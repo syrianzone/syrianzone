@@ -506,7 +506,7 @@ export default function PopulationClient() {
                                                 {selectedEnvProvince.data.current_conditions.temperature_celsius}°C
                                             </span>
                                             <p className="text-xs text-muted-foreground mt-1">
-                                                يحس وكأنها {selectedEnvProvince.data.current_conditions.feels_like_celsius}°C
+                                               المحسوسة {selectedEnvProvince.data.current_conditions.feels_like_celsius}°C
                                             </p>
                                             <p className="text-sm text-foreground/80 mt-1">
                                                 {selectedEnvProvince.data.current_conditions.weather_description}
@@ -552,7 +552,7 @@ export default function PopulationClient() {
                                     <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
                                         <h4 className="text-sm font-bold mb-3 flex items-center gap-2 text-foreground">
                                             <Thermometer size={16} className="text-orange-500" />
-                                            الظروف الحالية
+                                           الحالة الجوية
                                         </h4>
                                         <div className="grid grid-cols-2 gap-2">
                                             <div className="bg-card/80 backdrop-blur-sm p-2.5 rounded-lg border border-border/30 hover:border-orange-500/30 transition-colors group">
@@ -560,7 +560,7 @@ export default function PopulationClient() {
                                                     <Thermometer size={12} className="group-hover:text-orange-400 transition-colors" /> درجة الحرارة
                                                 </div>
                                                 <span className="text-lg font-bold">{selectedEnvProvince.data.current_conditions.temperature_celsius}°C</span>
-                                                <p className="text-[10px] text-muted-foreground">يحس: {selectedEnvProvince.data.current_conditions.feels_like_celsius}°</p>
+                                                <p className="text-[10px] text-muted-foreground">المحسوسة: {selectedEnvProvince.data.current_conditions.feels_like_celsius}°</p>
                                             </div>
                                             <div className="bg-card/80 backdrop-blur-sm p-2.5 rounded-lg border border-border/30 hover:border-blue-500/30 transition-colors group">
                                                 <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
@@ -683,7 +683,7 @@ export default function PopulationClient() {
                                             <div className="space-y-2">
                                                 <div className="flex justify-between items-center bg-card/50 p-2 rounded-lg">
                                                     <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                                        <Thermometer size={12} /> تغير الحرارة
+                                                        <Thermometer size={12} /> انحراف الحرارة
                                                     </span>
                                                     <span className={`text-xs font-bold flex items-center gap-1 ${selectedEnvProvince.data.climate_trends.temperature_trend_celsius < 0 ? 'text-blue-400' : 'text-red-400'
                                                         }`}>

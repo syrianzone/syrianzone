@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
   async rewrites() {
     const sites = [
-      'alignment', 'compass', 'house', 'legacytierlist', 'party',
+      'alignment', 'compass', 'house', 'legacytierlist', 'party', 'aws',
       'population', 'syid', 'syofficial', 'stats', 'sites'
     ];
 

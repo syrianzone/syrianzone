@@ -107,7 +107,7 @@ export function generateEnvironmentalTooltipHtml(name: string, data: any) {
             
             <div style="display: flex; align-items: baseline; gap: 6px; margin-bottom: 8px;">
                 <span style="font-size: 32px; font-weight: 700; color: ${tempColor}; font-family: monospace;">${temp}°</span>
-                <span style="font-size: 11px; color: #64748b;">يحس كـ ${feelsLike}°</span>
+                <span style="font-size: 11px; color: #64748b;">المحسوسة ${feelsLike}°</span>
             </div>
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">

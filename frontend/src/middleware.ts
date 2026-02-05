@@ -40,6 +40,9 @@ export async function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
+// Static HTML sites that should bypass middleware protection
+const STATIC_SITES = 'alignment|compass|house|legacytierlist|party|awstest|population|syid|syofficial|stats|sites';
+
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|assets|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  matcher: [`/((?!_next/static|_next/image|favicon.ico|assets|${STATIC_SITES}|.*\\.(?:svg|png|jpg|jpeg|gif|webp|html)$).*)`],
 };

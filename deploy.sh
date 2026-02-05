@@ -66,8 +66,8 @@ cd frontend
 
 # Fix ownership of .next build folder
 echo "🔧 Clearing old build folder..."
-rm -rf .next 2>/dev/null || true
-chown -R syrian:syrian node_modules 2>/dev/null || true
+sudo rm -rf .next 2>/dev/null || rm -rf .next 2>/dev/null || true
+sudo chown -R syrian:syrian node_modules 2>/dev/null || true
 
 # Install Node dependencies
 npm install

@@ -2,7 +2,7 @@ module.exports = {
     apps: [
         {
             name: 'syrianzone-frontend',
-            cwd: './frontend',
+            cwd: '.', // pm2 is started from frontend directory
             script: 'npm',
             args: 'start',
             instances: 1,

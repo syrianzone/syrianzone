@@ -30,6 +30,12 @@ fi
 echo "🐘 Deploying Backend (Laravel)..."
 cd backend
 
+# Fix ownership and clear old cache files that may have wrong permissions
+echo "🔧 Fixing file ownership..."
+chown -R syrian:syrian storage bootstrap/cache 2>/dev/null || true
+rm -rf storage/framework/views/*.php 2>/dev/null || true
+rm -rf bootstrap/cache/*.php 2>/dev/null || true
+
 # Ensure permissions are correct
 chmod -R 775 storage bootstrap/cache
 
@@ -47,6 +53,10 @@ fi
 php artisan route:clear
 php artisan config:clear
 php artisan optimize
+
+# Set correct ownership for web server
+echo "🔧 Setting web server ownership..."
+chown -R syrian:syrian storage bootstrap/cache
 
 cd ..
 

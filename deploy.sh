@@ -64,6 +64,10 @@ cd ..
 echo "⚛️  Deploying Frontend (Next.js)..."
 cd frontend
 
+# Fix ownership of .next build folder
+echo "🔧 Fixing frontend build folder ownership..."
+chown -R syrian:syrian .next node_modules 2>/dev/null || true
+
 # Install Node dependencies
 npm install
 

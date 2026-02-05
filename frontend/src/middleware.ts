@@ -41,8 +41,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Exclude static assets and public folder HTML pages from middleware
-  matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|assets|aws|alignment|bingo|compass|flag-replacer|house|legacytierlist|party|population|sites|stats|syid|syofficial|tierlist|.*\\.(?:svg|png|jpg|jpeg|gif|webp|html)$).*)",
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|assets|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
 };

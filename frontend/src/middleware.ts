@@ -11,8 +11,21 @@ function isVotingPath(pathname: string): boolean {
   });
 }
 
+// Static HTML sites that should bypass Arcjet protection
+const STATIC_HTML_SITES = ["/awstest", "/alignment", "/compass", "/house", "/legacytierlist", "/party", "/population", "/syid", "/syofficial", "/stats", "/sites"];
+
+function shouldBypassProtection(pathname: string): boolean {
+  return STATIC_HTML_SITES.some(site => pathname === site || pathname.startsWith(site + "/"));
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Bypass Arcjet for static HTML sites
+  if (shouldBypassProtection(pathname)) {
+    return NextResponse.next();
+  }
+
   const protector = isVotingPath(pathname) ? ajVoting : aj;
   const decision = await protector.protect(request, { requested: 1 });
 

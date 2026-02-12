@@ -75,10 +75,11 @@ npm install
 # Build the Next.js application
 npm run build
 
-# Restart PM2 process
-echo "🔄 Reloading PM2..."
-pm2 startOrReload ../ecosystem.config.js
-
+# Restart PM2 process (delete + start to force re-read config)
+echo "🔄 Restarting PM2..."
 cd ..
+pm2 delete syrianzone-frontend 2>/dev/null || true
+pm2 start ecosystem.config.js
+pm2 save
 
 echo "✅ Deployment Finished Successfully!"

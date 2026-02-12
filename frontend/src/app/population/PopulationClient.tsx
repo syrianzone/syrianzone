@@ -506,7 +506,7 @@ export default function PopulationClient() {
                                                 {selectedEnvProvince.data.current_conditions.temperature_celsius}°C
                                             </span>
                                             <p className="text-xs text-muted-foreground mt-1">
-                                               المحسوسة {selectedEnvProvince.data.current_conditions.feels_like_celsius}°C
+                                                المحسوسة {selectedEnvProvince.data.current_conditions.feels_like_celsius}°C
                                             </p>
                                             <p className="text-sm text-foreground/80 mt-1">
                                                 {selectedEnvProvince.data.current_conditions.weather_description}
@@ -552,7 +552,7 @@ export default function PopulationClient() {
                                     <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
                                         <h4 className="text-sm font-bold mb-3 flex items-center gap-2 text-foreground">
                                             <Thermometer size={16} className="text-orange-500" />
-                                           الحالة الجوية
+                                            الحالة الجوية
                                         </h4>
                                         <div className="grid grid-cols-2 gap-2">
                                             <div className="bg-card/80 backdrop-blur-sm p-2.5 rounded-lg border border-border/30 hover:border-orange-500/30 transition-colors group">
@@ -909,6 +909,18 @@ export default function PopulationClient() {
                                                     </span>
                                                 )}
                                             </div>
+
+                                            {source.source_url && (
+                                                <a
+                                                    href={source.source_url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center gap-1.5 text-[11px] text-primary hover:text-primary/80 transition-colors mb-2 px-1"
+                                                >
+                                                    <ExternalLink size={12} />
+                                                    <span>المصدر</span>
+                                                </a>
+                                            )}
 
                                             <div className="overflow-hidden rounded-md border border-border/50">
                                                 <table className="w-full text-xs text-right">

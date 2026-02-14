@@ -5,9 +5,10 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TierAvatar as Avatar } from "@/components/poll/TierAvatar";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CheckCircle2Icon, AlertCircleIcon } from "lucide-react";
+import { CheckCircle2Icon, AlertCircleIcon, Download } from "lucide-react";
 import { exportTierListFromData } from "@/lib/exportImage";
 import axios from "@/lib/axios";
+import JSZip from "jszip";
 import "./poll.css";
 
 type Candidate = {
@@ -88,11 +89,12 @@ export default function TierBoard({
         D: [],
         F: [],
     });
-    const [selectedForTier, setSelectedForTier] = useState<string | null>(null);
-    const [modalPosition, setModalPosition] = useState<{
-        top: number;
-        left: number;
-    } | null>(null);
+    // Single-select tier modal disabled — multi-select only
+    // const [selectedForTier, setSelectedForTier] = useState<string | null>(null);
+    // const [modalPosition, setModalPosition] = useState<{
+    //     top: number;
+    //     left: number;
+    // } | null>(null);
     // Deterministic seeded shuffle to avoid SSR/CSR hydration mismatch
     const shuffledInitial = useMemo(() => {
         function xmur3(str: string): number {
@@ -188,7 +190,6 @@ export default function TierBoard({
     // Important: do NOT depend on 'tiers' here to avoid infinite update loops.
     useEffect(() => {
         setSelectedIds(new Set());
-        setSelectedForTier(null);
         setTiers(createEmptyTiers());
 
         const filtered = shuffledInitial.filter((c) => {
@@ -288,29 +289,28 @@ export default function TierBoard({
         e.dataTransfer.dropEffect = "move";
     }
 
-    function handleCandidateClick(e: React.MouseEvent, candidateId: string) {
-        e.stopPropagation();
-
-        if (e.shiftKey || e.ctrlKey || e.metaKey) {
-            toggleSelected(candidateId);
-            setSelectedForTier(null);
-            setModalPosition(null);
-            return;
-        }
-
-        if (selectedForTier === candidateId) {
-            setSelectedForTier(null);
-            setModalPosition(null);
-        } else {
-            const rect = e.currentTarget.getBoundingClientRect();
-            setModalPosition({
-                top: rect.top - 10,
-                left: rect.left + rect.width / 2,
-            });
-            setSelectedForTier(candidateId);
-            setSelectedIds(new Set());
-        }
-    }
+    // Single-select tier modal click handler disabled — clicks now toggle multi-select
+    // function handleCandidateClick(e: React.MouseEvent, candidateId: string) {
+    //     e.stopPropagation();
+    //     if (e.shiftKey || e.ctrlKey || e.metaKey) {
+    //         toggleSelected(candidateId);
+    //         setSelectedForTier(null);
+    //         setModalPosition(null);
+    //         return;
+    //     }
+    //     if (selectedForTier === candidateId) {
+    //         setSelectedForTier(null);
+    //         setModalPosition(null);
+    //     } else {
+    //         const rect = e.currentTarget.getBoundingClientRect();
+    //         setModalPosition({
+    //             top: rect.top - 10,
+    //             left: rect.left + rect.width / 2,
+    //         });
+    //         setSelectedForTier(candidateId);
+    //         setSelectedIds(new Set());
+    //     }
+    // }
     async function submit() {
         const totalAssigned = tierKeys.reduce((acc, k) => acc + tiers[k].length, 0);
         if (totalAssigned < (minSelections || 3)) {
@@ -439,6 +439,54 @@ export default function TierBoard({
         }
     }
 
+    const isJolaniGroup = groups.find(g => g.id === selectedGroupId)?.key === 'jolani';
+
+    async function downloadImage(url: string, filename: string) {
+        try {
+            const res = await fetch(url);
+            const blob = await res.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(blobUrl);
+        } catch (err) {
+            console.error('Download failed:', err);
+        }
+    }
+
+    const [isDownloadingAll, setIsDownloadingAll] = useState(false);
+
+    async function downloadAllImages(candidates: Candidate[]) {
+        setIsDownloadingAll(true);
+        try {
+            const zip = new JSZip();
+            for (const c of candidates) {
+                if (!c.imageUrl) continue;
+                const ext = c.imageUrl.split('.').pop()?.split('?')[0] || 'png';
+                const res = await fetch(c.imageUrl);
+                const blob = await res.blob();
+                zip.file(`${c.name}.${ext}`, blob);
+            }
+            const content = await zip.generateAsync({ type: 'blob' });
+            const blobUrl = URL.createObjectURL(content);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = 'jolani-images.zip';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(blobUrl);
+        } catch (err) {
+            console.error('Download all failed:', err);
+        } finally {
+            setIsDownloadingAll(false);
+        }
+    }
+
     return (
         <Card
             ref={containerRef}
@@ -482,22 +530,30 @@ export default function TierBoard({
                                 key={c.id}
                                 draggable
                                 onDragStart={(e) => handleDragStart(e, c.id)}
-                                onClick={(e) => handleCandidateClick(e, c.id)}
+                                onClick={() => toggleSelected(c.id)}
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter' || e.key === ' ') {
-                                        handleCandidateClick(e as any, c.id);
+                                        toggleSelected(c.id);
                                     }
                                 }}
                                 role="button"
                                 tabIndex={0}
-                                className={`flex flex-col items-center gap-1 outline h-auto p-2 pt-3 cursor-pointer select-none rounded-md transition-all active:scale-95 ${selectedForTier === c.id
-                                    ? "bg-blue-600 hover:bg-blue-600 text-white outline-4 outline-blue-400 ring-4 ring-blue-300"
-                                    : selected
+                                className={`group relative flex flex-col items-center gap-1 outline h-auto p-2 pt-3 cursor-pointer select-none rounded-md transition-all active:scale-95 ${selected
                                         ? "bg-purple-600 hover:bg-purple-600 text-white outline-2 outline-purple-400 font-semibold"
                                         : "bg-card text-foreground border border-border hover:bg-muted"
                                     } w-[104px] sm:w-[120px]`}
                                 data-selected={selected ? "1" : undefined}
                             >
+                                {isJolaniGroup && c.imageUrl && (
+                                    <button
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); downloadImage(c.imageUrl!, `${c.name}.${c.imageUrl!.split('.').pop()?.split('?')[0] || 'png'}`); }}
+                                        className="absolute top-1 left-1 z-10 p-0.5 rounded bg-black/50 text-white hidden sm:block sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-black/70"
+                                        title="تحميل الصورة"
+                                    >
+                                        <Download size={14} />
+                                    </button>
+                                )}
                                 <Avatar
                                     src={c.imageUrl || ""}
                                     alt={c.name}
@@ -509,7 +565,7 @@ export default function TierBoard({
                                 </span>
                                 {c.title ? (
                                     <span
-                                        className={`text-[11px] text-muted-foreground text-center leading-tight pointer-events-none ${selected || selectedForTier === c.id ? "text-white" : ""
+                                        className={`text-[11px] text-muted-foreground text-center leading-tight pointer-events-none ${selected ? "text-white" : ""
                                             }`}
                                     >
                                         {c.title}
@@ -521,43 +577,21 @@ export default function TierBoard({
                 </div>
             </div>
 
-            {selectedForTier && modalPosition && (
-                <div
-                    className="fixed inset-0 z-50"
-                    onClick={() => {
-                        setSelectedForTier(null);
-                        setModalPosition(null);
-                    }}
-                >
-                    <div
-                        className="absolute bg-card rounded-lg shadow-2xl border-2 border-border p-1.5"
-                        style={{
-                            top: `${modalPosition.top}px`,
-                            left: `${modalPosition.left}px`,
-                            transform: "translate(-50%, -100%)",
-                            minWidth: "160px",
-                            maxWidth: "180px",
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                    >
+            {/* Single-select tier modal disabled — multi-select only */}
+            {/* {selectedForTier && modalPosition && (
+                <div className="fixed inset-0 z-50" onClick={() => { setSelectedForTier(null); setModalPosition(null); }}>
+                    <div className="absolute bg-card rounded-lg shadow-2xl border-2 border-border p-1.5"
+                        style={{ top: `${modalPosition.top}px`, left: `${modalPosition.left}px`, transform: "translate(-50%, -100%)", minWidth: "160px", maxWidth: "180px" }}
+                        onClick={(e) => e.stopPropagation()}>
                         <div className="flex flex-wrap gap-0.5 justify-center">
                             {tierKeys.map((k) => (
-                                <button
-                                    key={k}
-                                    onClick={() => {
-                                        moveCandidateTo(selectedForTier, k);
-                                        setSelectedForTier(null);
-                                        setModalPosition(null);
-                                    }}
-                                    className={`${tierStyles[k].label} text-white px-2 py-1 rounded text-xs font-bold hover:opacity-90 transition`}
-                                >
-                                    {k}
-                                </button>
+                                <button key={k} onClick={() => { moveCandidateTo(selectedForTier, k); setSelectedForTier(null); setModalPosition(null); }}
+                                    className={`${tierStyles[k].label} text-white px-2 py-1 rounded text-xs font-bold hover:opacity-90 transition`}>{k}</button>
                             ))}
                         </div>
                     </div>
                 </div>
-            )}
+            )} */}
 
             {selectedIds.size > 0 && (
                 <div className="mb-3 p-3 bg-purple-100 dark:bg-purple-900/30 border-2 border-purple-400 rounded-lg">
@@ -576,6 +610,33 @@ export default function TierBoard({
                             ))}
                         </div>
                     </div>
+                </div>
+            )}
+
+            {isJolaniGroup && (
+                <div className="flex justify-center mb-4">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => downloadAllImages([...bank, ...tierKeys.flatMap(k => tiers[k])])}
+                        disabled={isDownloadingAll}
+                        className="gap-1.5"
+                    >
+                        {isDownloadingAll ? (
+                            <span className="inline-flex items-center gap-2">
+                                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                                </svg>
+                                جاري التحميل...
+                            </span>
+                        ) : (
+                            <>
+                                <Download size={14} />
+                               تحميل صور جميع الشخصيات
+                            </>
+                        )}
+                    </Button>
                 </div>
             )}
 
@@ -644,22 +705,30 @@ export default function TierBoard({
                                         key={c.id}
                                         draggable
                                         onDragStart={(e) => handleDragStart(e, c.id)}
-                                        onClick={(e) => handleCandidateClick(e, c.id)}
+                                        onClick={() => toggleSelected(c.id)}
                                         onKeyDown={(e) => {
                                             if (e.key === 'Enter' || e.key === ' ') {
-                                                handleCandidateClick(e as any, c.id);
+                                                toggleSelected(c.id);
                                             }
                                         }}
                                         role="button"
                                         tabIndex={0}
-                                        className={`flex flex-col items-center gap-1 mr-2 mb-2 outline h-auto p-2 pt-3 cursor-pointer select-none rounded-md transition-all active:scale-95 ${selectedForTier === c.id
-                                            ? "bg-blue-600 hover:bg-blue-600 text-white outline-4 outline-blue-400 ring-4 ring-blue-300"
-                                            : selected
+                                        className={`group relative flex flex-col items-center gap-1 mr-2 mb-2 outline h-auto p-2 pt-3 cursor-pointer select-none rounded-md transition-all active:scale-95 ${selected
                                                 ? "bg-purple-600 hover:bg-purple-600 text-white outline-2 outline-purple-400 font-semibold"
                                                 : "bg-card text-foreground border border-border hover:bg-muted"
                                             } w-[104px] sm:w-[120px]`}
                                         data-selected={selected ? "1" : undefined}
                                     >
+                                        {isJolaniGroup && c.imageUrl && (
+                                            <button
+                                                type="button"
+                                                onClick={(e) => { e.stopPropagation(); downloadImage(c.imageUrl!, `${c.name}.${c.imageUrl!.split('.').pop()?.split('?')[0] || 'png'}`); }}
+                                                className="absolute top-1 left-1 z-10 p-0.5 rounded bg-black/50 text-white hidden sm:block sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-black/70"
+                                                title="تحميل الصورة"
+                                            >
+                                                <Download size={14} />
+                                            </button>
+                                        )}
                                         <Avatar
                                             src={c.imageUrl || ""}
                                             alt={c.name}
@@ -670,7 +739,7 @@ export default function TierBoard({
                                             {c.name}
                                         </span>
                                         {c.title ? (
-                                            <span className={`text-[11px] text-muted-foreground text-center leading-tight pointer-events-none ${selectedForTier === c.id || selected ? "text-white" : ""}`}>{c.title}</span>
+                                            <span className={`text-[11px] text-muted-foreground text-center leading-tight pointer-events-none ${selected ? "text-white" : ""}`}>{c.title}</span>
                                         ) : null}
                                     </div>
                                 );
@@ -758,7 +827,6 @@ export default function TierBoard({
                         setBank(shuffledInitial);
                         setTiers(createEmptyTiers());
                         setSelectedIds(new Set());
-                        setSelectedForTier(null);
                     }}
                 >
                     مسح الاختيارات

@@ -3,7 +3,7 @@
 
 @plugin "tailwindcss-animate";
 
-@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, [data-theme="dark-blue"], [data-theme="dark-blue"] *, [data-theme="dark-purple"], [data-theme="dark-purple"] *, [data-theme="dark-green"], [data-theme="dark-green"] *, [data-theme="high-contrast"], [data-theme="high-contrast"] *, .dark, .dark *));
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, [data-theme="dark-blue"], [data-theme="dark-blue"] *, [data-theme="dark-purple"], [data-theme="dark-purple"] *, [data-theme="dark-green"], [data-theme="dark-green"] *, [data-theme="high-contrast"], [data-theme="high-contrast"] *, [data-theme="damascus-rose"], [data-theme="damascus-rose"] *, .dark, .dark *));
 
 @theme {
     --font-sans: 'IBM Plex Sans Arabic', sans-serif;
@@ -105,12 +105,52 @@
     --sz-color-accent: 356 45.2% 45.1%;
 }
 
-/* Shared Dark Styles for all dark-based themes */
+[data-theme="jasmine"] {
+    --background: 45 60% 97%;
+    --foreground: 30 25% 12%;
+    --card: 45 50% 100%;
+    --card-foreground: 30 25% 12%;
+    --popover: 45 55% 98%;
+    --popover-foreground: 30 25% 12%;
+    --primary: 38 85% 45%;
+    /* Deep jasmine gold */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 42 35% 92%;
+    --secondary-foreground: 30 25% 15%;
+    --muted: 42 30% 93%;
+    --muted-foreground: 30 18% 42%;
+    --accent: 42 40% 90%;
+    --accent-foreground: 30 25% 15%;
+    --destructive: 356 45.2% 45.1%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 38 30% 85%;
+    --input: 38 30% 88%;
+    --ring: 38 85% 45%;
+    --radius: 0.5rem;
+    --chart-1: 38 85% 45%;
+    --chart-2: 105 30% 42%;
+    --chart-3: 356 45% 45%;
+    --chart-4: 200 60% 48%;
+    --chart-5: 280 50% 52%;
+    --sidebar: 42 40% 95%;
+    --sidebar-foreground: 30 25% 12%;
+    --sidebar-primary: 38 85% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 42 35% 90%;
+    --sidebar-accent-foreground: 30 25% 12%;
+    --sidebar-border: 38 30% 82%;
+    --sidebar-ring: 38 85% 45%;
+    --sz-color-primary: 38 85% 45%;
+    --sz-color-accent: 356 45.2% 45.1%;
+}
+
+
 [data-theme="dark"],
 [data-theme="dark-blue"],
 [data-theme="dark-purple"],
 [data-theme="dark-green"],
 [data-theme="high-contrast"],
+[data-theme="damascus-rose"],
 .dark {
     --background: 203 13.3% 11.8%;
     /* #1A1F22 */
@@ -147,7 +187,7 @@
     --sidebar-ring: 105 15.2% 36.1%;
 }
 
-/* Theme-specific Accent Overrides */
+
 [data-theme="dark"],
 .dark {
     --primary: 105 15.2% 36.1%;
@@ -178,6 +218,67 @@
     --primary: 120 100% 50%;
     --border: 120 100% 50%;
     --sz-color-primary: 120 100% 50%;
+}
+
+[data-theme="damascus-rose"] {
+    /* Rich warm rose-black — like dried rose petals */
+    --background: 345 28% 8%;
+    --foreground: 10 15% 96%;
+
+    /* Deep wine card surface */
+    --card: 345 32% 5.5%;
+    --card-foreground: 10 15% 96%;
+
+    --popover: 345 28% 7%;
+    --popover-foreground: 10 15% 96%;
+
+    /* Blooming rose — the heart of the theme */
+    --primary: 340 68% 58%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Warm plum secondary */
+    --secondary: 345 22% 13%;
+    --secondary-foreground: 10 15% 95%;
+
+    --muted: 345 22% 11%;
+    /* Dusty rose muted text — warm, not cold */
+    --muted-foreground: 340 18% 62%;
+
+    --accent: 345 22% 15%;
+    --accent-foreground: 10 15% 95%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Warm rose borders with soft glow */
+    --border: 340 35% 20%;
+    --input: 340 30% 18%;
+    --ring: 340 68% 58%;
+
+    /* Charts — rose palette */
+    --chart-1: 340 68% 58%;
+    /* Rose */
+    --chart-2: 38 75% 52%;
+    /* Gold */
+    --chart-3: 15 65% 48%;
+    /* Brick red */
+    --chart-4: 280 45% 55%;
+    /* Lavender */
+    --chart-5: 170 40% 45%;
+    /* Muted teal */
+
+    /* Sidebar — even deeper rose-black */
+    --sidebar: 345 35% 4%;
+    --sidebar-foreground: 10 15% 96%;
+    --sidebar-primary: 340 68% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 345 28% 11%;
+    --sidebar-accent-foreground: 10 15% 96%;
+    --sidebar-border: 340 30% 16%;
+    --sidebar-ring: 340 68% 58%;
+
+    --sz-color-primary: 340 68% 58%;
+    --sz-color-accent: 38 75% 52%;
 }
 
 @layer base {

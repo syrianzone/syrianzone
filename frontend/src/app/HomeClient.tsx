@@ -45,7 +45,6 @@ const PRESET_LINKS: PresetLink[] = [
     { href: 'https://chromewebstore.google.com/detail/syrian-flag-replacer/dngipobppehfhfggmbdiiiodgcibdeog', icon: null, text: 'مبدل العلم', image: '/flag-replacer/1f1f8-1f1fe.svg', external: true },
 ];
 
-
 const GOVERNORATES: Record<string, { lat: number; lon: number }> = {
     'damascus': { lat: 33.5138, lon: 36.2765 },
     'aleppo': { lat: 36.2021, lon: 37.1343 },
@@ -78,6 +77,40 @@ const WEATHER_TRANSLATIONS: Record<string, string> = {
     "moderate rain": "مطر متوسط",
 };
 
+// Theme metadata — label, emoji hint, and which group they belong to
+const THEME_META: Record<string, { ar: string; en: string; emoji: string }> = {
+    // Original themes
+    light:          { ar: 'فاتح',          en: 'Light',         emoji: '☀️' },
+    dark:           { ar: 'داكن',          en: 'Dark',          emoji: '🌑' },
+    'dark-blue':    { ar: 'داكن أزرق',     en: 'Dark Blue',     emoji: '🔵' },
+    'dark-purple':  { ar: 'داكن بنفسجي',   en: 'Dark Purple',   emoji: '🟣' },
+    'dark-green':   { ar: 'داكن أخضر',     en: 'Dark Green',    emoji: '🟢' },
+    'high-contrast':{ ar: 'تباين عالي',    en: 'High Contrast', emoji: '⚡' },
+    // Syrian Heritage themes
+    'damascus-rose':  { ar: 'الورد الدمشقي',   en: 'Damascus Rose',  emoji: '🌹' },
+    'jasmine':        { ar: 'ياسمين',           en: 'Jasmine',        emoji: '🌸' },
+};
+
+const THEMES = Object.keys(THEME_META);
+
+// Themes that use a dark background (affects logo + sun/moon icon)
+const DARK_THEMES = new Set([
+    'dark', 'dark-blue', 'dark-purple', 'dark-green', 'high-contrast',
+    'damascus-rose',
+]);
+
+// Approximate primary accent color per theme for the swatch UI
+const THEME_SWATCH: Record<string, { bg: string; primary: string }> = {
+    'light':          { bg: '#f5f5f5', primary: '#5a714a' },
+    'dark':           { bg: '#1a1f22', primary: '#5a714a' },
+    'dark-blue':      { bg: '#0f1520', primary: '#4d84f5' },
+    'dark-purple':    { bg: '#130e1a', primary: '#9b2ec4' },
+    'dark-green':     { bg: '#0e1a10', primary: '#4cac5a' },
+    'high-contrast':  { bg: '#0a0a0a', primary: '#00ff00' },
+    'damascus-rose':  { bg: '#1a0810', primary: '#d4527a' },
+    'jasmine':        { bg: '#fdf8ef', primary: '#c47e10' },
+};
+
 export default function HomeClient({ aboutContent = '' }: { aboutContent?: string }) {
     const [aboutHtml, setAboutHtml] = useState('');
 
@@ -108,8 +141,6 @@ export default function HomeClient({ aboutContent = '' }: { aboutContent?: strin
     const [governorate, setGovernorate] = useState('damascus');
     const [clockFormat, setClockFormat] = useState<'12' | '24'>('24');
 
-    const THEMES = ['light', 'dark', 'dark-blue', 'dark-purple', 'dark-green', 'high-contrast'];
-
     // Load settings from localStorage
     useEffect(() => {
         const savedTheme = localStorage.getItem('sz-theme') || 'dark';
@@ -131,7 +162,6 @@ export default function HomeClient({ aboutContent = '' }: { aboutContent?: strin
             }
         }
 
-        // Apply theme
         document.documentElement.setAttribute('data-theme', savedTheme);
         setMounted(true);
         setCurrentTime(new Date());
@@ -202,14 +232,17 @@ export default function HomeClient({ aboutContent = '' }: { aboutContent?: strin
         setSearchQuery('');
     };
 
+    const applyTheme = (newTheme: string) => {
+        setTheme(newTheme);
+        localStorage.setItem('sz-theme', newTheme);
+        document.documentElement.setAttribute('data-theme', newTheme);
+    };
+
     const cycleTheme = () => {
         const currentTheme = theme || 'dark';
         const currentIndex = THEMES.indexOf(currentTheme);
         const nextIndex = (currentIndex + 1) % THEMES.length;
-        const newTheme = THEMES[nextIndex];
-        setTheme(newTheme);
-        localStorage.setItem('sz-theme', newTheme);
-        document.documentElement.setAttribute('data-theme', newTheme);
+        applyTheme(THEMES[nextIndex]);
     };
 
     const toggleLanguage = () => {
@@ -251,6 +284,7 @@ export default function HomeClient({ aboutContent = '' }: { aboutContent?: strin
     if (!mounted) return null;
 
     const currentLang = language || 'ar';
+    const isDark = DARK_THEMES.has(theme || 'dark');
 
     return (
         <div className="min-h-screen text-foreground transition-colors" dir={currentLang === 'ar' ? 'rtl' : 'ltr'}>
@@ -260,12 +294,19 @@ export default function HomeClient({ aboutContent = '' }: { aboutContent?: strin
                     {currentLang === 'ar' ? 'حول' : 'About'}
                 </Button>
 
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
                     <Button variant="ghost" size="icon" onClick={toggleLanguage}>
                         <img src={`/assets/${currentLang}.svg`} alt={currentLang} className="w-5 h-5" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={cycleTheme}>
-                        {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={cycleTheme}
+                        title={currentLang === 'ar'
+                            ? `المظهر الحالي: ${THEME_META[theme || 'dark']?.ar}`
+                            : `Current theme: ${THEME_META[theme || 'dark']?.en}`}
+                    >
+                        {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
                     </Button>
                     <Button variant="ghost" size="icon" onClick={() => setSettingsOpen(true)}>
                         <Settings className="h-5 w-5" />
@@ -316,7 +357,7 @@ export default function HomeClient({ aboutContent = '' }: { aboutContent?: strin
                 <div className="flex justify-center mb-12">
                     {mounted && (
                         <img
-                            src={theme === 'light' ? '/assets/logo-lightmode.svg' : '/assets/logo-darkmode.svg'}
+                            src={isDark ? '/assets/logo-darkmode.svg' : '/assets/logo-lightmode.svg'}
                             alt="Syrian Zone"
                             className="h-16 md:h-24"
                         />
@@ -537,25 +578,78 @@ export default function HomeClient({ aboutContent = '' }: { aboutContent?: strin
                                     </SelectContent>
                                 </Select>
                             </div>
+
                             <div className="space-y-2">
                                 <Label>{currentLang === 'ar' ? 'المظهر' : 'Theme'}</Label>
-                                <Select value={theme || 'dark'} onValueChange={(val) => {
-                                    setTheme(val);
-                                    localStorage.setItem('sz-theme', val);
-                                    document.documentElement.setAttribute('data-theme', val);
-                                }}>
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="light">Light</SelectItem>
-                                        <SelectItem value="dark">Dark</SelectItem>
-                                        <SelectItem value="dark-blue">Dark Blue</SelectItem>
-                                        <SelectItem value="dark-purple">Dark Purple</SelectItem>
-                                        <SelectItem value="dark-green">Dark Green</SelectItem>
-                                        <SelectItem value="high-contrast">High Contrast</SelectItem>
-                                    </SelectContent>
-                                </Select>
+
+                                {/* Standard themes list */}
+                                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground pt-1">
+                                    {currentLang === 'ar' ? 'المظاهر الأساسية' : 'Standard'}
+                                </p>
+                                <div className="flex flex-col gap-1.5">
+                                    {['light','dark','dark-blue','dark-purple','dark-green','high-contrast'].map((t) => {
+                                        const swatch = THEME_SWATCH[t];
+                                        const meta = THEME_META[t];
+                                        const isActive = (theme || 'dark') === t;
+                                        return (
+                                            <button
+                                                key={t}
+                                                onClick={() => applyTheme(t)}
+                                                className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all hover:scale-[1.01] focus:outline-none w-full"
+                                                style={{
+                                                    background: isActive ? swatch.primary + '1a' : 'hsl(var(--muted))',
+                                                    border: isActive ? `2px solid ${swatch.primary}` : '2px solid transparent',
+                                                }}
+                                            >
+                                                <div
+                                                    className="w-6 h-6 rounded-full flex-shrink-0 overflow-hidden shadow-sm"
+                                                    style={{ background: swatch.bg, border: `2px solid ${swatch.primary}` }}
+                                                >
+                                                    <div style={{ background: swatch.primary, height: '50%', marginTop: '50%' }} />
+                                                </div>
+                                                <span className="text-sm font-medium" style={{ color: isActive ? swatch.primary : 'hsl(var(--foreground))' }}>
+                                                    {meta.emoji} {currentLang === 'ar' ? meta.ar : meta.en}
+                                                </span>
+                                                {isActive && (
+                                                    <span className="ms-auto text-sm" style={{ color: swatch.primary }}>✓</span>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Syrian Heritage themes list */}
+                                <div className="flex flex-col gap-1.5">
+                                    {['damascus-rose','jasmine'].map((t) => {
+                                        const swatch = THEME_SWATCH[t];
+                                        const meta = THEME_META[t];
+                                        const isActive = (theme || 'dark') === t;
+                                        return (
+                                            <button
+                                                key={t}
+                                                onClick={() => applyTheme(t)}
+                                                className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all hover:scale-[1.01] focus:outline-none w-full"
+                                                style={{
+                                                    background: isActive ? swatch.primary + '1a' : 'hsl(var(--muted))',
+                                                    border: isActive ? `2px solid ${swatch.primary}` : '2px solid transparent',
+                                                }}
+                                            >
+                                                <div
+                                                    className="w-6 h-6 rounded-full flex-shrink-0 overflow-hidden shadow-sm"
+                                                    style={{ background: swatch.bg, border: `2px solid ${swatch.primary}` }}
+                                                >
+                                                    <div style={{ background: swatch.primary, height: '50%', marginTop: '50%' }} />
+                                                </div>
+                                                <span className="text-sm font-medium" style={{ color: isActive ? swatch.primary : 'hsl(var(--foreground))' }}>
+                                                    {meta.emoji} {currentLang === 'ar' ? meta.ar : meta.en}
+                                                </span>
+                                                {isActive && (
+                                                    <span className="ms-auto text-sm" style={{ color: swatch.primary }}>✓</span>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         </div>
                     </div>

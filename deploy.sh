@@ -63,11 +63,8 @@ echo "⚛️  Deploying Frontend (Next.js)..."
 cd frontend
 
 echo "🔧 Cleaning previous Next.js build..."
-# We must use sudo in case previous cache folders were generated with root privileges
-sudo rm -rf .next 2>/dev/null || rm -rf .next 2>/dev/null || true
-sudo chown -R syrian:syrian node_modules 2>/dev/null || true
+rm -rf .next 2>/dev/null || true
 
-echo "📦 Installing Node dependencies..."
 # npm ci is faster and more reliable for deployments, but fall back to install if needed
 npm ci || npm install
 

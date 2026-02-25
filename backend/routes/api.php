@@ -19,6 +19,10 @@ Route::middleware('throttle:voting')->group(function () {
 });
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    });
+
     Route::post('/polls', [PollController::class, 'store']);
     Route::put('/polls/{id}', [PollController::class, 'update']);
     Route::delete('/polls/{id}', [PollController::class, 'destroy']);

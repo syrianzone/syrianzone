@@ -73,10 +73,12 @@ echo "🏗️  Building Next.js application..."
 npm run build
 
 # 4. Process Management (PM2)
-echo "🔄 Reloading PM2..."
+echo "🔄 Restarting PM2..."
 cd ..
-# Reload is zero-downtime if running, start will catch it if it's dead/missing
-pm2 reload syrianzone-frontend --update-env 2>/dev/null || pm2 start ecosystem.config.js
+
+# For Next.js in fork mode, restart is much safer than reload. 
+# It prevents the old server and its chunks map from hanging in memory.
+pm2 restart syrianzone-frontend --update-env 2>/dev/null || pm2 start ecosystem.config.js
 pm2 save
 
 echo "✅ Deployment Finished Successfully!"

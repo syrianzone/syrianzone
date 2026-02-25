@@ -7,9 +7,9 @@ const nextConfig: NextConfig = {
     return [
       {
         // Proxy API requests to Laravel's typical port if running via artisan setup
-        // Note: Restored to 8001 as that's what production expects
+        // Note: Switched to 8000 as per production
         source: '/api/:path*',
-        destination: 'http://127.0.0.1:8001/api/:path*',
+        destination: 'http://127.0.0.1:8000/api/:path*',
       }
     ];
   },

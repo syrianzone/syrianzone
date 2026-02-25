@@ -4,17 +4,18 @@ const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
   async rewrites() {
-    // In production, Laravel's app.php explicitly strips the 'api' prefix 
-    // from internal routes. In development, it retains it. We adjust our
-    // proxy path accordingly.
+    // In local development we want Next.js to proxy to artisan serve
+    // In production, Nginx directly takes over the /api location block
+    // before it reaches Node.js, so this rewrite mostly matters for local.
     const isProd = process.env.NODE_ENV === 'production';
-    const backendUrl = process.env.API_PROXY_URL || 'http://127.0.0.1:8000';
-    const destinationPath = isProd ? `${backendUrl}/:path*` : `${backendUrl}/api/:path*`;
+    if (isProd) {
+      return [];
+    }
 
     return [
       {
         source: '/api/:path*',
-        destination: destinationPath,
+        destination: 'http://127.0.0.1:8000/api/:path*',
       }
     ];
   },

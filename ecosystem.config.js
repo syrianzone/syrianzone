@@ -14,5 +14,15 @@ module.exports = {
                 PORT: 3001,
             },
         },
+        {
+            name: 'syrianzone-backend',
+            cwd: './backend',
+            script: 'artisan',
+            args: 'serve --port=8001',
+            interpreter: 'php',
+            instances: 1,
+            autorestart: true,
+            max_memory_restart: '512M',
+        },
     ],
 };

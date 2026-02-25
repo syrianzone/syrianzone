@@ -4,26 +4,13 @@ const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
   async rewrites() {
-    const sites = [
-      'alignment', 'compass', 'house', 'legacytierlist', 'party',
-      'population', 'syid', 'syofficial', 'stats', 'sites'
-    ];
-
     return [
       {
+        // Proxy API requests to Laravel's typical port if running via artisan setup
+        // Note: Change 8000 to match backend port, previously it said 8001
         source: '/api/:path*',
-        destination: 'http://127.0.0.1:8001/api/:path*',
-      },
-      ...sites.flatMap(site => [
-        {
-          source: `/${site}`,
-          destination: `/${site}/index.html`,
-        },
-        {
-          source: `/${site}/:path*`,
-          destination: `/${site}/:path*`,
-        }
-      ])
+        destination: 'http://127.0.0.1:8000/api/:path*',
+      }
     ];
   },
 };

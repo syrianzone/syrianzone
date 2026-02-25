@@ -3,11 +3,11 @@ module.exports = {
         {
             name: 'syrianzone-frontend',
             cwd: './frontend',
-            script: 'npm',
-            args: 'start',
+            script: 'node_modules/.bin/next',
+            args: 'start -p 3002',
+            exec_mode: 'fork',
             env: {
                 NODE_ENV: 'production',
-                PORT: 3002,
             },
             instances: 1,
             autorestart: true,

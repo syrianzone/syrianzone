@@ -71,15 +71,13 @@ npm ci || npm install
 echo "🏗️  Building Next.js application..."
 npm run build
 
-# Clean spaces from .env (Safety measure for manual edits)
-sed -i 's/[[:space:]]*$//' backend/.env || true
-sed -i 's/[[:space:]]*$//' frontend/.env || true
-
 # 4. Process Management (PM2)
 echo "🔄 Restarting PM2..."
-# For Next.js/Laravel, restarting the whole config file is safer to pick up new ports/envs
-pm2 delete syrianzone-frontend syrianzone-backend 2>/dev/null || true
-pm2 start ecosystem.config.js
+cd ..
+
+# For Next.js in fork mode, restart is much safer than reload. 
+# It prevents the old server and its chunks map from hanging in memory.
+pm2 restart syrianzone-frontend --update-env 2>/dev/null || pm2 start ecosystem.config.js
 pm2 save
 
 echo "✅ Deployment Finished Successfully!"

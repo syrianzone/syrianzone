@@ -53,6 +53,7 @@ export const metadata: Metadata = {
 
 import { AuthProvider } from "@/context/AuthContext";
 import Navbar from "@/components/Navbar";
+import UnblockSyriaNotification from "@/components/UnblockSyriaNotification";
 
 export default function RootLayout({
   children,
@@ -91,6 +92,7 @@ export default function RootLayout({
         <AuthProvider>
           <Navbar />
           {children}
+          <UnblockSyriaNotification />
         </AuthProvider>
       </body>
     </html >

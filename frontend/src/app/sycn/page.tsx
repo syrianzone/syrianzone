@@ -18,6 +18,37 @@ const i18n = {
   },
 }
 
+function ThemeToggle() {
+  const [mounted, setMounted] = useState(false)
+  const [isDark, setIsDark] = useState(false)
+  useEffect(() => {
+    setMounted(true)
+    setIsDark(document.documentElement.getAttribute("data-theme")?.includes("dark") ?? false)
+  }, [])
+  if (!mounted) return null
+
+  const toggle = () => {
+    const next = isDark ? "light" : "dark"
+    document.documentElement.setAttribute("data-theme", next)
+    localStorage.setItem("sz-theme", next)
+    setIsDark(!isDark)
+  }
+
+  return (
+    <button
+      onClick={toggle}
+      className="rounded-md border p-2 transition-colors"
+      style={{ borderColor: "hsl(var(--border))", color: "hsl(var(--foreground))" }}
+    >
+      {isDark ? (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4" /><path d="M12 2v2" /><path d="M12 20v2" /><path d="m4.93 4.93 1.41 1.41" /><path d="m17.66 17.66 1.41 1.41" /><path d="M2 12h2" /><path d="M20 12h2" /><path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" /></svg>
+      ) : (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" /></svg>
+      )}
+    </button>
+  )
+}
+
 function DirToggle() {
   const { dir, setDir } = useDir()
   return (
@@ -152,6 +183,7 @@ export default function SycnHome() {
             sycn
           </Link>
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <DirToggle />
           </div>
         </div>

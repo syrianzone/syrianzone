@@ -178,7 +178,7 @@ export default function SycnHome() {
     <div className="relative flex min-h-screen flex-col overflow-hidden">
       <AnimatedBackground />
       <header className="sticky top-0 z-50 w-full border-fade-b" style={{ backgroundColor: "hsl(var(--background))", opacity: 0.95 }}>
-        <div className="container mx-auto flex h-16 items-center justify-between px-6">
+        <div className="container mx-auto flex h-14 sm:h-16 items-center justify-between px-4 sm:px-6">
           <Link href="/sycn" className="text-xl font-bold">
             sycn
           </Link>
@@ -190,15 +190,15 @@ export default function SycnHome() {
       </header>
 
       <main className="flex-1 relative z-10">
-        <section className="flex flex-col items-center justify-center gap-6 py-20 md:py-28 lg:py-36 px-6 text-center">
-          <Image src="/sycn/emblem.svg" alt="sycn" width={120} height={120} className="mb-2" />
-          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl max-w-3xl">
+        <section className="flex flex-col items-center justify-center gap-4 sm:gap-6 py-12 sm:py-20 md:py-28 lg:py-36 px-4 sm:px-6 text-center">
+          <Image src="/sycn/emblem.svg" alt="sycn" width={120} height={120} className="mb-2 w-20 h-20 sm:w-[120px] sm:h-[120px]" />
+          <h1 className="text-3xl font-bold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl max-w-3xl">
             {t.title}
           </h1>
-          <p className="text-lg max-w-[600px] sm:text-xl" style={{ color: "hsl(var(--muted-foreground))" }}>
+          <p className="text-base sm:text-lg max-w-[600px] sm:text-xl" style={{ color: "hsl(var(--muted-foreground))" }}>
             {t.desc}
           </p>
-          <div className="flex gap-3 mt-2">
+          <div className="flex flex-col sm:flex-row gap-3 mt-2 w-full sm:w-auto px-4 sm:px-0">
             <Link
               href="/sycn/components/button"
               className="inline-flex items-center justify-center rounded-md px-6 py-3 text-sm font-medium shadow transition-colors"

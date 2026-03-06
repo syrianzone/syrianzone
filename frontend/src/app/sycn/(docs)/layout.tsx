@@ -124,85 +124,158 @@ function DirToggle({ dir, setDir }: { dir: Dir; setDir: (d: Dir) => void }) {
   )
 }
 
+function SidebarContent({ pathname, dir, setDir, t, onLinkClick }: {
+  pathname: string
+  dir: Dir
+  setDir: (d: Dir) => void
+  t: typeof i18n.ltr
+  onLinkClick?: () => void
+}) {
+  return (
+    <div className="p-4">
+      <Link href="/sycn" className="flex items-center gap-2.5 mb-4">
+        <Image src="/sycn/emblem.svg" alt="sycn" width={40} height={40} />
+        <span className="text-xl font-bold">sycn</span>
+      </Link>
+
+      <div className="flex gap-2 mb-6">
+        <ThemeToggle />
+        <DirToggle dir={dir} setDir={setDir} />
+      </div>
+
+      <div className="mb-6">
+        <h2 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: "hsl(var(--muted-foreground))" }}>
+          {t.identity}
+        </h2>
+        <ul className="space-y-0.5">
+          {identityItems.map((item) => {
+            const href = `/sycn/identity/${item.en}`
+            const active = pathname === href
+            return (
+              <li key={item.en}>
+                <Link
+                  href={href}
+                  onClick={onLinkClick}
+                  className="block rounded-md px-2 py-1.5 text-sm transition-colors"
+                  style={{
+                    backgroundColor: active ? "hsl(var(--accent))" : undefined,
+                    color: active ? "hsl(var(--accent-foreground))" : "hsl(var(--muted-foreground))",
+                    fontWeight: active ? 500 : undefined,
+                  }}
+                >
+                  {t[item.en as keyof typeof t]}
+                </Link>
+              </li>
+            )
+          })}
+        </ul>
+      </div>
+
+      <div>
+        <h2 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: "hsl(var(--muted-foreground))" }}>
+          {t.components}
+        </h2>
+        <ul className="space-y-0.5">
+          {components.map((item) => {
+            const slug = item.en.toLowerCase().replace(/ /g, "-")
+            const href = `/sycn/components/${slug}`
+            const active = pathname === href
+            return (
+              <li key={slug}>
+                <Link
+                  href={href}
+                  onClick={onLinkClick}
+                  className="block rounded-md px-2 py-1.5 text-sm transition-colors"
+                  style={{
+                    backgroundColor: active ? "hsl(var(--accent))" : undefined,
+                    color: active ? "hsl(var(--accent-foreground))" : "hsl(var(--muted-foreground))",
+                    fontWeight: active ? 500 : undefined,
+                  }}
+                >
+                  {dir === "rtl" ? item.ar : item.en}
+                </Link>
+              </li>
+            )
+          })}
+        </ul>
+      </div>
+    </div>
+  )
+}
+
 export default function SycnDocsLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const { dir, setDir } = useDir()
+  const [mobileOpen, setMobileOpen] = useState(false)
   const t = i18n[dir]
+
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    setMobileOpen(false)
+  }, [pathname])
+
+  // Prevent body scroll when mobile sidebar is open
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? "hidden" : ""
+    return () => { document.body.style.overflow = "" }
+  }, [mobileOpen])
 
   return (
     <div className="flex min-h-screen">
-      <aside className="fixed inset-inline-start-0 top-0 h-screen w-[250px] overflow-y-auto scrollbar-none border-fade-e" style={{ backgroundColor: "hsl(var(--background))" }}>
-        <div className="p-4">
-          <Link href="/sycn" className="flex items-center gap-2.5 mb-4">
-            <Image src="/sycn/emblem.svg" alt="sycn" width={40} height={40} />
-            <span className="text-xl font-bold">sycn</span>
-          </Link>
-
-          <div className="flex gap-2 mb-6">
-            <ThemeToggle />
-            <DirToggle dir={dir} setDir={setDir} />
-          </div>
-
-          <div className="mb-6">
-            <h2 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: "hsl(var(--muted-foreground))" }}>
-              {t.identity}
-            </h2>
-            <ul className="space-y-0.5">
-              {identityItems.map((item) => {
-                const href = `/sycn/identity/${item.en}`
-                const active = pathname === href
-                return (
-                  <li key={item.en}>
-                    <Link
-                      href={href}
-                      className="block rounded-md px-2 py-1.5 text-sm transition-colors"
-                      style={{
-                        backgroundColor: active ? "hsl(var(--accent))" : undefined,
-                        color: active ? "hsl(var(--accent-foreground))" : "hsl(var(--muted-foreground))",
-                        fontWeight: active ? 500 : undefined,
-                      }}
-                    >
-                      {t[item.en as keyof typeof t]}
-                    </Link>
-                  </li>
-                )
-              })}
-            </ul>
-          </div>
-
-          <div>
-            <h2 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: "hsl(var(--muted-foreground))" }}>
-              {t.components}
-            </h2>
-            <ul className="space-y-0.5">
-              {components.map((item) => {
-                const slug = item.en.toLowerCase().replace(/ /g, "-")
-                const href = `/sycn/components/${slug}`
-                const active = pathname === href
-                return (
-                  <li key={slug}>
-                    <Link
-                      href={href}
-                      className="block rounded-md px-2 py-1.5 text-sm transition-colors"
-                      style={{
-                        backgroundColor: active ? "hsl(var(--accent))" : undefined,
-                        color: active ? "hsl(var(--accent-foreground))" : "hsl(var(--muted-foreground))",
-                        fontWeight: active ? 500 : undefined,
-                      }}
-                    >
-                      {dir === "rtl" ? item.ar : item.en}
-                    </Link>
-                  </li>
-                )
-              })}
-            </ul>
-          </div>
-        </div>
+      {/* Desktop sidebar */}
+      <aside className="hidden md:block fixed inset-inline-start-0 top-0 h-screen w-[250px] overflow-y-auto scrollbar-none border-fade-e" style={{ backgroundColor: "hsl(var(--background))" }}>
+        <SidebarContent pathname={pathname} dir={dir} setDir={setDir} t={t} />
       </aside>
 
-      <main className="flex-1 ms-[250px] flex flex-col min-h-screen">
-        <div className="max-w-3xl mx-auto px-8 py-12 flex-1">{children}</div>
-        <footer className="py-6 text-center text-sm" style={{ color: "hsl(var(--muted-foreground))", backgroundImage: "linear-gradient(to right, transparent, hsl(var(--border)) 15%, hsl(var(--border)) 85%, transparent)", backgroundSize: "100% 1px", backgroundRepeat: "no-repeat", backgroundPosition: "top" }}>
+      {/* Mobile header */}
+      <header className="md:hidden fixed top-0 inset-x-0 z-50 flex h-14 items-center justify-between px-4 border-fade-b" style={{ backgroundColor: "hsl(var(--background))" }}>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="rounded-md border p-2 transition-colors"
+            style={{ borderColor: "hsl(var(--border))" }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h18" /><path d="M3 6h18" /><path d="M3 18h18" /></svg>
+          </button>
+          <Link href="/sycn" className="flex items-center gap-2">
+            <Image src="/sycn/emblem.svg" alt="sycn" width={28} height={28} />
+            <span className="text-lg font-bold">sycn</span>
+          </Link>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <ThemeToggle />
+          <DirToggle dir={dir} setDir={setDir} />
+        </div>
+      </header>
+
+      {/* Mobile sidebar overlay */}
+      {mobileOpen && (
+        <>
+          <div
+            className="md:hidden fixed inset-0 z-50 bg-black/50"
+            onClick={() => setMobileOpen(false)}
+          />
+          <aside
+            className="md:hidden fixed inset-inline-start-0 top-0 z-50 h-screen w-[280px] overflow-y-auto scrollbar-none"
+            style={{ backgroundColor: "hsl(var(--background))" }}
+          >
+            <div className="flex justify-end p-3">
+              <button
+                onClick={() => setMobileOpen(false)}
+                className="rounded-md border p-2 transition-colors"
+                style={{ borderColor: "hsl(var(--border))" }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+              </button>
+            </div>
+            <SidebarContent pathname={pathname} dir={dir} setDir={setDir} t={t} onLinkClick={() => setMobileOpen(false)} />
+          </aside>
+        </>
+      )}
+
+      <main className="flex-1 md:ms-[250px] flex flex-col min-h-screen">
+        <div className="max-w-3xl mx-auto px-4 sm:px-8 py-6 sm:py-12 flex-1 mt-14 md:mt-0 w-full">{children}</div>
+        <footer className="py-6 text-center text-sm px-4" style={{ color: "hsl(var(--muted-foreground))", backgroundImage: "linear-gradient(to right, transparent, hsl(var(--border)) 15%, hsl(var(--border)) 85%, transparent)", backgroundSize: "100% 1px", backgroundRepeat: "no-repeat", backgroundPosition: "top" }}>
           {dir === "rtl" ? (
             <>
               © {new Date().getFullYear()} نظام تصميم الهوية البصرية السورية - تم تطويرها بواسطة{" "}

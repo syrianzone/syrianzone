@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { MapContainer, GeoJSON } from 'react-leaflet';
+import { MapContainer, GeoJSON, ZoomControl } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { DATA_TYPES, CityData, RainfallData } from '../../types';
@@ -252,6 +252,30 @@ path.leaflet-interactive:hover {
                     animation: pulse-glow 3s infinite ease-in-out;
                 }
 
+                /* --- ZOOM CONTROL --- */
+                .leaflet-control-zoom {
+                    border: none !important;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.4) !important;
+                }
+                .leaflet-control-zoom a {
+                    background: rgba(15, 23, 42, 0.85) !important;
+                    backdrop-filter: blur(12px) !important;
+                    border: 1px solid rgba(255,255,255,0.1) !important;
+                    color: #cbd5e1 !important;
+                    font-size: 16px !important;
+                    width: 32px !important;
+                    height: 32px !important;
+                    line-height: 30px !important;
+                    transition: all 0.2s ease !important;
+                }
+                .leaflet-control-zoom a:hover {
+                    background: rgba(99, 102, 241, 0.3) !important;
+                    color: #fff !important;
+                    border-color: rgba(99, 102, 241, 0.5) !important;
+                }
+                .leaflet-control-zoom-in { border-radius: 8px 8px 0 0 !important; }
+                .leaflet-control-zoom-out { border-radius: 0 0 8px 8px !important; border-top: 1px solid rgba(255,255,255,0.05) !important; }
+
             `}</style>
 
             <MapContainer
@@ -259,10 +283,11 @@ path.leaflet-interactive:hover {
                 zoom={7}
                 style={{ height: '100%', width: '100%', background: 'transparent' }}
                 zoomControl={false}
-                scrollWheelZoom={false}
-                doubleClickZoom={false}
+                scrollWheelZoom={true}
+                doubleClickZoom={true}
                 attributionControl={false}
             >
+                <ZoomControl position="bottomleft" />
                 <MapUpdater geoJsonData={geoJsonData} />
                 <GeoJSON
                     key={`${currentDataType}-${currentSourceId}`}

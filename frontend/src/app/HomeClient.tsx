@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import {
     CheckCircle2, Palette, Users2, ListOrdered, Landmark, Compass,
     Settings, Sun, Link, Moon, Utensils, Globe, Plus, Edit, X, Download, Upload, RotateCcw,
-    Cloud, CloudRain, CloudLightning, Snowflake, Wind, MessageSquareCode, Smartphone
+    Cloud, CloudRain, CloudLightning, Snowflake, Wind, MessageSquareCode, Smartphone, Bus
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +40,7 @@ const PRESET_LINKS: PresetLink[] = [
     { href: '/sites', icon: Link, text: 'دليل المواقع' },
     { href: '/population', icon: Globe, text: 'أطلس' },
     { href: '/govapps', icon: Smartphone, text: 'تطبيقات الحكومة' },
+    { href: '/transit', icon: Bus, text: 'ترانزيت' },
     { href: 'https://food.syrian.zone', icon: Utensils, text: 'وصفاتنا' },
     { href: 'https://discord.gg/NqE8849VzA', icon: MessageSquareCode, text: 'مجتمع كوديكس', external: false },
     { href: 'https://chromewebstore.google.com/detail/syrian-flag-replacer/dngipobppehfhfggmbdiiiodgcibdeog', icon: null, text: 'مبدل العلم', image: '/flag-replacer/1f1f8-1f1fe.svg', external: true },

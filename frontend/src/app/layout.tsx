@@ -52,8 +52,7 @@ export const metadata: Metadata = {
 };
 
 import { AuthProvider } from "@/context/AuthContext";
-import Navbar from "@/components/Navbar";
-import UnblockSyriaNotification from "@/components/UnblockSyriaNotification";
+import ConditionalLayout from "@/components/ConditionalLayout";
 
 export default function RootLayout({
   children,
@@ -65,6 +64,7 @@ export default function RootLayout({
       <head>
 
         <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@100;200;300;400;500;600;700&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet" />
         <link rel="stylesheet" href="/styles/theme.css" />
         {/* startpage/style.css is now loaded only on the homepage to avoid style conflicts */}
         <script
@@ -90,9 +90,9 @@ export default function RootLayout({
           `}
         </Script>
         <AuthProvider>
-          <Navbar />
-          {children}
-          <UnblockSyriaNotification />
+          <ConditionalLayout>
+            {children}
+          </ConditionalLayout>
         </AuthProvider>
       </body>
     </html >

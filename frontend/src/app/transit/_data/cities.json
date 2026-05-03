@@ -1,0 +1,22 @@
+[
+  {
+    "id": "damascus",
+    "nameAr": "دمشق",
+    "nameEn": "Damascus",
+    "status": "active",
+    "routeCount": 7,
+    "bounds": [[35.8, 33.3], [36.8, 33.7]],
+    "center": [36.29, 33.51],
+    "zoom": 12
+  },
+  {
+    "id": "tartous",
+    "nameAr": "طرطوس",
+    "nameEn": "Tartous",
+    "status": "active",
+    "routeCount": 12,
+    "bounds": [[35.8, 34.8], [35.95, 34.95]],
+    "center": [35.887, 34.888],
+    "zoom": 13
+  }
+]

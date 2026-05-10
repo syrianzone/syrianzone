@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "@/lib/axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Trash2, Edit2, Save, X, MoreVertical, Star as StarIcon, ArrowLeft, ArrowRight, Archive, Undo2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { useUploadThing } from "@/lib/uploadthing";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -187,6 +188,21 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
         setCGroupId(c.candidate_group_id || null);
         setIsCandidateModalOpen(true);
     };
+
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const [uploadError, setUploadError] = useState<string | null>(null);
+
+    const { startUpload, isUploading } = useUploadThing("candidateImage", {
+        onClientUploadComplete: (res) => {
+            const url = (res?.[0] as any)?.serverData?.url || (res?.[0] as any)?.ufsUrl || (res?.[0] as any)?.url;
+            if (url) setCImage(url);
+            setUploadError(null);
+        },
+        onUploadError: (err) => {
+            console.error(err);
+            setUploadError(err.message || "Upload failed");
+        },
+    });
 
     const handleSaveCandidate = async () => {
         if (!cName.trim()) return;
@@ -488,9 +504,58 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                             <Label htmlFor="c-title" className="text-right">Title</Label>
                             <Input id="c-title" value={cTitle} onChange={e => setCTitle(e.target.value)} className="col-span-3" />
                         </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="c-image" className="text-right">Image URL</Label>
-                            <Input id="c-image" value={cImage} onChange={e => setCImage(e.target.value)} className="col-span-3" />
+                        <div className="grid grid-cols-4 items-start gap-4">
+                            <Label className="text-right pt-2">Image</Label>
+                            <div className="col-span-3 space-y-2">
+                                <div className="flex items-center gap-3">
+                                    <div className="h-16 w-16 rounded-md bg-muted overflow-hidden flex-shrink-0 border">
+                                        {cImage ? (
+                                            <img src={cImage} alt="preview" className="h-full w-full object-cover" />
+                                        ) : (
+                                            <span className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">No image</span>
+                                        )}
+                                    </div>
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/webp"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) startUpload([file]);
+                                            if (fileInputRef.current) fileInputRef.current.value = "";
+                                        }}
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        disabled={isUploading}
+                                    >
+                                        {isUploading ? "جاري الرفع..." : (cImage ? "استبدال" : "رفع صورة")}
+                                    </Button>
+                                    {cImage && !isUploading && (
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setCImage("")}
+                                        >
+                                            مسح
+                                        </Button>
+                                    )}
+                                </div>
+                                <Input
+                                    id="c-image"
+                                    value={cImage}
+                                    onChange={e => setCImage(e.target.value)}
+                                    placeholder="أو الصق رابطًا مباشرًا"
+                                    className="text-left text-xs"
+                                    dir="ltr"
+                                />
+                                {uploadError && <p className="text-xs text-destructive">{uploadError}</p>}
+                            </div>
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="c-group" className="text-right">Group</Label>

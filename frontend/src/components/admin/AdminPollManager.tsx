@@ -191,6 +191,7 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
 
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const [uploadError, setUploadError] = useState<string | null>(null);
+    const [isDragging, setIsDragging] = useState(false);
 
     const { startUpload, isUploading } = useUploadThing("candidateImage", {
         onClientUploadComplete: (res) => {
@@ -203,6 +204,16 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
             setUploadError(err.message || "Upload failed");
         },
     });
+
+    const handleDroppedFiles = (files: FileList | null) => {
+        const file = files?.[0];
+        if (!file) return;
+        if (!/^image\/(jpeg|png|webp)$/i.test(file.type)) {
+            setUploadError("نوع الملف غير مدعوم — JPEG/PNG/WEBP فقط");
+            return;
+        }
+        startUpload([file]);
+    };
 
     const handleSaveCandidate = async () => {
         if (!cName.trim()) return;
@@ -507,7 +518,21 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                         <div className="grid grid-cols-4 items-start gap-4">
                             <Label className="text-right pt-2">Image</Label>
                             <div className="col-span-3 space-y-2">
-                                <div className="flex items-center gap-3">
+                                <div
+                                    onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); }}
+                                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); }}
+                                    onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); }}
+                                    onDrop={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setIsDragging(false);
+                                        if (!isUploading) handleDroppedFiles(e.dataTransfer.files);
+                                    }}
+                                    onClick={() => !isUploading && fileInputRef.current?.click()}
+                                    className={`flex items-center gap-3 rounded-md border-2 border-dashed p-3 cursor-pointer transition-colors ${
+                                        isDragging ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"
+                                    } ${isUploading ? "opacity-60 cursor-wait" : ""}`}
+                                >
                                     <div className="h-16 w-16 rounded-md bg-muted overflow-hidden flex-shrink-0 border">
                                         {cImage ? (
                                             <img src={cImage} alt="preview" className="h-full w-full object-cover" />
@@ -526,21 +551,20 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                                             if (fileInputRef.current) fileInputRef.current.value = "";
                                         }}
                                     />
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => fileInputRef.current?.click()}
-                                        disabled={isUploading}
-                                    >
-                                        {isUploading ? "جاري الرفع..." : (cImage ? "استبدال" : "رفع صورة")}
-                                    </Button>
+                                    <div className="flex-1 text-xs text-muted-foreground">
+                                        {isUploading ? "جاري الرفع..." : (
+                                            <>
+                                                {isDragging ? "أفلت الصورة هنا" : "اسحب صورة هنا أو اضغط للاختيار"}
+                                                <div className="text-[10px] opacity-70 mt-0.5">JPEG / PNG / WEBP — حتى 4MB</div>
+                                            </>
+                                        )}
+                                    </div>
                                     {cImage && !isUploading && (
                                         <Button
                                             type="button"
                                             variant="ghost"
                                             size="sm"
-                                            onClick={() => setCImage("")}
+                                            onClick={(e) => { e.stopPropagation(); setCImage(""); }}
                                         >
                                             مسح
                                         </Button>

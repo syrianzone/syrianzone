@@ -50,7 +50,7 @@ export default function AdminPollEdit() {
         // Or we can just use the public show endpoint if we have the slug.
         // For simplicity, let's assume we can fetch by ID in the updated controller or adjust it.
 
-        axios.get(`/polls/${id}`)
+        axios.get(`/polls/${id}`, { params: { include_archived: 1 } })
             .then(res => {
                 const pollData = res.data.poll || res.data;
                 // If groups are returned as sibling, merge them
@@ -155,7 +155,7 @@ export default function AdminPollEdit() {
                                 pollId={id}
                                 initialData={poll}
                                 onRefresh={() => {
-                                    axios.get(`/polls/${id}`).then(res => {
+                                    axios.get(`/polls/${id}`, { params: { include_archived: 1 } }).then(res => {
                                         const pollData = res.data.poll || res.data;
                                         if (res.data.groups) pollData.groups = res.data.groups;
                                         if (res.data.candidates) pollData.candidates = res.data.candidates;

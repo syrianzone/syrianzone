@@ -52,15 +52,20 @@ class PollController extends Controller
         return response()->json(null, 204);
     }
 
-    public function show($idOrSlug)
+    public function show(Request $request, $idOrSlug)
     {
         $poll = Poll::where('id', $idOrSlug)->orWhere('slug', $idOrSlug)->firstOrFail();
         $today = Carbon::now($poll->timezone ?: 'UTC')->startOfDay();
 
+        $candidatesQuery = $poll->candidates()->orderBy('sort');
+        if (!$request->boolean('include_archived')) {
+            $candidatesQuery->where('status', 'active');
+        }
+
         return response()->json([
             'poll' => $poll,
             'groups' => $poll->groups,
-            'candidates' => $poll->candidates()->where('status', 'active')->orderBy('sort')->get(),
+            'candidates' => $candidatesQuery->get(),
             'todayScores' => DailyScore::where('poll_id', $poll->id)->where('day', $today)->get(),
             'voteDay' => $today->toIso8601String(),
         ]);

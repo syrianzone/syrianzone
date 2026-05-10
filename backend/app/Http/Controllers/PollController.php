@@ -60,34 +60,63 @@ class PollController extends Controller
         return response()->json([
             'poll' => $poll,
             'groups' => $poll->groups,
-            'candidates' => $poll->candidates()->orderBy('sort')->get(),
+            'candidates' => $poll->candidates()->where('status', 'active')->orderBy('sort')->get(),
             'todayScores' => DailyScore::where('poll_id', $poll->id)->where('day', $today)->get(),
             'voteDay' => $today->toIso8601String(),
         ]);
     }
 
-    public function leaderboard($slug)
+    public function leaderboard(Request $request, $slug)
     {
         $poll = Poll::where('slug', $slug)->firstOrFail();
-        $candidates = $poll->candidates()->orderBy('sort')->get()->keyBy('id');
+        $statusFilter = $request->query('status', 'active');
+        if (!in_array($statusFilter, ['active', 'former', 'all'], true)) {
+            $statusFilter = 'active';
+        }
 
-        $allTimeAgg = DB::table('daily_scores')
-            ->select('candidate_id', DB::raw('SUM(votes) as votes'), DB::raw('SUM(score) as score'))
-            ->where('poll_id', $poll->id)
-            ->groupBy('candidate_id')
-            ->get()
-            ->map(fn($row) => $this->mapCandidateScore($row, $candidates))
-            ->sortByDesc('avg')
-            ->values();
+        $candidatesQuery = $poll->candidates()->orderBy('sort');
+        if ($statusFilter === 'active') {
+            $candidatesQuery->where('status', 'active');
+        } elseif ($statusFilter === 'former') {
+            $candidatesQuery->where('status', 'archived');
+        }
+        $candidates = $candidatesQuery->get()->keyBy('id');
+
+        if ($candidates->isEmpty()) {
+            $allTimeAgg = collect();
+        } else {
+            $allTimeAgg = DB::table('daily_scores')
+                ->select('candidate_id', DB::raw('SUM(votes) as votes'), DB::raw('SUM(score) as score'))
+                ->where('poll_id', $poll->id)
+                ->whereIn('candidate_id', $candidates->keys())
+                ->where(function ($q) use ($candidates) {
+                    foreach ($candidates as $candidate) {
+                        if ($candidate->status === 'archived' && $candidate->term_ended_at) {
+                            $q->orWhere(function ($inner) use ($candidate) {
+                                $inner->where('candidate_id', $candidate->id)
+                                    ->where('day', '<=', $candidate->term_ended_at);
+                            });
+                        } else {
+                            $q->orWhere('candidate_id', $candidate->id);
+                        }
+                    }
+                })
+                ->groupBy('candidate_id')
+                ->get()
+                ->map(fn($row) => $this->mapCandidateScore($row, $candidates))
+                ->sortByDesc('avg')
+                ->values();
+        }
 
         $results = [
             'poll' => $poll,
             'groups' => $poll->groups,
+            'status' => $statusFilter,
             'ministers' => [],
             'governors' => [],
             'security' => [],
             'jolani' => [],
-            'history' => $this->getHistory($poll->id),
+            'history' => $this->getHistory($poll->id, $candidates),
         ];
 
         foreach ($poll->groups as $group) {
@@ -136,6 +165,11 @@ class PollController extends Controller
             'imageUrl' => $c?->image_url,
             'category' => $c?->category,
             'groupId' => $c?->candidate_group_id,
+            'status' => $c?->status ?? 'active',
+            'termStartedAt' => $c?->term_started_at?->toDateString(),
+            'termEndedAt' => $c?->term_ended_at?->toDateString(),
+            'archiveReason' => $c?->archive_reason,
+            'successorId' => $c?->successor_id,
             'votes' => (int) $row->votes,
             'score' => (int) $row->score,
             'avg' => $row->votes > 0 ? round($row->score / $row->votes, 2) : 0,
@@ -152,15 +186,34 @@ class PollController extends Controller
         };
     }
 
-    private function getHistory($pollId): array
+    private function getHistory($pollId, $candidates = null): array
     {
-        return DB::table('daily_scores')
+        $query = DB::table('daily_scores')
             ->where('poll_id', $pollId)
             ->select('candidate_id', 'day', 'votes', 'score')
-            ->orderBy('day')
-            ->get()
+            ->orderBy('day');
+
+        if ($candidates !== null) {
+            if ($candidates->isEmpty()) return [];
+            $query->whereIn('candidate_id', $candidates->keys());
+        }
+
+        $rows = $query->get();
+
+        if ($candidates !== null) {
+            $rows = $rows->filter(function ($row) use ($candidates) {
+                $c = $candidates->get($row->candidate_id);
+                if (!$c) return false;
+                if ($c->status === 'archived' && $c->term_ended_at) {
+                    return $row->day <= $c->term_ended_at->toDateString();
+                }
+                return true;
+            });
+        }
+
+        return $rows
             ->groupBy('candidate_id')
-            ->map(fn($items) => $items->map(fn($i) => [
+            ->map(fn($items) => $items->values()->map(fn($i) => [
                 'date' => $i->day,
                 'votes' => (int) $i->votes,
                 'score' => (int) $i->score,

@@ -32,6 +32,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/candidate-groups/{id}/default', [\App\Http\Controllers\CandidateGroupController::class, 'setDefault']);
 
     Route::apiResource('candidates', \App\Http\Controllers\CandidateController::class)->except(['index', 'show']);
+    Route::patch('/candidates/{id}/archive', [\App\Http\Controllers\CandidateController::class, 'archive']);
+    Route::patch('/candidates/{id}/restore', [\App\Http\Controllers\CandidateController::class, 'restore']);
 });
 
 Route::get('/contributors', [ContributorController::class, 'index']);

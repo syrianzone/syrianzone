@@ -7,9 +7,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircleIcon, Vote } from "lucide-react";
 import { TierAvatar as Avatar } from "@/components/poll/TierAvatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TimeseriesChart } from "./TimeseriesChart";
+
+type StatusFilter = "active" | "former" | "all";
 
 interface LeaderboardEntry {
     candidateId: string;
@@ -20,10 +23,16 @@ interface LeaderboardEntry {
     score: number;
     avg: number;
     rank: number;
+    status?: "active" | "archived";
+    termStartedAt?: string | null;
+    termEndedAt?: string | null;
+    archiveReason?: string | null;
+    successorId?: string | null;
 }
 
 interface LeaderboardData {
     poll: { id: string; title: string };
+    status?: StatusFilter;
     [key: string]: any;
 }
 
@@ -33,7 +42,36 @@ function formatNumberKM(n: number): string {
     return String(n);
 }
 
-function LeaderboardTable({ rows, title }: { rows: LeaderboardEntry[]; title: string }) {
+function buildSuccessorIndex(data: LeaderboardData): Record<string, string> {
+    const index: Record<string, string> = {};
+    for (const key of ["ministers", "governors", "security", "jolani"]) {
+        const rows: LeaderboardEntry[] = data[key] || [];
+        for (const r of rows) index[r.candidateId] = r.name;
+    }
+    return index;
+}
+
+function FormerBadge({ row, successorName }: { row: LeaderboardEntry; successorName?: string }) {
+    if (row.status !== "archived") return null;
+    return (
+        <div className="mt-1 flex flex-wrap items-center gap-1 text-[11px] text-gray-500">
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">سابق</Badge>
+            {row.termEndedAt && <span>حتى {row.termEndedAt}</span>}
+            {row.archiveReason && <span>· {row.archiveReason}</span>}
+            {successorName && <span>· خلفه {successorName}</span>}
+        </div>
+    );
+}
+
+function LeaderboardTable({
+    rows,
+    title,
+    successorIndex,
+}: {
+    rows: LeaderboardEntry[];
+    title: string;
+    successorIndex: Record<string, string>;
+}) {
     if (!rows.length) return null;
     return (
         <div className="mb-8">
@@ -52,23 +90,33 @@ function LeaderboardTable({ rows, title }: { rows: LeaderboardEntry[]; title: st
                                 </tr>
                             </thead>
                             <tbody>
-                                {rows.map((r) => (
-                                    <tr key={r.candidateId} className="border-b last:border-0">
-                                        <td className="p-3">#{r.rank}</td>
-                                        <td className="p-3">
-                                            <div className="flex items-center gap-2">
-                                                <Avatar src={r.imageUrl || ""} alt={r.name} size={28} />
-                                                <div>
-                                                    <div className="text-sm">{r.name}</div>
-                                                    {r.title && <div className="text-xs text-gray-500">{r.title}</div>}
+                                {rows.map((r) => {
+                                    const isFormer = r.status === "archived";
+                                    return (
+                                        <tr
+                                            key={r.candidateId}
+                                            className={`border-b last:border-0 ${isFormer ? "opacity-70" : ""}`}
+                                        >
+                                            <td className="p-3">#{r.rank}</td>
+                                            <td className="p-3">
+                                                <div className="flex items-center gap-2">
+                                                    <Avatar src={r.imageUrl || ""} alt={r.name} size={28} />
+                                                    <div>
+                                                        <div className="text-sm">{r.name}</div>
+                                                        {r.title && <div className="text-xs text-gray-500">{r.title}</div>}
+                                                        <FormerBadge
+                                                            row={r}
+                                                            successorName={r.successorId ? successorIndex[r.successorId] : undefined}
+                                                        />
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td className="p-3">{formatNumberKM(r.score)}</td>
-                                        <td className="p-3">{formatNumberKM(r.votes)}</td>
-                                        <td className="p-3">{r.avg.toFixed(2)}</td>
-                                    </tr>
-                                ))}
+                                            </td>
+                                            <td className="p-3">{formatNumberKM(r.score)}</td>
+                                            <td className="p-3">{formatNumberKM(r.votes)}</td>
+                                            <td className="p-3">{r.avg.toFixed(2)}</td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
@@ -117,13 +165,39 @@ function Top3Podium({ rows, title }: { rows: LeaderboardEntry[]; title: string }
     );
 }
 
+function StatusToggle({ value, onChange }: { value: StatusFilter; onChange: (v: StatusFilter) => void }) {
+    const options: { value: StatusFilter; label: string }[] = [
+        { value: "active", label: "الحاليون" },
+        { value: "former", label: "السابقون" },
+        { value: "all", label: "الكل" },
+    ];
+    return (
+        <div className="inline-flex rounded-md border bg-background p-0.5 text-sm">
+            {options.map((o) => (
+                <button
+                    key={o.value}
+                    type="button"
+                    onClick={() => onChange(o.value)}
+                    className={`px-3 py-1 rounded-sm transition-colors ${
+                        value === o.value ? "bg-primary text-primary-foreground" : "text-gray-600 hover:bg-muted"
+                    }`}
+                >
+                    {o.label}
+                </button>
+            ))}
+        </div>
+    );
+}
+
 export default function LeaderboardPage() {
     const [data, setData] = useState<LeaderboardData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [status, setStatus] = useState<StatusFilter>("active");
 
     useEffect(() => {
+        setLoading(true);
         axios
-            .get("/polls/best-ministers/leaderboard")
+            .get("/polls/best-ministers/leaderboard", { params: { status } })
             .then((response) => {
                 setData(response.data);
                 setLoading(false);
@@ -132,9 +206,9 @@ export default function LeaderboardPage() {
                 console.error("Error fetching leaderboard:", err);
                 setLoading(false);
             });
-    }, []);
+    }, [status]);
 
-    if (loading) {
+    if (loading && !data) {
         return (
             <main className="container mx-auto px-4 pt-10 pb-8">
                 <div className="text-center text-gray-600 dark:text-gray-400">جاري التحميل...</div>
@@ -149,6 +223,8 @@ export default function LeaderboardPage() {
             </main>
         );
     }
+
+    const successorIndex = buildSuccessorIndex(data);
 
     return (
         <main className="container mx-auto px-4 pt-6 pb-8" dir="rtl">
@@ -178,13 +254,14 @@ export default function LeaderboardPage() {
 
             {data.history && (
                 <Tabs defaultValue="ministers" dir="rtl" className="w-full">
-                    <div className="flex justify-center mb-6">
+                    <div className="flex flex-col items-center gap-3 mb-6">
                         <TabsList className="grid w-full max-w-md grid-cols-4">
                             <TabsTrigger value="ministers">الحكومة</TabsTrigger>
                             <TabsTrigger value="governors">المحافظون</TabsTrigger>
                             <TabsTrigger value="security">الأمن</TabsTrigger>
                             <TabsTrigger value="jolani">الجولاني</TabsTrigger>
                         </TabsList>
+                        <StatusToggle value={status} onChange={setStatus} />
                     </div>
 
                     <TabsContent value="ministers">
@@ -196,7 +273,11 @@ export default function LeaderboardPage() {
                         {(data.ministers || data.minister || []).length >= 3 && (
                             <Top3Podium rows={(data.ministers || data.minister || []).slice(0, 3)} title="أفضل ٣ على الإطلاق - الحكومة" />
                         )}
-                        <LeaderboardTable rows={data.ministers || data.minister || []} title="قائمة التصنيف التفصيلية - الحكومة" />
+                        <LeaderboardTable
+                            rows={data.ministers || data.minister || []}
+                            title="قائمة التصنيف التفصيلية - الحكومة"
+                            successorIndex={successorIndex}
+                        />
                     </TabsContent>
 
                     <TabsContent value="governors">
@@ -208,7 +289,11 @@ export default function LeaderboardPage() {
                         {(data.governors || data.governor || []).length >= 3 && (
                             <Top3Podium rows={(data.governors || data.governor || []).slice(0, 3)} title="أفضل ٣ - المحافظون" />
                         )}
-                        <LeaderboardTable rows={data.governors || data.governor || []} title="قائمة المحافظين" />
+                        <LeaderboardTable
+                            rows={data.governors || data.governor || []}
+                            title="قائمة المحافظين"
+                            successorIndex={successorIndex}
+                        />
                     </TabsContent>
 
                     <TabsContent value="security">
@@ -220,7 +305,11 @@ export default function LeaderboardPage() {
                         {(data.security || []).length >= 3 && (
                             <Top3Podium rows={(data.security || []).slice(0, 3)} title="أفضل ٣ - مسؤولي الأمن" />
                         )}
-                        <LeaderboardTable rows={data.security || []} title="قائمة مسؤولي الأمن" />
+                        <LeaderboardTable
+                            rows={data.security || []}
+                            title="قائمة مسؤولي الأمن"
+                            successorIndex={successorIndex}
+                        />
                     </TabsContent>
 
                     <TabsContent value="jolani">
@@ -232,7 +321,11 @@ export default function LeaderboardPage() {
                         {(data.jolani || []).length >= 3 && (
                             <Top3Podium rows={(data.jolani || []).slice(0, 3)} title="أفضل ٣ شخصيات الجولاني" />
                         )}
-                        <LeaderboardTable rows={data.jolani || []} title="شخصيات الجولاني" />
+                        <LeaderboardTable
+                            rows={data.jolani || []}
+                            title="شخصيات الجولاني"
+                            successorIndex={successorIndex}
+                        />
                     </TabsContent>
                 </Tabs>
             )}
@@ -243,7 +336,11 @@ export default function LeaderboardPage() {
                     <div className="text-center text-red-500 mb-4">بيانات التاريخ غير متوفرة</div>
                     {/* Ministers Table */}
                     <div className="max-w-screen-md mx-auto">
-                        <LeaderboardTable rows={data.ministers || data.minister || []} title="قائمة التصنيف التفصيلية - الحكومة" />
+                        <LeaderboardTable
+                            rows={data.ministers || data.minister || []}
+                            title="قائمة التصنيف التفصيلية - الحكومة"
+                            successorIndex={successorIndex}
+                        />
                     </div>
                 </>
             )}
@@ -251,4 +348,3 @@ export default function LeaderboardPage() {
         </main>
     );
 }
-

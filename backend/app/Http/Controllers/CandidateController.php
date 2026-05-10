@@ -46,4 +46,45 @@ class CandidateController extends Controller
         Candidate::findOrFail($id)->delete();
         return response()->json(null, 204);
     }
+
+    public function archive(Request $request, $id)
+    {
+        $candidate = Candidate::findOrFail($id);
+
+        $data = $request->validate([
+            'term_ended_at' => 'nullable|date',
+            'archive_reason' => 'nullable|string|max:200',
+            'successor_id' => 'nullable|exists:candidates,id|different:' . $id,
+        ]);
+
+        $termEnd = $data['term_ended_at'] ?? now()->toDateString();
+
+        $candidate->update([
+            'status' => 'archived',
+            'term_ended_at' => $termEnd,
+            'archive_reason' => $data['archive_reason'] ?? null,
+            'successor_id' => $data['successor_id'] ?? null,
+        ]);
+
+        if (!empty($data['successor_id'])) {
+            $successor = Candidate::find($data['successor_id']);
+            if ($successor && !$successor->term_started_at) {
+                $successor->update(['term_started_at' => $termEnd]);
+            }
+        }
+
+        return response()->json($candidate->fresh());
+    }
+
+    public function restore($id)
+    {
+        $candidate = Candidate::findOrFail($id);
+        $candidate->update([
+            'status' => 'active',
+            'term_ended_at' => null,
+            'archive_reason' => null,
+            'successor_id' => null,
+        ]);
+        return response()->json($candidate->fresh());
+    }
 }

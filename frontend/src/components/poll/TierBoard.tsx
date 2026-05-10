@@ -441,14 +441,52 @@ export default function TierBoard({
 
     const isJolaniGroup = groups.find(g => g.id === selectedGroupId)?.key === 'jolani';
 
-    async function downloadImage(url: string, filename: string) {
+    function safeFilename(name: string): string {
+        return (name || 'image').replace(/[\/\\:*?"<>|]+/g, '_').trim();
+    }
+
+    function extFromMime(mime: string | undefined): string {
+        switch ((mime || '').toLowerCase()) {
+            case 'image/jpeg':
+            case 'image/jpg':
+                return 'jpg';
+            case 'image/png':
+                return 'png';
+            case 'image/webp':
+                return 'webp';
+            case 'image/gif':
+                return 'gif';
+            case 'image/svg+xml':
+                return 'svg';
+            default:
+                return '';
+        }
+    }
+
+    function extFromUrlPath(url: string): string {
+        try {
+            const u = new URL(url, window.location.origin);
+            const last = u.pathname.split('/').pop() || '';
+            const m = last.match(/\.(jpe?g|png|webp|gif|svg)$/i);
+            return m ? m[1].toLowerCase() : '';
+        } catch {
+            return '';
+        }
+    }
+
+    function pickExtension(url: string, blob: Blob): string {
+        return extFromUrlPath(url) || extFromMime(blob.type) || 'png';
+    }
+
+    async function downloadImage(url: string, name: string) {
         try {
             const res = await fetch(url);
             const blob = await res.blob();
+            const ext = pickExtension(url, blob);
             const blobUrl = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = blobUrl;
-            a.download = filename;
+            a.download = `${safeFilename(name)}.${ext}`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -466,10 +504,10 @@ export default function TierBoard({
             const zip = new JSZip();
             for (const c of candidates) {
                 if (!c.imageUrl) continue;
-                const ext = c.imageUrl.split('.').pop()?.split('?')[0] || 'png';
                 const res = await fetch(c.imageUrl);
                 const blob = await res.blob();
-                zip.file(`${c.name}.${ext}`, blob);
+                const ext = pickExtension(c.imageUrl, blob);
+                zip.file(`${safeFilename(c.name)}.${ext}`, blob);
             }
             const content = await zip.generateAsync({ type: 'blob' });
             const blobUrl = URL.createObjectURL(content);
@@ -547,7 +585,7 @@ export default function TierBoard({
                                 {isJolaniGroup && c.imageUrl && (
                                     <button
                                         type="button"
-                                        onClick={(e) => { e.stopPropagation(); downloadImage(c.imageUrl!, `${c.name}.${c.imageUrl!.split('.').pop()?.split('?')[0] || 'png'}`); }}
+                                        onClick={(e) => { e.stopPropagation(); downloadImage(c.imageUrl!, c.name); }}
                                         className="absolute top-1 left-1 z-10 p-0.5 rounded bg-black/50 text-white hidden sm:block sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-black/70"
                                         title="تحميل الصورة"
                                     >
@@ -722,7 +760,7 @@ export default function TierBoard({
                                         {isJolaniGroup && c.imageUrl && (
                                             <button
                                                 type="button"
-                                                onClick={(e) => { e.stopPropagation(); downloadImage(c.imageUrl!, `${c.name}.${c.imageUrl!.split('.').pop()?.split('?')[0] || 'png'}`); }}
+                                                onClick={(e) => { e.stopPropagation(); downloadImage(c.imageUrl!, c.name); }}
                                                 className="absolute top-1 left-1 z-10 p-0.5 rounded bg-black/50 text-white hidden sm:block sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-black/70"
                                                 title="تحميل الصورة"
                                             >

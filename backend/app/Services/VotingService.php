@@ -4,10 +4,12 @@ namespace App\Services;
 
 use App\Models\Ballot;
 use App\Models\BallotItem;
+use App\Models\Candidate;
 use App\Models\DailyScore;
 use App\Models\Poll;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class VotingService
 {
@@ -25,6 +27,8 @@ class VotingService
     {
         $voteDay = Carbon::now($poll->timezone ?: 'UTC')->startOfDay();
 
+        $this->rejectArchivedCandidates($poll, $tiers);
+
         DB::transaction(function () use ($poll, $voteDay, $voterKey, $ipHash, $userAgent, $tiers) {
             $ballot = Ballot::create([
                 'poll_id' => $poll->id,
@@ -37,6 +41,29 @@ class VotingService
             $scoreDelta = $this->calculateScores($ballot, $tiers);
             $this->updateDailyScores($poll, $voteDay, $scoreDelta);
         });
+    }
+
+    private function rejectArchivedCandidates(Poll $poll, array $tiers): void
+    {
+        $ids = collect($tiers)
+            ->flatten(1)
+            ->pluck('candidateId')
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($ids->isEmpty()) return;
+
+        $archived = Candidate::where('poll_id', $poll->id)
+            ->whereIn('id', $ids)
+            ->where('status', 'archived')
+            ->exists();
+
+        if ($archived) {
+            throw ValidationException::withMessages([
+                'tiers' => 'Ballot contains archived candidates.',
+            ]);
+        }
     }
 
     private function calculateScores(Ballot $ballot, array $tiers): array

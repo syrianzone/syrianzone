@@ -14,7 +14,11 @@ function isVotingPath(pathname: string): boolean {
 // Static HTML sites that should bypass Arcjet protection
 const STATIC_HTML_SITES = ["/awstest", "/alignment", "/compass", "/house", "/legacytierlist", "/party", "/population", "/syid", "/syofficial", "/stats", "/sites"];
 
+// Server-internal routes that must not be Arcjet-blocked (UploadThing presign + callback handshake)
+const BYPASS_PREFIXES = ["/api/uploadthing"];
+
 function shouldBypassProtection(pathname: string): boolean {
+  if (BYPASS_PREFIXES.some(prefix => pathname.startsWith(prefix))) return true;
   return STATIC_HTML_SITES.some(site => pathname === site || pathname.startsWith(site + "/"));
 }
 

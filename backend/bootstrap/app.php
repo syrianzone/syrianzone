@@ -13,7 +13,16 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->alias(['transit.admin' => \App\Http\Middleware\TransitAdminAuth::class]);
         $middleware->statefulApi();
+        $middleware->validateCsrfTokens(except: [
+            'api/v1/studio/routes',
+            'api/v1/admin/login',
+            'api/v1/admin/route-drafts',
+            'api/v1/admin/route-drafts/*',
+            'api/polls/*/vote',
+            'api/submit',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

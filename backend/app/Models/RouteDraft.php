@@ -18,7 +18,8 @@ class RouteDraft extends Model
         'price',
         'notes',
         'geojson',
-        'status'
+        'status',
+        'rejection_reason',
     ];
 
     protected $casts = [

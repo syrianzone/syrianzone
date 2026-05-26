@@ -15,7 +15,7 @@ class TransitAdminController extends Controller
 {
     public function index()
     {
-        $drafts = RouteDraft::with(['user', 'city'])->orderBy('created_at', 'desc')->get();
+        $drafts = RouteDraft::with(['user:id,name', 'city:id,name_ar,name_en'])->orderBy('created_at', 'desc')->get();
         return response()->json($drafts);
     }
 
@@ -54,7 +54,7 @@ class TransitAdminController extends Controller
                 if ($feature['geometry']['type'] === 'LineString' || $feature['geometry']['type'] === 'MultiLineString') {
                     $routeLine = $feature['geometry'];
                 } elseif ($feature['geometry']['type'] === 'Point') {
-                    $stops[] = $feature['geometry'];
+                    $stops[] = $feature; // store full feature to access nameAr from properties
                 }
             }
 
@@ -70,13 +70,15 @@ class TransitAdminController extends Controller
 
             // Insert Stops and route_stop mapping
             $order = 1;
-            foreach ($stops as $stopPoint) {
+            foreach ($stops as $stopFeature) {
+                $stopPoint = $stopFeature['geometry'];
+                $nameAr = trim($stopFeature['properties']['nameAr'] ?? '') ?: ('محطة ' . $order);
                 $stopId = 'stop-' . Str::slug($draft->city->name_en ?? $draft->city->name_ar) . '-' . uniqid();
-                
+
                 DB::table('stops')->insert([
                     'id' => $stopId,
                     'city_id' => $draft->city_id,
-                    'name_ar' => 'محطة ' . $order, // Default stop name
+                    'name_ar' => $nameAr,
                     'geometry' => DB::raw("ST_GeomFromGeoJSON('" . json_encode($stopPoint) . "')"),
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -109,6 +111,8 @@ class TransitAdminController extends Controller
 
     public function reject(Request $request, $id)
     {
+        $validated = $request->validate(['reason' => 'nullable|string|max:1000']);
+
         $draft = RouteDraft::findOrFail($id);
 
         if ($draft->status !== 'pending') {
@@ -116,6 +120,7 @@ class TransitAdminController extends Controller
         }
 
         $draft->status = 'rejected';
+        $draft->rejection_reason = $validated['reason'] ?? null;
         $draft->save();
 
         return response()->json(['message' => 'Draft rejected']);

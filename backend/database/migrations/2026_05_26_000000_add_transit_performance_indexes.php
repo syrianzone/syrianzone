@@ -8,13 +8,15 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('stops', function (Blueprint $table) {
-            $table->spatialIndex('geometry');
+        $isMysql = in_array(Schema::getConnection()->getDriverName(), ['mysql', 'mariadb']);
+
+        Schema::table('stops', function (Blueprint $table) use ($isMysql) {
+            if ($isMysql) $table->spatialIndex('geometry');
             $table->index('city_id');
         });
 
-        Schema::table('route_geometries', function (Blueprint $table) {
-            $table->spatialIndex('geometry');
+        Schema::table('route_geometries', function (Blueprint $table) use ($isMysql) {
+            if ($isMysql) $table->spatialIndex('geometry');
         });
 
         Schema::table('routes', function (Blueprint $table) {
@@ -29,13 +31,15 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('stops', function (Blueprint $table) {
-            $table->dropSpatialIndex(['geometry']);
+        $isMysql = in_array(Schema::getConnection()->getDriverName(), ['mysql', 'mariadb']);
+
+        Schema::table('stops', function (Blueprint $table) use ($isMysql) {
+            if ($isMysql) $table->dropSpatialIndex(['geometry']);
             $table->dropIndex(['city_id']);
         });
 
-        Schema::table('route_geometries', function (Blueprint $table) {
-            $table->dropSpatialIndex(['geometry']);
+        Schema::table('route_geometries', function (Blueprint $table) use ($isMysql) {
+            if ($isMysql) $table->dropSpatialIndex(['geometry']);
         });
 
         Schema::table('routes', function (Blueprint $table) {

@@ -59,13 +59,10 @@ class TransitAdminController extends Controller
             }
 
             if ($routeLine) {
-                // Insert RouteGeometry
-                DB::table('route_geometries')->insert([
-                    'route_id' => $routeId,
-                    'geometry' => DB::raw("ST_GeomFromGeoJSON('" . json_encode($routeLine) . "')"),
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
+                DB::statement(
+                    'INSERT INTO route_geometries (route_id, geometry, created_at, updated_at) VALUES (?, ST_GeomFromGeoJSON(?), ?, ?)',
+                    [$routeId, json_encode($routeLine), now(), now()]
+                );
             }
 
             // Insert Stops and route_stop mapping
@@ -75,14 +72,10 @@ class TransitAdminController extends Controller
                 $nameAr = trim($stopFeature['properties']['nameAr'] ?? '') ?: ('محطة ' . $order);
                 $stopId = 'stop-' . Str::slug($draft->city->name_en ?? $draft->city->name_ar) . '-' . uniqid();
 
-                DB::table('stops')->insert([
-                    'id' => $stopId,
-                    'city_id' => $draft->city_id,
-                    'name_ar' => $nameAr,
-                    'geometry' => DB::raw("ST_GeomFromGeoJSON('" . json_encode($stopPoint) . "')"),
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
+                DB::statement(
+                    'INSERT INTO stops (id, city_id, name_ar, geometry, created_at, updated_at) VALUES (?, ?, ?, ST_GeomFromGeoJSON(?), ?, ?)',
+                    [$stopId, $draft->city_id, $nameAr, json_encode($stopPoint), now(), now()]
+                );
 
                 DB::table('route_stop')->insert([
                     'route_id' => $routeId,

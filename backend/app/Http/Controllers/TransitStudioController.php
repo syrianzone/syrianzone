@@ -20,7 +20,7 @@ class TransitStudioController extends Controller
         ]);
 
         $draft = RouteDraft::create([
-            'user_id' => Auth::id() ?? 1, // fallback to 1 if auth is missing for now, per open question
+            'user_id' => Auth::id(),
             'city_id' => $validated['city_id'],
             'name_ar' => $validated['name_ar'],
             'name_en' => $validated['name_en'],

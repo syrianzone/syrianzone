@@ -49,3 +49,18 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::get('/metrics', [MetricsController::class, 'index']);
+
+Route::prefix('v1')->group(function () {
+    Route::get('/cities', [\App\Http\Controllers\Api\V1\TransitController::class, 'getCities']);
+    Route::get('/cities/{id}/routes', [\App\Http\Controllers\Api\V1\TransitController::class, 'getRoutes']);
+    Route::get('/cities/{id}/map-data', [\App\Http\Controllers\Api\V1\TransitController::class, 'getMapData']);
+    Route::get('/stops/nearby', [\App\Http\Controllers\Api\V1\TransitController::class, 'getNearbyStops']);
+    Route::get('/search', [\App\Http\Controllers\Api\V1\TransitController::class, 'search']);
+
+    // Transit Studio & Admin routes
+    // Optionally protected by sanctum for testing purposes we can leave studio unprotected or create a mock middleware
+    Route::post('/studio/routes', [\App\Http\Controllers\TransitStudioController::class, 'store']);
+    Route::get('/admin/route-drafts', [\App\Http\Controllers\TransitAdminController::class, 'index']);
+    Route::post('/admin/route-drafts/{id}/approve', [\App\Http\Controllers\TransitAdminController::class, 'approve']);
+    Route::post('/admin/route-drafts/{id}/reject', [\App\Http\Controllers\TransitAdminController::class, 'reject']);
+});

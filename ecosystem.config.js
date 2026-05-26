@@ -17,7 +17,7 @@ module.exports = {
             name: 'syrianzone-backend',
             cwd: './backend',
             script: 'artisan',
-            args: 'serve --port=8002',
+            args: 'serve --port=8000',
             interpreter: 'php',
             instances: 1,
             autorestart: true,

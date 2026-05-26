@@ -1,65 +1,66 @@
-import { useEffect, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { FeatureCollection, RouteProperties, StopProperties } from '../_types'
 
-const cache = new Map<string, { routes: FeatureCollection<RouteProperties>; stops: FeatureCollection<StopProperties> }>()
-const inflight = new Set<string>()
+const API = () => process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'
 
-export function preloadCityData(cityId: string): void {
-  if (cache.has(cityId) || inflight.has(cityId)) return
-  inflight.add(cityId)
-  Promise.all([
-    fetch(`/data/${cityId}/routes.geojson`).then((r) => r.json() as Promise<FeatureCollection<RouteProperties>>),
-    fetch(`/data/${cityId}/stops.geojson`).then((r) => r.json() as Promise<FeatureCollection<StopProperties>>),
-  ])
-    .then(([routes, stops]) => {
-      cache.set(cityId, { routes, stops })
-    })
-    .catch(() => {})
-    .finally(() => inflight.delete(cityId))
+// ─── Map data (routes + stops GeoJSON) ───────────────────────────────────────
+
+interface MapDataResponse {
+  routes: FeatureCollection<RouteProperties>
+  stops: FeatureCollection<StopProperties>
+}
+
+const fetchMapData = async (cityId: string): Promise<MapDataResponse> => {
+  const res = await fetch(`${API()}/api/v1/cities/${cityId}/map-data`)
+  if (!res.ok) throw new Error('Failed to fetch map data')
+  return res.json()
 }
 
 export function useMapData(cityId: string | undefined) {
-  const [data, setData] = useState<{
-    routes: FeatureCollection<RouteProperties>
-    stops: FeatureCollection<StopProperties>
-  } | null>(() => (cityId ? (cache.get(cityId) ?? null) : null))
-  const [loading, setLoading] = useState(() => !!cityId && !cache.has(cityId))
-  const [error, setError] = useState<string | null>(null)
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['mapData', cityId],
+    queryFn: () => fetchMapData(cityId!),
+    enabled: !!cityId,
+    staleTime: 5 * 60 * 1000,
+  })
 
-  useEffect(() => {
-    if (!cityId) return
+  return {
+    data: data || null,
+    loading: isLoading,
+    error: error instanceof Error ? error.message : null,
+  }
+}
 
-    if (cache.has(cityId)) {
-      setData(cache.get(cityId)!)
-      setLoading(false)
-      setError(null)
-      return
-    }
+// ─── City routes list ─────────────────────────────────────────────────────────
 
-    setLoading(true)
-    setError(null)
+const fetchRoutes = async (cityId: string): Promise<RouteProperties[]> => {
+  const res = await fetch(`${API()}/api/v1/cities/${cityId}/routes`)
+  if (!res.ok) throw new Error('Failed to fetch routes')
+  return res.json()
+}
 
-    Promise.all([
-      fetch(`/data/${cityId}/routes.geojson`).then((r) => {
-        if (!r.ok) throw new Error('routes fetch failed')
-        return r.json() as Promise<FeatureCollection<RouteProperties>>
-      }),
-      fetch(`/data/${cityId}/stops.geojson`).then((r) => {
-        if (!r.ok) throw new Error('stops fetch failed')
-        return r.json() as Promise<FeatureCollection<StopProperties>>
-      }),
-    ])
-      .then(([routes, stops]) => {
-        const payload = { routes, stops }
-        cache.set(cityId, payload)
-        setData(payload)
-        setLoading(false)
-      })
-      .catch((err) => {
-        setError(err?.message || 'Unknown error')
-        setLoading(false)
-      })
-  }, [cityId])
+export function useRoutes(cityId: string) {
+  return useQuery({
+    queryKey: ['routes', cityId],
+    queryFn: () => fetchRoutes(cityId),
+    staleTime: 5 * 60 * 1000,
+  })
+}
 
-  return { data, loading, error }
+// ─── Prefetch helpers (called on hover) ──────────────────────────────────────
+
+export function usePreloadCity() {
+  const queryClient = useQueryClient()
+  return (cityId: string) => {
+    queryClient.prefetchQuery({
+      queryKey: ['mapData', cityId],
+      queryFn: () => fetchMapData(cityId),
+      staleTime: 5 * 60 * 1000,
+    })
+    queryClient.prefetchQuery({
+      queryKey: ['routes', cityId],
+      queryFn: () => fetchRoutes(cityId),
+      staleTime: 5 * 60 * 1000,
+    })
+  }
 }

@@ -1,6 +1,7 @@
 {
   "version": 8,
   "name": "Dark Matter Raster",
+  "glyphs": "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
   "sources": {
     "carto": {
       "type": "raster",

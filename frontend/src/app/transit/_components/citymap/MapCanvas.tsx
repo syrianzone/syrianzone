@@ -6,9 +6,14 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import { MapContext } from './MapContext'
 
 export const LocationContext = createContext<{ lng: number; lat: number } | null>(null)
+export const LocationStatusContext = createContext<'idle' | 'loading' | 'available' | 'denied'>('idle')
 
 export function useUserLocation() {
   return useContext(LocationContext)
+}
+
+export function useLocationStatus() {
+  return useContext(LocationStatusContext)
 }
 
 interface MapCanvasProps {
@@ -21,6 +26,7 @@ export default function MapCanvas({ bounds, children }: MapCanvasProps) {
   const [map, setMap] = useState<maplibregl.Map | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [userLocation, setUserLocation] = useState<{ lng: number; lat: number } | null>(null)
+  const [locationStatus, setLocationStatus] = useState<'idle' | 'loading' | 'available' | 'denied'>('idle')
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -64,8 +70,10 @@ export default function MapCanvas({ bounds, children }: MapCanvasProps) {
     let watchId: number | null = null
 
     if ('geolocation' in navigator) {
+      setLocationStatus('loading')
       watchId = navigator.geolocation.watchPosition(
         (pos) => {
+          setLocationStatus('available')
           setUserLocation({
             lng: pos.coords.longitude,
             lat: pos.coords.latitude,
@@ -73,9 +81,12 @@ export default function MapCanvas({ bounds, children }: MapCanvasProps) {
         },
         (err) => {
           console.warn('Geolocation error:', err)
+          setLocationStatus('denied')
         },
         { enableHighAccuracy: false, maximumAge: 60000, timeout: 10000 }
       )
+    } else {
+      setLocationStatus('denied')
     }
 
     return () => {
@@ -96,7 +107,9 @@ export default function MapCanvas({ bounds, children }: MapCanvasProps) {
       )}
       <MapContext.Provider value={map}>
         <LocationContext.Provider value={userLocation}>
-          {map ? children : null}
+          <LocationStatusContext.Provider value={locationStatus}>
+            {map ? children : null}
+          </LocationStatusContext.Provider>
         </LocationContext.Provider>
       </MapContext.Provider>
     </div>

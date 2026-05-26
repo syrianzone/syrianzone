@@ -12,8 +12,8 @@ export interface RouteProperties {
 export interface StopProperties {
   id: string
   nameAr: string
-  nameEn: string
-  routeId: string
+  nameEn?: string
+  routeIds: string[]
   type: 'stop'
 }
 

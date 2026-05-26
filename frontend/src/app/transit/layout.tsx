@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './transit.css'
 import { TransitThemeProvider } from './_components/TransitThemeContext'
+import { QueryProvider } from './_providers/QueryProvider'
 
 export const metadata: Metadata = {
   title: 'ترانزيت — Syria Transit',
@@ -19,9 +20,11 @@ export default function TransitLayout({
       <style>{`
         body { background: var(--bg); }
       `}</style>
-      <TransitThemeProvider>
-        {children}
-      </TransitThemeProvider>
+      <QueryProvider>
+        <TransitThemeProvider>
+          {children}
+        </TransitThemeProvider>
+      </QueryProvider>
     </div>
   )
 }

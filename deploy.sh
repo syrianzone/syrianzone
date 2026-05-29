@@ -72,9 +72,8 @@ npm run build
 echo "🔄 Restarting PM2..."
 cd ..
 
-# For Next.js in fork mode, restart is much safer than reload. 
-# It prevents the old server and its chunks map from hanging in memory.
-pm2 restart syrianzone-frontend --update-env 2>/dev/null || pm2 start ecosystem.config.js
+# For Next.js and Laravel served via PM2, restart ensures environment updates are picked up.
+pm2 restart syrianzone-frontend syrianzone-backend --update-env 2>/dev/null || pm2 start ecosystem.config.js
 pm2 save
 
 echo "✅ Deployment Finished Successfully!"

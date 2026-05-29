@@ -56,20 +56,23 @@ export default function SinglePollPage() {
 
         axios.get(`/polls/${slug}`)
             .then(response => {
-                // Normalize candidate imageUrl field
-                const candidates = response.data.candidates.map((c: any) => ({
+                const responseData = response.data.data || response.data;
+
+                // Normalize candidate imageUrl field and safeguard against undefined/null
+                const rawCandidates = responseData.candidates || [];
+                const candidates = rawCandidates.map((c: any) => ({
                     ...c,
                     imageUrl: c.imageUrl || c.image_url || null,
                 }));
 
                 // Handle groups - merge from response if available
-                const groups = response.data.groups || [];
+                const groups = responseData.groups || [];
 
                 setData({
-                    poll: response.data.poll,
+                    poll: responseData.poll,
                     candidates,
                     groups,
-                    voteDay: response.data.voteDay,
+                    voteDay: responseData.voteDay,
                 });
                 setLoading(false);
             })

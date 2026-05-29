@@ -49,16 +49,19 @@ export default function TierListPage() {
         axios
             .get("/polls/best-ministers")
             .then((response) => {
-                // Normalize candidate imageUrl field
-                const candidates = response.data.candidates.map((c: any) => ({
+                const responseData = response.data.data || response.data;
+
+                // Normalize candidate imageUrl field and safeguard against undefined/null
+                const rawCandidates = responseData.candidates || [];
+                const candidates = rawCandidates.map((c: any) => ({
                     ...c,
                     imageUrl: c.imageUrl || c.image_url || null,
                 }));
                 setData({
-                    poll: response.data.poll,
+                    poll: responseData.poll,
                     candidates,
-                    groups: response.data.groups || [],
-                    voteDay: response.data.voteDay,
+                    groups: responseData.groups || [],
+                    voteDay: responseData.voteDay,
                 });
                 setLoading(false);
             })

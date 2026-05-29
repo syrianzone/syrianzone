@@ -11,7 +11,7 @@ interface MapDataResponse {
 }
 
 const fetchMapData = async (cityId: string): Promise<MapDataResponse> => {
-  const res = await fetch(`${API()}/api/v1/cities/${cityId}/map-data`)
+  const res = await fetch(`${API()}/v1/cities/${cityId}/map-data`)
   if (!res.ok) throw new Error('Failed to fetch map data')
   return res.json()
 }
@@ -34,7 +34,7 @@ export function useMapData(cityId: string | undefined) {
 // ─── City routes list ─────────────────────────────────────────────────────────
 
 const fetchRoutes = async (cityId: string): Promise<RouteProperties[]> => {
-  const res = await fetch(`${API()}/api/v1/cities/${cityId}/routes`)
+  const res = await fetch(`${API()}/v1/cities/${cityId}/routes`)
   if (!res.ok) throw new Error('Failed to fetch routes')
   return res.json()
 }
@@ -53,7 +53,7 @@ export function useAdminDrafts(token: string | null) {
   return useQuery({
     queryKey: ['admin-drafts', token],
     queryFn: () =>
-      fetch(`${API()}/api/v1/admin/route-drafts`, {
+      fetch(`${API()}/v1/admin/route-drafts`, {
         headers: { Authorization: `Bearer ${token}` },
       }).then((r) => {
         if (r.status === 401) throw new Error('UNAUTHORIZED')

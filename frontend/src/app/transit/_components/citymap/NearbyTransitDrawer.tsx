@@ -33,7 +33,7 @@ export default function NearbyTransitDrawer() {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'
         const res = await fetch(
-          `${apiUrl}/api/v1/stops/nearby?lat=${userLocation.lat}&lng=${userLocation.lng}&radius=500`
+          `${apiUrl}/v1/stops/nearby?lat=${userLocation.lat}&lng=${userLocation.lng}&radius=500`
         )
         if (res.ok) {
           setStops(await res.json())

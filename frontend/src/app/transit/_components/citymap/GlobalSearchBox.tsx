@@ -37,7 +37,7 @@ export default function GlobalSearchBox({ cityId }: GlobalSearchBoxProps) {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'
         const params = new URLSearchParams({ q: query, city_id: cityId })
-        const res = await fetch(`${apiUrl}/api/v1/search?${params}`)
+        const res = await fetch(`${apiUrl}/v1/search?${params}`)
         if (res.ok) {
           const data = await res.json()
           setResults(data)

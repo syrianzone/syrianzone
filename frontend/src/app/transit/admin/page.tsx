@@ -275,7 +275,7 @@ export default function TransitAdminPage() {
   const handleApprove = useCallback(async (id: number) => {
     setActionLoading(true)
     try {
-      const res = await fetch(`${API()}/api/v1/admin/route-drafts/${id}/approve`, {
+      const res = await fetch(`${API()}/v1/admin/route-drafts/${id}/approve`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -296,7 +296,7 @@ export default function TransitAdminPage() {
     if (!selectedDraft) return
     setActionLoading(true)
     try {
-      const res = await fetch(`${API()}/api/v1/admin/route-drafts/${selectedDraft.id}/reject`, {
+      const res = await fetch(`${API()}/v1/admin/route-drafts/${selectedDraft.id}/reject`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ reason: rejectReason.trim() || null }),

@@ -10,11 +10,11 @@ use App\Http\Controllers\MetricsController;
 use App\Http\Controllers\Api\PopulationAtlasController;
 
 Route::get('/polls', [PollController::class, 'index']);
-Route::get('/polls/{poll}', [PollController::class, 'show']);
-Route::get('/polls/{poll}/leaderboard', [PollController::class, 'leaderboard']);
+Route::get('/polls/{idOrSlug}', [PollController::class, 'show']);
+Route::get('/polls/{idOrSlug}/leaderboard', [PollController::class, 'leaderboard']);
 
 Route::middleware('throttle:voting')->group(function () {
-    Route::post('/polls/{poll}/vote', [PollController::class, 'vote']);
+    Route::post('/polls/{idOrSlug}/vote', [PollController::class, 'vote']);
     Route::post('/submit', [PollController::class, 'submit']);
 });
 

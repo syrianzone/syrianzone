@@ -43,11 +43,8 @@ chmod -R 775 storage bootstrap/cache 2>/dev/null || true
 php -d error_reporting="E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED" "$(which composer)" install --no-dev --optimize-autoloader --quiet
 
 # Database migrations
-if grep -q "DB_DATABASE=laravel" .env || grep -q "DB_DATABASE=syrianzone" .env.example; then
-    # Modify this logic if your default db name is different
-    echo "🔄 Running migrations..."
-    php -d error_reporting="E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED" artisan migrate --force || echo "⚠️  Migrations failed or skipped."
-fi
+echo "🔄 Running migrations..."
+php -d error_reporting="E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED" artisan migrate --force || echo "⚠️  Migrations failed or skipped."
 
 # Optimize application
 echo "⚡ Optimizing Laravel..."

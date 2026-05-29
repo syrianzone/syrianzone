@@ -527,7 +527,6 @@ export default function TransitStudioPage() {
       new maplibregl.GeolocateControl({
         positionOptions: { enableHighAccuracy: true },
         trackUserLocation: false,
-        showUserHeading: false,
       }),
       'bottom-right'
     )

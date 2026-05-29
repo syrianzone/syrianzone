@@ -5,8 +5,9 @@ import { formatSocialUrl, getLanguageName } from './data';
 import { Organization } from './types';
 import {
     Search, X, FilterX, MapPin, Globe, FileText, Users,
-    LayoutGrid, Table as TableIcon, Twitter, Facebook, Instagram, Youtube, Send, ExternalLink
+    LayoutGrid, Table as TableIcon, Send, ExternalLink
 } from 'lucide-react';
+import { Twitter, Facebook, Instagram, Youtube } from '@/components/ui/icons';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";

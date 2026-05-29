@@ -45,6 +45,7 @@
     "@tanstack/react-query": "^5.100.14",
     "@types/leaflet": "^1.9.21",
     "@uploadthing/react": "^7.3.3",
+    "uploadthing": "^7.4.4",
     "axios": "^1.16.1",
     "chart.js": "^4.5.1",
     "class-variance-authority": "^0.7.1",

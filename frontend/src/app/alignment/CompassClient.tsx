@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { ArrowsUpFromLine, Palette, MapPin, Download, Info, Globe, Twitter, Trash2, Edit2, Plus } from 'lucide-react';
+import { ArrowsUpFromLine, Palette, MapPin, Download, Info, Globe, Trash2, Edit2, Plus } from 'lucide-react';
+import { Twitter } from '@/components/ui/icons';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";

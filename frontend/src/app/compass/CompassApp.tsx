@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SCALES, DEFAULT_QUESTIONS, Question, Scale } from './data';
-import { RotateCw, Share2, Globe, Twitter, Download, Copy, X } from 'lucide-react';
+import { RotateCw, Share2, Globe, Download, Copy, X } from 'lucide-react';
+import { Twitter } from '@/components/ui/icons';
 import html2canvas from 'html2canvas';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

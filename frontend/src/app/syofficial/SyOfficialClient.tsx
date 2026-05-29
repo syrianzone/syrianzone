@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { OfficialEntity } from './types';
-import { Search, X, Table as TableIcon, LayoutGrid, Globe, Facebook, Instagram, Linkedin, Send, Twitter, Youtube, Link as LinkIcon, MessageCircle } from 'lucide-react';
+import { Search, X, Table as TableIcon, LayoutGrid, Globe, Send, Link as LinkIcon, MessageCircle } from 'lucide-react';
+import { Facebook, Instagram, Linkedin, Twitter, Youtube } from '@/components/ui/icons';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";

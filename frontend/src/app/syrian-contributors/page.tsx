@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Trophy, Medal, Award, Users, Calendar, CalendarDays, Clock, ExternalLink, Github } from "lucide-react"
+import { Trophy, Medal, Award, Users, Calendar, CalendarDays, Clock, ExternalLink } from "lucide-react"
+import { Github } from "@/components/ui/icons"
 
 const assetPath = (path: string) => path
 

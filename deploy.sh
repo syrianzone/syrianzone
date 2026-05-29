@@ -40,21 +40,21 @@ rm -rf bootstrap/cache/*.php 2>/dev/null || true
 chmod -R 775 storage bootstrap/cache 2>/dev/null || true
 
 # Install PHP dependencies without dev packages
-composer install --no-dev --optimize-autoloader --quiet
+php -d error_reporting="E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED" "$(which composer)" install --no-dev --optimize-autoloader --quiet
 
 # Database migrations
 if grep -q "DB_DATABASE=laravel" .env || grep -q "DB_DATABASE=syrianzone" .env.example; then
     # Modify this logic if your default db name is different
     echo "🔄 Running migrations..."
-    php artisan migrate --force || echo "⚠️  Migrations failed or skipped."
+    php -d error_reporting="E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED" artisan migrate --force || echo "⚠️  Migrations failed or skipped."
 fi
 
 # Optimize application
 echo "⚡ Optimizing Laravel..."
-php artisan optimize:clear
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
+php -d error_reporting="E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED" artisan optimize:clear
+php -d error_reporting="E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED" artisan config:cache
+php -d error_reporting="E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED" artisan route:cache
+php -d error_reporting="E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED" artisan view:cache
 
 cd ..
 

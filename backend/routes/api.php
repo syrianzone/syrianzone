@@ -51,3 +51,24 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::get('/metrics', [MetricsController::class, 'index']);
+
+Route::prefix('v1')->group(function () {
+    Route::get('/cities', [\App\Http\Controllers\Api\V1\TransitController::class, 'getCities']);
+    Route::get('/cities/{id}/routes', [\App\Http\Controllers\Api\V1\TransitController::class, 'getRoutes']);
+    Route::get('/cities/{id}/map-data', [\App\Http\Controllers\Api\V1\TransitController::class, 'getMapData']);
+    Route::get('/stops/nearby', [\App\Http\Controllers\Api\V1\TransitController::class, 'getNearbyStops']);
+    Route::get('/search', [\App\Http\Controllers\Api\V1\TransitController::class, 'search']);
+
+    // Transit Studio — open for community contributions
+    Route::post('/studio/routes', [\App\Http\Controllers\TransitStudioController::class, 'store']);
+
+    // Transit Admin auth
+    Route::post('/admin/login', [\App\Http\Controllers\TransitAuthController::class, 'login']);
+
+    // Transit Admin — requires transit admin token
+    Route::middleware('transit.admin')->group(function () {
+        Route::get('/admin/route-drafts', [\App\Http\Controllers\TransitAdminController::class, 'index']);
+        Route::post('/admin/route-drafts/{id}/approve', [\App\Http\Controllers\TransitAdminController::class, 'approve']);
+        Route::post('/admin/route-drafts/{id}/reject', [\App\Http\Controllers\TransitAdminController::class, 'reject']);
+    });
+});

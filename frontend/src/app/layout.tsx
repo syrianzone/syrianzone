@@ -22,6 +22,7 @@ export const metadata: Metadata = {
     template: "%s | المساحة السورية"
   },
   description: "المنصة الشاملة للمحتوى السوري",
+  manifest: "/manifest.json",
   icons: {
     icon: "/assets/favicon.png",
     shortcut: "/assets/favicon.png",

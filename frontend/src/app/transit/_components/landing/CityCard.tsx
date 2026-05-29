@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import type { City } from '../../_types'
-import { preloadCityData } from '../../_hooks/useMapData'
+import { usePreloadCity } from '../../_hooks/useMapData'
 
 interface CityCardProps {
   city: City
@@ -11,6 +11,7 @@ interface CityCardProps {
 
 export default function CityCard({ city, index }: CityCardProps) {
   const isComingSoon = city.status === 'coming_soon'
+  const preloadCityData = usePreloadCity()
 
   const cardClasses = `city-card relative overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] transition-colors duration-200 hover:border-[var(--border-hover)] focus-within:border-[var(--border-hover)] sm:rounded-xl ${isComingSoon ? 'opacity-40' : ''}`
 

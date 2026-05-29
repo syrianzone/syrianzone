@@ -51,7 +51,7 @@ function CityMapPageContent() {
     if (!data) return { type: 'FeatureCollection', features: [] }
     if (!routeId) return data.stops
     const stops = data.stops.features.filter(
-      (f) => f.properties.routeId === routeId
+      (f) => Array.isArray(f.properties.routeIds) && f.properties.routeIds.includes(routeId!)
     )
     return {
       type: 'FeatureCollection',
@@ -102,6 +102,7 @@ function CityMapPageContent() {
 
         {data && bounds && (
           <MapView
+            cityId={id}
             bounds={bounds}
             routes={filteredRoutes}
             stops={filteredStops}

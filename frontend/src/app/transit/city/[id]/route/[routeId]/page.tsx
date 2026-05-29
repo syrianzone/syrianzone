@@ -104,7 +104,7 @@ export default async function RouteDetailPage({
 
     route = routesGeo.features.find((f) => f.properties.id === routeId)?.properties
     stops = stopsGeo.features
-      .filter((f) => f.properties.routeId === routeId)
+      .filter((f) => (f.properties as unknown as { routeId: string }).routeId === routeId)
       .map((f) => ({
         properties: f.properties,
         coordinates: f.geometry.coordinates as [number, number],

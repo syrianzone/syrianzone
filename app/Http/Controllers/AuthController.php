@@ -21,7 +21,7 @@ class AuthController extends Controller
         try {
             $googleUser = Socialite::driver('google')->stateless()->user();
         } catch (\Exception $e) {
-            return redirect(env('FRONTEND_URL') . '/login?error=auth_failed');
+            return redirect('/?error=auth_failed');
         }
 
         $email = $googleUser->getEmail();
@@ -29,7 +29,7 @@ class AuthController extends Controller
         $isSuperAdmin = $email === self::SUPERADMIN_EMAIL;
 
         if (!$user && !$isSuperAdmin) {
-            return redirect(env('FRONTEND_URL') . '/letmein?error=access_denied_admin_only');
+            return redirect('/?error=access_denied_admin_only');
         }
 
         $user = User::updateOrCreate(
@@ -44,7 +44,7 @@ class AuthController extends Controller
         );
 
         Auth::login($user, true);
-        return redirect(env('FRONTEND_URL') . '/admin/polls');
+        return redirect()->intended('/transit/admin');
     }
 
     public function user(Request $request)

@@ -287,3 +287,47 @@ sudo systemctl reload nginx
 ### Issue: Database migration errors
 *   **Cause**: The production database has not been created or the credentials in `/var/www/syrianzone/.env` are incorrect.
 *   **Solution**: Log in to mysql (`mysql -u root -p`), create the database `CREATE DATABASE syrianzone;`, and double-check credentials using `php artisan db:monitor` locally on the host.
+
+---
+
+## 8. Production Docker Image Build (Cranl Setup)
+
+For platforms like **Cranl** that operate using standardized containers, the application includes a production-ready, highly optimized multi-stage [Dockerfile](file:///run/media/hadi/SSD2/Coding/syrianzone/Dockerfile) in the repository root.
+
+### Multi-Stage Architecture:
+1.  **Stage 1: Frontend Asset Builder (`oven/bun:alpine`)**:
+    *   Uses **Bun** for ultra-fast, frozen-lockfile package installation.
+    *   Runs `bun run build` to compile the Vite/React monolithic production assets into `public/build`.
+2.  **Stage 2: Compression Module Compiler (`ngx_brotli`)**:
+    *   Dynamically compiles Google's Brotli module (`ngx_http_brotli_filter_module.so`) against the exact Nginx ABI configuration of the production base image.
+3.  **Stage 3: Production Server (`serversideup/php:8.4-fpm-nginx`)**:
+    *   Secured, production-hardened PHP 8.4-FPM + Nginx base running as a non-root user (`www-data`).
+    *   Exposes HTTP traffic on port `8080`.
+    *   Integrates **S6 Overlay v3** process supervisor to automatically launch auxiliary daemons.
+
+### Supervised Daemons (S6 Overlay):
+*   **One-Shot Startup Script (`docker/10-startup.sh`)**: Runs once on container startup. Clears and rebuilds application caches (`artisan config:cache`, `route:cache`, `view:cache`) and executes database schema migrations (`artisan migrate --force`) dynamically.
+*   **Queue Worker Daemon (`docker/s6/queue-worker-run`)**: Keeps the standard Laravel queue processor running in the background.
+*   **Scheduler Daemon (`docker/s6/laravel-scheduler-run`)**: Executes the cron scheduler loops every 60 seconds.
+
+### How to Build & Run Locally
+To verify the Docker configuration locally before uploading to Cranl:
+
+```bash
+# 1. Build the production Docker image
+docker build -t syrianzone:latest .
+
+# 2. Run the container locally, exposing it on port 8080
+docker run -d \
+  -p 8080:8080 \
+  --name syrianzone-app \
+  -e APP_KEY=base64:your_generated_app_key_here \
+  -e APP_ENV=production \
+  -e APP_DEBUG=false \
+  -e DB_HOST=172.17.0.1 \
+  -e DB_DATABASE=syrianzone \
+  -e DB_USERNAME=root \
+  -e DB_PASSWORD=secret \
+  syrianzone:latest
+```
+

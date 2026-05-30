@@ -1,0 +1,31 @@
+# Ignore Git history
+.git
+.gitignore
+.gitattributes
+
+# Ignore local package manager directories
+node_modules/
+vendor/
+frontend/
+
+# Ignore local database backups and environment files
+*.sql
+database_dump.sql
+.env
+.env.*
+.phpunit.cache
+.phpunit.result.cache
+
+# Ignore Laravel dynamic runtime files
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/views/*.php
+storage/logs/*.log
+bootstrap/cache/*.php
+
+# Ignore temporary hot-reloads
+public/hot
+
+# Ignore OS specific files
+.DS_Store
+Thumbs.db

@@ -16,8 +16,9 @@ echo "🎯 Target Directory: $TARGET_DIR"
 # Building assets first inside the source/runner directory avoids high CPU loads in production during npm install/build
 echo "⚛️  Building Frontend Assets in Source Directory (Vite)..."
 cd "$SRC_DIR"
-npm ci || npm install
-npm run build
+bun install --frozen-lockfile
+bun run build
+
 
 # 2. Sync Files to Target Directory (if different)
 if [ "$SRC_DIR" != "$TARGET_DIR" ]; then

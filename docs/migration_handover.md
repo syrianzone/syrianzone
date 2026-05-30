@@ -55,7 +55,7 @@ The implementation is structured into 5 sequential phases. Focus on them one at 
 ### Phase 1: Environment Consolidation (The Setup)
 *   **Action**: Move all files inside the `/backend` folder to the repository root directory. Remove or archive the `/backend` directory.
 *   **Configuration**: Add the Inertia backend requirements to `composer.json` and install.
-*   **JS Environment**: Merge package dependencies from `frontend/package.json` into the root `package.json`, then install NPM packages. Configure `vite.config.js` to enable the React plugin and specify the entrypoint `resources/js/app.tsx`.
+*   **JS Environment**: Merge package dependencies from `frontend/package.json` into the root `package.json`, then install packages using Bun. Configure `vite.config.js` to enable the React plugin and specify the entrypoint `resources/js/app.tsx`.
 
 ### Phase 2: Global Shell & Layout
 *   **Action**: Create the primary Blade container `resources/views/app.blade.php`.

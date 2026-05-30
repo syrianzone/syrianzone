@@ -17,11 +17,17 @@ jobs:
       - name: Verify PHP Installation
         run: php -v
 
-      - name: Verify Node.js & NPM Installation
-        run: node -v && npm -v
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Verify Bun Installation
+        run: bun -v
 
       - name: Execute Monolithic Deploy Script
         # Adjust the target path (/var/www/syrianzone) below to match your production web server root directory!
         run: |
           chmod +x deploy.sh
           ./deploy.sh /var/www/syrianzone
+

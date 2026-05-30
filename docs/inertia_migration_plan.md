@@ -286,9 +286,9 @@ export default defineConfig({
     ```bash
     composer require inertiajs/inertia-laravel
     ```
-3.  **Install NPM Dependencies**: Merge package configurations from `frontend/package.json` into the root `package.json` and install:
+3.  **Install JS Dependencies**: Merge package configurations from `frontend/package.json` into the root `package.json` and install:
     ```bash
-    npm install @inertiajs/react @vitejs/plugin-react react react-dom @types/react @types/react-dom typescript @types/node
+    bun install @inertiajs/react @vitejs/plugin-react react react-dom @types/react @types/react-dom typescript @types/node
     ```
 4.  **Create Inertia Root View**: Create `resources/views/app.blade.php`.
 5.  **Initialize Inertia Middleware**:
@@ -316,7 +316,7 @@ export default defineConfig({
 3.  **File Uploads**: Relocate images and upload handlers from the Next.js API endpoints to Laravel's controller endpoints using native file validation and storage disks.
 
 ### Phase 5: Verification, SEO, and Deployment
-1.  **Verify Asset Compiling**: Run `npm run build` to verify standard Vite bundles, ensuring chunk optimizations.
+1.  **Verify Asset Compiling**: Run `bun run build` to verify standard Vite bundles, ensuring chunk optimizations.
 2.  **Service Worker Integrations**: Re-register PWA rules under standard service workers in Vite PWA.
 3.  **Configure Deployment Runner**: Update `deploy.sh` and `ecosystem.config.js` to build and serve the unified Laravel runtime environment, eliminating Next.js build steps.
 
@@ -328,7 +328,7 @@ export default defineConfig({
   - [x] Move `/backend` files to repository root.
   - [x] Add `inertiajs/inertia-laravel` in composer requirements.
   - [x] Merge `frontend/package.json` packages into the root `package.json`.
-  - [x] Run `npm install` and resolve compiler conflicts.
+  - [x] Run `bun install` and resolve compiler conflicts.
   - [x] Create `resources/views/app.blade.php`.
   - [x] Register `HandleInertiaRequests` middleware in `bootstrap/app.php`.
   - [x] Update `vite.config.js`.

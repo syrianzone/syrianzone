@@ -16,11 +16,11 @@ graph TD
     Workflow --> Runner[3. Runner Workspace checkout]
     
     subgraph Build Phase (Runner Workspace)
-        Runner --> NPM[4. Install NPM deps & Build Vite Assets]
+        Runner --> Bun[4. Install Bun deps & Build Vite Assets]
     end
     
     subgraph Sync Phase
-        NPM --> Sync[5. rsync to /var/www/syrianzone]
+        Bun --> Sync[5. rsync to /var/www/syrianzone]
         style Sync fill:#f9f,stroke:#333,stroke-width:2px
     end
     
@@ -33,8 +33,8 @@ graph TD
 ```
 
 ### Key Advantages of This Architecture:
-1.  **CPU Isolation**: Compiling Vite assets (`npm run build`) is highly CPU and memory intensive. Building in the runner's workspace directory keeps the active production directory safe from CPU spikes or temporary downtime.
-2.  **Clean File Syncing**: `rsync` ensures that only compiled production code is moved over. Development tools, `.git` histories, and `node_modules` are completely excluded, keeping the server lean and secure.
+1.  **CPU Isolation**: Compiling Vite assets (`bun run build`) is highly CPU and memory intensive. Building in the runner's workspace directory keeps the active production directory safe from CPU spikes or temporary downtime.
+2.  **Clean File Syncing**: `rsync` ensures that only compiled production code is moved over. Development tools, `.git` histories, and `node_modules` (or Bun's node modules) are completely excluded, keeping the server lean and secure.
 3.  **Immutable Production `.env`**: The production configuration file is excluded from the file sync, ensuring your production secrets are never accidentally modified or exposed.
 
 ---
@@ -44,10 +44,10 @@ graph TD
 Ensure the following tools are installed on your production server:
 *   **Operating System**: Linux (Ubuntu 22.04 LTS or newer recommended)
 *   **PHP**: Version 8.2+ with extension dependencies (`php-mysql`, `php-xml`, `php-curl`, `php-mbstring`, `php-zip`, `php-bcmath`)
-*   **Node.js & NPM**: Node 18+ and NPM 10+
+*   **Bun**: Bun 1.0+ (used as the primary package installer and fast JS runtime)
 *   **Composer**: Global PHP package manager
 *   **Web Server**: Nginx (configured as a reverse proxy)
-*   **Process Manager**: PM2 (globally installed: `npm install -g pm2`)
+*   **Process Manager**: PM2 (globally installed: `bun install -g pm2` or `npm install -g pm2`)
 *   **File Sync Utility**: `rsync`
 
 ---
@@ -156,8 +156,13 @@ jobs:
       - name: Verify PHP Installation
         run: php -v
 
-      - name: Verify Node.js & NPM Installation
-        run: node -v && npm -v
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Verify Bun Installation
+        run: bun -v
 
       - name: Execute Monolithic Deploy Script
         run: |
@@ -174,8 +179,8 @@ When triggered, the deployment script executes the following stages:
 1.  **Frontend Asset Compilation (Runner Workspace)**:
     ```bash
     cd "$SRC_DIR"
-    npm ci
-    npm run build
+    bun install --frozen-lockfile
+    bun run build
     ```
     This generates clean, compiled frontend static assets in `$SRC_DIR/public/build`.
     
@@ -276,8 +281,8 @@ sudo systemctl reload nginx
 *   **Solution**: Ensure that `/var/www/syrianzone` is owned by the group `www-data` and write permissions (`775`) are granted to it. Run the permission commands in **Step 3** again.
 
 ### Issue: "Vite build fails / Out of Memory"
-*   **Cause**: Node.js might consume too much memory during the Vite build on small virtual private servers (VPS).
-*   **Solution**: Since the build is run inside the runner workspace on the server, you can increase swap space or limit the worker threads of the transpiler by adding `NODE_OPTIONS="--max-old-space-size=2048"` to the environment commands before building.
+*   **Cause**: Bun/Vite might consume too much memory during the Vite build on small virtual private servers (VPS) with limited RAM.
+*   **Solution**: Since the build is run inside the runner workspace on the server, you can increase host swap space or restrict memory footprints by passing environment bounds before executing `bun run build`.
 
 ### Issue: Database migration errors
 *   **Cause**: The production database has not been created or the credentials in `/var/www/syrianzone/.env` are incorrect.

@@ -153,7 +153,11 @@ class PollController extends Controller
 
     public function destroy($id)
     {
-        Poll::findOrFail($id)->delete();
+        $poll = Poll::findOrFail($id);
+        if ($poll->slug === 'best-ministers') {
+            return response()->json(['message' => 'Cannot delete the core Best Ministers poll.'], 403);
+        }
+        $poll->delete();
         return response()->json(null, 204);
     }
 

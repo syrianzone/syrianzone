@@ -5,7 +5,6 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\PollController;
 use App\Http\Controllers\ContributorController;
-use App\Http\Controllers\SiteController;
 use App\Http\Controllers\MetricsController;
 use App\Http\Controllers\Api\PopulationAtlasController;
 
@@ -21,8 +20,6 @@ Route::middleware('throttle:voting')->group(function () {
 
 Route::get('/contributors', [ContributorController::class, 'index']);
 Route::get('/contributors/{contributor}', [ContributorController::class, 'show']);
-
-Route::get('/sites', [SiteController::class, 'index']);
 
 Route::get('/population/master', [PopulationAtlasController::class, 'getData']);
 Route::get('/population/env-report', [PopulationAtlasController::class, 'getEnvironmentalDetails']);

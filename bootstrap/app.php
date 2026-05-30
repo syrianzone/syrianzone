@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->alias([
             'admin'         => \App\Http\Middleware\Admin::class,
+            'transit_admin' => \App\Http\Middleware\TransitAdmin::class,
             'superadmin'    => \App\Http\Middleware\SuperAdmin::class,
         ]);
         $middleware->statefulApi();

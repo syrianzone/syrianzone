@@ -32,7 +32,7 @@ test('superadmin can delete admin', function () {
         ->deleteJson("/api/admins/{$admin->id}")
         ->assertOk();
 
-    $this->assertDatabaseMissing('users', ['id' => $admin->id]);
+    $this->assertSoftDeleted('users', ['id' => $admin->id]);
 });
 
 test('cannot delete superadmin', function () {

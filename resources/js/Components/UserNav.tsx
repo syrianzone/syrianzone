@@ -47,7 +47,7 @@ export default function UserNav() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                    <Link href="/admin/dashboard" className="cursor-pointer">
+                    <Link href="/dashboard" className="cursor-pointer">
                         <LayoutDashboard className="ml-2 h-4 w-4" />
                         <span>لوحة التحكم</span>
                     </Link>

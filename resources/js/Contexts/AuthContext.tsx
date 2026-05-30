@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
-    const isAdmin = !!user;
+    const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
     const isSuperAdmin = user?.role === 'superadmin';
 
     return (

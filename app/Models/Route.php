@@ -20,7 +20,13 @@ class Route extends Model
         'price_old',
         'price_new',
         'status',
+        'user_id',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 
     public function city()
     {

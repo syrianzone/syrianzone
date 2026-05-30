@@ -43,7 +43,7 @@ class AuthController extends Controller
         );
 
         Auth::login($user, true);
-        return redirect()->intended('/transit/admin');
+        return redirect()->intended('/dashboard');
     }
 
     public function user(Request $request)

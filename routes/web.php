@@ -112,8 +112,8 @@ Route::get('/transit/studio', function () {
 });
 
 Route::get('/transit/admin', function () {
-    return Inertia::render('Transit/admin/Index');
-})->middleware(['auth', 'admin']);
+    return redirect('/dashboard');
+})->middleware('auth');
 
 Route::get('/user', [AuthController::class, 'user']);
 Route::get('/auth/google', [AuthController::class, 'redirectToProvider'])->name('login');
@@ -121,7 +121,14 @@ Route::get('/auth/google/callback', [AuthController::class, 'handleProviderCallb
 Route::post('/logout', [AuthController::class, 'logout']);
 
 use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\DashboardController;
+
 Route::middleware('auth')->group(function () {
+    // 1. Unified User Dashboard Views and Actions
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::post('/api/account/update', [DashboardController::class, 'updateAccount']);
+    Route::post('/api/account/delete', [DashboardController::class, 'deleteAccount']);
+
     Route::prefix('api')->group(function () {
         Route::get('/user', function (\Illuminate\Http\Request $request) {
             return $request->user();
@@ -134,8 +141,8 @@ Route::middleware('auth')->group(function () {
         });
     });
 
+    // 2. Polls & General Admin Panel (accessible to core admins and superadmins)
     Route::middleware('admin')->group(function () {
-        // Polls Admin Routes
         Route::get('/admin/polls', [PollController::class, 'renderIndex']);
         Route::get('/admin/polls/create', [PollController::class, 'adminCreate']);
         Route::get('/admin/polls/{id}/edit', [PollController::class, 'adminEdit']);
@@ -152,16 +159,17 @@ Route::middleware('auth')->group(function () {
             Route::apiResource('candidates', \App\Http\Controllers\CandidateController::class)->except(['index', 'show']);
             Route::patch('/candidates/{id}/archive', [\App\Http\Controllers\CandidateController::class, 'archive']);
             Route::patch('/candidates/{id}/restore', [\App\Http\Controllers\CandidateController::class, 'restore']);
+        });
+    });
 
-            Route::post('/sites', [\App\Http\Controllers\SiteController::class, 'store']);
-            Route::put('/sites/{id}', [\App\Http\Controllers\SiteController::class, 'update']);
-            Route::delete('/sites/{id}', [\App\Http\Controllers\SiteController::class, 'destroy']);
+    // 3. Transit Admin Panel (accessible to core admins, transit admins, and superadmins)
+    Route::middleware('transit_admin')->group(function () {
+        Route::post('/api/admin/users/{id}/toggle-ban', [DashboardController::class, 'toggleBan']);
 
-            Route::prefix('v1')->group(function () {
-                Route::get('/admin/route-drafts', [\App\Http\Controllers\TransitAdminController::class, 'index']);
-                Route::post('/admin/route-drafts/{id}/approve', [\App\Http\Controllers\TransitAdminController::class, 'approve']);
-                Route::post('/admin/route-drafts/{id}/reject', [\App\Http\Controllers\TransitAdminController::class, 'reject']);
-            });
+        Route::prefix('api/v1')->group(function () {
+            Route::get('/admin/route-drafts', [\App\Http\Controllers\TransitAdminController::class, 'index']);
+            Route::post('/admin/route-drafts/{id}/approve', [\App\Http\Controllers\TransitAdminController::class, 'approve']);
+            Route::post('/admin/route-drafts/{id}/reject', [\App\Http\Controllers\TransitAdminController::class, 'reject']);
         });
     });
 });

@@ -10,6 +10,10 @@ class TransitStudioController extends Controller
 {
     public function store(Request $request)
     {
+        if ($request->user() && $request->user()->is_banned) {
+            return response()->json(['message' => 'Your account has been banned from submitting route drafts.'], 403);
+        }
+
         $validated = $request->validate([
             'city_id' => 'required|exists:cities,id',
             'name_ar' => 'required|string|max:255',

@@ -7,7 +7,6 @@ node_modules/
 build/
 
 # Package manager locks
-bun.lock
 pnpm-lock.yaml
 package-lock.json
 

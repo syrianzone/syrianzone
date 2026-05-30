@@ -13,7 +13,7 @@ class StaticSitesSeeder extends Seeder
     public function run(): void
     {
         $sites = [
-            ['slug' => 'alignment', 'name' => 'Legacy Alignment', 'path' => '/alignment/index.html'],
+            ['slug' => 'alignment', 'name' => 'Legacy Alignment', 'path' => '/alignment-assets/index.html'],
             ['slug' => 'bingo', 'name' => 'Bingo', 'path' => '/bingo/index.html'],
             ['slug' => 'board', 'name' => 'Issues Board', 'path' => '/board/index.html'],
             ['slug' => 'compass', 'name' => 'Political Compass', 'path' => '/compass/index.html'],
@@ -23,8 +23,8 @@ class StaticSitesSeeder extends Seeder
             ['slug' => 'legacytierlist', 'name' => 'Legacy Tierlist', 'path' => '/legacytierlist/index.html'],
             ['slug' => 'party', 'name' => 'Political Parties', 'path' => '/party/index.html'],
             ['slug' => 'population', 'name' => 'Population Stats', 'path' => '/population/index.html'],
-            ['slug' => 'syid', 'name' => 'Syrian Identity', 'path' => '/syid/index.html'],
-            ['slug' => 'syofficial', 'name' => 'Official Accounts', 'path' => '/syofficial/index.html'],
+            ['slug' => 'syid', 'name' => 'Syrian Identity', 'path' => '/syid-assets/index.html'],
+            ['slug' => 'syofficial', 'name' => 'Official Accounts', 'path' => '/syofficial-assets/index.html'],
             ['slug' => 'stats', 'name' => 'Statistics', 'path' => '/stats/index.html'],
             ['slug' => 'sites', 'name' => 'Sites', 'path' => '/sites/index.html'],
         ];

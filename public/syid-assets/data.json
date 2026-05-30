@@ -1,0 +1,94 @@
+{
+        "wallpapers": [
+        {
+            "title": "الشعار الرسمي",
+            "imageSrc": "/syid-assets/materials/abdalhade/IMG_9403.jpg",
+            "downloadJpg": "/syid-assets/materials/abdalhade/IMG_9403.jpg"
+        },        {
+            "title": "الشعار الرسمي مفرغ",
+            "imageSrc": "/syid-assets/materials/logo.ai.svg",
+            "downloadSvg": "/syid-assets/materials/logo.ai.svg"
+        },
+        {
+            "title": "النمط الأساسي",
+            "imageSrc": "/syid-assets/materials/pattern.svg",
+            "downloadSvg": "/syid-assets/materials/pattern.svg"
+        },
+        {
+            "title": "خلفية سطح المكتب",
+            "imageSrc": "/syid-assets/materials/الهوية السورية الجديدة - خلفية الكمبيوتر.png",
+            "downloadPng": "/syid-assets/materials/الهوية السورية الجديدة - خلفية الكمبيوتر.png",
+            "downloadSvg": "/syid-assets/materials/الهوية السورية الجديدة - خلفية الكمبيوتر.svg"
+        },
+        {
+            "title": "خلفية هاتف",
+            "imageSrc": "/syid-assets/materials/الهوية السورية الجديدة - خلفية هاتف.png",
+            "downloadPng": "/syid-assets/materials/الهوية السورية الجديدة - خلفية هاتف.png",
+            "downloadSvg": "/syid-assets/materials/الهوية السورية الجديدة - خلفية هاتف.svg"
+        },
+        {
+            "title": "خلفية من scrollexx",
+            "imageSrc": "/syid-assets/materials/scrollexx/scrollexx-wallpaper.png",
+            "downloadPng": "/syid-assets/materials/scrollexx/scrollexx-wallpaper.png",
+            "designerName": "@scrollexx",
+            "designerLink": "https://x.com/scrollexx"
+        },        {
+            "title": "خلفية من scrollexx",
+            "imageSrc": "/syid-assets/materials/scrollexx/scrollexx-wp-pc.png",
+            "downloadPng": "/syid-assets/materials/scrollexx/scrollexx-wp-pc.png",
+            "designerName": "@scrollexx",
+            "designerLink": "https://x.com/scrollexx"
+        },        {
+            "title": "خلفية من scrollexx",
+            "imageSrc": "/syid-assets/materials/scrollexx/scrollexx-wp-pc2.png",
+            "downloadPng": "/syid-assets/materials/scrollexx/scrollexx-wp-pc2.png",
+            "designerName": "@scrollexx",
+            "designerLink": "https://x.com/scrollexx"
+        },
+        {
+            "title": "خلفية",
+            "imageSrc": "/syid-assets/materials/abdalhade/62EB27B4-E270-4D5C-BB9B-A77748201F7D.jpg",
+            "downloadJpg": "/syid-assets/materials/abdalhade/62EB27B4-E270-4D5C-BB9B-A77748201F7D.jpg"
+        },
+        
+        {
+            "title": "خلفية",
+            "imageSrc": "/syid-assets/materials/abdalhade/IMG_9406.jpg",
+            "downloadJpg": "/syid-assets/materials/abdalhade/IMG_9406.jpg"
+        },
+        {
+            "title": "خلفية",
+            "imageSrc": "/syid-assets/materials/abdalhade/IMG_9407.jpg",
+            "downloadJpg": "/syid-assets/materials/abdalhade/IMG_9407.jpg"
+        },
+        {
+            "title": "خلفية",
+            "imageSrc": "/syid-assets/materials/abdalhade/IMG_9409.jpg",
+            "downloadJpg": "/syid-assets/materials/abdalhade/IMG_9409.jpg"
+        },
+        {
+            "title": "خلفية",
+            "imageSrc": "/syid-assets/materials/abdalhade/IMG_9410.jpg",
+            "downloadJpg": "./materials/abdalhade/IMG_9410.jpg"
+        },
+        {
+            "title": "خلفية",
+            "imageSrc": "/syid-assets/materials/abdalhade/IMG_9411.jpg",
+            "downloadJpg": "./materials/abdalhade/IMG_9411.jpg"
+        },
+        {
+            "title": "خلفية",
+            "imageSrc": "/syid-assets/materials/abdalhade/IMG_9412.jpg",
+            "downloadJpg": "/syid-assets/materials/abdalhade/IMG_9412.jpg"
+        },
+        {
+            "title": "خلفية",
+            "imageSrc": "/syid-assets/materials/abdalhade/IMG_9413.jpg",
+            "downloadJpg": "/syid-assets/materials/abdalhade/IMG_9413.jpg"
+        },
+        {
+            "title": "خلفية",
+            "imageSrc": "/syid-assets/materials/abdalhade/IMG_9414.jpg",
+            "downloadJpg": "/syid-assets/materials/abdalhade/IMG_9414.jpg"        }
+    ]
+} 

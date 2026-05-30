@@ -239,7 +239,7 @@ export default function Index({ initialData }: SyOfficialClientProps) {
                                     : 'bg-muted text-muted-foreground hover:bg-muted/80'
                                     }`}
                             >
-                                <img src={`/syofficial/assets/flags/${lang}.svg`} alt={lang} className="w-5 h-3.5 object-cover rounded shadow-sm" />
+                                <img src={`/syofficial-assets/assets/flags/${lang}.svg`} alt={lang} className="w-5 h-3.5 object-cover rounded shadow-sm" />
                                 <span className="uppercase">{lang}</span>
                             </button>
                         ))}
@@ -352,11 +352,11 @@ export default function Index({ initialData }: SyOfficialClientProps) {
                                                 <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow border-0 shadow-md bg-card group">
                                                     <div className="aspect-square w-full bg-muted relative overflow-hidden">
                                                         <img
-                                                            src={`/syofficial/${item.image}`}
+                                                            src={`/syofficial-assets/${item.image}`}
                                                             alt={language === 'ar' ? item.name_ar : item.name}
                                                             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                                                             onError={(e) => {
-                                                                (e.target as HTMLImageElement).src = '/syofficial/images/placeholder.png'; // Fallback
+                                                                (e.target as HTMLImageElement).src = '/syofficial-assets/images/placeholder.png'; // Fallback
                                                             }}
                                                         />
                                                     </div>
@@ -411,11 +411,11 @@ export default function Index({ initialData }: SyOfficialClientProps) {
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-10 h-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
                                                             <img
-                                                                src={`/syofficial/${item.image}`}
+                                                                src={`/syofficial-assets/${item.image}`}
                                                                 alt=""
                                                                 className="w-full h-full object-cover"
                                                                 onError={(e) => {
-                                                                    (e.target as HTMLImageElement).src = '/syofficial/images/placeholder.png';
+                                                                    (e.target as HTMLImageElement).src = '/syofficial-assets/images/placeholder.png';
                                                                 }}
                                                             />
                                                         </div>

@@ -229,7 +229,7 @@ export default function SyidClient() {
 
                         <div className="text-center mb-8">
                             <img
-                                src="/syid/materials/qomra2.webp"
+                                src="/syid-assets/materials/qomra2.webp"
                                 alt="خط قمرة"
                                 className="mx-auto max-w-full h-auto shadow-lg border-4 border-border rounded-xl"
                                 style={{ maxHeight: '300px' }}
@@ -320,7 +320,7 @@ export default function SyidClient() {
 
                         <div className="flex flex-col sm:flex-row justify-center gap-4 mt-8">
                             <a
-                                href="/syid/materials/العلم السوري بالنسب الصحيحة.png"
+                                href="/syid-assets/materials/العلم السوري بالنسب الصحيحة.png"
                                 download
                                 className="inline-flex items-center justify-center bg-[#428177] text-white font-bold h-12 px-8 rounded-xl transition-all hover:bg-[#054239] hover:-translate-y-0.5 hover:shadow-lg text-center"
                             >
@@ -328,7 +328,7 @@ export default function SyidClient() {
                                 تحميل PNG
                             </a>
                             <a
-                                href="/syid/materials/العلم السوري بالنسب الصحيحة.svg"
+                                href="/syid-assets/materials/العلم السوري بالنسب الصحيحة.svg"
                                 download
                                 className="inline-flex items-center justify-center bg-[#428177] text-white font-bold h-12 px-8 rounded-xl transition-all hover:bg-[#054239] hover:-translate-y-0.5 hover:shadow-lg text-center"
                             >
@@ -336,7 +336,7 @@ export default function SyidClient() {
                                 تحميل SVG
                             </a>
                             <a
-                                href="/syid/materials/علم سوريا.dwg"
+                                href="/syid-assets/materials/علم سوريا.dwg"
                                 download
                                 className="inline-flex items-center justify-center bg-secondary text-secondary-foreground font-bold h-12 px-8 rounded-xl transition-all hover:bg-secondary/80 border-2 border-border hover:-translate-y-0.5 hover:shadow-lg text-center"
                             >
@@ -353,7 +353,7 @@ export default function SyidClient() {
 
                         <div className="text-center mb-8">
                             <img
-                                src="/syid/materials/logo.ai.svg"
+                                src="/syid-assets/materials/logo.ai.svg"
                                 alt="شعار الهوية البصرية السورية"
                                 className="mx-auto max-w-full h-auto shadow-lg border-4 border-border rounded-xl"
                                 style={{ maxHeight: '200px' }}

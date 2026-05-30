@@ -83,8 +83,8 @@ export default function Dashboard({
   allDrafts = [],
   publishedRoutes = []
 }: DashboardProps) {
-  const [activeTab, setActiveTab] = useState<'profile' | 'submissions' | 'polls' | 'transit'>(
-    role === 'user' ? 'submissions' : role === 'transit_admin' ? 'transit' : 'polls'
+  const [activeTab, setActiveTab] = useState<'profile' | 'submissions' | 'polls'>(
+    role === 'user' ? 'submissions' : (role === 'transit_admin' ? 'profile' : 'polls')
   );
 
   // Profile Form States
@@ -296,17 +296,13 @@ export default function Dashboard({
 
               {/* Transit review Tab (Admins, Transit Admins, Superadmins) */}
               {(role === 'admin' || role === 'transit_admin' || role === 'superadmin') && (
-                <button
-                  onClick={() => setActiveTab('transit')}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition duration-150 w-full whitespace-nowrap lg:whitespace-normal ${
-                    activeTab === 'transit'
-                      ? 'bg-amber-500 text-[#0b0c10]'
-                      : 'bg-[#1f2833] hover:bg-gray-800 text-gray-300'
-                  }`}
+                <Link
+                  href="/transit/admin"
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-[#1f2833] hover:bg-gray-800 text-gray-300"
                 >
                   <Bus className="h-5 w-5" />
-                  مراجعة الخطوط المقترحة
-                </button>
+                  مراجعة وإدارة الخطوط المقترحة (الخارطة)
+                </Link>
               )}
 
               {/* Profile/Settings Tab (All users) */}
@@ -457,96 +453,7 @@ export default function Dashboard({
               </div>
             )}
 
-            {/* TRANSIT REVIEW TAB */}
-            {activeTab === 'transit' && (role === 'admin' || role === 'transit_admin' || role === 'superadmin') && (
-              <div>
-                <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                  <Bus className="text-amber-500 h-6 w-6" />
-                  مراجعة اقتراحات خطوط الحافلات العامة للمجتمع
-                </h2>
 
-                {localDrafts.length === 0 ? (
-                  <div className="text-center py-12 text-gray-500">
-                    <Clock className="h-16 w-16 mx-auto mb-4 opacity-25" />
-                    <p className="text-lg">لا توجد اقتراحات مسارات للخطوط حالياً في النظام.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {localDrafts.map(draft => (
-                      <div key={draft.id} className="p-5 bg-[#1f2833] rounded-xl border border-gray-800 flex flex-col gap-4">
-                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 border-b border-gray-850 pb-3">
-                          <div>
-                            <div className="flex items-center gap-3 flex-wrap">
-                              <span className="text-white font-bold text-lg">{draft.name_ar}</span>
-                              {draft.name_en && <span className="text-xs text-gray-400 font-mono">({draft.name_en})</span>}
-                              <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                                draft.status === 'approved' ? 'bg-green-950 text-green-400 border border-green-900' :
-                                draft.status === 'rejected' ? 'bg-red-950 text-red-400 border border-red-900' :
-                                'bg-amber-950 text-amber-400 border border-amber-900'
-                              }`}>
-                                {draft.status === 'approved' ? 'تم القبول' :
-                                 draft.status === 'rejected' ? 'تم الرفض' : 'قيد الانتظار'}
-                              </span>
-                            </div>
-                            <p className="text-gray-400 text-xs mt-1">المدينة: {draft.city?.name_ar ?? draft.city_id} · بواسطة: <span className="text-gray-300 font-bold">{draft.user?.name ?? 'مجهول'} ({draft.user?.email ?? 'بدون إيميل'})</span></p>
-                          </div>
-
-                          {/* Submitter banning button */}
-                          {draft.user && (
-                            <button
-                              onClick={() => handleToggleBan(draft.user!.id, draft.user!.is_banned)}
-                              className={`px-3 py-1 text-xs font-bold rounded-lg border flex items-center gap-1.5 transition ${
-                                draft.user.is_banned
-                                  ? 'bg-green-950 hover:bg-green-900 text-green-400 border-green-800'
-                                  : 'bg-red-950 hover:bg-red-900 text-red-400 border-red-900'
-                              }`}
-                            >
-                              {draft.user.is_banned ? (
-                                <>
-                                  <UserCheck className="h-3.5 w-3.5" />
-                                  إلغاء حظر المساهم
-                                </>
-                              ) : (
-                                <>
-                                  <Ban className="h-3.5 w-3.5" />
-                                  حظر المساهم
-                                </>
-                              )}
-                            </button>
-                          )}
-                        </div>
-
-                        {draft.notes && (
-                          <p className="text-sm text-gray-300 bg-gray-950/20 p-3 rounded border border-gray-850">ملاحظات المساهم: {draft.notes}</p>
-                        )}
-
-                        {draft.status === 'pending' && (
-                          <div className="flex gap-3 mt-1">
-                            <button
-                              onClick={() => handleApproveDraft(draft.id)}
-                              disabled={apiLoading === draft.id}
-                              className="px-4 py-2 bg-green-700 hover:bg-green-600 text-white font-bold text-xs rounded-lg transition"
-                            >
-                              {apiLoading === draft.id ? 'جاري النشر...' : 'موافقة ونشر المسار'}
-                            </button>
-                            <button
-                              onClick={() => openRejectDialog(draft.id)}
-                              className="px-4 py-2 bg-red-700 hover:bg-red-600 text-white font-bold text-xs rounded-lg transition"
-                            >
-                              رفض الاقتراح
-                            </button>
-                          </div>
-                        )}
-
-                        {draft.status === 'rejected' && draft.rejection_reason && (
-                          <p className="text-xs text-red-300 italic">سبب الرفض: {draft.rejection_reason}</p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
 
             {/* PROFILE TAB */}
             {activeTab === 'profile' && (

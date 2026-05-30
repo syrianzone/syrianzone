@@ -111,9 +111,7 @@ Route::get('/transit/studio', function () {
     return Inertia::render('Transit/studio/Index');
 });
 
-Route::get('/transit/admin', function () {
-    return redirect('/dashboard');
-})->middleware('auth');
+
 
 Route::get('/user', [AuthController::class, 'user']);
 Route::get('/auth/google', [AuthController::class, 'redirectToProvider'])->name('login');
@@ -164,6 +162,10 @@ Route::middleware('auth')->group(function () {
 
     // 3. Transit Admin Panel (accessible to core admins, transit admins, and superadmins)
     Route::middleware('transit_admin')->group(function () {
+        Route::get('/transit/admin', function () {
+            return Inertia::render('Transit/admin/Index');
+        });
+
         Route::post('/api/admin/users/{id}/toggle-ban', [DashboardController::class, 'toggleBan']);
 
         Route::prefix('api/v1')->group(function () {

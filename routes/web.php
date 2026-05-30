@@ -8,6 +8,10 @@ use App\Http\Controllers\HomeController;
 
 Route::get('/', [HomeController::class, 'index']);
 
+Route::get('/healthcheck', function () {
+    return response('OK', 200)->header('Content-Type', 'text/plain');
+});
+
 use App\Http\Controllers\SyOfficialController;
 use App\Http\Controllers\PollController;
 

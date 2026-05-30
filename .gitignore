@@ -1,16 +1,49 @@
+# Dependency directories
 node_modules/
+/vendor
+
+# Next.js build output
 .next/
 build/
-docs/
 
+# Package manager locks
 bun.lock
-.cursor
-.continue
 pnpm-lock.yaml
 package-lock.json
-next-env.d.ts
 
+# IDE and tool configs
+.cursor
+.continue
+.fleet
+.idea
+.nova
+.vscode
+.zed
+.editorconfig
+
+# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+server.log
+
+# Laravel specific
+/.phpunit.cache
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/storage/pail
+.env
+.env.backup
+.env.production
+.env.production.bak
+.phpactor.json
+.phpunit.result.cache
+Homestead.json
+Homestead.yaml
+/auth.json
+
+# OS specific
+.DS_Store

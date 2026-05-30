@@ -1,0 +1,233 @@
+/* Poll/TierList specific styles */
+
+/* Tier row colors - used in TierBoard */
+.tier-label-s {
+    background-color: #e11d48;
+}
+
+.tier-label-a {
+    background-color: #d97706;
+}
+
+.tier-label-b {
+    background-color: #059669;
+}
+
+.tier-label-c {
+    background-color: #0284c7;
+}
+
+.tier-label-d {
+    background-color: #7c3aed;
+}
+
+.tier-label-f {
+    background-color: #1f2937;
+}
+
+.tier-area-s {
+    background-color: #fef2f2;
+    border-color: #fecaca;
+}
+
+.tier-area-a {
+    background-color: #fffbeb;
+    border-color: #fde68a;
+}
+
+.tier-area-b {
+    background-color: #ecfdf5;
+    border-color: #a7f3d0;
+}
+
+.tier-area-c {
+    background-color: #f0f9ff;
+    border-color: #bae6fd;
+}
+
+.tier-area-d {
+    background-color: #f5f3ff;
+    border-color: #ddd6fe;
+}
+
+.tier-area-f {
+    background-color: #f9fafb;
+    border-color: #d1d5db;
+}
+
+/* Dark mode variants */
+[data-theme="dark"] .tier-area-s,
+[data-theme="dark"] .tier-area-a,
+[data-theme="dark"] .tier-area-b,
+[data-theme="dark"] .tier-area-c,
+[data-theme="dark"] .tier-area-d,
+[data-theme="dark"] .tier-area-f,
+.dark .tier-area-s,
+.dark .tier-area-a,
+.dark .tier-area-b,
+.dark .tier-area-c,
+.dark .tier-area-d,
+.dark .tier-area-f {
+    background-color: #0D1315;
+}
+
+/* Candidate cards in tier board */
+.tier-candidate-card {
+    width: 104px;
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.375rem;
+    background-color: #ffffff;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+[data-theme="dark"] .tier-candidate-card,
+.dark .tier-candidate-card {
+    background-color: #1f2937;
+    border-color: #374151;
+}
+
+.tier-candidate-card:hover {
+    background-color: #f9fafb;
+}
+
+[data-theme="dark"] .tier-candidate-card:hover,
+.dark .tier-candidate-card:hover {
+    background-color: #374151;
+}
+
+.tier-candidate-card.selected {
+    background-color: #7c3aed !important;
+    color: #ffffff !important;
+    outline: 2px solid #a78bfa;
+}
+
+.tier-candidate-card.active-select {
+    background-color: #2563eb !important;
+    color: #ffffff !important;
+    outline: 4px solid #60a5fa;
+    box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.3);
+}
+
+/* Tier modal popup */
+.tier-select-modal {
+    position: absolute;
+    background-color: #ffffff;
+    border-radius: 0.5rem;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    border: 2px solid #cbd5e1;
+    padding: 0.375rem;
+    transform: translate(-50%, -100%);
+    min-width: 160px;
+    max-width: 180px;
+    z-index: 50;
+}
+
+[data-theme="dark"] .tier-select-modal,
+.dark .tier-select-modal {
+    background-color: #1e293b;
+    border-color: #475569;
+}
+
+/* Category tabs */
+.category-tab {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 9999px;
+    border: 1px solid #e5e7eb;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+    background-color: #ffffff;
+    color: #000000;
+}
+
+[data-theme="dark"] .category-tab,
+.dark .category-tab {
+    border-color: #374151;
+    background-color: #111827;
+    color: #ffffff;
+}
+
+.category-tab.active {
+    background-color: #000000;
+    color: #ffffff;
+}
+
+[data-theme="dark"] .category-tab.active,
+.dark .category-tab.active {
+    background-color: #ffffff;
+    color: #000000;
+}
+
+/* Bank area */
+.tier-bank-area {
+    padding: 0.5rem;
+    background-color: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.375rem;
+    margin-bottom: 1rem;
+}
+
+[data-theme="dark"] .tier-bank-area,
+.dark .tier-bank-area {
+    background-color: #0D1315;
+    border-color: #27272a;
+}
+
+/* Multi-select bar */
+.tier-multi-select-bar {
+    margin-bottom: 0.75rem;
+    padding: 0.75rem;
+    background-color: #f3e8ff;
+    border: 2px solid #a78bfa;
+    border-radius: 0.5rem;
+}
+
+[data-theme="dark"] .tier-multi-select-bar,
+.dark .tier-multi-select-bar {
+    background-color: rgba(139, 92, 246, 0.2);
+}
+
+/* Submit and action buttons */
+.tier-submit-btn {
+    background-color: #15803d;
+    color: #ffffff;
+}
+
+.tier-submit-btn:hover {
+    background-color: #166534;
+}
+
+.tier-save-btn {
+    background-color: #1f2937;
+    color: #ffffff;
+}
+
+.tier-save-btn:hover {
+    background-color: #374151;
+}
+
+.tier-clear-btn {
+    background-color: #dc2626;
+    color: #ffffff;
+}
+
+.tier-clear-btn:hover {
+    background-color: #b91c1c;
+}
+
+/* Responsive adjustments */
+@media (min-width: 640px) {
+    .tier-candidate-card {
+        width: 120px;
+    }
+
+    .category-tab {
+        padding: 0.25rem 0.875rem;
+    }
+}

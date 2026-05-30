@@ -1,0 +1,94 @@
+data_type,source_id,source_url,date,note,city_name,population
+population,1,https://data.humdata.org/dataset/worldpop-population-counts-for-syrian-arab-republic,2020,Population within 15km radius,Damascus,4066006
+population,1,https://data.humdata.org/dataset/worldpop-population-counts-for-syrian-arab-republic,2020,Population within 15km radius,Aleppo,3086786
+population,1,https://data.humdata.org/dataset/worldpop-population-counts-for-syrian-arab-republic,2020,Population within 15km radius,Homs,1143619
+population,1,https://data.humdata.org/dataset/worldpop-population-counts-for-syrian-arab-republic,2020,Population within 15km radius,Lattakia,644135
+population,1,https://data.humdata.org/dataset/worldpop-population-counts-for-syrian-arab-republic,2020,Population within 15km radius,Hamah,601523
+population,1,https://data.humdata.org/dataset/worldpop-population-counts-for-syrian-arab-republic,2020,Population within 15km radius,Idlib,375865
+population,1,https://data.humdata.org/dataset/worldpop-population-counts-for-syrian-arab-republic,2020,Population within 15km radius,Dayr Az Zawr,360749
+population,1,https://data.humdata.org/dataset/worldpop-population-counts-for-syrian-arab-republic,2020,Population within 15km radius,Dara,313204
+population,1,https://data.humdata.org/dataset/worldpop-population-counts-for-syrian-arab-republic,2020,Population within 15km radius,Tartus,285049
+population,1,https://data.humdata.org/dataset/worldpop-population-counts-for-syrian-arab-republic,2020,Population within 15km radius,Al Ḥasakah,260319
+population,2,https://simplemaps.com/data/sy-cities,unknown,City proper population,Damascus,2584771
+population,2,https://simplemaps.com/data/sy-cities,unknown,City proper population,Aleppo,2003671
+population,2,https://simplemaps.com/data/sy-cities,unknown,City proper population,Homs,775404
+population,2,https://simplemaps.com/data/sy-cities,unknown,City proper population,Lattakia,700000
+population,2,https://simplemaps.com/data/sy-cities,unknown,City proper population,Hamah,696863
+population,2,https://simplemaps.com/data/sy-cities,unknown,City proper population,Ar Raqqah,299824
+population,2,https://simplemaps.com/data/sy-cities,unknown,City proper population,Dayr Az Zawr,271800
+population,2,https://simplemaps.com/data/sy-cities,unknown,City proper population,Al Ḥasakah,188160
+population,2,https://simplemaps.com/data/sy-cities,unknown,City proper population,Idlib,165000
+population,2,https://simplemaps.com/data/sy-cities,unknown,City proper population,Dara,146481
+population,2,https://simplemaps.com/data/sy-cities,unknown,City proper population,Tartus,89457
+population,2,https://simplemaps.com/data/sy-cities,unknown,City proper population,As Suwayda,64730
+population,2,https://simplemaps.com/data/sy-cities,unknown,City proper population,Quneitra,153
+population,3,https://data.who.int/countries/760,2023,WHO data for 2024 projections,Damascus,2400000
+population,4,https://www.geo-ref.net/en/syr.htm,2021,Governorate populations,Aleppo,4118000
+population,4,https://www.geo-ref.net/en/syr.htm,2021,Governorate populations,Al Ḥasakah,1865000
+population,4,https://www.geo-ref.net/en/syr.htm,2021,Governorate populations,Ar Raqqah,940000
+population,4,https://www.geo-ref.net/en/syr.htm,2021,Governorate populations,As Suwayda,540000
+population,4,https://www.geo-ref.net/en/syr.htm,2021,Governorate populations,Damascus,2103000
+population,4,https://www.geo-ref.net/en/syr.htm,2021,Governorate populations,Dara,966000
+population,4,https://www.geo-ref.net/en/syr.htm,2021,Governorate populations,Dayr Az Zawr,1267000
+population,4,https://www.geo-ref.net/en/syr.htm,2021,Governorate populations,Hamah,2147000
+population,4,https://www.geo-ref.net/en/syr.htm,2021,Governorate populations,Homs,1790000
+population,4,https://www.geo-ref.net/en/syr.htm,2021,Governorate populations,Idlib,1172000
+population,4,https://www.geo-ref.net/en/syr.htm,2021,Governorate populations,Lattakia,1346000
+population,4,https://www.geo-ref.net/en/syr.htm,2021,Governorate populations,Quneitra,124000
+population,4,https://www.geo-ref.net/en/syr.htm,2021,Governorate populations,Rif Dimashq,3372000
+population,4,https://www.geo-ref.net/en/syr.htm,2021,Governorate populations,Tartus,1172000
+population,5,https://www.worldometers.info/world-population/syria-population/,2025,City population estimates,Aleppo,2098210
+population,5,https://www.worldometers.info/world-population/syria-population/,2025,City population estimates,Damascus,1569394
+population,5,https://www.worldometers.info/world-population/syria-population/,2025,City population estimates,Homs,775404
+population,5,https://www.worldometers.info/world-population/syria-population/,2025,City population estimates,Lattakia,709000
+population,5,https://www.worldometers.info/world-population/syria-population/,2025,City population estimates,Ar Raqqah,531952
+population,5,https://www.worldometers.info/world-population/syria-population/,2025,City population estimates,Hamah,460602
+population,5,https://www.worldometers.info/world-population/syria-population/,2025,City population estimates,Tartus,458327
+population,5,https://www.worldometers.info/world-population/syria-population/,2025,City population estimates,Al Ḥasakah,422445
+population,5,https://www.worldometers.info/world-population/syria-population/,2025,City population estimates,Dayr Az Zawr,271800
+population,5,https://www.worldometers.info/world-population/syria-population/,2025,City population estimates,Idlib,128840
+population,5,https://www.worldometers.info/world-population/syria-population/,2025,City population estimates,Dara,97969
+population,5,https://www.worldometers.info/world-population/syria-population/,2025,City population estimates,As Suwayda,59052
+population,5,https://www.worldometers.info/world-population/syria-population/,2025,City population estimates,Quneitra,36143
+idp,8,https://data.humdata.org/dataset/syria-idp-movements-and-spontaneous-return-movements,2024-09-30,OCHA UNHCR,Aleppo,2044468
+idp,8,https://data.humdata.org/dataset/syria-idp-movements-and-spontaneous-return-movements,2024-09-30,OCHA UNHCR,Al Ḥasakah,1010782
+idp,8,https://data.humdata.org/dataset/syria-idp-movements-and-spontaneous-return-movements,2024-09-30,OCHA UNHCR,Ḩamāh,712104
+idp,8,https://data.humdata.org/dataset/syria-idp-movements-and-spontaneous-return-movements,2024-09-30,OCHA UNHCR,Rif Dimashq,627403
+idp,8,https://data.humdata.org/dataset/syria-idp-movements-and-spontaneous-return-movements,2024-09-30,OCHA UNHCR,Damascus,588781
+idp,8,https://data.humdata.org/dataset/syria-idp-movements-and-spontaneous-return-movements,2024-09-30,OCHA UNHCR,Ţarţūs,529433
+idp,8,https://data.humdata.org/dataset/syria-idp-movements-and-spontaneous-return-movements,2024-09-30,OCHA UNHCR,Ar Raqqah,471210
+idp,8,https://data.humdata.org/dataset/syria-idp-movements-and-spontaneous-return-movements,2024-09-30,OCHA UNHCR,Idlib,428416
+idp,8,https://data.humdata.org/dataset/syria-idp-movements-and-spontaneous-return-movements,2024-09-30,OCHA UNHCR,Homs,350588
+idp,8,https://data.humdata.org/dataset/syria-idp-movements-and-spontaneous-return-movements,2024-09-30,OCHA UNHCR,Dayr Az Zawr,279201
+idp,8,https://data.humdata.org/dataset/syria-idp-movements-and-spontaneous-return-movements,2024-09-30,OCHA UNHCR,Lattakia,217000
+idp,8,https://data.humdata.org/dataset/syria-idp-movements-and-spontaneous-return-movements,2024-09-30,OCHA UNHCR,As Suwayda',84601
+idp,8,https://data.humdata.org/dataset/syria-idp-movements-and-spontaneous-return-movements,2024-09-30,OCHA UNHCR,Dar`a,53307
+idp,8,https://data.humdata.org/dataset/syria-idp-movements-and-spontaneous-return-movements,2024-09-30,OCHA UNHCR,Quneitra,11515
+idp_returnees,9,https://data.unhcr.org/en/situations/syria,2025-10-02,UNHCR,Damascus,188417
+idp_returnees,9,https://data.unhcr.org/en/situations/syria,2025-10-02,UNHCR,Aleppo,170042
+idp_returnees,9,https://data.unhcr.org/en/situations/syria,2025-10-02,UNHCR,Idlib,151112
+idp_returnees,9,https://data.unhcr.org/en/situations/syria,2025-10-02,UNHCR,Homs,138706
+idp_returnees,9,https://data.unhcr.org/en/situations/syria,2025-10-02,UNHCR,Rif Dimashq,134883
+idp_returnees,9,https://data.unhcr.org/en/situations/syria,2025-10-02,UNHCR,Dar`a,98881
+idp_returnees,9,https://data.unhcr.org/en/situations/syria,2025-10-02,UNHCR,Ḩamāh,97380
+idp_returnees,9,https://data.unhcr.org/en/situations/syria,2025-10-02,UNHCR,Lattakia,22599
+idp_returnees,9,https://data.unhcr.org/en/situations/syria,2025-10-02,UNHCR,Dayr Az Zawr,22492
+idp_returnees,9,https://data.unhcr.org/en/situations/syria,2025-10-02,UNHCR,Ar Raqqah,19032
+idp_returnees,9,https://data.unhcr.org/en/situations/syria,2025-10-02,UNHCR,Quneitra,15206
+idp_returnees,9,https://data.unhcr.org/en/situations/syria,2025-10-02,UNHCR,Al Ḥasakah,11671
+idp_returnees,9,https://data.unhcr.org/en/situations/syria,2025-10-02,UNHCR,Ţarţūs,8258
+idp_returnees,9,https://data.unhcr.org/en/situations/syria,2025-10-02,UNHCR,As Suwayda',4045
+idp_returnees,10,https://data.unhcr.org/en/situations/syria,2025-12-18,UNHCR Refugee Returnees from abroad,Damascus,230905
+idp_returnees,10,https://data.unhcr.org/en/situations/syria,2025-12-18,UNHCR Refugee Returnees from abroad,Aleppo,193079
+idp_returnees,10,https://data.unhcr.org/en/situations/syria,2025-12-18,UNHCR Refugee Returnees from abroad,Idlib,185276
+idp_returnees,10,https://data.unhcr.org/en/situations/syria,2025-12-18,UNHCR Refugee Returnees from abroad,Rif Dimashq,161457
+idp_returnees,10,https://data.unhcr.org/en/situations/syria,2025-12-18,UNHCR Refugee Returnees from abroad,Homs,160034
+idp_returnees,10,https://data.unhcr.org/en/situations/syria,2025-12-18,UNHCR Refugee Returnees from abroad,Ḩamāh,122521
+idp_returnees,10,https://data.unhcr.org/en/situations/syria,2025-12-18,UNHCR Refugee Returnees from abroad,Dar`a,110746
+idp_returnees,10,https://data.unhcr.org/en/situations/syria,2025-12-18,UNHCR Refugee Returnees from abroad,Lattakia,25956
+idp_returnees,10,https://data.unhcr.org/en/situations/syria,2025-12-18,UNHCR Refugee Returnees from abroad,Dayr Az Zawr,25287
+idp_returnees,10,https://data.unhcr.org/en/situations/syria,2025-12-18,UNHCR Refugee Returnees from abroad,Quneitra,20998
+idp_returnees,10,https://data.unhcr.org/en/situations/syria,2025-12-18,UNHCR Refugee Returnees from abroad,Ar Raqqah,19761
+idp_returnees,10,https://data.unhcr.org/en/situations/syria,2025-12-18,UNHCR Refugee Returnees from abroad,Al Ḥasakah,12873
+idp_returnees,10,https://data.unhcr.org/en/situations/syria,2025-12-18,UNHCR Refugee Returnees from abroad,Ţarţūs,8944
+idp_returnees,10,https://data.unhcr.org/en/situations/syria,2025-12-18,UNHCR Refugee Returnees from abroad,As Suwayda',4096

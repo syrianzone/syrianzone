@@ -16,6 +16,9 @@ import {
   ListOrdered,
   Link as LinkIcon,
   Newspaper,
+  Bus,
+  Smartphone,
+  MessageSquareCode,
 } from 'lucide-react';
 
 import { useAuth } from '@/Contexts/AuthContext';
@@ -53,12 +56,15 @@ const navLinks = [
   { href: '/house', text: 'المجلس التشريعي', icon: Landmark },
   { href: '/compass', text: 'البوصلة السياسية', icon: Compass },
   { href: '/alignment', text: 'بوصلة مخصصة', icon: Crosshair },
-  { href: 'https://food.syrian.zone', text: 'وصفاتنا', icon: Utensils },
+  { href: '/govapps', text: 'تطبيقات الحكومة', icon: Smartphone },
+  { href: '/transit', text: 'ترانزيت', icon: Bus },
 ];
 
 const externalLinks = [
   { href: 'https://news.jard.chat', text: 'أخبار سوريا', icon: Newspaper },
   { href: 'https://wrraq.com', text: 'المنتدى', icon: MessageSquare },
+  { href: 'https://food.syrian.zone', text: 'وصفاتنا', icon: Utensils },
+  { href: 'https://discord.gg/NqE8849VzA', text: 'مجتمع كوديكس', icon: MessageSquareCode },
   { href: 'https://chromewebstore.google.com/detail/syrian-flag-replacer/dngipobppehfhfggmbdiiiodgcibdeog', text: 'مبدل العلم', isFlag: true },
 ];
 

@@ -39,7 +39,8 @@ Route::prefix('v1')->group(function () {
     Route::get('/search', [\App\Http\Controllers\Api\V1\TransitController::class, 'search']);
 
     // Transit Studio — open for community contributions
-    Route::post('/studio/routes', [\App\Http\Controllers\TransitStudioController::class, 'store']);
+    Route::post('/studio/routes', [\App\Http\Controllers\TransitStudioController::class, 'store'])
+        ->middleware('throttle:5,1');
 
 
 });

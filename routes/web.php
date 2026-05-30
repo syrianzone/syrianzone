@@ -113,7 +113,7 @@ Route::get('/transit/studio', function () {
 
 Route::get('/transit/admin', function () {
     return Inertia::render('Transit/admin/Index');
-})->middleware('auth');
+})->middleware(['auth', 'admin']);
 
 Route::get('/user', [AuthController::class, 'user']);
 Route::get('/auth/google', [AuthController::class, 'redirectToProvider'])->name('login');
@@ -122,13 +122,6 @@ Route::post('/logout', [AuthController::class, 'logout']);
 
 use App\Http\Controllers\AdminUserController;
 Route::middleware('auth')->group(function () {
-    // Polls Admin Routes
-    Route::get('/admin/polls', [PollController::class, 'renderIndex']);
-    Route::get('/admin/polls/create', [PollController::class, 'adminCreate']);
-    Route::get('/admin/polls/{id}/edit', [PollController::class, 'adminEdit']);
-
-
-
     Route::prefix('api')->group(function () {
         Route::get('/user', function (\Illuminate\Http\Request $request) {
             return $request->user();
@@ -139,27 +132,36 @@ Route::middleware('auth')->group(function () {
             Route::post('/admins', [AdminUserController::class, 'store']);
             Route::delete('/admins/{id}', [AdminUserController::class, 'destroy']);
         });
+    });
 
-        Route::post('/polls', [PollController::class, 'store']);
-        Route::put('/polls/{id}', [PollController::class, 'update']);
-        Route::delete('/polls/{id}', [PollController::class, 'destroy']);
+    Route::middleware('admin')->group(function () {
+        // Polls Admin Routes
+        Route::get('/admin/polls', [PollController::class, 'renderIndex']);
+        Route::get('/admin/polls/create', [PollController::class, 'adminCreate']);
+        Route::get('/admin/polls/{id}/edit', [PollController::class, 'adminEdit']);
 
-        Route::apiResource('candidate-groups', \App\Http\Controllers\CandidateGroupController::class);
-        Route::post('/candidate-groups/reorder', [\App\Http\Controllers\CandidateGroupController::class, 'reorder']);
-        Route::post('/candidate-groups/{id}/default', [\App\Http\Controllers\CandidateGroupController::class, 'setDefault']);
+        Route::prefix('api')->group(function () {
+            Route::post('/polls', [PollController::class, 'store']);
+            Route::put('/polls/{id}', [PollController::class, 'update']);
+            Route::delete('/polls/{id}', [PollController::class, 'destroy']);
 
-        Route::apiResource('candidates', \App\Http\Controllers\CandidateController::class)->except(['index', 'show']);
-        Route::patch('/candidates/{id}/archive', [\App\Http\Controllers\CandidateController::class, 'archive']);
-        Route::patch('/candidates/{id}/restore', [\App\Http\Controllers\CandidateController::class, 'restore']);
+            Route::apiResource('candidate-groups', \App\Http\Controllers\CandidateGroupController::class);
+            Route::post('/candidate-groups/reorder', [\App\Http\Controllers\CandidateGroupController::class, 'reorder']);
+            Route::post('/candidate-groups/{id}/default', [\App\Http\Controllers\CandidateGroupController::class, 'setDefault']);
 
-        Route::post('/sites', [\App\Http\Controllers\SiteController::class, 'store']);
-        Route::put('/sites/{id}', [\App\Http\Controllers\SiteController::class, 'update']);
-        Route::delete('/sites/{id}', [\App\Http\Controllers\SiteController::class, 'destroy']);
+            Route::apiResource('candidates', \App\Http\Controllers\CandidateController::class)->except(['index', 'show']);
+            Route::patch('/candidates/{id}/archive', [\App\Http\Controllers\CandidateController::class, 'archive']);
+            Route::patch('/candidates/{id}/restore', [\App\Http\Controllers\CandidateController::class, 'restore']);
 
-        Route::prefix('v1')->group(function () {
-            Route::get('/admin/route-drafts', [\App\Http\Controllers\TransitAdminController::class, 'index']);
-            Route::post('/admin/route-drafts/{id}/approve', [\App\Http\Controllers\TransitAdminController::class, 'approve']);
-            Route::post('/admin/route-drafts/{id}/reject', [\App\Http\Controllers\TransitAdminController::class, 'reject']);
+            Route::post('/sites', [\App\Http\Controllers\SiteController::class, 'store']);
+            Route::put('/sites/{id}', [\App\Http\Controllers\SiteController::class, 'update']);
+            Route::delete('/sites/{id}', [\App\Http\Controllers\SiteController::class, 'destroy']);
+
+            Route::prefix('v1')->group(function () {
+                Route::get('/admin/route-drafts', [\App\Http\Controllers\TransitAdminController::class, 'index']);
+                Route::post('/admin/route-drafts/{id}/approve', [\App\Http\Controllers\TransitAdminController::class, 'approve']);
+                Route::post('/admin/route-drafts/{id}/reject', [\App\Http\Controllers\TransitAdminController::class, 'reject']);
+            });
         });
     });
 });

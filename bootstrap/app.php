@@ -19,7 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\HandleInertiaRequests::class,
         ]);
         $middleware->alias([
-            'transit.admin' => \App\Http\Middleware\TransitAdminAuth::class,
+            'admin'         => \App\Http\Middleware\Admin::class,
             'superadmin'    => \App\Http\Middleware\SuperAdmin::class,
         ]);
         $middleware->statefulApi();

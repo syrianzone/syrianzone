@@ -88,17 +88,11 @@ class PollController extends Controller
 
     public function adminCreate(Request $request)
     {
-        if (!$request->user() || ($request->user()->role !== 'admin' && $request->user()->role !== 'superadmin')) {
-            abort(403, 'Unauthorized.');
-        }
         return Inertia::render('Admin/Polls/Create');
     }
 
     public function adminEdit(Request $request, $id)
     {
-        if (!$request->user() || ($request->user()->role !== 'admin' && $request->user()->role !== 'superadmin')) {
-            abort(403, 'Unauthorized.');
-        }
         $poll = Poll::findOrFail($id);
         
         $candidates = $poll->candidates()

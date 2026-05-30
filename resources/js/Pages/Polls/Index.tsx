@@ -1,6 +1,5 @@
-import React, { useEffect } from 'react';
-import { router, Link } from '@inertiajs/react';
-import { useAuth } from '@/Contexts/AuthContext';
+import React from 'react';
+import { Link } from '@inertiajs/react';
 import { Button } from '@/Components/ui/button';
 import { Edit } from 'lucide-react';
 import MainLayout from '@/Layouts/MainLayout';
@@ -17,25 +16,6 @@ interface PollsPageProps {
 }
 
 export default function Index({ polls = [] }: PollsPageProps) {
-    const { isAdmin, loading: authLoading } = useAuth();
-
-    // Redirect non-admins to homepage
-    useEffect(() => {
-        if (!authLoading && !isAdmin) {
-            router.replace('/');
-        }
-    }, [isAdmin, authLoading]);
-
-    if (authLoading || !isAdmin) {
-        return (
-            <MainLayout>
-                <div className="min-h-screen bg-background flex items-center justify-center">
-                    <div className="text-center text-muted-foreground">Loading...</div>
-                </div>
-            </MainLayout>
-        );
-    }
-
     return (
         <MainLayout>
             <div className="min-h-screen bg-background text-foreground">

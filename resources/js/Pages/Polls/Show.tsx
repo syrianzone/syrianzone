@@ -1,6 +1,5 @@
 import React from 'react';
-import { Link } from '@inertiajs/react';
-import { useAuth } from '@/Contexts/AuthContext';
+import { Link, usePage } from '@inertiajs/react';
 import { Button } from '@/Components/ui/button';
 import { Edit, BarChart3Icon } from 'lucide-react';
 import TierBoard from "@/Components/poll/TierBoard";
@@ -35,7 +34,8 @@ interface PollShowProps {
 }
 
 export default function Show({ poll, candidates, groups, voteDay }: PollShowProps) {
-    const { isAdmin } = useAuth();
+    const { auth } = usePage().props as any;
+    const isAdmin = !!auth?.user;
 
     return (
         <MainLayout>

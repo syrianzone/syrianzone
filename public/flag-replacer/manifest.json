@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Twitter SVG Syrian Flag Replacer",
+  "version": "1.0",
+  "description": "Replaces remote Twitter flag emoji SVGs with local versions",
+  "icons": {
+    "128": "images/icon128.svg"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.twitter.com/*", "*://*.x.com/*"],
+      "js": ["content.js"]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["1f1f8-1f1fe.svg"],
+      "matches": ["*://*.twitter.com/*", "*://*.x.com/*"]
+    }
+  ]
+}

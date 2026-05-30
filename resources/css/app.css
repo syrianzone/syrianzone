@@ -1,0 +1,328 @@
+@import "tailwindcss";
+@import "./poll.css";
+
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, [data-theme="dark-blue"], [data-theme="dark-blue"] *, [data-theme="dark-purple"], [data-theme="dark-purple"] *, [data-theme="dark-green"], [data-theme="dark-green"] *, [data-theme="high-contrast"], [data-theme="high-contrast"] *, [data-theme="damascus-rose"], [data-theme="damascus-rose"] *, .dark, .dark *));
+
+@theme {
+    --font-sans: 'IBM Plex Sans Arabic', sans-serif;
+
+    /* Theme mappings */
+    --color-background: hsl(var(--background));
+    --color-foreground: hsl(var(--foreground));
+    --color-card: hsl(var(--card));
+    --color-card-foreground: hsl(var(--card-foreground));
+    --color-popover: hsl(var(--popover));
+    --color-popover-foreground: hsl(var(--popover-foreground));
+    --color-primary: hsl(var(--primary));
+    --color-primary-foreground: hsl(var(--primary-foreground));
+    --color-secondary: hsl(var(--secondary));
+    --color-secondary-foreground: hsl(var(--secondary-foreground));
+    --color-muted: hsl(var(--muted));
+    --color-muted-foreground: hsl(var(--muted-foreground));
+    --color-accent: hsl(var(--accent));
+    --color-accent-foreground: hsl(var(--accent-foreground));
+    --color-destructive: hsl(var(--destructive));
+    --color-destructive-foreground: hsl(var(--destructive-foreground));
+    --color-border: hsl(var(--border));
+    --color-input: hsl(var(--input));
+    --color-ring: hsl(var(--ring));
+    --color-chart-1: hsl(var(--chart-1));
+    --color-chart-2: hsl(var(--chart-2));
+    --color-chart-3: hsl(var(--chart-3));
+    --color-chart-4: hsl(var(--chart-4));
+    --color-chart-5: hsl(var(--chart-5));
+    --color-sidebar: hsl(var(--sidebar));
+    --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+    --color-sidebar-primary: hsl(var(--sidebar-primary));
+    --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+    --color-sidebar-accent: hsl(var(--sidebar-accent));
+    --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+    --color-sidebar-border: hsl(var(--sidebar-border));
+    --color-sidebar-ring: hsl(var(--sidebar-ring));
+
+    --radius-lg: var(--radius);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-sm: calc(var(--radius) - 4px);
+
+    --animate-accordion-down: accordion-down 0.2s ease-out;
+    --animate-accordion-up: accordion-up 0.2s ease-out;
+
+    @keyframes accordion-down {
+        from {
+            height: 0
+        }
+
+        to {
+            height: var(--radix-accordion-content-height)
+        }
+    }
+
+    @keyframes accordion-up {
+        from {
+            height: var(--radix-accordion-content-height)
+        }
+
+        to {
+            height: 0
+        }
+    }
+}
+
+/* Main theme variables */
+:root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 105 15.2% 36.1%;
+    /* Reseda Green as default primary */
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 356 45.2% 45.1%;
+    /* Redwood */
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 105 15.2% 36.1%;
+    --radius: 0.5rem;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+
+    /* Legacy Alias Support */
+    --sz-color-primary: 105 15.2% 36.1%;
+    --sz-color-accent: 356 45.2% 45.1%;
+}
+
+[data-theme="jasmine"] {
+    --background: 45 60% 97%;
+    --foreground: 30 25% 12%;
+    --card: 45 50% 100%;
+    --card-foreground: 30 25% 12%;
+    --popover: 45 55% 98%;
+    --popover-foreground: 30 25% 12%;
+    --primary: 38 85% 45%;
+    /* Deep jasmine gold */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 42 35% 92%;
+    --secondary-foreground: 30 25% 15%;
+    --muted: 42 30% 93%;
+    --muted-foreground: 30 18% 42%;
+    --accent: 42 40% 90%;
+    --accent-foreground: 30 25% 15%;
+    --destructive: 356 45.2% 45.1%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 38 30% 85%;
+    --input: 38 30% 88%;
+    --ring: 38 85% 45%;
+    --radius: 0.5rem;
+    --chart-1: 38 85% 45%;
+    --chart-2: 105 30% 42%;
+    --chart-3: 356 45% 45%;
+    --chart-4: 200 60% 48%;
+    --chart-5: 280 50% 52%;
+    --sidebar: 42 40% 95%;
+    --sidebar-foreground: 30 25% 12%;
+    --sidebar-primary: 38 85% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 42 35% 90%;
+    --sidebar-accent-foreground: 30 25% 12%;
+    --sidebar-border: 38 30% 82%;
+    --sidebar-ring: 38 85% 45%;
+    --sz-color-primary: 38 85% 45%;
+    --sz-color-accent: 356 45.2% 45.1%;
+}
+
+
+[data-theme="dark"],
+[data-theme="dark-blue"],
+[data-theme="dark-purple"],
+[data-theme="dark-green"],
+[data-theme="high-contrast"],
+[data-theme="damascus-rose"],
+.dark {
+    --background: 203 13.3% 11.8%;
+    /* #1A1F22 */
+    --foreground: 0 0% 100%;
+    --card: 195 23.5% 6.7%;
+    /* Exact #0D1315 */
+    --card-foreground: 0 0% 100%;
+    --popover: 200 15% 8%;
+    --popover-foreground: 0 0% 100%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 200 15% 12%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 195 23.5% 10%;
+    --muted-foreground: 200 10% 65%;
+    --accent: 200 15% 12%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 356 45.2% 45.1%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 100% / 10%;
+    --input: 0 0% 100% / 10%;
+    --ring: 105 15.2% 36.1%;
+    --chart-1: 105 15.2% 36.1%;
+    --chart-2: 356 45.2% 45.1%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    --sidebar: 200 15% 5%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 105 15.2% 36.1%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 195 23.5% 12%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 195 23.5% 15%;
+    --sidebar-ring: 105 15.2% 36.1%;
+}
+
+
+[data-theme="dark"],
+.dark {
+    --primary: 105 15.2% 36.1%;
+    /* Reseda Green */
+    --ring: 105 15.2% 36.1%;
+    --sz-color-primary: 105 15.2% 36.1%;
+}
+
+[data-theme="dark-blue"] {
+    --primary: 217 91% 60%;
+    --ring: 217 91% 60%;
+    --sz-color-primary: 217 91% 60%;
+}
+
+[data-theme="dark-purple"] {
+    --primary: 291 64% 42%;
+    --ring: 291 64% 42%;
+    --sz-color-primary: 291 64% 42%;
+}
+
+[data-theme="dark-green"] {
+    --primary: 122 39% 49%;
+    --ring: 122 39% 49%;
+    --sz-color-primary: 122 39% 49%;
+}
+
+[data-theme="high-contrast"] {
+    --primary: 120 100% 50%;
+    --border: 120 100% 50%;
+    --sz-color-primary: 120 100% 50%;
+}
+
+[data-theme="damascus-rose"] {
+    /* Rich warm rose-black — like dried rose petals */
+    --background: 345 28% 8%;
+    --foreground: 10 15% 96%;
+
+    /* Deep wine card surface */
+    --card: 345 32% 5.5%;
+    --card-foreground: 10 15% 96%;
+
+    --popover: 345 28% 7%;
+    --popover-foreground: 10 15% 96%;
+
+    /* Blooming rose — the heart of the theme */
+    --primary: 340 68% 58%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Warm plum secondary */
+    --secondary: 345 22% 13%;
+    --secondary-foreground: 10 15% 95%;
+
+    --muted: 345 22% 11%;
+    /* Dusty rose muted text — warm, not cold */
+    --muted-foreground: 340 18% 62%;
+
+    --accent: 345 22% 15%;
+    --accent-foreground: 10 15% 95%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Warm rose borders with soft glow */
+    --border: 340 35% 20%;
+    --input: 340 30% 18%;
+    --ring: 340 68% 58%;
+
+    /* Charts — rose palette */
+    --chart-1: 340 68% 58%;
+    /* Rose */
+    --chart-2: 38 75% 52%;
+    /* Gold */
+    --chart-3: 15 65% 48%;
+    /* Brick red */
+    --chart-4: 280 45% 55%;
+    /* Lavender */
+    --chart-5: 170 40% 45%;
+    /* Muted teal */
+
+    /* Sidebar — even deeper rose-black */
+    --sidebar: 345 35% 4%;
+    --sidebar-foreground: 10 15% 96%;
+    --sidebar-primary: 340 68% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 345 28% 11%;
+    --sidebar-accent-foreground: 10 15% 96%;
+    --sidebar-border: 340 30% 16%;
+    --sidebar-ring: 340 68% 58%;
+
+    --sz-color-primary: 340 68% 58%;
+    --sz-color-accent: 38 75% 52%;
+}
+
+@layer base {
+    * {
+        @apply border-border outline-ring/50;
+    }
+
+    body {
+        background-color: hsl(var(--background));
+        color: hsl(var(--foreground));
+        font-family: 'IBM Plex Sans Arabic', sans-serif;
+    }
+
+    button, 
+    [role="button"],
+    .button {
+        cursor: pointer;
+    }
+}
+
+html {
+    direction: rtl;
+}
+
+/* Utilities */
+@layer utilities {
+    .mx-auto {
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .text-center {
+        text-align: center;
+    }
+
+    .items-center {
+        align-items: center;
+    }
+
+    .justify-center {
+        justify-content: center;
+    }
+
+    .flex {
+        display: flex;
+    }
+}

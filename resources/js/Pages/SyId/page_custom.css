@@ -1,0 +1,545 @@
+/* Syid-specific styling */
+:root {
+    --sz-color-primary: #556A4E;
+    --sz-color-accent: #A73F46;
+    --sz-color-surface: #FFFFFF;
+    --sz-color-ink: #0D1315;
+}
+
+/* Remove forced squarish overrides to follow shadcn style */
+/* The global --radius variable from globals.css will now be respected */
+
+/* Main container with theme-consistent border */
+.sy-custom-page .container.mx-auto.my-8.bg-white {
+    border: 1px solid var(--border);
+}
+
+/* Custom styles for the syid elements while respecting global rounding */
+.sy-custom-page #backToTop {
+    border: 1px solid var(--border);
+}
+
+/* Color palette sections */
+.sy-custom-page .flex.rounded-lg {
+    border: 1px solid var(--border);
+}
+
+/* Ensure footer follows theme */
+.sy-custom-page .footer {
+    background-color: var(--background);
+    border-top: 1px solid var(--border);
+}
+
+.sy-custom-page .footer-link {
+    color: var(--foreground);
+    transition: color 0.2s ease;
+}
+
+.sy-custom-page .footer-link:hover {
+    color: var(--sz-color-primary);
+}
+
+/* Diagram specific styles - keeping these as they are functional */
+.flag-diagram-wrapper {
+    direction: ltr;
+}
+
+.content-wrapper {
+    max-width: 1270px;
+    margin: 2rem auto;
+    background: var(--bg-primary);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.weight-light {
+    font-weight: 300;
+}
+
+.weight-regular {
+    font-weight: 400;
+}
+
+.weight-medium {
+    font-weight: 500;
+}
+
+.weight-bold {
+    font-weight: 700;
+}
+
+.weight-black {
+    font-weight: 900;
+}
+
+.download-list {
+    margin-bottom: 20px;
+}
+
+.download-item {
+    background: var(--bg-primary);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 15px;
+    transition: transform 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.download-item:hover {
+    transform: translateY(-2px);
+}
+
+.font-weight-info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.font-weight-info h4 {
+    font-size: 1.3em;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.font-weight-sample {
+    font-size: 1.5em;
+    color: var(--text-secondary);
+    margin-bottom: 5px;
+}
+
+.weight-technical {
+    font-size: 0.9em;
+    color: var(--text-secondary);
+}
+
+.format-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.format-link {
+    background: var(--accent-color);
+    color: var(--bg-primary);
+    padding: 6px 12px;
+    border-radius: 20px;
+    text-decoration: none;
+    font-size: 0.85em;
+    font-weight: 500;
+    transition: background 0.2s ease;
+}
+
+.format-link:hover {
+    background: var(--accent-hover);
+}
+
+#notification {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--accent-color);
+    color: #fff;
+    padding: 15px 25px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+#notification.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+
+
+/* Responsive */
+@media (max-width: 768px) {
+    .header h1 {
+        font-size: 2.2em;
+    }
+
+    .section-title {
+        font-size: 2em;
+    }
+
+    .back-to-top {
+        right: 15px;
+        bottom: 15px;
+        padding: 8px;
+    }
+}
+
+/* Added for flag proportions diagram */
+.flag-diagram-wrapper {
+    position: relative;
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 4rem 5rem;
+    font-family: "IBM Plex Sans Arabic", sans-serif;
+    direction: ltr;
+    /* Ensure LTR for the diagram positioning */
+}
+
+.flag-diagram-container {
+    position: relative;
+    width: 100%;
+    /* Aspect ratio 36:24 -> 2:3 -> 66.67% */
+    padding-bottom: 66.67%;
+}
+
+.flag-visual {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border-color);
+}
+
+.flag-visual .stripe {
+    flex: 1;
+}
+
+.flag-visual .green {
+    background-color: #007A3D;
+}
+
+.flag-visual .black {
+    background-color: #161616;
+}
+
+.flag-visual .white {
+    background-color: #ffffff;
+    position: relative;
+    /* Changed from flex to relative for absolute positioning of stars */
+}
+
+.star {
+    position: absolute;
+    top: 50%;
+    height: 75%;
+    /* Star height is 6/8 = 75% of the white stripe height */
+    width: auto;
+    fill: #ce1126;
+}
+
+.star:nth-child(1) {
+    left: 25%;
+    transform: translate(-50%, -50%);
+}
+
+.star:nth-child(2) {
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.star:nth-child(3) {
+    left: 75%;
+    transform: translate(-50%, -50%);
+}
+
+/* Measurement annotations */
+.measurement {
+    position: absolute;
+    color: var(--text-secondary);
+    font-size: 1rem;
+    font-family: monospace;
+}
+
+.dim-line {
+    position: absolute;
+    background-color: var(--border-color);
+}
+
+.dim-line::before,
+.dim-line::after {
+    content: '';
+    position: absolute;
+    background-color: var(--border-color);
+}
+
+/* Horizontal Line Styling */
+.dim-line.h-line {
+    height: 1px;
+}
+
+.dim-line.h-line::before,
+.dim-line.h-line::after {
+    width: 1px;
+    height: 10px;
+    top: -4.5px;
+}
+
+.dim-line.h-line::before {
+    left: 0;
+}
+
+.dim-line.h-line::after {
+    right: 0;
+}
+
+/* Vertical Line Styling */
+.dim-line.v-line {
+    width: 1px;
+}
+
+.dim-line.v-line::before,
+.dim-line.v-line::after {
+    height: 1px;
+    width: 10px;
+    left: -4.5px;
+}
+
+.dim-line.v-line::before {
+    top: 0;
+}
+
+.dim-line.v-line::after {
+    bottom: 0;
+}
+
+/* Positioning */
+.top-line-h {
+    top: -2.5rem;
+    left: 0;
+    right: 0;
+}
+
+.top-total-num {
+    top: -4rem;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.top-line-v-1 {
+    top: -2.5rem;
+    height: 1rem;
+    left: 0;
+}
+
+.top-line-v-2 {
+    top: -2.5rem;
+    height: 1rem;
+    left: 25%;
+}
+
+.top-line-v-3 {
+    top: -2.5rem;
+    height: 1rem;
+    left: 50%;
+}
+
+.top-line-v-4 {
+    top: -2.5rem;
+    height: 1rem;
+    left: 75%;
+}
+
+.top-line-v-5 {
+    top: -2.5rem;
+    height: 1rem;
+    left: 100%;
+}
+
+.top-num-1 {
+    top: -2rem;
+    left: 12.5%;
+    transform: translateX(-50%);
+}
+
+.top-num-2 {
+    top: -2rem;
+    left: 37.5%;
+    transform: translateX(-50%);
+}
+
+.top-num-3 {
+    top: -2rem;
+    left: 62.5%;
+    transform: translateX(-50%);
+}
+
+.top-num-4 {
+    top: -2rem;
+    left: 87.5%;
+    transform: translateX(-50%);
+}
+
+.right-line-v {
+    right: -3.5rem;
+    top: 0;
+    bottom: 0;
+}
+
+.right-total-num {
+    right: -5.5rem;
+    top: 50%;
+    transform: translateY(-50%) rotate(90deg);
+}
+
+.right-line-h-1 {
+    right: -3.5rem;
+    width: 1rem;
+    top: 0;
+}
+
+.right-line-h-2 {
+    right: -3.5rem;
+    width: 1rem;
+    top: 33.33%;
+}
+
+.right-line-h-3 {
+    right: -3.5rem;
+    width: 1rem;
+    top: 66.67%;
+}
+
+.right-line-h-4 {
+    right: -3.5rem;
+    width: 1rem;
+    top: 100%;
+}
+
+.right-num-1 {
+    right: -2.5rem;
+    top: 16.665%;
+    transform: translateY(-50%);
+}
+
+.right-num-2 {
+    right: -2.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.right-num-3 {
+    right: -2.5rem;
+    top: 83.335%;
+    transform: translateY(-50%);
+}
+
+.bottom-line-h {
+    bottom: -2.5rem;
+    left: 0;
+    right: 0;
+}
+
+.bottom-line-v-1 {
+    bottom: -2.5rem;
+    height: 1rem;
+    left: calc(6 / 36 * 100%);
+}
+
+.bottom-line-v-2 {
+    bottom: -2.5rem;
+    height: 1rem;
+    left: calc(12 / 36 * 100%);
+}
+
+.bottom-line-v-3 {
+    bottom: -2.5rem;
+    height: 1rem;
+    left: calc(15 / 36 * 100%);
+}
+
+.bottom-line-v-4 {
+    bottom: -2.5rem;
+    height: 1rem;
+    left: calc(21 / 36 * 100%);
+}
+
+.bottom-line-v-5 {
+    bottom: -2.5rem;
+    height: 1rem;
+    left: calc(24 / 36 * 100%);
+}
+
+.bottom-line-v-6 {
+    bottom: -2.5rem;
+    height: 1rem;
+    left: calc(30 / 36 * 100%);
+}
+
+.bottom-num-1 {
+    bottom: -2rem;
+    left: calc(3 / 36 * 100%);
+    transform: translateX(-50%);
+}
+
+.bottom-num-2 {
+    bottom: -2rem;
+    left: calc(9 / 36 * 100%);
+    transform: translateX(-50%);
+}
+
+.bottom-num-3 {
+    bottom: -2rem;
+    left: calc(13.5 / 36 * 100%);
+    transform: translateX(-50%);
+}
+
+.bottom-num-4 {
+    bottom: -2rem;
+    left: calc(18 / 36 * 100%);
+    transform: translateX(-50%);
+}
+
+.bottom-num-5 {
+    bottom: -2rem;
+    left: calc(22.5 / 36 * 100%);
+    transform: translateX(-50%);
+}
+
+.bottom-num-6 {
+    bottom: -2rem;
+    left: calc(27 / 36 * 100%);
+    transform: translateX(-50%);
+}
+
+.bottom-num-7 {
+    bottom: -2rem;
+    left: calc(33 / 36 * 100%);
+    transform: translateX(-50%);
+}
+
+/* Corrected Left Measurements for star height */
+.left-line-v {
+    left: -3.5rem;
+    top: 37.5%;
+    /* Position to top of star (8/24 for green + 1/24 for padding) */
+    height: 25%;
+    /* Height of star (6/24 of total height) */
+}
+
+.left-num-1 {
+    left: -2.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.left-line-h-1 {
+    left: -3.5rem;
+    width: 1rem;
+    top: 37.5%;
+    /* Corresponds to top of star */
+}
+
+.left-line-h-2 {
+    left: -3.5rem;
+    width: 1rem;
+    top: 62.5%;
+    /* Corresponds to bottom of star */
+}

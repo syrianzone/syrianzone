@@ -324,43 +324,43 @@ export default defineConfig({
 
 ## 6. Master Task List
 
-- [ ] **Phase 1: Base Setup**
-  - [ ] Move `/backend` files to repository root.
-  - [ ] Add `inertiajs/inertia-laravel` in composer requirements.
-  - [ ] Merge `frontend/package.json` packages into the root `package.json`.
-  - [ ] Run `npm install` and resolve compiler conflicts.
-  - [ ] Create `resources/views/app.blade.php`.
-  - [ ] Register `HandleInertiaRequests` middleware in `bootstrap/app.php`.
-  - [ ] Update `vite.config.js`.
-  - [ ] Configure `tsconfig.json` paths for resolution alias `@/*` pointing to `resources/js/*`.
+- [x] **Phase 1: Base Setup**
+  - [x] Move `/backend` files to repository root.
+  - [x] Add `inertiajs/inertia-laravel` in composer requirements.
+  - [x] Merge `frontend/package.json` packages into the root `package.json`.
+  - [x] Run `npm install` and resolve compiler conflicts.
+  - [x] Create `resources/views/app.blade.php`.
+  - [x] Register `HandleInertiaRequests` middleware in `bootstrap/app.php`.
+  - [x] Update `vite.config.js`.
+  - [x] Configure `tsconfig.json` paths for resolution alias `@/*` pointing to `resources/js/*`.
 
-- [ ] **Phase 2: Global Layouts & Providers**
-  - [ ] Create `resources/js/app.tsx` entry point.
-  - [ ] Merge global CSS imports into `resources/css/app.css`.
-  - [ ] Move Theme and Language context files to `resources/js/Contexts/`.
-  - [ ] Migrate `Navbar` and `Footer` elements into `resources/js/Layouts/MainLayout.tsx`.
+- [x] **Phase 2: Global Layouts & Providers**
+  - [x] Create `resources/js/app.tsx` entry point.
+  - [x] Merge global CSS imports into `resources/css/app.css`.
+  - [x] Move Theme and Language context files to `resources/js/Contexts/`.
+  - [x] Migrate `Navbar` and `Footer` elements into `resources/js/Layouts/MainLayout.tsx`.
 
-- [ ] **Phase 3: Core Module Migrations**
-  - [ ] **Home Page**: Create `HomeController`, read and parse `about.md` on the server, render `Home.tsx`.
-  - [ ] **Verified Accounts**: Migrate `syofficial` pages, passing database sites as React props.
-  - [ ] **Opinion & Polling**: Update `PollController` routes to use Inertia, migrate `Polls/Index.tsx` and `Polls/Show.tsx`.
-  - [ ] **Political Compass**: Migrate compass question state logic, questions list, and rendering graphs.
-  - [ ] **Population Atlas**: Move environmental map aggregations and dynamic leaflet rendering.
-  - [ ] **Transit Module**:
-    - [ ] Copy components from `frontend/src/app/transit/_components` to `resources/js/Pages/Transit/Components`.
-    - [ ] Migrate `useMapStore` and `useStudioStore` Zustand declarations.
-    - [ ] Move MapLibre map initialization hooks.
-    - [ ] Rewrite map-data loading logic to query database geometries, returning coordinates as JSON directly.
+- [x] **Phase 3: Core Module Migrations**
+  - [x] **Home Page**: Create `HomeController`, read and parse `about.md` on the server, render `Home.tsx`.
+  - [x] **Verified Accounts**: Migrate `syofficial` pages, passing database sites as React props.
+  - [x] **Opinion & Polling**: Update `PollController` routes to use Inertia, migrate `Polls/Index.tsx` and `Polls/Show.tsx`.
+  - [x] **Political Compass**: Migrate compass question state logic, questions list, and rendering graphs.
+  - [x] **Population Atlas**: Move environmental map aggregations and dynamic leaflet rendering.
+  - [x] **Transit Module**:
+    - [x] Copy components from `frontend/src/app/transit/_components` to `resources/js/Pages/Transit/Components`.
+    - [x] Migrate `useMapStore` and `useStudioStore` Zustand declarations.
+    - [x] Move MapLibre map initialization hooks.
+    - [x] Rewrite map-data loading logic to query database geometries, returning coordinates as JSON directly.
 
-- [ ] **Phase 4: Auth & Security Consolidation**
-  - [ ] Remove Sanctum tokens from client login pipelines.
-  - [ ] Set up stateful, session-based user authentication using Web guard.
-  - [ ] Create `AdminMiddleware` checking roles on standard HTTP sessions.
-  - [ ] Eliminate `TransitAdminAuth` middleware using raw tokens in `.env`. Validate credentials in DB.
-  - [ ] Transition file upload targets to use Laravel storage structures.
+- [x] **Phase 4: Auth & Security Consolidation**
+  - [x] Remove Sanctum tokens from client login pipelines.
+  - [x] Set up stateful, session-based user authentication using Web guard.
+  - [x] Create `AdminMiddleware` checking roles on standard HTTP sessions.
+  - [x] Eliminate `TransitAdminAuth` middleware using raw tokens in `.env`. Validate credentials in DB.
+  - [x] Transition file upload targets to use Laravel storage structures.
 
-- [ ] **Phase 5: Deploy & Verification**
-  - [ ] Set up service worker caching policies.
-  - [ ] Test Vite output production bundles.
-  - [ ] Update `deploy.sh` to build assets under the unified workspace structure.
-  - [ ] Update `ecosystem.config.js` to run a single PHP-FPM / Artisan entry process.
+- [x] **Phase 5: Deploy & Verification**
+  - [x] Set up service worker caching policies.
+  - [x] Test Vite output production bundles.
+  - [x] Update `deploy.sh` to build assets under the unified workspace structure.
+  - [x] Update `ecosystem.config.js` to run a single PHP-FPM / Artisan entry process.

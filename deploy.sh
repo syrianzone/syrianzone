@@ -3,33 +3,58 @@
 # Exit on error
 set -e
 
-# Define root directory to ensure script runs correctly regardless of where it's called
-APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
-echo "🚀 Starting Deployment in $APP_DIR..."
-cd "$APP_DIR"
+# Define source (runner/app) directory
+SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+echo "🚀 Starting Deployment pipeline..."
+echo "📂 Source Directory: $SRC_DIR"
 
-# 1. Environment Setup
-echo "🔑 Checking environment files..."
-if [ ! -f "backend/.env" ]; then
-    echo "Creating backend/.env from .env.example..."
-    cp backend/.env.example backend/.env
-    echo "⚠️  Action Required: Update backend/.env with production details!"
+# Define target deployment directory (optional first parameter, falls back to source directory)
+TARGET_DIR="${1:-$SRC_DIR}"
+echo "🎯 Target Directory: $TARGET_DIR"
+
+# 1. Monolithic Frontend Assets Build (Vite) - in Source Directory
+# Building assets first inside the source/runner directory avoids high CPU loads in production during npm install/build
+echo "⚛️  Building Frontend Assets in Source Directory (Vite)..."
+cd "$SRC_DIR"
+npm ci || npm install
+npm run build
+
+# 2. Sync Files to Target Directory (if different)
+if [ "$SRC_DIR" != "$TARGET_DIR" ]; then
+    echo "🔄 Syncing files to Target Directory..."
+    # Ensure target directory exists
+    mkdir -p "$TARGET_DIR"
+    
+    # Sync using rsync, preserving permissions but excluding .git, node_modules, and active production .env
+    rsync -av --delete \
+        --exclude='.git/' \
+        --exclude='node_modules/' \
+        --exclude='.env' \
+        --exclude='storage/framework/cache/data/*' \
+        --exclude='storage/framework/sessions/*' \
+        --exclude='storage/framework/views/*' \
+        --exclude='storage/logs/*' \
+        "$SRC_DIR/" "$TARGET_DIR/"
 fi
 
-if [ ! -f "frontend/.env" ]; then
-    if [ -f "frontend/.env.example" ]; then
-        cp frontend/.env.example frontend/.env
-    elif [ -f "frontend/.env.local.example" ]; then
-        cp frontend/.env.local.example frontend/.env
+# Switch to target directory for application execution
+cd "$TARGET_DIR"
+
+# 3. Environment Setup
+echo "🔑 Checking target environment files..."
+if [ ! -f ".env" ]; then
+    if [ -f ".env.example" ]; then
+        echo "Creating .env from .env.example..."
+        cp .env.example .env
+        echo "⚠️  Action Required: Update $TARGET_DIR/.env with production details!"
     else
-        touch frontend/.env
+        echo "❌ Error: .env file missing in target directory and no .env.example exists."
+        exit 1
     fi
-    echo "⚠️  Action Required: Update frontend/.env with production API URLs!"
 fi
 
-# 2. Backend Deployment (Laravel)
-echo "🐘 Deploying Backend (Laravel)..."
-cd backend
+# 4. Monolithic Backend Deployment (Laravel)
+echo "🐘 Deploying Laravel in Target Directory..."
 
 # Clear old compiled files directly to avoid permission conflicts on rebuild
 echo "🔧 Cleaning Laravel cache files..."
@@ -40,7 +65,7 @@ rm -rf bootstrap/cache/*.php 2>/dev/null || true
 chmod -R 775 storage bootstrap/cache 2>/dev/null || true
 
 # Install PHP dependencies without dev packages
-php -d error_reporting="E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED" "$(which composer)" install --no-dev --optimize-autoloader --quiet
+php -d error_reporting="E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED" "$(which composer)" install --no-dev --optimize-autoloader --quiet --ignore-platform-req=ext-iconv
 
 # Database migrations
 echo "🔄 Running migrations..."
@@ -53,27 +78,15 @@ php -d error_reporting="E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED" artisan conf
 php -d error_reporting="E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED" artisan route:cache
 php -d error_reporting="E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED" artisan view:cache
 
-cd ..
+# 5. Process Management (PM2)
+# Ensure PM2 reloads the server process
+echo "🔄 Restarting PM2 process..."
+# Check if pm2 command exists
+if command -v pm2 &> /dev/null; then
+    pm2 restart syrianzone-backend --update-env 2>/dev/null || pm2 start ecosystem.config.js
+    pm2 save
+else
+    echo "⚠️  PM2 not found in PATH. Process reload skipped."
+fi
 
-# 3. Frontend Deployment (Next.js)
-echo "⚛️  Deploying Frontend (Next.js)..."
-cd frontend
-
-echo "🔧 Cleaning previous Next.js build..."
-rm -rf .next 2>/dev/null || true
-
-# npm ci is faster and more reliable for deployments, but fall back to install if needed
-npm ci || npm install
-
-echo "🏗️  Building Next.js application..."
-npm run build
-
-# 4. Process Management (PM2)
-echo "🔄 Restarting PM2..."
-cd ..
-
-# For Next.js and Laravel served via PM2, restart ensures environment updates are picked up.
-pm2 restart syrianzone-frontend syrianzone-backend --update-env 2>/dev/null || pm2 start ecosystem.config.js
-pm2 save
-
-echo "✅ Deployment Finished Successfully!"
+echo "✅ Monolithic Deployment Finished Successfully!"

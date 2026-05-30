@@ -1,0 +1,1037 @@
+{
+  "metadata": {
+    "country": "Syria",
+    "report_date": "2026-01-14T16:12:28.434124",
+    "data_sources": [
+      "Open-Meteo",
+      "NASA POWER",
+      "World Bank Climate API"
+    ],
+    "cities_analyzed": 14
+  },
+  "cities": {
+    "Damascus": {
+      "coordinates": {
+        "latitude": 33.51,
+        "longitude": 36.29
+      },
+      "population": 2103000,
+      "current_conditions": {
+        "temperature_celsius": 9.0,
+        "feels_like_celsius": 2.7,
+        "humidity_percent": 54,
+        "precipitation_mm": 0.0,
+        "wind_speed_kmh": 29.1,
+        "wind_direction_degrees": 285,
+        "pressure_msl_hpa": 1017.2,
+        "pressure_surface_hpa": 934.8,
+        "cloud_cover_percent": 1,
+        "weather_description": "Clear sky"
+      },
+      "daily_forecast_summary": {
+        "tomorrow_max_temp_c": 9.6,
+        "tomorrow_min_temp_c": 0.5,
+        "tomorrow_precipitation_mm": 0.0
+      },
+      "climate_trends": {
+        "temperature_trend_celsius": -11.07,
+        "temperature_change_rate_per_year": -2.215,
+        "rainfall_trend_mm": -109.2,
+        "average_annual_rainfall_mm": 115.18,
+        "avg_surface_pressure_hpa": 933.9
+      },
+      "air_quality": {
+        "estimated": true,
+        "method": "Weather-based estimation",
+        "factors": {
+          "wind_speed_m_s": 29.1,
+          "humidity_percent": 54,
+          "cloud_cover_percent": 1,
+          "pressure_msl_hpa": 1017.2
+        },
+        "estimated_aqi": 40,
+        "category": "Good (Good dispersion)",
+        "health_recommendation": "Air quality is good. Outdoor activities are safe."
+      },
+      "drought_risk": {
+        "dry_season_months": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "wet_season_months": [],
+        "annual_precipitation_mm": 139.13,
+        "drought_risk": "Very High",
+        "classification": "Arid/Semi-arid"
+      },
+      "historical_summary": {
+        "period_start": "2021-01-15",
+        "period_end": "2026-01-14",
+        "avg_max_temp_c": 26.73,
+        "avg_min_temp_c": 13.31,
+        "total_precipitation_mm": 691.1,
+        "max_wind_speed_kmh": 42.5,
+        "avg_surface_pressure_hpa": 933.92
+      }
+    },
+    "Aleppo": {
+      "coordinates": {
+        "latitude": 36.2,
+        "longitude": 37.16
+      },
+      "population": 4118000,
+      "current_conditions": {
+        "temperature_celsius": 7.9,
+        "feels_like_celsius": 2.1,
+        "humidity_percent": 33,
+        "precipitation_mm": 0.0,
+        "wind_speed_kmh": 19.1,
+        "wind_direction_degrees": 290,
+        "pressure_msl_hpa": 1017.8,
+        "pressure_surface_hpa": 969.8,
+        "cloud_cover_percent": 0,
+        "weather_description": "Clear sky"
+      },
+      "daily_forecast_summary": {
+        "tomorrow_max_temp_c": 8.5,
+        "tomorrow_min_temp_c": -0.4,
+        "tomorrow_precipitation_mm": 0.0
+      },
+      "climate_trends": {
+        "temperature_trend_celsius": -14.3,
+        "temperature_change_rate_per_year": -2.86,
+        "rainfall_trend_mm": -135.8,
+        "average_annual_rainfall_mm": 224.78,
+        "avg_surface_pressure_hpa": 966.9
+      },
+      "air_quality": {
+        "estimated": true,
+        "method": "Weather-based estimation",
+        "factors": {
+          "wind_speed_m_s": 19.1,
+          "humidity_percent": 33,
+          "cloud_cover_percent": 0,
+          "pressure_msl_hpa": 1017.8
+        },
+        "estimated_aqi": 40,
+        "category": "Good (Good dispersion)",
+        "health_recommendation": "Air quality is good. Outdoor activities are safe."
+      },
+      "drought_risk": {
+        "dry_season_months": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "wet_season_months": [],
+        "annual_precipitation_mm": 270.44,
+        "drought_risk": "Very High",
+        "classification": "Arid/Semi-arid"
+      },
+      "historical_summary": {
+        "period_start": "2021-01-15",
+        "period_end": "2026-01-14",
+        "avg_max_temp_c": 25.72,
+        "avg_min_temp_c": 13.54,
+        "total_precipitation_mm": 1348.7,
+        "max_wind_speed_kmh": 42.2,
+        "avg_surface_pressure_hpa": 966.88
+      }
+    },
+    "Idlib": {
+      "coordinates": {
+        "latitude": 35.933,
+        "longitude": 36.633
+      },
+      "population": 1172000,
+      "current_conditions": {
+        "temperature_celsius": 7.8,
+        "feels_like_celsius": 1.3,
+        "humidity_percent": 31,
+        "precipitation_mm": 0.0,
+        "wind_speed_kmh": 23.6,
+        "wind_direction_degrees": 322,
+        "pressure_msl_hpa": 1018.4,
+        "pressure_surface_hpa": 965.5,
+        "cloud_cover_percent": 0,
+        "weather_description": "Clear sky"
+      },
+      "daily_forecast_summary": {
+        "tomorrow_max_temp_c": 9.5,
+        "tomorrow_min_temp_c": 0.9,
+        "tomorrow_precipitation_mm": 0.0
+      },
+      "climate_trends": {
+        "temperature_trend_celsius": -13.35,
+        "temperature_change_rate_per_year": -2.669,
+        "rainfall_trend_mm": -205.6,
+        "average_annual_rainfall_mm": 301.77,
+        "avg_surface_pressure_hpa": 962.4
+      },
+      "air_quality": {
+        "estimated": true,
+        "method": "Weather-based estimation",
+        "factors": {
+          "wind_speed_m_s": 23.6,
+          "humidity_percent": 31,
+          "cloud_cover_percent": 0,
+          "pressure_msl_hpa": 1018.4
+        },
+        "estimated_aqi": 40,
+        "category": "Good (Good dispersion)",
+        "health_recommendation": "Air quality is good. Outdoor activities are safe."
+      },
+      "drought_risk": {
+        "dry_season_months": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "wet_season_months": [],
+        "annual_precipitation_mm": 363.53,
+        "drought_risk": "High",
+        "classification": "Semi-arid"
+      },
+      "historical_summary": {
+        "period_start": "2021-01-15",
+        "period_end": "2026-01-14",
+        "avg_max_temp_c": 24.03,
+        "avg_min_temp_c": 13.46,
+        "total_precipitation_mm": 1810.6,
+        "max_wind_speed_kmh": 41.6,
+        "avg_surface_pressure_hpa": 962.44
+      }
+    },
+    "Rif Dimashq": {
+      "coordinates": {
+        "latitude": 33.5,
+        "longitude": 37.3833
+      },
+      "population": 3372000,
+      "current_conditions": {
+        "temperature_celsius": 9.3,
+        "feels_like_celsius": 5.4,
+        "humidity_percent": 66,
+        "precipitation_mm": 0.0,
+        "wind_speed_kmh": 15.6,
+        "wind_direction_degrees": 326,
+        "pressure_msl_hpa": 1017.3,
+        "pressure_surface_hpa": 940.0,
+        "cloud_cover_percent": 37,
+        "weather_description": "Mainly clear"
+      },
+      "daily_forecast_summary": {
+        "tomorrow_max_temp_c": 9.0,
+        "tomorrow_min_temp_c": 0.5,
+        "tomorrow_precipitation_mm": 0.0
+      },
+      "climate_trends": {
+        "temperature_trend_celsius": -11.92,
+        "temperature_change_rate_per_year": -2.385,
+        "rainfall_trend_mm": -34.2,
+        "average_annual_rainfall_mm": 93.12,
+        "avg_surface_pressure_hpa": 938.7
+      },
+      "air_quality": {
+        "estimated": true,
+        "method": "Weather-based estimation",
+        "factors": {
+          "wind_speed_m_s": 15.6,
+          "humidity_percent": 66,
+          "cloud_cover_percent": 37,
+          "pressure_msl_hpa": 1017.3
+        },
+        "estimated_aqi": 40,
+        "category": "Good (Good dispersion)",
+        "health_recommendation": "Air quality is good. Outdoor activities are safe."
+      },
+      "drought_risk": {
+        "dry_season_months": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "wet_season_months": [],
+        "annual_precipitation_mm": 112.04,
+        "drought_risk": "Very High",
+        "classification": "Arid/Semi-arid"
+      },
+      "historical_summary": {
+        "period_start": "2021-01-15",
+        "period_end": "2026-01-14",
+        "avg_max_temp_c": 25.71,
+        "avg_min_temp_c": 12.48,
+        "total_precipitation_mm": 558.7,
+        "max_wind_speed_kmh": 66.7,
+        "avg_surface_pressure_hpa": 938.7
+      }
+    },
+    "Homs": {
+      "coordinates": {
+        "latitude": 34.73,
+        "longitude": 36.72
+      },
+      "population": 1790000,
+      "current_conditions": {
+        "temperature_celsius": 8.4,
+        "feels_like_celsius": 1.7,
+        "humidity_percent": 55,
+        "precipitation_mm": 0.0,
+        "wind_speed_kmh": 30.7,
+        "wind_direction_degrees": 275,
+        "pressure_msl_hpa": 1018.5,
+        "pressure_surface_hpa": 957.0,
+        "cloud_cover_percent": 91,
+        "weather_description": "Overcast"
+      },
+      "daily_forecast_summary": {
+        "tomorrow_max_temp_c": 10.9,
+        "tomorrow_min_temp_c": 2.3,
+        "tomorrow_precipitation_mm": 0.0
+      },
+      "climate_trends": {
+        "temperature_trend_celsius": -11.28,
+        "temperature_change_rate_per_year": -2.256,
+        "rainfall_trend_mm": -75.9,
+        "average_annual_rainfall_mm": 161.07,
+        "avg_surface_pressure_hpa": 954.3
+      },
+      "air_quality": {
+        "estimated": true,
+        "method": "Weather-based estimation",
+        "factors": {
+          "wind_speed_m_s": 30.7,
+          "humidity_percent": 55,
+          "cloud_cover_percent": 91,
+          "pressure_msl_hpa": 1018.5
+        },
+        "estimated_aqi": 40,
+        "category": "Good (Good dispersion)",
+        "health_recommendation": "Air quality is good. Outdoor activities are safe."
+      },
+      "drought_risk": {
+        "dry_season_months": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "wet_season_months": [],
+        "annual_precipitation_mm": 193.59,
+        "drought_risk": "Very High",
+        "classification": "Arid/Semi-arid"
+      },
+      "historical_summary": {
+        "period_start": "2021-01-15",
+        "period_end": "2026-01-14",
+        "avg_max_temp_c": 24.43,
+        "avg_min_temp_c": 12.91,
+        "total_precipitation_mm": 966.4,
+        "max_wind_speed_kmh": 58.0,
+        "avg_surface_pressure_hpa": 954.33
+      }
+    },
+    "Hama": {
+      "coordinates": {
+        "latitude": 35.13,
+        "longitude": 36.76
+      },
+      "population": 2147000,
+      "current_conditions": {
+        "temperature_celsius": 9.8,
+        "feels_like_celsius": 4.5,
+        "humidity_percent": 53,
+        "precipitation_mm": 0.0,
+        "wind_speed_kmh": 22.7,
+        "wind_direction_degrees": 281,
+        "pressure_msl_hpa": 1018.2,
+        "pressure_surface_hpa": 985.2,
+        "cloud_cover_percent": 92,
+        "weather_description": "Overcast"
+      },
+      "daily_forecast_summary": {
+        "tomorrow_max_temp_c": 10.9,
+        "tomorrow_min_temp_c": 0.1,
+        "tomorrow_precipitation_mm": 0.0
+      },
+      "climate_trends": {
+        "temperature_trend_celsius": -12.42,
+        "temperature_change_rate_per_year": -2.483,
+        "rainfall_trend_mm": -100.2,
+        "average_annual_rainfall_mm": 184.25,
+        "avg_surface_pressure_hpa": 981.3
+      },
+      "air_quality": {
+        "estimated": true,
+        "method": "Weather-based estimation",
+        "factors": {
+          "wind_speed_m_s": 22.7,
+          "humidity_percent": 53,
+          "cloud_cover_percent": 92,
+          "pressure_msl_hpa": 1018.2
+        },
+        "estimated_aqi": 40,
+        "category": "Good (Good dispersion)",
+        "health_recommendation": "Air quality is good. Outdoor activities are safe."
+      },
+      "drought_risk": {
+        "dry_season_months": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "wet_season_months": [],
+        "annual_precipitation_mm": 221.82,
+        "drought_risk": "Very High",
+        "classification": "Arid/Semi-arid"
+      },
+      "historical_summary": {
+        "period_start": "2021-01-15",
+        "period_end": "2026-01-14",
+        "avg_max_temp_c": 27.03,
+        "avg_min_temp_c": 13.73,
+        "total_precipitation_mm": 1105.5,
+        "max_wind_speed_kmh": 45.7,
+        "avg_surface_pressure_hpa": 981.33
+      }
+    },
+    "Daraa": {
+      "coordinates": {
+        "latitude": 32.6264,
+        "longitude": 36.1033
+      },
+      "population": 966000,
+      "current_conditions": {
+        "temperature_celsius": 10.4,
+        "feels_like_celsius": 5.2,
+        "humidity_percent": 66,
+        "precipitation_mm": 0.0,
+        "wind_speed_kmh": 25.7,
+        "wind_direction_degrees": 288,
+        "pressure_msl_hpa": 1019.9,
+        "pressure_surface_hpa": 958.5,
+        "cloud_cover_percent": 61,
+        "weather_description": "Partly cloudy"
+      },
+      "daily_forecast_summary": {
+        "tomorrow_max_temp_c": 12.6,
+        "tomorrow_min_temp_c": 3.4,
+        "tomorrow_precipitation_mm": 0.0
+      },
+      "climate_trends": {
+        "temperature_trend_celsius": -9.6,
+        "temperature_change_rate_per_year": -1.919,
+        "rainfall_trend_mm": -135.8,
+        "average_annual_rainfall_mm": 181.73,
+        "avg_surface_pressure_hpa": 954.5
+      },
+      "air_quality": {
+        "estimated": true,
+        "method": "Weather-based estimation",
+        "factors": {
+          "wind_speed_m_s": 25.7,
+          "humidity_percent": 66,
+          "cloud_cover_percent": 61,
+          "pressure_msl_hpa": 1019.9
+        },
+        "estimated_aqi": 40,
+        "category": "Good (Good dispersion)",
+        "health_recommendation": "Air quality is good. Outdoor activities are safe."
+      },
+      "drought_risk": {
+        "dry_season_months": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "wet_season_months": [],
+        "annual_precipitation_mm": 219.88,
+        "drought_risk": "Very High",
+        "classification": "Arid/Semi-arid"
+      },
+      "historical_summary": {
+        "period_start": "2021-01-15",
+        "period_end": "2026-01-14",
+        "avg_max_temp_c": 26.44,
+        "avg_min_temp_c": 13.14,
+        "total_precipitation_mm": 1090.4,
+        "max_wind_speed_kmh": 45.5,
+        "avg_surface_pressure_hpa": 954.53
+      }
+    },
+    "Latakia": {
+      "coordinates": {
+        "latitude": 35.53,
+        "longitude": 35.79
+      },
+      "population": 1346000,
+      "current_conditions": {
+        "temperature_celsius": 11.9,
+        "feels_like_celsius": 7.1,
+        "humidity_percent": 42,
+        "precipitation_mm": 0.0,
+        "wind_speed_kmh": 17.9,
+        "wind_direction_degrees": 350,
+        "pressure_msl_hpa": 1019.1,
+        "pressure_surface_hpa": 1016.2,
+        "cloud_cover_percent": 0,
+        "weather_description": "Clear sky"
+      },
+      "daily_forecast_summary": {
+        "tomorrow_max_temp_c": 13.7,
+        "tomorrow_min_temp_c": 6.8,
+        "tomorrow_precipitation_mm": 0.0
+      },
+      "climate_trends": {},
+      "air_quality": {
+        "estimated": true,
+        "method": "Weather-based estimation",
+        "factors": {
+          "wind_speed_m_s": 17.9,
+          "humidity_percent": 42,
+          "cloud_cover_percent": 0,
+          "pressure_msl_hpa": 1019.1
+        },
+        "estimated_aqi": 40,
+        "category": "Good (Good dispersion)",
+        "health_recommendation": "Air quality is good. Outdoor activities are safe."
+      },
+      "drought_risk": {}
+    },
+    "Deir ez-Zor": {
+      "coordinates": {
+        "latitude": 35.34,
+        "longitude": 40.14
+      },
+      "population": 1267000,
+      "current_conditions": {
+        "temperature_celsius": 10.8,
+        "feels_like_celsius": 5.5,
+        "humidity_percent": 41,
+        "precipitation_mm": 0.0,
+        "wind_speed_kmh": 20.5,
+        "wind_direction_degrees": 288,
+        "pressure_msl_hpa": 1016.8,
+        "pressure_surface_hpa": 992.7,
+        "cloud_cover_percent": 97,
+        "weather_description": "Overcast"
+      },
+      "daily_forecast_summary": {
+        "tomorrow_max_temp_c": 8.9,
+        "tomorrow_min_temp_c": 1.6,
+        "tomorrow_precipitation_mm": 0.0
+      },
+      "climate_trends": {
+        "temperature_trend_celsius": -15.8,
+        "temperature_change_rate_per_year": -3.161,
+        "rainfall_trend_mm": -60.5,
+        "average_annual_rainfall_mm": 113.08,
+        "avg_surface_pressure_hpa": 988.7
+      },
+      "air_quality": {
+        "estimated": true,
+        "method": "Weather-based estimation",
+        "factors": {
+          "wind_speed_m_s": 20.5,
+          "humidity_percent": 41,
+          "cloud_cover_percent": 97,
+          "pressure_msl_hpa": 1016.8
+        },
+        "estimated_aqi": 40,
+        "category": "Good (Good dispersion)",
+        "health_recommendation": "Air quality is good. Outdoor activities are safe."
+      },
+      "drought_risk": {
+        "dry_season_months": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "wet_season_months": [],
+        "annual_precipitation_mm": 135.94,
+        "drought_risk": "Very High",
+        "classification": "Arid/Semi-arid"
+      },
+      "historical_summary": {
+        "period_start": "2021-01-15",
+        "period_end": "2026-01-14",
+        "avg_max_temp_c": 28.28,
+        "avg_min_temp_c": 16.51,
+        "total_precipitation_mm": 678.5,
+        "max_wind_speed_kmh": 56.3,
+        "avg_surface_pressure_hpa": 988.74
+      }
+    },
+    "Quneitra": {
+      "coordinates": {
+        "latitude": 33.0776,
+        "longitude": 35.8934
+      },
+      "population": 124000,
+      "current_conditions": {
+        "temperature_celsius": 6.7,
+        "feels_like_celsius": -0.1,
+        "humidity_percent": 78,
+        "precipitation_mm": 0.0,
+        "wind_speed_kmh": 35.5,
+        "wind_direction_degrees": 285,
+        "pressure_msl_hpa": 1019.6,
+        "pressure_surface_hpa": 919.6,
+        "cloud_cover_percent": 47,
+        "weather_description": "Slight rain"
+      },
+      "daily_forecast_summary": {
+        "tomorrow_max_temp_c": 9.7,
+        "tomorrow_min_temp_c": 3.5,
+        "tomorrow_precipitation_mm": 0.0
+      },
+      "climate_trends": {
+        "temperature_trend_celsius": -9.9,
+        "temperature_change_rate_per_year": -1.98,
+        "rainfall_trend_mm": -311.8,
+        "average_annual_rainfall_mm": 309.95,
+        "avg_surface_pressure_hpa": 917.9
+      },
+      "air_quality": {
+        "estimated": true,
+        "method": "Weather-based estimation",
+        "factors": {
+          "wind_speed_m_s": 35.5,
+          "humidity_percent": 78,
+          "cloud_cover_percent": 47,
+          "pressure_msl_hpa": 1019.6
+        },
+        "estimated_aqi": 40,
+        "category": "Good (Good dispersion)",
+        "health_recommendation": "Air quality is good. Outdoor activities are safe."
+      },
+      "drought_risk": {
+        "dry_season_months": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "wet_season_months": [],
+        "annual_precipitation_mm": 374.65,
+        "drought_risk": "High",
+        "classification": "Semi-arid"
+      },
+      "historical_summary": {
+        "period_start": "2021-01-15",
+        "period_end": "2026-01-14",
+        "avg_max_temp_c": 22.71,
+        "avg_min_temp_c": 12.63,
+        "total_precipitation_mm": 1859.7,
+        "max_wind_speed_kmh": 44.8,
+        "avg_surface_pressure_hpa": 917.92
+      }
+    },
+    "Raqqa": {
+      "coordinates": {
+        "latitude": 35.95,
+        "longitude": 39.01
+      },
+      "population": 940000,
+      "current_conditions": {
+        "temperature_celsius": 8.6,
+        "feels_like_celsius": 3.1,
+        "humidity_percent": 35,
+        "precipitation_mm": 0.0,
+        "wind_speed_kmh": 18.0,
+        "wind_direction_degrees": 290,
+        "pressure_msl_hpa": 1017.2,
+        "pressure_surface_hpa": 986.0,
+        "cloud_cover_percent": 32,
+        "weather_description": "Mainly clear"
+      },
+      "daily_forecast_summary": {
+        "tomorrow_max_temp_c": 8.8,
+        "tomorrow_min_temp_c": -0.3,
+        "tomorrow_precipitation_mm": 0.0
+      },
+      "climate_trends": {
+        "temperature_trend_celsius": -15.72,
+        "temperature_change_rate_per_year": -3.145,
+        "rainfall_trend_mm": -75.5,
+        "average_annual_rainfall_mm": 193.65,
+        "avg_surface_pressure_hpa": 982.4
+      },
+      "air_quality": {
+        "estimated": true,
+        "method": "Weather-based estimation",
+        "factors": {
+          "wind_speed_m_s": 18.0,
+          "humidity_percent": 35,
+          "cloud_cover_percent": 32,
+          "pressure_msl_hpa": 1017.2
+        },
+        "estimated_aqi": 40,
+        "category": "Good (Good dispersion)",
+        "health_recommendation": "Air quality is good. Outdoor activities are safe."
+      },
+      "drought_risk": {
+        "dry_season_months": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "wet_season_months": [],
+        "annual_precipitation_mm": 233.3,
+        "drought_risk": "Very High",
+        "classification": "Arid/Semi-arid"
+      },
+      "historical_summary": {
+        "period_start": "2021-01-15",
+        "period_end": "2026-01-14",
+        "avg_max_temp_c": 27.2,
+        "avg_min_temp_c": 14.94,
+        "total_precipitation_mm": 1161.9,
+        "max_wind_speed_kmh": 45.1,
+        "avg_surface_pressure_hpa": 982.37
+      }
+    },
+    "Al-Hasakah": {
+      "coordinates": {
+        "latitude": 36.5079,
+        "longitude": 40.7463
+      },
+      "population": 1865000,
+      "current_conditions": {
+        "temperature_celsius": 9.1,
+        "feels_like_celsius": 3.9,
+        "humidity_percent": 39,
+        "precipitation_mm": 0.0,
+        "wind_speed_kmh": 16.9,
+        "wind_direction_degrees": 270,
+        "pressure_msl_hpa": 1015.9,
+        "pressure_surface_hpa": 979.1,
+        "cloud_cover_percent": 100,
+        "weather_description": "Overcast"
+      },
+      "daily_forecast_summary": {
+        "tomorrow_max_temp_c": 8.3,
+        "tomorrow_min_temp_c": 0.7,
+        "tomorrow_precipitation_mm": 0.0
+      },
+      "climate_trends": {
+        "temperature_trend_celsius": -16.2,
+        "temperature_change_rate_per_year": -3.241,
+        "rainfall_trend_mm": -90.9,
+        "average_annual_rainfall_mm": 223.37,
+        "avg_surface_pressure_hpa": 976.5
+      },
+      "air_quality": {
+        "estimated": true,
+        "method": "Weather-based estimation",
+        "factors": {
+          "wind_speed_m_s": 16.9,
+          "humidity_percent": 39,
+          "cloud_cover_percent": 100,
+          "pressure_msl_hpa": 1015.9
+        },
+        "estimated_aqi": 40,
+        "category": "Good (Good dispersion)",
+        "health_recommendation": "Air quality is good. Outdoor activities are safe."
+      },
+      "drought_risk": {
+        "dry_season_months": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "wet_season_months": [],
+        "annual_precipitation_mm": 270.4,
+        "drought_risk": "Very High",
+        "classification": "Arid/Semi-arid"
+      },
+      "historical_summary": {
+        "period_start": "2021-01-15",
+        "period_end": "2026-01-14",
+        "avg_max_temp_c": 27.61,
+        "avg_min_temp_c": 14.48,
+        "total_precipitation_mm": 1340.2,
+        "max_wind_speed_kmh": 38.0,
+        "avg_surface_pressure_hpa": 976.51
+      }
+    },
+    "Tartus": {
+      "coordinates": {
+        "latitude": 34.89,
+        "longitude": 35.89
+      },
+      "population": 1172000,
+      "current_conditions": {
+        "temperature_celsius": 13.1,
+        "feels_like_celsius": 7.8,
+        "humidity_percent": 54,
+        "precipitation_mm": 0.0,
+        "wind_speed_kmh": 27.1,
+        "wind_direction_degrees": 274,
+        "pressure_msl_hpa": 1018.9,
+        "pressure_surface_hpa": 1016.1,
+        "cloud_cover_percent": 62,
+        "weather_description": "Partly cloudy"
+      },
+      "daily_forecast_summary": {
+        "tomorrow_max_temp_c": 14.9,
+        "tomorrow_min_temp_c": 10.8,
+        "tomorrow_precipitation_mm": 0.0
+      },
+      "climate_trends": {
+        "temperature_trend_celsius": -7.49,
+        "temperature_change_rate_per_year": -1.499,
+        "rainfall_trend_mm": -518.5,
+        "average_annual_rainfall_mm": 789.25,
+        "avg_surface_pressure_hpa": 1010.4
+      },
+      "air_quality": {
+        "estimated": true,
+        "method": "Weather-based estimation",
+        "factors": {
+          "wind_speed_m_s": 27.1,
+          "humidity_percent": 54,
+          "cloud_cover_percent": 62,
+          "pressure_msl_hpa": 1018.9
+        },
+        "estimated_aqi": 40,
+        "category": "Good (Good dispersion)",
+        "health_recommendation": "Air quality is good. Outdoor activities are safe."
+      },
+      "drought_risk": {
+        "dry_season_months": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "wet_season_months": [],
+        "annual_precipitation_mm": 949.39,
+        "drought_risk": "Moderate",
+        "classification": "Sub-humid"
+      },
+      "historical_summary": {
+        "period_start": "2021-01-15",
+        "period_end": "2026-01-14",
+        "avg_max_temp_c": 24.1,
+        "avg_min_temp_c": 16.88,
+        "total_precipitation_mm": 4735.5,
+        "max_wind_speed_kmh": 53.0,
+        "avg_surface_pressure_hpa": 1010.4
+      }
+    },
+    "As-Suwayda": {
+      "coordinates": {
+        "latitude": 32.709,
+        "longitude": 36.5695
+      },
+      "population": 540000,
+      "current_conditions": {
+        "temperature_celsius": 5.2,
+        "feels_like_celsius": -0.2,
+        "humidity_percent": 77,
+        "precipitation_mm": 0.0,
+        "wind_speed_kmh": 24.6,
+        "wind_direction_degrees": 275,
+        "pressure_msl_hpa": 1020.4,
+        "pressure_surface_hpa": 896.7,
+        "cloud_cover_percent": 96,
+        "weather_description": "Unknown (code: 85)"
+      },
+      "daily_forecast_summary": {
+        "tomorrow_max_temp_c": 8.1,
+        "tomorrow_min_temp_c": 1.0,
+        "tomorrow_precipitation_mm": 0.0
+      },
+      "climate_trends": {
+        "temperature_trend_celsius": -9.66,
+        "temperature_change_rate_per_year": -1.932,
+        "rainfall_trend_mm": -278.9,
+        "average_annual_rainfall_mm": 371.15,
+        "avg_surface_pressure_hpa": 895.9
+      },
+      "air_quality": {
+        "estimated": true,
+        "method": "Weather-based estimation",
+        "factors": {
+          "wind_speed_m_s": 24.6,
+          "humidity_percent": 77,
+          "cloud_cover_percent": 96,
+          "pressure_msl_hpa": 1020.4
+        },
+        "estimated_aqi": 40,
+        "category": "Good (Good dispersion)",
+        "health_recommendation": "Air quality is good. Outdoor activities are safe."
+      },
+      "drought_risk": {
+        "dry_season_months": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "wet_season_months": [],
+        "annual_precipitation_mm": 448.64,
+        "drought_risk": "High",
+        "classification": "Semi-arid"
+      },
+      "historical_summary": {
+        "period_start": "2021-01-15",
+        "period_end": "2026-01-14",
+        "avg_max_temp_c": 22.68,
+        "avg_min_temp_c": 11.52,
+        "total_precipitation_mm": 2226.9,
+        "max_wind_speed_kmh": 44.4,
+        "avg_surface_pressure_hpa": 895.94
+      }
+    }
+  },
+  "country_level": {
+    "world_bank_climate_data": {},
+    "climate_context": {
+      "classification": "Mostly semi-arid to arid",
+      "main_climate_challenges": [
+        "Water scarcity and declining groundwater levels",
+        "Increasing drought frequency and severity",
+        "Rising temperatures and heat waves",
+        "Rainfall pattern changes affecting agriculture",
+        "Air quality concerns in urban areas"
+      ],
+      "key_water_basins": [
+        "Euphrates River Basin",
+        "Orontes River Basin",
+        "Yarmouk River Basin",
+        "Barada and Awaj Basin",
+        "Coastal Basin"
+      ]
+    }
+  },
+  "summary": {
+    "total_cities_analyzed": 14,
+    "data_collection_date": "2026-01-14T16:14:04.936469",
+    "key_findings": [
+      "12/13 cities at high/very high drought risk",
+      "Average temperature change of -12.21°C over analysis period"
+    ],
+    "recommendations": [
+      "Implement water conservation and efficient irrigation systems",
+      "Develop drought-resistant agricultural practices",
+      "Monitor air quality in major urban centers",
+      "Enhance early warning systems for extreme weather events",
+      "Invest in renewable energy to reduce pollution"
+    ]
+  }
+}

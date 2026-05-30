@@ -9,50 +9,7 @@ COPY . .
 RUN bun run build
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Stage 2: Compile ngx_brotli dynamic modules against the exact nginx version
-#          in the base image. We use the same base image so the ABI matches.
-# ─────────────────────────────────────────────────────────────────────────────
-FROM serversideup/php:8.4-fpm-nginx AS brotli-builder
-USER root
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        build-essential \
-        libpcre2-dev \
-        libssl-dev \
-        zlib1g-dev \
-        git \
-        cmake \
-        curl \
-    && rm -rf /var/lib/apt/lists/*
-
-# Clone ngx_brotli with its brotli submodule
-RUN git clone --recurse-submodules --depth 1 \
-        https://github.com/google/ngx_brotli.git /tmp/ngx_brotli
-
-# Build libbrotli first (cmake)
-RUN cd /tmp/ngx_brotli/deps/brotli \
-    && cmake -DCMAKE_BUILD_TYPE=Release -B ./out . \
-    && cmake --build ./out --config Release -j$(nproc)
-
-# Fetch nginx source matching the exact installed version
-RUN NGINX_VER=$(nginx -v 2>&1 | grep -oP '[\d.]+') \
-    && echo "Building ngx_brotli against nginx ${NGINX_VER}" \
-    && curl -fsSL https://nginx.org/download/nginx-${NGINX_VER}.tar.gz \
-       | tar -xz -C /tmp
-
-# Compile the dynamic modules only.
-RUN NGINX_VER=$(nginx -v 2>&1 | grep -oP '[\d.]+') \
-    && cd /tmp/nginx-${NGINX_VER} \
-    && ./configure \
-        --with-compat \
-        --add-dynamic-module=/tmp/ngx_brotli \
-    && make -j$(nproc) modules \
-    && mkdir -p /tmp/brotli-modules \
-    && cp objs/ngx_http_brotli_filter_module.so /tmp/brotli-modules/ \
-    && cp objs/ngx_http_brotli_static_module.so /tmp/brotli-modules/
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Stage 3: Production image — serversideup/php with S6 Overlay v3
+# Stage 2: Production image — serversideup/php with S6 Overlay v3
 # ─────────────────────────────────────────────────────────────────────────────
 FROM serversideup/php:8.4-fpm-nginx
 
@@ -78,9 +35,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy compiled Brotli .so modules from the build stage
-COPY --from=brotli-builder /tmp/brotli-modules/ /usr/lib/nginx/modules/
-
 WORKDIR /var/www/html
 
 # Copy codebase
@@ -89,21 +43,15 @@ COPY --chown=www-data:www-data . .
 # Copy compiled frontend assets from Stage 1
 COPY --from=frontend-builder --chown=www-data:www-data /app/public/build ./public/build
 
-# Install PHP dependencies (ignoring missing iconv plugin platform requirement if needed)
+# Install PHP dependencies
 RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-scripts --ignore-platform-req=ext-iconv
 
 # Set correct permissions on Laravel writable dirs
 RUN chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# ── Nginx: Brotli module loader integration ─────────────────────────────────
-RUN mkdir -p /etc/nginx/main.d && printf "load_module /usr/lib/nginx/modules/ngx_http_brotli_filter_module.so;\nload_module /usr/lib/nginx/modules/ngx_http_brotli_static_module.so;\n" > /etc/nginx/main.d/brotli-loader.conf
-
 # ── Nginx: Replace default site with our Laravel server block ─────────────────
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
-
-# ── Nginx: Brotli http-context directives (brotli on, brotli_static on, etc.) ─
-COPY docker/nginx-brotli.conf /etc/nginx/conf.d/brotli.conf
 
 # ── S6 Overlay: One-shot startup entrypoint (migrations, cache, optimizations) ───
 COPY docker/10-startup.sh /etc/entrypoint.d/10-startup.sh

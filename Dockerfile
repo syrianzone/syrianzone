@@ -50,8 +50,7 @@ RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoload
 RUN chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# ── Nginx: Replace default site with our Laravel server block ─────────────────
-COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
+
 
 # ── S6 Overlay: One-shot startup entrypoint (migrations, cache, optimizations) ───
 COPY docker/10-startup.sh /etc/entrypoint.d/10-startup.sh

@@ -35,7 +35,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         curl \
     && rm -rf /var/lib/apt/lists/*
 
+# Install required PHP extensions
+RUN install-php-extensions intl
+
 WORKDIR /var/www/html
+
 
 # Copy codebase
 COPY --chown=www-data:www-data . .

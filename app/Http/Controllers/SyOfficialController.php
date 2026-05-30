@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 
 class SyOfficialController extends Controller
@@ -14,15 +16,23 @@ class SyOfficialController extends Controller
      */
     public function index()
     {
-        $entities = [];
-        try {
-            $response = Http::get(self::CSV_URL);
-            if ($response->successful()) {
-                $entities = $this->parseCSV($response->body());
+        $entities = Cache::remember('external_syofficial_data', 600, function () {
+            $entities = [];
+            try {
+                $response = Http::get(self::CSV_URL);
+                if ($response->successful()) {
+                    $entities = $this->parseCSV($response->body());
+                } else {
+                    Log::warning('Failed to fetch external syofficial data: HTTP ' . $response->status());
+                }
+            } catch (\Exception $e) {
+                Log::warning('Failed to fetch external data', [
+                    'controller' => static::class,
+                    'error'      => $e->getMessage(),
+                ]);
             }
-        } catch (\Exception $e) {
-            // Fail silently and return empty
-        }
+            return $entities;
+        });
 
         return Inertia::render('SyOfficial/Index', [
             'initialData' => $entities

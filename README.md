@@ -35,24 +35,21 @@
 
 ## Structure
 
-- **`backend/`**: Laravel 11 API & Admin.
-- **`frontend/`**: Next.js 15 App Router Frontend.
+This is a Laravel + Inertia.js monolith. There is no separate frontend directory.
+
+- **`app/`** — PHP controllers, models, middleware, services
+- **`resources/js/`** — React/TypeScript frontend pages and components (rendered via Inertia)
+- **`routes/web.php`** — Web routes (Inertia-rendered pages + authenticated API)
+- **`routes/api.php`** — Public API routes (voting, transit data)
+- **`database/`** — Migrations and seeders
 
 ## Getting Started
 
-### Backend
 ```bash
-cd backend
 composer install
 cp .env.example .env
 php artisan key:generate
 php artisan migrate
-php artisan serve
-```
-
-### Frontend
-```bash
-cd frontend
 npm install
 npm run dev
 ```

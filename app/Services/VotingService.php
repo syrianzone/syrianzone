@@ -68,6 +68,14 @@ class VotingService
 
     private function calculateScores(Ballot $ballot, array $tiers): array
     {
+        // Guard: ensure no candidate appears in more than one tier
+        $allCandidateIds = collect($tiers)->flatten(1)->pluck('candidateId')->filter();
+        if ($allCandidateIds->count() !== $allCandidateIds->unique()->count()) {
+            throw ValidationException::withMessages([
+                'tiers' => 'A candidate cannot appear in more than one tier.',
+            ]);
+        }
+
         $scoreDelta = [];
 
         foreach ($tiers as $tierKey => $items) {
@@ -97,24 +105,23 @@ class VotingService
     private function updateDailyScores(Poll $poll, Carbon $voteDay, array $scoreDelta): void
     {
         foreach ($scoreDelta as $candidateId => $delta) {
-            $dailyScore = DailyScore::where('poll_id', $poll->id)
-                ->where('candidate_id', $candidateId)
-                ->where('day', $voteDay)
-                ->lockForUpdate()
-                ->first();
-
-            if ($dailyScore) {
-                $dailyScore->increment('votes', $delta['votes']);
-                $dailyScore->increment('score', $delta['score']);
-            } else {
-                DailyScore::create([
-                    'poll_id' => $poll->id,
-                    'candidate_id' => $candidateId,
-                    'day' => $voteDay,
-                    'votes' => $delta['votes'],
-                    'score' => $delta['score'],
-                ]);
-            }
+            DB::table('daily_scores')
+                ->upsert(
+                    [
+                        'poll_id'      => $poll->id,
+                        'candidate_id' => $candidateId,
+                        'day'          => $voteDay->toDateString(),
+                        'votes'        => $delta['votes'],
+                        'score'        => $delta['score'],
+                        'updated_at'   => now(),
+                    ],
+                    ['poll_id', 'candidate_id', 'day'], // unique key columns
+                    [
+                        'votes'      => DB::raw('daily_scores.votes + VALUES(votes)'),
+                        'score'      => DB::raw('daily_scores.score + VALUES(score)'),
+                        'updated_at' => now(),
+                    ]
+                );
         }
     }
 }

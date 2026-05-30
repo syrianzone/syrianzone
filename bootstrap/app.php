@@ -18,13 +18,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
         ]);
-        $middleware->alias(['transit.admin' => \App\Http\Middleware\TransitAdminAuth::class]);
+        $middleware->alias([
+            'transit.admin' => \App\Http\Middleware\TransitAdminAuth::class,
+            'superadmin'    => \App\Http\Middleware\SuperAdmin::class,
+        ]);
         $middleware->statefulApi();
         $middleware->validateCsrfTokens(except: [
             'api/v1/studio/routes',
-            'api/v1/admin/login',
-            'api/v1/admin/route-drafts',
-            'api/v1/admin/route-drafts/*',
             'api/polls/*/vote',
             'api/submit',
         ]);

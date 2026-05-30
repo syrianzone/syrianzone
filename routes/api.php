@@ -14,7 +14,6 @@ Route::get('/polls/{idOrSlug}', [PollController::class, 'show']);
 Route::get('/polls/{idOrSlug}/leaderboard', [PollController::class, 'leaderboard']);
 
 Route::middleware('throttle:voting')->group(function () {
-    Route::post('/polls/{idOrSlug}/vote', [PollController::class, 'vote']);
     Route::post('/submit', [PollController::class, 'submit']);
 });
 

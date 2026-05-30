@@ -41,7 +41,7 @@ const PRESET_LINKS: PresetLink[] = [
     { href: '/govapps', icon: Smartphone, text: 'تطبيقات الحكومة' },
     { href: '/transit', icon: Bus, text: 'ترانزيت' },
     { href: 'https://food.syrian.zone', icon: Utensils, text: 'وصفاتنا' },
-    { href: 'https://discord.gg/NqE8849VzA', icon: MessageSquareCode, text: 'مجتمع كوديكس', external: false },
+    { href: 'https://discord.gg/NqE8849VzA', icon: MessageSquareCode, text: 'مجتمع كوديكس', external: true },
     { href: 'https://chromewebstore.google.com/detail/syrian-flag-replacer/dngipobppehfhfggmbdiiiodgcibdeog', icon: null, text: 'مبدل العلم', image: '/flag-replacer/1f1f8-1f1fe.svg', external: true },
 ];
 

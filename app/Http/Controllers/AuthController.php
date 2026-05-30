@@ -9,7 +9,6 @@ use Laravel\Socialite\Facades\Socialite;
 
 class AuthController extends Controller
 {
-    private const SUPERADMIN_EMAIL = 'hade.alahmad1@gmail.com';
 
     public function redirectToProvider()
     {
@@ -26,8 +25,8 @@ class AuthController extends Controller
 
         $email = $googleUser->getEmail();
         $user = User::where('email', $email)->first();
-        $isSuperAdmin = $email === self::SUPERADMIN_EMAIL;
-
+        $superadminEmail = config('app.superadmin_email');
+        $isSuperAdmin = $superadminEmail !== '' && $email === $superadminEmail;
         if (!$user && !$isSuperAdmin) {
             return redirect('/?error=access_denied_admin_only');
         }

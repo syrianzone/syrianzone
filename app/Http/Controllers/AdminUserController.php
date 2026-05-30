@@ -11,7 +11,7 @@ class AdminUserController extends Controller
 {
     public function index()
     {
-        return User::all();
+        return User::select('id', 'name', 'email', 'role', 'created_at')->get();
     }
 
     public function store(Request $request)

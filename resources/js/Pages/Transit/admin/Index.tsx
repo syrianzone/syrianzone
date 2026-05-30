@@ -42,115 +42,7 @@ function stopCount(draft: Draft) {
   return draft.geojson?.features?.filter((f: any) => f.geometry?.type === 'Point').length ?? 0
 }
 
-// ─── Login form ───────────────────────────────────────────────────────────────
-function LoginForm({ onSuccess }: { onSuccess: (token: string) => void }) {
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading,  setLoading]  = useState(false)
-  const [error,    setError]    = useState('')
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    try {
-      const res = await fetch('/api/v1/admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-      })
-      if (res.ok) {
-        const { token } = await res.json()
-        localStorage.setItem('transit_admin_token', token)
-        onSuccess(token)
-      } else {
-        const err = await res.json().catch(() => ({}))
-        setError(err.message ?? 'خطأ في تسجيل الدخول')
-      }
-    } catch {
-      setError('تعذّر الاتصال بالخادم')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return (
-    <div className="adm-login-shell" dir="rtl">
-      <style>{`
-        .adm-login-shell {
-          display: flex; align-items: center; justify-content: center;
-          min-height: 100svh; background: var(--bg);
-          font-family: var(--font-ar, 'Cairo', sans-serif);
-          padding: 1.5rem;
-        }
-        .adm-login-card {
-          width: 100%; max-width: 360px;
-          background: var(--surface); border: 1px solid var(--border);
-          border-radius: 16px; padding: 2rem 1.75rem;
-          display: flex; flex-direction: column; gap: 1.1rem;
-          box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-        }
-        .adm-login-brand { display: flex; flex-direction: column; gap: 0.2rem; margin-bottom: 0.25rem; }
-        .adm-login-logo  { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; color: var(--gold); text-transform: uppercase; }
-        .adm-login-title { font-size: 1.15rem; font-weight: 800; color: var(--text); margin: 0; }
-        .adm-login-field { display: flex; flex-direction: column; gap: 0.35rem; }
-        .adm-login-label { font-size: 0.8rem; font-weight: 600; color: var(--text); }
-        .adm-login-input {
-          width: 100%; background: var(--bg); border: 1px solid var(--border);
-          border-radius: 8px; color: var(--text); font-family: inherit;
-          font-size: 0.9rem; padding: 0.6rem 0.75rem; outline: none;
-          transition: border-color 0.15s, box-shadow 0.15s; box-sizing: border-box;
-        }
-        .adm-login-input::placeholder { color: var(--muted); opacity: 0.6; }
-        .adm-login-input:focus {
-          border-color: var(--gold);
-          box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 15%, transparent);
-        }
-        .adm-login-error { font-size: 0.8rem; color: #ef4444; margin: 0; }
-        .adm-login-btn {
-          width: 100%; padding: 0.7rem; border-radius: 9px;
-          border: none; background: var(--gold); color: var(--bg);
-          font-family: inherit; font-size: 0.9rem; font-weight: 700;
-          cursor: pointer; transition: opacity 0.15s; margin-top: 0.25rem;
-        }
-        .adm-login-btn:hover:not(:disabled) { opacity: 0.87; }
-        .adm-login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-      `}</style>
-      <form className="adm-login-card" onSubmit={handleSubmit}>
-        <div className="adm-login-brand">
-          <span className="adm-login-logo">SYRIAN.ZONE</span>
-          <h1 className="adm-login-title">لوحة إدارة ترانزيت</h1>
-        </div>
-        <div className="adm-login-field">
-          <label className="adm-login-label" htmlFor="l-user">اسم المستخدم</label>
-          <input
-            id="l-user" type="text" required autoFocus
-            className="adm-login-input"
-            value={username}
-            onChange={e => setUsername(e.target.value)}
-            placeholder="admin"
-            dir="ltr"
-          />
-        </div>
-        <div className="adm-login-field">
-          <label className="adm-login-label" htmlFor="l-pass">كلمة المرور</label>
-          <input
-            id="l-pass" type="password" required
-            className="adm-login-input"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            placeholder="••••••••"
-            dir="ltr"
-          />
-        </div>
-        {error && <p className="adm-login-error">{error}</p>}
-        <button type="submit" className="adm-login-btn" disabled={loading}>
-          {loading ? 'جاري التحقق…' : 'دخول'}
-        </button>
-      </form>
-    </div>
-  )
-}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 function TransitAdminPageContent() {
@@ -165,9 +57,8 @@ function TransitAdminPageContent() {
   const [actionLoading,  setActionLoading]  = useState(false)
   const [toast,          setToast]          = useState<{ msg: string; ok: boolean } | null>(null)
   const [mobileView,     setMobileView]     = useState<'list' | 'map'>('list')
-  const token = 'session'
 
-  const { data: drafts = [], isLoading, error: draftsError } = useAdminDrafts(token)
+  const { data: drafts = [], isLoading, error: draftsError } = useAdminDrafts()
 
   const { data: refData } = useMapData(selectedDraft?.city_id)
   const queryClient = useQueryClient()
@@ -264,7 +155,6 @@ function TransitAdminPageContent() {
     try {
       const res = await fetch(`${API()}/v1/admin/route-drafts/${id}/approve`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
       })
       if (res.ok) {
         showToast('تمت الموافقة على المسار ونشره')
@@ -285,7 +175,7 @@ function TransitAdminPageContent() {
     try {
       const res = await fetch(`${API()}/v1/admin/route-drafts/${selectedDraft.id}/reject`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason: rejectReason.trim() || null }),
       })
       if (res.ok) {

@@ -27,6 +27,7 @@ return [
     */
 
     'env' => env('APP_ENV', 'production'),
+    'superadmin_email' => env('SUPERADMIN_EMAIL', ''),
 
     /*
     |--------------------------------------------------------------------------

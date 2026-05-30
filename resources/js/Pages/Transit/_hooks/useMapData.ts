@@ -49,18 +49,17 @@ export function useRoutes(cityId: string) {
 
 // ─── Admin drafts ─────────────────────────────────────────────────────────────
 
-export function useAdminDrafts(token: string | null) {
+export function useAdminDrafts() {
   return useQuery({
-    queryKey: ['admin-drafts', token],
+    queryKey: ['admin-drafts'],
     queryFn: () =>
       fetch(`${API()}/v1/admin/route-drafts`, {
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
       }).then((r) => {
         if (r.status === 401) throw new Error('UNAUTHORIZED')
         if (!r.ok) throw new Error('Failed to fetch drafts')
         return r.json()
       }),
-    enabled: !!token,
     staleTime: 30_000,
   })
 }

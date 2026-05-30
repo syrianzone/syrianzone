@@ -43,11 +43,11 @@ Route::get('/transit', function () {
 
 Route::get('/transit/city/{id}', function ($id) {
     return Inertia::render('Transit/city/[id]/Index', ['id' => $id]);
-});
+})->where('id', '[a-z0-9\-]+');
 
 Route::get('/transit/city/{id}/map', function ($id) {
     return Inertia::render('Transit/city/[id]/map/Index', ['id' => $id]);
-});
+})->where('id', '[a-z0-9\-]+');
 
 Route::get('/transit/city/{id}/route/{routeId}', function ($id, $routeId) {
     $citiesPath = resource_path('js/Pages/Transit/_data/cities.json');
@@ -105,7 +105,7 @@ Route::get('/transit/city/{id}/route/{routeId}', function ($id, $routeId) {
         'route' => $routeData,
         'stops' => $stopsData
     ]);
-});
+})->where(['id' => '[a-z0-9\-]+', 'routeId' => '[a-z0-9\-]+']);
 
 Route::get('/transit/studio', function () {
     return Inertia::render('Transit/studio/Index');
@@ -127,13 +127,17 @@ Route::middleware('auth')->group(function () {
     Route::get('/admin/polls/create', [PollController::class, 'adminCreate']);
     Route::get('/admin/polls/{id}/edit', [PollController::class, 'adminEdit']);
 
-    Route::get('/admins', [AdminUserController::class, 'index']);
-    Route::post('/admins', [AdminUserController::class, 'store']);
-    Route::delete('/admins/{id}', [AdminUserController::class, 'destroy']);
+
 
     Route::prefix('api')->group(function () {
         Route::get('/user', function (\Illuminate\Http\Request $request) {
             return $request->user();
+        });
+
+        Route::middleware('superadmin')->group(function () {
+            Route::get('/admins', [AdminUserController::class, 'index']);
+            Route::post('/admins', [AdminUserController::class, 'store']);
+            Route::delete('/admins/{id}', [AdminUserController::class, 'destroy']);
         });
 
         Route::post('/polls', [PollController::class, 'store']);
@@ -160,5 +164,4 @@ Route::middleware('auth')->group(function () {
     });
 });
 
-// Fallback for callback without api prefix (often configured in Google Console)
-Route::get('/auth/google/callback', [AuthController::class, 'handleProviderCallback']);
+

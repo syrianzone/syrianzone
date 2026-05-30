@@ -135,12 +135,12 @@ class TransitController extends Controller
         $request->validate([
             'lat' => 'required|numeric',
             'lng' => 'required|numeric',
-            'radius' => 'nullable|numeric'
+            'radius' => 'nullable|numeric|min:1|max:5000'
         ]);
 
         $lat = $request->lat;
         $lng = $request->lng;
-        $radius = $request->radius ?? 500;
+        $radius = min((float) ($request->radius ?? 500), 5000);
 
         $point = "POINT($lng $lat)";
 

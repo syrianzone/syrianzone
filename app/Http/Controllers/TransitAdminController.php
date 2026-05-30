@@ -31,7 +31,7 @@ class TransitAdminController extends Controller
 
         try {
             // Generate unique IDs
-            $routeId = 'route-' . Str::slug($draft->city->name_en ?? $draft->city->name_ar) . '-' . uniqid();
+            $routeId = 'route-' . Str::slug($draft->city->name_en ?? $draft->city->name_ar) . '-' . Str::uuid();
 
             // Create the Route
             $route = Route::create([
@@ -70,7 +70,7 @@ class TransitAdminController extends Controller
             foreach ($stops as $stopFeature) {
                 $stopPoint = $stopFeature['geometry'];
                 $nameAr = trim($stopFeature['properties']['nameAr'] ?? '') ?: ('محطة ' . $order);
-                $stopId = 'stop-' . Str::slug($draft->city->name_en ?? $draft->city->name_ar) . '-' . uniqid();
+                $stopId = 'stop-' . Str::slug($draft->city->name_en ?? $draft->city->name_ar) . '-' . Str::uuid();
 
                 DB::statement(
                     'INSERT INTO stops (id, city_id, name_ar, geometry, created_at, updated_at) VALUES (?, ?, ?, ST_GeomFromGeoJSON(?), ?, ?)',

@@ -17,7 +17,7 @@ import {
   Edit,
   Plus
 } from 'lucide-react';
-import Navbar from '@/Components/Navbar';
+import MainLayout from '@/Layouts/MainLayout';
 
 interface City {
   id: string;
@@ -231,11 +231,11 @@ export default function Dashboard({
   };
 
   return (
-    <div className="min-h-screen bg-[#0b0c10] text-[#c5c6c7] font-sans antialiased selection:bg-[#66fcf1] selection:text-black" dir="rtl">
-      <Head title="لوحة التحكم الموحدة" />
-      <Navbar />
+    <MainLayout>
+      <div className="min-h-screen bg-[#0b0c10] text-[#c5c6c7] font-sans antialiased selection:bg-[#66fcf1] selection:text-black" dir="rtl">
+        <Head title="لوحة التحكم الموحدة" />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header Title with nice Amber accent */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 pb-4 border-b border-gray-800">
           <div>
@@ -676,5 +676,6 @@ export default function Dashboard({
         </div>
       )}
     </div>
+    </MainLayout>
   );
 }

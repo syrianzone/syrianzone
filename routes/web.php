@@ -6,14 +6,7 @@ use App\Http\Controllers\AuthController;
 
 use App\Http\Controllers\HomeController;
 
-Route::get('/', function () {
-    try {
-        return app(App\Http\Controllers\HomeController::class)->index();
-    } catch (\Throwable $e) {
-        return response($e->getMessage() . "\n\n" . $e->getTraceAsString(), 500)
-            ->header('Content-Type', 'text/plain');
-    }
-});
+Route::get('/', [HomeController::class, 'index']);
 
 Route::get('/healthcheck', function () {
     return response('OK', 200)->header('Content-Type', 'text/plain');

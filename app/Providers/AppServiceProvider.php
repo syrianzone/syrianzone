@@ -13,6 +13,10 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        if (config('app.env') === 'production') {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+        }
+
         RateLimiter::for('voting', fn(Request $request) =>
             Limit::perMinute(10)->by($request->ip())->response(fn() =>
                 response()->json(['error' => 'Too many votes. Please slow down.'], 429)

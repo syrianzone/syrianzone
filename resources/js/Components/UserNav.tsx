@@ -13,7 +13,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { LogOut, User as UserIcon, LayoutDashboard, ListOrdered } from "lucide-react";
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/Contexts/AuthContext';
 
 export default function UserNav() {
     const { user, isAdmin } = useAuth();

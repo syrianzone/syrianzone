@@ -86,6 +86,43 @@ class PollController extends Controller
         return Inertia::render('TierList/Leaderboard', $data);
     }
 
+    public function adminCreate(Request $request)
+    {
+        if (!$request->user() || ($request->user()->role !== 'admin' && $request->user()->role !== 'superadmin')) {
+            abort(403, 'Unauthorized.');
+        }
+        return Inertia::render('Admin/Polls/Create');
+    }
+
+    public function adminEdit(Request $request, $id)
+    {
+        if (!$request->user() || ($request->user()->role !== 'admin' && $request->user()->role !== 'superadmin')) {
+            abort(403, 'Unauthorized.');
+        }
+        $poll = Poll::findOrFail($id);
+        
+        $candidates = $poll->candidates()
+            ->orderBy('sort')
+            ->get()
+            ->map(fn($c) => [
+                'id' => $c->id,
+                'candidate_group_id' => $c->candidate_group_id,
+                'name' => $c->name,
+                'title' => $c->title,
+                'image_url' => $c->image_url,
+                'imageUrl' => $c->image_url ?: null,
+                'category' => $c->category,
+                'status' => $c->status ?? 'active',
+            ]);
+
+        return Inertia::render('Admin/Polls/Edit', [
+            'id' => $poll->id,
+            'poll' => $poll,
+            'candidates' => $candidates,
+            'groups' => $poll->groups()->orderBy('sort_order')->get()
+        ]);
+    }
+
     public function index(Request $request)
     {
         return $request->user() ? Poll::all() : Poll::where('is_active', true)->get();

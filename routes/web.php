@@ -122,6 +122,11 @@ Route::post('/logout', [AuthController::class, 'logout']);
 
 use App\Http\Controllers\AdminUserController;
 Route::middleware('auth')->group(function () {
+    // Polls Admin Routes
+    Route::get('/admin/polls', [PollController::class, 'renderIndex']);
+    Route::get('/admin/polls/create', [PollController::class, 'adminCreate']);
+    Route::get('/admin/polls/{id}/edit', [PollController::class, 'adminEdit']);
+
     Route::get('/admins', [AdminUserController::class, 'index']);
     Route::post('/admins', [AdminUserController::class, 'store']);
     Route::delete('/admins/{id}', [AdminUserController::class, 'destroy']);

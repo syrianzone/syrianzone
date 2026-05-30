@@ -15,6 +15,7 @@ import {
   Globe,
   ListOrdered,
   Link as LinkIcon,
+  Newspaper,
 } from 'lucide-react';
 
 import { useAuth } from '@/Contexts/AuthContext';
@@ -56,6 +57,7 @@ const navLinks = [
 ];
 
 const externalLinks = [
+  { href: 'https://news.jard.chat', text: 'أخبار سوريا', icon: Newspaper },
   { href: 'https://wrraq.com', text: 'المنتدى', icon: MessageSquare },
   { href: 'https://chromewebstore.google.com/detail/syrian-flag-replacer/dngipobppehfhfggmbdiiiodgcibdeog', text: 'مبدل العلم', isFlag: true },
 ];

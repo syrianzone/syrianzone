@@ -76,7 +76,6 @@ USER root
 RUN apt-get update && apt-get install -y --no-install-recommends \
         default-mysql-client \
         curl \
-        php-zip \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy compiled Brotli .so modules from the build stage

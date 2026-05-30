@@ -79,7 +79,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy compiled Brotli .so modules from the build stage
-COPY --from=brotli-builder /tmp/brotli-modules/ /etc/nginx/modules/
+COPY --from=brotli-builder /tmp/brotli-modules/ /usr/lib/nginx/modules/
 
 WORKDIR /var/www/html
 
@@ -97,7 +97,7 @@ RUN chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
 # ── Nginx: Brotli module loader integration ─────────────────────────────────
-RUN mkdir -p /etc/nginx/main.d && echo "load_module modules/ngx_http_brotli_filter_module.so;\nload_module modules/ngx_http_brotli_static_module.so;" > /etc/nginx/main.d/brotli-loader.conf
+RUN mkdir -p /etc/nginx/main.d && printf "load_module /usr/lib/nginx/modules/ngx_http_brotli_filter_module.so;\nload_module /usr/lib/nginx/modules/ngx_http_brotli_static_module.so;\n" > /etc/nginx/main.d/brotli-loader.conf
 
 # ── Nginx: Replace default site with our Laravel server block ─────────────────
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf

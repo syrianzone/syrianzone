@@ -1,7 +1,7 @@
 # Dependency directories
 node_modules/
 /vendor
-
+dbdump/
 # Next.js build output
 .next/
 build/

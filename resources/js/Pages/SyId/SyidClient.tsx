@@ -362,9 +362,8 @@ export default function SyidClient() {
 
                         <div className="text-center">
                             <a
-                                href="https://syrianidentity.sy/media-and-press"
-                                target="_blank"
-                                rel="noopener noreferrer"
+                                href="/syid-assets/materials/191b8f0d278fc2ab095fb4f344e3e9b4.zip"
+                                download
                                 className="inline-flex items-center justify-center bg-[#428177] text-white font-bold h-12 px-8 rounded-xl no-underline transition-all hover:bg-[#054239] hover:-translate-y-0.5 hover:shadow-lg"
                             >
                                 <Download className="ml-2 h-5 w-5" />

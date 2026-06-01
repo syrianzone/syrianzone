@@ -37,33 +37,33 @@ const tiers: Tier[] = [
         rank: 'S',
         badge: 'bg-red-500',
         spots: [
-            { name: 'Just Shawarma', logo: '/shawarma/just-shawarma.png', href: 'https://www.instagram.com/justshawarma.sy/', social: 'instagram' },
-            { name: 'Alger', logo: '/shawarma/alager.png', href: 'https://www.instagram.com/shawrma.alaghr/', social: 'instagram' },
-            { name: 'Check In', logo: '/shawarma/checkin.jpg', href: 'https://www.instagram.com/checkin.sy/', social: 'instagram' },
+            { name: 'Just Shawarma', logo: '/assets/shawarma/just-shawarma.png', href: 'https://www.instagram.com/justshawarma.sy/', social: 'instagram' },
+            { name: 'Alger', logo: '/assets/shawarma/alager.png', href: 'https://www.instagram.com/shawrma.alaghr/', social: 'instagram' },
+            { name: 'Check In', logo: '/assets/shawarma/checkin.jpg', href: 'https://www.instagram.com/checkin.sy/', social: 'instagram' },
         ],
     },
     {
         rank: 'A',
         badge: 'bg-orange-500',
         spots: [
-            { name: 'Sbenti', logo: '/shawarma/sbenti.png', href: 'https://www.facebook.com/p/Spenti-snak-100063744110605/', social: 'facebook' },
-            { name: 'Kamal Ayash', logo: '/shawarma/Kamal-Ayash.jpg', href: 'https://www.instagram.com/kamalayash1/', social: 'instagram' },
+            { name: 'Sbenti', logo: '/assets/shawarma/sbenti.png', href: 'https://www.facebook.com/p/Spenti-snak-100063744110605/', social: 'facebook' },
+            { name: 'Kamal Ayash', logo: '/assets/shawarma/Kamal-Ayash.jpg', href: 'https://www.instagram.com/kamalayash1/', social: 'instagram' },
         ],
     },
     {
         rank: 'B',
         badge: 'bg-yellow-400',
         spots: [
-            { name: 'Shawerha', logo: '/shawarma/SHAWERHA.png', href: 'https://www.instagram.com/shawerhaofficial/', social: 'instagram' },
-            { name: 'Faruk', logo: '/shawarma/faruk.jpg', href: 'https://www.instagram.com/alfarouk.res/', social: 'instagram' },
-            { name: 'Abu Rateb', logo: '/shawarma/abu-rateb.png', href: 'https://www.instagram.com/aburatebchicken', social: 'instagram' },
+            { name: 'Shawerha', logo: '/assets/shawarma/SHAWERHA.png', href: 'https://www.instagram.com/shawerhaofficial/', social: 'instagram' },
+            { name: 'Faruk', logo: '/assets/shawarma/faruk.jpg', href: 'https://www.instagram.com/alfarouk.res/', social: 'instagram' },
+            { name: 'Abu Rateb', logo: '/assets/shawarma/abu-rateb.png', href: 'https://www.instagram.com/aburatebchicken', social: 'instagram' },
         ],
     },
     {
         rank: 'C',
         badge: 'bg-green-500',
         spots: [
-            { name: 'Alaga', logo: '/shawarma/alaga.png', href: 'https://www.facebook.com/alagha.Broast.shawarma/', social: 'facebook' },
+            { name: 'Alaga', logo: '/assets/shawarma/alaga.png', href: 'https://www.facebook.com/alagha.Broast.shawarma/', social: 'facebook' },
         ],
     },
 ];

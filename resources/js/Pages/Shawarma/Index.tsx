@@ -48,6 +48,7 @@ const tiers: Tier[] = [
         spots: [
             { name: 'Sbenti', logo: '/assets/shawarma/sbenti.png', href: 'https://www.facebook.com/p/Spenti-snak-100063744110605/', social: 'facebook' },
             { name: 'Kamal Ayash', logo: '/assets/shawarma/Kamal-Ayash.jpg', href: 'https://www.instagram.com/kamalayash1/', social: 'instagram' },
+            { name: 'Paprika', logo: '/assets/shawarma/paprika.jpg', href: 'https://www.instagram.com/paprika.syria', social: 'instagram' },
         ],
     },
     {

@@ -28,14 +28,14 @@ type Spot = {
 
 type Tier = {
     rank: 'S' | 'A' | 'B' | 'C';
-    badge: string;
+    color: string;
     spots: Spot[];
 };
 
 const tiers: Tier[] = [
     {
         rank: 'S',
-        badge: 'bg-red-500',
+        color: 'text-red-500',
         spots: [
             { name: 'Just Shawarma', logo: '/assets/shawarma/just-shawarma.png', href: 'https://www.instagram.com/justshawarma.sy/', social: 'instagram' },
             { name: 'Alger', logo: '/assets/shawarma/alager.png', href: 'https://www.instagram.com/shawrma.alaghr/', social: 'instagram' },
@@ -44,7 +44,7 @@ const tiers: Tier[] = [
     },
     {
         rank: 'A',
-        badge: 'bg-orange-500',
+        color: 'text-orange-500',
         spots: [
             { name: 'Sbenti', logo: '/assets/shawarma/sbenti.png', href: 'https://www.facebook.com/p/Spenti-snak-100063744110605/', social: 'facebook' },
             { name: 'Kamal Ayash', logo: '/assets/shawarma/Kamal-Ayash.jpg', href: 'https://www.instagram.com/kamalayash1/', social: 'instagram' },
@@ -52,7 +52,7 @@ const tiers: Tier[] = [
     },
     {
         rank: 'B',
-        badge: 'bg-yellow-400',
+        color: 'text-yellow-400',
         spots: [
             { name: 'Shawerha', logo: '/assets/shawarma/SHAWERHA.png', href: 'https://www.instagram.com/shawerhaofficial/', social: 'instagram' },
             { name: 'Faruk', logo: '/assets/shawarma/faruk.jpg', href: 'https://www.instagram.com/alfarouk.res/', social: 'instagram' },
@@ -61,7 +61,7 @@ const tiers: Tier[] = [
     },
     {
         rank: 'C',
-        badge: 'bg-green-500',
+        color: 'text-green-500',
         spots: [
             { name: 'Alaga', logo: '/assets/shawarma/alaga.png', href: 'https://www.facebook.com/alagha.Broast.shawarma/', social: 'facebook' },
         ],
@@ -82,10 +82,8 @@ export default function ShawarmaPage() {
                         {tiers.map((tier) => (
                             <div key={tier.rank} className="flex items-stretch">
                                 {/* Tier badge */}
-                                <div
-                                    className={`${tier.badge} shrink-0 w-20 sm:w-28 flex items-center justify-center text-black`}
-                                >
-                                    <span className="text-4xl sm:text-5xl font-extrabold leading-none">
+                                <div className="shrink-0 w-20 sm:w-28 flex items-center justify-center bg-muted">
+                                    <span className={`${tier.color} text-4xl sm:text-5xl font-extrabold leading-none`}>
                                         {tier.rank}
                                     </span>
                                 </div>

@@ -19,6 +19,7 @@ import {
   Bus,
   Smartphone,
   MessageSquareCode,
+  Sandwich,
 } from 'lucide-react';
 
 import { useAuth } from '@/Contexts/AuthContext';
@@ -58,6 +59,7 @@ const navLinks = [
   { href: '/alignment', text: 'بوصلة مخصصة', icon: Crosshair },
   { href: '/govapps', text: 'تطبيقات الحكومة', icon: Smartphone },
   { href: '/transit', text: 'ترانزيت', icon: Bus },
+  { href: '/shawarma', text: 'تير ليست الشاورما', icon: Sandwich },
 ];
 
 const externalLinks = [

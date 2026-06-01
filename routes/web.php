@@ -28,6 +28,9 @@ Route::get('/tierlist/leaderboard', [PollController::class, 'renderTierListLeade
 Route::get('/compass', function () {
     return Inertia::render('Compass/Index');
 });
+Route::get('/shawarma', function () {
+    return Inertia::render('Shawarma/Index');
+});
 Route::get('/syid', [ExternalDataController::class, 'syid']);
 Route::get('/syrian-contributors', [ExternalDataController::class, 'contributors']);
 Route::get('/sites', [ExternalDataController::class, 'sites']);

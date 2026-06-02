@@ -40,13 +40,13 @@ const tiers: Tier[] = [
             { name: 'Just Shawarma', logo: '/assets/shawarma/just-shawarma.png', href: 'https://www.instagram.com/justshawarma.sy/', social: 'instagram' },
             { name: 'Alger', logo: '/assets/shawarma/alager.png', href: 'https://www.instagram.com/shawrma.alaghr/', social: 'instagram' },
             { name: 'Check In', logo: '/assets/shawarma/checkin.jpg', href: 'https://www.instagram.com/checkin.sy/', social: 'instagram' },
+            { name: 'Sbenti', logo: '/assets/shawarma/sbenti.png', href: 'https://www.facebook.com/p/Spenti-snak-100063744110605/', social: 'facebook' },
         ],
     },
     {
         rank: 'A',
         color: 'text-orange-500',
         spots: [
-            { name: 'Sbenti', logo: '/assets/shawarma/sbenti.png', href: 'https://www.facebook.com/p/Spenti-snak-100063744110605/', social: 'facebook' },
             { name: 'Kamal Ayash', logo: '/assets/shawarma/Kamal-Ayash.jpg', href: 'https://www.instagram.com/kamalayash1/', social: 'instagram' },
             { name: 'Paprika', logo: '/assets/shawarma/paprika.jpg', href: 'https://www.instagram.com/paprika.syria', social: 'instagram' },
         ],

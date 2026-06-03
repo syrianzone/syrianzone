@@ -29,9 +29,11 @@ HEALTHCHECK --interval=1m --timeout=10s --retries=3 \
 
 USER root
 
-# Install runtime-only dependencies (including curl for health checks)
+# Install runtime-only dependencies (curl is required by the HEALTHCHECK above).
+# NOTE: no mysql client is installed — nothing in the app/docker scripts shells out
+# to `mysql`/`mysqldump` (migrations etc. run via `php artisan`). The old
+# `default-mysql-client` package also fails to resolve on Debian trixie.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        default-mysql-client \
         curl \
     && rm -rf /var/lib/apt/lists/*
 

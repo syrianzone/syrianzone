@@ -68,7 +68,7 @@ const tierDescriptions: Record<TierKey, string> = {
     F: "سيئ",
 };
 
-const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
+const BASE_PATH = import.meta.env.VITE_BASE_PATH ?? "";
 
 export default function TierBoard({
     initialCandidates,

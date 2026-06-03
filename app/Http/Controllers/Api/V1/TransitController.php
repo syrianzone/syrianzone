@@ -97,8 +97,10 @@ class TransitController extends Controller
             // Batch load all route associations — one query instead of one per stop
             $stopIds = $stops->pluck('id');
             $routeMap = DB::table('route_stop')
-                ->whereIn('stop_id', $stopIds)
-                ->select('stop_id', 'route_id')
+                ->join('routes', 'route_stop.route_id', '=', 'routes.id')
+                ->whereIn('route_stop.stop_id', $stopIds)
+                ->where('routes.status', 'published')
+                ->select('route_stop.stop_id', 'route_stop.route_id')
                 ->get()
                 ->groupBy('stop_id')
                 ->map(fn($rows) => $rows->pluck('route_id')->values());
@@ -142,11 +144,15 @@ class TransitController extends Controller
         $lng = $request->lng;
         $radius = min((float) ($request->radius ?? 500), 5000);
 
-        $point = "POINT($lng $lat)";
+        // Build the comparison point through the same GeoJSON path the stops were
+        // stored with (ST_GeomFromGeoJSON => SRID 4326, [lng, lat] axis order). Using
+        // ST_GeomFromText here would produce SRID 0 and mismatch the column's SRID 4326,
+        // causing ST_Distance_Sphere to error out on every request.
+        $pointJson = json_encode(['type' => 'Point', 'coordinates' => [(float) $lng, (float) $lat]]);
 
         $stops = DB::table('stops')
             ->select('id', 'name_ar', 'city_id', DB::raw('ST_AsGeoJSON(geometry) as geojson'))
-            ->whereRaw("ST_Distance_Sphere(geometry, ST_GeomFromText(?)) <= ?", [$point, $radius])
+            ->whereRaw("ST_Distance_Sphere(geometry, ST_GeomFromGeoJSON(?)) <= ?", [$pointJson, $radius])
             ->get();
 
         // Batch load routes for all nearby stops — one query instead of one per stop
@@ -154,6 +160,7 @@ class TransitController extends Controller
         $routesByStop = DB::table('route_stop')
             ->join('routes', 'route_stop.route_id', '=', 'routes.id')
             ->whereIn('route_stop.stop_id', $stopIds)
+            ->where('routes.status', 'published')
             ->select('route_stop.stop_id', 'routes.id', 'routes.name_ar')
             ->get()
             ->groupBy('stop_id');

@@ -51,9 +51,10 @@ class TransitAdminController extends Controller
             $routeLine = null;
 
             foreach ($features as $feature) {
-                if ($feature['geometry']['type'] === 'LineString' || $feature['geometry']['type'] === 'MultiLineString') {
+                $type = $feature['geometry']['type'] ?? null;
+                if ($type === 'LineString' || $type === 'MultiLineString') {
                     $routeLine = $feature['geometry'];
-                } elseif ($feature['geometry']['type'] === 'Point') {
+                } elseif ($type === 'Point') {
                     $stops[] = $feature; // store full feature to access nameAr from properties
                 }
             }

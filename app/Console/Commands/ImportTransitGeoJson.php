@@ -18,8 +18,8 @@ class ImportTransitGeoJson extends Command
     public function handle()
     {
         $this->info('Importing cities...');
-        $citiesPath = base_path('../frontend/src/app/transit/_data/cities.json');
-        
+        $citiesPath = resource_path('js/Pages/Transit/_data/cities.json');
+
         if (!File::exists($citiesPath)) {
             $this->error("cities.json not found at {$citiesPath}");
             return;
@@ -47,16 +47,16 @@ class ImportTransitGeoJson extends Command
             $polygonWkt = "POLYGON(($minLng $minLat, $maxLng $minLat, $maxLng $maxLat, $minLng $maxLat, $minLng $minLat))";
             $centerWkt = "POINT({$cityData['center'][0]} {$cityData['center'][1]})";
 
-            City::create([
-                'id' => $cityData['id'],
-                'name_ar' => $cityData['nameAr'],
-                'name_en' => $cityData['nameEn'],
-                'center' => DB::raw("ST_GeomFromText('{$centerWkt}')"),
-                'bounds' => DB::raw("ST_GeomFromText('{$polygonWkt}')"),
-                'zoom' => $cityData['zoom'],
-                'status' => $cityData['status'],
-            ]);
-            
+            DB::statement(
+                'INSERT INTO cities (id, name_ar, name_en, center, bounds, zoom, status, created_at, updated_at) '
+                . 'VALUES (?, ?, ?, ST_GeomFromText(?), ST_GeomFromText(?), ?, ?, ?, ?)',
+                [
+                    $cityData['id'], $cityData['nameAr'], $cityData['nameEn'],
+                    $centerWkt, $polygonWkt, $cityData['zoom'], $cityData['status'],
+                    now(), now(),
+                ]
+            );
+
             $this->importRoutes($cityData['id']);
             $this->importStops($cityData['id']);
         }
@@ -66,7 +66,7 @@ class ImportTransitGeoJson extends Command
 
     private function importRoutes($cityId)
     {
-        $path = base_path("../frontend/public/data/{$cityId}/routes.geojson");
+        $path = public_path("data/{$cityId}/routes.geojson");
         if (!File::exists($path)) return;
         
         $data = json_decode(File::get($path), true);
@@ -87,17 +87,16 @@ class ImportTransitGeoJson extends Command
                 'status' => 'published',
             ]);
 
-            $geomJson = json_encode($geom);
-            RouteGeometry::create([
-                'route_id' => $route->id,
-                'geometry' => DB::raw("ST_GeomFromGeoJSON('{$geomJson}')")
-            ]);
+            DB::statement(
+                'INSERT INTO route_geometries (route_id, geometry, created_at, updated_at) VALUES (?, ST_GeomFromGeoJSON(?), ?, ?)',
+                [$route->id, json_encode($geom), now(), now()]
+            );
         }
     }
 
     private function importStops($cityId)
     {
-        $path = base_path("../frontend/public/data/{$cityId}/stops.geojson");
+        $path = public_path("data/{$cityId}/stops.geojson");
         if (!File::exists($path)) return;
         
         $data = json_decode(File::get($path), true);
@@ -112,13 +111,10 @@ class ImportTransitGeoJson extends Command
             $stopId = $props['id'];
             
             if (!Stop::find($stopId)) {
-                $geomJson = json_encode($geom);
-                Stop::create([
-                    'id' => $stopId,
-                    'city_id' => $cityId,
-                    'name_ar' => $props['nameAr'] ?? '',
-                    'geometry' => DB::raw("ST_GeomFromGeoJSON('{$geomJson}')"),
-                ]);
+                DB::statement(
+                    'INSERT INTO stops (id, city_id, name_ar, geometry, created_at, updated_at) VALUES (?, ?, ?, ST_GeomFromGeoJSON(?), ?, ?)',
+                    [$stopId, $cityId, $props['nameAr'] ?? '', json_encode($geom), now(), now()]
+                );
             }
             
             if (isset($props['routeId'])) {

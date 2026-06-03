@@ -21,6 +21,8 @@ class TransitStudioController extends Controller
             'price' => 'nullable|integer',
             'notes' => 'nullable|string',
             'geojson' => 'required|array',
+            'geojson.features' => 'required|array|min:1',
+            'geojson.features.*.geometry.type' => 'required|string',
         ]);
 
         $draft = RouteDraft::create([

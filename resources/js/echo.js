@@ -23,6 +23,11 @@ window.Echo = new Echo({
     wssPort: import.meta.env.VITE_REVERB_PORT ?? 443,
     forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'https') === 'https',
     enabledTransports: ['ws', 'wss'],
+    // Send a ping every 25s so Reverb's 30s activity_timeout never fires.
+    // Reverb closes connections after 30s of silence; Pusher.js defaults to
+    // 120s which is far too long.
+    activityTimeout: 25000,
+    pongTimeout: 10000,
     authEndpoint: '/guesswho/broadcasting/auth',
     auth: {
         headers: {

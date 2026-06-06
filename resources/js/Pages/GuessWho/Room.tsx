@@ -186,6 +186,9 @@ export default function GameRoom({ game }: GameProps) {
 
   const [myTurn, setMyTurn] = useState(false);
   const [winMessage, setWinMessage] = useState<string | null>(null);
+  // Non-blocking peer disconnect banner (replaces the old alert())
+  const [peerDisconnected, setPeerDisconnected] = useState(false);
+  const peerReconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // WebRTC Refs
   const peerConnection = useRef<RTCPeerConnection | null>(null);
@@ -244,6 +247,12 @@ export default function GameRoom({ game }: GameProps) {
         console.log('[GuessWho] .joining() fired, new user:', user.session_id);
         setPeerUuid(user.session_id);
         setOpponentName(user.name || 'لاعب آخر');
+        // Clear any disconnect banner since the peer is back
+        setPeerDisconnected(false);
+        if (peerReconnectTimer.current) {
+          clearTimeout(peerReconnectTimer.current);
+          peerReconnectTimer.current = null;
+        }
         // Smaller UUID initiates the WebRTC call
         if (sessionUuid < user.session_id) {
           console.log('[GuessWho] I have smaller UUID, initiating call to joiner');
@@ -256,7 +265,10 @@ export default function GameRoom({ game }: GameProps) {
         console.log('[GuessWho] .leaving() fired, user left:', user.session_id);
         if (user.session_id === peerUuidRef.current) {
           setPeerConnected(false);
-          alert('انقطع اتصال الخصم.');
+          // Give 5s grace period for reconnection before showing disconnect banner
+          peerReconnectTimer.current = setTimeout(() => {
+            setPeerDisconnected(true);
+          }, 5000);
         }
       })
       .error((error: any) => {
@@ -460,6 +472,20 @@ export default function GameRoom({ game }: GameProps) {
               animation: share-glow 1.5s infinite ease-in-out;
             }
           `}</style>
+
+          {/* Peer Disconnect Banner — non-blocking, dismissible, auto-clears on reconnect */}
+          {peerDisconnected && (
+            <div className="flex items-center justify-between gap-3 bg-destructive/10 border border-destructive/30 text-destructive rounded-xl px-4 py-3 mb-4 text-sm font-bold">
+              <span>انقطع اتصال الخصم. في انتظار إعادة الاتصال...</span>
+              <button
+                onClick={() => setPeerDisconnected(false)}
+                className="text-destructive/60 hover:text-destructive transition shrink-0"
+                aria-label="إغلاق"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
 
           {/* Top Info Panel */}
           <div className="flex flex-col md:flex-row justify-between items-center bg-card border border-border p-4 rounded-xl mb-6 gap-4">

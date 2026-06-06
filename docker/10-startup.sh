@@ -11,7 +11,10 @@ php /var/www/html/artisan migrate --force || echo "⚠️ Database migrations fa
 echo "🌱 Seeding database..."
 php /var/www/html/artisan db:seed --class=GuessWhoSeeder --force || echo "⚠️ GuessWho seeding failed."
 
-# 3. Optimize configurations and cache
+# 3. Ensure storage symlink exists (Docker layers don't preserve symlinks)
+php /var/www/html/artisan storage:link || true
+
+# 4. Optimize configurations and cache
 echo "⚡ Optimizing Laravel application..."
 php /var/www/html/artisan optimize:clear
 php /var/www/html/artisan config:cache

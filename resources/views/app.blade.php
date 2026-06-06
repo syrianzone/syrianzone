@@ -34,6 +34,16 @@
         })();
     </script>
     
+    <!-- Runtime Reverb Config -->
+    <script>
+        window.REVERB_CONFIG = window.REVERB_CONFIG || {
+            host: "{{ config('broadcasting.connections.reverb.host') }}",
+            port: {{ config('broadcasting.connections.reverb.options.port', 443) }},
+            scheme: "{{ config('broadcasting.connections.reverb.options.scheme', 'https') }}",
+            key: "{{ config('broadcasting.connections.reverb.key') }}",
+        };
+    </script>
+    
     <!-- Scripts & Styles -->
     @viteReactRefresh
     @vite(['resources/js/app.tsx'])

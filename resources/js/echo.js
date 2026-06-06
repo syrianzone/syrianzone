@@ -5,27 +5,21 @@ window.Pusher = Pusher;
 
 import { getGuessWhoSessionId } from './Lib/guessWhoSession';
 
-// Generate session ID immediately if not exists
 const sessionId = getGuessWhoSessionId();
 
-// Use the current page's hostname so that whether the user opens via
-// "localhost" or "127.0.0.1", Echo connects to the same origin and the
-// /guesswho/broadcasting/auth endpoint is called on the correct host.
-const wsHost = (typeof window !== 'undefined' && window.location.hostname)
+const reverbConfig = (typeof window !== 'undefined' && window.REVERB_CONFIG) || {};
+const fallbackHost = (typeof window !== 'undefined' && window.location.hostname)
     ? window.location.hostname
-    : import.meta.env.VITE_REVERB_HOST;
+    : (reverbConfig.host || 'localhost');
 
 window.Echo = new Echo({
     broadcaster: 'reverb',
-    key: import.meta.env.VITE_REVERB_APP_KEY,
-    wsHost: wsHost,
-    wsPort: import.meta.env.VITE_REVERB_PORT ?? 80,
-    wssPort: import.meta.env.VITE_REVERB_PORT ?? 443,
-    forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'https') === 'https',
+    key: reverbConfig.key || '',
+    wsHost: fallbackHost,
+    wsPort: reverbConfig.port ?? 80,
+    wssPort: reverbConfig.port ?? 443,
+    forceTLS: (reverbConfig.scheme ?? 'https') === 'https',
     enabledTransports: ['ws', 'wss'],
-    // Send a ping every 25s so Reverb's 30s activity_timeout never fires.
-    // Reverb closes connections after 30s of silence; Pusher.js defaults to
-    // 120s which is far too long.
     activityTimeout: 25000,
     pongTimeout: 10000,
     authEndpoint: '/guesswho/broadcasting/auth',

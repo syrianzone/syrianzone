@@ -1,7 +1,9 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # Stage 1: Build Vite/React assets using Bun
 # ─────────────────────────────────────────────────────────────────────────────
+ARG SKEW=local
 FROM oven/bun:alpine AS frontend-builder
+LABEL skew=${SKEW}
 WORKDIR /app
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
@@ -11,6 +13,7 @@ RUN bun run build
 # ─────────────────────────────────────────────────────────────────────────────
 # Stage 2: Production image — serversideup/php with S6 Overlay v3
 # ─────────────────────────────────────────────────────────────────────────────
+ARG SKEW=local
 FROM serversideup/php:8.4-fpm-nginx
 
 # Performance & Stability (PHP-FPM)

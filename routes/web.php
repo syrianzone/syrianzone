@@ -3,8 +3,9 @@
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\AuthController;
-
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\GuessWhoController;
+use App\Http\Controllers\SignalingController;
 
 Route::get('/', [HomeController::class, 'index']);
 
@@ -36,6 +37,11 @@ Route::get('/house', [ExternalDataController::class, 'house']);
 Route::get('/alignment', [ExternalDataController::class, 'alignment']);
 Route::get('/govapps', [ExternalDataController::class, 'govapps']);
 Route::get('/population', [PopulationAtlasController::class, 'renderIndex']);
+
+Route::get('/guesswho', [GuessWhoController::class, 'index']);
+Route::post('/guesswho/rooms', [GuessWhoController::class, 'createRoom']);
+Route::get('/guesswho/room/{roomCode}', [GuessWhoController::class, 'showRoom']);
+Route::post('/guesswho/room/{roomCode}/signal', [SignalingController::class, 'signal']);
 
 Route::get('/transit', function () {
     return Inertia::render('Transit/Index');

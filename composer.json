@@ -10,6 +10,7 @@
         "filament/filament": "^3.2",
         "inertiajs/inertia-laravel": "^3.1",
         "laravel/framework": "^11.31",
+        "laravel/reverb": "^1.0",
         "laravel/sanctum": "^4.0",
         "laravel/scout": "^11.2",
         "laravel/socialite": "^5.24",

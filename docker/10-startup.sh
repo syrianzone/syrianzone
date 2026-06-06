@@ -7,9 +7,9 @@ echo "🚀 Running production startup tasks..."
 echo "🔄 Running database migrations..."
 php /var/www/html/artisan migrate --force || echo "⚠️ Database migrations failed or skipped."
 
-# 2. Seed the database (idempotent — runs all seeders via DatabaseSeeder)
+# 2. Seed the database (runs each seeder independently to avoid DatabaseSeeder factory dependency on dev-only Faker)
 echo "🌱 Seeding database..."
-php /var/www/html/artisan db:seed --force || echo "⚠️ Database seeding failed or skipped."
+php /var/www/html/artisan db:seed --class=GuessWhoSeeder --force || echo "⚠️ GuessWho seeding failed."
 
 # 3. Optimize configurations and cache
 echo "⚡ Optimizing Laravel application..."

@@ -7,7 +7,11 @@ echo "🚀 Running production startup tasks..."
 echo "🔄 Running database migrations..."
 php /var/www/html/artisan migrate --force || echo "⚠️ Database migrations failed or skipped."
 
-# 2. Optimize configurations and cache
+# 2. Seed the database (idempotent — runs all seeders via DatabaseSeeder)
+echo "🌱 Seeding database..."
+php /var/www/html/artisan db:seed --force || echo "⚠️ Database seeding failed or skipped."
+
+# 3. Optimize configurations and cache
 echo "⚡ Optimizing Laravel application..."
 php /var/www/html/artisan optimize:clear
 php /var/www/html/artisan config:cache

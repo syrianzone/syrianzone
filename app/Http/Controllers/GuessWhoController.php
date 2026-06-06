@@ -101,4 +101,49 @@ class GuessWhoController extends Controller
             'game' => $gameData
         ]);
     }
+
+    // Custom endpoint to authorize WebSocket broadcasting for both authenticated and guest users
+    public function authenticateBroadcasting(Request $request)
+    {
+        $socketId = $request->input('socket_id');
+        $channelName = $request->input('channel_name');
+
+        if (!$socketId || !$channelName) {
+            return response()->json(['error' => 'البيانات غير صالحة.'], 400);
+        }
+
+        // Retrieve guest session ID from headers or inputs
+        $sessionId = $request->header('X-Guess-Who-Session-ID')
+            ?? $request->input('session_id')
+            ?? 'guest-' . Str::uuid();
+
+        // Retrieve authenticated user
+        $user = $request->user();
+
+        // Build the presence channel user details block
+        $channelData = json_encode([
+            'user_id' => $sessionId,
+            'user_info' => [
+                'id' => $sessionId,
+                'session_id' => $sessionId,
+                'name' => $user ? $user->name : 'لاعب ضيف',
+            ]
+        ]);
+
+        // Generate HMAC signature using Pusher/Reverb App Secret
+        $stringToSign = $socketId . ':' . $channelName . ':' . $channelData;
+        $appSecret = env('REVERB_APP_SECRET') ?: env('PUSHER_APP_SECRET');
+        $appKey = env('REVERB_APP_KEY') ?: env('PUSHER_APP_KEY');
+
+        if (!$appSecret) {
+            return response()->json(['error' => 'لم يتم إعداد Reverb App Secret.'], 500);
+        }
+
+        $signature = hash_hmac('sha256', $stringToSign, $appSecret);
+
+        return response()->json([
+            'auth' => $appKey . ':' . $signature,
+            'channel_data' => $channelData,
+        ]);
+    }
 }

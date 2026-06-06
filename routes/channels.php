@@ -7,12 +7,6 @@ Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
 });
 
 Broadcast::channel('guesswho.{roomCode}', function ($user = null, $roomCode) {
-    \Illuminate\Support\Facades\Log::info('Broadcast auth callback execution start', [
-        'roomCode' => $roomCode,
-        'user' => $user ? $user->id : 'guest',
-        'headers' => request()->headers->all()
-    ]);
-    
     // Read local storage guest session ID from request headers
     $sessionId = request()->header('X-Guess-Who-Session-ID')
         ?? request()->input('session_id') 

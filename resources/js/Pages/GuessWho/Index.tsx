@@ -6,6 +6,7 @@ import { Button } from '@/Components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/Components/ui/card';
 import { Badge } from '@/Components/ui/badge';
 import axios from 'axios';
+import { getGuessWhoSessionId } from '@/Lib/guessWhoSession';
 
 interface Category {
   id: number;
@@ -26,22 +27,13 @@ export default function GuessWhoIndex({ categories, total_characters }: IndexPro
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'create' | 'join'>('create');
 
-  const getSessionId = () => {
-    let sid = localStorage.getItem('guess_who_session_id');
-    if (!sid) {
-      sid = crypto.randomUUID();
-      localStorage.setItem('guess_who_session_id', sid);
-    }
-    return sid;
-  };
-
   const handleCreateRoom = async () => {
     if (!selectedCat) return;
     setLoading(true);
     try {
       const res = await axios.post('/guesswho/rooms', {
         category_id: selectedCat,
-        player_session: getSessionId()
+        player_session: getGuessWhoSessionId()
       });
       router.visit(`/guesswho/room/${res.data.room_code}`);
     } catch (err) {

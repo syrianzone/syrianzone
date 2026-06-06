@@ -29,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/v1/studio/routes',
             'api/polls/*/vote',
             'api/submit',
+            'guesswho/broadcasting/auth',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

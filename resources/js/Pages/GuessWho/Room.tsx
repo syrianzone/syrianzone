@@ -7,6 +7,7 @@ import { Button } from '@/Components/ui/button';
 import { Card } from '@/Components/ui/card';
 import { Badge } from '@/Components/ui/badge';
 import axios from 'axios';
+import { getGuessWhoSessionId } from '@/Lib/guessWhoSession';
 
 interface Character {
   id: number;
@@ -154,23 +155,35 @@ function CharacterCard({
 }
 
 export default function GameRoom({ game }: GameProps) {
-  const [sessionUuid] = useState(() => {
-    let uuid = localStorage.getItem('guess_who_session_id');
-    if (!uuid) {
-      uuid = crypto.randomUUID();
-      localStorage.setItem('guess_who_session_id', uuid);
-    }
-    return uuid;
-  });
+  const [sessionUuid] = useState(() => getGuessWhoSessionId());
   
   // Game States
   const [peerConnected, setPeerConnected] = useState(false);
   const [gameState, setGameState] = useState<'lobby' | 'selecting' | 'playing' | 'ended'>('lobby');
   const [board, setBoard] = useState<(Character & { eliminated: boolean })[]>([]);
-  const [mySecret, setMySecret] = useState<number | null>(null);
-  const [opponentName, setOpponentName] = useState('الخصم');
+  const [mySecret, setMySecretState] = useState<number | null>(null);
+  const mySecretRef = useRef<number | null>(null);
+  const setMySecret = (id: number | null) => {
+    mySecretRef.current = id;
+    setMySecretState(id);
+  };
+
+  const [opponentName, setOpponentNameState] = useState('الخصم');
+  const opponentNameRef = useRef<string>('الخصم');
+  const setOpponentName = (name: string) => {
+    opponentNameRef.current = name;
+    setOpponentNameState(name);
+  };
+
   const [opponentRemaining, setOpponentRemaining] = useState(game.category.characters.length);
-  const [peerUuid, setPeerUuid] = useState<string | null>(null);
+
+  const [peerUuid, setPeerUuidState] = useState<string | null>(null);
+  const peerUuidRef = useRef<string | null>(null);
+  const setPeerUuid = (uuid: string | null) => {
+    peerUuidRef.current = uuid;
+    setPeerUuidState(uuid);
+  };
+
   const [myTurn, setMyTurn] = useState(false);
   const [winMessage, setWinMessage] = useState<string | null>(null);
 
@@ -185,6 +198,19 @@ export default function GameRoom({ game }: GameProps) {
     setBoard([...items].sort(() => Math.random() - 0.5));
   }, [game]);
 
+  // Auto-transition from 'selecting' → 'playing' once peer connects and secret is chosen.
+  // This prevents the game from starting while the data channel is not yet open.
+  useEffect(() => {
+    if (peerConnected && mySecret !== null && (gameState === 'selecting' || gameState === 'lobby')) {
+      // Send directly via ref to avoid stale-closure on sendStateUpdate
+      if (dataChannel.current?.readyState === 'open') {
+        dataChannel.current.send(JSON.stringify({ action: 'select_ready', payload: { id: mySecret } }));
+      }
+      setGameState('playing');
+    }
+  }, [peerConnected, mySecret, gameState]);
+
+
   // Configure WebRTC and Laravel Echo listeners
   useEffect(() => {
     if (!window.Echo) {
@@ -193,27 +219,51 @@ export default function GameRoom({ game }: GameProps) {
     }
 
     const channelName = `guesswho.${game.room_code}`;
+    console.log('[GuessWho] Joining presence channel:', channelName, 'as session:', sessionUuid);
+
     const channel = window.Echo.join(channelName)
       .here((users: any[]) => {
+        console.log('[GuessWho] .here() fired, users in channel:', users);
         const other = users.find(u => u.session_id !== sessionUuid);
         if (other) {
+          console.log('[GuessWho] Peer already in channel:', other.session_id);
           setPeerUuid(other.session_id);
           setOpponentName(other.name || 'لاعب آخر');
-          initiateCall(other.session_id);
+          // Smaller UUID initiates the WebRTC call
+          if (sessionUuid < other.session_id) {
+            console.log('[GuessWho] I have smaller UUID, initiating call');
+            initiateCall(other.session_id);
+          } else {
+            console.log('[GuessWho] I have larger UUID, waiting for offer');
+          }
+        } else {
+          console.log('[GuessWho] No peer in channel yet, waiting for joining event');
         }
       })
       .joining((user: any) => {
+        console.log('[GuessWho] .joining() fired, new user:', user.session_id);
         setPeerUuid(user.session_id);
         setOpponentName(user.name || 'لاعب آخر');
-        initiateCall(user.session_id);
+        // Smaller UUID initiates the WebRTC call
+        if (sessionUuid < user.session_id) {
+          console.log('[GuessWho] I have smaller UUID, initiating call to joiner');
+          initiateCall(user.session_id);
+        } else {
+          console.log('[GuessWho] I have larger UUID, waiting for offer from joiner');
+        }
       })
       .leaving((user: any) => {
-        if (user.session_id === peerUuid) {
+        console.log('[GuessWho] .leaving() fired, user left:', user.session_id);
+        if (user.session_id === peerUuidRef.current) {
           setPeerConnected(false);
           alert('انقطع اتصال الخصم.');
         }
       })
+      .error((error: any) => {
+        console.error('[GuessWho] Presence channel subscription error:', error);
+      })
       .listen('.signal', (e: any) => {
+        console.log('[GuessWho] Signal received:', e.type, 'targetSession:', e.targetSession);
         if (e.targetSession === sessionUuid) {
           handleSignal(e);
         }
@@ -223,7 +273,7 @@ export default function GameRoom({ game }: GameProps) {
       window.Echo.leave(channelName);
       peerConnection.current?.close();
     };
-  }, [peerUuid]);
+  }, [game.room_code, sessionUuid]);
 
   // Setup Peer Connection
   const createPeerConnection = (targetSession: string) => {
@@ -252,7 +302,7 @@ export default function GameRoom({ game }: GameProps) {
     dataChannel.current = channel;
     channel.onopen = () => {
       setPeerConnected(true);
-      const isPlayer1 = sessionUuid < (peerUuid || '');
+      const isPlayer1 = sessionUuid < (peerUuidRef.current || '');
       setMyTurn(isPlayer1);
     };
     channel.onclose = () => setPeerConnected(false);
@@ -315,11 +365,13 @@ export default function GameRoom({ game }: GameProps) {
         setOpponentRemaining(msg.payload.remaining);
         break;
       case 'guess':
-        const isCorrect = msg.payload.character_id === mySecret;
+        const currentMySecret = mySecretRef.current;
+        const currentOpponentName = opponentNameRef.current;
+        const isCorrect = msg.payload.character_id === currentMySecret;
         if (isCorrect) {
-          sendStateUpdate('guess_result', { success: true, winner: opponentName });
+          sendStateUpdate('guess_result', { success: true, winner: currentOpponentName });
           setGameState('ended');
-          setWinMessage(`لقد فاز ${opponentName}! خمن بنجاح أن شخصيتك هي: ${game.category.characters.find(c => c.id === mySecret)?.name_ar}`);
+          setWinMessage(`لقد فاز ${currentOpponentName}! خمن بنجاح أن شخصيتك هي: ${game.category.characters.find(c => c.id === currentMySecret)?.name_ar}`);
         } else {
           sendStateUpdate('guess_result', { success: false });
           alert(`خمن الخصم بشكل خاطئ! دورك الآن.`);
@@ -350,8 +402,15 @@ export default function GameRoom({ game }: GameProps) {
 
   const handleChooseSecret = (id: number) => {
     setMySecret(id);
-    sendStateUpdate('select_ready', { id });
-    setGameState('playing');
+    if (peerConnected) {
+      // Peer is already connected — data channel is open, transition immediately.
+      sendStateUpdate('select_ready', { id });
+      setGameState('playing');
+    } else {
+      // Peer not yet connected — move to a waiting state; the useEffect above
+      // will complete the transition once the peer joins and data channel opens.
+      setGameState('selecting');
+    }
   };
 
   const handleGuess = (charId: number, charName: string) => {
@@ -438,6 +497,24 @@ export default function GameRoom({ game }: GameProps) {
               </Button>
             </div>
           </div>
+
+          {/* Selecting screen: secret chosen but waiting for opponent to connect */}
+          {gameState === 'selecting' && (
+            <Card className="bg-card border-border text-card-foreground rounded-2xl p-8 text-center shadow-xl">
+              <div className="flex flex-col items-center gap-4">
+                <div className="p-4 bg-primary/10 rounded-full border border-primary/30 animate-pulse">
+                  <Gamepad2 className="h-10 w-10 text-primary" />
+                </div>
+                <h2 className="text-2xl font-black text-foreground">تم اختيار شخصيتك السرية!</h2>
+                <p className="text-muted-foreground text-sm max-w-sm">
+                  في انتظار انضمام الخصم إلى الغرفة... شارك رابط الغرفة معه لبدء اللعبة.
+                </p>
+                <Badge variant="outline" className="px-4 py-2 text-sm font-bold bg-yellow-500/10 text-yellow-600 border-yellow-500/20 animate-pulse">
+                  بانتظار الخصم...
+                </Badge>
+              </div>
+            </Card>
+          )}
 
           {/* Lobby screen: Choose secret character */}
           {gameState === 'lobby' && (

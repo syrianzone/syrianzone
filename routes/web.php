@@ -45,6 +45,7 @@ Route::get('/guesswho', [GuessWhoController::class, 'index']);
 Route::post('/guesswho/rooms', [GuessWhoController::class, 'createRoom']);
 Route::get('/guesswho/room/{roomCode}', [GuessWhoController::class, 'showRoom']);
 Route::post('/guesswho/room/{roomCode}/signal', [SignalingController::class, 'signal']);
+Route::post('/guesswho/broadcasting/auth', [GuessWhoController::class, 'authenticateBroadcasting']);
 
 Route::get('/transit', function () {
     return Inertia::render('Transit/Index');

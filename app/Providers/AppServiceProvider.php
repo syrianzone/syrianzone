@@ -23,20 +23,5 @@ class AppServiceProvider extends ServiceProvider
             )
         );
 
-        \Illuminate\Support\Facades\Broadcast::resolveRequestUsing(function ($request) {
-            if ($user = $request->user()) {
-                return $user;
-            }
-
-            // Return a GenericUser dummy object for unauthenticated guest connections
-            $sessionId = $request->header('X-Guess-Who-Session-ID')
-                ?? $request->input('session_id') 
-                ?? 'guest-' . \Illuminate\Support\Str::uuid();
-
-            return new \Illuminate\Auth\GenericUser([
-                'id' => $sessionId,
-                'name' => 'لاعب ضيف',
-            ]);
-        });
     }
 }

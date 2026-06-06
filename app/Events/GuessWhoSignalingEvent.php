@@ -3,11 +3,11 @@
 namespace App\Events;
 
 use Illuminate\Broadcasting\PresenceChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class GuessWhoSignalingEvent implements ShouldBroadcast
+class GuessWhoSignalingEvent implements ShouldBroadcastNow
 {
     use Dispatchable, SerializesModels;
 

@@ -294,9 +294,14 @@ export default function GameRoom({ game }: GameProps) {
   // Debounced call initiator — collapses rapid leave/join events into one stable attempt
   const scheduleCall = (targetSession: string) => {
     if (initiateCallTimer.current) clearTimeout(initiateCallTimer.current);
-    initiateCallTimer.current = setTimeout(() => {
-      console.log('[GuessWho] Debounce resolved, initiating call to:', targetSession);
-      initiateCall(targetSession);
+    initiateCallTimer.current = setTimeout(async () => {
+      try {
+        console.log('[GuessWho] Debounce resolved, initiating call to:', targetSession);
+        await initiateCall(targetSession);
+        console.log('[GuessWho] initiateCall completed — offer sent, waiting for answer');
+      } catch (err) {
+        console.error('[GuessWho] initiateCall failed:', err);
+      }
     }, 800);
   };
 
@@ -331,9 +336,22 @@ export default function GameRoom({ game }: GameProps) {
       ]
     });
 
+    // Log all state transitions for debugging
+    pc.onconnectionstatechange = () =>
+      console.log('[GuessWho] PC connectionState:', pc.connectionState);
+    pc.onicegatheringstatechange = () =>
+      console.log('[GuessWho] ICE gatheringState:', pc.iceGatheringState);
+    pc.oniceconnectionstatechange = () =>
+      console.log('[GuessWho] ICE connectionState:', pc.iceConnectionState);
+    pc.onsignalingstatechange = () =>
+      console.log('[GuessWho] signalingState:', pc.signalingState);
+
     pc.onicecandidate = (event) => {
       if (event.candidate) {
+        console.log('[GuessWho] Sending ICE candidate:', event.candidate.type);
         sendSignal(targetSession, 'candidate', event.candidate);
+      } else {
+        console.log('[GuessWho] ICE gathering complete');
       }
     };
 
@@ -371,9 +389,12 @@ export default function GameRoom({ game }: GameProps) {
     const dc = pc.createDataChannel('game_sync');
     setupDataChannel(dc);
 
+    console.log('[GuessWho] Creating offer...');
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
-    sendSignal(targetSession, 'offer', offer);
+    console.log('[GuessWho] Sending offer, sdpType:', offer.type);
+    await sendSignal(targetSession, 'offer', offer);
+    console.log('[GuessWho] Offer sent — waiting for answer from:', targetSession);
   };
 
   const handleSignal = async (e: any) => {

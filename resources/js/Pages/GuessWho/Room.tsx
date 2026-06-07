@@ -194,6 +194,8 @@ export default function GameRoom({ game }: GameProps) {
   const peerConnection = useRef<RTCPeerConnection | null>(null);
   const dataChannel = useRef<RTCDataChannel | null>(null);
   const iceCandidateQueue = useRef<RTCIceCandidateInit[]>([]);
+  // Debounce timer: collapses rapid Reverb leave/join flicker into one call attempt
+  const initiateCallTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Initialize board characters
   useEffect(() => {
@@ -233,10 +235,10 @@ export default function GameRoom({ game }: GameProps) {
           console.log('[GuessWho] Peer already in channel:', other.session_id);
           setPeerUuid(other.session_id);
           setOpponentName(other.name || 'لاعب آخر');
-          // Smaller UUID initiates the WebRTC call
+          // Smaller UUID initiates the WebRTC call — debounced to absorb Reverb reconnect flicker
           if (sessionUuid < other.session_id) {
-            console.log('[GuessWho] I have smaller UUID, initiating call');
-            initiateCall(other.session_id);
+            console.log('[GuessWho] I have smaller UUID, scheduling call');
+            scheduleCall(other.session_id);
           } else {
             console.log('[GuessWho] I have larger UUID, waiting for offer');
           }
@@ -254,10 +256,10 @@ export default function GameRoom({ game }: GameProps) {
           clearTimeout(peerReconnectTimer.current);
           peerReconnectTimer.current = null;
         }
-        // Smaller UUID initiates the WebRTC call
+        // Smaller UUID initiates the WebRTC call — debounced to absorb Reverb reconnect flicker
         if (sessionUuid < user.session_id) {
-          console.log('[GuessWho] I have smaller UUID, initiating call to joiner');
-          initiateCall(user.session_id);
+          console.log('[GuessWho] I have smaller UUID, scheduling call to joiner');
+          scheduleCall(user.session_id);
         } else {
           console.log('[GuessWho] I have larger UUID, waiting for offer from joiner');
         }
@@ -285,8 +287,18 @@ export default function GameRoom({ game }: GameProps) {
     return () => {
       window.Echo.leave(channelName);
       peerConnection.current?.close();
+      if (initiateCallTimer.current) clearTimeout(initiateCallTimer.current);
     };
   }, [game.room_code, sessionUuid]);
+
+  // Debounced call initiator — collapses rapid leave/join events into one stable attempt
+  const scheduleCall = (targetSession: string) => {
+    if (initiateCallTimer.current) clearTimeout(initiateCallTimer.current);
+    initiateCallTimer.current = setTimeout(() => {
+      console.log('[GuessWho] Debounce resolved, initiating call to:', targetSession);
+      initiateCall(targetSession);
+    }, 800);
+  };
 
   // Setup Peer Connection
   const createPeerConnection = (targetSession: string) => {

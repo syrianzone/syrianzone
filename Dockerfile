@@ -53,8 +53,6 @@ RUN chmod +x /etc/entrypoint.d/10-startup.sh
 
 # server-opts.d: location blocks injected INSIDE the server {} block
 COPY docker/server-opts.d/app-websocket.conf /etc/nginx/server-opts.d/app-websocket.conf
-# http-opts.d: map/global directives injected at the http {} level
-COPY docker/http-opts.d/connection-upgrade.conf /etc/nginx/http-opts.d/connection-upgrade.conf
 
 RUN mkdir -p /etc/s6-overlay/s6-rc.d/queue-worker/dependencies.d
 RUN echo "longrun" > /etc/s6-overlay/s6-rc.d/queue-worker/type

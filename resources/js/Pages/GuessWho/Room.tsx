@@ -298,6 +298,16 @@ export default function GameRoom({ game }: GameProps) {
         console.log('[GuessWho] .leaving() fired, user left:', user.session_id);
         if (user.session_id === peerUuidRef.current) {
           setPeerConnected(false);
+          if (peerConnection.current) {
+            try {
+              peerConnection.current.close();
+            } catch (err) {
+              console.error('[GuessWho] Error closing peer connection on leaving:', err);
+            }
+            peerConnection.current = null;
+            dataChannel.current = null;
+            iceCandidateQueue.current = [];
+          }
           // Give 5s grace period for reconnection before showing disconnect banner
           peerReconnectTimer.current = setTimeout(() => {
             setPeerDisconnected(true);
@@ -428,6 +438,20 @@ export default function GameRoom({ game }: GameProps) {
   };
 
   const handleSignal = async (e: any) => {
+    if (e.type === 'offer') {
+      console.log('[GuessWho] Received new offer signal. Re-creating peer connection.');
+      if (peerConnection.current) {
+        try {
+          peerConnection.current.close();
+        } catch (err) {
+          console.error('[GuessWho] Error closing peer connection on offer:', err);
+        }
+        peerConnection.current = null;
+        dataChannel.current = null;
+        iceCandidateQueue.current = [];
+      }
+    }
+
     const pc = peerConnection.current || createPeerConnection(e.senderSession);
 
     // Decode base64-encoded SDP (encoded by sender to protect \r\n in transit)

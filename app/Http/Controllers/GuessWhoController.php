@@ -117,6 +117,18 @@ class GuessWhoController extends Controller
             ?? $request->input('session_id')
             ?? 'guest-' . Str::uuid();
 
+        // Verify session ID matches one of the assigned players for this room channel
+        if (preg_match('/^(?:presence-)?guesswho\.(.+)$/', $channelName, $matches)) {
+            $roomCode = $matches[1];
+            $game = GuessWhoGame::where('room_code', $roomCode)->first();
+            if (!$game) {
+                return response()->json(['error' => 'الغرفة غير موجودة.'], 404);
+            }
+            if ($game->player_1_session !== $sessionId && $game->player_2_session !== $sessionId) {
+                return response()->json(['error' => 'غير مصرح لك بالانضمام لهذه الغرفة.'], 403);
+            }
+        }
+
         // Retrieve authenticated user
         $user = $request->user();
 

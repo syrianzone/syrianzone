@@ -6,7 +6,7 @@ Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
     return (int) $user->id === (int) $id;
 });
 
-Broadcast::channel('guesswho.{roomCode}', function ($user = null, $roomCode) {
+Broadcast::channel('guesswho.{roomCode}', function (?object $user, $roomCode) {
     // Read local storage guest session ID from request headers
     $sessionId = request()->header('X-Guess-Who-Session-ID')
         ?? request()->input('session_id') 

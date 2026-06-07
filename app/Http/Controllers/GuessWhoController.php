@@ -140,10 +140,47 @@ class GuessWhoController extends Controller
         }
 
         $signature = hash_hmac('sha256', $stringToSign, $appSecret);
-
-        return response()->json([
-            'auth' => $appKey . ':' . $signature,
-            'channel_data' => $channelData,
-        ]);
-    }
-}
+ 
+         return response()->json([
+             'auth' => $appKey . ':' . $signature,
+             'channel_data' => $channelData,
+         ]);
+     }
+ 
+     // Join a game room and claim player slots
+     public function joinRoom(Request $request, $roomCode)
+     {
+         $request->validate([
+             'player_session' => 'required|string'
+         ]);
+ 
+         $game = GuessWhoGame::where('room_code', $roomCode)->firstOrFail();
+         $playerSession = $request->player_session;
+ 
+         // Slot 1 Check / Assignment
+         if (empty($game->player_1_session)) {
+             $game->player_1_session = $playerSession;
+             $game->save();
+             return response()->json(['status' => 'joined', 'role' => 'player_1']);
+         }
+ 
+         if ($game->player_1_session === $playerSession) {
+             return response()->json(['status' => 'joined', 'role' => 'player_1']);
+         }
+ 
+         // Slot 2 Check / Assignment
+         if (empty($game->player_2_session)) {
+             $game->player_2_session = $playerSession;
+             $game->status = 'selecting';
+             $game->save();
+             return response()->json(['status' => 'joined', 'role' => 'player_2']);
+         }
+ 
+         if ($game->player_2_session === $playerSession) {
+             return response()->json(['status' => 'joined', 'role' => 'player_2']);
+         }
+ 
+         // Both slots filled by other sessions
+         return response()->json(['error' => 'الغرفة ممتلئة بالكامل ولا يمكنك الانضمام.'], 403);
+     }
+ }

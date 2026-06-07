@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Head, router } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
-import { Play, Plus, Users, ShieldAlert, HelpCircle, Gamepad2, Layers, Tv } from 'lucide-react';
+import { Play, Plus, Users, ShieldAlert, HelpCircle, Gamepad2, Layers, Tv, X } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/Components/ui/card';
 import { Badge } from '@/Components/ui/badge';
@@ -26,6 +26,19 @@ export default function GuessWhoIndex({ categories, total_characters }: IndexPro
   const [roomCodeInput, setRoomCodeInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'create' | 'join'>('create');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get('error');
+    if (error === 'room_full') {
+      setErrorMessage('عذراً، هذه الغرفة ممتلئة بالكامل ولا يمكنك الانضمام إليها.');
+      // Clean query parameter from URL bar without forcing reload
+      const url = new URL(window.location.href);
+      url.searchParams.delete('error');
+      window.history.replaceState({}, document.title, url.pathname);
+    }
+  }, []);
 
   const handleCreateRoom = async () => {
     if (!selectedCat) return;
@@ -70,6 +83,22 @@ export default function GuessWhoIndex({ categories, total_characters }: IndexPro
               تحدّ صديقك في لعبة التخمين الشهيرة بالاتصال المباشر! اطرح الأسئلة الذكية واستبعد الشخصيات لتكشف بطاقة خصمك السرية أولاً.
             </p>
           </div>
+
+          {errorMessage && (
+            <div className="mb-8 p-4 bg-destructive/10 border border-destructive/30 text-destructive rounded-2xl flex items-center justify-between gap-3 text-sm font-bold">
+              <div className="flex items-center gap-2">
+                <ShieldAlert className="h-5 w-5 shrink-0" />
+                <span>{errorMessage}</span>
+              </div>
+              <button 
+                onClick={() => setErrorMessage(null)} 
+                className="text-destructive/60 hover:text-destructive transition shrink-0"
+                aria-label="إغلاق"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
 
           {/* Game Menu Card */}
           <Card className="bg-card/75 backdrop-blur-md border-border text-card-foreground rounded-3xl shadow-2xl overflow-hidden mb-12">

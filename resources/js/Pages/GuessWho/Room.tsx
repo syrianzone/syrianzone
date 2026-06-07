@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Share2, RefreshCw, HelpCircle, ArrowRight, X, Check, Gamepad2 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -158,6 +158,8 @@ export default function GameRoom({ game }: GameProps) {
   const [sessionUuid] = useState(() => getGuessWhoSessionId());
   
   // Game States
+  const [isJoined, setIsJoined] = useState(false);
+  const [loadingJoin, setLoadingJoin] = useState(true);
   const [peerConnected, setPeerConnected] = useState(false);
   const [gameState, setGameState] = useState<'lobby' | 'selecting' | 'playing' | 'ended'>('lobby');
   const [board, setBoard] = useState<(Character & { eliminated: boolean })[]>([]);
@@ -197,6 +199,32 @@ export default function GameRoom({ game }: GameProps) {
   // Debounce timer: collapses rapid Reverb leave/join flicker into one call attempt
   const initiateCallTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Join registration on mount to claim slot 1/2 and prevent 3rd player entry
+  useEffect(() => {
+    let active = true;
+    const registerPlayer = async () => {
+      try {
+        await axios.post(`/guesswho/room/${game.room_code}/join`, {
+          player_session: sessionUuid
+        });
+        if (active) {
+          setIsJoined(true);
+          setLoadingJoin(false);
+        }
+      } catch (err) {
+        console.error('Room registration error:', err);
+        if (active) {
+          // Redirect full rooms or errors back to lobby index with warning query param
+          router.visit('/guesswho?error=room_full');
+        }
+      }
+    };
+    registerPlayer();
+    return () => {
+      active = false;
+    };
+  }, [game.room_code, sessionUuid]);
+
   // Initialize board characters
   useEffect(() => {
     const items = game.category.characters.map(c => ({ ...c, eliminated: false }));
@@ -219,6 +247,8 @@ export default function GameRoom({ game }: GameProps) {
 
   // Configure WebRTC and Laravel Echo listeners
   useEffect(() => {
+    if (!isJoined) return;
+
     if (!window.Echo) {
       console.warn('Laravel Echo is not configured. Broadcasting won\'t work.');
       return;
@@ -527,6 +557,30 @@ export default function GameRoom({ game }: GameProps) {
     setMyTurn(false);
     sendStateUpdate('pass_turn', {});
   };
+
+  if (loadingJoin) {
+    return (
+      <MainLayout>
+        <div className="min-h-screen bg-background text-foreground p-6 font-sans flex items-center justify-center relative overflow-hidden" dir="rtl">
+          {/* Ambient background glows */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[350px] bg-gradient-to-b from-primary/10 via-transparent to-transparent pointer-events-none blur-3xl rounded-full" />
+          
+          <Head title="جاري التحقق من الغرفة..." />
+          <Card className="bg-card/75 backdrop-blur-md border-border text-card-foreground rounded-3xl p-8 max-w-md w-full text-center shadow-2xl relative z-10">
+            <div className="flex flex-col items-center gap-5">
+              <div className="p-4 bg-primary/10 rounded-full border border-primary/20 animate-pulse">
+                <Gamepad2 className="h-10 w-10 text-primary animate-spin" style={{ animationDuration: '3s' }} />
+              </div>
+              <h2 className="text-2xl font-black text-foreground">جاري التحقق من الغرفة...</h2>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                نقوم بالاتصال بخوادم اللعبة والتأكد من توفر مقعد شاغر لك. يرجى الانتظار لحظة.
+              </p>
+            </div>
+          </Card>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>

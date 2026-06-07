@@ -52,6 +52,24 @@
 <body class="font-sans antialiased">
     @inertia
 
+    <!-- Service Worker Cleanup -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for (var registration of registrations) {
+                    registration.unregister();
+                }
+            });
+            if ('caches' in window) {
+                caches.keys().then(function(names) {
+                    for (var name of names) {
+                        caches.delete(name);
+                    }
+                });
+            }
+        }
+    </script>
+
     <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-K4H98TC203"></script>
     <script>

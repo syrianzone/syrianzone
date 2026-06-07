@@ -37,9 +37,9 @@
     <!-- Runtime Reverb Config -->
     <script>
         window.REVERB_CONFIG = window.REVERB_CONFIG || {
-            host: "{{ config('broadcasting.connections.reverb.host') }}",
-            port: {{ config('broadcasting.connections.reverb.options.port', 443) }},
-            scheme: "{{ config('broadcasting.connections.reverb.options.scheme', 'https') }}",
+            host: "{{ config('broadcasting.connections.reverb.client.host') }}",
+            port: {{ config('broadcasting.connections.reverb.client.port', 443) }},
+            scheme: "{{ config('broadcasting.connections.reverb.client.scheme', 'https') }}",
             key: "{{ config('broadcasting.connections.reverb.key') }}",
         };
     </script>

@@ -329,7 +329,7 @@ export default function GameRoom({ game }: GameProps) {
       peerConnection.current?.close();
       if (initiateCallTimer.current) clearTimeout(initiateCallTimer.current);
     };
-  }, [game.room_code, sessionUuid]);
+  }, [game.room_code, sessionUuid, isJoined]);
 
   // Debounced call initiator — collapses rapid leave/join events into one stable attempt
   const scheduleCall = (targetSession: string) => {

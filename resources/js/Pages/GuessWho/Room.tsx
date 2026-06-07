@@ -193,6 +193,7 @@ export default function GameRoom({ game }: GameProps) {
   // WebRTC Refs
   const peerConnection = useRef<RTCPeerConnection | null>(null);
   const dataChannel = useRef<RTCDataChannel | null>(null);
+  const iceCandidateQueue = useRef<RTCIceCandidateInit[]>([]);
 
   // Initialize board characters
   useEffect(() => {
@@ -291,8 +292,30 @@ export default function GameRoom({ game }: GameProps) {
   const createPeerConnection = (targetSession: string) => {
     const pc = new RTCPeerConnection({
       iceServers: [
+        // STUN — direct connection when NAT allows
         { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
+        { urls: 'stun:stun1.l.google.com:19302' },
+        // TURN — relay fallback for symmetric NATs (Open Relay by Metered, free)
+        {
+          urls: 'turn:openrelay.metered.ca:80',
+          username: 'openrelayproject',
+          credential: 'openrelayproject',
+        },
+        {
+          urls: 'turn:openrelay.metered.ca:443',
+          username: 'openrelayproject',
+          credential: 'openrelayproject',
+        },
+        {
+          urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+          username: 'openrelayproject',
+          credential: 'openrelayproject',
+        },
+        {
+          urls: 'turns:openrelay.metered.ca:443',
+          username: 'openrelayproject',
+          credential: 'openrelayproject',
+        },
       ]
     });
 
@@ -325,6 +348,13 @@ export default function GameRoom({ game }: GameProps) {
   };
 
   const initiateCall = async (targetSession: string) => {
+    // Close any stale connection before re-initiating (handles Reverb reconnect flicker)
+    if (peerConnection.current) {
+      peerConnection.current.close();
+      peerConnection.current = null;
+      dataChannel.current = null;
+      iceCandidateQueue.current = [];
+    }
     const pc = createPeerConnection(targetSession);
     const dc = pc.createDataChannel('game_sync');
     setupDataChannel(dc);
@@ -337,25 +367,52 @@ export default function GameRoom({ game }: GameProps) {
   const handleSignal = async (e: any) => {
     const pc = peerConnection.current || createPeerConnection(e.senderSession);
 
+    // Decode base64-encoded SDP (encoded by sender to protect \r\n in transit)
+    const decodeSdp = (data: any): RTCSessionDescriptionInit => ({
+      type: data.type,
+      sdp: atob(data.sdp),
+    });
+
     if (e.type === 'offer') {
-      await pc.setRemoteDescription(new RTCSessionDescription(e.data));
+      await pc.setRemoteDescription(new RTCSessionDescription(decodeSdp(e.data)));
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
       sendSignal(e.senderSession, 'answer', answer);
+      // Drain any candidates that arrived before the remote description was set
+      for (const candidate of iceCandidateQueue.current) {
+        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      }
+      iceCandidateQueue.current = [];
     } else if (e.type === 'answer') {
-      await pc.setRemoteDescription(new RTCSessionDescription(e.data));
+      await pc.setRemoteDescription(new RTCSessionDescription(decodeSdp(e.data)));
+      // Drain any candidates that arrived before the remote description was set
+      for (const candidate of iceCandidateQueue.current) {
+        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      }
+      iceCandidateQueue.current = [];
     } else if (e.type === 'candidate') {
-      await pc.addIceCandidate(new RTCIceCandidate(e.data));
+      if (pc.remoteDescription) {
+        await pc.addIceCandidate(new RTCIceCandidate(e.data));
+      } else {
+        // Queue candidate until remote description is ready
+        iceCandidateQueue.current.push(e.data);
+      }
     }
   };
 
   const sendSignal = async (targetSession: string, type: string, data: any) => {
     try {
+      // Base64-encode the SDP string to protect \r\n line endings from
+      // being mangled by PHP/JSON/WebSocket transit
+      let payload = data;
+      if ((type === 'offer' || type === 'answer') && data?.sdp) {
+        payload = { ...data, sdp: btoa(data.sdp) };
+      }
       await axios.post(`/guesswho/room/${game.room_code}/signal`, {
         target_session: targetSession,
         sender_session: sessionUuid,
         type,
-        data
+        data: payload
       });
     } catch (err) {
       console.error('Failed to send signal:', err);

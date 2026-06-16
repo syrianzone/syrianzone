@@ -1337,13 +1337,23 @@ export default function PrioritiesApp() {
                   {/* Right: Brand Info */}
                   <div className="flex items-center gap-2">
                     <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center p-1.5 border"
                       style={{
+                        width: '32px',
+                        height: '32px',
+                        minWidth: '32px',
+                        minHeight: '32px',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '6px',
+                        border: '1px solid',
+                        overflow: 'hidden',
                         backgroundColor: storyThemeStyles.isLight ? 'rgba(0, 0, 0, 0.05)' : `rgba(${storyThemeStyles.primaryRgb || '90, 113, 74'}, 0.2)`,
                         borderColor: storyThemeStyles.isLight ? 'rgba(0, 0, 0, 0.1)' : `rgba(${storyThemeStyles.primaryRgb || '90, 113, 74'}, 0.3)`
                       }}
                     >
-                      <img src="/assets/ar.svg" className="w-full h-full object-contain" alt="علم سوريا" />
+                      <img src="/assets/ar.svg" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} alt="علم سوريا" />
                     </div>
                     <div>
                       <h4 className="text-[11px] font-black" style={{ color: storyThemeStyles.headerTitle }}>المساحة السورية</h4>
@@ -1352,13 +1362,13 @@ export default function PrioritiesApp() {
                   </div>
 
                   {/* Left: QR Code and URL */}
-                  <div className="flex items-center gap-1.5" dir="ltr">
-                    <div className="w-12 h-12 rounded-md bg-white p-1 flex items-center justify-center shadow-inner flex-shrink-0">
-                      <svg className="w-full h-full text-black" viewBox="0 0 31 31" shapeRendering="crispEdges">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', direction: 'ltr' }}>
+                    <div style={{ width: '48px', height: '48px', minWidth: '48px', minHeight: '48px', borderRadius: '6px', backgroundColor: '#ffffff', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <svg style={{ width: '100%', height: '100%', display: 'block' }} viewBox="0 0 31 31" shapeRendering="crispEdges">
                         <path stroke="#000000" d="M1 1.5h7m2 0h1m3 0h1m2 0h4m2 0h7M1 2.5h1m5 0h1m1 0h1m1 0h3m1 0h4m1 0h1m2 0h1m5 0h1M1 3.5h1m1 0h3m1 0h1m6 0h2m1 0h1m2 0h2m1 0h1m1 0h3m1 0h1M1 4.5h1m1 0h3m1 0h1m2 0h1m3 0h3m2 0h3m1 0h1m1 0h3m1 0h1M1 5.5h1m1 0h3m1 0h1m1 0h5m1 0h1m2 0h3m2 0h1m1 0h3m1 0h1M1 6.5h1m5 0h1m2 0h1m2 0h2m4 0h2m2 0h1m5 0h1M1 7.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M10 8.5h3m1 0h2m1 0h4M1 9.5h1m1 0h1m1 0h1m1 0h1m3 0h3m1 0h2m1 0h1m6 0h1m2 0h1M1 10.5h1m2 0h1m1 0h1m2 0h4m2 0h2m1 0h2m1 0h3m2 0h1m2 0h1M4 11.5h2m1 0h1m2 0h2m2 0h1m3 0h2m3 0h3m1 0h3M1 12.5h1m1 0h1m2 0h1m1 0h2m1 0h2m3 0h1m1 0h1m2 0h1m2 0h2m2 0h1M2 13.5h2m1 0h3m4 0h2m3 0h2m1 0h4m2 0h1m1 0h2M1 14.5h6m1 0h4m2 0h1m1 0h2m4 0h2m2 0h1m2 0h1M3 15.5h1m3 0h1m1 0h1m1 0h2m2 0h3m1 0h1m2 0h1m3 0h1m1 0h2M1 16.5h3m2 0h1m1 0h1m1 0h2m2 0h2m1 0h8m1 0h1m1 0h1M1 17.5h3m3 0h3m1 0h2m2 0h2m1 0h1m2 0h1m1 0h2m1 0h1m1 0h2M2 18.5h3m1 0h1m1 0h2m3 0h1m1 0h2m1 0h2m1 0h3m2 0h2m1 0h1M1 19.5h1m3 0h4m1 0h1m1 0h1m1 0h1m6 0h2m1 0h2m2 0h2M2 20.5h3m3 0h2m3 0h1m2 0h1m1 0h1m2 0h6m1 0h1M1 21.5h1m1 0h1m3 0h1m1 0h1m1 0h1m5 0h2m1 0h6M9 22.5h1m1 0h1m1 0h2m1 0h2m2 0h2m3 0h1m1 0h3M1 23.5h7m3 0h2m2 0h3m1 0h3m1 0h1m1 0h2m1 0h2M1 24.5h1m5 0h1m5 0h3m1 0h3m1 0h1m3 0h2m1 0h2M1 25.5h1m1 0h3m1 0h1m1 0h1m5 0h4m2 0h5m2 0h1M1 26.5h1m1 0h3m1 0h1m2 0h1m2 0h1m1 0h2m1 0h1m2 0h1m3 0h1m1 0h1M1 27.5h1m1 0h3m1 0h1m1 0h1m1 0h2m2 0h1m4 0h1m1 0h1m1 0h3m2 0h1M1 28.5h1m5 0h1m2 0h1m2 0h1m4 0h6m1 0h1m2 0h1M1 29.5h7m1 0h2m2 0h1m1 0h1m2 0h1m1 0h2m3 0h2m1 0h2" />
                       </svg>
                     </div>
-                    <div className="flex flex-col text-left">
+                    <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
                       <span className="text-[7px] font-extrabold leading-tight" style={{ color: storyThemeStyles.urlLabel }}>صمّم بروفايلك:</span>
                       <span className="text-[8px] font-black" style={{ color: storyThemeStyles.urlText }}>syrian.zone/priorities</span>
                     </div>
@@ -1366,7 +1376,7 @@ export default function PrioritiesApp() {
                 </div>
 
                 {/* Main Section: Dynamic Persona Badge */}
-                <div className="text-center my-2 px-2">
+                <div style={{ textAlign: 'center', margin: '8px 0', padding: '0 8px' }}>
                   {/* Mini SVG Radar Chart */}
                   {(() => {
                     const RADAR_ORDER = ['economy', 'justice', 'housing', 'security', 'politics', 'digital'];

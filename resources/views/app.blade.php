@@ -52,6 +52,21 @@
 <body class="font-sans antialiased">
     @inertia
 
+    <!-- bfcache: force reload if browser restores a cached Inertia XHR response (shows raw JSON) -->
+    <script>
+        window.addEventListener('pageshow', function (event) {
+            if (event.persisted) {
+                // Page was restored from back/forward cache.
+                // If the Inertia app root has no rendered children, the browser is
+                // displaying the raw JSON payload — force a fresh load.
+                var root = document.getElementById('app');
+                if (!root || !root.firstChild) {
+                    window.location.reload();
+                }
+            }
+        });
+    </script>
+
     <!-- Service Worker Cleanup -->
     <script>
         if ('serviceWorker' in navigator) {

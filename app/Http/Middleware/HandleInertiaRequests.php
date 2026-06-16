@@ -45,15 +45,20 @@ class HandleInertiaRequests extends Middleware
 
     /**
      * Handle the incoming request and prevent caching of Inertia responses to avoid back-button JSON issues.
+     *
+     * `no-store` is used (not `no-cache`) because it is the only Cache-Control directive
+     * that instructs the browser NOT to store the response in the Back/Forward Cache (bfcache).
+     * Without this, navigating back can surface the raw Inertia JSON payload.
+     * We only apply these headers to Inertia XHR requests so full-page responses are unaffected.
      */
     public function handle(Request $request, \Closure $next)
     {
         $response = parent::handle($request, $next);
 
-        $response->headers->set('Cache-Control', 'no-cache, no-store, max-age=0, must-revalidate');
-        $response->headers->set('Pragma', 'no-cache');
-        $response->headers->set('Expires', 'Sat, 01 Jan 1990 00:00:00 GMT');
-        $response->headers->set('Vary', 'X-Inertia');
+        if ($request->header('X-Inertia')) {
+            $response->headers->set('Cache-Control', 'no-store, private');
+            $response->headers->set('Vary', 'X-Inertia');
+        }
 
         return $response;
     }

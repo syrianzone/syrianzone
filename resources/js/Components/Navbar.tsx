@@ -20,6 +20,7 @@ import {
   Smartphone,
   MessageSquareCode,
   Sandwich,
+  Sliders,
 } from 'lucide-react';
 
 import { useAuth } from '@/Contexts/AuthContext';
@@ -56,6 +57,7 @@ const navLinks = [
   { href: '/party', text: 'دليل الأحزاب', icon: Users2 },
   { href: '/house', text: 'المجلس التشريعي', icon: Landmark },
   { href: '/compass', text: 'البوصلة السياسية', icon: Compass },
+  { href: '/priorities', text: 'أولويات سوريا', icon: Sliders },
   { href: '/alignment', text: 'بوصلة مخصصة', icon: Crosshair },
   { href: '/govapps', text: 'تطبيقات الحكومة', icon: Smartphone },
   { href: '/transit', text: 'ترانزيت', icon: Bus },

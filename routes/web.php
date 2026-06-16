@@ -29,6 +29,9 @@ Route::get('/tierlist/leaderboard', [PollController::class, 'renderTierListLeade
 Route::get('/compass', function () {
     return Inertia::render('Compass/Index');
 });
+Route::get('/priorities', function () {
+    return Inertia::render('Priorities/Index');
+});
 Route::get('/shawarma', function () {
     return Inertia::render('Shawarma/Index');
 });

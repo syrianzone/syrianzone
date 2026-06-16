@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger } from "@/Components/ui/tabs"
 import { Button } from "@/Components/ui/button"
 import { Download } from "lucide-react"
-import html2canvas from "html2canvas"
+import html2canvas from "html2canvas-pro"
 
 interface HistoryPoint {
     date: string

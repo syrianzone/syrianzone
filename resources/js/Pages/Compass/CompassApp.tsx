@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { SCALES, DEFAULT_QUESTIONS, Question, Scale } from './data';
 import { RotateCw, Share2, Globe, Download, Copy, X } from 'lucide-react';
 import { Twitter } from '@/Components/ui/icons';
-import html2canvas from 'html2canvas';
+import html2canvas from 'html2canvas-pro';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
 

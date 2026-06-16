@@ -3,7 +3,7 @@ import {
     CheckCircle2, Palette, Users2, ListOrdered, Landmark, Compass,
     Settings, Sun, Link, Moon, Utensils, Globe, Plus, Edit, X, Download, Upload, RotateCcw,
     Cloud, CloudRain, CloudLightning, Snowflake, Wind, MessageSquareCode, Smartphone, Bus,
-    Newspaper
+    Newspaper, Sliders
 } from 'lucide-react';
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
@@ -37,6 +37,7 @@ const PRESET_LINKS: PresetLink[] = [
     { href: '/tierlist', icon: ListOrdered, text: 'تقييم الحكومة' },
     { href: '/house', icon: Landmark, text: 'المجلس التشريعي' },
     { href: '/compass', icon: Compass, text: 'البوصلة السياسية' },
+    { href: '/priorities', icon: Sliders, text: 'أولويات سوريا' },
     { href: '/sites', icon: Link, text: 'دليل المواقع' },
     { href: '/population', icon: Globe, text: 'أطلس' },
     { href: '/govapps', icon: Smartphone, text: 'تطبيقات الحكومة' },

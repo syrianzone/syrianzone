@@ -346,6 +346,46 @@ export default function SyidClient() {
                         </div>
                     </div>
 
+                    {/* Flag Guidelines Section */}
+                    <div className="p-10 border-t border-border" id="flag-guidelines">
+                        <h2 className="text-4xl font-bold text-center text-foreground mb-4">الدليل الإرشادي للعلم السوري</h2>
+                        <p className="text-center text-lg mb-8 text-muted-foreground">الدليل الإرشادي الرسمي والتعليمات الخاصة باستخدام العلم السوري ونسبه وتطبيقاته.</p>
+
+                        <div className="text-center mb-8">
+                            <a
+                                href="https://drive.google.com/uc?export=download&id=1-HbfWI2PC76TTR6rKpmGl7GDcUlcZFXl"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-block group relative overflow-hidden rounded-xl shadow-lg border-2 border-border transition-all hover:scale-[1.02] hover:shadow-2xl duration-300"
+                            >
+                                <img
+                                    src="/syid-assets/materials/الدليل الإرشادي للعلم السوري.webp"
+                                    alt="الدليل الإرشادي للعلم السوري"
+                                    className="mx-auto max-w-full h-auto transition-transform duration-500 group-hover:scale-105"
+                                    style={{ maxHeight: '350px' }}
+                                />
+                                <div className="absolute inset-0 bg-[#054239]/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                                    <div className="bg-[#428177]/90 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                                        <Download className="h-5 w-5" />
+                                        تحميل الدليل (PDF)
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+
+                        <div className="text-center">
+                            <a
+                                href="https://drive.google.com/uc?export=download&id=1-HbfWI2PC76TTR6rKpmGl7GDcUlcZFXl"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center justify-center bg-[#428177] text-white font-bold h-12 px-8 rounded-xl transition-all hover:bg-[#054239] hover:-translate-y-0.5 hover:shadow-lg text-center"
+                            >
+                                <Download className="ml-2 h-5 w-5" />
+                                تحميل ملف الدليل الإرشادي (PDF)
+                            </a>
+                        </div>
+                    </div>
+
                     {/* Materials Section */}
                     <div className="p-10 border-t border-border" id="materials">
                         <h2 className="text-4xl font-bold text-center text-foreground mb-4">المواد والموارد</h2>

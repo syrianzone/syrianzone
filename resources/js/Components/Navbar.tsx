@@ -21,6 +21,7 @@ import {
   MessageSquareCode,
   Sandwich,
   Sliders,
+  Scale,
 } from 'lucide-react';
 
 import { useAuth } from '@/Contexts/AuthContext';
@@ -62,6 +63,7 @@ const navLinks = [
   { href: '/govapps', text: 'تطبيقات الحكومة', icon: Smartphone },
   { href: '/transit', text: 'ترانزيت', icon: Bus },
   { href: '/shawarma', text: 'تير ليست الشاورما', icon: Sandwich },
+  { href: '/justice', text: 'العدالة الانتقالية', icon: Scale },
 ];
 
 const externalLinks = [

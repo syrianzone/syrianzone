@@ -35,6 +35,9 @@ Route::get('/priorities', function () {
 Route::get('/shawarma', function () {
     return Inertia::render('Shawarma/Index');
 });
+Route::get('/justice', function () {
+    return Inertia::render('Justice/Index');
+});
 Route::get('/syid', [ExternalDataController::class, 'syid']);
 Route::get('/syrian-contributors', [ExternalDataController::class, 'contributors']);
 Route::get('/sites', [ExternalDataController::class, 'sites']);

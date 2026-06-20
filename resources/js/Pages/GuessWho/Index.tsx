@@ -65,7 +65,10 @@ export default function GuessWhoIndex({ categories, total_characters }: IndexPro
   return (
     <MainLayout>
       <div className="min-h-screen bg-background text-foreground font-sans antialiased pb-16" dir="rtl">
-        <Head title="لعبة من هو؟ - Guess Who" />
+        <Head>
+          <title>لعبة من هو؟ - Guess Who</title>
+          <meta name="description" content="تحدّ صديقك في لعبة التخمين الشهيرة 'من هو؟' بالاتصال المباشر! اطرح الأسئلة واستبعد الشخصيات لتكشف بطاقة خصمك السرية." />
+        </Head>
         
         {/* Ambient background glows */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[350px] bg-gradient-to-b from-primary/10 via-transparent to-transparent pointer-events-none blur-3xl rounded-full" />

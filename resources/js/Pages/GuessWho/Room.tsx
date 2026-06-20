@@ -589,7 +589,10 @@ export default function GameRoom({ game }: GameProps) {
           {/* Ambient background glows */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[350px] bg-gradient-to-b from-primary/10 via-transparent to-transparent pointer-events-none blur-3xl rounded-full" />
           
-          <Head title="جاري التحقق من الغرفة..." />
+          <Head>
+            <title>جاري التحقق من الغرفة...</title>
+            <meta name="description" content="يرجى الانتظار أثناء جاري الدخول للغرفة والتحقق من توفر مقعد شاغر." />
+          </Head>
           <Card className="bg-card/75 backdrop-blur-md border-border text-card-foreground rounded-3xl p-8 max-w-md w-full text-center shadow-2xl relative z-10">
             <div className="flex flex-col items-center gap-5">
               <div className="p-4 bg-primary/10 rounded-full border border-primary/20 animate-pulse">
@@ -609,7 +612,10 @@ export default function GameRoom({ game }: GameProps) {
   return (
     <MainLayout>
       <div className="min-h-screen bg-background text-foreground p-6 font-sans select-none" dir="rtl">
-        <Head title={`الغرفة: ${game.category.name_ar}`} />
+        <Head>
+          <title>{`غرفة لعب: ${game.category.name_ar}`}</title>
+          <meta name="description" content={`غرفة لعب تفاعلية مباشرة لتخمين شخصيات فئة ${game.category.name_ar} مع خصمك.`} />
+        </Head>
         <div className="max-w-6xl mx-auto">
           {/* Style block for 3D flip card animations */}
           <style>{`

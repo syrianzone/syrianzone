@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { router, Link } from '@inertiajs/react';
+import { router, Link, Head } from '@inertiajs/react';
 import axios from '@/Lib/axios';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
@@ -35,6 +35,10 @@ export default function Create() {
 
     return (
         <MainLayout>
+            <Head>
+                <title>إنشاء تصويت جديد</title>
+                <meta name="description" content="إنشاء وإعداد استبيان تصويت جديد للمرشحين والوزراء في المساحة السورية." />
+            </Head>
             <div className="min-h-screen bg-background py-12" dir="rtl">
                 <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
                     <form onSubmit={handleSave}>

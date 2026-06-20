@@ -233,7 +233,10 @@ export default function Dashboard({
   return (
     <MainLayout>
       <div className="min-h-screen bg-[#0b0c10] text-[#c5c6c7] font-sans antialiased selection:bg-[#66fcf1] selection:text-black" dir="rtl">
-        <Head title="لوحة التحكم الموحدة" />
+        <Head>
+          <title>لوحة التحكم الموحدة</title>
+          <meta name="description" content="إدارة الاستبيانات، خطوط النقل المشتركة المقترحة، وإعدادات الحساب الشخصي في المساحة السورية." />
+        </Head>
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header Title with nice Amber accent */}

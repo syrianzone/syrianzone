@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { router, Link } from '@inertiajs/react';
+import { router, Link, Head } from '@inertiajs/react';
 import axios from '@/Lib/axios';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
@@ -82,6 +82,10 @@ export default function Edit({ id, poll: initialPoll, candidates: initialCandida
 
     return (
         <MainLayout>
+            <Head>
+                <title>{`تعديل التصويت: ${poll.title}`}</title>
+                <meta name="description" content={`تعديل إعدادات استبيان التصويت، المجموعات والمرشحين لـ ${poll.title}.`} />
+            </Head>
             <div className="min-h-screen bg-background py-12" dir="rtl">
                 <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="mb-8 flex items-center justify-between">

@@ -72,7 +72,10 @@ function MemberCard({ member, root = false }: { member: Member; root?: boolean }
 export default function JusticePage() {
     return (
         <MainLayout>
-            <Head title="العدالة الانتقالية | المساحة السورية" />
+            <Head>
+                <title>العدالة الانتقالية</title>
+                <meta name="description" content="العدالة الانتقالية - قوائم وإحصائيات رموز نظام الأسد والمجرمين الموقوفين لدى وزارة الداخلية السورية وهيكل القيادة العسكرية والأمنية." />
+            </Head>
             <main className="container mx-auto max-w-screen-xl px-4 pt-6 pb-16" dir="rtl">
                 {/* Header */}
                 <header className="text-center mb-10">

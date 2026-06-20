@@ -7,7 +7,7 @@ import type { FeatureCollection } from 'geojson'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAdminDrafts, useMapData } from '../_hooks/useMapData'
 import TransitLayout from '../layout'
-import { router } from '@inertiajs/react'
+import { router, Head } from '@inertiajs/react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type DraftStatus = 'pending' | 'approved' | 'rejected'
@@ -780,6 +780,10 @@ function TransitAdminPageContent() {
 export default function TransitAdminPage() {
   return (
     <TransitLayout>
+      <Head>
+        <title>لوحة التحكم بالترانزيت</title>
+        <meta name="description" content="مراجعة وتدقيق خطوط ومحطات النقل المقترحة من قبل المساهمين في منصة ترانزيت." />
+      </Head>
       <TransitAdminPageContent />
     </TransitLayout>
   )

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from '@inertiajs/react';
+import { Link, Head } from '@inertiajs/react';
 import TierBoard from "@/Components/poll/TierBoard";
 import { Card, CardContent } from "@/Components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/Components/ui/alert";
@@ -38,6 +38,10 @@ interface TierListPageProps {
 export default function Index({ poll, candidates = [], groups = [], voteDay }: TierListPageProps) {
     return (
         <MainLayout>
+            <Head>
+                <title>تير ليست الحكومة السورية</title>
+                <meta name="description" content="شارك في تقييم وتصنيف أداء أعضاء الحكومة السورية الجديدة عبر منصة تير ليست تفاعلية وشاركه مع الآخرين." />
+            </Head>
             <main className="container mx-auto px-4 pt-6 pb-8" dir="rtl">
                 {/* Results Link */}
                 <div className="max-w-screen-lg mx-auto mb-4 flex justify-end">

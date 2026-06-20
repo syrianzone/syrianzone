@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
-import { router, Link } from '@inertiajs/react'
+import { router, Link, Head } from '@inertiajs/react'
 import type { FeatureCollection, Position } from 'geojson'
 import { useStudioStore, type StopFeature, type WizardStep } from '../_store/useStudioStore'
 import { useMapData } from '../_hooks/useMapData'
@@ -1443,6 +1443,10 @@ function TransitStudioPageContent() {
 export default function TransitStudioPage() {
   return (
     <TransitLayout>
+      <Head>
+        <title>استوديو ترانزيت | إضافة خط مواصلات</title>
+        <meta name="description" content="استوديو ترانزيت سوريا - أداة تفاعلية للمساهمة وإضافة خطوط سرافيس ومواقف مواصلات جديدة لخرائط النقل العام." />
+      </Head>
       <TransitStudioPageContent />
     </TransitLayout>
   )

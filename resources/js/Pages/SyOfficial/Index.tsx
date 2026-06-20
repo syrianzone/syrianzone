@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/Components/ui/tabs";
 import { Badge } from "@/Components/ui/badge";
 import MainLayout from '@/Layouts/MainLayout';
+import { Head } from '@inertiajs/react';
 
 interface SyOfficialClientProps {
     initialData: OfficialEntity[];
@@ -220,6 +221,10 @@ export default function Index({ initialData }: SyOfficialClientProps) {
 
     return (
         <MainLayout>
+            <Head>
+                <title>{t.title}</title>
+                <meta name="description" content={t.description} />
+            </Head>
             <div className="min-h-screen transition-colors" dir={language === 'ar' || language === 'ku' ? 'rtl' : 'ltr'}>
 
             {/* Header / Hero */}

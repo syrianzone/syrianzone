@@ -6,6 +6,7 @@ import Header from '../../../_components/layout/Header'
 import OfflineBanner from '../../../_components/citymap/OfflineBanner'
 import type { City, FeatureCollection, RouteProperties, StopProperties } from '../../../_types'
 import TransitLayout from '../../../layout'
+import { Head } from '@inertiajs/react'
 
 const cities = citiesData as City[]
 
@@ -119,8 +120,14 @@ function CityMapPageContent({ id }: CityMapPageProps) {
 }
 
 export default function CityMapPage({ id }: CityMapPageProps) {
+  const city = cities.find((c) => c.id === id)
+
   return (
     <TransitLayout>
+      <Head>
+        <title>{city ? `خريطة مواصلات ${city.nameAr} التفاعلية | ترانزيت` : 'المدينة غير موجودة - ترانزيت'}</title>
+        <meta name="description" content={city ? `خريطة تفاعلية كاملة لخطوط السرافيس ومواقف الباصات في مدينة ${city.nameAr} لمعرفة خطوط السير ومسارات المواصلات.` : 'خريطة مواصلات المدينة المطلوبة غير متوفرة.'} />
+      </Head>
       <Suspense fallback={
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--bg)]">
           <div className="text-[var(--muted)]">جاري تحميل الخريطة...</div>

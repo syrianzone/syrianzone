@@ -1,10 +1,15 @@
 import React from 'react';
 import MainLayout from '@/Layouts/MainLayout';
 import HouseClient from './HouseClient';
+import { Head } from '@inertiajs/react';
 
 export default function HousePage() {
     return (
         <MainLayout>
+            <Head>
+                <title>المجلس التشريعي السوري</title>
+                <meta name="description" content="منصة تفاعلية لاستكشاف، ومتابعة، وتحليل أداء وبيانات أعضاء المجلس التشريعي السوري." />
+            </Head>
             <div className="min-h-screen bg-background pb-16">
                 <div className="container mx-auto px-4 py-8 max-w-7xl">
                     <HouseClient

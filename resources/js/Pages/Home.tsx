@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Head } from '@inertiajs/react';
 import {
     CheckCircle2, Palette, Users2, ListOrdered, Landmark, Compass,
     Settings, Sun, Link, Moon, Utensils, Globe, Plus, Edit, X, Download, Upload, RotateCcw,
@@ -291,6 +292,10 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
 
     return (
         <MainLayout>
+            <Head>
+                <title>الرئيسية</title>
+                <meta name="description" content="المساحة السورية - منصة تفاعلية تجمع وتوفر الموارد والخدمات والمعلومات المفتوحة المتعلقة بالشأن السوري من استطلاعات رأي، وأدلة رسمية، وأطلس، وترانزيت، وهويات بصرية." />
+            </Head>
             <div className="min-h-screen text-foreground transition-colors" dir={currentLang === 'ar' ? 'rtl' : 'ltr'}>
             {/* Top Controls */}
             <div className="fixed top-4 left-4 right-4 flex justify-between items-center z-50">

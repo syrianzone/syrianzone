@@ -4,6 +4,7 @@ import Header from '../../_components/layout/Header'
 import RoutesList from './_components/RoutesList'
 import type { City } from '../../_types'
 import TransitLayout from '../../layout'
+import { Head } from '@inertiajs/react'
 
 const cities = citiesData as City[]
 
@@ -17,6 +18,9 @@ export default function CityRoutesPage({ id }: CityRoutesPageProps) {
   if (!city || !city.bounds) {
     return (
       <TransitLayout>
+        <Head>
+          <title>المدينة غير موجودة - ترانزيت</title>
+        </Head>
         <div className="flex min-h-svh flex-col bg-[var(--bg)]">
           <Header />
           <div className="flex flex-1 items-center justify-center text-[var(--muted)]">
@@ -29,6 +33,10 @@ export default function CityRoutesPage({ id }: CityRoutesPageProps) {
 
   return (
     <TransitLayout>
+      <Head>
+        <title>{`مواصلات وسرافيس ${city.nameAr} | ترانزيت`}</title>
+        <meta name="description" content={`دليل وخريطة خطوط المواصلات العامة والسرافيس في مدينة ${city.nameAr} وتفاصيل مسار كل خط.`} />
+      </Head>
       <div className="flex min-h-svh flex-col bg-[var(--bg)]">
         <Header />
         <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6">

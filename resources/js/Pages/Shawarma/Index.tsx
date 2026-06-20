@@ -72,7 +72,9 @@ const tiers: Tier[] = [
 export default function ShawarmaPage() {
     return (
         <MainLayout>
-            <Head title="@macdoos's Shawarma Tier List" />
+            <Head title="@macdoos's Shawarma Tier List">
+                <meta name="description" content="تقييم وتصنيف محلات الشاورما السورية الشهيرة - قائمة مكدوس لأفضل محلات الشاورما." />
+            </Head>
             <main className="container mx-auto px-4 pt-6 pb-12" dir="ltr">
                 <h1 className="text-3xl md:text-4xl font-extrabold text-center mb-8 text-foreground">
                     @macdoos&apos;s Shawarma Tier List

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from '@inertiajs/react';
+import { Link, Head } from '@inertiajs/react';
 import { Globe } from 'lucide-react';
 import CompassApp from './CompassApp';
 import MainLayout from '@/Layouts/MainLayout';
@@ -7,6 +7,10 @@ import MainLayout from '@/Layouts/MainLayout';
 export default function CompassPage() {
     return (
         <MainLayout>
+            <Head>
+                <title>البوصلة السياسية السورية</title>
+                <meta name="description" content="البوصلة السياسية السورية - اختبار تفاعلي لاكتشاف توجهاتك وميولك السياسية على ستة محاور مختلفة للشأن السوري." />
+            </Head>
             <div className="min-h-screen flex flex-col bg-background">
                 {/* Hero Section */}
                 <section className="bg-card py-12 shadow-sm border-b border-border relative z-0">

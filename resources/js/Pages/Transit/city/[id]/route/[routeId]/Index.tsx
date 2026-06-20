@@ -1,5 +1,5 @@
 import React from 'react'
-import { Link } from '@inertiajs/react'
+import { Link, Head } from '@inertiajs/react'
 import Header from '../../../../_components/layout/Header'
 import DirectionsButton from '../../../../_components/DirectionsButton'
 import { getRouteColor } from '../../../../_lib/mapColors'
@@ -25,6 +25,9 @@ export default function RouteDetailPage({ id, city, route, stops = [] }: RouteDe
   if (!city || !city.bounds) {
     return (
       <TransitLayout>
+        <Head>
+          <title>المدينة غير موجودة - ترانزيت</title>
+        </Head>
         <div className="flex min-h-svh flex-col bg-[var(--bg)]">
           <Header />
           <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center px-4 text-center">
@@ -43,6 +46,10 @@ export default function RouteDetailPage({ id, city, route, stops = [] }: RouteDe
 
   return (
     <TransitLayout>
+      <Head>
+        <title>{route ? `${route.nameAr} (${city.nameAr}) | ترانزيت` : 'الخط غير موجود - ترانزيت'}</title>
+        <meta name="description" content={route ? `تعرف على مسار، ومواقف، وسعر خط سيرفيس ${route.nameAr} في مدينة ${city.nameAr} مع خريطة تفاعلية للمسار.` : 'تفاصيل الخط المطلوبة غير متوفرة.'} />
+      </Head>
       <div className="flex min-h-svh flex-col bg-[var(--bg)]">
         <Header />
 

@@ -3,6 +3,7 @@
 import type React from "react"
 import { useState, useEffect } from "react"
 import MainLayout from "@/Layouts/MainLayout"
+import { Head } from "@inertiajs/react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -258,6 +259,10 @@ export default function SyrianContributorsPage() {
 
   return (
     <MainLayout>
+      <Head>
+        <title>أفضل المساهمين السوريين في GitHub</title>
+        <meta name="description" content="قائمة وتصنيف لأكثر المطورين والمبرمجين السوريين مساهمةً في المشاريع مفتوحة المصدر على GitHub على المستويات اليومية والشهرية والسنوية." />
+      </Head>
       <div className="min-h-screen relative overflow-hidden">
       <div className="fixed inset-0 bg-background transition-colors duration-300">
         <div

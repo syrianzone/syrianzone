@@ -2,6 +2,7 @@ import React from 'react';
 import MainLayout from '@/Layouts/MainLayout';
 import PartyClient from './PartyClient';
 import { Organization } from './types';
+import { Head } from '@inertiajs/react';
 
 interface PartyPageProps {
     initialOrganizations: Organization[];
@@ -10,6 +11,10 @@ interface PartyPageProps {
 export default function PartyPage({ initialOrganizations }: PartyPageProps) {
     return (
         <MainLayout>
+            <Head>
+                <title>دليل الأحزاب والقوى السياسية</title>
+                <meta name="description" content="دليل تفاعلي للتعرف على الأحزاب، والتنظيمات، والقوى السياسية والمدنية الفاعلة في الساحة السورية." />
+            </Head>
             <PartyClient initialOrganizations={initialOrganizations} />
         </MainLayout>
     );

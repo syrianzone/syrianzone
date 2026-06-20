@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from '@inertiajs/react';
+import { Link, Head } from '@inertiajs/react';
 import axios from 'axios';
 import { Card, CardContent } from "@/Components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/Components/ui/alert";
@@ -223,6 +223,10 @@ export default function Leaderboard(initialProps: LeaderboardProps) {
 
     return (
         <MainLayout>
+            <Head>
+                <title>نتائج تقييم الحكومة السورية</title>
+                <meta name="description" content="إحصائيات ونتائج تصويت تير ليست الحكومة السورية، المحافظين، والشخصيات العامة ببيانات تفاعلية محدثة." />
+            </Head>
             <main className="container mx-auto px-4 pt-6 pb-8" dir="rtl">
                 {/* Vote Link */}
                 <div className="max-w-screen-md mx-auto mb-4 flex justify-end">

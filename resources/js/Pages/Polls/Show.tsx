@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, usePage } from '@inertiajs/react';
+import { Link, usePage, Head } from '@inertiajs/react';
 import { Button } from '@/Components/ui/button';
 import { Edit, BarChart3Icon } from 'lucide-react';
 import TierBoard from "@/Components/poll/TierBoard";
@@ -39,6 +39,10 @@ export default function Show({ poll, candidates, groups, voteDay }: PollShowProp
 
     return (
         <MainLayout>
+            <Head>
+                <title>{poll.title}</title>
+                <meta name="description" content={`شارك في استطلاع الرأي والتقييم المجتمعي لـ ${poll.title} وصوّت وشارك رأيك معنا.`} />
+            </Head>
             <div className="min-h-screen bg-background pb-12">
                 <main className="container mx-auto px-4 pt-6" dir="rtl">
                     <div className="max-w-screen-lg mx-auto mb-4 flex justify-between items-center">

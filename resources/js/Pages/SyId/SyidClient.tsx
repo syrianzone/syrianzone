@@ -349,7 +349,19 @@ export default function SyidClient() {
                     {/* Flag Guidelines Section */}
                     <div className="p-10 border-t border-border" id="flag-guidelines">
                         <h2 className="text-4xl font-bold text-center text-foreground mb-4">الدليل الإرشادي للعلم السوري</h2>
-                        <p className="text-center text-lg mb-8 text-muted-foreground">الدليل الإرشادي الرسمي والتعليمات الخاصة باستخدام العلم السوري ونسبه وتطبيقاته.</p>
+                        <p className="text-center text-lg mb-4 text-muted-foreground">الدليل الإرشادي الرسمي والتعليمات الخاصة باستخدام العلم السوري ونسبه وتطبيقاته.</p>
+
+                        <p className="text-center text-sm mb-8 text-muted-foreground">
+                            إعداد ومساهمة:{" "}
+                            <a
+                                href="https://x.com/abd_hmh"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="font-semibold text-foreground hover:text-[#428177] transition-colors"
+                            >
+                                عبدالرحمن حداد (@abd_hmh)
+                            </a>
+                        </p>
 
                         <div className="text-center mb-8">
                             <a

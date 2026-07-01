@@ -11,7 +11,7 @@ export interface HouseRow {
     [key: string]: string;
 }
 
-export type Mode = 'voters' | 'candidates' | 'winners';
+export type Mode = 'voters' | 'candidates' | 'winners' | 'presidential';
 
 export const PROVINCES = [
     { key: 'all', label: 'الكل', sheetId: '1bZKrmEUiFHdeID8pXHkT8XBaZ--oo6g2mGNcVvZMCgc', gid: '125118455' },
@@ -32,3 +32,5 @@ export const PROVINCES = [
 
 export const CANDIDATES_SHEET = { sheetId: '1bZKrmEUiFHdeID8pXHkT8XBaZ--oo6g2mGNcVvZMCgc', gid: '109132918' };
 export const WINNERS_SHEET = { sheetId: '1bZKrmEUiFHdeID8pXHkT8XBaZ--oo6g2mGNcVvZMCgc', gid: '385944900' };
+// الثلث الرئاسي (presidential third): 70 appointed members
+export const PRESIDENTIAL_SHEET = { sheetId: '1bZKrmEUiFHdeID8pXHkT8XBaZ--oo6g2mGNcVvZMCgc', gid: '1851445664' };

@@ -1,4 +1,4 @@
-import { HouseRow, PROVINCES, CANDIDATES_SHEET, WINNERS_SHEET, Mode } from './types';
+import { HouseRow, PROVINCES, CANDIDATES_SHEET, WINNERS_SHEET, PRESIDENTIAL_SHEET, Mode } from './types';
 
 function csvUrlFor(sheet: { sheetId: string, gid: string }) {
     return `https://docs.google.com/spreadsheets/d/${sheet.sheetId}/export?format=csv&gid=${sheet.gid}`;
@@ -135,6 +135,8 @@ export async function fetchHouseData(mode: Mode, provinceKey: string = 'damascus
             url = csvUrlFor(WINNERS_SHEET);
         } else if (mode === 'candidates') {
             url = csvUrlFor(CANDIDATES_SHEET);
+        } else if (mode === 'presidential') {
+            url = csvUrlFor(PRESIDENTIAL_SHEET);
         } else {
             const province = PROVINCES.find(p => p.key === provinceKey) || PROVINCES[4]; // Default to Damascus
             url = csvUrlFor(province);

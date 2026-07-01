@@ -240,16 +240,18 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
             <div className="flex flex-col items-center mb-8">
                 <h1 className="text-3xl font-bold mb-2 text-foreground">المجلس التشريعي</h1>
                 <p className="text-muted-foreground mb-6 text-center max-w-2xl">
-                    {mode === 'candidates' ? 'المرشحون لانتخابات المجلس التشريعي — يمكن التصفية والبحث' :
+                    {mode === 'candidates' ? 'المرشحون لانتخابات المجلس التشريعي، يمكن التصفية والبحث' :
                         mode === 'winners' ? 'الفائزون في انتخابات المجلس التشريعي' :
-                            'أعضاء الهيئات الناخبة لالمجلس التشريعي — يمكن التصفية والبحث وعرض إحصاءات'}
+                            mode === 'presidential' ? 'الثلث الرئاسي: الأعضاء المعينون في المجلس التشريعي، يمكن التصفية والبحث وعرض إحصاءات' :
+                                'أعضاء الهيئات الناخبة للمجلس التشريعي، يمكن التصفية والبحث وعرض إحصاءات'}
                 </p>
 
                 <div className="flex bg-muted p-1 rounded-lg">
                     {[
                         { id: 'voters', label: 'الهيئات الناخبة' },
                         { id: 'candidates', label: 'المرشحون' },
-                        { id: 'winners', label: 'الفائزون' }
+                        { id: 'winners', label: 'الفائزون' },
+                        { id: 'presidential', label: 'الثلث الرئاسي' }
                     ].map(tab => (
                         <button
                             key={tab.id}
@@ -276,8 +278,8 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
             {/* Controls */}
             <div className="bg-card p-4 rounded-lg shadow-sm border border-border">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    {/* Province Selector (Voters/Winners) */}
-                    {(mode !== 'candidates') && (
+                    {/* Province Selector (Voters/Winners). Presidential is a single national list. */}
+                    {(mode === 'voters' || mode === 'winners') && (
                         <div>
                             <label className="block text-xs font-medium text-muted-foreground mb-1">
                                 {mode === 'winners' ? 'الدائرة الانتخابية' : 'المحافظة'}
@@ -391,7 +393,7 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
             </div>
 
             {/* Stats Cards */}
-            {(mode === 'voters' || mode === 'winners') && (
+            {(mode === 'voters' || mode === 'winners' || mode === 'presidential') && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="bg-card p-4 rounded-lg shadow-sm border border-border text-center">
                         <div className="text-xs text-muted-foreground mb-1">الإجمالي</div>
@@ -418,7 +420,7 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
             )}
 
             {/* Charts Row */}
-            {(mode === 'voters' || mode === 'winners') && (
+            {(mode === 'voters' || mode === 'winners' || mode === 'presidential') && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="bg-card p-6 rounded-lg shadow-sm border border-border flex flex-col items-center">
                         <h3 className="text-sm font-semibold mb-4 text-foreground flex items-center gap-2">

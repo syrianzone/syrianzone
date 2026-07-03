@@ -67,21 +67,18 @@
         });
     </script>
 
-    <!-- Service Worker Cleanup -->
+    <!-- Service Worker Registration -->
     <script>
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                for (var registration of registrations) {
-                    registration.unregister();
-                }
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(function(reg) {
+                        console.log('Service Worker registered with scope: ', reg.scope);
+                    })
+                    .catch(function(err) {
+                        console.error('Service Worker registration failed: ', err);
+                    });
             });
-            if ('caches' in window) {
-                caches.keys().then(function(names) {
-                    for (var name of names) {
-                        caches.delete(name);
-                    }
-                });
-            }
         }
     </script>
 

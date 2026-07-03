@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Head } from '@inertiajs/react';
 import {
     CheckCircle2, Palette, Users2, ListOrdered, Landmark, Compass,
     Settings, Sun, Link, Moon, Utensils, Globe, Plus, Edit, X, Download, Upload, RotateCcw,
     Cloud, CloudRain, CloudLightning, Snowflake, Wind, MessageSquareCode, Smartphone, Bus,
-    Newspaper, Sliders
+    Newspaper, Sliders, Calendar, Clock, Sunrise, Sunset, SunDim, MoonStar
 } from 'lucide-react';
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
@@ -33,6 +33,7 @@ interface PresetLink {
 
 const PRESET_LINKS: PresetLink[] = [
     { href: '/syofficial', icon: CheckCircle2, text: 'الحسابات الرسمية' },
+    { href: '/roznama', icon: Calendar, text: 'الروزنامة' },
     { href: '/syid', icon: Palette, text: 'الهوية البصرية' },
     { href: '/party', icon: Users2, text: 'دليل الأحزاب' },
     { href: '/tierlist', icon: ListOrdered, text: 'تقييم الحكومة' },
@@ -144,6 +145,7 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
     const [weather, setWeather] = useState<any>(null);
     const [governorate, setGovernorate] = useState('damascus');
     const [clockFormat, setClockFormat] = useState<'12' | '24'>('24');
+    const [prayerTimes, setPrayerTimes] = useState<Record<string, string> | null>(null);
 
     // Load settings from localStorage
     useEffect(() => {
@@ -220,6 +222,109 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
         }
     }, [governorate, language, mounted]);
 
+    // Fetch prayer times for the upcoming prayer widget
+    useEffect(() => {
+        const fetchPrayers = async () => {
+            try {
+                const coords = GOVERNORATES[governorate] || GOVERNORATES['damascus'];
+                const now = new Date();
+                const day = String(now.getDate()).padStart(2, '0');
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const year = now.getFullYear();
+                const dateStr = `${day}-${month}-${year}`;
+
+                // Method 3: Muslim World League (Syrian standard)
+                const response = await fetch(`https://api.aladhan.com/v1/timings/${dateStr}?latitude=${coords.lat}&longitude=${coords.lon}&method=3`);
+                if (!response.ok) throw new Error('Prayer times fetch failed');
+                const data = await response.json();
+                if (data.code === 200 && data.data) {
+                    setPrayerTimes(data.data.timings);
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        };
+
+        if (mounted) {
+            fetchPrayers();
+        }
+    }, [governorate, mounted]);
+
+    // Calculate upcoming prayer in Home.tsx
+    const nextPrayerInfo = useMemo(() => {
+        if (!prayerTimes || !currentTime) return null;
+
+        const events = [
+            { key: 'Fajr', labelAr: 'الفجر', labelEn: 'Fajr' },
+            { key: 'Sunrise', labelAr: 'الشروق', labelEn: 'Sunrise' },
+            { key: 'Dhuhr', labelAr: 'الظهر', labelEn: 'Dhuhr' },
+            { key: 'Asr', labelAr: 'العصر', labelEn: 'Asr' },
+            { key: 'Maghrib', labelAr: 'المغرب', labelEn: 'Maghrib' },
+            { key: 'Isha', labelAr: 'العشاء', labelEn: 'Isha' }
+        ];
+
+        const parsedEvents = events.map(ev => {
+            const timeStr = prayerTimes[ev.key];
+            if (!timeStr) return null;
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            const eventTime = new Date(currentTime);
+            eventTime.setHours(hours, minutes, 0, 0);
+            return { ...ev, time: eventTime };
+        }).filter(Boolean) as Array<{ key: string; labelAr: string; labelEn: string; time: Date }>;
+
+        if (parsedEvents.length === 0) return null;
+
+        // Sort chronologically
+        parsedEvents.sort((a, b) => a.time.getTime() - b.time.getTime());
+
+        const nextEventIndex = parsedEvents.findIndex(ev => ev.time > currentTime);
+        const currentLang = language || 'ar';
+        
+        if (nextEventIndex === -1) {
+            // Next is Fajr tomorrow
+            const firstEvent = parsedEvents[0];
+            const tomorrowFajr = new Date(firstEvent.time);
+            tomorrowFajr.setDate(tomorrowFajr.getDate() + 1);
+
+            return {
+                key: firstEvent.key,
+                label: currentLang === 'ar' ? firstEvent.labelAr : firstEvent.labelEn,
+                timeStr: prayerTimes[firstEvent.key],
+                timeDiffMs: tomorrowFajr.getTime() - currentTime.getTime()
+            };
+        } else {
+            const nextEvent = parsedEvents[nextEventIndex];
+            return {
+                key: nextEvent.key,
+                label: currentLang === 'ar' ? nextEvent.labelAr : nextEvent.labelEn,
+                timeStr: prayerTimes[nextEvent.key],
+                timeDiffMs: nextEvent.time.getTime() - currentTime.getTime()
+            };
+        }
+    }, [prayerTimes, currentTime, language]);
+
+    const getPrayerIcon = (key: string, className?: string) => {
+        switch (key) {
+            case 'Fajr': return <MoonStar className={className} />;
+            case 'Sunrise': return <Sunrise className={className} />;
+            case 'Dhuhr': return <Sun className={className} />;
+            case 'Asr': return <SunDim className={className} />;
+            case 'Maghrib': return <Sunset className={className} />;
+            case 'Isha': return <Moon className={className} />;
+            default: return <Clock className={className} />;
+        }
+    };
+
+    const formatDuration = (ms: number) => {
+        const totalSecs = Math.floor(ms / 1000);
+        if (totalSecs < 0) return '00:00:00';
+        const hours = Math.floor(totalSecs / 3600);
+        const minutes = Math.floor((totalSecs % 3600) / 60);
+        const seconds = totalSecs % 60;
+        const pad = (num: number) => String(num).padStart(2, '0');
+        return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+    };
+
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         if (!searchQuery.trim()) return;
@@ -283,6 +388,40 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
             month: 'long',
             day: 'numeric'
         });
+    };
+
+    const formatHijriDate = (date: Date | null) => {
+        if (!date) return "";
+        try {
+            const formatter = new Intl.DateTimeFormat(language === 'ar' ? 'ar-SY-u-ca-islamic-umalqura' : 'en-US-u-ca-islamic-umalqura', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+            const formatted = formatter.format(date);
+            if (language === 'ar') {
+                return formatted.includes('هـ') ? formatted : `${formatted} هـ`;
+            } else {
+                return formatted.includes('AH') ? formatted : `${formatted} AH`;
+            }
+        } catch (e) {
+            console.error('Intl Hijri format error', e);
+            try {
+                const formatter = new Intl.DateTimeFormat(language === 'ar' ? 'ar-SY-u-ca-islamic' : 'en-US-u-ca-islamic', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                });
+                const formatted = formatter.format(date);
+                if (language === 'ar') {
+                    return formatted.includes('هـ') ? formatted : `${formatted} هـ`;
+                } else {
+                    return formatted.includes('AH') ? formatted : `${formatted} AH`;
+                }
+            } catch (err) {
+                return "";
+            }
+        }
     };
 
     if (!mounted) return null;
@@ -351,15 +490,44 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
                         <div className="text-4xl md:text-6xl font-bold text-foreground mb-2">
                             {formatTime(currentTime)}
                         </div>
-                        <div className="text-sm text-muted-foreground">
-                            {formatDate(currentTime)}
+                        <div className="text-sm text-muted-foreground flex flex-col items-center gap-1">
+                            <span>{formatDate(currentTime)}</span>
+                            {currentTime && (
+                                <span className="text-xs text-primary/80 font-medium">
+                                    {formatHijriDate(currentTime)}
+                                </span>
+                            )}
                         </div>
                     </div>
 
-                    <div className="w-full md:w-auto opacity-0 md:opacity-100">
-                        {/* Spacer for symmetry */}
-                        <div className="w-32 h-16"></div>
-                    </div>
+                    {/* Next Prayer Widget */}
+                    <Card className="w-full md:w-auto bg-card/40 backdrop-blur-sm border-border" dir={currentLang === 'ar' ? 'rtl' : 'ltr'}>
+                        <CardContent className="p-3.5 flex items-center gap-3">
+                            {nextPrayerInfo ? (
+                                <>
+                                    <div className="p-2 bg-primary/10 rounded-xl text-primary">
+                                        {getPrayerIcon(nextPrayerInfo.key, "w-5 h-5")}
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] text-muted-foreground font-medium leading-none">
+                                            {currentLang === 'ar' ? 'الصلاة القادمة' : 'Next Prayer'}
+                                        </span>
+                                        <div className="flex items-baseline gap-1.5 mt-1 leading-none">
+                                            <span className="font-bold text-sm text-foreground">{nextPrayerInfo.label}</span>
+                                            <span className="text-[10px] text-muted-foreground font-semibold">({nextPrayerInfo.timeStr})</span>
+                                        </div>
+                                    </div>
+                                    <div className="mr-auto rtl:mr-0 rtl:ml-auto pl-2 rtl:pl-0 rtl:pr-2 border-l rtl:border-l-0 rtl:border-r border-border/80 font-mono text-xs text-primary font-bold tracking-wider">
+                                        {formatDuration(nextPrayerInfo.timeDiffMs)}
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="text-xs text-muted-foreground animate-pulse py-1 px-4">
+                                    {currentLang === 'ar' ? 'جاري تحميل المواقيت...' : 'Loading times...'}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
                 </div>
 
                 {/* Logo */}

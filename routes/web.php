@@ -32,6 +32,9 @@ Route::get('/compass', function () {
 Route::get('/priorities', function () {
     return Inertia::render('Priorities/Index');
 });
+Route::get('/roznama', function () {
+    return Inertia::render('Roznama/Index');
+});
 Route::get('/shawarma', function () {
     return Inertia::render('Shawarma/Index');
 });

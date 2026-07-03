@@ -4,7 +4,7 @@ import {
     CheckCircle2, Palette, Users2, ListOrdered, Landmark, Compass,
     Settings, Sun, Link, Moon, Utensils, Globe, Plus, Edit, X, Download, Upload, RotateCcw,
     Cloud, CloudRain, CloudLightning, Snowflake, Wind, MessageSquareCode, Smartphone, Bus,
-    Newspaper, Sliders, Calendar, Clock, Sunrise, Sunset, SunDim, MoonStar
+    Newspaper, Sliders, Calendar, Clock, Sunrise, Sunset, SunDim, MoonStar, Phone
 } from 'lucide-react';
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
@@ -34,6 +34,7 @@ interface PresetLink {
 const PRESET_LINKS: PresetLink[] = [
     { href: '/syofficial', icon: CheckCircle2, text: 'الحسابات الرسمية' },
     { href: '/roznama', icon: Calendar, text: 'الروزنامة' },
+    { href: '/phonebook', icon: Phone, text: 'دليل الهاتف' },
     { href: '/syid', icon: Palette, text: 'الهوية البصرية' },
     { href: '/party', icon: Users2, text: 'دليل الأحزاب' },
     { href: '/tierlist', icon: ListOrdered, text: 'تقييم الحكومة' },

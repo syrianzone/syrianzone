@@ -23,6 +23,7 @@ import {
   Sliders,
   Scale,
   Calendar,
+  Phone,
 } from 'lucide-react';
 
 import { useAuth } from '@/Contexts/AuthContext';
@@ -52,6 +53,7 @@ import { ThemeToggle } from './ThemeToggle';
 const navLinks = [
   { href: '/syofficial', text: 'الحسابات الرسمية', icon: CheckCircle2 },
   { href: '/roznama', text: 'الروزنامة', icon: Calendar },
+  { href: '/phonebook', text: 'دليل الهاتف', icon: Phone },
   { href: '/syid', text: 'الهوية البصرية', icon: Palette },
   { href: '/tierlist', text: 'تقييم الحكومة', icon: ListOrdered },
   { href: '/syrian-contributors', text: 'المساهمون', icon: Code2 },

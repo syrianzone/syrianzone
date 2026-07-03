@@ -35,6 +35,7 @@ Route::get('/priorities', function () {
 Route::get('/roznama', function () {
     return Inertia::render('Roznama/Index');
 });
+Route::get('/phonebook', [\App\Http\Controllers\PhonebookController::class, 'index']);
 Route::get('/shawarma', function () {
     return Inertia::render('Shawarma/Index');
 });

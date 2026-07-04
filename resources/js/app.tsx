@@ -5,6 +5,10 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { createInertiaApp, router } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
+import { watchSystemTheme } from './lib/theme';
+
+// keep data-theme in sync with the device scheme while the preference is 'system'
+watchSystemTheme();
 
 const appName = import.meta.env.VITE_APP_NAME || 'Syrian Zone';
 const GA_ID = 'G-K4H98TC203';

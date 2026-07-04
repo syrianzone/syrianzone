@@ -29,7 +29,11 @@
                         s = (JSON.parse(sp)||{}).theme;
                     }
                 }
-                document.documentElement.setAttribute('data-theme', s || 'dark');
+                // no saved choice (or explicit 'system'): follow the device scheme
+                if(!s || s === 'system') {
+                    s = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+                }
+                document.documentElement.setAttribute('data-theme', s);
             } catch(e) {}
         })();
     </script>

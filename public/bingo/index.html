@@ -28,7 +28,7 @@
   <link rel="apple-touch-icon" href="/assets/favicon.png">
   
   <!-- Stylesheets -->
-  <script>(function(){try{var s=localStorage.getItem('sz-theme');if(!s){var sp=localStorage.getItem('startpage-settings');if(sp){s=(JSON.parse(sp)||{}).theme}};document.documentElement.setAttribute('data-theme', s||'dark');}catch(e){}})();</script>
+  <script>(function(){try{var s=localStorage.getItem('sz-theme');if(!s){var sp=localStorage.getItem('startpage-settings');if(sp){s=(JSON.parse(sp)||{}).theme}};if(!s||s==='system'){s=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light'};document.documentElement.setAttribute('data-theme', s);}catch(e){}})();</script>
   <link rel="stylesheet" href="/styles/theme.css">
   <link rel="stylesheet" href="/styles/output.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">

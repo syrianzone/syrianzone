@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/Components/ui/label";
 import { marked } from 'marked';
 import MainLayout from '@/Layouts/MainLayout';
+import { applyTheme as persistTheme, getThemePreference, resolveTheme, SYSTEM_THEME } from '@/lib/theme';
 
 interface CustomLink {
     id: string;
@@ -85,6 +86,8 @@ const WEATHER_TRANSLATIONS: Record<string, string> = {
 
 // Theme metadata — label, emoji hint, and which group they belong to
 const THEME_META: Record<string, { ar: string; en: string; emoji: string }> = {
+    // Follows the device's light/dark setting
+    system:         { ar: 'تلقائي (حسب الجهاز)', en: 'Auto (System)', emoji: '🌓' },
     // Original themes
     light:          { ar: 'فاتح',          en: 'Light',         emoji: '☀️' },
     dark:           { ar: 'داكن',          en: 'Dark',          emoji: '🌑' },
@@ -107,6 +110,7 @@ const DARK_THEMES = new Set([
 
 // Approximate primary accent color per theme for the swatch UI
 const THEME_SWATCH: Record<string, { bg: string; primary: string }> = {
+    'system':         { bg: 'linear-gradient(90deg, #f5f5f5 50%, #1a1f22 50%)', primary: '#5a714a' },
     'light':          { bg: '#f5f5f5', primary: '#5a714a' },
     'dark':           { bg: '#1a1f22', primary: '#5a714a' },
     'dark-blue':      { bg: '#0f1520', primary: '#4d84f5' },
@@ -131,6 +135,7 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
     }, [aboutContent]);
 
     const [theme, setTheme] = useState<string | null>(null);
+    const [systemDark, setSystemDark] = useState(false);
     const [language, setLanguage] = useState<'ar' | 'en' | null>(null);
     const [searchEngine, setSearchEngine] = useState('duckduckgo');
     const [searchQuery, setSearchQuery] = useState('');
@@ -150,7 +155,7 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
 
     // Load settings from localStorage
     useEffect(() => {
-        const savedTheme = localStorage.getItem('sz-theme') || 'dark';
+        const savedTheme = getThemePreference();
         const savedLang = localStorage.getItem('sz-language') as 'ar' | 'en' || 'ar';
         const savedLinks = localStorage.getItem('customLinks');
         const savedGovernorate = localStorage.getItem('governorate') || 'damascus';
@@ -169,9 +174,18 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
             }
         }
 
-        document.documentElement.setAttribute('data-theme', savedTheme);
+        document.documentElement.setAttribute('data-theme', resolveTheme(savedTheme));
         setMounted(true);
         setCurrentTime(new Date());
+    }, []);
+
+    // Track the device scheme so system-resolved UI (logo, sun/moon icon) stays in sync
+    useEffect(() => {
+        const query = window.matchMedia('(prefers-color-scheme: dark)');
+        setSystemDark(query.matches);
+        const onChange = (e: MediaQueryListEvent) => setSystemDark(e.matches);
+        query.addEventListener('change', onChange);
+        return () => query.removeEventListener('change', onChange);
     }, []);
 
     // Clock update
@@ -344,12 +358,11 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
 
     const applyTheme = (newTheme: string) => {
         setTheme(newTheme);
-        localStorage.setItem('sz-theme', newTheme);
-        document.documentElement.setAttribute('data-theme', newTheme);
+        persistTheme(newTheme);
     };
 
     const cycleTheme = () => {
-        const currentTheme = theme || 'dark';
+        const currentTheme = theme || SYSTEM_THEME;
         const currentIndex = THEMES.indexOf(currentTheme);
         const nextIndex = (currentIndex + 1) % THEMES.length;
         applyTheme(THEMES[nextIndex]);
@@ -428,7 +441,8 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
     if (!mounted) return null;
 
     const currentLang = language || 'ar';
-    const isDark = DARK_THEMES.has(theme || 'dark');
+    const activeTheme = theme || SYSTEM_THEME;
+    const isDark = DARK_THEMES.has(activeTheme === SYSTEM_THEME ? (systemDark ? 'dark' : 'light') : activeTheme);
 
     return (
         <MainLayout>
@@ -452,8 +466,8 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
                         size="icon"
                         onClick={cycleTheme}
                         title={currentLang === 'ar'
-                            ? `المظهر الحالي: ${THEME_META[theme || 'dark']?.ar}`
-                            : `Current theme: ${THEME_META[theme || 'dark']?.en}`}
+                            ? `المظهر الحالي: ${THEME_META[activeTheme]?.ar}`
+                            : `Current theme: ${THEME_META[activeTheme]?.en}`}
                     >
                         {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
                     </Button>
@@ -765,10 +779,10 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
                                     {currentLang === 'ar' ? 'المظاهر الأساسية' : 'Standard'}
                                 </p>
                                 <div className="flex flex-col gap-1.5">
-                                    {['light','dark','dark-blue','dark-purple','dark-green','high-contrast'].map((t) => {
+                                    {['system','light','dark','dark-blue','dark-purple','dark-green','high-contrast'].map((t) => {
                                         const swatch = THEME_SWATCH[t];
                                         const meta = THEME_META[t];
-                                        const isActive = (theme || 'dark') === t;
+                                        const isActive = activeTheme === t;
                                         return (
                                             <button
                                                 key={t}
@@ -801,7 +815,7 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
                                     {['damascus-rose','jasmine'].map((t) => {
                                         const swatch = THEME_SWATCH[t];
                                         const meta = THEME_META[t];
-                                        const isActive = (theme || 'dark') === t;
+                                        const isActive = activeTheme === t;
                                         return (
                                             <button
                                                 key={t}

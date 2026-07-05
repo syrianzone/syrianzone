@@ -24,6 +24,7 @@ import {
   Scale,
   Calendar,
   Phone,
+  Sparkles,
 } from 'lucide-react';
 
 import { useAuth } from '@/Contexts/AuthContext';
@@ -74,6 +75,7 @@ const navLinks = [
 const externalLinks = [
   { href: 'https://news.jard.chat', text: 'أخبار سوريا', icon: Newspaper },
   { href: 'https://wrraq.com', text: 'المنتدى', icon: MessageSquare },
+  { href: 'https://joory.chat', text: 'جوري AI', image: 'https://joory.chat/favicon.svg' },
   { href: 'https://food.syrian.zone', text: 'وصفاتنا', icon: Utensils },
   { href: 'https://discord.gg/NqE8849VzA', text: 'مجتمع كوديكس', icon: MessageSquareCode },
   { href: 'https://chromewebstore.google.com/detail/syrian-flag-replacer/dngipobppehfhfggmbdiiiodgcibdeog', text: 'مبدل العلم', isFlag: true },
@@ -148,7 +150,7 @@ export default function Navbar() {
                 </Link>
               ))}
               <Separator className="my-2" />
-              {externalLinks.map(({ href, text, icon: Icon, isFlag }) => (
+              {externalLinks.map(({ href, text, icon: Icon, isFlag, image }) => (
                 <a
                   key={href}
                   href={href}
@@ -158,6 +160,8 @@ export default function Navbar() {
                 >
                   {isFlag ? (
                     <img src="/flag-replacer/1f1f8-1f1fe.svg" alt="Flag" className="w-4 h-4 ml-2" />
+                  ) : image ? (
+                    <img src={image} alt={text} className="w-4 h-4 object-contain" />
                   ) : Icon ? (
                     <Icon className="h-4 w-4" />
                   ) : null}
@@ -230,7 +234,7 @@ export default function Navbar() {
                     </li>
                   ))}
                   <Separator className="col-span-2 my-2" />
-                  {externalLinks.map(({ href, text, icon: Icon, isFlag }) => (
+                  {externalLinks.map(({ href, text, icon: Icon, isFlag, image }) => (
                     <li key={href} className="col-span-1">
                       <a
                         href={href}
@@ -240,6 +244,8 @@ export default function Navbar() {
                       >
                         {isFlag ? (
                           <img src="/flag-replacer/1f1f8-1f1fe.svg" alt="Flag" className="w-4 h-4 ml-1" />
+                        ) : image ? (
+                          <img src={image} alt={text} className="w-4 h-4 object-contain" />
                         ) : Icon ? (
                           <Icon className="h-4 w-4 text-muted-foreground" />
                         ) : null}

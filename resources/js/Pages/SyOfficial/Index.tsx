@@ -233,6 +233,18 @@ export default function Index({ initialData }: SyOfficialClientProps) {
                     <h1 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">{t.title}</h1>
                     <p className="text-lg text-muted-foreground mb-8">{t.description}</p>
 
+                    {/* Social Lists Links */}
+                    <div className="flex justify-center gap-4 mb-8">
+                        <a href="https://x.com/i/lists/1906101934660174006" target="_blank" rel="noopener" className="flex items-center gap-2 px-5 py-2 rounded-full bg-muted hover:bg-muted/80 text-foreground transition-colors font-medium border border-border text-sm">
+                            <Twitter className="h-4 w-4 text-blue-400" />
+                            <span>{t.socialTwitterList}</span>
+                        </a>
+                        <a href="https://t.me/addlist/fKrhEy2yNeEwODQ0" target="_blank" rel="noopener" className="flex items-center gap-2 px-5 py-2 rounded-full bg-muted hover:bg-muted/80 text-foreground transition-colors font-medium border border-border text-sm">
+                            <Send className="h-4 w-4 text-blue-500" />
+                            <span>{t.socialTelegramList}</span>
+                        </a>
+                    </div>
+
                     {/* Language Switcher */}
                     <div className="flex justify-center gap-2 mb-8">
                         {(['ar', 'en', 'tr', 'ku'] as Language[]).map(lang => (
@@ -460,19 +472,7 @@ export default function Index({ initialData }: SyOfficialClientProps) {
                 )}
             </div>
 
-            {/* Social Lists Links (Footer area of the content) */}
-            <div className="container mx-auto px-4 pb-12 text-center">
-                <div className="inline-flex gap-4">
-                    <a href="https://x.com/i/lists/1906101934660174006" target="_blank" rel="noopener" className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-muted hover:bg-muted/80 text-foreground transition-colors font-medium border border-border">
-                        <Twitter className="h-5 w-5 text-blue-400" />
-                        <span>{t.socialTwitterList}</span>
-                    </a>
-                    <a href="https://t.me/addlist/fKrhEy2yNeEwODQ0" target="_blank" rel="noopener" className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-muted hover:bg-muted/80 text-foreground transition-colors font-medium border border-border">
-                        <Send className="h-5 w-5 text-blue-500" />
-                        <span>{t.socialTelegramList}</span>
-                    </a>
-                </div>
-            </div>
+
         </div>
         </MainLayout>
     );

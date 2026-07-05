@@ -4,7 +4,7 @@ import {
     CheckCircle2, Palette, Users2, ListOrdered, Landmark, Compass,
     Settings, Sun, Link, Moon, Utensils, Globe, Plus, Edit, X, Download, Upload, RotateCcw,
     Cloud, CloudRain, CloudLightning, Snowflake, Wind, MessageSquareCode, Smartphone, Bus,
-    Newspaper, Sliders, Calendar, Clock, Sunrise, Sunset, SunDim, MoonStar, Phone, Scale
+    Newspaper, Sliders, Calendar, Clock, Sunrise, Sunset, SunDim, MoonStar, Phone, Scale, Search
 } from 'lucide-react';
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
@@ -510,29 +510,37 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
                 </div>
 
                 {/* Search */}
-                <div className="max-w-3xl mx-auto mb-16">
-                    <form onSubmit={handleSearch} className="flex gap-2">
-                        <Select value={searchEngine} onValueChange={setSearchEngine}>
-                            <SelectTrigger className="w-[180px]">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="duckduckgo">DuckDuckGo</SelectItem>
-                                <SelectItem value="searx">SearX</SelectItem>
-                                <SelectItem value="google">Google</SelectItem>
-                                <SelectItem value="bing">Bing</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <Input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder={currentLang === 'ar' ? 'ابحث في الويب...' : 'Search the web...'}
-                            className="flex-1"
-                        />
-                        <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                            {currentLang === 'ar' ? 'بحث' : 'Search'}
-                        </Button>
+                <div className="max-w-2xl mx-auto mb-16 px-4">
+                    <form onSubmit={handleSearch} className="w-full">
+                        <div className="relative flex items-center w-full h-12 rounded-full border border-input bg-card/45 backdrop-blur-sm px-4 py-1.5 shadow-sm focus-within:ring-1 focus-within:ring-ring transition-all">
+                            {/* Search Icon */}
+                            <Search className="h-5 w-5 text-muted-foreground shrink-0 ms-1" />
+                            
+                            {/* Text Input */}
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder={currentLang === 'ar' ? 'ابحث في الويب...' : 'Search the web...'}
+                                className="flex-1 bg-transparent px-3 py-2 text-sm outline-none placeholder:text-muted-foreground w-full min-w-0"
+                            />
+                            
+                            {/* Divider */}
+                            <div className="h-6 w-[1px] bg-border mx-2 shrink-0" />
+                            
+                            {/* Dropdown Selection */}
+                            <Select value={searchEngine} onValueChange={setSearchEngine}>
+                                <SelectTrigger className="w-[110px] border-0 bg-transparent shadow-none focus:ring-0 focus:ring-offset-0 px-2 h-auto text-xs font-bold text-muted-foreground hover:text-foreground shrink-0 gap-1.5 cursor-pointer">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent align="end" className="w-[140px]" dir={currentLang === 'ar' ? 'rtl' : 'ltr'}>
+                                    <SelectItem value="duckduckgo">DuckDuckGo</SelectItem>
+                                    <SelectItem value="searx">SearX</SelectItem>
+                                    <SelectItem value="google">Google</SelectItem>
+                                    <SelectItem value="bing">Bing</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </form>
                 </div>
 

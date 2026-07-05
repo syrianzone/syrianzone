@@ -76,6 +76,7 @@ const externalLinks = [
   { href: 'https://news.jard.chat', text: 'أخبار سوريا', icon: Newspaper },
   { href: 'https://wrraq.com', text: 'المنتدى', icon: MessageSquare },
   { href: 'https://joory.chat', text: 'جوري AI', image: 'https://joory.chat/favicon.svg' },
+  { href: 'https://jard.chat', text: 'جرد', image: 'https://jard.chat/images/logo-light.svg' },
   { href: 'https://food.syrian.zone', text: 'وصفاتنا', icon: Utensils },
   { href: 'https://discord.gg/NqE8849VzA', text: 'مجتمع كوديكس', icon: MessageSquareCode },
   { href: 'https://chromewebstore.google.com/detail/syrian-flag-replacer/dngipobppehfhfggmbdiiiodgcibdeog', text: 'مبدل العلم', isFlag: true },

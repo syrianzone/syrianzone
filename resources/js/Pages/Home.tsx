@@ -432,9 +432,9 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
             {/* Main Content */}
             <div className="container mx-auto px-4 pt-20 pb-12 max-w-6xl">
                 {/* Weather & Clock */}
-                <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-12">
+                <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-6 mb-12 w-full">
                     {/* Weather Widget */}
-                    <Card className="w-full md:w-auto bg-card/50 backdrop-blur-sm border-border">
+                    <Card className="w-full md:w-auto justify-self-stretch md:justify-self-start bg-card/50 backdrop-blur-sm border-border">
                         <CardContent className="p-4">
                             <div className="text-sm text-muted-foreground">
                                 {weather ? (
@@ -453,7 +453,7 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
                     </Card>
 
                     {/* Clock */}
-                    <div className="text-center">
+                    <div className="text-center justify-self-center">
                         <div className="text-4xl md:text-6xl font-bold text-foreground mb-2">
                             {formatTime(currentTime)}
                         </div>
@@ -468,7 +468,7 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
                     </div>
 
                     {/* Next Prayer Widget */}
-                    <Card className="w-full md:w-auto bg-card/40 backdrop-blur-sm border-border" dir={currentLang === 'ar' ? 'rtl' : 'ltr'}>
+                    <Card className="w-full md:w-auto justify-self-stretch md:justify-self-end bg-card/40 backdrop-blur-sm border-border" dir={currentLang === 'ar' ? 'rtl' : 'ltr'}>
                         <CardContent className="p-3.5 flex items-center gap-3">
                             {nextPrayerInfo ? (
                                 <>

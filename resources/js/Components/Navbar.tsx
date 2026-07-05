@@ -49,6 +49,7 @@ import { Separator } from '@/components/ui/separator';
 
 import UserNav from './UserNav';
 import { ThemeToggle } from './ThemeToggle';
+import { isDarkTheme } from '@/lib/theme';
 
 const navLinks = [
   { href: '/syofficial', text: 'الحسابات الرسمية', icon: CheckCircle2 },
@@ -84,6 +85,8 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = React.useState(false);
   const [theme, setTheme] = React.useState('dark');
   const { user } = useAuth();
+
+  const isDark = isDarkTheme(theme, false);
 
   React.useEffect(() => {
     const savedTheme = document.documentElement.getAttribute('data-theme') || 'dark';
@@ -121,7 +124,7 @@ export default function Navbar() {
               <SheetTitle>
                 <Link href="/" className="flex items-center" onClick={() => setIsOpen(false)}>
                   <img
-                    src={theme === 'light' ? '/assets/logo-lightmode.svg' : '/assets/logo-darkmode.svg'}
+                    src={isDark ? '/assets/logo-darkmode.svg' : '/assets/logo-lightmode.svg'}
                     className="h-8"
                     alt="Syrian Zone"
                   />
@@ -173,7 +176,7 @@ export default function Navbar() {
         <div className="absolute left-1/2 -translate-x-1/2 lg:static lg:translate-x-0 flex shrink-0 lg:ml-12">
           <Link href="/" className="flex items-center gap-2">
             <img
-              src={theme === 'light' ? '/assets/logo-lightmode.svg' : '/assets/logo-darkmode.svg'}
+              src={isDark ? '/assets/logo-darkmode.svg' : '/assets/logo-lightmode.svg'}
               className="h-10"
               alt="Syrian Zone"
             />

@@ -38,6 +38,7 @@ import {
 import { Instagram } from '@/Components/ui/icons';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/Components/ui/card";
+import { THEME_REGISTRY, getThemeById } from '@/lib/theme';
 import { Button } from "@/Components/ui/button";
 
 import {
@@ -56,17 +57,6 @@ ChartJS.register(
   Tooltip,
   Legend
 );
-
-const THEME_COLORS: Record<string, { primary: string; primaryRgb: string }> = {
-  'light': { primary: '#5a714a', primaryRgb: '90, 113, 74' },
-  'dark': { primary: '#5a714a', primaryRgb: '90, 113, 74' },
-  'dark-blue': { primary: '#4d84f5', primaryRgb: '77, 132, 245' },
-  'dark-purple': { primary: '#9b2ec4', primaryRgb: '155, 46, 196' },
-  'dark-green': { primary: '#4cac5a', primaryRgb: '76, 172, 90' },
-  'high-contrast': { primary: '#00ff00', primaryRgb: '0, 255, 0' },
-  'damascus-rose': { primary: '#d4527a', primaryRgb: '212, 82, 122' },
-  'jasmine': { primary: '#c47e10', primaryRgb: '196, 126, 16' },
-};
 
 const TOPIC_ICONS: Record<string, React.ComponentType<any>> = {
   economy: Briefcase,
@@ -88,50 +78,18 @@ const getShortTopicName = (id: string, fallback: string) => {
 };
 
 const getStoryThemeStyles = (themeKey: string) => {
-  const colors = THEME_COLORS[themeKey] || THEME_COLORS['dark'];
-  let gradient = 'linear-gradient(135deg, #0b0f19 0%, #064e3b 50%, #022c22 100%)';
-  let accentBg = 'bg-emerald-500/20 border-emerald-500/30';
-  let accentText = 'text-emerald-400';
-  let badgeBg = 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300';
+  const theme = getThemeById(themeKey) || getThemeById('dark') || THEME_REGISTRY[2];
+  const priorities = theme.priorities || {
+    primaryRgb: '90, 113, 74',
+    gradient: 'linear-gradient(135deg, #0b0f19 0%, #064e3b 50%, #022c22 100%)',
+    accentBg: 'bg-emerald-500/20 border-emerald-500/30',
+    accentText: 'text-emerald-400',
+    badgeBg: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300',
+    headerSubtitle: '#a7f3d0',
+    urlText: '#34d399',
+  };
 
-  if (themeKey === 'dark-blue') {
-    gradient = 'linear-gradient(135deg, #090d16 0%, #0f2b5c 50%, #061124 100%)';
-    accentBg = 'bg-blue-500/20 border-blue-500/30';
-    accentText = 'text-blue-400';
-    badgeBg = 'bg-blue-500/10 border-blue-500/20 text-blue-300';
-  } else if (themeKey === 'dark-purple') {
-    gradient = 'linear-gradient(135deg, #0a0b14 0%, #3b1154 50%, #180526 100%)';
-    accentBg = 'bg-purple-500/20 border-purple-500/30';
-    accentText = 'text-purple-400';
-    badgeBg = 'bg-purple-500/10 border-purple-500/20 text-purple-300';
-  } else if (themeKey === 'damascus-rose') {
-    gradient = 'linear-gradient(135deg, #0d0a0b 0%, #5c142e 50%, #24050f 100%)';
-    accentBg = 'bg-pink-500/20 border-pink-500/30';
-    accentText = 'text-pink-400';
-    badgeBg = 'bg-pink-500/10 border-pink-500/20 text-pink-300';
-  } else if (themeKey === 'jasmine') {
-    gradient = 'linear-gradient(135deg, #0d0c0a 0%, #523105 50%, #241402 100%)';
-    accentBg = 'bg-amber-500/20 border-amber-500/30';
-    accentText = 'text-amber-400';
-    badgeBg = 'bg-amber-500/10 border-amber-500/20 text-amber-300';
-  } else if (themeKey === 'high-contrast') {
-    gradient = 'linear-gradient(135deg, #000000 0%, #111111 100%)';
-    accentBg = 'bg-green-500/20 border-green-500/30';
-    accentText = 'text-green-400';
-    badgeBg = 'bg-green-500/10 border-green-500/20 text-green-300';
-  } else if (themeKey === 'dark-green') {
-    gradient = 'linear-gradient(135deg, #080d0a 0%, #144d21 50%, #051a0b 100%)';
-    accentBg = 'bg-green-500/20 border-green-500/30';
-    accentText = 'text-green-400';
-    badgeBg = 'bg-green-500/10 border-green-500/20 text-green-300';
-  } else if (themeKey === 'light') {
-    gradient = 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)';
-    accentBg = 'bg-slate-200 border-slate-300';
-    accentText = 'text-slate-700';
-    badgeBg = 'bg-slate-100 border-slate-200 text-slate-800';
-  }
-
-  const isLight = themeKey === 'light';
+  const isLight = theme.id === 'light';
   const textPrimary = isLight ? '#0f172a' : '#ffffff';
   const textSecondary = isLight ? '#475569' : '#94a3b8';
   const textMuted = isLight ? '#64748b' : 'rgba(255, 255, 255, 0.45)';
@@ -139,55 +97,18 @@ const getStoryThemeStyles = (themeKey: string) => {
   const cardBorder = isLight ? 'rgba(203, 213, 225, 0.8)' : 'rgba(30, 41, 59, 0.6)';
 
   // Contrast configurations for the header text and URL
-  let headerTitle = '#ffffff';
-  let headerSubtitle = '#a7f3d0';
-  let urlLabel = '#cbd5e1';
-  let urlText = '#34d399';
-
-  if (themeKey === 'dark-blue') {
-    headerTitle = '#ffffff';
-    headerSubtitle = '#93c5fd';
-    urlLabel = '#cbd5e1';
-    urlText = '#60a5fa';
-  } else if (themeKey === 'dark-purple') {
-    headerTitle = '#ffffff';
-    headerSubtitle = '#e9d5ff';
-    urlLabel = '#cbd5e1';
-    urlText = '#d8b4fe';
-  } else if (themeKey === 'damascus-rose') {
-    headerTitle = '#ffffff';
-    headerSubtitle = '#fbcfe8';
-    urlLabel = '#cbd5e1';
-    urlText = '#f472b6';
-  } else if (themeKey === 'jasmine') {
-    headerTitle = '#ffffff';
-    headerSubtitle = '#fde68a';
-    urlLabel = '#cbd5e1';
-    urlText = '#fbbf24';
-  } else if (themeKey === 'high-contrast') {
-    headerTitle = '#ffffff';
-    headerSubtitle = '#00ff00';
-    urlLabel = '#ffffff';
-    urlText = '#00ff00';
-  } else if (themeKey === 'dark-green') {
-    headerTitle = '#ffffff';
-    headerSubtitle = '#86efac';
-    urlLabel = '#cbd5e1';
-    urlText = '#86efac';
-  } else if (isLight) {
-    headerTitle = '#0f172a';
-    headerSubtitle = '#475569';
-    urlLabel = '#64748b';
-    urlText = '#5a714a';
-  }
+  const headerTitle = isLight ? '#0f172a' : '#ffffff';
+  const headerSubtitle = priorities.headerSubtitle;
+  const urlLabel = isLight ? '#64748b' : '#cbd5e1';
+  const urlText = priorities.urlText;
 
   return {
-    gradient,
-    accentBg,
-    accentText,
-    badgeBg,
-    primary: colors.primary,
-    primaryRgb: colors.primaryRgb,
+    gradient: priorities.gradient,
+    accentBg: priorities.accentBg,
+    accentText: priorities.accentText,
+    badgeBg: priorities.badgeBg,
+    primary: theme.primary,
+    primaryRgb: priorities.primaryRgb,
     textPrimary,
     textSecondary,
     textMuted,
@@ -518,7 +439,11 @@ export default function PrioritiesApp() {
   }, [totalAllocated, topics]);
 
   // Theme-sensitive chart colors
-  const themeColors = THEME_COLORS[activeTheme] || THEME_COLORS['dark'];
+  const activeThemeConfig = getThemeById(activeTheme) || getThemeById('dark') || THEME_REGISTRY[2];
+  const themeColors = useMemo(() => ({
+    primary: activeThemeConfig.primary,
+    primaryRgb: activeThemeConfig.priorities?.primaryRgb || '90, 113, 74'
+  }), [activeThemeConfig]);
 
   const chartData = useMemo(() => {
     return {
@@ -1610,19 +1535,17 @@ export default function PrioritiesApp() {
                 اختر لون المظهر للبطاقة:
               </label>
               <div className="flex flex-wrap justify-start gap-2">
-                {Object.keys(THEME_COLORS).map((themeKey) => {
-                  const colors = THEME_COLORS[themeKey];
+                {THEME_REGISTRY.filter(t => t.id !== 'system').map((theme) => {
+                  const themeKey = theme.id;
+                  const colors = {
+                    primary: theme.primary,
+                    primaryRgb: theme.priorities?.primaryRgb || '90, 113, 74'
+                  };
                   const isActive = storyTheme === themeKey;
                   const themeMeta = {
-                    light: { ar: 'فاتح', emoji: '☀️' },
-                    dark: { ar: 'داكن', emoji: '🌑' },
-                    'dark-blue': { ar: 'أزرق', emoji: '🔵' },
-                    'dark-purple': { ar: 'بنفسجي', emoji: '🟣' },
-                    'dark-green': { ar: 'أخضر', emoji: '🟢' },
-                    'high-contrast': { ar: 'تباين', emoji: '⚡' },
-                    'damascus-rose': { ar: 'دمشقي', emoji: '🌹' },
-                    'jasmine': { ar: 'ياسمين', emoji: '🌸' },
-                  }[themeKey] || { ar: themeKey, emoji: '🎨' };
+                    ar: theme.shortNameAr || theme.nameAr,
+                    emoji: theme.emoji
+                  };
 
                   return (
                     <button
@@ -1637,7 +1560,7 @@ export default function PrioritiesApp() {
                       }}
                     >
                       <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: colors.primary }}></span>
-                      <span>{themeMeta.ar}</span>
+                      <span>{themeMeta.emoji} {themeMeta.ar}</span>
                     </button>
                   );
                 })}

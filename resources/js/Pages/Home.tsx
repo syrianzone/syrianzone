@@ -14,7 +14,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/Components/ui/label";
 import { marked } from 'marked';
 import MainLayout from '@/Layouts/MainLayout';
-import { applyTheme as persistTheme, getThemePreference, resolveTheme, SYSTEM_THEME } from '@/lib/theme';
+import { applyTheme as persistTheme, getThemePreference, resolveTheme, SYSTEM_THEME, THEME_REGISTRY, isDarkTheme } from '@/lib/theme';
+import { ThemeToggle } from '@/Components/ThemeToggle';
 
 interface CustomLink {
     id: string;
@@ -84,42 +85,7 @@ const WEATHER_TRANSLATIONS: Record<string, string> = {
     "moderate rain": "مطر متوسط",
 };
 
-// Theme metadata — label, emoji hint, and which group they belong to
-const THEME_META: Record<string, { ar: string; en: string; emoji: string }> = {
-    // Follows the device's light/dark setting
-    system:         { ar: 'تلقائي (حسب الجهاز)', en: 'Auto (System)', emoji: '🌓' },
-    // Original themes
-    light:          { ar: 'فاتح',          en: 'Light',         emoji: '☀️' },
-    dark:           { ar: 'داكن',          en: 'Dark',          emoji: '🌑' },
-    'dark-blue':    { ar: 'داكن أزرق',     en: 'Dark Blue',     emoji: '🔵' },
-    'dark-purple':  { ar: 'داكن بنفسجي',   en: 'Dark Purple',   emoji: '🟣' },
-    'dark-green':   { ar: 'داكن أخضر',     en: 'Dark Green',    emoji: '🟢' },
-    'high-contrast':{ ar: 'تباين عالي',    en: 'High Contrast', emoji: '⚡' },
-    // Syrian Heritage themes
-    'damascus-rose':  { ar: 'الورد الدمشقي',   en: 'Damascus Rose',  emoji: '🌹' },
-    'jasmine':        { ar: 'ياسمين',           en: 'Jasmine',        emoji: '🌸' },
-};
 
-const THEMES = Object.keys(THEME_META);
-
-// Themes that use a dark background (affects logo + sun/moon icon)
-const DARK_THEMES = new Set([
-    'dark', 'dark-blue', 'dark-purple', 'dark-green', 'high-contrast',
-    'damascus-rose',
-]);
-
-// Approximate primary accent color per theme for the swatch UI
-const THEME_SWATCH: Record<string, { bg: string; primary: string }> = {
-    'system':         { bg: 'linear-gradient(90deg, #f5f5f5 50%, #1a1f22 50%)', primary: '#5a714a' },
-    'light':          { bg: '#f5f5f5', primary: '#5a714a' },
-    'dark':           { bg: '#1a1f22', primary: '#5a714a' },
-    'dark-blue':      { bg: '#0f1520', primary: '#4d84f5' },
-    'dark-purple':    { bg: '#130e1a', primary: '#9b2ec4' },
-    'dark-green':     { bg: '#0e1a10', primary: '#4cac5a' },
-    'high-contrast':  { bg: '#0a0a0a', primary: '#00ff00' },
-    'damascus-rose':  { bg: '#1a0810', primary: '#d4527a' },
-    'jasmine':        { bg: '#fdf8ef', primary: '#c47e10' },
-};
 
 export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
     const [aboutHtml, setAboutHtml] = useState('');
@@ -361,12 +327,7 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
         persistTheme(newTheme);
     };
 
-    const cycleTheme = () => {
-        const currentTheme = theme || SYSTEM_THEME;
-        const currentIndex = THEMES.indexOf(currentTheme);
-        const nextIndex = (currentIndex + 1) % THEMES.length;
-        applyTheme(THEMES[nextIndex]);
-    };
+
 
     const toggleLanguage = () => {
         const newLang = language === 'ar' ? 'en' : 'ar';
@@ -442,7 +403,7 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
 
     const currentLang = language || 'ar';
     const activeTheme = theme || SYSTEM_THEME;
-    const isDark = DARK_THEMES.has(activeTheme === SYSTEM_THEME ? (systemDark ? 'dark' : 'light') : activeTheme);
+    const isDark = isDarkTheme(activeTheme, systemDark);
 
     return (
         <MainLayout>
@@ -461,16 +422,7 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
                     <Button variant="ghost" size="icon" onClick={toggleLanguage}>
                         <img src={`/assets/${currentLang}.svg`} alt={currentLang} className="w-5 h-5" />
                     </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={cycleTheme}
-                        title={currentLang === 'ar'
-                            ? `المظهر الحالي: ${THEME_META[activeTheme]?.ar}`
-                            : `Current theme: ${THEME_META[activeTheme]?.en}`}
-                    >
-                        {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-                    </Button>
+                    <ThemeToggle />
                     <Button variant="ghost" size="icon" onClick={() => setSettingsOpen(true)}>
                         <Settings className="h-5 w-5" />
                     </Button>
@@ -779,31 +731,29 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
                                     {currentLang === 'ar' ? 'المظاهر الأساسية' : 'Standard'}
                                 </p>
                                 <div className="flex flex-col gap-1.5">
-                                    {['system','light','dark','dark-blue','dark-purple','dark-green','high-contrast'].map((t) => {
-                                        const swatch = THEME_SWATCH[t];
-                                        const meta = THEME_META[t];
-                                        const isActive = activeTheme === t;
+                                    {THEME_REGISTRY.filter(t => t.group === 'standard' || t.group === 'system').map((t) => {
+                                        const isActive = activeTheme === t.id;
                                         return (
                                             <button
-                                                key={t}
-                                                onClick={() => applyTheme(t)}
+                                                key={t.id}
+                                                onClick={() => applyTheme(t.id)}
                                                 className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all hover:scale-[1.01] focus:outline-none w-full"
                                                 style={{
-                                                    background: isActive ? swatch.primary + '1a' : 'hsl(var(--muted))',
-                                                    border: isActive ? `2px solid ${swatch.primary}` : '2px solid transparent',
+                                                    background: isActive ? t.primary + '1a' : 'hsl(var(--muted))',
+                                                    border: isActive ? `2px solid ${t.primary}` : '2px solid transparent',
                                                 }}
                                             >
                                                 <div
                                                     className="w-6 h-6 rounded-full flex-shrink-0 overflow-hidden shadow-sm"
-                                                    style={{ background: swatch.bg, border: `2px solid ${swatch.primary}` }}
+                                                    style={{ background: t.bg, border: `2px solid ${t.primary}` }}
                                                 >
-                                                    <div style={{ background: swatch.primary, height: '50%', marginTop: '50%' }} />
+                                                    <div style={{ background: t.primary, height: '50%', marginTop: '50%' }} />
                                                 </div>
-                                                <span className="text-sm font-medium" style={{ color: isActive ? swatch.primary : 'hsl(var(--foreground))' }}>
-                                                    {meta.emoji} {currentLang === 'ar' ? meta.ar : meta.en}
+                                                <span className="text-sm font-medium" style={{ color: isActive ? t.primary : 'hsl(var(--foreground))' }}>
+                                                    {t.emoji} {currentLang === 'ar' ? t.nameAr : t.nameEn}
                                                 </span>
                                                 {isActive && (
-                                                    <span className="ms-auto text-sm" style={{ color: swatch.primary }}>✓</span>
+                                                    <span className="ms-auto text-sm" style={{ color: t.primary }}>✓</span>
                                                 )}
                                             </button>
                                         );
@@ -811,32 +761,33 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
                                 </div>
 
                                 {/* Syrian Heritage themes list */}
+                                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground pt-3">
+                                    {currentLang === 'ar' ? 'التراث السوري' : 'Syrian Heritage'}
+                                </p>
                                 <div className="flex flex-col gap-1.5">
-                                    {['damascus-rose','jasmine'].map((t) => {
-                                        const swatch = THEME_SWATCH[t];
-                                        const meta = THEME_META[t];
-                                        const isActive = activeTheme === t;
+                                    {THEME_REGISTRY.filter(t => t.group === 'heritage').map((t) => {
+                                        const isActive = activeTheme === t.id;
                                         return (
                                             <button
-                                                key={t}
-                                                onClick={() => applyTheme(t)}
+                                                key={t.id}
+                                                onClick={() => applyTheme(t.id)}
                                                 className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all hover:scale-[1.01] focus:outline-none w-full"
                                                 style={{
-                                                    background: isActive ? swatch.primary + '1a' : 'hsl(var(--muted))',
-                                                    border: isActive ? `2px solid ${swatch.primary}` : '2px solid transparent',
+                                                    background: isActive ? t.primary + '1a' : 'hsl(var(--muted))',
+                                                    border: isActive ? `2px solid ${t.primary}` : '2px solid transparent',
                                                 }}
                                             >
                                                 <div
                                                     className="w-6 h-6 rounded-full flex-shrink-0 overflow-hidden shadow-sm"
-                                                    style={{ background: swatch.bg, border: `2px solid ${swatch.primary}` }}
+                                                    style={{ background: t.bg, border: `2px solid ${t.primary}` }}
                                                 >
-                                                    <div style={{ background: swatch.primary, height: '50%', marginTop: '50%' }} />
+                                                    <div style={{ background: t.primary, height: '50%', marginTop: '50%' }} />
                                                 </div>
-                                                <span className="text-sm font-medium" style={{ color: isActive ? swatch.primary : 'hsl(var(--foreground))' }}>
-                                                    {meta.emoji} {currentLang === 'ar' ? meta.ar : meta.en}
+                                                <span className="text-sm font-medium" style={{ color: isActive ? t.primary : 'hsl(var(--foreground))' }}>
+                                                    {t.emoji} {currentLang === 'ar' ? t.nameAr : t.nameEn}
                                                 </span>
                                                 {isActive && (
-                                                    <span className="ms-auto text-sm" style={{ color: swatch.primary }}>✓</span>
+                                                    <span className="ms-auto text-sm" style={{ color: t.primary }}>✓</span>
                                                 )}
                                             </button>
                                         );

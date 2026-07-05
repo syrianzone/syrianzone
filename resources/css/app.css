@@ -197,26 +197,94 @@
 }
 
 [data-theme="dark-blue"] {
+    --background: 219 36% 9%;
+    --foreground: 210 40% 98%;
+    --card: 219 36% 6.5%;
+    --card-foreground: 210 40% 98%;
+    --popover: 219 36% 8%;
+    --popover-foreground: 210 40% 98%;
     --primary: 217 91% 60%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 219 25% 15%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 219 25% 13%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 219 25% 17%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 219 25% 17%;
+    --input: 219 25% 17%;
     --ring: 217 91% 60%;
     --sz-color-primary: 217 91% 60%;
 }
 
 [data-theme="dark-purple"] {
+    --background: 270 30% 8%;
+    --foreground: 270 40% 98%;
+    --card: 270 30% 5.5%;
+    --card-foreground: 270 40% 98%;
+    --popover: 270 30% 7%;
+    --popover-foreground: 270 40% 98%;
     --primary: 291 64% 42%;
+    --primary-foreground: 270 40% 98%;
+    --secondary: 270 20% 14%;
+    --secondary-foreground: 270 40% 98%;
+    --muted: 270 20% 12%;
+    --muted-foreground: 270 20% 65%;
+    --accent: 270 20% 16%;
+    --accent-foreground: 270 40% 98%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 270 40% 98%;
+    --border: 270 20% 16%;
+    --input: 270 20% 16%;
     --ring: 291 64% 42%;
     --sz-color-primary: 291 64% 42%;
 }
 
 [data-theme="dark-green"] {
+    --background: 135 29% 8%;
+    --foreground: 135 40% 98%;
+    --card: 135 29% 5.5%;
+    --card-foreground: 135 40% 98%;
+    --popover: 135 29% 7%;
+    --popover-foreground: 135 40% 98%;
     --primary: 122 39% 49%;
+    --primary-foreground: 135 40% 98%;
+    --secondary: 135 20% 14%;
+    --secondary-foreground: 135 40% 98%;
+    --muted: 135 20% 12%;
+    --muted-foreground: 130 18% 65%;
+    --accent: 135 20% 16%;
+    --accent-foreground: 135 40% 98%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 135 40% 98%;
+    --border: 135 20% 16%;
+    --input: 135 20% 16%;
     --ring: 122 39% 49%;
     --sz-color-primary: 122 39% 49%;
 }
 
 [data-theme="high-contrast"] {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+    --card: 0 0% 0%;
+    --card-foreground: 0 0% 100%;
+    --popover: 0 0% 0%;
+    --popover-foreground: 0 0% 100%;
     --primary: 120 100% 50%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 85%;
+    --accent: 0 0% 15%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 100% 50%;
+    --destructive-foreground: 0 0% 100%;
     --border: 120 100% 50%;
+    --input: 120 100% 50%;
+    --ring: 120 100% 50%;
     --sz-color-primary: 120 100% 50%;
 }
 

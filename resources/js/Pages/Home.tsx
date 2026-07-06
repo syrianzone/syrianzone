@@ -16,6 +16,7 @@ import { marked } from 'marked';
 import MainLayout from '@/Layouts/MainLayout';
 import { applyTheme as persistTheme, getThemePreference, resolveTheme, SYSTEM_THEME, THEME_REGISTRY, isDarkTheme } from '@/lib/theme';
 import { ThemeToggle } from '@/Components/ThemeToggle';
+import F3aliaEvents from '@/Components/F3aliaEvents';
 
 interface CustomLink {
     id: string;
@@ -546,6 +547,9 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
                     </form>
                 </div>
 
+                {/* F3alia Events integration */}
+                <F3aliaEvents governorate={governorate} language={currentLang} variant="single" />
+
                 {/* Quick Links */}
                 <div className="mb-12">
                     <h3 className="text-xl font-bold text-foreground mb-6 text-center">
@@ -667,7 +671,10 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
                             </h4>
                             <div className="space-y-2">
                                 <Label>{currentLang === 'ar' ? 'المحافظة' : 'Governorate'}</Label>
-                                <Select value={governorate} onValueChange={setGovernorate}>
+                                <Select value={governorate} onValueChange={(val) => {
+                                    setGovernorate(val);
+                                    localStorage.setItem('governorate', val);
+                                }}>
                                     <SelectTrigger>
                                         <SelectValue />
                                     </SelectTrigger>

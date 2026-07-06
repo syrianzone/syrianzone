@@ -11,6 +11,59 @@ import { Button } from "@/Components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/Components/ui/select";
 import { Badge } from "@/Components/ui/badge";
 import { Switch } from "@/Components/ui/switch";
+interface EventCategory {
+    nameAr: string;
+    nameEn: string;
+}
+
+interface F3aliaEvent {
+    id: string;
+    name: string;
+    description: string;
+    address: string;
+    isOnline: boolean;
+    eventLink: string;
+    province: string;
+    provinceName: string;
+    isFree: boolean;
+    ticketPrice: number;
+    eventDate: string;
+    eventTime: string | null;
+    category: EventCategory | null;
+}
+
+const GOVERNORATE_TO_F3ALIA_PROVINCE: Record<string, string> = {
+    'damascus': 'DAMASCUS',
+    'aleppo': 'ALEPPO',
+    'homs': 'HOMS',
+    'hama': 'HAMA',
+    'latakia': 'LATTAKIA',
+    'tartus': 'TARTOUS',
+    'deir-ez-zor': 'DEIR_EZ_ZOR',
+    'idlib': 'IDLIB',
+    'daraa': 'DARAA',
+    'quneitra': 'QUNEITRA',
+    'sweida': 'AS_SUWAYDA',
+    'rural-damascus': 'DAMASCUS',
+    'hasakah': 'HASAKEH',
+    'raqqa': 'RAQQA'
+};
+
+const F3ALIA_PROVINCE_TO_ARABIC: Record<string, string> = {
+    'DAMASCUS': 'دمشق',
+    'ALEPPO': 'حلب',
+    'HOMS': 'حمص',
+    'HAMA': 'حماة',
+    'LATTAKIA': 'اللاذقية',
+    'TARTOUS': 'طرطوس',
+    'DEIR_EZ_ZOR': 'دير الزور',
+    'IDLIB': 'إدلب',
+    'DARAA': 'درعا',
+    'QUNEITRA': 'القنيطرة',
+    'AS_SUWAYDA': 'السويداء',
+    'HASAKEH': 'الحسكة',
+    'RAQQA': 'الرقة'
+};
 import { Label } from "@/Components/ui/label";
 import {
     Table,
@@ -122,6 +175,16 @@ export default function Index() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [mounted, setMounted] = useState(false);
+
+    // F3alia Events States
+    const [events, setEvents] = useState<F3aliaEvent[]>([]);
+    const [showOtherGovEvents, setShowOtherGovEvents] = useState(false);
+    const [loadingEvents, setLoadingEvents] = useState(true);
+    const [eventsError, setEventsError] = useState<string | null>(null);
+
+    const nextEvent = useMemo(() => {
+        return events.length > 0 ? events[0] : null;
+    }, [events]);
     
     // Switch state for hiding passed holidays
     const [hidePassed, setHidePassed] = useState<boolean>(() => {
@@ -220,6 +283,78 @@ export default function Index() {
 
         fetchPrayerTimes();
     }, [governorate, mounted]);
+
+    // Fetch upcoming events from F3alia public API
+    useEffect(() => {
+        if (!mounted) return;
+
+        const fetchF3aliaEvents = async () => {
+            setLoadingEvents(true);
+            setEventsError(null);
+            try {
+                const query = `
+                    query GetEvents($province: Province, $fromDate: Date, $size: Int!) {
+                        getAllEventsForVisitor(page: 0, size: $size, province: $province, fromDate: $fromDate) {
+                            content {
+                                id
+                                name
+                                description
+                                address
+                                isOnline
+                                eventLink
+                                province
+                                provinceName
+                                isFree
+                                ticketPrice
+                                eventDate
+                                eventTime
+                                category {
+                                    nameAr
+                                    nameEn
+                                }
+                            }
+                        }
+                    }
+                `;
+
+                const provinceEnum = showOtherGovEvents ? null : (GOVERNORATE_TO_F3ALIA_PROVINCE[governorate] || null);
+                
+                const d = new Date();
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                const todayStr = `${year}-${month}-${day}`;
+
+                const response = await fetch('https://event-backend-production-18c4.up.railway.app/graphql', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query,
+                        variables: {
+                            province: provinceEnum,
+                            fromDate: todayStr,
+                            size: 15
+                        }
+                    })
+                });
+
+                if (!response.ok) throw new Error();
+                const resData = await response.json();
+                if (resData.errors && resData.errors.length > 0) throw new Error(resData.errors[0].message);
+
+                const fetchedEvents = (resData.data?.getAllEventsForVisitor?.content || []) as F3aliaEvent[];
+                const upcoming = fetchedEvents.filter(e => e.eventDate >= todayStr);
+                setEvents(upcoming);
+            } catch (err) {
+                console.error(err);
+                setEventsError('فشل تحميل الفعاليات');
+            } finally {
+                setLoadingEvents(false);
+            }
+        };
+
+        fetchF3aliaEvents();
+    }, [governorate, showOtherGovEvents, mounted]);
 
     // Handle governorate change (saves to Roznama-specific key)
     const handleGovChange = (val: string) => {
@@ -523,6 +658,40 @@ export default function Index() {
                                                 </span>
                                             </div>
                                         </div>
+
+                                        {/* Next Event section inside Holiday Card */}
+                                        {nextEvent && (
+                                            <div className="mt-4 pt-4 border-t border-border/40 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-xs" dir="rtl">
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center gap-1.5 text-primary font-bold">
+                                                        <Sparkles className="h-3.5 w-3.5 animate-pulse" />
+                                                        <span>الفعالية القادمة: {nextEvent.name}</span>
+                                                    </div>
+                                                    <div className="text-[11px] text-muted-foreground flex items-center gap-2 flex-wrap">
+                                                        <span className="font-semibold text-foreground/80">
+                                                            {F3ALIA_PROVINCE_TO_ARABIC[nextEvent.province] || nextEvent.provinceName}
+                                                        </span>
+                                                        <span>•</span>
+                                                        <span>{formatDateGregorian(new Date(nextEvent.eventDate))}</span>
+                                                        {nextEvent.eventTime && (
+                                                            <>
+                                                                <span>•</span>
+                                                                <span className="font-mono">{nextEvent.eventTime}</span>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <a
+                                                    href={nextEvent.eventLink}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-[11px] font-bold text-primary hover:underline inline-flex items-center gap-0.5 bg-primary/10 px-2.5 py-1 rounded border border-primary/20 hover:bg-primary/15 transition-colors shrink-0"
+                                                >
+                                                    <span>التفاصيل</span>
+                                                    <ExternalLink className="h-3 w-3" />
+                                                </a>
+                                            </div>
+                                        )}
                                     </CardContent>
                                 </Card>
                             )}
@@ -627,115 +796,253 @@ export default function Index() {
 
                     </div>
 
-                    {/* Bottom Section: Single Full-Width Row (Table & Notes) */}
-                    <div className="space-y-6">
+                    {/* Bottom Section: Two columns layout (Holidays vs Events) */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
                         
                         {/* Compact Table Card */}
-                        <Card className="border-border bg-card/60 backdrop-blur-sm shadow-sm">
-                            <CardContent className="p-6">
-                                
-                                {/* Table Controls Header */}
-                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 border-b border-border/60 pb-3">
-                                    <div>
-                                        <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
-                                            <Calendar className="h-5 w-5 text-primary" />
-                                            <span>العطل الرسمية في سوريا ({currentTime.getFullYear()}م)</span>
-                                        </h3>
-                                    </div>
-                                    <div className="flex flex-wrap items-center gap-4">
-                                        
-                                        {/* Toggle Passed Holidays Switch */}
-                                        <div className="flex items-center gap-2 bg-muted/40 px-3 py-1.5 rounded-lg border border-border/50">
-                                            <Switch
-                                                id="hide-passed"
-                                                dir="rtl"
-                                                checked={hidePassed}
-                                                onCheckedChange={setHidePassed}
-                                            />
-                                            <Label htmlFor="hide-passed" className="text-xs font-semibold cursor-pointer">
-                                                إخفاء العطل المنقضية
-                                            </Label>
+                        <Card className="border-border bg-card/60 backdrop-blur-sm shadow-sm h-full flex flex-col justify-between">
+                            <CardContent className="p-6 flex-1 flex flex-col justify-between">
+                                <div>
+                                    {/* Table Controls Header */}
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 border-b border-border/60 pb-3">
+                                        <div>
+                                            <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
+                                                <Calendar className="h-5 w-5 text-primary" />
+                                                <span>العطل الرسمية في سوريا ({currentTime.getFullYear()}م)</span>
+                                            </h3>
                                         </div>
+                                        <div className="flex flex-wrap items-center gap-4">
+                                            
+                                            {/* Toggle Passed Holidays Switch */}
+                                            <div className="flex items-center gap-2 bg-muted/40 px-3 py-1.5 rounded-lg border border-border/50">
+                                                <Switch
+                                                    id="hide-passed"
+                                                    dir="rtl"
+                                                    checked={hidePassed}
+                                                    onCheckedChange={setHidePassed}
+                                                />
+                                                <Label htmlFor="hide-passed" className="text-xs font-semibold cursor-pointer">
+                                                    إخفاء العطل المنقضية
+                                                </Label>
+                                            </div>
 
-                                        {/* Source Link */}
-                                        <a 
-                                            href="https://sana.sy/presidency/2299819/" 
-                                            target="_blank" 
-                                            rel="noopener noreferrer" 
-                                            className="text-xs text-primary hover:underline inline-flex items-center gap-1 font-semibold bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/20 transition-colors hover:bg-primary/15"
-                                        >
-                                            <span>المرسوم رقم 188 (سانا)</span>
-                                            <ExternalLink className="h-3 w-3" />
-                                        </a>
+                                            {/* Source Link */}
+                                            <a 
+                                                href="https://sana.sy/presidency/2299819/" 
+                                                target="_blank" 
+                                                rel="noopener noreferrer" 
+                                                className="text-xs text-primary hover:underline inline-flex items-center gap-1 font-semibold bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/20 transition-colors hover:bg-primary/15"
+                                            >
+                                                <span>المرسوم رقم 188 (سانا)</span>
+                                                <ExternalLink className="h-3 w-3" />
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                    {/* Table */}
+                                    <div className="bg-card rounded-lg shadow border border-border overflow-hidden">
+                                        <Table>
+                                            <TableHeader className="bg-muted">
+                                                <TableRow>
+                                                    <TableHead className="text-right font-bold text-foreground">المناسبة</TableHead>
+                                                    <TableHead className="text-right font-bold text-foreground">التاريخ</TableHead>
+                                                    <TableHead className="text-right font-bold text-foreground">الحالة</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {filteredHolidays.length === 0 ? (
+                                                    <TableRow>
+                                                        <TableCell colSpan={3} className="text-center py-8 text-muted-foreground text-sm">
+                                                            لا توجد عطلات رسمية متبقية لهذا العام.
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ) : (
+                                                    filteredHolidays.map((holiday, idx) => {
+                                                        const isPast = holiday.date < new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate());
+                                                        const daysDiff = Math.ceil((holiday.date.getTime() - new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate()).getTime()) / (1000 * 60 * 60 * 24));
+                                                        
+                                                        return (
+                                                            <TableRow key={idx} className={isPast ? "opacity-50 bg-muted/10" : "hover:bg-muted/50"}>
+                                                                <TableCell className="font-semibold text-sm">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span>{holiday.nameAr}</span>
+                                                                        {holiday.isNew && (
+                                                                            <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white text-[9px] font-bold h-4 px-1">
+                                                                                جديد
+                                                                            </Badge>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="text-xs text-muted-foreground font-normal mt-0.5 max-w-sm">
+                                                                        {holiday.description}
+                                                                    </div>
+                                                                </TableCell>
+                                                                <TableCell className="font-medium text-xs whitespace-nowrap">
+                                                                    {holiday.date.toLocaleDateString('ar-SY', { day: 'numeric', month: 'long' })}
+                                                                    {holiday.date.getFullYear() !== currentTime.getFullYear() && ` (${holiday.date.getFullYear()})`}
+                                                                </TableCell>
+                                                                <TableCell className="text-xs">
+                                                                    {isPast ? (
+                                                                        <span className="text-muted-foreground">منقضية</span>
+                                                                    ) : daysDiff === 0 ? (
+                                                                        <Badge className="bg-primary text-primary-foreground font-bold animate-pulse text-[10px] h-5">
+                                                                            اليوم
+                                                                        </Badge>
+                                                                    ) : (
+                                                                        <span className="text-primary font-medium font-mono">
+                                                                            متبقٍ {daysDiff} يوم
+                                                                        </span>
+                                                                    )}
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        );
+                                                    })
+                                                )}
+                                            </TableBody>
+                                        </Table>
                                     </div>
                                 </div>
-
-                                {/* Table */}
-                                <div className="bg-card rounded-lg shadow border border-border overflow-hidden">
-                                    <Table>
-                                        <TableHeader className="bg-muted">
-                                            <TableRow>
-                                                <TableHead className="text-right font-bold text-foreground">المناسبة</TableHead>
-                                                <TableHead className="text-right font-bold text-foreground">التاريخ</TableHead>
-                                                <TableHead className="text-right font-bold text-foreground">الحالة</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {filteredHolidays.length === 0 ? (
-                                                <TableRow>
-                                                    <TableCell colSpan={3} className="text-center py-8 text-muted-foreground text-sm">
-                                                        لا توجد عطلات رسمية متبقية لهذا العام.
-                                                    </TableCell>
-                                                </TableRow>
-                                            ) : (
-                                                filteredHolidays.map((holiday, idx) => {
-                                                    const isPast = holiday.date < new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate());
-                                                    const daysDiff = Math.ceil((holiday.date.getTime() - new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate()).getTime()) / (1000 * 60 * 60 * 24));
-                                                    
-                                                    return (
-                                                        <TableRow key={idx} className={isPast ? "opacity-50 bg-muted/10" : "hover:bg-muted/50"}>
-                                                            <TableCell className="font-semibold text-sm">
-                                                                <div className="flex items-center gap-2">
-                                                                    <span>{holiday.nameAr}</span>
-                                                                    {holiday.isNew && (
-                                                                        <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white text-[9px] font-bold h-4 px-1">
-                                                                            جديد
-                                                                        </Badge>
-                                                                    )}
-                                                                </div>
-                                                                <div className="text-xs text-muted-foreground font-normal mt-0.5 max-w-sm">
-                                                                    {holiday.description}
-                                                                </div>
-                                                            </TableCell>
-                                                            <TableCell className="font-medium text-xs whitespace-nowrap">
-                                                                {holiday.date.toLocaleDateString('ar-SY', { day: 'numeric', month: 'long' })}
-                                                                {holiday.date.getFullYear() !== currentTime.getFullYear() && ` (${holiday.date.getFullYear()})`}
-                                                            </TableCell>
-                                                            <TableCell className="text-xs">
-                                                                {isPast ? (
-                                                                    <span className="text-muted-foreground">منقضية</span>
-                                                                ) : daysDiff === 0 ? (
-                                                                    <Badge className="bg-primary text-primary-foreground font-bold animate-pulse text-[10px] h-5">
-                                                                        اليوم
-                                                                    </Badge>
-                                                                ) : (
-                                                                    <span className="text-primary font-medium font-mono">
-                                                                        متبقٍ {daysDiff} يوم
-                                                                    </span>
-                                                                )}
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    );
-                                                })
-                                            )}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-
                             </CardContent>
                         </Card>
 
-                        {/* Combined and Simplified Notes & Canceled Holidays Box */}
+                        {/* Upcoming Events Column */}
+                        <Card className="border-border bg-card/60 backdrop-blur-sm shadow-sm h-full flex flex-col justify-between">
+                            <CardContent className="p-6 flex flex-col justify-between h-full">
+                                <div>
+                                    {/* Events Header */}
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 border-b border-border/60 pb-3">
+                                        <div>
+                                            <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
+                                                <Sparkles className="h-5 w-5 text-primary" />
+                                                <span>الفعاليات القادمة في {showOtherGovEvents ? 'باقي المحافظات' : activeGov.nameAr}</span>
+                                            </h3>
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                            {/* Toggle switch for showing other governorates */}
+                                            <div className="flex items-center gap-2 bg-muted/40 px-3 py-1.5 rounded-lg border border-border/50">
+                                                <Switch
+                                                    id="show-other-govs"
+                                                    dir="rtl"
+                                                    checked={showOtherGovEvents}
+                                                    onCheckedChange={setShowOtherGovEvents}
+                                                />
+                                                <Label htmlFor="show-other-govs" className="text-xs font-semibold cursor-pointer">
+                                                    باقي المحافظات
+                                                </Label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Events List */}
+                                    {loadingEvents ? (
+                                        <div className="space-y-3 py-1">
+                                            {[1, 2, 3, 4, 5].map(i => (
+                                                <div key={i} className="flex items-center justify-between p-3 rounded-xl border border-border/50 bg-muted/5 animate-pulse gap-4">
+                                                    <div className="space-y-2 min-w-0 flex-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="h-4 bg-muted rounded w-2/5" />
+                                                            <div className="h-3.5 bg-muted rounded w-12" />
+                                                        </div>
+                                                        <div className="h-3 bg-muted rounded w-3/5" />
+                                                    </div>
+                                                    <div className="flex items-center gap-3 shrink-0">
+                                                        <div className="h-5 bg-muted rounded w-14" />
+                                                        <div className="h-7 bg-muted rounded w-7" />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : eventsError ? (
+                                        <div className="text-center py-8 text-sm text-red-500 flex flex-col items-center gap-2">
+                                            <AlertCircle className="h-8 w-8 text-red-500" />
+                                            <p>{eventsError}</p>
+                                        </div>
+                                    ) : events.length === 0 ? (
+                                        <div className="text-center py-12 text-sm text-muted-foreground">
+                                            <Calendar className="h-8 w-8 text-muted-foreground/60 mx-auto mb-2" />
+                                            <p>لا توجد فعاليات قادمة مسجلة حالياً في هذه المحافظة.</p>
+                                            <button 
+                                                onClick={() => setShowOtherGovEvents(true)}
+                                                className="text-xs text-primary font-bold hover:underline mt-2"
+                                            >
+                                                تصفح الفعاليات في باقي المحافظات
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {events.map((event) => (
+                                                <div 
+                                                    key={event.id}
+                                                    className="flex items-center justify-between p-3 rounded-xl border border-border/50 bg-muted/10 hover:bg-muted/30 transition-colors gap-4"
+                                                >
+                                                    <div className="space-y-1 min-w-0">
+                                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                                            <span className="font-bold text-sm text-foreground truncate">{event.name}</span>
+                                                            {event.category && (
+                                                                <Badge variant="outline" className="text-[9px] h-4 px-1 py-0 bg-primary/5 text-primary border-primary/20 shrink-0">
+                                                                    {event.category.nameAr}
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
+                                                            <span className="font-semibold text-foreground/75">
+                                                                {F3ALIA_PROVINCE_TO_ARABIC[event.province] || event.provinceName}
+                                                            </span>
+                                                            <span>•</span>
+                                                            <span>{formatDateGregorian(new Date(event.eventDate))}</span>
+                                                            {event.eventTime && (
+                                                                <>
+                                                                    <span>•</span>
+                                                                    <span className="font-mono">{event.eventTime}</span>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-3 shrink-0">
+                                                        <Badge 
+                                                            className={`${
+                                                                event.isFree 
+                                                                    ? 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/15 border-emerald-500/20' 
+                                                                    : 'bg-primary/10 text-primary hover:bg-primary/15 border-primary/20'
+                                                            } border text-[10px] font-bold h-5 px-1.5`}
+                                                        >
+                                                            {event.isFree ? 'مجاني' : `${event.ticketPrice.toLocaleString()} ل.س`}
+                                                        </Badge>
+                                                        
+                                                        <a 
+                                                            href={event.eventLink} 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer"
+                                                            className="text-primary hover:text-primary-foreground hover:bg-primary p-1.5 rounded-lg border border-primary/25 hover:border-primary transition-all"
+                                                        >
+                                                            <ExternalLink className="h-3.5 w-3.5" />
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Source and Show More button */}
+                                <div className="mt-6 pt-4 border-t border-border/60 flex flex-col sm:flex-row items-center justify-between gap-4">
+                                    <div className="text-[10px] text-muted-foreground">
+                                        المصدر: منصة فعالية (F3alia) للأحداث والفعاليات
+                                    </div>
+                                    <a 
+                                        href="https://app.f3alia.com" 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="text-xs text-primary hover:underline inline-flex items-center gap-1 font-semibold bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/20 transition-all hover:bg-primary/15"
+                                    >
+                                        <span>عرض المزيد في المصدر</span>
+                                        <ExternalLink className="h-3 w-3" />
+                                    </a>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                    </div>                        {/* Combined and Simplified Notes & Canceled Holidays Box */}
                         <Card className="border-border bg-muted/20 shadow-sm p-5">
                             <div className="flex gap-3.5 items-start text-xs text-muted-foreground leading-relaxed">
                                 <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
@@ -752,8 +1059,6 @@ export default function Index() {
                     </div>
 
                 </div>
-
-            </div>
-        </MainLayout>
+            </MainLayout>
     );
 }

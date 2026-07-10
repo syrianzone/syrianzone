@@ -104,11 +104,11 @@ function AppDetailView({ app, isDesktop }: { app: GovApp; isDesktop: boolean }) 
             </div>
 
             {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto px-6 pb-10 space-y-8">
-                {/* Simple Action Row */}
-                <div className="flex flex-wrap gap-3 pt-2">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 pb-10 space-y-8 min-w-0">
+                {/* Action Buttons — grid so they never overflow the modal */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
                     {app.links.android && (
-                        <Button asChild variant="outline" className="flex-1 min-w-[140px] h-11 rounded-xl">
+                        <Button asChild variant="outline" className="h-10 rounded-xl w-full">
                             <a href={app.links.android} target="_blank" rel="noopener noreferrer">
                                 <Smartphone className="ml-2 h-4 w-4" />
                                 أندرويد
@@ -116,7 +116,7 @@ function AppDetailView({ app, isDesktop }: { app: GovApp; isDesktop: boolean }) 
                         </Button>
                     )}
                     {app.links.apple && (
-                        <Button asChild variant="outline" className="flex-1 min-w-[140px] h-11 rounded-xl">
+                        <Button asChild variant="outline" className="h-10 rounded-xl w-full">
                             <a href={app.links.apple} target="_blank" rel="noopener noreferrer">
                                 <Apple className="ml-2 h-4 w-4" />
                                 آيفون
@@ -124,7 +124,7 @@ function AppDetailView({ app, isDesktop }: { app: GovApp; isDesktop: boolean }) 
                         </Button>
                     )}
                     {app.links.official && (
-                        <Button asChild variant="outline" className="flex-1 min-w-[140px] h-11 rounded-xl">
+                        <Button asChild variant="outline" className="h-10 rounded-xl w-full">
                             <a href={app.links.official} target="_blank" rel="noopener noreferrer">
                                 <Globe className="ml-2 h-4 w-4" />
                                 الموقع الرسمي

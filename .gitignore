@@ -46,3 +46,10 @@ Homestead.yaml
 
 # OS specific
 .DS_Store
+
+# Android & Bubblewrap (TWA)
+android/.bubblewrap/
+android/*.keystore
+android/*.jks
+android/*.apk
+android/*.aab

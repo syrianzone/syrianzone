@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "zone.syrian.app",
+      "sha256_cert_fingerprints": [
+        "DD:13:7A:69:34:E2:1E:D2:51:DC:79:74:D3:29:95:89:E7:E4:11:BA:A4:CC:5A:CD:91:79:FC:48:24:E0:98:7E"
+      ]
+    }
+  }
+]

@@ -32,7 +32,7 @@ class TransitStudioController extends Controller
             'name_en' => $validated['name_en'],
             'price' => $validated['price'],
             'notes' => $validated['notes'],
-            'geojson' => $validated['geojson'],
+            'geojson' => $request->input('geojson'),
             'status' => 'pending',
         ]);
 

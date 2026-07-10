@@ -16,6 +16,14 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->trustProxies(at: '*');
         
+        $middleware->web(prepend: [
+            \App\Http\Middleware\AutoLoginDevUser::class,
+        ]);
+        
+        $middleware->api(prepend: [
+            \App\Http\Middleware\AutoLoginDevUser::class,
+        ]);
+        
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
         ]);

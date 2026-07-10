@@ -107,12 +107,12 @@ function TransitAdminPageContent() {
         id: 'draft-line', type: 'line', source: 'draft-source',
         layout: { 'line-join': 'round', 'line-cap': 'round' },
         paint: { 'line-color': '#f59e0b', 'line-width': 4 },
-        filter: ['==', ['geometry-type'], 'LineString'],
+        filter: ['==', '$type', 'LineString'],
       })
       map.addLayer({
         id: 'draft-points', type: 'circle', source: 'draft-source',
         paint: { 'circle-radius': 7, 'circle-color': '#ef4444', 'circle-stroke-width': 2, 'circle-stroke-color': '#fff' },
-        filter: ['==', ['geometry-type'], 'Point'],
+        filter: ['==', '$type', 'Point'],
       })
 
       mapRef.current = map

@@ -50,6 +50,11 @@ function stopCount(draft: Draft) {
   return geojson?.features?.filter((f: any) => f.geometry?.type === 'Point').length ?? 0
 }
 
+function getCsrfToken(): string {
+  const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/)
+  return match ? decodeURIComponent(match[1]) : ''
+}
+
 
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -173,6 +178,10 @@ function TransitAdminPageContent() {
     try {
       const res = await fetch(`${API()}/v1/admin/route-drafts/${id}/approve`, {
         method: 'POST',
+        headers: {
+          'X-XSRF-TOKEN': getCsrfToken(),
+        },
+        credentials: 'include',
       })
       if (res.ok) {
         showToast('تمت الموافقة على المسار ونشره')
@@ -193,7 +202,11 @@ function TransitAdminPageContent() {
     try {
       const res = await fetch(`${API()}/v1/admin/route-drafts/${selectedDraft.id}/reject`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-XSRF-TOKEN': getCsrfToken(),
+        },
+        credentials: 'include',
         body: JSON.stringify({ reason: rejectReason.trim() || null }),
       })
       if (res.ok) {

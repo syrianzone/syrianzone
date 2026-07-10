@@ -140,34 +140,33 @@ function AppDetailView({ app, isDesktop }: { app: GovApp; isDesktop: boolean }) 
                     </div>
                 )}
 
-                {/* Seamless Screenshot Slider */}
+                {/* Screenshot Slider */}
                 {app.images && app.images.length > 0 && (
-                    <div className="space-y-4">
+                    <div className="space-y-4 -mx-6 px-6 overflow-hidden">
                         <div className="flex items-center justify-between">
                             <h4 className="font-bold text-base text-foreground">لقطات الشاشة</h4>
                             <span className="text-xs text-muted-foreground">{app.images.length} صور</span>
                         </div>
-                        <div className=" -mx-6">
-                            <div
-                                ref={scrollRef}
-                                className={`flex gap-4 px-6 pb-6 overflow-x-auto scrollbar-hide select-none ${isDesktop ? 'cursor-grab' : ''} ${isDragging ? 'cursor-grabbing snap-none' : 'snap-x snap-mandatory'}`}
-                                onMouseDown={handleMouseDown}
-                                onMouseLeave={handleMouseLeave}
-                                onMouseUp={handleMouseUp}
-                                onMouseMove={handleMouseMove}
-                                dir="rtl"
-                            >
-                                {app.images.map((img, i) => (
-                                    <div key={i} className="relative w-[75%] sm:w-64 aspect-[9/16] shrink-0 overflow-hidden rounded-2xl border bg-muted/20 shadow-lg snap-start pointer-events-none">
-                                        <img
-                                            src={img}
-                                            alt={`Screenshot ${i + 1}`}
-                                            className="absolute inset-0 h-full w-full object-contain"
-                                        />
-                                    </div>
-                                ))}
-                                <div className="w-6 shrink-0" />
-                            </div>
+                        <div
+                            ref={scrollRef}
+                            className={`flex gap-3 pb-4 overflow-x-auto scrollbar-hide select-none touch-pan-x ${isDesktop ? 'cursor-grab' : ''} ${isDragging ? 'cursor-grabbing snap-none' : 'snap-x snap-mandatory'}`}
+                            onMouseDown={handleMouseDown}
+                            onMouseLeave={handleMouseLeave}
+                            onMouseUp={handleMouseUp}
+                            onMouseMove={handleMouseMove}
+                            dir="rtl"
+                        >
+                            {app.images.map((img, i) => (
+                                <div key={i} className="relative w-40 sm:w-48 aspect-[9/16] shrink-0 overflow-hidden rounded-2xl border bg-muted/20 shadow-lg snap-start">
+                                    <img
+                                        src={img}
+                                        alt={`Screenshot ${i + 1}`}
+                                        className="absolute inset-0 h-full w-full object-contain"
+                                        draggable={false}
+                                    />
+                                </div>
+                            ))}
+                            <div className="w-4 shrink-0" />
                         </div>
                     </div>
                 )}

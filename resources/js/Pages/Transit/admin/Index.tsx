@@ -123,7 +123,7 @@ function TransitAdminPageContent() {
 
     if (selectedDraft) {
       const line = selectedDraft.geojson?.features?.find((f: any) => f.geometry?.type === 'LineString')
-      if (line) {
+      if (line && line.geometry?.coordinates && Array.isArray(line.geometry.coordinates) && line.geometry.coordinates.length > 0) {
         const coords: [number, number][] = line.geometry.coordinates
         const bounds = coords.reduce(
           (b, c) => b.extend(c as maplibregl.LngLatLike),

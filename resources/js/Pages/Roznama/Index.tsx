@@ -65,14 +65,6 @@ const F3ALIA_PROVINCE_TO_ARABIC: Record<string, string> = {
     'RAQQA': 'الرقة'
 };
 import { Label } from "@/Components/ui/label";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/Components/ui/table";
 import MainLayout from '@/Layouts/MainLayout';
 
 const GOVERNORATES: Record<string, { nameAr: string; nameEn: string; lat: number; lon: number }> = {
@@ -799,11 +791,11 @@ export default function Index() {
                     {/* Bottom Section: Two columns layout (Holidays vs Events) */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
                         
-                        {/* Compact Table Card */}
+                        {/* Holidays Card */}
                         <Card className="border-border bg-card/60 backdrop-blur-sm shadow-sm h-full flex flex-col justify-between">
-                            <CardContent className="p-6 flex-1 flex flex-col justify-between">
+                            <CardContent className="p-6 flex flex-col justify-between h-full">
                                 <div>
-                                    {/* Table Controls Header */}
+                                    {/* Holidays Header */}
                                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 border-b border-border/60 pb-3">
                                         <div>
                                             <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
@@ -811,8 +803,7 @@ export default function Index() {
                                                 <span>العطل الرسمية في سوريا ({currentTime.getFullYear()}م)</span>
                                             </h3>
                                         </div>
-                                        <div className="flex flex-wrap items-center gap-4">
-                                            
+                                        <div className="flex items-center gap-4">
                                             {/* Toggle Passed Holidays Switch */}
                                             <div className="flex items-center gap-2 bg-muted/40 px-3 py-1.5 rounded-lg border border-border/50">
                                                 <Switch
@@ -825,81 +816,83 @@ export default function Index() {
                                                     إخفاء العطل المنقضية
                                                 </Label>
                                             </div>
-
-                                            {/* Source Link */}
-                                            <a 
-                                                href="https://sana.sy/presidency/2299819/" 
-                                                target="_blank" 
-                                                rel="noopener noreferrer" 
-                                                className="text-xs text-primary hover:underline inline-flex items-center gap-1 font-semibold bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/20 transition-colors hover:bg-primary/15"
-                                            >
-                                                <span>المرسوم رقم 188 (سانا)</span>
-                                                <ExternalLink className="h-3 w-3" />
-                                            </a>
                                         </div>
                                     </div>
 
-                                    {/* Table */}
-                                    <div className="bg-card rounded-lg shadow border border-border overflow-hidden">
-                                        <Table>
-                                            <TableHeader className="bg-muted">
-                                                <TableRow>
-                                                    <TableHead className="text-right font-bold text-foreground">المناسبة</TableHead>
-                                                    <TableHead className="text-right font-bold text-foreground">التاريخ</TableHead>
-                                                    <TableHead className="text-right font-bold text-foreground">الحالة</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {filteredHolidays.length === 0 ? (
-                                                    <TableRow>
-                                                        <TableCell colSpan={3} className="text-center py-8 text-muted-foreground text-sm">
-                                                            لا توجد عطلات رسمية متبقية لهذا العام.
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ) : (
-                                                    filteredHolidays.map((holiday, idx) => {
-                                                        const isPast = holiday.date < new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate());
-                                                        const daysDiff = Math.ceil((holiday.date.getTime() - new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate()).getTime()) / (1000 * 60 * 60 * 24));
-                                                        
-                                                        return (
-                                                            <TableRow key={idx} className={isPast ? "opacity-50 bg-muted/10" : "hover:bg-muted/50"}>
-                                                                <TableCell className="font-semibold text-sm">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span>{holiday.nameAr}</span>
-                                                                        {holiday.isNew && (
-                                                                            <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white text-[9px] font-bold h-4 px-1">
-                                                                                جديد
-                                                                            </Badge>
-                                                                        )}
-                                                                    </div>
-                                                                    <div className="text-xs text-muted-foreground font-normal mt-0.5 max-w-sm">
-                                                                        {holiday.description}
-                                                                    </div>
-                                                                </TableCell>
-                                                                <TableCell className="font-medium text-xs whitespace-nowrap">
+                                    {/* Holidays List */}
+                                    {filteredHolidays.length === 0 ? (
+                                        <div className="text-center py-12 text-sm text-muted-foreground">
+                                            <Calendar className="h-8 w-8 text-muted-foreground/60 mx-auto mb-2" />
+                                            <p>لا توجد عطلات رسمية متبقية لهذا العام.</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {filteredHolidays.map((holiday, idx) => {
+                                                const isPast = holiday.date < new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate());
+                                                const daysDiff = Math.ceil((holiday.date.getTime() - new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate()).getTime()) / (1000 * 60 * 60 * 24));
+                                                
+                                                return (
+                                                    <div 
+                                                        key={idx}
+                                                        className={`flex items-center justify-between p-3 rounded-xl border border-border/50 transition-colors gap-4 ${isPast ? "opacity-50 bg-muted/10" : "bg-muted/10 hover:bg-muted/30"}`}
+                                                    >
+                                                        <div className="space-y-1 min-w-0">
+                                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                                <span className="font-bold text-sm text-foreground truncate">{holiday.nameAr}</span>
+                                                                {holiday.isNew && (
+                                                                    <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white text-[9px] font-bold h-4 px-1">
+                                                                        جديد
+                                                                    </Badge>
+                                                                )}
+                                                            </div>
+                                                            <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
+                                                                <span className="font-semibold text-foreground/75">
                                                                     {holiday.date.toLocaleDateString('ar-SY', { day: 'numeric', month: 'long' })}
                                                                     {holiday.date.getFullYear() !== currentTime.getFullYear() && ` (${holiday.date.getFullYear()})`}
-                                                                </TableCell>
-                                                                <TableCell className="text-xs">
-                                                                    {isPast ? (
-                                                                        <span className="text-muted-foreground">منقضية</span>
-                                                                    ) : daysDiff === 0 ? (
-                                                                        <Badge className="bg-primary text-primary-foreground font-bold animate-pulse text-[10px] h-5">
-                                                                            اليوم
-                                                                        </Badge>
-                                                                    ) : (
-                                                                        <span className="text-primary font-medium font-mono">
-                                                                            متبقٍ {daysDiff} يوم
-                                                                        </span>
-                                                                    )}
-                                                                </TableCell>
-                                                            </TableRow>
-                                                        );
-                                                    })
-                                                )}
-                                            </TableBody>
-                                        </Table>
+                                                                </span>
+                                                                {holiday.description && (
+                                                                    <>
+                                                                        <span>•</span>
+                                                                        <span>{holiday.description}</span>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="flex items-center gap-3 shrink-0">
+                                                            {isPast ? (
+                                                                <span className="text-xs text-muted-foreground">منقضية</span>
+                                                            ) : daysDiff === 0 ? (
+                                                                <Badge className="bg-primary text-primary-foreground font-bold animate-pulse text-[10px] h-5">
+                                                                    اليوم
+                                                                </Badge>
+                                                            ) : (
+                                                                <Badge className="bg-primary/10 text-primary hover:bg-primary/15 border border-primary/20 text-[10px] font-bold h-5 px-1.5">
+                                                                    متبقٍ {daysDiff} يوم
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Source */}
+                                <div className="mt-6 pt-4 border-t border-border/60 flex flex-col sm:flex-row items-center justify-between gap-4">
+                                    <div className="text-[10px] text-muted-foreground">
+                                        المصدر: المرسوم رقم 188 لعام 2025
                                     </div>
+                                    <a 
+                                        href="https://sana.sy/presidency/2299819/" 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="text-xs text-primary hover:underline inline-flex items-center gap-1 font-semibold bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/20 transition-all hover:bg-primary/15"
+                                    >
+                                        <span>عرض المرسوم في المصدر</span>
+                                        <ExternalLink className="h-3 w-3" />
+                                    </a>
                                 </div>
                             </CardContent>
                         </Card>

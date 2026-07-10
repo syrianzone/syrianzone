@@ -39,7 +39,15 @@ const STATUS_LABELS: Record<DraftStatus, string> = {
 const API = () => '/api'
 
 function stopCount(draft: Draft) {
-  return draft.geojson?.features?.filter((f: any) => f.geometry?.type === 'Point').length ?? 0
+  let geojson = draft.geojson
+  if (typeof geojson === 'string') {
+    try {
+      geojson = JSON.parse(geojson)
+    } catch (e) {
+      console.error(e)
+    }
+  }
+  return geojson?.features?.filter((f: any) => f.geometry?.type === 'Point').length ?? 0
 }
 
 
@@ -119,10 +127,20 @@ function TransitAdminPageContent() {
     if (!mapReady || !mapRef.current) return
     const src = mapRef.current.getSource('draft-source') as maplibregl.GeoJSONSource | undefined
     const empty: FeatureCollection = { type: 'FeatureCollection', features: [] }
-    src?.setData(selectedDraft?.geojson ?? empty)
+    
+    let geojsonData = selectedDraft?.geojson ?? empty
+    if (typeof geojsonData === 'string') {
+      try {
+        geojsonData = JSON.parse(geojsonData)
+      } catch (e) {
+        console.error('Failed to parse geojson', e)
+        geojsonData = empty
+      }
+    }
+    src?.setData(geojsonData)
 
-    if (selectedDraft) {
-      const line = selectedDraft.geojson?.features?.find((f: any) => f.geometry?.type === 'LineString')
+    if (selectedDraft && geojsonData) {
+      const line = geojsonData.features?.find((f: any) => f.geometry?.type === 'LineString')
       if (line && line.geometry?.coordinates && Array.isArray(line.geometry.coordinates) && line.geometry.coordinates.length > 0) {
         const coords: [number, number][] = line.geometry.coordinates
         const bounds = coords.reduce(

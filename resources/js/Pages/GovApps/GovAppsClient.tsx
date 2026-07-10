@@ -39,6 +39,31 @@ function useMediaQuery(query: string) {
     return matches;
 }
 
+function getFaviconUrl(officialUrl: string | undefined): string | null {
+    if (!officialUrl) return null;
+    try {
+        const url = new URL(officialUrl);
+        return `https://www.google.com/s2/favicons?domain=${url.hostname}&sz=128`;
+    } catch {
+        return null;
+    }
+}
+
+function AppIcon({ app, className, placeholderClassName }: { app: GovApp; className?: string; placeholderClassName?: string }) {
+    if (app.icon) {
+        return <img src={app.icon} alt={app.name} className={className} />;
+    }
+    const favicon = getFaviconUrl(app.links.official);
+    if (favicon) {
+        return <img src={favicon} alt={app.name} className={className} />;
+    }
+    return (
+        <div className={`flex items-center justify-center ${className || ''}`}>
+            <Smartphone className={placeholderClassName || 'h-8 w-8 text-muted-foreground/30'} />
+        </div>
+    );
+}
+
 function AppDetailView({ app, isDesktop }: { app: GovApp; isDesktop: boolean }) {
     const scrollRef = React.useRef<HTMLDivElement>(null);
     const [isDragging, setIsDragging] = useState(false);
@@ -68,20 +93,13 @@ function AppDetailView({ app, isDesktop }: { app: GovApp; isDesktop: boolean }) 
                 <div className="w-12 h-1.5 bg-muted rounded-full mx-auto my-3 flex-shrink-0" />
             )}
 
-            {/* Compact Row Header */}
-            <div className="px-6 py-4 flex items-start gap-4">
+            {/* Compact Row Header — icon + name only, no description */}
+            <div className="px-6 py-4 flex items-center gap-4">
                 <div className="relative h-16 w-16 rounded-2xl overflow-hidden border shadow-sm flex-shrink-0 bg-white">
-                    {app.icon ? (
-                        <img src={app.icon} alt={app.name} className="absolute inset-0 h-full w-full object-cover" />
-                    ) : (
-                        <Smartphone className="h-8 w-8 m-auto text-gray-400" />
-                    )}
+                    <AppIcon app={app} className="absolute inset-0 h-full w-full object-cover" placeholderClassName="h-8 w-8 text-gray-400" />
                 </div>
-                <div className="flex-1">
-                    <div className="text-xl font-bold mb-1">{app.name}</div>
-                    <div className="text-sm text-muted-foreground leading-snug line-clamp-2">
-                        {app.description}
-                    </div>
+                <div className="flex-1 min-w-0">
+                    <div className="text-xl font-bold truncate">{app.name}</div>
                 </div>
             </div>
 
@@ -115,10 +133,12 @@ function AppDetailView({ app, isDesktop }: { app: GovApp; isDesktop: boolean }) 
                     )}
                 </div>
 
-                {/* Full Description */}
-                <div className="text-foreground/80 text-sm leading-relaxed whitespace-pre-wrap">
-                    {app.description}
-                </div>
+                {/* Full Description — shown once, not duplicated in header */}
+                {app.description && (
+                    <div className="text-foreground/80 text-sm leading-relaxed whitespace-pre-wrap">
+                        {app.description}
+                    </div>
+                )}
 
                 {/* Seamless Screenshot Slider */}
                 {app.images && app.images.length > 0 && (
@@ -182,17 +202,11 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
                         {initialData.map((app) => (
                             <Card key={app.id} className="overflow-hidden hover:shadow-md transition-shadow border-0 shadow-sm bg-card group flex flex-col h-full">
                                 <div className="aspect-square w-full bg-muted relative overflow-hidden cursor-pointer" onClick={() => setSelectedApp(app)}>
-                                    {app.icon ? (
-                                        <img
-                                            src={app.icon}
-                                            alt={`${app.name} icon`}
-                                            className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
-                                        />
-                                    ) : (
-                                        <div className="flex items-center justify-center h-full w-full">
-                                            <Smartphone className="h-10 w-10 text-muted-foreground/30" />
-                                        </div>
-                                    )}
+                                    <AppIcon
+                                        app={app}
+                                        className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+                                        placeholderClassName="h-10 w-10 text-muted-foreground/30"
+                                    />
                                 </div>
 
                                 <CardContent className="p-2.5 text-center flex-grow flex flex-col justify-between">

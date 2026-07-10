@@ -4,15 +4,34 @@ import {
     CheckCircle2, Palette, Users2, ListOrdered, Landmark, Compass,
     Settings, Sun, Link, Moon, Utensils, Globe, Plus, Edit, X, Download, Upload, RotateCcw,
     Cloud, CloudRain, CloudLightning, Snowflake, Wind, MessageSquareCode, Smartphone, Bus,
-    Newspaper, Sliders, Calendar, Clock, Sunrise, Sunset, SunDim, MoonStar, Phone, Scale, Search
+    Newspaper, Sliders, Calendar, Clock, Sunrise, Sunset, SunDim, MoonStar, Phone, Scale, Search, Shield, FileText
 } from 'lucide-react';
 import { Button } from "@/Components/ui/button";
+import { ScrollArea } from "@/Components/ui/scroll-area";
+import { Switch } from "@/Components/ui/switch";
 import { Input } from "@/Components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/Components/ui/select";
 import { Card, CardContent } from "@/Components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/Components/ui/dialog";
 import { Label } from "@/Components/ui/label";
 import { marked } from 'marked';
+
+const GOVERNORATE_LIST = [
+    { value: "damascus", nameAr: "دمشق", nameEn: "Damascus" },
+    { value: "aleppo", nameAr: "حلب", nameEn: "Aleppo" },
+    { value: "homs", nameAr: "حمص", nameEn: "Homs" },
+    { value: "hama", nameAr: "حماة", nameEn: "Hama" },
+    { value: "latakia", nameAr: "اللاذقية", nameEn: "Latakia" },
+    { value: "tartus", nameAr: "طرطوس", nameEn: "Tartus" },
+    { value: "deir-ez-zor", nameAr: "دير الزور", nameEn: "Deir ez-Zor" },
+    { value: "idlib", nameAr: "إدلب", nameEn: "Idlib" },
+    { value: "daraa", nameAr: "درعا", nameEn: "Daraa" },
+    { value: "quneitra", nameAr: "القنيطرة", nameEn: "Quneitra" },
+    { value: "sweida", nameAr: "السويداء", nameEn: "Sweida" },
+    { value: "rural-damascus", nameAr: "ريف دمشق", nameEn: "Rural Damascus" },
+    { value: "hasakah", nameAr: "الحسكة", nameEn: "Hasakah" },
+    { value: "raqqa", nameAr: "الرقة", nameEn: "Raqqa" },
+];
 import MainLayout from '@/Layouts/MainLayout';
 import { applyTheme as persistTheme, getThemePreference, resolveTheme, SYSTEM_THEME, THEME_REGISTRY, isDarkTheme } from '@/lib/theme';
 import { ThemeToggle } from '@/Components/ThemeToggle';
@@ -113,6 +132,8 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [aboutOpen, setAboutOpen] = useState(false);
     const [addLinkOpen, setAddLinkOpen] = useState(false);
+    const [govDropdownOpen, setGovDropdownOpen] = useState(false);
+    const [govSearch, setGovSearch] = useState('');
     const [editMode, setEditMode] = useState(false);
     const [mounted, setMounted] = useState(false);
 
@@ -659,161 +680,244 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
 
             {/* Settings Dialog */}
             <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                    <DialogHeader>
+                <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col p-0" dir={currentLang === 'ar' ? 'rtl' : 'ltr'}>
+                    <DialogHeader className="px-6 pt-6 pb-2 text-start sm:text-start">
                         <DialogTitle>{currentLang === 'ar' ? 'الإعدادات' : 'Settings'}</DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-6 py-4">
-                        {/* Weather Settings */}
-                        <div className="space-y-4">
-                            <h4 className="font-semibold text-foreground">
-                                {currentLang === 'ar' ? 'إعدادات الطقس' : 'Weather Settings'}
-                            </h4>
-                            <div className="space-y-2">
-                                <Label>{currentLang === 'ar' ? 'المحافظة' : 'Governorate'}</Label>
-                                <Select value={governorate} onValueChange={(val) => {
-                                    setGovernorate(val);
-                                    localStorage.setItem('governorate', val);
-                                }}>
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="damascus">Damascus</SelectItem>
-                                        <SelectItem value="aleppo">Aleppo</SelectItem>
-                                        <SelectItem value="homs">Homs</SelectItem>
-                                        <SelectItem value="hama">Hama</SelectItem>
-                                        <SelectItem value="latakia">Latakia</SelectItem>
-                                        <SelectItem value="tartus">Tartus</SelectItem>
-                                        <SelectItem value="deir-ez-zor">Deir ez-Zor</SelectItem>
-                                        <SelectItem value="idlib">Idlib</SelectItem>
-                                        <SelectItem value="daraa">Daraa</SelectItem>
-                                        <SelectItem value="quneitra">Quneitra</SelectItem>
-                                        <SelectItem value="sweida">Sweida</SelectItem>
-                                        <SelectItem value="rural-damascus">Rural Damascus</SelectItem>
-                                        <SelectItem value="hasakah">Hasakah</SelectItem>
-                                        <SelectItem value="raqqa">Raqqa</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
+                    <ScrollArea className="h-[500px] max-h-[60vh] px-6 pb-6" dir={currentLang === 'ar' ? 'rtl' : 'ltr'}>
+                        <div className="space-y-6 py-4 text-start">
+                          {/* Row with Language & Clock segmented controls */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              {/* Language Selection */}
+                              <div className="space-y-2">
+                                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{currentLang === 'ar' ? 'اللغة' : 'Language'}</Label>
+                                  <div className="grid grid-cols-2 gap-1 p-1 bg-muted rounded-lg border border-border/50">
+                                      <button
+                                          type="button"
+                                          onClick={() => {
+                                              setLanguage('ar');
+                                              localStorage.setItem('sz-language', 'ar');
+                                          }}
+                                          className={`py-1.5 text-xs font-medium rounded-md transition-all ${
+                                              currentLang === 'ar'
+                                                  ? 'bg-background text-foreground shadow-sm'
+                                                  : 'text-muted-foreground hover:text-foreground'
+                                          }`}
+                                      >
+                                          العربية
+                                      </button>
+                                      <button
+                                          type="button"
+                                          onClick={() => {
+                                              setLanguage('en');
+                                              localStorage.setItem('sz-language', 'en');
+                                          }}
+                                          className={`py-1.5 text-xs font-medium rounded-md transition-all ${
+                                              currentLang === 'en'
+                                                  ? 'bg-background text-foreground shadow-sm'
+                                                  : 'text-muted-foreground hover:text-foreground'
+                                          }`}
+                                      >
+                                          English
+                                      </button>
+                                  </div>
+                              </div>
 
-                        {/* Clock Settings */}
-                        <div className="space-y-4">
-                            <h4 className="font-semibold text-foreground">
-                                {currentLang === 'ar' ? 'إعدادات الساعة' : 'Clock Settings'}
-                            </h4>
-                            <div className="space-y-2">
-                                <Label>{currentLang === 'ar' ? 'تنسيق الوقت' : 'Time Format'}</Label>
-                                <Select value={clockFormat} onValueChange={(val: '12' | '24') => {
-                                    setClockFormat(val);
-                                    localStorage.setItem('clockFormat', val);
-                                }}>
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="12">12 Hour</SelectItem>
-                                        <SelectItem value="24">24 Hour</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
+                              {/* Clock Format Selection */}
+                              <div className="space-y-2">
+                                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{currentLang === 'ar' ? 'تنسيق الوقت' : 'Time Format'}</Label>
+                                  <div className="grid grid-cols-2 gap-1 p-1 bg-muted rounded-lg border border-border/50">
+                                      <button
+                                          type="button"
+                                          onClick={() => {
+                                              setClockFormat('12');
+                                              localStorage.setItem('clockFormat', '12');
+                                          }}
+                                          className={`py-1.5 text-xs font-medium rounded-md transition-all ${
+                                              clockFormat === '12'
+                                                  ? 'bg-background text-foreground shadow-sm'
+                                                  : 'text-muted-foreground hover:text-foreground'
+                                          }`}
+                                      >
+                                          {currentLang === 'ar' ? '12 ساعة' : '12-Hour'}
+                                      </button>
+                                      <button
+                                          type="button"
+                                          onClick={() => {
+                                              setClockFormat('24');
+                                              localStorage.setItem('clockFormat', '24');
+                                          }}
+                                          className={`py-1.5 text-xs font-medium rounded-md transition-all ${
+                                              clockFormat === '24'
+                                                  ? 'bg-background text-foreground shadow-sm'
+                                                  : 'text-muted-foreground hover:text-foreground'
+                                          }`}
+                                      >
+                                          {currentLang === 'ar' ? '24 ساعة' : '24-Hour'}
+                                      </button>
+                                  </div>
+                              </div>
+                          </div>
 
-                        {/* Theme Settings */}
-                        <div className="space-y-4">
-                            <h4 className="font-semibold text-foreground">
-                                {currentLang === 'ar' ? 'إعدادات المظهر' : 'Theme Settings'}
-                            </h4>
-                            <div className="space-y-2">
-                                <Label>{currentLang === 'ar' ? 'اللغة' : 'Language'}</Label>
-                                <Select value={currentLang} onValueChange={(val: 'ar' | 'en') => {
-                                    setLanguage(val);
-                                    localStorage.setItem('sz-language', val);
-                                }}>
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="en">English</SelectItem>
-                                        <SelectItem value="ar">العربية</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                          {/* Governorate dropdown with search */}
+                          <div className="space-y-2 relative">
+                              <Label className="text-sm font-semibold">{currentLang === 'ar' ? 'المحافظة الافتراضية' : 'Default Governorate'}</Label>
+                              <button
+                                  type="button"
+                                  onClick={() => setGovDropdownOpen(!govDropdownOpen)}
+                                  className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background/50 px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 text-start"
+                              >
+                                  <span>
+                                      {(() => {
+                                          const activeGov = GOVERNORATE_LIST.find(g => g.value === governorate);
+                                          return activeGov ? (currentLang === 'ar' ? `${activeGov.nameAr} / ${activeGov.nameEn}` : `${activeGov.nameEn} / ${activeGov.nameAr}`) : (currentLang === 'ar' ? 'اختر محافظة...' : 'Select governorate...');
+                                      })()}
+                                  </span>
+                                  <span className="text-muted-foreground text-xs">▼</span>
+                              </button>
 
-                            <div className="space-y-2">
-                                <Label>{currentLang === 'ar' ? 'المظهر' : 'Theme'}</Label>
+                              {govDropdownOpen && (
+                                  <>
+                                      <div className="fixed inset-0 z-40" onClick={() => { setGovDropdownOpen(false); setGovSearch(''); }} />
+                                      <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in fade-in-80">
+                                          <div className="flex items-center border-b px-3">
+                                              <Search className="h-4 w-4 shrink-0 opacity-50 me-2" />
+                                              <input
+                                                  type="text"
+                                                  value={govSearch}
+                                                  onChange={(e) => setGovSearch(e.target.value)}
+                                                  placeholder={currentLang === 'ar' ? 'ابحث عن محافظة...' : 'Search governorate...'}
+                                                  className="flex h-9 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                                              />
+                                          </div>
+                                          <div className="max-h-[200px] overflow-y-auto p-1">
+                                              {(() => {
+                                                  const filtered = GOVERNORATE_LIST.filter(g =>
+                                                      g.nameAr.includes(govSearch) ||
+                                                      g.nameEn.toLowerCase().includes(govSearch.toLowerCase())
+                                                  );
 
-                                {/* Standard themes list */}
-                                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground pt-1">
-                                    {currentLang === 'ar' ? 'المظاهر الأساسية' : 'Standard'}
-                                </p>
-                                <div className="flex flex-col gap-1.5">
-                                    {THEME_REGISTRY.filter(t => t.group === 'standard' || t.group === 'system').map((t) => {
-                                        const isActive = activeTheme === t.id;
-                                        return (
-                                            <button
-                                                key={t.id}
-                                                onClick={() => applyTheme(t.id)}
-                                                className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all hover:scale-[1.01] focus:outline-none w-full"
-                                                style={{
-                                                    background: isActive ? t.primary + '1a' : 'hsl(var(--muted))',
-                                                    border: isActive ? `2px solid ${t.primary}` : '2px solid transparent',
-                                                }}
-                                            >
-                                                <div
-                                                    className="w-6 h-6 rounded-full flex-shrink-0 overflow-hidden shadow-sm"
-                                                    style={{ background: t.bg, border: `2px solid ${t.primary}` }}
-                                                >
-                                                    <div style={{ background: t.primary, height: '50%', marginTop: '50%' }} />
-                                                </div>
-                                                <span className="text-sm font-medium" style={{ color: isActive ? t.primary : 'hsl(var(--foreground))' }}>
-                                                    {t.emoji} {currentLang === 'ar' ? t.nameAr : t.nameEn}
-                                                </span>
-                                                {isActive && (
-                                                    <span className="ms-auto text-sm" style={{ color: t.primary }}>✓</span>
-                                                )}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
+                                                  if (filtered.length === 0) {
+                                                      return <div className="py-6 text-center text-sm text-muted-foreground">{currentLang === 'ar' ? 'لم يتم العثور على نتائج' : 'No results found.'}</div>;
+                                                  }
 
-                                {/* Syrian Heritage themes list */}
-                                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground pt-3">
-                                    {currentLang === 'ar' ? 'التراث السوري' : 'Syrian Heritage'}
-                                </p>
-                                <div className="flex flex-col gap-1.5">
-                                    {THEME_REGISTRY.filter(t => t.group === 'heritage').map((t) => {
-                                        const isActive = activeTheme === t.id;
-                                        return (
-                                            <button
-                                                key={t.id}
-                                                onClick={() => applyTheme(t.id)}
-                                                className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all hover:scale-[1.01] focus:outline-none w-full"
-                                                style={{
-                                                    background: isActive ? t.primary + '1a' : 'hsl(var(--muted))',
-                                                    border: isActive ? `2px solid ${t.primary}` : '2px solid transparent',
-                                                }}
-                                            >
-                                                <div
-                                                    className="w-6 h-6 rounded-full flex-shrink-0 overflow-hidden shadow-sm"
-                                                    style={{ background: t.bg, border: `2px solid ${t.primary}` }}
-                                                >
-                                                    <div style={{ background: t.primary, height: '50%', marginTop: '50%' }} />
-                                                </div>
-                                                <span className="text-sm font-medium" style={{ color: isActive ? t.primary : 'hsl(var(--foreground))' }}>
-                                                    {t.emoji} {currentLang === 'ar' ? t.nameAr : t.nameEn}
-                                                </span>
-                                                {isActive && (
-                                                    <span className="ms-auto text-sm" style={{ color: t.primary }}>✓</span>
-                                                )}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
+                                                  return filtered.map((g) => {
+                                                      const isSelected = g.value === governorate;
+                                                      return (
+                                                          <button
+                                                              type="button"
+                                                              key={g.value}
+                                                              onClick={() => {
+                                                                  setGovernorate(g.value);
+                                                                  localStorage.setItem('governorate', g.value);
+                                                                  setGovDropdownOpen(false);
+                                                                  setGovSearch('');
+                                                              }}
+                                                              className={`flex w-full items-center justify-between rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground cursor-pointer text-start ${isSelected ? 'bg-accent/50 font-semibold' : ''}`}
+                                                          >
+                                                              <span>{currentLang === 'ar' ? `${g.nameAr} / ${g.nameEn}` : `${g.nameEn} / ${g.nameAr}`}</span>
+                                                              {isSelected && <span className="text-primary text-xs">✓</span>}
+                                                          </button>
+                                                      );
+                                                  });
+                                              })()}
+                                          </div>
+                                      </div>
+                                  </>
+                              )}
+                          </div>
+
+                          {/* Theme Settings */}
+                          <div className="space-y-4 pt-2">
+                              <h4 className="font-semibold text-foreground text-sm">
+                                  {currentLang === 'ar' ? 'إعدادات المظهر' : 'Theme Settings'}
+                              </h4>
+
+                              <div className="space-y-2">
+                                  {/* Standard themes list */}
+                                  <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground pt-1">
+                                      {currentLang === 'ar' ? 'المظاهر الأساسية' : 'Standard'}
+                                  </p>
+                                  <div className="grid grid-cols-2 gap-2">
+                                      {THEME_REGISTRY.filter(t => t.group === 'standard' || t.group === 'system').map((t) => {
+                                          const isActive = activeTheme === t.id;
+                                          return (
+                                              <button
+                                                  key={t.id}
+                                                  onClick={() => applyTheme(t.id)}
+                                                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all hover:scale-[1.01] focus:outline-none w-full"
+                                                  style={{
+                                                      background: isActive ? t.primary + '1a' : 'hsl(var(--muted))',
+                                                      border: isActive ? `2px solid ${t.primary}` : '2px solid transparent',
+                                                  }}
+                                              >
+                                                  <div
+                                                      className="w-6 h-6 rounded-full flex-shrink-0 overflow-hidden shadow-sm"
+                                                      style={{ background: t.bg, border: `2px solid ${t.primary}` }}
+                                                  >
+                                                      <div style={{ background: t.primary, height: '50%', marginTop: '50%' }} />
+                                                  </div>
+                                                  <span className="text-xs font-medium truncate" style={{ color: isActive ? t.primary : 'hsl(var(--foreground))' }}>
+                                                      {t.emoji} {currentLang === 'ar' ? t.nameAr : t.nameEn}
+                                                  </span>
+                                                  {isActive && (
+                                                      <span className="ms-auto text-xs" style={{ color: t.primary }}>✓</span>
+                                                  )}
+                                              </button>
+                                          );
+                                      })}
+                                  </div>
+
+                                  {/* Syrian Heritage themes list */}
+                                  <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground pt-3">
+                                      {currentLang === 'ar' ? 'التراث السوري' : 'Syrian Heritage'}
+                                  </p>
+                                  <div className="grid grid-cols-2 gap-2">
+                                      {THEME_REGISTRY.filter(t => t.group === 'heritage').map((t) => {
+                                          const isActive = activeTheme === t.id;
+                                          return (
+                                              <button
+                                                  key={t.id}
+                                                  onClick={() => applyTheme(t.id)}
+                                                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all hover:scale-[1.01] focus:outline-none w-full"
+                                                  style={{
+                                                      background: isActive ? t.primary + '1a' : 'hsl(var(--muted))',
+                                                      border: isActive ? `2px solid ${t.primary}` : '2px solid transparent',
+                                                  }}
+                                              >
+                                                  <div
+                                                      className="w-6 h-6 rounded-full flex-shrink-0 overflow-hidden shadow-sm"
+                                                      style={{ background: t.bg, border: `2px solid ${t.primary}` }}
+                                                  >
+                                                      <div style={{ background: t.primary, height: '50%', marginTop: '50%' }} />
+                                                  </div>
+                                                  <span className="text-xs font-medium truncate" style={{ color: isActive ? t.primary : 'hsl(var(--foreground))' }}>
+                                                      {t.emoji} {currentLang === 'ar' ? t.nameAr : t.nameEn}
+                                                  </span>
+                                                  {isActive && (
+                                                      <span className="ms-auto text-xs" style={{ color: t.primary }}>✓</span>
+                                                  )}
+                                              </button>
+                                          );
+                                      })}
+                                  </div>
+                              </div>
+                          </div>
+
+                        <div className="h-[1px] bg-border w-full" />
+                        <div className="flex justify-center gap-4 text-xs text-muted-foreground pt-2">
+                            <a href="/privacy" className="hover:text-primary transition-colors flex items-center gap-1.5">
+                                <Shield className="w-3.5 h-3.5 text-muted-foreground hover:text-primary" />
+                                {currentLang === 'ar' ? 'سياسة الخصوصية' : 'Privacy Policy'}
+                            </a>
+                            <span>•</span>
+                            <a href="/terms" className="hover:text-primary transition-colors flex items-center gap-1.5">
+                                <FileText className="w-3.5 h-3.5 text-muted-foreground hover:text-primary" />
+                                {currentLang === 'ar' ? 'الشروط والأحكام' : 'Terms & Conditions'}
+                            </a>
                         </div>
                     </div>
+                    </ScrollArea>
                 </DialogContent>
             </Dialog>
 
@@ -827,15 +931,17 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
 
             {/* About Dialog */}
             <Dialog open={aboutOpen} onOpenChange={setAboutOpen}>
-                <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-                    <DialogHeader>
+                <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col p-0" dir={currentLang === 'ar' ? 'rtl' : 'ltr'}>
+                    <DialogHeader className="px-6 pt-6 pb-2 text-start sm:text-start">
                         <DialogTitle>{currentLang === 'ar' ? 'حول Syrian Zone' : 'About Syrian Zone'}</DialogTitle>
                     </DialogHeader>
-                    <div
-                        className="py-4 space-y-4 [&>h1]:text-2xl [&>h1]:font-bold [&>h1]:mb-4 [&>h2]:text-xl [&>h2]:font-bold [&>h2]:mt-6 [&>h2]:mb-2 [&>p]:mb-4 [&>p]:leading-relaxed [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:mb-4 [&_a]:text-primary [&_a]:underline"
-                        dir={currentLang === 'ar' ? 'rtl' : 'ltr'}
-                        dangerouslySetInnerHTML={{ __html: aboutHtml || (currentLang === 'ar' ? 'جاري التحميل...' : 'Loading...') }}
-                    />
+                    <ScrollArea className="h-[500px] max-h-[60vh] px-6 pb-6" dir={currentLang === 'ar' ? 'rtl' : 'ltr'}>
+                        <div
+                            className="py-4 space-y-4 text-start [&>h1]:text-2xl [&>h1]:font-bold [&>h1]:mb-4 [&>h2]:text-xl [&>h2]:font-bold [&>h2]:mt-6 [&>h2]:mb-2 [&>p]:mb-4 [&>p]:leading-relaxed [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:mb-4 [&_a]:text-primary [&_a]:underline"
+                            dir={currentLang === 'ar' ? 'rtl' : 'ltr'}
+                            dangerouslySetInnerHTML={{ __html: aboutHtml || (currentLang === 'ar' ? 'جاري التحميل...' : 'Loading...') }}
+                        />
+                    </ScrollArea>
                 </DialogContent>
             </Dialog>
         </div>

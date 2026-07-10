@@ -170,6 +170,24 @@ export default function Navbar() {
                   <ExternalLink className="h-3 w-3 mr-auto" />
                 </a>
               ))}
+              <Separator className="my-2" />
+              <div className="flex gap-4 justify-start text-xs text-muted-foreground px-2 pt-1 pb-4">
+                <Link
+                  href="/privacy"
+                  onClick={() => setIsOpen(false)}
+                  className="hover:text-primary transition-colors"
+                >
+                  سياسة الخصوصية
+                </Link>
+                <span>•</span>
+                <Link
+                  href="/terms"
+                  onClick={() => setIsOpen(false)}
+                  className="hover:text-primary transition-colors"
+                >
+                  الشروط والأحكام
+                </Link>
+              </div>
             </div>
             <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-background flex items-center justify-end">
               <UserNav />
@@ -255,6 +273,22 @@ export default function Navbar() {
                       </a>
                     </li>
                   ))}
+                  <Separator className="col-span-2 my-2" />
+                  <li className="col-span-2 flex justify-center gap-6 text-xs text-muted-foreground py-1">
+                    <Link
+                      href="/privacy"
+                      className="hover:text-primary transition-colors"
+                    >
+                      سياسة الخصوصية
+                    </Link>
+                    <span>•</span>
+                    <Link
+                      href="/terms"
+                      className="hover:text-primary transition-colors"
+                    >
+                      الشروط والأحكام
+                    </Link>
+                  </li>
                 </ul>
               </NavigationMenuContent>
             </NavigationMenuItem>

@@ -18,7 +18,7 @@ import {
     DialogDescription,
 } from "@/components/ui/dialog";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { ExternalLink, Images as ImageIcon, Globe } from "lucide-react";
+import { ExternalLink, Smartphone, Images as ImageIcon, Globe } from "lucide-react";
 
 function AndroidIcon({ className }: { className?: string }) {
     return (

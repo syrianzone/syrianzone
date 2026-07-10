@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/Components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/Components/ui/dialog";
 import { Label } from "@/Components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/Components/ui/tabs";
 import { marked } from 'marked';
 
 const GOVERNORATE_LIST = [
@@ -144,6 +145,21 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
     const [clockFormat, setClockFormat] = useState<'12' | '24'>('24');
     const [prayerTimes, setPrayerTimes] = useState<Record<string, string> | null>(null);
 
+    // Widget visibility states
+    const [showClock, setShowClock] = useState(true);
+    const [showWeather, setShowWeather] = useState(true);
+    const [showPrayerTimes, setShowPrayerTimes] = useState(true);
+    const [showEvents, setShowEvents] = useState(true);
+    const [showSearch, setShowSearch] = useState(true);
+
+    // Custom coordinates states
+    const [useCustomCoords, setUseCustomCoords] = useState(false);
+    const [customLat, setCustomLat] = useState('');
+    const [customLon, setCustomLon] = useState('');
+
+    // Custom search engine URL state
+    const [customSearchUrl, setCustomSearchUrl] = useState('');
+
     // Load settings from localStorage
     useEffect(() => {
         const savedTheme = getThemePreference();
@@ -151,11 +167,39 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
         const savedLinks = localStorage.getItem('customLinks');
         const savedGovernorate = localStorage.getItem('governorate') || 'damascus';
         const savedClockFormat = localStorage.getItem('clockFormat') as '12' | '24' || '24';
+        const savedSearchEngine = localStorage.getItem('sz-searchEngine') || 'duckduckgo';
+
+        // Load widget visibility
+        const savedShowClock = localStorage.getItem('sz-showClock') !== 'false';
+        const savedShowWeather = localStorage.getItem('sz-showWeather') !== 'false';
+        const savedShowPrayerTimes = localStorage.getItem('sz-showPrayerTimes') !== 'false';
+        const savedShowEvents = localStorage.getItem('sz-showEvents') !== 'false';
+        const savedShowSearch = localStorage.getItem('sz-showSearch') !== 'false';
+
+        // Load custom coordinates
+        const savedUseCustomCoords = localStorage.getItem('useCustomCoords') === 'true';
+        const savedCustomLat = localStorage.getItem('customLat') || '';
+        const savedCustomLon = localStorage.getItem('customLon') || '';
+
+        // Load custom search URL
+        const savedCustomSearchUrl = localStorage.getItem('customSearchUrl') || '';
 
         setTheme(savedTheme);
         setLanguage(savedLang);
         setGovernorate(savedGovernorate);
         setClockFormat(savedClockFormat);
+        setSearchEngine(savedSearchEngine);
+
+        setShowClock(savedShowClock);
+        setShowWeather(savedShowWeather);
+        setShowPrayerTimes(savedShowPrayerTimes);
+        setShowEvents(savedShowEvents);
+        setShowSearch(savedShowSearch);
+
+        setUseCustomCoords(savedUseCustomCoords);
+        setCustomLat(savedCustomLat);
+        setCustomLon(savedCustomLon);
+        setCustomSearchUrl(savedCustomSearchUrl);
 
         if (savedLinks) {
             try {
@@ -202,7 +246,13 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
     useEffect(() => {
         const fetchWeather = async () => {
             try {
-                const coords = GOVERNORATES[governorate] || GOVERNORATES['damascus'];
+                const hasCustom = useCustomCoords && customLat && customLon;
+                const coords = hasCustom 
+                    ? { lat: parseFloat(customLat), lon: parseFloat(customLon) } 
+                    : (GOVERNORATES[governorate] || GOVERNORATES['damascus']);
+
+                if (isNaN(coords.lat) || isNaN(coords.lon)) return;
+
                 const response = await fetch(`https://syrianzone.hade-alahmad1.workers.dev/?lat=${coords.lat}&lon=${coords.lon}`);
                 if (!response.ok) throw new Error('Weather fetch failed');
                 const data = await response.json();
@@ -223,16 +273,22 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
             }
         };
 
-        if (mounted) {
+        if (mounted && showWeather) {
             fetchWeather();
         }
-    }, [governorate, language, mounted]);
+    }, [governorate, useCustomCoords, customLat, customLon, language, mounted, showWeather]);
 
     // Fetch prayer times for the upcoming prayer widget
     useEffect(() => {
         const fetchPrayers = async () => {
             try {
-                const coords = GOVERNORATES[governorate] || GOVERNORATES['damascus'];
+                const hasCustom = useCustomCoords && customLat && customLon;
+                const coords = hasCustom 
+                    ? { lat: parseFloat(customLat), lon: parseFloat(customLon) } 
+                    : (GOVERNORATES[governorate] || GOVERNORATES['damascus']);
+
+                if (isNaN(coords.lat) || isNaN(coords.lon)) return;
+
                 const now = new Date();
                 const day = String(now.getDate()).padStart(2, '0');
                 const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -251,10 +307,10 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
             }
         };
 
-        if (mounted) {
+        if (mounted && showPrayerTimes) {
             fetchPrayers();
         }
-    }, [governorate, mounted]);
+    }, [governorate, useCustomCoords, customLat, customLon, mounted, showPrayerTimes]);
 
     // Calculate upcoming prayer in Home.tsx
     const nextPrayerInfo = useMemo(() => {
@@ -331,6 +387,30 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
         return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
     };
 
+    const getDeviceLocation = () => {
+        const currentLang = language || 'ar';
+        if (!navigator.geolocation) {
+            alert(currentLang === 'ar' ? 'متصفحك لا يدعم تحديد الموقع الجغرافي' : 'Geolocation is not supported by your browser');
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const lat = position.coords.latitude.toFixed(4);
+                const lon = position.coords.longitude.toFixed(4);
+                setCustomLat(lat);
+                setCustomLon(lon);
+                setUseCustomCoords(true);
+                localStorage.setItem('customLat', lat);
+                localStorage.setItem('customLon', lon);
+                localStorage.setItem('useCustomCoords', 'true');
+            },
+            (error) => {
+                console.error(error);
+                alert(currentLang === 'ar' ? 'فشل الحصول على الموقع الجغرافي. تأكد من تفعيل الـ GPS وإعطاء الصلاحية.' : 'Failed to retrieve location. Please check your GPS settings and permissions.');
+            }
+        );
+    };
+
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         if (!searchQuery.trim()) return;
@@ -342,7 +422,15 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
             searx: `https://searx.be/search?q=${encodeURIComponent(searchQuery)}`,
         };
 
-        const url = searchUrls[searchEngine] || searchUrls.duckduckgo;
+        let url = searchUrls[searchEngine] || searchUrls.duckduckgo;
+        if (searchEngine === 'custom' && customSearchUrl) {
+            if (customSearchUrl.includes('%s')) {
+                url = customSearchUrl.replace('%s', encodeURIComponent(searchQuery));
+            } else {
+                url = `${customSearchUrl}${encodeURIComponent(searchQuery)}`;
+            }
+        }
+        
         window.open(url, '_blank');
         setSearchQuery('');
     };
@@ -456,71 +544,79 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
 
             {/* Main Content */}
             <div className="container mx-auto px-4 pt-20 pb-12 max-w-6xl">
-                {/* Weather & Clock */}
-                <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-6 mb-12 w-full">
-                    {/* Weather Widget */}
-                    <Card className="w-full md:w-auto justify-self-stretch md:justify-self-start bg-card/50 backdrop-blur-sm border-border">
-                        <CardContent className="p-4">
-                            <div className="text-sm text-muted-foreground">
-                                {weather ? (
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-2xl">{weather.icon}</span>
-                                        <div>
-                                            <div className="font-semibold text-foreground">{weather.temp}°C</div>
-                                            <div className="text-xs">{weather.description}</div>
-                                        </div>
+                {/* Weather & Clock & Prayer Times */}
+                {(showWeather || showClock || showPrayerTimes) && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-6 mb-12 w-full">
+                        {/* Weather Widget */}
+                        {showWeather ? (
+                            <Card className="w-full md:w-auto justify-self-stretch md:justify-self-start bg-card/50 backdrop-blur-sm border-border">
+                                <CardContent className="p-4">
+                                    <div className="text-sm text-muted-foreground">
+                                        {weather ? (
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-2xl">{weather.icon}</span>
+                                                <div>
+                                                    <div className="font-semibold text-foreground">{weather.temp}°C</div>
+                                                    <div className="text-xs">{weather.description}</div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="animate-pulse">Loading weather...</div>
+                                        )}
                                     </div>
-                                ) : (
-                                    <div className="animate-pulse">Loading weather...</div>
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
+                                </CardContent>
+                            </Card>
+                        ) : <div />}
 
-                    {/* Clock */}
-                    <div className="text-center justify-self-center">
-                        <div className="text-4xl md:text-6xl font-bold text-foreground mb-2">
-                            {formatTime(currentTime)}
-                        </div>
-                        <div className="text-sm text-muted-foreground flex flex-col items-center gap-1">
-                            <span>{formatDate(currentTime)}</span>
-                            {currentTime && (
-                                <span className="text-xs text-primary/80 font-medium">
-                                    {formatHijriDate(currentTime)}
-                                </span>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Next Prayer Widget */}
-                    <Card className="w-full md:w-auto justify-self-stretch md:justify-self-end bg-card/40 backdrop-blur-sm border-border" dir={currentLang === 'ar' ? 'rtl' : 'ltr'}>
-                        <CardContent className="p-3.5 flex items-center gap-3">
-                            {nextPrayerInfo ? (
-                                <>
-                                    <div className="p-2 bg-primary/10 rounded-xl text-primary">
-                                        {getPrayerIcon(nextPrayerInfo.key, "w-5 h-5")}
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <span className="text-[10px] text-muted-foreground font-medium leading-none">
-                                            {currentLang === 'ar' ? 'الصلاة القادمة' : 'Next Prayer'}
-                                        </span>
-                                        <div className="flex items-baseline gap-1.5 mt-1 leading-none">
-                                            <span className="font-bold text-sm text-foreground">{nextPrayerInfo.label}</span>
-                                            <span className="text-[10px] text-muted-foreground font-semibold">({nextPrayerInfo.timeStr})</span>
-                                        </div>
-                                    </div>
-                                    <div className="mr-auto rtl:mr-0 rtl:ml-auto pl-2 rtl:pl-0 rtl:pr-2 border-l rtl:border-l-0 rtl:border-r border-border/80 font-mono text-xs text-primary font-bold tracking-wider">
-                                        {formatDuration(nextPrayerInfo.timeDiffMs)}
-                                    </div>
-                                </>
-                            ) : (
-                                <div className="text-xs text-muted-foreground animate-pulse py-1 px-4">
-                                    {currentLang === 'ar' ? 'جاري تحميل المواقيت...' : 'Loading times...'}
+                        {/* Clock */}
+                        {showClock ? (
+                            <div className="text-center justify-self-center">
+                                <div className="text-4xl md:text-6xl font-bold text-foreground mb-2">
+                                    {formatTime(currentTime)}
                                 </div>
-                            )}
-                        </CardContent>
-                    </Card>
-                </div>
+                                <div className="text-sm text-muted-foreground flex flex-col items-center gap-1">
+                                    <span>{formatDate(currentTime)}</span>
+                                    {currentTime && (
+                                        <span className="text-xs text-primary/80 font-medium">
+                                            {formatHijriDate(currentTime)}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        ) : <div />}
+
+                        {/* Next Prayer Widget */}
+                        {showPrayerTimes ? (
+                            <Card className="w-full md:w-auto justify-self-stretch md:justify-self-end bg-card/40 backdrop-blur-sm border-border" dir={currentLang === 'ar' ? 'rtl' : 'ltr'}>
+                                <CardContent className="p-3.5 flex items-center gap-3">
+                                    {nextPrayerInfo ? (
+                                        <>
+                                            <div className="p-2 bg-primary/10 rounded-xl text-primary">
+                                                {getPrayerIcon(nextPrayerInfo.key, "w-5 h-5")}
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] text-muted-foreground font-medium leading-none">
+                                                    {currentLang === 'ar' ? 'الصلاة القادمة' : 'Next Prayer'}
+                                                </span>
+                                                <div className="flex items-baseline gap-1.5 mt-1 leading-none">
+                                                    <span className="font-bold text-sm text-foreground">{nextPrayerInfo.label}</span>
+                                                    <span className="text-[10px] text-muted-foreground font-semibold">({nextPrayerInfo.timeStr})</span>
+                                                </div>
+                                            </div>
+                                            <div className="mr-auto rtl:mr-0 rtl:ml-auto pl-2 rtl:pl-0 rtl:pr-2 border-l rtl:border-l-0 rtl:border-r border-border/80 font-mono text-xs text-primary font-bold tracking-wider">
+                                                {formatDuration(nextPrayerInfo.timeDiffMs)}
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="text-xs text-muted-foreground animate-pulse py-1 px-4">
+                                            {currentLang === 'ar' ? 'جاري تحميل المواقيت...' : 'Loading times...'}
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        ) : <div />}
+                    </div>
+                )}
 
                 {/* Logo */}
                 <div className="flex justify-center mb-12">
@@ -534,42 +630,50 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
                 </div>
 
                 {/* Search */}
-                <div className="max-w-2xl mx-auto mb-16 px-4">
-                    <form onSubmit={handleSearch} className="w-full">
-                        <div className="relative flex items-center w-full h-12 rounded-full border border-input bg-card/45 backdrop-blur-sm px-4 py-1.5 shadow-sm focus-within:ring-1 focus-within:ring-ring transition-all">
-                            {/* Search Icon */}
-                            <Search className="h-5 w-5 text-muted-foreground shrink-0 ms-1" />
-                            
-                            {/* Text Input */}
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder={currentLang === 'ar' ? 'ابحث في الويب...' : 'Search the web...'}
-                                className="flex-1 bg-transparent px-3 py-2 text-sm outline-none placeholder:text-muted-foreground w-full min-w-0"
-                            />
-                            
-                            {/* Divider */}
-                            <div className="h-6 w-[1px] bg-border mx-2 shrink-0" />
-                            
-                            {/* Dropdown Selection */}
-                            <Select value={searchEngine} onValueChange={setSearchEngine}>
-                                <SelectTrigger className="w-[110px] border-0 bg-transparent shadow-none focus:ring-0 focus:ring-offset-0 px-2 h-auto text-xs font-bold text-muted-foreground hover:text-foreground shrink-0 gap-1.5 cursor-pointer">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent align="end" className="w-[140px]" dir={currentLang === 'ar' ? 'rtl' : 'ltr'}>
-                                    <SelectItem value="duckduckgo">DuckDuckGo</SelectItem>
-                                    <SelectItem value="searx">SearX</SelectItem>
-                                    <SelectItem value="google">Google</SelectItem>
-                                    <SelectItem value="bing">Bing</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </form>
-                </div>
+                {showSearch && (
+                    <div className="max-w-2xl mx-auto mb-16 px-4">
+                        <form onSubmit={handleSearch} className="w-full">
+                            <div className="relative flex items-center w-full h-12 rounded-full border border-input bg-card/45 backdrop-blur-sm px-4 py-1.5 shadow-sm focus-within:ring-1 focus-within:ring-ring transition-all">
+                                {/* Search Icon */}
+                                <Search className="h-5 w-5 text-muted-foreground shrink-0 ms-1" />
+                                
+                                {/* Text Input */}
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder={currentLang === 'ar' ? 'ابحث في الويب...' : 'Search the web...'}
+                                    className="flex-1 bg-transparent px-3 py-2 text-sm outline-none placeholder:text-muted-foreground w-full min-w-0"
+                                />
+                                
+                                {/* Divider */}
+                                <div className="h-6 w-[1px] bg-border mx-2 shrink-0" />
+                                
+                                {/* Dropdown Selection */}
+                                <Select value={searchEngine} onValueChange={(val) => {
+                                    setSearchEngine(val);
+                                    localStorage.setItem('sz-searchEngine', val);
+                                }}>
+                                    <SelectTrigger className="w-[110px] border-0 bg-transparent shadow-none focus:ring-0 focus:ring-offset-0 px-2 h-auto text-xs font-bold text-muted-foreground hover:text-foreground shrink-0 gap-1.5 cursor-pointer">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent align="end" className="w-[140px]" dir={currentLang === 'ar' ? 'rtl' : 'ltr'}>
+                                        <SelectItem value="duckduckgo">DuckDuckGo</SelectItem>
+                                        <SelectItem value="searx">SearX</SelectItem>
+                                        <SelectItem value="google">Google</SelectItem>
+                                        <SelectItem value="bing">Bing</SelectItem>
+                                        <SelectItem value="custom">{currentLang === 'ar' ? 'مخصص' : 'Custom'}</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </form>
+                    </div>
+                )}
 
                 {/* F3alia Events integration */}
-                <F3aliaEvents governorate={governorate} language={currentLang} variant="single" />
+                {showEvents && (
+                    <F3aliaEvents governorate={governorate} language={currentLang} variant="single" />
+                )}
 
                 {/* Quick Links */}
                 <div className="mb-12">
@@ -680,232 +784,423 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
 
             {/* Settings Dialog */}
             <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-                <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col p-0" dir={currentLang === 'ar' ? 'rtl' : 'ltr'}>
+                <DialogContent className="max-w-2xl md:max-w-3xl max-h-[85vh] flex flex-col p-0" dir={currentLang === 'ar' ? 'rtl' : 'ltr'}>
                     <DialogHeader className="px-6 pt-6 pb-2 text-start sm:text-start">
                         <DialogTitle>{currentLang === 'ar' ? 'الإعدادات' : 'Settings'}</DialogTitle>
                     </DialogHeader>
-                    <ScrollArea className="h-[500px] max-h-[60vh] px-6 pb-6" dir={currentLang === 'ar' ? 'rtl' : 'ltr'}>
-                        <div className="space-y-6 py-4 text-start">
-                          {/* Row with Language & Clock segmented controls */}
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              {/* Language Selection */}
-                              <div className="space-y-2">
-                                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{currentLang === 'ar' ? 'اللغة' : 'Language'}</Label>
-                                  <div className="grid grid-cols-2 gap-1 p-1 bg-muted rounded-lg border border-border/50">
-                                      <button
-                                          type="button"
-                                          onClick={() => {
-                                              setLanguage('ar');
-                                              localStorage.setItem('sz-language', 'ar');
-                                          }}
-                                          className={`py-1.5 text-xs font-medium rounded-md transition-all ${
-                                              currentLang === 'ar'
-                                                  ? 'bg-background text-foreground shadow-sm'
-                                                  : 'text-muted-foreground hover:text-foreground'
-                                          }`}
-                                      >
-                                          العربية
-                                      </button>
-                                      <button
-                                          type="button"
-                                          onClick={() => {
-                                              setLanguage('en');
-                                              localStorage.setItem('sz-language', 'en');
-                                          }}
-                                          className={`py-1.5 text-xs font-medium rounded-md transition-all ${
-                                              currentLang === 'en'
-                                                  ? 'bg-background text-foreground shadow-sm'
-                                                  : 'text-muted-foreground hover:text-foreground'
-                                          }`}
-                                      >
-                                          English
-                                      </button>
-                                  </div>
-                              </div>
+                    
+                    <Tabs defaultValue="simple" dir={currentLang === 'ar' ? 'rtl' : 'ltr'} className="w-full flex-1 flex flex-col min-h-0">
+                        <div className="px-6 border-b">
+                            <TabsList className="w-full justify-start rounded-none border-b-0 bg-transparent p-0 h-10 gap-6" dir={currentLang === 'ar' ? 'rtl' : 'ltr'}>
+                                <TabsTrigger 
+                                    value="simple" 
+                                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 pb-3 pt-2 text-sm font-semibold cursor-pointer"
+                                >
+                                    {currentLang === 'ar' ? 'عام' : 'General'}
+                                </TabsTrigger>
+                                <TabsTrigger 
+                                    value="advanced" 
+                                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 pb-3 pt-2 text-sm font-semibold cursor-pointer"
+                                >
+                                    {currentLang === 'ar' ? 'خيارات متقدمة' : 'Advanced'}
+                                </TabsTrigger>
+                            </TabsList>
+                        </div>
+                        
+                        <div className="flex-1 min-h-0">
+                            <TabsContent value="simple" className="h-full m-0">
+                                <ScrollArea className="h-[450px] max-h-[50vh] px-6 pb-6" dir={currentLang === 'ar' ? 'rtl' : 'ltr'}>
+                                    <div className="space-y-6 py-4 text-start">
+                                        {/* Row with Language & Clock segmented controls */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            {/* Language Selection */}
+                                            <div className="space-y-2">
+                                                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{currentLang === 'ar' ? 'اللغة' : 'Language'}</Label>
+                                                <div className="grid grid-cols-2 gap-1 p-1 bg-muted rounded-lg border border-border/50">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setLanguage('ar');
+                                                            localStorage.setItem('sz-language', 'ar');
+                                                        }}
+                                                        className={`py-1.5 text-xs font-medium rounded-md transition-all ${
+                                                            currentLang === 'ar'
+                                                                ? 'bg-background text-foreground shadow-sm'
+                                                                : 'text-muted-foreground hover:text-foreground'
+                                                        }`}
+                                                    >
+                                                        العربية
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setLanguage('en');
+                                                            localStorage.setItem('sz-language', 'en');
+                                                        }}
+                                                        className={`py-1.5 text-xs font-medium rounded-md transition-all ${
+                                                            currentLang === 'en'
+                                                                ? 'bg-background text-foreground shadow-sm'
+                                                                : 'text-muted-foreground hover:text-foreground'
+                                                        }`}
+                                                    >
+                                                        English
+                                                    </button>
+                                                </div>
+                                            </div>
 
-                              {/* Clock Format Selection */}
-                              <div className="space-y-2">
-                                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{currentLang === 'ar' ? 'تنسيق الوقت' : 'Time Format'}</Label>
-                                  <div className="grid grid-cols-2 gap-1 p-1 bg-muted rounded-lg border border-border/50">
-                                      <button
-                                          type="button"
-                                          onClick={() => {
-                                              setClockFormat('12');
-                                              localStorage.setItem('clockFormat', '12');
-                                          }}
-                                          className={`py-1.5 text-xs font-medium rounded-md transition-all ${
-                                              clockFormat === '12'
-                                                  ? 'bg-background text-foreground shadow-sm'
-                                                  : 'text-muted-foreground hover:text-foreground'
-                                          }`}
-                                      >
-                                          {currentLang === 'ar' ? '12 ساعة' : '12-Hour'}
-                                      </button>
-                                      <button
-                                          type="button"
-                                          onClick={() => {
-                                              setClockFormat('24');
-                                              localStorage.setItem('clockFormat', '24');
-                                          }}
-                                          className={`py-1.5 text-xs font-medium rounded-md transition-all ${
-                                              clockFormat === '24'
-                                                  ? 'bg-background text-foreground shadow-sm'
-                                                  : 'text-muted-foreground hover:text-foreground'
-                                          }`}
-                                      >
-                                          {currentLang === 'ar' ? '24 ساعة' : '24-Hour'}
-                                      </button>
-                                  </div>
-                              </div>
-                          </div>
+                                            {/* Clock Format Selection */}
+                                            <div className="space-y-2">
+                                                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{currentLang === 'ar' ? 'تنسيق الوقت' : 'Time Format'}</Label>
+                                                <div className="grid grid-cols-2 gap-1 p-1 bg-muted rounded-lg border border-border/50">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setClockFormat('12');
+                                                            localStorage.setItem('clockFormat', '12');
+                                                        }}
+                                                        className={`py-1.5 text-xs font-medium rounded-md transition-all ${
+                                                            clockFormat === '12'
+                                                                ? 'bg-background text-foreground shadow-sm'
+                                                                : 'text-muted-foreground hover:text-foreground'
+                                                        }`}
+                                                    >
+                                                        {currentLang === 'ar' ? '12 ساعة' : '12-Hour'}
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setClockFormat('24');
+                                                            localStorage.setItem('clockFormat', '24');
+                                                        }}
+                                                        className={`py-1.5 text-xs font-medium rounded-md transition-all ${
+                                                            clockFormat === '24'
+                                                                ? 'bg-background text-foreground shadow-sm'
+                                                                : 'text-muted-foreground hover:text-foreground'
+                                                        }`}
+                                                    >
+                                                        {currentLang === 'ar' ? '24 ساعة' : '24-Hour'}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
 
-                          {/* Governorate dropdown with search */}
-                          <div className="space-y-2 relative">
-                              <Label className="text-sm font-semibold">{currentLang === 'ar' ? 'المحافظة الافتراضية' : 'Default Governorate'}</Label>
-                              <button
-                                  type="button"
-                                  onClick={() => setGovDropdownOpen(!govDropdownOpen)}
-                                  className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background/50 px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 text-start"
-                              >
-                                  <span>
-                                      {(() => {
-                                          const activeGov = GOVERNORATE_LIST.find(g => g.value === governorate);
-                                          return activeGov ? (currentLang === 'ar' ? `${activeGov.nameAr} / ${activeGov.nameEn}` : `${activeGov.nameEn} / ${activeGov.nameAr}`) : (currentLang === 'ar' ? 'اختر محافظة...' : 'Select governorate...');
-                                      })()}
-                                  </span>
-                                  <span className="text-muted-foreground text-xs">▼</span>
-                              </button>
+                                        {/* Governorate dropdown with search */}
+                                        <div className="space-y-2 relative">
+                                            <Label className="text-sm font-semibold">{currentLang === 'ar' ? 'المحافظة الافتراضية' : 'Default Governorate'}</Label>
+                                            <button
+                                                type="button"
+                                                onClick={() => setGovDropdownOpen(!govDropdownOpen)}
+                                                className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background/50 px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 text-start"
+                                            >
+                                                <span>
+                                                    {(() => {
+                                                        const activeGov = GOVERNORATE_LIST.find(g => g.value === governorate);
+                                                        return activeGov ? (currentLang === 'ar' ? `${activeGov.nameAr} / ${activeGov.nameEn}` : `${activeGov.nameEn} / ${activeGov.nameAr}`) : (currentLang === 'ar' ? 'اختر محافظة...' : 'Select governorate...');
+                                                    })()}
+                                                </span>
+                                                <span className="text-muted-foreground text-xs">▼</span>
+                                            </button>
 
-                              {govDropdownOpen && (
-                                  <>
-                                      <div className="fixed inset-0 z-40" onClick={() => { setGovDropdownOpen(false); setGovSearch(''); }} />
-                                      <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in fade-in-80">
-                                          <div className="flex items-center border-b px-3">
-                                              <Search className="h-4 w-4 shrink-0 opacity-50 me-2" />
-                                              <input
-                                                  type="text"
-                                                  value={govSearch}
-                                                  onChange={(e) => setGovSearch(e.target.value)}
-                                                  placeholder={currentLang === 'ar' ? 'ابحث عن محافظة...' : 'Search governorate...'}
-                                                  className="flex h-9 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
-                                              />
-                                          </div>
-                                          <div className="max-h-[200px] overflow-y-auto p-1">
-                                              {(() => {
-                                                  const filtered = GOVERNORATE_LIST.filter(g =>
-                                                      g.nameAr.includes(govSearch) ||
-                                                      g.nameEn.toLowerCase().includes(govSearch.toLowerCase())
-                                                  );
+                                            {govDropdownOpen && (
+                                                <>
+                                                    <div className="fixed inset-0 z-40" onClick={() => { setGovDropdownOpen(false); setGovSearch(''); }} />
+                                                    <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in fade-in-80">
+                                                        <div className="flex items-center border-b px-3">
+                                                            <Search className="h-4 w-4 shrink-0 opacity-50 me-2" />
+                                                            <input
+                                                                type="text"
+                                                                value={govSearch}
+                                                                onChange={(e) => setGovSearch(e.target.value)}
+                                                                placeholder={currentLang === 'ar' ? 'ابحث عن محافظة...' : 'Search governorate...'}
+                                                                className="flex h-9 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                                                            />
+                                                        </div>
+                                                        <div className="max-h-[200px] overflow-y-auto p-1">
+                                                            {(() => {
+                                                                const filtered = GOVERNORATE_LIST.filter(g =>
+                                                                    g.nameAr.includes(govSearch) ||
+                                                                    g.nameEn.toLowerCase().includes(govSearch.toLowerCase())
+                                                                );
 
-                                                  if (filtered.length === 0) {
-                                                      return <div className="py-6 text-center text-sm text-muted-foreground">{currentLang === 'ar' ? 'لم يتم العثور على نتائج' : 'No results found.'}</div>;
-                                                  }
+                                                                if (filtered.length === 0) {
+                                                                    return <div className="py-6 text-center text-sm text-muted-foreground">{currentLang === 'ar' ? 'لم يتم العثور على نتائج' : 'No results found.'}</div>;
+                                                                }
 
-                                                  return filtered.map((g) => {
-                                                      const isSelected = g.value === governorate;
-                                                      return (
-                                                          <button
-                                                              type="button"
-                                                              key={g.value}
-                                                              onClick={() => {
-                                                                  setGovernorate(g.value);
-                                                                  localStorage.setItem('governorate', g.value);
-                                                                  setGovDropdownOpen(false);
-                                                                  setGovSearch('');
-                                                              }}
-                                                              className={`flex w-full items-center justify-between rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground cursor-pointer text-start ${isSelected ? 'bg-accent/50 font-semibold' : ''}`}
-                                                          >
-                                                              <span>{currentLang === 'ar' ? `${g.nameAr} / ${g.nameEn}` : `${g.nameEn} / ${g.nameAr}`}</span>
-                                                              {isSelected && <span className="text-primary text-xs">✓</span>}
-                                                          </button>
-                                                      );
-                                                  });
-                                              })()}
-                                          </div>
-                                      </div>
-                                  </>
-                              )}
-                          </div>
+                                                                return filtered.map((g) => {
+                                                                    const isSelected = g.value === governorate;
+                                                                    return (
+                                                                        <button
+                                                                            type="button"
+                                                                            key={g.value}
+                                                                            onClick={() => {
+                                                                                setGovernorate(g.value);
+                                                                                localStorage.setItem('governorate', g.value);
+                                                                                setGovDropdownOpen(false);
+                                                                                setGovSearch('');
+                                                                            }}
+                                                                            className={`flex w-full items-center justify-between rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground cursor-pointer text-start ${isSelected ? 'bg-accent/50 font-semibold' : ''}`}
+                                                                        >
+                                                                            <span>{currentLang === 'ar' ? `${g.nameAr} / ${g.nameEn}` : `${g.nameEn} / ${g.nameAr}`}</span>
+                                                                            {isSelected && <span className="text-primary text-xs">✓</span>}
+                                                                        </button>
+                                                                    );
+                                                                });
+                                                            })()}
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
 
-                          {/* Theme Settings */}
-                          <div className="space-y-4 pt-2">
-                              <h4 className="font-semibold text-foreground text-sm">
-                                  {currentLang === 'ar' ? 'إعدادات المظهر' : 'Theme Settings'}
-                              </h4>
+                                        {/* Theme Settings */}
+                                        <div className="space-y-4 pt-2">
+                                            <h4 className="font-semibold text-foreground text-sm">
+                                                {currentLang === 'ar' ? 'إعدادات المظهر' : 'Theme Settings'}
+                                            </h4>
 
-                              <div className="space-y-2">
-                                  {/* Standard themes list */}
-                                  <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground pt-1">
-                                      {currentLang === 'ar' ? 'المظاهر الأساسية' : 'Standard'}
-                                  </p>
-                                  <div className="grid grid-cols-2 gap-2">
-                                      {THEME_REGISTRY.filter(t => t.group === 'standard' || t.group === 'system').map((t) => {
-                                          const isActive = activeTheme === t.id;
-                                          return (
-                                              <button
-                                                  key={t.id}
-                                                  onClick={() => applyTheme(t.id)}
-                                                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all hover:scale-[1.01] focus:outline-none w-full"
-                                                  style={{
-                                                      background: isActive ? t.primary + '1a' : 'hsl(var(--muted))',
-                                                      border: isActive ? `2px solid ${t.primary}` : '2px solid transparent',
-                                                  }}
-                                              >
-                                                  <div
-                                                      className="w-6 h-6 rounded-full flex-shrink-0 overflow-hidden shadow-sm"
-                                                      style={{ background: t.bg, border: `2px solid ${t.primary}` }}
-                                                  >
-                                                      <div style={{ background: t.primary, height: '50%', marginTop: '50%' }} />
-                                                  </div>
-                                                  <span className="text-xs font-medium truncate" style={{ color: isActive ? t.primary : 'hsl(var(--foreground))' }}>
-                                                      {t.emoji} {currentLang === 'ar' ? t.nameAr : t.nameEn}
-                                                  </span>
-                                                  {isActive && (
-                                                      <span className="ms-auto text-xs" style={{ color: t.primary }}>✓</span>
-                                                  )}
-                                              </button>
-                                          );
-                                      })}
-                                  </div>
+                                            <div className="space-y-2">
+                                                {/* Standard themes list */}
+                                                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground pt-1">
+                                                    {currentLang === 'ar' ? 'المظاهر الأساسية' : 'Standard'}
+                                                </p>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    {THEME_REGISTRY.filter(t => t.group === 'standard' || t.group === 'system').map((t) => {
+                                                        const isActive = activeTheme === t.id;
+                                                        return (
+                                                            <button
+                                                                key={t.id}
+                                                                type="button"
+                                                                onClick={() => applyTheme(t.id)}
+                                                                className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all hover:scale-[1.01] focus:outline-none w-full border text-start"
+                                                                style={{
+                                                                    background: isActive ? t.primary + '1a' : 'hsl(var(--muted))',
+                                                                    border: isActive ? `2px solid ${t.primary}` : '2px solid transparent',
+                                                                }}
+                                                            >
+                                                                <div
+                                                                    className="w-6 h-6 rounded-full flex-shrink-0 overflow-hidden shadow-sm"
+                                                                    style={{ background: t.bg, border: `2px solid ${t.primary}` }}
+                                                                >
+                                                                    <div style={{ background: t.primary, height: '50%', marginTop: '50%' }} />
+                                                                </div>
+                                                                <span className="text-xs font-medium truncate" style={{ color: isActive ? t.primary : 'hsl(var(--foreground))' }}>
+                                                                    {t.emoji} {currentLang === 'ar' ? t.nameAr : t.nameEn}
+                                                                </span>
+                                                                {isActive && (
+                                                                    <span className="ms-auto text-xs" style={{ color: t.primary }}>✓</span>
+                                                                )}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
 
-                                  {/* Syrian Heritage themes list */}
-                                  <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground pt-3">
-                                      {currentLang === 'ar' ? 'التراث السوري' : 'Syrian Heritage'}
-                                  </p>
-                                  <div className="grid grid-cols-2 gap-2">
-                                      {THEME_REGISTRY.filter(t => t.group === 'heritage').map((t) => {
-                                          const isActive = activeTheme === t.id;
-                                          return (
-                                              <button
-                                                  key={t.id}
-                                                  onClick={() => applyTheme(t.id)}
-                                                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all hover:scale-[1.01] focus:outline-none w-full"
-                                                  style={{
-                                                      background: isActive ? t.primary + '1a' : 'hsl(var(--muted))',
-                                                      border: isActive ? `2px solid ${t.primary}` : '2px solid transparent',
-                                                  }}
-                                              >
-                                                  <div
-                                                      className="w-6 h-6 rounded-full flex-shrink-0 overflow-hidden shadow-sm"
-                                                      style={{ background: t.bg, border: `2px solid ${t.primary}` }}
-                                                  >
-                                                      <div style={{ background: t.primary, height: '50%', marginTop: '50%' }} />
-                                                  </div>
-                                                  <span className="text-xs font-medium truncate" style={{ color: isActive ? t.primary : 'hsl(var(--foreground))' }}>
-                                                      {t.emoji} {currentLang === 'ar' ? t.nameAr : t.nameEn}
-                                                  </span>
-                                                  {isActive && (
-                                                      <span className="ms-auto text-xs" style={{ color: t.primary }}>✓</span>
-                                                  )}
-                                              </button>
-                                          );
-                                      })}
-                                  </div>
-                              </div>
-                          </div>
+                                                {/* Syrian Heritage themes list */}
+                                                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground pt-3">
+                                                    {currentLang === 'ar' ? 'التراث السوري' : 'Syrian Heritage'}
+                                                </p>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    {THEME_REGISTRY.filter(t => t.group === 'heritage').map((t) => {
+                                                        const isActive = activeTheme === t.id;
+                                                        return (
+                                                            <button
+                                                                key={t.id}
+                                                                type="button"
+                                                                onClick={() => applyTheme(t.id)}
+                                                                className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all hover:scale-[1.01] focus:outline-none w-full border text-start"
+                                                                style={{
+                                                                    background: isActive ? t.primary + '1a' : 'hsl(var(--muted))',
+                                                                    border: isActive ? `2px solid ${t.primary}` : '2px solid transparent',
+                                                                }}
+                                                            >
+                                                                <div
+                                                                    className="w-6 h-6 rounded-full flex-shrink-0 overflow-hidden shadow-sm"
+                                                                    style={{ background: t.bg, border: `2px solid ${t.primary}` }}
+                                                                >
+                                                                    <div style={{ background: t.primary, height: '50%', marginTop: '50%' }} />
+                                                                </div>
+                                                                <span className="text-xs font-medium truncate" style={{ color: isActive ? t.primary : 'hsl(var(--foreground))' }}>
+                                                                    {t.emoji} {currentLang === 'ar' ? t.nameAr : t.nameEn}
+                                                                </span>
+                                                                {isActive && (
+                                                                    <span className="ms-auto text-xs" style={{ color: t.primary }}>✓</span>
+                                                                )}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </ScrollArea>
+                            </TabsContent>
+                            
+                            <TabsContent value="advanced" className="h-full m-0">
+                                <ScrollArea className="h-[450px] max-h-[50vh] px-6 pb-6" dir={currentLang === 'ar' ? 'rtl' : 'ltr'}>
+                                    <div className="space-y-6 py-4 text-start">
+                                        {/* Widget visibility toggles */}
+                                        <div className="space-y-4">
+                                            <h4 className="font-semibold text-foreground text-sm">
+                                                {currentLang === 'ar' ? 'عرض وإخفاء الودجات' : 'Widget Visibility'}
+                                            </h4>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                {/* Toggle Clock */}
+                                                <div className="flex items-center justify-between rounded-lg border border-border/50 p-3 bg-card/20">
+                                                    <span className="text-xs font-medium text-foreground">{currentLang === 'ar' ? 'الساعة' : 'Clock'}</span>
+                                                    <Switch
+                                                        checked={showClock}
+                                                        onCheckedChange={(checked) => {
+                                                            setShowClock(checked);
+                                                            localStorage.setItem('sz-showClock', String(checked));
+                                                        }}
+                                                    />
+                                                </div>
+                                                {/* Toggle Weather */}
+                                                <div className="flex items-center justify-between rounded-lg border border-border/50 p-3 bg-card/20">
+                                                    <span className="text-xs font-medium text-foreground">{currentLang === 'ar' ? 'الطقس' : 'Weather'}</span>
+                                                    <Switch
+                                                        checked={showWeather}
+                                                        onCheckedChange={(checked) => {
+                                                            setShowWeather(checked);
+                                                            localStorage.setItem('sz-showWeather', String(checked));
+                                                        }}
+                                                    />
+                                                </div>
+                                                {/* Toggle Prayer Times */}
+                                                <div className="flex items-center justify-between rounded-lg border border-border/50 p-3 bg-card/20">
+                                                    <span className="text-xs font-medium text-foreground">{currentLang === 'ar' ? 'مواقيت الصلاة' : 'Prayer Times'}</span>
+                                                    <Switch
+                                                        checked={showPrayerTimes}
+                                                        onCheckedChange={(checked) => {
+                                                            setShowPrayerTimes(checked);
+                                                            localStorage.setItem('sz-showPrayerTimes', String(checked));
+                                                        }}
+                                                    />
+                                                </div>
+                                                {/* Toggle Events */}
+                                                <div className="flex items-center justify-between rounded-lg border border-border/50 p-3 bg-card/20">
+                                                    <span className="text-xs font-medium text-foreground">{currentLang === 'ar' ? 'الفعاليات والأحداث' : 'Events Widget'}</span>
+                                                    <Switch
+                                                        checked={showEvents}
+                                                        onCheckedChange={(checked) => {
+                                                            setShowEvents(checked);
+                                                            localStorage.setItem('sz-showEvents', String(checked));
+                                                        }}
+                                                    />
+                                                </div>
+                                                {/* Toggle Search */}
+                                                <div className="flex items-center justify-between rounded-lg border border-border/50 p-3 bg-card/20 flex-1 col-span-1 sm:col-span-2">
+                                                    <span className="text-xs font-medium text-foreground">{currentLang === 'ar' ? 'شريط البحث' : 'Search Bar'}</span>
+                                                    <Switch
+                                                        checked={showSearch}
+                                                        onCheckedChange={(checked) => {
+                                                            setShowSearch(checked);
+                                                            localStorage.setItem('sz-showSearch', String(checked));
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
 
-                        <div className="h-[1px] bg-border w-full" />
-                        <div className="flex justify-center gap-4 text-xs text-muted-foreground pt-2">
+                                        <div className="h-[1px] bg-border w-full" />
+
+                                        {/* Custom Coordinates Section */}
+                                        <div className="space-y-4 pt-2">
+                                            <h4 className="font-semibold text-foreground text-sm">
+                                                {currentLang === 'ar' ? 'إحداثيات جغرافية مخصصة' : 'Custom Location Coordinates'}
+                                            </h4>
+                                            <p className="text-xs text-muted-foreground leading-normal">
+                                                {currentLang === 'ar' 
+                                                    ? 'استخدم إحداثيات مخصصة بدلاً من موقع المحافظة الافتراضي لجلب الطقس ومواقيت الصلاة بشكل دقيق للغاية.' 
+                                                    : 'Set custom GPS coordinates to fetch local weather and prayer times with high precision.'}
+                                            </p>
+                                            
+                                            <div className="flex items-center justify-between rounded-lg border border-border/50 p-3 bg-card/20">
+                                                <span className="text-xs font-medium text-foreground">{currentLang === 'ar' ? 'تفعيل الإحداثيات المخصصة' : 'Use Custom Coordinates'}</span>
+                                                <Switch
+                                                    checked={useCustomCoords}
+                                                    onCheckedChange={(checked) => {
+                                                        setUseCustomCoords(checked);
+                                                        localStorage.setItem('useCustomCoords', String(checked));
+                                                    }}
+                                                />
+                                            </div>
+
+                                            {useCustomCoords && (
+                                                <div className="space-y-3 p-3 rounded-lg border border-border bg-card/10">
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div className="space-y-1 text-start">
+                                                            <Label className="text-xs">{currentLang === 'ar' ? 'خط العرض (Lat)' : 'Latitude'}</Label>
+                                                            <Input
+                                                                type="text"
+                                                                value={customLat}
+                                                                onChange={(e) => {
+                                                                    setCustomLat(e.target.value);
+                                                                    localStorage.setItem('customLat', e.target.value);
+                                                                }}
+                                                                placeholder="33.5138"
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-1 text-start">
+                                                            <Label className="text-xs">{currentLang === 'ar' ? 'خط الطول (Lon)' : 'Longitude'}</Label>
+                                                            <Input
+                                                                type="text"
+                                                                value={customLon}
+                                                                onChange={(e) => {
+                                                                    setCustomLon(e.target.value);
+                                                                    localStorage.setItem('customLon', e.target.value);
+                                                                }}
+                                                                placeholder="36.2765"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="w-full text-xs cursor-pointer flex items-center justify-center gap-1.5"
+                                                        onClick={getDeviceLocation}
+                                                    >
+                                                        <Compass className="w-3.5 h-3.5" />
+                                                        {currentLang === 'ar' ? 'الحصول على إحداثيات موقعي الحالي' : 'Get coordinates from device'}
+                                                    </Button>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="h-[1px] bg-border w-full" />
+
+                                        {/* Custom Search Engine Section */}
+                                        <div className="space-y-4 pt-2">
+                                            <h4 className="font-semibold text-foreground text-sm">
+                                                {currentLang === 'ar' ? 'محرك بحث مخصص' : 'Custom Search Engine'}
+                                            </h4>
+                                            <p className="text-xs text-muted-foreground leading-normal">
+                                                {currentLang === 'ar'
+                                                    ? 'إذا اخترت محرك البحث "مخصص" من الصفحة الرئيسية، سيتم استخدام هذا الرابط. ضع %s في مكان كلمة البحث (مثال: https://search.yahoo.com/search?q=%s).'
+                                                    : 'If "Custom" is selected as the search provider on the homepage, queries will be sent to this URL. Use %s to specify where the query should be injected (e.g. https://search.yahoo.com/search?q=%s).'}
+                                            </p>
+                                            <div className="space-y-1 text-start">
+                                                <Label className="text-xs">{currentLang === 'ar' ? 'رابط محرك البحث المخصص' : 'Custom Search Query URL'}</Label>
+                                                <Input
+                                                    type="text"
+                                                    value={customSearchUrl}
+                                                    onChange={(e) => {
+                                                        setCustomSearchUrl(e.target.value);
+                                                        localStorage.setItem('customSearchUrl', e.target.value);
+                                                    }}
+                                                    placeholder="https://search.yahoo.com/search?q=%s"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </ScrollArea>
+                            </TabsContent>
+                        </div>
+                    </Tabs>
+                    
+                    <div className="border-t bg-muted/20 p-4">
+                        <div className="flex justify-center gap-4 text-xs text-muted-foreground">
                             <a href="/privacy" className="hover:text-primary transition-colors flex items-center gap-1.5">
                                 <Shield className="w-3.5 h-3.5 text-muted-foreground hover:text-primary" />
                                 {currentLang === 'ar' ? 'سياسة الخصوصية' : 'Privacy Policy'}
@@ -917,7 +1212,6 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
                             </a>
                         </div>
                     </div>
-                    </ScrollArea>
                 </DialogContent>
             </Dialog>
 

@@ -389,7 +389,7 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
                                                 title="Android"
                                                 onClick={(e) => e.stopPropagation()}
                                             >
-                                                <AndroidIcon className="h-5 w-5" />
+                                                <AndroidIcon className="h-6 w-6" />
                                             </a>
                                         )}
                                         {app.links.apple && (
@@ -401,7 +401,7 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
                                                 title="iOS"
                                                 onClick={(e) => e.stopPropagation()}
                                             >
-                                                <IosIcon className="h-5 w-5" />
+                                                <IosIcon className="h-6 w-6" />
                                             </a>
                                         )}
                                         {app.links.official && (
@@ -413,16 +413,9 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
                                                 title="Website"
                                                 onClick={(e) => e.stopPropagation()}
                                             >
-                                                <Globe className="h-5 w-5" />
+                                                <Globe className="h-6 w-6" />
                                             </a>
                                         )}
-                                        <button
-                                            className="text-muted-foreground hover:text-primary transition-colors p-0.5"
-                                            onClick={() => setSelectedApp(app)}
-                                            title="عرض التفاصيل"
-                                        >
-                                            <ImageIcon className="h-5 w-5" />
-                                        </button>
                                     </div>
                                 </CardContent>
                             </Card>

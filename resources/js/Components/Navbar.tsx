@@ -25,6 +25,7 @@ import {
   Calendar,
   Phone,
   Sparkles,
+  HelpCircle,
 } from 'lucide-react';
 
 import { useAuth } from '@/Contexts/AuthContext';
@@ -74,6 +75,7 @@ const navLinks = [
 
 const externalLinks = [
   { href: 'https://news.jard.chat', text: 'أخبار سوريا', icon: Newspaper },
+  { href: 'https://answers.syrian.zone', text: 'إجابات سوريا', icon: HelpCircle },
   { href: 'https://wrraq.com', text: 'المنتدى', icon: MessageSquare },
   { href: 'https://joory.chat', text: 'جوري AI', image: 'https://joory.chat/favicon.svg' },
   { href: 'https://jard.chat', text: 'جرد', image: 'https://jard.chat/images/logo-light.svg' },

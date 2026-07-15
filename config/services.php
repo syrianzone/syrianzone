@@ -41,4 +41,12 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URL'),
     ],
 
+    'x' => [
+        'client_id' => env('X_CLIENT_ID'),
+        'client_secret' => env('X_CLIENT_SECRET'),
+        'access_token' => env('X_ACCESS_TOKEN'),
+        'refresh_token' => env('X_REFRESH_TOKEN'),
+        'username' => env('X_USERNAME', 'syrianzone'),
+    ],
+
 ];

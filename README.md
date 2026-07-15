@@ -63,6 +63,33 @@ npm run dev
 
 نرحب بأي مساهمات واقتراحات وتحسينات عبر Issues و Pull Requests.
 
+## Tierlist updates on X
+
+The scheduler checks the `best-ministers` leaderboard each day at 09:00 Damascus time. Its first run saves a baseline. Later runs post each changed rank to X and save successful posts so retries don't repeat them.
+
+Authorize the X app while signed in directly as `@syrianzone`. X Delegate access alone doesn't make a personal user token post as the delegated account. Request `tweet.read tweet.write users.read offline.access`, then set these environment variables:
+
+```dotenv
+X_CLIENT_ID=your_oauth2_client_id
+X_CLIENT_SECRET=your_oauth2_client_secret
+X_REFRESH_TOKEN=the_refresh_token_issued_for_syrianzone
+X_USERNAME=syrianzone
+```
+
+For a short manual test, you can set `X_ACCESS_TOKEN` instead. OAuth 2.0 access tokens expire, so production should use the refresh token. The app stores rotated refresh tokens in Laravel's configured cache. Don't clear that cache unless you can authorize the account again.
+
+Preview the pending posts without changing the baseline:
+
+```bash
+php artisan tierlist:post-rank-changes --dry-run
+```
+
+Run the live command after checking the preview:
+
+```bash
+php artisan tierlist:post-rank-changes
+```
+
 
 ## قادم قريبًا
 

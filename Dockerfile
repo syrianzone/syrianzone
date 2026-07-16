@@ -36,7 +36,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         curl \
     && rm -rf /var/lib/apt/lists/*
 
-RUN install-php-extensions intl
+# gd: PlaceImageService encodes uploaded photos to webp; the base image ships without it
+RUN install-php-extensions intl gd
 
 WORKDIR /var/www/html
 

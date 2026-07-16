@@ -146,6 +146,8 @@ Route::get('/transit/studio', function () {
     return Inertia::render('Transit/studio/Index');
 });
 
+Route::get('/places', [\App\Http\Controllers\PlaceController::class, 'renderIndex']);
+
 
 
 Route::get('/user', [AuthController::class, 'user']);
@@ -174,6 +176,31 @@ Route::middleware('auth')->group(function () {
         });
     });
 
+    // Hidden Places: authenticated writes (session + CSRF via the web group)
+    Route::prefix('api/v1')->group(function () {
+        Route::post('/places', [\App\Http\Controllers\PlaceController::class, 'store'])
+            ->middleware('throttle:5,60');
+        Route::get('/my/places', [\App\Http\Controllers\PlaceController::class, 'mine'])
+            ->middleware('throttle:60,1');
+        Route::get('/my/saves', [\App\Http\Controllers\PlaceEngagementController::class, 'mySaves'])
+            ->middleware('throttle:60,1');
+
+        Route::post('/places/{id}/like', [\App\Http\Controllers\PlaceEngagementController::class, 'like'])
+            ->whereNumber('id')->middleware('throttle:60,1');
+        Route::delete('/places/{id}/like', [\App\Http\Controllers\PlaceEngagementController::class, 'unlike'])
+            ->whereNumber('id')->middleware('throttle:60,1');
+        Route::post('/places/{id}/save', [\App\Http\Controllers\PlaceEngagementController::class, 'save'])
+            ->whereNumber('id')->middleware('throttle:60,1');
+        Route::delete('/places/{id}/save', [\App\Http\Controllers\PlaceEngagementController::class, 'unsave'])
+            ->whereNumber('id')->middleware('throttle:60,1');
+        Route::post('/places/{id}/comments', [\App\Http\Controllers\PlaceEngagementController::class, 'storeComment'])
+            ->whereNumber('id')->middleware('throttle:10,1');
+        Route::delete('/place-comments/{id}', [\App\Http\Controllers\PlaceEngagementController::class, 'destroyComment'])
+            ->whereNumber('id')->middleware('throttle:60,1');
+        Route::post('/places/{id}/report', [\App\Http\Controllers\PlaceEngagementController::class, 'report'])
+            ->whereNumber('id')->middleware('throttle:5,60');
+    });
+
     // 2. Polls & General Admin Panel (accessible to core admins and superadmins)
     Route::middleware('admin')->group(function () {
         Route::get('/admin/polls', [PollController::class, 'renderIndex']);
@@ -192,6 +219,18 @@ Route::middleware('auth')->group(function () {
             Route::apiResource('candidates', \App\Http\Controllers\CandidateController::class)->except(['index', 'show']);
             Route::patch('/candidates/{id}/archive', [\App\Http\Controllers\CandidateController::class, 'archive']);
             Route::patch('/candidates/{id}/restore', [\App\Http\Controllers\CandidateController::class, 'restore']);
+        });
+
+        // Hidden Places moderation
+        Route::get('/admin/places', [\App\Http\Controllers\PlaceAdminController::class, 'renderIndex']);
+
+        Route::prefix('api/v1')->middleware('throttle:60,1')->group(function () {
+            Route::get('/admin/places', [\App\Http\Controllers\PlaceAdminController::class, 'index']);
+            Route::post('/admin/places/{id}/approve', [\App\Http\Controllers\PlaceAdminController::class, 'approve'])->whereNumber('id');
+            Route::post('/admin/places/{id}/reject', [\App\Http\Controllers\PlaceAdminController::class, 'reject'])->whereNumber('id');
+            Route::delete('/admin/places/{id}', [\App\Http\Controllers\PlaceAdminController::class, 'destroy'])->whereNumber('id');
+            Route::get('/admin/place-reports', [\App\Http\Controllers\PlaceAdminController::class, 'reports']);
+            Route::post('/admin/place-reports/{id}/resolve', [\App\Http\Controllers\PlaceAdminController::class, 'resolveReport'])->whereNumber('id');
         });
     });
 

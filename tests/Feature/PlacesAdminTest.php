@@ -2,7 +2,6 @@
 
 use App\Models\Place;
 use App\Models\PlacePhoto;
-use App\Models\PlaceReport;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 
@@ -20,7 +19,6 @@ test('admin endpoints reject guests and non-admins', function () {
   $this->actingAs($user)->postJson("/api/v1/admin/places/{$place->id}/approve")->assertForbidden();
   $this->actingAs($user)->postJson("/api/v1/admin/places/{$place->id}/reject")->assertForbidden();
   $this->actingAs($user)->deleteJson("/api/v1/admin/places/{$place->id}")->assertForbidden();
-  $this->actingAs($user)->getJson('/api/v1/admin/place-reports')->assertForbidden();
 });
 
 test('admin list defaults to pending and filters by status', function () {
@@ -32,7 +30,7 @@ test('admin list defaults to pending and filters by status', function () {
     ->assertOk()
     ->assertJsonCount(1, 'data')
     ->assertJsonPath('data.0.id', $pending->id)
-    ->assertJsonStructure(['data' => [['id', 'name', 'status', 'rejection_reason', 'reports_count', 'photos', 'user' => ['id', 'name', 'avatar_url']]]]);
+    ->assertJsonStructure(['data' => [['id', 'name', 'status', 'rejection_reason', 'photos', 'user' => ['id', 'name', 'avatar_url']]]]);
 
   $this->actingAs(placesAdmin())->getJson('/api/v1/admin/places?status=approved')
     ->assertOk()
@@ -127,52 +125,4 @@ test('deleting an approved place busts the map cache', function () {
   $this->actingAs(placesAdmin())->deleteJson("/api/v1/admin/places/{$place->id}")->assertNoContent();
 
   $this->getJson('/api/v1/places/map')->assertOk()->assertJsonCount(0, 'features');
-});
-
-test('admin reports list defaults to open and filters by status', function () {
-  $place = Place::factory()->approved()->create();
-  $open = PlaceReport::create([
-    'place_id' => $place->id,
-    'user_id' => User::factory()->create(['role' => 'user'])->id,
-    'reason' => 'spam',
-  ]);
-  PlaceReport::create([
-    'place_id' => $place->id,
-    'user_id' => User::factory()->create(['role' => 'user'])->id,
-    'reason' => 'other',
-    'status' => 'resolved',
-  ]);
-
-  $this->actingAs(placesAdmin())->getJson('/api/v1/admin/place-reports')
-    ->assertOk()
-    ->assertJsonCount(1, 'data')
-    ->assertJsonPath('data.0.id', $open->id)
-    ->assertJsonPath('data.0.reason', 'spam')
-    ->assertJsonPath('data.0.place.id', $place->id)
-    ->assertJsonStructure(['data' => [['id', 'reason', 'details', 'status', 'created_at', 'user' => ['id', 'name'], 'place' => ['id', 'name', 'status']]]]);
-
-  $this->actingAs(placesAdmin())->getJson('/api/v1/admin/place-reports?status=all')
-    ->assertOk()
-    ->assertJsonCount(2, 'data');
-});
-
-test('admin can resolve and dismiss reports', function () {
-  $place = Place::factory()->approved()->create();
-  $reporter = User::factory()->create(['role' => 'user']);
-  $report = PlaceReport::create(['place_id' => $place->id, 'user_id' => $reporter->id, 'reason' => 'spam']);
-
-  $this->actingAs(placesAdmin())
-    ->postJson("/api/v1/admin/place-reports/{$report->id}/resolve", ['action' => 'resolve'])
-    ->assertOk()
-    ->assertJsonPath('status', 'resolved');
-  $this->assertDatabaseHas('place_reports', ['id' => $report->id, 'status' => 'resolved']);
-
-  $this->actingAs(placesAdmin())
-    ->postJson("/api/v1/admin/place-reports/{$report->id}/resolve", ['action' => 'dismiss'])
-    ->assertOk()
-    ->assertJsonPath('status', 'dismissed');
-
-  $this->actingAs(placesAdmin())
-    ->postJson("/api/v1/admin/place-reports/{$report->id}/resolve", ['action' => 'bogus'])
-    ->assertStatus(422);
 });

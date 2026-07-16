@@ -9,17 +9,23 @@ const LAYERS = ['clusters', 'cluster-count', 'place-pin'];
 export function PlacesMap(props: {
   features: PlaceFeatureCollection;
   selectedId: number | null;
+  addMode: boolean;
+  focus: { lng: number; lat: number; zoom?: number; key: number } | null;
+  highlight: LatLng | null;
   onPinClick: (id: number) => void;
   onMapClick: (point: LatLng) => void;
   className?: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
+  const highlightMarkerRef = useRef<maplibregl.Marker | null>(null);
   const [mapReady, setMapReady] = useState(false);
 
   // refs so map handlers registered once always see the latest props
   const featuresRef = useRef(props.features);
   featuresRef.current = props.features;
+  const addModeRef = useRef(props.addMode);
+  addModeRef.current = props.addMode;
   const onPinClickRef = useRef(props.onPinClick);
   onPinClickRef.current = props.onPinClick;
   const onMapClickRef = useRef(props.onMapClick);
@@ -106,9 +112,10 @@ export function PlacesMap(props: {
         onMapClickRef.current({ lng: e.lngLat.lng, lat: e.lngLat.lat });
       });
 
+      // consult the add-mode ref so hovering/leaving a pin never drops the crosshair
       for (const layer of ['clusters', 'place-pin']) {
-        map.on('mouseenter', layer, () => { map.getCanvas().style.cursor = 'pointer'; });
-        map.on('mouseleave', layer, () => { map.getCanvas().style.cursor = ''; });
+        map.on('mouseenter', layer, () => { map.getCanvas().style.cursor = addModeRef.current ? 'crosshair' : 'pointer'; });
+        map.on('mouseleave', layer, () => { map.getCanvas().style.cursor = addModeRef.current ? 'crosshair' : ''; });
       }
 
       setMapReady(true);
@@ -144,6 +151,36 @@ export function PlacesMap(props: {
       props.selectedId == null ? 7 : ['case', ['==', ['get', 'id'], props.selectedId], 10, 7],
     );
   }, [props.selectedId, mapReady]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.getCanvas().style.cursor = props.addMode ? 'crosshair' : '';
+  }, [props.addMode]);
+
+  // mapReady dep queues a focus requested before the map finished loading
+  useEffect(() => {
+    const map = mapRef.current;
+    const focus = props.focus;
+    if (!map || !mapReady || !focus) return;
+    map.flyTo({ center: [focus.lng, focus.lat], zoom: focus.zoom ?? 15 });
+  }, [props.focus?.key, mapReady]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    highlightMarkerRef.current?.remove();
+    highlightMarkerRef.current = null;
+    if (props.highlight) {
+      highlightMarkerRef.current = new maplibregl.Marker({ color: '#7d8a5c' })
+        .setLngLat([props.highlight.lng, props.highlight.lat])
+        .addTo(map);
+    }
+    return () => {
+      highlightMarkerRef.current?.remove();
+      highlightMarkerRef.current = null;
+    };
+  }, [props.highlight]);
 
   // inner div gets inline size: maplibre's stylesheet forces position:relative on its
   // container, which would defeat tailwind absolute/inset classes applied directly to it

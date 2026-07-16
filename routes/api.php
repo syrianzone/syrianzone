@@ -109,6 +109,5 @@ Route::prefix('v1')->group(function () {
         Route::get('/places/nearby', [\App\Http\Controllers\PlaceController::class, 'nearby']);
         Route::get('/places', [\App\Http\Controllers\PlaceController::class, 'index']);
         Route::get('/places/{id}', [\App\Http\Controllers\PlaceController::class, 'show'])->whereNumber('id');
-        Route::get('/places/{id}/comments', [\App\Http\Controllers\PlaceEngagementController::class, 'comments'])->whereNumber('id');
     });
 });

@@ -11,12 +11,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { api, extractError } from '../../Places/_lib/api';
 import type { AdminPlace, Paginated } from '../../Places/_lib/types';
 import { PlaceReviewCard } from './PlaceReviewCard';
 import { RejectDialog } from './RejectDialog';
-import { ReportsTab } from './ReportsTab';
 
 type StatusFilter = 'pending' | 'approved' | 'rejected' | 'all';
 
@@ -101,90 +99,79 @@ export default function Index() {
       <main dir="rtl" className="container mx-auto max-w-3xl px-4 py-6">
         <h1 className="mb-4 text-xl font-bold">إدارة الأماكن الخفية</h1>
 
-        <Tabs defaultValue="review" dir="rtl">
-          <TabsList className="mb-4">
-            <TabsTrigger value="review">المراجعة</TabsTrigger>
-            <TabsTrigger value="reports">البلاغات</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="review" className="space-y-4">
-            <div className="flex flex-wrap items-center gap-3">
-              <Select
-                value={status}
-                onValueChange={(v) => {
-                  setStatus(v as StatusFilter);
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {STATUS_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>
-                      {o.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {places && (
-                <p className="text-sm text-muted-foreground">
-                  النتائج: <span dir="ltr">{places.total}</span>
-                </p>
-              )}
-            </div>
-
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            {loading ? (
-              <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                جارٍ التحميل
-              </div>
-            ) : !places || places.data.length === 0 ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">لا توجد أماكن</p>
-            ) : (
-              <div className="space-y-3">
-                {places.data.map((place) => (
-                  <PlaceReviewCard
-                    key={place.id}
-                    place={place}
-                    onApprove={handleApprove}
-                    onReject={setRejectId}
-                    onDelete={handleDelete}
-                  />
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <Select
+              value={status}
+              onValueChange={(v) => {
+                setStatus(v as StatusFilter);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
                 ))}
-              </div>
+              </SelectContent>
+            </Select>
+            {places && (
+              <p className="text-sm text-muted-foreground">
+                النتائج: <span dir="ltr">{places.total}</span>
+              </p>
             )}
+          </div>
 
-            {places && places.last_page > 1 && (
-              <div className="flex items-center justify-center gap-3">
-                <Button size="sm" variant="outline" disabled={page <= 1 || loading} onClick={() => setPage(page - 1)}>
-                  السابق
-                </Button>
-                <span className="text-sm text-muted-foreground" dir="ltr">
-                  {places.current_page} / {places.last_page}
-                </span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={page >= places.last_page || loading}
-                  onClick={() => setPage(page + 1)}
-                >
-                  التالي
-                </Button>
-              </div>
-            )}
-          </TabsContent>
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
-          <TabsContent value="reports">
-            <ReportsTab />
-          </TabsContent>
-        </Tabs>
+          {loading ? (
+            <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              جارٍ التحميل
+            </div>
+          ) : !places || places.data.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">لا توجد أماكن</p>
+          ) : (
+            <div className="space-y-3">
+              {places.data.map((place) => (
+                <PlaceReviewCard
+                  key={place.id}
+                  place={place}
+                  onApprove={handleApprove}
+                  onReject={setRejectId}
+                  onDelete={handleDelete}
+                />
+              ))}
+            </div>
+          )}
+
+          {places && places.last_page > 1 && (
+            <div className="flex items-center justify-center gap-3">
+              <Button size="sm" variant="outline" disabled={page <= 1 || loading} onClick={() => setPage(page - 1)}>
+                السابق
+              </Button>
+              <span className="text-sm text-muted-foreground" dir="ltr">
+                {places.current_page} / {places.last_page}
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={page >= places.last_page || loading}
+                onClick={() => setPage(page + 1)}
+              >
+                التالي
+              </Button>
+            </div>
+          )}
+        </div>
 
         <RejectDialog
           open={rejectId !== null}

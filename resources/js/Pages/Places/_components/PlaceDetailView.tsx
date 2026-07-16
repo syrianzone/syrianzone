@@ -4,14 +4,11 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { api, extractError } from '../_lib/api';
 import { CATEGORY_LABELS } from '../_lib/categories';
 import type { PlaceDetail } from '../_lib/types';
-import { CommentsSection } from './CommentsSection';
 import { EngagementBar } from './EngagementBar';
 import { PhotoGallery } from './PhotoGallery';
-import { ReportButton } from './ReportButton';
 
 export function PlaceDetailView(props: { placeId: number; onClose: () => void }) {
   const { placeId, onClose } = props;
@@ -101,22 +98,15 @@ export function PlaceDetailView(props: { placeId: number; onClose: () => void })
               </Button>
             </div>
             {place.status === 'approved' ? (
-              <>
-                <div className="flex items-center justify-between gap-2">
-                  <EngagementBar
-                    key={place.id}
-                    placeId={place.id}
-                    initialLiked={place.liked_by_me}
-                    initialSaved={place.saved_by_me}
-                    initialLikes={place.likes_count}
-                    initialSaves={place.saves_count}
-                    commentsCount={place.comments_count}
-                  />
-                  <ReportButton placeId={place.id} />
-                </div>
-                <Separator />
-                <CommentsSection placeId={place.id} />
-              </>
+              <EngagementBar
+                key={place.id}
+                placeId={place.id}
+                placeName={place.name}
+                lat={place.lat}
+                lng={place.lng}
+                initialSaved={place.saved_by_me}
+                initialSaves={place.saves_count}
+              />
             ) : (
               // engagement endpoints 404 for non-approved places, show the status instead
               <Badge variant={place.status === 'pending' ? 'secondary' : 'destructive'}>

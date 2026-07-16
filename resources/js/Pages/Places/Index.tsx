@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Head } from '@inertiajs/react';
-import { ChevronDown, ChevronUp, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, X } from 'lucide-react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { PlacesMap } from './_components/PlacesMap';
-import { FilterBar } from './_components/FilterBar';
+import { FilterBar, parseLatLng } from './_components/FilterBar';
 import { PlacesPanel } from './_components/PlacesPanel';
 import { SubmitSheet } from './_components/SubmitSheet';
 import { api, extractError } from './_lib/api';
@@ -21,14 +22,55 @@ export default function Index() {
   const [listLoading, setListLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [notice, setNotice] = useState<{ text: string; destructive: boolean } | null>(null);
+  const [addMode, setAddMode] = useState(false);
+  const [focus, setFocus] = useState<{ lng: number; lat: number; zoom?: number; key: number } | null>(null);
+  const [highlight, setHighlight] = useState<LatLng | null>(null);
+  // which q the current listPlaces was fetched for; guards the dropdown against stale results
+  const [fetchedQuery, setFetchedQuery] = useState('');
 
   // stale-response guard for the debounced list fetch
   const requestRef = useRef(0);
+  const focusKeyRef = useRef(0);
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function flyTo(lng: number, lat: number) {
+    setFocus({ lng, lat, zoom: 15, key: ++focusKeyRef.current });
+  }
 
   useEffect(() => {
     api.mapData()
       .then(setFeatures)
       .catch((e) => setNotice({ text: extractError(e), destructive: true }));
+  }, []);
+
+  // ?place=ID deep link: open the detail and fly to the place once the map is ready
+  useEffect(() => {
+    const raw = new URLSearchParams(window.location.search).get('place');
+    if (!raw || !/^\d+$/.test(raw)) return;
+    const id = Number(raw);
+    if (id <= 0) return;
+    setSelectedId(id);
+    setExpanded(true);
+    api.getPlace(id)
+      .then((place) => flyTo(place.lng, place.lat))
+      .catch((e) => {
+        setNotice({ text: extractError(e), destructive: true });
+        // only clear if the deep-linked place is still selected; the user may have picked another
+        setSelectedId((cur) => (cur === id ? null : cur));
+      });
+  }, []);
+
+  useEffect(() => {
+    if (!addMode) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setAddMode(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [addMode]);
+
+  useEffect(() => () => {
+    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
   }, []);
 
   useEffect(() => {
@@ -38,14 +80,17 @@ export default function Index() {
 
   async function fetchList(page: number) {
     const id = ++requestRef.current;
+    // a coordinate query is a map jump, not a text filter: fetch the unfiltered list
+    const q = parseLatLng(query) ? '' : query.trim();
     setListLoading(true);
     try {
       const res = await api.listPlaces({
         category: category ?? undefined,
-        q: query.trim() || undefined,
+        q: q || undefined,
         page,
       });
       if (id !== requestRef.current) return;
+      setFetchedQuery(q);
       setListPlaces((prev) =>
         page > 1 && prev ? { ...res, data: [...prev.data, ...res.data] } : res,
       );
@@ -56,8 +101,11 @@ export default function Index() {
     }
   }
 
+  const coordCandidate = useMemo(() => parseLatLng(query), [query]);
+
   const filteredFeatures = useMemo<PlaceFeatureCollection>(() => {
-    const q = query.trim();
+    // a coordinate query jumps the map; it must not filter the pins away
+    const q = coordCandidate ? '' : query.trim();
     return {
       type: 'FeatureCollection',
       features: (features?.features ?? []).filter(
@@ -66,10 +114,14 @@ export default function Index() {
           (q === '' || f.properties.name.includes(q)),
       ),
     };
-  }, [features, category, query]);
+  }, [features, category, query, coordCandidate]);
+
+  // during the debounce window listPlaces still holds the previous query's results
+  const searchPending = query.trim() !== '' && !coordCandidate && fetchedQuery !== query.trim();
+  const searchResults = query.trim() === '' || searchPending ? [] : (listPlaces?.data ?? []).slice(0, 8);
 
   function handleMapClick(point: LatLng) {
-    if (selectedId !== null) {
+    if (!addMode) {
       setSelectedId(null);
       return;
     }
@@ -80,11 +132,26 @@ export default function Index() {
     }
     setSubmitPoint(point);
     setSubmitOpen(true);
+    setAddMode(false);
   }
 
   function handlePinClick(id: number) {
     setSelectedId(id);
     setExpanded(true);
+    setAddMode(false);
+  }
+
+  function handleSelectResult(place: PlaceListItem) {
+    setSelectedId(place.id);
+    setExpanded(true);
+    flyTo(place.lng, place.lat);
+  }
+
+  function handleGoToCoord(point: LatLng) {
+    flyTo(point.lng, point.lat);
+    setHighlight(point);
+    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+    highlightTimerRef.current = setTimeout(() => setHighlight(null), 6000);
   }
 
   // panel taps must expand the mobile sheet too, or the detail opens 224px tall
@@ -113,25 +180,36 @@ export default function Index() {
         <PlacesMap
           features={filteredFeatures}
           selectedId={selectedId}
+          addMode={addMode}
+          focus={focus}
+          highlight={highlight}
           onPinClick={handlePinClick}
           onMapClick={handleMapClick}
           // bottom-56 keeps the map's bottom-left controls above the collapsed mobile sheet
           className="absolute inset-x-0 top-0 bottom-56 md:inset-0"
         />
 
-        {/* pr-96 keeps the floating bar clear of the side panel on desktop */}
-        <div className="absolute top-3 inset-x-3 z-10 max-w-xl mx-auto space-y-2 md:pr-96 md:max-w-3xl">
+        {/* pr-96 keeps the floating bar clear of the side panel on desktop;
+            z-20 keeps the search dropdown above the z-10 bottom sheet (later sibling) */}
+        <div className="absolute top-3 inset-x-3 z-20 max-w-xl mx-auto space-y-2 md:pr-96 md:max-w-3xl">
           <FilterBar
             category={category}
             onCategoryChange={setCategory}
             query={query}
             onQueryChange={setQuery}
+            results={searchResults}
+            resultsLoading={listLoading || searchPending}
+            coordCandidate={coordCandidate}
+            onSelectResult={handleSelectResult}
+            onGoToCoord={handleGoToCoord}
           />
-          <div className="flex justify-center">
-            <span className="rounded-full border border-border bg-card/90 px-3 py-1 text-xs text-muted-foreground shadow-sm">
-              انقر على الخريطة لإضافة مكان
-            </span>
-          </div>
+          {addMode && (
+            <div className="flex justify-center">
+              <span className="rounded-full border border-border bg-card/90 px-3 py-1 text-xs text-muted-foreground shadow-sm">
+                انقر على الخريطة لتحديد الموقع
+              </span>
+            </div>
+          )}
           {notice && (
             <Alert variant={notice.destructive ? 'destructive' : 'default'} className="flex items-start justify-between gap-2">
               <AlertDescription>{notice.text}</AlertDescription>
@@ -141,6 +219,17 @@ export default function Index() {
             </Alert>
           )}
         </div>
+
+        {/* bottom-60 clears the collapsed mobile sheet; left-14 clears the map controls.
+            hidden while the mobile sheet is expanded: the sheet would cover both FAB and map */}
+        <Button
+          type="button"
+          className={`absolute left-14 bottom-60 z-10 shadow-lg md:bottom-6 ${expanded ? 'hidden md:inline-flex' : ''}`}
+          onClick={() => setAddMode((v) => !v)}
+        >
+          {addMode ? <X /> : <Plus />}
+          {addMode ? 'إلغاء الإضافة' : 'أضف مكاناً'}
+        </Button>
 
         <div
           className={`absolute inset-x-0 bottom-0 z-10 flex flex-col bg-card border-t border-border md:inset-x-auto md:top-0 md:right-0 md:h-full md:w-96 md:border-t-0 md:border-l ${expanded ? 'h-[65dvh]' : 'h-56'}`}

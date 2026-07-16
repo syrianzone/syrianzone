@@ -51,7 +51,20 @@ test('list returns only approved places with list item shape', function () {
     ->assertOk()
     ->assertJsonCount(1, 'data')
     ->assertJsonPath('data.0.id', $approved->id)
-    ->assertJsonStructure(['data' => [['id', 'name', 'category', 'description', 'lat', 'lng', 'thumb_url', 'likes_count', 'saves_count', 'comments_count']]]);
+    ->assertJsonStructure(['data' => [['id', 'name', 'category', 'description', 'lat', 'lng', 'thumb_url', 'saves_count']]]);
+});
+
+test('list items do not leak removed counters', function () {
+  $place = Place::factory()->approved()->create();
+
+  $this->getJson('/api/v1/places')
+    ->assertOk()
+    ->assertJsonMissingPath('data.0.likes_count')
+    ->assertJsonMissingPath('data.0.comments_count');
+
+  $this->getJson("/api/v1/places/{$place->id}")
+    ->assertOk()
+    ->assertJsonMissingPath('liked_by_me');
 });
 
 test('list filters by category', function () {
@@ -78,9 +91,9 @@ test('list searches name and description', function () {
     ->assertJsonCount(2, 'data');
 });
 
-test('list sorts by popularity', function () {
-  Place::factory()->approved()->create(['likes_count' => 1]);
-  $popular = Place::factory()->approved()->create(['likes_count' => 9]);
+test('popular sort orders by saves_count', function () {
+  Place::factory()->approved()->create(['saves_count' => 1]);
+  $popular = Place::factory()->approved()->create(['saves_count' => 9]);
 
   $this->getJson('/api/v1/places?sort=popular')
     ->assertOk()
@@ -159,7 +172,6 @@ test('show returns detail for approved place', function () {
     ->assertOk()
     ->assertJsonPath('id', $place->id)
     ->assertJsonPath('status', 'approved')
-    ->assertJsonPath('liked_by_me', false)
     ->assertJsonPath('saved_by_me', false)
     ->assertJsonStructure(['user' => ['id', 'name', 'avatar_url'], 'photos', 'created_at']);
 });
@@ -317,4 +329,9 @@ test('my places lists own places with status and rejection_reason', function () 
 
 test('guest cannot list my places', function () {
   $this->getJson('/api/v1/my/places')->assertUnauthorized();
+});
+
+test('places page renders with a place deep link param', function () {
+  // The share URL is /places?place={id}; the page route must ignore the param.
+  $this->get('/places?place=123')->assertOk();
 });

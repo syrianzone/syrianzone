@@ -40,7 +40,33 @@ test('deleting user account soft deletes user and delegates polls and routes to 
     // Create a poll owned by the deleting admin
     $poll = Poll::factory()->create(['user_id' => $admin->id]);
 
-    \Illuminate\Support\Facades\Schema::disableForeignKeyConstraints();
+    // Satisfy the routes.city_id foreign key; sqlite pragmas cannot be
+    // toggled inside the test transaction, so insert a real city instead.
+    $geometry = function (array $shape) {
+        $json = json_encode($shape, JSON_THROW_ON_ERROR);
+        if (\Illuminate\Support\Facades\DB::connection()->getDriverName() === 'sqlite') {
+            return $json;
+        }
+
+        $quoted = \Illuminate\Support\Facades\DB::connection()->getPdo()->quote($json);
+
+        return \Illuminate\Support\Facades\DB::raw("ST_GeomFromGeoJSON({$quoted})");
+    };
+
+    \Illuminate\Support\Facades\DB::table('cities')->insert([
+        'id' => 'damascus',
+        'name_ar' => 'دمشق',
+        'name_en' => 'Damascus',
+        'center' => $geometry(['type' => 'Point', 'coordinates' => [36.29, 33.51]]),
+        'bounds' => $geometry([
+            'type' => 'Polygon',
+            'coordinates' => [[[35.8, 33.3], [36.8, 33.3], [36.8, 33.7], [35.8, 33.3]]],
+        ]),
+        'zoom' => 12,
+        'status' => 'active',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
 
     // Create a route owned by the deleting admin
     $route = Route::create([
@@ -50,8 +76,6 @@ test('deleting user account soft deletes user and delegates polls and routes to 
         'status' => 'published',
         'user_id' => $admin->id,
     ]);
-
-    \Illuminate\Support\Facades\Schema::enableForeignKeyConstraints();
 
     // Perform delete account action
     $this->actingAs($admin)

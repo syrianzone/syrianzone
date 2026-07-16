@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import {
+  Bookmark,
   Church,
   Ghost,
-  Heart,
   Landmark,
   MapPin,
-  MessageCircle,
   Mountain,
   Palette,
   Store,
@@ -56,12 +55,8 @@ export function PlaceCard(props: { place: PlaceListItem; onClick: (id: number) =
         <Badge variant="secondary" className="mt-1">{CATEGORY_LABELS[place.category]}</Badge>
         <div className="mt-1.5 flex items-center gap-3 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
-            <Heart className="h-3.5 w-3.5" />
-            <span dir="ltr">{place.likes_count}</span>
-          </span>
-          <span className="flex items-center gap-1">
-            <MessageCircle className="h-3.5 w-3.5" />
-            <span dir="ltr">{place.comments_count}</span>
+            <Bookmark className="h-3.5 w-3.5" />
+            <span dir="ltr">{place.saves_count}</span>
           </span>
         </div>
       </div>

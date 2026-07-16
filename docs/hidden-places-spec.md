@@ -2,9 +2,9 @@
 
 ## 1. THESIS
 
-"Hidden Places" (أماكن خفية) is a map-first community feature at `/places` where logged-in users pin hidden Syrian locations with photos, submissions pass admin moderation before appearing on a clustered MapLibre map, and visitors browse, search, like, save, comment on, and report approved places.
+"Hidden Places" (أماكن خفية) is a map-first community feature at `/places` where logged-in users pin hidden Syrian locations with photos, submissions pass admin moderation before appearing on a clustered MapLibre map, and visitors browse, search, save, and share approved places.
 
-This document is the single contract for six parallel work packages. Every name, path, prop, and JSON key below is normative. Do not invent alternatives.
+This document is the single contract for the feature as implemented. Every name, path, prop, and JSON key below is normative. Do not invent alternatives.
 
 ## 2. HOUSE CONVENTIONS (follow exactly, do not re-derive from the codebase)
 
@@ -30,103 +30,68 @@ export default function Index() {
 ```
 
 - Auth in React: `const { user, isAdmin } = useAuth()` from `@/Contexts/AuthContext` (available under MainLayout). Login prompt is a plain link: `<a href="/auth/google">تسجيل الدخول عبر جوجل</a>`. No login page exists.
-- HTTP client: the shared instance `import axios from '@/lib/axios'` (withCredentials + XSRF already configured). Never use raw fetch for API calls. All Places components call the typed client in `resources/js/Pages/Places/_lib/api.ts`, never axios directly (exception: the api.ts module itself).
-- UI components: import from `@/Components/ui/*` (button, card, dialog, sheet, input, textarea, select, badge, avatar, alert, tabs, separator, scroll-area, label). Do NOT import from `Components/sycn`. No toast library: feedback uses `<Alert variant="default|destructive">` inline.
+- HTTP client: the shared instance `import axios from '@/lib/axios'` (withCredentials + XSRF already configured). Never use raw fetch for API calls. All Places components call the typed client in `resources/js/Pages/Places/_lib/api.ts`, never axios directly (exceptions: the api.ts module itself, and the Lightbox photo downloads, which fetch static `/storage/...` files, not API endpoints).
+- UI components: import from `@/Components/ui/*` (button, card, dialog, sheet, input, textarea, select, badge, avatar, alert, separator, scroll-area, label). Do NOT import from `Components/sycn`. No toast library: feedback uses `<Alert variant="default|destructive">` inline or a transient icon/label swap.
 - Icons: lucide-react. Theme: rely on tokens (`bg-background`, `text-foreground`, `text-primary`, `bg-card`, `text-muted-foreground`, `border-border`, `bg-accent/50`, `destructive`). Never hardcode colors; dark mode is automatic via `data-theme`.
 - Map style: `'/styles/styles/dark-matter.json'` (local, no API key). MapLibre v5 is already a dependency.
 - Backend validation: inline `$request->validate(['field' => 'required|string|max:255'])` pipe-string rules in controllers. No FormRequest classes, no Policies, no API Resources: match the codebase. Guard checks return early JSON: `return response()->json(['message' => '...'], 403);`.
 - Response codes: 201 create, 204 delete (`response()->json(null, 204)`), 400 invalid transition, 403 forbidden, 404 missing, 422 validation (automatic), 429 throttled. Error key is `message`.
 - Models: explicit `$fillable`, sparse `$casts`, one-line relation methods, `HasFactory`.
-- Migrations: anonymous class, `up()`/`down()` with `Schema::dropIfExists`, `foreignId(...)->constrained()->cascadeOnDelete()`, `enum` for status columns, `timestamps()`. SQLite AND MySQL portable: no spatial functions, no SQLite-only SQL, no generated columns.
+- Migrations: anonymous class, `up()`/`down()`, `foreignId(...)->constrained()->cascadeOnDelete()`, `enum` for status columns, `timestamps()`. SQLite AND MySQL portable: no spatial functions, no SQLite-only SQL, no generated columns. Shipped migrations are never edited; schema removals happen through new drop migrations.
 - Tests: Pest closures in `tests/Feature/`, `RefreshDatabase` is global via `tests/Pest.php`. Style: `test('can list approved places', function () { ... });`, `$this->getJson()/postJson()`, `assertOk/assertCreated/assertJsonPath/assertJsonCount/assertDatabaseHas`, `actingAs(User::factory()->create(['role' => 'user']))`. WARNING: `UserFactory` defaults `role` to `'admin'`; every test that means a regular user MUST pass `['role' => 'user']` explicitly or admin-gating tests silently pass for the wrong reason. Rate-limit tests loop N+1 requests and assert 429.
-- Routing split: public reads live in `routes/api.php` (no session needed, but `statefulApi()` means `$request->user()` still resolves when a session cookie is present). All writes (user and admin) live in `routes/web.php` under the existing `Route::middleware('auth')->group()` so they get session + CSRF. Only WP-INTEGRATE touches route files.
+- Routing split: public reads live in `routes/api.php` (no session needed, but `statefulApi()` means `$request->user()` still resolves when a session cookie is present). All writes (user and admin) live in `routes/web.php` under the existing `Route::middleware('auth')->group()` so they get session + CSRF.
 - GeoJSON coordinates are `[lng, lat]`. Database columns and all non-GeoJSON API JSON use explicit `lat` and `lng` keys.
 
 ## 3. DATA MODEL
 
-### 3.1 Migrations (WP-SCAFFOLD)
+### 3.1 Schema
 
-Six files in `database/migrations/`, prefix `2026_07_15_1000NN_` (NN orders them):
+Live tables: `places`, `place_photos`, `place_saves`.
 
-**`2026_07_15_100001_create_places_table.php`**
+Likes, comments, and reports were removed from the product. The original create migrations (prefix `2026_07_15_1000NN_`) remain in the tree because production ran them; the `2026_07_16_2000NN_` drop migrations remove `place_likes`, `place_comments`, and `place_reports`, and drop the `likes_count` and `comments_count` counter columns from `places`. Their `down()` methods recreate the originals exactly.
 
-```php
-Schema::create('places', function (Blueprint $table) {
-  $table->id();
-  $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-  $table->string('name', 160);
-  $table->string('category', 32)->index();
-  $table->text('description');
-  $table->decimal('lat', 10, 7);
-  $table->decimal('lng', 10, 7);
-  $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
-  $table->text('rejection_reason')->nullable();
-  $table->unsignedInteger('likes_count')->default(0);
-  $table->unsignedInteger('saves_count')->default(0);
-  $table->unsignedInteger('comments_count')->default(0);
-  $table->timestamp('approved_at')->nullable();
-  $table->timestamps();
-  $table->index(['lat', 'lng']);
-  $table->index(['status', 'category']);
-});
-```
-
-**`2026_07_15_100002_create_place_photos_table.php`**
+**`places`** (after `2026_07_16_200004_drop_place_counters_from_places_table.php`)
 
 ```php
-Schema::create('place_photos', function (Blueprint $table) {
-  $table->id();
-  $table->foreignId('place_id')->constrained()->cascadeOnDelete();
-  $table->string('original_path');
-  $table->string('display_path');
-  $table->string('thumb_path');
-  $table->unsignedSmallInteger('sort')->default(0);
-  $table->timestamps();
-});
+$table->id();
+$table->foreignId('user_id')->constrained()->cascadeOnDelete();
+$table->string('name', 160);
+$table->string('category', 32)->index();
+$table->text('description');
+$table->decimal('lat', 10, 7);
+$table->decimal('lng', 10, 7);
+$table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
+$table->text('rejection_reason')->nullable();
+$table->unsignedInteger('saves_count')->default(0);
+$table->timestamp('approved_at')->nullable();
+$table->timestamps();
+$table->index(['lat', 'lng']);
+$table->index(['status', 'category']);
 ```
 
-**`2026_07_15_100003_create_place_likes_table.php`**
+**`place_photos`**
 
 ```php
-Schema::create('place_likes', function (Blueprint $table) {
-  $table->id();
-  $table->foreignId('place_id')->constrained()->cascadeOnDelete();
-  $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-  $table->timestamps();
-  $table->unique(['place_id', 'user_id']);
-});
+$table->id();
+$table->foreignId('place_id')->constrained()->cascadeOnDelete();
+$table->string('original_path');
+$table->string('display_path');
+$table->string('thumb_path');
+$table->unsignedSmallInteger('sort')->default(0);
+$table->timestamps();
 ```
 
-**`2026_07_15_100004_create_place_saves_table.php`**: identical to place_likes with table name `place_saves`.
-
-**`2026_07_15_100005_create_place_comments_table.php`**
+**`place_saves`**
 
 ```php
-Schema::create('place_comments', function (Blueprint $table) {
-  $table->id();
-  $table->foreignId('place_id')->constrained()->cascadeOnDelete();
-  $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-  $table->string('body', 500);
-  $table->timestamps();
-});
+$table->id();
+$table->foreignId('place_id')->constrained()->cascadeOnDelete();
+$table->foreignId('user_id')->constrained()->cascadeOnDelete();
+$table->timestamps();
+$table->unique(['place_id', 'user_id']);
 ```
 
-**`2026_07_15_100006_create_place_reports_table.php`**
-
-```php
-Schema::create('place_reports', function (Blueprint $table) {
-  $table->id();
-  $table->foreignId('place_id')->constrained()->cascadeOnDelete();
-  $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-  $table->string('reason', 32);
-  $table->text('details')->nullable();
-  $table->enum('status', ['open', 'resolved', 'dismissed'])->default('open');
-  $table->timestamps();
-  $table->unique(['place_id', 'user_id']);
-});
-```
-
-### 3.2 Models (WP-SCAFFOLD, all in `app/Models/`)
+### 3.2 Models (`app/Models/`)
 
 **`Place.php`**
 
@@ -135,37 +100,30 @@ class Place extends Model {
   use HasFactory;
   protected $fillable = ['user_id', 'name', 'category', 'description', 'lat', 'lng', 'status', 'rejection_reason', 'approved_at'];
   protected $casts = ['lat' => 'float', 'lng' => 'float', 'approved_at' => 'datetime'];
-  public function user() { return $this->belongsTo(User::class); }
+  public function user() { return $this->belongsTo(User::class)->withTrashed(); }
   public function photos() { return $this->hasMany(PlacePhoto::class)->orderBy('sort'); }
-  public function likes() { return $this->hasMany(PlaceLike::class); }
   public function saves() { return $this->hasMany(PlaceSave::class); }
-  public function comments() { return $this->hasMany(PlaceComment::class); }
-  public function reports() { return $this->hasMany(PlaceReport::class); }
 }
 ```
 
 **`PlacePhoto.php`**: fillable `['place_id', 'original_path', 'display_path', 'thumb_path', 'sort']`, relation `place()`. No accessors and no appends: controllers build URLs inline with `Storage::url($photo->thumb_path)` / `Storage::url($photo->display_path)`.
 
-**`PlaceLike.php`** / **`PlaceSave.php`**: fillable `['place_id', 'user_id']`, relations `place()`, `user()`.
+**`PlaceSave.php`**: fillable `['place_id', 'user_id']`, relations `place()`, `user()`.
 
-**`PlaceComment.php`**: fillable `['place_id', 'user_id', 'body']`, relations `place()`, `user()`.
+The `saves_count` counter cache is maintained by controllers with `increment()`/`decrement()` on write, never recomputed on read.
 
-**`PlaceReport.php`**: fillable `['place_id', 'user_id', 'reason', 'details', 'status']`, relations `place()`, `user()`.
+### 3.3 Factories (`database/factories/`)
 
-Counter caches (`likes_count`, `saves_count`, `comments_count`) are maintained by controllers with `increment()`/`decrement()` on write, never recomputed on read.
-
-### 3.3 Factories (WP-SCAFFOLD, `database/factories/`)
-
-`PlaceFactory.php` (name: fake city word, category random key from section 11, description: sentence, lat between 32.5 and 37.0, lng between 35.8 and 42.0, status `'pending'`, `user_id => User::factory()`), `PlacePhotoFactory.php`, `PlaceCommentFactory.php`. Factory states on PlaceFactory: `approved()` (status approved + approved_at now), `rejected()`.
+`PlaceFactory.php` (name: fake city word, category random key from section 11, description: sentence, lat between 32.5 and 37.0, lng between 35.8 and 42.0, status `'pending'`, `user_id => User::factory()`), `PlacePhotoFactory.php`. Factory states on PlaceFactory: `approved()` (status approved + approved_at now), `rejected()`.
 
 ## 4. IMAGE PIPELINE
 
-- Library: `intervention/image` v3 with GD driver. WP-SCAFFOLD adds `"intervention/image": "^3.9"` to composer.json require and runs `composer update intervention/image` (never touch other deps).
-- Disk: `public` (`storage/app/public`), URLs `/storage/...` via `Storage::url()`. WP-INTEGRATE runs `php artisan storage:link` (the symlink does not exist yet).
+- Library: `intervention/image` v3 with GD driver.
+- Disk: `public` (`storage/app/public`), URLs `/storage/...` via `Storage::url()`. `php artisan storage:link` must have run.
 - Paths (all under `places/{place_id}/`): original `places/{id}/{uuid}.{ext}` (ext = original extension, stored untouched for future reprocessing), display `places/{id}/{uuid}_display.webp`, thumb `places/{id}/{uuid}_thumb.webp`.
 - Sizes: thumb = 400x400 cover crop, webp quality 75. Display = scaled down so the longest side is at most 1600px (never upscaled), webp quality 80. Use `ImageManager::withDriver(\Intervention\Image\Drivers\Gd\Driver::class)`, `cover(400, 400)` and `scaleDown(width: 1600, height: 1600)`, `toWebp(quality)`.
-- Validation (in controller, exact rules): `'photos' => 'required|array|min:1|max:5'`, `'photos.*' => 'required|image|mimes:jpg,jpeg,png,webp|max:8192|dimensions:min_width=200,min_height=200'`. Laravel's `image`/`mimes` rules sniff content via fileinfo, not extension: this is the required mime check.
-- Service class (WP-SCAFFOLD): `app/Services/PlaceImageService.php`
+- Validation (in controller, exact rules): `'photos' => 'required|array|min:1|max:5'`, `'photos.*' => 'required|image|mimes:jpg,jpeg,png,webp|max:8192|dimensions:min_width=200,min_height=200,max_width=6000,max_height=6000'`. Laravel's `image`/`mimes` rules sniff content via fileinfo, not extension: this is the required mime check. The max dimensions cap decompression bombs before GD allocates the bitmap.
+- Service class: `app/Services/PlaceImageService.php`
 
 ```php
 namespace App\Services;
@@ -186,9 +144,9 @@ Wrap GD processing in try/catch; on failure delete any files already written and
 
 ## 5. API CONTRACT
 
-All JSON keys are snake_case. `PLACE_LIST_ITEM`, `PLACE_DETAIL`, `COMMENT`, `MY_PLACE`, `ADMIN_PLACE`, `REPORT` denote the shapes defined at the end of this section. Throttle middleware shown per route is registered by WP-INTEGRATE; controllers must not assume it exists (server-side validation still guards everything).
+All JSON keys are snake_case. `PLACE_LIST_ITEM`, `PLACE_DETAIL`, `MY_PLACE`, `ADMIN_PLACE` denote the shapes defined at the end of this section.
 
-### 5.1 Public reads (routes/api.php, nested group inside the existing v1 group with `throttle:60,1` applied to the NEW routes only; never add middleware to the whole v1 group, that would change the existing transit endpoints)
+### 5.1 Public reads (routes/api.php, nested group inside the existing v1 group with `throttle:60,1` applied to these routes only; never add middleware to the whole v1 group, that would change the existing transit endpoints)
 
 Register `/places/map` and `/places/nearby` BEFORE `/places/{id}`, and constrain every `{id}` route with `->whereNumber('id')` so literal segments never match the show route.
 
@@ -209,7 +167,7 @@ Register `/places/map` and `/places/nearby` BEFORE `/places/{id}`, and constrain
 
 `thumb_url` is the first photo's thumb or `null`. Coordinates are `[lng, lat]`.
 
-**`GET /api/v1/places`** -> `PlaceController@index`. Validate: `'category' => 'sometimes|string|in:historical,natural,cultural,religious,abandoned,viewpoint,market,other'`, `'q' => 'sometimes|string|max:100'` (matches `name LIKE %q% OR description LIKE %q%`), `'sort' => 'sometimes|in:newest,popular'` (`newest` default, `popular` = likes_count desc), plus `page`. Approved only, `->paginate(20)`, standard Laravel paginator JSON (`data`, `current_page`, `last_page`, `total`, ...), each `data` item is `PLACE_LIST_ITEM`.
+**`GET /api/v1/places`** -> `PlaceController@index`. Validate: `'category' => 'sometimes|string|in:historical,natural,cultural,religious,abandoned,viewpoint,market,other'`, `'q' => 'sometimes|string|max:100'` (matches `name LIKE %q% OR description LIKE %q%`), `'sort' => 'sometimes|in:newest,popular'` (`newest` default, `popular` = saves_count desc, newest as tiebreaker), plus `page`. Approved only, `->paginate(20)`, standard Laravel paginator JSON (`data`, `current_page`, `last_page`, `total`, ...), each `data` item is `PLACE_LIST_ITEM`.
 
 **`GET /api/v1/places/nearby`** -> `PlaceController@nearby`. Params: `lat` required numeric -90..90, `lng` required numeric -180..180, `radius_km` optional numeric 0.05..25 default 2, `include_pending` optional boolean default false (when true, the requester's OWN pending places are included: used by the duplicate check so users see their own not-yet-approved submissions). `include_pending` is honored ONLY when `$request->user()` is non-null and never exposes other users' pending places; for guests it is silently ignored (approved only). Without this scoping, any self-registered account could enumerate unmoderated submissions that `show` deliberately 404s. Implementation is portable: bounding-box SQL prefilter then haversine in PHP:
 
@@ -221,15 +179,11 @@ $lngDelta = $radiusKm / (111.045 * max(cos(deg2rad($lat)), 0.01));
 
 Haversine (meters): `6371000 * 2 * asin(sqrt(sin²(Δlat/2) + cos(lat1)cos(lat2)sin²(Δlng/2)))`. Response 200: `{ "places": [ PLACE_LIST_ITEM + "distance_m": 154 ] }`, sorted nearest first, max 20.
 
-**`GET /api/v1/places/{id}`** -> `PlaceController@show`. `id` numeric. 200 with `PLACE_DETAIL` if approved; the owner gets their own pending/rejected place, users with role admin/superadmin get any place regardless of status; everyone else gets 404. `liked_by_me`/`saved_by_me` computed from `$request->user()` (false when guest).
-
-**`GET /api/v1/places/{id}/comments`** -> `PlaceEngagementController@comments`. `->paginate(20)` newest first, `data` items are `COMMENT`.
+**`GET /api/v1/places/{id}`** -> `PlaceController@show`. `id` numeric. 200 with `PLACE_DETAIL` if approved; the owner gets their own pending/rejected place, users with role admin/superadmin get any place regardless of status; everyone else gets 404. `saved_by_me` computed from `$request->user()` (false when guest).
 
 ### 5.2 Authenticated writes (routes/web.php, inside the existing `Route::middleware('auth')->group()`)
 
-Every write route in 5.2 and 5.3 gets throttle middleware: `throttle:60,1` unless a stricter one is stated on the route (submit `5,60`, comment `10,1`, report `5,60`).
-
-**`POST /api/v1/places`** -> `PlaceController@store`. Middleware `throttle:5,60` (5 submissions per hour per user; keyed by default throttle logic, user id when authed). Multipart form. Guard: `if ($request->user()->is_banned) return response()->json(['message' => 'تم حظر حسابك من المساهمة'], 403);`. Validation:
+**`POST /api/v1/places`** -> `PlaceController@store`. Middleware `throttle:20,60` (coarse abuse shield only; the real quota is 5 created places per hour counted in the controller, so failed validation attempts don't lock users out). Multipart form. Guard: `if ($request->user()->is_banned) return response()->json(['message' => 'تم حظر حسابك من المساهمة'], 403);`. Validation:
 
 ```php
 $request->validate([
@@ -245,25 +199,15 @@ $request->validate([
 
 (lat/lng bounds roughly box Syria; duplicate suggestion is a client-side step, the server does not block duplicates.) Creates place with `status => 'pending'` and photos via `PlaceImageService` inside `DB::transaction`. Response 201: `{ "id": 12, "status": "pending" }`.
 
-**`GET /api/v1/my/places`** -> `PlaceController@mine`. Own places, newest first, `->paginate(20)`, `data` items are `MY_PLACE` (includes `status` and `rejection_reason`: this closes the Transit gap where submitters never see rejection reasons).
+**`GET /api/v1/my/places`** -> `PlaceController@mine`. Middleware `throttle:60,1`. Own places, newest first, `->paginate(20)`, `data` items are `MY_PLACE` (includes `status` and `rejection_reason`).
 
-**`GET /api/v1/my/saves`** -> `PlaceEngagementController@mySaves`. Approved places the user saved, `->paginate(20)`, `data` items are `PLACE_LIST_ITEM`.
+**`GET /api/v1/my/saves`** -> `PlaceEngagementController@mySaves`. Middleware `throttle:60,1`. Approved places the user saved, ordered by save time (newest save first, via a join on `place_saves.created_at`, not by place age), `->paginate(20)`, `data` items are `PLACE_LIST_ITEM`.
 
-**`POST /api/v1/places/{id}/like`** -> `PlaceEngagementController@like`. Middleware `throttle:60,1`. `firstOrCreate` on the unique pair; increment `likes_count` only when newly created. 200: `{ "liked": true, "likes_count": 5 }`.
+**`POST /api/v1/places/{id}/save`** / **`DELETE /api/v1/places/{id}/save`** -> `PlaceEngagementController@save` / `@unsave`. Middleware `throttle:60,1`. `firstOrCreate` on the unique pair; increment `saves_count` only when newly created, decrement only when the delete actually removed a row (guard against double-unsave driving the counter negative). 200: `{ "saved": true|false, "saves_count": n }`. Save targets must be approved places, else 404.
 
-**`DELETE /api/v1/places/{id}/like`** -> `PlaceEngagementController@unlike`. Decrement `likes_count` only when the delete actually removed a row (guard against double-unlike driving the counter negative). 200: `{ "liked": false, "likes_count": 4 }`.
+There are no like, comment, or report endpoints. `POST/DELETE /api/v1/places/{id}/like`, `GET/POST /api/v1/places/{id}/comments`, `DELETE /api/v1/place-comments/{id}`, and `POST /api/v1/places/{id}/report` were removed and now 404.
 
-**`POST /api/v1/places/{id}/save`** / **`DELETE /api/v1/places/{id}/save`** -> `PlaceEngagementController@save` / `@unsave`. Same semantics as like/unlike (firstOrCreate, decrement only on actual delete): `{ "saved": true|false, "saves_count": n }`.
-
-Like/save/comment/report targets must be approved places, else 404.
-
-**`POST /api/v1/places/{id}/comments`** -> `PlaceEngagementController@storeComment`. Middleware `throttle:10,1`. Banned-user guard (403). Validation `'body' => 'required|string|max:500'`. Increments `comments_count`. 201: `COMMENT`.
-
-**`DELETE /api/v1/place-comments/{id}`** -> `PlaceEngagementController@destroyComment`. Owner or role admin/superadmin (inline check), else 403. Decrements `comments_count`. 204.
-
-**`POST /api/v1/places/{id}/report`** -> `PlaceEngagementController@report`. Middleware `throttle:5,60`. Banned-user guard (403, same message as submit). Validation: `'reason' => 'required|string|in:spam,wrong_info,inappropriate,duplicate,other'`, `'details' => 'nullable|string|max:1000'`. Duplicate report by same user: 200 `{ "message": "تم استلام بلاغك مسبقاً" }` (idempotent, no new row). Otherwise 201: `{ "message": "تم استلام البلاغ" }`.
-
-### 5.3 Admin moderation (routes/web.php, inside `auth` group, nested `Route::middleware('admin')`)
+### 5.3 Admin moderation (routes/web.php, inside `auth` group, nested `Route::middleware('admin')`, group throttle `60,1`)
 
 **`GET /api/v1/admin/places?status=pending|approved|rejected|all`** -> `PlaceAdminController@index`. Validate `'status' => 'sometimes|in:pending,approved,rejected,all'`, default `pending`. Newest first, `->paginate(20)`, `data` items are `ADMIN_PLACE`.
 
@@ -273,13 +217,11 @@ Like/save/comment/report targets must be approved places, else 404.
 
 **`DELETE /api/v1/admin/places/{id}`** -> `PlaceAdminController@destroy`. Takedown of any place: deletes photo files via `PlaceImageService::deleteFiles`, deletes row (cascades), `Cache::forget('places:map')`. 204.
 
-**`GET /api/v1/admin/place-reports?status=open|resolved|dismissed|all`** -> `PlaceAdminController@reports`. Validate `'status' => 'sometimes|in:open,resolved,dismissed,all'`, default `open`, `->paginate(20)`, `data` items are `REPORT`.
-
-**`POST /api/v1/admin/place-reports/{id}/resolve`** -> `PlaceAdminController@resolveReport`. Validation `'action' => 'required|string|in:resolve,dismiss'`. Sets report status to `resolved`/`dismissed`. 200: `{ "id": 3, "status": "resolved" }`.
+`GET /api/v1/admin/place-reports` and `POST /api/v1/admin/place-reports/{id}/resolve` were removed and now 404.
 
 ### 5.4 Inertia pages (routes/web.php)
 
-- `GET /places` -> `PlaceController@renderIndex` -> `Inertia::render('Places/Index')`. Public.
+- `GET /places` -> `PlaceController@renderIndex` -> `Inertia::render('Places/Index')`. Public. The route ignores query params; the client reads `?place={id}` on load (section 6.2, deep link).
 - `GET /admin/places` -> `PlaceAdminController@renderIndex` -> `Inertia::render('Admin/Places/Index')`. Inside `auth` + `admin` group.
 
 ### 5.5 JSON shapes (normative)
@@ -288,28 +230,19 @@ Like/save/comment/report targets must be approved places, else 404.
 // PLACE_LIST_ITEM
 { "id": 12, "name": "مقهى النوفرة", "category": "cultural", "description": "...",
   "lat": 33.5104, "lng": 36.2913, "thumb_url": "/storage/places/12/abc_thumb.webp",
-  "likes_count": 4, "saves_count": 2, "comments_count": 7 }
+  "saves_count": 2 }
 
 // PLACE_DETAIL = PLACE_LIST_ITEM plus:
 { "status": "approved",
   "user": { "id": 3, "name": "أحمد", "avatar_url": "https://..." },
   "photos": [ { "id": 1, "thumb_url": "/storage/...", "display_url": "/storage/...", "sort": 0 } ],
-  "liked_by_me": false, "saved_by_me": false, "created_at": "2026-07-15T10:00:00.000000Z" }
-
-// COMMENT
-{ "id": 9, "body": "مكان رائع", "created_at": "2026-07-15T10:00:00.000000Z",
-  "user": { "id": 3, "name": "أحمد", "avatar_url": "https://..." } }
+  "saved_by_me": false, "created_at": "2026-07-15T10:00:00.000000Z" }
 
 // MY_PLACE = PLACE_LIST_ITEM plus:
 { "status": "rejected", "rejection_reason": "صور غير واضحة", "created_at": "..." }
 
 // ADMIN_PLACE = PLACE_DETAIL plus:
-{ "rejection_reason": null, "reports_count": 0 }
-
-// REPORT
-{ "id": 3, "reason": "spam", "details": null, "status": "open", "created_at": "...",
-  "user": { "id": 3, "name": "أحمد" },
-  "place": { "id": 12, "name": "مقهى النوفرة", "status": "approved" } }
+{ "rejection_reason": null }
 ```
 
 Shaping is done inline with `->map(fn($p) => [...])` in controllers (no API Resources). `thumb_url`/`display_url` are built with `Storage::url()`.
@@ -318,7 +251,7 @@ Shaping is done inline with `->map(fn($p) => [...])` in controllers (no API Reso
 
 Stack: MapLibre GL (imperative init, Transit "Pattern B"), style `'/styles/styles/dark-matter.json'`, built-in GeoJSON clustering (`cluster: true`). No TanStack Query for this feature: plain typed api client + useState/useEffect (matches most Pages). Zustand not needed; `Index.tsx` owns state and passes props.
 
-### 6.1 Shared modules (WP-SCAFFOLD owns; every other frontend WP imports from these, exactly these)
+### 6.1 Shared modules (every component imports from these, exactly these)
 
 **`resources/js/Pages/Places/_lib/types.ts`** exports:
 
@@ -331,22 +264,15 @@ export interface PlacePhoto { id: number; thumb_url: string; display_url: string
 export interface PlaceListItem {
   id: number; name: string; category: PlaceCategory; description: string;
   lat: number; lng: number; thumb_url: string | null;
-  likes_count: number; saves_count: number; comments_count: number;
+  saves_count: number;
 }
 export interface NearbyPlace extends PlaceListItem { distance_m: number; }
 export interface PlaceDetail extends PlaceListItem {
   status: PlaceStatus; user: PlaceUser; photos: PlacePhoto[];
-  liked_by_me: boolean; saved_by_me: boolean; created_at: string;
+  saved_by_me: boolean; created_at: string;
 }
 export interface MyPlace extends PlaceListItem { status: PlaceStatus; rejection_reason: string | null; created_at: string; }
-export interface AdminPlace extends PlaceDetail { rejection_reason: string | null; reports_count: number; }
-export interface PlaceComment { id: number; body: string; created_at: string; user: PlaceUser; }
-export interface PlaceReport {
-  id: number; reason: string; details: string | null;
-  status: 'open' | 'resolved' | 'dismissed'; created_at: string;
-  user: { id: number; name: string };
-  place: { id: number; name: string; status: PlaceStatus };
-}
+export interface AdminPlace extends PlaceDetail { rejection_reason: string | null; }
 export interface PlaceFeatureProps { id: number; name: string; category: PlaceCategory; thumb_url: string | null; }
 export interface PlaceFeature {
   type: 'Feature';
@@ -376,20 +302,12 @@ export const api = {
   submitPlace(data: { name: string; category: PlaceCategory; description: string; lat: number; lng: number; photos: File[] }): Promise<{ id: number; status: 'pending' }>, // builds FormData, photos appended as photos[]
   myPlaces(page?: number): Promise<Paginated<MyPlace>>,
   mySaves(page?: number): Promise<Paginated<PlaceListItem>>,
-  like(id: number): Promise<{ liked: boolean; likes_count: number }>,
-  unlike(id: number): Promise<{ liked: boolean; likes_count: number }>,
   save(id: number): Promise<{ saved: boolean; saves_count: number }>,
   unsave(id: number): Promise<{ saved: boolean; saves_count: number }>,
-  listComments(placeId: number, page?: number): Promise<Paginated<PlaceComment>>,
-  addComment(placeId: number, body: string): Promise<PlaceComment>,
-  deleteComment(commentId: number): Promise<void>,
-  report(placeId: number, reason: string, details?: string): Promise<{ message: string }>,
   adminListPlaces(status: 'pending' | 'approved' | 'rejected' | 'all', page?: number): Promise<Paginated<AdminPlace>>,
   adminApprove(id: number): Promise<{ id: number; status: string }>,
   adminReject(id: number, reason: string | null): Promise<{ id: number; status: string }>,
   adminDeletePlace(id: number): Promise<void>,
-  adminListReports(status: 'open' | 'resolved' | 'dismissed' | 'all', page?: number): Promise<Paginated<PlaceReport>>,
-  adminResolveReport(id: number, action: 'resolve' | 'dismiss'): Promise<{ id: number; status: string }>,
 };
 export function extractError(e: unknown): string; // error.response?.data.message ?? error.response?.data.error ?? 'حدث خطأ، حاول مجدداً'
 ```
@@ -397,49 +315,60 @@ export function extractError(e: unknown): string; // error.response?.data.messag
 ### 6.2 Component tree and prop contracts
 
 ```
-Pages/Places/Index.tsx (WP-MAP)                       route GET /places
-├─ PlacesMap            _components/PlacesMap.tsx      (WP-MAP)
-├─ FilterBar            _components/FilterBar.tsx      (WP-MAP)
-├─ PlacesPanel          _components/PlacesPanel.tsx    (WP-CARDS)
-│  ├─ PlaceCard         _components/PlaceCard.tsx      (WP-CARDS)
-│  └─ PlaceDetailView   _components/PlaceDetailView.tsx (WP-CARDS)
-│     ├─ PhotoGallery   _components/PhotoGallery.tsx   (WP-CARDS)
-│     ├─ EngagementBar  _components/EngagementBar.tsx  (WP-CARDS)
-│     ├─ ReportButton   _components/ReportButton.tsx   (WP-CARDS)
-│     └─ CommentsSection _components/CommentsSection.tsx (WP-CARDS)
-└─ SubmitSheet          _components/SubmitSheet.tsx    (WP-SUBMIT)
-   ├─ DuplicateSuggestions _components/DuplicateSuggestions.tsx (WP-SUBMIT)
-   └─ PhotoPicker       _components/PhotoPicker.tsx    (WP-SUBMIT)
+Pages/Places/Index.tsx                                route GET /places
+├─ PlacesMap            _components/PlacesMap.tsx
+├─ FilterBar            _components/FilterBar.tsx
+├─ PlacesPanel          _components/PlacesPanel.tsx
+│  ├─ PlaceCard         _components/PlaceCard.tsx
+│  └─ PlaceDetailView   _components/PlaceDetailView.tsx
+│     ├─ PhotoGallery   _components/PhotoGallery.tsx
+│     │  └─ Lightbox    _components/Lightbox.tsx
+│     └─ EngagementBar  _components/EngagementBar.tsx
+└─ SubmitSheet          _components/SubmitSheet.tsx
+   ├─ DuplicateSuggestions _components/DuplicateSuggestions.tsx
+   └─ PhotoPicker       _components/PhotoPicker.tsx
 
-Pages/Admin/Places/Index.tsx (WP-ADMIN)               route GET /admin/places
-├─ PlaceReviewCard      Pages/Admin/Places/PlaceReviewCard.tsx (WP-ADMIN)
-├─ RejectDialog         Pages/Admin/Places/RejectDialog.tsx    (WP-ADMIN)
-└─ ReportsTab           Pages/Admin/Places/ReportsTab.tsx      (WP-ADMIN)
+Pages/Admin/Places/Index.tsx                          route GET /admin/places
+├─ PlaceReviewCard      Pages/Admin/Places/PlaceReviewCard.tsx
+└─ RejectDialog         Pages/Admin/Places/RejectDialog.tsx
 ```
 
 All `_components/` files live in `resources/js/Pages/Places/_components/`. Every component below is a NAMED export matching its file name (e.g. `export function PlacesMap(...)`), except the two page `Index.tsx` files which are default exports.
 
-**Layout (WP-MAP implements in Index.tsx)**: full-viewport map (`h-[calc(100dvh-4rem)]` under the Navbar, `relative`), FilterBar floating at top center (`absolute top-3 inset-x-3 z-10 max-w-xl mx-auto`), PlacesPanel as a side panel on desktop (`absolute top-0 right-0 h-full w-96` since RTL puts the panel on the right) and a bottom sheet on mobile (fixed bottom, drag-free, two snap states via a `expanded` boolean). An "add place" hint chip explains: انقر على الخريطة لإضافة مكان. Map click while the detail is open first closes the detail; second click opens SubmitSheet with the clicked point.
+**Layout (Index.tsx)**: full-viewport map (`h-[calc(100dvh-4rem)]` under the Navbar, `relative`), FilterBar floating at top center (`absolute top-3 inset-x-3 z-10 max-w-xl mx-auto`), PlacesPanel as a side panel on desktop (`absolute top-0 right-0 h-full w-96` since RTL puts the panel on the right) and a bottom sheet on mobile (fixed bottom, drag-free, two snap states via a `expanded` boolean).
 
-**Index.tsx state ownership (WP-MAP)**: `features: PlaceFeatureCollection | null` (from `api.mapData()` on mount), `category: PlaceCategory | null`, `query: string`, `selectedId: number | null`, `submitPoint: LatLng | null`, `submitOpen: boolean`, `listPlaces: Paginated<PlaceListItem> | null` (from `api.listPlaces`, refetched on filter change with 300ms debounce). Filtered features (category + query on `properties.name`) are computed client-side and passed to PlacesMap. After a successful submission (`onSubmitted`), show an inline `<Alert>` "تم إرسال المكان وسيظهر بعد الموافقة".
+**Index.tsx state ownership**: `features: PlaceFeatureCollection | null` (from `api.mapData()` on mount), `category: PlaceCategory | null`, `query: string`, `selectedId: number | null`, `addMode: boolean`, `focus: { lng: number; lat: number; zoom?: number; key: number } | null`, `highlight: LatLng | null`, `submitPoint: LatLng | null`, `submitOpen: boolean`, `listPlaces: Paginated<PlaceListItem> | null` (from `api.listPlaces`, refetched on filter change with 300ms debounce). Filtered features (category + query on `properties.name`) are computed client-side and passed to PlacesMap. After a successful submission (`onSubmitted`), show an inline `<Alert>` "تم إرسال المكان وسيظهر بعد الموافقة".
 
-**`PlacesMap`** (WP-MAP):
+**Add-mode (explicit submission entry, replaces bare-click submit)**:
+- A FAB floats over the map (primary Button, `absolute z-10`, clear of the panel, the bottom-left map controls, and the collapsed mobile sheet). Idle label: أضف مكاناً with a Plus icon. While active: إلغاء الإضافة with an X icon; pressing again cancels.
+- While active, a hint chip near the top bar reads: انقر على الخريطة لتحديد الموقع. Escape cancels add-mode (window keydown listener registered only while addMode is true).
+- Map clicks while addMode is false only close an open detail (`setSelectedId(null)`); they NEVER open the submit sheet. While addMode is true, a click is checked against the Syria bounds (notice النقطة خارج حدود سوريا on failure, staying in add-mode); on success `setSubmitPoint(point)`, `setSubmitOpen(true)`, `setAddMode(false)`. Pin clicks keep opening the detail and drop add-mode when it was active.
+- PlacesMap shows a crosshair cursor while addMode is true, including while hovering pins.
+
+**Deep link (`?place={id}`)**: on mount, Index parses `new URLSearchParams(window.location.search).get('place')`; if it is a positive integer: `setSelectedId(id)`, `setExpanded(true)` (opens PlaceDetailView, which does its own fetch), AND calls `api.getPlace(id)` for lat/lng, then flies the map to that point at zoom 15 once the map is ready. On 404/error: show the extractError notice and clear the selection. No URL rewriting or history syncing while users browse; the param is read once on load. The canonical producer of these URLs is the share button (EngagementBar).
+
+**`PlacesMap`**:
 
 ```ts
 export function PlacesMap(props: {
-  features: PlaceFeatureCollection;      // already filtered by the parent
-  selectedId: number | null;             // highlight this pin
+  features: PlaceFeatureCollection;         // already filtered by the parent
+  selectedId: number | null;                // highlight this pin
+  addMode: boolean;                         // crosshair cursor while true
+  focus: { lng: number; lat: number; zoom?: number; key: number } | null; // flyTo on key change
+  highlight: LatLng | null;                 // temporary marker (coordinate jump)
   onPinClick: (id: number) => void;
-  onMapClick: (point: LatLng) => void;   // clicks NOT on a pin or cluster
+  onMapClick: (point: LatLng) => void;      // clicks NOT on a pin or cluster
   className?: string;
 }): JSX.Element;
 ```
 
-No viewport/bounds callback: nothing consumes it (the list is filter-driven, not viewport-driven).
+Init (mirror Transit admin Index): `useRef` container + map guard, `new maplibregl.Map({ container, style: '/styles/styles/dark-matter.json', center: [38.0, 35.0], zoom: 6.2, attributionControl: false })`, add `AttributionControl({ compact: true })` + `NavigationControl` + `GeolocateControl` bottom-left (RTL page, keep controls off the panel side). On `'load'`: `map.addSource('places', { type: 'geojson', data, cluster: true, clusterRadius: 50, clusterMaxZoom: 14 })` then three layers: `clusters` (circle, paint `circle-color` step by `point_count`: `hsl(105 15% 36%)` base, larger radius steps 15/20/25 at counts 10/30), `cluster-count` (symbol, `text-field: '{point_count_abbreviated}'`, glyphs come with the style), `place-pin` (circle, filter `['!', ['has', 'point_count']]`, `circle-radius` 7 (10 when `['==', ['get', 'id'], selectedId]` via `setPaintProperty` on selection change), `circle-color '#7d8a5c'`, `circle-stroke-width 2`, `circle-stroke-color '#ffffff'`). Cluster click: `getClusterExpansionZoom` + `easeTo`. Pin click: `onPinClick(feature.properties.id)`. Plain map click (use `queryRenderedFeatures` on the three layers; empty result means background): `onMapClick({ lng, lat })`. Feature updates via `(map.getSource('places') as maplibregl.GeoJSONSource).setData(...)`. Cleanup with guarded removeLayer/removeSource in try/catch, `map.remove()` on unmount.
 
-Init (mirror Transit admin Index): `useRef` container + map guard, `new maplibregl.Map({ container, style: '/styles/styles/dark-matter.json', center: [38.0, 35.0], zoom: 6.2, attributionControl: false })`, add `AttributionControl({ compact: true })` + `NavigationControl` + `GeolocateControl` bottom-left (RTL page, keep controls off the panel side). On `'load'`: `map.addSource('places', { type: 'geojson', data, cluster: true, clusterRadius: 50, clusterMaxZoom: 14 })` then three layers: `clusters` (circle, paint `circle-color` step by `point_count`: `hsl(105 15% 36%)` base, larger radius steps 15/20/25 at counts 10/30), `cluster-count` (symbol, `text-field: '{point_count_abbreviated}'`, glyphs come with the style), `place-pin` (circle, filter `['!', ['has', 'point_count']]`, `circle-radius` 7 (10 when `['==', ['get', 'id'], selectedId]` via `setPaintProperty` on selection change), `circle-color '#7d8a5c'`, `circle-stroke-width 2`, `circle-stroke-color '#ffffff'`). Cluster click: `getClusterExpansionZoom` + `easeTo`. Pin click: `onPinClick(feature.properties.id)`. Plain map click (use `queryRenderedFeatures` on the three layers; empty result means background): `onMapClick({ lng, lat })`. Feature updates via `(map.getSource('places') as maplibregl.GeoJSONSource).setData(...)`. Cursor pointer on layer mouseenter/mouseleave. Cleanup with guarded removeLayer/removeSource in try/catch, `map.remove()` on unmount.
+Cursor: `addMode` is mirrored into a ref; an effect sets `map.getCanvas().style.cursor = addMode ? 'crosshair' : ''`. The pin mouseenter/mouseleave pointer handlers consult the ref so leaving a pin restores `'crosshair'` (not `''`) and hovering a pin during add-mode keeps `'crosshair'`.
 
-**`FilterBar`** (WP-MAP):
+Focus: an effect keyed on `focus.key` runs `map.flyTo({ center: [focus.lng, focus.lat], zoom: focus.zoom ?? 15 })`, queued until the map is ready. Highlight: a single `new maplibregl.Marker({ color: '#7d8a5c' })` at the point, removed when the prop becomes null or on unmount.
+
+**`FilterBar`** (dual search: one input handles coordinate parsing OR db search):
 
 ```ts
 export function FilterBar(props: {
@@ -447,13 +376,27 @@ export function FilterBar(props: {
   onCategoryChange: (c: PlaceCategory | null) => void;
   query: string;
   onQueryChange: (q: string) => void;
+  results: PlaceListItem[];                 // db results for the dropdown (parent-fed)
+  resultsLoading: boolean;
+  coordCandidate: LatLng | null;            // parsed coords, null when query is not coords
+  onSelectResult: (place: PlaceListItem) => void;
+  onGoToCoord: (point: LatLng) => void;
   className?: string;
 }): JSX.Element;
+
+export function parseLatLng(q: string): LatLng | null;  // exported from FilterBar.tsx
 ```
 
-Card-styled bar: search `Input` (placeholder ابحث عن مكان) + horizontally scrollable category `Badge` chips from `CATEGORIES` plus a "الكل" chip for null.
+Card-styled bar: search `Input` + horizontally scrollable category `Badge` chips from `CATEGORIES` plus a "الكل" chip for null.
 
-**`PlacesPanel`** (WP-CARDS):
+- `parseLatLng` accepts 'LAT, LNG' or 'LAT LNG' (comma and/or whitespace separated, optional surrounding whitespace, decimals optional, leading minus allowed): regex `/^\s*(-?\d{1,3}(?:\.\d+)?)[\s,]+(-?\d{1,3}(?:\.\d+)?)\s*$/` then range-check lat in [-90,90], lng in [-180,180]; null otherwise.
+- When `coordCandidate` is non-null the dropdown shows one action row الانتقال إلى النقطة (MapPin icon, coords echoed in a `dir="ltr"` span); activating it calls `onGoToCoord`.
+- Otherwise, when the query is non-empty the dropdown (absolute under the input, z above the map, Card style, aligned to the input width) lists up to 8 results: thumb-less rows with name + category Badge (`CATEGORY_LABELS`). Click calls `onSelectResult(place)`. Empty state لا توجد نتائج, spinner row while `resultsLoading`.
+- Keyboard: ArrowDown/ArrowUp move the active row (visual ring/bg-accent), Enter activates it, Escape closes the dropdown and blurs. `role="listbox"`/`role="option"` + `aria-activedescendant`. RTL correct: rows `text-right`.
+- Index feeds `results` from the existing debounced `api.listPlaces` fetch (`slice(0, 8)` of `listPlaces.data` when the query is non-empty), `resultsLoading` = the list loading flag, `coordCandidate = parseLatLng(query)`.
+- `onSelectResult`: `setSelectedId(place.id)`, `setExpanded(true)`, `setFocus({ lng, lat, zoom: 15, key: ++n })`; FilterBar closes its own dropdown on select. `onGoToCoord`: `setFocus({ lng, lat, zoom: 15, key: ++n })` and `setHighlight(point)`; the highlight clears after ~6s (timeout, cleared on the next jump).
+
+**`PlacesPanel`**:
 
 ```ts
 export function PlacesPanel(props: {
@@ -469,46 +412,69 @@ export function PlacesPanel(props: {
 
 When `selectedId` is null: scrollable PlaceCard list + "عرض المزيد" button. When set: renders `PlaceDetailView` with a back button calling `onSelect(null)`.
 
-For logged-in users (`useAuth()`), the panel header shows `Tabs`: الأماكن (the props-driven list above), محفوظاتي (self-contained, fetches `api.mySaves`, rows are PlaceCard), مساهماتي (self-contained, fetches `api.myPlaces`, rows are PlaceCard plus a status `Badge` and, when rejected, the `rejection_reason` text). Guests see only the main list, no tabs. This is the UI for `GET /api/v1/my/*`; without it saves and rejection reasons would be write-only.
+For logged-in users (`useAuth()`), the panel header shows `Tabs`: الأماكن (the props-driven list above), محفوظاتي (self-contained, fetches `api.mySaves`, rows are PlaceCard), مساهماتي (self-contained, fetches `api.myPlaces`, rows are PlaceCard plus a status `Badge` and, when rejected, the `rejection_reason` text). Guests see only the main list, no tabs.
 
-**`PlaceCard`** (WP-CARDS): `export function PlaceCard(props: { place: PlaceListItem; onClick: (id: number) => void }): JSX.Element;` Thumb `<img loading="lazy">` (fallback to a category icon block on error/null), name, category label badge, like/comment counts.
+**`PlaceCard`**: `export function PlaceCard(props: { place: PlaceListItem; onClick: (id: number) => void }): JSX.Element;` Thumb `<img loading="lazy">` (fallback to a category icon block on error/null), name, category label badge, a single Bookmark + `saves_count` counter.
 
-**`PlaceDetailView`** (WP-CARDS): `export function PlaceDetailView(props: { placeId: number; onClose: () => void }): JSX.Element;` Self-contained: fetches `api.getPlace(placeId)` on mount/id change, loading skeleton, then PhotoGallery, name + category badge, description, contributor row (`Avatar` with `avatar_url`, name), EngagementBar, ReportButton, CommentsSection. Coordinates shown as `<span dir="ltr">{lat.toFixed(5)}, {lng.toFixed(5)}</span>` with a copy button.
+**`PlaceDetailView`**: `export function PlaceDetailView(props: { placeId: number; onClose: () => void }): JSX.Element;` Self-contained: fetches `api.getPlace(placeId)` on mount/id change, loading skeleton, then PhotoGallery, name + category badge, description, contributor row (`Avatar` with `avatar_url`, name), EngagementBar (only when `place.status === 'approved'`, remounted via `key={place.id}`). Coordinates shown as `<span dir="ltr">{lat.toFixed(5)}, {lng.toFixed(5)}</span>` with a copy button (transient icon swap on success).
 
-**`PhotoGallery`** (WP-CARDS): `export function PhotoGallery(props: { photos: PlacePhoto[]; name: string }): JSX.Element;` Main image shows `display_url` of the active photo (`loading="lazy"`, `decoding="async"`), thumb strip uses `thumb_url`, active thumb ring `ring-2 ring-primary`. Tapping the main image opens a `Dialog` lightbox with the display image.
+**`PhotoGallery`**: `export function PhotoGallery(props: { photos: PlacePhoto[]; name: string }): JSX.Element;` Main image shows `display_url` of the active photo (`loading="lazy"`, `decoding="async"`), thumb strip uses `thumb_url` (`loading="lazy"`), active thumb ring `ring-2 ring-primary`. Clicking the main image opens the `Lightbox` with `index` = the active thumb.
 
-**`EngagementBar`** (WP-CARDS): self-contained optimistic toggles.
+**`Lightbox`**:
+
+```ts
+import type { PlacePhoto } from '../_lib/types';
+
+export function Lightbox(props: {
+  photos: PlacePhoto[];      // ordered as in PlaceDetail.photos
+  name: string;              // place name, used for alt text and download filenames
+  index: number;             // photo to show when opened
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}): JSX.Element;
+```
+
+- Full screen: Dialog from the ui kit with a DialogContent stretched to the viewport (e.g. `max-w-none h-dvh w-screen bg-background/95 p-0 border-0`), `dir="rtl"`, DialogTitle sr-only. ESC closes (Dialog default). Current image: `display_url`, object-contain, max dimensions inside the viewport, `loading="eager" decoding="async"`, wrapped so pinch/scroll zoom on mobile does not break layout (`touch-action: pinch-zoom` on the image container, overflow hidden on the shell).
+- Prev/next buttons, RTL-aware: the on-screen RIGHT button goes to the PREVIOUS photo (aria-label الصورة السابقة, ChevronRight icon) and the LEFT button to the NEXT photo (aria-label الصورة التالية, ChevronLeft icon). Keyboard: ArrowRight = previous, ArrowLeft = next (matches RTL reading direction). No wraparound; disabled at the ends. Hidden when `photos.length === 1`.
+- Counter centered, `dir="ltr"`, format `${current + 1}/${photos.length}` (e.g. 3/5).
+- Download current: Button with Download icon, label تحميل. `fetch(display_url)` -> blob -> `URL.createObjectURL` -> temp `<a download={`${name}-${current + 1}.webp`}>` click -> revokeObjectURL.
+- Bulk: Button label تحميل الكل, sequential await of the same routine over all photos (no zip), disabled + Loader2 spinner + label جارٍ التحميل while running; inline destructive text تعذر تحميل الصورة if any fetch fails (continue with the rest).
+- Internal current-photo state initialized from `props.index` on each open.
+
+**`EngagementBar`**: three actions in one RTL row.
 
 ```ts
 export function EngagementBar(props: {
   placeId: number;
-  initialLiked: boolean; initialSaved: boolean;
-  initialLikes: number; initialSaves: number;
-  commentsCount: number;
+  placeName: string;
+  lat: number;
+  lng: number;
+  initialSaved: boolean;
+  initialSaves: number;
 }): JSX.Element;
 ```
 
-Guests: buttons render but clicking shows an inline login link (تسجيل الدخول للتفاعل -> `/auth/google`). Uses `useAuth()`.
+1. Save toggle: optimistic save/unsave (Bookmark icon + `dir="ltr"` count). Guests get the inline link تسجيل الدخول للتفاعل -> `/auth/google`. Saving is the only auth-gated action; share and Google Maps are not.
+2. Share button (outline sm, Share2 icon, label مشاركة). onClick builds the canonical share URL `` `${window.location.origin}/places?place=${placeId}` ``. If `navigator.share` exists: `navigator.share({ title: placeName, url })`, swallowing AbortError. Else `navigator.clipboard.writeText(url)` with transient (1.5s) inline feedback swapping the label/icon to Check + تم نسخ الرابط; on clipboard failure show تعذر نسخ الرابط (destructive text, transient).
+3. Google Maps: an anchor styled as an outline sm button, ExternalLink icon, label افتح في خرائط جوجل, `href={`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`}`, `target="_blank" rel="noopener noreferrer"`.
 
-**`ReportButton`** (WP-CARDS): `export function ReportButton(props: { placeId: number }): JSX.Element;` Small ghost button opening a `Dialog` with reason `Select` (spam مزعج, wrong_info معلومات خاطئة, inappropriate غير لائق, duplicate مكرر, other أخرى), optional details `Textarea`, submits `api.report`. Guests see the login link instead.
+PlaceDetailView passes: `placeId=place.id`, `placeName=place.name`, `lat=place.lat`, `lng=place.lng`, `initialSaved=place.saved_by_me`, `initialSaves=place.saves_count`.
 
-**`CommentsSection`** (WP-CARDS): `export function CommentsSection(props: { placeId: number }): JSX.Element;` Self-contained: paginated list via `api.listComments`, add form (auth-gated), delete button on own comments (and for `isAdmin`).
-
-**`SubmitSheet`** (WP-SUBMIT):
+**`SubmitSheet`**:
 
 ```ts
 export function SubmitSheet(props: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  point: LatLng | null;                 // the clicked map point; null renders nothing
+  point: LatLng | null;                 // the point picked in add-mode; null renders nothing
   onSubmitted: (id: number) => void;
   onSelectExisting: (id: number) => void; // user picked a duplicate suggestion; parent opens its detail
 }): JSX.Element;
 ```
 
-Uses `Sheet` with `side="bottom"` on mobile and `side="left"` on desktop (panel is on the right), `dir="rtl"`. Internal step state: `'auth' | 'duplicates' | 'form' | 'done'`. Step auth: if `!user` (from `useAuth()`), show the Google login link and stop. Step duplicates: on open, call `api.nearby({ lat, lng, radius_km: 0.25, include_pending: true })`; if any results render `DuplicateSuggestions`, else skip to form. Step form: name Input, category Select from `CATEGORIES`, description Textarea (counter, min 20 max 1000), read-only coordinates line (`dir="ltr"`), `PhotoPicker`. Client validation before `api.submitPlace`; errors via `extractError` in a destructive `Alert`. Step done: success message + button عرض مساهماتي is out of scope; just a close button. Calls `onSubmitted(id)` then `onOpenChange(false)` on close.
+Uses `Sheet` with `side="bottom"` on mobile and `side="left"` on desktop (panel is on the right), `dir="rtl"`. Internal step state: `'auth' | 'duplicates' | 'form' | 'done'`. Step auth: if `!user` (from `useAuth()`), show the Google login link and stop. Step duplicates: on open, call `api.nearby({ lat, lng, radius_km: 0.25, include_pending: true })`; if any results render `DuplicateSuggestions`, else skip to form. Step form: name Input, category Select from `CATEGORIES`, description Textarea (counter, min 20 max 1000), read-only coordinates line (`dir="ltr"`), `PhotoPicker`. Client validation before `api.submitPlace`; errors via `extractError` in a destructive `Alert`. Step done: success message + close button. Calls `onSubmitted(id)` then `onOpenChange(false)` on close.
 
-**`DuplicateSuggestions`** (WP-SUBMIT):
+**`DuplicateSuggestions`**:
 
 ```ts
 export function DuplicateSuggestions(props: {
@@ -520,7 +486,7 @@ export function DuplicateSuggestions(props: {
 
 Title: يوجد أماكن قريبة من النقطة المحددة. Rows: thumb, name, `<span dir="ltr">` distance in meters. Buttons: هذا هو المكان (per row, onSelectExisting) and مكاني مختلف، متابعة (onContinue).
 
-**`PhotoPicker`** (WP-SUBMIT):
+**`PhotoPicker`**:
 
 ```ts
 export function PhotoPicker(props: {
@@ -532,9 +498,9 @@ export function PhotoPicker(props: {
 
 Hidden `<input type="file" accept="image/jpeg,image/png,image/webp" multiple>`, preview grid via `URL.createObjectURL` (revoke on cleanup), per-file remove button, client-side rejects files over 8MB or beyond max with an inline destructive Alert.
 
-### 6.3 Admin page (WP-ADMIN)
+### 6.3 Admin page
 
-`Pages/Admin/Places/Index.tsx` (default export): MainLayout + `Tabs` (المراجعة / البلاغات), status filter `Select`, paginated list via `api.adminListPlaces`. Renders `PlaceReviewCard` per place. Follows the Transit admin pattern: refetch after each action, counts row at top (client-side from `total`).
+`Pages/Admin/Places/Index.tsx` (default export): MainLayout, status filter `Select`, paginated review list via `api.adminListPlaces` as the page body (no tabs). Renders `PlaceReviewCard` per place. Follows the Transit admin pattern: refetch after each action, counts row at top (client-side from `total`).
 
 ```ts
 // Pages/Admin/Places/PlaceReviewCard.tsx
@@ -547,7 +513,7 @@ export function PlaceReviewCard(props: {
 // Shows photos (thumb strip with lightbox-free <img>), name, category, description,
 // contributor, coordinates (dir="ltr") with an OpenStreetMap link
 // https://www.openstreetmap.org/?mlat={lat}&mlon={lng}#map=17/{lat}/{lng},
-// status badge, rejection_reason when rejected, reports_count badge when > 0.
+// status badge, rejection_reason when rejected.
 
 // Pages/Admin/Places/RejectDialog.tsx
 export function RejectDialog(props: {
@@ -555,94 +521,52 @@ export function RejectDialog(props: {
   onOpenChange: (open: boolean) => void;
   onConfirm: (reason: string | null) => void; // trimmed, empty -> null
 }): JSX.Element;
-
-// Pages/Admin/Places/ReportsTab.tsx
-export function ReportsTab(): JSX.Element;
-// Self-contained: api.adminListReports('open'), rows with reason/details/reporter/place name,
-// buttons: تم الحل (resolve), تجاهل (dismiss), حذف المكان (adminDeletePlace with confirm()).
 ```
 
 ## 7. MODERATION
 
-Imitates the Transit RouteDraft lifecycle exactly: statuses are plain strings, only creatable state is `pending`, transitions `pending -> approved` and `pending -> rejected` are terminal, both guarded with a 400 "Place is already {status}". Rejection reason is nullable text shown to admins AND to the submitter via `GET /api/v1/my/places` (improvement over Transit). Approve/delete bust the `places:map` cache. Reports never auto-hide a place: admins act via the reports tab. Spam defenses: throttles per section 5, `is_banned` guard on submit and comment, server-side validation on everything, unique constraints make like/save/report idempotent. Existing `POST /api/admin/users/{id}/toggle-ban` covers banning abusers; do not rebuild it (it sits under the `transit_admin` middleware, which also passes roles admin and superadmin, so place moderators can use it).
+Imitates the Transit RouteDraft lifecycle exactly: statuses are plain strings, only creatable state is `pending`, transitions `pending -> approved` and `pending -> rejected` are terminal, both guarded with a 400 "Place is already {status}". Rejection reason is nullable text shown to admins AND to the submitter via `GET /api/v1/my/places`. Approve/delete bust the `places:map` cache. Spam defenses: throttles per section 5, `is_banned` guard on submit, server-side validation on everything, the unique constraint makes save idempotent. Existing `POST /api/admin/users/{id}/toggle-ban` covers banning abusers; do not rebuild it (it sits under the `transit_admin` middleware, which also passes roles admin and superadmin, so place moderators can use it).
 
-## 8. FILE MANIFEST (strictly disjoint; a file appears in exactly one WP)
+## 8. FILE MANIFEST
 
-### WP-SCAFFOLD (21 files: 19 created + composer.json/composer.lock edited)
-- `database/migrations/2026_07_15_100001_create_places_table.php` (create)
-- `database/migrations/2026_07_15_100002_create_place_photos_table.php` (create)
-- `database/migrations/2026_07_15_100003_create_place_likes_table.php` (create)
-- `database/migrations/2026_07_15_100004_create_place_saves_table.php` (create)
-- `database/migrations/2026_07_15_100005_create_place_comments_table.php` (create)
-- `database/migrations/2026_07_15_100006_create_place_reports_table.php` (create)
-- `app/Models/Place.php`, `app/Models/PlacePhoto.php`, `app/Models/PlaceLike.php`, `app/Models/PlaceSave.php`, `app/Models/PlaceComment.php`, `app/Models/PlaceReport.php` (create)
-- `database/factories/PlaceFactory.php`, `database/factories/PlacePhotoFactory.php`, `database/factories/PlaceCommentFactory.php` (create)
-- `app/Services/PlaceImageService.php` (create)
-- `resources/js/Pages/Places/_lib/types.ts`, `resources/js/Pages/Places/_lib/categories.ts`, `resources/js/Pages/Places/_lib/api.ts` (create)
-- `composer.json` + `composer.lock` (edit: add `intervention/image: ^3.9` only). Run `php artisan migrate` (never migrate:fresh).
+Backend:
+- `database/migrations/2026_07_15_1000NN_*` (six creates, immutable history) and `database/migrations/2026_07_16_2000NN_*` (four drops: place_likes, place_comments, place_reports, and the likes_count/comments_count columns)
+- `app/Models/Place.php`, `app/Models/PlacePhoto.php`, `app/Models/PlaceSave.php`
+- `database/factories/PlaceFactory.php`, `database/factories/PlacePhotoFactory.php`
+- `app/Services/PlaceImageService.php`
+- `app/Http/Controllers/PlaceController.php` (renderIndex, mapData, index, nearby, show, store, mine)
+- `app/Http/Controllers/PlaceEngagementController.php` (save, unsave, mySaves)
+- `app/Http/Controllers/PlaceAdminController.php` (renderIndex, index, approve, reject, destroy)
+- Routes: the places block in `routes/api.php` (public reads) and `routes/web.php` (page routes, authed writes, admin moderation)
 
-### WP-BACKEND (3 files)
-- `app/Http/Controllers/PlaceController.php` (create: renderIndex, mapData, index, nearby, show, store, mine)
-- `app/Http/Controllers/PlaceEngagementController.php` (create: comments, storeComment, destroyComment, like, unlike, save, unsave, report, mySaves)
-- `app/Http/Controllers/PlaceAdminController.php` (create: renderIndex, index, approve, reject, destroy, reports, resolveReport)
-- No FormRequests, no Policies (codebase convention is inline validation and inline role checks). Throttle middleware is applied at route registration by WP-INTEGRATE, not here.
-
-### WP-MAP (3 files, all create)
+Frontend:
+- `resources/js/Pages/Places/_lib/types.ts`, `_lib/categories.ts`, `_lib/api.ts`
 - `resources/js/Pages/Places/Index.tsx`
-- `resources/js/Pages/Places/_components/PlacesMap.tsx`
-- `resources/js/Pages/Places/_components/FilterBar.tsx`
+- `resources/js/Pages/Places/_components/`: PlacesMap, FilterBar, PlacesPanel, PlaceCard, PlaceDetailView, PhotoGallery, Lightbox, EngagementBar, SubmitSheet, DuplicateSuggestions, PhotoPicker
+- `resources/js/Pages/Admin/Places/`: Index.tsx, PlaceReviewCard.tsx, RejectDialog.tsx
 
-### WP-SUBMIT (3 files, all create)
-- `resources/js/Pages/Places/_components/SubmitSheet.tsx`
-- `resources/js/Pages/Places/_components/DuplicateSuggestions.tsx`
-- `resources/js/Pages/Places/_components/PhotoPicker.tsx`
-
-### WP-CARDS (7 files, all create)
-- `resources/js/Pages/Places/_components/PlacesPanel.tsx`
-- `resources/js/Pages/Places/_components/PlaceCard.tsx`
-- `resources/js/Pages/Places/_components/PlaceDetailView.tsx`
-- `resources/js/Pages/Places/_components/PhotoGallery.tsx`
-- `resources/js/Pages/Places/_components/EngagementBar.tsx`
-- `resources/js/Pages/Places/_components/ReportButton.tsx`
-- `resources/js/Pages/Places/_components/CommentsSection.tsx`
-
-### WP-ADMIN (4 files, all create)
-- `resources/js/Pages/Admin/Places/Index.tsx`
-- `resources/js/Pages/Admin/Places/PlaceReviewCard.tsx`
-- `resources/js/Pages/Admin/Places/RejectDialog.tsx`
-- `resources/js/Pages/Admin/Places/ReportsTab.tsx`
-
-### WP-TESTS (3 files, all create)
-- `tests/Feature/PlacesTest.php` (map geojson shape, list + filters + search + pagination, nearby distance ordering + include_pending, show 404 for pending to strangers but 200 for owner, submit happy path with `UploadedFile::fake()->image()` asserting 3 files on `Storage::fake('public')`, submit validation failures, banned user 403, submit throttle 429 loop, my/places includes rejection_reason)
-- `tests/Feature/PlacesEngagementTest.php` (like/unlike idempotency + counts, save/unsave, comment create/delete + ownership 403, guest 401s, report idempotency, comment throttle)
-- `tests/Feature/PlacesAdminTest.php` (non-admin 403, pending list, approve, reject with reason, double-approve 400, delete removes files and rows, reports list + resolve/dismiss, cache bust assertion via map endpoint reflecting approval)
-
-### WP-INTEGRATE (6 files + 1 command; ONLY this WP touches shared existing files, with one exception: composer.json/composer.lock belong to WP-SCAFFOLD)
-- `routes/api.php` (edit: add the 5 public GET routes in a nested group inside the v1 group with `throttle:60,1` on the new routes only; `/places/map` and `/places/nearby` registered before `/places/{id}`; `->whereNumber('id')` on every `{id}` route)
-- `routes/web.php` (edit: `GET /places` public page route; user write routes with `->whereNumber('id')` inside the existing `Route::middleware('auth')->group()`; admin routes + `GET /admin/places` inside the existing `Route::middleware('admin')` nested group; throttles per section 5)
-- `app/Http/Controllers/AuthController.php` (edit: allow self-registration; when the Google email has no User row and is not the superadmin email, create the user with `role => 'user'` instead of rejecting. Existing users keep current behavior. This is required: the community cannot contribute under the current invite-only callback)
-- `resources/js/Components/Navbar.tsx` (edit: append `{ href: '/places', text: 'أماكن خفية', icon: MapPin }` to `navLinks`, import MapPin)
-- `resources/js/Pages/Home.tsx` (edit: append `{ href: '/places', icon: MapPin, text: 'أماكن خفية' }` to `PRESET_LINKS`, add MapPin to the lucide import if absent)
-- `.gitignore` check for `public/storage` (Laravel default already ignores it; verify only)
-- Run `php artisan storage:link` (the symlink does not exist yet; uploads 404 without it).
-
-Cross-package imports allowed ONLY via the exact exported names/signatures in section 6. Suggested merge order: SCAFFOLD -> (BACKEND, MAP, SUBMIT, CARDS, ADMIN, TESTS in parallel) -> INTEGRATE. The WP-TESTS suites hit routes that only exist after WP-INTEGRATE registers them: expect them red until INTEGRATE merges, and gate CI on the post-INTEGRATE run.
+Tests:
+- `tests/Feature/PlacesTest.php` (map geojson shape, list + filters + search + popular-by-saves sort + pagination, removed-counter leak guards, nearby distance ordering + include_pending, show visibility rules, submit happy path + validation + quota, my/places, `/places?place=` page renders)
+- `tests/Feature/PlacesEngagementTest.php` (save/unsave idempotency + counts, approved-only targets, guest 401s, my saves content + save-time ordering, removed endpoints 404)
+- `tests/Feature/PlacesAdminTest.php` (non-admin 403, pending list, approve, reject with reason, double-approve 400, delete removes files and rows, cache bust assertions)
 
 ## 9. URL + NAMING
 
-- Public URL: `/places`. Admin URL: `/admin/places`. API namespace: `/api/v1/places`, `/api/v1/my/*`, `/api/v1/admin/places`, `/api/v1/admin/place-reports`, `/api/v1/place-comments/{id}`.
+- Public URL: `/places`. Share/deep-link URL: `/places?place={id}`. Admin URL: `/admin/places`. API namespace: `/api/v1/places`, `/api/v1/my/*`, `/api/v1/admin/places`.
 - Arabic section title: أماكن خفية. Page `<title>`: أماكن خفية (template appends "- Syrian Zone").
 - Page dirs: `resources/js/Pages/Places/`, `resources/js/Pages/Admin/Places/`.
-- Controllers: `PlaceController`, `PlaceEngagementController`, `PlaceAdminController`. Models: `Place`, `PlacePhoto`, `PlaceLike`, `PlaceSave`, `PlaceComment`, `PlaceReport`. Service: `PlaceImageService`.
+- Controllers: `PlaceController`, `PlaceEngagementController`, `PlaceAdminController`. Models: `Place`, `PlacePhoto`, `PlaceSave`. Service: `PlaceImageService`.
 - Cache key: `places:map`. Storage dir: `places/{place_id}/`.
 
 ## 10. NON-GOALS (do not build these)
 
+- No likes, comments, or reports: removed from the product entirely (endpoints 404, tables dropped).
 - No editing places after submission or approval (resubmit instead), no draft saving.
-- No EXIF GPS extraction, no geocoding/reverse geocoding, no address fields.
+- No EXIF GPS extraction, no external geocoder or address search; coordinate parsing is the only non-db search.
+- No URL/history syncing while browsing (only the initial `?place=` read).
+- No zip bundling for تحميل الكل; sequential downloads are fine.
 - No offline/PWA-specific behavior, no service worker changes.
 - No English i18n, no i18n library.
-- No comment threads/replies, no comment editing, no like on comments.
 - No email/push notifications on approval or rejection (my/places is the feedback channel).
 - No user profile pages, follower systems, or leaderboards.
 - No admin map view, no bulk moderation, no audit log.

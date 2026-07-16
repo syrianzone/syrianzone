@@ -5,11 +5,9 @@ import type {
   NearbyPlace,
   Paginated,
   PlaceCategory,
-  PlaceComment,
   PlaceDetail,
   PlaceFeatureCollection,
   PlaceListItem,
-  PlaceReport,
 } from './types';
 
 const base = '/api/v1';
@@ -57,16 +55,6 @@ export const api = {
     return data;
   },
 
-  async like(id: number): Promise<{ liked: boolean; likes_count: number }> {
-    const { data } = await axios.post(`${base}/places/${id}/like`);
-    return data;
-  },
-
-  async unlike(id: number): Promise<{ liked: boolean; likes_count: number }> {
-    const { data } = await axios.delete(`${base}/places/${id}/like`);
-    return data;
-  },
-
   async save(id: number): Promise<{ saved: boolean; saves_count: number }> {
     const { data } = await axios.post(`${base}/places/${id}/save`);
     return data;
@@ -74,25 +62,6 @@ export const api = {
 
   async unsave(id: number): Promise<{ saved: boolean; saves_count: number }> {
     const { data } = await axios.delete(`${base}/places/${id}/save`);
-    return data;
-  },
-
-  async listComments(placeId: number, page?: number): Promise<Paginated<PlaceComment>> {
-    const { data } = await axios.get(`${base}/places/${placeId}/comments`, { params: { page } });
-    return data;
-  },
-
-  async addComment(placeId: number, body: string): Promise<PlaceComment> {
-    const { data } = await axios.post(`${base}/places/${placeId}/comments`, { body });
-    return data;
-  },
-
-  async deleteComment(commentId: number): Promise<void> {
-    await axios.delete(`${base}/place-comments/${commentId}`);
-  },
-
-  async report(placeId: number, reason: string, details?: string): Promise<{ message: string }> {
-    const { data } = await axios.post(`${base}/places/${placeId}/report`, { reason, details });
     return data;
   },
 
@@ -113,16 +82,6 @@ export const api = {
 
   async adminDeletePlace(id: number): Promise<void> {
     await axios.delete(`${base}/admin/places/${id}`);
-  },
-
-  async adminListReports(status: 'open' | 'resolved' | 'dismissed' | 'all', page?: number): Promise<Paginated<PlaceReport>> {
-    const { data } = await axios.get(`${base}/admin/place-reports`, { params: { status, page } });
-    return data;
-  },
-
-  async adminResolveReport(id: number, action: 'resolve' | 'dismiss'): Promise<{ id: number; status: string }> {
-    const { data } = await axios.post(`${base}/admin/place-reports/${id}/resolve`, { action });
-    return data;
   },
 };
 

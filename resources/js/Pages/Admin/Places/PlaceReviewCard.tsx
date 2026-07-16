@@ -47,12 +47,6 @@ export function PlaceReviewCard(props: {
           <h3 className="text-base font-bold">{place.name}</h3>
           <Badge variant="outline">{CATEGORY_LABELS[place.category]}</Badge>
           <Badge variant={STATUS_VARIANTS[place.status]}>{STATUS_LABELS[place.status]}</Badge>
-          {place.reports_count > 0 && (
-            <Badge variant="destructive">
-              <span dir="ltr">{place.reports_count}</span>
-              <span className="mr-1">بلاغ</span>
-            </Badge>
-          )}
         </div>
 
         <p className="text-sm text-muted-foreground">{place.description}</p>

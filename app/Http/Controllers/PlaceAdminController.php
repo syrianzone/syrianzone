@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Place;
-use App\Models\PlaceReport;
 use App\Services\PlaceImageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -24,11 +23,7 @@ class PlaceAdminController extends Controller
     $userId = $request->user()->id;
 
     $query = Place::with(['user', 'photos'])
-      ->withCount('reports')
-      ->withExists([
-        'likes as liked_by_me' => fn ($q) => $q->where('user_id', $userId),
-        'saves as saved_by_me' => fn ($q) => $q->where('user_id', $userId),
-      ])
+      ->withExists(['saves as saved_by_me' => fn ($q) => $q->where('user_id', $userId)])
       ->latest();
 
     if ($status !== 'all') {
@@ -79,40 +74,6 @@ class PlaceAdminController extends Controller
     return response()->json(null, 204);
   }
 
-  public function reports(Request $request)
-  {
-    $validated = $request->validate(['status' => 'sometimes|in:open,resolved,dismissed,all']);
-    $status = $validated['status'] ?? 'open';
-
-    $query = PlaceReport::with(['user', 'place'])->latest();
-    if ($status !== 'all') {
-      $query->where('status', $status);
-    }
-
-    $reports = $query->paginate(20)->through(fn ($r) => [
-      'id' => $r->id,
-      'reason' => $r->reason,
-      'details' => $r->details,
-      'status' => $r->status,
-      'created_at' => $r->created_at,
-      'user' => ['id' => $r->user->id, 'name' => $r->user->name],
-      'place' => ['id' => $r->place->id, 'name' => $r->place->name, 'status' => $r->place->status],
-    ]);
-
-    return response()->json($reports);
-  }
-
-  public function resolveReport(Request $request, int $id)
-  {
-    $report = PlaceReport::findOrFail($id);
-    $validated = $request->validate(['action' => 'required|string|in:resolve,dismiss']);
-
-    $status = $validated['action'] === 'resolve' ? 'resolved' : 'dismissed';
-    $report->update(['status' => $status]);
-
-    return response()->json(['id' => $report->id, 'status' => $status]);
-  }
-
   private function adminItem(Place $p): array
   {
     return [
@@ -123,9 +84,7 @@ class PlaceAdminController extends Controller
       'lat' => $p->lat,
       'lng' => $p->lng,
       'thumb_url' => ($photo = $p->photos->first()) ? Storage::url($photo->thumb_path) : null,
-      'likes_count' => $p->likes_count,
       'saves_count' => $p->saves_count,
-      'comments_count' => $p->comments_count,
       'status' => $p->status,
       'user' => ['id' => $p->user->id, 'name' => $p->user->name, 'avatar_url' => $p->user->avatar_url],
       'photos' => $p->photos->map(fn ($photo) => [
@@ -134,11 +93,9 @@ class PlaceAdminController extends Controller
         'display_url' => Storage::url($photo->display_path),
         'sort' => $photo->sort,
       ])->values(),
-      'liked_by_me' => (bool) $p->liked_by_me,
       'saved_by_me' => (bool) $p->saved_by_me,
       'created_at' => $p->created_at,
       'rejection_reason' => $p->rejection_reason,
-      'reports_count' => $p->reports_count,
     ];
   }
 }

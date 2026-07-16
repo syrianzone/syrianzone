@@ -63,7 +63,7 @@ class PlaceController extends Controller
       $query->where(fn ($w) => $w->where('name', 'LIKE', "%{$q}%")->orWhere('description', 'LIKE', "%{$q}%"));
     }
     if (($validated['sort'] ?? 'newest') === 'popular') {
-      $query->orderByDesc('likes_count')->latest();
+      $query->orderByDesc('saves_count')->latest();
     } else {
       $query->latest();
     }
@@ -141,7 +141,6 @@ class PlaceController extends Controller
         'display_url' => Storage::url($photo->display_path),
         'sort' => $photo->sort,
       ])->values(),
-      'liked_by_me' => $user ? $place->likes()->where('user_id', $user->id)->exists() : false,
       'saved_by_me' => $user ? $place->saves()->where('user_id', $user->id)->exists() : false,
       'created_at' => $place->created_at,
     ]);
@@ -225,9 +224,7 @@ class PlaceController extends Controller
       'lat' => $p->lat,
       'lng' => $p->lng,
       'thumb_url' => ($photo = $p->photos->first()) ? Storage::url($photo->thumb_path) : null,
-      'likes_count' => $p->likes_count,
       'saves_count' => $p->saves_count,
-      'comments_count' => $p->comments_count,
     ];
   }
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import type { PlacePhoto } from '../_lib/types';
+import { Lightbox } from './Lightbox';
 
 export function PhotoGallery(props: { photos: PlacePhoto[]; name: string }) {
   const { photos, name } = props;
@@ -47,18 +47,13 @@ export function PhotoGallery(props: { photos: PlacePhoto[]; name: string }) {
           ))}
         </div>
       )}
-      <Dialog open={lightbox} onOpenChange={setLightbox}>
-        <DialogContent className="max-w-3xl p-2" dir="rtl">
-          <DialogTitle className="sr-only">{name}</DialogTitle>
-          <img
-            src={current.display_url}
-            alt={name}
-            loading="lazy"
-            decoding="async"
-            className="max-h-[80dvh] w-full rounded-md object-contain"
-          />
-        </DialogContent>
-      </Dialog>
+      <Lightbox
+        photos={photos}
+        name={name}
+        index={Math.min(active, photos.length - 1)}
+        open={lightbox}
+        onOpenChange={setLightbox}
+      />
     </div>
   );
 }

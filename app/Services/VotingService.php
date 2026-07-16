@@ -105,23 +105,32 @@ class VotingService
     private function updateDailyScores(Poll $poll, Carbon $voteDay, array $scoreDelta): void
     {
         foreach ($scoreDelta as $candidateId => $delta) {
-            DB::table('daily_scores')
-                ->upsert(
-                    [
-                        'poll_id'      => $poll->id,
-                        'candidate_id' => $candidateId,
-                        'day'          => $voteDay->toDateString(),
-                        'votes'        => $delta['votes'],
-                        'score'        => $delta['score'],
-                        'updated_at'   => now(),
-                    ],
-                    ['poll_id', 'candidate_id', 'day'], // unique key columns
-                    [
-                        'votes'      => DB::raw('daily_scores.votes + VALUES(votes)'),
-                        'score'      => DB::raw('daily_scores.score + VALUES(score)'),
-                        'updated_at' => now(),
-                    ]
-                );
+            $where = [
+                'poll_id' => $poll->id,
+                'candidate_id' => $candidateId,
+                'day' => $voteDay->toDateString(),
+            ];
+            $increments = [
+                'votes' => DB::raw('votes + '.(int) $delta['votes']),
+                'score' => DB::raw('score + '.(int) $delta['score']),
+                'updated_at' => now(),
+            ];
+
+            $updated = DB::table('daily_scores')->where($where)->update($increments);
+            if ($updated !== 0) {
+                continue;
+            }
+
+            $inserted = DB::table('daily_scores')->insertOrIgnore([
+                ...$where,
+                'votes' => $delta['votes'],
+                'score' => $delta['score'],
+                'updated_at' => now(),
+            ]);
+
+            if ($inserted === 0) {
+                DB::table('daily_scores')->where($where)->update($increments);
+            }
         }
     }
 }

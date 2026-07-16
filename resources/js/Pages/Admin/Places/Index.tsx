@@ -94,10 +94,10 @@ export default function Index() {
   return (
     <MainLayout>
       <Head>
-        <title>إدارة الأماكن الخفية</title>
+        <title>إدارة أماكن مشوار</title>
       </Head>
       <main dir="rtl" className="container mx-auto max-w-3xl px-4 py-6">
-        <h1 className="mb-4 text-xl font-bold">إدارة الأماكن الخفية</h1>
+        <h1 className="mb-4 text-xl font-bold">إدارة أماكن مشوار</h1>
 
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-3">

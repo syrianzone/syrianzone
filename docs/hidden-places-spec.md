@@ -2,7 +2,7 @@
 
 ## 1. THESIS
 
-"Hidden Places" (أماكن خفية) is a map-first community feature at `/places` where logged-in users pin hidden Syrian locations with photos, submissions pass admin moderation before appearing on a clustered MapLibre map, and visitors browse, search, save, and share approved places.
+"Mishwar" (مشوار) is a map-first community feature at `/mishwar` (legacy `/places` 301-redirects there) where logged-in users pin hidden Syrian locations with photos, submissions pass admin moderation before appearing on a clustered MapLibre map, and visitors browse, search, save, and share approved places.
 
 This document is the single contract for the feature as implemented. Every name, path, prop, and JSON key below is normative. Do not invent alternatives.
 
@@ -20,8 +20,8 @@ export default function Index() {
   return (
     <MainLayout>
       <Head>
-        <title>أماكن خفية</title>
-        <meta name="description" content="خريطة تفاعلية لأماكن سوريا الخفية" />
+        <title>مشوار</title>
+        <meta name="description" content="خريطة تفاعلية لأماكن تستحق المشوار في سوريا" />
       </Head>
       <main dir="rtl">...</main>
     </MainLayout>
@@ -221,7 +221,7 @@ There are no like, comment, or report endpoints. `POST/DELETE /api/v1/places/{id
 
 ### 5.4 Inertia pages (routes/web.php)
 
-- `GET /places` -> `PlaceController@renderIndex` -> `Inertia::render('Places/Index')`. Public. The route ignores query params; the client reads `?place={id}` on load (section 6.2, deep link).
+- `GET /mishwar` -> `PlaceController@renderIndex` (`GET /places` 301-redirects here, query preserved) -> `Inertia::render('Places/Index')`. Public. The route ignores query params; the client reads `?place={id}` on load (section 6.2, deep link).
 - `GET /admin/places` -> `PlaceAdminController@renderIndex` -> `Inertia::render('Admin/Places/Index')`. Inside `auth` + `admin` group.
 
 ### 5.5 JSON shapes (normative)
@@ -315,7 +315,7 @@ export function extractError(e: unknown): string; // error.response?.data.messag
 ### 6.2 Component tree and prop contracts
 
 ```
-Pages/Places/Index.tsx                                route GET /places
+Pages/Places/Index.tsx                                route GET /mishwar
 ├─ PlacesMap            _components/PlacesMap.tsx
 ├─ FilterBar            _components/FilterBar.tsx
 ├─ PlacesPanel          _components/PlacesPanel.tsx
@@ -455,7 +455,7 @@ export function EngagementBar(props: {
 ```
 
 1. Save toggle: optimistic save/unsave (Bookmark icon + `dir="ltr"` count). Guests get the inline link تسجيل الدخول للتفاعل -> `/auth/google`. Saving is the only auth-gated action; share and Google Maps are not.
-2. Share button (outline sm, Share2 icon, label مشاركة). onClick builds the canonical share URL `` `${window.location.origin}/places?place=${placeId}` ``. If `navigator.share` exists: `navigator.share({ title: placeName, url })`, swallowing AbortError. Else `navigator.clipboard.writeText(url)` with transient (1.5s) inline feedback swapping the label/icon to Check + تم نسخ الرابط; on clipboard failure show تعذر نسخ الرابط (destructive text, transient).
+2. Share button (outline sm, Share2 icon, label مشاركة). onClick builds the canonical share URL `` `${window.location.origin}/mishwar?place=${placeId}` ``. If `navigator.share` exists: `navigator.share({ title: placeName, url })`, swallowing AbortError. Else `navigator.clipboard.writeText(url)` with transient (1.5s) inline feedback swapping the label/icon to Check + تم نسخ الرابط; on clipboard failure show تعذر نسخ الرابط (destructive text, transient).
 3. Google Maps: an anchor styled as an outline sm button, ExternalLink icon, label افتح في خرائط جوجل, `href={`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`}`, `target="_blank" rel="noopener noreferrer"`.
 
 PlaceDetailView passes: `placeId=place.id`, `placeName=place.name`, `lat=place.lat`, `lng=place.lng`, `initialSaved=place.saved_by_me`, `initialSaves=place.saves_count`.
@@ -546,13 +546,13 @@ Frontend:
 - `resources/js/Pages/Admin/Places/`: Index.tsx, PlaceReviewCard.tsx, RejectDialog.tsx
 
 Tests:
-- `tests/Feature/PlacesTest.php` (map geojson shape, list + filters + search + popular-by-saves sort + pagination, removed-counter leak guards, nearby distance ordering + include_pending, show visibility rules, submit happy path + validation + quota, my/places, `/places?place=` page renders)
+- `tests/Feature/PlacesTest.php` (map geojson shape, list + filters + search + popular-by-saves sort + pagination, removed-counter leak guards, nearby distance ordering + include_pending, show visibility rules, submit happy path + validation + quota, my/places, `/mishwar?place=` page renders)
 - `tests/Feature/PlacesEngagementTest.php` (save/unsave idempotency + counts, approved-only targets, guest 401s, my saves content + save-time ordering, removed endpoints 404)
 - `tests/Feature/PlacesAdminTest.php` (non-admin 403, pending list, approve, reject with reason, double-approve 400, delete removes files and rows, cache bust assertions)
 
 ## 9. URL + NAMING
 
-- Public URL: `/places`. Share/deep-link URL: `/places?place={id}`. Admin URL: `/admin/places`. API namespace: `/api/v1/places`, `/api/v1/my/*`, `/api/v1/admin/places`.
+- Public URL: `/mishwar` (legacy `/places` redirects). Share/deep-link URL: `/mishwar?place={id}`. Admin URL: `/admin/places`. API namespace: `/api/v1/places`, `/api/v1/my/*`, `/api/v1/admin/places`.
 - Arabic section title: أماكن خفية. Page `<title>`: أماكن خفية (template appends "- Syrian Zone").
 - Page dirs: `resources/js/Pages/Places/`, `resources/js/Pages/Admin/Places/`.
 - Controllers: `PlaceController`, `PlaceEngagementController`, `PlaceAdminController`. Models: `Place`, `PlacePhoto`, `PlaceSave`. Service: `PlaceImageService`.

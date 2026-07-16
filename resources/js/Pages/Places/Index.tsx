@@ -173,8 +173,8 @@ export default function Index() {
   return (
     <MainLayout>
       <Head>
-        <title>أماكن خفية</title>
-        <meta name="description" content="خريطة تفاعلية لأماكن سوريا الخفية" />
+        <title>مشوار</title>
+        <meta name="description" content="خريطة تفاعلية لأماكن تستحق المشوار في سوريا" />
       </Head>
       <main dir="rtl" className="relative h-[calc(100dvh-4rem)] overflow-hidden">
         <PlacesMap

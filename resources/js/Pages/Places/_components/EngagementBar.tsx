@@ -52,7 +52,7 @@ export function EngagementBar(props: {
   };
 
   const share = async () => {
-    const url = `${window.location.origin}/places?place=${placeId}`;
+    const url = `${window.location.origin}/mishwar?place=${placeId}`;
     if (navigator.share) {
       try {
         await navigator.share({ title: placeName, url });

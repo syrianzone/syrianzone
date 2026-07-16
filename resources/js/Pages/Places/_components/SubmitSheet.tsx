@@ -154,9 +154,9 @@ export function SubmitSheet(props: {
         className={isMobile ? 'max-h-[85dvh] overflow-y-auto' : 'overflow-y-auto'}
       >
         <SheetHeader className="text-right">
-          <SheetTitle>إضافة مكان خفي</SheetTitle>
+          <SheetTitle>إضافة مكان جديد</SheetTitle>
           <SheetDescription>
-            شارك مكاناً خفياً ليظهر على الخريطة بعد موافقة المشرفين
+            شارك مكاناً يستحق المشوار ليظهر على الخريطة بعد موافقة المشرفين
           </SheetDescription>
         </SheetHeader>
 

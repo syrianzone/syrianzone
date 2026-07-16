@@ -316,7 +316,7 @@ export default function Dashboard({
                   className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-[#1f2833] hover:bg-gray-800 text-gray-300"
                 >
                   <MapPin className="h-5 w-5" />
-                  مراجعة الأماكن الخفية المقترحة
+                  مراجعة أماكن مشوار المقترحة
                 </Link>
               )}
 

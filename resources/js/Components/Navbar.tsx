@@ -72,7 +72,7 @@ const navLinks = [
   { href: '/transit', text: 'ترانزيت', icon: Bus },
   { href: '/shawarma', text: 'تير ليست الشاورما', icon: Sandwich },
   { href: '/justice', text: 'العدالة الانتقالية', icon: Scale },
-  { href: '/places', text: 'أماكن خفية', icon: MapPin },
+  { href: '/mishwar', text: 'مشوار', icon: MapPin },
 ];
 
 const externalLinks = [

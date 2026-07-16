@@ -331,7 +331,13 @@ test('guest cannot list my places', function () {
   $this->getJson('/api/v1/my/places')->assertUnauthorized();
 });
 
-test('places page renders with a place deep link param', function () {
-  // The share URL is /places?place={id}; the page route must ignore the param.
-  $this->get('/places?place=123')->assertOk();
+test('mishwar page renders with a place deep link param', function () {
+  // The share URL is /mishwar?place={id}; the page route must ignore the param.
+  $this->get('/mishwar?place=123')->assertOk();
+});
+
+test('legacy places slug redirects permanently and keeps the query', function () {
+  $this->get('/places?place=123')
+    ->assertMovedPermanently()
+    ->assertRedirect('/mishwar?place=123');
 });

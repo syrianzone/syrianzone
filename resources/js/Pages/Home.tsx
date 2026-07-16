@@ -69,7 +69,7 @@ const PRESET_LINKS: PresetLink[] = [
     { href: '/govapps', icon: Smartphone, text: 'تطبيقات الحكومة' },
     { href: '/transit', icon: Bus, text: 'ترانزيت' },
     { href: '/justice', icon: Scale, text: 'العدالة الانتقالية' },
-    { href: '/places', icon: MapPin, text: 'أماكن خفية' },
+    { href: '/mishwar', icon: MapPin, text: 'مشوار' },
     { href: 'https://joory.chat', icon: null, image: 'https://joory.chat/favicon.svg', text: 'جوري AI', external: true },
     { href: 'https://jard.chat', icon: null, image: 'https://jard.chat/images/logo-light.svg', text: 'جرد', external: true },
     { href: 'https://food.syrian.zone', icon: Utensils, text: 'وصفاتنا' },

@@ -146,7 +146,9 @@ Route::get('/transit/studio', function () {
     return Inertia::render('Transit/studio/Index');
 });
 
-Route::get('/places', [\App\Http\Controllers\PlaceController::class, 'renderIndex']);
+Route::get('/mishwar', [\App\Http\Controllers\PlaceController::class, 'renderIndex']);
+// legacy slug: share links from the first release said /places
+Route::get('/places', fn () => redirect('/mishwar' . (request()->getQueryString() ? '?' . request()->getQueryString() : ''), 301));
 
 
 

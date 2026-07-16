@@ -267,13 +267,37 @@ test('banned user cannot submit', function () {
     ->assertJsonPath('message', 'تم حظر حسابك من المساهمة');
 });
 
-test('submit is throttled after 5 requests per hour', function () {
+test('failed validation attempts do not consume the submit quota', function () {
+  Storage::fake('public');
   $user = placesUser();
 
-  foreach (range(1, 5) as $i) {
+  foreach (range(1, 6) as $i) {
     $this->actingAs($user)->postJson('/api/v1/places', [])->assertStatus(422);
   }
-  $this->actingAs($user)->postJson('/api/v1/places', [])->assertStatus(429);
+
+  $this->actingAs($user)->postJson('/api/v1/places', [
+    'name' => 'مكان تجريبي',
+    'category' => 'natural',
+    'description' => 'وصف تجريبي طويل بما يكفي لتجاوز الحد الأدنى للتحقق',
+    'lat' => 33.5,
+    'lng' => 36.3,
+    'photos' => [UploadedFile::fake()->image('a.jpg', 800, 600)],
+  ])->assertStatus(201);
+});
+
+test('submit quota rejects a sixth place within an hour', function () {
+  Storage::fake('public');
+  $user = placesUser();
+  Place::factory()->count(5)->create(['user_id' => $user->id]);
+
+  $this->actingAs($user)->postJson('/api/v1/places', [
+    'name' => 'مكان سادس',
+    'category' => 'natural',
+    'description' => 'وصف تجريبي طويل بما يكفي لتجاوز الحد الأدنى للتحقق',
+    'lat' => 33.5,
+    'lng' => 36.3,
+    'photos' => [UploadedFile::fake()->image('b.jpg', 800, 600)],
+  ])->assertStatus(429);
 });
 
 test('my places lists own places with status and rejection_reason', function () {

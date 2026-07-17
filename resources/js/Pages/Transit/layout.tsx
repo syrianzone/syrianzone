@@ -1,6 +1,6 @@
 import React from 'react'
 import './transit.css'
-import { TransitThemeProvider } from './_components/TransitThemeContext'
+import { TransitThemeProvider, useTransitTheme } from './_components/TransitThemeContext'
 import { QueryProvider } from './_providers/QueryProvider'
 import MainLayout from '@/Layouts/MainLayout'
 
@@ -11,17 +11,26 @@ export default function TransitLayout({
 }) {
   return (
     <MainLayout>
-      <div className="transit-root min-h-svh" data-transit-theme="jasmine">
-        {/* Prevent flash of main-site theme during hydration */}
-        <style>{`
-          body { background: var(--bg); }
-        `}</style>
-        <QueryProvider>
-          <TransitThemeProvider>
+      <QueryProvider>
+        <TransitThemeProvider>
+          <TransitRootWrapper>
             {children}
-          </TransitThemeProvider>
-        </QueryProvider>
-      </div>
+          </TransitRootWrapper>
+        </TransitThemeProvider>
+      </QueryProvider>
     </MainLayout>
+  )
+}
+
+function TransitRootWrapper({ children }: { children: React.ReactNode }) {
+  const { theme } = useTransitTheme()
+  return (
+    <div className="transit-root min-h-svh" data-transit-theme={theme}>
+      {/* Prevent flash of main-site theme during hydration */}
+      <style>{`
+        body { background: var(--bg); }
+      `}</style>
+      {children}
+    </div>
   )
 }

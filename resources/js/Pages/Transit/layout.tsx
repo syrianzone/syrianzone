@@ -26,10 +26,11 @@ export default function TransitLayout({
 function TransitRootWrapper({ children }: { children: React.ReactNode }) {
   const { theme } = useTransitTheme()
   const { url } = usePage()
+  const path = url.split('?')[0]
   const isFullHeight =
-    url.startsWith('/transit/studio') ||
-    url.startsWith('/transit/admin') ||
-    url.match(/^\/transit\/city\/[^/]+\/map$/) !== null
+    path.startsWith('/transit/studio') ||
+    path.startsWith('/transit/admin') ||
+    path.match(/^\/transit\/city\/[^/]+\/map$/) !== null
 
   return (
     <div

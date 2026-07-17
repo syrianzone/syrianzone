@@ -198,9 +198,11 @@ export default function Dashboard({
   allDrafts = [],
   publishedRoutes = []
 }: DashboardProps) {
-  const [activeTab, setActiveTab] = useState<'profile' | 'submissions' | 'polls'>(
-    role === 'user' ? 'submissions' : (role === 'transit_admin' ? 'profile' : 'polls')
-  );
+  const [activeTab, setActiveTab] = useState<'profile' | 'submissions' | 'polls'>(() => {
+    // ?tab=profile deep link from the navbar dropdown; profile is the only tab every role has
+    if (new URLSearchParams(window.location.search).get('tab') === 'profile') return 'profile';
+    return role === 'user' ? 'submissions' : (role === 'transit_admin' ? 'profile' : 'polls');
+  });
 
   // Profile Form States
   const [profileName, setProfileName] = useState(auth.user.name);

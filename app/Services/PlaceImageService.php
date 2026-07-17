@@ -53,6 +53,8 @@ class PlaceImageService
     [$display, $thumb] = $this->variants($disk->get($photo->original_path));
     $disk->put($photo->display_path, $display);
     $disk->put($photo->thumb_path, $thumb);
+    // bump updated_at so the versioned urls bypass the immutable browser cache
+    $photo->touch();
   }
 
   // Deletes the three files for a photo from the public disk (row deletion is the caller's job).

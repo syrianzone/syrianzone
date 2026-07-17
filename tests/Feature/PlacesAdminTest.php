@@ -21,6 +21,9 @@ test('admin endpoints reject guests and non-admins', function () {
   $this->actingAs($user)->deleteJson("/api/v1/admin/places/{$place->id}")->assertForbidden();
   $this->actingAs($user)->postJson('/api/v1/admin/place-photos/1/rotate')->assertForbidden();
   $this->actingAs($user)->postJson('/api/v1/admin/place-photos/1/replace')->assertForbidden();
+  $this->actingAs($user)->patchJson("/api/v1/admin/places/{$place->id}")->assertForbidden();
+  $this->actingAs($user)->postJson("/api/v1/admin/places/{$place->id}/photos")->assertForbidden();
+  $this->actingAs($user)->deleteJson('/api/v1/admin/place-photos/1')->assertForbidden();
 });
 
 test('admin can replace a photo and the new file has fresh paths', function () {
@@ -193,6 +196,168 @@ test('admin delete removes rows and photo files', function () {
   $this->assertDatabaseMissing('places', ['id' => $place->id]);
   $this->assertDatabaseMissing('place_photos', ['id' => $photo->id]);
   Storage::disk('public')->assertMissing([$photo->original_path, $photo->display_path, $photo->thumb_path]);
+});
+
+test('admin can update all editable fields of a place', function () {
+  $place = Place::factory()->approved()->create();
+  PlacePhoto::factory()->create(['place_id' => $place->id]);
+
+  $this->actingAs(placesAdmin())
+    ->patchJson("/api/v1/admin/places/{$place->id}", [
+      'name' => 'قلعة الحصن',
+      'category' => 'historical',
+      'description' => 'قلعة صليبية محفوظة بشكل ممتاز غرب حمص',
+      'lat' => 34.75712,
+      'lng' => 36.29454,
+    ])
+    ->assertOk()
+    ->assertJsonPath('name', 'قلعة الحصن')
+    ->assertJsonPath('category', 'historical')
+    ->assertJsonStructure(['id', 'name', 'category', 'description', 'lat', 'lng', 'status', 'saved_by_me', 'photos' => [['id', 'thumb_url', 'display_url', 'sort']], 'user' => ['id', 'name', 'avatar_url']]);
+
+  $this->assertDatabaseHas('places', [
+    'id' => $place->id,
+    'name' => 'قلعة الحصن',
+    'category' => 'historical',
+    'lat' => 34.75712,
+    'lng' => 36.29454,
+  ]);
+});
+
+test('admin update accepts a partial body and leaves other fields alone', function () {
+  $place = Place::factory()->create(['name' => 'الاسم القديم']);
+
+  $this->actingAs(placesAdmin())
+    ->patchJson("/api/v1/admin/places/{$place->id}", ['name' => 'الاسم الجديد'])
+    ->assertOk()
+    ->assertJsonPath('name', 'الاسم الجديد');
+
+  $place->refresh();
+  expect($place->name)->toBe('الاسم الجديد');
+  expect($place->status)->toBe('pending');
+});
+
+test('admin update rejects invalid values', function () {
+  $place = Place::factory()->create();
+  $admin = placesAdmin();
+
+  $this->actingAs($admin)
+    ->patchJson("/api/v1/admin/places/{$place->id}", ['category' => 'castle'])
+    ->assertStatus(422)
+    ->assertJsonValidationErrors(['category']);
+
+  $this->actingAs($admin)
+    ->patchJson("/api/v1/admin/places/{$place->id}", ['lat' => 31.9])
+    ->assertStatus(422)
+    ->assertJsonValidationErrors(['lat']);
+
+  $this->actingAs($admin)
+    ->patchJson("/api/v1/admin/places/{$place->id}", ['description' => 'قصير'])
+    ->assertStatus(422)
+    ->assertJsonValidationErrors(['description']);
+});
+
+test('admin update busts the map cache', function () {
+  $place = Place::factory()->approved()->create();
+  \Illuminate\Support\Facades\Cache::put('places:map', ['stale'], 3600);
+
+  $this->actingAs(placesAdmin())
+    ->patchJson("/api/v1/admin/places/{$place->id}", ['name' => 'اسم محدث للخريطة'])
+    ->assertOk();
+
+  expect(\Illuminate\Support\Facades\Cache::missing('places:map'))->toBeTrue();
+});
+
+test('admin can add a photo and it lands after the existing ones', function () {
+  Storage::fake('public');
+  $place = Place::factory()->approved()->create();
+  app(\App\Services\PlaceImageService::class)
+    ->store(\Illuminate\Http\UploadedFile::fake()->image('a.jpg', 800, 600), $place->id, 0);
+
+  $response = $this->actingAs(placesAdmin())
+    ->postJson("/api/v1/admin/places/{$place->id}/photos", [
+      'photo' => \Illuminate\Http\UploadedFile::fake()->image('b.jpg', 800, 600),
+    ])
+    ->assertCreated()
+    ->assertJsonPath('sort', 1)
+    ->assertJsonStructure(['id', 'thumb_url', 'display_url', 'sort']);
+
+  $photo = PlacePhoto::findOrFail($response->json('id'));
+  expect($place->photos()->count())->toBe(2);
+  Storage::disk('public')->assertExists([$photo->original_path, $photo->display_path, $photo->thumb_path]);
+});
+
+test('add photo is refused when the place already has five photos', function () {
+  Storage::fake('public');
+  $place = Place::factory()->approved()->create();
+  PlacePhoto::factory()->count(5)->sequence(fn ($seq) => ['sort' => $seq->index])->create(['place_id' => $place->id]);
+
+  $this->actingAs(placesAdmin())
+    ->postJson("/api/v1/admin/places/{$place->id}/photos", [
+      'photo' => \Illuminate\Http\UploadedFile::fake()->image('f.jpg', 800, 600),
+    ])
+    ->assertStatus(422)
+    ->assertJsonPath('message', 'لا يمكن إضافة أكثر من خمس صور');
+
+  expect($place->photos()->count())->toBe(5);
+});
+
+test('add photo rejects a non-image upload', function () {
+  Storage::fake('public');
+  $place = Place::factory()->approved()->create();
+  PlacePhoto::factory()->create(['place_id' => $place->id]);
+
+  $this->actingAs(placesAdmin())
+    ->postJson("/api/v1/admin/places/{$place->id}/photos", [
+      'photo' => \Illuminate\Http\UploadedFile::fake()->create('doc.pdf', 100, 'application/pdf'),
+    ])
+    ->assertStatus(422);
+});
+
+test('admin can delete a photo along with its files', function () {
+  Storage::fake('public');
+  $place = Place::factory()->approved()->create();
+  PlacePhoto::factory()->create(['place_id' => $place->id, 'sort' => 0]);
+  $victim = PlacePhoto::factory()->create([
+    'place_id' => $place->id,
+    'sort' => 1,
+    'original_path' => "places/{$place->id}/v.jpg",
+    'display_path' => "places/{$place->id}/v_display.webp",
+    'thumb_path' => "places/{$place->id}/v_thumb.webp",
+  ]);
+  foreach ([$victim->original_path, $victim->display_path, $victim->thumb_path] as $path) {
+    Storage::disk('public')->put($path, 'x');
+  }
+
+  $this->actingAs(placesAdmin())
+    ->deleteJson("/api/v1/admin/place-photos/{$victim->id}")
+    ->assertNoContent();
+
+  $this->assertDatabaseMissing('place_photos', ['id' => $victim->id]);
+  Storage::disk('public')->assertMissing([$victim->original_path, $victim->display_path, $victim->thumb_path]);
+  expect($place->photos()->count())->toBe(1);
+});
+
+test('delete photo refuses to remove the last photo', function () {
+  Storage::fake('public');
+  $place = Place::factory()->approved()->create();
+  $photo = PlacePhoto::factory()->create([
+    'place_id' => $place->id,
+    'original_path' => "places/{$place->id}/only.jpg",
+    'display_path' => "places/{$place->id}/only_display.webp",
+    'thumb_path' => "places/{$place->id}/only_thumb.webp",
+  ]);
+  foreach ([$photo->original_path, $photo->display_path, $photo->thumb_path] as $path) {
+    Storage::disk('public')->put($path, 'x');
+  }
+
+  $this->actingAs(placesAdmin())
+    ->deleteJson("/api/v1/admin/place-photos/{$photo->id}")
+    ->assertStatus(422)
+    ->assertJsonPath('message', 'لا يمكن حذف الصورة الأخيرة');
+
+  $this->assertDatabaseHas('place_photos', ['id' => $photo->id]);
+  Storage::disk('public')->assertExists([$photo->original_path, $photo->display_path, $photo->thumb_path]);
 });
 
 test('deleting an approved place busts the map cache', function () {

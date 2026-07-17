@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { zipSync } from 'fflate';
 import { ChevronLeft, ChevronRight, Download, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -15,6 +16,7 @@ export function Lightbox(props: {
   const [current, setCurrent] = useState(index);
   const [busy, setBusy] = useState<'one' | 'all' | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -46,19 +48,24 @@ export function Lightbox(props: {
     }
   };
 
-  const downloadPhoto = async (target: PlacePhoto, position: number) => {
-    const response = await fetch(target.display_url);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const blob = await response.blob();
+  // keep the Arabic name, strip only filesystem-unsafe characters
+  const safeName = name.replace(/[\\/:*?"<>|]+/g, '-');
+
+  const saveBlob = (blob: Blob, filename: string) => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    // keep the Arabic name, strip only filesystem-unsafe characters
-    link.download = `${name.replace(/[\\/:*?"<>|]+/g, '-')}-${position}.webp`;
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     link.remove();
     URL.revokeObjectURL(url);
+  };
+
+  const downloadPhoto = async (target: PlacePhoto, position: number) => {
+    const response = await fetch(target.display_url);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    saveBlob(await response.blob(), `${safeName}-${position}.webp`);
   };
 
   const downloadCurrent = async () => {
@@ -76,17 +83,60 @@ export function Lightbox(props: {
   const downloadAll = async () => {
     setBusy('all');
     setError(null);
-    let failed = false;
+    setProgress({ done: 0, total: photos.length });
+    const entries: Record<string, Uint8Array> = {};
+    let failed = 0;
     for (let i = 0; i < photos.length; i++) {
       try {
-        await downloadPhoto(photos[i], i + 1);
+        const res = await fetch(photos[i].display_url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        entries[`${safeName}-${i + 1}.webp`] = new Uint8Array(await res.arrayBuffer());
       } catch {
-        failed = true;
+        failed++;
       }
+      setProgress({ done: i + 1, total: photos.length });
     }
-    if (failed) setError('تعذر تحميل الصورة');
+    if (Object.keys(entries).length > 0) {
+      // webp is already compressed: store, don't deflate
+      const zipped = zipSync(entries, { level: 0 });
+      saveBlob(new Blob([zipped], { type: 'application/zip' }), `${safeName}.zip`);
+    }
+    if (failed > 0) setError(failed === photos.length ? 'تعذر تحميل الصورة' : 'تعذر تحميل بعض الصور');
     setBusy(null);
+    setProgress(null);
   };
+
+  const downloadButtons = (buttonClass: string) => (
+    <>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className={buttonClass}
+        onClick={downloadCurrent}
+        disabled={busy !== null}
+      >
+        <Download />
+        تحميل
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className={buttonClass}
+        onClick={downloadAll}
+        disabled={busy !== null}
+      >
+        {busy === 'all' ? <Loader2 className="animate-spin" /> : <Download />}
+        {busy === 'all' ? 'جارٍ التحميل' : 'تحميل الكل'}
+        {busy === 'all' && progress && (
+          <span dir="ltr" className="tabular-nums">
+            {progress.done}/{progress.total}
+          </span>
+        )}
+      </Button>
+    </>
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -97,27 +147,8 @@ export function Lightbox(props: {
       >
         <DialogTitle className="sr-only">{name}</DialogTitle>
         <div className="relative flex items-center gap-2 p-3 pe-14">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={downloadCurrent}
-            disabled={busy !== null}
-          >
-            <Download />
-            تحميل
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={downloadAll}
-            disabled={busy !== null}
-          >
-            {busy === 'all' ? <Loader2 className="animate-spin" /> : <Download />}
-            {busy === 'all' ? 'جارٍ التحميل' : 'تحميل الكل'}
-          </Button>
-          {error && <span className="text-sm text-destructive">{error}</span>}
+          {downloadButtons('hidden sm:inline-flex')}
+          {error && <span className="hidden text-sm text-destructive sm:inline">{error}</span>}
           <span
             dir="ltr"
             className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-sm tabular-nums text-muted-foreground"
@@ -163,6 +194,10 @@ export function Lightbox(props: {
               </Button>
             </>
           )}
+        </div>
+        <div className="flex flex-col gap-2 border-t p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:hidden">
+          {error && <span className="text-sm text-destructive">{error}</span>}
+          <div className="flex gap-2">{downloadButtons('h-11 flex-1')}</div>
         </div>
       </DialogContent>
     </Dialog>

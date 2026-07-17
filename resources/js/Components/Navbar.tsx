@@ -90,6 +90,7 @@ const externalLinks = [
 export default function Navbar() {
   const { url } = usePage();
   const pathname = url.split('?')[0];
+  const isTransitPage = pathname.startsWith('/transit');
   const [isOpen, setIsOpen] = React.useState(false);
   const [theme, setTheme] = React.useState('dark');
   const { user } = useAuth();
@@ -141,20 +142,65 @@ export default function Navbar() {
             </SheetHeader>
             <Separator className="my-4" />
             <div className="flex flex-col gap-4 px-10 overflow-y-auto max-h-[calc(100vh-8rem)]">
-              {navLinks.map(({ href, text, icon: Icon }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  onClick={() => setIsOpen(false)}
-                  className={cn(
-                    "flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary",
-                    pathname === href ? "text-primary" : "text-muted-foreground"
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  {text}
-                </Link>
-              ))}
+              {isTransitPage ? (
+                <>
+                  <Link
+                    href="/transit"
+                    onClick={() => setIsOpen(false)}
+                    className={cn(
+                      "flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary",
+                      pathname === '/transit' ? "text-primary" : "text-muted-foreground"
+                    )}
+                  >
+                    <Bus className="h-4 w-4" />
+                    الرئيسية
+                  </Link>
+                  <Link
+                    href="/transit/studio"
+                    onClick={() => setIsOpen(false)}
+                    className={cn(
+                      "flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary",
+                      pathname === '/transit/studio' ? "text-primary" : "text-muted-foreground"
+                    )}
+                  >
+                    <Sparkles className="h-4 w-4 text-[var(--gold)]" />
+                    إضافة خط / الاستوديو
+                  </Link>
+
+                  <Separator className="my-2" />
+                  <p className="text-xs font-bold text-muted-foreground/60 px-1">أقسام الموقع الأخرى</p>
+                  
+                  {navLinks.filter(n => n.href !== '/transit').map(({ href, text, icon: Icon }) => (
+                    <Link
+                      key={href}
+                      href={href}
+                      onClick={() => setIsOpen(false)}
+                      className={cn(
+                        "flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary",
+                        pathname === href ? "text-primary" : "text-muted-foreground"
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {text}
+                    </Link>
+                  ))}
+                </>
+              ) : (
+                navLinks.map(({ href, text, icon: Icon }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={() => setIsOpen(false)}
+                    className={cn(
+                      "flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary",
+                      pathname === href ? "text-primary" : "text-muted-foreground"
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {text}
+                  </Link>
+                ))
+              )}
               <Separator className="my-2" />
               {externalLinks.map(({ href, text, icon: Icon, isFlag, image }) => (
                 <a
@@ -240,89 +286,193 @@ export default function Navbar() {
         {/* Desktop Navigation */}
         <NavigationMenu className="hidden lg:flex" dir="rtl">
           <NavigationMenuList className="gap-1">
-            {navLinks.slice(0, 5).map(({ href, text, icon: Icon }) => (
-              <NavigationMenuItem key={href}>
-                <NavigationMenuLink asChild>
-                  <Link
-                    href={href}
-                    className={cn(
-                      navigationMenuTriggerStyle(),
-                      "bg-transparent hover:bg-accent/50",
-                      pathname === href && "text-primary bg-accent/50"
-                    )}
-                  >
-                    <Icon className="h-4 w-4 ml-2" />
-                    {text}
-                  </Link>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-            ))}
+            {isTransitPage ? (
+              <>
+                <NavigationMenuItem>
+                  <NavigationMenuLink asChild>
+                    <Link
+                      href="/transit"
+                      className={cn(
+                        navigationMenuTriggerStyle(),
+                        "bg-transparent hover:bg-accent/50",
+                        pathname === '/transit' && "text-primary bg-accent/50"
+                      )}
+                    >
+                      <Bus className="h-4 w-4 ml-2" />
+                      الرئيسية
+                    </Link>
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
 
-            <NavigationMenuItem>
-              <NavigationMenuTrigger className="bg-transparent hover:bg-accent/50">المزيد</NavigationMenuTrigger>
-              <NavigationMenuContent className="text-right">
-                <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
-                  {navLinks.slice(5).map(({ href, text, icon: Icon }) => (
-                    <li key={href}>
-                      <NavigationMenuLink asChild>
-                        <Link
-                          href={href}
-                          className={cn(
-                            "group block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-                            pathname === href ? "bg-accent/50 text-primary" : ""
-                          )}
-                        >
-                          <div className="flex items-center gap-2 text-sm font-medium leading-none mb-1">
-                            <Icon className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                <NavigationMenuItem>
+                  <NavigationMenuLink asChild>
+                    <Link
+                      href="/transit/studio"
+                      className={cn(
+                        navigationMenuTriggerStyle(),
+                        "bg-transparent hover:bg-accent/50",
+                        pathname === '/transit/studio' && "text-primary bg-accent/50"
+                      )}
+                    >
+                      <Sparkles className="h-4 w-4 ml-2 text-[var(--gold)]" />
+                      إضافة خط / الاستوديو
+                    </Link>
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger className="bg-transparent hover:bg-accent/50">أقسام الموقع</NavigationMenuTrigger>
+                  <NavigationMenuContent className="text-right">
+                    <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
+                      {navLinks.map(({ href, text, icon: Icon }) => (
+                        <li key={href}>
+                          <NavigationMenuLink asChild>
+                            <Link
+                              href={href}
+                              className={cn(
+                                "group block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+                                pathname === href ? "bg-accent/50 text-primary" : ""
+                              )}
+                            >
+                              <div className="flex items-center gap-2 text-sm font-medium leading-none mb-1">
+                                <Icon className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                                {text}
+                              </div>
+                              <p className="line-clamp-2 text-xs leading-snug text-muted-foreground">
+                                انتقل إلى صفحة {text} لمزيد من المعلومات.
+                              </p>
+                            </Link>
+                          </NavigationMenuLink>
+                        </li>
+                      ))}
+                      <Separator className="col-span-2 my-2" />
+                      {externalLinks.map(({ href, text, icon: Icon, isFlag, image }) => (
+                        <li key={href} className="col-span-1">
+                          <a
+                            href={href}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center gap-2 rounded-md p-3 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                          >
+                            {isFlag ? (
+                              <img src="/flag-replacer/1f1f8-1f1fe.svg" alt="Flag" className="w-4 h-4 ml-1" />
+                            ) : image ? (
+                              <img src={image} alt={text} className="w-4 h-4 object-contain" />
+                            ) : Icon ? (
+                              <Icon className="h-4 w-4 text-muted-foreground" />
+                            ) : null}
                             {text}
-                          </div>
-                          <p className="line-clamp-2 text-xs leading-snug text-muted-foreground">
-                            انتقل إلى صفحة {text} لمزيد من المعلومات.
-                          </p>
+                            <ExternalLink className="h-3 w-3 mr-auto opacity-50" />
+                          </a>
+                        </li>
+                      ))}
+                      <Separator className="col-span-2 my-2" />
+                      <li className="col-span-2 flex justify-center gap-6 text-xs text-muted-foreground py-1">
+                        <Link
+                          href="/privacy"
+                          className="hover:text-primary transition-colors"
+                        >
+                          سياسة الخصوصية
                         </Link>
-                      </NavigationMenuLink>
-                    </li>
-                  ))}
-                  <Separator className="col-span-2 my-2" />
-                  {externalLinks.map(({ href, text, icon: Icon, isFlag, image }) => (
-                    <li key={href} className="col-span-1">
-                      <a
+                        <span>•</span>
+                        <Link
+                          href="/terms"
+                          className="hover:text-primary transition-colors"
+                        >
+                          الشروط والأحكام
+                        </Link>
+                      </li>
+                    </ul>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+              </>
+            ) : (
+              <>
+                {navLinks.slice(0, 5).map(({ href, text, icon: Icon }) => (
+                  <NavigationMenuItem key={href}>
+                    <NavigationMenuLink asChild>
+                      <Link
                         href={href}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center gap-2 rounded-md p-3 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                        className={cn(
+                          navigationMenuTriggerStyle(),
+                          "bg-transparent hover:bg-accent/50",
+                          pathname === href && "text-primary bg-accent/50"
+                        )}
                       >
-                        {isFlag ? (
-                          <img src="/flag-replacer/1f1f8-1f1fe.svg" alt="Flag" className="w-4 h-4 ml-1" />
-                        ) : image ? (
-                          <img src={image} alt={text} className="w-4 h-4 object-contain" />
-                        ) : Icon ? (
-                          <Icon className="h-4 w-4 text-muted-foreground" />
-                        ) : null}
+                        <Icon className="h-4 w-4 ml-2" />
                         {text}
-                        <ExternalLink className="h-3 w-3 mr-auto opacity-50" />
-                      </a>
-                    </li>
-                  ))}
-                  <Separator className="col-span-2 my-2" />
-                  <li className="col-span-2 flex justify-center gap-6 text-xs text-muted-foreground py-1">
-                    <Link
-                      href="/privacy"
-                      className="hover:text-primary transition-colors"
-                    >
-                      سياسة الخصوصية
-                    </Link>
-                    <span>•</span>
-                    <Link
-                      href="/terms"
-                      className="hover:text-primary transition-colors"
-                    >
-                      الشروط والأحكام
-                    </Link>
-                  </li>
-                </ul>
-              </NavigationMenuContent>
-            </NavigationMenuItem>
+                      </Link>
+                    </NavigationMenuLink>
+                  </NavigationMenuItem>
+                ))}
+
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger className="bg-transparent hover:bg-accent/50">المزيد</NavigationMenuTrigger>
+                  <NavigationMenuContent className="text-right">
+                    <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
+                      {navLinks.slice(5).map(({ href, text, icon: Icon }) => (
+                        <li key={href}>
+                          <NavigationMenuLink asChild>
+                            <Link
+                              href={href}
+                              className={cn(
+                                "group block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+                                pathname === href ? "bg-accent/50 text-primary" : ""
+                              )}
+                            >
+                              <div className="flex items-center gap-2 text-sm font-medium leading-none mb-1">
+                                <Icon className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                                {text}
+                              </div>
+                              <p className="line-clamp-2 text-xs leading-snug text-muted-foreground">
+                                انتقل إلى صفحة {text} لمزيد من المعلومات.
+                              </p>
+                            </Link>
+                          </NavigationMenuLink>
+                        </li>
+                      ))}
+                      <Separator className="col-span-2 my-2" />
+                      {externalLinks.map(({ href, text, icon: Icon, isFlag, image }) => (
+                        <li key={href} className="col-span-1">
+                          <a
+                            href={href}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center gap-2 rounded-md p-3 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                          >
+                            {isFlag ? (
+                              <img src="/flag-replacer/1f1f8-1f1fe.svg" alt="Flag" className="w-4 h-4 ml-1" />
+                            ) : image ? (
+                              <img src={image} alt={text} className="w-4 h-4 object-contain" />
+                            ) : Icon ? (
+                              <Icon className="h-4 w-4 text-muted-foreground" />
+                            ) : null}
+                            {text}
+                            <ExternalLink className="h-3 w-3 mr-auto opacity-50" />
+                          </a>
+                        </li>
+                      ))}
+                      <Separator className="col-span-2 my-2" />
+                      <li className="col-span-2 flex justify-center gap-6 text-xs text-muted-foreground py-1">
+                        <Link
+                          href="/privacy"
+                          className="hover:text-primary transition-colors"
+                        >
+                          سياسة الخصوصية
+                        </Link>
+                        <span>•</span>
+                        <Link
+                          href="/terms"
+                          className="hover:text-primary transition-colors"
+                        >
+                          الشروط والأحكام
+                        </Link>
+                      </li>
+                    </ul>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+              </>
+            )}
           </NavigationMenuList>
         </NavigationMenu>
 

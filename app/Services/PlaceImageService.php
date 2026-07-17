@@ -110,9 +110,11 @@ class PlaceImageService
   private function variants(string $binary): array
   {
     $manager = ImageManager::withDriver(\Intervention\Image\Drivers\Gd\Driver::class);
-    return [
-      (string) $manager->read($binary)->scaleDown(width: 1600, height: 1600)->toWebp(quality: 80),
-      (string) $manager->read($binary)->cover(400, 400)->toWebp(quality: 75),
-    ];
+    // decode the full-size original exactly once: a 12MP photo is ~100MB as a GD
+    // bitmap, and decoding it a second time for the thumb blew the 256M limit in
+    // production; the thumb crops the 1600px display copy instead (~20MB decode)
+    $display = (string) $manager->read($binary)->scaleDown(width: 1600, height: 1600)->toWebp(quality: 80);
+    $thumb = (string) $manager->read($display)->cover(400, 400)->toWebp(quality: 75);
+    return [$display, $thumb];
   }
 }

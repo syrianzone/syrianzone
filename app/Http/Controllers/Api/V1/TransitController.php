@@ -51,7 +51,7 @@ class TransitController extends Controller
 
     public function getRoutes($id)
     {
-        $routes = Route::where('city_id', $id)->where('status', 'published')->get();
+        $routes = Route::where('city_id', $id)->where('status', 'published')->withCount('stops')->get();
         return response()->json($routes->map(function ($r) {
             return [
                 'id' => $r->id,
@@ -60,6 +60,7 @@ class TransitController extends Controller
                 'colorIndex' => $r->color_index,
                 'priceOld' => $r->price_old,
                 'priceNew' => $r->price_new,
+                'stopsCount' => $r->stops_count,
             ];
         }));
     }

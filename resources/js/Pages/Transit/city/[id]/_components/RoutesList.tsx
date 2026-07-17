@@ -64,11 +64,23 @@ export default function RoutesList({ cityId }: RoutesListProps) {
                 <h3 className="text-sm sm:text-base font-semibold text-foreground leading-snug break-words">
                   {route.nameAr}
                 </h3>
-                {route.nameEn && (
-                  <p className="mt-1 text-xs text-muted-foreground font-medium">
-                    {route.nameEn}
-                  </p>
-                )}
+                <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                  {route.nameEn && <span className="font-medium">{route.nameEn}</span>}
+                  {route.nameEn && (route.stopsCount !== undefined || route.priceNew > 0) && (
+                    <span className="opacity-40">•</span>
+                  )}
+                  {route.stopsCount !== undefined && (
+                    <span>{route.stopsCount.toLocaleString('ar-SY')} موقف</span>
+                  )}
+                  {route.stopsCount !== undefined && route.priceNew > 0 && (
+                    <span className="opacity-40">•</span>
+                  )}
+                  {route.priceNew > 0 && (
+                    <span className="font-bold text-[var(--gold)]">
+                      {route.priceNew.toLocaleString('ar-SY')} ل.س
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 

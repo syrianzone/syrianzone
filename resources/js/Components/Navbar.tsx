@@ -26,6 +26,7 @@ import {
   Phone,
   Sparkles,
   HelpCircle,
+  Shield,
 } from 'lucide-react';
 
 import { useAuth } from '@/Contexts/AuthContext';
@@ -55,6 +56,7 @@ import { isDarkTheme } from '@/lib/theme';
 
 const navLinks = [
   { href: '/syofficial', text: 'الحسابات الرسمية', icon: CheckCircle2 },
+  { href: '/central', text: 'الدليل المركزي', icon: Shield },
   { href: '/roznama', text: 'الروزنامة', icon: Calendar },
   { href: '/phonebook', text: 'دليل الهاتف', icon: Phone },
   { href: '/syid', text: 'الهوية البصرية', icon: Palette },

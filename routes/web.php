@@ -56,6 +56,9 @@ Route::get('/house', [ExternalDataController::class, 'house']);
 Route::get('/alignment', [ExternalDataController::class, 'alignment']);
 Route::get('/govapps', [ExternalDataController::class, 'govapps']);
 Route::get('/population', [PopulationAtlasController::class, 'renderIndex']);
+Route::get('/central', function () {
+    return Inertia::render('Central/Index');
+});
 
 Route::get('/guesswho', [GuessWhoController::class, 'index']);
 Route::post('/guesswho/rooms', [GuessWhoController::class, 'createRoom']);

@@ -9,6 +9,7 @@ import { useStudioStore, type StopFeature, type WizardStep } from '../_store/use
 import { useMapData } from '../_hooks/useMapData'
 import cities from '../_data/cities.json'
 import TransitLayout from '../layout'
+import { useTransitTheme } from '../_components/TransitThemeContext'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type DrawMode = 'idle' | 'line' | 'point'
@@ -460,6 +461,7 @@ function TransitStudioPageContent() {
     step, cityId, drawnLine, stops, nameAr, submittedDraftId,
     setStep, setCity, setDrawnLine, updateStopName, setSubmittedDraftId, reset,
   } = useStudioStore()
+  const { theme } = useTransitTheme()
 
   const [mapReady,           setMapReady]           = useState(false)
   const [drawMode,           setDrawMode]           = useState<DrawMode>('idle')
@@ -514,7 +516,7 @@ function TransitStudioPageContent() {
 
     const map = new maplibregl.Map({
       container: mapContainer.current,
-      style: '/styles/styles/dark-matter.json',
+      style: theme === 'jasmine' ? '/styles/styles/positron.json' : '/styles/styles/dark-matter.json',
       center: [36.2913, 33.5138],
       zoom: 5,
       attributionControl: false,
@@ -648,9 +650,9 @@ function TransitStudioPageContent() {
       window.removeEventListener('keydown', onKeyDown)
       map.remove()
       mapRef.current = null
+      setMapReady(false)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [theme])
 
   // ─── Sync drawn line → map ───────────────────────────────────────────────────
   useEffect(() => {

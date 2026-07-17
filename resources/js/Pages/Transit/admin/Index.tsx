@@ -8,6 +8,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useAdminDrafts, useMapData } from '../_hooks/useMapData'
 import TransitLayout from '../layout'
 import { router, Head } from '@inertiajs/react'
+import { useTransitTheme } from '../_components/TransitThemeContext'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type DraftStatus = 'pending' | 'approved' | 'rejected'
@@ -62,6 +63,7 @@ function TransitAdminPageContent() {
   const mapContainer = useRef<HTMLDivElement>(null)
   const mapRef       = useRef<maplibregl.Map | null>(null)
   const [mapReady,       setMapReady]       = useState(false)
+  const { theme } = useTransitTheme()
   const [selectedDraft,  setSelectedDraft]  = useState<Draft | null>(null)
   const [statusFilter,   setStatusFilter]   = useState<StatusFilter>('all')
   const [cityFilter,     setCityFilter]     = useState('all')
@@ -88,7 +90,7 @@ function TransitAdminPageContent() {
 
     const map = new maplibregl.Map({
       container: mapContainer.current,
-      style: '/styles/styles/dark-matter.json',
+      style: theme === 'jasmine' ? '/styles/styles/positron.json' : '/styles/styles/dark-matter.json',
       center: [36.29, 33.51],
       zoom: 7,
       attributionControl: false,
@@ -124,8 +126,12 @@ function TransitAdminPageContent() {
       setMapReady(true)
     })
 
-    return () => { map.remove(); mapRef.current = null }
-  }, [])
+    return () => {
+      map.remove()
+      mapRef.current = null
+      setMapReady(false)
+    }
+  }, [theme])
 
   // ─── Update draft layer when selection changes ───────────────────────────────
   useEffect(() => {

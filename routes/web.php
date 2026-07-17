@@ -221,6 +221,10 @@ Route::middleware('auth')->group(function () {
             ->middleware('throttle:20,60');
         Route::get('/my/places', [\App\Http\Controllers\PlaceController::class, 'mine'])
             ->middleware('throttle:60,1');
+        // Every accepted move re-enters the moderation queue, so mirror the
+        // store() coarse shield instead of a per-minute rate.
+        Route::patch('/my/places/{id}/location', [\App\Http\Controllers\PlaceController::class, 'updateLocation'])
+            ->whereNumber('id')->middleware('throttle:20,60');
         Route::get('/my/saves', [\App\Http\Controllers\PlaceEngagementController::class, 'mySaves'])
             ->middleware('throttle:60,1');
 

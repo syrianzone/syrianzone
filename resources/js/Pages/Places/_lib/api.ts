@@ -2,6 +2,7 @@ import axios from '@/Lib/axios';
 import type {
   GeoSuggestion,
   AdminPlace,
+  LatLng,
   MyPlace,
   NearbyPlace,
   Paginated,
@@ -53,6 +54,11 @@ export const api = {
 
   async myPlaces(page?: number): Promise<Paginated<MyPlace>> {
     const { data } = await axios.get(`${base}/my/places`, { params: { page } });
+    return data;
+  },
+
+  async updateMyPlaceLocation(id: number, coords: LatLng): Promise<{ id: number; lat: number; lng: number; status: 'pending' }> {
+    const { data } = await axios.patch(`${base}/my/places/${id}/location`, coords);
     return data;
   },
 
@@ -124,6 +130,7 @@ const STATUS_MESSAGES: Record<number, string> = {
   401: 'سجل الدخول للمتابعة',
   403: 'غير مسموح لك بهذا الإجراء',
   404: 'العنصر غير موجود',
+  413: 'الصور المرفوعة كبيرة جداً، الحد الأقصى 8 ميغابايت لكل صورة',
   419: 'انتهت الجلسة، أعد تحميل الصفحة',
   422: 'تحقق من البيانات المدخلة',
   429: 'محاولات كثيرة، انتظر قليلاً ثم أعد المحاولة',
@@ -136,4 +143,17 @@ export function extractError(e: unknown): string {
   if (message && /[\u0600-\u06FF]/.test(message)) return message;
   const status = err.response?.status;
   return (status !== undefined && STATUS_MESSAGES[status]) || 'حدث خطأ، حاول مجدداً';
+}
+
+export function extractFieldErrors(e: unknown): Record<string, string> | null {
+  const err = e as { response?: { status?: number; data?: { errors?: Record<string, string[]> } } };
+  if (err.response?.status !== 422 || !err.response.data?.errors) return null;
+  const out: Record<string, string> = {};
+  for (const [key, msgs] of Object.entries(err.response.data.errors)) {
+    // photos.0, photos.1 ... collapse onto the photos field
+    const field = key.startsWith('photos') ? 'photos' : key.split('.')[0];
+    // same guard as extractError: only trust the app's own Arabic messages
+    if (!(field in out) && msgs[0] && /[؀-ۿ]/.test(msgs[0])) out[field] = msgs[0];
+  }
+  return Object.keys(out).length ? out : null;
 }

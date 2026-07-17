@@ -78,6 +78,13 @@ class DashboardController extends Controller
         // decompression bombs before GD ever allocates width*height*4 bytes
         $request->validate([
             'avatar' => 'required|image|mimes:jpg,jpeg,png,webp|max:4096|dimensions:min_width=64,min_height=64,max_width=6000,max_height=6000',
+        ], [
+            'avatar.required' => 'اختر صورة',
+            'avatar.uploaded' => 'تعذر رفع الصورة، تأكد أن حجمها لا يتجاوز 4 ميغابايت',
+            'avatar.image' => 'الملف يجب أن يكون صورة',
+            'avatar.mimes' => 'الصورة يجب أن تكون بصيغة JPG أو PNG أو WebP',
+            'avatar.max' => 'حجم الصورة يجب ألا يتجاوز 4 ميغابايت',
+            'avatar.dimensions' => 'أبعاد الصورة يجب أن تكون بين 64x64 و 6000x6000 بكسل',
         ]);
 
         try {

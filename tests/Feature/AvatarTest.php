@@ -90,7 +90,26 @@ test('rejects a non-image upload', function () {
 
   $this->actingAs(avatarUser())->postJson('/api/account/avatar', [
     'avatar' => UploadedFile::fake()->create('doc.pdf', 100, 'application/pdf'),
-  ])->assertStatus(422)->assertJsonValidationErrors('avatar');
+  ])->assertStatus(422)
+    ->assertJsonValidationErrors('avatar')
+    ->assertJsonPath('errors.avatar.0', 'الملف يجب أن يكون صورة');
+});
+
+test('rejects an unsupported image format with the arabic mimes message', function () {
+  Storage::fake('public');
+
+  $this->actingAs(avatarUser())->postJson('/api/account/avatar', [
+    'avatar' => UploadedFile::fake()->image('a.gif', 300, 300),
+  ])->assertStatus(422)
+    ->assertJsonPath('errors.avatar.0', 'الصورة يجب أن تكون بصيغة JPG أو PNG أو WebP');
+});
+
+test('rejects a missing avatar with the arabic required message', function () {
+  Storage::fake('public');
+
+  $this->actingAs(avatarUser())->postJson('/api/account/avatar', [])
+    ->assertStatus(422)
+    ->assertJsonPath('errors.avatar.0', 'اختر صورة');
 });
 
 test('rejects an upload above 4MB', function () {
@@ -98,7 +117,18 @@ test('rejects an upload above 4MB', function () {
 
   $this->actingAs(avatarUser())->postJson('/api/account/avatar', [
     'avatar' => UploadedFile::fake()->image('big.jpg')->size(5000),
-  ])->assertStatus(422)->assertJsonValidationErrors('avatar');
+  ])->assertStatus(422)
+    ->assertJsonValidationErrors('avatar')
+    ->assertJsonPath('errors.avatar.0', 'حجم الصورة يجب ألا يتجاوز 4 ميغابايت');
+});
+
+test('rejects a too-small avatar with the arabic dimensions message', function () {
+  Storage::fake('public');
+
+  $this->actingAs(avatarUser())->postJson('/api/account/avatar', [
+    'avatar' => UploadedFile::fake()->image('small.png', 32, 32),
+  ])->assertStatus(422)
+    ->assertJsonPath('errors.avatar.0', 'أبعاد الصورة يجب أن تكون بين 64x64 و 6000x6000 بكسل');
 });
 
 test('google login does not clobber a custom avatar', function () {

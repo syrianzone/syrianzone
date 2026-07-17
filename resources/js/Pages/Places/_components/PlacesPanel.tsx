@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, MapPin } from 'lucide-react';
 import { useAuth } from '@/Contexts/AuthContext';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/Lib/utils';
 import { api } from '../_lib/api';
 import type { MyPlace, Paginated, PlaceListItem, PlaceStatus } from '../_lib/types';
+import { EditLocationDialog } from './EditLocationDialog';
 import { PlaceCard } from './PlaceCard';
 import { PlaceDetailView } from './PlaceDetailView';
 
@@ -122,20 +123,28 @@ function SavesTab(props: { onSelect: (id: number) => void }) {
 
 function MineTab(props: { onSelect: (id: number) => void }) {
   const { items, loading, failed, reload, hasMore, loadMore } = usePagedList<MyPlace>((page) => api.myPlaces(page));
+  const [editing, setEditing] = useState<MyPlace | null>(null);
   return (
-    <ListShell loading={loading} empty={items.length === 0} hasMore={hasMore} onLoadMore={loadMore} failed={failed} onRetry={reload}>
-      {items.map((p) => (
-        <div key={p.id} className="space-y-1">
-          <PlaceCard place={p} onClick={props.onSelect} />
-          <div className="flex items-start gap-2 px-1">
-            <Badge variant={STATUS_VARIANTS[p.status]}>{STATUS_LABELS[p.status]}</Badge>
-            {p.status === 'rejected' && p.rejection_reason && (
-              <p className="text-xs text-muted-foreground">{p.rejection_reason}</p>
-            )}
+    <>
+      <ListShell loading={loading} empty={items.length === 0} hasMore={hasMore} onLoadMore={loadMore} failed={failed} onRetry={reload}>
+        {items.map((p) => (
+          <div key={p.id} className="space-y-1">
+            <PlaceCard place={p} onClick={props.onSelect} />
+            <div className="flex items-start gap-2 px-1">
+              <Badge variant={STATUS_VARIANTS[p.status]}>{STATUS_LABELS[p.status]}</Badge>
+              {p.status === 'rejected' && p.rejection_reason && (
+                <p className="text-xs text-muted-foreground">{p.rejection_reason}</p>
+              )}
+              <Button type="button" variant="ghost" size="sm" className="ms-auto" onClick={() => setEditing(p)}>
+                <MapPin className="h-4 w-4" />
+                تعديل الموقع
+              </Button>
+            </div>
           </div>
-        </div>
-      ))}
-    </ListShell>
+        ))}
+      </ListShell>
+      <EditLocationDialog place={editing} onOpenChange={(o) => !o && setEditing(null)} onUpdated={reload} />
+    </>
   );
 }
 

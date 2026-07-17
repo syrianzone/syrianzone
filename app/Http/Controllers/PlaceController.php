@@ -43,6 +43,8 @@ class PlaceController extends Controller
       ];
     });
 
+    // 60s of client-side staleness is accepted: moved or moderated pins may linger
+    // one minute in browsers, same as approvals appearing; server cache busts instantly
     return response()->json($geojson)->header('Cache-Control', 'public, max-age=60');
   }
 
@@ -222,6 +224,34 @@ class PlaceController extends Controller
       'photos' => 'required|array|min:1|max:5',
       // max_width/max_height cap decompression bombs before GD allocates the bitmap
       'photos.*' => 'required|image|mimes:jpg,jpeg,png,webp|max:8192|dimensions:min_width=200,min_height=200,max_width=6000,max_height=6000',
+    ], [
+      'name.required' => 'أدخل اسم المكان',
+      'name.string' => 'اسم المكان يجب أن يكون نصاً',
+      'name.max' => 'اسم المكان يجب ألا يتجاوز 160 حرفاً',
+      'category.required' => 'اختر التصنيف',
+      'category.string' => 'التصنيف المختار غير صالح',
+      'category.in' => 'التصنيف المختار غير صالح',
+      'description.required' => 'أدخل وصف المكان',
+      'description.string' => 'الوصف يجب أن يكون نصاً',
+      'description.min' => 'الوصف يجب ألا يقل عن 20 حرفاً',
+      'description.max' => 'الوصف يجب ألا يتجاوز 1000 حرف',
+      'lat.required' => 'حدد موقع المكان على الخريطة',
+      'lat.numeric' => 'خط العرض يجب أن يكون رقماً',
+      'lat.between' => 'خط العرض يجب أن يكون بين 32.0 و 37.5 (داخل سوريا)',
+      'lng.required' => 'حدد موقع المكان على الخريطة',
+      'lng.numeric' => 'خط الطول يجب أن يكون رقماً',
+      'lng.between' => 'خط الطول يجب أن يكون بين 35.5 و 42.5 (داخل سوريا)',
+      'photos.required' => 'أضف صورة واحدة على الأقل',
+      'photos.array' => 'صيغة الصور المرسلة غير صالحة',
+      'photos.min' => 'أضف صورة واحدة على الأقل',
+      'photos.max' => 'الحد الأقصى 5 صور',
+      // implicit rule when PHP itself rejects the upload (e.g. over upload_max_filesize)
+      'photos.*.uploaded' => 'تعذر رفع الصورة، تأكد أن حجمها لا يتجاوز 8 ميغابايت',
+      'photos.*.required' => 'تعذر قراءة إحدى الصور، أعد اختيارها',
+      'photos.*.image' => 'الملف يجب أن يكون صورة',
+      'photos.*.mimes' => 'الصورة يجب أن تكون بصيغة JPG أو PNG أو WebP',
+      'photos.*.max' => 'حجم الصورة يجب ألا يتجاوز 8 ميغابايت',
+      'photos.*.dimensions' => 'أبعاد الصورة يجب أن تكون بين 200x200 و 6000x6000 بكسل',
     ]);
 
     $stored = [];
@@ -265,6 +295,42 @@ class PlaceController extends Controller
       ]);
 
     return response()->json($places);
+  }
+
+  public function updateLocation(Request $request, int $id)
+  {
+    // Ownership scoping: strangers and unknown ids both get 404, no existence leak.
+    $place = Place::where('user_id', $request->user()->id)->findOrFail($id);
+
+    $validated = $request->validate([
+      'lat' => 'required|numeric|between:32.0,37.5',
+      'lng' => 'required|numeric|between:35.5,42.5',
+    ], [
+      'lat.required' => 'أدخل الإحداثيات',
+      'lat.numeric' => 'خط العرض يجب أن يكون رقماً',
+      'lat.between' => 'خط العرض يجب أن يكون بين 32.0 و 37.5 (داخل سوريا)',
+      'lng.required' => 'أدخل الإحداثيات',
+      'lng.numeric' => 'خط الطول يجب أن يكون رقماً',
+      'lng.between' => 'خط الطول يجب أن يكون بين 35.5 و 42.5 (داخل سوريا)',
+    ]);
+
+    // Any moved pin re-enters the moderation queue, whatever its prior status.
+    $place->update([
+      'lat' => $validated['lat'],
+      'lng' => $validated['lng'],
+      'status' => 'pending',
+      'rejection_reason' => null,
+      'approved_at' => null,
+    ]);
+    // An approved place may have just left the public map.
+    Cache::forget('places:map');
+
+    return response()->json([
+      'id' => $place->id,
+      'lat' => $place->lat,
+      'lng' => $place->lng,
+      'status' => 'pending',
+    ]);
   }
 
   private function listItem(Place $p): array

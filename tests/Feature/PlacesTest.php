@@ -279,6 +279,32 @@ test('banned user cannot submit', function () {
     ->assertJsonPath('message', 'تم حظر حسابك من المساهمة');
 });
 
+test('photo processing honors exif portrait orientation', function () {
+  Storage::fake('public');
+  $place = Place::factory()->approved()->create();
+
+  // 400x300 landscape pixels + EXIF orientation 6 = a phone portrait photo:
+  // correct processing must rotate it, so the stored display image is 300x400
+  $img = imagecreatetruecolor(400, 300);
+  imagefill($img, 0, 0, imagecolorallocate($img, 200, 50, 50));
+  ob_start();
+  imagejpeg($img);
+  $jpeg = ob_get_clean();
+  $exif = "Exif\x00\x00" . 'II' . pack('v', 42) . pack('V', 8)
+    . pack('v', 1)                                             // one IFD0 entry
+    . pack('v', 0x0112) . pack('v', 3) . pack('V', 1) . pack('v', 6) . pack('v', 0) // Orientation = 6
+    . pack('V', 0);                                            // no next IFD
+  $bytes = substr($jpeg, 0, 2) . "\xFF\xE1" . pack('n', strlen($exif) + 2) . $exif . substr($jpeg, 2);
+  $path = tempnam(sys_get_temp_dir(), 'exif') . '.jpg';
+  file_put_contents($path, $bytes);
+  $file = new \Illuminate\Http\UploadedFile($path, 'portrait.jpg', 'image/jpeg', null, true);
+
+  $photo = app(\App\Services\PlaceImageService::class)->store($file, $place->id, 0);
+
+  [$width, $height] = getimagesizefromstring(Storage::disk('public')->get($photo->display_path));
+  expect($height)->toBeGreaterThan($width);
+});
+
 test('failed validation attempts do not consume the submit quota', function () {
   Storage::fake('public');
   $user = placesUser();

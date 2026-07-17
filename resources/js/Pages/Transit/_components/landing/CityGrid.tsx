@@ -3,13 +3,17 @@ import citiesData from '../../_data/cities.json'
 import CityCard from './CityCard'
 import type { City } from '../../_types'
 
-const cities = (citiesData as City[]).filter((c) => c.status === 'active')
-const ready = cities
-  .filter((c) => c.routeCount > 0)
-  .sort((a, b) => b.routeCount - a.routeCount)
-const pending = cities.filter((c) => c.routeCount === 0)
+interface CityGridProps {
+  cities?: City[]
+}
 
-export default function CityGrid() {
+export default function CityGrid({ cities: propCities }: CityGridProps) {
+  const cities = (propCities && propCities.length > 0 ? propCities : (citiesData as City[])).filter((c) => c.status === 'active')
+  const ready = cities
+    .filter((c) => c.routeCount > 0)
+    .sort((a, b) => b.routeCount - a.routeCount)
+  const pending = cities.filter((c) => c.routeCount === 0)
+
   return (
     <section className="px-4 pb-14 pt-8 sm:pt-10">
       <div className="mx-auto max-w-3xl">

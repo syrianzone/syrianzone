@@ -27,6 +27,7 @@ import {
   Sparkles,
   HelpCircle,
   Shield,
+  MapPin,
 } from 'lucide-react';
 
 import { useAuth } from '@/Contexts/AuthContext';
@@ -73,6 +74,7 @@ const navLinks = [
   { href: '/transit', text: 'ترانزيت', icon: Bus },
   { href: '/shawarma', text: 'تير ليست الشاورما', icon: Sandwich },
   { href: '/justice', text: 'العدالة الانتقالية', icon: Scale },
+  { href: '/mishwar', text: 'مشوار', icon: MapPin },
 ];
 
 const externalLinks = [

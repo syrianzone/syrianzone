@@ -68,7 +68,39 @@ Route::post('/guesswho/room/{roomCode}/signal', [SignalingController::class, 'si
 Route::post('/guesswho/broadcasting/auth', [GuessWhoController::class, 'authenticateBroadcasting']);
 
 Route::get('/transit', function () {
-    return Inertia::render('Transit/Index');
+    $cities = \Illuminate\Support\Facades\Cache::remember('transit:cities', 3600, function () {
+        $citiesModel = \App\Models\City::select(
+            'id', 'name_ar', 'name_en', 'zoom', 'status',
+            \Illuminate\Support\Facades\DB::raw('ST_AsGeoJSON(center) as center_geojson'),
+            \Illuminate\Support\Facades\DB::raw('ST_AsGeoJSON(bounds) as bounds_geojson')
+        )->withCount(['routes as routeCount' => fn($q) => $q->where('status', 'published')])->get();
+
+        return $citiesModel->map(function ($city) {
+            $centerJson = json_decode($city->center_geojson, true);
+            $boundsJson = json_decode($city->bounds_geojson, true);
+
+            $minLng = $boundsJson['coordinates'][0][0][0] ?? 0;
+            $minLat = $boundsJson['coordinates'][0][0][1] ?? 0;
+            $maxLng = $boundsJson['coordinates'][0][2][0] ?? 0;
+            $maxLat = $boundsJson['coordinates'][0][2][1] ?? 0;
+
+            return [
+                'id' => $city->id,
+                'nameAr' => $city->name_ar,
+                'nameEn' => $city->name_en,
+                'status' => $city->status,
+                'zoom' => $city->zoom,
+                'center' => $centerJson['coordinates'] ?? [0, 0],
+                'bounds' => [
+                    [$minLng, $minLat],
+                    [$maxLng, $maxLat]
+                ],
+                'routeCount' => $city->routeCount,
+            ];
+        })->toArray();
+    });
+
+    return Inertia::render('Transit/Index', ['cities' => $cities]);
 });
 
 Route::get('/transit/city/{id}', function ($id) {
@@ -149,6 +181,10 @@ Route::get('/transit/studio', function () {
     return Inertia::render('Transit/studio/Index');
 });
 
+Route::get('/mishwar', [\App\Http\Controllers\PlaceController::class, 'renderIndex']);
+// legacy slug: share links from the first release said /places
+Route::get('/places', fn () => redirect('/mishwar' . (request()->getQueryString() ? '?' . request()->getQueryString() : ''), 301));
+
 
 
 Route::get('/user', [AuthController::class, 'user']);
@@ -177,6 +213,23 @@ Route::middleware('auth')->group(function () {
         });
     });
 
+    // Hidden Places: authenticated writes (session + CSRF via the web group)
+    Route::prefix('api/v1')->group(function () {
+        // Coarse abuse shield only; the real 5-per-hour quota counts created
+        // places in the controller, so failed validation attempts don't lock users out.
+        Route::post('/places', [\App\Http\Controllers\PlaceController::class, 'store'])
+            ->middleware('throttle:20,60');
+        Route::get('/my/places', [\App\Http\Controllers\PlaceController::class, 'mine'])
+            ->middleware('throttle:60,1');
+        Route::get('/my/saves', [\App\Http\Controllers\PlaceEngagementController::class, 'mySaves'])
+            ->middleware('throttle:60,1');
+
+        Route::post('/places/{id}/save', [\App\Http\Controllers\PlaceEngagementController::class, 'save'])
+            ->whereNumber('id')->middleware('throttle:60,1');
+        Route::delete('/places/{id}/save', [\App\Http\Controllers\PlaceEngagementController::class, 'unsave'])
+            ->whereNumber('id')->middleware('throttle:60,1');
+    });
+
     // 2. Polls & General Admin Panel (accessible to core admins and superadmins)
     Route::middleware('admin')->group(function () {
         Route::get('/admin/polls', [PollController::class, 'renderIndex']);
@@ -195,6 +248,18 @@ Route::middleware('auth')->group(function () {
             Route::apiResource('candidates', \App\Http\Controllers\CandidateController::class)->except(['index', 'show']);
             Route::patch('/candidates/{id}/archive', [\App\Http\Controllers\CandidateController::class, 'archive']);
             Route::patch('/candidates/{id}/restore', [\App\Http\Controllers\CandidateController::class, 'restore']);
+        });
+
+        // Hidden Places moderation
+        Route::get('/admin/places', [\App\Http\Controllers\PlaceAdminController::class, 'renderIndex']);
+
+        Route::prefix('api/v1')->middleware('throttle:60,1')->group(function () {
+            Route::get('/admin/places', [\App\Http\Controllers\PlaceAdminController::class, 'index']);
+            Route::post('/admin/places/{id}/approve', [\App\Http\Controllers\PlaceAdminController::class, 'approve'])->whereNumber('id');
+            Route::post('/admin/places/{id}/reject', [\App\Http\Controllers\PlaceAdminController::class, 'reject'])->whereNumber('id');
+            Route::delete('/admin/places/{id}', [\App\Http\Controllers\PlaceAdminController::class, 'destroy'])->whereNumber('id');
+            Route::post('/admin/place-photos/{id}/rotate', [\App\Http\Controllers\PlaceAdminController::class, 'rotatePhoto'])->whereNumber('id');
+            Route::post('/admin/place-photos/{id}/replace', [\App\Http\Controllers\PlaceAdminController::class, 'replacePhoto'])->whereNumber('id');
         });
     });
 

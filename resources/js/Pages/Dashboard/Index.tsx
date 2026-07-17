@@ -15,7 +15,8 @@ import {
   Ban,
   UserCheck,
   Edit,
-  Plus
+  Plus,
+  MapPin
 } from 'lucide-react';
 import MainLayout from '@/Layouts/MainLayout';
 
@@ -305,6 +306,17 @@ export default function Dashboard({
                 >
                   <Bus className="h-5 w-5" />
                   مراجعة وإدارة الخطوط المقترحة (الخارطة)
+                </Link>
+              )}
+
+              {/* Places moderation Tab (Admins, Superadmins) */}
+              {(role === 'admin' || role === 'superadmin') && (
+                <Link
+                  href="/admin/places"
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-[#1f2833] hover:bg-gray-800 text-gray-300"
+                >
+                  <MapPin className="h-5 w-5" />
+                  مراجعة أماكن مشوار المقترحة
                 </Link>
               )}
 

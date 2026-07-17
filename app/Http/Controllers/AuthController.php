@@ -24,13 +24,17 @@ class AuthController extends Controller
         }
 
         $email = $googleUser->getEmail();
-        $user = User::where('email', $email)->first();
+        // withTrashed: a soft-deleted account still holds the unique email, so a
+        // scoped miss would send updateOrCreate into a duplicate-email insert (500).
+        $user = User::withTrashed()->where('email', $email)->first();
+        if ($user && $user->trashed()) {
+            $user->restore();
+        }
         $superadminEmail = config('app.superadmin_email');
         $isSuperAdmin = $superadminEmail !== '' && $email === $superadminEmail;
-        if (!$user && !$isSuperAdmin) {
-            return redirect('/?error=access_denied_admin_only');
-        }
 
+        // Self-registration: unknown emails become regular users so the
+        // community can contribute (places, comments). Existing users keep their role.
         $user = User::updateOrCreate(
             ['email' => $email],
             [
@@ -38,7 +42,7 @@ class AuthController extends Controller
                 'google_id' => $googleUser->getId(),
                 'avatar_url' => $googleUser->getAvatar(),
                 'password' => $user?->password ?? bcrypt(str()->random(16)),
-                'role' => $isSuperAdmin ? 'superadmin' : ($user?->role ?? 'admin'),
+                'role' => $isSuperAdmin ? 'superadmin' : ($user?->role ?? 'user'),
             ]
         );
 

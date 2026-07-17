@@ -5,7 +5,9 @@ import CityGrid from './_components/landing/CityGrid'
 import TransitLayout from './layout'
 import { Head } from '@inertiajs/react'
 
-export default function TransitLandingPage() {
+import type { City } from './_types'
+
+export default function TransitLandingPage({ cities = [] }: { cities?: City[] }) {
   return (
     <TransitLayout>
       <Head>
@@ -15,8 +17,8 @@ export default function TransitLandingPage() {
       <div className="flex min-h-svh flex-col bg-[var(--bg)]">
         <Header />
         <main className="flex-1">
-          <Hero />
-          <CityGrid />
+          <Hero cities={cities} />
+          <CityGrid cities={cities} />
         </main>
         <footer className="border-t border-[var(--border)] px-4 py-8">
           <div className="mx-auto flex max-w-3xl flex-col items-center gap-2 text-center">

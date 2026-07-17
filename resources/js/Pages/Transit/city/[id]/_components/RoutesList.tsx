@@ -1,6 +1,7 @@
 'use client'
 
 import { Link } from '@inertiajs/react'
+import { Bus, MapPin, Map } from 'lucide-react'
 import { useRoutes } from '../../../_hooks/useMapData'
 import { getRouteColor } from '../../../_lib/mapColors'
 import { Button } from '@/components/ui/button'
@@ -52,48 +53,59 @@ export default function RoutesList({ cityId }: RoutesListProps) {
         {routes.map((route) => (
           <div
             key={route.id}
-            className="flex flex-col md:flex-row md:items-center justify-between gap-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-5 transition-colors hover:border-primary/30"
+            className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--surface)] transition-all duration-200 hover:border-primary/40 hover:shadow-sm"
           >
-            {/* Title & Metadata */}
-            <div className="flex items-start gap-3 flex-1 min-w-0" dir="rtl">
+            {/* Card Body Link (clickable details area) */}
+            <Link
+              href={`/transit/city/${cityId}/route/${route.id}`}
+              className="flex items-start gap-3 flex-1 min-w-0 pr-4 py-4 pl-2 no-underline text-right"
+              dir="rtl"
+            >
+              {/* Colored Badge */}
               <span
-                className="h-10 w-1.5 shrink-0 rounded-full mt-1"
+                className="h-10 w-10 shrink-0 rounded-full flex items-center justify-center text-white"
                 style={{ backgroundColor: getRouteColor(route.colorIndex) }}
-              />
-              <div className="flex-1 min-w-0 text-right">
+              >
+                <Bus className="h-5 w-5" />
+              </span>
+              
+              {/* Title & Metadata */}
+              <div className="flex-1 min-w-0">
                 <h3 className="text-sm sm:text-base font-semibold text-foreground leading-snug break-words">
                   {route.nameAr}
                 </h3>
-                <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground">
                   {route.nameEn && <span className="font-medium">{route.nameEn}</span>}
                   {route.nameEn && (route.stopsCount !== undefined || route.priceNew > 0) && (
                     <span className="opacity-40">•</span>
                   )}
                   {route.stopsCount !== undefined && (
-                    <span>{route.stopsCount.toLocaleString('ar-SY')} موقف</span>
+                    <span className="flex items-center gap-1">
+                      <MapPin className="h-3.5 w-3.5 opacity-65" />
+                      <span>{route.stopsCount.toLocaleString('ar-SY')} موقف</span>
+                    </span>
                   )}
                   {route.stopsCount !== undefined && route.priceNew > 0 && (
                     <span className="opacity-40">•</span>
                   )}
                   {route.priceNew > 0 && (
-                    <span className="font-bold text-[var(--gold)]">
-                      {route.priceNew.toLocaleString('ar-SY')} ل.س
+                    <span className="flex items-center gap-1 rounded-full bg-[var(--gold)]/10 px-2 py-0.5 font-bold text-[var(--gold)]">
+                      <span>{route.priceNew.toLocaleString('ar-SY')} ل.س</span>
                     </span>
                   )}
                 </div>
               </div>
-            </div>
+            </Link>
 
-            {/* Actions */}
-            <div className="flex items-center gap-2 shrink-0 justify-end w-full md:w-auto" dir="rtl">
-              <Button asChild variant="outline" size="sm" className="flex-1 md:flex-none text-xs h-9">
-                <Link href={`/transit/city/${cityId}/route/${route.id}`}>
-                  عرض المواقف
-                </Link>
-              </Button>
-              <Button asChild size="sm" className="flex-1 md:flex-none text-xs h-9 bg-primary text-primary-foreground hover:bg-primary/95">
-                <Link href={`/transit/city/${cityId}/map?route=${route.id}`}>
-                  عرض على الخريطة
+            {/* Map Action Button */}
+            <div className="pl-4 py-4 pr-2 shrink-0 flex items-center justify-center">
+              <Button
+                asChild
+                size="icon"
+                className="h-11 w-11 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200"
+              >
+                <Link href={`/transit/city/${cityId}/map?route=${route.id}`} title="عرض على الخريطة">
+                  <Map className="h-5 w-5" />
                 </Link>
               </Button>
             </div>

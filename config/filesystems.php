@@ -85,10 +85,11 @@ return [
 
         // Offsite copy of the db backups. Separate PRIVATE bucket: the media
         // bucket is world-readable via its r2.dev url, a db dump must never land there.
+        // Separate creds too: the media token is scoped to its bucket only.
         'r2-backups' => [
             'driver' => 's3',
-            'key' => env('R2_ACCESS_KEY_ID'),
-            'secret' => env('R2_SECRET_ACCESS_KEY'),
+            'key' => env('R2_BACKUP_ACCESS_KEY_ID', env('R2_ACCESS_KEY_ID')),
+            'secret' => env('R2_BACKUP_SECRET_ACCESS_KEY', env('R2_SECRET_ACCESS_KEY')),
             'region' => 'auto',
             'bucket' => env('R2_BACKUP_BUCKET'),
             'endpoint' => env('R2_ENDPOINT'),

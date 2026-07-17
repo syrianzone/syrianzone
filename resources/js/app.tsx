@@ -9,6 +9,7 @@ import { watchSystemTheme } from '@/lib/theme';
 import { QueryProvider } from '@/Pages/Transit/_providers/QueryProvider';
 import { DirectionProvider } from '@radix-ui/react-direction';
 import * as Sentry from '@sentry/react';
+import posthog from 'posthog-js';
 
 // errors only, no tracing. no-op locally: the dsn is only injected in ci builds.
 if (import.meta.env.VITE_SENTRY_DSN) {
@@ -16,6 +17,15 @@ if (import.meta.env.VITE_SENTRY_DSN) {
         dsn: import.meta.env.VITE_SENTRY_DSN,
         release: import.meta.env.VITE_SENTRY_RELEASE,
         sendDefaultPii: false,
+    });
+}
+
+// /ingest is a first-party caddy proxy to posthog cloud (adblockers drop the direct host).
+// history_change defaults capture inertia spa navigations as pageviews. no-op locally.
+if (import.meta.env.VITE_POSTHOG_KEY) {
+    posthog.init(import.meta.env.VITE_POSTHOG_KEY, {
+        api_host: import.meta.env.VITE_POSTHOG_HOST || '/ingest',
+        defaults: '2025-05-24',
     });
 }
 

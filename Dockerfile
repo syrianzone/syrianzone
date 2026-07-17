@@ -8,12 +8,14 @@ WORKDIR /app
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 COPY . .
-# client-visible sentry config baked into the bundle; empty locally = sdk no-op
+# client-visible sentry/posthog config baked into the bundle; empty locally = sdks no-op
 ARG VITE_SENTRY_DSN
+ARG VITE_POSTHOG_KEY
 ARG SENTRY_ORG
 ARG SENTRY_PROJECT
 ARG GIT_SHA=dev
 ENV VITE_SENTRY_DSN=${VITE_SENTRY_DSN} VITE_SENTRY_RELEASE=${GIT_SHA} \
+    VITE_POSTHOG_KEY=${VITE_POSTHOG_KEY} \
     SENTRY_ORG=${SENTRY_ORG} SENTRY_PROJECT=${SENTRY_PROJECT}
 # the upload token must never land in a layer (public image): secret mount, ci-only
 RUN --mount=type=secret,id=sentry_auth_token \

@@ -35,19 +35,33 @@ class AuthController extends Controller
 
         // Self-registration: unknown emails become regular users so the
         // community can contribute (places, comments). Existing users keep their role.
-        $user = User::updateOrCreate(
-            ['email' => $email],
-            [
-                'name' => $googleUser->getName(),
-                'google_id' => $googleUser->getId(),
-                'avatar_url' => $googleUser->getAvatar(),
-                'password' => $user?->password ?? bcrypt(str()->random(16)),
-                'role' => $isSuperAdmin ? 'superadmin' : ($user?->role ?? 'user'),
-            ]
-        );
+        $attributes = [
+            'name' => $googleUser->getName(),
+            'google_id' => $googleUser->getId(),
+            'password' => $user?->password ?? bcrypt(str()->random(16)),
+            'role' => $isSuperAdmin ? 'superadmin' : ($user?->role ?? 'user'),
+        ];
+        // Refresh the Google avatar only when the user has not uploaded a custom
+        // one; a custom avatar lives under our media disk's avatars/ prefix.
+        if (!$this->hasCustomAvatar($user)) {
+            $attributes['avatar_url'] = $googleUser->getAvatar();
+        }
+        $user = User::updateOrCreate(['email' => $email], $attributes);
 
         Auth::login($user, true);
         return redirect()->intended('/dashboard');
+    }
+
+    private function hasCustomAvatar(?User $user): bool
+    {
+        if (!$user || $user->avatar_url === null) {
+            return false;
+        }
+        // Structural match on the url path (/avatars/{id}/ under any base): a
+        // MEDIA_DISK switch changes the base url, and a prefix check against the
+        // current disk would let the Google avatar clobber pre-switch uploads.
+        $path = parse_url($user->avatar_url, PHP_URL_PATH) ?? '';
+        return is_string($path) && str_contains($path, "/avatars/{$user->id}/");
     }
 
     public function user(Request $request)

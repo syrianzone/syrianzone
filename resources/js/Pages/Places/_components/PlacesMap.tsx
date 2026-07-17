@@ -1,10 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { THEME_REGISTRY } from '@/Lib/theme';
 import type { LatLng, PlaceFeatureCollection } from '../_lib/types';
 
 const SOURCE_ID = 'places';
 const LAYERS = ['clusters', 'cluster-count', 'place-pin'];
+
+// data-theme on <html> always holds a concrete theme id (set pre-hydration by app.blade.php)
+function styleUrl(): string {
+  const id = document.documentElement.getAttribute('data-theme');
+  const dark = THEME_REGISTRY.find((t) => t.id === id)?.isDark ?? true;
+  return dark ? '/styles/styles/dark-matter.json' : '/styles/styles/light.json';
+}
 
 export function PlacesMap(props: {
   features: PlaceFeatureCollection;
@@ -26,6 +34,9 @@ export function PlacesMap(props: {
   featuresRef.current = props.features;
   const addModeRef = useRef(props.addMode);
   addModeRef.current = props.addMode;
+  const selectedIdRef = useRef(props.selectedId);
+  selectedIdRef.current = props.selectedId;
+  const styleUrlRef = useRef('');
   const onPinClickRef = useRef(props.onPinClick);
   onPinClickRef.current = props.onPinClick;
   const onMapClickRef = useRef(props.onMapClick);
@@ -34,9 +45,10 @@ export function PlacesMap(props: {
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
+    styleUrlRef.current = styleUrl();
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: '/styles/styles/dark-matter.json',
+      style: styleUrlRef.current,
       center: [38.0, 35.0],
       zoom: 6.2,
       attributionControl: false,
@@ -49,8 +61,12 @@ export function PlacesMap(props: {
       'bottom-left',
     );
 
-    map.on('load', () => {
-      map.addSource(SOURCE_ID, {
+    // runs on the initial style AND after every setStyle (which wipes custom sources/layers);
+    // reads refs so a theme swap keeps current data and the selection ring
+    const addSourcesAndLayers = (m: maplibregl.Map) => {
+      if (m.getSource(SOURCE_ID)) return;
+
+      m.addSource(SOURCE_ID, {
         type: 'geojson',
         data: featuresRef.current as GeoJSON.FeatureCollection,
         cluster: true,
@@ -58,7 +74,7 @@ export function PlacesMap(props: {
         clusterMaxZoom: 14,
       });
 
-      map.addLayer({
+      m.addLayer({
         id: 'clusters',
         type: 'circle',
         source: SOURCE_ID,
@@ -71,7 +87,7 @@ export function PlacesMap(props: {
         },
       });
 
-      map.addLayer({
+      m.addLayer({
         id: 'cluster-count',
         type: 'symbol',
         source: SOURCE_ID,
@@ -80,19 +96,25 @@ export function PlacesMap(props: {
         paint: { 'text-color': '#ffffff' },
       });
 
-      map.addLayer({
+      m.addLayer({
         id: 'place-pin',
         type: 'circle',
         source: SOURCE_ID,
         filter: ['!', ['has', 'point_count']],
         paint: {
-          'circle-radius': 7,
+          'circle-radius': selectedIdRef.current == null ? 7 : ['case', ['==', ['get', 'id'], selectedIdRef.current], 10, 7],
           'circle-color': '#7d8a5c',
           'circle-stroke-width': 2,
           'circle-stroke-color': '#ffffff',
         },
       });
+    };
 
+    map.on('style.load', () => addSourcesAndLayers(map));
+
+    // one-time work: handlers are delegated by layer ID, so they survive setStyle as long as
+    // addSourcesAndLayers recreates the same IDs; never re-register them there (double-fire)
+    map.on('load', () => {
       map.on('click', 'clusters', async (e) => {
         const feature = e.features?.[0];
         if (!feature) return;
@@ -121,9 +143,20 @@ export function PlacesMap(props: {
       setMapReady(true);
     });
 
+    // live theme switch: swap the basemap style, style.load re-adds our sources/layers
+    const observer = new MutationObserver(() => {
+      const url = styleUrl();
+      if (url !== styleUrlRef.current) {
+        styleUrlRef.current = url;
+        map.setStyle(url);
+      }
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
     mapRef.current = map;
 
     return () => {
+      observer.disconnect();
       try {
         for (const layer of LAYERS) if (map.getLayer(layer)) map.removeLayer(layer);
         if (map.getSource(SOURCE_ID)) map.removeSource(SOURCE_ID);
@@ -144,7 +177,9 @@ export function PlacesMap(props: {
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !mapReady) return;
+    // getLayer guard: between setStyle and its style.load the layer briefly does not exist;
+    // addSourcesAndLayers reads selectedIdRef, so the ring is restored on re-add anyway
+    if (!map || !mapReady || !map.getLayer('place-pin')) return;
     map.setPaintProperty(
       'place-pin',
       'circle-radius',

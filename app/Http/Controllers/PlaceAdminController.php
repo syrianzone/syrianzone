@@ -7,6 +7,7 @@ use App\Models\PlacePhoto;
 use App\Services\PlaceImageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class PlaceAdminController extends Controller
@@ -31,6 +32,86 @@ class PlaceAdminController extends Controller
     }
 
     return response()->json($query->paginate(20)->through(fn ($p) => $this->adminItem($p)));
+  }
+
+  public function update(int $id, Request $request)
+  {
+    $place = Place::findOrFail($id);
+
+    $validated = $request->validate([
+      'name' => 'sometimes|required|string|max:160',
+      'category' => 'sometimes|required|string|in:historical,natural,cultural,religious,abandoned,viewpoint,market,other',
+      'description' => 'sometimes|required|string|min:20|max:1000',
+      'lat' => 'sometimes|required|numeric|between:32.0,37.5',
+      'lng' => 'sometimes|required|numeric|between:35.5,42.5',
+    ]);
+
+    $place->update($validated);
+    // name/category/coords are embedded in the map payload
+    Cache::forget('places:map');
+
+    $userId = $request->user()->id;
+    $fresh = Place::with(['user', 'photos'])
+      ->withExists(['saves as saved_by_me' => fn ($q) => $q->where('user_id', $userId)])
+      ->findOrFail($id);
+
+    return response()->json($this->adminItem($fresh));
+  }
+
+  public function addPhoto(int $id, Request $request, PlaceImageService $images)
+  {
+    $request->validate([
+      'photo' => 'required|image|mimes:jpg,jpeg,png,webp|max:8192|dimensions:min_width=200,min_height=200,max_width=6000,max_height=6000',
+    ]);
+
+    $place = Place::findOrFail($id);
+
+    // guard + store under a lock on the place row so two concurrent adds cannot
+    // both read count 4 and end at 6 (sqlite ignores FOR UPDATE but serializes writes)
+    $photo = DB::transaction(function () use ($place, $request, $images) {
+      Place::whereKey($place->id)->lockForUpdate()->first();
+      if ($place->photos()->count() >= 5) {
+        return null;
+      }
+      return $images->store($request->file('photo'), $place->id, (int) $place->photos()->max('sort') + 1);
+    });
+    if ($photo === null) {
+      return response()->json(['message' => 'لا يمكن إضافة أكثر من خمس صور'], 422);
+    }
+    // a first-position thumb can change the map thumb_url; forget unconditionally
+    Cache::forget('places:map');
+
+    return response()->json([
+      'id' => $photo->id,
+      'thumb_url' => $photo->thumb_url,
+      'display_url' => $photo->display_url,
+      'sort' => $photo->sort,
+    ], 201);
+  }
+
+  public function deletePhoto(int $id, PlaceImageService $images)
+  {
+    $photo = PlacePhoto::findOrFail($id);
+
+    // same lock as addPhoto: two concurrent deletes on a 2-photo place must not
+    // both pass the min-1 guard and leave the place with zero photos
+    $deleted = DB::transaction(function () use ($photo) {
+      Place::whereKey($photo->place_id)->lockForUpdate()->first();
+      if (PlacePhoto::where('place_id', $photo->place_id)->count() <= 1) {
+        return false;
+      }
+      $photo->delete();
+      return true;
+    });
+    if (!$deleted) {
+      return response()->json(['message' => 'لا يمكن حذف الصورة الأخيرة'], 422);
+    }
+
+    // files go after the row commit so a rollback cannot orphan the photo row
+    $images->deleteFiles($photo);
+    Cache::forget('places:map');
+
+    return response()->json(null, 204);
   }
 
   public function approve(int $id)

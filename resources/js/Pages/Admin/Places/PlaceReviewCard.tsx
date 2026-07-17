@@ -1,11 +1,12 @@
 import { useRef, useState } from 'react';
-import { Check, ExternalLink, Loader2, RotateCw, Trash2, Upload, X } from 'lucide-react';
+import { Check, ExternalLink, Loader2, Pencil, Plus, RotateCw, Trash2, Upload, X } from 'lucide-react';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
 import { api, extractError } from '../../Places/_lib/api';
 import { CATEGORY_LABELS } from '../../Places/_lib/categories';
 import type { AdminPlace, PlaceStatus } from '../../Places/_lib/types';
+import { EditPlaceDialog } from './EditPlaceDialog';
 
 const STATUS_LABELS: Record<PlaceStatus, string> = {
   pending: 'قيد الانتظار',
@@ -24,14 +25,18 @@ export function PlaceReviewCard(props: {
   onApprove: (id: number) => void;
   onReject: (id: number) => void;
   onDelete: (id: number) => void;
+  onChanged: () => void;
 }) {
-  const { place, onApprove, onReject, onDelete } = props;
+  const { place, onApprove, onReject, onDelete, onChanged } = props;
   const osmUrl = `https://www.openstreetmap.org/?mlat=${place.lat}&mlon=${place.lng}#map=17/${place.lat}/${place.lng}`;
   // fixed photos get fresh versioned urls; keyed here so the img swaps without a refetch
   const [photoUrls, setPhotoUrls] = useState<Record<number, string>>({});
   const [busyPhoto, setBusyPhoto] = useState<number | null>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [addingPhoto, setAddingPhoto] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const addInputRef = useRef<HTMLInputElement>(null);
   const replaceTargetRef = useRef<number | null>(null);
 
   async function rotate(photoId: number) {
@@ -69,6 +74,35 @@ export function PlaceReviewCard(props: {
     }
   }
 
+  async function addSelected(file: File | undefined) {
+    if (!file) return;
+    setAddingPhoto(true);
+    setPhotoError(null);
+    try {
+      await api.adminAddPhoto(place.id, file);
+      onChanged();
+    } catch (e) {
+      setPhotoError(extractError(e));
+    } finally {
+      setAddingPhoto(false);
+      if (addInputRef.current) addInputRef.current.value = '';
+    }
+  }
+
+  async function deletePhoto(photoId: number) {
+    if (!confirm('حذف هذه الصورة؟')) return;
+    setBusyPhoto(photoId);
+    setPhotoError(null);
+    try {
+      await api.adminDeletePhoto(photoId);
+      onChanged();
+    } catch (e) {
+      setPhotoError(extractError(e));
+    } finally {
+      setBusyPhoto(null);
+    }
+  }
+
   return (
     <Card>
       <CardContent className="space-y-3 p-4">
@@ -78,6 +112,13 @@ export function PlaceReviewCard(props: {
           accept="image/jpeg,image/png,image/webp"
           className="hidden"
           onChange={(e) => replaceSelected(e.target.files?.[0])}
+        />
+        <input
+          ref={addInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={(e) => addSelected(e.target.files?.[0])}
         />
         {place.photos.length > 0 && (
           <div className="flex gap-2 overflow-x-auto">
@@ -113,10 +154,33 @@ export function PlaceReviewCard(props: {
                     >
                       <Upload className="h-4 w-4" />
                     </button>
+                    {place.photos.length > 1 && (
+                      <button
+                        type="button"
+                        aria-label="حذف الصورة"
+                        title="حذف الصورة"
+                        onClick={() => deletePhoto(photo.id)}
+                        className="rounded-md bg-background/80 p-1 text-destructive shadow-sm hover:bg-background"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
                   </span>
                 )}
               </div>
             ))}
+            {place.photos.length < 5 && (
+              <button
+                type="button"
+                aria-label="إضافة صورة"
+                title="إضافة صورة"
+                disabled={addingPhoto}
+                onClick={() => addInputRef.current?.click()}
+                className="flex h-24 w-24 shrink-0 items-center justify-center rounded-md border border-dashed border-muted-foreground/50 text-muted-foreground hover:bg-muted"
+              >
+                {addingPhoto ? <Loader2 className="h-5 w-5 animate-spin" /> : <Plus className="h-5 w-5" />}
+              </button>
+            )}
           </div>
         )}
         {photoError && <p className="text-sm text-destructive">{photoError}</p>}
@@ -167,11 +231,17 @@ export function PlaceReviewCard(props: {
               </Button>
             </>
           )}
+          <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>
+            <Pencil className="h-4 w-4" />
+            تعديل
+          </Button>
           <Button size="sm" variant="ghost" className="text-destructive" onClick={() => onDelete(place.id)}>
             <Trash2 className="h-4 w-4" />
             حذف
           </Button>
         </div>
+
+        <EditPlaceDialog open={editOpen} onOpenChange={setEditOpen} place={place} onSaved={onChanged} />
       </CardContent>
     </Card>
   );

@@ -28,7 +28,10 @@ test('map returns approved places as geojson', function () {
     ->assertJsonPath('features.0.properties.id', $place->id)
     ->assertJsonPath('features.0.properties.name', $place->name)
     ->assertJsonPath('features.0.properties.category', $place->category)
-    ->assertJsonPath('features.0.properties.thumb_url', fn ($url) => str_starts_with($url, "/storage/places/{$place->id}/abc_thumb.webp?v=") && !str_ends_with($url, 'v=0'));
+    ->assertJsonPath('features.0.properties.thumb_url', function ($url) use ($place) {
+      $expected = Storage::disk(config('filesystems.media_disk'))->url("places/{$place->id}/abc_thumb.webp") . '?v=';
+      return str_starts_with($url, $expected) && !str_ends_with($url, 'v=0');
+    });
 
   // GeoJSON order is [lng, lat].
   expect($response->json('features.0.geometry.coordinates'))->toBe([36.2913, 33.5104]);

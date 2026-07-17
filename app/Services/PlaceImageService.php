@@ -10,7 +10,7 @@ use Intervention\Image\ImageManager;
 
 class PlaceImageService
 {
-  // Stores original + display webp + thumb webp on the public disk and creates the PlacePhoto row.
+  // Stores original + display webp + thumb webp on the media disk and creates the PlacePhoto row.
   public function store(UploadedFile $file, int $placeId, int $sort): PlacePhoto
   {
     return PlacePhoto::create(['place_id' => $placeId, 'sort' => $sort] + $this->writeSet($file, $placeId));
@@ -23,13 +23,13 @@ class PlaceImageService
   {
     $old = [$photo->original_path, $photo->display_path, $photo->thumb_path];
     $photo->update($this->writeSet($file, $photo->place_id));
-    Storage::disk('public')->delete($old);
+    $this->disk()->delete($old);
   }
 
   // Regenerates display + thumb from the stored original (e.g. after a pipeline fix).
   public function reprocess(PlacePhoto $photo): void
   {
-    $disk = Storage::disk('public');
+    $disk = $this->disk();
     if (!$disk->exists($photo->original_path)) {
       throw new \RuntimeException("original missing: {$photo->original_path}");
     }
@@ -44,7 +44,7 @@ class PlaceImageService
   // photos whose original is gone (thumb is re-derived so its crop follows the rotation).
   public function rotateClockwise(PlacePhoto $photo): void
   {
-    $disk = Storage::disk('public');
+    $disk = $this->disk();
     if (!$disk->exists($photo->display_path)) {
       throw new \RuntimeException("display missing: {$photo->display_path}");
     }
@@ -55,10 +55,10 @@ class PlaceImageService
     $photo->touch();
   }
 
-  // Deletes the three files for a photo from the public disk (row deletion is the caller's job).
+  // Deletes the three files for a photo from the media disk (row deletion is the caller's job).
   public function deleteFiles(PlacePhoto $photo): void
   {
-    Storage::disk('public')->delete([$photo->original_path, $photo->display_path, $photo->thumb_path]);
+    $this->disk()->delete([$photo->original_path, $photo->display_path, $photo->thumb_path]);
   }
 
   /** Writes original + variants under a fresh uuid, verified; returns the path columns. */
@@ -70,7 +70,7 @@ class PlaceImageService
     $originalPath = "{$dir}/{$uuid}.{$ext}";
     $displayPath = "{$dir}/{$uuid}_display.webp";
     $thumbPath = "{$dir}/{$uuid}_thumb.webp";
-    $disk = Storage::disk('public');
+    $disk = $this->disk();
     $written = [];
 
     try {
@@ -99,6 +99,11 @@ class PlaceImageService
     }
 
     return ['original_path' => $originalPath, 'display_path' => $displayPath, 'thumb_path' => $thumbPath];
+  }
+
+  private function disk(): \Illuminate\Contracts\Filesystem\Filesystem
+  {
+    return Storage::disk(config('filesystems.media_disk'));
   }
 
   /** @return array{string, string} display webp, thumb webp */

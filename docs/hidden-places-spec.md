@@ -119,7 +119,7 @@ The `saves_count` counter cache is maintained by controllers with `increment()`/
 ## 4. IMAGE PIPELINE
 
 - Library: `intervention/image` v3 with GD driver.
-- Disk: `public` (`storage/app/public`), URLs `/storage/...` via `Storage::url()`. `php artisan storage:link` must have run.
+- Disk: resolved from `config('filesystems.media_disk')` (env `MEDIA_DISK`, default `public`). Local dev/tests use `public` (`storage/app/public`, URLs `/storage/...`, `php artisan storage:link` must have run). Production sets `MEDIA_DISK=r2`: the `r2` disk (S3 driver against Cloudflare R2, `R2_*` env vars) stores media off-box so files survive container replacement, with URLs served from `R2_URL`. `MEDIA_DISK=r2` rollout requirement: the host behind `R2_URL` MUST send `Access-Control-Allow-Origin` for the app origin (R2 bucket CORS policy or CDN rule allowing GET/HEAD). The lightbox download buttons `fetch()` `display_url`, which is cross-origin under r2; without that header every download fails with a CORS TypeError even though `<img>` rendering works.
 - Paths (all under `places/{place_id}/`): original `places/{id}/{uuid}.{ext}` (ext = original extension, stored untouched for future reprocessing), display `places/{id}/{uuid}_display.webp`, thumb `places/{id}/{uuid}_thumb.webp`.
 - Sizes: thumb = 400x400 cover crop, webp quality 75. Display = scaled down so the longest side is at most 1600px (never upscaled), webp quality 80. Use `ImageManager::withDriver(\Intervention\Image\Drivers\Gd\Driver::class)`, `cover(400, 400)` and `scaleDown(width: 1600, height: 1600)`, `toWebp(quality)`.
 - Validation (in controller, exact rules): `'photos' => 'required|array|min:1|max:5'`, `'photos.*' => 'required|image|mimes:jpg,jpeg,png,webp|max:8192|dimensions:min_width=200,min_height=200,max_width=6000,max_height=6000'`. Laravel's `image`/`mimes` rules sniff content via fileinfo, not extension: this is the required mime check. The max dimensions cap decompression bombs before GD allocates the bitmap.
@@ -132,10 +132,10 @@ use App\Models\PlacePhoto;
 use Illuminate\Http\UploadedFile;
 
 class PlaceImageService {
-  // Stores original + display webp + thumb webp on the public disk and creates the PlacePhoto row.
+  // Stores original + display webp + thumb webp on the media disk and creates the PlacePhoto row.
   public function store(UploadedFile $file, int $placeId, int $sort): PlacePhoto;
 
-  // Deletes the three files for a photo from the public disk (row deletion is the caller's job).
+  // Deletes the three files for a photo from the media disk (row deletion is the caller's job).
   public function deleteFiles(PlacePhoto $photo): void;
 }
 ```
@@ -570,7 +570,7 @@ Tests:
 - No email/push notifications on approval or rejection (my/places is the feedback channel).
 - No user profile pages, follower systems, or leaderboards.
 - No admin map view, no bulk moderation, no audit log.
-- No S3/uploadthing: local public disk only.
+- No uploadthing or bespoke upload services: media goes to the `MEDIA_DISK` filesystem disk (`public` locally, `r2` on Cloudflare R2 in production via the S3 driver).
 - No spatial DB features, no Scout search indexing (LIKE is enough at this scale).
 - No changes to `public/sw.js`, `bootstrap/app.php`, or middleware aliases.
 

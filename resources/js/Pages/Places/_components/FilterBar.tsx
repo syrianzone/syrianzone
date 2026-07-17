@@ -7,11 +7,53 @@ import { cn } from '@/Lib/utils';
 import { CATEGORIES, CATEGORY_LABELS } from '../_lib/categories';
 import type { LatLng, PlaceCategory, PlaceListItem } from '../_lib/types';
 
+// token: optional hemisphere letter, signed number (dot or comma decimal), optional °, optional letter
+const COORD_TOKEN = String.raw`([NSEW])?\s*([+-]?\d{1,3}(?:[.,]\d+)?)\s*°?\s*([NSEW])?`;
+// separator: comma/semicolon, whitespace, or both; greedy number matching keeps decimal commas
+// inside the token, and the comma-decimal gate below vets the ambiguous cases
+const COORD_RE = new RegExp(String.raw`^\s*${COORD_TOKEN}\s*(?:[,;]\s*|\s+)${COORD_TOKEN}\s*$`, 'i');
+
+// accepts: "34.7394153, 36.6750744" | "34,73192° N, 36,70764° E" | "36,70764° E, 34,73192° N"
+// | "34.7 S, 36.6 W" | "34 36"
+// rejects: "34,73192, 36,70764" (comma decimals, no marker) | "91, 30" | "34, 190"
+// | "34.7 N, 36.6 N" | "دمشق" | "-34.7 S, 36.6 W"
 export function parseLatLng(q: string): LatLng | null {
-  const m = /^\s*(-?\d{1,3}(?:\.\d+)?)[\s,]+(-?\d{1,3}(?:\.\d+)?)\s*$/.exec(q);
+  const m = COORD_RE.exec(q);
   if (!m) return null;
-  const lat = Number(m[1]);
-  const lng = Number(m[2]);
+  const [, pre1, num1, suf1, pre2, num2, suf2] = m as (string | undefined)[];
+  if (num1 === undefined || num2 === undefined) return null;
+
+  // comma decimals are only trusted when the input carries a ° or hemisphere marker
+  const hasCommaDecimal = /\d,\d/.test(num1) || /\d,\d/.test(num2);
+  const hasMarker = m[0].includes('°') || Boolean(pre1 || suf1 || pre2 || suf2);
+  if (hasCommaDecimal && !hasMarker) return null;
+
+  const token = (pre: string | undefined, suf: string | undefined, raw: string) => {
+    if (pre && suf) return null;
+    const letter = (pre ?? suf)?.toUpperCase() ?? null;
+    if (letter && /[+-]/.test(raw)) return null;
+    let value = Number(raw.replace(',', '.'));
+    if (letter === 'S' || letter === 'W') value = -value;
+    return { value, letter };
+  };
+  const t1 = token(pre1, suf1, num1);
+  const t2 = token(pre2, suf2, num2);
+  if (!t1 || !t2) return null;
+
+  const axis = (l: string | null) => (l === 'N' || l === 'S' ? 'lat' : l === 'E' || l === 'W' ? 'lng' : null);
+  const a1 = axis(t1.letter);
+  const a2 = axis(t2.letter);
+  if (a1 && a2 && a1 === a2) return null;
+
+  let lat: number;
+  let lng: number;
+  if (a1 === 'lng' || a2 === 'lat') {
+    lat = t2.value;
+    lng = t1.value;
+  } else {
+    lat = t1.value;
+    lng = t2.value;
+  }
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
   return { lat, lng };
 }

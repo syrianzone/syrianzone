@@ -164,6 +164,7 @@ Route::middleware('auth')->group(function () {
     // 1. Unified User Dashboard Views and Actions
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::post('/api/account/update', [DashboardController::class, 'updateAccount']);
+    Route::post('/api/account/avatar', [DashboardController::class, 'updateAvatar'])->middleware('throttle:10,1');
     Route::post('/api/account/delete', [DashboardController::class, 'deleteAccount']);
 
     Route::prefix('api')->group(function () {
@@ -222,9 +223,12 @@ Route::middleware('auth')->group(function () {
             Route::get('/admin/places', [\App\Http\Controllers\PlaceAdminController::class, 'index']);
             Route::post('/admin/places/{id}/approve', [\App\Http\Controllers\PlaceAdminController::class, 'approve'])->whereNumber('id');
             Route::post('/admin/places/{id}/reject', [\App\Http\Controllers\PlaceAdminController::class, 'reject'])->whereNumber('id');
+            Route::patch('/admin/places/{id}', [\App\Http\Controllers\PlaceAdminController::class, 'update'])->whereNumber('id');
             Route::delete('/admin/places/{id}', [\App\Http\Controllers\PlaceAdminController::class, 'destroy'])->whereNumber('id');
+            Route::post('/admin/places/{id}/photos', [\App\Http\Controllers\PlaceAdminController::class, 'addPhoto'])->whereNumber('id');
             Route::post('/admin/place-photos/{id}/rotate', [\App\Http\Controllers\PlaceAdminController::class, 'rotatePhoto'])->whereNumber('id');
             Route::post('/admin/place-photos/{id}/replace', [\App\Http\Controllers\PlaceAdminController::class, 'replacePhoto'])->whereNumber('id');
+            Route::delete('/admin/place-photos/{id}', [\App\Http\Controllers\PlaceAdminController::class, 'deletePhoto'])->whereNumber('id');
         });
     });
 

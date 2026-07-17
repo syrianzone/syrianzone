@@ -8,7 +8,7 @@ export const CATEGORIES: { key: PlaceCategory; label: string }[] = [
   { key: 'abandoned', label: 'مهجور' },
   { key: 'viewpoint', label: 'إطلالة' },
   { key: 'market', label: 'سوق' },
-  { key: 'other', label: 'أخرى' },
+  { key: 'other', label: 'آخر' },
 ];
 
 export const CATEGORY_LABELS: Record<PlaceCategory, string> = Object.fromEntries(

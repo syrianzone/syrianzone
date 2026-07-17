@@ -148,6 +148,7 @@ export default function Index() {
                   onApprove={handleApprove}
                   onReject={setRejectId}
                   onDelete={handleDelete}
+                  onChanged={refetch}
                 />
               ))}
             </div>

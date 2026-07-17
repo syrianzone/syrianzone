@@ -6,6 +6,7 @@ use App\Models\Poll;
 use App\Models\Route;
 use App\Models\RouteDraft;
 use App\Models\User;
+use App\Services\AvatarService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -66,6 +67,27 @@ class DashboardController extends Controller
         $user->update($data);
 
         return back()->with('success', 'تم تحديث الحساب بنجاح');
+    }
+
+    /**
+     * Upload a new profile avatar, replacing any previously hosted one.
+     */
+    public function updateAvatar(Request $request, AvatarService $avatars)
+    {
+        // dimensions reads the header only (getimagesize), so it cheaply blocks
+        // decompression bombs before GD ever allocates width*height*4 bytes
+        $request->validate([
+            'avatar' => 'required|image|mimes:jpg,jpeg,png,webp|max:4096|dimensions:min_width=64,min_height=64,max_width=6000,max_height=6000',
+        ]);
+
+        try {
+            $url = $avatars->update($request->user(), $request->file('avatar'));
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'تعذر معالجة الصورة'], 422);
+        }
+
+        return response()->json(['avatar_url' => $url]);
     }
 
     /**

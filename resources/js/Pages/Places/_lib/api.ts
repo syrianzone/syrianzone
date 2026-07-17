@@ -84,6 +84,22 @@ export const api = {
     await axios.delete(`${base}/admin/places/${id}`);
   },
 
+  async adminUpdatePlace(id: number, data: Partial<Pick<AdminPlace, 'name' | 'category' | 'description' | 'lat' | 'lng'>>): Promise<AdminPlace> {
+    const { data: res } = await axios.patch(`${base}/admin/places/${id}`, data);
+    return res;
+  },
+
+  async adminAddPhoto(placeId: number, file: File): Promise<{ id: number; thumb_url: string; display_url: string; sort: number }> {
+    const form = new FormData();
+    form.append('photo', file);
+    const { data } = await axios.post(`${base}/admin/places/${placeId}/photos`, form);
+    return data;
+  },
+
+  async adminDeletePhoto(photoId: number): Promise<void> {
+    await axios.delete(`${base}/admin/place-photos/${photoId}`);
+  },
+
   async adminRotatePhoto(photoId: number): Promise<{ id: number; thumb_url: string; display_url: string }> {
     const { data } = await axios.post(`${base}/admin/place-photos/${photoId}/rotate`);
     return data;

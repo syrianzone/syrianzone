@@ -23,13 +23,23 @@ class PlaceImageService
     $written = [];
 
     try {
-      $disk->putFileAs($dir, $file, "{$uuid}.{$ext}");
+      $binary = file_get_contents($file->getRealPath());
+
+      // the disk is configured with throw=false, so writes fail by returning false;
+      // a silently missing original is unrecoverable data loss, fail the upload instead
+      if ($disk->put($originalPath, $binary) !== true) {
+        throw new \RuntimeException("failed writing {$originalPath}");
+      }
       $written[] = $originalPath;
 
-      [$display, $thumb] = $this->variants(file_get_contents($file->getRealPath()));
-      $disk->put($displayPath, $display);
+      [$display, $thumb] = $this->variants($binary);
+      if ($disk->put($displayPath, $display) !== true) {
+        throw new \RuntimeException("failed writing {$displayPath}");
+      }
       $written[] = $displayPath;
-      $disk->put($thumbPath, $thumb);
+      if ($disk->put($thumbPath, $thumb) !== true) {
+        throw new \RuntimeException("failed writing {$thumbPath}");
+      }
       $written[] = $thumbPath;
     } catch (\Throwable $e) {
       // Clean up partial writes so the caller's transaction rollback leaves no orphan files.
@@ -50,6 +60,9 @@ class PlaceImageService
   public function reprocess(PlacePhoto $photo): void
   {
     $disk = Storage::disk('public');
+    if (!$disk->exists($photo->original_path)) {
+      throw new \RuntimeException("original missing: {$photo->original_path}");
+    }
     [$display, $thumb] = $this->variants($disk->get($photo->original_path));
     $disk->put($photo->display_path, $display);
     $disk->put($photo->thumb_path, $thumb);

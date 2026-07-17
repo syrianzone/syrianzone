@@ -19,6 +19,37 @@ test('admin endpoints reject guests and non-admins', function () {
   $this->actingAs($user)->postJson("/api/v1/admin/places/{$place->id}/approve")->assertForbidden();
   $this->actingAs($user)->postJson("/api/v1/admin/places/{$place->id}/reject")->assertForbidden();
   $this->actingAs($user)->deleteJson("/api/v1/admin/places/{$place->id}")->assertForbidden();
+  $this->actingAs($user)->postJson('/api/v1/admin/place-photos/1/rotate')->assertForbidden();
+});
+
+test('admin can rotate a photo clockwise and gets fresh versioned urls', function () {
+  Storage::fake('public');
+  $place = Place::factory()->approved()->create();
+
+  // 400x300 landscape display; one clockwise turn must make it 300x400
+  $img = imagecreatetruecolor(400, 300);
+  ob_start();
+  imagewebp($img);
+  $displayBytes = ob_get_clean();
+  $photo = PlacePhoto::factory()->create([
+    'place_id' => $place->id,
+    'display_path' => "places/{$place->id}/x_display.webp",
+    'thumb_path' => "places/{$place->id}/x_thumb.webp",
+  ]);
+  Storage::disk('public')->put($photo->display_path, $displayBytes);
+
+  $response = $this->actingAs(placesAdmin())
+    ->postJson("/api/v1/admin/place-photos/{$photo->id}/rotate")
+    ->assertOk()
+    ->assertJsonPath('id', $photo->id);
+
+  [$width, $height] = getimagesizefromstring(Storage::disk('public')->get($photo->display_path));
+  expect($height)->toBe(400)->and($width)->toBe(300);
+
+  [$tw, $th] = getimagesizefromstring(Storage::disk('public')->get($photo->thumb_path));
+  expect($tw)->toBe(400)->and($th)->toBe(400);
+
+  expect($response->json('display_url'))->toContain('?v=');
 });
 
 test('admin list defaults to pending and filters by status', function () {

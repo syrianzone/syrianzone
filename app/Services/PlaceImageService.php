@@ -70,6 +70,18 @@ class PlaceImageService
     $photo->touch();
   }
 
+  // Rotates 90 degrees clockwise using the display as source: the escape hatch for
+  // photos whose original is gone (thumb is re-derived so its crop follows the rotation).
+  public function rotateClockwise(PlacePhoto $photo): void
+  {
+    $disk = Storage::disk('public');
+    $manager = ImageManager::withDriver(\Intervention\Image\Drivers\Gd\Driver::class);
+    $rotated = (string) $manager->read($disk->get($photo->display_path))->rotate(-90)->toWebp(quality: 80);
+    $disk->put($photo->display_path, $rotated);
+    $disk->put($photo->thumb_path, (string) $manager->read($rotated)->cover(400, 400)->toWebp(quality: 75));
+    $photo->touch();
+  }
+
   // Deletes the three files for a photo from the public disk (row deletion is the caller's job).
   public function deleteFiles(PlacePhoto $photo): void
   {

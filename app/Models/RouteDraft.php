@@ -12,6 +12,7 @@ class RouteDraft extends Model
 
     protected $fillable = [
         'user_id',
+        'route_id',
         'city_id',
         'name_ar',
         'name_en',
@@ -34,5 +35,10 @@ class RouteDraft extends Model
     public function city(): BelongsTo
     {
         return $this->belongsTo(City::class);
+    }
+
+    public function linkedRoute(): BelongsTo
+    {
+        return $this->belongsTo(Route::class, 'route_id');
     }
 }

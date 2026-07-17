@@ -15,18 +15,102 @@ class TransitAdminController extends Controller
 {
     public function index()
     {
-        $drafts = RouteDraft::with(['user:id,name', 'city:id,name_ar,name_en'])->orderBy('created_at', 'desc')->get();
+        $drafts = RouteDraft::with(['user:id,name', 'city:id,name_ar,name_en', 'linkedRoute:id,name_ar,name_en'])
+            ->orderBy('created_at', 'desc')->get();
         return response()->json($drafts);
     }
 
     public function approve(Request $request, $id)
     {
-        $draft = RouteDraft::findOrFail($id);
+        $draft = RouteDraft::with('linkedRoute')->findOrFail($id);
 
         if ($draft->status !== 'pending') {
             return response()->json(['message' => 'Draft is already ' . $draft->status], 400);
         }
 
+        // Linked draft = edit suggestion for existing published route
+        if ($draft->route_id) {
+            DB::beginTransaction();
+            try {
+                $route = Route::findOrFail($draft->route_id);
+
+                // Update route metadata
+                $route->name_ar = $draft->name_ar;
+                $route->name_en = $draft->name_en;
+                $route->price_new = $draft->price;
+                $route->save();
+
+                // Update geometry
+                $geojson = $draft->geojson;
+                $features = $geojson['features'] ?? [];
+                $routeLine = null;
+                $stops = [];
+
+                foreach ($features as $feature) {
+                    $type = $feature['geometry']['type'] ?? null;
+                    if ($type === 'LineString' || $type === 'MultiLineString') {
+                        $routeLine = $feature['geometry'];
+                    } elseif ($type === 'Point') {
+                        $stops[] = $feature;
+                    }
+                }
+
+                // Replace geometry
+                DB::table('route_geometries')->where('route_id', $route->id)->delete();
+                if ($routeLine) {
+                    DB::statement(
+                        'INSERT INTO route_geometries (route_id, geometry, created_at, updated_at) VALUES (?, ST_GeomFromGeoJSON(?), ?, ?)',
+                        [$route->id, json_encode($routeLine), now(), now()]
+                    );
+                }
+
+                // Replace stops
+                DB::table('route_stop')->where('route_id', $route->id)->delete();
+                $order = 1;
+                foreach ($stops as $stopFeature) {
+                    $stopPoint = $stopFeature['geometry'];
+                    $nameAr = trim($stopFeature['properties']['nameAr'] ?? '') ?: ('محطة ' . $order);
+                    $stopId = 'stop-' . Str::slug($draft->city->name_en ?? $draft->city->name_ar) . '-' . Str::uuid();
+
+                    DB::statement(
+                        'INSERT INTO stops (id, city_id, name_ar, geometry, created_at, updated_at) VALUES (?, ?, ?, ST_GeomFromGeoJSON(?), ?, ?)',
+                        [$stopId, $draft->city_id, $nameAr, json_encode($stopPoint), now(), now()]
+                    );
+
+                    DB::table('route_stop')->insert([
+                        'route_id' => $route->id,
+                        'stop_id' => $stopId,
+                        'order' => $order++,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+
+                // Log the update
+                \App\Models\TransitRouteLog::create([
+                    'route_id' => $route->id,
+                    'action' => 'updated_via_draft',
+                    'description' => "تحديث الخط '{$route->name_ar}' بناءً على مساهمة #{$draft->id} من " . ($draft->user->name ?? 'مجهول'),
+                    'user_id' => auth()->id(),
+                ]);
+
+                // Mark draft as approved
+                $draft->status = 'approved';
+                $draft->save();
+
+                DB::commit();
+
+                Cache::forget("transit:map-data:{$draft->city_id}");
+                Cache::forget('transit:cities');
+
+                return response()->json(['message' => 'Draft approved and route updated', 'route' => $route]);
+            } catch (\Exception $e) {
+                DB::rollBack();
+                return response()->json(['message' => 'Failed to approve draft', 'error' => $e->getMessage()], 500);
+            }
+        }
+
+        // Original flow: new route from scratch
         DB::beginTransaction();
 
         try {
@@ -579,5 +663,46 @@ class TransitAdminController extends Controller
             'type' => 'FeatureCollection',
             'features' => $features
         ]);
+    }
+
+    public function updateRoute(Request $request, $id)
+    {
+        $route = Route::findOrFail($id);
+
+        $validated = $request->validate([
+            'name_ar' => 'sometimes|string|max:255',
+            'name_en' => 'nullable|string|max:255',
+            'price_new' => 'nullable|integer',
+            'price_old' => 'nullable|integer',
+        ]);
+
+        $updateData = [];
+        if ($request->has('name_ar')) $updateData['name_ar'] = $validated['name_ar'];
+        if ($request->has('name_en')) $updateData['name_en'] = $validated['name_en'];
+        if ($request->has('price_new')) $updateData['price_new'] = $validated['price_new'];
+        if ($request->has('price_old')) $updateData['price_old'] = $validated['price_old'];
+
+        if (empty($updateData)) {
+            return response()->json(['message' => 'No fields to update'], 400);
+        }
+
+        $route->update($updateData);
+
+        $changes = [];
+        if (isset($updateData['name_ar'])) $changes[] = "الاسم من '{$route->getOriginal('name_ar')}' إلى '{$updateData['name_ar']}'";
+        if (isset($updateData['name_en'])) $changes[] = "الاسم الإنجليزي";
+        if (isset($updateData['price_new'])) $changes[] = "التعرفة من '{$route->getOriginal('price_new')}' إلى '{$updateData['price_new']}'";
+
+        \App\Models\TransitRouteLog::create([
+            'route_id' => $route->id,
+            'action' => 'admin_updated',
+            'description' => "تعديل مباشر للخط '{$route->name_ar}': " . implode(', ', $changes),
+            'user_id' => auth()->id(),
+        ]);
+
+        Cache::forget("transit:map-data:{$route->city_id}");
+        Cache::forget('transit:cities');
+
+        return response()->json(['message' => 'Route updated', 'route' => $route->fresh()]);
     }
 }

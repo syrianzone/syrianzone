@@ -87,7 +87,7 @@ const externalLinks = [
   { href: 'https://chromewebstore.google.com/detail/syrian-flag-replacer/dngipobppehfhfggmbdiiiodgcibdeog', text: 'مبدل العلم', isFlag: true },
 ];
 
-export default function Navbar() {
+export default function Navbar({ sticky = true }: { sticky?: boolean }) {
   const { url } = usePage();
   const pathname = url.split('?')[0];
   const isTransitPage = pathname.startsWith('/transit');
@@ -114,7 +114,7 @@ export default function Navbar() {
   if (pathname === '/') return null;
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className={`${sticky ? 'sticky top-0' : 'relative'} z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60`}>
       <div className="container relative flex h-16 max-w-7xl mx-auto items-center px-4 md:px-8 justify-between lg:justify-normal" dir="rtl">
         {/* Mobile Menu */}
         <Sheet open={isOpen} onOpenChange={setIsOpen}>

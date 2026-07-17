@@ -6,3 +6,17 @@ interface Window {
     gtag: (...args: unknown[]) => void;
     dataLayer: unknown[];
 }
+
+// Shared Inertia page props injected by HandleInertiaRequests.
+interface DevProps {
+    enabled: boolean;
+    roles: string[];
+    currentRole: string | null;
+}
+
+declare module '@inertiajs/react' {
+    interface PageProps {
+        dev?: DevProps;
+    }
+}
+

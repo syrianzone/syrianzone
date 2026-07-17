@@ -10,8 +10,12 @@ use Laravel\Socialite\Facades\Socialite;
 class AuthController extends Controller
 {
 
-    public function redirectToProvider()
+    public function redirectToProvider(Request $request)
     {
+        $redirect = $request->query('redirect');
+        if ($redirect && filter_var($redirect, FILTER_VALIDATE_URL) === false) {
+            $request->session()->put('url.intended', '/' . ltrim($redirect, '/'));
+        }
         return Socialite::driver('google')->redirect();
     }
 

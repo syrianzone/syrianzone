@@ -70,7 +70,7 @@ function CityMapPageContent({ id }: CityMapPageProps) {
 
   if (!city || !city.bounds) {
     return (
-      <div className="flex h-svh flex-col bg-[var(--bg)]">
+      <div className="flex h-full flex-col bg-[var(--bg)]">
         <Header />
         <div className="flex flex-1 items-center justify-center text-[var(--muted)]">
           المدينة غير موجودة
@@ -80,7 +80,7 @@ function CityMapPageContent({ id }: CityMapPageProps) {
   }
 
   return (
-    <div className="flex h-svh flex-col bg-[var(--bg)]">
+    <div className="flex h-full flex-col bg-[var(--bg)]">
       <Header />
       {isOffline && <OfflineBanner />}
 

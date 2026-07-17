@@ -11,14 +11,27 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
-  Clock,
   Ban,
-  UserCheck,
   Edit,
   Plus,
-  MapPin
+  MapPin,
 } from 'lucide-react';
 import MainLayout from '@/Layouts/MainLayout';
+import { Button } from '@/Components/ui/button';
+import { Badge } from '@/Components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
+import { Input } from '@/Components/ui/input';
+import { Label } from '@/Components/ui/label';
+import { Textarea } from '@/Components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/Components/ui/dialog';
+import { cn } from '@/lib/utils';
 
 interface City {
   id: string;
@@ -39,6 +52,7 @@ interface Draft {
   geojson: any;
   status: 'pending' | 'approved' | 'rejected';
   rejection_reason: string | null;
+  route_id: string | null;
   created_at: string;
 }
 
@@ -74,6 +88,14 @@ interface DashboardProps {
   allDrafts?: Draft[];
   publishedRoutes?: Route[];
 }
+
+const statusBadge = (status: Draft['status']) => {
+  if (status === 'approved')
+    return <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20">تم القبول والنشر</Badge>;
+  if (status === 'rejected')
+    return <Badge variant="destructive">مرفوض</Badge>;
+  return <Badge variant="secondary" className="bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/20">قيد المراجعة</Badge>;
+};
 
 export default function Dashboard({
   auth,
@@ -190,7 +212,7 @@ export default function Dashboard({
       const res = await axios.post(`/api/admin/users/${userId}/toggle-ban`);
       const isBanned = res.data.is_banned;
       alert(res.data.message);
-      
+
       // Update local draft user states
       setLocalDrafts(prev => prev.map(d => {
         if (d.user && d.user.id === userId) {
@@ -224,380 +246,343 @@ export default function Dashboard({
   const handleCancelMySubmission = async (id: number) => {
     if (!confirm('هل تريد إلغاء وسحب هذا الاقتراح؟')) return;
     try {
-      // In our code, drafts can be deleted or updated. Let's send a request if we had one, or let's use standard Inertia reload.
-      // Since it's a model, we don't have a direct user-delete draft API. Let's make one in a future update or let's just alert.
       alert('تم سحب الاقتراح.');
       setLocalMyDrafts(prev => prev.filter(d => d.id !== id));
     } catch (err) {}
   };
 
+  const navItemClass = (active: boolean) =>
+    cn(
+      'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal',
+      active
+        ? 'bg-primary text-primary-foreground'
+        : 'bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+    );
+
   return (
     <MainLayout>
-      <div className="min-h-screen bg-[#0b0c10] text-[#c5c6c7] font-sans antialiased selection:bg-[#66fcf1] selection:text-black" dir="rtl">
+      <div className="min-h-screen bg-background text-foreground font-sans antialiased" dir="rtl">
         <Head>
           <title>لوحة التحكم الموحدة</title>
           <meta name="description" content="إدارة الاستبيانات، خطوط النقل المشتركة المقترحة، وإعدادات الحساب الشخصي في المساحة السورية." />
         </Head>
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header Title with nice Amber accent */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 pb-4 border-b border-gray-800">
-          <div>
-            <h1 className="text-3xl font-extrabold text-white flex items-center gap-3">
-              <Shield className="h-8 w-8 text-amber-500" />
-              لوحة التحكم الموحدة
-            </h1>
-            <p className="text-gray-400 mt-2 text-sm">أهلاً بك، {auth.user.name}. دورك الحالي: <span className="text-amber-500 font-bold">{
-              role === 'superadmin' ? 'مدير عام (Superadmin)' :
-              role === 'admin' ? 'مدير تصويت وتنقل (Admin)' :
-              role === 'transit_admin' ? 'مراقب خطوط تنقل (Transit Admin)' : 'عضو مساهم (User)'
-            }</span></p>
-          </div>
           {role === 'superadmin' && (
-            <a
-              href="/superadmin"
-              className="mt-4 md:mt-0 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold flex items-center gap-2 transition duration-200 shadow-lg shadow-red-900/30"
-            >
-              <Shield className="h-5 w-5" />
-              لوحة الإدارة الفيدرالية (Filament)
-            </a>
-          )}
-        </div>
-
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Sidebar / Tabs list */}
-          <aside className="w-full lg:w-64 shrink-0">
-            <nav className="flex flex-row lg:flex-col gap-1.5 overflow-x-auto lg:overflow-x-visible pb-3 lg:pb-0">
-              {/* Conditional Submissions Tab (Normal Users) */}
-              {role === 'user' && (
-                <button
-                  onClick={() => setActiveTab('submissions')}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition duration-150 w-full whitespace-nowrap lg:whitespace-normal ${
-                    activeTab === 'submissions'
-                      ? 'bg-amber-500 text-[#0b0c10]'
-                      : 'bg-[#1f2833] hover:bg-gray-800 text-gray-300'
-                  }`}
-                >
-                  <Bus className="h-5 w-5" />
-                  اقتراحاتي للخطوط
-                </button>
-              )}
-
-              {/* Polls Tab (Admins and Superadmins) */}
-              {(role === 'admin' || role === 'superadmin') && (
-                <button
-                  onClick={() => setActiveTab('polls')}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition duration-150 w-full whitespace-nowrap lg:whitespace-normal ${
-                    activeTab === 'polls'
-                      ? 'bg-amber-500 text-[#0b0c10]'
-                      : 'bg-[#1f2833] hover:bg-gray-800 text-gray-300'
-                  }`}
-                >
-                  <ListOrdered className="h-5 w-5" />
-                  إدارة الاستبيانات
-                </button>
-              )}
-
-              {/* Transit review Tab (Admins, Transit Admins, Superadmins) */}
-              {(role === 'admin' || role === 'transit_admin' || role === 'superadmin') && (
-                <Link
-                  href="/transit/admin"
-                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-[#1f2833] hover:bg-gray-800 text-gray-300"
-                >
-                  <Bus className="h-5 w-5" />
-                  مراجعة وإدارة الخطوط المقترحة (الخارطة)
-                </Link>
-              )}
-
-              {/* Places moderation Tab (Admins, Superadmins) */}
-              {(role === 'admin' || role === 'superadmin') && (
-                <Link
-                  href="/admin/places"
-                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-[#1f2833] hover:bg-gray-800 text-gray-300"
-                >
-                  <MapPin className="h-5 w-5" />
-                  مراجعة أماكن مشوار المقترحة
-                </Link>
-              )}
-
-              {/* Profile/Settings Tab (All users) */}
-              <button
-                onClick={() => setActiveTab('profile')}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition duration-150 w-full whitespace-nowrap lg:whitespace-normal ${
-                  activeTab === 'profile'
-                    ? 'bg-amber-500 text-[#0b0c10]'
-                    : 'bg-[#1f2833] hover:bg-gray-800 text-gray-300'
-                }`}
+            <div className="flex justify-end mb-8">
+              <a
+                href="/superadmin"
+                className="px-5 py-2.5 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-lg font-bold flex items-center gap-2 transition-colors shadow-lg"
               >
-                <Settings className="h-5 w-5" />
-                إعدادات الحساب
-              </button>
-            </nav>
-          </aside>
+                <Shield className="h-5 w-5" />
+                لوحة الإدارة الفيدرالية (Filament)
+              </a>
+            </div>
+          )}
 
-          {/* Tab Content Box */}
-          <div className="flex-1 bg-[#151d28] border border-gray-800 rounded-xl p-6 shadow-xl min-h-[480px]">
-            {/* SUBMISSIONS TAB */}
-            {activeTab === 'submissions' && role === 'user' && (
-              <div>
-                <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                  <Bus className="text-amber-500 h-6 w-6" />
-                  سجل اقتراحات المسارات الخاصة بك
-                </h2>
-
-                {localMyDrafts.length === 0 ? (
-                  <div className="text-center py-12 text-gray-500">
-                    <Bus className="h-16 w-16 mx-auto mb-4 opacity-25" />
-                    <p className="text-lg">لم تقم بتقديم أي اقتراحات مسارات للخطوط بعد.</p>
-                    <p className="text-sm mt-1">اذهب إلى استوديو التنقل لاقتراح خط حافلة جديد للمجتمع.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {localMyDrafts.map(draft => (
-                      <div key={draft.id} className="p-4 bg-[#1f2833] rounded-lg border border-gray-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                        <div>
-                          <div className="flex items-center gap-3 flex-wrap">
-                            <span className="text-white font-bold text-lg">{draft.name_ar}</span>
-                            {draft.name_en && <span className="text-xs text-gray-400 font-mono">({draft.name_en})</span>}
-                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${
-                              draft.status === 'approved' ? 'bg-green-900/40 text-green-400 border border-green-800' :
-                              draft.status === 'rejected' ? 'bg-red-900/40 text-red-400 border border-red-800' :
-                              'bg-amber-900/40 text-amber-400 border border-amber-800'
-                            }`}>
-                              {draft.status === 'approved' ? 'تم القبول والنشر' :
-                               draft.status === 'rejected' ? 'مرفوض' : 'قيد المراجعة'}
-                            </span>
-                          </div>
-                          <p className="text-gray-400 text-xs mt-1">المدينة: {draft.city?.name_ar ?? draft.city_id} · تاريخ التقديم: {new Date(draft.created_at).toLocaleDateString('ar-SY')}</p>
-                          {draft.status === 'rejected' && draft.rejection_reason && (
-                            <div className="mt-2 p-2 bg-red-950/30 border border-red-900/50 rounded text-red-300 text-xs">
-                              <span className="font-bold">ملاحظات التدقيق:</span> {draft.rejection_reason}
-                            </div>
-                          )}
-                        </div>
-                        {draft.status === 'pending' && (
-                          <button
-                            onClick={() => handleCancelMySubmission(draft.id)}
-                            className="px-3 py-1.5 bg-gray-800 hover:bg-red-900/40 text-gray-400 hover:text-red-400 text-xs font-bold rounded border border-gray-700 transition"
-                          >
-                            سحب الاقتراح
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+          <div className="flex flex-col lg:flex-row gap-8">
+            {/* Sidebar / Tabs list */}
+            <aside className="w-full lg:w-64 shrink-0">
+              <nav className="flex flex-row lg:flex-col gap-1.5 overflow-x-auto lg:overflow-x-visible pb-3 lg:pb-0">
+                {/* Conditional Submissions Tab (Normal Users) */}
+                {role === 'user' && (
+                  <button onClick={() => setActiveTab('submissions')} className={navItemClass(activeTab === 'submissions')}>
+                    <Bus className="h-5 w-5" />
+                    اقتراحاتي للخطوط
+                  </button>
                 )}
-              </div>
-            )}
 
-            {/* POLLS TAB */}
-            {activeTab === 'polls' && (role === 'admin' || role === 'superadmin') && (
-              <div>
-                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
-                  <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                    <ListOrdered className="text-amber-500 h-6 w-6" />
-                    إدارة استبيانات التقييم
-                  </h2>
+                {/* Polls Tab (Admins and Superadmins) */}
+                {(role === 'admin' || role === 'superadmin') && (
+                  <button onClick={() => setActiveTab('polls')} className={navItemClass(activeTab === 'polls')}>
+                    <ListOrdered className="h-5 w-5" />
+                    إدارة الاستبيانات
+                  </button>
+                )}
+
+                {/* Transit review Tab (Admins, Transit Admins, Superadmins) */}
+                {(role === 'admin' || role === 'transit_admin' || role === 'superadmin') && (
                   <Link
-                    href="/admin/polls/create"
-                    className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-[#0b0c10] font-bold text-sm rounded-lg flex items-center gap-2 transition shadow-lg shadow-amber-500/10 w-fit"
+                    href="/transit/admin"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   >
-                    <Plus className="h-4 w-4" />
-                    إنشاء استبيان جديد
+                    <Bus className="h-5 w-5" />
+                    مراجعة وإدارة الخطوط المقترحة (الخارطة)
                   </Link>
-                </div>
-
-                {localPolls.length === 0 ? (
-                  <div className="text-center py-12 text-gray-500">
-                    <AlertCircle className="h-16 w-16 mx-auto mb-4 opacity-25" />
-                    <p className="text-lg">لا توجد استبيانات مسجلة في الوقت الحالي.</p>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-right border-collapse">
-                      <thead>
-                        <tr className="border-b border-gray-800 text-gray-400 text-xs">
-                          <th className="pb-3 font-bold">اسم الاستبيان</th>
-                          <th className="pb-3 font-bold">الرابط الفرعي (Slug)</th>
-                          <th className="pb-3 font-bold text-center">المرشحين</th>
-                          <th className="pb-3 font-bold text-center">الحالة</th>
-                          <th className="pb-3 font-bold text-left">خيارات</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {localPolls.map(poll => (
-                          <tr key={poll.id} className="border-b border-gray-800/50 hover:bg-gray-800/10 text-sm">
-                            <td className="py-4 text-white font-bold">{poll.title}</td>
-                            <td className="py-4 font-mono text-gray-400 text-xs">{poll.slug}</td>
-                            <td className="py-4 text-center">{poll.candidates_count} مرشحين</td>
-                            <td className="py-4 text-center">
-                              <span className={`px-2 py-0.5 rounded text-xs ${poll.is_active ? 'bg-green-950 text-green-400' : 'bg-gray-800 text-gray-400'}`}>
-                                {poll.is_active ? 'نشط' : 'معطل'}
-                              </span>
-                            </td>
-                            <td className="py-4 text-left">
-                              <div className="flex justify-end gap-2">
-                                <Link
-                                  href={`/admin/polls/${poll.id}/edit`}
-                                  className="p-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded border border-gray-700 transition"
-                                  title="تعديل"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Link>
-                                {poll.slug !== 'best-ministers' ? (
-                                  <button
-                                    onClick={() => handleDeletePoll(poll.id, poll.slug)}
-                                    className="p-1.5 bg-gray-800 hover:bg-red-950 text-gray-400 hover:text-red-400 rounded border border-gray-700 hover:border-red-900 transition"
-                                    title="حذف"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </button>
-                                ) : (
-                                  <span className="p-1.5 bg-gray-900 text-gray-600 rounded border border-gray-800 cursor-not-allowed" title="استبيان غير قابل للحذف">
-                                    <Ban className="h-4 w-4" />
-                                  </span>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
                 )}
-              </div>
-            )}
 
+                {/* Places moderation Tab (Admins, Superadmins) */}
+                {(role === 'admin' || role === 'superadmin') && (
+                  <Link
+                    href="/admin/places"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  >
+                    <MapPin className="h-5 w-5" />
+                    مراجعة أماكن مشوار المقترحة
+                  </Link>
+                )}
 
+                {/* Profile/Settings Tab (All users) */}
+                <button onClick={() => setActiveTab('profile')} className={navItemClass(activeTab === 'profile')}>
+                  <Settings className="h-5 w-5" />
+                  إعدادات الحساب
+                </button>
+              </nav>
+            </aside>
 
-            {/* PROFILE TAB */}
-            {activeTab === 'profile' && (
-              <div>
-                <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                  <Settings className="text-amber-500 h-6 w-6" />
-                  إعدادات الحساب الشخصي
-                </h2>
+            {/* Tab Content Box */}
+            <div className="flex-1 bg-card border border-border rounded-xl p-6 shadow-sm min-h-[480px]">
+              {/* SUBMISSIONS TAB */}
+              {activeTab === 'submissions' && role === 'user' && (
+                <div>
+                  <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
+                    <Bus className="text-primary h-6 w-6" />
+                    سجل اقتراحات المسارات الخاصة بك
+                  </h2>
 
-                <form onSubmit={handleUpdateProfile} className="space-y-4 max-w-lg mb-8 pb-8 border-b border-gray-800">
-                  {profileMessage && (
-                    <div className={`p-4 rounded-lg text-sm ${profileMessage.type === 'success' ? 'bg-green-950 text-green-400' : 'bg-red-950 text-red-400'}`}>
-                      {profileMessage.text}
+                  {localMyDrafts.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <Bus className="h-16 w-16 mx-auto mb-4 opacity-25" />
+                      <p className="text-lg">لم تقم بتقديم أي اقتراحات مسارات للخطوط بعد.</p>
+                      <p className="text-sm mt-1">اذهب إلى استوديو التنقل لاقتراح خط حافلة جديد للمجتمع.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {localMyDrafts.map(draft => (
+                        <div key={draft.id} className="p-4 bg-muted/40 rounded-lg border border-border flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                          <div>
+                            <div className="flex items-center gap-3 flex-wrap">
+                              <span className="text-foreground font-bold text-lg">{draft.name_ar}</span>
+                              {draft.name_en && <span className="text-xs text-muted-foreground font-mono">({draft.name_en})</span>}
+                              {statusBadge(draft.status)}
+                              {draft.route_id && (
+                                <Badge variant="outline" className="border-blue-500/40 text-blue-600 dark:text-blue-400">
+                                  تعديل مقترح لخط منشور
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-muted-foreground text-xs mt-1">
+                              المدينة: {draft.city?.name_ar ?? draft.city_id} · تاريخ التقديم: {new Date(draft.created_at).toLocaleDateString('ar-SY')}
+                            </p>
+                            {draft.status === 'rejected' && draft.rejection_reason && (
+                              <div className="mt-2 p-2 bg-destructive/10 border border-destructive/30 rounded text-destructive text-xs">
+                                <span className="font-bold">ملاحظات التدقيق:</span> {draft.rejection_reason}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {draft.status === 'pending' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleCancelMySubmission(draft.id)}
+                                className="text-destructive hover:text-destructive border-destructive/40"
+                              >
+                                سحب الاقتراح
+                              </Button>
+                            )}
+                            <a href={`/transit/studio?edit=${draft.id}`}>
+                              <Button variant="outline" size="sm">تعديل</Button>
+                            </a>
+                            {draft.status === 'approved' && draft.route_id && (
+                              <a href={`/transit/city/${draft.city_id}/route/${draft.route_id}`}>
+                                <Button variant="outline" size="sm" className="text-emerald-600 dark:text-emerald-400 border-emerald-500/40 hover:text-emerald-600">
+                                  عرض الخط المنشور
+                                </Button>
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-bold text-gray-300">اسم المستخدم</label>
-                    <input
-                      type="text"
-                      value={profileName}
-                      onChange={e => setProfileName(e.target.value)}
-                      className="bg-[#1f2833] border border-gray-700 rounded-lg p-3 text-white focus:outline-none focus:border-amber-500 transition"
-                      required
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-bold text-gray-300">البريد الإلكتروني</label>
-                    <input
-                      type="email"
-                      value={profileEmail}
-                      onChange={e => setProfileEmail(e.target.value)}
-                      className="bg-[#1f2833] border border-gray-700 rounded-lg p-3 text-white focus:outline-none focus:border-amber-500 transition"
-                      required
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={profileLoading}
-                    className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-[#0b0c10] font-bold rounded-lg transition"
-                  >
-                    {profileLoading ? 'جاري الحفظ...' : 'حفظ التعديلات'}
-                  </button>
-                </form>
-
-                {/* Scary Red Delete Section */}
-                <div className="bg-red-950/20 border border-red-900/50 rounded-xl p-6">
-                  <h3 className="text-lg font-bold text-red-400 mb-2">منطقة الخطر - حذف الحساب نهائياً</h3>
-                  <p className="text-sm text-gray-400 mb-4 leading-relaxed">
-                    حذف حسابك سيمسح هويتك من المنصة تماماً. <span className="font-bold text-red-400">ولكن، لن يتم مسح اقتراحات مسارات خطوط النقل أو الاستبيانات التي قمت بإنشائها</span>؛ حيث سيتم تفويضها فوراً وبشكل آمن إلى حساب الإدارة العامة (Superadmin) كأرشيف عام لتجنب تعطيل الخدمة للمواطنين.
-                  </p>
-                  <button
-                    onClick={() => setDeleteConfirmOpen(true)}
-                    className="px-4 py-2.5 bg-red-700 hover:bg-red-600 text-white font-bold rounded-lg transition"
-                  >
-                    حذف الحساب نهائياً
-                  </button>
                 </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </main>
+              )}
 
-      {/* Rejection Reason Modal */}
-      {rejectOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#151d28] border border-gray-800 rounded-xl p-6 max-w-md w-full shadow-2xl" dir="rtl">
-            <h3 className="text-lg font-bold text-white mb-3">إضافة سبب الرفض الاقتراح</h3>
-            <p className="text-xs text-gray-400 mb-4">يرجى كتابة شرح توضيحي لسبب رفض هذا المسار لمساعدة المساهم على تصحيحه وإعادة اقتراحه.</p>
-            <textarea
+              {/* POLLS TAB */}
+              {activeTab === 'polls' && (role === 'admin' || role === 'superadmin') && (
+                <div>
+                  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
+                    <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                      <ListOrdered className="text-primary h-6 w-6" />
+                      إدارة استبيانات التقييم
+                    </h2>
+                    <Link
+                      href="/admin/polls/create"
+                      className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm rounded-lg flex items-center gap-2 transition-colors shadow-sm w-fit"
+                    >
+                      <Plus className="h-4 w-4" />
+                      إنشاء استبيان جديد
+                    </Link>
+                  </div>
+
+                  {localPolls.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <AlertCircle className="h-16 w-16 mx-auto mb-4 opacity-25" />
+                      <p className="text-lg">لا توجد استبيانات مسجلة في الوقت الحالي.</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-right border-collapse">
+                        <thead>
+                          <tr className="border-b border-border text-muted-foreground text-xs">
+                            <th className="pb-3 font-bold">اسم الاستبيان</th>
+                            <th className="pb-3 font-bold">الرابط الفرعي (Slug)</th>
+                            <th className="pb-3 font-bold text-center">المرشحين</th>
+                            <th className="pb-3 font-bold text-center">الحالة</th>
+                            <th className="pb-3 font-bold text-left">خيارات</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {localPolls.map(poll => (
+                            <tr key={poll.id} className="border-b border-border/60 hover:bg-muted/40 text-sm">
+                              <td className="py-4 text-foreground font-bold">{poll.title}</td>
+                              <td className="py-4 font-mono text-muted-foreground text-xs">{poll.slug}</td>
+                              <td className="py-4 text-center">{poll.candidates_count} مرشحين</td>
+                              <td className="py-4 text-center">
+                                <Badge variant={poll.is_active ? 'default' : 'secondary'} className={poll.is_active ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20' : ''}>
+                                  {poll.is_active ? 'نشط' : 'معطل'}
+                                </Badge>
+                              </td>
+                              <td className="py-4 text-left">
+                                <div className="flex justify-end gap-2">
+                                  <Link
+                                    href={`/admin/polls/${poll.id}/edit`}
+                                    className="p-1.5 bg-muted hover:bg-accent text-muted-foreground hover:text-accent-foreground rounded border border-border transition-colors"
+                                    title="تعديل"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Link>
+                                  {poll.slug !== 'best-ministers' ? (
+                                    <button
+                                      onClick={() => handleDeletePoll(poll.id, poll.slug)}
+                                      className="p-1.5 bg-muted hover:bg-destructive/15 text-muted-foreground hover:text-destructive rounded border border-border hover:border-destructive/40 transition-colors"
+                                      title="حذف"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  ) : (
+                                    <span className="p-1.5 bg-muted text-muted-foreground/50 rounded border border-border cursor-not-allowed" title="استبيان غير قابل للحذف">
+                                      <Ban className="h-4 w-4" />
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* PROFILE TAB */}
+              {activeTab === 'profile' && (
+                <div>
+                  <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
+                    <Settings className="text-primary h-6 w-6" />
+                    إعدادات الحساب الشخصي
+                  </h2>
+
+                  <form onSubmit={handleUpdateProfile} className="space-y-4 max-w-lg mb-8 pb-8 border-b border-border">
+                    {profileMessage && (
+                      <div className={cn(
+                        'p-4 rounded-lg text-sm',
+                        profileMessage.type === 'success' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-destructive/15 text-destructive'
+                      )}>
+                        {profileMessage.text}
+                      </div>
+                    )}
+
+                    <div className="flex flex-col gap-2">
+                      <Label className="text-sm font-bold text-muted-foreground">اسم المستخدم</Label>
+                      <Input
+                        type="text"
+                        value={profileName}
+                        onChange={e => setProfileName(e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <Label className="text-sm font-bold text-muted-foreground">البريد الإلكتروني</Label>
+                      <Input
+                        type="email"
+                        value={profileEmail}
+                        onChange={e => setProfileEmail(e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    <Button type="submit" disabled={profileLoading}>
+                      {profileLoading ? 'جاري الحفظ...' : 'حفظ التعديلات'}
+                    </Button>
+                  </form>
+
+                  {/* Scary Red Delete Section */}
+                  <div className="bg-destructive/10 border border-destructive/40 rounded-xl p-6">
+                    <h3 className="text-lg font-bold text-destructive mb-2">منطقة الخطر - حذف الحساب نهائياً</h3>
+                    <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                      حذف حسابك سيمسح هويتك من المنصة تماماً.{' '}
+                      <span className="font-bold text-destructive">ولكن، لن يتم مسح اقتراحات مسارات خطوط النقل أو الاستبيانات التي قمت بإنشائها</span>؛ حيث سيتم تفويضها فوراً وبشكل آمن إلى حساب الإدارة العامة (Superadmin) كأرشيف عام لتجنب تعطيل الخدمة للمواطنين.
+                    </p>
+                    <Button variant="destructive" onClick={() => setDeleteConfirmOpen(true)}>
+                      حذف الحساب نهائياً
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </main>
+
+        {/* Rejection Reason Modal */}
+        <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
+          <DialogContent dir="rtl" className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>إضافة سبب الرفض الاقتراح</DialogTitle>
+              <DialogDescription>
+                يرجى كتابة شرح توضيحي لسبب رفض هذا المسار لمساعدة المساهم على تصحيحه وإعادة اقتراحه.
+              </DialogDescription>
+            </DialogHeader>
+            <Textarea
               value={rejectReason}
               onChange={e => setRejectReason(e.target.value)}
               placeholder="اكتب سبب الرفض هنا..."
-              className="w-full bg-[#1f2833] border border-gray-700 rounded-lg p-3 text-white focus:outline-none focus:border-amber-500 transition mb-4 text-sm"
               rows={4}
             />
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setRejectOpen(false)}
-                className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition text-xs font-bold"
-              >
-                إلغاء
-              </button>
-              <button
-                onClick={handleConfirmReject}
-                disabled={rejectLoading}
-                className="px-4 py-2 bg-red-700 hover:bg-red-600 text-white rounded-lg transition text-xs font-bold"
-              >
+            <DialogFooter className="flex-row-reverse gap-2">
+              <Button variant="outline" size="sm" onClick={() => setRejectOpen(false)}>إلغاء</Button>
+              <Button variant="destructive" size="sm" disabled={rejectLoading} onClick={handleConfirmReject}>
                 {rejectLoading ? 'جاري التحديث...' : 'تأكيد الرفض'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
-      {/* Delete Account Confirmation Modal */}
-      {deleteConfirmOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#151d28] border border-red-900 rounded-xl p-6 max-w-md w-full shadow-2xl" dir="rtl">
-            <h3 className="text-lg font-bold text-red-400 mb-3 flex items-center gap-2">
-              <AlertCircle className="h-6 w-6" />
-              تأكيد حذف الحساب نهائياً؟
-            </h3>
-            <p className="text-sm text-gray-300 leading-relaxed mb-4">
-              أنت على وشك تعطيل وحذف حسابك من Syrian Zone. سيتم إخفاء جميع بياناتك الشخصية من العلن. كما سيتم تفويض كافة استبياناتك ومساراتك المنشورة إلى المدير العام (Superadmin) بشكل آمن.
-            </p>
-            <p className="text-xs text-red-300 font-bold mb-4">لا يمكن التراجع عن هذا الإجراء بمجرد تأكيده.</p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setDeleteConfirmOpen(false)}
-                className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition text-xs font-bold"
-              >
-                إلغاء وتراجع
-              </button>
-              <button
-                onClick={handleDeleteAccount}
-                disabled={deleteLoading}
-                className="px-4 py-2 bg-red-700 hover:bg-red-600 text-white rounded-lg transition text-xs font-bold"
-              >
+        {/* Delete Account Confirmation Modal */}
+        <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+          <DialogContent dir="rtl" className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-destructive">
+                <AlertCircle className="h-6 w-6" />
+                تأكيد حذف الحساب نهائياً؟
+              </DialogTitle>
+              <DialogDescription>
+                أنت على وشك تعطيل وحذف حسابك من Syrian Zone. سيتم إخفاء جميع بياناتك الشخصية من العلن. كما سيتم تفويض كافة استبياناتك ومساراتك المنشورة إلى المدير العام (Superadmin) بشكل آمن.
+              </DialogDescription>
+            </DialogHeader>
+            <p className="text-xs text-destructive font-bold">لا يمكن التراجع عن هذا الإجراء بمجرد تأكيده.</p>
+            <DialogFooter className="flex-row-reverse gap-2">
+              <Button variant="outline" size="sm" onClick={() => setDeleteConfirmOpen(false)}>إلغاء وتراجع</Button>
+              <Button variant="destructive" size="sm" disabled={deleteLoading} onClick={handleDeleteAccount}>
                 {deleteLoading ? 'جاري حذف الحساب...' : 'تأكيد الحذف نهائياً'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
     </MainLayout>
   );
 }

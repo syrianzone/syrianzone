@@ -25,7 +25,7 @@ import {
 import {
   ArrowRight, MapPin, CheckCircle2, XCircle, Eye, EyeOff,
   GitMerge, GitBranch, MoveRight, LogOut, Map, Loader2,
-  Route, Users, History
+  Route, Users, History, Pencil
 } from 'lucide-react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -36,6 +36,8 @@ interface Draft {
   id: number
   user_id: number
   user: { name: string } | null
+  route_id: string | null
+  linked_route: { name_ar: string; name_en: string } | null
   city_id: string
   city: { name_ar: string; name_en: string } | null
   name_ar: string
@@ -153,6 +155,11 @@ function TransitAdminPageContent() {
 
   const [isMoveModalOpen, setIsMoveModalOpen] = useState(false)
   const [targetCityId, setTargetCityId] = useState('')
+
+  const [isEditRouteModalOpen, setIsEditRouteModalOpen] = useState(false)
+  const [editRouteNameAr, setEditRouteNameAr] = useState('')
+  const [editRouteNameEn, setEditRouteNameEn] = useState('')
+  const [editRoutePrice, setEditRoutePrice] = useState('')
 
   const { data: drafts = [], isLoading, error: draftsError } = useAdminDrafts()
 
@@ -351,6 +358,29 @@ function TransitAdminPageContent() {
     } catch { showToast('تعذّر الاتصال بالخادم', false) } finally { setActionLoading(false) }
   }, [selectedRoute, splitAtStopId, splitNameAAr, splitNameAEn, splitNameBAr, splitNameBEn, fetchRoutes, showToast])
 
+  const handleUpdateRoute = useCallback(async () => {
+    if (!selectedRoute) return
+    setActionLoading(true)
+    try {
+      const res = await fetch(`/api/v1/admin/routes/${selectedRoute.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
+        credentials: 'include',
+        body: JSON.stringify({
+          name_ar: editRouteNameAr.trim() || undefined,
+          name_en: editRouteNameEn.trim() || null,
+          price: editRoutePrice ? parseInt(editRoutePrice) : null,
+        }),
+      })
+      if (res.ok) {
+        showToast('تم تحديث الخط')
+        setIsEditRouteModalOpen(false)
+        setSelectedRoute(p => p ? { ...p, name_ar: editRouteNameAr.trim() || p.name_ar, name_en: editRouteNameEn.trim() || null, price_new: editRoutePrice ? parseInt(editRoutePrice) : p.price_new } : null)
+        fetchRoutes()
+      } else { const e = await res.json().catch(() => ({})); showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false) }
+    } catch { showToast('تعذّر الاتصال بالخادم', false) } finally { setActionLoading(false) }
+  }, [selectedRoute, editRouteNameAr, editRouteNameEn, editRoutePrice, fetchRoutes, showToast])
+
   // ─── Derived ──────────────────────────────────────────────────────────────
   const stats = {
     pending: drafts.filter((d: Draft) => d.status === 'pending').length,
@@ -373,7 +403,7 @@ function TransitAdminPageContent() {
 
   return (
     <>
-    <div className="h-[calc(100svh-4rem)] overflow-hidden flex flex-col lg:flex-row bg-background text-foreground" dir="rtl">
+    <div className="h-full overflow-hidden flex flex-col lg:flex-row bg-background text-foreground" dir="rtl">
       {/* Sidebar */}
       <aside className="w-full lg:w-[400px] xl:w-[440px] flex-shrink-0 flex flex-col border-l border-border bg-card overflow-hidden max-h-full">
         <header className="flex items-center justify-between px-5 py-4 border-b border-border">
@@ -450,9 +480,24 @@ function TransitAdminPageContent() {
                     onClick={() => { setSelectedDraft(draft); setMobileView('map') }}>
                     <div className="flex items-start justify-between gap-2">
                       <span className="text-sm font-semibold leading-tight">{draft.name_ar}</span>
-                      <Badge variant={draft.status === 'pending' ? 'secondary' : draft.status === 'approved' ? 'default' : 'destructive'} className="text-[10px] shrink-0">
-                        {STATUS_LABELS[draft.status]}
-                      </Badge>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {draft.route_id && (
+                          <Badge variant="outline" className="text-[10px] bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-300">
+                            تعديل مقترح
+                          </Badge>
+                        )}
+                        <Badge variant={draft.status === 'pending' ? 'secondary' : draft.status === 'approved' ? 'default' : 'destructive'} className="text-[10px]">
+                          {STATUS_LABELS[draft.status]}
+                        </Badge>
+                        <button
+                          type="button"
+                          className="p-1 rounded-md hover:bg-muted transition-colors"
+                          title="تعديل في الاستوديو"
+                          onClick={(e) => { e.stopPropagation(); router.get(`/transit/studio?edit=${draft.id}`) }}
+                        >
+                          <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                        </button>
+                      </div>
                     </div>
                     <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-muted-foreground flex-wrap">
                       <span>{draft.city?.name_ar ?? draft.city_id}</span>
@@ -582,13 +627,20 @@ function TransitAdminPageContent() {
                 <div><span className="text-muted-foreground">التعرفة</span><p className="font-medium">{selectedDraft.price ? `${selectedDraft.price} ل.س` : 'غير محدد'}</p></div>
                 <div><span className="text-muted-foreground">المحطات</span><p className="font-medium">{stopCount(selectedDraft)} محطة</p></div>
               </div>
+              {selectedDraft.route_id && (
+                <div className="bg-blue-500/10 border border-blue-300 rounded-lg px-3 py-2 text-xs">
+                  <span className="font-semibold text-blue-600 dark:text-blue-400">تعديل مقترح للخط:</span>{' '}
+                  <span className="font-medium">{selectedDraft.linked_route?.name_ar ?? selectedDraft.route_id}</span>
+                </div>
+              )}
               {selectedDraft.notes && <p className="text-xs text-muted-foreground border-t border-border pt-2">{selectedDraft.notes}</p>}
               <p className="text-[10px] text-muted-foreground text-center">الخطوط الباهتة = البيانات المنشورة. الخط اللامع = المسار المقترح.</p>
 
               {selectedDraft.status === 'pending' && (
                 <div className="flex gap-2 pt-1">
                   <Button className="flex-1" size="sm" disabled={actionLoading} onClick={() => handleApprove(selectedDraft.id)}>
-                    {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />} موافقة ونشر
+                    {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                    {selectedDraft.route_id ? 'تطبيق التعديلات' : 'موافقة ونشر'}
                   </Button>
                   <Button variant="destructive" size="sm" className="flex-1" disabled={actionLoading} onClick={() => { setRejectReason(''); setRejectOpen(true) }}>
                     <XCircle className="h-4 w-4" /> رفض
@@ -597,9 +649,16 @@ function TransitAdminPageContent() {
               )}
 
               {selectedDraft.status !== 'pending' && (
-                <div className={`text-center py-2 rounded-lg text-xs font-semibold ${selectedDraft.status === 'approved' ? 'bg-green-500/10 text-green-600 dark:text-green-400' : 'bg-red-500/10 text-red-600 dark:text-red-400'}`}>
-                  {selectedDraft.status === 'approved' ? '✓ تم نشر هذا المسار' : '✕ تم رفض هذا المسار'}
-                </div>
+                <>
+                  <div className="flex gap-2 pt-1">
+                    <Button variant="outline" size="sm" className="flex-1" onClick={() => router.get(`/transit/studio?edit=${selectedDraft.id}`)}>
+                      <Pencil className="h-3.5 w-3.5" /> تعديل في الاستوديو
+                    </Button>
+                  </div>
+                  <div className={`text-center py-2 rounded-lg text-xs font-semibold ${selectedDraft.status === 'approved' ? 'bg-green-500/10 text-green-600 dark:text-green-400' : 'bg-red-500/10 text-red-600 dark:text-red-400'}`}>
+                    {selectedDraft.status === 'approved' ? '✓ تم نشر هذا المسار' : '✕ تم رفض هذا المسار'}
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>
@@ -627,6 +686,12 @@ function TransitAdminPageContent() {
               <p className="text-[10px] text-muted-foreground text-center">الخط اللامع = المسار المحدد. الخطوط الباهتة = باقي خطوط المدينة.</p>
 
               <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" size="sm" className="text-xs" onClick={() => { setEditRouteNameAr(selectedRoute.name_ar); setEditRouteNameEn(selectedRoute.name_en ?? ''); setEditRoutePrice(selectedRoute.price_new != null ? String(selectedRoute.price_new) : ''); setIsEditRouteModalOpen(true) }}>
+                  <Pencil className="h-3.5 w-3.5" /> تعديل الاسم والتعرفة
+                </Button>
+                <Button variant="outline" size="sm" className="text-xs" onClick={() => router.get(`/transit/studio?edit=${selectedRoute.id}`)}>
+                  <Pencil className="h-3.5 w-3.5" /> تعديل في الاستوديو
+                </Button>
                 {selectedRoute.status === 'published' ? (
                   <Button variant="destructive" size="sm" className="text-xs" disabled={actionLoading} onClick={() => handleUpdateStatus(selectedRoute.id, 'disapproved')}>
                     <XCircle className="h-3.5 w-3.5" /> تعطيل
@@ -808,6 +873,36 @@ function TransitAdminPageContent() {
             <Button variant="outline" size="sm" onClick={() => setIsMoveModalOpen(false)}>إلغاء</Button>
             <Button size="sm" disabled={actionLoading || !targetCityId || targetCityId === selectedRoute?.city_id} onClick={handleMoveRoute} className="bg-blue-600 hover:bg-blue-700">
               {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoveRight className="h-4 w-4" />} تأكيد النقل
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Edit Route Dialog ──────────────────────────────────────────────── */}
+      <Dialog open={isEditRouteModalOpen} onOpenChange={setIsEditRouteModalOpen}>
+        <DialogContent dir="rtl" className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>تعديل الخط</DialogTitle>
+            <DialogDescription>تعديل اسم و/أو تعرفة <strong>{selectedRoute?.name_ar}</strong>.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium">الاسم بالعربية</label>
+              <Input value={editRouteNameAr} onChange={e => setEditRouteNameAr(e.target.value)} className="h-9 text-xs" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium">الاسم بالإنجليزية</label>
+              <Input value={editRouteNameEn} onChange={e => setEditRouteNameEn(e.target.value)} className="h-9 text-xs" dir="ltr" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium">التعرفة (ل.س)</label>
+              <Input type="number" value={editRoutePrice} onChange={e => setEditRoutePrice(e.target.value)} placeholder="اترك فارغاً للحفاظ على التعرفة الحالية" className="h-9 text-xs" />
+            </div>
+          </div>
+          <DialogFooter className="flex-row-reverse gap-2">
+            <Button variant="outline" size="sm" onClick={() => setIsEditRouteModalOpen(false)}>إلغاء</Button>
+            <Button size="sm" disabled={actionLoading || !editRouteNameAr.trim()} onClick={handleUpdateRoute}>
+              {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pencil className="h-4 w-4" />} حفظ التعديلات
             </Button>
           </DialogFooter>
         </DialogContent>

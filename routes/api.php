@@ -102,6 +102,14 @@ Route::prefix('v1')->group(function () {
     Route::post('/studio/routes', [\App\Http\Controllers\TransitStudioController::class, 'store'])
         ->middleware('throttle:5,1');
 
+    // Transit Studio: edit existing drafts (requires auth)
+    Route::middleware('auth')->group(function () {
+        Route::get('/studio/routes/{id}', [\App\Http\Controllers\TransitStudioController::class, 'show']);
+        Route::put('/studio/routes/{id}', [\App\Http\Controllers\TransitStudioController::class, 'update'])
+            ->middleware('throttle:10,1');
+        Route::get('/studio/routes/{id}/from-route', [\App\Http\Controllers\TransitStudioController::class, 'showForEdit']);
+    });
+
     // Hidden Places public reads. Throttled here only so the existing transit endpoints stay untouched.
     // /places/map and /places/nearby must register before /places/{id}.
     Route::middleware('throttle:60,1')->group(function () {

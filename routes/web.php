@@ -1,11 +1,11 @@
 <?php
 
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\GuessWhoController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\SignalingController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\HomeController;
-use App\Http\Controllers\GuessWhoController;
-use App\Http\Controllers\SignalingController;
 
 Route::get('/', [HomeController::class, 'index']);
 
@@ -13,8 +13,8 @@ Route::get('/healthcheck', function () {
     return response('OK', 200)->header('Content-Type', 'text/plain');
 });
 
-use App\Http\Controllers\SyOfficialController;
 use App\Http\Controllers\PollController;
+use App\Http\Controllers\SyOfficialController;
 
 Route::get('/syofficial', [SyOfficialController::class, 'index']);
 Route::get('/polls', [PollController::class, 'renderIndex']);
@@ -73,7 +73,7 @@ Route::get('/transit', function () {
             'id', 'name_ar', 'name_en', 'zoom', 'status',
             \Illuminate\Support\Facades\DB::raw('ST_AsGeoJSON(center) as center_geojson'),
             \Illuminate\Support\Facades\DB::raw('ST_AsGeoJSON(bounds) as bounds_geojson')
-        )->withCount(['routes as routeCount' => fn($q) => $q->where('status', 'published')])->get();
+        )->withCount(['routes as routeCount' => fn ($q) => $q->where('status', 'published')])->get();
 
         return $citiesModel->map(function ($city) {
             $centerJson = json_decode($city->center_geojson, true);
@@ -93,7 +93,7 @@ Route::get('/transit', function () {
                 'center' => $centerJson['coordinates'] ?? [0, 0],
                 'bounds' => [
                     [$minLng, $minLat],
-                    [$maxLng, $maxLat]
+                    [$maxLng, $maxLat],
                 ],
                 'routeCount' => $city->routeCount,
             ];
@@ -113,22 +113,22 @@ Route::get('/transit/city/{id}/map', function ($id) {
 
 Route::get('/transit/city/{id}/route/{routeId}', function ($id, $routeId) {
     $citiesPath = resource_path('js/Pages/Transit/_data/cities.json');
-    if (!file_exists($citiesPath)) {
+    if (! file_exists($citiesPath)) {
         abort(404, 'Cities configuration not found.');
     }
-    
+
     $cities = json_decode(file_get_contents($citiesPath), true);
     $city = collect($cities)->firstWhere('id', $id);
-    
-    if (!$city) {
+
+    if (! $city) {
         return Inertia::render('Transit/city/[id]/route/[routeId]/Index', [
             'id' => $id,
             'city' => null,
             'route' => null,
-            'stops' => []
+            'stops' => [],
         ]);
     }
-    
+
     // Read route + stops from the database — the same source the live map uses — so
     // admin-approved community routes appear here too (the old static GeoJSON files in
     // public/data are never updated on approval, so they drifted out of sync).
@@ -159,6 +159,7 @@ Route::get('/transit/city/{id}/route/{routeId}', function ($id, $routeId) {
 
         $stopsData = $stops->map(function ($s) {
             $coordinates = json_decode($s->geojson, true)['coordinates'] ?? [0, 0];
+
             return [
                 'properties' => [
                     'id' => $s->id,
@@ -173,7 +174,7 @@ Route::get('/transit/city/{id}/route/{routeId}', function ($id, $routeId) {
         'id' => $id,
         'city' => $city,
         'route' => $routeData,
-        'stops' => $stopsData
+        'stops' => $stopsData,
     ]);
 })->where(['id' => '[a-z0-9\-]+', 'routeId' => '[a-z0-9\-]+']);
 
@@ -183,9 +184,7 @@ Route::get('/transit/studio', function () {
 
 Route::get('/mishwar', [\App\Http\Controllers\PlaceController::class, 'renderIndex']);
 // legacy slug: share links from the first release said /places
-Route::get('/places', fn () => redirect('/mishwar' . (request()->getQueryString() ? '?' . request()->getQueryString() : ''), 301));
-
-
+Route::get('/places', fn () => redirect('/mishwar'.(request()->getQueryString() ? '?'.request()->getQueryString() : ''), 301));
 
 Route::get('/user', [AuthController::class, 'user']);
 Route::get('/auth/google', [AuthController::class, 'redirectToProvider'])->name('login');
@@ -279,6 +278,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/admin/routes', [\App\Http\Controllers\TransitAdminController::class, 'getPublishedRoutes']);
             Route::get('/admin/routes/logs', [\App\Http\Controllers\TransitAdminController::class, 'getLogs']);
             Route::post('/admin/routes/{id}/status', [\App\Http\Controllers\TransitAdminController::class, 'updateRouteStatus']);
+            Route::put('/admin/routes/{id}', [\App\Http\Controllers\TransitAdminController::class, 'updateRoute']);
             Route::post('/admin/routes/{id}/move', [\App\Http\Controllers\TransitAdminController::class, 'moveRoute']);
             Route::post('/admin/routes/combine', [\App\Http\Controllers\TransitAdminController::class, 'combineRoutes']);
             Route::post('/admin/routes/split', [\App\Http\Controllers\TransitAdminController::class, 'splitRoute']);
@@ -288,4 +288,9 @@ Route::middleware('auth')->group(function () {
     });
 });
 
+// Dev-only: impersonate a user role for local development (never registered in production).
+use App\Http\Controllers\DevController;
 
+Route::get('/dev/impersonate/{role}', [DevController::class, 'impersonate'])
+    ->name('dev.impersonate')
+    ->middleware(\App\Http\Middleware\AutoLoginDevUser::class);

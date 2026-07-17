@@ -26,10 +26,6 @@ function TransitRootWrapper({ children }: { children: React.ReactNode }) {
   const { theme } = useTransitTheme()
   return (
     <div className="transit-root min-h-svh" data-transit-theme={theme}>
-      {/* Prevent flash of main-site theme during hydration */}
-      <style>{`
-        body { background: var(--bg); }
-      `}</style>
       {children}
     </div>
   )

@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Place;
 use App\Models\PlaceSave;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class PlaceEngagementController extends Controller
 {
@@ -69,7 +68,7 @@ class PlaceEngagementController extends Controller
       'description' => $p->description,
       'lat' => $p->lat,
       'lng' => $p->lng,
-      'thumb_url' => ($photo = $p->photos->first()) ? Storage::url($photo->thumb_path) : null,
+      'thumb_url' => $p->photos->first()?->thumb_url,
       'saves_count' => $p->saves_count,
     ];
   }

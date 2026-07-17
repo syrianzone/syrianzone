@@ -7,7 +7,6 @@ use App\Services\PlaceImageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class PlaceController extends Controller
@@ -15,7 +14,8 @@ class PlaceController extends Controller
   // list shapes only read the first thumb, skip hydrating full photo rows
   public static function thumbPhotos(): array
   {
-    return ['photos' => fn ($q) => $q->select('id', 'place_id', 'thumb_path', 'sort')];
+    // updated_at feeds the cache-busting ?v= in thumb_url
+    return ['photos' => fn ($q) => $q->select('id', 'place_id', 'thumb_path', 'sort', 'updated_at')];
   }
 
   public function renderIndex()
@@ -36,7 +36,7 @@ class PlaceController extends Controller
             'id' => $p->id,
             'name' => $p->name,
             'category' => $p->category,
-            'thumb_url' => ($photo = $p->photos->first()) ? Storage::url($photo->thumb_path) : null,
+            'thumb_url' => $p->photos->first()?->thumb_url,
           ],
         ])->values()->all(),
       ];
@@ -137,8 +137,8 @@ class PlaceController extends Controller
       'user' => ['id' => $place->user->id, 'name' => $place->user->name, 'avatar_url' => $place->user->avatar_url],
       'photos' => $place->photos->map(fn ($photo) => [
         'id' => $photo->id,
-        'thumb_url' => Storage::url($photo->thumb_path),
-        'display_url' => Storage::url($photo->display_path),
+        'thumb_url' => $photo->thumb_url,
+        'display_url' => $photo->display_url,
         'sort' => $photo->sort,
       ])->values(),
       'saved_by_me' => $user ? $place->saves()->where('user_id', $user->id)->exists() : false,
@@ -223,7 +223,7 @@ class PlaceController extends Controller
       'description' => $p->description,
       'lat' => $p->lat,
       'lng' => $p->lng,
-      'thumb_url' => ($photo = $p->photos->first()) ? Storage::url($photo->thumb_path) : null,
+      'thumb_url' => $p->photos->first()?->thumb_url,
       'saves_count' => $p->saves_count,
     ];
   }

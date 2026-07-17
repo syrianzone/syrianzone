@@ -6,7 +6,6 @@ use App\Models\Place;
 use App\Services\PlaceImageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class PlaceAdminController extends Controller
@@ -83,14 +82,14 @@ class PlaceAdminController extends Controller
       'description' => $p->description,
       'lat' => $p->lat,
       'lng' => $p->lng,
-      'thumb_url' => ($photo = $p->photos->first()) ? Storage::url($photo->thumb_path) : null,
+      'thumb_url' => $p->photos->first()?->thumb_url,
       'saves_count' => $p->saves_count,
       'status' => $p->status,
       'user' => ['id' => $p->user->id, 'name' => $p->user->name, 'avatar_url' => $p->user->avatar_url],
       'photos' => $p->photos->map(fn ($photo) => [
         'id' => $photo->id,
-        'thumb_url' => Storage::url($photo->thumb_path),
-        'display_url' => Storage::url($photo->display_path),
+        'thumb_url' => $photo->thumb_url,
+        'display_url' => $photo->display_url,
         'sort' => $photo->sort,
       ])->values(),
       'saved_by_me' => (bool) $p->saved_by_me,

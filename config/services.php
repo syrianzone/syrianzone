@@ -41,4 +41,8 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URL'),
     ],
 
+    'google_places' => [
+        'key' => env('GOOGLE_PLACES_API_KEY'),
+    ],
+
 ];

@@ -9,7 +9,7 @@ import { FilterBar, parseLatLng } from './_components/FilterBar';
 import { PlacesPanel } from './_components/PlacesPanel';
 import { SubmitSheet } from './_components/SubmitSheet';
 import { api, extractError } from './_lib/api';
-import type { LatLng, Paginated, PlaceCategory, PlaceFeatureCollection, PlaceListItem } from './_lib/types';
+import type { GeoSuggestion, LatLng, Paginated, PlaceCategory, PlaceFeatureCollection, PlaceListItem } from './_lib/types';
 
 export default function Index() {
   const [features, setFeatures] = useState<PlaceFeatureCollection | null>(null);
@@ -27,6 +27,8 @@ export default function Index() {
   const [highlight, setHighlight] = useState<LatLng | null>(null);
   // which q the current listPlaces was fetched for; guards the dropdown against stale results
   const [fetchedQuery, setFetchedQuery] = useState('');
+  const [geoResults, setGeoResults] = useState<GeoSuggestion[]>([]);
+  const geoReqRef = useRef(0);
 
   // stale-response guard for the debounced list fetch
   const requestRef = useRef(0);
@@ -77,6 +79,22 @@ export default function Index() {
     const timer = setTimeout(() => fetchList(1), 300);
     return () => clearTimeout(timer);
   }, [category, query]);
+
+  // google places suggestions ride the same debounce; coord queries skip them
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2 || parseLatLng(q)) {
+      setGeoResults([]);
+      return;
+    }
+    const id = ++geoReqRef.current;
+    const timer = setTimeout(() => {
+      api.geocode(q)
+        .then((res) => { if (id === geoReqRef.current) setGeoResults(res.suggestions); })
+        .catch(() => { if (id === geoReqRef.current) setGeoResults([]); });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query]);
 
   async function fetchList(page: number) {
     const id = ++requestRef.current;
@@ -198,9 +216,11 @@ export default function Index() {
             query={query}
             onQueryChange={setQuery}
             results={searchResults}
+            geoResults={coordCandidate ? [] : geoResults}
             resultsLoading={listLoading || searchPending}
             coordCandidate={coordCandidate}
             onSelectResult={handleSelectResult}
+            onSelectGeo={(s) => handleGoToCoord({ lat: s.lat, lng: s.lng })}
             onGoToCoord={handleGoToCoord}
           />
           {addMode && (

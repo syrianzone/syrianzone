@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/Components/ui/badge';
 import { cn } from '@/Lib/utils';
 import { CATEGORIES, CATEGORY_LABELS } from '../_lib/categories';
-import type { LatLng, PlaceCategory, PlaceListItem } from '../_lib/types';
+import type { GeoSuggestion, LatLng, PlaceCategory, PlaceListItem } from '../_lib/types';
 
 // token: optional hemisphere letter, signed number (dot or comma decimal), optional °, optional letter
 const COORD_TOKEN = String.raw`([NSEW])?\s*([+-]?\d{1,3}(?:[.,]\d+)?)\s*°?\s*([NSEW])?`;
@@ -64,9 +64,11 @@ export function FilterBar(props: {
   query: string;
   onQueryChange: (q: string) => void;
   results: PlaceListItem[];
+  geoResults: GeoSuggestion[];
   resultsLoading: boolean;
   coordCandidate: LatLng | null;
   onSelectResult: (place: PlaceListItem) => void;
+  onSelectGeo: (suggestion: GeoSuggestion) => void;
   onGoToCoord: (point: LatLng) => void;
   className?: string;
 }) {
@@ -76,7 +78,7 @@ export function FilterBar(props: {
 
   const hasQuery = props.query.trim() !== '';
   const showDropdown = open && hasQuery;
-  const optionCount = props.coordCandidate ? 1 : props.results.length;
+  const optionCount = props.coordCandidate ? 1 : props.results.length + props.geoResults.length;
 
   function close() {
     setOpen(false);
@@ -89,9 +91,16 @@ export function FilterBar(props: {
       close();
       return;
     }
-    const place = props.results[index];
-    if (!place) return;
-    props.onSelectResult(place);
+    if (index < props.results.length) {
+      const place = props.results[index];
+      if (!place) return;
+      props.onSelectResult(place);
+      close();
+      return;
+    }
+    const suggestion = props.geoResults[index - props.results.length];
+    if (!suggestion) return;
+    props.onSelectGeo(suggestion);
     close();
   }
 
@@ -170,7 +179,7 @@ export function FilterBar(props: {
               <div className="flex items-center justify-center py-3">
                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
               </div>
-            ) : props.results.length === 0 ? (
+            ) : props.results.length === 0 && props.geoResults.length === 0 ? (
               <p className="py-3 text-center text-sm text-muted-foreground">لا توجد نتائج</p>
             ) : (
               props.results.map((place, i) => (
@@ -191,6 +200,34 @@ export function FilterBar(props: {
                   <Badge variant="outline" className="shrink-0">{CATEGORY_LABELS[place.category]}</Badge>
                 </button>
               ))
+            )}
+            {!props.coordCandidate && !props.resultsLoading && props.geoResults.map((suggestion, gi) => {
+              const i = props.results.length + gi;
+              return (
+                <button
+                  key={`geo-${gi}`}
+                  type="button"
+                  id={`place-search-option-${i}`}
+                  role="option"
+                  aria-selected={activeIndex === i}
+                  className={cn(
+                    'flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm text-right',
+                    activeIndex === i && 'bg-accent',
+                  )}
+                  onClick={() => activate(i)}
+                  onMouseEnter={() => setActiveIndex(i)}
+                >
+                  <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate">{suggestion.name}</span>
+                    <span className="block truncate text-xs text-muted-foreground">{suggestion.address}</span>
+                  </span>
+                </button>
+              );
+            })}
+            {!props.coordCandidate && props.geoResults.length > 0 && (
+              // required attribution for Places data shown off a Google map
+              <p className="px-2 py-1 text-left text-[10px] text-muted-foreground" dir="ltr">powered by Google</p>
             )}
           </Card>
         )}

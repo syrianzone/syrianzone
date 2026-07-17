@@ -4,6 +4,7 @@ use App\Models\Place;
 use App\Models\PlacePhoto;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
 // UserFactory defaults role to admin; regular users must be explicit.
@@ -113,6 +114,34 @@ test('list paginates at 20', function () {
     ->assertJsonPath('last_page', 2);
 
   $this->getJson('/api/v1/places?page=2')->assertOk()->assertJsonCount(5, 'data');
+});
+
+test('geocode proxies google places and maps the suggestion shape', function () {
+  config(['services.google_places.key' => 'test-key']);
+  Http::fake(['places.googleapis.com/*' => Http::response(['places' => [[
+    'displayName' => ['text' => 'سوق الحميدية'],
+    'formattedAddress' => 'دمشق، سوريا',
+    'location' => ['latitude' => 33.5112, 'longitude' => 36.3037],
+  ]]])]);
+
+  $this->getJson('/api/v1/places/geocode?q=' . urlencode('الحميدية'))
+    ->assertOk()
+    ->assertJsonCount(1, 'suggestions')
+    ->assertJsonPath('suggestions.0.name', 'سوق الحميدية')
+    ->assertJsonPath('suggestions.0.lat', 33.5112)
+    ->assertJsonPath('suggestions.0.lng', 36.3037);
+});
+
+test('geocode returns empty without a configured key and calls nothing', function () {
+  config(['services.google_places.key' => null]);
+  Http::fake();
+
+  $this->getJson('/api/v1/places/geocode?q=damascus')->assertOk()->assertJsonCount(0, 'suggestions');
+  Http::assertNothingSent();
+});
+
+test('geocode validates the query length', function () {
+  $this->getJson('/api/v1/places/geocode?q=a')->assertStatus(422);
 });
 
 test('nearby returns places sorted by distance and excludes out of radius', function () {

@@ -115,6 +115,7 @@ Route::prefix('v1')->group(function () {
     Route::middleware('throttle:60,1')->group(function () {
         Route::get('/places/map', [\App\Http\Controllers\PlaceController::class, 'mapData']);
         Route::get('/places/nearby', [\App\Http\Controllers\PlaceController::class, 'nearby']);
+        Route::get('/places/geocode', [\App\Http\Controllers\PlaceController::class, 'geocode']);
         Route::get('/places', [\App\Http\Controllers\PlaceController::class, 'index']);
         Route::get('/places/{id}', [\App\Http\Controllers\PlaceController::class, 'show'])->whereNumber('id');
     });

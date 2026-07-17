@@ -7,6 +7,7 @@ use App\Services\PlaceImageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Inertia\Inertia;
 
 class PlaceController extends Controller
@@ -69,6 +70,58 @@ class PlaceController extends Controller
     }
 
     return response()->json($query->paginate(20)->through(fn ($p) => $this->listItem($p)));
+  }
+
+  // Google Places text search, proxied so the key stays server side. Results are
+  // biased to the same Syria box the submit form enforces and cached per query.
+  public function geocode(Request $request)
+  {
+    $validated = $request->validate(['q' => 'required|string|min:2|max:100']);
+    $key = config('services.google_places.key');
+    if (!$key) {
+      return response()->json(['suggestions' => []]);
+    }
+
+    $cacheKey = 'places:geo:' . md5($validated['q']);
+    $suggestions = Cache::get($cacheKey);
+    if ($suggestions === null) {
+      try {
+        $response = Http::timeout(5)
+          ->withHeaders([
+            'X-Goog-Api-Key' => $key,
+            'X-Goog-FieldMask' => 'places.displayName,places.formattedAddress,places.location',
+          ])
+          ->post('https://places.googleapis.com/v1/places:searchText', [
+            'textQuery' => $validated['q'],
+            'languageCode' => 'ar',
+            'regionCode' => 'SY',
+            'locationBias' => ['rectangle' => [
+              'low' => ['latitude' => 32.0, 'longitude' => 35.5],
+              'high' => ['latitude' => 37.5, 'longitude' => 42.5],
+            ]],
+            'maxResultCount' => 5,
+          ]);
+      } catch (\Throwable $e) {
+        return response()->json(['suggestions' => []]);
+      }
+      if (!$response->successful()) {
+        // failures are not cached so a transient error does not stick for a day
+        return response()->json(['suggestions' => []]);
+      }
+      $suggestions = collect($response->json('places') ?? [])
+        ->map(fn ($p) => [
+          'name' => $p['displayName']['text'] ?? '',
+          'address' => $p['formattedAddress'] ?? '',
+          'lat' => $p['location']['latitude'] ?? null,
+          'lng' => $p['location']['longitude'] ?? null,
+        ])
+        ->filter(fn ($p) => $p['name'] !== '' && $p['lat'] !== null && $p['lng'] !== null)
+        ->values()
+        ->all();
+      Cache::put($cacheKey, $suggestions, 86400);
+    }
+
+    return response()->json(['suggestions' => $suggestions])->header('Cache-Control', 'public, max-age=3600');
   }
 
   public function nearby(Request $request)

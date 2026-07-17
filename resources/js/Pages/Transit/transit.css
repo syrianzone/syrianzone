@@ -1,50 +1,26 @@
-/* Transit-specific styles — applied immediately without JS */
-
-/* ========== JASMINE (default) ========== */
-[data-transit-theme="jasmine"] {
-  --bg: hsl(45 60% 97%);
-  --surface: hsl(45 50% 100%);
-  --surface-2: hsl(42 35% 92%);
-  --border: hsl(38 30% 85%);
-  --border-hover: hsl(38 30% 75%);
-  --gold: hsl(38 85% 45%);
-  --pomegranate: hsl(356 45.2% 45.1%);
-  --tile-blue: #4a8fa8;
-  --terracotta: #d4956a;
-  --text: hsl(30 25% 12%);
-  --muted: hsl(30 18% 42%);
-  --font-ar: 'Cairo', 'IBM Plex Sans Arabic', sans-serif;
-  --font-mono: ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', monospace;
-
-  /* Banner / warning semantic tokens */
-  --banner-bg: hsl(38 60% 92%);
-  --banner-text: hsl(38 80% 30%);
-  --banner-border: hsl(38 50% 80%);
-}
-
-/* ========== DAMASCUS ROSE ========== */
-[data-transit-theme="damascus-rose"] {
-  --bg: hsl(345 28% 8%);
-  --surface: hsl(345 32% 5.5%);
-  --surface-2: hsl(345 22% 13%);
-  --border: hsl(340 35% 20%);
-  --border-hover: hsl(340 35% 30%);
-  --gold: hsl(340 68% 58%);
-  --pomegranate: hsl(0 72% 51%);
-  --tile-blue: #4a8fa8;
-  --terracotta: #d4956a;
-  --text: hsl(10 15% 96%);
-  --muted: hsl(340 18% 62%);
-
-  --banner-bg: hsl(340 35% 15%);
-  --banner-text: hsl(340 68% 58%);
-  --banner-border: hsl(340 35% 22%);
-
-  --font-ar: 'Cairo', 'IBM Plex Sans Arabic', sans-serif;
-  --font-mono: ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', monospace;
-}
+/* Transit-specific styles — applied dynamically using global site themes */
 
 .transit-root {
+  --bg: hsl(var(--background));
+  --surface: hsl(var(--card));
+  --surface-2: hsl(var(--muted));
+  --border: hsl(var(--border));
+  --border-hover: hsl(var(--primary));
+  --gold: hsl(var(--primary));
+  --pomegranate: hsl(var(--destructive));
+  --tile-blue: #4a8fa8;
+  --terracotta: #d4956a;
+  --text: hsl(var(--foreground));
+  --muted: hsl(var(--muted-foreground));
+
+  /* Banner / warning semantic tokens */
+  --banner-bg: hsl(var(--muted));
+  --banner-text: hsl(var(--primary));
+  --banner-border: hsl(var(--border));
+
+  --font-ar: 'Cairo', 'IBM Plex Sans Arabic', sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', monospace;
+
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-ar);

@@ -45,9 +45,4 @@ return [
         'key' => env('GOOGLE_PLACES_API_KEY'),
     ],
 
-    // temporary, see routes/web.php /ops/run-backup
-    'backup_trigger' => [
-        'token' => env('BACKUP_TRIGGER_TOKEN'),
-    ],
-
 ];

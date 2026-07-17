@@ -13,15 +13,6 @@ Route::get('/healthcheck', function () {
     return response('OK', 200)->header('Content-Type', 'text/plain');
 });
 
-// TODO: remove after the cranl->vps migration. exists only to pull a fresh db dump
-// out of the PaaS (no shell or db access there); 404s unless BACKUP_TRIGGER_TOKEN is set.
-Route::post('/ops/run-backup', function () {
-    $token = (string) config('services.backup_trigger.token');
-    abort_unless($token !== '' && hash_equals($token, (string) request()->header('X-Backup-Token')), 404);
-    \Illuminate\Support\Facades\Artisan::call('backup:run', ['--only-db' => true, '--disable-notifications' => true]);
-    return response()->json(['ok' => true, 'output' => \Illuminate\Support\Facades\Artisan::output()]);
-});
-
 use App\Http\Controllers\PollController;
 use App\Http\Controllers\SyOfficialController;
 

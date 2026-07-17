@@ -56,8 +56,6 @@ function getCsrfToken(): string {
   return match ? decodeURIComponent(match[1]) : ''
 }
 
-
-
 // ─── Component ────────────────────────────────────────────────────────────────
 function TransitAdminPageContent() {
   const mapContainer = useRef<HTMLDivElement>(null)
@@ -73,15 +71,95 @@ function TransitAdminPageContent() {
   const [toast,          setToast]          = useState<{ msg: string; ok: boolean } | null>(null)
   const [mobileView,     setMobileView]     = useState<'list' | 'map'>('list')
 
+  // ─── New Admin States ────────────────────────────────────────────────────────
+  const [adminTab,       setAdminTab]       = useState<AdminTab>('drafts')
+  const [publishedRoutes, setPublishedRoutes] = useState<PublishedRoute[]>([])
+  const [loadingRoutes,  setLoadingRoutes]  = useState(false)
+  const [selectedRoute,  setSelectedRoute]  = useState<PublishedRoute | null>(null)
+  const [selectedRouteGeoJson, setSelectedRouteGeoJson] = useState<any>(null)
+  
+  // Route Filters
+  const [routeSearchQuery, setRouteSearchQuery] = useState('')
+  const [routeCityFilter,   setRouteCityFilter]   = useState('all')
+  const [routeStatusFilter, setRouteStatusFilter] = useState<'all' | 'published' | 'disapproved' | 'hidden'>('all')
+
+  // Activity Logs
+  const [logs,           setLogs]           = useState<ActivityLog[]>([])
+  const [loadingLogs,    setLoadingLogs]    = useState(false)
+
+  // Cities List
+  const [cities,         setCities]         = useState<any[]>([])
+
+  // Modal states
+  const [isCombineModalOpen, setIsCombineModalOpen] = useState(false)
+  const [combineCityId,      setCombineCityId]      = useState('')
+  const [combineRouteAId,    setCombineRouteAId]    = useState('')
+  const [combineRouteBId,    setCombineRouteBId]    = useState('')
+  const [combineNameAr,      setCombineNameAr]      = useState('')
+  const [combineNameEn,      setCombineNameEn]      = useState('')
+  const [combinePrice,       setCombinePrice]       = useState('')
+
+  const [isSplitModalOpen,   setIsSplitModalOpen]   = useState(false)
+  const [splitAtStopId,      setSplitAtStopId]      = useState('')
+  const [splitNameAAr,       setSplitNameAAr]       = useState('')
+  const [splitNameAEn,       setSplitNameAEn]       = useState('')
+  const [splitNameBAr,       setSplitNameBAr]       = useState('')
+  const [splitNameBEn,       setSplitNameBEn]       = useState('')
+  const [routeStops,         setRouteStops]         = useState<any[]>([])
+
+  const [isMoveModalOpen,    setIsMoveModalOpen]    = useState(false)
+  const [targetCityId,       setTargetCityId]       = useState('')
+
   const { data: drafts = [], isLoading, error: draftsError } = useAdminDrafts()
 
-  const { data: refData } = useMapData(selectedDraft?.city_id)
+  const activeCityId = adminTab === 'drafts' ? selectedDraft?.city_id : selectedRoute?.city_id
+  const { data: refData } = useMapData(activeCityId)
   const queryClient = useQueryClient()
 
   // ─── Toast helper ────────────────────────────────────────────────────────────
   const showToast = useCallback((msg: string, ok = true) => {
     setToast({ msg, ok })
     setTimeout(() => setToast(null), 4000)
+  }, [])
+
+  // ─── Load Cities ─────────────────────────────────────────────────────────────
+  useEffect(() => {
+    fetch('/api/v1/cities')
+      .then(res => res.json())
+      .then(data => setCities(data))
+      .catch(err => console.error('Failed to load cities', err))
+  }, [])
+
+  // ─── Fetch Published Routes ──────────────────────────────────────────────────
+  const fetchRoutes = useCallback(async () => {
+    setLoadingRoutes(true)
+    try {
+      const res = await fetch('/api/v1/admin/routes')
+      if (res.ok) {
+        const data = await res.json()
+        setPublishedRoutes(data)
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setLoadingRoutes(false)
+    }
+  }, [])
+
+  // ─── Fetch Activity Logs ─────────────────────────────────────────────────────
+  const fetchLogs = useCallback(async () => {
+    setLoadingLogs(true)
+    try {
+      const res = await fetch('/api/v1/admin/routes/logs')
+      if (res.ok) {
+        const data = await res.json()
+        setLogs(data)
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setLoadingLogs(false)
+    }
   }, [])
 
   // ─── Map init ────────────────────────────────────────────────────────────────
@@ -139,29 +217,40 @@ function TransitAdminPageContent() {
     const src = mapRef.current.getSource('draft-source') as maplibregl.GeoJSONSource | undefined
     const empty: FeatureCollection = { type: 'FeatureCollection', features: [] }
     
-    let geojsonData = selectedDraft?.geojson ?? empty
-    if (typeof geojsonData === 'string') {
-      try {
-        geojsonData = JSON.parse(geojsonData)
-      } catch (e) {
-        console.error('Failed to parse geojson', e)
-        geojsonData = empty
+    let geojsonData = empty
+    if (adminTab === 'drafts') {
+      geojsonData = selectedDraft?.geojson ?? empty
+      if (typeof geojsonData === 'string') {
+        try {
+          geojsonData = JSON.parse(geojsonData)
+        } catch (e) {
+          console.error('Failed to parse geojson', e)
+          geojsonData = empty
+        }
       }
+    } else if (adminTab === 'routes') {
+      geojsonData = selectedRouteGeoJson ?? empty
     }
+
     src?.setData(geojsonData)
 
-    if (selectedDraft && geojsonData) {
-      const line = geojsonData.features?.find((f: any) => f.geometry?.type === 'LineString')
-      if (line && line.geometry?.coordinates && Array.isArray(line.geometry.coordinates) && line.geometry.coordinates.length > 0) {
-        const coords: [number, number][] = line.geometry.coordinates
-        const bounds = coords.reduce(
-          (b, c) => b.extend(c as maplibregl.LngLatLike),
-          new maplibregl.LngLatBounds(coords[0], coords[0])
-        )
-        mapRef.current.fitBounds(bounds, { padding: 80 })
+    if (geojsonData && geojsonData.features) {
+      const line = geojsonData.features.find((f: any) => f.geometry?.type === 'LineString' || f.geometry?.type === 'MultiLineString')
+      if (line && line.geometry?.coordinates) {
+        let coords: [number, number][] = line.geometry.coordinates
+        if (line.geometry.type === 'MultiLineString') {
+          coords = coords.flat()
+        }
+        if (coords.length > 0) {
+          const bounds = coords.reduce(
+            (b, c) => b.extend(c as maplibregl.LngLatLike),
+            new maplibregl.LngLatBounds(coords[0], coords[0])
+          )
+          mapRef.current.fitBounds(bounds, { padding: 80 })
+        }
       }
     }
-  }, [mapReady, selectedDraft])
+  }, [mapReady, selectedDraft, selectedRouteGeoJson, adminTab])
 
   // ─── Update reference layer when refData or selection changes ───────────────
   useEffect(() => {
@@ -229,6 +318,164 @@ function TransitAdminPageContent() {
     finally { setActionLoading(false) }
   }, [selectedDraft, rejectReason, queryClient, showToast])
 
+  // ─── Select Published Route ──────────────────────────────────────────────────
+  const handleSelectRoute = useCallback(async (route: PublishedRoute) => {
+    setSelectedRoute(route)
+    setMobileView('map')
+    try {
+      const res = await fetch(`/api/v1/admin/routes/${route.id}/geojson`)
+      if (res.ok) {
+        const geojsonData = await res.json()
+        setSelectedRouteGeoJson(geojsonData)
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }, [])
+
+  // ─── Update Status ───────────────────────────────────────────────────────────
+  const handleUpdateStatus = useCallback(async (routeId: string, newStatus: string) => {
+    setActionLoading(true)
+    try {
+      const res = await fetch(`/api/v1/admin/routes/${routeId}/status`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-XSRF-TOKEN': getCsrfToken(),
+        },
+        credentials: 'include',
+        body: JSON.stringify({ status: newStatus }),
+      })
+      if (res.ok) {
+        showToast('تم تحديث حالة الخط بنجاح')
+        fetchRoutes()
+        if (selectedRoute?.id === routeId) {
+          setSelectedRoute(prev => prev ? { ...prev, status: newStatus as any } : null)
+        }
+      } else {
+        const err = await res.json().catch(() => ({}))
+        showToast('خطأ: ' + (err.message ?? `HTTP ${res.status}`), false)
+      }
+    } catch {
+      showToast('تعذّر الاتصال بالخادم', false)
+    } finally {
+      setActionLoading(false)
+    }
+  }, [fetchRoutes, selectedRoute, showToast])
+
+  // ─── Move Route ──────────────────────────────────────────────────────────────
+  const handleMoveRoute = useCallback(async () => {
+    if (!selectedRoute) return
+    setActionLoading(true)
+    try {
+      const res = await fetch(`/api/v1/admin/routes/${selectedRoute.id}/move`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-XSRF-TOKEN': getCsrfToken(),
+        },
+        credentials: 'include',
+        body: JSON.stringify({ city_id: targetCityId }),
+      })
+      if (res.ok) {
+        showToast('تم نقل الخط بنجاح')
+        setIsMoveModalOpen(false)
+        setSelectedRoute(null)
+        setSelectedRouteGeoJson(null)
+        fetchRoutes()
+      } else {
+        const err = await res.json().catch(() => ({}))
+        showToast('خطأ: ' + (err.message ?? `HTTP ${res.status}`), false)
+      }
+    } catch {
+      showToast('تعذّر الاتصال بالخادم', false)
+    } finally {
+      setActionLoading(false)
+    }
+  }, [selectedRoute, targetCityId, fetchRoutes, showToast])
+
+  // ─── Combine Routes ──────────────────────────────────────────────────────────
+  const handleCombineRoutes = useCallback(async () => {
+    setActionLoading(true)
+    try {
+      const res = await fetch('/api/v1/admin/routes/combine', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-XSRF-TOKEN': getCsrfToken(),
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          route_a_id: combineRouteAId,
+          route_b_id: combineRouteBId,
+          name_ar: combineNameAr.trim(),
+          name_en: combineNameEn.trim() || null,
+          price: combinePrice ? parseInt(combinePrice) : null,
+        }),
+      })
+      if (res.ok) {
+        showToast('تم دمج الخطين بنجاح وإنشاء الخط الجديد')
+        setIsCombineModalOpen(false)
+        setCombineRouteAId('')
+        setCombineRouteBId('')
+        setCombineNameAr('')
+        setCombineNameEn('')
+        setCombinePrice('')
+        fetchRoutes()
+      } else {
+        const err = await res.json().catch(() => ({}))
+        showToast('خطأ: ' + (err.message ?? `HTTP ${res.status}`), false)
+      }
+    } catch {
+      showToast('تعذّر الاتصال بالخادم', false)
+    } finally {
+      setActionLoading(false)
+    }
+  }, [combineRouteAId, combineRouteBId, combineNameAr, combineNameEn, combinePrice, fetchRoutes, showToast])
+
+  // ─── Split Route ─────────────────────────────────────────────────────────────
+  const handleSplitRoute = useCallback(async () => {
+    if (!selectedRoute) return
+    setActionLoading(true)
+    try {
+      const res = await fetch('/api/v1/admin/routes/split', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-XSRF-TOKEN': getCsrfToken(),
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          route_id: selectedRoute.id,
+          split_stop_id: splitAtStopId,
+          name_a_ar: splitNameAAr.trim(),
+          name_a_en: splitNameAEn.trim() || null,
+          name_b_ar: splitNameBAr.trim(),
+          name_b_en: splitNameBEn.trim() || null,
+        }),
+      })
+      if (res.ok) {
+        showToast('تم تقسيم الخط بنجاح إلى خطين جديدين')
+        setIsSplitModalOpen(false)
+        setSelectedRoute(null)
+        setSelectedRouteGeoJson(null)
+        setSplitAtStopId('')
+        setSplitNameAAr('')
+        setSplitNameAEn('')
+        setSplitNameBAr('')
+        setSplitNameBEn('')
+        fetchRoutes()
+      } else {
+        const err = await res.json().catch(() => ({}))
+        showToast('خطأ: ' + (err.message ?? `HTTP ${res.status}`), false)
+      }
+    } catch {
+      showToast('تعذّر الاتصال بالخادم', false)
+    } finally {
+      setActionLoading(false)
+    }
+  }, [selectedRoute, splitAtStopId, splitNameAAr, splitNameAEn, splitNameBAr, splitNameBEn, fetchRoutes, showToast])
+
   // ─── Derived data ────────────────────────────────────────────────────────────
   const stats = {
     pending:  drafts.filter((d: Draft) => d.status === 'pending').length,
@@ -238,16 +485,26 @@ function TransitAdminPageContent() {
 
   const uniqueCities = Array.from(new Set(drafts.map((d: Draft) => d.city_id))) as string[]
 
-  const filtered: Draft[] = drafts
+  const filteredDrafts: Draft[] = drafts
     .filter((d: Draft) => statusFilter === 'all' || d.status === statusFilter)
     .filter((d: Draft) => cityFilter === 'all' || d.city_id === cityFilter)
     .sort((a: Draft, b: Draft) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
+  const filteredRoutes = publishedRoutes
+    .filter(r => routeStatusFilter === 'all' || r.status === routeStatusFilter)
+    .filter(r => routeCityFilter === 'all' || r.city_id === routeCityFilter)
+    .filter(r => {
+      const q = routeSearchQuery.trim().toLowerCase()
+      if (!q) return true
+      return (
+        r.name_ar.toLowerCase().includes(q) ||
+        (r.name_en?.toLowerCase() || '').includes(q)
+      )
+    })
+
   const handleLogout = useCallback(() => {
     router.post('/logout')
   }, [])
-
-  // ─── Render ──────────────────────────────────────────────────────────────────
 
   return (
     <div className={`adm-shell${mobileView === 'map' ? ' adm-shell--map-view' : ''}`} dir="rtl">
@@ -257,7 +514,7 @@ function TransitAdminPageContent() {
         <header className="adm-sidebar-header">
           <div>
             <h1 className="adm-title">لوحة الإدارة</h1>
-            <p className="adm-subtitle">مراجعة مسارات المجتمع</p>
+            <p className="adm-subtitle">التحكم في مسارات النقل</p>
           </div>
           <button type="button" className="adm-logout-btn" onClick={handleLogout} title="تسجيل الخروج">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -266,92 +523,257 @@ function TransitAdminPageContent() {
           </button>
         </header>
 
-        {/* Stats */}
-        <div className="adm-stats">
-          <div className="adm-stat adm-stat--pending">
-            <span className="adm-stat-num">{stats.pending}</span>
-            <span className="adm-stat-label">بانتظار المراجعة</span>
-          </div>
-          <div className="adm-stat adm-stat--approved">
-            <span className="adm-stat-num">{stats.approved}</span>
-            <span className="adm-stat-label">مقبول</span>
-          </div>
-          <div className="adm-stat adm-stat--rejected">
-            <span className="adm-stat-num">{stats.rejected}</span>
-            <span className="adm-stat-label">مرفوض</span>
-          </div>
+        {/* Tab switcher */}
+        <div className="adm-nav-tabs">
+          <button
+            type="button"
+            className={`adm-nav-tab ${adminTab === 'drafts' ? 'adm-nav-tab--active' : ''}`}
+            onClick={() => {
+              setAdminTab('drafts')
+              setSelectedRoute(null)
+              setSelectedRouteGeoJson(null)
+            }}
+          >
+            طلبات المسودات
+          </button>
+          <button
+            type="button"
+            className={`adm-nav-tab ${adminTab === 'routes' ? 'adm-nav-tab--active' : ''}`}
+            onClick={() => {
+              setAdminTab('routes')
+              setSelectedDraft(null)
+              fetchRoutes()
+            }}
+          >
+            إدارة الخطوط
+          </button>
+          <button
+            type="button"
+            className={`adm-nav-tab ${adminTab === 'logs' ? 'adm-nav-tab--active' : ''}`}
+            onClick={() => {
+              setAdminTab('logs')
+              setSelectedDraft(null)
+              setSelectedRoute(null)
+              setSelectedRouteGeoJson(null)
+              fetchLogs()
+            }}
+          >
+            سجل العمليات
+          </button>
         </div>
 
-        {/* Filters */}
-        <div className="adm-filters">
-          <div className="adm-status-tabs">
-            {(['all', 'pending', 'approved', 'rejected'] as const).map(s => (
+        {/* DRAFTS TAB */}
+        {adminTab === 'drafts' && (
+          <>
+            {/* Stats */}
+            <div className="adm-stats">
+              <div className="adm-stat adm-stat--pending">
+                <span className="adm-stat-num">{stats.pending}</span>
+                <span className="adm-stat-label">بانتظار المراجعة</span>
+              </div>
+              <div className="adm-stat adm-stat--approved">
+                <span className="adm-stat-num">{stats.approved}</span>
+                <span className="adm-stat-label">مقبول</span>
+              </div>
+              <div className="adm-stat adm-stat--rejected">
+                <span className="adm-stat-num">{stats.rejected}</span>
+                <span className="adm-stat-label">مرفوض</span>
+              </div>
+            </div>
+
+            {/* Filters */}
+            <div className="adm-filters">
+              <div className="adm-status-tabs">
+                {(['all', 'pending', 'approved', 'rejected'] as const).map(s => (
+                  <button
+                    key={s}
+                    type="button"
+                    className={`adm-tab ${statusFilter === s ? 'adm-tab--active' : ''}`}
+                    onClick={() => setStatusFilter(s)}
+                  >
+                    {s === 'all' ? 'الكل' : STATUS_LABELS[s]}
+                  </button>
+                ))}
+              </div>
+              {uniqueCities.length > 1 && (
+                <div className="adm-select-wrap">
+                  <select
+                    className="adm-select"
+                    value={cityFilter}
+                    onChange={e => setCityFilter(e.target.value)}
+                  >
+                    <option value="all">جميع المدن</option>
+                    {uniqueCities.map(id => (
+                      <option key={id} value={id}>{id}</option>
+                    ))}
+                  </select>
+                  <svg className="adm-select-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6"/></svg>
+                </div>
+              )}
+            </div>
+
+            {/* Draft list */}
+            <div className="adm-list">
+              {isLoading ? (
+                <div className="adm-empty">جاري التحميل…</div>
+              ) : draftsError ? (
+                <div className="adm-empty adm-empty--error">
+                  تعذّر تحميل البيانات<br/>
+                  <span className="adm-empty-detail">{String(draftsError)}</span>
+                </div>
+              ) : filteredDrafts.length === 0 ? (
+                <div className="adm-empty">لا توجد نتائج</div>
+              ) : filteredDrafts.map((draft: Draft) => (
+                <button
+                  key={draft.id}
+                  type="button"
+                  className={`adm-draft-item ${selectedDraft?.id === draft.id ? 'adm-draft-item--active' : ''}`}
+                  onClick={() => { setSelectedDraft(draft); setMobileView('map') }}
+                >
+                  <div className="adm-draft-top">
+                    <span className="adm-draft-name">{draft.name_ar}</span>
+                    <span className={`adm-badge adm-badge--${draft.status}`}>
+                      {STATUS_LABELS[draft.status]}
+                    </span>
+                  </div>
+                  <div className="adm-draft-meta">
+                    <span>{draft.city?.name_ar ?? draft.city_id}</span>
+                    <span className="adm-meta-sep">·</span>
+                    <span>{draft.user?.name ?? 'مجهول'}</span>
+                    <span className="adm-meta-sep">·</span>
+                    <span>{stopCount(draft)} محطة</span>
+                    <span className="adm-meta-sep">·</span>
+                    <span>{new Date(draft.created_at).toLocaleDateString('ar-SY')}</span>
+                  </div>
+                  {draft.status === 'rejected' && draft.rejection_reason && (
+                    <p className="adm-rejection-reason">{draft.rejection_reason}</p>
+                  )}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* ROUTES TAB */}
+        {adminTab === 'routes' && (
+          <>
+            {/* Quick Actions */}
+            <div className="p-3 border-b border-[var(--border)] flex gap-2">
               <button
-                key={s}
                 type="button"
-                className={`adm-tab ${statusFilter === s ? 'adm-tab--active' : ''}`}
-                onClick={() => setStatusFilter(s)}
+                className="w-full py-2 px-3 bg-[var(--gold)] text-[var(--bg)] hover:opacity-90 font-bold text-xs rounded-lg transition-opacity flex items-center justify-center gap-1"
+                onClick={() => {
+                  setCombineCityId('')
+                  setCombineRouteAId('')
+                  setCombineRouteBId('')
+                  setCombineNameAr('')
+                  setCombineNameEn('')
+                  setCombinePrice('')
+                  setIsCombineModalOpen(true)
+                }}
               >
-                {s === 'all' ? 'الكل' : STATUS_LABELS[s]}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                دمج خطين
               </button>
+            </div>
+
+            {/* Filters */}
+            <div className="adm-filters">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  className="adm-login-input text-xs py-1.5 px-3 rounded-lg"
+                  placeholder="بحث باسم الخط..."
+                  value={routeSearchQuery}
+                  onChange={e => setRouteSearchQuery(e.target.value)}
+                />
+              </div>
+              <div className="adm-status-tabs">
+                {(['all', 'published', 'disapproved', 'hidden'] as const).map(s => (
+                  <button
+                    key={s}
+                    type="button"
+                    className={`adm-tab ${routeStatusFilter === s ? 'adm-tab--active' : ''}`}
+                    onClick={() => setRouteStatusFilter(s)}
+                  >
+                    {s === 'all' ? 'الكل' : s === 'published' ? 'نشط' : s === 'disapproved' ? 'معطل' : 'مخفي'}
+                  </button>
+                ))}
+              </div>
+              <div className="adm-select-wrap">
+                <select
+                  className="adm-select"
+                  value={routeCityFilter}
+                  onChange={e => setRouteCityFilter(e.target.value)}
+                >
+                  <option value="all">جميع المدن</option>
+                  {cities.map(c => (
+                    <option key={c.id} value={c.id}>{c.nameAr}</option>
+                  ))}
+                </select>
+                <svg className="adm-select-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6"/></svg>
+              </div>
+            </div>
+
+            {/* Routes List */}
+            <div className="adm-list">
+              {loadingRoutes ? (
+                <div className="adm-empty">جاري التحميل…</div>
+              ) : filteredRoutes.length === 0 ? (
+                <div className="adm-empty">لا توجد خطوط منشورة مطابقة</div>
+              ) : filteredRoutes.map((route: PublishedRoute) => (
+                <button
+                  key={route.id}
+                  type="button"
+                  className={`adm-draft-item ${selectedRoute?.id === route.id ? 'adm-draft-item--active' : ''}`}
+                  onClick={() => handleSelectRoute(route)}
+                >
+                  <div className="adm-draft-top">
+                    <span className="adm-draft-name">{route.name_ar}</span>
+                    <span className={`adm-badge ${route.status === 'published' ? 'adm-badge--approved' : route.status === 'disapproved' ? 'adm-badge--rejected' : 'adm-badge--pending'}`}>
+                      {route.status === 'published' ? 'منشور' : route.status === 'disapproved' ? 'معطل' : 'مخفي'}
+                    </span>
+                  </div>
+                  <div className="adm-draft-meta">
+                    <span>{route.city?.name_ar ?? route.city_id}</span>
+                    <span className="adm-meta-sep">·</span>
+                    <span>{route.stops_count} موقف</span>
+                    {route.price_new && (
+                      <>
+                        <span className="adm-meta-sep">·</span>
+                        <span>{route.price_new} ل.س</span>
+                      </>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* LOGS TAB */}
+        {adminTab === 'logs' && (
+          <div className="adm-log-list">
+            {loadingLogs ? (
+              <div className="adm-empty">جاري التحميل…</div>
+            ) : logs.length === 0 ? (
+              <div className="adm-empty">لا يوجد سجل عمليات</div>
+            ) : logs.map((log: ActivityLog) => (
+              <div key={log.id} className="adm-log-item">
+                <div className="adm-log-header">
+                  <span className={`adm-log-action adm-log-action--${log.action}`}>
+                    {log.action === 'approved' ? 'نشر' : log.action === 'disapproved' ? 'تعطيل' : log.action === 'restored' ? 'تفعيل' : log.action === 'hidden' ? 'إخفاء' : log.action === 'combined' ? 'دمج' : log.action === 'split' ? 'تقسيم' : log.action === 'moved' ? 'نقل' : log.action}
+                  </span>
+                  <span className="text-xs text-[var(--muted)]">{new Date(log.created_at).toLocaleString('ar-SY')}</span>
+                </div>
+                <p className="adm-log-desc">{log.description}</p>
+                <div className="adm-log-meta">
+                  <span>المسؤول: {log.user?.name ?? 'مجهول'}</span>
+                </div>
+              </div>
             ))}
           </div>
-          {uniqueCities.length > 1 && (
-            <div className="adm-select-wrap">
-              <select
-                className="adm-select"
-                value={cityFilter}
-                onChange={e => setCityFilter(e.target.value)}
-              >
-                <option value="all">جميع المدن</option>
-                {uniqueCities.map(id => (
-                  <option key={id} value={id}>{id}</option>
-                ))}
-              </select>
-              <svg className="adm-select-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6"/></svg>
-            </div>
-          )}
-        </div>
-
-        {/* Draft list */}
-        <div className="adm-list">
-          {isLoading ? (
-            <div className="adm-empty">جاري التحميل…</div>
-          ) : draftsError ? (
-            <div className="adm-empty adm-empty--error">
-              تعذّر تحميل البيانات<br/>
-              <span className="adm-empty-detail">{String(draftsError)}</span>
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="adm-empty">لا توجد نتائج</div>
-          ) : filtered.map((draft: Draft) => (
-            <button
-              key={draft.id}
-              type="button"
-              className={`adm-draft-item ${selectedDraft?.id === draft.id ? 'adm-draft-item--active' : ''}`}
-              onClick={() => { setSelectedDraft(draft); setMobileView('map') }}
-            >
-              <div className="adm-draft-top">
-                <span className="adm-draft-name">{draft.name_ar}</span>
-                <span className={`adm-badge adm-badge--${draft.status}`}>
-                  {STATUS_LABELS[draft.status]}
-                </span>
-              </div>
-              <div className="adm-draft-meta">
-                <span>{draft.city?.name_ar ?? draft.city_id}</span>
-                <span className="adm-meta-sep">·</span>
-                <span>{draft.user?.name ?? 'مجهول'}</span>
-                <span className="adm-meta-sep">·</span>
-                <span>{stopCount(draft)} محطة</span>
-                <span className="adm-meta-sep">·</span>
-                <span>{new Date(draft.created_at).toLocaleDateString('ar-SY')}</span>
-              </div>
-              {draft.status === 'rejected' && draft.rejection_reason && (
-                <p className="adm-rejection-reason">{draft.rejection_reason}</p>
-              )}
-            </button>
-          ))}
-        </div>
+        )}
       </aside>
 
       {/* Map panel */}
@@ -368,8 +790,8 @@ function TransitAdminPageContent() {
         </button>
         <div ref={mapContainer} className="adm-map" />
 
-        {/* Detail overlay */}
-        {selectedDraft && (
+        {/* Draft detail overlay */}
+        {selectedDraft && adminTab === 'drafts' && (
           <div className="adm-detail">
             <div className="adm-detail-header">
               <div>
@@ -440,11 +862,128 @@ function TransitAdminPageContent() {
           </div>
         )}
 
-        {/* Empty state hint */}
-        {!selectedDraft && (
-          <div className="adm-map-hint">
-            اختر مسودة من القائمة لمعاينتها على الخريطة
+        {/* Route detail overlay */}
+        {selectedRoute && adminTab === 'routes' && (
+          <div className="adm-detail">
+            <div className="adm-detail-header">
+              <div>
+                <h2 className="adm-detail-title">{selectedRoute.name_ar}</h2>
+                {selectedRoute.name_en && <p className="adm-detail-subtitle" dir="ltr">{selectedRoute.name_en}</p>}
+              </div>
+              <button type="button" className="adm-detail-close" onClick={() => { setSelectedRoute(null); setSelectedRouteGeoJson(null); }}>✕</button>
+            </div>
+
+            <div className="adm-detail-rows">
+              <div className="adm-detail-row">
+                <span className="adm-detail-label">المدينة</span>
+                <span>{selectedRoute.city?.name_ar ?? selectedRoute.city_id}</span>
+              </div>
+              <div className="adm-detail-row">
+                <span className="adm-detail-label">الحالة الحالية</span>
+                <span className={`adm-badge ${selectedRoute.status === 'published' ? 'adm-badge--approved' : selectedRoute.status === 'disapproved' ? 'adm-badge--rejected' : 'adm-badge--pending'}`}>
+                  {selectedRoute.status === 'published' ? 'منشور' : selectedRoute.status === 'disapproved' ? 'معطل' : 'مخفي'}
+                </span>
+              </div>
+              <div className="adm-detail-row">
+                <span className="adm-detail-label">التعرفة</span>
+                <span>{selectedRoute.price_new ? `${selectedRoute.price_new} ل.س` : 'غير محدد'}</span>
+              </div>
+              <div className="adm-detail-row">
+                <span className="adm-detail-label">المواقف</span>
+                <span>{selectedRoute.stops_count} موقف</span>
+              </div>
+            </div>
+
+            <div className="adm-detail-hint">
+              الخط البرتقالي = المسار المحدد. الخطوط الباهتة = باقي خطوط المدينة.
+            </div>
+
+            <div className="adm-detail-actions flex-wrap gap-2 mt-4">
+              {selectedRoute.status === 'published' ? (
+                <button
+                  type="button"
+                  className="adm-btn adm-btn--reject flex-1"
+                  disabled={actionLoading}
+                  onClick={() => handleUpdateStatus(selectedRoute.id, 'disapproved')}
+                >
+                  تعطيل (إلغاء نشر)
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="adm-btn adm-btn--approve flex-1"
+                  disabled={actionLoading}
+                  onClick={() => handleUpdateStatus(selectedRoute.id, 'published')}
+                >
+                  تفعيل ونشر الخط
+                </button>
+              )}
+
+              {selectedRoute.status !== 'hidden' && (
+                <button
+                  type="button"
+                  className="adm-btn bg-zinc-600 hover:bg-zinc-700 text-white flex-1 text-xs py-2 px-3 rounded-lg font-bold"
+                  disabled={actionLoading}
+                  onClick={() => handleUpdateStatus(selectedRoute.id, 'hidden')}
+                >
+                  إخفاء الخط
+                </button>
+              )}
+
+              <button
+                type="button"
+                className="adm-btn bg-blue-600 hover:bg-blue-700 text-white flex-1 text-xs py-2 px-3 rounded-lg font-bold"
+                disabled={actionLoading}
+                onClick={() => {
+                  setTargetCityId(selectedRoute.city_id)
+                  setIsMoveModalOpen(true)
+                }}
+              >
+                نقل لمدينة
+              </button>
+
+              <button
+                type="button"
+                className="adm-btn bg-purple-600 hover:bg-purple-700 text-white flex-1 text-xs py-2 px-3 rounded-lg font-bold"
+                disabled={actionLoading}
+                onClick={async () => {
+                  setActionLoading(true)
+                  try {
+                    const res = await fetch(`/api/v1/admin/routes/${selectedRoute.id}/stops`)
+                    if (res.ok) {
+                      const stopsData = await res.json()
+                      setRouteStops(stopsData)
+                      setSplitAtStopId(stopsData[1]?.id || '')
+                      setSplitNameAAr(`${selectedRoute.name_ar} (القسم الأول)`)
+                      setSplitNameBAr(`${selectedRoute.name_ar} (القسم الثاني)`)
+                      setSplitNameAEn(selectedRoute.name_en ? `${selectedRoute.name_en} (Part 1)` : '')
+                      setSplitNameBEn(selectedRoute.name_en ? `${selectedRoute.name_en} (Part 2)` : '')
+                      setIsSplitModalOpen(true)
+                    } else {
+                      showToast('فشل في تحميل مواقف الخط', false)
+                    }
+                  } catch {
+                    showToast('خطأ في الاتصال', false)
+                  } finally {
+                    setActionLoading(false)
+                  }
+                }}
+              >
+                تقسيم الخط
+              </button>
+            </div>
           </div>
+        )}
+
+        {/* Empty state hints */}
+        {!selectedDraft && adminTab === 'drafts' && (
+          <div className="adm-map-hint">اختر مسودة من القائمة لمعاينتها على الخريطة</div>
+        )}
+        {!selectedRoute && adminTab === 'routes' && (
+          <div className="adm-map-hint">اختر خطاً من القائمة لمعاينته والتحكم به</div>
+        )}
+        {adminTab === 'logs' && (
+          <div className="adm-map-hint">تصفح سجل العمليات الإدارية في القائمة الجانبية</div>
         )}
       </div>
 
@@ -456,9 +995,7 @@ function TransitAdminPageContent() {
               <h3 className="adm-dialog-title">رفض المسار</h3>
               <button type="button" className="adm-detail-close" onClick={() => setRejectOpen(false)}>✕</button>
             </div>
-            <p className="adm-dialog-desc">
-              أضف سبب الرفض — سيظهر للمساهم ليتمكن من التحسين.
-            </p>
+            <p className="adm-dialog-desc">أضف سبب الرفض — سيظهر للمساهم ليتمكن من التحسين.</p>
             <textarea
               className="adm-textarea"
               value={rejectReason}
@@ -468,16 +1005,222 @@ function TransitAdminPageContent() {
               autoFocus
             />
             <div className="adm-dialog-actions">
-              <button type="button" className="adm-btn adm-btn--ghost" onClick={() => setRejectOpen(false)}>
-                إلغاء
+              <button type="button" className="adm-btn adm-btn--ghost" onClick={() => setRejectOpen(false)}>إلغاء</button>
+              <button type="button" className="adm-btn adm-btn--reject" disabled={actionLoading} onClick={handleRejectConfirm}>
+                {actionLoading ? '…' : 'تأكيد الرفض'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Combine Modal */}
+      {isCombineModalOpen && (
+        <div className="adm-overlay" onClick={e => { if (e.target === e.currentTarget) setIsCombineModalOpen(false) }}>
+          <div className="adm-dialog" dir="rtl">
+            <div className="adm-dialog-header">
+              <h3 className="adm-dialog-title">دمج خطوط النقل</h3>
+              <button type="button" className="adm-detail-close" onClick={() => setIsCombineModalOpen(false)}>✕</button>
+            </div>
+            <p className="adm-dialog-desc">اختر خطين في نفس المدينة لدمجهما في خط جديد واحد متتابع.</p>
+            <div className="adm-dialog-fields">
+              <div className="adm-dialog-field">
+                <label className="adm-dialog-label font-bold text-xs">المدينة</label>
+                <select
+                  className="adm-dialog-select"
+                  value={combineCityId}
+                  onChange={e => {
+                    setCombineCityId(e.target.value)
+                    setCombineRouteAId('')
+                    setCombineRouteBId('')
+                  }}
+                >
+                  <option value="">اختر المدينة...</option>
+                  {cities.map(c => (
+                    <option key={c.id} value={c.id}>{c.nameAr}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="adm-dialog-field">
+                <label className="adm-dialog-label font-bold text-xs">الخط الأول (البداية)</label>
+                <select
+                  className="adm-dialog-select"
+                  value={combineRouteAId}
+                  onChange={e => setCombineRouteAId(e.target.value)}
+                  disabled={!combineCityId}
+                >
+                  <option value="">اختر الخط الأول...</option>
+                  {publishedRoutes
+                    .filter(r => r.city_id === combineCityId && r.status === 'published')
+                    .map(r => (
+                      <option key={r.id} value={r.id}>{r.name_ar}</option>
+                    ))}
+                </select>
+              </div>
+
+              <div className="adm-dialog-field">
+                <label className="adm-dialog-label font-bold text-xs">الخط الثاني (الامتداد)</label>
+                <select
+                  className="adm-dialog-select"
+                  value={combineRouteBId}
+                  onChange={e => setCombineRouteBId(e.target.value)}
+                  disabled={!combineCityId}
+                >
+                  <option value="">اختر الخط الثاني...</option>
+                  {publishedRoutes
+                    .filter(r => r.city_id === combineCityId && r.status === 'published' && r.id !== combineRouteAId)
+                    .map(r => (
+                      <option key={r.id} value={r.id}>{r.name_ar}</option>
+                    ))}
+                </select>
+              </div>
+
+              <div className="adm-dialog-field">
+                <label className="adm-dialog-label font-bold text-xs">اسم الخط الجديد (بالعربية)</label>
+                <input
+                  type="text"
+                  className="adm-dialog-input"
+                  value={combineNameAr}
+                  onChange={e => setCombineNameAr(e.target.value)}
+                  placeholder="مثال: الدوار الجنوبي - المزة"
+                />
+              </div>
+
+              <div className="adm-dialog-field">
+                <label className="adm-dialog-label font-bold text-xs">اسم الخط الجديد (بالإنجليزية)</label>
+                <input
+                  type="text"
+                  className="adm-dialog-input"
+                  value={combineNameEn}
+                  onChange={e => setCombineNameEn(e.target.value)}
+                  placeholder="e.g. Southern Ring - Mezzeh"
+                  dir="ltr"
+                />
+              </div>
+
+              <div className="adm-dialog-field">
+                <label className="adm-dialog-label font-bold text-xs">التعرفة الجديدة (ل.س)</label>
+                <input
+                  type="number"
+                  className="adm-dialog-input"
+                  value={combinePrice}
+                  onChange={e => setCombinePrice(e.target.value)}
+                  placeholder="اترك فارغاً لاستخدام تعرفة الخطوط الأصلية"
+                />
+              </div>
+            </div>
+
+            <div className="adm-dialog-actions">
+              <button type="button" className="adm-btn adm-btn--ghost" onClick={() => setIsCombineModalOpen(false)}>إلغاء</button>
               <button
                 type="button"
-                className="adm-btn adm-btn--reject"
-                disabled={actionLoading}
-                onClick={handleRejectConfirm}
+                className="adm-btn adm-btn--approve"
+                disabled={actionLoading || !combineRouteAId || !combineRouteBId || !combineNameAr.trim()}
+                onClick={handleCombineRoutes}
               >
-                {actionLoading ? '…' : 'تأكيد الرفض'}
+                {actionLoading ? '…' : 'تأكيد الدمج ونشر الخط'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Split Modal */}
+      {isSplitModalOpen && selectedRoute && (
+        <div className="adm-overlay" onClick={e => { if (e.target === e.currentTarget) setIsSplitModalOpen(false) }}>
+          <div className="adm-dialog" dir="rtl">
+            <div className="adm-dialog-header">
+              <h3 className="adm-dialog-title">تقسيم خط النقل</h3>
+              <button type="button" className="adm-detail-close" onClick={() => setIsSplitModalOpen(false)}>✕</button>
+            </div>
+            <p className="adm-dialog-desc">سيتم تقسيم خط <strong>{selectedRoute.name_ar}</strong> إلى خطين منفصلين عند المحطة المحددة.</p>
+            <div className="adm-dialog-fields">
+              <div className="adm-dialog-field">
+                <label className="adm-dialog-label font-bold text-xs">نقطة التقسيم (المحطة المشتركة الأخيرة للقسم الأول)</label>
+                <select
+                  className="adm-dialog-select"
+                  value={splitAtStopId}
+                  onChange={e => setSplitAtStopId(e.target.value)}
+                >
+                  <option value="">اختر محطة التقسيم...</option>
+                  {routeStops.map((stop, sIdx) => {
+                    if (sIdx === 0 || sIdx === routeStops.length - 1) return null
+                    return (
+                      <option key={stop.id} value={stop.id}>
+                        {sIdx + 1}. {stop.name_ar}
+                      </option>
+                    )
+                  })}
+                </select>
+              </div>
+
+              <div className="adm-dialog-field">
+                <label className="adm-dialog-label font-bold text-xs">اسم القسم الأول (بالعربية)</label>
+                <input type="text" className="adm-dialog-input" value={splitNameAAr} onChange={e => setSplitNameAAr(e.target.value)} />
+              </div>
+
+              <div className="adm-dialog-field">
+                <label className="adm-dialog-label font-bold text-xs">اسم القسم الأول (بالإنجليزية)</label>
+                <input type="text" className="adm-dialog-input" value={splitNameAEn} onChange={e => setSplitNameAEn(e.target.value)} dir="ltr" />
+              </div>
+
+              <div className="adm-dialog-field">
+                <label className="adm-dialog-label font-bold text-xs">اسم القسم الثاني (بالعربية)</label>
+                <input type="text" className="adm-dialog-input" value={splitNameBAr} onChange={e => setSplitNameBAr(e.target.value)} />
+              </div>
+
+              <div className="adm-dialog-field">
+                <label className="adm-dialog-label font-bold text-xs">اسم القسم الثاني (بالإنجليزية)</label>
+                <input type="text" className="adm-dialog-input" value={splitNameBEn} onChange={e => setSplitNameBEn(e.target.value)} dir="ltr" />
+              </div>
+            </div>
+
+            <div className="adm-dialog-actions">
+              <button type="button" className="adm-btn adm-btn--ghost" onClick={() => setIsSplitModalOpen(false)}>إلغاء</button>
+              <button
+                type="button"
+                className="adm-btn bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-4 py-2 font-bold transition-colors"
+                disabled={actionLoading || !splitAtStopId || !splitNameAAr.trim() || !splitNameBAr.trim()}
+                onClick={handleSplitRoute}
+              >
+                {actionLoading ? '…' : 'تأكيد التقسيم ونشر الخطين'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Move Modal */}
+      {isMoveModalOpen && selectedRoute && (
+        <div className="adm-overlay" onClick={e => { if (e.target === e.currentTarget) setIsMoveModalOpen(false) }}>
+          <div className="adm-dialog" dir="rtl">
+            <div className="adm-dialog-header">
+              <h3 className="adm-dialog-title">نقل الخط لمدينة أخرى</h3>
+              <button type="button" className="adm-detail-close" onClick={() => setIsMoveModalOpen(false)}>✕</button>
+            </div>
+            <p className="adm-dialog-desc">نقل خط <strong>{selectedRoute.name_ar}</strong> وكل المحطات التابعة له والغير مشتركة مع خطوط أخرى في المدينة الأصلية.</p>
+            <div className="adm-dialog-fields">
+              <div className="adm-dialog-field">
+                <label className="adm-dialog-label font-bold text-xs">المدينة المستهدفة</label>
+                <select className="adm-dialog-select" value={targetCityId} onChange={e => setTargetCityId(e.target.value)}>
+                  <option value="">اختر مدينة...</option>
+                  {cities.map(c => (
+                    <option key={c.id} value={c.id}>{c.nameAr}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="adm-dialog-actions">
+              <button type="button" className="adm-btn adm-btn--ghost" onClick={() => setIsMoveModalOpen(false)}>إلغاء</button>
+              <button
+                type="button"
+                className="adm-btn bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 py-2 font-bold transition-colors"
+                disabled={actionLoading || !targetCityId || targetCityId === selectedRoute.city_id}
+                onClick={handleMoveRoute}
+              >
+                {actionLoading ? '…' : 'تأكيد النقل'}
               </button>
             </div>
           </div>
@@ -498,6 +1241,81 @@ function TransitAdminPageContent() {
           font-family: var(--font-ar, 'IBM Plex Sans Arabic', sans-serif);
         }
 
+        /* Nav Tabs */
+        .adm-nav-tabs {
+          display: flex; border-bottom: 1px solid var(--border);
+          background: var(--surface); flex-shrink: 0;
+        }
+        .adm-nav-tab {
+          flex: 1; padding: 0.85rem; text-align: center;
+          font-size: 0.82rem; font-weight: 700; border-bottom: 2px solid transparent;
+          color: var(--muted); cursor: pointer; transition: all 0.15s;
+          background: transparent; border-top: none; border-left: none; border-right: none;
+          font-family: inherit; outline: none;
+        }
+        .adm-nav-tab:hover { color: var(--text); background: var(--surface-2); }
+        .adm-nav-tab--active {
+          color: var(--gold); border-bottom-color: var(--gold);
+          background: color-mix(in srgb, var(--gold) 6%, var(--surface));
+        }
+
+        /* Activity Logs */
+        .adm-log-list {
+          display: flex; flex-direction: column; gap: 0.6rem;
+          padding: 0.75rem; flex: 1; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+        }
+        .adm-log-item {
+          background: var(--surface-2); border: 1px solid var(--border);
+          border-radius: 10px; padding: 0.75rem 0.875rem; display: flex;
+          flex-direction: column; gap: 0.35rem; text-align: right;
+        }
+        .adm-log-header {
+          display: flex; align-items: center; justify-content: space-between;
+        }
+        .adm-log-action {
+          font-size: 0.67rem; font-weight: 700; padding: 0.15rem 0.5rem;
+          border-radius: 20px;
+        }
+        .adm-log-action--approved { background: color-mix(in srgb, #22c55e 18%, transparent); color: #22c55e; }
+        .adm-log-action--disapproved { background: color-mix(in srgb, #ef4444 18%, transparent); color: #ef4444; }
+        .adm-log-action--restored { background: color-mix(in srgb, #3b82f6 18%, transparent); color: #3b82f6; }
+        .adm-log-action--hidden { background: color-mix(in srgb, #71717a 18%, transparent); color: #71717a; }
+        .adm-log-action--combined { background: color-mix(in srgb, #a855f7 18%, transparent); color: #a855f7; }
+        .adm-log-action--split { background: color-mix(in srgb, #ec4899 18%, transparent); color: #ec4899; }
+        .adm-log-action--moved { background: color-mix(in srgb, #14b8a6 18%, transparent); color: #14b8a6; }
+        .adm-log-desc { font-size: 0.8rem; color: var(--text); line-height: 1.5; margin: 0; }
+        .adm-log-meta { font-size: 0.72rem; color: var(--muted); display: flex; gap: 0.5rem; }
+
+        /* Modal / Dialog */
+        .adm-overlay {
+          position: fixed; inset: 0; z-index: 100;
+          display: flex; align-items: center; justify-content: center;
+          background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+          padding: 1.5rem;
+        }
+        .adm-dialog {
+          width: 100%; max-width: 500px; background: var(--surface);
+          border: 1px solid var(--border); border-radius: 16px;
+          box-shadow: 0 12px 40px rgba(0,0,0,0.4); display: flex;
+          flex-direction: column; gap: 1rem; padding: 1.5rem;
+        }
+        .adm-dialog-header {
+          display: flex; align-items: center; justify-content: space-between;
+        }
+        .adm-dialog-title { font-size: 1.05rem; font-weight: 800; color: var(--gold); margin: 0; }
+        .adm-dialog-desc { font-size: 0.78rem; color: var(--muted); margin: 0; }
+        .adm-dialog-fields { display: flex; flex-direction: column; gap: 0.8rem; }
+        .adm-dialog-field { display: flex; flex-direction: column; gap: 0.35rem; }
+        .adm-dialog-label { font-size: 0.78rem; font-weight: 600; color: var(--text); }
+        .adm-dialog-input, .adm-dialog-select {
+          width: 100%; background: var(--bg); border: 1px solid var(--border);
+          border-radius: 8px; color: var(--text); font-family: inherit;
+          font-size: 0.85rem; padding: 0.55rem 0.75rem; outline: none;
+          transition: border-color 0.15s;
+        }
+        .adm-dialog-input:focus, .adm-dialog-select:focus { border-color: var(--gold); }
+        .adm-dialog-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem; }
+
         /* Sidebar */
         .adm-sidebar {
           width: 420px; flex-shrink: 0; display: flex; flex-direction: column;
@@ -507,6 +1325,7 @@ function TransitAdminPageContent() {
         .adm-sidebar-header {
           flex-shrink: 0; padding: 1.25rem 1.25rem 1rem;
           border-bottom: 1px solid var(--border);
+          display: flex; align-items: center; justify-content: space-between;
         }
         .adm-title    { font-size: 1.1rem; font-weight: 800; color: var(--gold); margin: 0 0 0.2rem; }
         .adm-subtitle { font-size: 0.78rem; color: var(--muted); margin: 0; }
@@ -595,108 +1414,57 @@ function TransitAdminPageContent() {
           background: var(--surface); border: 1px solid var(--border);
           border-radius: 10px; padding: 0.875rem 1.25rem;
           font-size: 0.85rem; color: var(--muted); pointer-events: none;
-          white-space: nowrap;
+          white-space: nowrap; z-index: 5;
         }
 
-        /* Detail overlay */
+        /* Detail card */
         .adm-detail {
-          position: absolute; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
-          width: min(420px, calc(100% - 2rem));
-          background: var(--surface); border: 1px solid var(--border);
-          border-radius: 12px; padding: 1.25rem;
-          box-shadow: 0 8px 32px rgba(0,0,0,0.35);
-          display: flex; flex-direction: column; gap: 0.875rem;
+          position: absolute; bottom: 1.25rem; right: 1.25rem; z-index: 10;
+          width: 380px; background: var(--surface); border: 1px solid var(--border);
+          border-radius: 14px; padding: 1.25rem; display: flex; flex-direction: column;
+          gap: 0.875rem; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
         }
         .adm-detail-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
-        .adm-detail-title  { font-size: 1rem; font-weight: 800; color: var(--text); margin: 0; }
-        .adm-detail-subtitle { font-size: 0.78rem; color: var(--muted); margin: 0.15rem 0 0; }
+        .adm-detail-title { font-size: 1rem; font-weight: 800; color: var(--text); margin: 0; text-align: right; }
+        .adm-detail-subtitle { font-size: 0.75rem; color: var(--muted); margin: 0.15rem 0 0; text-align: right; }
         .adm-detail-close {
-          width: 28px; height: 28px; border-radius: 6px; flex-shrink: 0;
-          background: var(--surface-2); border: 1px solid var(--border);
-          color: var(--muted); cursor: pointer; font-size: 0.75rem;
-          display: flex; align-items: center; justify-content: center;
-          transition: all 0.12s;
+          border: none; background: transparent; font-size: 0.85rem;
+          color: var(--muted); cursor: pointer; padding: 0.2rem;
+          line-height: 1; transition: color 0.1s;
         }
-        .adm-detail-close:hover { color: var(--text); background: var(--border); }
-        .adm-detail-rows { display: flex; flex-direction: column; gap: 0.4rem; }
-        .adm-detail-row { display: flex; gap: 0.5rem; font-size: 0.82rem; }
-        .adm-detail-label { color: var(--muted); min-width: 70px; flex-shrink: 0; }
-        .adm-detail-hint {
-          font-size: 0.72rem; color: var(--muted);
-          border-top: 1px solid var(--border); padding-top: 0.625rem;
-        }
+        .adm-detail-close:hover { color: var(--text); }
+        .adm-detail-rows { display: flex; flex-direction: column; gap: 0.5rem; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 0.75rem 0; }
+        .adm-detail-row { display: flex; justify-content: space-between; font-size: 0.82rem; color: var(--text); }
+        .adm-detail-label { color: var(--muted); font-weight: 500; }
+        .adm-detail-hint { font-size: 0.67rem; color: var(--muted); text-align: center; }
+
         .adm-detail-actions { display: flex; gap: 0.5rem; }
+        .adm-btn {
+          padding: 0.55rem 1rem; border-radius: 8px; border: 1px solid transparent;
+          font-family: inherit; font-size: 0.82rem; font-weight: 700;
+          cursor: pointer; transition: all 0.12s; text-align: center;
+        }
+        .adm-btn--approve { background: var(--gold); color: var(--bg); }
+        .adm-btn--approve:hover:not(:disabled) { opacity: 0.9; }
+        .adm-btn--reject { background: transparent; border-color: #ef4444; color: #ef4444; }
+        .adm-btn--reject:hover:not(:disabled) { background: #ef4444; color: #fff; }
+        .adm-btn--ghost { background: transparent; border-color: var(--border); color: var(--text); }
+        .adm-btn--ghost:hover { background: var(--surface-2); }
+        .adm-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
         .adm-status-resolved {
-          font-size: 0.82rem; font-weight: 600; padding: 0.5rem 0.75rem;
-          border-radius: 8px; text-align: center;
+          padding: 0.6rem; border-radius: 8px; font-size: 0.8rem; font-weight: 700;
+          text-align: center; display: flex; flex-direction: column; gap: 0.35rem;
         }
         .adm-status-resolved--approved { background: color-mix(in srgb, #22c55e 12%, transparent); color: #22c55e; }
         .adm-status-resolved--rejected { background: color-mix(in srgb, #ef4444 12%, transparent); color: #ef4444; }
-        .adm-resolved-reason { font-size: 0.75rem; font-weight: 400; color: var(--muted); margin: 0.3rem 0 0; font-style: italic; }
-
-        /* Buttons */
-        .adm-btn {
-          flex: 1; padding: 0.55rem 0.75rem; border-radius: 8px;
-          font-family: inherit; font-size: 0.85rem; font-weight: 700;
-          cursor: pointer; transition: opacity 0.12s; border: none;
-        }
-        .adm-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .adm-btn--approve { background: #16a34a; color: #fff; }
-        .adm-btn--approve:not(:disabled):hover { opacity: 0.88; }
-        .adm-btn--reject  { background: #dc2626; color: #fff; }
-        .adm-btn--reject:not(:disabled):hover  { opacity: 0.88; }
-        .adm-btn--ghost {
-          background: transparent; color: var(--muted);
-          border: 1px solid var(--border);
-        }
-        .adm-btn--ghost:hover { background: var(--surface-2); color: var(--text); }
-
-        /* Dialog */
-        .adm-overlay {
-          position: fixed; inset: 0; z-index: 50;
-          background: rgba(0,0,0,0.55); backdrop-filter: blur(2px);
-          display: flex; align-items: center; justify-content: center;
-        }
-        .adm-dialog {
-          background: var(--surface); border: 1px solid var(--border);
-          border-radius: 14px; padding: 1.5rem;
-          width: min(440px, calc(100vw - 2rem));
-          box-shadow: 0 16px 48px rgba(0,0,0,0.4);
-          display: flex; flex-direction: column; gap: 1rem;
-        }
-        .adm-dialog-header { display: flex; align-items: center; justify-content: space-between; }
-        .adm-dialog-title  { font-size: 1rem; font-weight: 800; color: var(--text); margin: 0; }
-        .adm-dialog-desc   { font-size: 0.82rem; color: var(--muted); margin: 0; line-height: 1.6; }
-        .adm-textarea {
-          width: 100%; background: var(--bg); border: 1px solid var(--border);
-          border-radius: 8px; color: var(--text); font-family: inherit;
-          font-size: 0.85rem; padding: 0.6rem 0.75rem; resize: vertical;
-          outline: none; transition: border-color 0.15s;
-        }
-        .adm-textarea:focus { border-color: var(--gold); }
-        .adm-textarea::placeholder { color: var(--muted); opacity: 0.65; }
-        .adm-dialog-actions { display: flex; gap: 0.5rem; }
-
-        /* Toast */
-        .adm-toast {
-          position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
-          z-index: 100; padding: 0.65rem 1.25rem; border-radius: 10px;
-          font-family: inherit; font-size: 0.875rem; font-weight: 600;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-          animation: adm-toast-in 0.25s cubic-bezier(.34,1.56,.64,1) both;
-        }
-        @keyframes adm-toast-in { from{opacity:0;transform:translate(-50%,10px)} to{opacity:1;transform:translate(-50%,0)} }
-        .adm-toast--ok  { background: rgba(21,128,61,0.96); color: #dcfce7; }
-        .adm-toast--err { background: rgba(153,27,27,0.96); color: #fee2e2; }
+        .adm-resolved-reason { font-size: 0.72rem; color: var(--muted); font-weight: 500; margin: 0; }
 
         /* Logout button */
-        .adm-sidebar-header { display: flex; align-items: flex-start; justify-content: space-between; }
         .adm-logout-btn {
-          width: 30px; height: 30px; border-radius: 7px; flex-shrink: 0;
-          border: 1px solid var(--border); background: transparent;
-          color: var(--muted); cursor: pointer; display: flex;
-          align-items: center; justify-content: center; transition: all 0.12s;
+          background: transparent; border: 1px solid var(--border);
+          border-radius: 8px; color: var(--muted); padding: 0.4rem;
+          cursor: pointer; transition: all 0.12s; display: flex; align-items: center; justify-content: center;
         }
         .adm-logout-btn:hover { color: #ef4444; border-color: #ef4444; }
 
@@ -714,9 +1482,10 @@ function TransitAdminPageContent() {
           display: flex; flex-direction: column; gap: 1.1rem;
           box-shadow: 0 8px 32px rgba(0,0,0,0.3);
         }
-        .adm-login-brand { display: flex; flex-direction: column; gap: 0.2rem; margin-bottom: 0.25rem; }
-        .adm-login-logo  { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; color: var(--gold); text-transform: uppercase; }
-        .adm-login-title { font-size: 1.15rem; font-weight: 800; color: var(--text); margin: 0; }
+        .adm-login-logo-wrap { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; text-align: center; }
+        .adm-login-title { font-size: 1.25rem; font-weight: 900; color: var(--gold); margin: 0; }
+        .adm-login-subtitle { font-size: 0.78rem; color: var(--muted); margin: 0; }
+        .adm-login-fields { display: flex; flex-direction: column; gap: 0.85rem; }
         .adm-login-field { display: flex; flex-direction: column; gap: 0.35rem; }
         .adm-login-label { font-size: 0.8rem; font-weight: 600; color: var(--text); }
         .adm-login-input {
@@ -810,18 +1579,59 @@ function TransitAdminPageContent() {
           .adm-toast { bottom: 4rem; }
         }
       `}</style>
+      {/* Combine State Variables Helper */}
+      <CombineStateHelper
+        combineCityId={combineCityId}
+        setCombineRouteAId={setCombineRouteAId}
+        setCombineRouteBId={setCombineRouteBId}
+        publishedRoutes={publishedRoutes}
+      />
     </div>
   )
 }
 
-export default function TransitAdminPage() {
-  return (
-    <TransitLayout>
-      <Head>
-        <title>لوحة التحكم بالترانزيت</title>
-        <meta name="description" content="مراجعة وتدقيق خطوط ومحطات النقل المقترحة من قبل المساهمين في منصة ترانزيت." />
-      </Head>
-      <TransitAdminPageContent />
-    </TransitLayout>
-  )
+// Helper component to bind dependent state updates to avoid React render errors
+function CombineStateHelper({
+  combineCityId,
+  setCombineRouteAId,
+  setCombineRouteBId,
+  publishedRoutes,
+}: {
+  combineCityId: string
+  setCombineRouteAId: (v: string) => void
+  setCombineRouteBId: (v: string) => void
+  publishedRoutes: PublishedRoute[]
+}) {
+  useEffect(() => {
+    if (!combineCityId) return
+    const cityRoutes = publishedRoutes.filter(r => r.city_id === combineCityId && r.status === 'published')
+    setCombineRouteAId(cityRoutes[0]?.id || '')
+    setCombineRouteBId(cityRoutes[1]?.id || '')
+  }, [combineCityId, publishedRoutes, setCombineRouteAId, setCombineRouteBId])
+  return null
+}
+
+// ─── Additional Types ─────────────────────────────────────────────────────────
+type AdminTab = 'drafts' | 'routes' | 'logs'
+
+interface PublishedRoute {
+  id: string
+  city_id: string
+  city: { name_ar: string; name_en: string } | null
+  name_ar: string
+  name_en: string | null
+  price_old: number | null
+  price_new: number | null
+  status: 'published' | 'disapproved' | 'hidden'
+  stops_count: number
+  created_at: string
+}
+
+interface ActivityLog {
+  id: number
+  route_id: string | null
+  action: string
+  description: string
+  user: { name: string } | null
+  created_at: string
 }

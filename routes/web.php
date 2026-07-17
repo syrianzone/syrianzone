@@ -275,6 +275,15 @@ Route::middleware('auth')->group(function () {
             Route::get('/admin/route-drafts', [\App\Http\Controllers\TransitAdminController::class, 'index']);
             Route::post('/admin/route-drafts/{id}/approve', [\App\Http\Controllers\TransitAdminController::class, 'approve']);
             Route::post('/admin/route-drafts/{id}/reject', [\App\Http\Controllers\TransitAdminController::class, 'reject']);
+
+            Route::get('/admin/routes', [\App\Http\Controllers\TransitAdminController::class, 'getPublishedRoutes']);
+            Route::get('/admin/routes/logs', [\App\Http\Controllers\TransitAdminController::class, 'getLogs']);
+            Route::post('/admin/routes/{id}/status', [\App\Http\Controllers\TransitAdminController::class, 'updateRouteStatus']);
+            Route::post('/admin/routes/{id}/move', [\App\Http\Controllers\TransitAdminController::class, 'moveRoute']);
+            Route::post('/admin/routes/combine', [\App\Http\Controllers\TransitAdminController::class, 'combineRoutes']);
+            Route::post('/admin/routes/split', [\App\Http\Controllers\TransitAdminController::class, 'splitRoute']);
+            Route::get('/admin/routes/{id}/stops', [\App\Http\Controllers\TransitAdminController::class, 'getRouteStops']);
+            Route::get('/admin/routes/{id}/geojson', [\App\Http\Controllers\TransitAdminController::class, 'getRouteGeoJson']);
         });
     });
 });

@@ -41,9 +41,29 @@ export default function CityRoutesPage({ id }: CityRoutesPageProps) {
         <Header />
         <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6">
           <div className="mb-6 flex items-center justify-between gap-4" dir="rtl">
-            <div>
-              <h2 className="text-2xl font-bold text-[var(--text)]">{city.nameAr}</h2>
-              <p className="text-sm text-[var(--muted)]">{city.routeCount} خط سيرفيس</p>
+            <div className="flex items-center gap-3">
+              <Link
+                href="/transit"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface-2)] text-[var(--text)] hover:text-primary transition-colors shrink-0"
+                title="العودة للرئيسية"
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+              </Link>
+              <div>
+                <h2 className="text-2xl font-bold text-[var(--text)]">{city.nameAr}</h2>
+                <p className="text-sm text-[var(--muted)]">{city.routeCount} خط سيرفيس</p>
+              </div>
             </div>
             <Link
               href={`/transit/city/${id}/map`}

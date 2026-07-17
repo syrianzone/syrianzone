@@ -4,7 +4,7 @@
   --bg: hsl(var(--background));
   --surface: hsl(var(--card));
   --surface-2: hsl(var(--muted));
-  --border: hsl(var(--border));
+  --border: var(--color-border);
   --border-hover: hsl(var(--primary));
   --gold: hsl(var(--primary));
   --pomegranate: hsl(var(--destructive));

@@ -104,7 +104,6 @@ export default function RouteDetailPage({ id, city, route, stops = [] }: RouteDe
                     </span>
                     <div>
                       <h2 className="text-xl sm:text-2xl font-bold text-[var(--text)]">{route.nameAr}</h2>
-                      <p className="text-xs sm:text-sm text-[var(--muted)]">{route.nameEn}</p>
                     </div>
                   </div>
                   <Link
@@ -130,10 +129,36 @@ export default function RouteDetailPage({ id, city, route, stops = [] }: RouteDe
                 </div>
               </div>
 
-              <div className="mb-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
-                <p className="mb-1 text-xs text-[var(--muted)]">سعر الركوب</p>
-                <p className="text-xl font-bold text-[var(--gold)]">{formatPrice(route.priceNew)}</p>
-                <p className="text-xs text-[var(--muted)]">{formatOldPrice(route.priceOld)}</p>
+              <div className="mb-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-5">
+                <div className="grid grid-cols-2 gap-4" dir="rtl">
+                  {/* Description / English Name */}
+                  {route.nameEn && (
+                    <div className="col-span-2 border-b border-[var(--border)] pb-3">
+                      <p className="text-xs text-[var(--muted)] mb-0.5">تفاصيل الخط</p>
+                      <p className="text-sm font-semibold text-[var(--text)]">{route.nameEn}</p>
+                    </div>
+                  )}
+                  
+                  {/* Price */}
+                  <div>
+                    <p className="text-xs text-[var(--muted)] mb-0.5">سعر الركوب</p>
+                    <p className="text-base sm:text-lg font-bold text-[var(--gold)]">{formatPrice(route.priceNew)}</p>
+                  </div>
+                  
+                  {/* Number of stops */}
+                  <div>
+                    <p className="text-xs text-[var(--muted)] mb-0.5">عدد المواقف</p>
+                    <p className="text-base sm:text-lg font-bold text-[var(--text)]">{stops.length} موقف</p>
+                  </div>
+                  
+                  {/* Old Price */}
+                  {route.priceOld > 0 && (
+                    <div className="col-span-2 border-t border-[var(--border)] pt-3">
+                      <p className="text-xs text-[var(--muted)] mb-0.5">السعر بالليرة القديمة</p>
+                      <p className="text-xs sm:text-sm text-[var(--muted)]">{formatOldPrice(route.priceOld)}</p>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="mb-6">
@@ -148,23 +173,47 @@ export default function RouteDetailPage({ id, city, route, stops = [] }: RouteDe
                 )}
                 <div className="space-y-2">
                   {stops.map((stop, index) => (
-                    <div
+                    <a
                       key={stop.properties.id}
-                      className="flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3"
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${stop.coordinates[1]},${stop.coordinates[0]}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 transition-colors hover:border-primary/30 hover:shadow-sm"
+                      dir="rtl"
                     >
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--surface-2)] text-xs font-medium text-[var(--muted)]">
-                        {index + 1}
-                      </span>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-[var(--text)]">
-                          {stop.properties.nameAr}
-                        </p>
-                        {stop.properties.nameEn && (
-                          <p className="text-xs text-[var(--muted)]">{stop.properties.nameEn}</p>
-                        )}
+                      {/* Right side: Stop Number & Stop Name */}
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--surface-2)] text-xs font-medium text-[var(--muted)]">
+                          {index + 1}
+                        </span>
+                        <div className="min-w-0 text-right">
+                          <p className="text-sm font-medium text-[var(--text)] leading-snug break-words">
+                            {stop.properties.nameAr}
+                          </p>
+                          {stop.properties.nameEn && (
+                            <p className="text-xs text-[var(--muted)] leading-snug break-words">{stop.properties.nameEn}</p>
+                          )}
+                        </div>
                       </div>
-                      <DirectionsButton lat={stop.coordinates[1]} lng={stop.coordinates[0]} />
-                    </div>
+
+                      {/* Left side: Directions link */}
+                      <span className="flex items-center gap-1 text-xs font-semibold text-[var(--gold)] shrink-0 hover:underline">
+                        <span className="hidden sm:inline">عرض في تطبيق الخرائط</span>
+                        <span className="inline sm:hidden">الخريطة</span>
+                        <svg
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" />
+                        </svg>
+                      </span>
+                    </a>
                   ))}
                 </div>
               </div>

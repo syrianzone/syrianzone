@@ -4,7 +4,7 @@ import Header from '../../_components/layout/Header'
 import RoutesList from './_components/RoutesList'
 import type { City } from '../../_types'
 import TransitLayout from '../../layout'
-import { Head } from '@inertiajs/react'
+import { Head, Link } from '@inertiajs/react'
 
 const cities = citiesData as City[]
 
@@ -40,9 +40,22 @@ export default function CityRoutesPage({ id }: CityRoutesPageProps) {
       <div className="flex min-h-svh flex-col bg-[var(--bg)]">
         <Header />
         <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-[var(--text)]">{city.nameAr}</h2>
-            <p className="text-sm text-[var(--muted)]">{city.routeCount} خط سيرفيس</p>
+          <div className="mb-6 flex items-center justify-between gap-4" dir="rtl">
+            <div>
+              <h2 className="text-2xl font-bold text-[var(--text)]">{city.nameAr}</h2>
+              <p className="text-sm text-[var(--muted)]">{city.routeCount} خط سيرفيس</p>
+            </div>
+            <Link
+              href={`/transit/city/${id}/map`}
+              className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-4 py-2 text-sm font-medium text-[var(--text)] transition-colors hover:border-[var(--border-hover)] shrink-0"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="1 6 1 22 8 18 16 22 21 18 21 2 16 6 8 2 1 6" />
+                <line x1="8" y1="2" x2="8" y2="18" />
+                <line x1="16" y1="6" x2="16" y2="22" />
+              </svg>
+              <span>عرض الكل على الخريطة</span>
+            </Link>
           </div>
           <RoutesList cityId={id} />
         </main>

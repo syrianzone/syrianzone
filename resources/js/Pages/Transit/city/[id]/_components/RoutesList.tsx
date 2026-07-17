@@ -75,10 +75,6 @@ export default function RoutesList({ cityId }: RoutesListProps) {
                   {route.nameAr}
                 </h3>
                 <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground">
-                  {route.nameEn && <span className="font-medium">{route.nameEn}</span>}
-                  {route.nameEn && (route.stopsCount !== undefined || route.priceNew > 0) && (
-                    <span className="opacity-40">•</span>
-                  )}
                   {route.stopsCount !== undefined && (
                     <span className="flex items-center gap-1">
                       <MapPin className="h-3.5 w-3.5 opacity-65" />

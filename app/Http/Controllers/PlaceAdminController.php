@@ -77,8 +77,30 @@ class PlaceAdminController extends Controller
   public function rotatePhoto(int $id, PlaceImageService $images)
   {
     $photo = PlacePhoto::findOrFail($id);
-    $images->rotateClockwise($photo);
+    try {
+      $images->rotateClockwise($photo);
+    } catch (\RuntimeException $e) {
+      // the file is gone from disk (cdn may still show a ghost copy): only a re-upload helps
+      return response()->json(['message' => 'ملف الصورة مفقود على الخادم، استخدم إعادة الرفع'], 422);
+    }
     // the map cache embeds versioned thumb urls
+    Cache::forget('places:map');
+
+    return response()->json([
+      'id' => $photo->id,
+      'thumb_url' => $photo->thumb_url,
+      'display_url' => $photo->display_url,
+    ]);
+  }
+
+  public function replacePhoto(int $id, Request $request, PlaceImageService $images)
+  {
+    $request->validate([
+      'photo' => 'required|image|mimes:jpg,jpeg,png,webp|max:8192|dimensions:min_width=200,min_height=200,max_width=6000,max_height=6000',
+    ]);
+
+    $photo = PlacePhoto::findOrFail($id);
+    $images->replace($photo, $request->file('photo'));
     Cache::forget('places:map');
 
     return response()->json([

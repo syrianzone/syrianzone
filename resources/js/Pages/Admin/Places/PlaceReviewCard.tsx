@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import { Check, ExternalLink, Loader2, RotateCw, Trash2, X } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Check, ExternalLink, Loader2, RotateCw, Trash2, Upload, X } from 'lucide-react';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
-import { api } from '../../Places/_lib/api';
+import { api, extractError } from '../../Places/_lib/api';
 import { CATEGORY_LABELS } from '../../Places/_lib/categories';
 import type { AdminPlace, PlaceStatus } from '../../Places/_lib/types';
 
@@ -27,51 +27,99 @@ export function PlaceReviewCard(props: {
 }) {
   const { place, onApprove, onReject, onDelete } = props;
   const osmUrl = `https://www.openstreetmap.org/?mlat=${place.lat}&mlon=${place.lng}#map=17/${place.lat}/${place.lng}`;
-  // rotated photos get fresh versioned urls; keyed here so the img swaps without a refetch
-  const [rotatedUrls, setRotatedUrls] = useState<Record<number, string>>({});
-  const [rotating, setRotating] = useState<number | null>(null);
+  // fixed photos get fresh versioned urls; keyed here so the img swaps without a refetch
+  const [photoUrls, setPhotoUrls] = useState<Record<number, string>>({});
+  const [busyPhoto, setBusyPhoto] = useState<number | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const replaceTargetRef = useRef<number | null>(null);
 
   async function rotate(photoId: number) {
-    setRotating(photoId);
+    setBusyPhoto(photoId);
+    setPhotoError(null);
     try {
       const res = await api.adminRotatePhoto(photoId);
-      setRotatedUrls((prev) => ({ ...prev, [photoId]: res.thumb_url }));
-    } catch {
-      // leave the old image; the button stays available to retry
+      setPhotoUrls((prev) => ({ ...prev, [photoId]: res.thumb_url }));
+    } catch (e) {
+      setPhotoError(extractError(e));
     } finally {
-      setRotating(null);
+      setBusyPhoto(null);
+    }
+  }
+
+  function pickReplacement(photoId: number) {
+    replaceTargetRef.current = photoId;
+    fileInputRef.current?.click();
+  }
+
+  async function replaceSelected(file: File | undefined) {
+    const photoId = replaceTargetRef.current;
+    if (!file || photoId === null) return;
+    setBusyPhoto(photoId);
+    setPhotoError(null);
+    try {
+      const res = await api.adminReplacePhoto(photoId, file);
+      setPhotoUrls((prev) => ({ ...prev, [photoId]: res.thumb_url }));
+    } catch (e) {
+      setPhotoError(extractError(e));
+    } finally {
+      setBusyPhoto(null);
+      replaceTargetRef.current = null;
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   }
 
   return (
     <Card>
       <CardContent className="space-y-3 p-4">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={(e) => replaceSelected(e.target.files?.[0])}
+        />
         {place.photos.length > 0 && (
           <div className="flex gap-2 overflow-x-auto">
             {place.photos.map((photo) => (
               <div key={photo.id} className="relative shrink-0">
                 <img
-                  src={rotatedUrls[photo.id] ?? photo.thumb_url}
+                  src={photoUrls[photo.id] ?? photo.thumb_url}
                   alt={place.name}
                   loading="lazy"
                   className="h-24 w-24 rounded-md object-cover"
                 />
-                <button
-                  type="button"
-                  aria-label="تدوير الصورة"
-                  title="تدوير الصورة ٩٠ درجة"
-                  disabled={rotating === photo.id}
-                  onClick={() => rotate(photo.id)}
-                  className="absolute bottom-1 left-1 rounded-md bg-background/80 p-1 text-foreground shadow-sm hover:bg-background"
-                >
-                  {rotating === photo.id
-                    ? <Loader2 className="h-4 w-4 animate-spin" />
-                    : <RotateCw className="h-4 w-4" />}
-                </button>
+                {busyPhoto === photo.id ? (
+                  <span className="absolute bottom-1 left-1 rounded-md bg-background/80 p-1 shadow-sm">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  </span>
+                ) : (
+                  <span className="absolute bottom-1 left-1 flex gap-1">
+                    <button
+                      type="button"
+                      aria-label="تدوير الصورة"
+                      title="تدوير الصورة ٩٠ درجة"
+                      onClick={() => rotate(photo.id)}
+                      className="rounded-md bg-background/80 p-1 text-foreground shadow-sm hover:bg-background"
+                    >
+                      <RotateCw className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="إعادة رفع الصورة"
+                      title="إعادة رفع الصورة"
+                      onClick={() => pickReplacement(photo.id)}
+                      className="rounded-md bg-background/80 p-1 text-foreground shadow-sm hover:bg-background"
+                    >
+                      <Upload className="h-4 w-4" />
+                    </button>
+                  </span>
+                )}
               </div>
             ))}
           </div>
         )}
+        {photoError && <p className="text-sm text-destructive">{photoError}</p>}
 
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="text-base font-bold">{place.name}</h3>

@@ -3,6 +3,7 @@
 import { Link } from '@inertiajs/react'
 import { useRoutes } from '../../../_hooks/useMapData'
 import { getRouteColor } from '../../../_lib/mapColors'
+import { Button } from '@/components/ui/button'
 
 interface RoutesListProps {
   cityId: string
@@ -49,20 +50,42 @@ export default function RoutesList({ cityId }: RoutesListProps) {
     <>
       <div className="space-y-3">
         {routes.map((route) => (
-          <Link
+          <div
             key={route.id}
-            href={`/transit/city/${cityId}/route/${route.id}`}
-            className="flex items-center gap-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 transition-colors hover:border-[var(--border-hover)]"
+            className="flex flex-col md:flex-row md:items-center justify-between gap-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-5 transition-colors hover:border-primary/30"
           >
-            <span
-              className="h-10 w-1.5 shrink-0 rounded-full"
-              style={{ backgroundColor: getRouteColor(route.colorIndex) }}
-            />
-            <div className="flex-1">
-              <h3 className="text-base font-semibold text-[var(--text)]">{route.nameAr}</h3>
-              {route.nameEn && <p className="text-xs text-[var(--muted)]">{route.nameEn}</p>}
+            {/* Title & Metadata */}
+            <div className="flex items-start gap-3 flex-1 min-w-0" dir="rtl">
+              <span
+                className="h-10 w-1.5 shrink-0 rounded-full mt-1"
+                style={{ backgroundColor: getRouteColor(route.colorIndex) }}
+              />
+              <div className="flex-1 min-w-0 text-right">
+                <h3 className="text-sm sm:text-base font-semibold text-foreground leading-snug break-words">
+                  {route.nameAr}
+                </h3>
+                {route.nameEn && (
+                  <p className="mt-1 text-xs text-muted-foreground font-medium">
+                    {route.nameEn}
+                  </p>
+                )}
+              </div>
             </div>
-          </Link>
+
+            {/* Actions */}
+            <div className="flex items-center gap-2 shrink-0 justify-end w-full md:w-auto" dir="rtl">
+              <Button asChild variant="outline" size="sm" className="flex-1 md:flex-none text-xs h-9">
+                <Link href={`/transit/city/${cityId}/route/${route.id}`}>
+                  عرض المواقف
+                </Link>
+              </Button>
+              <Button asChild size="sm" className="flex-1 md:flex-none text-xs h-9 bg-primary text-primary-foreground hover:bg-primary/95">
+                <Link href={`/transit/city/${cityId}/map?route=${route.id}`}>
+                  عرض على الخريطة
+                </Link>
+              </Button>
+            </div>
+          </div>
         ))}
       </div>
 

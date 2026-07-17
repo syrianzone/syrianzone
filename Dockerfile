@@ -32,8 +32,12 @@ HEALTHCHECK --interval=1m --timeout=10s --retries=3 \
 
 USER root
 
+# mariadb-client: spatie/laravel-backup shells out to mysqldump; without it the
+# scheduled db backups fail silently. Debian ships no Oracle mysql-client; the
+# mariadb dump works against MySQL 8 (hence no --set-gtid-purged in config/database.php).
 RUN apt-get update && apt-get install -y --no-install-recommends \
         curl \
+        mariadb-client \
     && rm -rf /var/lib/apt/lists/*
 
 # gd: PlaceImageService encodes uploaded photos to webp; the base image ships without it.

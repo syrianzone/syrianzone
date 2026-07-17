@@ -83,6 +83,20 @@ return [
             'throw' => false,
         ],
 
+        // Offsite copy of the db backups. Separate PRIVATE bucket: the media
+        // bucket is world-readable via its r2.dev url, a db dump must never land there.
+        'r2-backups' => [
+            'driver' => 's3',
+            'key' => env('R2_ACCESS_KEY_ID'),
+            'secret' => env('R2_SECRET_ACCESS_KEY'),
+            'region' => 'auto',
+            'bucket' => env('R2_BACKUP_BUCKET'),
+            'endpoint' => env('R2_ENDPOINT'),
+            'use_path_style_endpoint' => true,
+            'throw' => false,
+            'report' => false,
+        ],
+
     ],
 
     /*

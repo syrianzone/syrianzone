@@ -18,7 +18,8 @@ return [
             'compression_method' => ZipArchive::CM_DEFAULT,
             'compression_level' => 9,
             'filename_prefix' => '',
-            'disks' => ['backups'],
+            // r2-backups only when the bucket is configured, so local/dev backups still work
+            'disks' => array_filter(['backups', env('R2_BACKUP_BUCKET') ? 'r2-backups' : null]),
         ],
         'temporary_directory' => storage_path('app/backup-temp'),
         'password' => env('BACKUP_ARCHIVE_PASSWORD'),

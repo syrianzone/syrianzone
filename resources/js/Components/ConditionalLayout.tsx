@@ -8,7 +8,7 @@ export default function ConditionalLayout({ children }: { children: React.ReactN
 
   return (
     <>
-      {!isTransit && <Navbar />}
+      <Navbar />
       {children}
       {!isTransit && <UnblockSyriaNotification />}
     </>

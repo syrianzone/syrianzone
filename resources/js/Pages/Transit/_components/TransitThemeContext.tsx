@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, useLayoutEffect, useCallback } from 'react'
+import { THEME_REGISTRY, getThemePreference, resolveTheme } from '@/Lib/theme'
 
 type TransitTheme = 'jasmine' | 'damascus-rose'
 
@@ -21,17 +22,35 @@ export function useTransitTheme() {
 export function TransitThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<TransitTheme>('jasmine')
 
-  // useLayoutEffect fires synchronously before browser paint, preventing theme flash
-  useLayoutEffect(() => {
-    const stored = localStorage.getItem('transit-theme') as TransitTheme
-    if (stored === 'damascus-rose' || stored === 'jasmine') {
-      setTheme(stored)
+  const syncWithGlobalTheme = useCallback(() => {
+    const activePref = getThemePreference()
+    const resolved = resolveTheme(activePref)
+
+    if (resolved === 'jasmine') {
+      setTheme('jasmine')
+    } else if (resolved === 'damascus-rose') {
+      setTheme('damascus-rose')
+    } else {
+      const themeConfig = THEME_REGISTRY.find(t => t.id === resolved)
+      const isDark = themeConfig ? themeConfig.isDark : false
+      setTheme(isDark ? 'damascus-rose' : 'jasmine')
     }
   }, [])
 
+  // Sync initially before render
+  useLayoutEffect(() => {
+    syncWithGlobalTheme()
+  }, [syncWithGlobalTheme])
+
+  // Set up observer to sync when html data-theme attribute changes
   useEffect(() => {
-    localStorage.setItem('transit-theme', theme)
-  }, [theme])
+    syncWithGlobalTheme()
+
+    const observer = new MutationObserver(syncWithGlobalTheme)
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+
+    return () => observer.disconnect()
+  }, [syncWithGlobalTheme])
 
   const toggleTheme = useCallback(() => {
     setTheme((prev) => (prev === 'jasmine' ? 'damascus-rose' : 'jasmine'))

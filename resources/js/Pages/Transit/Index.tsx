@@ -1,5 +1,3 @@
-import React from 'react'
-import Header from './_components/layout/Header'
 import Hero from './_components/landing/Hero'
 import CityGrid from './_components/landing/CityGrid'
 import TransitLayout from './layout'
@@ -15,7 +13,6 @@ export default function TransitLandingPage({ cities = [] }: { cities?: City[] })
         <meta name="description" content="ترانزيت سوريا - دليل وخرائط تفاعلية لشبكات وخطوط المواصلات العامة والسرافيس في المدن السورية." />
       </Head>
       <div className="flex min-h-svh flex-col bg-[var(--bg)]">
-        <Header />
         <main className="flex-1">
           <Hero cities={cities} />
           <CityGrid cities={cities} />

@@ -20,6 +20,53 @@ test('admin endpoints reject guests and non-admins', function () {
   $this->actingAs($user)->postJson("/api/v1/admin/places/{$place->id}/reject")->assertForbidden();
   $this->actingAs($user)->deleteJson("/api/v1/admin/places/{$place->id}")->assertForbidden();
   $this->actingAs($user)->postJson('/api/v1/admin/place-photos/1/rotate')->assertForbidden();
+  $this->actingAs($user)->postJson('/api/v1/admin/place-photos/1/replace')->assertForbidden();
+});
+
+test('admin can replace a photo and the new file has fresh paths', function () {
+  Storage::fake('public');
+  $place = Place::factory()->approved()->create();
+  $photo = app(\App\Services\PlaceImageService::class)
+    ->store(\Illuminate\Http\UploadedFile::fake()->image('a.jpg', 800, 600), $place->id, 0);
+  $oldPaths = [$photo->original_path, $photo->display_path, $photo->thumb_path];
+
+  $this->actingAs(placesAdmin())
+    ->postJson("/api/v1/admin/place-photos/{$photo->id}/replace", [
+      'photo' => \Illuminate\Http\UploadedFile::fake()->image('b.jpg', 500, 900),
+    ])
+    ->assertOk()
+    ->assertJsonPath('id', $photo->id);
+
+  $photo->refresh();
+  expect($photo->display_path)->not->toBe($oldPaths[1]);
+  foreach ($oldPaths as $old) {
+    Storage::disk('public')->assertMissing($old);
+  }
+  [$width, $height] = getimagesizefromstring(Storage::disk('public')->get($photo->display_path));
+  expect($height)->toBeGreaterThan($width);
+});
+
+test('replace rejects a non-image upload', function () {
+  Storage::fake('public');
+  $place = Place::factory()->approved()->create();
+  $photo = PlacePhoto::factory()->create(['place_id' => $place->id]);
+
+  $this->actingAs(placesAdmin())
+    ->postJson("/api/v1/admin/place-photos/{$photo->id}/replace", [
+      'photo' => \Illuminate\Http\UploadedFile::fake()->create('doc.pdf', 100, 'application/pdf'),
+    ])
+    ->assertStatus(422);
+});
+
+test('rotate reports a missing display file instead of a server error', function () {
+  Storage::fake('public');
+  $place = Place::factory()->approved()->create();
+  $photo = PlacePhoto::factory()->create(['place_id' => $place->id]);
+
+  $this->actingAs(placesAdmin())
+    ->postJson("/api/v1/admin/place-photos/{$photo->id}/rotate")
+    ->assertStatus(422)
+    ->assertJsonPath('message', 'ملف الصورة مفقود على الخادم، استخدم إعادة الرفع');
 });
 
 test('admin can rotate a photo clockwise and gets fresh versioned urls', function () {

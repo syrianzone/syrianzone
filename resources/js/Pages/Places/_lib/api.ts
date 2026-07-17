@@ -88,6 +88,13 @@ export const api = {
     const { data } = await axios.post(`${base}/admin/place-photos/${photoId}/rotate`);
     return data;
   },
+
+  async adminReplacePhoto(photoId: number, file: File): Promise<{ id: number; thumb_url: string; display_url: string }> {
+    const form = new FormData();
+    form.append('photo', file);
+    const { data } = await axios.post(`${base}/admin/place-photos/${photoId}/replace`, form);
+    return data;
+  },
 };
 
 const STATUS_MESSAGES: Record<number, string> = {

@@ -39,6 +39,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/polls/*/vote',
             'api/submit',
             'guesswho/broadcasting/auth',
+            'ops/run-backup',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

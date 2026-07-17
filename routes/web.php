@@ -20,7 +20,7 @@ Route::post('/ops/run-backup', function () {
     abort_unless($token !== '' && hash_equals($token, (string) request()->header('X-Backup-Token')), 404);
     \Illuminate\Support\Facades\Artisan::call('backup:run', ['--only-db' => true, '--disable-notifications' => true]);
     return response()->json(['ok' => true, 'output' => \Illuminate\Support\Facades\Artisan::output()]);
-})->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfTokens::class]);
+});
 
 use App\Http\Controllers\PollController;
 use App\Http\Controllers\SyOfficialController;

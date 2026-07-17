@@ -28,53 +28,6 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ===== Landing hero ===== */
-.transit-root .transit-hero {
-  position: relative;
-  isolation: isolate;
-}
-/* Warm gold glow + cool tile-blue counterweight for atmospheric depth */
-.transit-root .transit-hero-glow {
-  position: absolute;
-  inset: 0;
-  z-index: -2;
-  pointer-events: none;
-  background:
-    radial-gradient(62% 80% at 88% -12%, color-mix(in srgb, var(--gold) 24%, transparent), transparent 70%),
-    radial-gradient(48% 70% at -5% 115%, color-mix(in srgb, var(--tile-blue) 16%, transparent), transparent 70%);
-}
-/* Faint diagonal "route lines" texture, fading toward the content below */
-.transit-root .transit-hero-lines {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  opacity: 0.6;
-  pointer-events: none;
-  background-image: repeating-linear-gradient(
-    115deg,
-    transparent 0 38px,
-    color-mix(in srgb, var(--border) 55%, transparent) 38px 39px
-  );
-  -webkit-mask-image: linear-gradient(to bottom, black, transparent 88%);
-  mask-image: linear-gradient(to bottom, black, transparent 88%);
-}
-
-.transit-root .transit-hero-eyebrow,
-.transit-root .transit-hero-title,
-.transit-root .transit-hero-sub,
-.transit-root .transit-hero-stats {
-  animation: heroReveal 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-.transit-root .transit-hero-eyebrow { animation-delay: 40ms; }
-.transit-root .transit-hero-title   { animation-delay: 120ms; }
-.transit-root .transit-hero-sub     { animation-delay: 220ms; }
-.transit-root .transit-hero-stats   { animation-delay: 320ms; }
-
-@keyframes heroReveal {
-  from { opacity: 0; transform: translateY(14px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
 /* City card reveal animation — `backwards` (not `both`) so the lingering
    end-frame transform doesn't override the :hover lift after it plays */
 .transit-root .city-card {
@@ -106,10 +59,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .transit-root .transit-hero-eyebrow,
-  .transit-root .transit-hero-title,
-  .transit-root .transit-hero-sub,
-  .transit-root .transit-hero-stats,
   .transit-root .city-card {
     animation: none;
   }

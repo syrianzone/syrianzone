@@ -69,28 +69,28 @@ export default function RouteDetailPage({ id, city, route, stops = [] }: RouteDe
           {route && (
             <>
               <div className="mb-6">
-                <Link
-                  href={`/transit/city/${city.id}`}
-                  className="mb-3 inline-flex items-center gap-1 text-sm text-[var(--muted)] hover:text-[var(--gold)]"
-                >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M19 12H5M12 19l-7-7 7-7" />
-                  </svg>
-                  العودة للخطوط
-                </Link>
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-start gap-3">
+                    <Link
+                      href={`/transit/city/${city.id}`}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface-2)] text-[var(--text)] hover:text-primary transition-colors shrink-0 mt-0.5"
+                      title="العودة للخطوط"
+                    >
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                      </svg>
+                    </Link>
                     <span
-                      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white mt-1"
+                      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white mt-0.5"
                       style={{ backgroundColor: getRouteColor(route.colorIndex) }}
                     >
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-bus">

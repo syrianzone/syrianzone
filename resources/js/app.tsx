@@ -8,6 +8,16 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { watchSystemTheme } from '@/lib/theme';
 import { QueryProvider } from '@/Pages/Transit/_providers/QueryProvider';
 import { DirectionProvider } from '@radix-ui/react-direction';
+import * as Sentry from '@sentry/react';
+
+// errors only, no tracing. no-op locally: the dsn is only injected in ci builds.
+if (import.meta.env.VITE_SENTRY_DSN) {
+    Sentry.init({
+        dsn: import.meta.env.VITE_SENTRY_DSN,
+        release: import.meta.env.VITE_SENTRY_RELEASE,
+        sendDefaultPii: false,
+    });
+}
 
 // keep data-theme in sync with the device scheme while the preference is 'system'
 watchSystemTheme();

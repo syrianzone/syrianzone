@@ -8,7 +8,16 @@ WORKDIR /app
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 COPY . .
-RUN bun run build
+# client-visible sentry config baked into the bundle; empty locally = sdk no-op
+ARG VITE_SENTRY_DSN
+ARG SENTRY_ORG
+ARG SENTRY_PROJECT
+ARG GIT_SHA=dev
+ENV VITE_SENTRY_DSN=${VITE_SENTRY_DSN} VITE_SENTRY_RELEASE=${GIT_SHA} \
+    SENTRY_ORG=${SENTRY_ORG} SENTRY_PROJECT=${SENTRY_PROJECT}
+# the upload token must never land in a layer (public image): secret mount, ci-only
+RUN --mount=type=secret,id=sentry_auth_token \
+    SENTRY_AUTH_TOKEN="$(cat /run/secrets/sentry_auth_token 2>/dev/null || true)" bun run build
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Stage 2: Production image — serversideup/php with S6 Overlay v3
@@ -26,6 +35,10 @@ ENV NGINX_FASTCGI_READ_TIMEOUT=65s
 
 # Enable OPcache for production performance
 ENV PHP_OPCACHE_ENABLE=1
+
+# ties backend sentry events to the deployed image
+ARG GIT_SHA=dev
+ENV SENTRY_RELEASE=${GIT_SHA}
 
 HEALTHCHECK --interval=1m --timeout=10s --retries=3 \
     CMD curl -f http://localhost:8080/healthcheck || exit 1

@@ -38,6 +38,8 @@
     "@radix-ui/react-toggle": "^1.1.10",
     "@radix-ui/react-toggle-group": "^1.1.11",
     "@radix-ui/react-tooltip": "^1.2.8",
+    "@sentry/react": "^10.66.0",
+    "@sentry/vite-plugin": "^5.4.0",
     "@tanstack/react-query": "^5.100.14",
     "@types/leaflet": "^1.9.21",
     "@uploadthing/react": "^7.3.3",
@@ -88,5 +90,8 @@
     "tailwindcss": "^4.3.0",
     "typescript": "^6.0.3",
     "vite": "^6.0.11"
-  }
+  },
+  "trustedDependencies": [
+    "@sentry/cli"
+  ]
 }

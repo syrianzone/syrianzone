@@ -83,6 +83,11 @@ export const api = {
   async adminDeletePlace(id: number): Promise<void> {
     await axios.delete(`${base}/admin/places/${id}`);
   },
+
+  async adminRotatePhoto(photoId: number): Promise<{ id: number; thumb_url: string; display_url: string }> {
+    const { data } = await axios.post(`${base}/admin/place-photos/${photoId}/rotate`);
+    return data;
+  },
 };
 
 const STATUS_MESSAGES: Record<number, string> = {

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Place;
+use App\Models\PlacePhoto;
 use App\Services\PlaceImageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -71,6 +72,20 @@ class PlaceAdminController extends Controller
     Cache::forget('places:map');
 
     return response()->json(null, 204);
+  }
+
+  public function rotatePhoto(int $id, PlaceImageService $images)
+  {
+    $photo = PlacePhoto::findOrFail($id);
+    $images->rotateClockwise($photo);
+    // the map cache embeds versioned thumb urls
+    Cache::forget('places:map');
+
+    return response()->json([
+      'id' => $photo->id,
+      'thumb_url' => $photo->thumb_url,
+      'display_url' => $photo->display_url,
+    ]);
   }
 
   private function adminItem(Place $p): array

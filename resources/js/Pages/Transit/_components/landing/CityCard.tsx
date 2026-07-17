@@ -27,12 +27,14 @@ function getGovSvgKey(cityId: string): string {
     'idlib': 'idlib',
     'lattakia': 'lattakia',
     'tartus': 'tartus',
+    'tartous': 'tartus',
     'daraa': 'dar`a',
     'sweida': 'as suwayda',
     'quneitra': 'quneitra',
     'deir-ez-zor': 'dayr az zawr',
+    'deir-ezzor': 'dayr az zawr',
     'raqqa': 'ar raqqah',
-    'hasakah': 'al ḥasakah',
+    'hasakah': 'al Ḥasakah',
   }
   return mapping[cityId] || cityId
 }

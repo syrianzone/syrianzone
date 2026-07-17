@@ -495,7 +495,7 @@ function TransitAdminPageContent() {
         .adm-shell {
           display: flex; height: 100svh; overflow: hidden;
           background: var(--bg); color: var(--text);
-          font-family: var(--font-ar, 'Cairo', sans-serif);
+          font-family: var(--font-ar, 'IBM Plex Sans Arabic', sans-serif);
         }
 
         /* Sidebar */
@@ -704,7 +704,7 @@ function TransitAdminPageContent() {
         .adm-login-shell {
           display: flex; align-items: center; justify-content: center;
           min-height: 100svh; background: var(--bg);
-          font-family: var(--font-ar, 'Cairo', sans-serif);
+          font-family: var(--font-ar, 'IBM Plex Sans Arabic', sans-serif);
           padding: 1.5rem;
         }
         .adm-login-card {

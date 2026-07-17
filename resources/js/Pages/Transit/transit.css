@@ -18,7 +18,7 @@
   --banner-text: hsl(var(--primary));
   --banner-border: hsl(var(--border));
 
-  --font-ar: 'Cairo', 'IBM Plex Sans Arabic', sans-serif;
+  --font-ar: 'IBM Plex Sans Arabic', sans-serif;
   --font-mono: ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', monospace;
 
   background: var(--bg);

@@ -1035,7 +1035,7 @@ function TransitStudioPageContent() {
           display: flex; flex-direction: column;
           height: 100svh; overflow: hidden;
           background: var(--bg); color: var(--text);
-          font-family: var(--font-ar, 'Cairo', sans-serif);
+          font-family: var(--font-ar, 'IBM Plex Sans Arabic', sans-serif);
         }
 
         /* Header */

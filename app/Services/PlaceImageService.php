@@ -26,14 +26,10 @@ class PlaceImageService
       $disk->putFileAs($dir, $file, "{$uuid}.{$ext}");
       $written[] = $originalPath;
 
-      $manager = ImageManager::withDriver(\Intervention\Image\Drivers\Gd\Driver::class);
-
-      $display = $manager->read($file->getRealPath())->scaleDown(width: 1600, height: 1600);
-      $disk->put($displayPath, (string) $display->toWebp(quality: 80));
+      [$display, $thumb] = $this->variants(file_get_contents($file->getRealPath()));
+      $disk->put($displayPath, $display);
       $written[] = $displayPath;
-
-      $thumb = $manager->read($file->getRealPath())->cover(400, 400);
-      $disk->put($thumbPath, (string) $thumb->toWebp(quality: 75));
+      $disk->put($thumbPath, $thumb);
       $written[] = $thumbPath;
     } catch (\Throwable $e) {
       // Clean up partial writes so the caller's transaction rollback leaves no orphan files.
@@ -50,9 +46,28 @@ class PlaceImageService
     ]);
   }
 
+  // Regenerates display + thumb from the stored original (e.g. after a pipeline fix).
+  public function reprocess(PlacePhoto $photo): void
+  {
+    $disk = Storage::disk('public');
+    [$display, $thumb] = $this->variants($disk->get($photo->original_path));
+    $disk->put($photo->display_path, $display);
+    $disk->put($photo->thumb_path, $thumb);
+  }
+
   // Deletes the three files for a photo from the public disk (row deletion is the caller's job).
   public function deleteFiles(PlacePhoto $photo): void
   {
     Storage::disk('public')->delete([$photo->original_path, $photo->display_path, $photo->thumb_path]);
+  }
+
+  /** @return array{string, string} display webp, thumb webp */
+  private function variants(string $binary): array
+  {
+    $manager = ImageManager::withDriver(\Intervention\Image\Drivers\Gd\Driver::class);
+    return [
+      (string) $manager->read($binary)->scaleDown(width: 1600, height: 1600)->toWebp(quality: 80),
+      (string) $manager->read($binary)->cover(400, 400)->toWebp(quality: 75),
+    ];
   }
 }

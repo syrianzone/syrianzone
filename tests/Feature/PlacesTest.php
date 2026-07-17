@@ -279,12 +279,9 @@ test('banned user cannot submit', function () {
     ->assertJsonPath('message', 'تم حظر حسابك من المساهمة');
 });
 
-test('photo processing honors exif portrait orientation', function () {
-  Storage::fake('public');
-  $place = Place::factory()->approved()->create();
-
-  // 400x300 landscape pixels + EXIF orientation 6 = a phone portrait photo:
-  // correct processing must rotate it, so the stored display image is 300x400
+// 400x300 landscape pixels + EXIF orientation 6 = a phone portrait photo:
+// correct processing must rotate it, so the stored display image is 300x400.
+function portraitExifUpload(): \Illuminate\Http\UploadedFile {
   $img = imagecreatetruecolor(400, 300);
   imagefill($img, 0, 0, imagecolorallocate($img, 200, 50, 50));
   ob_start();
@@ -297,9 +294,31 @@ test('photo processing honors exif portrait orientation', function () {
   $bytes = substr($jpeg, 0, 2) . "\xFF\xE1" . pack('n', strlen($exif) + 2) . $exif . substr($jpeg, 2);
   $path = tempnam(sys_get_temp_dir(), 'exif') . '.jpg';
   file_put_contents($path, $bytes);
-  $file = new \Illuminate\Http\UploadedFile($path, 'portrait.jpg', 'image/jpeg', null, true);
+  return new \Illuminate\Http\UploadedFile($path, 'portrait.jpg', 'image/jpeg', null, true);
+}
 
-  $photo = app(\App\Services\PlaceImageService::class)->store($file, $place->id, 0);
+test('photo processing honors exif portrait orientation', function () {
+  Storage::fake('public');
+  $place = Place::factory()->approved()->create();
+
+  $photo = app(\App\Services\PlaceImageService::class)->store(portraitExifUpload(), $place->id, 0);
+
+  [$width, $height] = getimagesizefromstring(Storage::disk('public')->get($photo->display_path));
+  expect($height)->toBeGreaterThan($width);
+});
+
+test('reprocess-photos command regenerates variants from the originals', function () {
+  Storage::fake('public');
+  $place = Place::factory()->approved()->create();
+  $photo = app(\App\Services\PlaceImageService::class)->store(portraitExifUpload(), $place->id, 0);
+
+  // simulate output of the broken pipeline: an unrotated landscape display image
+  $img = imagecreatetruecolor(400, 300);
+  ob_start();
+  imagewebp($img);
+  Storage::disk('public')->put($photo->display_path, ob_get_clean());
+
+  $this->artisan('places:reprocess-photos')->assertSuccessful();
 
   [$width, $height] = getimagesizefromstring(Storage::disk('public')->get($photo->display_path));
   expect($height)->toBeGreaterThan($width);

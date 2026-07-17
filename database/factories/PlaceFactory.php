@@ -15,7 +15,7 @@ class PlaceFactory extends Factory
     return [
       'user_id' => User::factory(),
       'name' => fake()->city(),
-      'category' => fake()->randomElement(['historical', 'natural', 'cultural', 'religious', 'abandoned', 'viewpoint', 'market', 'other']),
+      'category' => fake()->randomElement(['historical', 'natural', 'cultural', 'religious', 'abandoned', 'viewpoint', 'market', 'food', 'other']),
       'description' => fake()->sentence(12),
       'lat' => fake()->randomFloat(7, 32.5, 37.0),
       'lng' => fake()->randomFloat(7, 35.8, 42.0),

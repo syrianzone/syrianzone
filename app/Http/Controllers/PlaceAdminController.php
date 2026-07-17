@@ -40,7 +40,7 @@ class PlaceAdminController extends Controller
 
     $validated = $request->validate([
       'name' => 'sometimes|required|string|max:160',
-      'category' => 'sometimes|required|string|in:historical,natural,cultural,religious,abandoned,viewpoint,market,other',
+      'category' => 'sometimes|required|string|in:historical,natural,cultural,religious,abandoned,viewpoint,market,food,other',
       'description' => 'sometimes|required|string|min:20|max:1000',
       'lat' => 'sometimes|required|numeric|between:32.0,37.5',
       'lng' => 'sometimes|required|numeric|between:35.5,42.5',

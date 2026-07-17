@@ -1,4 +1,4 @@
-export type PlaceCategory = 'historical' | 'natural' | 'cultural' | 'religious' | 'abandoned' | 'viewpoint' | 'market' | 'other';
+export type PlaceCategory = 'historical' | 'natural' | 'cultural' | 'religious' | 'abandoned' | 'viewpoint' | 'market' | 'food' | 'other';
 export type PlaceStatus = 'pending' | 'approved' | 'rejected';
 
 export interface LatLng { lat: number; lng: number; }

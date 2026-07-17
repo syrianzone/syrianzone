@@ -48,7 +48,7 @@ class PlaceController extends Controller
   public function index(Request $request)
   {
     $validated = $request->validate([
-      'category' => 'sometimes|string|in:historical,natural,cultural,religious,abandoned,viewpoint,market,other',
+      'category' => 'sometimes|string|in:historical,natural,cultural,religious,abandoned,viewpoint,market,food,other',
       'q' => 'sometimes|string|max:100',
       'sort' => 'sometimes|in:newest,popular',
     ]);
@@ -162,7 +162,7 @@ class PlaceController extends Controller
 
     $validated = $request->validate([
       'name' => 'required|string|max:160',
-      'category' => 'required|string|in:historical,natural,cultural,religious,abandoned,viewpoint,market,other',
+      'category' => 'required|string|in:historical,natural,cultural,religious,abandoned,viewpoint,market,food,other',
       'description' => 'required|string|min:20|max:1000',
       'lat' => 'required|numeric|between:32.0,37.5',
       'lng' => 'required|numeric|between:35.5,42.5',

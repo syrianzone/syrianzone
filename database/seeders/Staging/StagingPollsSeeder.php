@@ -28,10 +28,28 @@ use Illuminate\Support\Facades\DB;
  *    security -> security. Any other key becomes its own top-level array that
  *    the Inertia page does not know how to render, so stick to those three.
  *
- * 3. `best-ministers` is off limits. LegacyPollSeeder owns that slug, the
- *    hardcoded /tierlist routes resolve it, and GuessWhoSeeder builds its
- *    characters from its candidates. Everything here uses `staging-*` slugs so
- *    the demo data cannot poison those flows.
+ * 3. This module OWNS the `best-ministers` slug on staging, and it has to. The
+ *    /tierlist routes carry no slug: PollController::renderTierList does
+ *    firstOrFail() on the literal 'best-ministers', and
+ *    renderTierListLeaderboard hands the same literal to leaderboard(). With no
+ *    poll under that exact slug the site's flagship feature is simply a 404 on
+ *    staging, which is what this seeder used to cause by routing around the
+ *    name.
+ *
+ *    Claiming it is safe because staging runs an isolated database and nothing
+ *    else writes that slug there: docker/10-startup.sh skips the production
+ *    GuessWhoSeeder whenever APP_ENV=staging, and LegacyPollSeeder is never
+ *    invoked at boot (it is dead code anyway, the create_poll_tables migration
+ *    DROPs the `questions` table its Question::firstOrCreate calls need and
+ *    nothing recreates it). The two remaining polls keep their `staging-*`
+ *    slugs, and every title here stays marked بيئة تجريبية so nobody mistakes a
+ *    staging box for production on the strength of a familiar slug.
+ *
+ *    One knock-on, on a dev box where both seeders do run: GuessWhoSeeder
+ *    builds its characters from the best-ministers candidates, so it will pick
+ *    up the cast below. That is the good branch of that seeder rather than its
+ *    broken dummy fallback, and every candidate here has an image_url pointing
+ *    at a file that exists, which is exactly what it needs.
  *
  * 4. Every date this seeder writes hangs off ANCHOR_DAY, never off now(). This
  *    module runs on EVERY container boot, and `daily_scores` is keyed by
@@ -88,7 +106,12 @@ class StagingPollsSeeder extends StagingSeed
    */
   private const POLLS = [
     [
-      'slug' => 'staging-cabinet',
+      // The slug the hardcoded /tierlist and /tierlist/leaderboard routes
+      // resolve. It is the production name on purpose (see point 3 above); the
+      // title is what tells you which box you are on. This entry stays FIRST in
+      // the list: the module PRNG is a single stream, so reordering polls would
+      // reshuffle every owner, term date and score below it.
+      'slug' => 'best-ministers',
       'title' => 'تقييم الحكومة (بيئة تجريبية)',
       'is_active' => true,
       'dayFrom' => 6,
@@ -180,9 +203,24 @@ class StagingPollsSeeder extends StagingSeed
     ],
   ];
 
+  /**
+   * Slugs this module used to create and no longer does.
+   *
+   * The cabinet poll moved from `staging-cabinet` to `best-ministers`. Staging
+   * databases persist across deploys, so without this the old poll would sit
+   * there forever as a second, stale copy of the same demo data: duplicated in
+   * the /polls index and double-counted by anything that sums across polls.
+   *
+   * Only ever slugs this file itself created, so the delete cannot reach data
+   * it did not write. Cascades handle candidate_groups, candidates, ballots,
+   * ballot_items, daily_scores and daily_ranks.
+   */
+  private const RETIRED_SLUGS = ['staging-cabinet'];
+
   public function run(): void
   {
     $this->assertAnchorIsPast();
+    $this->retireOldPolls();
     $this->seedRandom('staging-polls');
 
     $users = StagingUsersSeeder::guides();
@@ -268,6 +306,19 @@ class StagingPollsSeeder extends StagingSeed
     }
   }
 
+  /** Drop polls this module has stopped creating. See RETIRED_SLUGS. */
+  private function retireOldPolls(): void
+  {
+    foreach (Poll::whereIn('slug', self::RETIRED_SLUGS)->get() as $poll) {
+      $poll->delete();
+
+      $this->command?->getOutput()->writeln(sprintf(
+        '  <fg=gray>poll</> %-24s retired',
+        $poll->slug
+      ));
+    }
+  }
+
   /** The fixed last day of the demo series. Never derived from now(). */
   private function anchorDay(): Carbon
   {
@@ -313,11 +364,26 @@ class StagingPollsSeeder extends StagingSeed
    * series rather than add a second one. Without this the leaderboard keeps
    * summing both.
    *
-   * Scoped hard. Only the poll passed in, which is always one of this file's
-   * `staging-*` slugs, and only days strictly before today, so a vote cast by
-   * a human tester today is never in range. The bounds are a contiguous range
-   * rather than a NOT IN list because `day` is a timestamp column that MySQL
-   * and sqlite render differently, and range comparisons survive both.
+   * Scoped hard, on three axes:
+   *
+   *   - only the poll passed in, always one this file created;
+   *   - only days strictly before today, so a vote a human tester casts today
+   *     (VotingService always writes vote_day = today) is never in range;
+   *   - on daily_scores, only rows carrying this seeder's own signature.
+   *
+   * That third axis matters now that this module owns `best-ministers`, the
+   * slug /tierlist actually submits against. daily_scores is the one table here
+   * that real voting also writes, so a bare poll+day delete would take a
+   * tester's vote from an EARLIER day with it: the day is in the past, so the
+   * second-axis guard does not cover it. seedScores stamps updated_at at the
+   * exact end of the row's own day, where VotingService stamps now() during the
+   * day, so matching on that leaves anything a human touched alone. daily_ranks
+   * needs no such guard, nothing outside this seeder ever writes it.
+   *
+   * The day bounds are a contiguous range rather than a NOT IN list because
+   * `day` is a timestamp column that MySQL and sqlite render differently, and
+   * range comparisons survive both. For the same reason the signature match is
+   * done in PHP rather than as SQL date arithmetic.
    */
   private function pruneStaleDays(Poll $poll, array $days): void
   {
@@ -325,13 +391,32 @@ class StagingPollsSeeder extends StagingSeed
     $end = $days[count($days) - 1]->copy()->endOfDay()->toDateTimeString();
     $today = now()->startOfDay()->toDateString();
 
-    foreach (['daily_scores', 'daily_ranks'] as $table) {
-      DB::table($table)
+    $outsideWindow = function ($q) use ($start, $end, $today) {
+      $q->where('day', '<', $start)
+        ->orWhere(fn($inner) => $inner->where('day', '>', $end)->where('day', '<', $today));
+    };
+
+    DB::table('daily_ranks')
+      ->where('poll_id', $poll->id)
+      ->where($outsideWindow)
+      ->delete();
+
+    $rows = DB::table('daily_scores')
+      ->where('poll_id', $poll->id)
+      ->where($outsideWindow)
+      ->get(['candidate_id', 'day', 'updated_at']);
+
+    foreach ($rows as $row) {
+      $signature = Carbon::parse($row->day)->endOfDay()->toDateTimeString();
+      if (Carbon::parse($row->updated_at)->toDateTimeString() !== $signature) {
+        // a real vote, or something else we did not write. leave it.
+        continue;
+      }
+
+      DB::table('daily_scores')
         ->where('poll_id', $poll->id)
-        ->where(function ($q) use ($start, $end, $today) {
-          $q->where('day', '<', $start)
-            ->orWhere(fn($inner) => $inner->where('day', '>', $end)->where('day', '<', $today));
-        })
+        ->where('candidate_id', $row->candidate_id)
+        ->where('day', $row->day)
         ->delete();
     }
   }

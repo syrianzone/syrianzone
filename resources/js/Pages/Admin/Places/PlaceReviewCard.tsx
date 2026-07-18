@@ -169,7 +169,7 @@ export function PlaceReviewCard(props: {
                 )}
               </div>
             ))}
-            {place.photos.length < 5 && (
+            {place.photos.length < 10 && (
               <button
                 type="button"
                 aria-label="إضافة صورة"

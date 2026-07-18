@@ -1,13 +1,14 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Loader2, MapPin } from 'lucide-react';
+import { Loader2, Pencil } from 'lucide-react';
 import { useAuth } from '@/Contexts/AuthContext';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/Lib/utils';
-import { api } from '../_lib/api';
+import { api, extractError } from '../_lib/api';
 import type { MyPlace, Paginated, PlaceListItem, PlaceStatus } from '../_lib/types';
-import { EditLocationDialog } from './EditLocationDialog';
+import { GuidesTab } from './GuidesTab';
+import { ManagePlaceDialog } from './ManagePlaceDialog';
 import { PlaceCard } from './PlaceCard';
 import { PlaceDetailView } from './PlaceDetailView';
 
@@ -123,7 +124,30 @@ function SavesTab(props: { onSelect: (id: number) => void }) {
 
 function MineTab(props: { onSelect: (id: number) => void }) {
   const { items, loading, failed, reload, hasMore, loadMore } = usePagedList<MyPlace>((page) => api.myPlaces(page));
-  const [editing, setEditing] = useState<MyPlace | null>(null);
+  const [managing, setManaging] = useState<MyPlace | null>(null);
+  const [resubmitting, setResubmitting] = useState<number | null>(null);
+  const [resubmitted, setResubmitted] = useState<Set<number>>(new Set());
+  const [resubmitErrors, setResubmitErrors] = useState<Record<number, string>>({});
+
+  const resubmit = async (id: number) => {
+    if (resubmitting !== null) return;
+    setResubmitting(id);
+    setResubmitErrors((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    try {
+      await api.resubmitMyPlace(id);
+      setResubmitted((prev) => new Set(prev).add(id));
+      reload();
+    } catch (e) {
+      setResubmitErrors((prev) => ({ ...prev, [id]: extractError(e) }));
+    } finally {
+      setResubmitting(null);
+    }
+  };
+
   return (
     <>
       <ListShell loading={loading} empty={items.length === 0} hasMore={hasMore} onLoadMore={loadMore} failed={failed} onRetry={reload}>
@@ -132,18 +156,36 @@ function MineTab(props: { onSelect: (id: number) => void }) {
             <PlaceCard place={p} onClick={props.onSelect} />
             <div className="flex items-start gap-2 px-1">
               <Badge variant={STATUS_VARIANTS[p.status]}>{STATUS_LABELS[p.status]}</Badge>
-              {p.status === 'rejected' && p.rejection_reason && (
-                <p className="text-xs text-muted-foreground">{p.rejection_reason}</p>
-              )}
-              <Button type="button" variant="ghost" size="sm" className="ms-auto" onClick={() => setEditing(p)}>
-                <MapPin className="h-4 w-4" />
-                تعديل الموقع
+              <Button type="button" variant="ghost" size="sm" className="ms-auto" onClick={() => setManaging(p)}>
+                <Pencil className="h-4 w-4" />
+                إدارة
               </Button>
             </div>
+            {p.status === 'rejected' && p.rejection_reason && (
+              <div className="flex items-start gap-2 px-1">
+                <p className="flex-1 text-xs text-muted-foreground">{p.rejection_reason}</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={resubmitting === p.id}
+                  onClick={() => resubmit(p.id)}
+                >
+                  {resubmitting === p.id && <Loader2 className="h-4 w-4 animate-spin" />}
+                  إعادة إرسال
+                </Button>
+              </div>
+            )}
+            {resubmitErrors[p.id] && (
+              <p className="px-1 text-xs text-destructive">{resubmitErrors[p.id]}</p>
+            )}
+            {resubmitted.has(p.id) && (
+              <p className="px-1 text-xs text-muted-foreground">تمت إعادة الإرسال وستتم مراجعتها من المشرفين</p>
+            )}
           </div>
         ))}
       </ListShell>
-      <EditLocationDialog place={editing} onOpenChange={(o) => !o && setEditing(null)} onUpdated={reload} />
+      <ManagePlaceDialog place={managing} onOpenChange={(o) => !o && setManaging(null)} onUpdated={reload} />
     </>
   );
 }
@@ -172,25 +214,34 @@ export function PlacesPanel(props: {
     <div dir="rtl" className={cn('flex flex-col overflow-hidden bg-background', className)}>
       {selectedId !== null ? (
         <PlaceDetailView placeId={selectedId} onClose={() => onSelect(null)} />
-      ) : user ? (
+      ) : (
         <Tabs defaultValue="places" className="flex min-h-0 flex-1 flex-col">
-          <TabsList className="mx-3 mt-3 grid grid-cols-3">
+          <TabsList className={cn('mx-3 mt-3 grid', user ? 'grid-cols-4' : 'grid-cols-2')}>
             <TabsTrigger value="places">الأماكن</TabsTrigger>
-            <TabsTrigger value="saves">محفوظاتي</TabsTrigger>
-            <TabsTrigger value="mine">مساهماتي</TabsTrigger>
+            {user && <TabsTrigger value="saves">محفوظاتي</TabsTrigger>}
+            {user && <TabsTrigger value="mine">مساهماتي</TabsTrigger>}
+            <TabsTrigger value="guides">الأدلة</TabsTrigger>
           </TabsList>
           <TabsContent value="places" className="mt-0 flex min-h-0 flex-1 flex-col">
             {mainList}
           </TabsContent>
-          <TabsContent value="saves" className="mt-0 flex min-h-0 flex-1 flex-col">
-            <SavesTab onSelect={onSelect} />
-          </TabsContent>
-          <TabsContent value="mine" className="mt-0 flex min-h-0 flex-1 flex-col">
-            <MineTab onSelect={onSelect} />
+          {user && (
+            <TabsContent value="saves" className="mt-0 flex min-h-0 flex-1 flex-col">
+              <SavesTab onSelect={onSelect} />
+            </TabsContent>
+          )}
+          {user && (
+            <TabsContent value="mine" className="mt-0 flex min-h-0 flex-1 flex-col">
+              <MineTab onSelect={onSelect} />
+            </TabsContent>
+          )}
+          <TabsContent value="guides" className="mt-0 flex min-h-0 flex-1 flex-col">
+            {/* heading الأدلة المحليون renders inside GuidesTab */}
+            <div className="min-h-0 flex-1 overflow-y-auto p-3">
+              <GuidesTab />
+            </div>
           </TabsContent>
         </Tabs>
-      ) : (
-        mainList
       )}
     </div>
   );

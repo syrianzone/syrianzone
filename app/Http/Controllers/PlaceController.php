@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Place;
+use App\Models\PlacePhoto;
 use App\Services\PlaceImageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -221,9 +222,9 @@ class PlaceController extends Controller
       'description' => 'required|string|min:20|max:1000',
       'lat' => 'required|numeric|between:32.0,37.5',
       'lng' => 'required|numeric|between:35.5,42.5',
-      'photos' => 'required|array|min:1|max:5',
+      'photos' => 'required|array|min:1|max:10',
       // max_width/max_height cap decompression bombs before GD allocates the bitmap
-      'photos.*' => 'required|image|mimes:jpg,jpeg,png,webp|max:8192|dimensions:min_width=200,min_height=200,max_width=6000,max_height=6000',
+      'photos.*' => 'required|image|mimes:jpg,jpeg,png,webp|max:12288|dimensions:min_width=200,min_height=200,max_width=6000,max_height=6000',
     ], [
       'name.required' => 'أدخل اسم المكان',
       'name.string' => 'اسم المكان يجب أن يكون نصاً',
@@ -244,13 +245,13 @@ class PlaceController extends Controller
       'photos.required' => 'أضف صورة واحدة على الأقل',
       'photos.array' => 'صيغة الصور المرسلة غير صالحة',
       'photos.min' => 'أضف صورة واحدة على الأقل',
-      'photos.max' => 'الحد الأقصى 5 صور',
+      'photos.max' => 'الحد الأقصى 10 صور',
       // implicit rule when PHP itself rejects the upload (e.g. over upload_max_filesize)
-      'photos.*.uploaded' => 'تعذر رفع الصورة، تأكد أن حجمها لا يتجاوز 8 ميغابايت',
+      'photos.*.uploaded' => 'تعذر رفع الصورة، تأكد أن حجمها لا يتجاوز 12 ميغابايت',
       'photos.*.required' => 'تعذر قراءة إحدى الصور، أعد اختيارها',
       'photos.*.image' => 'الملف يجب أن يكون صورة',
       'photos.*.mimes' => 'الصورة يجب أن تكون بصيغة JPG أو PNG أو WebP',
-      'photos.*.max' => 'حجم الصورة يجب ألا يتجاوز 8 ميغابايت',
+      'photos.*.max' => 'حجم الصورة يجب ألا يتجاوز 12 ميغابايت',
       'photos.*.dimensions' => 'أبعاد الصورة يجب أن تكون بين 200x200 و 6000x6000 بكسل',
     ]);
 
@@ -315,15 +316,7 @@ class PlaceController extends Controller
     ]);
 
     // Any moved pin re-enters the moderation queue, whatever its prior status.
-    $place->update([
-      'lat' => $validated['lat'],
-      'lng' => $validated['lng'],
-      'status' => 'pending',
-      'rejection_reason' => null,
-      'approved_at' => null,
-    ]);
-    // An approved place may have just left the public map.
-    Cache::forget('places:map');
+    $this->backToPending($place, ['lat' => $validated['lat'], 'lng' => $validated['lng']]);
 
     return response()->json([
       'id' => $place->id,
@@ -331,6 +324,170 @@ class PlaceController extends Controller
       'lng' => $place->lng,
       'status' => 'pending',
     ]);
+  }
+
+  public function updateDetails(Request $request, int $id)
+  {
+    $place = Place::where('user_id', $request->user()->id)->findOrFail($id);
+
+    $validated = $request->validate([
+      'name' => 'sometimes|required|string|max:160',
+      'category' => 'sometimes|required|string|in:historical,natural,cultural,religious,abandoned,viewpoint,market,food,other',
+      'description' => 'sometimes|required|string|min:20|max:1000',
+    ], [
+      'name.required' => 'أدخل اسم المكان',
+      'name.string' => 'اسم المكان يجب أن يكون نصاً',
+      'name.max' => 'اسم المكان يجب ألا يتجاوز 160 حرفاً',
+      'category.required' => 'اختر التصنيف',
+      'category.string' => 'التصنيف المختار غير صالح',
+      'category.in' => 'التصنيف المختار غير صالح',
+      'description.required' => 'أدخل وصف المكان',
+      'description.string' => 'الوصف يجب أن يكون نصاً',
+      'description.min' => 'الوصف يجب ألا يقل عن 20 حرفاً',
+      'description.max' => 'الوصف يجب ألا يتجاوز 1000 حرف',
+    ]);
+
+    if ($validated === []) {
+      return response()->json(['message' => 'لا توجد تعديلات'], 422);
+    }
+
+    // Edited content re-enters the moderation queue with any prior verdict cleared.
+    $this->backToPending($place, $validated);
+
+    return response()->json([
+      'id' => $place->id,
+      'name' => $place->name,
+      'category' => $place->category,
+      'description' => $place->description,
+      'status' => 'pending',
+    ]);
+  }
+
+  public function addPhoto(Request $request, int $id, PlaceImageService $images)
+  {
+    $place = Place::where('user_id', $request->user()->id)->findOrFail($id);
+
+    $request->validate([
+      'photo' => 'required|image|mimes:jpg,jpeg,png,webp|max:12288|dimensions:min_width=200,min_height=200,max_width=6000,max_height=6000',
+    ], $this->photoMessages());
+
+    // guard + store under a lock on the place row so two concurrent adds cannot
+    // both read count 9 and end at 11 (sqlite ignores FOR UPDATE but serializes writes)
+    $photo = DB::transaction(function () use ($place, $request, $images) {
+      Place::whereKey($place->id)->lockForUpdate()->first();
+      if ($place->photos()->count() >= 10) {
+        return null;
+      }
+      $photo = $images->store($request->file('photo'), $place->id, (int) $place->photos()->max('sort') + 1);
+      $place->update(['status' => 'pending', 'rejection_reason' => null, 'approved_at' => null]);
+      return $photo;
+    });
+    if ($photo === null) {
+      return response()->json(['message' => 'لا يمكن إضافة أكثر من 10 صور'], 422);
+    }
+    Cache::forget('places:map');
+
+    return response()->json([
+      'id' => $photo->id,
+      'thumb_url' => $photo->thumb_url,
+      'display_url' => $photo->display_url,
+      'sort' => $photo->sort,
+      'place_status' => 'pending',
+    ], 201);
+  }
+
+  public function deletePhoto(Request $request, int $id, PlaceImageService $images)
+  {
+    $photo = PlacePhoto::whereHas('place', fn ($q) => $q->where('user_id', $request->user()->id))->findOrFail($id);
+
+    // same lock as addPhoto: two concurrent deletes on a 2-photo place must not
+    // both pass the min-1 guard and leave the place with zero photos
+    $deleted = DB::transaction(function () use ($photo) {
+      $place = Place::whereKey($photo->place_id)->lockForUpdate()->first();
+      if (PlacePhoto::where('place_id', $photo->place_id)->count() <= 1) {
+        return false;
+      }
+      $photo->delete();
+      $place->update(['status' => 'pending', 'rejection_reason' => null, 'approved_at' => null]);
+      return true;
+    });
+    if (!$deleted) {
+      return response()->json(['message' => 'لا يمكن حذف الصورة الأخيرة'], 422);
+    }
+
+    // files go after the row commit so a rollback cannot orphan the photo row
+    $images->deleteFiles($photo);
+    Cache::forget('places:map');
+
+    return response()->json(['id' => $photo->id, 'place_status' => 'pending']);
+  }
+
+  public function rotatePhoto(Request $request, int $id, PlaceImageService $images)
+  {
+    $photo = PlacePhoto::whereHas('place', fn ($q) => $q->where('user_id', $request->user()->id))->findOrFail($id);
+
+    try {
+      $images->rotateClockwise($photo);
+    } catch (\RuntimeException $e) {
+      return response()->json(['message' => 'ملف الصورة مفقود على الخادم'], 422);
+    }
+    // pixels only: approval status is deliberately KEPT, but the map cache embeds
+    // versioned thumb urls so it must still be forgotten
+    Cache::forget('places:map');
+
+    return response()->json([
+      'id' => $photo->id,
+      'thumb_url' => $photo->thumb_url,
+      'display_url' => $photo->display_url,
+    ]);
+  }
+
+  public function destroy(Request $request, int $id, PlaceImageService $images)
+  {
+    $place = Place::where('user_id', $request->user()->id)->with('photos')->findOrFail($id);
+
+    // owner deletion is immediate, no moderation round-trip
+    foreach ($place->photos as $photo) {
+      $images->deleteFiles($photo);
+    }
+    $place->delete();
+    Cache::forget('places:map');
+
+    return response()->json(null, 204);
+  }
+
+  public function resubmit(Request $request, int $id)
+  {
+    $place = Place::where('user_id', $request->user()->id)->findOrFail($id);
+
+    if ($place->status !== 'rejected') {
+      return response()->json(['message' => 'لا يمكن إعادة إرسال هذا المكان'], 400);
+    }
+
+    // nothing but the moderation state changes; photos and fields stay as-is
+    $this->backToPending($place);
+
+    return response()->json(['id' => $place->id, 'status' => 'pending']);
+  }
+
+  // Owner content mutations re-enter moderation: any prior rejection reason and
+  // approval are cleared, and the (possibly approved) pin leaves the public map.
+  private function backToPending(Place $place, array $extra = []): void
+  {
+    $place->update($extra + ['status' => 'pending', 'rejection_reason' => null, 'approved_at' => null]);
+    Cache::forget('places:map');
+  }
+
+  private function photoMessages(): array
+  {
+    return [
+      'photo.required' => 'أضف صورة',
+      'photo.image' => 'الملف يجب أن يكون صورة',
+      'photo.mimes' => 'الصورة يجب أن تكون بصيغة JPG أو PNG أو WebP',
+      'photo.max' => 'حجم الصورة يجب ألا يتجاوز 12 ميغابايت',
+      'photo.uploaded' => 'تعذر رفع الصورة، تأكد أن حجمها لا يتجاوز 12 ميغابايت',
+      'photo.dimensions' => 'أبعاد الصورة يجب أن تكون بين 200x200 و 6000x6000 بكسل',
+    ];
   }
 
   private function listItem(Place $p): array

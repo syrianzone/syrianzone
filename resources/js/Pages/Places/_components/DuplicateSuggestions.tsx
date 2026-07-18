@@ -12,6 +12,7 @@ export function DuplicateSuggestions(props: {
   return (
     <div className="space-y-3">
       <p className="text-sm font-medium">يوجد أماكن قريبة من النقطة المحددة</p>
+      <p className="text-xs text-muted-foreground">إن كان مكانك مختلفاً يمكنك إضافته بلا مشكلة</p>
       <div className="space-y-2 max-h-64 overflow-y-auto">
         {places.map((place) => (
           <div key={place.id} className="flex items-center gap-3 rounded-md border border-border p-2">
@@ -35,7 +36,7 @@ export function DuplicateSuggestions(props: {
         ))}
       </div>
       <Button type="button" className="w-full" onClick={onContinue}>
-        مكاني مختلف، متابعة
+        متابعة الإضافة على أي حال
       </Button>
     </div>
   );

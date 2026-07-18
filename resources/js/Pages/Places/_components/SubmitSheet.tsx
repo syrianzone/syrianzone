@@ -124,8 +124,8 @@ export function SubmitSheet(props: {
       setError('الوصف يجب أن يكون بين 20 و 1000 حرف');
       return;
     }
-    if (photos.length < 1 || photos.length > 5) {
-      setError('أضف من صورة واحدة إلى 5 صور');
+    if (photos.length < 1 || photos.length > 10) {
+      setError('أضف من صورة واحدة إلى 10 صور');
       return;
     }
     setSubmitting(true);

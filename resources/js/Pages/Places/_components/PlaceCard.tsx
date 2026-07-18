@@ -9,6 +9,7 @@ import {
   Palette,
   Store,
   TreePine,
+  Utensils,
   type LucideIcon,
 } from 'lucide-react';
 import { Badge } from '@/Components/ui/badge';
@@ -23,6 +24,7 @@ const CATEGORY_ICONS: Record<PlaceCategory, LucideIcon> = {
   abandoned: Ghost,
   viewpoint: Mountain,
   market: Store,
+  food: Utensils,
   other: MapPin,
 };
 

@@ -6,9 +6,12 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { PlacesMap } from './_components/PlacesMap';
 import { FilterBar, parseLatLng } from './_components/FilterBar';
+import { PhotoGrid } from './_components/PhotoGrid';
 import { PlacesPanel } from './_components/PlacesPanel';
 import { SubmitSheet } from './_components/SubmitSheet';
+import { ViewToggle } from './_components/ViewToggle';
 import { api, extractError } from './_lib/api';
+import type { GridPhoto } from './_lib/discovery';
 import type { GeoSuggestion, LatLng, Paginated, PlaceCategory, PlaceFeatureCollection, PlaceListItem } from './_lib/types';
 
 export default function Index() {
@@ -29,6 +32,10 @@ export default function Index() {
   const [fetchedQuery, setFetchedQuery] = useState('');
   const [geoResults, setGeoResults] = useState<GeoSuggestion[]>([]);
   const geoReqRef = useRef(0);
+  // the url is the source of truth on load so grid links share
+  const [view, setView] = useState<'map' | 'grid'>(() =>
+    new URLSearchParams(window.location.search).get('view') === 'grid' ? 'grid' : 'map',
+  );
 
   // stale-response guard for the debounced list fetch
   const requestRef = useRef(0);
@@ -37,6 +44,21 @@ export default function Index() {
 
   function flyTo(lng: number, lat: number) {
     setFocus({ lng, lat, zoom: 15, key: ++focusKeyRef.current });
+  }
+
+  function changeView(v: 'map' | 'grid') {
+    setView(v);
+    const url = new URL(window.location.href);
+    if (v === 'grid') url.searchParams.set('view', 'grid');
+    else url.searchParams.delete('view');
+    window.history.replaceState(null, '', url);
+  }
+
+  function handleGridPhotoClick(p: GridPhoto) {
+    changeView('map');
+    setSelectedId(p.place.id);
+    setExpanded(true);
+    flyTo(p.place.lng, p.place.lat);
   }
 
   useEffect(() => {
@@ -207,9 +229,12 @@ export default function Index() {
           className="absolute inset-x-0 top-0 bottom-56 md:inset-0"
         />
 
-        {/* pr-96 keeps the floating bar clear of the side panel on desktop;
+        {/* stays mounted across view switches so fetched pages survive; renders null on the map view */}
+        <PhotoGrid active={view === 'grid'} onPhotoClick={handleGridPhotoClick} />
+
+        {/* pr-96 keeps the floating bar clear of the side panel on desktop (map view only);
             z-20 keeps the search dropdown above the z-10 bottom sheet (later sibling) */}
-        <div className="absolute top-3 inset-x-3 z-20 max-w-xl mx-auto space-y-2 md:pr-96 md:max-w-3xl">
+        <div className={`absolute top-3 inset-x-3 z-20 max-w-xl mx-auto space-y-2 md:max-w-3xl ${view === 'map' ? 'md:pr-96' : ''}`}>
           <FilterBar
             category={category}
             onCategoryChange={setCategory}
@@ -223,6 +248,7 @@ export default function Index() {
             onSelectGeo={(s) => handleGoToCoord({ lat: s.lat, lng: s.lng })}
             onGoToCoord={handleGoToCoord}
           />
+          <ViewToggle view={view} onChange={changeView} />
           {addMode && (
             <div className="flex justify-center">
               <span className="rounded-full border border-border bg-card/90 px-3 py-1 text-xs text-muted-foreground shadow-sm">
@@ -240,38 +266,43 @@ export default function Index() {
           )}
         </div>
 
-        {/* bottom-60 clears the collapsed mobile sheet; left-14 clears the map controls.
-            hidden while the mobile sheet is expanded: the sheet would cover both FAB and map */}
-        <Button
-          type="button"
-          className={`absolute left-14 bottom-60 z-10 shadow-lg md:bottom-6 ${expanded ? 'hidden md:inline-flex' : ''}`}
-          onClick={() => setAddMode((v) => !v)}
-        >
-          {addMode ? <X /> : <Plus />}
-          {addMode ? 'إلغاء الإضافة' : 'أضف مكاناً'}
-        </Button>
+        {/* FAB and the sheet/panel are conditionally unmounted in grid view (not css-hidden) */}
+        {view === 'map' && (
+          <>
+            {/* bottom-60 clears the collapsed mobile sheet; left-14 clears the map controls.
+                hidden while the mobile sheet is expanded: the sheet would cover both FAB and map */}
+            <Button
+              type="button"
+              className={`absolute left-14 bottom-60 z-10 shadow-lg md:bottom-6 ${expanded ? 'hidden md:inline-flex' : ''}`}
+              onClick={() => setAddMode((v) => !v)}
+            >
+              {addMode ? <X /> : <Plus />}
+              {addMode ? 'إلغاء الإضافة' : 'أضف مكاناً'}
+            </Button>
 
-        <div
-          className={`absolute inset-x-0 bottom-0 z-10 flex flex-col bg-card border-t border-border md:inset-x-auto md:top-0 md:right-0 md:h-full md:w-96 md:border-t-0 md:border-l ${expanded ? 'h-[65dvh]' : 'h-56'}`}
-        >
-          <button
-            type="button"
-            className="flex w-full items-center justify-center py-1 text-muted-foreground md:hidden"
-            aria-label={expanded ? 'تصغير القائمة' : 'توسيع القائمة'}
-            onClick={() => setExpanded((v) => !v)}
-          >
-            {expanded ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
-          </button>
-          <PlacesPanel
-            places={listPlaces?.data ?? []}
-            loading={listLoading}
-            selectedId={selectedId}
-            onSelect={handlePanelSelect}
-            hasMore={listPlaces !== null && listPlaces.current_page < listPlaces.last_page}
-            onLoadMore={() => listPlaces && fetchList(listPlaces.current_page + 1)}
-            className="min-h-0 flex-1"
-          />
-        </div>
+            <div
+              className={`absolute inset-x-0 bottom-0 z-10 flex flex-col bg-card border-t border-border md:inset-x-auto md:top-0 md:right-0 md:h-full md:w-96 md:border-t-0 md:border-l ${expanded ? 'h-[65dvh]' : 'h-56'}`}
+            >
+              <button
+                type="button"
+                className="flex w-full items-center justify-center py-1 text-muted-foreground md:hidden"
+                aria-label={expanded ? 'تصغير القائمة' : 'توسيع القائمة'}
+                onClick={() => setExpanded((v) => !v)}
+              >
+                {expanded ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
+              </button>
+              <PlacesPanel
+                places={listPlaces?.data ?? []}
+                loading={listLoading}
+                selectedId={selectedId}
+                onSelect={handlePanelSelect}
+                hasMore={listPlaces !== null && listPlaces.current_page < listPlaces.last_page}
+                onLoadMore={() => listPlaces && fetchList(listPlaces.current_page + 1)}
+                className="min-h-0 flex-1"
+              />
+            </div>
+          </>
+        )}
 
         <SubmitSheet
           open={submitOpen}

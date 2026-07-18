@@ -508,13 +508,13 @@ test('submit validation errors carry the exact arabic messages', function () {
     'description' => 'قصير',
     'lat' => 45.0,
     'lng' => 36.3,
-    'photos' => array_map(fn () => UploadedFile::fake()->image('p.jpg', 640, 480), range(1, 6)),
+    'photos' => array_map(fn () => UploadedFile::fake()->image('p.jpg', 640, 480), range(1, 11)),
   ], ['Accept' => 'application/json'])
     ->assertStatus(422)
     ->assertJsonPath('errors.name.0', 'اسم المكان يجب ألا يتجاوز 160 حرفاً')
     ->assertJsonPath('errors.description.0', 'الوصف يجب ألا يقل عن 20 حرفاً')
     ->assertJsonPath('errors.lat.0', 'خط العرض يجب أن يكون بين 32.0 و 37.5 (داخل سوريا)')
-    ->assertJsonPath('errors.photos.0', 'الحد الأقصى 5 صور');
+    ->assertJsonPath('errors.photos.0', 'الحد الأقصى 10 صور');
 
   // description.max, photos.*.max, photos.*.dimensions in a second request
   $this->actingAs($user)->post('/api/v1/places', [
@@ -524,16 +524,380 @@ test('submit validation errors carry the exact arabic messages', function () {
     'lat' => 33.5,
     'lng' => 36.3,
     'photos' => [
-      UploadedFile::fake()->image('big.jpg', 640, 480)->size(9000),
+      UploadedFile::fake()->image('big.jpg', 640, 480)->size(13000),
       UploadedFile::fake()->image('tiny.jpg', 100, 100),
     ],
   ], ['Accept' => 'application/json'])
     ->assertStatus(422)
     ->assertJsonPath('errors.description.0', 'الوصف يجب ألا يتجاوز 1000 حرف')
-    ->assertJsonPath('errors', fn ($errors) => in_array('حجم الصورة يجب ألا يتجاوز 8 ميغابايت', $errors['photos.0'] ?? [])
+    ->assertJsonPath('errors', fn ($errors) => in_array('حجم الصورة يجب ألا يتجاوز 12 ميغابايت', $errors['photos.0'] ?? [])
       && in_array('أبعاد الصورة يجب أن تكون بين 200x200 و 6000x6000 بكسل', $errors['photos.1'] ?? []));
 
   $this->assertDatabaseCount('places', 0);
+});
+
+test('submit accepts ten photos', function () {
+  Storage::fake('public');
+  $user = placesUser();
+
+  $response = $this->actingAs($user)->post('/api/v1/places', [
+    'name' => 'مكان بعشر صور',
+    'category' => 'natural',
+    'description' => 'وصف تجريبي طويل بما يكفي لتجاوز الحد الأدنى للتحقق',
+    'lat' => 33.5,
+    'lng' => 36.3,
+    'photos' => array_map(fn () => UploadedFile::fake()->image('p.jpg', 640, 480), range(1, 10)),
+  ], ['Accept' => 'application/json'])->assertCreated();
+
+  expect(PlacePhoto::where('place_id', $response->json('id'))->count())->toBe(10);
+});
+
+test('guests cannot use the owner management endpoints', function () {
+  $this->patchJson('/api/v1/my/places/1', ['name' => 'اسم'])->assertUnauthorized();
+  $this->postJson('/api/v1/my/places/1/photos')->assertUnauthorized();
+  $this->postJson('/api/v1/my/places/1/resubmit')->assertUnauthorized();
+  $this->deleteJson('/api/v1/my/places/1')->assertUnauthorized();
+  $this->deleteJson('/api/v1/my/place-photos/1')->assertUnauthorized();
+  $this->postJson('/api/v1/my/place-photos/1/rotate')->assertUnauthorized();
+});
+
+test('owner edits details and the place goes back to pending', function () {
+  $user = placesUser();
+  $place = Place::factory()->approved()->create([
+    'user_id' => $user->id, 'name' => 'الاسم القديم', 'approved_at' => now(),
+  ]);
+  Cache::put('places:map', ['stale'], 300);
+
+  $this->actingAs($user)
+    ->patchJson("/api/v1/my/places/{$place->id}", ['name' => 'الاسم الجديد'])
+    ->assertOk()
+    ->assertJsonPath('id', $place->id)
+    ->assertJsonPath('name', 'الاسم الجديد')
+    ->assertJsonPath('status', 'pending');
+
+  $fresh = $place->fresh();
+  expect($fresh->name)->toBe('الاسم الجديد');
+  expect($fresh->status)->toBe('pending');
+  expect($fresh->rejection_reason)->toBeNull();
+  expect($fresh->approved_at)->toBeNull();
+  expect(Cache::missing('places:map'))->toBeTrue();
+});
+
+test('owner edits a rejected place and the rejection reason clears', function () {
+  $user = placesUser();
+  $place = Place::factory()->rejected()->create([
+    'user_id' => $user->id, 'rejection_reason' => 'صور غير واضحة',
+  ]);
+
+  $this->actingAs($user)
+    ->patchJson("/api/v1/my/places/{$place->id}", [
+      'description' => 'وصف جديد طويل بما يكفي لتجاوز الحد الأدنى للأحرف المطلوبة',
+    ])
+    ->assertOk()
+    ->assertJsonPath('status', 'pending');
+
+  $fresh = $place->fresh();
+  expect($fresh->status)->toBe('pending');
+  expect($fresh->rejection_reason)->toBeNull();
+});
+
+test('stranger and guest cannot edit another user place details', function () {
+  $place = Place::factory()->approved()->create(['name' => 'قلعة']);
+
+  $this->patchJson("/api/v1/my/places/{$place->id}", ['name' => 'اسم'])->assertUnauthorized();
+
+  $this->actingAs(placesUser())
+    ->patchJson("/api/v1/my/places/{$place->id}", ['name' => 'اسم جديد'])
+    ->assertNotFound();
+
+  $fresh = $place->fresh();
+  expect($fresh->name)->toBe('قلعة');
+  expect($fresh->status)->toBe('approved');
+});
+
+test('editing details with an empty body is a 422', function () {
+  $user = placesUser();
+  $place = Place::factory()->approved()->create(['user_id' => $user->id]);
+
+  $this->actingAs($user)
+    ->patchJson("/api/v1/my/places/{$place->id}", [])
+    ->assertStatus(422)
+    ->assertJsonPath('message', 'لا توجد تعديلات');
+
+  expect($place->fresh()->status)->toBe('approved');
+});
+
+test('details validation errors carry the exact arabic messages', function () {
+  $user = placesUser();
+  $place = Place::factory()->create(['user_id' => $user->id]);
+
+  $this->actingAs($user)
+    ->patchJson("/api/v1/my/places/{$place->id}", [
+      'name' => str_repeat('م', 161),
+      'category' => 'bogus',
+      'description' => 'قصير',
+    ])
+    ->assertStatus(422)
+    ->assertJsonPath('errors.name.0', 'اسم المكان يجب ألا يتجاوز 160 حرفاً')
+    ->assertJsonPath('errors.category.0', 'التصنيف المختار غير صالح')
+    ->assertJsonPath('errors.description.0', 'الوصف يجب ألا يقل عن 20 حرفاً');
+});
+
+test('owner adds a photo and the place goes back to pending', function () {
+  Storage::fake('public');
+  $user = placesUser();
+  $place = Place::factory()->approved()->create(['user_id' => $user->id, 'approved_at' => now()]);
+  app(\App\Services\PlaceImageService::class)
+    ->store(UploadedFile::fake()->image('a.jpg', 800, 600), $place->id, 0);
+  Cache::put('places:map', ['stale'], 300);
+
+  $response = $this->actingAs($user)
+    ->postJson("/api/v1/my/places/{$place->id}/photos", [
+      'photo' => UploadedFile::fake()->image('b.jpg', 800, 600),
+    ])
+    ->assertCreated()
+    ->assertJsonPath('sort', 1)
+    ->assertJsonPath('place_status', 'pending')
+    ->assertJsonStructure(['id', 'thumb_url', 'display_url', 'sort', 'place_status']);
+
+  $photo = PlacePhoto::findOrFail($response->json('id'));
+  Storage::disk('public')->assertExists([$photo->original_path, $photo->display_path, $photo->thumb_path]);
+  $fresh = $place->fresh();
+  expect($fresh->status)->toBe('pending');
+  expect($fresh->rejection_reason)->toBeNull();
+  expect($fresh->approved_at)->toBeNull();
+  expect(Cache::missing('places:map'))->toBeTrue();
+});
+
+test('owner add photo is refused at ten photos', function () {
+  Storage::fake('public');
+  $user = placesUser();
+  $place = Place::factory()->approved()->create(['user_id' => $user->id]);
+  PlacePhoto::factory()->count(10)->sequence(fn ($seq) => ['sort' => $seq->index])->create(['place_id' => $place->id]);
+
+  $this->actingAs($user)
+    ->postJson("/api/v1/my/places/{$place->id}/photos", [
+      'photo' => UploadedFile::fake()->image('x.jpg', 800, 600),
+    ])
+    ->assertStatus(422)
+    ->assertJsonPath('message', 'لا يمكن إضافة أكثر من 10 صور');
+
+  expect($place->photos()->count())->toBe(10);
+  expect($place->fresh()->status)->toBe('approved');
+});
+
+test('stranger cannot add a photo to another user place', function () {
+  Storage::fake('public');
+  $place = Place::factory()->approved()->create();
+
+  $this->actingAs(placesUser())
+    ->postJson("/api/v1/my/places/{$place->id}/photos", [
+      'photo' => UploadedFile::fake()->image('x.jpg', 800, 600),
+    ])
+    ->assertNotFound();
+
+  expect($place->photos()->count())->toBe(0);
+});
+
+test('owner add photo rejects an oversized file with the arabic message', function () {
+  Storage::fake('public');
+  $user = placesUser();
+  $place = Place::factory()->approved()->create(['user_id' => $user->id]);
+
+  $this->actingAs($user)
+    ->postJson("/api/v1/my/places/{$place->id}/photos", [
+      'photo' => UploadedFile::fake()->image('big.jpg', 640, 480)->size(13000),
+    ])
+    ->assertStatus(422)
+    ->assertJsonPath('errors.photo.0', 'حجم الصورة يجب ألا يتجاوز 12 ميغابايت');
+
+  expect($place->fresh()->status)->toBe('approved');
+});
+
+test('owner deletes a photo, files go and the place goes back to pending', function () {
+  Storage::fake('public');
+  $user = placesUser();
+  $place = Place::factory()->approved()->create(['user_id' => $user->id, 'approved_at' => now()]);
+  app(\App\Services\PlaceImageService::class)
+    ->store(UploadedFile::fake()->image('a.jpg', 800, 600), $place->id, 0);
+  $victim = app(\App\Services\PlaceImageService::class)
+    ->store(UploadedFile::fake()->image('b.jpg', 800, 600), $place->id, 1);
+  Cache::put('places:map', ['stale'], 300);
+
+  $this->actingAs($user)
+    ->deleteJson("/api/v1/my/place-photos/{$victim->id}")
+    ->assertOk()
+    ->assertJsonPath('id', $victim->id)
+    ->assertJsonPath('place_status', 'pending');
+
+  $this->assertDatabaseMissing('place_photos', ['id' => $victim->id]);
+  Storage::disk('public')->assertMissing([$victim->original_path, $victim->display_path, $victim->thumb_path]);
+  $fresh = $place->fresh();
+  expect($fresh->status)->toBe('pending');
+  expect($fresh->rejection_reason)->toBeNull();
+  expect($fresh->approved_at)->toBeNull();
+  expect(Cache::missing('places:map'))->toBeTrue();
+});
+
+test('owner cannot delete the last photo', function () {
+  Storage::fake('public');
+  $user = placesUser();
+  $place = Place::factory()->approved()->create(['user_id' => $user->id]);
+  $photo = app(\App\Services\PlaceImageService::class)
+    ->store(UploadedFile::fake()->image('only.jpg', 800, 600), $place->id, 0);
+
+  $this->actingAs($user)
+    ->deleteJson("/api/v1/my/place-photos/{$photo->id}")
+    ->assertStatus(422)
+    ->assertJsonPath('message', 'لا يمكن حذف الصورة الأخيرة');
+
+  $this->assertDatabaseHas('place_photos', ['id' => $photo->id]);
+  Storage::disk('public')->assertExists([$photo->original_path, $photo->display_path, $photo->thumb_path]);
+  expect($place->fresh()->status)->toBe('approved');
+});
+
+test('stranger cannot delete another user photo', function () {
+  Storage::fake('public');
+  $place = Place::factory()->approved()->create();
+  PlacePhoto::factory()->count(2)->sequence(fn ($seq) => ['sort' => $seq->index])->create(['place_id' => $place->id]);
+  $victim = $place->photos()->first();
+
+  $this->actingAs(placesUser())
+    ->deleteJson("/api/v1/my/place-photos/{$victim->id}")
+    ->assertNotFound();
+
+  $this->assertDatabaseHas('place_photos', ['id' => $victim->id]);
+});
+
+test('owner rotate keeps approval and refreshes the versioned urls', function () {
+  Storage::fake('public');
+  $user = placesUser();
+  $place = Place::factory()->approved()->create(['user_id' => $user->id, 'approved_at' => now()]);
+
+  // 400x300 landscape display; one clockwise turn must make it 300x400
+  $img = imagecreatetruecolor(400, 300);
+  ob_start();
+  imagewebp($img);
+  $displayBytes = ob_get_clean();
+  $photo = PlacePhoto::factory()->create([
+    'place_id' => $place->id,
+    'display_path' => "places/{$place->id}/x_display.webp",
+    'thumb_path' => "places/{$place->id}/x_thumb.webp",
+  ]);
+  Storage::disk('public')->put($photo->display_path, $displayBytes);
+  // backdate so the ?v= version visibly changes on rotate
+  PlacePhoto::whereKey($photo->id)->update(['updated_at' => now()->subMinute()]);
+  $oldUrl = $photo->fresh()->display_url;
+
+  $response = $this->actingAs($user)
+    ->postJson("/api/v1/my/place-photos/{$photo->id}/rotate")
+    ->assertOk()
+    ->assertJsonPath('id', $photo->id);
+
+  expect($response->json('display_url'))->not->toBe($oldUrl);
+  [$width, $height] = getimagesizefromstring(Storage::disk('public')->get($photo->fresh()->display_path));
+  expect($height)->toBe(400)->and($width)->toBe(300);
+
+  $fresh = $place->fresh();
+  expect($fresh->status)->toBe('approved');
+  expect($fresh->approved_at)->not->toBeNull();
+});
+
+test('owner rotate reports a missing display file', function () {
+  Storage::fake('public');
+  $user = placesUser();
+  $place = Place::factory()->approved()->create(['user_id' => $user->id]);
+  $photo = PlacePhoto::factory()->create(['place_id' => $place->id]);
+
+  $this->actingAs($user)
+    ->postJson("/api/v1/my/place-photos/{$photo->id}/rotate")
+    ->assertStatus(422)
+    ->assertJsonPath('message', 'ملف الصورة مفقود على الخادم');
+});
+
+test('stranger cannot rotate another user photo', function () {
+  Storage::fake('public');
+  $place = Place::factory()->approved()->create();
+  $photo = PlacePhoto::factory()->create(['place_id' => $place->id]);
+
+  $this->actingAs(placesUser())
+    ->postJson("/api/v1/my/place-photos/{$photo->id}/rotate")
+    ->assertNotFound();
+});
+
+test('owner deletes their place along with photo rows and files', function () {
+  Storage::fake('public');
+  $user = placesUser();
+  $place = Place::factory()->approved()->create(['user_id' => $user->id]);
+  $photo = app(\App\Services\PlaceImageService::class)
+    ->store(UploadedFile::fake()->image('a.jpg', 800, 600), $place->id, 0);
+  Cache::put('places:map', ['stale'], 300);
+
+  $this->actingAs($user)->deleteJson("/api/v1/my/places/{$place->id}")->assertNoContent();
+
+  $this->assertDatabaseMissing('places', ['id' => $place->id]);
+  $this->assertDatabaseMissing('place_photos', ['id' => $photo->id]);
+  Storage::disk('public')->assertMissing([$photo->original_path, $photo->display_path, $photo->thumb_path]);
+  expect(Cache::missing('places:map'))->toBeTrue();
+});
+
+test('stranger cannot delete another user place', function () {
+  $place = Place::factory()->approved()->create();
+
+  $this->actingAs(placesUser())->deleteJson("/api/v1/my/places/{$place->id}")->assertNotFound();
+
+  $this->assertDatabaseHas('places', ['id' => $place->id]);
+});
+
+test('owner resubmits a rejected place without touching its files', function () {
+  Storage::fake('public');
+  $user = placesUser();
+  $place = Place::factory()->rejected()->create(['user_id' => $user->id, 'rejection_reason' => 'صور غير واضحة']);
+  $photo = app(\App\Services\PlaceImageService::class)
+    ->store(UploadedFile::fake()->image('a.jpg', 800, 600), $place->id, 0);
+  $paths = [$photo->original_path, $photo->display_path, $photo->thumb_path];
+
+  $this->actingAs($user)
+    ->postJson("/api/v1/my/places/{$place->id}/resubmit")
+    ->assertOk()
+    ->assertJsonPath('id', $place->id)
+    ->assertJsonPath('status', 'pending');
+
+  $fresh = $place->fresh();
+  expect($fresh->status)->toBe('pending');
+  expect($fresh->rejection_reason)->toBeNull();
+
+  $freshPhoto = $photo->fresh();
+  expect([$freshPhoto->original_path, $freshPhoto->display_path, $freshPhoto->thumb_path])->toBe($paths);
+  Storage::disk('public')->assertExists($paths);
+});
+
+test('resubmit is refused for non-rejected places', function () {
+  $user = placesUser();
+  $pending = Place::factory()->create(['user_id' => $user->id]);
+  $approved = Place::factory()->approved()->create(['user_id' => $user->id]);
+
+  $this->actingAs($user)
+    ->postJson("/api/v1/my/places/{$pending->id}/resubmit")
+    ->assertStatus(400)
+    ->assertJsonPath('message', 'لا يمكن إعادة إرسال هذا المكان');
+
+  $this->actingAs($user)
+    ->postJson("/api/v1/my/places/{$approved->id}/resubmit")
+    ->assertStatus(400);
+
+  expect($pending->fresh()->status)->toBe('pending');
+  expect($approved->fresh()->status)->toBe('approved');
+});
+
+test('stranger cannot resubmit another user place', function () {
+  $place = Place::factory()->rejected()->create(['rejection_reason' => 'سبب']);
+
+  $this->actingAs(placesUser())
+    ->postJson("/api/v1/my/places/{$place->id}/resubmit")
+    ->assertNotFound();
+
+  expect($place->fresh()->status)->toBe('rejected');
 });
 
 test('mishwar page renders with a place deep link param', function () {

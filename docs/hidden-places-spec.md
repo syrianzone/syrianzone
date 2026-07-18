@@ -122,7 +122,8 @@ The `saves_count` counter cache is maintained by controllers with `increment()`/
 - Disk: resolved from `config('filesystems.media_disk')` (env `MEDIA_DISK`, default `public`). Local dev/tests use `public` (`storage/app/public`, URLs `/storage/...`, `php artisan storage:link` must have run). Production sets `MEDIA_DISK=r2`: the `r2` disk (S3 driver against Cloudflare R2, `R2_*` env vars) stores media off-box so files survive container replacement, with URLs served from `R2_URL`. `MEDIA_DISK=r2` rollout requirement: the host behind `R2_URL` MUST send `Access-Control-Allow-Origin` for the app origin (R2 bucket CORS policy or CDN rule allowing GET/HEAD). The lightbox download buttons `fetch()` `display_url`, which is cross-origin under r2; without that header every download fails with a CORS TypeError even though `<img>` rendering works.
 - Paths (all under `places/{place_id}/`): original `places/{id}/{uuid}.{ext}` (ext = original extension, stored untouched for future reprocessing), display `places/{id}/{uuid}_display.webp`, thumb `places/{id}/{uuid}_thumb.webp`.
 - Sizes: thumb = 400x400 cover crop, webp quality 75. Display = scaled down so the longest side is at most 1600px (never upscaled), webp quality 80. Use `ImageManager::withDriver(\Intervention\Image\Drivers\Gd\Driver::class)`, `cover(400, 400)` and `scaleDown(width: 1600, height: 1600)`, `toWebp(quality)`.
-- Validation (in controller, exact rules): `'photos' => 'required|array|min:1|max:5'`, `'photos.*' => 'required|image|mimes:jpg,jpeg,png,webp|max:8192|dimensions:min_width=200,min_height=200,max_width=6000,max_height=6000'`. Laravel's `image`/`mimes` rules sniff content via fileinfo, not extension: this is the required mime check. The max dimensions cap decompression bombs before GD allocates the bitmap.
+- Validation (in controller, exact rules): `'photos' => 'required|array|min:1|max:10'`, `'photos.*' => 'required|image|mimes:jpg,jpeg,png,webp|max:12288|dimensions:min_width=200,min_height=200,max_width=6000,max_height=6000'`. Laravel's `image`/`mimes` rules sniff content via fileinfo, not extension: this is the required mime check. The max dimensions cap decompression bombs before GD allocates the bitmap.
+- Ops prerequisite for the 10-photo, 12 MB caps: a full submit needs `upload_max_filesize >= 12M`, `post_max_size >= 125M`, and nginx `client_max_body_size >= 125M`. The 6000x6000 dimension cap stays (real memory bound).
 - Service class: `app/Services/PlaceImageService.php`
 
 ```php
@@ -167,7 +168,7 @@ Register `/places/map` and `/places/nearby` BEFORE `/places/{id}`, and constrain
 
 `thumb_url` is the first photo's thumb or `null`. Coordinates are `[lng, lat]`.
 
-**`GET /api/v1/places`** -> `PlaceController@index`. Validate: `'category' => 'sometimes|string|in:historical,natural,cultural,religious,abandoned,viewpoint,market,other'`, `'q' => 'sometimes|string|max:100'` (matches `name LIKE %q% OR description LIKE %q%`), `'sort' => 'sometimes|in:newest,popular'` (`newest` default, `popular` = saves_count desc, newest as tiebreaker), plus `page`. Approved only, `->paginate(20)`, standard Laravel paginator JSON (`data`, `current_page`, `last_page`, `total`, ...), each `data` item is `PLACE_LIST_ITEM`.
+**`GET /api/v1/places`** -> `PlaceController@index`. Validate: `'category' => 'sometimes|string|in:historical,natural,cultural,religious,abandoned,viewpoint,market,food,other'`, `'q' => 'sometimes|string|max:100'` (matches `name LIKE %q% OR description LIKE %q%`), `'sort' => 'sometimes|in:newest,popular'` (`newest` default, `popular` = saves_count desc, newest as tiebreaker), plus `page`. Approved only, `->paginate(20)`, standard Laravel paginator JSON (`data`, `current_page`, `last_page`, `total`, ...), each `data` item is `PLACE_LIST_ITEM`.
 
 **`GET /api/v1/places/nearby`** -> `PlaceController@nearby`. Params: `lat` required numeric -90..90, `lng` required numeric -180..180, `radius_km` optional numeric 0.05..25 default 2, `include_pending` optional boolean default false (when true, the requester's OWN pending places are included: used by the duplicate check so users see their own not-yet-approved submissions). `include_pending` is honored ONLY when `$request->user()` is non-null and never exposes other users' pending places; for guests it is silently ignored (approved only). Without this scoping, any self-registered account could enumerate unmoderated submissions that `show` deliberately 404s. Implementation is portable: bounding-box SQL prefilter then haversine in PHP:
 
@@ -181,6 +182,12 @@ Haversine (meters): `6371000 * 2 * asin(sqrt(sin²(Δlat/2) + cos(lat1)cos(lat2)
 
 **`GET /api/v1/places/{id}`** -> `PlaceController@show`. `id` numeric. 200 with `PLACE_DETAIL` if approved; the owner gets their own pending/rejected place, users with role admin/superadmin get any place regardless of status; everyone else gets 404. `saved_by_me` computed from `$request->user()` (false when guest).
 
+**`GET /api/v1/places/photos`** -> `PlaceDiscoveryController@photos`. Photo grid feed: photos of approved places only, newest photo first, `paginate(24)`. Each entry: `{ "id", "thumb_url", "display_url", "place": { "id", "name", "category", "lat", "lng" } }` (lat/lng included so the grid can fly to the place without a second fetch). `Cache-Control: public, max-age=60`. Registered before `/places/{id}`.
+
+**`GET /api/v1/guides`** -> `PlaceDiscoveryController@guides`. Local guides leaderboard. `'sort' => 'sometimes|in:submissions,saves,recent'` (default `submissions`). Single aggregate over approved places joined to non-banned, non-deleted users; top 20; cached per sort with `Cache::remember("places:guides:{$sort}", 300, ...)` (no forget hooks, 5-minute staleness is accepted). Response: `{ "sort", "guides": [ { "rank", "user_id", "name", "avatar_url", "approved_count", "saves_total", "recent_count" } ] }` (rank 1-based). `Cache-Control: public, max-age=60`.
+
+Future guide-ranking criteria (documented only, deliberately NOT built): category specialists (top contributor per category), governorate coverage (distinct governorates contributed to, needs a governorate resolver), streaks (consecutive weeks with an approved place).
+
 ### 5.2 Authenticated writes (routes/web.php, inside the existing `Route::middleware('auth')->group()`)
 
 **`POST /api/v1/places`** -> `PlaceController@store`. Middleware `throttle:20,60` (coarse abuse shield only; the real quota is 5 created places per hour counted in the controller, so failed validation attempts don't lock users out). Multipart form. Guard: `if ($request->user()->is_banned) return response()->json(['message' => 'تم حظر حسابك من المساهمة'], 403);`. Validation:
@@ -188,18 +195,28 @@ Haversine (meters): `6371000 * 2 * asin(sqrt(sin²(Δlat/2) + cos(lat1)cos(lat2)
 ```php
 $request->validate([
   'name' => 'required|string|max:160',
-  'category' => 'required|string|in:historical,natural,cultural,religious,abandoned,viewpoint,market,other',
+  'category' => 'required|string|in:historical,natural,cultural,religious,abandoned,viewpoint,market,food,other',
   'description' => 'required|string|min:20|max:1000',
   'lat' => 'required|numeric|between:32.0,37.5',
   'lng' => 'required|numeric|between:35.5,42.5',
-  'photos' => 'required|array|min:1|max:5',
-  'photos.*' => 'required|image|mimes:jpg,jpeg,png,webp|max:8192|dimensions:min_width=200,min_height=200,max_width=6000,max_height=6000',
+  'photos' => 'required|array|min:1|max:10',
+  'photos.*' => 'required|image|mimes:jpg,jpeg,png,webp|max:12288|dimensions:min_width=200,min_height=200,max_width=6000,max_height=6000',
 ]);
 ```
 
 (lat/lng bounds roughly box Syria; duplicate suggestion is a client-side step, the server does not block duplicates.) Creates place with `status => 'pending'` and photos via `PlaceImageService` inside `DB::transaction`. Response 201: `{ "id": 12, "status": "pending" }`.
 
 **`GET /api/v1/my/places`** -> `PlaceController@mine`. Middleware `throttle:60,1`. Own places, newest first, `->paginate(20)`, `data` items are `MY_PLACE` (includes `status` and `rejection_reason`).
+
+**Owner management** (all `throttle:20,60`, all `whereNumber('id')`). Scoping: `Place::where('user_id', $user->id)->findOrFail($id)` and `PlacePhoto::whereHas('place', ...)->findOrFail($id)`, so strangers and unknown ids both get 404 (no existence leak). Every content mutation EXCEPT rotate and place delete sends the place back to moderation: `status => 'pending'`, `rejection_reason => null`, `approved_at => null`, plus `Cache::forget('places:map')` (the `backToPending` helper in `PlaceController`).
+
+- **`PATCH /api/v1/my/places/{id}`** -> `updateDetails`. Fields `name`/`category`/`description`, each `sometimes|required` with the same rules and Arabic messages as store. Empty validated payload: 422 `{ "message": "لا توجد تعديلات" }`. 200: `{ "id", "name", "category", "description", "status": "pending" }`.
+- **`PATCH /api/v1/my/places/{id}/location`** -> `updateLocation`. Coords only, Syria box, back to pending. 200: `{ "id", "lat", "lng", "status": "pending" }`.
+- **`POST /api/v1/my/places/{id}/photos`** -> `addPhoto`. Field `photo`, same rule set as admin addPhoto (`max:12288`, Arabic messages). Count guard `>= 10` under a row lock: 422 `{ "message": "لا يمكن إضافة أكثر من 10 صور" }`. Pending-reset happens inside the same transaction. 201: `{ "id", "thumb_url", "display_url", "sort", "place_status": "pending" }`.
+- **`DELETE /api/v1/my/place-photos/{id}`** -> `deletePhoto`. Min-1 guard under the same lock: 422 `{ "message": "لا يمكن حذف الصورة الأخيرة" }`. Files deleted after commit. 200: `{ "id", "place_status": "pending" }` (not 204: the client needs the status flip).
+- **`POST /api/v1/my/place-photos/{id}/rotate`** -> `rotatePhoto`. Delegates to `PlaceImageService::rotateClockwise`; missing file: 422 `{ "message": "ملف الصورة مفقود على الخادم" }`. Approval status is KEPT (pixels only); the map cache is still forgotten because it embeds versioned thumb urls. 200: `{ "id", "thumb_url", "display_url" }`.
+- **`DELETE /api/v1/my/places/{id}`** -> `destroy`. Immediate, no approval: photo files then the row. 204.
+- **`POST /api/v1/my/places/{id}/resubmit`** -> `resubmit`. Only from `rejected`, else 400 `{ "message": "لا يمكن إعادة إرسال هذا المكان" }`. Pending-reset only, no file or field changes. 200: `{ "id", "status": "pending" }`.
 
 **`GET /api/v1/my/saves`** -> `PlaceEngagementController@mySaves`. Middleware `throttle:60,1`. Approved places the user saved, ordered by save time (newest save first, via a join on `place_saves.created_at`, not by place age), `->paginate(20)`, `data` items are `PLACE_LIST_ITEM`.
 
@@ -216,6 +233,8 @@ There are no like, comment, or report endpoints. `POST/DELETE /api/v1/places/{id
 **`POST /api/v1/admin/places/{id}/reject`** -> `PlaceAdminController@reject`. Same pending-only guard. Validation `'reason' => 'nullable|string|max:1000'`. Sets `status => 'rejected'`, `rejection_reason`. 200: `{ "id": 12, "status": "rejected" }`.
 
 **`DELETE /api/v1/admin/places/{id}`** -> `PlaceAdminController@destroy`. Takedown of any place: deletes photo files via `PlaceImageService::deleteFiles`, deletes row (cascades), `Cache::forget('places:map')`. 204.
+
+**Moderation edit endpoints**: `PATCH /api/v1/admin/places/{id}` (partial field update), `POST /api/v1/admin/places/{id}/photos` (add, count guard `>= 10` -> 422 `لا يمكن إضافة أكثر من 10 صور`), `POST /api/v1/admin/place-photos/{id}/replace`, `POST /api/v1/admin/place-photos/{id}/rotate`, `DELETE /api/v1/admin/place-photos/{id}` (min-1 guard). Photo rule everywhere: `required|image|mimes:jpg,jpeg,png,webp|max:12288|dimensions:min_width=200,min_height=200,max_width=6000,max_height=6000` with the same Arabic messages as the owner endpoints.
 
 `GET /api/v1/admin/place-reports` and `POST /api/v1/admin/place-reports/{id}/resolve` were removed and now 404.
 
@@ -256,7 +275,7 @@ Stack: MapLibre GL (imperative init, Transit "Pattern B"), style `'/styles/style
 **`resources/js/Pages/Places/_lib/types.ts`** exports:
 
 ```ts
-export type PlaceCategory = 'historical' | 'natural' | 'cultural' | 'religious' | 'abandoned' | 'viewpoint' | 'market' | 'other';
+export type PlaceCategory = 'historical' | 'natural' | 'cultural' | 'religious' | 'abandoned' | 'viewpoint' | 'market' | 'food' | 'other';
 export type PlaceStatus = 'pending' | 'approved' | 'rejected';
 export interface LatLng { lat: number; lng: number; }
 export interface PlaceUser { id: number; name: string; avatar_url: string | null; }
@@ -492,11 +511,11 @@ Title: يوجد أماكن قريبة من النقطة المحددة. Rows: th
 export function PhotoPicker(props: {
   files: File[];
   onChange: (files: File[]) => void;
-  max?: number;                          // default 5
+  max?: number;                          // default 10
 }): JSX.Element;
 ```
 
-Hidden `<input type="file" accept="image/jpeg,image/png,image/webp" multiple>`, preview grid via `URL.createObjectURL` (revoke on cleanup), per-file remove button, client-side rejects files over 8MB or beyond max with an inline destructive Alert.
+Hidden `<input type="file" accept="image/jpeg,image/png,image/webp" multiple>`, preview grid via `URL.createObjectURL` (revoke on cleanup), per-file remove button, client-side rejects files over 12MB or beyond max with an inline destructive Alert.
 
 ### 6.3 Admin page
 
@@ -561,14 +580,18 @@ Tests:
 ## 10. NON-GOALS (do not build these)
 
 - No likes, comments, or reports: removed from the product entirely (endpoints 404, tables dropped).
-- No editing places after submission or approval (resubmit instead), no draft saving.
+- No draft saving. Owners edit via the `/api/v1/my/*` management endpoints above; every content edit re-enters moderation.
+- No follower or social features, no guide profile pages (leaderboard rows are not links), no guide sorts beyond submissions/saves/recent.
+- No photo captions.
+- No email/push notifications on rejection or approval (my/places stays the pull-based feedback channel).
+- No coordinate-uniqueness constraints; the duplicate step in SubmitSheet is advisory only.
+- No transit map changes beyond metadata notes in the shared style files.
 - No EXIF GPS extraction, no external geocoder or address search; coordinate parsing is the only non-db search.
-- No URL/history syncing while browsing (only the initial `?place=` read).
+- No URL/history syncing while browsing beyond the initial `?place=` read and the `?view=grid` toggle (written with `history.replaceState`, read once on load).
 - No zip bundling for تحميل الكل; sequential downloads are fine.
 - No offline/PWA-specific behavior, no service worker changes.
 - No English i18n, no i18n library.
-- No email/push notifications on approval or rejection (my/places is the feedback channel).
-- No user profile pages, follower systems, or leaderboards.
+- No user profile pages or follower systems (the guides leaderboard is the only ranking surface).
 - No admin map view, no bulk moderation, no audit log.
 - No uploadthing or bespoke upload services: media goes to the `MEDIA_DISK` filesystem disk (`public` locally, `r2` on Cloudflare R2 in production via the S3 driver).
 - No spatial DB features, no Scout search indexing (LIKE is enough at this scale).
@@ -585,4 +608,5 @@ Tests:
 | abandoned | مهجور |
 | viewpoint | إطلالة |
 | market | سوق |
-| other | أخرى |
+| food | مأكولات |
+| other | آخر |

@@ -225,6 +225,20 @@ Route::middleware('auth')->group(function () {
         // store() coarse shield instead of a per-minute rate.
         Route::patch('/my/places/{id}/location', [\App\Http\Controllers\PlaceController::class, 'updateLocation'])
             ->whereNumber('id')->middleware('throttle:20,60');
+        // Owner mutations share the same coarse hourly shield: every accepted
+        // content change re-enters the moderation queue.
+        Route::patch('/my/places/{id}', [\App\Http\Controllers\PlaceController::class, 'updateDetails'])
+            ->whereNumber('id')->middleware('throttle:20,60');
+        Route::post('/my/places/{id}/photos', [\App\Http\Controllers\PlaceController::class, 'addPhoto'])
+            ->whereNumber('id')->middleware('throttle:20,60');
+        Route::post('/my/places/{id}/resubmit', [\App\Http\Controllers\PlaceController::class, 'resubmit'])
+            ->whereNumber('id')->middleware('throttle:20,60');
+        Route::delete('/my/places/{id}', [\App\Http\Controllers\PlaceController::class, 'destroy'])
+            ->whereNumber('id')->middleware('throttle:20,60');
+        Route::delete('/my/place-photos/{id}', [\App\Http\Controllers\PlaceController::class, 'deletePhoto'])
+            ->whereNumber('id')->middleware('throttle:20,60');
+        Route::post('/my/place-photos/{id}/rotate', [\App\Http\Controllers\PlaceController::class, 'rotatePhoto'])
+            ->whereNumber('id')->middleware('throttle:20,60');
         Route::get('/my/saves', [\App\Http\Controllers\PlaceEngagementController::class, 'mySaves'])
             ->middleware('throttle:60,1');
 

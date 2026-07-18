@@ -1,6 +1,7 @@
 {
   "version": 8,
   "name": "Positron Raster",
+  "metadata": { "sz:note": "raster kept for transit consumers; mishwar uses *-vector.json" },
   "glyphs": "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
   "sources": {
     "carto": {

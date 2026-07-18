@@ -31,10 +31,11 @@ export function RejectDialog(props: {
         </DialogHeader>
         <Textarea
           value={reason}
-          rows={4}
+          rows={6}
           maxLength={1000}
           autoFocus
-          placeholder="سبب الرفض (اختياري)"
+          className="min-h-36"
+          placeholder="اكتب سبباً واضحاً يساعد المساهم على التحسين، مثال: الصور غير واضحة، أو الوصف لا يذكر ما يميز المكان"
           onChange={(e) => setReason(e.target.value)}
         />
         <DialogFooter className="gap-2">

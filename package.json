@@ -75,6 +75,8 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@ibm/plex-sans-arabic": "^1.1.0",
+    "@mapbox/mapbox-gl-rtl-text": "^0.4.0",
     "@tailwindcss/postcss": "^4.3.0",
     "@types/html2canvas": "^1.0.0",
     "@types/mapbox__mapbox-gl-draw": "^1.4.9",
@@ -86,6 +88,7 @@
     "babel-plugin-react-compiler": "1.0.0",
     "concurrently": "^9.0.1",
     "eslint": "^10.4.0",
+    "fontnik": "^0.7.7",
     "laravel-vite-plugin": "^1.2.0",
     "postcss": "^8.4.47",
     "tailwindcss": "^4.3.0",

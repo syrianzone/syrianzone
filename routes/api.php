@@ -111,12 +111,14 @@ Route::prefix('v1')->group(function () {
     });
 
     // Hidden Places public reads. Throttled here only so the existing transit endpoints stay untouched.
-    // /places/map and /places/nearby must register before /places/{id}.
+    // Static /places/* paths must register before /places/{id}.
     Route::middleware('throttle:60,1')->group(function () {
         Route::get('/places/map', [\App\Http\Controllers\PlaceController::class, 'mapData']);
         Route::get('/places/nearby', [\App\Http\Controllers\PlaceController::class, 'nearby']);
         Route::get('/places/geocode', [\App\Http\Controllers\PlaceController::class, 'geocode']);
+        Route::get('/places/photos', [\App\Http\Controllers\PlaceDiscoveryController::class, 'photos']);
         Route::get('/places', [\App\Http\Controllers\PlaceController::class, 'index']);
+        Route::get('/guides', [\App\Http\Controllers\PlaceDiscoveryController::class, 'guides']);
         Route::get('/places/{id}', [\App\Http\Controllers\PlaceController::class, 'show'])->whereNumber('id');
     });
 });

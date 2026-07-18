@@ -61,22 +61,22 @@ class PlaceAdminController extends Controller
   public function addPhoto(int $id, Request $request, PlaceImageService $images)
   {
     $request->validate([
-      'photo' => 'required|image|mimes:jpg,jpeg,png,webp|max:8192|dimensions:min_width=200,min_height=200,max_width=6000,max_height=6000',
-    ]);
+      'photo' => 'required|image|mimes:jpg,jpeg,png,webp|max:12288|dimensions:min_width=200,min_height=200,max_width=6000,max_height=6000',
+    ], $this->photoMessages());
 
     $place = Place::findOrFail($id);
 
     // guard + store under a lock on the place row so two concurrent adds cannot
-    // both read count 4 and end at 6 (sqlite ignores FOR UPDATE but serializes writes)
+    // both read count 9 and end at 11 (sqlite ignores FOR UPDATE but serializes writes)
     $photo = DB::transaction(function () use ($place, $request, $images) {
       Place::whereKey($place->id)->lockForUpdate()->first();
-      if ($place->photos()->count() >= 5) {
+      if ($place->photos()->count() >= 10) {
         return null;
       }
       return $images->store($request->file('photo'), $place->id, (int) $place->photos()->max('sort') + 1);
     });
     if ($photo === null) {
-      return response()->json(['message' => 'لا يمكن إضافة أكثر من خمس صور'], 422);
+      return response()->json(['message' => 'لا يمكن إضافة أكثر من 10 صور'], 422);
     }
     // a first-position thumb can change the map thumb_url; forget unconditionally
     Cache::forget('places:map');
@@ -177,8 +177,8 @@ class PlaceAdminController extends Controller
   public function replacePhoto(int $id, Request $request, PlaceImageService $images)
   {
     $request->validate([
-      'photo' => 'required|image|mimes:jpg,jpeg,png,webp|max:8192|dimensions:min_width=200,min_height=200,max_width=6000,max_height=6000',
-    ]);
+      'photo' => 'required|image|mimes:jpg,jpeg,png,webp|max:12288|dimensions:min_width=200,min_height=200,max_width=6000,max_height=6000',
+    ], $this->photoMessages());
 
     $photo = PlacePhoto::findOrFail($id);
     $images->replace($photo, $request->file('photo'));
@@ -189,6 +189,18 @@ class PlaceAdminController extends Controller
       'thumb_url' => $photo->thumb_url,
       'display_url' => $photo->display_url,
     ]);
+  }
+
+  private function photoMessages(): array
+  {
+    return [
+      'photo.required' => 'أضف صورة',
+      'photo.image' => 'الملف يجب أن يكون صورة',
+      'photo.mimes' => 'الصورة يجب أن تكون بصيغة JPG أو PNG أو WebP',
+      'photo.max' => 'حجم الصورة يجب ألا يتجاوز 12 ميغابايت',
+      'photo.uploaded' => 'تعذر رفع الصورة، تأكد أن حجمها لا يتجاوز 12 ميغابايت',
+      'photo.dimensions' => 'أبعاد الصورة يجب أن تكون بين 200x200 و 6000x6000 بكسل',
+    ];
   }
 
   private function adminItem(Place $p): array

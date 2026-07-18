@@ -287,19 +287,58 @@ test('admin can add a photo and it lands after the existing ones', function () {
   Storage::disk('public')->assertExists([$photo->original_path, $photo->display_path, $photo->thumb_path]);
 });
 
-test('add photo is refused when the place already has five photos', function () {
+test('add photo is refused when the place already has ten photos', function () {
   Storage::fake('public');
   $place = Place::factory()->approved()->create();
-  PlacePhoto::factory()->count(5)->sequence(fn ($seq) => ['sort' => $seq->index])->create(['place_id' => $place->id]);
+  PlacePhoto::factory()->count(10)->sequence(fn ($seq) => ['sort' => $seq->index])->create(['place_id' => $place->id]);
 
   $this->actingAs(placesAdmin())
     ->postJson("/api/v1/admin/places/{$place->id}/photos", [
       'photo' => \Illuminate\Http\UploadedFile::fake()->image('f.jpg', 800, 600),
     ])
     ->assertStatus(422)
-    ->assertJsonPath('message', 'لا يمكن إضافة أكثر من خمس صور');
+    ->assertJsonPath('message', 'لا يمكن إضافة أكثر من 10 صور');
 
-  expect($place->photos()->count())->toBe(5);
+  expect($place->photos()->count())->toBe(10);
+});
+
+test('admin add and replace accept a 12 MB photo', function () {
+  Storage::fake('public');
+  $place = Place::factory()->approved()->create();
+  $photo = app(\App\Services\PlaceImageService::class)
+    ->store(\Illuminate\Http\UploadedFile::fake()->image('a.jpg', 800, 600), $place->id, 0);
+
+  $this->actingAs(placesAdmin())
+    ->postJson("/api/v1/admin/places/{$place->id}/photos", [
+      'photo' => \Illuminate\Http\UploadedFile::fake()->image('big.jpg', 800, 600)->size(10000),
+    ])
+    ->assertCreated();
+
+  $this->actingAs(placesAdmin())
+    ->postJson("/api/v1/admin/place-photos/{$photo->id}/replace", [
+      'photo' => \Illuminate\Http\UploadedFile::fake()->image('big2.jpg', 800, 600)->size(12000),
+    ])
+    ->assertOk();
+});
+
+test('admin add and replace reject a photo over 12 MB with the arabic message', function () {
+  Storage::fake('public');
+  $place = Place::factory()->approved()->create();
+  $photo = PlacePhoto::factory()->create(['place_id' => $place->id]);
+
+  $this->actingAs(placesAdmin())
+    ->postJson("/api/v1/admin/places/{$place->id}/photos", [
+      'photo' => \Illuminate\Http\UploadedFile::fake()->image('big.jpg', 800, 600)->size(13000),
+    ])
+    ->assertStatus(422)
+    ->assertJsonPath('errors.photo.0', 'حجم الصورة يجب ألا يتجاوز 12 ميغابايت');
+
+  $this->actingAs(placesAdmin())
+    ->postJson("/api/v1/admin/place-photos/{$photo->id}/replace", [
+      'photo' => \Illuminate\Http\UploadedFile::fake()->image('big.jpg', 800, 600)->size(13000),
+    ])
+    ->assertStatus(422)
+    ->assertJsonPath('errors.photo.0', 'حجم الصورة يجب ألا يتجاوز 12 ميغابايت');
 });
 
 test('add photo rejects a non-image upload', function () {

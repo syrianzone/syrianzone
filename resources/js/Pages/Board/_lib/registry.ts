@@ -1,0 +1,44 @@
+import { clockWidget } from '../_widgets/clock';
+import { defaultConfig, newId, nowStamp } from './layout';
+import type { BoardDoc, WidgetDefinition } from './types';
+
+// The one manifest. Adding a widget is a new folder plus one line here, and
+// nothing else in the core changes.
+//
+// Deliberately not import.meta.glob: it kills config generic inference and
+// hides the dependency graph to save a single line.
+export const WIDGETS: WidgetDefinition<any>[] = [
+  clockWidget,
+];
+
+export const WIDGETS_BY_ID: Record<string, WidgetDefinition<any>> = Object.fromEntries(
+  WIDGETS.map((w) => [w.id, w]),
+);
+
+export function findWidget(id: string): WidgetDefinition<any> | undefined {
+  return WIDGETS_BY_ID[id];
+}
+
+// Widgets seeded onto a brand new board, in order. Unregistered ids are skipped
+// so this list can name a widget before it ships.
+const SEED_IDS = ['clock'];
+
+export function defaultDoc(): BoardDoc {
+  const widgets = SEED_IDS
+    .map(findWidget)
+    .filter((def): def is WidgetDefinition<any> => def !== undefined)
+    .map((def) => ({
+      i: newId('w'),
+      d: def.id,
+      w: def.defaultSize.w,
+      h: def.defaultSize.h,
+      c: defaultConfig(def),
+    }));
+
+  return {
+    v: 1,
+    activeId: 'd_main',
+    updatedAt: nowStamp(),
+    dashboards: [{ id: 'd_main', name: 'الرئيسية', widgets }],
+  };
+}

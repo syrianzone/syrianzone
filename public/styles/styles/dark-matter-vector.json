@@ -2,7 +2,8 @@
   "version": 8,
   "name": "Dark Matter",
   "metadata": {
-    "sz:vendored": "carto dark-matter-gl-style fetched 2026-07-18; glyphs self-hosted, fonts rebranded"
+    "sz:vendored": "carto dark-matter-gl-style fetched 2026-07-18; glyphs self-hosted, fonts rebranded",
+    "syrianzone:label-overrides": "country labels: Israel renders as Palestine (editorial choice)"
   },
   "sources": {
     "carto": {
@@ -4805,7 +4806,22 @@
         ]
       ],
       "layout": {
-        "text-field": "{name_en}",
+        "text-field": [
+          "case",
+          [
+            "==",
+            [
+              "get",
+              "name_en"
+            ],
+            "Israel"
+          ],
+          "Palestine",
+          [
+            "get",
+            "name_en"
+          ]
+        ],
         "text-font": [
           "IBM Plex Sans Arabic Bold"
         ],
@@ -4877,7 +4893,22 @@
         ]
       ],
       "layout": {
-        "text-field": "{name_en}",
+        "text-field": [
+          "case",
+          [
+            "==",
+            [
+              "get",
+              "name_en"
+            ],
+            "Israel"
+          ],
+          "Palestine",
+          [
+            "get",
+            "name_en"
+          ]
+        ],
         "text-font": [
           "IBM Plex Sans Arabic Bold"
         ],

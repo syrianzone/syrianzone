@@ -88,13 +88,16 @@
         }
     </script>
 
-    <!-- Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-K4H98TC203"></script>
+    <!-- Google Analytics: id is runtime config, so staging omits it and loads nothing -->
+    @if (config('services.google_analytics.id'))
+    <script>window.GA_ID = "{{ config('services.google_analytics.id') }}";</script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ config('services.google_analytics.id') }}"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
-        gtag('config', 'G-K4H98TC203');
+        gtag('config', "{{ config('services.google_analytics.id') }}");
     </script>
+    @endif
 </body>
 </html>

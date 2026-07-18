@@ -45,4 +45,11 @@ return [
         'key' => env('GOOGLE_PLACES_API_KEY'),
     ],
 
+    // read at runtime, not baked into the bundle, so staging turns analytics off
+    // by leaving GA_MEASUREMENT_ID empty in its .env. production keeps the id it
+    // has always used.
+    'google_analytics' => [
+        'id' => env('GA_MEASUREMENT_ID'),
+    ],
+
 ];

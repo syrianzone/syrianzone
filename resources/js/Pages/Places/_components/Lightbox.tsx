@@ -1,9 +1,22 @@
 import { useEffect, useState } from 'react';
 import { zipSync } from 'fflate';
-import { ChevronLeft, ChevronRight, Download, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import type { PlacePhoto } from '../_lib/types';
+
+// media-query hook instead of sm: utilities: the code-split css chunks each emit
+// their own tailwind layer, so responsive show/hide classes lose cascade order here
+function useIsNarrow(): boolean {
+  const [narrow, setNarrow] = useState(() => window.matchMedia('(max-width: 639px)').matches);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 639px)');
+    const onChange = () => setNarrow(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+  return narrow;
+}
 
 export function Lightbox(props: {
   photos: PlacePhoto[];
@@ -17,6 +30,7 @@ export function Lightbox(props: {
   const [busy, setBusy] = useState<'one' | 'all' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const narrow = useIsNarrow();
 
   useEffect(() => {
     if (open) {
@@ -143,18 +157,28 @@ export function Lightbox(props: {
       <DialogContent
         dir="rtl"
         onKeyDown={onKeyDown}
-        className="flex h-dvh w-screen max-w-none flex-col gap-0 overflow-hidden rounded-none border-0 bg-background/95 p-0 sm:rounded-none"
+        className="flex h-dvh w-screen max-w-none flex-col gap-0 overflow-hidden rounded-none border-0 bg-background/95 p-0 sm:rounded-none [&>button]:hidden"
       >
         <DialogTitle className="sr-only">{name}</DialogTitle>
-        <div className="relative flex items-center gap-2 p-3 pe-14">
-          {downloadButtons('hidden sm:inline-flex')}
-          {error && <span className="hidden text-sm text-destructive sm:inline">{error}</span>}
+        <div className="relative flex items-center gap-2 p-3">
+          {!narrow && downloadButtons('')}
+          {!narrow && error && <span className="text-sm text-destructive">{error}</span>}
           <span
             dir="ltr"
             className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-sm tabular-nums text-muted-foreground"
           >
             {current + 1}/{photos.length}
           </span>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="ms-auto h-10 w-10 rounded-full"
+            onClick={() => onOpenChange(false)}
+            aria-label="إغلاق"
+          >
+            <X className="h-5 w-5" />
+          </Button>
         </div>
         <div className="relative flex min-h-0 flex-1 items-center justify-center">
           <div className="flex h-full w-full items-center justify-center [touch-action:pinch-zoom]">
@@ -195,10 +219,12 @@ export function Lightbox(props: {
             </>
           )}
         </div>
-        <div className="flex flex-col gap-2 border-t p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:hidden">
-          {error && <span className="text-sm text-destructive">{error}</span>}
-          <div className="flex gap-2">{downloadButtons('h-11 flex-1')}</div>
-        </div>
+        {narrow && (
+          <div className="flex flex-col gap-2 border-t p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+            {error && <span className="text-sm text-destructive">{error}</span>}
+            <div className="flex gap-2">{downloadButtons('h-11 flex-1')}</div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

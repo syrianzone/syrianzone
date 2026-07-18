@@ -6,7 +6,7 @@ import { createRoot } from 'react-dom/client';
 import { createInertiaApp, router } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { watchSystemTheme } from '@/lib/theme';
-import { QueryProvider } from '@/Pages/Transit/_providers/QueryProvider';
+import { QueryProvider } from '@/Providers/QueryProvider';
 import { DirectionProvider } from '@radix-ui/react-direction';
 import * as Sentry from '@sentry/react';
 import posthog from 'posthog-js';

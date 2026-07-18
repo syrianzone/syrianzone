@@ -16,6 +16,12 @@ class AuthController extends Controller
         if ($redirect && filter_var($redirect, FILTER_VALIDATE_URL) === false) {
             $request->session()->put('url.intended', '/' . ltrim($redirect, '/'));
         }
+        // Socialite throws on absent credentials, which turns a misconfigured
+        // env into a bare 500 on the login button. Staging runs without a google
+        // client on purpose, so answer the same way the callback already does.
+        if (! config('services.google.client_id')) {
+            return redirect('/?error=auth_unavailable');
+        }
         return Socialite::driver('google')->redirect();
     }
 

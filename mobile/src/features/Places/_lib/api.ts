@@ -1,18 +1,22 @@
 import { z } from 'zod';
 
 import { apiClient } from '@/lib/api/client';
+import { apiOrigin } from '@/lib/env';
 
 import type {
   AdminPlace,
+  GeoSuggestion,
+  GridPhoto,
+  Guide,
+  GuidesSort,
+  LatLng,
   MyPlace,
   NearbyPlace,
   Paginated,
   PlaceCategory,
-  PlaceComment,
   PlaceDetail,
   PlaceFeatureCollection,
   PlaceListItem,
-  PlaceReport,
 } from './types';
 import type { PlacePhotoUpload } from './submission';
 
@@ -26,29 +30,43 @@ export const placeCategorySchema = z.enum([
   'abandoned',
   'viewpoint',
   'market',
+  'food',
   'other',
 ]);
 
 const placeStatusSchema = z.enum(['pending', 'approved', 'rejected']);
-const nullableUrlSchema = z.string().nullable();
+const mediaUrlSchema = z
+  .string()
+  .min(1)
+  .refine((value) => {
+    if (value.startsWith('//')) {
+      return false;
+    }
+    try {
+      const url = new URL(value, `${apiOrigin}/`);
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  })
+  .transform((value) => new URL(value, `${apiOrigin}/`).toString());
+const nullableUrlSchema = mediaUrlSchema.nullable();
 const placeUserSchema = z.object({
   avatar_url: nullableUrlSchema,
   id: z.number().int().positive(),
   name: z.string().min(1),
 });
 const placePhotoSchema = z.object({
-  display_url: z.string().min(1),
+  display_url: mediaUrlSchema,
   id: z.number().int().positive(),
   sort: z.number().int().nonnegative(),
-  thumb_url: z.string().min(1),
+  thumb_url: mediaUrlSchema,
 });
 export const placeListItemSchema = z.object({
   category: placeCategorySchema,
-  comments_count: z.number().int().nonnegative(),
   description: z.string(),
   id: z.number().int().positive(),
   lat: z.number().min(-90).max(90),
-  likes_count: z.number().int().nonnegative(),
   lng: z.number().min(-180).max(180),
   name: z.string().min(1),
   saves_count: z.number().int().nonnegative(),
@@ -59,8 +77,7 @@ const nearbyPlaceSchema = placeListItemSchema.extend({
 });
 const placeDetailSchema = placeListItemSchema.extend({
   created_at: z.string().min(1),
-  liked_by_me: z.boolean(),
-  photos: z.array(placePhotoSchema).max(5),
+  photos: z.array(placePhotoSchema).max(10),
   saved_by_me: z.boolean(),
   status: placeStatusSchema,
   user: placeUserSchema,
@@ -72,29 +89,6 @@ const myPlaceSchema = placeListItemSchema.extend({
 });
 const adminPlaceSchema = placeDetailSchema.extend({
   rejection_reason: z.string().nullable(),
-  reports_count: z.number().int().nonnegative(),
-});
-const placeCommentSchema = z.object({
-  body: z.string(),
-  created_at: z.string().min(1),
-  id: z.number().int().positive(),
-  user: placeUserSchema,
-});
-const placeReportSchema = z.object({
-  created_at: z.string().min(1),
-  details: z.string().nullable(),
-  id: z.number().int().positive(),
-  place: z.object({
-    id: z.number().int().positive(),
-    name: z.string().min(1),
-    status: placeStatusSchema,
-  }),
-  reason: z.string().min(1),
-  status: z.enum(['open', 'resolved', 'dismissed']),
-  user: z.object({
-    id: z.number().int().positive(),
-    name: z.string().min(1),
-  }),
 });
 const placeFeatureCollectionSchema = z.object({
   features: z.array(
@@ -127,27 +121,87 @@ function paginatedSchema<T extends z.ZodType>(item: T) {
 const placeListSchema = paginatedSchema(placeListItemSchema);
 const myPlacesSchema = paginatedSchema(myPlaceSchema);
 const adminPlacesSchema = paginatedSchema(adminPlaceSchema);
-const commentsSchema = paginatedSchema(placeCommentSchema);
-const reportsSchema = paginatedSchema(placeReportSchema);
 const nearbySchema = z.object({ places: z.array(nearbyPlaceSchema).max(20) });
 const submissionSchema = z.object({
   id: z.number().int().positive(),
   status: z.literal('pending'),
 });
-const engagementSchema = z.object({
-  liked: z.boolean(),
-  likes_count: z.number().int().nonnegative(),
-});
 const saveSchema = z.object({
   saved: z.boolean(),
   saves_count: z.number().int().nonnegative(),
 });
-const messageSchema = z.object({ message: z.string().min(1) });
 const moderationSchema = z.object({
   id: z.number().int().positive(),
   status: z.string().min(1),
 });
 const emptySchema = z.undefined();
+const addedPhotoSchema = placePhotoSchema;
+const changedPhotoSchema = placePhotoSchema.omit({ sort: true });
+const geoSuggestionSchema = z.object({
+  address: z.string(),
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180),
+  name: z.string().min(1),
+});
+const geocodeSchema = z.object({ suggestions: z.array(geoSuggestionSchema).max(5) });
+export const guideSchema = z.object({
+  approved_count: z.number().int().nonnegative(),
+  avatar_url: nullableUrlSchema,
+  name: z.string().min(1),
+  rank: z.number().int().positive().max(20),
+  recent_count: z.number().int().nonnegative(),
+  saves_total: z.number().int().nonnegative(),
+  user_id: z.number().int().positive(),
+});
+const guidesSchema = z.object({
+  guides: z.array(guideSchema).max(20),
+  sort: z.enum(['submissions', 'saves', 'recent']),
+});
+const gridPhotoSchema = z.object({
+  display_url: mediaUrlSchema,
+  id: z.number().int().positive(),
+  place: z.object({
+    category: placeCategorySchema,
+    id: z.number().int().positive(),
+    lat: z.number().min(-90).max(90),
+    lng: z.number().min(-180).max(180),
+    name: z.string().min(1),
+  }),
+  thumb_url: mediaUrlSchema,
+});
+const gridPhotosSchema = paginatedSchema(gridPhotoSchema);
+const ownerLocationSchema = z.object({
+  id: z.number().int().positive(),
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180),
+  status: z.literal('pending'),
+});
+const ownerDetailsSchema = z.object({
+  category: placeCategorySchema,
+  description: z.string(),
+  id: z.number().int().positive(),
+  name: z.string().min(1),
+  status: z.literal('pending'),
+});
+const ownerPhotoSchema = placePhotoSchema.extend({ place_status: z.literal('pending') });
+const ownerDeletedPhotoSchema = z.object({
+  id: z.number().int().positive(),
+  place_status: z.literal('pending'),
+});
+const ownerResubmitSchema = z.object({
+  id: z.number().int().positive(),
+  status: z.literal('pending'),
+});
+
+function photoForm(photo: PlacePhotoUpload): FormData {
+  const form = new FormData();
+  form.append('photo', {
+    name: photo.fileName,
+    type: photo.mimeType,
+    uri: photo.uri,
+  } as unknown as Blob);
+  return form;
+}
 
 export const placesApi = {
   mapData: (): Promise<PlaceFeatureCollection> =>
@@ -166,6 +220,27 @@ export const placesApi = {
       auth: false,
       query,
       schema: placeListSchema,
+    }),
+
+  geocode: (q: string): Promise<{ suggestions: GeoSuggestion[] }> =>
+    apiClient.request(`${basePath}/places/geocode`, {
+      auth: false,
+      query: { q },
+      schema: geocodeSchema,
+    }),
+
+  guides: (sort: GuidesSort): Promise<{ sort: GuidesSort; guides: Guide[] }> =>
+    apiClient.request(`${basePath}/guides`, {
+      auth: false,
+      query: { sort },
+      schema: guidesSchema,
+    }),
+
+  gridPhotos: (page = 1): Promise<Paginated<GridPhoto>> =>
+    apiClient.request(`${basePath}/places/photos`, {
+      auth: false,
+      query: { page },
+      schema: gridPhotosSchema,
     }),
 
   nearby: (query: {
@@ -218,22 +293,60 @@ export const placesApi = {
       schema: myPlacesSchema,
     }),
 
+  updateMyPlaceLocation: (id: number, point: LatLng) =>
+    apiClient.request(`${basePath}/my/places/${id}/location`, {
+      body: point,
+      method: 'PATCH',
+      schema: ownerLocationSchema,
+    }),
+
+  updateMyPlace: (
+    id: number,
+    data: Partial<Pick<MyPlace, 'category' | 'description' | 'name'>>,
+  ) =>
+    apiClient.request(`${basePath}/my/places/${id}`, {
+      body: data,
+      method: 'PATCH',
+      schema: ownerDetailsSchema,
+    }),
+
+  addMyPhoto: (id: number, photo: PlacePhotoUpload) =>
+    apiClient.request(`${basePath}/my/places/${id}/photos`, {
+      body: photoForm(photo),
+      method: 'POST',
+      schema: ownerPhotoSchema,
+    }),
+
+  deleteMyPhoto: (id: number) =>
+    apiClient.request(`${basePath}/my/place-photos/${id}`, {
+      method: 'DELETE',
+      schema: ownerDeletedPhotoSchema,
+    }),
+
+  rotateMyPhoto: (id: number) =>
+    apiClient.request(`${basePath}/my/place-photos/${id}/rotate`, {
+      method: 'POST',
+      schema: changedPhotoSchema,
+    }),
+
+  resubmitMyPlace: (id: number) =>
+    apiClient.request(`${basePath}/my/places/${id}/resubmit`, {
+      method: 'POST',
+      schema: ownerResubmitSchema,
+    }),
+
+  deleteMyPlace: (id: number): Promise<void> =>
+    apiClient.request(`${basePath}/my/places/${id}`, {
+      method: 'DELETE',
+      schema: emptySchema,
+    }),
+
   mySaves: (page = 1): Promise<Paginated<PlaceListItem>> =>
     apiClient.request(`${basePath}/my/saves`, {
       query: { page },
       schema: placeListSchema,
     }),
 
-  like: (id: number) =>
-    apiClient.request(`${basePath}/places/${id}/like`, {
-      method: 'POST',
-      schema: engagementSchema,
-    }),
-  unlike: (id: number) =>
-    apiClient.request(`${basePath}/places/${id}/like`, {
-      method: 'DELETE',
-      schema: engagementSchema,
-    }),
   save: (id: number) =>
     apiClient.request(`${basePath}/places/${id}/save`, {
       method: 'POST',
@@ -243,33 +356,6 @@ export const placesApi = {
     apiClient.request(`${basePath}/places/${id}/save`, {
       method: 'DELETE',
       schema: saveSchema,
-    }),
-
-  listComments: (
-    placeId: number,
-    page = 1,
-  ): Promise<Paginated<PlaceComment>> =>
-    apiClient.request(`${basePath}/places/${placeId}/comments`, {
-      auth: false,
-      query: { page },
-      schema: commentsSchema,
-    }),
-  addComment: (placeId: number, body: string): Promise<PlaceComment> =>
-    apiClient.request(`${basePath}/places/${placeId}/comments`, {
-      body: { body },
-      method: 'POST',
-      schema: placeCommentSchema,
-    }),
-  deleteComment: (id: number): Promise<void> =>
-    apiClient.request(`${basePath}/place-comments/${id}`, {
-      method: 'DELETE',
-      schema: emptySchema,
-    }),
-  report: (id: number, reason: string, details?: string) =>
-    apiClient.request(`${basePath}/places/${id}/report`, {
-      body: { details, reason },
-      method: 'POST',
-      schema: messageSchema,
     }),
 
   adminListPlaces: (
@@ -296,26 +382,45 @@ export const placesApi = {
       method: 'DELETE',
       schema: emptySchema,
     }),
-  adminListReports: (
-    status: 'open' | 'resolved' | 'dismissed' | 'all',
-    page = 1,
-  ): Promise<Paginated<PlaceReport>> =>
-    apiClient.request(`${basePath}/admin/place-reports`, {
-      query: { page, status },
-      schema: reportsSchema,
+  adminUpdatePlace: (
+    id: number,
+    data: Partial<
+      Pick<AdminPlace, 'category' | 'description' | 'lat' | 'lng' | 'name'>
+    >,
+  ): Promise<AdminPlace> =>
+    apiClient.request(`${basePath}/admin/places/${id}`, {
+      body: data,
+      method: 'PATCH',
+      schema: adminPlaceSchema,
     }),
-  adminResolveReport: (id: number, action: 'resolve' | 'dismiss') =>
-    apiClient.request(`${basePath}/admin/place-reports/${id}/resolve`, {
-      body: { action },
+  adminAddPhoto: (id: number, photo: PlacePhotoUpload) =>
+    apiClient.request(`${basePath}/admin/places/${id}/photos`, {
+      body: photoForm(photo),
       method: 'POST',
-      schema: moderationSchema,
+      schema: addedPhotoSchema,
+    }),
+  adminDeletePhoto: (id: number): Promise<void> =>
+    apiClient.request(`${basePath}/admin/place-photos/${id}`, {
+      method: 'DELETE',
+      schema: emptySchema,
+    }),
+  adminRotatePhoto: (id: number) =>
+    apiClient.request(`${basePath}/admin/place-photos/${id}/rotate`, {
+      method: 'POST',
+      schema: changedPhotoSchema,
+    }),
+  adminReplacePhoto: (id: number, photo: PlacePhotoUpload) =>
+    apiClient.request(`${basePath}/admin/place-photos/${id}/replace`, {
+      body: photoForm(photo),
+      method: 'POST',
+      schema: changedPhotoSchema,
     }),
 };
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Places/_lib/api.ts (132 lines)
+  source:     resources/js/Pages/Places/_lib/api.ts (203 lines)
   confidence: high
   todos:      0
-  notes:      All public, personal, engagement, comment, report, and moderation routes use validated native contracts.
+  notes:      Public, discovery, owner, save, edit, photo, and moderation routes use validated native contracts.
 */

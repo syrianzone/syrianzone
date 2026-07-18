@@ -10,6 +10,8 @@ Route::prefix('mobile')
     ->group(function () {
         Route::get('/account', [AccountController::class, 'show']);
         Route::patch('/account', [AccountController::class, 'update']);
+        Route::post('/account/avatar', [AccountController::class, 'updateAvatar'])
+            ->middleware('throttle:10,1');
         Route::delete('/account', [AccountController::class, 'destroy']);
         Route::delete('/account/transit-drafts/{id}', [AccountController::class, 'destroyDraft'])
             ->whereNumber('id');

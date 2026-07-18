@@ -5,6 +5,7 @@ import { LocaleProvider } from '@/contexts/LocaleContext';
 import { AppThemeProvider } from '@/contexts/ThemeContext';
 import type { AuthService } from '@/lib/auth/service';
 import type { AuthUser } from '@/lib/auth/types';
+import { createQueryClient } from '@/lib/query/client';
 
 import { AuthScreen } from './AuthScreen';
 
@@ -38,7 +39,7 @@ async function renderScreen(service: AuthService) {
   return render(
     <LocaleProvider>
       <AppThemeProvider>
-        <AuthProvider service={service}>
+        <AuthProvider queryClient={createQueryClient()} service={service}>
           <AuthScreen />
         </AuthProvider>
       </AppThemeProvider>

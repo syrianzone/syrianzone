@@ -6,8 +6,10 @@ use App\Models\Poll;
 use App\Models\Route;
 use App\Models\RouteDraft;
 use App\Models\User;
+use App\Services\AvatarService;
 use App\Services\UserDeletionService;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
@@ -67,6 +69,37 @@ class DashboardController extends Controller
         $user->update($data);
 
         return back()->with('success', 'تم تحديث الحساب بنجاح');
+    }
+
+    /**
+     * Upload a new profile avatar, replacing any previously hosted one.
+     */
+    public function updateAvatar(Request $request, AvatarService $avatars)
+    {
+        $request->validate([
+            'avatar' => [
+                'bail',
+                'required',
+                'image',
+                'mimes:jpg,jpeg,png,webp',
+                'max:4096',
+                function (string $attribute, mixed $value, callable $fail) use ($avatars) {
+                    if (! $value instanceof UploadedFile || ! $avatars->dimensionsAreSafe($value)) {
+                        $fail('The image dimensions are not supported.');
+                    }
+                },
+            ],
+        ]);
+
+        try {
+            $url = $avatars->update($request->user(), $request->file('avatar'));
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json(['message' => 'تعذر معالجة الصورة'], 422);
+        }
+
+        return response()->json(['avatar_url' => $url]);
     }
 
     /**

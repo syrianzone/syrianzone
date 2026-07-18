@@ -1,7 +1,7 @@
 import type { PlaceCategory } from './types';
 
-export const MAX_PLACE_PHOTOS = 5;
-export const MAX_PLACE_PHOTO_BYTES = 8 * 1024 * 1024;
+export const MAX_PLACE_PHOTOS = 10;
+export const MAX_PLACE_PHOTO_BYTES = 12 * 1024 * 1024;
 
 const allowedMimeTypes = new Set([
   'image/jpeg',
@@ -19,8 +19,10 @@ const mimeByExtension: Readonly<Record<string, string>> = {
 export interface PickedPhotoCandidate {
   fileName?: string | null;
   fileSize?: number;
+  height?: number;
   mimeType?: string | null;
   uri: string;
+  width?: number;
 }
 
 export interface PlacePhotoUpload {
@@ -103,7 +105,23 @@ export function mergePickedPhotos(
       continue;
     }
     if (candidate.fileSize > MAX_PLACE_PHOTO_BYTES) {
-      errors.push(`الصورة ${fileName} تتجاوز 8 ميغابايت.`);
+      errors.push(`الصورة ${fileName} تتجاوز 12 ميغابايت.`);
+      continue;
+    }
+    if (
+      candidate.width !== undefined &&
+      candidate.height !== undefined &&
+      (candidate.width < 200 || candidate.height < 200)
+    ) {
+      errors.push(`الصورة ${fileName} أصغر من 200x200 بكسل.`);
+      continue;
+    }
+    if (
+      candidate.width !== undefined &&
+      candidate.height !== undefined &&
+      (candidate.width > 6000 || candidate.height > 6000)
+    ) {
+      errors.push(`الصورة ${fileName} تتجاوز 6000x6000 بكسل.`);
       continue;
     }
 
@@ -138,7 +156,7 @@ export function validatePlaceSubmission(
     input.photos.length < 1 ||
     input.photos.length > MAX_PLACE_PHOTOS
   ) {
-    return 'أضف من صورة واحدة إلى 5 صور.';
+    return 'أضف من صورة واحدة إلى 10 صور.';
   }
 
   return null;

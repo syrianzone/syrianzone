@@ -243,10 +243,7 @@ export default function Home({ liveClock = true, now = defaultNow }: HomeProps) 
       await openSafeExternalUrl(link.target);
       return;
     }
-    router.push({
-      pathname: '/feature/[slug]',
-      params: { slug: link.target },
-    });
+    openFeature(link.target);
   };
 
   const addCustomLink = async () => {
@@ -558,12 +555,7 @@ export default function Home({ liveClock = true, now = defaultNow }: HomeProps) 
                 <Pressable
                   accessibilityRole="button"
                   key={feature.slug}
-                  onPress={() =>
-                    router.push({
-                      pathname: '/feature/[slug]',
-                      params: { slug: feature.slug },
-                    })
-                  }
+                  onPress={() => openFeature(feature.slug)}
                   style={({ pressed }) => [styles.linkPressable, { opacity: pressed ? 0.65 : 1 }]}
                 >
                   <AppCard style={styles.linkCard}>
@@ -584,6 +576,17 @@ export default function Home({ liveClock = true, now = defaultNow }: HomeProps) 
       </AppButton>
     </Screen>
   );
+}
+
+function openFeature(slug: string): void {
+  if (slug === 'central') {
+    router.push('/central');
+    return;
+  }
+  router.push({
+    pathname: '/feature/[slug]',
+    params: { slug },
+  });
 }
 
 function ProviderChoice({
@@ -718,7 +721,7 @@ const styles = StyleSheet.create({
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Home.tsx (1326 lines)
+  source:     resources/js/Pages/Home.tsx (1327 lines)
   confidence: high
   todos:      0
   notes:      Native Home keeps configurable widgets, F3alia, search, source quick links, personal links, and location settings.

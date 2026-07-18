@@ -4,6 +4,7 @@ import {
   deleteDashboardAccount,
   fetchDashboardAccount,
   updateDashboardAccount,
+  updateDashboardAvatar,
   withdrawDashboardDraft,
 } from './api';
 
@@ -61,6 +62,30 @@ describe('dashboard account API', () => {
       auth: true,
       body: { email: 'admin@example.test', name: 'Admin' },
       method: 'PATCH',
+      schema: expect.anything(),
+    });
+  });
+
+  test('uploads profile avatars as authenticated multipart data', async () => {
+    const request = jest
+      .spyOn(apiClient, 'request')
+      .mockImplementation(
+        async <T>(
+          _path: string,
+          options: ApiRequestOptions<T>,
+        ): Promise<T> => options.schema.parse({ data: { user } }),
+      );
+
+    await updateDashboardAvatar({
+      fileName: 'avatar.png',
+      mimeType: 'image/png',
+      uri: 'file:///avatar.png',
+    });
+
+    expect(request).toHaveBeenCalledWith('/api/mobile/account/avatar', {
+      auth: true,
+      body: expect.any(FormData),
+      method: 'POST',
       schema: expect.anything(),
     });
   });

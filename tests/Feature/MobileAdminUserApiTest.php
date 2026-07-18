@@ -1,6 +1,8 @@
 <?php
 
+use App\Models\Poll;
 use App\Models\User;
+use Illuminate\Support\Facades\Storage;
 
 function mobileUserAdminBearer(User $user): string
 {
@@ -26,6 +28,7 @@ test('mobile user administration requires mobile bearer provenance and a superad
 });
 
 test('mobile superadmins list create and delete bounded user records', function () {
+    Storage::fake('public');
     $superadmin = User::factory()->create(['role' => 'superadmin']);
     $token = mobileUserAdminBearer($superadmin);
 
@@ -43,17 +46,23 @@ test('mobile superadmins list create and delete bounded user records', function 
         ->assertJsonPath('data.role', 'transit_admin')
         ->assertJsonPath('data.is_banned', false)
         ->json('data.id');
+    $createdUser = User::findOrFail($created);
+    $avatarPath = "avatars/{$created}/mobile-admin-delete.webp";
+    Storage::disk('public')->put($avatarPath, 'private avatar');
+    $createdUser->forceFill(['avatar_url' => Storage::disk('public')->url($avatarPath)])->save();
+    $poll = Poll::factory()->create(['user_id' => $created]);
 
     $this->withToken($token)->deleteJson("/api/mobile/admin/users/{$created}")
         ->assertOk()
         ->assertExactJson(['data' => ['deleted' => true]]);
 
-    expect(User::withTrashed()->findOrFail($created)->deleted_at)->not->toBeNull();
+    expect(User::withTrashed()->findOrFail($created)->deleted_at)->not->toBeNull()
+        ->and($poll->fresh()->user_id)->toBe($superadmin->id);
+    Storage::disk('public')->assertMissing($avatarPath);
 });
 
 test('mobile user administration protects superadmins and validates role assignments', function () {
     $superadmin = User::factory()->create(['role' => 'superadmin']);
-    $otherSuperadmin = User::factory()->create(['role' => 'superadmin']);
     $token = mobileUserAdminBearer($superadmin);
 
     $this->withToken($token)->postJson('/api/mobile/admin/users', [
@@ -62,9 +71,23 @@ test('mobile user administration protects superadmins and validates role assignm
         'role' => 'superadmin',
     ])->assertUnprocessable()->assertJsonValidationErrors('role');
 
-    $this->withToken($token)->deleteJson("/api/mobile/admin/users/{$otherSuperadmin->id}")
+    $this->withToken($token)->deleteJson("/api/mobile/admin/users/{$superadmin->id}")
         ->assertForbidden()
         ->assertJsonPath('code', 'protected_superadmin');
+});
+
+test('mobile superadmin deletion delegates ownership when another active superadmin remains', function () {
+    $actor = User::factory()->create(['role' => 'superadmin']);
+    $target = User::factory()->create(['role' => 'superadmin']);
+    $poll = Poll::factory()->create(['user_id' => $target->id]);
+
+    $this->withToken(mobileUserAdminBearer($actor))
+        ->deleteJson("/api/mobile/admin/users/{$target->id}")
+        ->assertOk()
+        ->assertExactJson(['data' => ['deleted' => true]]);
+
+    expect($target->fresh()->deleted_at)->not->toBeNull()
+        ->and($poll->fresh()->user_id)->toBe($actor->id);
 });
 
 test('mobile user creation normalizes email before checking uniqueness', function () {

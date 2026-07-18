@@ -171,7 +171,7 @@ export default function Edit({ onBack, onSaved, pollId }: EditPollProps) {
   const query = useQuery({
     enabled: Boolean(pollId && permitted),
     queryFn: ({ signal }) => fetchAdminPollDetail(pollId!, signal),
-    queryKey: ['admin-poll-detail', pollId],
+    queryKey: ['admin-poll-detail', user?.id ?? 'guest', pollId],
   });
 
   if (authLoading) {

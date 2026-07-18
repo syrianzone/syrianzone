@@ -14,7 +14,17 @@ class User extends Authenticatable implements FilamentUser
 {
     use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
-    protected $fillable = ['name', 'email', 'password', 'google_id', 'avatar_url', 'role', 'is_banned'];
+    protected $fillable = [
+        'avatar_disk',
+        'avatar_path',
+        'avatar_url',
+        'email',
+        'google_id',
+        'is_banned',
+        'name',
+        'password',
+        'role',
+    ];
 
     protected $hidden = ['password', 'remember_token'];
 

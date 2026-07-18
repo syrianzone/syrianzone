@@ -27,6 +27,7 @@ import {
   canReviewTransit,
   type DraftStatusFilter,
   filterTransitDrafts,
+  transitAdminDraftsQueryKey,
   transitDraftStats,
   transitDraftStopCount,
 } from './model';
@@ -92,7 +93,7 @@ export default function TransitAdminScreen() {
   const draftsQuery = useQuery({
     enabled: permitted,
     queryFn: getTransitDrafts,
-    queryKey: ['transit-admin-drafts'],
+    queryKey: transitAdminDraftsQueryKey(user?.id ?? 0),
   });
   const drafts = useMemo(() => draftsQuery.data ?? [], [draftsQuery.data]);
   const selected = drafts.find((draft) => draft.id === selectedId) ?? null;
@@ -123,7 +124,9 @@ export default function TransitAdminScreen() {
     mutationFn: approveTransitDraft,
     onSuccess: async () => {
       setSelectedId(null);
-      await queryClient.invalidateQueries({ queryKey: ['transit-admin-drafts'] });
+      await queryClient.invalidateQueries({
+        queryKey: transitAdminDraftsQueryKey(user?.id ?? 0),
+      });
     },
   });
   const reject = useMutation({
@@ -132,7 +135,9 @@ export default function TransitAdminScreen() {
     onSuccess: async () => {
       setRejectReason('');
       setSelectedId(null);
-      await queryClient.invalidateQueries({ queryKey: ['transit-admin-drafts'] });
+      await queryClient.invalidateQueries({
+        queryKey: transitAdminDraftsQueryKey(user?.id ?? 0),
+      });
     },
   });
   const toggleSubmitterBan = useMutation({
@@ -422,7 +427,7 @@ const styles = StyleSheet.create({
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Transit/admin/Index.tsx (821 lines)
+  source:     resources/js/Pages/Transit/admin/Index.tsx (931 lines)
   confidence: high
   todos:      0
   notes:      Bearer role gates, filters, preview, moderation, decisions, counts, and refresh preserve native review behavior.

@@ -105,7 +105,7 @@ name: Syrian Zone complete feature smoke
 - openLink: "syrianzone://feature/places"
 - runFlow: accept-deep-link.yaml
 - extendedWaitUntil:
-    visible: "أماكن خفية"
+    visible: "مشوار"
     timeout: 30000
 - openLink: "syrianzone://feature/justice"
 - runFlow: accept-deep-link.yaml

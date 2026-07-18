@@ -1,6 +1,7 @@
 import type { LucideIcon } from 'lucide-react-native';
 import {
   BarChart3,
+  Building2,
   Bus,
   CalendarDays,
   CheckCircle2,
@@ -34,6 +35,14 @@ export interface FeatureDefinition {
 }
 
 export const featureRegistry: readonly FeatureDefinition[] = [
+  {
+    slug: 'central',
+    labelAr: 'الدليل المركزي',
+    labelEn: 'Central directory',
+    descriptionAr: 'دليل المحافظات والوزارات والهيئات الرسمية',
+    descriptionEn: 'Governorates, ministries, and public bodies',
+    icon: Building2,
+  },
   {
     slug: 'syofficial',
     labelAr: 'الحسابات الرسمية',
@@ -148,10 +157,10 @@ export const featureRegistry: readonly FeatureDefinition[] = [
   },
   {
     slug: 'places',
-    labelAr: 'أماكن مخفية',
-    labelEn: 'Hidden places',
-    descriptionAr: 'اكتشف أماكن سورية وساهم بصورك',
-    descriptionEn: 'Discover Syrian places and contribute photos',
+    labelAr: 'مشوار',
+    labelEn: 'Mishwar',
+    descriptionAr: 'خريطة تفاعلية لأماكن تستحق المشوار في سوريا',
+    descriptionEn: 'An interactive map of Syrian places worth the trip',
     icon: MapPinned,
   },
   {

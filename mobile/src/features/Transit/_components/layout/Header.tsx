@@ -22,7 +22,7 @@ export function TransitHeader() {
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Transit/_components/layout/Header.tsx (72 lines)
+  source:     resources/js/Pages/Transit/_components/layout/Header.tsx (12 lines)
   confidence: high
   todos:      0
   notes:      A native control preserves the transit-specific heritage theme toggle.

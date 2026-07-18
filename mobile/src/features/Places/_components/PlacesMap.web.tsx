@@ -7,8 +7,11 @@ import type { LatLng, PlaceFeatureCollection } from '../_lib/types';
 export function PlacesMap({
   data,
 }: {
+  addMode: boolean;
   data: PlaceFeatureCollection;
-  onAdd: (point: LatLng) => void;
+  focus: { key: number; lat: number; lng: number; zoom?: number } | null;
+  highlight: LatLng | null;
+  onMapPress: (point: LatLng) => void;
   onSelect: (id: number) => void;
   selectedId: number | null;
 }) {

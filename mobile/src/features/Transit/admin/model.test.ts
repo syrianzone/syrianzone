@@ -3,6 +3,7 @@ import {
   buildDraftMapData,
   canReviewTransit,
   filterTransitDrafts,
+  transitAdminDraftsQueryKey,
   transitDraftStats,
   transitDraftStopCount,
 } from './model';
@@ -44,6 +45,13 @@ function draft(overrides: Partial<TransitDraft> = {}): TransitDraft {
 }
 
 describe('transit admin model', () => {
+  test('scopes privileged draft cache entries to the signed-in account', () => {
+    expect(transitAdminDraftsQueryKey(42)).toEqual([
+      'transit-admin-drafts',
+      42,
+    ]);
+  });
+
   test('enforces every source transit reviewer role', () => {
     expect(canReviewTransit('admin')).toBe(true);
     expect(canReviewTransit('transit_admin')).toBe(true);

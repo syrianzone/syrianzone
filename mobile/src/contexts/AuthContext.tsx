@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import type { QueryClient } from '@tanstack/react-query';
 
 import {
   authErrorCode,
@@ -32,6 +33,7 @@ export interface AuthContextType {
 }
 
 interface AuthProviderProps {
+  queryClient: QueryClient;
   service?: AuthService;
 }
 
@@ -39,12 +41,25 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({
   children,
+  queryClient,
   service = nativeAuthService,
 }: PropsWithChildren<AuthProviderProps>) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<AuthErrorCode | null>(null);
+  const identityRef = useRef<AuthUser['id'] | null>(null);
   const operationRef = useRef(0);
+  const replaceUser = useCallback(
+    (nextUser: AuthUser | null) => {
+      const nextIdentity = nextUser?.id ?? null;
+      if (identityRef.current !== nextIdentity) {
+        queryClient.clear();
+      }
+      identityRef.current = nextIdentity;
+      setUser(nextUser);
+    },
+    [queryClient],
+  );
 
   useEffect(() => {
     let active = true;
@@ -53,12 +68,12 @@ export function AuthProvider({
       .bootstrap()
       .then((nextUser) => {
         if (active && operationRef.current === operation) {
-          setUser(nextUser);
+          replaceUser(nextUser);
         }
       })
       .catch((cause: unknown) => {
         if (active && operationRef.current === operation) {
-          setUser(null);
+          replaceUser(null);
           setError(authErrorCode(cause, 'bootstrap_failed'));
         }
       })
@@ -70,7 +85,7 @@ export function AuthProvider({
     return () => {
       active = false;
     };
-  }, [service]);
+  }, [replaceUser, service]);
 
   const clearError = useCallback(() => setError(null), []);
 
@@ -81,11 +96,11 @@ export function AuthProvider({
     try {
       const nextUser = await service.refreshUser();
       if (operationRef.current === operation) {
-        setUser(nextUser);
+        replaceUser(nextUser);
       }
     } catch (cause) {
       if (operationRef.current === operation) {
-        setUser(null);
+        replaceUser(null);
         setError(authErrorCode(cause, 'refresh_failed'));
       }
     } finally {
@@ -93,7 +108,7 @@ export function AuthProvider({
         setLoading(false);
       }
     }
-  }, [service]);
+  }, [replaceUser, service]);
 
   const login = useCallback(async () => {
     const operation = ++operationRef.current;
@@ -105,7 +120,7 @@ export function AuthProvider({
         operationRef.current === operation &&
         result.status === 'authenticated'
       ) {
-        setUser(result.user);
+        replaceUser(result.user);
       }
     } catch (cause) {
       if (operationRef.current === operation) {
@@ -116,7 +131,7 @@ export function AuthProvider({
         setLoading(false);
       }
     }
-  }, [service]);
+  }, [replaceUser, service]);
 
   const logout = useCallback(async () => {
     const operation = ++operationRef.current;
@@ -134,12 +149,12 @@ export function AuthProvider({
     } finally {
       if (operationRef.current === operation) {
         if (sessionCleared) {
-          setUser(null);
+          replaceUser(null);
         }
         setLoading(false);
       }
     }
-  }, [service]);
+  }, [replaceUser, service]);
 
   const value = useMemo<AuthContextType>(
     () => ({

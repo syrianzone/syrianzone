@@ -181,7 +181,7 @@ test('Google callback rejects expired or replayed browser state before calling G
     ]))->assertStatus(410)->assertJson(['error' => 'invalid_login']);
 });
 
-test('Google callback does not create an unapproved account', function () {
+test('Google callback creates an unknown account as a regular contributor', function () {
     $record = seedMobileAuthRecord(['exchange_code_hash' => null]);
     $provider = Mockery::mock(GoogleProvider::class);
     Socialite::shouldReceive('buildProvider')->once()->andReturn($provider);
@@ -196,10 +196,91 @@ test('Google callback does not create an unapproved account', function () {
     $response->assertRedirect();
     parse_str((string) parse_url($response->headers->get('Location'), PHP_URL_QUERY), $query);
 
+    $user = User::where('email', 'visitor@example.test')->firstOrFail();
+
+    expect($query['code'] ?? null)->toBeString()
+        ->and($query['state'] ?? null)->toBe($record['appState'])
+        ->and($user->google_id)->toBe('google-user-id')
+        ->and($user->role)->toBe('user');
+});
+
+test('Google callback rejects a banned account before issuing a code', function () {
+    $user = User::factory()->create([
+        'email' => 'banned@example.test',
+        'google_id' => 'google-user-id',
+        'is_banned' => true,
+    ]);
+    $record = seedMobileAuthRecord(['exchange_code_hash' => null]);
+    $provider = Mockery::mock(GoogleProvider::class);
+    Socialite::shouldReceive('buildProvider')->once()->andReturn($provider);
+    $provider->shouldReceive('stateless')->once()->andReturnSelf();
+    $provider->shouldReceive('user')->once()->andReturn(mobileSocialiteUser($user->email));
+
+    $response = $this->get('/api/mobile/auth/google/callback?'.http_build_query([
+        'state' => $record['oauthState'],
+        'code' => 'google-authorization-code',
+    ]));
+
+    parse_str((string) parse_url($response->headers->get('Location'), PHP_URL_QUERY), $query);
+
     expect($query)->toMatchArray([
         'error' => 'access_denied',
         'state' => $record['appState'],
-    ])->and(User::where('email', 'visitor@example.test')->exists())->toBeFalse();
+    ])->and(DB::table('mobile_auth_codes')->where('id', $record['id'])->value('exchange_code_hash'))
+        ->toBeNull();
+});
+
+test('Google callback does not restore a legacy soft-deleted account', function () {
+    $user = User::factory()->create([
+        'email' => 'deleted@example.test',
+        'google_id' => 'google-user-id',
+        'role' => 'admin',
+    ]);
+    $user->delete();
+    $record = seedMobileAuthRecord(['exchange_code_hash' => null]);
+    $provider = Mockery::mock(GoogleProvider::class);
+    Socialite::shouldReceive('buildProvider')->once()->andReturn($provider);
+    $provider->shouldReceive('stateless')->once()->andReturnSelf();
+    $provider->shouldReceive('user')->once()->andReturn(mobileSocialiteUser('deleted@example.test'));
+
+    $response = $this->get('/api/mobile/auth/google/callback?'.http_build_query([
+        'state' => $record['oauthState'],
+        'code' => 'google-authorization-code',
+    ]));
+
+    parse_str((string) parse_url($response->headers->get('Location'), PHP_URL_QUERY), $query);
+
+    expect($query['error'] ?? null)->toBe('access_denied')
+        ->and(User::withTrashed()->findOrFail($user->id)->trashed())->toBeTrue()
+        ->and(User::where('email', 'deleted@example.test')->exists())->toBeFalse();
+});
+
+test('Google callback preserves a custom uploaded avatar', function () {
+    $user = User::factory()->create([
+        'email' => 'avatar@example.test',
+        'google_id' => 'google-user-id',
+    ]);
+    $customAvatar = "https://cdn.example.test/avatars/{$user->id}/custom.webp";
+    $user->forceFill([
+        'avatar_disk' => 'public',
+        'avatar_path' => "avatars/{$user->id}/custom.webp",
+        'avatar_url' => $customAvatar,
+    ])->save();
+    $record = seedMobileAuthRecord(['exchange_code_hash' => null]);
+    $provider = Mockery::mock(GoogleProvider::class);
+    Socialite::shouldReceive('buildProvider')->once()->andReturn($provider);
+    $provider->shouldReceive('stateless')->once()->andReturnSelf();
+    $provider->shouldReceive('user')->once()->andReturn(mobileSocialiteUser($user->email));
+
+    $response = $this->get('/api/mobile/auth/google/callback?'.http_build_query([
+        'state' => $record['oauthState'],
+        'code' => 'google-authorization-code',
+    ]));
+
+    parse_str((string) parse_url($response->headers->get('Location'), PHP_URL_QUERY), $query);
+
+    expect($query['code'] ?? null)->toBeString()
+        ->and($user->fresh()->avatar_url)->toBe($customAvatar);
 });
 
 test('Google callback rejects a different subject for an already linked email', function () {

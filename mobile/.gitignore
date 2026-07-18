@@ -21,6 +21,10 @@ expo-env.d.ts
 # Metro
 .metro-health-check*
 
+# Test output
+coverage/
+.stryker-tmp/
+
 # debug
 npm-debug.*
 yarn-debug.*

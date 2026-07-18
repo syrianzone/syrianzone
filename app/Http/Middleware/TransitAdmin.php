@@ -11,7 +11,7 @@ class TransitAdmin
     {
         $user = $request->user();
 
-        if (!$user || ($user->role !== 'admin' && $user->role !== 'transit_admin' && $user->role !== 'superadmin')) {
+        if (! $user || $user->is_banned || ($user->role !== 'admin' && $user->role !== 'transit_admin' && $user->role !== 'superadmin')) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Unauthorized'], 403);
             }

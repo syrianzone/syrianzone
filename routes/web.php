@@ -1,11 +1,26 @@
 <?php
 
+use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\Api\PopulationAtlasController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CandidateController;
+use App\Http\Controllers\CandidateGroupController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ExternalDataController;
+use App\Http\Controllers\GuessWhoController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\PhonebookController;
+use App\Http\Controllers\PlaceAdminController;
+use App\Http\Controllers\PlaceController;
+use App\Http\Controllers\PollController;
+use App\Http\Controllers\SignalingController;
+use App\Http\Controllers\SyOfficialController;
+use App\Http\Controllers\TransitAdminController;
+use App\Http\Middleware\EnsureUserIsActive;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\HomeController;
-use App\Http\Controllers\GuessWhoController;
-use App\Http\Controllers\SignalingController;
 
 Route::get('/', [HomeController::class, 'index']);
 
@@ -13,18 +28,12 @@ Route::get('/healthcheck', function () {
     return response('OK', 200)->header('Content-Type', 'text/plain');
 });
 
-use App\Http\Controllers\SyOfficialController;
-use App\Http\Controllers\PollController;
-
 Route::get('/syofficial', [SyOfficialController::class, 'index']);
 Route::get('/polls', [PollController::class, 'renderIndex']);
 Route::get('/polls/{slug}', [PollController::class, 'renderShow']);
 Route::get('/polls/{slug}/leaderboard', [PollController::class, 'renderLeaderboard']);
 
 Route::get('/tierlist', [PollController::class, 'renderTierList']);
-use App\Http\Controllers\Api\PopulationAtlasController;
-use App\Http\Controllers\ExternalDataController;
-
 Route::get('/tierlist/leaderboard', [PollController::class, 'renderTierListLeaderboard']);
 Route::get('/compass', function () {
     return Inertia::render('Compass/Index');
@@ -35,7 +44,7 @@ Route::get('/priorities', function () {
 Route::get('/roznama', function () {
     return Inertia::render('Roznama/Index');
 });
-Route::get('/phonebook', [\App\Http\Controllers\PhonebookController::class, 'index']);
+Route::get('/phonebook', [PhonebookController::class, 'index']);
 Route::get('/shawarma', function () {
     return Inertia::render('Shawarma/Index');
 });
@@ -78,26 +87,26 @@ Route::get('/transit/city/{id}/map', function ($id) {
 
 Route::get('/transit/city/{id}/route/{routeId}', function ($id, $routeId) {
     $citiesPath = resource_path('js/Pages/Transit/_data/cities.json');
-    if (!file_exists($citiesPath)) {
+    if (! file_exists($citiesPath)) {
         abort(404, 'Cities configuration not found.');
     }
-    
+
     $cities = json_decode(file_get_contents($citiesPath), true);
     $city = collect($cities)->firstWhere('id', $id);
-    
-    if (!$city) {
+
+    if (! $city) {
         return Inertia::render('Transit/city/[id]/route/[routeId]/Index', [
             'id' => $id,
             'city' => null,
             'route' => null,
-            'stops' => []
+            'stops' => [],
         ]);
     }
-    
+
     // Read route and stops from the database, the same source the live map uses, so
     // admin-approved community routes appear here too (the old static GeoJSON files in
     // public/data are never updated on approval, so they drifted out of sync).
-    $route = \Illuminate\Support\Facades\DB::table('routes')
+    $route = DB::table('routes')
         ->where('id', $routeId)
         ->where('city_id', $id)
         ->where('status', 'published')
@@ -115,15 +124,16 @@ Route::get('/transit/city/{id}/route/{routeId}', function ($id, $routeId) {
     $stopsData = [];
 
     if ($routeData) {
-        $stops = \Illuminate\Support\Facades\DB::table('route_stop')
+        $stops = DB::table('route_stop')
             ->join('stops', 'route_stop.stop_id', '=', 'stops.id')
             ->where('route_stop.route_id', $routeId)
             ->orderBy('route_stop.order')
-            ->select('stops.id', 'stops.name_ar', \Illuminate\Support\Facades\DB::raw('ST_AsGeoJSON(stops.geometry) as geojson'))
+            ->select('stops.id', 'stops.name_ar', DB::raw('ST_AsGeoJSON(stops.geometry) as geojson'))
             ->get();
 
         $stopsData = $stops->map(function ($s) {
             $coordinates = json_decode($s->geojson, true)['coordinates'] ?? [0, 0];
+
             return [
                 'properties' => [
                     'id' => $s->id,
@@ -138,7 +148,7 @@ Route::get('/transit/city/{id}/route/{routeId}', function ($id, $routeId) {
         'id' => $id,
         'city' => $city,
         'route' => $routeData,
-        'stops' => $stopsData
+        'stops' => $stopsData,
     ]);
 })->where(['id' => '[a-z0-9\-]+', 'routeId' => '[a-z0-9\-]+']);
 
@@ -146,24 +156,24 @@ Route::get('/transit/studio', function () {
     return Inertia::render('Transit/studio/Index');
 });
 
+Route::get('/mishwar', [PlaceController::class, 'renderIndex']);
+// legacy slug: share links from the first release said /places
+Route::get('/places', fn () => redirect('/mishwar'.(request()->getQueryString() ? '?'.request()->getQueryString() : ''), 301));
 
-
-Route::get('/user', [AuthController::class, 'user']);
+Route::get('/user', [AuthController::class, 'user'])->middleware(EnsureUserIsActive::class);
 Route::get('/auth/google', [AuthController::class, 'redirectToProvider'])->name('login');
 Route::get('/auth/google/callback', [AuthController::class, 'handleProviderCallback']);
 Route::post('/logout', [AuthController::class, 'logout']);
 
-use App\Http\Controllers\AdminUserController;
-use App\Http\Controllers\DashboardController;
-
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', EnsureUserIsActive::class])->group(function () {
     // 1. Unified User Dashboard Views and Actions
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::post('/api/account/update', [DashboardController::class, 'updateAccount']);
+    Route::post('/api/account/avatar', [DashboardController::class, 'updateAvatar'])->middleware('throttle:10,1');
     Route::post('/api/account/delete', [DashboardController::class, 'deleteAccount']);
 
     Route::prefix('api')->group(function () {
-        Route::get('/user', function (\Illuminate\Http\Request $request) {
+        Route::get('/user', function (Request $request) {
             return $request->user();
         });
 
@@ -185,14 +195,18 @@ Route::middleware('auth')->group(function () {
             Route::put('/polls/{id}', [PollController::class, 'update']);
             Route::delete('/polls/{id}', [PollController::class, 'destroy']);
 
-            Route::apiResource('candidate-groups', \App\Http\Controllers\CandidateGroupController::class);
-            Route::post('/candidate-groups/reorder', [\App\Http\Controllers\CandidateGroupController::class, 'reorder']);
-            Route::post('/candidate-groups/{id}/default', [\App\Http\Controllers\CandidateGroupController::class, 'setDefault']);
+            Route::apiResource('candidate-groups', CandidateGroupController::class);
+            Route::post('/candidate-groups/reorder', [CandidateGroupController::class, 'reorder']);
+            Route::post('/candidate-groups/{id}/default', [CandidateGroupController::class, 'setDefault']);
 
-            Route::apiResource('candidates', \App\Http\Controllers\CandidateController::class)->except(['index', 'show']);
-            Route::patch('/candidates/{id}/archive', [\App\Http\Controllers\CandidateController::class, 'archive']);
-            Route::patch('/candidates/{id}/restore', [\App\Http\Controllers\CandidateController::class, 'restore']);
+            Route::apiResource('candidates', CandidateController::class)->except(['index', 'show']);
+            Route::patch('/candidates/{id}/archive', [CandidateController::class, 'archive']);
+            Route::patch('/candidates/{id}/restore', [CandidateController::class, 'restore']);
         });
+
+        // Hidden Places moderation
+        Route::get('/admin/places', [PlaceAdminController::class, 'renderIndex']);
+
     });
 
     // 3. Transit Admin Panel (accessible to core admins, transit admins, and superadmins)
@@ -204,10 +218,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/api/admin/users/{id}/toggle-ban', [DashboardController::class, 'toggleBan']);
 
         Route::prefix('api/v1')->group(function () {
-            Route::get('/admin/route-drafts', [\App\Http\Controllers\TransitAdminController::class, 'index']);
-            Route::post('/admin/route-drafts/{id}/approve', [\App\Http\Controllers\TransitAdminController::class, 'approve']);
-            Route::post('/admin/route-drafts/{id}/reject', [\App\Http\Controllers\TransitAdminController::class, 'reject']);
+            Route::get('/admin/route-drafts', [TransitAdminController::class, 'index']);
+            Route::post('/admin/route-drafts/{id}/approve', [TransitAdminController::class, 'approve']);
+            Route::post('/admin/route-drafts/{id}/reject', [TransitAdminController::class, 'reject']);
         });
     });
 });
-

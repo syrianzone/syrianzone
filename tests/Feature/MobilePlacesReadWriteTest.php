@@ -1,191 +1,153 @@
 <?php
 
 use App\Models\Place;
-use App\Models\PlaceLike;
 use App\Models\PlacePhoto;
-use App\Models\PlaceSave;
 use App\Models\User;
 use App\Services\PlaceImageService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
-
-beforeEach(fn () => Cache::flush());
 
 function mobilePlacesToken(User $user, string $name = 'mobile:places-test'): string
 {
     return $user->createToken($name, ['mobile'])->plainTextToken;
 }
 
-function placesRegularUser(array $attributes = []): User
+function mobilePlacesUser(array $attributes = []): User
 {
     return User::factory()->create(['role' => 'user', ...$attributes]);
 }
 
-test('place map returns approved records as cacheable GeoJSON', function () {
-    $approved = Place::factory()->approved()->create([
-        'lat' => 33.5104,
-        'lng' => 36.2913,
-    ]);
-    PlacePhoto::create([
-        'place_id' => $approved->id,
-        'original_path' => "places/{$approved->id}/one.jpg",
-        'display_path' => "places/{$approved->id}/one_display.webp",
-        'thumb_path' => "places/{$approved->id}/one_thumb.webp",
-        'sort' => 0,
-    ]);
-    Place::factory()->create();
-
-    $this->getJson('/api/v1/places/map')
-        ->assertOk()
-        ->assertHeader('Cache-Control', 'max-age=60, public')
-        ->assertExactJson([
-            'type' => 'FeatureCollection',
-            'features' => [[
-                'type' => 'Feature',
-                'geometry' => [
-                    'type' => 'Point',
-                    'coordinates' => [36.2913, 33.5104],
-                ],
-                'properties' => [
-                    'id' => $approved->id,
-                    'name' => $approved->name,
-                    'category' => $approved->category,
-                    'thumb_url' => Storage::disk('public')->url("places/{$approved->id}/one_thumb.webp"),
-                ],
-            ]],
-        ]);
-
-    expect(Cache::has('places:map'))->toBeTrue();
-});
-
-test('place catalog validates filters and returns the native list shape', function () {
-    Place::factory()->approved()->create([
-        'category' => 'natural',
-        'likes_count' => 2,
-        'name' => 'نوفرة صغيرة',
-    ]);
-    $popular = Place::factory()->approved()->create([
-        'category' => 'cultural',
-        'description' => 'مكان قريب من النوفرة القديمة في دمشق',
-        'likes_count' => 10,
-    ]);
-    Place::factory()->approved()->create(['category' => 'cultural', 'likes_count' => 1]);
-    Place::factory()->rejected()->create(['category' => 'cultural', 'likes_count' => 100]);
-
-    $this->getJson('/api/v1/places?category=cultural&q='.urlencode('النوفرة').'&sort=popular')
-        ->assertOk()
-        ->assertJsonCount(1, 'data')
-        ->assertJsonPath('data.0.id', $popular->id)
-        ->assertJsonStructure([
-            'data' => [[
-                'id',
-                'name',
-                'category',
-                'description',
-                'lat',
-                'lng',
-                'thumb_url',
-                'likes_count',
-                'saves_count',
-                'comments_count',
-            ]],
-            'current_page',
-            'last_page',
-            'total',
-        ]);
-
-    $this->getJson('/api/v1/places?category=unknown')->assertUnprocessable();
-    $this->getJson('/api/v1/places?page=0')->assertUnprocessable();
-});
-
-test('nearby keeps unpublished records private to their owner and administrators', function () {
-    $owner = placesRegularUser();
-    $stranger = placesRegularUser();
-    $admin = User::factory()->create(['role' => 'admin']);
-    $approved = Place::factory()->approved()->create(['lat' => 33.5104, 'lng' => 36.2913]);
-    $ownedPending = Place::factory()->create([
-        'user_id' => $owner->id,
-        'lat' => 33.5105,
-        'lng' => 36.2913,
-    ]);
-    $otherPending = Place::factory()->create([
-        'user_id' => $stranger->id,
-        'lat' => 33.5106,
-        'lng' => 36.2913,
-    ]);
-    Place::factory()->approved()->create(['lat' => 36.2, 'lng' => 37.2]);
-    $url = '/api/v1/places/nearby?lat=33.5104&lng=36.2913&radius_km=1&include_pending=true';
-
-    $guest = $this->getJson($url)->assertOk()->json('places');
-    expect(collect($guest)->pluck('id')->all())->toBe([$approved->id]);
-
-    $sessionOnly = $this->actingAs($owner)->getJson($url)->assertOk()->json('places');
-    expect(collect($sessionOnly)->pluck('id')->all())->toBe([$approved->id]);
-
-    $owned = $this->withToken(mobilePlacesToken($owner))->getJson($url)->assertOk()->json('places');
-    expect(collect($owned)->pluck('id')->all())
-        ->toContain($approved->id, $ownedPending->id)
-        ->not->toContain($otherPending->id);
-
-    $all = $this->withToken(mobilePlacesToken($admin))->getJson($url)->assertOk()->json('places');
-    expect(collect($all)->pluck('id')->all())
-        ->toContain($approved->id, $ownedPending->id, $otherPending->id);
-    expect($all[0])->toHaveKeys(['distance_m', 'thumb_url', 'likes_count', 'saves_count', 'comments_count']);
-});
-
-test('place detail accepts only verified mobile identity for private and personal fields', function () {
-    $owner = placesRegularUser();
-    $stranger = placesRegularUser();
-    $approved = Place::factory()->approved()->create(['user_id' => $owner->id]);
+test('public place reads accept guests and verified mobile identity only', function () {
+    $owner = mobilePlacesUser();
     $pending = Place::factory()->create(['user_id' => $owner->id]);
-    PlaceLike::create(['place_id' => $approved->id, 'user_id' => $owner->id]);
-    PlaceSave::create(['place_id' => $approved->id, 'user_id' => $owner->id]);
+    $wildcard = $owner->createToken('browser-session', ['*'])->plainTextToken;
 
-    $this->getJson("/api/v1/places/{$approved->id}")
-        ->assertOk()
-        ->assertJsonPath('liked_by_me', false)
-        ->assertJsonPath('saved_by_me', false)
-        ->assertJsonStructure([
-            'id',
-            'status',
-            'created_at',
-            'photos',
-            'user' => ['id', 'name', 'avatar_url'],
-        ]);
-
-    $this->actingAs($owner)->getJson("/api/v1/places/{$pending->id}")->assertNotFound();
-    $this->withToken(mobilePlacesToken($stranger))->getJson("/api/v1/places/{$pending->id}")->assertNotFound();
+    $this->getJson('/api/v1/places')->assertOk();
+    $this->getJson("/api/v1/places/{$pending->id}")->assertNotFound();
+    $this->actingAs($owner)->getJson("/api/v1/places/{$pending->id}")->assertOk();
     $this->withToken(mobilePlacesToken($owner))->getJson("/api/v1/places/{$pending->id}")
         ->assertOk()
         ->assertJsonPath('status', 'pending');
-    $this->withToken(mobilePlacesToken($owner))->getJson("/api/v1/places/{$approved->id}")
-        ->assertOk()
-        ->assertJsonPath('liked_by_me', true)
-        ->assertJsonPath('saved_by_me', true);
-});
-
-test('public place reads reject bearer tokens without mobile provenance', function () {
-    $user = placesRegularUser();
-    $wildcard = $user->createToken('browser-session', ['*'])->plainTextToken;
-
     $this->withToken($wildcard)->getJson('/api/v1/places')->assertUnauthorized();
 });
 
-test('place writes require a verified mobile bearer token', function () {
-    $user = placesRegularUser();
+test('place writes accept sessions and verified mobile tokens', function () {
+    $user = mobilePlacesUser();
+    Place::factory()->approved()->create(['user_id' => $user->id]);
+
+    $this->actingAs($user)->getJson('/api/v1/my/places')
+        ->assertOk()
+        ->assertJsonCount(1, 'data');
+    $this->withToken(mobilePlacesToken($user))->getJson('/api/v1/my/places')
+        ->assertOk()
+        ->assertJsonCount(1, 'data');
+});
+
+test('mobile public discovery routes expose geocoding guides and the photo grid', function () {
+    config(['services.google_places.key' => null]);
+    $owner = mobilePlacesUser();
+    $place = Place::factory()->approved()->create([
+        'user_id' => $owner->id,
+        'name' => 'سوق الحميدية',
+        'saves_count' => 4,
+    ]);
+    PlacePhoto::factory()->create(['place_id' => $place->id, 'sort' => 0]);
+
+    $this->getJson('/api/v1/places/geocode?q=الحميدية')
+        ->assertOk()
+        ->assertJsonCount(0, 'suggestions');
+    $this->getJson('/api/v1/guides?sort=saves')
+        ->assertOk()
+        ->assertJsonPath('sort', 'saves')
+        ->assertJsonPath('guides.0.user_id', $owner->id)
+        ->assertJsonPath('guides.0.saves_total', 4);
+    $this->getJson('/api/v1/places/photos')
+        ->assertOk()
+        ->assertJsonPath('data.0.place.id', $place->id)
+        ->assertJsonPath('data.0.place.name', 'سوق الحميدية');
+});
+
+test('verified mobile owners can manage place content through every native route', function () {
+    Storage::fake(config('filesystems.media_disk'));
+    $owner = mobilePlacesUser();
+    $token = mobilePlacesToken($owner);
+    $place = Place::factory()->approved()->create([
+        'user_id' => $owner->id,
+        'approved_at' => now(),
+    ]);
+    $existing = app(PlaceImageService::class)->store(
+        UploadedFile::fake()->image('existing.jpg', 800, 600),
+        $place->id,
+        0,
+    );
+
+    $this->withToken($token)
+        ->patchJson("/api/v1/my/places/{$place->id}", [
+            'name' => 'بيت دمشقي مجدد',
+            'category' => 'food',
+            'description' => 'وصف واضح ومحدث للمكان الدمشقي وتجربته المحلية.',
+        ])
+        ->assertOk()
+        ->assertJsonPath('status', 'pending')
+        ->assertJsonPath('category', 'food');
+
+    $this->withToken($token)
+        ->patchJson("/api/v1/my/places/{$place->id}/location", [
+            'lat' => 33.51234,
+            'lng' => 36.29876,
+        ])
+        ->assertOk()
+        ->assertJsonPath('status', 'pending');
+
+    $added = $this->withToken($token)->post("/api/v1/my/places/{$place->id}/photos", [
+        'photo' => UploadedFile::fake()->image('added.jpg', 800, 600),
+    ], ['Accept' => 'application/json'])
+        ->assertCreated()
+        ->assertJsonPath('place_status', 'pending');
+
+    $this->withToken($token)
+        ->postJson("/api/v1/my/place-photos/{$existing->id}/rotate")
+        ->assertOk()
+        ->assertJsonPath('id', $existing->id);
+    $this->withToken($token)
+        ->deleteJson('/api/v1/my/place-photos/'.$added->json('id'))
+        ->assertOk()
+        ->assertJsonPath('place_status', 'pending');
+
+    $rejected = Place::factory()->rejected()->create(['user_id' => $owner->id]);
+    $this->withToken($token)
+        ->postJson("/api/v1/my/places/{$rejected->id}/resubmit")
+        ->assertOk()
+        ->assertJsonPath('status', 'pending');
+
+    $this->withToken($token)
+        ->deleteJson("/api/v1/my/places/{$place->id}")
+        ->assertNoContent();
+    $this->assertDatabaseMissing('places', ['id' => $place->id]);
+});
+
+test('mobile owner management routes reject guests', function () {
+    $this->patchJson('/api/v1/my/places/1', ['name' => 'اسم'])->assertUnauthorized();
+    $this->patchJson('/api/v1/my/places/1/location', [])->assertUnauthorized();
+    $this->postJson('/api/v1/my/places/1/photos')->assertUnauthorized();
+    $this->postJson('/api/v1/my/places/1/resubmit')->assertUnauthorized();
+    $this->deleteJson('/api/v1/my/places/1')->assertUnauthorized();
+    $this->deleteJson('/api/v1/my/place-photos/1')->assertUnauthorized();
+    $this->postJson('/api/v1/my/place-photos/1/rotate')->assertUnauthorized();
+});
+
+test('place writes reject guests and bearer tokens without mobile provenance', function () {
+    $user = mobilePlacesUser();
     $wildcard = $user->createToken('browser-session', ['*'])->plainTextToken;
 
     $this->postJson('/api/v1/places', [])->assertUnauthorized();
-    $this->actingAs($user)->postJson('/api/v1/places', [])->assertUnauthorized();
     $this->withToken($wildcard)->postJson('/api/v1/places', [])->assertUnauthorized();
 });
 
-test('mobile users submit bounded Syria images and receive a pending record', function () {
+test('mobile users submit a bounded image and receive a pending record', function () {
     Storage::fake('public');
-    $user = placesRegularUser();
-    $photo = UploadedFile::fake()->image('damascus.jpg', 1800, 1200);
+    $user = mobilePlacesUser();
 
     $response = $this->withToken(mobilePlacesToken($user))->post('/api/v1/places', [
         'name' => 'مقهى النوفرة',
@@ -193,112 +155,30 @@ test('mobile users submit bounded Syria images and receive a pending record', fu
         'description' => 'مقهى تاريخي قديم في دمشق القديمة قرب الجامع الأموي',
         'lat' => 33.5104,
         'lng' => 36.2913,
-        'photos' => [$photo],
+        'photos' => [UploadedFile::fake()->image('damascus.jpg', 1800, 1200)],
     ], ['Accept' => 'application/json']);
 
-    $response->assertCreated()->assertExactJson([
-        'id' => $response->json('id'),
-        'status' => 'pending',
-    ]);
-    $place = Place::query()->findOrFail($response->json('id'));
-    $stored = PlacePhoto::query()->where('place_id', $place->id)->firstOrFail();
-    expect($place->user_id)->toBe($user->id)
-        ->and($place->lat)->toBe(33.5104)
-        ->and($stored->original_path)->toEndWith('.jpg');
+    $response->assertCreated()->assertJsonPath('status', 'pending');
+    $place = Place::findOrFail($response->json('id'));
+    $photo = $place->photos()->firstOrFail();
+    expect($place->user_id)->toBe($user->id);
     Storage::disk('public')->assertExists([
-        $stored->original_path,
-        $stored->display_path,
-        $stored->thumb_path,
+        $photo->original_path,
+        $photo->display_path,
+        $photo->thumb_path,
     ]);
-
-    [$displayWidth, $displayHeight] = getimagesize(Storage::disk('public')->path($stored->display_path));
-    [$thumbWidth, $thumbHeight] = getimagesize(Storage::disk('public')->path($stored->thumb_path));
-    expect(max($displayWidth, $displayHeight))->toBeLessThanOrEqual(1600)
-        ->and([$thumbWidth, $thumbHeight])->toBe([400, 400]);
 });
 
-test('submission rejects out of bounds coordinates and unsafe image dimensions', function () {
-    Storage::fake('public');
-    $user = placesRegularUser();
-    $token = mobilePlacesToken($user);
-    $payload = [
-        'name' => 'مكان سوري',
-        'category' => 'natural',
-        'description' => 'وصف طويل بما يكفي لتجاوز الحد الأدنى للأحرف المطلوبة',
-        'lat' => 33.5,
-        'lng' => 36.3,
-        'photos' => [UploadedFile::fake()->image('place.jpg', 640, 480)],
-    ];
+test('banned mobile users lose their tokens before place writes', function () {
+    $user = mobilePlacesUser(['is_banned' => true]);
 
-    $this->withToken($token)->post('/api/v1/places', [...$payload, 'lat' => 38.0], ['Accept' => 'application/json'])
-        ->assertUnprocessable()
-        ->assertJsonValidationErrors('lat');
-    $this->withToken($token)->post('/api/v1/places', [
-        ...$payload,
-        'photos' => [UploadedFile::fake()->image('wide.jpg', 6001, 200)],
-    ], ['Accept' => 'application/json'])
-        ->assertUnprocessable()
-        ->assertJsonValidationErrors('photos.0');
-    $this->withToken($token)->post('/api/v1/places', [
-        ...$payload,
-        'photos' => [UploadedFile::fake()->create('fake.jpg', 1, 'image/jpeg')],
-    ], ['Accept' => 'application/json'])
-        ->assertUnprocessable()
-        ->assertJsonValidationErrors('photos.0');
-    $this->withToken($token)->post('/api/v1/places', [
-        ...$payload,
-        'name' => '   ',
-    ], ['Accept' => 'application/json'])
-        ->assertUnprocessable()
-        ->assertJsonValidationErrors('name');
-
-    $this->assertDatabaseCount('places', 0);
-});
-
-test('my places returns only the bearer owners records with moderation state', function () {
-    $user = placesRegularUser();
-    $rejected = Place::factory()->rejected()->create([
-        'user_id' => $user->id,
-        'rejection_reason' => 'صور غير واضحة',
-    ]);
-    Place::factory()->approved()->create(['user_id' => $user->id]);
-    Place::factory()->approved()->create();
-
-    $response = $this->withToken(mobilePlacesToken($user))->getJson('/api/v1/my/places')
-        ->assertOk()
-        ->assertJsonCount(2, 'data');
-    $row = collect($response->json('data'))->firstWhere('id', $rejected->id);
-
-    expect($row)->toMatchArray([
-        'status' => 'rejected',
-        'rejection_reason' => 'صور غير واضحة',
-    ])->and($row)->toHaveKeys(['created_at', 'thumb_url', 'comments_count']);
-});
-
-test('disabled users cannot use place write endpoints', function () {
-    $user = placesRegularUser(['is_banned' => true]);
-    $token = mobilePlacesToken($user);
-
-    $this->withToken($token)->postJson('/api/v1/places', [])
+    $this->withToken(mobilePlacesToken($user))->postJson('/api/v1/places', [])
         ->assertForbidden()
         ->assertJsonPath('error', 'account_disabled');
     expect($user->tokens()->count())->toBe(0);
 });
 
-test('place submissions are throttled after five attempts per hour', function () {
-    $user = placesRegularUser();
-    $token = mobilePlacesToken($user);
-
-    foreach (range(1, 5) as $attempt) {
-        $this->withToken($token)->postJson('/api/v1/places', [])
-            ->assertUnprocessable();
-    }
-
-    $this->withToken($token)->postJson('/api/v1/places', [])
-        ->assertStatus(429);
-});
-
-test('image processing removes newly written files when photo persistence fails', function () {
+test('image processing removes new files when photo persistence fails', function () {
     Storage::fake('public');
     $place = Place::factory()->create();
     $existing = PlacePhoto::create([

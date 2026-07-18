@@ -10,6 +10,8 @@ use Illuminate\Support\Str;
 
 class UserDeletionService
 {
+    public function __construct(private readonly AvatarService $avatars) {}
+
     public function deleteAccountAndTransferOwnership(User $user): bool
     {
         return DB::transaction(function () use ($user): bool {
@@ -32,16 +34,25 @@ class UserDeletionService
                 Route::where('user_id', $account->id)->update(['user_id' => $delegate->id]);
             }
 
+            $this->avatars->deleteAllFor(
+                $account->id,
+                $account->avatar_disk ?: (string) config('filesystems.media_disk'),
+            );
             $this->anonymizeAndDelete($account);
 
             return true;
         });
     }
 
-    public function anonymizeAndDelete(User $user): void
+    private function anonymizeAndDelete(User $user): void
     {
+        $email = $user->email;
         $user->tokens()->delete();
+        DB::table('sessions')->where('user_id', $user->id)->delete();
+        DB::table('password_reset_tokens')->where('email', $email)->delete();
         $user->forceFill([
+            'avatar_disk' => null,
+            'avatar_path' => null,
             'avatar_url' => null,
             'email' => sprintf(
                 'deleted+%d+%s@deleted.invalid',

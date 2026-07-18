@@ -119,9 +119,9 @@ export function SubmitSheet({
 
   return (
     <AppCard style={styles.root}>
-      <AppText variant="heading">إضافة مكان خفي</AppText>
+      <AppText variant="heading">إضافة مكان جديد</AppText>
       <AppText color="muted">
-        شارك مكاناً خفياً ليظهر على الخريطة بعد موافقة المشرفين.
+        شارك مكاناً يستحق المشوار ليظهر على الخريطة بعد موافقة المشرفين.
       </AppText>
 
       {visibleStep === 'auth' ? (
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Places/_components/SubmitSheet.tsx (269 lines)
+  source:     resources/js/Pages/Places/_components/SubmitSheet.tsx (294 lines)
   confidence: high
   todos:      0
   notes:      Native auth, automatic duplicate review, bounded fields, photos, submission, and completion preserve the full flow.

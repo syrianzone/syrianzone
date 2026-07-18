@@ -26,27 +26,34 @@ contributors	GET	/api/mobile/contributors	app/Http/Controllers/Mobile/PublicCont
 contributor	GET	/api/mobile/contributors/{username}	app/Http/Controllers/Mobile/PublicContentController.php	-	public	none	server-only
 population	GET	/api/population/master	app/Http/Controllers/Api/PopulationAtlasController.php	mobile/src/features/Population/lib/data-fetcher.ts	public	none	implemented
 population_environment	GET	/api/population/env-report	app/Http/Controllers/Api/PopulationAtlasController.php	mobile/src/features/Population/lib/data-fetcher.ts	public	none	implemented
-places_map	GET	/api/v1/places/map	app/Http/Controllers/Mobile/PlaceController.php	mobile/src/features/Places/_lib/api.ts	optional bearer	none	implemented
-places_list	GET	/api/v1/places	app/Http/Controllers/Mobile/PlaceController.php	mobile/src/features/Places/_lib/api.ts	optional bearer	none	implemented
-places_nearby	GET	/api/v1/places/nearby	app/Http/Controllers/Mobile/PlaceController.php	mobile/src/features/Places/_lib/api.ts	optional bearer	none	implemented
-places_detail	GET	/api/v1/places/{id}	app/Http/Controllers/Mobile/PlaceController.php	mobile/src/features/Places/_lib/api.ts	optional bearer	none	implemented
-places_comments	GET	/api/v1/places/{id}/comments	app/Http/Controllers/Mobile/PlaceEngagementController.php	mobile/src/features/Places/_lib/api.ts	optional bearer	none	implemented
-places_submit	POST	/api/v1/places	app/Http/Controllers/Mobile/PlaceController.php	mobile/src/features/Places/_lib/api.ts	bearer	none	implemented
-places_mine	GET	/api/v1/my/places	app/Http/Controllers/Mobile/PlaceController.php	mobile/src/features/Places/_lib/api.ts	bearer	none	implemented
-places_saves	GET	/api/v1/my/saves	app/Http/Controllers/Mobile/PlaceEngagementController.php	mobile/src/features/Places/_lib/api.ts	bearer	none	implemented
-places_like	POST	/api/v1/places/{id}/like	app/Http/Controllers/Mobile/PlaceEngagementController.php	mobile/src/features/Places/_lib/api.ts	bearer	none	implemented
-places_unlike	DELETE	/api/v1/places/{id}/like	app/Http/Controllers/Mobile/PlaceEngagementController.php	mobile/src/features/Places/_lib/api.ts	bearer	none	implemented
-places_save	POST	/api/v1/places/{id}/save	app/Http/Controllers/Mobile/PlaceEngagementController.php	mobile/src/features/Places/_lib/api.ts	bearer	none	implemented
-places_unsave	DELETE	/api/v1/places/{id}/save	app/Http/Controllers/Mobile/PlaceEngagementController.php	mobile/src/features/Places/_lib/api.ts	bearer	none	implemented
-places_comment_create	POST	/api/v1/places/{id}/comments	app/Http/Controllers/Mobile/PlaceEngagementController.php	mobile/src/features/Places/_lib/api.ts	bearer	none	implemented
-places_comment_delete	DELETE	/api/v1/place-comments/{id}	app/Http/Controllers/Mobile/PlaceEngagementController.php	mobile/src/features/Places/_lib/api.ts	bearer	owner|admin|superadmin	implemented
-places_report	POST	/api/v1/places/{id}/report	app/Http/Controllers/Mobile/PlaceEngagementController.php	mobile/src/features/Places/_lib/api.ts	bearer	none	implemented
-places_admin_list	GET	/api/v1/admin/places	app/Http/Controllers/Mobile/PlaceAdminController.php	mobile/src/features/Places/_lib/api.ts	bearer	admin|superadmin	implemented
-places_admin_approve	POST	/api/v1/admin/places/{id}/approve	app/Http/Controllers/Mobile/PlaceAdminController.php	mobile/src/features/Places/_lib/api.ts	bearer	admin|superadmin	implemented
-places_admin_reject	POST	/api/v1/admin/places/{id}/reject	app/Http/Controllers/Mobile/PlaceAdminController.php	mobile/src/features/Places/_lib/api.ts	bearer	admin|superadmin	implemented
-places_admin_delete	DELETE	/api/v1/admin/places/{id}	app/Http/Controllers/Mobile/PlaceAdminController.php	mobile/src/features/Places/_lib/api.ts	bearer	admin|superadmin	implemented
-places_admin_reports	GET	/api/v1/admin/place-reports	app/Http/Controllers/Mobile/PlaceAdminController.php	mobile/src/features/Places/_lib/api.ts	bearer	admin|superadmin	implemented
-places_admin_report_resolve	POST	/api/v1/admin/place-reports/{id}/resolve	app/Http/Controllers/Mobile/PlaceAdminController.php	mobile/src/features/Places/_lib/api.ts	bearer	admin|superadmin	implemented
+places_map	GET	/api/v1/places/map	app/Http/Controllers/PlaceController.php	mobile/src/features/Places/_lib/api.ts	public with optional verified mobile bearer	none	implemented
+places_geocode	GET	/api/v1/places/geocode	app/Http/Controllers/PlaceController.php	mobile/src/features/Places/_lib/api.ts	public with optional verified mobile bearer	none	implemented
+places_guides	GET	/api/v1/guides	app/Http/Controllers/PlaceDiscoveryController.php	mobile/src/features/Places/_lib/api.ts	public with optional verified mobile bearer	none	implemented
+places_photo_grid	GET	/api/v1/places/photos	app/Http/Controllers/PlaceDiscoveryController.php	mobile/src/features/Places/_lib/api.ts	public with optional verified mobile bearer	none	implemented
+places_list	GET	/api/v1/places	app/Http/Controllers/PlaceController.php	mobile/src/features/Places/_lib/api.ts	public with optional verified mobile bearer	none	implemented
+places_nearby	GET	/api/v1/places/nearby	app/Http/Controllers/PlaceController.php	mobile/src/features/Places/_lib/api.ts	public with optional verified mobile bearer	none	implemented
+places_detail	GET	/api/v1/places/{id}	app/Http/Controllers/PlaceController.php	mobile/src/features/Places/_lib/api.ts	public with optional verified mobile bearer	none	implemented
+places_submit	POST	/api/v1/places	app/Http/Controllers/PlaceController.php	mobile/src/features/Places/_lib/api.ts	stateful session or verified mobile bearer	none	implemented
+places_mine	GET	/api/v1/my/places	app/Http/Controllers/PlaceController.php	mobile/src/features/Places/_lib/api.ts	stateful session or verified mobile bearer	none	implemented
+places_owner_update_location	PATCH	/api/v1/my/places/{id}/location	app/Http/Controllers/PlaceController.php	mobile/src/features/Places/_lib/api.ts	stateful session or verified mobile bearer	owner	implemented
+places_owner_update_details	PATCH	/api/v1/my/places/{id}	app/Http/Controllers/PlaceController.php	mobile/src/features/Places/_lib/api.ts	stateful session or verified mobile bearer	owner	implemented
+places_owner_photo_add	POST	/api/v1/my/places/{id}/photos	app/Http/Controllers/PlaceController.php	mobile/src/features/Places/_lib/api.ts	stateful session or verified mobile bearer	owner	implemented
+places_owner_resubmit	POST	/api/v1/my/places/{id}/resubmit	app/Http/Controllers/PlaceController.php	mobile/src/features/Places/_lib/api.ts	stateful session or verified mobile bearer	owner	implemented
+places_owner_delete	DELETE	/api/v1/my/places/{id}	app/Http/Controllers/PlaceController.php	mobile/src/features/Places/_lib/api.ts	stateful session or verified mobile bearer	owner	implemented
+places_owner_photo_delete	DELETE	/api/v1/my/place-photos/{id}	app/Http/Controllers/PlaceController.php	mobile/src/features/Places/_lib/api.ts	stateful session or verified mobile bearer	owner	implemented
+places_owner_photo_rotate	POST	/api/v1/my/place-photos/{id}/rotate	app/Http/Controllers/PlaceController.php	mobile/src/features/Places/_lib/api.ts	stateful session or verified mobile bearer	owner	implemented
+places_saves	GET	/api/v1/my/saves	app/Http/Controllers/PlaceEngagementController.php	mobile/src/features/Places/_lib/api.ts	stateful session or verified mobile bearer	none	implemented
+places_save	POST	/api/v1/places/{id}/save	app/Http/Controllers/PlaceEngagementController.php	mobile/src/features/Places/_lib/api.ts	stateful session or verified mobile bearer	none	implemented
+places_unsave	DELETE	/api/v1/places/{id}/save	app/Http/Controllers/PlaceEngagementController.php	mobile/src/features/Places/_lib/api.ts	stateful session or verified mobile bearer	none	implemented
+places_admin_list	GET	/api/v1/admin/places	app/Http/Controllers/PlaceAdminController.php	mobile/src/features/Places/_lib/api.ts	stateful session or verified mobile bearer	admin|superadmin	implemented
+places_admin_approve	POST	/api/v1/admin/places/{id}/approve	app/Http/Controllers/PlaceAdminController.php	mobile/src/features/Places/_lib/api.ts	stateful session or verified mobile bearer	admin|superadmin	implemented
+places_admin_reject	POST	/api/v1/admin/places/{id}/reject	app/Http/Controllers/PlaceAdminController.php	mobile/src/features/Places/_lib/api.ts	stateful session or verified mobile bearer	admin|superadmin	implemented
+places_admin_update	PATCH	/api/v1/admin/places/{id}	app/Http/Controllers/PlaceAdminController.php	mobile/src/features/Places/_lib/api.ts	stateful session or verified mobile bearer	admin|superadmin	implemented
+places_admin_delete	DELETE	/api/v1/admin/places/{id}	app/Http/Controllers/PlaceAdminController.php	mobile/src/features/Places/_lib/api.ts	stateful session or verified mobile bearer	admin|superadmin	implemented
+places_admin_photo_add	POST	/api/v1/admin/places/{id}/photos	app/Http/Controllers/PlaceAdminController.php	mobile/src/features/Places/_lib/api.ts	stateful session or verified mobile bearer	admin|superadmin	implemented
+places_admin_photo_rotate	POST	/api/v1/admin/place-photos/{id}/rotate	app/Http/Controllers/PlaceAdminController.php	mobile/src/features/Places/_lib/api.ts	stateful session or verified mobile bearer	admin|superadmin	implemented
+places_admin_photo_replace	POST	/api/v1/admin/place-photos/{id}/replace	app/Http/Controllers/PlaceAdminController.php	mobile/src/features/Places/_lib/api.ts	stateful session or verified mobile bearer	admin|superadmin	implemented
+places_admin_photo_delete	DELETE	/api/v1/admin/place-photos/{id}	app/Http/Controllers/PlaceAdminController.php	mobile/src/features/Places/_lib/api.ts	stateful session or verified mobile bearer	admin|superadmin	implemented
 transit_cities	GET	/api/v1/cities	app/Http/Controllers/Api/V1/TransitController.php	mobile/src/features/Transit/api.ts	public	none	implemented
 transit_routes	GET	/api/v1/cities/{id}/routes	app/Http/Controllers/Api/V1/TransitController.php	mobile/src/features/Transit/api.ts	public	none	implemented
 transit_map	GET	/api/v1/cities/{id}/map-data	app/Http/Controllers/Api/V1/TransitController.php	mobile/src/features/Transit/api.ts	public	none	implemented
@@ -54,11 +61,26 @@ transit_nearby	GET	/api/v1/stops/nearby	app/Http/Controllers/Api/V1/TransitContr
 transit_search	GET	/api/v1/search	app/Http/Controllers/Api/V1/TransitController.php	mobile/src/features/Transit/api.ts	public	none	implemented
 transit_route_detail	GET	/api/mobile/transit/cities/{cityId}/routes/{routeId}	app/Http/Controllers/Mobile/PublicContentController.php	mobile/src/features/Transit/api.ts	public	none	implemented
 transit_contribution	POST	/api/v1/studio/routes	app/Http/Controllers/TransitStudioController.php	mobile/src/features/Transit/api.ts	optional bearer	none	implemented
+transit_studio_draft	GET	/api/v1/studio/routes/{id}	app/Http/Controllers/TransitStudioController.php	-	stateful web session	owner|admin|transit_admin|superadmin	server-only
+transit_studio_draft_update	PUT	/api/v1/studio/routes/{id}	app/Http/Controllers/TransitStudioController.php	-	stateful web session	owner|admin|transit_admin|superadmin	server-only
+transit_studio_from_route	GET	/api/v1/studio/routes/{id}/from-route	app/Http/Controllers/TransitStudioController.php	-	stateful web session	authenticated	server-only
+transit_admin_routes	GET	/api/v1/admin/routes	app/Http/Controllers/TransitAdminController.php	-	stateful web session	admin|transit_admin|superadmin	server-only
+transit_admin_route_logs	GET	/api/v1/admin/routes/logs	app/Http/Controllers/TransitAdminController.php	-	stateful web session	admin|transit_admin|superadmin	server-only
+transit_admin_route_status	POST	/api/v1/admin/routes/{id}/status	app/Http/Controllers/TransitAdminController.php	-	stateful web session	admin|transit_admin|superadmin	server-only
+transit_admin_route_update	PUT	/api/v1/admin/routes/{id}	app/Http/Controllers/TransitAdminController.php	-	stateful web session	admin|transit_admin|superadmin	server-only
+transit_admin_route_move	POST	/api/v1/admin/routes/{id}/move	app/Http/Controllers/TransitAdminController.php	-	stateful web session	admin|transit_admin|superadmin	server-only
+transit_admin_route_combine	POST	/api/v1/admin/routes/combine	app/Http/Controllers/TransitAdminController.php	-	stateful web session	admin|transit_admin|superadmin	server-only
+transit_admin_route_split	POST	/api/v1/admin/routes/split	app/Http/Controllers/TransitAdminController.php	-	stateful web session	admin|transit_admin|superadmin	server-only
+transit_admin_route_stops	GET	/api/v1/admin/routes/{id}/stops	app/Http/Controllers/TransitAdminController.php	-	stateful web session	admin|transit_admin|superadmin	server-only
+transit_admin_route_geojson	GET	/api/v1/admin/routes/{id}/geojson	app/Http/Controllers/TransitAdminController.php	-	stateful web session	admin|transit_admin|superadmin	server-only
 transit_admin_drafts	GET	/api/mobile/admin/transit-drafts	app/Http/Controllers/TransitAdminController.php	mobile/src/features/Transit/api.ts	bearer	admin|transit_admin|superadmin	implemented
 transit_admin_approve	POST	/api/mobile/admin/transit-drafts/{id}/approve	app/Http/Controllers/TransitAdminController.php	mobile/src/features/Transit/api.ts	bearer	admin|transit_admin|superadmin	implemented
 transit_admin_reject	POST	/api/mobile/admin/transit-drafts/{id}/reject	app/Http/Controllers/TransitAdminController.php	mobile/src/features/Transit/api.ts	bearer	admin|transit_admin|superadmin	implemented
-transit_basemap_tiles	GET	https://{a|b|c|d}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png	-	mobile/assets/styles/dark-matter.json	public	none	declared-external
-transit_map_glyphs	GET	https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf	-	mobile/assets/styles/dark-matter.json	public	none	declared-external
+map_vector_tile_manifest	GET	https://tiles.basemaps.cartocdn.com/vector/carto.streets/v1/tiles.json	-	mobile/assets/styles/dark-matter-vector.json|mobile/assets/styles/light-vector.json	public	none	declared-external
+map_vector_tiles	GET	https://tiles-{a|b|c|d}.basemaps.cartocdn.com/vectortiles/carto.streets/v1/{z}/{x}/{y}.mvt	-	mobile/assets/styles/dark-matter-vector.json|mobile/assets/styles/light-vector.json	public	none	declared-external
+map_light_sprite	GET	https://tiles.basemaps.cartocdn.com/gl/positron-gl-style/sprite{.json|.png}	-	mobile/assets/styles/light-vector.json	public	none	declared-external
+map_dark_sprite	GET	https://tiles.basemaps.cartocdn.com/gl/dark-matter-gl-style/sprite{.json|.png}	-	mobile/assets/styles/dark-matter-vector.json	public	none	declared-external
+map_glyphs	GET	/fonts/map/{fontstack}/{range}.pbf	public/fonts/map/IBM Plex Sans Arabic Regular/0-255.pbf	mobile/src/lib/maps/style.ts	public	none	implemented
 auth_start	GET	/api/mobile/auth/google	app/Http/Controllers/MobileAuthController.php	mobile/src/lib/auth/browser.ts	public	none	implemented
 auth_callback	GET	/api/mobile/auth/google/callback	app/Http/Controllers/MobileAuthController.php	mobile/src/lib/auth/browser.ts	OAuth transaction	none	implemented
 auth_exchange	POST	/api/mobile/auth/exchange	app/Http/Controllers/MobileAuthController.php	mobile/src/lib/auth/api.ts	single-use code and PKCE	none	implemented
@@ -66,6 +88,7 @@ auth_user	GET	/api/mobile/user	app/Http/Controllers/MobileAuthController.php	mob
 auth_logout	POST	/api/mobile/logout	app/Http/Controllers/MobileAuthController.php	mobile/src/lib/auth/api.ts	bearer	none	implemented
 account	GET	/api/mobile/account	app/Http/Controllers/Mobile/AccountController.php	mobile/src/features/Dashboard/api.ts	bearer	none	implemented
 account_update	PATCH	/api/mobile/account	app/Http/Controllers/Mobile/AccountController.php	mobile/src/features/Dashboard/api.ts	bearer	none	implemented
+account_avatar	POST	/api/mobile/account/avatar	app/Http/Controllers/Mobile/AccountController.php	mobile/src/features/Dashboard/api.ts	bearer	none	implemented
 account_delete	DELETE	/api/mobile/account	app/Http/Controllers/Mobile/AccountController.php	mobile/src/features/Dashboard/api.ts	bearer	none	implemented
 account_draft_withdraw	DELETE	/api/mobile/account/transit-drafts/{id}	app/Http/Controllers/Mobile/AccountController.php	mobile/src/features/Dashboard/api.ts	bearer	owner	implemented
 guess_who_categories	GET	/api/mobile/guess-who/categories	app/Http/Controllers/Mobile/GuessWhoController.php	mobile/src/features/GuessWho/api.ts	public	none	implemented

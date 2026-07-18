@@ -22,6 +22,9 @@ export function DuplicateSuggestions({
   return (
     <View style={styles.root}>
       <AppText variant="label">توجد أماكن قريبة من النقطة المحددة</AppText>
+      <AppText color="muted" variant="caption">
+        إن كان مكانك مختلفاً يمكنك إضافته بلا مشكلة
+      </AppText>
       {places.map((place) => (
         <View
           key={place.id}
@@ -60,7 +63,7 @@ export function DuplicateSuggestions({
           </AppButton>
         </View>
       ))}
-      <AppButton onPress={onContinue}>مكاني مختلف، متابعة</AppButton>
+      <AppButton onPress={onContinue}>متابعة الإضافة على أي حال</AppButton>
     </View>
   );
 }
@@ -94,7 +97,7 @@ const styles = StyleSheet.create({
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Places/_components/DuplicateSuggestions.tsx (42 lines)
+  source:     resources/js/Pages/Places/_components/DuplicateSuggestions.tsx (43 lines)
   confidence: high
   todos:      0
   notes:      Nearby thumbnails, distances, existing-place selection, and explicit continuation preserve duplicate review.

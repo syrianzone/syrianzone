@@ -8,7 +8,8 @@ export const CATEGORIES: { key: PlaceCategory; label: string }[] = [
   { key: 'abandoned', label: 'مهجور' },
   { key: 'viewpoint', label: 'إطلالة' },
   { key: 'market', label: 'سوق' },
-  { key: 'other', label: 'أخرى' },
+  { key: 'food', label: 'مأكولات' },
+  { key: 'other', label: 'آخر' },
 ];
 
 export const CATEGORY_LABELS: Record<PlaceCategory, string> = Object.fromEntries(
@@ -17,7 +18,7 @@ export const CATEGORY_LABELS: Record<PlaceCategory, string> = Object.fromEntries
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Places/_lib/categories.ts (16 lines)
+  source:     resources/js/Pages/Places/_lib/categories.ts (17 lines)
   confidence: high
   todos:      0
   notes:      Category keys and Arabic labels remain exact at the API and UI boundary.

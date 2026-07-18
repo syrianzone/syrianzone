@@ -33,10 +33,11 @@ export default function AdminUsersScreen() {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<AssignableUserRole>('user');
   const [search, setSearch] = useState('');
+  const usersQueryKey = ['admin-users', user?.id ?? 'guest'] as const;
   const usersQuery = useQuery({
     enabled: user?.role === 'superadmin',
     queryFn: ({ signal }) => fetchManagedUsers(signal),
-    queryKey: ['admin-users'],
+    queryKey: usersQueryKey,
   });
   const users = useMemo(() => usersQuery.data ?? [], [usersQuery.data]);
   const filtered = useMemo(
@@ -50,17 +51,17 @@ export default function AdminUsersScreen() {
       setName('');
       setEmail('');
       setRole('user');
-      await queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      await queryClient.invalidateQueries({ queryKey: usersQueryKey });
     },
   });
   const deleteUser = useMutation({
     mutationFn: deleteManagedUser,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-users'] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: usersQueryKey }),
   });
   const toggleBan = useMutation({
     mutationFn: ({ id, isBanned }: { id: number; isBanned: boolean }) =>
       toggleManagedUserBan(id, isBanned),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-users'] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: usersQueryKey }),
   });
 
   if (authLoading) {

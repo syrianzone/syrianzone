@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Poll;
 use App\Models\RouteDraft;
 use App\Models\User;
+use App\Services\AvatarService;
 use App\Services\UserDeletionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
@@ -29,6 +31,30 @@ class AccountController extends Controller
         $user->update($data);
 
         return response()->json(['data' => ['user' => $this->userResource($user->fresh())]]);
+    }
+
+    public function updateAvatar(Request $request, AvatarService $avatars): JsonResponse
+    {
+        $request->validate([
+            'avatar' => [
+                'bail',
+                'required',
+                'image',
+                'mimes:jpg,jpeg,png,webp',
+                'max:4096',
+                function (string $attribute, mixed $value, callable $fail) use ($avatars) {
+                    if (! $value instanceof UploadedFile || ! $avatars->dimensionsAreSafe($value)) {
+                        $fail('The image dimensions are not supported.');
+                    }
+                },
+            ],
+        ]);
+
+        $avatars->update($request->user(), $request->file('avatar'));
+
+        return response()->json([
+            'data' => ['user' => $this->userResource($request->user()->fresh())],
+        ]);
     }
 
     public function destroy(Request $request, UserDeletionService $deletion): JsonResponse

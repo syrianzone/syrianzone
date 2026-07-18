@@ -9,6 +9,7 @@ import type { City, MapDataResponse } from '../../_types';
 interface MapCanvasProps {
   city: City;
   data: MapDataResponse;
+  fitToData?: boolean;
   onMapPress?: (coordinate: [number, number]) => void;
   showUserLocation?: boolean;
 }

@@ -4,14 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\MobileAuthCode;
 use App\Models\User;
+use App\Services\GoogleAccountService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
-use Laravel\Socialite\Contracts\User as SocialiteUser;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\GoogleProvider;
 use Throwable;
@@ -47,8 +46,10 @@ class MobileAuthController extends Controller
             ->redirect();
     }
 
-    public function handleGoogleCallback(Request $request): RedirectResponse|JsonResponse
-    {
+    public function handleGoogleCallback(
+        Request $request,
+        GoogleAccountService $accounts,
+    ): RedirectResponse|JsonResponse {
         $validated = $request->validate([
             'state' => ['required', 'string', 'regex:/\A[A-Za-z0-9\-._~]{43,128}\z/'],
             'code' => ['nullable', 'string', 'max:2048'],
@@ -87,7 +88,7 @@ class MobileAuthController extends Controller
             return $this->redirectToApp($record, ['error' => 'auth_failed']);
         }
 
-        $user = $this->resolveGoogleUser($googleUser);
+        $user = $accounts->resolve($googleUser);
 
         if (! $user) {
             return $this->redirectToApp($record, ['error' => 'access_denied']);
@@ -194,56 +195,6 @@ class MobileAuthController extends Controller
         ]);
 
         return Socialite::buildProvider(GoogleProvider::class, $config);
-    }
-
-    private function resolveGoogleUser(SocialiteUser $googleUser): ?User
-    {
-        $email = $googleUser->getEmail();
-        $googleId = $googleUser->getId();
-
-        if (! is_string($email) || $email === '' || ! is_string($googleId) || $googleId === '') {
-            return null;
-        }
-
-        $subjectUser = User::where('google_id', $googleId)->first();
-        $emailUser = User::where('email', $email)->first();
-
-        if ($subjectUser && $emailUser && ! $subjectUser->is($emailUser)) {
-            return null;
-        }
-
-        if (
-            $emailUser
-            && $emailUser->google_id
-            && ! hash_equals((string) $emailUser->google_id, $googleId)
-        ) {
-            return null;
-        }
-
-        $user = $subjectUser ?: $emailUser;
-        $superadminEmail = (string) config('app.superadmin_email');
-        $isSuperadmin = $superadminEmail !== '' && hash_equals($superadminEmail, $email);
-
-        if ((! $user && ! $isSuperadmin) || $user?->is_banned) {
-            return null;
-        }
-
-        $user ??= new User;
-        $user->forceFill([
-            'name' => $googleUser->getName() ?: $email,
-            'email' => $email,
-            'google_id' => $googleId,
-            'avatar_url' => $googleUser->getAvatar(),
-            'role' => $isSuperadmin ? 'superadmin' : ($user->role ?? 'admin'),
-        ]);
-
-        if (! $user->exists) {
-            $user->password = Hash::make(Str::random(32));
-        }
-
-        $user->save();
-
-        return $user;
     }
 
     private function googleRedirectUrl(): string

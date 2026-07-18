@@ -29,6 +29,13 @@ export function defaultDashboardTab(role: string): DashboardTab {
   return 'profile';
 }
 
+export function dashboardTabFromParam(
+  value: string | string[] | undefined,
+): DashboardTab | null {
+  const current = Array.isArray(value) ? value[0] : value;
+  return current === 'profile' ? 'profile' : null;
+}
+
 export function roleLabel(role: string): string {
   switch (role) {
     case 'superadmin':

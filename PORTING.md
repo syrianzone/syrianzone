@@ -11,6 +11,7 @@ Read this whole document before changing mobile code. A draft must preserve beha
 - `resources/js/Data/<path>` maps to `mobile/src/data/<path>`. A manifest `.json` or `.md` source becomes a typed `.ts` module with the same basename, so strict data syntax never receives comments. `resources/js/echo.js` is the only startup special case and maps to `mobile/src/lib/realtime.ts`.
 - Exact shared-code specials are `Components/Navbar.tsx` to `mobile/src/components/shell/Navbar.tsx`, `Components/ThemeToggle.tsx` to `mobile/src/components/shell/ThemeToggle.tsx`, `Components/ConditionalLayout.tsx` to `mobile/src/components/shell/ConditionalLayout.tsx`, `Lib/axios.ts` to `mobile/src/lib/api/client.ts`, and `Lib/uploadthing.ts` to `mobile/src/lib/api/uploads.ts`.
 - An intentional native split may give one source file several target files. Every target repeats the same source path and line count in its `PORT STATUS` trailer, and the contract verifier derives the exact target set from those trailers.
+- One target can't merge several manifest sources. The four `Pages/Admin/Places` source components keep separate targets under `mobile/src/features/Admin/Places/`, even when they share native state and API helpers.
 - Keep exported type and function names in camelCase or PascalCase. Preserve API field names exactly at the network boundary.
 - Don't import Inertia, React DOM, Radix, Tailwind, CSS, browser globals, or the web map libraries into mobile code.
 - Flag over guess: use `TODO(port): <reason>`, `PERF(port): <source idiom>`, or `PORT NOTE: <why>` when a translation isn't settled.
@@ -30,7 +31,7 @@ Read this whole document before changing mobile code. A draft must preserve beha
 |---|---|---|
 | Server | Laravel 11 baseline | Laravel 12.64.0 under the `^12.61` constraint |
 | View runtime | React 19.2.6 with Inertia 2.3 | React 19.2.3 with React Native 0.86.0 |
-| Native framework | No native client | Expo SDK 57.0.6 with Expo Router 57.0.6 |
+| Native framework | No native client | Expo SDK 57.0.7 with Expo Router 57.0.7 |
 | Web build | Vite 6.4 | Vite 6.4 for the retained web client, Expo CLI for native bundles |
 | Node baseline | Local Node 25.6.1 | Node 24 LTS, with Node 22.13 or newer also supported |
 | Android | Bubblewrap TWA | Native Android 7+ (API 24), compile and target SDK 36 |
@@ -46,11 +47,12 @@ Read this whole document before changing mobile code. A draft must preserve beha
 | `Pages/Polls`, `TierList`, `Components/poll` | Matching feature and component folders | Preserve tier assignment, cooldown, submission, results, history, sharing, and archived filters. |
 | `Pages/Compass`, `Alignment`, `Priorities` | Matching folders under `mobile/src/features/` | Keep question order, scoring, result labels, custom alignment, and share output. |
 | `Pages/Transit` | `mobile/src/features/Transit/` | Use `@maplibre/maplibre-react-native@11.3.6`. Preserve city, route, stop, nearby, search, studio, and review flows. |
+| `Pages/Central` | `mobile/src/features/Central/` | Keep the typed directory, search, section filters, record details, and safe external links available at `/central`. |
 | `Pages/Population` | `mobile/src/features/Population/` | Use `@maplibre/maplibre-react-native@11.3.6` and keep layer, source, legend, city, climate, and rainfall behavior. |
-| `Pages/Places` | `mobile/src/features/Places/` | Keep map, list, search, nearby, detail, photo submission, saves, likes, comments, reports, personal lists, and admin moderation. |
+| `Pages/Places`, `Pages/Admin/Places` | Matching folders under `mobile/src/features/` | Mishwar keeps map, list, and photo-grid views, local and Google place search, nearby results, explicit pin mode, detail deep links, guides, photo submission, saves, sharing, lightbox downloads, owner edits, and full place and photo moderation. Likes, comments, and reports no longer exist. |
 | `Pages/GuessWho` | `mobile/src/features/GuessWho/` | Keep room creation, join, signaling, presence, selection, guessing, reconnect, and end-game states. |
 | `Pages/SyId`, `Justice`, `House`, `Roznama` | Matching folders under `mobile/src/features/` | Keep images, filters, timelines, event detail, downloads, and external sources. |
-| `Pages/SyrianContributors`, `Dashboard`, `Admin`, `Transit/admin` | Matching feature folders plus `mobile/src/components/admin/` | Contributors keep the daily, monthly, yearly, and total count contract. Native auth and role gates replace browser session assumptions. |
+| `Pages/SyrianContributors`, `Dashboard`, `Admin`, `Transit/admin` | Matching feature folders plus `mobile/src/components/admin/` | Contributors keep the daily, monthly, yearly, and total count contract. Dashboard keeps profile avatar upload. Native auth and role gates replace browser session assumptions. |
 | `Pages/Shawarma`, `Privacy`, `Terms` | Matching feature folders plus `mobile/src/components/content/` | Preserve text, attribution, legal headings, and source links. |
 | `Components/Navbar.tsx`, `ThemeToggle.tsx`, `ConditionalLayout.tsx` | Exact files under `mobile/src/components/shell/` | Expo Router drawer, header, language, theme, safe areas, and offline status. |
 | `Lib/axios.ts` | `mobile/src/lib/api/client.ts` | One typed client with a configured origin, abort timeout, auth token, and error translation. Direct-fetch source files keep their feature target and delegate requests to this client. |
@@ -86,6 +88,7 @@ Fallback rule: a source file without a named special case keeps its complete sou
 | `localStorage` event sync | Context state plus storage subscription owned by the adapter |
 | `navigator.geolocation` | `expo-location` foreground permission and watch APIs |
 | `navigator.clipboard` | `expo-clipboard` |
+| `navigator.share()` with clipboard fallback | React Native `Share.share()` with the canonical `/mishwar?place=<id>` link |
 | `html2canvas` download | Native view capture, file write, and share sheet |
 | `marked` plus `dangerouslySetInnerHTML` | Bundled About Markdown parsed into an allowlisted native token model with safe link handling and no runtime Markdown dependency |
 | `<input type="file">` | Expo image or document picker |
@@ -98,7 +101,7 @@ Fallback rule: a source file without a named special case keeps its complete sou
 | Browser WebRTC globals and data channel | `react-native-webrtc@124.0.7` data-only peer adapter in a native development build |
 | `btoa()` and `atob()` for SDP | `js-base64@3.9.1` UTF-8-safe encode and decode helpers |
 | Chart.js, Recharts, or hand-written browser SVG | Feature-owned `react-native-svg@15.15.4` charts with native labels, legends, and share capture |
-| JSZip, Blob, and object URL archive download | `jszip@3.10.1` base64 archive in the Expo cache, then native share and guaranteed cleanup |
+| `fflate`, Blob, and object URL gallery download | Bounded media downloads, a `jszip@3.10.1` base64 archive in the Expo cache, native sharing, and guaranteed cleanup |
 | Drag and drop | Gesture handler plus Reanimated position state |
 | Form submit and CSRF cookie | Validated JSON, or multipart only for declared uploads, with bearer token when auth is required |
 
@@ -118,19 +121,23 @@ Typography is bundled, not fetched at runtime. `@expo-google-fonts/ibm-plex-sans
 
 Large GeoJSON, climate reports, event feeds, and image galleries stay out of long-lived global state. Screens cache bounded API responses and release transient map or export buffers after use. File exports write to the app cache and are removed after the share operation finishes.
 
+Mishwar uses the configured Laravel media disk for place photos and profile avatars. Native code treats every media URL as opaque, keeps the server's version query when caching, and never derives a local-disk path from it. The lightbox can share one photo or a complete archive. Both paths enforce bounded downloads and remove temporary files after success, cancellation, or failure.
+
 The About screen imports the bundled `about.md` content through its typed data module. `mobile/src/lib/content/aboutMarkdown.ts` normalizes line endings, recognizes `# ` as H1, `## ` as H2, both `- ` and `* ` as unordered-list markers, and other nonblank runs as paragraphs. A nonblank unmarked line immediately following a list item, with no intervening blank line, becomes a continuation line inside that item. This preserves the BrandKit sentence on source line 32. Blank lines close the active paragraph or list. The inline parser composes bold and links recursively, including bold inside a link label, and emits typed text, bold, and link spans. Unmatched delimiters, malformed links, unsupported markers, and raw HTML remain literal text. Native `Text` and `View` render the tokens, and link presses use the shared scheme allowlist. Golden tests snapshot every block and inline token from the exact bundled document. Tier Board keeps individual image sharing and the complete archive action. It downloads bounded image responses through the API client, adds them to `jszip@3.10.1`, generates base64, writes one temporary zip with `expo-file-system@57.0.1`, opens `expo-sharing@57.0.5`, and deletes every temporary image and archive in `finally`, including cancel and error paths. Archive generation rejects an entry or total size over the tested limits with a clear retry message instead of exhausting memory.
 
 ## Cross-file analysis
 
 `mobile-api.tsv` records every first-party data route and direct service dependency with its server implementation, native client, auth mode, required role, and port status. `implemented` means the registered Laravel route and native client evidence both exist. `server-only` marks a registered first-party route that no native client calls. Test results belong to the verification runs below instead of a hand-maintained row status. External rows distinguish direct native calls, server-only upstream calls, and map resources declared in a bundled style. User-initiated external links and media URLs returned by validated payloads aren't service calls, so they stay outside this table. Treat the table as the source of truth before adding a request. A missing first-party contract must be added to Laravel and tested there before the native screen calls it.
 
-`mobile-assets.tsv` records each asset family, whether it ships in the binary or stays server-hosted, and the source and target paths that prove it's used. It covers `public/assets`, `public/syid-assets`, `public/syofficial-assets`, transit and population GeoJSON, root SVG files, fonts, contributor data, and uploaded media.
+Transit draft editing and published-route administration remain `server-only` because those endpoints accept a stateful web session and do not yet accept verified mobile bearer tokens. Native screens must not expose actions that would call those contracts until Laravel provides equivalent bearer authentication and feature tests.
+
+`mobile-assets.tsv` records each asset family, whether it ships in the binary or stays server-hosted, and the source and target paths that prove it's used. It covers `public/assets`, `public/syid-assets`, `public/syofficial-assets`, transit and population GeoJSON, both map styles, root SVG files, fonts, contributor data, and media-disk uploads. The verifier also checks that both bundled map style files match their source bytes.
 
 Offline scope is explicit: the shell, legal text, static civic questionnaires, app identity, bundled map boundaries, persisted widget data, and in-memory last-good API responses remain usable. Server-hosted images use the native disk cache where the screen declares it, then show their fallback when unavailable. The port does not promise a full offline mirror of the 184 MB public tree.
 
-`port-manifest.tsv` lists source files that carry behavior or data into the app. Its order is leaf-first where practical. Pending work is any manifest source without a matching target trailer. `mobile/scripts/verify-port-contract.mjs` checks the source line counts when a source snapshot is available, derives every exact target path from its trailer, and rejects missing, stale, low-confidence, or flagged targets.
+`port-manifest.tsv` lists source files that carry behavior or data into the app. Its order is leaf-first where practical. Pending work is any manifest source without a matching target trailer. `mobile/scripts/verify-port-contract.mjs` checks source line counts, requires every public and admin Mishwar TypeScript source in the manifest, derives every exact target path from its trailer, and rejects missing, stale, low-confidence, or flagged targets.
 
-The Places source arrived as untracked files in the source checkout, so those files aren't present on the mobile branch. Their paths and line counts remain in the manifest. Set `PORT_SOURCE_ROOT` to a checkout that contains the snapshot when you want the verifier to recheck those source counts. Target existence, trailer counts, confidence, and port flags are always checked.
+The verifier checks manifest line counts against this worktree first, then an explicit `PORT_SOURCE_ROOT`, then the sibling source checkout. This keeps the contract tied to the merged Mishwar snapshot while still supporting an isolated mobile worktree.
 
 ## Don't translate
 
@@ -146,7 +153,7 @@ The Places source arrived as untracked files in the source checkout, so those fi
 
 ## Verification contract
 
-- `node mobile/scripts/verify-port-contract.mjs` must pass. Set `PORT_SOURCE_ROOT=/path/to/source-checkout` when the Places source snapshot is outside this branch.
+- `node mobile/scripts/verify-port-contract.mjs` must pass. Set `PORT_SOURCE_ROOT=/path/to/source-checkout` when the required source snapshot is outside this branch.
 - At the repository root, `composer validate --strict`, `composer audit --locked`, `php artisan test`, and `npm run build` must pass.
 - Under `mobile/`, `npm audit --omit=dev` and `npx expo install --check` must pass. Run `npm run lint`, `npm run typecheck`, `npm test -- --runInBand`, `npm run doctor`, and `npm run export` twice.
 - Run two native cycles. Each cycle starts with `npm run prebuild:clean`, then runs `npm run build:ios` and `npm run build:android` against the fresh generated projects.
@@ -158,7 +165,7 @@ Node 24 is the release verification runtime. When the active shell uses another 
 
 `@maplibre/maplibre-react-native@11.3.6` is the selected native map because it supports React Native 0.80+, the required new architecture, GeoJSON shape sources, line layers, symbols, map presses, and both target platforms. Transit Studio owns edit state in React: map presses add coordinates or stops, drag gestures edit selected points, and declarative layers render active, reference, and conflict geometry. Undo, conflict checks, stop ordering, and GeoJSON export are pure functions with characterization tests.
 
-The app bundles the dark transit style JSON, including its plain dark background, and keeps CARTO raster tiles and MapLibre demo glyphs as declared remote dependencies. Transit and Places display OpenStreetMap and CARTO attribution because they use those tiles. Population and Syrian identity maps use bundled geometry on a local background. Remote base tiles are not part of the offline promise. If they are unavailable, the dark background, bundled boundaries, cached routes and stops, and an offline notice remain visible.
+The app bundles exact dark and light vector map styles. Mishwar and Transit select the active theme, fetch CARTO vector tile metadata, MVT tiles, and sprites, and resolve IBM Plex Sans Arabic glyphs against Laravel. The bundled styles preserve the source country-label override for Palestine. Transit and Mishwar display OpenStreetMap and CARTO attribution. Population and Syrian identity maps use bundled geometry on a local background. Remote base tiles aren't part of the offline promise. If they're unavailable, the selected background, bundled boundaries, cached routes and stops, and an offline notice remain visible.
 
 Charts use `react-native-svg@15.15.4` inside the feature that owns each chart. House charts live in `mobile/src/features/House/HouseCharts.tsx`, Priorities uses `mobile/src/features/Priorities/RadarChart.tsx`, and poll history uses the poll and tier-list `TimeseriesChart.tsx` files plus `mobile/src/components/poll/MonthlyLineChart.tsx`. Their models preserve source scales, labels, legends, RTL text, empty states, and theme colors. Share output uses the Expo SDK 57 compatible `react-native-view-shot@5.1.0` where a rendered native view must become an image.
 
@@ -171,11 +178,11 @@ This remains a high-risk port because the source frontend has no JavaScript test
 - Home fixtures freeze clock, calendar, weather, prayer, and event inputs, then assert search, settings, quick links, loading, cached, and error states.
 - Directory fixtures cover official accounts in four languages, phonebook, sites, parties, government apps, contributors, and Shawarma search, filters, ranking, images, and source links.
 - Poll and civic fixtures cover tier moves, ballot payloads, cooldowns, leaderboard series, question order, scoring, result labels, custom alignment, and shared output.
-- Transit and population fixtures cover longitude and latitude order, city and route selection, nearby search, map layers, legends, colors, studio edit, undo, conflict, export, and review decisions.
-- Places fixtures cover map and list parity, categories, search, nearby distance, detail permissions, multipart photos, likes, saves, comments, reports, personal lists, and moderation transitions.
+- Transit and population fixtures cover longitude and latitude order, city and route selection, nearby search, map layers, Palestine labels, legends, colors, studio edit, undo, conflict, export, and review decisions.
+- Mishwar fixtures cover map, list, gallery, and guide parity, categories, local and Google search, nearby distance, add mode and Syria bounds, detail deep links, multipart photos, saves, sharing, lightbox downloads, personal lists, owner edits, photo operations, and moderation transitions.
 - Guess Who fixtures cover create, join, slot binding, signaling authorization, presence, character selection, guessing, reconnect, and terminal room states.
 - Reference fixtures cover Syrian identity, justice, House modes and provinces, Roznama events, filtering, timelines, downloads, external sources, and cached failures.
-- Account fixtures cover sign-in callback validation, token lifecycle, profile updates, deletion, uploads, and every admin, transit admin, and superadmin role denial or success path.
+- Account fixtures cover sign-in callback validation, token lifecycle, profile and avatar updates, deletion, uploads, and every admin, transit admin, and superadmin role denial or success path.
 - Content fixtures assert the complete privacy, terms, attribution, and informational heading structure, plus navigation and offline presentation.
 
 Source-derived fixtures live beside their feature tests or under `mobile/src/test/fixtures/`. They never call the network. Laravel feature tests own every first-party route contract, while Maestro journeys own top-level native navigation on both platforms.

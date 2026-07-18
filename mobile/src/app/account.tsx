@@ -12,7 +12,10 @@ export default function AccountRoute() {
         router.push({ pathname: '/feature/[slug]', params: { slug: 'polls' } })
       }
       onOpenProfile={() =>
-        router.push({ pathname: '/feature/[slug]', params: { slug: 'dashboard' } })
+        router.push({
+          pathname: '/feature/[slug]',
+          params: { slug: 'dashboard', tab: 'profile' },
+        })
       }
     />
   );

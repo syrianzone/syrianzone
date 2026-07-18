@@ -3,9 +3,12 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet } from 'react-native';
 
 import type { PlacePhoto } from '../_lib/types';
+import { Lightbox } from './Lightbox';
 
 export function PhotoGallery({ name, photos }: { name: string; photos: readonly PlacePhoto[] }) {
   const [active, setActive] = useState(0);
+  const [lightbox, setLightbox] = useState(false);
+
   const selectedIndex = Math.min(active, Math.max(photos.length - 1, 0));
   const photo = photos[selectedIndex];
   if (!photo) {
@@ -13,7 +16,13 @@ export function PhotoGallery({ name, photos }: { name: string; photos: readonly 
   }
   return (
     <>
-      <Image accessibilityLabel={name} contentFit="cover" source={photo.display_url} style={styles.hero} />
+      <Pressable
+        accessibilityLabel={`فتح صورة ${name}`}
+        accessibilityRole="button"
+        onPress={() => setLightbox(true)}
+      >
+        <Image accessibilityLabel={name} contentFit="cover" source={photo.display_url} style={styles.hero} />
+      </Pressable>
       {photos.length > 1 ? (
         <ScrollView contentContainerStyle={styles.thumbnails} horizontal showsHorizontalScrollIndicator={false}>
           {photos.map((item, index) => (
@@ -23,6 +32,15 @@ export function PhotoGallery({ name, photos }: { name: string; photos: readonly 
           ))}
         </ScrollView>
       ) : null}
+      {lightbox ? (
+        <Lightbox
+          index={selectedIndex}
+          name={name}
+          onClose={() => setLightbox(false)}
+          open
+          photos={photos}
+        />
+      ) : null}
     </>
   );
 }
@@ -31,8 +49,8 @@ const styles = StyleSheet.create({ active: { borderColor: '#428177', borderWidth
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Places/_components/PhotoGallery.tsx (64 lines)
+  source:     resources/js/Pages/Places/_components/PhotoGallery.tsx (59 lines)
   confidence: high
   todos:      0
-  notes:      Native image gallery keeps full images, thumbnails, labels, and active selection.
+  notes:      Native images, thumbnails, active selection, and full-screen lightbox preserve the source gallery.
 */

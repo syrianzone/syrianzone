@@ -12,12 +12,14 @@ import cities from '../../../_data/cities';
 import { transitFallback } from '../../../_data/fallback';
 import { useMapData } from '../../../_hooks/useMapData';
 import type { City } from '../../../_types';
+import { focusTransitMapData } from '../../../model';
 
 export default function TransitCityMapScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, route } = useLocalSearchParams<{ id: string; route?: string }>();
   const query = useMapData(id);
   const city = cities.find((item) => item.id === id) as City | undefined;
-  const data = query.data ?? transitFallback(id);
+  const rawData = query.data ?? transitFallback(id);
+  const data = rawData ? focusTransitMapData(rawData, route) : null;
   if (!city) {
     return <QueryState detail="المدينة غير معروفة." type="error" />;
   }
@@ -30,7 +32,11 @@ export default function TransitCityMapScreen() {
       </View>
       {data ? (
         <View style={styles.map}>
-          <TransitMapView city={city} data={data} />
+          <TransitMapView
+            city={city}
+            data={data}
+            fitToData={Boolean(route)}
+          />
         </View>
       ) : query.error ? (
         <QueryState onRetry={() => void query.refetch()} type="error" />
@@ -56,8 +62,8 @@ const styles = StyleSheet.create({
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Transit/city/[id]/map/Index.tsx (140 lines)
+  source:     resources/js/Pages/Transit/city/[id]/map/Index.tsx (139 lines)
   confidence: high
   todos:      0
-  notes:      Native MapLibre preserves live or offline geometry, search, nearby stops, and refresh.
+  notes:      Native MapLibre preserves live or offline geometry, focused route links, search, nearby stops, and refresh.
 */

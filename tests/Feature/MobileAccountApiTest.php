@@ -3,7 +3,9 @@
 use App\Models\Poll;
 use App\Models\RouteDraft;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 function mobileAccountBearer(User $user): string
 {
@@ -89,6 +91,42 @@ test('mobile account update validates uniqueness and returns the updated user', 
     ])->assertOk()
         ->assertJsonPath('data.user.email', 'new@example.test')
         ->assertJsonPath('data.user.name', 'Updated Name');
+});
+
+test('mobile account owner can upload and replace a profile avatar', function () {
+    Storage::fake('public');
+    $user = User::factory()->create(['role' => 'user']);
+    $token = mobileAccountBearer($user);
+
+    $first = $this->withToken($token)->postJson('/api/mobile/account/avatar', [
+        'avatar' => UploadedFile::fake()->image('first.jpg', 640, 480),
+    ])->assertOk()
+        ->assertJsonPath('data.user.id', $user->id);
+
+    $firstPath = Storage::disk('public')->files("avatars/{$user->id}")[0];
+    expect($first->json('data.user.avatar_url'))
+        ->toBe(Storage::disk('public')->url($firstPath));
+
+    $this->withToken($token)->postJson('/api/mobile/account/avatar', [
+        'avatar' => UploadedFile::fake()->image('second.png', 300, 300),
+    ])->assertOk();
+
+    Storage::disk('public')->assertMissing($firstPath);
+    expect(Storage::disk('public')->files("avatars/{$user->id}"))->toHaveCount(1);
+});
+
+test('mobile avatar upload rejects wildcard tokens and invalid files', function () {
+    Storage::fake('public');
+    $user = User::factory()->create(['role' => 'user']);
+    $wildcard = $user->createToken('web-token', ['*'])->plainTextToken;
+
+    $this->withToken($wildcard)->postJson('/api/mobile/account/avatar', [
+        'avatar' => UploadedFile::fake()->image('avatar.jpg', 300, 300),
+    ])->assertUnauthorized();
+
+    $this->withToken(mobileAccountBearer($user))->postJson('/api/mobile/account/avatar', [
+        'avatar' => UploadedFile::fake()->create('avatar.pdf', 100, 'application/pdf'),
+    ])->assertUnprocessable()->assertJsonValidationErrors('avatar');
 });
 
 test('account owners can withdraw only their own pending transit drafts', function () {

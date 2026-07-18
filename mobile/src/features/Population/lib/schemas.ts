@@ -184,7 +184,7 @@ export const environmentalReportSchema = z
 
 /*
 PORT STATUS
-  source:     app/Http/Controllers/Api/PopulationAtlasController.php (215 lines)
+  source:     app/Http/Controllers/Api/PopulationAtlasController.php (216 lines)
   confidence: high
   todos:      0
   notes:      Native trust boundaries validate every atlas field before screen state receives it.

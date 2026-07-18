@@ -51,16 +51,12 @@ class AdminUserController extends Controller
 
     public function destroy(User $user, UserDeletionService $deletion): JsonResponse
     {
-        if ($user->isSuperAdmin()) {
+        if (! $deletion->deleteAccountAndTransferOwnership($user)) {
             return response()->json([
                 'code' => 'protected_superadmin',
-                'message' => 'Superadmin accounts cannot be deleted here.',
+                'message' => 'The final active superadmin cannot be deleted.',
             ], 403);
         }
-
-        DB::transaction(function () use ($deletion, $user): void {
-            $deletion->anonymizeAndDelete($user);
-        });
 
         return response()->json(['data' => ['deleted' => true]]);
     }

@@ -114,7 +114,7 @@ export function PhotoPicker({
         </AppButton>
       ) : null}
       <AppText color="muted" variant="caption">
-        من صورة واحدة إلى {max} صور، JPEG أو PNG أو WebP، بحد أقصى 8 MB لكل صورة.
+        من صورة واحدة إلى {max} صور، JPEG أو PNG أو WebP، بحد أقصى 12 MB لكل صورة.
       </AppText>
     </View>
   );
@@ -167,8 +167,8 @@ const styles = StyleSheet.create({
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Places/_components/PhotoPicker.tsx (94 lines)
+  source:     resources/js/Pages/Places/_components/PhotoPicker.tsx (118 lines)
   confidence: high
   todos:      0
-  notes:      Native previews, removal, format validation, size validation, and the five-photo limit preserve the source contract.
+  notes:      Native previews, removal, format, size, dimensions, and the ten-photo limit preserve the source contract.
 */

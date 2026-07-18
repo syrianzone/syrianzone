@@ -58,7 +58,7 @@ export function AppProviders({ children }: PropsWithChildren) {
         <QueryClientProvider client={queryClient}>
           <LocaleProvider>
             <AppThemeProvider>
-              <AuthProvider>
+              <AuthProvider queryClient={queryClient}>
                 <HomeSettingsProvider>{children}</HomeSettingsProvider>
               </AuthProvider>
             </AppThemeProvider>

@@ -225,7 +225,9 @@ test('studio submissions remain anonymous or bind a verified mobile bearer', fun
 
 test('studio submissions reject disabled mobile accounts', function () {
     [$user, $token] = mobileTransitAdminUser('user');
-    $user->update(['is_banned' => true]);
+    // Simulate a stale credential left by an external database update. Normal
+    // application ban paths revoke every token immediately through the observer.
+    DB::table('users')->where('id', $user->id)->update(['is_banned' => true]);
 
     $this->withToken($token)
         ->postJson('/api/v1/studio/routes', [

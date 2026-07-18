@@ -30,6 +30,7 @@ const routeSchema = z.object({
   notes: z.string().nullable().optional(),
   priceNew: z.number().nullable().optional(),
   priceOld: z.number().nullable().optional(),
+  stopsCount: z.number().int().nonnegative().optional(),
 });
 const mapDataSchema = z.object({
   routes: z.object({

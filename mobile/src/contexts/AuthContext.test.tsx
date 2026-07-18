@@ -4,11 +4,13 @@ import {
   render,
   waitFor,
 } from '@testing-library/react-native';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { Pressable, Text } from 'react-native';
 
 import type { AuthService } from '@/lib/auth/service';
 import type { AuthUser } from '@/lib/auth/types';
 import { AuthError } from '@/lib/auth/errors';
+import { createQueryClient } from '@/lib/query/client';
 
 import { AuthProvider, useAuth } from './AuthContext';
 
@@ -64,12 +66,18 @@ function readState(view: Awaited<ReturnType<typeof render>>) {
   };
 }
 
-test('hydrates the shared user and derives source role flags', async () => {
-  const view = await render(
-    <AuthProvider service={createService()}>
-      <Probe />
-    </AuthProvider>,
+function renderAuth(service: AuthService, queryClient = createQueryClient()) {
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider queryClient={queryClient} service={service}>
+        <Probe />
+      </AuthProvider>
+    </QueryClientProvider>,
   );
+}
+
+test('hydrates the shared user and derives source role flags', async () => {
+  const view = await renderAuth(createService());
 
   await waitFor(() => expect(readState(view).loading).toBe(false));
   expect(readState(view)).toMatchObject({
@@ -86,11 +94,7 @@ test('refresh clears a stale user on failure like the web context', async () => 
       throw new Error('private network detail');
     }),
   });
-  const view = await render(
-    <AuthProvider service={service}>
-      <Probe />
-    </AuthProvider>,
-  );
+  const view = await renderAuth(service);
   await waitFor(() => expect(readState(view).loading).toBe(false));
 
   await fireEvent.press(view.getByTestId('refresh'));
@@ -104,11 +108,7 @@ test('a cancelled browser login leaves the user and error unchanged', async () =
     bootstrap: jest.fn(async () => null),
     login: jest.fn(async () => ({ status: 'cancelled' as const })),
   });
-  const view = await render(
-    <AuthProvider service={service}>
-      <Probe />
-    </AuthProvider>,
-  );
+  const view = await renderAuth(service);
   await waitFor(() => expect(readState(view).loading).toBe(false));
 
   await fireEvent.press(view.getByTestId('login'));
@@ -119,11 +119,7 @@ test('a cancelled browser login leaves the user and error unchanged', async () =
 
 test('logout clears the current user after revocation', async () => {
   const service = createService();
-  const view = await render(
-    <AuthProvider service={service}>
-      <Probe />
-    </AuthProvider>,
-  );
+  const view = await renderAuth(service);
   await waitFor(() => expect(readState(view).user).toEqual(admin));
 
   await fireEvent.press(view.getByTestId('logout'));
@@ -138,11 +134,7 @@ test('keeps the user visible when logout cannot revoke or clear credentials', as
       throw new AuthError('logout_incomplete');
     }),
   });
-  const view = await render(
-    <AuthProvider service={service}>
-      <Probe />
-    </AuthProvider>,
-  );
+  const view = await renderAuth(service);
   await waitFor(() => expect(readState(view).user).toEqual(admin));
 
   await fireEvent.press(view.getByTestId('logout'));
@@ -164,11 +156,7 @@ test('does not let a delayed refresh restore the user after logout', async () =>
         }),
     ),
   });
-  const view = await render(
-    <AuthProvider service={service}>
-      <Probe />
-    </AuthProvider>,
-  );
+  const view = await renderAuth(service);
   await waitFor(() => expect(readState(view).user).toEqual(admin));
 
   await fireEvent.press(view.getByTestId('refresh'));
@@ -177,4 +165,32 @@ test('does not let a delayed refresh restore the user after logout', async () =>
 
   await waitFor(() => expect(service.refreshUser).toHaveBeenCalledTimes(1));
   expect(readState(view).user).toBeNull();
+});
+
+test('clears private query data before switching to another account', async () => {
+  const secondUser: AuthUser = {
+    ...admin,
+    email: 'second@example.test',
+    id: 2,
+    name: 'Second user',
+    role: 'user',
+  };
+  const service = createService({
+    refreshUser: jest.fn(async () => secondUser),
+  });
+  const queryClient = createQueryClient();
+  const view = await renderAuth(service, queryClient);
+  await waitFor(() => expect(readState(view).user).toEqual(admin));
+  queryClient.setQueryData(
+    ['dashboard-account', admin.id],
+    { user: admin },
+    { updatedAt: Date.now() },
+  );
+
+  await fireEvent.press(view.getByTestId('refresh'));
+
+  await waitFor(() => expect(readState(view).user).toEqual(secondUser));
+  expect(
+    queryClient.getQueryData(['dashboard-account', admin.id]),
+  ).toBeUndefined();
 });

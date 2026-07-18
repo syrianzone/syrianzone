@@ -8,6 +8,7 @@ export interface RouteProperties {
   notes?: string | null;
   priceNew?: number | null;
   priceOld?: number | null;
+  stopsCount?: number;
   type?: 'serafee';
 }
 
@@ -59,7 +60,7 @@ export interface TransitSearchResult {
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Transit/_types/index.ts (44 lines)
+  source:     resources/js/Pages/Transit/_types/index.ts (45 lines)
   confidence: high
   todos:      0
   notes:      GeoJSON types now use the shared native GeoJSON declarations.

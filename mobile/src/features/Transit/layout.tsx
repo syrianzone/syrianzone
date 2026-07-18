@@ -13,7 +13,7 @@ export default function TransitLayout({ children }: PropsWithChildren) {
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Transit/layout.tsx (27 lines)
+  source:     resources/js/Pages/Transit/layout.tsx (43 lines)
   confidence: high
   todos:      0
   notes:      Native providers replace the browser layout and CSS scope.

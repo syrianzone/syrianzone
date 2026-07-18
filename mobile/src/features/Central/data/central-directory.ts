@@ -1,0 +1,482 @@
+import type { CentralDirectoryData } from '../model';
+
+export const centralDirectoryData = {
+  "governorates": [
+    {
+      "id": "damascus",
+      "nameAr": "دمشق",
+      "nameEn": "Damascus",
+      "links": [
+        { "label": "الموقع الإلكتروني لمحافظة دمشق", "type": "website", "value": "http://damascus.gov.sy" },
+        { "label": "الصفحة الرسمية على فيسبوك", "type": "facebook", "value": "https://www.facebook.com/DamascusGov" },
+        { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/DamascusGov1" },
+        { "label": "حساب إكس الرسمي لمحافظة دمشق", "type": "x", "value": "https://x.com/DamascusGov1" },
+        { "label": "تطبيق شكاوى محافظة دمشق", "type": "app", "value": "http://damascus.gov.sy/app-download" },
+        { "label": "رقم الهاتف - الاستعلامات", "type": "phone", "value": "0112211111" }
+      ]
+    },
+    {
+      "id": "rural-damascus",
+      "nameAr": "ريف دمشق",
+      "nameEn": "Rif Dimashq",
+      "links": [
+        { "label": "الموقع الإلكتروني لمحافظة ريف دمشق", "type": "website", "value": "http://rifdimashq.gov.sy" },
+        { "label": "الصفحة الرسمية على فيسبوك", "type": "facebook", "value": "https://www.facebook.com/RifDimashqGovernorate" },
+        { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/RDamascusGov1" },
+        { "label": "حساب إكس الرسمي للمحافظة", "type": "x", "value": "https://x.com/RDamascusGov1" },
+        { "label": "رقم الهاتف - ديوان المحافظة", "type": "phone", "value": "0112244555" }
+      ]
+    },
+    {
+      "id": "aleppo",
+      "nameAr": "حلب",
+      "nameEn": "Aleppo",
+      "links": [
+        { "label": "الموقع الإلكتروني لمحافظة حلب", "type": "website", "value": "http://aleppo.gov.sy" },
+        { "label": "الصفحة الرسمية على فيسبوك", "type": "facebook", "value": "https://www.facebook.com/AleppoGov" },
+        { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/AleppoGov1" },
+        { "label": "رقم الهاتف - ديوان المحافظة", "type": "phone", "value": "0212234000" }
+      ]
+    },
+    {
+      "id": "homs",
+      "nameAr": "حمص",
+      "nameEn": "Homs",
+      "links": [
+        { "label": "الموقع الإلكتروني لمحافظة حمص", "type": "website", "value": "http://homs.gov.sy" },
+        { "label": "الصفحة الرسمية على فيسبوك", "type": "facebook", "value": "https://www.facebook.com/HomsGovernorate" },
+        { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/HomsGov1" },
+        { "label": "حساب إكس الرسمي للمحافظة", "type": "x", "value": "https://x.com/HoomsGov1" },
+        { "label": "رقم الهاتف - الاستعلامات", "type": "phone", "value": "0312228000" }
+      ]
+    },
+    {
+      "id": "hama",
+      "nameAr": "حماة",
+      "nameEn": "Hama",
+      "links": [
+        { "label": "الموقع الإلكتروني لمحافظة حماة", "type": "website", "value": "http://hama.gov.sy" },
+        { "label": "الصفحة الرسمية على فيسبوك", "type": "facebook", "value": "https://www.facebook.com/HamaGovernorate" },
+        { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/HamaGov1" },
+        { "label": "رقم الهاتف - ديوان المحافظة", "type": "phone", "value": "0332213000" }
+      ]
+    },
+    {
+      "id": "latakia",
+      "nameAr": "اللاذقية",
+      "nameEn": "Latakia",
+      "links": [
+        { "label": "الموقع الإلكتروني لمحافظة اللاذقية", "type": "website", "value": "http://latakia.gov.sy" },
+        { "label": "الصفحة الرسمية على فيسبوك", "type": "facebook", "value": "https://www.facebook.com/LatakiaGovernorate" },
+        { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/LatakiaGov1" },
+        { "label": "حساب إكس الرسمي للمحافظة", "type": "x", "value": "https://x.com/LatakiaaGov1" },
+        { "label": "رقم الهاتف - ديوان المحافظة", "type": "phone", "value": "0412231000" }
+      ]
+    },
+    {
+      "id": "tartus",
+      "nameAr": "طرطوس",
+      "nameEn": "Tartus",
+      "links": [
+        { "label": "الموقع الإلكتروني لمحافظة طرطوس", "type": "website", "value": "http://tartus.gov.sy" },
+        { "label": "الصفحة الرسمية على فيسبوك", "type": "facebook", "value": "https://www.facebook.com/TartusGovernorate" },
+        { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/TartusGov1" },
+        { "label": "رقم الهاتف - ديوان المحافظة", "type": "phone", "value": "0432221200" }
+      ]
+    },
+    {
+      "id": "idlib",
+      "nameAr": "إدلب",
+      "nameEn": "Idlib",
+      "links": [
+        { "label": "الموقع الإلكتروني للمحافظة والخدمات المحلية", "type": "website", "value": "https://idlib.gov.sy" },
+        { "label": "الصفحة الرسمية على فيسبوك", "type": "facebook", "value": "https://www.facebook.com/IdlibGovernorate" },
+        { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/IdlibGov1" },
+        { "label": "رقم الهاتف - شكاوى الخدمات", "type": "phone", "value": "0232220100" }
+      ]
+    },
+    {
+      "id": "raqqa",
+      "nameAr": "الرقة",
+      "nameEn": "Raqqa",
+      "links": [
+        { "label": "الموقع الإلكتروني لمحافظة الرقة", "type": "website", "value": "http://raqqa.gov.sy" },
+        { "label": "الصفحة الرسمية على فيسبوك", "type": "facebook", "value": "https://www.facebook.com/RaqqaGovernorate" },
+        { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/raqqaaGov1" }
+      ]
+    },
+    {
+      "id": "deir-ez-zor",
+      "nameAr": "دير الزور",
+      "nameEn": "Deir ez-Zor",
+      "links": [
+        { "label": "الموقع الإلكتروني لمحافظة دير الزور", "type": "website", "value": "http://deirezzor.gov.sy" },
+        { "label": "الصفحة الرسمية على فيسبوك", "type": "facebook", "value": "https://www.facebook.com/DeirEzZorGovernorate" },
+        { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/DeirezZorGov1" }
+      ]
+    },
+    {
+      "id": "hasakah",
+      "nameAr": "الحسكة",
+      "nameEn": "Al-Hasakah",
+      "links": [
+        { "label": "الموقع الإلكتروني لمحافظة الحسكة", "type": "website", "value": "http://hasakah.gov.sy" },
+        { "label": "الصفحة الرسمية على فيسبوك", "type": "facebook", "value": "https://www.facebook.com/HasakahGovernorate" },
+        { "label": "قناة التلغرام (مديرية الإعلام)", "type": "telegram", "value": "https://t.me/hasakahmd" }
+      ]
+    },
+    {
+      "id": "daraa",
+      "nameAr": "درعا",
+      "nameEn": "Daraa",
+      "links": [
+        { "label": "الموقع الإلكتروني لمحافظة درعا", "type": "website", "value": "http://daraa.gov.sy" },
+        { "label": "الصفحة الرسمية على فيسبوك", "type": "facebook", "value": "https://www.facebook.com/DaraaGovernorate" },
+        { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/DaraaGov1" }
+      ]
+    },
+    {
+      "id": "sweida",
+      "nameAr": "السويداء",
+      "nameEn": "As-Suwayda",
+      "links": [
+        { "label": "الموقع الإلكتروني لمحافظة السويداء", "type": "website", "value": "http://sweida.gov.sy" },
+        { "label": "الصفحة الرسمية على فيسبوك", "type": "facebook", "value": "https://www.facebook.com/SweidaGovernorate" },
+        { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/SweidaGov1" }
+      ]
+    },
+    {
+      "id": "quneitra",
+      "nameAr": "القنيطرة",
+      "nameEn": "Quneitra",
+      "links": [
+        { "label": "الموقع الإلكتروني لمحافظة القنيطرة", "type": "website", "value": "http://quneitra.gov.sy" },
+        { "label": "الصفحة الرسمية على فيسبوك", "type": "facebook", "value": "https://www.facebook.com/QuneitraGovernorate" },
+        { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/QuneitraGov1" },
+        { "label": "حساب إكس الرسمي للمحافظة", "type": "x", "value": "https://x.com/quneitramd" }
+      ]
+    }
+  ],
+  "presidency": {
+    "entities": [
+      {
+        "id": "presidency_office",
+        "name": "الأمانة العامة لرئاسة الجمهورية",
+        "head": "عبد الرحمن الأعمى",
+        "image": "images/public_figures/pf-abdulrahman-alamaa.webp",
+        "links": [
+          { "label": "الموقع الرسمي لرئاسة الجمهورية", "type": "website", "value": "http://www.presidency.gov.sy" },
+          { "label": "الصفحة الرسمية على فيسبوك", "type": "facebook", "value": "https://www.facebook.com/SyrianPresidency" },
+          { "label": "قناة التلغرام الرسمية للرئاسة", "type": "telegram", "value": "https://t.me/SyrianPresidency" },
+          { "label": "حساب إكس الرسمي للرئاسة", "type": "x", "value": "https://x.com/SyPresidency" },
+          { "label": "حساب إكس (الأمانة العامة للرئاسة)", "type": "x", "value": "https://x.com/SyGSPRCA" }
+        ]
+      },
+      {
+        "id": "control_inspection",
+        "name": "الهيئة المركزية للرقابة والتفتيش",
+        "head": "عامر نامس العلي",
+        "image": "",
+        "links": [
+          { "label": "الصفحة الإعلامية للهيئة", "type": "facebook", "value": "https://www.facebook.com/Inspection.Sy" },
+          { "label": "قناة التلغرام الرسمية للهيئة", "type": "telegram", "value": "https://t.me/SyCOFCAI" },
+          { "label": "حساب إكس الرسمي للهيئة", "type": "x", "value": "https://x.com/SyCOFCAI" }
+        ]
+      },
+      {
+        "id": "ports_customs",
+        "name": "الهيئة العامة للمنافذ والجمارك",
+        "head": "قتيبة أحمد بدوي",
+        "image": "",
+        "links": [
+          { "label": "قناة التلغرام الرسمية للهيئة", "type": "telegram", "value": "https://t.me/SyrGABC" },
+          { "label": "حساب إكس الرسمي للهيئة", "type": "x", "value": "https://x.com/SyrGABC" },
+          { "label": "معاون رئيس هيئة المنافذ (جمارك): خالد محمد البراد", "type": "other", "value": "تعيين فني للإشراف على قطاع الجمارك" }
+        ]
+      },
+      {
+        "id": "service_extension_committee",
+        "name": "لجنة تمديد الخدمة والوظائف",
+        "head": "وزير التنمية الإدارية",
+        "image": "",
+        "links": []
+      },
+      {
+        "id": "syrian_ports",
+        "name": "المديرية العامة للموانئ السورية",
+        "head": "أحمد علي مصطفى",
+        "image": "",
+        "links": [
+          { "label": "الموقع الإلكتروني للموانئ", "type": "website", "value": "http://www.ports.gov.sy" }
+        ]
+      }
+    ],
+    "ministries": [
+      {
+        "id": "mofa",
+        "name": "وزارة الخارجية والمغتربين",
+        "head": "أسعد حسن الشيباني",
+        "image": "images/public_figures/pf-asaad-alshaibani.webp",
+        "links": [
+          { "label": "الموقع الإلكتروني للوزارة", "type": "website", "value": "http://www.mofa.gov.sy" },
+          { "label": "الصفحة الرسمية على فيسبوك", "type": "facebook", "value": "https://www.facebook.com/Mofa.Sy" },
+          { "label": "حساب إكس الرسمي للوزارة", "type": "x", "value": "https://x.com/syrianmofaex" },
+          { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/syrianmofaex1" }
+        ]
+      },
+      {
+        "id": "defense",
+        "name": "وزارة الدفاع",
+        "head": "مرهف أحمد أبو قصرة",
+        "image": "images/public_figures/pf-murhaf-abuqasra.webp",
+        "links": [
+          { "label": "الموقع الإلكتروني لوزارة الدفاع", "type": "website", "value": "http://mod.gov.sy" },
+          { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/Sy_Defense" },
+          { "label": "حساب إكس الرسمي للوزارة", "type": "x", "value": "https://x.com/Sy_Defense" }
+        ]
+      },
+      {
+        "id": "interior",
+        "name": "وزارة الداخلية",
+        "head": "أنس خطاب",
+        "image": "images/public_figures/pf-anas-khatab.webp",
+        "links": [
+          { "label": "الموقع الإلكتروني للوزارة", "type": "website", "value": "http://www.syriamoi.gov.sy" },
+          { "label": "الصفحة الرسمية على فيسبوك", "type": "facebook", "value": "https://www.facebook.com/moi.syria" },
+          { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/syrianmoi" },
+          { "label": "حساب إكس الرسمي للوزارة", "type": "x", "value": "https://x.com/syrianmoi" }
+        ]
+      },
+      {
+        "id": "energy",
+        "name": "وزارة الطاقة (مُستحدثة)",
+        "head": "محمد البشير",
+        "image": "images/public_figures/pf-albasheir.webp",
+        "links": [
+          { "label": "الصفحة الرسمية لوزارة الطاقة", "type": "facebook", "value": "https://www.facebook.com/EnergyMinistrySy" },
+          { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/SyrMOfE" },
+          { "label": "حساب إكس الرسمي للوزارة", "type": "x", "value": "https://x.com/SyrMOfE" }
+        ]
+      },
+      {
+        "id": "finance",
+        "name": "وزارة المالية",
+        "head": "محمد يسر برنية",
+        "image": "images/public_figures/pf-yisr-barnieh.webp",
+        "links": [
+          { "label": "الموقع الإلكتروني للوزارة", "type": "website", "value": "http://syriatax.gov.sy" },
+          { "label": "صفحة فيسبوك الرسمية", "type": "facebook", "value": "https://www.facebook.com/mof.syria" },
+          { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/SyrMOfF" },
+          { "label": "حساب إكس الرسمي للوزارة", "type": "x", "value": "https://x.com/SyrMOfF" }
+        ]
+      },
+      {
+        "id": "economy_industry",
+        "name": "وزارة الاقتصاد والصناعة (مُستحدثة)",
+        "head": "نضال الشعار",
+        "image": "images/public_figures/pf-nedal-alchaar.webp",
+        "links": [
+          { "label": "الصفحة الرسمية للوزارة", "type": "facebook", "value": "https://www.facebook.com/EconIndSy" },
+          { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/SyMOEAI" }
+        ]
+      },
+      {
+        "id": "justice",
+        "name": "وزارة العدل",
+        "head": "مظهر الويس",
+        "image": "images/public_figures/pf-mazhar-alwais.webp",
+        "links": [
+          { "label": "الموقع الإلكتروني للوزارة", "type": "website", "value": "http://www.moj.gov.sy" },
+          { "label": "الصفحة الرسمية على فيسبوك", "type": "facebook", "value": "https://www.facebook.com/moj.gov.sy" },
+          { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/SyrMOfj" },
+          { "label": "حساب إكس الرسمي للوزارة", "type": "x", "value": "https://x.com/SyrMOf" }
+        ]
+      },
+      {
+        "id": "awqaf",
+        "name": "وزارة الأوقاف",
+        "head": "محمد أبو الخير شكري",
+        "image": "images/public_figures/pf-mohammed-abu-khair-shukri.webp",
+        "links": [
+          { "label": "الموقع الإلكتروني للوزارة", "type": "website", "value": "http://mora-sy.org" },
+          { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/SyMOfE" },
+          { "label": "حساب إكس الرسمي للوزارة", "type": "x", "value": "https://x.com/SyMOfE" }
+        ]
+      },
+      {
+        "id": "higher_education",
+        "name": "وزارة التعليم العالي والبحث العلمي",
+        "head": "مروان الحلبي",
+        "image": "images/public_figures/pf-marwan-alhalabi.webp",
+        "links": [
+          { "label": "الموقع الإلكتروني للوزارة", "type": "website", "value": "http://mohe.gov.sy" },
+          { "label": "صفحة فيسبوك الرسمية", "type": "facebook", "value": "https://www.facebook.com/mohe.sy" },
+          { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/SyMOHEASR" },
+          { "label": "حساب إكس الرسمي للوزارة", "type": "x", "value": "https://x.com/SyMOHEASR" }
+        ]
+      },
+      {
+        "id": "health",
+        "name": "وزارة الصحة",
+        "head": "مصعب نزال العلي",
+        "image": "images/public_figures/pf-musaab-alali.webp",
+        "links": [
+          { "label": "الموقع الإلكتروني للوزارة", "type": "website", "value": "http://www.moh.gov.sy" },
+          { "label": "الصفحة الرسمية على فيسبوك", "type": "facebook", "value": "https://www.facebook.com/moh.syria" },
+          { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/SyrMOfH" },
+          { "label": "حساب إكس الرسمي للوزارة", "type": "x", "value": "https://x.com/SyrMOfH" }
+        ]
+      },
+      {
+        "id": "local_admin",
+        "name": "وزارة الإدارة المحلية والبيئة",
+        "head": "محمد عنجراني",
+        "image": "images/public_figures/pf-mohamad-anjrani.webp",
+        "links": [
+          { "label": "الموقع الإلكتروني للوزارة", "type": "website", "value": "http://www.mla.gov.sy" },
+          { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/SyMOLAAE" },
+          { "label": "حساب إكس الرسمي للوزارة", "type": "x", "value": "https://x.com/SyMOLAAE" }
+        ]
+      },
+      {
+        "id": "telecommunications",
+        "name": "وزارة الاتصالات وتقانة المعلومات",
+        "head": "عبد السلام هيكل",
+        "image": "images/public_figures/pf-abdulsalam-haykal.webp",
+        "links": [
+          { "label": "الموقع الإلكتروني للوزارة", "type": "website", "value": "http://www.moct.gov.sy" },
+          { "label": "الصفحة الرسمية على فيسبوك", "type": "facebook", "value": "https://www.facebook.com/Moct.Sy" },
+          { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/SyMOCAIT" },
+          { "label": "حساب إكس الرسمي للوزارة", "type": "x", "value": "https://x.com/SyMOCAIT" }
+        ]
+      },
+      {
+        "id": "education",
+        "name": "وزارة التربية والتعليم",
+        "head": "محمد عبد الرحمن تركو",
+        "image": "",
+        "links": [
+          { "label": "الموقع الإلكتروني للوزارة", "type": "website", "value": "http://moed.gov.sy" },
+          { "label": "الصفحة الرسمية على فيسبوك", "type": "facebook", "value": "https://www.facebook.com/syrianeducation" },
+          { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/TrbyaGov" },
+          { "label": "حساب إكس الرسمي للوزارة", "type": "x", "value": "https://x.com/SyrMOEgov" }
+        ]
+      },
+      {
+        "id": "social_affairs",
+        "name": "وزارة الشؤون الاجتماعية والعمل",
+        "head": "هند قبوات",
+        "image": "images/public_figures/pf-hind-kabawat.webp",
+        "links": [
+          { "label": "الموقع الإلكتروني للوزارة", "type": "website", "value": "http://molsa.gov.sy" },
+          { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/SyMOSAAL" },
+          { "label": "حساب إكس الرسمي للوزارة", "type": "x", "value": "https://x.com/SyMOSAAL" }
+        ]
+      },
+      {
+        "id": "public_works",
+        "name": "وزارة الأشغال العامة والإسكان",
+        "head": "مصطفى عبد الرزاق",
+        "image": "images/public_figures/pf-mustafa.webp",
+        "links": [
+          { "label": "الموقع الإلكتروني للوزارة", "type": "website", "value": "http://mopwh.gov.sy" },
+          { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/MOPWAH" },
+          { "label": "حساب إكس الرسمي للوزارة", "type": "x", "value": "https://x.com/MOPWAH" }
+        ]
+      },
+      {
+        "id": "emergency_disaster",
+        "name": "وزارة الطوارئ والكوارث (مُستحدثة)",
+        "head": "رائد الصالح",
+        "image": "images/public_figures/pf-raed-alsaleh.webp",
+        "links": [
+          { "label": "الصفحة الرسمية للدفاع المدني السوري", "type": "facebook", "value": "https://www.facebook.com/SyriaCivilDefense" },
+          { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/SyMOEADM" },
+          { "label": "حساب إكس الرسمي للوزارة", "type": "x", "value": "https://x.com/SyMOEADM" }
+        ]
+      },
+      {
+        "id": "transport",
+        "name": "وزارة النقل",
+        "head": "يعرب سليمان بدر",
+        "image": "images/public_figures/pf-yarob-badr.webp",
+        "links": [
+          { "label": "الموقع الإلكتروني للوزارة", "type": "website", "value": "http://www.mot.gov.sy" },
+          { "label": "الصفحة الرسمية على فيسبوك", "type": "facebook", "value": "https://www.facebook.com/ministryoftransportsyria" },
+          { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/SyrSMOT" },
+          { "label": "حساب إكس الرسمي للوزارة", "type": "x", "value": "https://x.com/SyrSMOT" }
+        ]
+      },
+      {
+        "id": "admin_development",
+        "name": "وزارة التنمية الإدارية",
+        "head": "محمد حسان سكاف",
+        "image": "images/public_figures/pf-mhd-alskaf.webp",
+        "links": [
+          { "label": "الموقع الرسمي للتنمية الإدارية", "type": "website", "value": "http://www.msad.gov.sy" },
+          { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/SyMOAD" },
+          { "label": "حساب إكس الرسمي للوزارة", "type": "x", "value": "https://x.com/SyMOAD" }
+        ]
+      },
+      {
+        "id": "culture",
+        "name": "وزارة الثقافة",
+        "head": "محمد ياسين صالح",
+        "image": "images/public_figures/pf-mohammad-saleh.webp",
+        "links": [
+          { "label": "الموقع الإلكتروني للوزارة", "type": "website", "value": "http://www.moc.gov.sy" },
+          { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/SyrSMOC" }
+        ]
+      },
+      {
+        "id": "tourism",
+        "name": "وزارة السياحة",
+        "head": "مازن الصالحاني",
+        "image": "",
+        "links": [
+          { "label": "الموقع الإلكتروني للوزارة", "type": "website", "value": "http://www.syriatourism.org" },
+          { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/SySMOfT" }
+        ]
+      },
+      {
+        "id": "sports_youth",
+        "name": "وزارة الرياضة والشباب (مُستحدثة)",
+        "head": "محمد سامح حامض",
+        "image": "",
+        "links": [
+          { "label": "الصفحة الرسمية للاتحاد الرياضي العام", "type": "facebook", "value": "https://www.facebook.com/GeneralSportsFederation" },
+          { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/SyrMOYAS" }
+        ]
+      },
+      {
+        "id": "agriculture",
+        "name": "وزارة الزراعة والإصلاح الزراعي",
+        "head": "باسل حافظ السويدان",
+        "image": "",
+        "links": [
+          { "label": "الموقع الإلكتروني للوزارة", "type": "website", "value": "http://moaar.gov.sy" },
+          { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/SyrMOfA" }
+        ]
+      },
+      {
+        "id": "media",
+        "name": "وزارة الإعلام",
+        "head": "خالد فواز زعرور",
+        "image": "",
+        "links": [
+          { "label": "الموقع الرسمي للتلفزيون والإذاعة", "type": "website", "value": "http://www.ortas.online" },
+          { "label": "قناة التلغرام الرسمية", "type": "telegram", "value": "https://t.me/SyMOIGov" },
+          { "label": "حساب إكس الرسمي للوزارة", "type": "x", "value": "https://x.com/SyMOIGov" }
+        ]
+      }
+    ]
+  }
+} satisfies CentralDirectoryData;
+
+/*
+PORT STATUS
+  source:     resources/js/Pages/Central/data/central-directory.json (472 lines)
+  confidence: high
+  todos:      0
+  notes:      The static Central records are bundled as typed native data.
+*/

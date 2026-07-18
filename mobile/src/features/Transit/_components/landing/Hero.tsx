@@ -1,21 +1,33 @@
-import { Bus, MapPinned } from 'lucide-react-native';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/ui/AppText';
-import { useAppTheme } from '@/contexts/ThemeContext';
 
-export function Hero() {
-  const { theme } = useAppTheme();
+import type { City } from '../../_types';
+import { transitSummary } from '../../model';
+
+export function Hero({ cities }: { cities: readonly City[] }) {
+  const summary = transitSummary(cities);
   return (
     <View style={styles.hero}>
-      <View style={styles.icons}>
-        <Bus color={theme.palette.primary} size={38} />
-        <MapPinned color={theme.palette.primary} size={28} />
-      </View>
       <AppText style={styles.center} variant="title">ترانزيت سوريا</AppText>
       <AppText color="muted" style={styles.center}>
-        خطوط النقل، المحطات، البحث، والاتجاهات في المدن السورية
+        دليل وخرائط تفاعلية لشبكات وخطوط المواصلات العامة والسرافيس في المدن
+        السورية، يجمعها المجتمع ويحدّثها، ومتاحة للجميع مجاناً.
       </AppText>
+      <View style={styles.stats}>
+        <View style={styles.stat}>
+          <AppText variant="heading">
+            {summary.readyCities.toLocaleString('ar-SY')}
+          </AppText>
+          <AppText color="muted" variant="caption">مدن جاهزة</AppText>
+        </View>
+        <View style={styles.stat}>
+          <AppText variant="heading">
+            {summary.totalRoutes.toLocaleString('ar-SY')}
+          </AppText>
+          <AppText color="muted" variant="caption">خط سيرفيس</AppText>
+        </View>
+      </View>
     </View>
   );
 }
@@ -29,17 +41,22 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 20,
   },
-  icons: {
+  stat: {
     alignItems: 'center',
-    flexDirection: 'row',
-    gap: 8,
+    gap: 2,
+  },
+  stats: {
+    flexDirection: 'row-reverse',
+    gap: 28,
+    justifyContent: 'center',
+    paddingTop: 8,
   },
 });
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Transit/_components/landing/Hero.tsx (55 lines)
+  source:     resources/js/Pages/Transit/_components/landing/Hero.tsx (38 lines)
   confidence: high
   todos:      0
-  notes:      Native typography and icons preserve the landing introduction.
+  notes:      Native typography preserves the source introduction and live city and route totals.
 */

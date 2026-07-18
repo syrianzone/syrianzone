@@ -43,6 +43,16 @@ function sourcePath(path) {
   return null;
 }
 
+function sourceDirectoryPath(path) {
+  for (const sourceRoot of sourceRoots) {
+    const candidate = resolve(sourceRoot, path);
+    if (existsSync(candidate) && statSync(candidate).isDirectory()) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
 function readTsv(path, expectedHeader) {
   const content = readFileSync(repoPath(path), 'utf8').trimEnd();
   const rows = content.split('\n').map((line, index) => {
@@ -99,6 +109,24 @@ for (const [index, line] of readFileSync(repoPath('port-manifest.tsv'), 'utf8')
     warnings.push(`${source}: source snapshot isn't available for line verification`);
   } else if (lines(actualSource) !== loc) {
     fail(`${source}: manifest has ${loc} lines, source has ${lines(actualSource)}`);
+  }
+}
+
+for (const requiredSourceDirectory of [
+  'resources/js/Pages/Places',
+  'resources/js/Pages/Admin/Places',
+]) {
+  const actualSourceDirectory = sourceDirectoryPath(requiredSourceDirectory);
+  if (!actualSourceDirectory) {
+    warnings.push(`${requiredSourceDirectory}: source directory isn't available for manifest coverage`);
+    continue;
+  }
+  for (const sourceFile of walk(actualSourceDirectory).filter((path) => /\.[jt]sx?$/.test(path))) {
+    const suffix = sourceFile.slice(actualSourceDirectory.length + 1).replaceAll('\\', '/');
+    const source = `${requiredSourceDirectory}/${suffix}`;
+    if (!manifest.has(source)) {
+      fail(`${source}: source file is missing from port-manifest.tsv`);
+    }
   }
 }
 
@@ -271,6 +299,59 @@ for (const [index, row] of assetRows.entries()) {
     if (!existsSync(repoPath(evidence))) {
       fail(`mobile-assets.tsv:${line}: missing target evidence ${evidence}`);
     }
+  }
+}
+
+for (const style of ['dark-matter.json', 'light.json']) {
+  const source = sourcePath(`public/styles/styles/${style}`);
+  const target = repoPath(`mobile/assets/styles/${style}`);
+  if (!source || !existsSync(target)) {
+    continue;
+  }
+  if (readFileSync(source, 'utf8') !== readFileSync(target, 'utf8')) {
+    fail(`mobile/assets/styles/${style}: bundled style differs from its source`);
+  }
+}
+
+const placesMap = readFileSync(repoPath('mobile/src/features/Places/_components/PlacesMap.tsx'), 'utf8');
+for (const style of ['dark-matter-vector.json', 'light-vector.json']) {
+  const source = sourcePath(`public/styles/styles/${style}`);
+  const target = repoPath(`mobile/assets/styles/${style}`);
+  if (!source) {
+    fail(`public/styles/styles/${style}: vector place style is missing`);
+    continue;
+  }
+  if (!existsSync(target)) {
+    fail(`mobile/assets/styles/${style}: bundled vector style is missing`);
+    continue;
+  }
+  if (readFileSync(source, 'utf8') !== readFileSync(target, 'utf8')) {
+    fail(`mobile/assets/styles/${style}: bundled vector style differs from its source`);
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(readFileSync(source, 'utf8'));
+  } catch (error) {
+    fail(`public/styles/styles/${style}: invalid JSON: ${error.message}`);
+    continue;
+  }
+
+  const countryLayers = new Map(
+    (parsed.layers ?? [])
+      .filter(({ id }) => id === 'place_country_1' || id === 'place_country_2')
+      .map((layer) => [layer.id, layer]),
+  );
+  for (const id of ['place_country_1', 'place_country_2']) {
+    const textField = countryLayers.get(id)?.layout?.['text-field'];
+    const serialized = JSON.stringify(textField);
+    if (!serialized.includes('Israel') || !serialized.includes('Palestine')) {
+      fail(`public/styles/styles/${style}: ${id} is missing the Palestine label override`);
+    }
+  }
+
+  if (!placesMap.includes(`@/assets/styles/${style}`)) {
+    fail(`mobile/src/features/Places/_components/PlacesMap.tsx: place map does not reference ${style}`);
   }
 }
 

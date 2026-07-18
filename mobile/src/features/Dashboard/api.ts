@@ -64,6 +64,26 @@ export async function updateDashboardAccount(input: {
   return response.data.user;
 }
 
+export async function updateDashboardAvatar(input: {
+  fileName: string;
+  mimeType: string;
+  uri: string;
+}) {
+  const form = new FormData();
+  form.append('avatar', {
+    name: input.fileName,
+    type: input.mimeType,
+    uri: input.uri,
+  } as unknown as Blob);
+  const response = await apiClient.request('/api/mobile/account/avatar', {
+    auth: true,
+    body: form,
+    method: 'POST',
+    schema: accountUpdateResponseSchema,
+  });
+  return response.data.user;
+}
+
 export async function deleteDashboardAccount(): Promise<void> {
   await apiClient.request('/api/mobile/account', {
     auth: true,

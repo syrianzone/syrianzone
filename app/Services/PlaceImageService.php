@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Models\PlacePhoto;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Intervention\Image\Drivers\Gd\Driver;
@@ -19,81 +21,227 @@ class PlaceImageService
         'image/webp' => 'webp',
     ];
 
+    public function __construct(
+        private readonly ImageDecodeGuard $decodeGuard,
+        private readonly MediaCleanupService $cleanup,
+    ) {}
+
     public function dimensionsAreSafe(UploadedFile $file): bool
     {
-        $dimensions = @getimagesize($file->getRealPath());
-
-        if (! is_array($dimensions)) {
-            return false;
-        }
-
-        [$width, $height] = $dimensions;
-
-        return $width >= 200
-          && $height >= 200
-          && $width <= 6000
-          && $height <= 6000
-          && ($width * $height) <= 20_000_000;
+        return $this->decodeGuard->dimensionsAreSafe($file, 200);
     }
 
     public function store(UploadedFile $file, int $placeId, int $sort): PlacePhoto
     {
-        $mime = $file->getMimeType();
-        $extension = self::MIME_EXTENSIONS[$mime] ?? null;
-
-        if (! $extension || ! $this->dimensionsAreSafe($file)) {
-            throw new RuntimeException('Unsafe place image');
-        }
-
-        $id = (string) Str::uuid();
-        $directory = $this->directory($placeId);
-        $originalPath = "{$directory}/{$id}.{$extension}";
-        $displayPath = "{$directory}/{$id}_display.webp";
-        $thumbPath = "{$directory}/{$id}_thumb.webp";
-        $disk = Storage::disk('public');
-        $written = [];
+        $paths = $this->writeSet($file, $placeId);
 
         try {
-            if (! $disk->putFileAs($directory, $file, "{$id}.{$extension}")) {
-                throw new RuntimeException('Could not store place image');
-            }
-            $written[] = $originalPath;
-
-            $manager = new ImageManager(new Driver);
-            $display = $manager->read($file->getRealPath())->orient()->scaleDown(width: 1600, height: 1600);
-            if (! $disk->put($displayPath, (string) $display->toWebp(quality: 80))) {
-                throw new RuntimeException('Could not store place display image');
-            }
-            $written[] = $displayPath;
-
-            $thumb = $manager->read($file->getRealPath())->orient()->cover(400, 400);
-            if (! $disk->put($thumbPath, (string) $thumb->toWebp(quality: 75))) {
-                throw new RuntimeException('Could not store place thumbnail');
-            }
-            $written[] = $thumbPath;
-
             return PlacePhoto::create([
                 'place_id' => $placeId,
-                'original_path' => $originalPath,
-                'display_path' => $displayPath,
-                'thumb_path' => $thumbPath,
                 'sort' => $sort,
+                ...$paths,
             ]);
         } catch (Throwable $error) {
-            $disk->delete($written);
+            $this->disk()->delete(array_values($paths));
 
             throw $error;
         }
     }
 
+    public function replace(PlacePhoto $photo, UploadedFile $file): void
+    {
+        $newPaths = $this->writeSet($file, $photo->place_id);
+
+        try {
+            DB::transaction(function () use ($photo, $newPaths): void {
+                $locked = PlacePhoto::query()->lockForUpdate()->findOrFail($photo->id);
+                $oldPaths = [$locked->original_path, $locked->display_path, $locked->thumb_path];
+                $locked->forceFill([...$newPaths, 'rotation_degrees' => 0])->save();
+                $this->cleanup->queueFiles($oldPaths);
+                DB::afterRollBack(fn () => $this->disk()->delete(array_values($newPaths)));
+            });
+        } catch (Throwable $error) {
+            $this->disk()->delete(array_values($newPaths));
+
+            throw $error;
+        }
+
+        $photo->refresh();
+    }
+
+    public function reprocess(PlacePhoto $photo): void
+    {
+        $this->refreshVariants($photo, false);
+    }
+
+    public function rotateClockwise(PlacePhoto $photo): void
+    {
+        $this->refreshVariants($photo, true);
+    }
+
+    public function deleteFiles(PlacePhoto $photo): void
+    {
+        $this->cleanup->queueFiles([
+            $photo->original_path,
+            $photo->display_path,
+            $photo->thumb_path,
+        ]);
+    }
+
     public function deletePlaceFiles(int $placeId): void
     {
-        $disk = Storage::disk('public');
-        $directory = $this->directory($placeId);
+        $this->cleanup->queueDirectory($this->directory($placeId));
+    }
 
-        if ($disk->directoryExists($directory) && ! $disk->deleteDirectory($directory)) {
-            throw new RuntimeException('Could not delete place images');
+    /**
+     * @return array{original_path: string, display_path: string, thumb_path: string}
+     */
+    private function writeSet(UploadedFile $file, int $placeId): array
+    {
+        $extension = self::MIME_EXTENSIONS[$file->getMimeType()] ?? null;
+        if (! $extension || ! $this->dimensionsAreSafe($file)) {
+            throw new RuntimeException('Unsafe place image');
         }
+
+        $uuid = (string) Str::uuid();
+        $directory = $this->directory($placeId);
+        $originalPath = "{$directory}/{$uuid}.{$extension}";
+        $displayPath = "{$directory}/{$uuid}_display.webp";
+        $thumbPath = "{$directory}/{$uuid}_thumb.webp";
+        $written = [];
+
+        try {
+            $binary = file_get_contents($file->getRealPath());
+            if (! is_string($binary)) {
+                throw new RuntimeException('Could not read place image');
+            }
+
+            $this->putOrFail($originalPath, $binary);
+            $written[] = $originalPath;
+
+            [$display, $thumb] = $this->variants($binary, 0);
+            $this->putOrFail($displayPath, $display);
+            $written[] = $displayPath;
+            $this->putOrFail($thumbPath, $thumb);
+            $written[] = $thumbPath;
+        } catch (Throwable $error) {
+            $this->disk()->delete($written);
+
+            throw $error;
+        }
+
+        return [
+            'original_path' => $originalPath,
+            'display_path' => $displayPath,
+            'thumb_path' => $thumbPath,
+        ];
+    }
+
+    private function putOrFail(string $path, string $contents): void
+    {
+        if ($this->disk()->put($path, $contents) !== true) {
+            throw new RuntimeException("Failed writing {$path}");
+        }
+    }
+
+    private function disk(): Filesystem
+    {
+        return Storage::disk(config('filesystems.media_disk'));
+    }
+
+    /**
+     * @return array{string, string}
+     */
+    private function variants(string $binary, int $rotationDegrees): array
+    {
+        $manager = ImageManager::withDriver(Driver::class);
+        $image = $manager
+            ->read($binary)
+            ->scaleDown(width: 1600, height: 1600);
+        if ($rotationDegrees !== 0) {
+            $image = $image->rotate(-$rotationDegrees);
+        }
+        $display = (string) $image->toWebp(quality: 80);
+        $thumb = (string) $manager
+            ->read($display)
+            ->cover(400, 400)
+            ->toWebp(quality: 75);
+
+        return [$display, $thumb];
+    }
+
+    private function refreshVariants(PlacePhoto $photo, bool $rotateClockwise): void
+    {
+        $newPaths = null;
+
+        try {
+            DB::transaction(function () use ($photo, $rotateClockwise, &$newPaths): void {
+                $locked = PlacePhoto::query()->lockForUpdate()->findOrFail($photo->id);
+                $disk = $this->disk();
+                if (! $disk->exists($locked->original_path)) {
+                    throw new RuntimeException("Original image is missing: {$locked->original_path}");
+                }
+
+                $binary = $disk->get($locked->original_path);
+                if (! $this->decodeGuard->binaryDimensionsAreSafe($binary, 200)) {
+                    throw new RuntimeException('Unsafe stored place image');
+                }
+
+                $rotation = (int) $locked->rotation_degrees;
+                if ($rotateClockwise) {
+                    $rotation = ($rotation + 90) % 360;
+                }
+
+                $oldPaths = [$locked->display_path, $locked->thumb_path];
+                $newPaths = $this->writeVariants(
+                    $binary,
+                    $locked->place_id,
+                    $rotation,
+                );
+                DB::afterRollBack(fn () => $disk->delete(array_values($newPaths)));
+                $locked->forceFill([
+                    ...$newPaths,
+                    'rotation_degrees' => $rotation,
+                ])->save();
+                $this->cleanup->queueFiles($oldPaths);
+            });
+        } catch (Throwable $error) {
+            if (is_array($newPaths)) {
+                $this->disk()->delete(array_values($newPaths));
+            }
+
+            throw $error;
+        }
+
+        $photo->refresh();
+    }
+
+    /**
+     * @return array{display_path: string, thumb_path: string}
+     */
+    private function writeVariants(string $binary, int $placeId, int $rotationDegrees): array
+    {
+        $uuid = (string) Str::uuid();
+        $directory = $this->directory($placeId);
+        $paths = [
+            'display_path' => "{$directory}/{$uuid}_display.webp",
+            'thumb_path' => "{$directory}/{$uuid}_thumb.webp",
+        ];
+        $written = [];
+
+        try {
+            [$display, $thumb] = $this->variants($binary, $rotationDegrees);
+            $this->putOrFail($paths['display_path'], $display);
+            $written[] = $paths['display_path'];
+            $this->putOrFail($paths['thumb_path'], $thumb);
+            $written[] = $paths['thumb_path'];
+        } catch (Throwable $error) {
+            $this->disk()->delete($written);
+
+            throw $error;
+        }
+
+        return $paths;
     }
 
     private function directory(int $placeId): string

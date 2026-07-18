@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import type { ComponentType } from 'react';
 
@@ -121,6 +121,12 @@ beforeEach(async () => {
   });
 });
 
+afterEach(async () => {
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+});
+
 test('renders custom local widgets, Hijri date, F3alia, and server quick links', async () => {
   await AsyncStorage.setItem(
     'startpage-settings',
@@ -197,4 +203,15 @@ test('keeps every source external link available when Home content is offline', 
   expect(view.getByText('مجتمع كوديكس')).toBeTruthy();
   expect(view.getByText('مبدل العلم')).toBeTruthy();
   expect(view.getByText('الحسابات الرسمية')).toBeTruthy();
+});
+
+test('opens the central directory from the Home tools', async () => {
+  const view = await renderScreen();
+
+  await waitFor(() => expect(view.getByText('الروزنامة')).toBeTruthy());
+  await waitFor(() => expect(view.getByText('29°C')).toBeTruthy());
+  await waitFor(() => expect(view.getByText('الدليل المركزي')).toBeTruthy());
+  await fireEvent.press(view.getByText('الدليل المركزي'));
+
+  expect(router.push).toHaveBeenCalledWith('/central');
 });

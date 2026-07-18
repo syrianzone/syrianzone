@@ -1,9 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
+import { router, useLocalSearchParams } from 'expo-router';
 import {
   AlertCircle,
   Ban,
   Bus,
+  Camera,
   Edit,
   ListOrdered,
   MapPinned,
@@ -37,10 +40,12 @@ import {
   deleteDashboardAccount,
   fetchDashboardAccount,
   updateDashboardAccount,
+  updateDashboardAvatar,
   withdrawDashboardDraft,
 } from './api';
 import {
   dashboardCapabilities,
+  dashboardTabFromParam,
   type DashboardTab,
   defaultDashboardTab,
   draftStatusLabel,
@@ -50,12 +55,14 @@ import {
 type DashboardMode = 'dashboard' | 'poll-create' | 'poll-edit';
 
 interface DashboardContentProps {
+  initialTab: DashboardTab | null;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   user: AuthUser;
 }
 
 function DashboardContent({
+  initialTab,
   logout,
   refreshUser,
   user,
@@ -63,10 +70,11 @@ function DashboardContent({
   const { theme } = useAppTheme();
   const [mode, setMode] = useState<DashboardMode>('dashboard');
   const [editingPollId, setEditingPollId] = useState<string | null>(null);
-  const [requestedTab, setRequestedTab] = useState<DashboardTab | null>(null);
+  const [requestedTab, setRequestedTab] = useState<DashboardTab | null>(initialTab);
   const [withdrawingDraftId, setWithdrawingDraftId] = useState<number | null>(null);
   const [profileName, setProfileName] = useState(user.name);
   const [profileEmail, setProfileEmail] = useState(user.email);
+  const [avatarLoading, setAvatarLoading] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileMessage, setProfileMessage] = useState<{
     text: string;
@@ -76,7 +84,7 @@ function DashboardContent({
   const [deletingPollId, setDeletingPollId] = useState<string | null>(null);
   const accountQuery = useQuery({
     queryFn: ({ signal }) => fetchDashboardAccount(signal),
-    queryKey: ['dashboard-account'],
+    queryKey: ['dashboard-account', user.id],
   });
   const accountUser = accountQuery.data?.user ?? user;
   const capabilities = dashboardCapabilities(accountUser.role);
@@ -97,7 +105,7 @@ function DashboardContent({
   const pollsQuery = useQuery({
     enabled: capabilities.canManagePolls,
     queryFn: ({ signal }) => fetchAdminPollCatalog(signal),
-    queryKey: ['admin-poll-catalog'],
+    queryKey: ['admin-poll-catalog', user.id],
   });
   const myDrafts = accountQuery.data?.myDrafts ?? [];
 
@@ -157,6 +165,62 @@ function DashboardContent({
       });
     } finally {
       setProfileLoading(false);
+    }
+  };
+
+  const pickAvatar = async () => {
+    setProfileMessage(null);
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      setProfileMessage({
+        text: 'يلزم السماح بالوصول إلى الصور لاختيار صورة الحساب.',
+        type: 'error',
+      });
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      mediaTypes: ['images'],
+      preferredAssetRepresentationMode:
+        ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
+      quality: 0.9,
+    });
+    const asset = result.assets?.[0];
+    if (result.canceled || !asset) {
+      return;
+    }
+    if (asset.fileSize && asset.fileSize > 4 * 1_024 * 1_024) {
+      setProfileMessage({
+        text: 'يجب ألا يتجاوز حجم صورة الحساب 4 MB.',
+        type: 'error',
+      });
+      return;
+    }
+
+    setAvatarLoading(true);
+    try {
+      await updateDashboardAvatar({
+        fileName: asset.fileName ?? 'profile-avatar.jpg',
+        mimeType: asset.mimeType ?? 'image/jpeg',
+        uri: asset.uri,
+      });
+      await Promise.all([refreshUser(), accountQuery.refetch()]);
+      setProfileMessage({
+        text: 'تم تحديث صورة الحساب بنجاح.',
+        type: 'success',
+      });
+    } catch (cause) {
+      setProfileMessage({
+        text:
+          cause instanceof Error
+            ? cause.message
+            : 'تعذر تحديث صورة الحساب.',
+        type: 'error',
+      });
+    } finally {
+      setAvatarLoading(false);
     }
   };
 
@@ -494,6 +558,44 @@ function DashboardContent({
             </AppCard>
           ) : null}
           <AppCard style={styles.form}>
+            <View style={styles.avatarRow}>
+              {accountUser.avatar_url ? (
+                <Image
+                  accessibilityLabel="صورة الحساب الحالية"
+                  contentFit="cover"
+                  source={accountUser.avatar_url}
+                  style={styles.profileAvatar}
+                />
+              ) : (
+                <View
+                  accessibilityLabel="صورة الحساب الافتراضية"
+                  style={[
+                    styles.profileAvatar,
+                    styles.avatarFallback,
+                    { backgroundColor: theme.palette.surfaceRaised },
+                  ]}
+                >
+                  <AppText variant="heading">
+                    {accountUser.name.trim().charAt(0).toUpperCase() || '؟'}
+                  </AppText>
+                </View>
+              )}
+              <View style={styles.grow}>
+                <AppText variant="label">صورة الحساب</AppText>
+                <AppText color="muted" variant="caption">
+                  صورة مربعة بصيغة JPEG أو PNG أو WebP، وبحجم أقصى 4 MB.
+                </AppText>
+                <AppButton
+                  icon={<Camera color={theme.palette.foreground} size={18} />}
+                  loading={avatarLoading}
+                  onPress={() => void pickAvatar()}
+                  testID="dashboard-avatar-picker"
+                  variant="secondary"
+                >
+                  اختيار صورة جديدة
+                </AppButton>
+              </View>
+            </View>
             <AppText variant="label">اسم المستخدم</AppText>
             <AppInput
               maxLength={255}
@@ -545,6 +647,8 @@ function DashboardContent({
 
 export default function Dashboard() {
   const { loading, login, logout, refreshUser, user } = useAuth();
+  const params = useLocalSearchParams<{ tab?: string | string[] }>();
+  const initialTab = dashboardTabFromParam(params.tab);
 
   if (loading) {
     return (
@@ -564,6 +668,7 @@ export default function Dashboard() {
 
   return (
     <DashboardContent
+      initialTab={initialTab}
       key={user.id}
       logout={logout}
       refreshUser={refreshUser}
@@ -573,6 +678,15 @@ export default function Dashboard() {
 }
 
 const styles = StyleSheet.create({
+  avatarFallback: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarRow: {
+    alignItems: 'center',
+    flexDirection: 'row-reverse',
+    gap: 14,
+  },
   cardActions: {
     gap: 7,
   },
@@ -598,6 +712,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
     gap: 12,
   },
+  profileAvatar: {
+    borderRadius: 44,
+    height: 88,
+    width: 88,
+  },
   row: {
     alignItems: 'center',
     flexDirection: 'row-reverse',
@@ -621,8 +740,8 @@ const styles = StyleSheet.create({
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Dashboard/Index.tsx (591 lines)
+  source:     resources/js/Pages/Dashboard/Index.tsx (694 lines)
   confidence: high
   todos:      0
-  notes:      Native role gates, submissions, poll administration, profile updates, and account deletion preserve the source dashboard.
+  notes:      Native role gates, submissions, poll administration, avatar and profile updates, and account deletion preserve the source dashboard.
 */

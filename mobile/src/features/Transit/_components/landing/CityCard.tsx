@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Bus, ChevronLeft } from 'lucide-react-native';
+import { ChevronLeft } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppCard } from '@/components/ui/AppCard';
@@ -8,11 +8,12 @@ import { useAppTheme } from '@/contexts/ThemeContext';
 
 import { usePreloadCity } from '../../_hooks/useMapData';
 import type { City } from '../../_types';
+import { GovernorateIcon } from './GovernorateIcon';
 
 export function CityCard({ city }: { city: City }) {
   const { theme } = useAppTheme();
   const preload = usePreloadCity();
-  const enabled = city.status === 'active';
+  const enabled = city.status === 'active' && city.routeCount > 0;
   return (
     <Pressable
       accessibilityRole="button"
@@ -26,12 +27,16 @@ export function CityCard({ city }: { city: City }) {
     >
       <AppCard style={styles.card}>
         <View style={[styles.icon, { backgroundColor: theme.palette.surfaceRaised }]}>
-          <Bus color={theme.palette.primary} size={24} />
+          <GovernorateIcon
+            cityId={city.id}
+            color={theme.palette.primary}
+            size={30}
+          />
         </View>
         <View style={styles.copy}>
           <AppText variant="heading">{city.nameAr}</AppText>
           <AppText color="muted" variant="caption">
-            {city.nameEn}، {city.routeCount} خط
+            {city.routeCount > 0 ? `${city.routeCount} خط` : 'قريباً'}
           </AppText>
         </View>
         {enabled ? <ChevronLeft color={theme.palette.mutedForeground} size={20} /> : null}
@@ -60,8 +65,8 @@ const styles = StyleSheet.create({
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Transit/_components/landing/CityCard.tsx (85 lines)
+  source:     resources/js/Pages/Transit/_components/landing/CityCard.tsx (118 lines)
   confidence: high
   todos:      0
-  notes:      Native presses preserve city status, counts, navigation, and prefetch.
+  notes:      Native presses preserve city readiness, province silhouettes, counts, navigation, and prefetch.
 */

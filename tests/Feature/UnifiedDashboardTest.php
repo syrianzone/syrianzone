@@ -47,22 +47,32 @@ test('deleting user account soft deletes user and delegates polls and routes to 
     // Create a poll owned by the deleting admin
     $poll = Poll::factory()->create(['user_id' => $admin->id]);
 
+    // Satisfy the routes.city_id foreign key; sqlite pragmas cannot be
+    // toggled inside the test transaction, so insert a real city instead.
+    $geometry = function (array $shape) {
+        $json = json_encode($shape, JSON_THROW_ON_ERROR);
+        if (DB::connection()->getDriverName() === 'sqlite') {
+            return $json;
+        }
+
+        $quoted = DB::connection()->getPdo()->quote($json);
+
+        return DB::raw("ST_GeomFromGeoJSON({$quoted})");
+    };
+
     DB::table('cities')->insert([
-        'bounds' => json_encode([
-            'coordinates' => [[[35.8, 33.3], [36.8, 33.3], [36.8, 33.7], [35.8, 33.3]]],
-            'type' => 'Polygon',
-        ], JSON_THROW_ON_ERROR),
-        'center' => json_encode([
-            'coordinates' => [36.29, 33.51],
-            'type' => 'Point',
-        ], JSON_THROW_ON_ERROR),
-        'created_at' => now(),
         'id' => 'damascus',
         'name_ar' => 'دمشق',
         'name_en' => 'Damascus',
-        'status' => 'active',
-        'updated_at' => now(),
+        'center' => $geometry(['type' => 'Point', 'coordinates' => [36.29, 33.51]]),
+        'bounds' => $geometry([
+            'type' => 'Polygon',
+            'coordinates' => [[[35.8, 33.3], [36.8, 33.3], [36.8, 33.7], [35.8, 33.3]]],
+        ]),
         'zoom' => 12,
+        'status' => 'active',
+        'created_at' => now(),
+        'updated_at' => now(),
     ]);
 
     // Create a route owned by the deleting admin

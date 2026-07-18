@@ -9,11 +9,15 @@ const photo = (overrides: Partial<{
   fileSize: number;
   mimeType: string | null;
   uri: string;
+  width: number;
+  height: number;
 }> = {}) => ({
   fileName: 'damascus.jpg',
   fileSize: 1_000_000,
+  height: 1200,
   mimeType: 'image/jpeg',
   uri: 'file:///damascus.jpg',
+  width: 1600,
   ...overrides,
 });
 
@@ -59,10 +63,10 @@ describe('place submission validation', () => {
         name: 'خان',
         photos: [],
       }),
-    ).toBe('أضف من صورة واحدة إلى 5 صور.');
+    ).toBe('أضف من صورة واحدة إلى 10 صور.');
   });
 
-  test('accepts only five JPEG, PNG, or WebP files no larger than 8 MB', () => {
+  test('accepts only ten JPEG, PNG, or WebP files no larger than 12 MB', () => {
     const result = mergePickedPhotos(
       [],
       [
@@ -70,24 +74,28 @@ describe('place submission validation', () => {
         photo({ fileName: 'aleppo.png', mimeType: 'image/png', uri: 'file:///aleppo.png' }),
         photo({ fileName: 'hama.webp', mimeType: 'image/webp', uri: 'file:///hama.webp' }),
         photo({ fileName: 'bad.gif', mimeType: 'image/gif', uri: 'file:///bad.gif' }),
-        photo({ fileName: 'large.jpg', fileSize: 8 * 1024 * 1024 + 1, uri: 'file:///large.jpg' }),
+        photo({ fileName: 'large.jpg', fileSize: 12 * 1024 * 1024 + 1, uri: 'file:///large.jpg' }),
+        photo({ fileName: 'small.jpg', height: 199, uri: 'file:///small.jpg' }),
+        photo({ fileName: 'wide.jpg', uri: 'file:///wide.jpg', width: 6001 }),
       ],
     );
 
     expect(result.photos).toHaveLength(3);
     expect(result.errors).toEqual([
       'الصورة bad.gif ليست بصيغة JPEG أو PNG أو WebP.',
-      'الصورة large.jpg تتجاوز 8 ميغابايت.',
+      'الصورة large.jpg تتجاوز 12 ميغابايت.',
+      'الصورة small.jpg أصغر من 200x200 بكسل.',
+      'الصورة wide.jpg تتجاوز 6000x6000 بكسل.',
     ]);
 
     const atLimit = mergePickedPhotos(
       result.photos,
-      Array.from({ length: 4 }, (_, index) =>
+      Array.from({ length: 9 }, (_, index) =>
         photo({ fileName: `extra-${index}.jpg`, uri: `file:///extra-${index}.jpg` }),
       ),
     );
-    expect(atLimit.photos).toHaveLength(5);
-    expect(atLimit.errors).toContain('الحد الأقصى 5 صور.');
+    expect(atLimit.photos).toHaveLength(10);
+    expect(atLimit.errors).toContain('الحد الأقصى 10 صور.');
   });
 
   test('infers a safe upload name and MIME type when the picker omits them', () => {

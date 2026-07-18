@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import axios from 'axios';
 import {
@@ -15,9 +15,12 @@ import {
   Ban,
   UserCheck,
   Edit,
-  Plus
+  Plus,
+  MapPin,
+  Loader2
 } from 'lucide-react';
 import MainLayout from '@/Layouts/MainLayout';
+import { useAuth } from '@/Contexts/AuthContext';
 
 interface City {
   id: string;
@@ -64,6 +67,7 @@ interface DashboardProps {
       name: string;
       email: string;
       role: string;
+      avatar_url: string | null;
     };
   };
   role: string;
@@ -72,6 +76,92 @@ interface DashboardProps {
   polls?: Poll[];
   allDrafts?: Draft[];
   publishedRoutes?: Route[];
+}
+
+// Rendered inside the <MainLayout> children, where the AuthProvider that
+// MainLayout mounts is an ancestor; calling useAuth() in the page component
+// body would run above the provider and throw, white-screening /dashboard.
+function AvatarUploader({ user }: { user: { name: string; avatar_url: string | null } }) {
+  const { refreshUser } = useAuth();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(user.avatar_url ?? null);
+  const [avatarLoading, setAvatarLoading] = useState(false);
+  const [avatarMessage, setAvatarMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  // a dead avatar_url (lost file, stale Google url) falls back to the initial circle
+  const [avatarBroken, setAvatarBroken] = useState(false);
+
+  // Upload a new avatar as soon as a file is picked
+  const handleAvatarPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarLoading(true);
+    setAvatarMessage(null);
+    try {
+      const form = new FormData();
+      form.append('avatar', file);
+      const res = await axios.post('/api/account/avatar', form);
+      setAvatarUrl(res.data.avatar_url);
+      setAvatarBroken(false);
+      setAvatarMessage({ type: 'success', text: 'تم تحديث الصورة الشخصية' });
+      await refreshUser();
+    } catch (err: any) {
+      const msg = err.response?.data?.message;
+      setAvatarMessage({
+        type: 'error',
+        text: msg && /[\u0600-\u06FF]/.test(msg) ? msg : 'تعذر رفع الصورة'
+      });
+    } finally {
+      if (avatarInputRef.current) avatarInputRef.current.value = '';
+      setAvatarLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="flex items-center gap-4">
+        {avatarUrl && !avatarBroken ? (
+          <img
+            src={avatarUrl}
+            alt={user.name}
+            onError={() => setAvatarBroken(true)}
+            className="h-16 w-16 rounded-full object-cover"
+          />
+        ) : (
+          <div className="h-16 w-16 rounded-full bg-[#1f2833] border border-gray-700 flex items-center justify-center text-white text-xl font-bold">
+            {user.name.charAt(0)}
+          </div>
+        )}
+        <input
+          ref={avatarInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={handleAvatarPick}
+        />
+        <button
+          type="button"
+          onClick={() => avatarInputRef.current?.click()}
+          disabled={avatarLoading}
+          className="px-4 py-2 border border-amber-500 text-amber-500 hover:bg-amber-500 hover:text-[#0b0c10] font-bold text-sm rounded-lg transition flex items-center gap-2 disabled:opacity-60"
+        >
+          {avatarLoading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              جارٍ الرفع
+            </>
+          ) : (
+            'تغيير الصورة'
+          )}
+        </button>
+      </div>
+
+      {avatarMessage && (
+        <div className={`p-4 rounded-lg text-sm ${avatarMessage.type === 'success' ? 'bg-green-950 text-green-400' : 'bg-red-950 text-red-400'}`}>
+          {avatarMessage.text}
+        </div>
+      )}
+    </>
+  );
 }
 
 export default function Dashboard({
@@ -308,6 +398,17 @@ export default function Dashboard({
                 </Link>
               )}
 
+              {/* Places moderation Tab (Admins, Superadmins) */}
+              {(role === 'admin' || role === 'superadmin') && (
+                <Link
+                  href="/admin/places"
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-[#1f2833] hover:bg-gray-800 text-gray-300"
+                >
+                  <MapPin className="h-5 w-5" />
+                  مراجعة أماكن مشوار المقترحة
+                </Link>
+              )}
+
               {/* Profile/Settings Tab (All users) */}
               <button
                 onClick={() => setActiveTab('profile')}
@@ -467,6 +568,8 @@ export default function Dashboard({
                 </h2>
 
                 <form onSubmit={handleUpdateProfile} className="space-y-4 max-w-lg mb-8 pb-8 border-b border-gray-800">
+                  <AvatarUploader user={auth.user} />
+
                   {profileMessage && (
                     <div className={`p-4 rounded-lg text-sm ${profileMessage.type === 'success' ? 'bg-green-950 text-green-400' : 'bg-red-950 text-red-400'}`}>
                       {profileMessage.text}

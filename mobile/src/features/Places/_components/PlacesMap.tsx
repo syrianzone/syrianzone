@@ -11,7 +11,7 @@ import {
 } from '@maplibre/maplibre-react-native';
 import * as Location from 'expo-location';
 import { LocateFixed } from 'lucide-react-native';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Pressable,
   StyleSheet,
@@ -19,9 +19,11 @@ import {
   type NativeSyntheticEvent,
 } from 'react-native';
 
-import darkMapStyle from '@/assets/styles/dark-matter.json';
+import darkMapStyle from '@/assets/styles/dark-matter-vector.json';
+import lightMapStyle from '@/assets/styles/light-vector.json';
 import { AppText } from '@/components/ui/AppText';
 import { useAppTheme } from '@/contexts/ThemeContext';
+import { buildMapStyle } from '@/lib/maps/style';
 
 import type { LatLng, PlaceFeatureCollection } from '../_lib/types';
 
@@ -38,21 +40,42 @@ function pointCoordinates(feature: GeoJSON.Feature): [number, number] | null {
 }
 
 export function PlacesMap({
+  addMode,
   data,
-  onAdd,
+  focus,
+  highlight,
+  onMapPress,
   onSelect,
   selectedId,
 }: {
+  addMode: boolean;
   data: PlaceFeatureCollection;
-  onAdd: (point: LatLng) => void;
+  focus: { key: number; lat: number; lng: number; zoom?: number } | null;
+  highlight: LatLng | null;
+  onMapPress: (point: LatLng) => void;
   onSelect: (id: number) => void;
   selectedId: number | null;
 }) {
   const { theme } = useAppTheme();
   const cameraRef = useRef<CameraRef>(null);
   const sourceRef = useRef<GeoJSONSourceRef>(null);
+  const mapStyle = useMemo(
+    () => buildMapStyle(theme.isDark ? darkMapStyle : lightMapStyle) as unknown as StyleSpecification,
+    [theme.isDark],
+  );
   const [locationError, setLocationError] = useState<string | null>(null);
   const [showUserLocation, setShowUserLocation] = useState(false);
+
+  useEffect(() => {
+    if (!focus) {
+      return;
+    }
+    cameraRef.current?.flyTo({
+      center: [focus.lng, focus.lat],
+      duration: 800,
+      zoom: focus.zoom ?? 15,
+    });
+  }, [focus]);
 
   useEffect(() => {
     if (selectedId === null) {
@@ -73,6 +96,7 @@ export function PlacesMap({
   const select = async (
     event: NativeSyntheticEvent<PressEventWithFeatures>,
   ) => {
+    event.stopPropagation();
     const feature = event.nativeEvent.features[0];
     if (!feature) {
       return;
@@ -125,10 +149,13 @@ export function PlacesMap({
         attribution
         compass
         logo={false}
-        mapStyle={darkMapStyle as unknown as StyleSpecification}
-        onLongPress={(event) => {
+        mapStyle={mapStyle}
+        onPress={(event) => {
+          if ('features' in event.nativeEvent && event.nativeEvent.features.length > 0) {
+            return;
+          }
           const [lng, lat] = event.nativeEvent.lngLat;
-          onAdd({ lat, lng });
+          onMapPress({ lat, lng });
         }}
         style={styles.map}
       >
@@ -202,6 +229,27 @@ export function PlacesMap({
             type="circle"
           />
         </GeoJSONSource>
+        {highlight ? (
+          <GeoJSONSource
+            data={{
+              geometry: { coordinates: [highlight.lng, highlight.lat], type: 'Point' },
+              properties: {},
+              type: 'Feature',
+            }}
+            id="place-highlight"
+          >
+            <Layer
+              id="place-highlight-ring"
+              paint={{
+                'circle-color': theme.palette.primary,
+                'circle-radius': 10,
+                'circle-stroke-color': '#ffffff',
+                'circle-stroke-width': 3,
+              }}
+              type="circle"
+            />
+          </GeoJSONSource>
+        ) : null}
       </Map>
       <Pressable
         accessibilityLabel="الانتقال إلى موقعي"
@@ -224,11 +272,26 @@ export function PlacesMap({
           </AppText>
         </View>
       ) : null}
+      {addMode ? (
+        <View style={[styles.addMode, { backgroundColor: theme.palette.surface }]}>
+          <AppText color="muted" variant="caption">
+            انقر على الخريطة لتحديد الموقع
+          </AppText>
+        </View>
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  addMode: {
+    alignSelf: 'center',
+    borderRadius: 16,
+    bottom: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    position: 'absolute',
+  },
   error: {
     borderRadius: 8,
     left: 12,
@@ -261,8 +324,8 @@ const styles = StyleSheet.create({
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Places/_components/PlacesMap.tsx (149 lines)
+  source:     resources/js/Pages/Places/_components/PlacesMap.tsx (232 lines)
   confidence: high
   todos:      0
-  notes:      Dark basemap, clusters, cluster expansion, location, selection, camera focus, and long-press contribution are native.
+  notes:      Theme basemaps, clusters, location, selection, focus, highlight, and explicit pin mode are native.
 */

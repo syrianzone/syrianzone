@@ -70,7 +70,7 @@ export const useStudioStore = create<StudioState>((set) => ({
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Transit/_store/useStudioStore.ts (64 lines)
+  source:     resources/js/Pages/Transit/_store/useStudioStore.ts (105 lines)
   confidence: high
   todos:      0
   notes:      The five-step studio state remains platform independent.

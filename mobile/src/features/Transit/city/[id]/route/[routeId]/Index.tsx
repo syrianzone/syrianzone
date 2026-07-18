@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
-import { useLocalSearchParams } from 'expo-router';
-import { Bus, MapPin } from 'lucide-react-native';
+import { router, useLocalSearchParams } from 'expo-router';
+import { Bus, Map, MapPin } from 'lucide-react-native';
 import { StyleSheet, View } from 'react-native';
 
+import { AppButton } from '@/components/ui/AppButton';
 import { AppCard } from '@/components/ui/AppCard';
 import { AppText } from '@/components/ui/AppText';
 import { QueryState } from '@/components/ui/QueryState';
@@ -37,44 +38,98 @@ export default function TransitRouteScreen() {
     <Screen
       subtitle={data?.city.nameAr}
       title={data?.route.nameAr ?? 'تفاصيل الخط'}
+      trailing={data ? (
+        <AppButton
+          accessibilityLabel={`فتح ${data.route.nameAr} على الخريطة`}
+          icon={<Map color={theme.palette.primaryForeground} size={18} />}
+          onPress={() =>
+            router.push({
+              pathname: '/transit/city/[id]/map',
+              params: { id, route: data.route.id },
+            })
+          }
+        >
+          فتح الخريطة
+        </AppButton>
+      ) : undefined}
     >
       {data ? (
         <>
           <AppCard style={styles.summary}>
-            <View
-              style={[
-                styles.routeColor,
-                { backgroundColor: routeColor(data.route.colorIndex) },
-              ]}
-            />
-            <Bus color={theme.palette.primary} size={26} />
-            <View style={styles.copy}>
-              {data.route.nameEn ? (
-                <AppText color="muted">{data.route.nameEn}</AppText>
-              ) : null}
-              <AppText color="primary" variant="label">
-                {data.route.priceNew
-                  ? `${data.route.priceNew.toLocaleString('ar-SY')} ل.س`
-                  : 'السعر غير متوفر'}
-              </AppText>
-            </View>
-          </AppCard>
-          <AppText variant="heading">المحطات بالترتيب</AppText>
-          {data.stops.map((stop, index) => (
-            <AppCard key={stop.properties.id} style={styles.stop}>
-              <View style={styles.order}>
-                <AppText style={styles.orderText} variant="label">{index + 1}</AppText>
-              </View>
-              <MapPin color={theme.palette.primary} size={20} />
-              <View style={styles.copy}>
-                <AppText variant="label">{stop.properties.nameAr}</AppText>
-              </View>
-              <DirectionsButton
-                coordinate={stop.coordinates}
-                label={stop.properties.nameAr}
+            <View style={styles.summaryHeading}>
+              <View
+                style={[
+                  styles.routeColor,
+                  { backgroundColor: routeColor(data.route.colorIndex) },
+                ]}
               />
-            </AppCard>
-          ))}
+              <Bus color={theme.palette.primary} size={26} />
+              <View style={styles.copy}>
+                {data.route.nameEn ? (
+                  <>
+                    <AppText color="muted" variant="caption">تفاصيل الخط</AppText>
+                    <AppText>{data.route.nameEn}</AppText>
+                  </>
+                ) : null}
+              </View>
+            </View>
+            <View style={styles.stats}>
+              <View style={styles.stat}>
+                <AppText color="muted" variant="caption">سعر الركوب</AppText>
+                <AppText color="primary" variant="heading">
+                  {data.route.priceNew
+                    ? `${data.route.priceNew.toLocaleString('ar-SY')} ل.س`
+                    : 'غير متوفر'}
+                </AppText>
+              </View>
+              <View style={styles.stat}>
+                <AppText color="muted" variant="caption">عدد المواقف</AppText>
+                <AppText variant="heading">
+                  {data.stops.length.toLocaleString('ar-SY')} موقف
+                </AppText>
+              </View>
+            </View>
+            {data.route.priceOld && data.route.priceOld > 0 ? (
+              <View
+                style={[
+                  styles.oldPrice,
+                  { borderTopColor: theme.palette.border },
+                ]}
+              >
+                <AppText color="muted" variant="caption">السعر بالليرة القديمة</AppText>
+                <AppText color="muted" variant="caption">
+                  {data.route.priceOld.toLocaleString('ar-SY')} ليرة سورية قديمة
+                </AppText>
+              </View>
+            ) : null}
+          </AppCard>
+          <View style={styles.stopHeading}>
+            <AppText variant="heading">المواقف على الخط</AppText>
+            <AppText color="muted" variant="caption">
+              {data.stops.length.toLocaleString('ar-SY')} موقف
+            </AppText>
+          </View>
+          {data.stops.length ? (
+            data.stops.map((stop, index) => (
+              <AppCard key={stop.properties.id} style={styles.stop}>
+                <View style={styles.order}>
+                  <AppText style={styles.orderText} variant="label">
+                    {index + 1}
+                  </AppText>
+                </View>
+                <MapPin color={theme.palette.primary} size={20} />
+                <View style={styles.copy}>
+                  <AppText variant="label">{stop.properties.nameAr}</AppText>
+                </View>
+                <DirectionsButton
+                  coordinate={stop.coordinates}
+                  label={stop.properties.nameAr}
+                />
+              </AppCard>
+            ))
+          ) : (
+            <AppText color="muted">لا توجد مواقف مسجلة لهذا الخط</AppText>
+          )}
         </>
       ) : null}
     </Screen>
@@ -84,6 +139,11 @@ export default function TransitRouteScreen() {
 const styles = StyleSheet.create({
   copy: {
     flex: 1,
+  },
+  oldPrice: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    gap: 2,
+    paddingTop: 10,
   },
   order: {
     alignItems: 'center',
@@ -100,12 +160,28 @@ const styles = StyleSheet.create({
     height: 48,
     width: 6,
   },
+  stat: {
+    flex: 1,
+    gap: 2,
+  },
+  stats: {
+    flexDirection: 'row',
+    gap: 16,
+  },
   stop: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: 8,
   },
+  stopHeading: {
+    alignItems: 'baseline',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
   summary: {
+    gap: 12,
+  },
+  summaryHeading: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: 12,
@@ -114,8 +190,8 @@ const styles = StyleSheet.create({
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Transit/city/[id]/route/[routeId]/Index.tsx (171 lines)
+  source:     resources/js/Pages/Transit/city/[id]/route/[routeId]/Index.tsx (226 lines)
   confidence: high
   todos:      0
-  notes:      The native detail preserves fares, ordered stops, route color, and directions.
+  notes:      The native detail preserves fare history, stop totals, focused map entry, route color, and directions.
 */

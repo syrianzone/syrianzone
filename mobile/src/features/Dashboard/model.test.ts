@@ -1,5 +1,6 @@
 import {
   dashboardCapabilities,
+  dashboardTabFromParam,
   defaultDashboardTab,
   draftStatusLabel,
   roleLabel,
@@ -32,6 +33,13 @@ describe('dashboard role contract', () => {
     expect(defaultDashboardTab('transit_admin')).toBe('profile');
     expect(defaultDashboardTab('admin')).toBe('polls');
     expect(roleLabel('superadmin')).toContain('Superadmin');
+  });
+
+  test('honors only the shared profile deep link', () => {
+    expect(dashboardTabFromParam('profile')).toBe('profile');
+    expect(dashboardTabFromParam(['profile', 'polls'])).toBe('profile');
+    expect(dashboardTabFromParam('polls')).toBeNull();
+    expect(dashboardTabFromParam(undefined)).toBeNull();
   });
 
   test('keeps every submission status label', () => {

@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Transit/studio/Index.tsx (1453 lines)
+  source:     resources/js/Pages/Transit/studio/Index.tsx (1842 lines)
   confidence: high
   todos:      0
   notes:      Native map taps, line undo, stop authoring, conflict warnings, submission, and GeoJSON export preserve the studio workflow.

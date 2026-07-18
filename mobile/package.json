@@ -75,8 +75,8 @@
     "doctor": "npx expo-doctor@latest",
     "export": "expo export --platform all",
     "prebuild:clean": "EXPO_NO_GIT_STATUS=1 expo prebuild --clean",
-    "build:ios": "expo run:ios --no-bundler",
-    "build:android": "expo run:android --no-bundler",
+    "build:ios": "expo run:ios --configuration Release --no-bundler",
+    "build:android": "expo run:android --variant release --no-bundler",
     "smoke:ios": "maestro test .maestro/ios.yaml",
     "smoke:android": "maestro test .maestro/android.yaml"
   },

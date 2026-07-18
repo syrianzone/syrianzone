@@ -3,6 +3,10 @@ import type { TransitDraft } from '../api';
 
 export type DraftStatusFilter = 'all' | TransitDraft['status'];
 
+export function transitAdminDraftsQueryKey(userId: number) {
+  return ['transit-admin-drafts', userId] as const;
+}
+
 function readObject(value: unknown): Readonly<Record<string, unknown>> | null {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
     ? (value as Readonly<Record<string, unknown>>)

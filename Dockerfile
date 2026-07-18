@@ -11,7 +11,7 @@ COPY . .
 RUN bun run build
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Stage 2: Production image — serversideup/php with S6 Overlay v3
+# Stage 2: Production image, serversideup/php with S6 Overlay v3
 # ─────────────────────────────────────────────────────────────────────────────
 ARG SKEW=local
 FROM serversideup/php:8.4-fpm-nginx
@@ -36,7 +36,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         curl \
     && rm -rf /var/lib/apt/lists/*
 
-RUN install-php-extensions intl
+# gd: PlaceImageService encodes uploaded photos to webp; the base image ships without it.
+# exif: without it intervention/image cannot read the orientation tag, so phone
+# portrait photos come out rotated (it degrades silently, no error).
+RUN install-php-extensions intl gd exif
 
 WORKDIR /var/www/html
 

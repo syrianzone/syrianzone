@@ -3,15 +3,12 @@ import {
   type PropsWithChildren,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
-  useState,
 } from 'react';
 
-import {
-  readStringPreference,
-  writeStringPreference,
-} from '@/lib/storage/preferences';
+import { useAppTheme } from '@/contexts/ThemeContext';
+
+import { transitThemeForApp } from '../model';
 
 type TransitTheme = 'damascus-rose' | 'jasmine';
 
@@ -21,25 +18,11 @@ const TransitThemeContext = createContext<{
 } | null>(null);
 
 export function TransitThemeProvider({ children }: PropsWithChildren) {
-  const [theme, setTheme] = useState<TransitTheme>('jasmine');
-  useEffect(() => {
-    let active = true;
-    void readStringPreference('transit-theme').then((value) => {
-      if (active && (value === 'damascus-rose' || value === 'jasmine')) {
-        setTheme(value);
-      }
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
+  const { setPreference, theme: appTheme } = useAppTheme();
+  const theme = transitThemeForApp(appTheme.isDark);
   const toggleTheme = useCallback(() => {
-    setTheme((current) => {
-      const next = current === 'jasmine' ? 'damascus-rose' : 'jasmine';
-      void writeStringPreference('transit-theme', next);
-      return next;
-    });
-  }, []);
+    void setPreference(theme === 'jasmine' ? 'damascus-rose' : 'jasmine');
+  }, [setPreference, theme]);
   const value = useMemo(() => ({ theme, toggleTheme }), [theme, toggleTheme]);
   return (
     <TransitThemeContext.Provider value={value}>
@@ -58,8 +41,8 @@ export function useTransitTheme() {
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Transit/_components/TransitThemeContext.tsx (47 lines)
+  source:     resources/js/Pages/Transit/_components/TransitThemeContext.tsx (66 lines)
   confidence: high
   todos:      0
-  notes:      AsyncStorage replaces DOM attributes and localStorage.
+  notes:      The transit palette follows the global native theme and keeps the heritage toggle available.
 */

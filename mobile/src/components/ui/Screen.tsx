@@ -1,4 +1,4 @@
-import type { PropsWithChildren, ReactNode } from 'react';
+import type { PropsWithChildren, ReactNode, RefObject } from 'react';
 import {
   RefreshControl,
   ScrollView,
@@ -14,9 +14,11 @@ import { AppText } from './AppText';
 
 interface ScreenProps {
   contentStyle?: ViewStyle;
+  onContentSizeChange?: (width: number, height: number) => void;
   onRefresh?: () => void;
   refreshing?: boolean;
   scroll?: boolean;
+  scrollViewRef?: RefObject<ScrollView | null>;
   subtitle?: string;
   title?: string;
   trailing?: ReactNode;
@@ -25,9 +27,11 @@ interface ScreenProps {
 export function Screen({
   children,
   contentStyle,
+  onContentSizeChange,
   onRefresh,
   refreshing = false,
   scroll = true,
+  scrollViewRef,
   subtitle,
   title,
   trailing,
@@ -56,6 +60,7 @@ export function Screen({
       {scroll ? (
         <ScrollView
           contentContainerStyle={styles.scrollContent}
+          onContentSizeChange={onContentSizeChange}
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
           refreshControl={
@@ -67,6 +72,7 @@ export function Screen({
               />
             ) : undefined
           }
+          ref={scrollViewRef}
         >
           {content}
         </ScrollView>

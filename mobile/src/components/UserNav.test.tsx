@@ -5,6 +5,7 @@ import { LocaleProvider } from '@/contexts/LocaleContext';
 import { AppThemeProvider } from '@/contexts/ThemeContext';
 import type { AuthService } from '@/lib/auth/service';
 import type { AuthUser } from '@/lib/auth/types';
+import { createQueryClient } from '@/lib/query/client';
 
 import UserNav from './UserNav';
 
@@ -36,7 +37,7 @@ async function renderNav(user: AuthUser | null, props = {}) {
   const view = await render(
     <LocaleProvider>
       <AppThemeProvider>
-        <AuthProvider service={service}>
+        <AuthProvider queryClient={createQueryClient()} service={service}>
           <UserNav {...props} />
         </AuthProvider>
       </AppThemeProvider>

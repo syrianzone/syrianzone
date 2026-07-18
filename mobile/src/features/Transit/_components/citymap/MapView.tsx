@@ -8,11 +8,13 @@ import { MapCanvas } from './MapCanvas';
 export function TransitMapView({
   city,
   data,
+  fitToData,
   onMapPress,
   showUserLocation,
 }: {
   city: City;
   data: MapDataResponse;
+  fitToData?: boolean;
   onMapPress?: (coordinate: [number, number]) => void;
   showUserLocation?: boolean;
 }) {
@@ -22,6 +24,7 @@ export function TransitMapView({
       <MapCanvas
         city={city}
         data={data}
+        fitToData={fitToData}
         onMapPress={onMapPress}
         ref={mapRef}
         showUserLocation={showUserLocation}
@@ -38,8 +41,8 @@ const styles = StyleSheet.create({
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Transit/_components/citymap/MapView.tsx (28 lines)
+  source:     resources/js/Pages/Transit/_components/citymap/MapView.tsx (86 lines)
   confidence: high
   todos:      0
-  notes:      The native map ref replaces lazy browser map initialization.
+  notes:      The native map ref preserves optional single-route camera fitting.
 */

@@ -5,8 +5,10 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/Components/ui/button';
 import { BoardGrid, useBreakpoint } from './_components/BoardGrid';
 import { BoardToolbar } from './_components/BoardToolbar';
-import { activeDashboard, migrate, moveWidget, removeWidget, resizeWidget, updateWidgetConfig } from './_lib/layout';
-import { defaultDoc } from './_lib/registry';
+import { WidgetGallery } from './_components/WidgetGallery';
+import { WidgetConfigDialog } from './_components/WidgetConfigDialog';
+import { activeDashboard, addWidget, migrate, moveWidget, removeWidget, resizeWidget, updateWidgetConfig } from './_lib/layout';
+import { defaultDoc, findWidget } from './_lib/registry';
 import { readLocal, writeLocal } from './_lib/storage';
 import { useBoardSync } from './_lib/sync';
 import type { BoardDoc } from './_lib/types';
@@ -21,6 +23,8 @@ export default function Index() {
   // storage, so sync can tell "guest had a board" from "nothing here yet"
   const [hadLocal] = useState(() => readLocal() !== null);
   const [editing, setEditing] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [configuring, setConfiguring] = useState<string | null>(null);
   const breakpoint = useBreakpoint();
   // straight from the shared Inertia props, not useAuth(): AuthProvider lives
   // inside MainLayout, which this component renders, so the context is not
@@ -36,6 +40,8 @@ export default function Index() {
     writeLocal(doc);
   }, [doc]);
 
+  const configured = dashboard.widgets.find((w) => w.i === configuring) ?? null;
+
   return (
     <MainLayout>
       <Head title="لوحتي" />
@@ -46,6 +52,7 @@ export default function Index() {
           unsaved={sync.status === 'error'}
           onRetry={sync.retry}
           onToggleEditing={() => setEditing((e) => !e)}
+          onAddWidget={() => setGalleryOpen(true)}
         />
 
         {sync.superseded && (
@@ -69,8 +76,25 @@ export default function Index() {
           onMove={(from, to) => setDoc((d) => moveWidget(d, from, to))}
           onRemove={(id) => setDoc((d) => removeWidget(d, id))}
           onResize={(id, size) => setDoc((d) => resizeWidget(d, id, size))}
-          onConfigure={() => undefined}
+          onConfigure={(id) => setConfiguring(id)}
           onConfigChange={(id, patch) => setDoc((d) => updateWidgetConfig(d, id, patch))}
+        />
+
+        <WidgetGallery
+          open={galleryOpen}
+          onOpenChange={setGalleryOpen}
+          placedIds={dashboard.widgets.map((w) => w.d)}
+          onAdd={(def) => {
+            setDoc((d) => addWidget(d, def));
+            setGalleryOpen(false);
+          }}
+        />
+
+        <WidgetConfigDialog
+          def={configured ? findWidget(configured.d) ?? null : null}
+          config={configured?.c ?? {}}
+          onChange={(patch) => configured && setDoc((d) => updateWidgetConfig(d, configured.i, patch))}
+          onClose={() => setConfiguring(null)}
         />
       </main>
     </MainLayout>

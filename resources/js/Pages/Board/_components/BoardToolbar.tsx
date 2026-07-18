@@ -1,4 +1,4 @@
-import { Check, CloudOff, Pencil } from 'lucide-react';
+import { Check, CloudOff, Pencil, Plus } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 
 export function BoardToolbar(props: {
@@ -7,6 +7,7 @@ export function BoardToolbar(props: {
   unsaved: boolean;
   onRetry: () => void;
   onToggleEditing: () => void;
+  onAddWidget: () => void;
 }) {
   return (
     <div dir="rtl" className="mb-3 flex items-center gap-2">
@@ -23,6 +24,13 @@ export function BoardToolbar(props: {
           <CloudOff className="h-3.5 w-3.5" />
           غير محفوظ
         </button>
+      )}
+
+      {props.editing && (
+        <Button type="button" variant="outline" size="sm" onClick={props.onAddWidget}>
+          <Plus className="ms-1 h-4 w-4" />
+          إضافة
+        </Button>
       )}
 
       <Button

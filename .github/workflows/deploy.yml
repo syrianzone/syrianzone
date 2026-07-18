@@ -47,6 +47,7 @@ jobs:
             GIT_SHA=${{ github.sha }}
             SKEW=${{ github.sha }}
             VITE_SENTRY_DSN=${{ vars.VITE_SENTRY_DSN }}
+            VITE_SENTRY_TRACES_SAMPLE_RATE=${{ vars.VITE_SENTRY_TRACES_SAMPLE_RATE }}
             VITE_POSTHOG_KEY=${{ vars.VITE_POSTHOG_KEY }}
             SENTRY_ORG=${{ vars.SENTRY_ORG }}
             SENTRY_PROJECT=${{ vars.SENTRY_PROJECT }}

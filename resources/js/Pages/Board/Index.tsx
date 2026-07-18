@@ -5,10 +5,23 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/Components/ui/button';
 import { BoardGrid, useBreakpoint } from './_components/BoardGrid';
 import { BoardToolbar } from './_components/BoardToolbar';
+import { DashboardTabs } from './_components/DashboardTabs';
 import { GeoProvider } from './_components/GeoProvider';
 import { WidgetGallery } from './_components/WidgetGallery';
 import { WidgetConfigDialog } from './_components/WidgetConfigDialog';
-import { activeDashboard, addWidget, migrate, moveWidget, removeWidget, resizeWidget, updateWidgetConfig } from './_lib/layout';
+import {
+  activeDashboard,
+  addDashboard,
+  addWidget,
+  migrate,
+  moveWidget,
+  removeDashboard,
+  removeWidget,
+  renameDashboard,
+  resizeWidget,
+  selectDashboard,
+  updateWidgetConfig,
+} from './_lib/layout';
 import { defaultDoc, findWidget } from './_lib/registry';
 import { readLocal, writeLocal } from './_lib/storage';
 import { useBoardSync } from './_lib/sync';
@@ -54,6 +67,15 @@ export default function Index() {
           onRetry={sync.retry}
           onToggleEditing={() => setEditing((e) => !e)}
           onAddWidget={() => setGalleryOpen(true)}
+        />
+
+        <DashboardTabs
+          doc={doc}
+          editing={editing}
+          onSelect={(id) => setDoc((d) => selectDashboard(d, id))}
+          onAdd={() => setDoc((d) => addDashboard(d, 'لوحة جديدة'))}
+          onRename={(id, name) => setDoc((d) => renameDashboard(d, id, name))}
+          onRemove={(id) => setDoc((d) => removeDashboard(d, id))}
         />
 
         {sync.superseded && (

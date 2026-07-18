@@ -19,8 +19,13 @@ if (import.meta.env.VITE_SENTRY_DSN) {
         dsn: import.meta.env.VITE_SENTRY_DSN,
         release: import.meta.env.VITE_SENTRY_RELEASE,
         sendDefaultPii: false,
-        integrations: [Sentry.browserTracingIntegration()],
+        integrations: [
+            Sentry.browserTracingIntegration(),
+            // forwards console.warn/error to sentry logs; plain console.log stays local
+            Sentry.consoleLoggingIntegration({ levels: ['warn', 'error'] }),
+        ],
         tracesSampleRate: Number(import.meta.env.VITE_SENTRY_TRACES_SAMPLE_RATE) || 0,
+        enableLogs: true,
     });
 }
 

@@ -43,6 +43,18 @@ export function writeLocal(doc: BoardDoc): void {
   safeSet(DOC_KEY, JSON.stringify(doc));
 }
 
+// One geolocation fix shared by every widget that needs it, so the user is
+// prompted once rather than once per tile.
+export function readGeo(): { lat: number; lng: number } | null {
+  const v = readJson(GEO_KEY) as { lat?: unknown; lng?: unknown } | null;
+  if (!v || typeof v.lat !== 'number' || typeof v.lng !== 'number') return null;
+  return { lat: v.lat, lng: v.lng };
+}
+
+export function writeGeo(coords: { lat: number; lng: number }): void {
+  safeSet(GEO_KEY, JSON.stringify(coords));
+}
+
 // The losing side of a login merge, kept so the user can undo it for the
 // session rather than silently losing a board.
 export function readPrev(): unknown {

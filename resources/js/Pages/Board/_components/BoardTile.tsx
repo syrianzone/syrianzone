@@ -1,7 +1,7 @@
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, LogIn, Settings, X } from 'lucide-react';
+import { GripVertical, LogIn, MapPin, Settings, X } from 'lucide-react';
 import { useAuth } from '@/Contexts/AuthContext';
 import { Button } from '@/Components/ui/button';
 import { findWidget } from '../_lib/registry';
@@ -11,6 +11,7 @@ import { WidgetShell } from './WidgetShell';
 import { MissingWidget } from './MissingWidget';
 import { TileChromeProvider } from './TileChrome';
 import { SizeMenu } from './SizeMenu';
+import { useGeo } from './GeoProvider';
 
 // Capability gates live here, never inside a widget: a widget body should be
 // able to assume it is allowed to run.
@@ -91,6 +92,14 @@ function TileBody(props: {
   onConfigChange: (patch: Record<string, unknown>) => void;
 }) {
   const def = props.def;
+  const geo = useGeo();
+  const needsGeo = !!def?.requires.includes('geo');
+
+  // ask once, on behalf of the widget, so a widget body never has to handle
+  // the permission dance itself
+  useEffect(() => {
+    if (needsGeo && geo.status === 'idle') geo.request();
+  }, [needsGeo, geo]);
 
   if (!def) {
     return <MissingWidget definitionId={props.widget.d} editing={props.editing} onRemove={props.onRemove} />;
@@ -110,6 +119,23 @@ function TileBody(props: {
         </div>
       </WidgetShell>
     );
+  }
+
+  if (needsGeo && geo.status !== 'granted') {
+    if (geo.status === 'denied') {
+      return (
+        <WidgetShell title={def.name} icon={def.icon}>
+          <div className="flex h-full flex-col items-center justify-center gap-2 p-3 text-center">
+            <p className="text-sm text-muted-foreground">هذا الويدجت يحتاج إلى موقعك</p>
+            <Button type="button" variant="outline" size="sm" onClick={geo.request}>
+              <MapPin className="ms-1 h-4 w-4" />
+              تفعيل الموقع
+            </Button>
+          </div>
+        </WidgetShell>
+      );
+    }
+    return <WidgetShell title={def.name} icon={def.icon} loading />;
   }
 
   const Component = def.Component;

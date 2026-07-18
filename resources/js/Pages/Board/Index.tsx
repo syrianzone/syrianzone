@@ -5,6 +5,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/Components/ui/button';
 import { BoardGrid, useBreakpoint } from './_components/BoardGrid';
 import { BoardToolbar } from './_components/BoardToolbar';
+import { GeoProvider } from './_components/GeoProvider';
 import { WidgetGallery } from './_components/WidgetGallery';
 import { WidgetConfigDialog } from './_components/WidgetConfigDialog';
 import { activeDashboard, addWidget, migrate, moveWidget, removeWidget, resizeWidget, updateWidgetConfig } from './_lib/layout';
@@ -69,16 +70,18 @@ export default function Index() {
           </Alert>
         )}
 
-        <BoardGrid
-          widgets={dashboard.widgets}
-          breakpoint={breakpoint}
-          editing={editing}
-          onMove={(from, to) => setDoc((d) => moveWidget(d, from, to))}
-          onRemove={(id) => setDoc((d) => removeWidget(d, id))}
-          onResize={(id, size) => setDoc((d) => resizeWidget(d, id, size))}
-          onConfigure={(id) => setConfiguring(id)}
-          onConfigChange={(id, patch) => setDoc((d) => updateWidgetConfig(d, id, patch))}
-        />
+        <GeoProvider>
+          <BoardGrid
+            widgets={dashboard.widgets}
+            breakpoint={breakpoint}
+            editing={editing}
+            onMove={(from, to) => setDoc((d) => moveWidget(d, from, to))}
+            onRemove={(id) => setDoc((d) => removeWidget(d, id))}
+            onResize={(id, size) => setDoc((d) => resizeWidget(d, id, size))}
+            onConfigure={(id) => setConfiguring(id)}
+            onConfigChange={(id, patch) => setDoc((d) => updateWidgetConfig(d, id, patch))}
+          />
+        </GeoProvider>
 
         <WidgetGallery
           open={galleryOpen}

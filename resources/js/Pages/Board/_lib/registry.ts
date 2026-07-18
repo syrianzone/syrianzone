@@ -1,6 +1,9 @@
 import { clockWidget } from '../_widgets/clock';
+import { guidesWidget } from '../_widgets/guides';
 import { notesWidget } from '../_widgets/notes';
+import { placesNearbyWidget } from '../_widgets/places-nearby';
 import { prayerWidget } from '../_widgets/prayer';
+import { transitCitiesWidget } from '../_widgets/transit-cities';
 import { weatherWidget } from '../_widgets/weather';
 import { defaultConfig, newId, nowStamp } from './layout';
 import type { BoardDoc, WidgetDefinition } from './types';
@@ -14,6 +17,9 @@ export const WIDGETS: WidgetDefinition<any>[] = [
   clockWidget,
   weatherWidget,
   prayerWidget,
+  placesNearbyWidget,
+  guidesWidget,
+  transitCitiesWidget,
   notesWidget,
 ];
 
@@ -27,7 +33,7 @@ export function findWidget(id: string): WidgetDefinition<any> | undefined {
 
 // Widgets seeded onto a brand new board, in order. Unregistered ids are skipped
 // so this list can name a widget before it ships.
-const SEED_IDS = ['clock', 'weather', 'prayer', 'notes'];
+const SEED_IDS = ['clock', 'weather', 'prayer', 'places-nearby', 'guides', 'notes'];
 
 export function defaultDoc(): BoardDoc {
   const widgets = SEED_IDS

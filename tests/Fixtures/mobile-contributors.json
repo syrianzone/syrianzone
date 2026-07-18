@@ -1,0 +1,18 @@
+[
+  {
+    "username": "FirstDev",
+    "daily_contributions": 2,
+    "monthly_contributions": 18,
+    "yearly_contributions": 220,
+    "total_contributions": 1200,
+    "avatar_url": "https://avatars.example/first"
+  },
+  {
+    "username": "second-dev",
+    "daily_contributions": 0,
+    "monthly_contributions": 6,
+    "yearly_contributions": 42,
+    "total_contributions": 210,
+    "avatar_url": "https://avatars.example/second"
+  }
+]

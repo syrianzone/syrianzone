@@ -1,0 +1,99 @@
+{
+  "name": "syrianzone-mobile",
+  "main": "expo-router/entry",
+  "version": "1.0.0",
+  "dependencies": {
+    "@expo-google-fonts/cairo": "0.4.2",
+    "@expo-google-fonts/ibm-plex-sans-arabic": "0.4.2",
+    "@maplibre/maplibre-react-native": "11.3.6",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-native-community/netinfo": "12.0.1",
+    "@tanstack/react-query": "5.101.2",
+    "expo": "~57.0.7",
+    "expo-asset": "~57.0.5",
+    "expo-auth-session": "~57.0.4",
+    "expo-clipboard": "~57.0.1",
+    "expo-constants": "~57.0.5",
+    "expo-crypto": "~57.0.1",
+    "expo-dev-client": "~57.0.7",
+    "expo-file-system": "~57.0.1",
+    "expo-font": "~57.0.1",
+    "expo-image": "~57.0.1",
+    "expo-image-picker": "~57.0.5",
+    "expo-linking": "~57.0.3",
+    "expo-localization": "~57.0.1",
+    "expo-location": "~57.0.5",
+    "expo-router": "~57.0.7",
+    "expo-secure-store": "~57.0.1",
+    "expo-sharing": "~57.0.6",
+    "expo-splash-screen": "~57.0.4",
+    "expo-status-bar": "~57.0.1",
+    "expo-system-ui": "~57.0.1",
+    "expo-web-browser": "~57.0.1",
+    "js-base64": "3.9.1",
+    "jszip": "3.10.1",
+    "laravel-echo": "2.4.0",
+    "lucide-react-native": "1.24.0",
+    "pusher-js": "8.5.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.86.0",
+    "react-native-gesture-handler": "~2.32.0",
+    "react-native-reanimated": "4.5.0",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "4.25.2",
+    "react-native-svg": "15.15.4",
+    "react-native-view-shot": "5.1.0",
+    "react-native-web": "~0.21.0",
+    "react-native-webrtc": "124.0.7",
+    "react-native-worklets": "0.10.0",
+    "zod": "4.4.3",
+    "zustand": "5.0.14"
+  },
+  "devDependencies": {
+    "@testing-library/react-native": "14.0.1",
+    "@types/geojson": "7946.0.16",
+    "@types/jest": "29.5.14",
+    "@types/node": "24.10.1",
+    "@types/react": "~19.2.2",
+    "eslint": "9.39.5",
+    "eslint-config-expo": "~57.0.0",
+    "jest-expo": "~57.0.2",
+    "react-test-renderer": "19.2.3",
+    "typescript": "~6.0.3"
+  },
+  "scripts": {
+    "start": "expo start --dev-client",
+    "start:clear": "expo start --dev-client --clear",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web",
+    "lint": "expo lint --max-warnings 0",
+    "typecheck": "tsc --noEmit",
+    "test": "jest",
+    "test:ci": "jest --runInBand --coverage",
+    "doctor": "npx expo-doctor@latest",
+    "export": "expo export --platform all",
+    "prebuild:clean": "EXPO_NO_GIT_STATUS=1 expo prebuild --clean",
+    "build:ios": "expo run:ios --no-bundler",
+    "build:android": "expo run:android --no-bundler",
+    "smoke:ios": "maestro test .maestro/ios.yaml",
+    "smoke:android": "maestro test .maestro/android.yaml"
+  },
+  "overrides": {
+    "uuid": "11.1.1"
+  },
+  "private": true,
+  "engines": {
+    "node": "^22.13.0 || ^24.0.0"
+  },
+  "expo": {
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "exclude": [
+          "react-native-webrtc"
+        ]
+      }
+    }
+  }
+}

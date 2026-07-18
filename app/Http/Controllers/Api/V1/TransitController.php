@@ -94,7 +94,7 @@ class TransitController extends Controller
                 ->select('id', 'name_ar', DB::raw('ST_AsGeoJSON(geometry) as geojson'))
                 ->get();
 
-            // Batch load all route associations — one query instead of one per stop
+            // Batch load all route associations, one query instead of one per stop
             $stopIds = $stops->pluck('id');
             $routeMap = DB::table('route_stop')
                 ->join('routes', 'route_stop.route_id', '=', 'routes.id')
@@ -155,7 +155,7 @@ class TransitController extends Controller
             ->whereRaw("ST_Distance_Sphere(geometry, ST_GeomFromGeoJSON(?)) <= ?", [$pointJson, $radius])
             ->get();
 
-        // Batch load routes for all nearby stops — one query instead of one per stop
+        // Batch load routes for all nearby stops, one query instead of one per stop
         $stopIds = $stops->pluck('id');
         $routesByStop = DB::table('route_stop')
             ->join('routes', 'route_stop.route_id', '=', 'routes.id')
@@ -208,7 +208,7 @@ class TransitController extends Controller
         }
         $stopResults = $stopSearch->get();
 
-        // Batch geometry lookups — one query for all matching stops
+        // Batch geometry lookups, one query for all matching stops
         $geoMap = DB::table('stops')
             ->whereIn('id', $stopResults->pluck('id'))
             ->select('id', DB::raw('ST_AsGeoJSON(geometry) as geojson'))

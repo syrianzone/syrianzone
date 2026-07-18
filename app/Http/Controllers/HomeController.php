@@ -1,27 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Services\PublicContent\HomeContentService;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\File;
+use Inertia\Response;
 
 class HomeController extends Controller
 {
-    /**
-     * Display the home/dashboard page.
-     */
-    public function index()
-    {
-        $aboutPath = resource_path('js/Data/about.md');
-        $aboutContent = '';
-        
-        if (File::exists($aboutPath)) {
-            $aboutContent = File::get($aboutPath);
-        }
+    public function __construct(private readonly HomeContentService $homeContent) {}
 
+    public function index(): Response
+    {
         return Inertia::render('Home', [
-            'aboutContent' => $aboutContent
+            'aboutContent' => $this->homeContent->about(),
         ]);
     }
 }

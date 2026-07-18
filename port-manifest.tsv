@@ -28,7 +28,16 @@ resources/js/Pages/Places/_components/DuplicateSuggestions.tsx	42
 resources/js/Pages/Places/_components/FilterBar.tsx	49
 resources/js/Pages/Places/_components/PhotoPicker.tsx	94
 resources/js/Pages/Places/_components/PlacesMap.tsx	149
+resources/js/Pages/Places/_components/PhotoGallery.tsx	64
+resources/js/Pages/Places/_components/PlaceCard.tsx	70
+resources/js/Pages/Places/_components/ReportButton.tsx	130
+resources/js/Pages/Places/_components/CommentsSection.tsx	160
+resources/js/Pages/Places/_components/EngagementBar.tsx	103
+resources/js/Pages/Places/_components/PlaceDetailView.tsx	122
+resources/js/Pages/Places/_components/PlacesPanel.tsx	172
 resources/js/Pages/Places/_components/SubmitSheet.tsx	269
+resources/js/Pages/Places/Index.tsx	165
+app/Http/Controllers/Api/PopulationAtlasController.php	215
 resources/js/Pages/Population/components/map/MapUpdater.tsx	29
 resources/js/Pages/Population/constants/data-config.ts	78
 resources/js/Pages/Population/types/data-types.ts	21

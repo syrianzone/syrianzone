@@ -1,0 +1,67 @@
+import { router } from 'expo-router';
+import { Bus, ChevronLeft } from 'lucide-react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+
+import { AppCard } from '@/components/ui/AppCard';
+import { AppText } from '@/components/ui/AppText';
+import { useAppTheme } from '@/contexts/ThemeContext';
+
+import { usePreloadCity } from '../../_hooks/useMapData';
+import type { City } from '../../_types';
+
+export function CityCard({ city }: { city: City }) {
+  const { theme } = useAppTheme();
+  const preload = usePreloadCity();
+  const enabled = city.status === 'active';
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ disabled: !enabled }}
+      disabled={!enabled}
+      onPress={() =>
+        router.push({ pathname: '/transit/city/[id]', params: { id: city.id } })
+      }
+      onPressIn={() => preload(city.id)}
+      style={({ pressed }) => ({ opacity: enabled ? (pressed ? 0.65 : 1) : 0.5 })}
+    >
+      <AppCard style={styles.card}>
+        <View style={[styles.icon, { backgroundColor: theme.palette.surfaceRaised }]}>
+          <Bus color={theme.palette.primary} size={24} />
+        </View>
+        <View style={styles.copy}>
+          <AppText variant="heading">{city.nameAr}</AppText>
+          <AppText color="muted" variant="caption">
+            {city.nameEn}، {city.routeCount} خط
+          </AppText>
+        </View>
+        {enabled ? <ChevronLeft color={theme.palette.mutedForeground} size={20} /> : null}
+      </AppCard>
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  card: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+  },
+  copy: {
+    flex: 1,
+  },
+  icon: {
+    alignItems: 'center',
+    borderRadius: 14,
+    height: 48,
+    justifyContent: 'center',
+    width: 48,
+  },
+});
+
+/*
+PORT STATUS
+  source:     resources/js/Pages/Transit/_components/landing/CityCard.tsx (85 lines)
+  confidence: high
+  todos:      0
+  notes:      Native presses preserve city status, counts, navigation, and prefetch.
+*/

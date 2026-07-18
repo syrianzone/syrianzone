@@ -1,0 +1,4 @@
+appId: zone.syrian.app
+name: Syrian Zone Android smoke
+---
+- runFlow: smoke.yaml

@@ -1,0 +1,72 @@
+export const PROVINCE_TO_PCODE: Readonly<Record<string, string>> = {
+  damascus: 'SY01',
+  aleppo: 'SY02',
+  'rural damascus': 'SY03',
+  'rif dimashq': 'SY03',
+  homs: 'SY04',
+  hama: 'SY05',
+  hamah: 'SY05',
+  lattakia: 'SY06',
+  latakia: 'SY06',
+  idlib: 'SY07',
+  idleb: 'SY07',
+  'al hasakah': 'SY08',
+  'al hasakeh': 'SY08',
+  hasakah: 'SY08',
+  'deir ez-zor': 'SY09',
+  'deir ezzor': 'SY09',
+  'deir-ez-zor': 'SY09',
+  'dayr az zawr': 'SY09',
+  tartous: 'SY10',
+  tartus: 'SY10',
+  'ar raqqah': 'SY11',
+  'ar-raqqa': 'SY11',
+  raqqa: 'SY11',
+  daraa: 'SY12',
+  dara: 'SY12',
+  "dar'a": 'SY12',
+  'as suwayda': 'SY13',
+  "as suwayda'": 'SY13',
+  sweida: 'SY13',
+  quneitra: 'SY14',
+  'al qunaytirah': 'SY14',
+  دمشق: 'SY01',
+  حلب: 'SY02',
+  'ريف دمشق': 'SY03',
+  حمص: 'SY04',
+  حماة: 'SY05',
+  اللاذقية: 'SY06',
+  إدلب: 'SY07',
+  الحسكة: 'SY08',
+  'دير الزور': 'SY09',
+  طرطوس: 'SY10',
+  الرقة: 'SY11',
+  درعا: 'SY12',
+  السويداء: 'SY13',
+  القنيطرة: 'SY14',
+};
+
+export const ARABIC_TO_ENGLISH_CITY_MAP: Readonly<Record<string, string>> = {
+  دمشق: 'Damascus',
+  حلب: 'Aleppo',
+  'ريف دمشق': 'Rif Dimashq',
+  حمص: 'Homs',
+  حماة: 'Hama',
+  اللاذقية: 'Latakia',
+  إدلب: 'Idlib',
+  الحسكة: 'Al-Hasakah',
+  'دير الزور': 'Deir ez-Zor',
+  طرطوس: 'Tartus',
+  الرقة: 'Raqqa',
+  درعا: 'Daraa',
+  السويداء: 'As-Suwayda',
+  القنيطرة: 'Quneitra',
+};
+
+/*
+PORT STATUS
+  source:     resources/js/Pages/Population/constants/province-mappings.ts (43 lines)
+  confidence: high
+  todos:      0
+  notes:      Source aliases are preserved and expanded for names present in the bundled boundary file.
+*/

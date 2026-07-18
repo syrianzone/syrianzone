@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\UserDeletionService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -29,15 +31,24 @@ class AdminUserController extends Controller
         ]), 201);
     }
 
-    public function destroy($id)
+    public function destroy($id, UserDeletionService $deletion)
     {
-        $user = User::findOrFail($id);
+        $deleted = DB::transaction(function () use ($deletion, $id): bool {
+            $user = User::query()->lockForUpdate()->findOrFail($id);
 
-        if ($user->isSuperAdmin()) {
+            if ($user->isSuperAdmin()) {
+                return false;
+            }
+
+            $deletion->anonymizeAndDelete($user);
+
+            return true;
+        });
+
+        if (! $deleted) {
             return response()->json(['message' => 'Cannot delete superadmin'], 403);
         }
 
-        $user->delete();
         return response()->json(['message' => 'User deleted']);
     }
 }

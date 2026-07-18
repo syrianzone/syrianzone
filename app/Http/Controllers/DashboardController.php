@@ -6,6 +6,7 @@ use App\Models\Poll;
 use App\Models\Route;
 use App\Models\RouteDraft;
 use App\Models\User;
+use App\Services\UserDeletionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -60,7 +61,7 @@ class DashboardController extends Controller
 
         $data = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:users,email,' . $user->id,
+            'email' => 'required|email|max:255|unique:users,email,'.$user->id,
         ]);
 
         $user->update($data);
@@ -71,27 +72,22 @@ class DashboardController extends Controller
     /**
      * Soft delete user account and delegate owned polls/routes to superadmin.
      */
-    public function deleteAccount(Request $request)
+    public function deleteAccount(Request $request, UserDeletionService $deletion)
     {
         $user = $request->user();
 
-        // Locate first active superadmin to delegate data to
-        $superadmin = User::where('role', 'superadmin')
-            ->whereNull('deleted_at')
-            ->first();
+        $deleted = $deletion->deleteAccountAndTransferOwnership($user);
 
-        if ($superadmin && $superadmin->id !== $user->id) {
-            // Delegate polls
-            Poll::where('user_id', $user->id)->update(['user_id' => $superadmin->id]);
-            // Delegate routes
-            Route::where('user_id', $user->id)->update(['user_id' => $superadmin->id]);
+        if (! $deleted) {
+            return response()->json([
+                'code' => 'last_superadmin',
+                'message' => 'لا يمكن حذف آخر مشرف عام.',
+            ], 409);
         }
 
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-
-        $user->delete(); // Triggers soft delete
 
         return response()->json(['ok' => true]);
     }
@@ -112,12 +108,12 @@ class DashboardController extends Controller
             return response()->json(['message' => 'Cannot ban a superadmin'], 403);
         }
 
-        $userToBan->update(['is_banned' => !$userToBan->is_banned]);
+        $userToBan->update(['is_banned' => ! $userToBan->is_banned]);
 
         return response()->json([
             'ok' => true,
             'is_banned' => $userToBan->is_banned,
-            'message' => $userToBan->is_banned ? 'تم حظر المستخدم بنجاح' : 'تم إلغاء حظر المستخدم'
+            'message' => $userToBan->is_banned ? 'تم حظر المستخدم بنجاح' : 'تم إلغاء حظر المستخدم',
         ]);
     }
 }

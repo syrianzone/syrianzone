@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\Ballot;
 use App\Models\BallotItem;
 use App\Models\Candidate;
-use App\Models\DailyScore;
 use App\Models\Poll;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -14,6 +13,7 @@ use Illuminate\Validation\ValidationException;
 class VotingService
 {
     private const TIER_MINIMUMS = ['S' => 50, 'A' => 40, 'B' => 30, 'C' => 20, 'D' => 10, 'F' => 0];
+
     private const TIER_BONUSES = [
         'S' => [5, 3, 1, 0, 0, 0, 0, 0, 0, 0],
         'A' => [4, 2, 1, 0, 0, 0, 0, 0, 0, 0],
@@ -52,7 +52,9 @@ class VotingService
             ->unique()
             ->values();
 
-        if ($ids->isEmpty()) return;
+        if ($ids->isEmpty()) {
+            return;
+        }
 
         $archived = Candidate::where('poll_id', $poll->id)
             ->whereIn('id', $ids)
@@ -79,7 +81,9 @@ class VotingService
         $scoreDelta = [];
 
         foreach ($tiers as $tierKey => $items) {
-            if (!isset(self::TIER_MINIMUMS[$tierKey])) continue;
+            if (! isset(self::TIER_MINIMUMS[$tierKey])) {
+                continue;
+            }
 
             foreach ($items as $index => $item) {
                 $candidateId = $item['candidateId'];
@@ -105,23 +109,32 @@ class VotingService
     private function updateDailyScores(Poll $poll, Carbon $voteDay, array $scoreDelta): void
     {
         foreach ($scoreDelta as $candidateId => $delta) {
-            DB::table('daily_scores')
-                ->upsert(
-                    [
-                        'poll_id'      => $poll->id,
-                        'candidate_id' => $candidateId,
-                        'day'          => $voteDay->toDateString(),
-                        'votes'        => $delta['votes'],
-                        'score'        => $delta['score'],
-                        'updated_at'   => now(),
-                    ],
-                    ['poll_id', 'candidate_id', 'day'], // unique key columns
-                    [
-                        'votes'      => DB::raw('daily_scores.votes + VALUES(votes)'),
-                        'score'      => DB::raw('daily_scores.score + VALUES(score)'),
-                        'updated_at' => now(),
-                    ]
-                );
+            $where = [
+                'poll_id' => $poll->id,
+                'candidate_id' => $candidateId,
+                'day' => $voteDay->toDateString(),
+            ];
+            $increments = [
+                'votes' => DB::raw('votes + '.(int) $delta['votes']),
+                'score' => DB::raw('score + '.(int) $delta['score']),
+                'updated_at' => now(),
+            ];
+
+            $updated = DB::table('daily_scores')->where($where)->update($increments);
+            if ($updated !== 0) {
+                continue;
+            }
+
+            $inserted = DB::table('daily_scores')->insertOrIgnore([
+                ...$where,
+                'votes' => $delta['votes'],
+                'score' => $delta['score'],
+                'updated_at' => now(),
+            ]);
+
+            if ($inserted === 0) {
+                DB::table('daily_scores')->where($where)->update($increments);
+            }
         }
     }
 }

@@ -1,0 +1,1011 @@
+const data = {
+  "type": "FeatureCollection",
+  "generated_at": "2026-05-02T16:38:44.498Z",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.3094806,
+          33.5466072
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-001",
+        "nameAr": "نقطة التقاء سرفيس برزة البلد ب سرفيس مساكن برزة",
+        "nameEn": "نقطة التقاء سرفيس برزة البلد ب سرفيس مساكن برزة",
+        "routeId": "damascus-001",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.2998925,
+          33.5147257
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-002",
+        "nameAr": "نقطة وصول - شارع الثورة",
+        "nameEn": "نقطة وصول - شارع الثورة",
+        "routeId": "damascus-003",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.3258356,
+          33.5459397
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-003",
+        "nameAr": "نقطة انطلاق - مساكن برزة",
+        "nameEn": "نقطة انطلاق - مساكن برزة",
+        "routeId": "damascus-003",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7546005,
+          35.1305612
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-004",
+        "nameAr": "موقف حي الكرامة(حي البعث سابقاً) وحي التتان",
+        "nameEn": "موقف حي الكرامة(حي البعث سابقاً) وحي التتان",
+        "routeId": "damascus-005",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7519993,
+          35.1312445
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-005",
+        "nameAr": "موقف الدباغة",
+        "nameEn": "موقف الدباغة",
+        "routeId": "damascus-005",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7485705,
+          35.1301915
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-006",
+        "nameAr": "موقف الصيدلية",
+        "nameEn": "موقف الصيدلية",
+        "routeId": "damascus-005",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7501272,
+          35.1280007
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-007",
+        "nameAr": "موقف شاكر",
+        "nameEn": "موقف شاكر",
+        "routeId": "damascus-005",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7512939,
+          35.1263708
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-008",
+        "nameAr": "عقدة موقف الحارة",
+        "nameEn": "عقدة موقف الحارة",
+        "routeId": "damascus-005",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7491062,
+          35.1236172
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-009",
+        "nameAr": "موقف باب طرابلس - عودة‎",
+        "nameEn": "موقف باب طرابلس - عودة‎",
+        "routeId": "damascus-005",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7494561,
+          35.123579
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-010",
+        "nameAr": "موقف باب طرابلس - ذهاب‎",
+        "nameEn": "موقف باب طرابلس - ذهاب‎",
+        "routeId": "damascus-006",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7471417,
+          35.1228846
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-011",
+        "nameAr": "موقف بيت الراس",
+        "nameEn": "موقف بيت الراس",
+        "routeId": "damascus-005",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7456319,
+          35.1249296
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-012",
+        "nameAr": "موقف تكسي الجلاء",
+        "nameEn": "موقف تكسي الجلاء",
+        "routeId": "damascus-005",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7433319,
+          35.1279081
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-013",
+        "nameAr": "موقف دوار العجزة",
+        "nameEn": "موقف دوار العجزة",
+        "routeId": "damascus-005",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7422416,
+          35.129371
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-014",
+        "nameAr": "موقف المرأة العربية",
+        "nameEn": "موقف المرأة العربية",
+        "routeId": "damascus-005",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7409134,
+          35.1304126
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-015",
+        "nameAr": "موقف السواح",
+        "nameEn": "موقف السواح",
+        "routeId": "damascus-005",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7392329,
+          35.1314422
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-016",
+        "nameAr": "موقف دوار المحطة",
+        "nameEn": "موقف دوار المحطة",
+        "routeId": "damascus-005",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7390356,
+          35.1311281
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-017",
+        "nameAr": "موقف دوار المحطة",
+        "nameEn": "موقف دوار المحطة",
+        "routeId": "damascus-006",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7362269,
+          35.1325343
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-018",
+        "nameAr": "موقف دوار اتحاد العمال",
+        "nameEn": "موقف دوار اتحاد العمال",
+        "routeId": "damascus-005",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7358681,
+          35.1317564
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-019",
+        "nameAr": "موقف دوار اتحاد العمال",
+        "nameEn": "موقف دوار اتحاد العمال",
+        "routeId": "damascus-006",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7343086,
+          35.133686
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-020",
+        "nameAr": "موقف المستوصف",
+        "nameEn": "موقف المستوصف",
+        "routeId": "damascus-005",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7340367,
+          35.1334768
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-021",
+        "nameAr": "موقف المفرق",
+        "nameEn": "موقف المفرق",
+        "routeId": "damascus-006",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7339333,
+          35.1353224
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-022",
+        "nameAr": "موقف جنوب الثكنة",
+        "nameEn": "موقف جنوب الثكنة",
+        "routeId": "damascus-005",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7337641,
+          35.137268
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-023",
+        "nameAr": "موقف مفرق البرناوي",
+        "nameEn": "موقف مفرق البرناوي",
+        "routeId": "damascus-005",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7336348,
+          35.1384473
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-024",
+        "nameAr": "موقف عدي‎",
+        "nameEn": "موقف عدي‎",
+        "routeId": "damascus-005",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.733447,
+          35.1394818
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-025",
+        "nameAr": "موقف الصيدلية",
+        "nameEn": "موقف الصيدلية",
+        "routeId": "damascus-005",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7328252,
+          35.1403653
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-026",
+        "nameAr": "موقف الدوار الخارجي",
+        "nameEn": "موقف الدوار الخارجي",
+        "routeId": "damascus-006",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7300101,
+          35.143057
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-027",
+        "nameAr": "موقف الأسطة",
+        "nameEn": "موقف الأسطة",
+        "routeId": "damascus-005",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7269212,
+          35.1419209
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-028",
+        "nameAr": "موقف دوار الصحة",
+        "nameEn": "موقف دوار الصحة",
+        "routeId": "damascus-005",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7275385,
+          35.1393736
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-029",
+        "nameAr": "موقف دوار الغولدن",
+        "nameEn": "موقف دوار الغولدن",
+        "routeId": "damascus-005",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7272665,
+          35.1381827
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-030",
+        "nameAr": "موقف دوار السبسبي",
+        "nameEn": "موقف دوار السبسبي",
+        "routeId": "damascus-005",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.729842,
+          35.1374616
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-031",
+        "nameAr": "موقف دوار الباشا",
+        "nameEn": "موقف دوار الباشا",
+        "routeId": "damascus-005",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7417618,
+          35.1294782
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-032",
+        "nameAr": "موقف مدرسة الحكمة",
+        "nameEn": "موقف مدرسة الحكمة",
+        "routeId": "damascus-006",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.742888,
+          35.1278092
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-033",
+        "nameAr": "موقف جامع الشيخ محمد الحامد",
+        "nameEn": "موقف جامع الشيخ محمد الحامد",
+        "routeId": "damascus-006",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7429895,
+          35.1266645
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-034",
+        "nameAr": "موقف كورنيش البياض",
+        "nameEn": "موقف كورنيش البياض",
+        "routeId": "damascus-006",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7437374,
+          35.1257219
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-035",
+        "nameAr": "موقف ميكادو",
+        "nameEn": "موقف ميكادو",
+        "routeId": "damascus-006",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7443863,
+          35.1248543
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-036",
+        "nameAr": "موقف الصيدلية",
+        "nameEn": "موقف الصيدلية",
+        "routeId": "damascus-006",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7459284,
+          35.1220418
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-037",
+        "nameAr": "موقف الزاوية",
+        "nameEn": "موقف الزاوية",
+        "routeId": "damascus-006",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7475138,
+          35.1223064
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-038",
+        "nameAr": "موقف التربية",
+        "nameEn": "موقف التربية",
+        "routeId": "damascus-006",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7481555,
+          35.121295
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-039",
+        "nameAr": "موقف كراج حمص",
+        "nameEn": "موقف كراج حمص",
+        "routeId": "damascus-006",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7487149,
+          35.1225985
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-040",
+        "nameAr": "موقف كراج مصياف",
+        "nameEn": "موقف كراج مصياف",
+        "routeId": "damascus-006",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7309463,
+          35.1402599
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-041",
+        "nameAr": "موقف دوار الحبال - ذهاب وعوة",
+        "nameEn": "موقف دوار الحبال - ذهاب وعوة",
+        "routeId": "damascus-005",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7545716,
+          35.1305576
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-042",
+        "nameAr": "موقف حي الكرامة(حي البعث سابقاً) وحي التتان",
+        "nameEn": "موقف حي الكرامة(حي البعث سابقاً) وحي التتان",
+        "routeId": "damascus-005",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7486087,
+          35.130198
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-043",
+        "nameAr": "موقف الصيدلية",
+        "nameEn": "موقف الصيدلية",
+        "routeId": "damascus-005",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7512619,
+          35.1263751
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-044",
+        "nameAr": "عقدة موقف الحارة",
+        "nameEn": "عقدة موقف الحارة",
+        "routeId": "damascus-005",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7456238,
+          35.1249376
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-045",
+        "nameAr": "موقف تكسي الجلاء",
+        "nameEn": "موقف تكسي الجلاء",
+        "routeId": "damascus-005",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7310393,
+          35.1403478
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-046",
+        "nameAr": "موقف دوار الحبال - ذهاب وعوة",
+        "nameEn": "موقف دوار الحبال - ذهاب وعوة",
+        "routeId": "damascus-005",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7300165,
+          35.1430441
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-047",
+        "nameAr": "موقف الأسطة",
+        "nameEn": "موقف الأسطة",
+        "routeId": "damascus-005",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7269176,
+          35.1419125
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-048",
+        "nameAr": "موقف دوار الصحة",
+        "nameEn": "موقف دوار الصحة",
+        "routeId": "damascus-005",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7273757,
+          35.1381577
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-049",
+        "nameAr": "موقف دوار السبسبي",
+        "nameEn": "موقف دوار السبسبي",
+        "routeId": "damascus-005",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7298647,
+          35.137439
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-050",
+        "nameAr": "موقف دوار الباشا",
+        "nameEn": "موقف دوار الباشا",
+        "routeId": "damascus-005",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7309585,
+          35.1403872
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-051",
+        "nameAr": "4PRJ+48M, Al Habbal Rte, Hamah, Syria",
+        "nameEn": "4PRJ+48M, Al Habbal Rte, Hamah, Syria",
+        "routeId": "damascus-006",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7310596,
+          35.1402132
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-052",
+        "nameAr": "موقف دوار الحبال - ذهاب وعوة‎‎‎‎",
+        "nameEn": "موقف دوار الحبال - ذهاب وعوة‎‎‎‎",
+        "routeId": "damascus-005",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7328188,
+          35.1402886
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-053",
+        "nameAr": "موقف الدوار الخارجي",
+        "nameEn": "موقف الدوار الخارجي",
+        "routeId": "damascus-006",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7358659,
+          35.1317515
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-054",
+        "nameAr": "موقف دوار اتحاد العمال",
+        "nameEn": "موقف دوار اتحاد العمال",
+        "routeId": "damascus-006",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7459098,
+          35.122031
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-055",
+        "nameAr": "موقف الزاوية",
+        "nameEn": "موقف الزاوية",
+        "routeId": "damascus-006",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7481556,
+          35.1212939
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-056",
+        "nameAr": "موقف كراج حمص",
+        "nameEn": "موقف كراج حمص",
+        "routeId": "damascus-006",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7545571,
+          35.1306357
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-057",
+        "nameAr": "4QJ3+6Q9, AlMarabet, Hamah, Syria",
+        "nameEn": "4QJ3+6Q9, AlMarabet, Hamah, Syria",
+        "routeId": "damascus-005",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7271975,
+          35.1380047
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-058",
+        "nameAr": "4PQG+6WP, Hama, Syria",
+        "nameEn": "4PQG+6WP, Hama, Syria",
+        "routeId": "damascus-007",
+        "type": "stop"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          36.7296251,
+          35.1373225
+        ]
+      },
+      "properties": {
+        "id": "stop-damascus-059",
+        "nameAr": "4PPH+WPQ, Hama, Syria",
+        "nameEn": "4PPH+WPQ, Hama, Syria",
+        "routeId": "damascus-007",
+        "type": "stop"
+      }
+    }
+  ]
+} as const;
+
+export default data;

@@ -4,16 +4,17 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Population\PopulationDemographic;
-use App\Models\Population\PopulationRainfall;
 use App\Models\Population\PopulationEnvironmentalLog;
+use App\Models\Population\PopulationRainfall;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
+use Inertia\Inertia;
 
 class PopulationAtlasController extends Controller
 {
     public function getData(): JsonResponse
     {
-        $data = Cache::remember('population_master', 3600, function () {
+        $data = Cache::remember('population_master_v2', 3600, function () {
             return $this->buildMasterData();
         });
 
@@ -22,7 +23,7 @@ class PopulationAtlasController extends Controller
 
     public function getEnvironmentalDetails(): JsonResponse
     {
-        $data = Cache::remember('population_env_report', 3600, function () {
+        $data = Cache::remember('population_env_report_v2', 3600, function () {
             return $this->buildEnvironmentalReport();
         });
 
@@ -31,15 +32,15 @@ class PopulationAtlasController extends Controller
 
     public function renderIndex()
     {
-        $masterData = Cache::remember('population_master', 3600, function () {
+        $masterData = Cache::remember('population_master_v2', 3600, function () {
             return $this->buildMasterData();
         });
 
-        $envData = Cache::remember('population_env_report', 3600, function () {
+        $envData = Cache::remember('population_env_report_v2', 3600, function () {
             return $this->buildEnvironmentalReport();
         });
 
-        return \Inertia\Inertia::render('Population/Index', [
+        return Inertia::render('Population/Index', [
             'masterData' => $masterData,
             'envData' => $envData,
         ]);
@@ -54,7 +55,7 @@ class PopulationAtlasController extends Controller
             $type = $item->data_type;
             $sourceId = $item->source_id;
 
-            if (!isset($grouped[$type][$sourceId])) {
+            if (! isset($grouped[$type][$sourceId])) {
                 $grouped[$type][$sourceId] = [
                     'source_id' => $sourceId,
                     'note' => $item->note,
@@ -67,14 +68,23 @@ class PopulationAtlasController extends Controller
             $grouped[$type][$sourceId]['cities'][$item->city_name] = $item->value;
         }
 
-        $formattedDemographics = [];
+        $formattedDemographics = [
+            'population' => [],
+            'idp' => [],
+            'idp_returnees' => [],
+            'rainfall' => [],
+            'environmental' => [],
+        ];
         foreach ($grouped as $type => $sources) {
+            if (! array_key_exists($type, $formattedDemographics)) {
+                continue;
+            }
             $formattedDemographics[$type] = array_values($sources);
         }
 
         $envLogs = PopulationEnvironmentalLog::pluck('city_name')->toArray();
 
-        if (!empty($envLogs)) {
+        if (! empty($envLogs)) {
             $envCities = [];
             foreach ($envLogs as $city) {
                 $envCities[$city] = 1;
@@ -83,11 +93,14 @@ class PopulationAtlasController extends Controller
             $envAvailability = [
                 [
                     'source_id' => 1,
+                    'source_url' => null,
+                    'date' => null,
+                    'note' => null,
                     'cities' => $envCities,
-                ]
+                ],
             ];
 
-            if (!isset($formattedDemographics['environmental'])) {
+            if (empty($formattedDemographics['environmental'])) {
                 $formattedDemographics['environmental'] = $envAvailability;
             }
         }
@@ -96,7 +109,7 @@ class PopulationAtlasController extends Controller
         $rainfallData = [];
 
         foreach ($rainfall as $item) {
-            if (!isset($rainfallData[$item->pcode])) {
+            if (! isset($rainfallData[$item->pcode])) {
                 $rainfallData[$item->pcode] = [];
             }
 
@@ -109,7 +122,7 @@ class PopulationAtlasController extends Controller
 
         return [
             'groups' => $formattedDemographics,
-            'rainfall_data' => $rainfallData,
+            'rainfall_data' => (object) $rainfallData,
         ];
     }
 
@@ -125,12 +138,12 @@ class PopulationAtlasController extends Controller
                     'longitude' => $log->lon,
                 ],
                 'population' => $log->population_ref,
-                'current_conditions' => $log->current_conditions,
-                'daily_forecast_summary' => $log->forecast_summary,
-                'climate_trends' => $log->climate_trends,
-                'air_quality' => $log->air_quality,
-                'drought_risk' => $log->drought_risk,
-                'historical_summary' => $log->historical_summary,
+                'current_conditions' => (object) ($log->current_conditions ?? []),
+                'daily_forecast_summary' => (object) ($log->forecast_summary ?? []),
+                'climate_trends' => (object) ($log->climate_trends ?? []),
+                'air_quality' => (object) ($log->air_quality ?? []),
+                'drought_risk' => (object) ($log->drought_risk ?? []),
+                'historical_summary' => (object) ($log->historical_summary ?? []),
             ];
         }
 
@@ -166,18 +179,18 @@ class PopulationAtlasController extends Controller
 
         $droughtHighCount = collect($citiesData)
             ->pluck('drought_risk.drought_risk')
-            ->filter(fn($r) => in_array($r, ['High', 'Very High']))
+            ->filter(fn ($r) => in_array($r, ['High', 'Very High']))
             ->count();
 
         $aqiPoorCount = collect($citiesData)
             ->pluck('air_quality.estimated_aqi')
-            ->filter(fn($aqi) => $aqi > 75)
+            ->filter(fn ($aqi) => $aqi > 75)
             ->count();
 
         $keyFindings = [
-            "{$droughtHighCount}/" . count($citiesData) . " cities at high/very high drought risk",
-            "{$aqiPoorCount}/" . count($citiesData) . " cities with poor air quality conditions",
-            "Generated by Laravel Climate Service at " . now()->toDateTimeString(),
+            "{$droughtHighCount}/".count($citiesData).' cities at high/very high drought risk',
+            "{$aqiPoorCount}/".count($citiesData).' cities with poor air quality conditions',
+            'Generated by Laravel Climate Service at '.now()->toDateTimeString(),
         ];
 
         $summary = [
@@ -195,7 +208,7 @@ class PopulationAtlasController extends Controller
 
         return [
             'metadata' => $metadata,
-            'cities' => $citiesData,
+            'cities' => (object) $citiesData,
             'country_level' => $countryLevel,
             'summary' => $summary,
         ];

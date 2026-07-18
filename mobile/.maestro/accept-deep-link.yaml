@@ -1,0 +1,8 @@
+appId: zone.syrian.app
+name: Accept iOS deep link confirmation
+---
+- runFlow:
+    when:
+      visible: 'Open in.*Syrian Zone.*'
+    commands:
+      - tapOn: "Open"

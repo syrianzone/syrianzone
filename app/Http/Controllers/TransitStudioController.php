@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\RouteDraft;
+use App\Services\TransitDraftGeoJson;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class TransitStudioController extends Controller
 {
@@ -18,21 +18,21 @@ class TransitStudioController extends Controller
             'city_id' => 'required|exists:cities,id',
             'name_ar' => 'required|string|max:255',
             'name_en' => 'nullable|string|max:255',
-            'price' => 'nullable|integer',
-            'notes' => 'nullable|string',
+            'price' => 'nullable|integer|min:0',
+            'notes' => 'nullable|string|max:5000',
             'geojson' => 'required|array',
-            'geojson.features' => 'required|array|min:1',
-            'geojson.features.*.geometry.type' => 'required|string',
         ]);
 
+        $geojson = TransitDraftGeoJson::validate($validated['geojson']);
+
         $draft = RouteDraft::create([
-            'user_id' => Auth::id(),
+            'user_id' => $request->user()?->id,
             'city_id' => $validated['city_id'],
             'name_ar' => $validated['name_ar'],
-            'name_en' => $validated['name_en'],
-            'price' => $validated['price'],
-            'notes' => $validated['notes'],
-            'geojson' => $request->input('geojson'),
+            'name_en' => $validated['name_en'] ?? null,
+            'price' => $validated['price'] ?? null,
+            'notes' => $validated['notes'] ?? null,
+            'geojson' => $geojson,
             'status' => 'pending',
         ]);
 

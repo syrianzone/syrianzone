@@ -94,7 +94,7 @@ Route::get('/transit/city/{id}/route/{routeId}', function ($id, $routeId) {
         ]);
     }
     
-    // Read route + stops from the database — the same source the live map uses — so
+    // Read route and stops from the database, the same source the live map uses, so
     // admin-approved community routes appear here too (the old static GeoJSON files in
     // public/data are never updated on approval, so they drifted out of sync).
     $route = \Illuminate\Support\Facades\DB::table('routes')
@@ -210,5 +210,4 @@ Route::middleware('auth')->group(function () {
         });
     });
 });
-
 

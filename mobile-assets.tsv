@@ -1,20 +1,24 @@
-family	source_paths	mobile_strategy	source_evidence
-app_identity	public/favicon.ico|public/assets/favicon.png|public/assets/icon-192.png|public/assets/icon-512.png|public/assets/logo-darkmode.svg|public/assets/logo-lightmode.svg|public/syria-flag.svg	bundle	resources/views/app.blade.php|resources/js/Components/Navbar.tsx|resources/js/Pages/Home.tsx|public/manifest.json
-language_flags	public/assets/ar.svg|public/assets/en.svg	bundle	resources/js/Components/ThemeToggle.tsx
-external_link_art	public/flag-replacer/1f1f8-1f1fe.svg	bundle	resources/js/Pages/Home.tsx|resources/js/Components/Navbar.tsx
-external_link_remote_art	https://joory.chat/favicon.svg|https://jard.chat/images/logo-light.svg	remote-with-bundled-placeholder	resources/js/Pages/Home.tsx|resources/js/Components/Navbar.tsx
-fonts	npm:@expo-google-fonts/ibm-plex-sans-arabic@0.4.2|npm:@expo-google-fonts/cairo@0.4.2	bundle-native-ttf-ibm-100-700-and-cairo-300-400-600-700-900-with-ofl-licenses	resources/views/app.blade.php|resources/css/app.css|resources/js/Lib/exportImage.ts|resources/js/Pages/Transit/transit.css
-government_apps	public/assets/apps/**	server	resources/js/Pages/GovApps/GovAppsClient.tsx
-justice	public/assets/justice/**	server	resources/js/Pages/Justice/Index.tsx
-shawarma	public/assets/shawarma/**	server-with-image-cache	resources/js/Pages/Shawarma/Index.tsx
-syrian_identity	public/syid-assets/**	server-with-offline-index	resources/js/Pages/SyId/SyidClient.tsx
-official_accounts	public/syofficial-assets/**	server	resources/js/Pages/SyOfficial/Index.tsx
-tierlist	public/tierlist-assets/**|public/tierlist/**	server-with-image-cache	resources/js/Components/poll/TierBoard.tsx
-transit_geojson	public/data/**|resources/js/Pages/Transit/_data/cities.json	bundle-city-fallback-and-fetch-live-geometry	resources/js/Pages/Transit/_hooks/useMapData.ts
-transit_map_style	public/styles/styles/dark-matter.json	bundle-style-and-fetch-remote-tiles	resources/js/Pages/Transit/_components/citymap/MapCanvas.tsx|resources/js/Pages/Transit/studio/Index.tsx|resources/js/Pages/Transit/admin/Index.tsx
-population_geojson	public/assets/population/syr_admin1.geojson|public/assets/population/syria_provinces.geojson	bundle-map-boundaries-and-fetch-live-data	resources/js/Pages/Population/PopulationClient.tsx|resources/js/Pages/SyId/SyidClient.tsx
-contributors	public/contributors.json	serve-through-mobile-api	resources/js/Pages/SyrianContributors/Index.tsx
-content_placeholders	public/placeholder*.png|public/placeholder*.svg|public/placeholder-user.jpg	bundle	resources/js/Pages/SyrianContributors/Index.tsx
-place_photos	storage/app/public/places/**	server-with-bounded-image-cache	resources/js/Pages/Places/_lib/types.ts|app/Services/PlaceImageService.php
-web_social_metadata	public/assets/thumbnail.jpg	do-not-bundle	resources/js/Pages/SyrianContributors/layout.tsx
-legacy_web	public/build/**|public/sw.js|public/js/**|public/css/**	do-not-bundle	vite.config.js|public/manifest.json
+family	source_paths	mobile_strategy	source_evidence	target_evidence
+app_identity	public/favicon.ico|public/assets/favicon.png|public/assets/icon-192.png|public/assets/icon-512.png|public/assets/logo-darkmode.svg|public/assets/logo-lightmode.svg	bundle	resources/views/app.blade.php|resources/js/Components/Navbar.tsx|resources/js/Pages/Home.tsx|public/manifest.json	mobile/assets/images/favicon.png|mobile/assets/images/icon.png|mobile/assets/images/icon-monochrome.png|mobile/assets/images/splash-icon.png|mobile/assets/images/logo-darkmode.svg|mobile/assets/images/logo-lightmode.svg
+language_flags	public/assets/ar.svg|public/assets/en.svg	unreferenced-copy-do-not-bundle	resources/js/Components/ThemeToggle.tsx	mobile/assets/images/ar.svg|mobile/assets/images/en.svg
+external_link_art	public/flag-replacer/1f1f8-1f1fe.svg	unreferenced-copy-do-not-bundle	resources/js/Pages/Home.tsx|resources/js/Components/Navbar.tsx	mobile/assets/images/flag-replacer.svg
+syria_flag	public/syria-flag.svg	server-url-with-unreferenced-copy	resources/js/Pages/SyrianContributors/Index.tsx	mobile/src/features/SyrianContributors/Index.tsx|mobile/assets/images/syria-flag.svg
+fonts	npm:@expo-google-fonts/ibm-plex-sans-arabic@0.4.2|npm:@expo-google-fonts/cairo@0.4.2	bundle-package-fonts-ibm-400-500-600-700-and-cairo-400-600-700	resources/views/app.blade.php|resources/css/app.css|resources/js/Lib/exportImage.ts|resources/js/Pages/Transit/transit.css	mobile/src/providers/AppProviders.tsx|mobile/assets/licenses/cairo-font.txt|mobile/assets/licenses/cairo-package.txt|mobile/assets/licenses/ibm-plex-font.txt|mobile/assets/licenses/ibm-plex-package.txt
+government_apps	public/assets/apps/**	server	resources/js/Pages/GovApps/GovAppsClient.tsx	mobile/src/features/GovApps/data.ts
+justice	public/assets/justice/**	server	resources/js/Pages/Justice/Index.tsx	mobile/src/features/Justice/Index.tsx
+shawarma	public/assets/shawarma/**	server	resources/js/Pages/Shawarma/Index.tsx	mobile/src/features/Shawarma/Index.tsx
+syrian_identity	public/syid-assets/**	server-with-bundled-boundary-map	resources/js/Pages/SyId/SyidClient.tsx	mobile/src/features/SyId/files.ts|mobile/src/features/SyId/SyriaMap.tsx|mobile/assets/data/population/syria_provinces.geojson
+official_accounts	public/syofficial-assets/**	server	resources/js/Pages/SyOfficial/Index.tsx	mobile/src/features/SyOfficial/logic.ts
+tierlist	public/tierlist-assets/**|public/tierlist/**	server	resources/js/Components/poll/TierBoard.tsx	mobile/src/components/poll/TierBoard.tsx|mobile/src/features/Polls/sharing.ts
+transit_city_fallback	resources/js/Pages/Transit/_data/cities.json	translate-to-typed-module-and-fetch-live-data	resources/js/Pages/Transit/_hooks/useMapData.ts	mobile/src/features/Transit/_data/cities.ts|mobile/src/features/Transit/_data/fallback.ts|mobile/src/features/Transit/api.ts
+transit_raw_geojson	public/data/**	translate-to-typed-modules-and-fetch-live-data	resources/js/Pages/Transit/_hooks/useMapData.ts	mobile/src/features/Transit/_data/damascus/routes.ts|mobile/src/features/Transit/_data/damascus/stops.ts|mobile/src/features/Transit/_data/hama/routes.ts|mobile/src/features/Transit/_data/hama/stops.ts|mobile/src/features/Transit/_data/tartous/routes.ts|mobile/src/features/Transit/_data/tartous/stops.ts|mobile/src/features/Transit/_data/fallback.ts|mobile/src/features/Transit/api.ts
+transit_map_style	public/styles/styles/dark-matter.json	bundle-style-and-fetch-remote-tiles	resources/js/Pages/Transit/_components/citymap/MapCanvas.tsx|resources/js/Pages/Transit/studio/Index.tsx|resources/js/Pages/Transit/admin/Index.tsx	mobile/assets/styles/dark-matter.json
+population_geojson	public/assets/population/syria_provinces.geojson	bundle-map-boundaries-and-fetch-live-data	resources/js/Pages/SyId/SyidClient.tsx	mobile/assets/data/population/syria_provinces.geojson|mobile/src/lib/geojson/bundled.ts
+population_source_geojson	public/assets/population/syr_admin1.geojson	replaced-by-shared-province-boundaries	resources/js/Pages/Population/PopulationClient.tsx	mobile/assets/data/population/syria_provinces.geojson|mobile/src/lib/geojson/bundled.ts
+contributors	public/contributors.json	serve-through-mobile-api	resources/js/Pages/SyrianContributors/Index.tsx	app/Services/PublicContent/ContributorDirectoryService.php|mobile/src/features/SyrianContributors/api.ts
+content_placeholder	public/placeholder*.png|public/placeholder*.svg|public/placeholder-user.jpg	unreferenced-copy-do-not-bundle	resources/js/Pages/SyrianContributors/Index.tsx	mobile/assets/images/placeholder.svg
+place_photos	storage/app/public/places/**	server-with-generated-display-and-thumbnail-urls	resources/js/Pages/Places/_lib/types.ts|app/Services/PlaceImageService.php	app/Services/PlaceImageService.php|mobile/src/features/Places/_components/PhotoGallery.tsx
+guess_who_characters	storage/app/public/**	server	resources/js/Pages/GuessWho/Room.tsx	mobile/src/features/GuessWho/api.ts
+candidate_uploads	storage/app/public/candidates/**	server	resources/js/Components/admin/AdminPollManager.tsx	app/Http/Controllers/Mobile/AdminUploadController.php|mobile/src/components/admin/api.ts
+web_social_metadata	public/assets/thumbnail.jpg	do-not-bundle	resources/js/Pages/SyrianContributors/layout.tsx	-
+legacy_web	public/build/**|public/sw.js|public/js/**|public/css/**	do-not-bundle	vite.config.js|public/manifest.json	-

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 class UpdateSyriaClimate extends Command
 {
     protected $signature = 'population:update-climate';
+
     protected $description = 'Update climate and environmental data for all Syrian cities';
 
     public function handle()
@@ -20,14 +21,14 @@ class UpdateSyriaClimate extends Command
         $startTime = now();
 
         try {
-            $service = new SyriaClimateService();
+            $service = new SyriaClimateService;
             $service->setOutput($this->output)->updateAllCities();
 
-            Cache::forget('population_env_report');
+            Cache::forget('population_env_report_v2');
 
             $duration = $startTime->diffInSeconds(now());
             $this->info("✓ Climate data updated successfully ({$duration}s)");
-            $this->info('Run completed at: ' . now()->toDateTimeString());
+            $this->info('Run completed at: '.now()->toDateTimeString());
 
             Log::info('Syria climate data update completed', [
                 'duration_seconds' => $duration,

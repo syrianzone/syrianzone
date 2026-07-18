@@ -1,0 +1,153 @@
+appId: zone.syrian.app
+name: Syrian Zone complete feature smoke
+---
+- launchApp:
+    clearState: true
+- runFlow: accept-deep-link.yaml
+- tapOn: "الرئيسية"
+- extendedWaitUntil:
+    visible: "أهلا بك"
+    timeout: 30000
+- extendedWaitUntil:
+    visible: "صوتك بيعمل فرق!"
+    timeout: 10000
+- tapOn:
+    id: "إغلاق"
+    optional: true
+- tapOn:
+    text: "إغلاق"
+    optional: true
+- openLink: "syrianzone://account"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "الحساب"
+    timeout: 30000
+- openLink: "syrianzone://settings"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "الإعدادات"
+    timeout: 30000
+- openLink: "syrianzone://about"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "عن المساحة السورية"
+    timeout: 30000
+- openLink: "syrianzone://feature/syofficial"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "روابط الحسابات الرسمية السورية"
+    timeout: 30000
+- openLink: "syrianzone://feature/roznama"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "الروزنامة"
+    timeout: 30000
+- openLink: "syrianzone://feature/phonebook"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "دليل الهاتف والواتساب"
+    timeout: 30000
+- openLink: "syrianzone://feature/syid"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "عناصر الهوية البصرية السورية"
+    timeout: 30000
+- openLink: "syrianzone://feature/party"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "دليل المنظمات السياسية السورية"
+    timeout: 30000
+- openLink: "syrianzone://feature/tierlist"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "الاستطلاع"
+    timeout: 30000
+- openLink: "syrianzone://feature/house"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "المجلس التشريعي"
+    timeout: 30000
+- openLink: "syrianzone://feature/compass"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "بوصلة سوريا السياسية"
+    timeout: 30000
+- openLink: "syrianzone://feature/priorities"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "أولويات سوريا"
+    timeout: 30000
+- openLink: "syrianzone://feature/alignment"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "البوصلة المخصصة"
+    timeout: 30000
+- openLink: "syrianzone://feature/sites"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "المواقع السورية"
+    timeout: 30000
+- openLink: "syrianzone://feature/population"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "أطلس سوريا التفاعلي"
+    timeout: 30000
+- openLink: "syrianzone://feature/govapps"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "تطبيقات حكومية"
+    timeout: 30000
+- openLink: "syrianzone://transit"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "ترانزيت سوريا"
+    timeout: 30000
+- openLink: "syrianzone://feature/places"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "أماكن خفية"
+    timeout: 30000
+- openLink: "syrianzone://feature/justice"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "العدالة الانتقالية"
+    timeout: 30000
+- openLink: "syrianzone://feature/polls"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "الاستبيانات واستطلاعات الرأي"
+    timeout: 30000
+- openLink: "syrianzone://feature/guesswho"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "لعبة مَنْ هُوَ؟"
+    timeout: 30000
+- openLink: "syrianzone://feature/contributors"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "أفضل المساهمين في GitHub"
+    timeout: 30000
+- openLink: "syrianzone://feature/dashboard"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "لوحة التحكم الموحدة"
+    timeout: 30000
+- openLink: "syrianzone://feature/shawarma"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "@macdoos's Shawarma Tier List"
+    timeout: 30000
+- openLink: "syrianzone://feature/privacy"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "سياسة الخصوصية"
+    timeout: 30000
+- openLink: "syrianzone://feature/terms"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "الشروط والأحكام"
+    timeout: 30000
+- tapOn: "الرئيسية"
+- extendedWaitUntil:
+    visible: "أهلا بك"
+    timeout: 30000

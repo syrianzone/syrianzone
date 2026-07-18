@@ -26,13 +26,27 @@ test('superadmin can create admin', function () {
 });
 
 test('superadmin can delete admin', function () {
-    $admin = User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->create([
+        'avatar_url' => 'https://accounts.example.test/private-admin.png',
+        'email' => 'private-admin@example.test',
+        'google_id' => 'private-admin-subject',
+        'name' => 'Private Admin',
+        'role' => 'admin',
+    ]);
+    $admin->createToken('mobile:admin-device', ['mobile']);
 
     $this->actingAs(User::factory()->create(['role' => 'superadmin']))
         ->deleteJson("/api/admins/{$admin->id}")
         ->assertOk();
 
     $this->assertSoftDeleted('users', ['id' => $admin->id]);
+    $deletedAdmin = User::withTrashed()->findOrFail($admin->id);
+    expect($deletedAdmin->avatar_url)->toBeNull()
+        ->and($deletedAdmin->email)->not->toBe('private-admin@example.test')
+        ->and($deletedAdmin->email)->toEndWith('@deleted.invalid')
+        ->and($deletedAdmin->google_id)->toBeNull()
+        ->and($deletedAdmin->name)->not->toBe('Private Admin')
+        ->and($admin->tokens()->count())->toBe(0);
 });
 
 test('cannot delete superadmin', function () {

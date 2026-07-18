@@ -1,0 +1,484 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`bundled About Markdown matches the complete source-derived token golden 1`] = `
+[
+  {
+    "children": [
+      {
+        "type": "text",
+        "value": "Syrian Zone Project",
+      },
+    ],
+    "type": "h1",
+  },
+  {
+    "children": [
+      {
+        "type": "text",
+        "value": "مرحبًا بكم في مشروع Syrian Zone! هذا المشروع هو جهد تعاوني مفتوح المصدر يهدف إلى توفير أدوات وموارد متنوعة تتعلق بالشأن السوري.",
+      },
+    ],
+    "type": "paragraph",
+  },
+  {
+    "children": [
+      {
+        "type": "text",
+        "value": "يهدف المشروع إلى أن يكون مساحة للمشاريع التي تتسم بالبساطة والقيمة العالية وسهولة الإنجاز والإطلاق السريع.",
+      },
+    ],
+    "type": "paragraph",
+  },
+  {
+    "children": [
+      {
+        "type": "text",
+        "value": "المشروع بدأ بمجهود شخصين:",
+      },
+    ],
+    "type": "paragraph",
+  },
+  {
+    "items": [
+      [
+        {
+          "type": "text",
+          "value": "هادي الأحمد (",
+        },
+        {
+          "children": [
+            {
+              "type": "text",
+              "value": "@hadealahmad",
+            },
+          ],
+          "href": "https://twitter.com/hadealahmad",
+          "type": "link",
+        },
+        {
+          "type": "text",
+          "value": ")",
+        },
+      ],
+      [
+        {
+          "type": "text",
+          "value": "نور صوفناتي (",
+        },
+        {
+          "children": [
+            {
+              "type": "text",
+              "value": "@Nour_Sofanati",
+            },
+          ],
+          "href": "https://twitter.com/Nour_Sofanati",
+          "type": "link",
+        },
+        {
+          "type": "text",
+          "value": ")",
+        },
+      ],
+    ],
+    "type": "list",
+  },
+  {
+    "children": [
+      {
+        "type": "text",
+        "value": "ما هي البرمجيات مفتوحة المصدر؟",
+      },
+    ],
+    "type": "h2",
+  },
+  {
+    "children": [
+      {
+        "type": "text",
+        "value": "البرمجيات مفتوحة المصدر (Open Source Software) هي برمجيات يكون شفرتها المصدرية متاحة للجمهور للاطلاع عليها، تعديلها، وتوزيعها. هذا النموذج يشجع على التعاون والشفافية، حيث يمكن لأي شخص المساهمة في تطوير البرمجية أو تكييفها لتناسب احتياجاته الخاصة. تساهم المشاريع مفتوحة المصدر في الابتكار وتسمح للمستخدمين بفهم كيفية عمل البرمجية والمساهمة في تحسينها.",
+      },
+    ],
+    "type": "paragraph",
+  },
+  {
+    "children": [
+      {
+        "type": "text",
+        "value": "الترخيص تحت رخصة MIT",
+      },
+    ],
+    "type": "h2",
+  },
+  {
+    "children": [
+      {
+        "type": "text",
+        "value": "هذا المشروع مرخص تحت رخصة MIT. رخصة MIT هي إحدى أبسط وأكثر رخص البرمجيات الحرة تساهلاً. تسمح هذه الرخصة بإعادة استخدام الكود المصدري لأي غرض تقريبًا، بما في ذلك الاستخدام التجاري، بشرط أن يتم تضمين نسخة من الرخصة والإشعار بحقوق النشر الأصلي في جميع النسخ أو الأجزاء الهامة من البرنامج. بعبارة أخرى، تمنحك رخصة MIT حرية كبيرة في استخدام وتعديل وتوزيع هذا المشروع.",
+      },
+    ],
+    "type": "paragraph",
+  },
+  {
+    "children": [
+      {
+        "type": "text",
+        "value": "المساهمات",
+      },
+    ],
+    "type": "h2",
+  },
+  {
+    "children": [
+      {
+        "type": "text",
+        "value": "هذا المشروع يرحب بمساهمات الجميع بمختلف أشكالها. سواء كانت إضافة محتوى، تحسين الكود، الإبلاغ عن مشاكل، تقديم اقتراحات، أو المساعدة في الترجمة. نؤمن بأن قوة المشروع تكمن في مساهمات الناس العشوائيين في تحسينه والإضافة إليه.",
+      },
+    ],
+    "type": "paragraph",
+  },
+  {
+    "children": [
+      {
+        "type": "text",
+        "value": "نخص بالذكر المساهمين التاليين لمجهوداتهم القيمة:",
+      },
+    ],
+    "type": "paragraph",
+  },
+  {
+    "items": [
+      [
+        {
+          "type": "text",
+          "value": "ساهم ",
+        },
+        {
+          "children": [
+            {
+              "type": "text",
+              "value": "مكدوس",
+            },
+          ],
+          "type": "bold",
+        },
+        {
+          "type": "text",
+          "value": " (",
+        },
+        {
+          "children": [
+            {
+              "type": "text",
+              "value": "https://x.com/macdoos",
+            },
+          ],
+          "href": "https://x.com/macdoos",
+          "type": "link",
+        },
+        {
+          "type": "text",
+          "value": ") بتطوير قسم تقييم الوزراء بالكامل.",
+        },
+      ],
+      [
+        {
+          "children": [
+            {
+              "type": "text",
+              "value": "الحارث الموسى",
+            },
+          ],
+          "type": "bold",
+        },
+        {
+          "type": "text",
+          "value": " - (",
+        },
+        {
+          "children": [
+            {
+              "type": "text",
+              "value": "@tirh25",
+            },
+          ],
+          "href": "https://x.com/tirh25",
+          "type": "link",
+        },
+        {
+          "type": "text",
+          "value": ") قام بإضافة عدد كبير من الحسابات الرسمية لصفحة الحسابات الرسمية السورية.",
+        },
+      ],
+      [
+        {
+          "type": "text",
+          "value": "قام ",
+        },
+        {
+          "children": [
+            {
+              "type": "text",
+              "value": "haiueida",
+            },
+          ],
+          "type": "bold",
+        },
+        {
+          "type": "text",
+          "value": " (",
+        },
+        {
+          "children": [
+            {
+              "type": "text",
+              "value": "@haiueida",
+            },
+          ],
+          "href": "https://x.com/haiueida",
+          "type": "link",
+        },
+        {
+          "type": "text",
+          "value": ") بتوفير الترجمة الكردية لصفحة الحسابات الرسمية السورية.",
+        },
+      ],
+      [
+        {
+          "type": "text",
+          "value": "ساهم ",
+        },
+        {
+          "children": [
+            {
+              "type": "text",
+              "value": "Waleed Khamees",
+            },
+          ],
+          "type": "bold",
+        },
+        {
+          "type": "text",
+          "value": " - (",
+        },
+        {
+          "children": [
+            {
+              "type": "text",
+              "value": "@WaleedKhamees",
+            },
+          ],
+          "href": "https://github.com/WaleedKhamees",
+          "type": "link",
+        },
+        {
+          "type": "text",
+          "value": ") في ضغط الصور وتحسين الأداء للموقع.",
+        },
+      ],
+      [
+        {
+          "type": "text",
+          "value": "ساهم ",
+        },
+        {
+          "children": [
+            {
+              "type": "text",
+              "value": "مجهول",
+            },
+          ],
+          "type": "bold",
+        },
+        {
+          "type": "text",
+          "value": " في تحسين الخريطة في أطلس سوريا لتضمين الجولان بالكامل وبشكل أوضح.",
+        },
+      ],
+      [
+        {
+          "type": "text",
+          "value": "ساهم ",
+        },
+        {
+          "children": [
+            {
+              "type": "text",
+              "value": "وحيد شعّار",
+            },
+          ],
+          "type": "bold",
+        },
+        {
+          "type": "text",
+          "value": " (",
+        },
+        {
+          "children": [
+            {
+              "type": "text",
+              "value": "https://x.com/WaheedShaar",
+            },
+          ],
+          "href": "https://x.com/WaheedShaar",
+          "type": "link",
+        },
+        {
+          "type": "text",
+          "value": ") بتوفير نسخة DWG من العلم السوري في صفحة الهوية البصرية السورية",
+        },
+      ],
+      [
+        {
+          "type": "text",
+          "value": "ساهم ",
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "type": "text",
+                  "value": "SourceM7",
+                },
+              ],
+              "type": "bold",
+            },
+          ],
+          "href": "https://github.com/SourceM7",
+          "type": "link",
+        },
+        {
+          "type": "text",
+          "value": " بتطوير أطلس سوريا وتطوير الصفحة الرئيسية",
+        },
+      ],
+      [
+        {
+          "children": [
+            {
+              "type": "text",
+              "value": "يوري دندشي",
+            },
+          ],
+          "type": "bold",
+        },
+        {
+          "type": "text",
+          "value": " - (",
+        },
+        {
+          "children": [
+            {
+              "type": "text",
+              "value": "@yuri.dandashi",
+            },
+          ],
+          "href": "https://www.instagram.com/yuri.dandashi/",
+          "type": "link",
+        },
+        {
+          "type": "text",
+          "value": ") قام بتصميم الشعار وأيقونة الموقع والهوية البصرية العامة.
+",
+        },
+        {
+          "type": "text",
+          "value": "تحميل ملفات الهوية البصرية للمساحة السورية: ",
+        },
+        {
+          "children": [
+            {
+              "type": "text",
+              "value": "حملها من هنا",
+            },
+          ],
+          "href": "https://syrian.zone/assets/BrandKit.zip",
+          "type": "link",
+        },
+      ],
+    ],
+    "type": "list",
+  },
+  {
+    "children": [
+      {
+        "type": "text",
+        "value": "نقدر كل مساهمة، كبيرة كانت أم صغيرة، وندعوكم للانضمام والمساهمة في تطوير هذا المشروع.",
+      },
+    ],
+    "type": "paragraph",
+  },
+  {
+    "children": [
+      {
+        "type": "text",
+        "value": "المستودع على GitHub",
+      },
+    ],
+    "type": "h2",
+  },
+  {
+    "children": [
+      {
+        "type": "text",
+        "value": "المستودع العام للمشروع متاح على GitHub:",
+      },
+    ],
+    "type": "paragraph",
+  },
+  {
+    "items": [
+      [
+        {
+          "children": [
+            {
+              "type": "text",
+              "value": "github.com/syrianzone/syrianzone",
+            },
+          ],
+          "href": "https://github.com/syrianzone/syrianzone",
+          "type": "link",
+        },
+      ],
+    ],
+    "type": "list",
+  },
+  {
+    "children": [
+      {
+        "type": "text",
+        "value": "نرحب بأي مساهمات واقتراحات وتحسينات عبر Issues و Pull Requests.",
+      },
+    ],
+    "type": "paragraph",
+  },
+  {
+    "children": [
+      {
+        "type": "text",
+        "value": "قادم قريبًا",
+      },
+    ],
+    "type": "h2",
+  },
+  {
+    "children": [
+      {
+        "type": "text",
+        "value": "ندعوكم للمساهمة في هذا المشروع بأي طريقة ممكنة. سواء كانت بتقديم أفكار جديدة، المساعدة في البرمجة، التصميم، الترجمة، أو حتى مجرد استخدام الموقع وتقديم الملاحظات.",
+      },
+    ],
+    "type": "paragraph",
+  },
+  {
+    "children": [
+      {
+        "type": "text",
+        "value": "للمساهمة، يمكنكم فتح مشكلة (Issue) أو طلب سحب (Pull Request) على مستودع المشروع على GitHub، أو التواصل مع المساهمين الرئيسيين عبر حساباتهم المذكورة أعلاه.",
+      },
+    ],
+    "type": "paragraph",
+  },
+]
+`;

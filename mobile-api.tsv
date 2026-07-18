@@ -1,98 +1,100 @@
-module	method	server_path	source_evidence	auth	role	port_status
-home	GET	/api/mobile/home	app/Http/Controllers/HomeController.php	public	none	planned
-weather	GET	https://syrianzone.hade-alahmad1.workers.dev	resources/js/Pages/Home.tsx	public	none	existing-third-party
-prayer_times	GET	https://api.aladhan.com/v1/timings/{date}	resources/js/Pages/Home.tsx	public	none	existing-third-party
-events	POST	https://event-backend-production-18c4.up.railway.app/graphql	resources/js/Components/F3aliaEvents.tsx	public	none	existing-third-party
-official_accounts	GET	/api/mobile/official-accounts	app/Http/Controllers/SyOfficialController.php	public	none	planned
-official_accounts_upstream	GET	https://docs.google.com/spreadsheets/d/e/2PACX-1vTAtwovmqnk0722ikCNL1RAeoEWyJ2tec3L0-sGHe-0kbmKs0ZPOIyCxOP4e74ndkPooauvG9ZeLTWT/pub?gid=0&single=true&output=csv	app/Http/Controllers/SyOfficialController.php	server-only	none	existing-third-party-upstream
-phonebook	GET	/api/mobile/phonebook	app/Http/Controllers/PhonebookController.php	public	none	planned
-phonebook_upstream	GET	https://docs.google.com/spreadsheets/d/e/2PACX-1vT59DuQe_jOSrhrjVS7J7kB8YdVJiUHMxkB1-LsZc5MlAVFnUQrDXGM0n4qFm5yqQpPqFn5zkhTGgHS/pub?output=csv	app/Http/Controllers/PhonebookController.php	server-only	none	existing-third-party-upstream
-sites	GET	/api/mobile/sites	app/Http/Controllers/ExternalDataController.php	public	none	planned
-sites_upstream	GET	https://docs.google.com/spreadsheets/d/e/2PACX-1vTCrz7GpfTDmtgKipQd3IqyMPle1ehoG77VO2SQRDqKC9zRRKO3FDI60VoYhA_XqlzoKQ6gZDrIuIjL/pub?output=csv	app/Http/Controllers/ExternalDataController.php	server-only	none	existing-third-party-upstream
-parties	GET	/api/mobile/parties	app/Http/Controllers/ExternalDataController.php	public	none	planned
-parties_upstream	GET	https://docs.google.com/spreadsheets/d/e/2PACX-1vTxa48kbdV2X5Umd3WGDeU7xX5qFVRpyA3uDFhI9w2FAOuxSiGebSpKrVpjU-13XswnNgxHvfWw-sbJ/pub?output=csv	app/Http/Controllers/ExternalDataController.php	server-only	none	existing-third-party-upstream
-government_apps	GET	/api/mobile/government-apps	app/Http/Controllers/ExternalDataController.php	public	none	planned
-government_apps_upstream	GET	https://docs.google.com/spreadsheets/d/e/2PACX-1vRW4BMKTSgWlF6ppCgGxzVxvFIdADOG7G5MxIuiRuOCysCIdC_BYpLURlyQwOsrsJj_5q_vn7JwheCF/pub?gid=0&single=true&output=csv	app/Http/Controllers/ExternalDataController.php	server-only	none	existing-third-party-upstream
-government_app_icon	GET	/api/app-icon	routes/api.php	public	none	existing
-government_app_icon_apple_upstream	GET	https://itunes.apple.com/lookup?id={id}	routes/api.php	server-only	none	existing-third-party-upstream
-government_app_icon_play_upstream	GET	https://play.google.com/store/apps/details?id={package}&hl=en	routes/api.php	server-only	none	existing-third-party-upstream
-quick_link_joory_art	GET	https://joory.chat/favicon.svg	resources/js/Pages/Home.tsx	public	none	existing-third-party-with-bundled-fallback
-quick_link_jard_art	GET	https://jard.chat/images/logo-light.svg	resources/js/Pages/Home.tsx	public	none	existing-third-party-with-bundled-fallback
-house	GET	/api/mobile/house?mode={mode}&province={province}	resources/js/Pages/House/data.ts	public	none	planned-server-proxy
-house_upstream	GET	https://docs.google.com/spreadsheets/d/{sheetId}/export?format=csv&gid={gid}	resources/js/Pages/House/data.ts	server-only	none	existing-third-party-upstream
-polls	GET	/api/polls	app/Http/Controllers/PollController.php	optional bearer	none	existing
-poll	GET	/api/polls/{idOrSlug}	app/Http/Controllers/PollController.php	public	none	existing
-poll_leaderboard	GET	/api/polls/{idOrSlug}/leaderboard	app/Http/Controllers/PollController.php	public	none	existing
-poll_vote	POST	/api/submit	app/Http/Controllers/PollController.php	public	none	existing-hardening-required
-contributors	GET	/api/mobile/contributors	resources/js/Pages/SyrianContributors/Index.tsx	public	none	planned
-contributor	GET	/api/mobile/contributors/{username}	resources/js/Pages/SyrianContributors/Index.tsx	public	none	planned
-population	GET	/api/population/master	app/Http/Controllers/Api/PopulationAtlasController.php	public	none	existing
-population_environment	GET	/api/population/env-report	app/Http/Controllers/Api/PopulationAtlasController.php	public	none	existing
-places_map	GET	/api/v1/places/map	resources/js/Pages/Places/_lib/api.ts	public	none	concurrent-source-contract
-places_list	GET	/api/v1/places	resources/js/Pages/Places/_lib/api.ts	public	none	concurrent-source-contract
-places_nearby	GET	/api/v1/places/nearby	resources/js/Pages/Places/_lib/api.ts	optional bearer	none	concurrent-source-contract
-places_detail	GET	/api/v1/places/{id}	resources/js/Pages/Places/_lib/api.ts	optional bearer	none	concurrent-source-contract
-places_comments	GET	/api/v1/places/{id}/comments	resources/js/Pages/Places/_lib/api.ts	public	none	concurrent-source-contract
-places_submit	POST	/api/v1/places	resources/js/Pages/Places/_lib/api.ts	bearer	none	concurrent-source-contract
-places_mine	GET	/api/v1/my/places	resources/js/Pages/Places/_lib/api.ts	bearer	none	concurrent-source-contract
-places_saves	GET	/api/v1/my/saves	resources/js/Pages/Places/_lib/api.ts	bearer	none	concurrent-source-contract
-places_like	POST	/api/v1/places/{id}/like	resources/js/Pages/Places/_lib/api.ts	bearer	none	concurrent-source-contract
-places_unlike	DELETE	/api/v1/places/{id}/like	resources/js/Pages/Places/_lib/api.ts	bearer	none	concurrent-source-contract
-places_save	POST	/api/v1/places/{id}/save	resources/js/Pages/Places/_lib/api.ts	bearer	none	concurrent-source-contract
-places_unsave	DELETE	/api/v1/places/{id}/save	resources/js/Pages/Places/_lib/api.ts	bearer	none	concurrent-source-contract
-places_comment_create	POST	/api/v1/places/{id}/comments	resources/js/Pages/Places/_lib/api.ts	bearer	none	concurrent-source-contract
-places_comment_delete	DELETE	/api/v1/place-comments/{id}	resources/js/Pages/Places/_lib/api.ts	bearer	owner|admin|superadmin	concurrent-source-contract
-places_report	POST	/api/v1/places/{id}/report	resources/js/Pages/Places/_lib/api.ts	bearer	none	concurrent-source-contract
-places_admin_list	GET	/api/v1/admin/places	resources/js/Pages/Places/_lib/api.ts	bearer	admin|superadmin	concurrent-source-contract
-places_admin_approve	POST	/api/v1/admin/places/{id}/approve	resources/js/Pages/Places/_lib/api.ts	bearer	admin|superadmin	concurrent-source-contract
-places_admin_reject	POST	/api/v1/admin/places/{id}/reject	resources/js/Pages/Places/_lib/api.ts	bearer	admin|superadmin	concurrent-source-contract
-places_admin_delete	DELETE	/api/v1/admin/places/{id}	resources/js/Pages/Places/_lib/api.ts	bearer	admin|superadmin	concurrent-source-contract
-places_admin_reports	GET	/api/v1/admin/place-reports	resources/js/Pages/Places/_lib/api.ts	bearer	admin|superadmin	concurrent-source-contract
-places_admin_report_resolve	POST	/api/v1/admin/place-reports/{id}/resolve	resources/js/Pages/Places/_lib/api.ts	bearer	admin|superadmin	concurrent-source-contract
-transit_cities	GET	/api/v1/cities	resources/js/Pages/Transit/_data/cities.json	public	none	existing
-transit_routes	GET	/api/v1/cities/{id}/routes	resources/js/Pages/Transit/_hooks/useMapData.ts	public	none	existing
-transit_map	GET	/api/v1/cities/{id}/map-data	resources/js/Pages/Transit/_hooks/useMapData.ts	public	none	existing
-transit_nearby	GET	/api/v1/stops/nearby	resources/js/Pages/Transit/_components/citymap/NearbyTransitDrawer.tsx	public	none	existing
-transit_search	GET	/api/v1/search	resources/js/Pages/Transit/_components/citymap/GlobalSearchBox.tsx	public	none	existing
-transit_route_detail	GET	/api/mobile/transit/cities/{cityId}/routes/{routeId}	routes/web.php	public	none	planned
-transit_basemap_tiles	GET	https://{a|b|c|d}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png	public/styles/styles/dark-matter.json	public	none	existing-third-party
-transit_map_glyphs	GET	https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf	public/styles/styles/dark-matter.json	public	none	existing-third-party
-transit_contribution	POST	/api/v1/studio/routes	app/Http/Controllers/TransitStudioController.php	optional bearer	none	existing
-auth_start	GET	/api/mobile/auth/google	app/Http/Controllers/AuthController.php	public	none	planned
-auth_exchange	POST	/api/mobile/auth/exchange	app/Http/Controllers/AuthController.php	single-use code+PKCE	none	planned
-auth_user	GET	/api/mobile/user	app/Models/User.php	bearer	none	planned
-auth_logout	POST	/api/mobile/logout	app/Http/Controllers/AuthController.php	bearer	none	planned
-account	GET	/api/mobile/account	app/Http/Controllers/DashboardController.php	bearer	none	planned
-account_update	PATCH	/api/mobile/account	app/Http/Controllers/DashboardController.php	bearer	none	planned
-account_delete	DELETE	/api/mobile/account	app/Http/Controllers/DashboardController.php	bearer	none	planned
-guess_who_categories	GET	/api/mobile/guess-who/categories	app/Http/Controllers/GuessWhoController.php	public	none	planned
-guess_who_session	POST	/api/mobile/guess-who/sessions	app/Http/Controllers/GuessWhoController.php	public	none	planned-hardening-required
-guess_who_room	GET	/api/mobile/guess-who/rooms/{roomCode}	app/Http/Controllers/GuessWhoController.php	room session	none	planned-hardening-required
-guess_who_create	POST	/api/mobile/guess-who/rooms	app/Http/Controllers/GuessWhoController.php	unbound room session	none	planned-hardening-required
-guess_who_join	POST	/api/mobile/guess-who/rooms/{roomCode}/join	app/Http/Controllers/GuessWhoController.php	unbound room session	none	planned-hardening-required
-guess_who_signal	POST	/api/mobile/guess-who/rooms/{roomCode}/signal	app/Http/Controllers/SignalingController.php	room session	none	planned-hardening-required
-guess_who_presence_auth	POST	/api/mobile/guess-who/broadcasting/auth	app/Http/Controllers/GuessWhoController.php	room session	none	planned-hardening-required
-guess_who_realtime_config	GET	/api/mobile/realtime	resources/views/app.blade.php	public	none	planned
-guess_who_realtime	WS	wss://{reverbHost}:{reverbPort}/app/{reverbKey}	resources/js/echo.js	room session	none	planned
-guess_who_turn	POST	/api/mobile/guess-who/turn-credentials	resources/js/Pages/GuessWho/Room.tsx	room session	none	planned
-admin_polls_create	POST	/api/mobile/admin/polls	routes/web.php	bearer	admin|superadmin	planned
-admin_polls_update	PUT	/api/mobile/admin/polls/{id}	routes/web.php	bearer	admin|superadmin	planned
-admin_polls_delete	DELETE	/api/mobile/admin/polls/{id}	routes/web.php	bearer	admin|superadmin	planned
-admin_candidates_create	POST	/api/mobile/admin/candidates	routes/web.php	bearer	admin|superadmin	planned
-admin_candidates_update	PUT	/api/mobile/admin/candidates/{id}	routes/web.php	bearer	admin|superadmin	planned
-admin_candidates_delete	DELETE	/api/mobile/admin/candidates/{id}	routes/web.php	bearer	admin|superadmin	planned
-admin_candidates_archive	PATCH	/api/mobile/admin/candidates/{id}/archive	routes/web.php	bearer	admin|superadmin	planned
-admin_candidates_restore	PATCH	/api/mobile/admin/candidates/{id}/restore	routes/web.php	bearer	admin|superadmin	planned
-admin_groups_create	POST	/api/mobile/admin/candidate-groups	routes/web.php	bearer	admin|superadmin	planned
-admin_groups_update	PUT	/api/mobile/admin/candidate-groups/{id}	routes/web.php	bearer	admin|superadmin	planned
-admin_groups_delete	DELETE	/api/mobile/admin/candidate-groups/{id}	routes/web.php	bearer	admin|superadmin	planned
-admin_groups_reorder	POST	/api/mobile/admin/candidate-groups/reorder	routes/web.php	bearer	admin|superadmin	planned
-admin_groups_default	POST	/api/mobile/admin/candidate-groups/{id}/default	routes/web.php	bearer	admin|superadmin	planned
-admin_transit_drafts	GET	/api/mobile/admin/transit-drafts	routes/web.php	bearer	admin|transit_admin|superadmin	planned
-admin_transit_approve	POST	/api/mobile/admin/transit-drafts/{id}/approve	routes/web.php	bearer	admin|transit_admin|superadmin	planned
-admin_transit_reject	POST	/api/mobile/admin/transit-drafts/{id}/reject	routes/web.php	bearer	admin|transit_admin|superadmin	planned
-admin_users_list	GET	/api/mobile/admin/users	app/Http/Controllers/AdminUserController.php	bearer	superadmin	planned
-admin_users_create	POST	/api/mobile/admin/users	app/Http/Controllers/AdminUserController.php	bearer	superadmin	planned
-admin_users_delete	DELETE	/api/mobile/admin/users/{id}	app/Http/Controllers/AdminUserController.php	bearer	superadmin	planned
-admin_users_ban	POST	/api/mobile/admin/users/{id}/toggle-ban	app/Http/Controllers/DashboardController.php	bearer	admin|transit_admin|superadmin	planned
-candidate_upload	POST	/api/mobile/admin/uploads	resources/js/Components/admin/AdminPollManager.tsx	bearer	admin|superadmin	planned
+module	method	path	server_evidence	mobile_evidence	auth	role	port_status
+home	GET	/api/mobile/home	app/Http/Controllers/Mobile/PublicContentController.php	mobile/src/features/Home/api.ts	public	none	implemented
+weather	GET	https://syrianzone.hade-alahmad1.workers.dev	-	mobile/src/lib/home/widgets.ts	public	none	direct-external
+prayer_times	GET	https://api.aladhan.com/v1/timings/{date}	-	mobile/src/lib/home/widgets.ts|mobile/src/features/Roznama/data.ts	public	none	direct-external
+events	POST	https://event-backend-production-18c4.up.railway.app/graphql	-	mobile/src/components/F3aliaEvents.model.ts	public	none	direct-external
+official_accounts	GET	/api/mobile/official-accounts	app/Http/Controllers/Mobile/PublicContentController.php	mobile/src/lib/api/directories.ts	public	none	implemented
+official_accounts_upstream	GET	https://docs.google.com/spreadsheets/d/e/2PACX-1vTAtwovmqnk0722ikCNL1RAeoEWyJ2tec3L0-sGHe-0kbmKs0ZPOIyCxOP4e74ndkPooauvG9ZeLTWT/pub?gid=0&single=true&output=csv	app/Services/PublicContent/DirectoryDataService.php	-	server-only	none	server-only-external
+phonebook	GET	/api/mobile/phonebook	app/Http/Controllers/Mobile/PublicContentController.php	mobile/src/lib/api/directories.ts	public	none	implemented
+phonebook_upstream	GET	https://docs.google.com/spreadsheets/d/e/2PACX-1vT59DuQe_jOSrhrjVS7J7kB8YdVJiUHMxkB1-LsZc5MlAVFnUQrDXGM0n4qFm5yqQpPqFn5zkhTGgHS/pub?output=csv	app/Services/PublicContent/DirectoryDataService.php	-	server-only	none	server-only-external
+sites	GET	/api/mobile/sites	app/Http/Controllers/Mobile/PublicContentController.php	mobile/src/lib/api/directories.ts	public	none	implemented
+sites_upstream	GET	https://docs.google.com/spreadsheets/d/e/2PACX-1vTCrz7GpfTDmtgKipQd3IqyMPle1ehoG77VO2SQRDqKC9zRRKO3FDI60VoYhA_XqlzoKQ6gZDrIuIjL/pub?output=csv	app/Services/PublicContent/DirectoryDataService.php	-	server-only	none	server-only-external
+parties	GET	/api/mobile/parties	app/Http/Controllers/Mobile/PublicContentController.php	mobile/src/lib/api/directories.ts	public	none	implemented
+parties_upstream	GET	https://docs.google.com/spreadsheets/d/e/2PACX-1vTxa48kbdV2X5Umd3WGDeU7xX5qFVRpyA3uDFhI9w2FAOuxSiGebSpKrVpjU-13XswnNgxHvfWw-sbJ/pub?output=csv	app/Services/PublicContent/DirectoryDataService.php	-	server-only	none	server-only-external
+government_apps	GET	/api/mobile/government-apps	app/Http/Controllers/Mobile/PublicContentController.php	mobile/src/lib/api/directories.ts	public	none	implemented
+government_apps_upstream	GET	https://docs.google.com/spreadsheets/d/e/2PACX-1vRW4BMKTSgWlF6ppCgGxzVxvFIdADOG7G5MxIuiRuOCysCIdC_BYpLURlyQwOsrsJj_5q_vn7JwheCF/pub?gid=0&single=true&output=csv	app/Services/PublicContent/DirectoryDataService.php	-	server-only	none	server-only-external
+government_app_icon	GET	/api/app-icon	routes/api.php	mobile/src/lib/api/directories.ts	public	none	implemented
+government_app_icon_apple_upstream	GET	https://itunes.apple.com/lookup?id={id}	routes/api.php	-	server-only	none	server-only-external
+government_app_icon_play_upstream	GET	https://play.google.com/store/apps/details?id={package}&hl=en	routes/api.php	-	server-only	none	server-only-external
+house	GET	/api/mobile/house?mode={mode}&province={province}	app/Http/Controllers/Mobile/PublicContentController.php	mobile/src/features/House/data.ts	public	none	implemented
+house_upstream	GET	https://docs.google.com/spreadsheets/d/{sheetId}/export?format=csv&gid={gid}	app/Services/PublicContent/HouseDataService.php	-	server-only	none	server-only-external
+polls	GET	/api/mobile/polls	app/Http/Controllers/Mobile/PollController.php	mobile/src/lib/api/polls.ts	public	none	implemented
+poll	GET	/api/mobile/polls/{idOrSlug}	app/Http/Controllers/Mobile/PollController.php	mobile/src/lib/api/polls.ts	public	none	implemented
+poll_leaderboard	GET	/api/mobile/polls/{idOrSlug}/leaderboard	app/Http/Controllers/Mobile/PollController.php	mobile/src/lib/api/polls.ts	public	none	implemented
+poll_vote	POST	/api/mobile/polls/{idOrSlug}/votes	app/Http/Controllers/Mobile/PollController.php	mobile/src/lib/api/polls.ts	installation id	none	implemented
+contributors	GET	/api/mobile/contributors	app/Http/Controllers/Mobile/PublicContentController.php	mobile/src/features/SyrianContributors/api.ts	public	none	implemented
+contributor	GET	/api/mobile/contributors/{username}	app/Http/Controllers/Mobile/PublicContentController.php	-	public	none	server-only
+population	GET	/api/population/master	app/Http/Controllers/Api/PopulationAtlasController.php	mobile/src/features/Population/lib/data-fetcher.ts	public	none	implemented
+population_environment	GET	/api/population/env-report	app/Http/Controllers/Api/PopulationAtlasController.php	mobile/src/features/Population/lib/data-fetcher.ts	public	none	implemented
+places_map	GET	/api/v1/places/map	app/Http/Controllers/Mobile/PlaceController.php	mobile/src/features/Places/_lib/api.ts	optional bearer	none	implemented
+places_list	GET	/api/v1/places	app/Http/Controllers/Mobile/PlaceController.php	mobile/src/features/Places/_lib/api.ts	optional bearer	none	implemented
+places_nearby	GET	/api/v1/places/nearby	app/Http/Controllers/Mobile/PlaceController.php	mobile/src/features/Places/_lib/api.ts	optional bearer	none	implemented
+places_detail	GET	/api/v1/places/{id}	app/Http/Controllers/Mobile/PlaceController.php	mobile/src/features/Places/_lib/api.ts	optional bearer	none	implemented
+places_comments	GET	/api/v1/places/{id}/comments	app/Http/Controllers/Mobile/PlaceEngagementController.php	mobile/src/features/Places/_lib/api.ts	optional bearer	none	implemented
+places_submit	POST	/api/v1/places	app/Http/Controllers/Mobile/PlaceController.php	mobile/src/features/Places/_lib/api.ts	bearer	none	implemented
+places_mine	GET	/api/v1/my/places	app/Http/Controllers/Mobile/PlaceController.php	mobile/src/features/Places/_lib/api.ts	bearer	none	implemented
+places_saves	GET	/api/v1/my/saves	app/Http/Controllers/Mobile/PlaceEngagementController.php	mobile/src/features/Places/_lib/api.ts	bearer	none	implemented
+places_like	POST	/api/v1/places/{id}/like	app/Http/Controllers/Mobile/PlaceEngagementController.php	mobile/src/features/Places/_lib/api.ts	bearer	none	implemented
+places_unlike	DELETE	/api/v1/places/{id}/like	app/Http/Controllers/Mobile/PlaceEngagementController.php	mobile/src/features/Places/_lib/api.ts	bearer	none	implemented
+places_save	POST	/api/v1/places/{id}/save	app/Http/Controllers/Mobile/PlaceEngagementController.php	mobile/src/features/Places/_lib/api.ts	bearer	none	implemented
+places_unsave	DELETE	/api/v1/places/{id}/save	app/Http/Controllers/Mobile/PlaceEngagementController.php	mobile/src/features/Places/_lib/api.ts	bearer	none	implemented
+places_comment_create	POST	/api/v1/places/{id}/comments	app/Http/Controllers/Mobile/PlaceEngagementController.php	mobile/src/features/Places/_lib/api.ts	bearer	none	implemented
+places_comment_delete	DELETE	/api/v1/place-comments/{id}	app/Http/Controllers/Mobile/PlaceEngagementController.php	mobile/src/features/Places/_lib/api.ts	bearer	owner|admin|superadmin	implemented
+places_report	POST	/api/v1/places/{id}/report	app/Http/Controllers/Mobile/PlaceEngagementController.php	mobile/src/features/Places/_lib/api.ts	bearer	none	implemented
+places_admin_list	GET	/api/v1/admin/places	app/Http/Controllers/Mobile/PlaceAdminController.php	mobile/src/features/Places/_lib/api.ts	bearer	admin|superadmin	implemented
+places_admin_approve	POST	/api/v1/admin/places/{id}/approve	app/Http/Controllers/Mobile/PlaceAdminController.php	mobile/src/features/Places/_lib/api.ts	bearer	admin|superadmin	implemented
+places_admin_reject	POST	/api/v1/admin/places/{id}/reject	app/Http/Controllers/Mobile/PlaceAdminController.php	mobile/src/features/Places/_lib/api.ts	bearer	admin|superadmin	implemented
+places_admin_delete	DELETE	/api/v1/admin/places/{id}	app/Http/Controllers/Mobile/PlaceAdminController.php	mobile/src/features/Places/_lib/api.ts	bearer	admin|superadmin	implemented
+places_admin_reports	GET	/api/v1/admin/place-reports	app/Http/Controllers/Mobile/PlaceAdminController.php	mobile/src/features/Places/_lib/api.ts	bearer	admin|superadmin	implemented
+places_admin_report_resolve	POST	/api/v1/admin/place-reports/{id}/resolve	app/Http/Controllers/Mobile/PlaceAdminController.php	mobile/src/features/Places/_lib/api.ts	bearer	admin|superadmin	implemented
+transit_cities	GET	/api/v1/cities	app/Http/Controllers/Api/V1/TransitController.php	mobile/src/features/Transit/api.ts	public	none	implemented
+transit_routes	GET	/api/v1/cities/{id}/routes	app/Http/Controllers/Api/V1/TransitController.php	mobile/src/features/Transit/api.ts	public	none	implemented
+transit_map	GET	/api/v1/cities/{id}/map-data	app/Http/Controllers/Api/V1/TransitController.php	mobile/src/features/Transit/api.ts	public	none	implemented
+transit_nearby	GET	/api/v1/stops/nearby	app/Http/Controllers/Api/V1/TransitController.php	mobile/src/features/Transit/api.ts	public	none	implemented
+transit_search	GET	/api/v1/search	app/Http/Controllers/Api/V1/TransitController.php	mobile/src/features/Transit/api.ts	public	none	implemented
+transit_route_detail	GET	/api/mobile/transit/cities/{cityId}/routes/{routeId}	app/Http/Controllers/Mobile/PublicContentController.php	mobile/src/features/Transit/api.ts	public	none	implemented
+transit_contribution	POST	/api/v1/studio/routes	app/Http/Controllers/TransitStudioController.php	mobile/src/features/Transit/api.ts	optional bearer	none	implemented
+transit_admin_drafts	GET	/api/mobile/admin/transit-drafts	app/Http/Controllers/TransitAdminController.php	mobile/src/features/Transit/api.ts	bearer	admin|transit_admin|superadmin	implemented
+transit_admin_approve	POST	/api/mobile/admin/transit-drafts/{id}/approve	app/Http/Controllers/TransitAdminController.php	mobile/src/features/Transit/api.ts	bearer	admin|transit_admin|superadmin	implemented
+transit_admin_reject	POST	/api/mobile/admin/transit-drafts/{id}/reject	app/Http/Controllers/TransitAdminController.php	mobile/src/features/Transit/api.ts	bearer	admin|transit_admin|superadmin	implemented
+transit_basemap_tiles	GET	https://{a|b|c|d}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png	-	mobile/assets/styles/dark-matter.json	public	none	declared-external
+transit_map_glyphs	GET	https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf	-	mobile/assets/styles/dark-matter.json	public	none	declared-external
+auth_start	GET	/api/mobile/auth/google	app/Http/Controllers/MobileAuthController.php	mobile/src/lib/auth/browser.ts	public	none	implemented
+auth_callback	GET	/api/mobile/auth/google/callback	app/Http/Controllers/MobileAuthController.php	mobile/src/lib/auth/browser.ts	OAuth transaction	none	implemented
+auth_exchange	POST	/api/mobile/auth/exchange	app/Http/Controllers/MobileAuthController.php	mobile/src/lib/auth/api.ts	single-use code and PKCE	none	implemented
+auth_user	GET	/api/mobile/user	app/Http/Controllers/MobileAuthController.php	mobile/src/lib/auth/api.ts	bearer	none	implemented
+auth_logout	POST	/api/mobile/logout	app/Http/Controllers/MobileAuthController.php	mobile/src/lib/auth/api.ts	bearer	none	implemented
+account	GET	/api/mobile/account	app/Http/Controllers/Mobile/AccountController.php	mobile/src/features/Dashboard/api.ts	bearer	none	implemented
+account_update	PATCH	/api/mobile/account	app/Http/Controllers/Mobile/AccountController.php	mobile/src/features/Dashboard/api.ts	bearer	none	implemented
+account_delete	DELETE	/api/mobile/account	app/Http/Controllers/Mobile/AccountController.php	mobile/src/features/Dashboard/api.ts	bearer	none	implemented
+account_draft_withdraw	DELETE	/api/mobile/account/transit-drafts/{id}	app/Http/Controllers/Mobile/AccountController.php	mobile/src/features/Dashboard/api.ts	bearer	owner	implemented
+guess_who_categories	GET	/api/mobile/guess-who/categories	app/Http/Controllers/Mobile/GuessWhoController.php	mobile/src/features/GuessWho/api.ts	public	none	implemented
+guess_who_session	POST	/api/mobile/guess-who/sessions	app/Http/Controllers/Mobile/GuessWhoController.php	mobile/src/features/GuessWho/api.ts	public	none	implemented
+guess_who_room	GET	/api/mobile/guess-who/rooms/{roomCode}	app/Http/Controllers/Mobile/GuessWhoController.php	mobile/src/features/GuessWho/api.ts	bound room session	none	implemented
+guess_who_create	POST	/api/mobile/guess-who/rooms	app/Http/Controllers/Mobile/GuessWhoController.php	mobile/src/features/GuessWho/api.ts	unbound room session	none	implemented
+guess_who_join	POST	/api/mobile/guess-who/rooms/{roomCode}/join	app/Http/Controllers/Mobile/GuessWhoController.php	mobile/src/features/GuessWho/api.ts	unbound room session	none	implemented
+guess_who_signal	POST	/api/mobile/guess-who/rooms/{roomCode}/signal	app/Http/Controllers/Mobile/GuessWhoController.php	mobile/src/features/GuessWho/api.ts	bound room session	none	implemented
+guess_who_presence_auth	POST	/api/mobile/guess-who/broadcasting/auth	app/Http/Controllers/Mobile/GuessWhoController.php	mobile/src/features/GuessWho/presence.ts	bound room session	none	implemented
+guess_who_realtime_config	GET	/api/mobile/realtime	app/Http/Controllers/Mobile/GuessWhoController.php	mobile/src/features/GuessWho/api.ts	public	none	implemented
+guess_who_realtime	WS	ws(s)://{reverbHost}:{reverbPort}/app/{reverbKey}	config/broadcasting.php	mobile/src/lib/realtime.ts	bound room session	none	implemented
+guess_who_turn	POST	/api/mobile/guess-who/turn-credentials	app/Http/Controllers/Mobile/GuessWhoController.php	mobile/src/features/GuessWho/api.ts	bound room session	none	implemented
+admin_polls_list	GET	/api/mobile/admin/polls	app/Http/Controllers/Mobile/PollController.php	mobile/src/components/admin/api.ts|mobile/src/lib/api/polls.ts	bearer	admin|superadmin	implemented
+admin_polls_detail	GET	/api/mobile/admin/polls/{id}	app/Http/Controllers/Mobile/PollController.php	mobile/src/components/admin/api.ts	bearer	admin|superadmin	implemented
+admin_polls_create	POST	/api/mobile/admin/polls	app/Http/Controllers/Mobile/PollController.php	mobile/src/components/admin/api.ts	bearer	admin|superadmin	implemented
+admin_polls_update	PUT	/api/mobile/admin/polls/{id}	app/Http/Controllers/Mobile/PollController.php	mobile/src/components/admin/api.ts	bearer	admin|superadmin	implemented
+admin_polls_delete	DELETE	/api/mobile/admin/polls/{id}	app/Http/Controllers/Mobile/PollController.php	mobile/src/components/admin/api.ts	bearer	admin|superadmin	implemented
+admin_candidates_create	POST	/api/mobile/admin/candidates	app/Http/Controllers/Mobile/PollController.php	mobile/src/components/admin/api.ts	bearer	admin|superadmin	implemented
+admin_candidates_update	PUT	/api/mobile/admin/candidates/{id}	app/Http/Controllers/Mobile/PollController.php	mobile/src/components/admin/api.ts	bearer	admin|superadmin	implemented
+admin_candidates_delete	DELETE	/api/mobile/admin/candidates/{id}	app/Http/Controllers/Mobile/PollController.php	mobile/src/components/admin/api.ts	bearer	admin|superadmin	implemented
+admin_candidates_archive	PATCH	/api/mobile/admin/candidates/{id}/archive	app/Http/Controllers/Mobile/PollController.php	mobile/src/components/admin/api.ts	bearer	admin|superadmin	implemented
+admin_candidates_restore	PATCH	/api/mobile/admin/candidates/{id}/restore	app/Http/Controllers/Mobile/PollController.php	mobile/src/components/admin/api.ts	bearer	admin|superadmin	implemented
+admin_groups_create	POST	/api/mobile/admin/candidate-groups	app/Http/Controllers/Mobile/PollController.php	mobile/src/components/admin/api.ts	bearer	admin|superadmin	implemented
+admin_groups_update	PUT	/api/mobile/admin/candidate-groups/{id}	app/Http/Controllers/Mobile/PollController.php	mobile/src/components/admin/api.ts	bearer	admin|superadmin	implemented
+admin_groups_delete	DELETE	/api/mobile/admin/candidate-groups/{id}	app/Http/Controllers/Mobile/PollController.php	mobile/src/components/admin/api.ts	bearer	admin|superadmin	implemented
+admin_groups_reorder	POST	/api/mobile/admin/candidate-groups/reorder	app/Http/Controllers/Mobile/PollController.php	mobile/src/components/admin/api.ts	bearer	admin|superadmin	implemented
+admin_groups_default	POST	/api/mobile/admin/candidate-groups/{id}/default	app/Http/Controllers/Mobile/PollController.php	mobile/src/components/admin/api.ts	bearer	admin|superadmin	implemented
+admin_users_list	GET	/api/mobile/admin/users	app/Http/Controllers/Mobile/AdminUserController.php	mobile/src/features/Admin/usersApi.ts	bearer	superadmin	implemented
+admin_users_create	POST	/api/mobile/admin/users	app/Http/Controllers/Mobile/AdminUserController.php	mobile/src/features/Admin/usersApi.ts	bearer	superadmin	implemented
+admin_users_delete	DELETE	/api/mobile/admin/users/{user}	app/Http/Controllers/Mobile/AdminUserController.php	mobile/src/features/Admin/usersApi.ts	bearer	superadmin	implemented
+admin_users_ban	POST	/api/mobile/admin/users/{user}/toggle-ban	app/Http/Controllers/Mobile/AdminUserController.php	mobile/src/features/Admin/usersApi.ts|mobile/src/features/Transit/api.ts	bearer	admin|transit_admin|superadmin	implemented
+candidate_upload	POST	/api/mobile/admin/uploads	app/Http/Controllers/Mobile/AdminUploadController.php	mobile/src/components/admin/api.ts|mobile/src/lib/api/uploads.ts	bearer	admin|superadmin	implemented

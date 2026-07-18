@@ -155,3 +155,22 @@ test('google login still refreshes a google-hosted avatar', function () {
 
   expect($user->fresh()->avatar_url)->toBe('https://lh3.googleusercontent.com/fresh-avatar');
 });
+
+test('google login keeps a display name the user chose', function () {
+  $user = User::factory()->create(['email' => 'macdoos@example.com', 'name' => 'macdoos', 'role' => 'user']);
+
+  $google = Mockery::mock();
+  $google->shouldReceive('getEmail')->andReturn('macdoos@example.com');
+  $google->shouldReceive('getName')->andReturn('Real Name');
+  $google->shouldReceive('getId')->andReturn('google-123');
+  $google->shouldReceive('getAvatar')->andReturn('https://lh3.googleusercontent.com/a/x');
+
+  $provider = Mockery::mock(\Laravel\Socialite\Two\GoogleProvider::class);
+  $provider->shouldReceive('stateless')->andReturnSelf();
+  $provider->shouldReceive('user')->andReturn($google);
+  \Laravel\Socialite\Facades\Socialite::shouldReceive('driver')->with('google')->andReturn($provider);
+
+  $this->get('/auth/google/callback');
+
+  expect($user->fresh()->name)->toBe('macdoos');
+});

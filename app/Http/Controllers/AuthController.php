@@ -46,11 +46,15 @@ class AuthController extends Controller
         // Self-registration: unknown emails become regular users so the
         // community can contribute (places, comments). Existing users keep their role.
         $attributes = [
-            'name' => $googleUser->getName(),
             'google_id' => $googleUser->getId(),
             'password' => $user?->password ?? bcrypt(str()->random(16)),
             'role' => $isSuperAdmin ? 'superadmin' : ($user?->role ?? 'user'),
         ];
+        // Google only seeds the display name at signup. Overwriting it on every login
+        // undid any name set in the dashboard and put real names on public pages.
+        if (!$user) {
+            $attributes['name'] = $googleUser->getName();
+        }
         // Refresh the Google avatar only when the user has not uploaded a custom
         // one; a custom avatar lives under our media disk's avatars/ prefix.
         if (!$this->hasCustomAvatar($user)) {

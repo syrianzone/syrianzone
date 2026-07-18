@@ -36,13 +36,6 @@ export function defaultConfig(def: WidgetDefinition): Record<string, unknown> {
   return Object.fromEntries(def.fields.map((f) => [f.key, f.default]));
 }
 
-export function clampSize(def: WidgetDefinition, size: WidgetSize): WidgetSize {
-  return {
-    w: Math.min(Math.max(size.w, def.minSize.w), def.maxSize.w),
-    h: Math.min(Math.max(size.h, def.minSize.h), def.maxSize.h),
-  };
-}
-
 // ***** parsing *****
 // Never throws. A corrupt localStorage entry or an unreadable server document
 // must fall back to defaults, not white-screen /board.

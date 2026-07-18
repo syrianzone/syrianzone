@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/Lib/utils';
 import { Button } from '@/Components/ui/button';
+import { useTileActions } from './TileChrome';
 
 // Every widget's chrome and every non-happy state lives here, so no widget ships
 // its own spinner and they all degrade the same way.
@@ -19,6 +20,7 @@ export function WidgetShell(props: {
 }) {
   const Icon = props.icon;
   const showBody = !props.loading && !props.error && !props.empty;
+  const tileActions = useTileActions();
 
   return (
     <div dir="rtl" className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card">
@@ -32,6 +34,7 @@ export function WidgetShell(props: {
         <Icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         <h3 className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">{props.title}</h3>
         {props.actions}
+        {tileActions}
       </div>
 
       <div className={cn('min-h-0 flex-1', showBody ? 'overflow-auto' : 'overflow-hidden')}>

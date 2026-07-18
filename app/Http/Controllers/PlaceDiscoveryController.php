@@ -53,10 +53,13 @@ class PlaceDiscoveryController extends Controller
       ->header('Cache-Control', 'public, max-age=60');
   }
 
-  public function photos()
+  public function photos(Request $request)
   {
+    $validated = $request->validate(['user_id' => 'sometimes|integer|min:1']);
+
     $page = PlacePhoto::join('places', 'places.id', '=', 'place_photos.place_id')
       ->where('places.status', 'approved')
+      ->when(!empty($validated['user_id']), fn ($q) => $q->where('places.user_id', $validated['user_id']))
       // place_photos.* keeps updated_at on the model so thumb_url/display_url stay versioned
       ->select(
         'place_photos.*',

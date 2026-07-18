@@ -11,7 +11,7 @@ import { PlacesPanel } from './_components/PlacesPanel';
 import { SubmitSheet } from './_components/SubmitSheet';
 import { ViewToggle } from './_components/ViewToggle';
 import { api, extractError } from './_lib/api';
-import type { GridPhoto } from './_lib/discovery';
+import { discovery, type GridPhoto } from './_lib/discovery';
 import type { GeoSuggestion, LatLng, Paginated, PlaceCategory, PlaceFeatureCollection, PlaceListItem } from './_lib/types';
 
 export default function Index() {
@@ -33,6 +33,10 @@ export default function Index() {
   const [geoResults, setGeoResults] = useState<GeoSuggestion[]>([]);
   const geoReqRef = useRef(0);
   // the url is the source of truth on load so grid links share
+  const [guide, setGuide] = useState<{ id: number; name: string } | null>(() => {
+    const raw = new URLSearchParams(window.location.search).get('guide');
+    return raw && /^\d+$/.test(raw) ? { id: Number(raw), name: '' } : null;
+  });
   const [view, setView] = useState<'map' | 'grid'>(() =>
     new URLSearchParams(window.location.search).get('view') === 'grid' ? 'grid' : 'map',
   );
@@ -54,12 +58,32 @@ export default function Index() {
     window.history.replaceState(null, '', url);
   }
 
+  function selectGuide(g: { id: number; name: string } | null) {
+    setGuide(g);
+    setSelectedId(null);
+    const url = new URL(window.location.href);
+    if (g) url.searchParams.set('guide', String(g.id));
+    else url.searchParams.delete('guide');
+    window.history.replaceState(null, '', url);
+  }
+
   function handleGridPhotoClick(p: GridPhoto) {
     changeView('map');
     setSelectedId(p.place.id);
     setExpanded(true);
     flyTo(p.place.lng, p.place.lat);
   }
+
+  // a ?guide= link arrives without a name: look it up so the chip reads properly
+  useEffect(() => {
+    if (!guide || guide.name !== '') return;
+    discovery.guides('submissions')
+      .then((res) => {
+        const match = res.guides.find((g) => g.user_id === guide.id);
+        setGuide({ id: guide.id, name: match?.name ?? 'مرشد' });
+      })
+      .catch(() => setGuide((g) => (g ? { ...g, name: 'مرشد' } : null)));
+  }, [guide?.id]);
 
   useEffect(() => {
     api.mapData()
@@ -100,7 +124,7 @@ export default function Index() {
   useEffect(() => {
     const timer = setTimeout(() => fetchList(1), 300);
     return () => clearTimeout(timer);
-  }, [category, query]);
+  }, [category, query, guide]);
 
   // google places suggestions ride the same debounce; coord queries skip them
   useEffect(() => {
@@ -127,6 +151,7 @@ export default function Index() {
       const res = await api.listPlaces({
         category: category ?? undefined,
         q: q || undefined,
+        user_id: guide?.id,
         page,
       });
       if (id !== requestRef.current) return;
@@ -151,10 +176,11 @@ export default function Index() {
       features: (features?.features ?? []).filter(
         (f) =>
           (category === null || f.properties.category === category) &&
+          (guide === null || f.properties.user_id === guide.id) &&
           (q === '' || f.properties.name.includes(q)),
       ),
     };
-  }, [features, category, query, coordCandidate]);
+  }, [features, category, query, coordCandidate, guide]);
 
   // during the debounce window listPlaces still holds the previous query's results
   const searchPending = query.trim() !== '' && !coordCandidate && fetchedQuery !== query.trim();
@@ -230,7 +256,7 @@ export default function Index() {
         />
 
         {/* stays mounted across view switches so fetched pages survive; renders null on the map view */}
-        <PhotoGrid active={view === 'grid'} onPhotoClick={handleGridPhotoClick} />
+        <PhotoGrid active={view === 'grid'} guideId={guide?.id ?? null} onPhotoClick={handleGridPhotoClick} />
 
         {/* pr-96 keeps the floating bar clear of the side panel on desktop (map view only);
             z-20 keeps the search dropdown above the z-10 bottom sheet (later sibling) */}
@@ -249,6 +275,16 @@ export default function Index() {
             onGoToCoord={handleGoToCoord}
           />
           <ViewToggle view={view} onChange={changeView} />
+          {guide && (
+            <div className="flex justify-center">
+              <span className="flex items-center gap-2 rounded-full border border-primary/40 bg-card/95 px-3 py-1 text-xs text-foreground shadow-sm">
+                مساهمات {guide.name}
+                <button type="button" aria-label="إلغاء التصفية" onClick={() => selectGuide(null)}>
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </span>
+            </div>
+          )}
           {addMode && (
             <div className="flex justify-center">
               <span className="rounded-full border border-border bg-card/90 px-3 py-1 text-xs text-muted-foreground shadow-sm">
@@ -298,6 +334,7 @@ export default function Index() {
                 onSelect={handlePanelSelect}
                 hasMore={listPlaces !== null && listPlaces.current_page < listPlaces.last_page}
                 onLoadMore={() => listPlaces && fetchList(listPlaces.current_page + 1)}
+                onSelectGuide={selectGuide}
                 className="min-h-0 flex-1"
               />
             </div>

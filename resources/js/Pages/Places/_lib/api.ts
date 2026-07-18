@@ -23,7 +23,7 @@ export const api = {
     return data;
   },
 
-  async listPlaces(params: { category?: PlaceCategory; q?: string; sort?: 'newest' | 'popular'; page?: number }): Promise<Paginated<PlaceListItem>> {
+  async listPlaces(params: { category?: PlaceCategory; q?: string; sort?: 'newest' | 'popular'; page?: number; user_id?: number }): Promise<Paginated<PlaceListItem>> {
     const { data } = await axios.get(`${base}/places`, { params });
     return data;
   },

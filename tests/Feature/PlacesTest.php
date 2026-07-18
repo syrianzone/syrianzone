@@ -910,3 +910,21 @@ test('legacy places slug redirects permanently and keeps the query', function ()
     ->assertMovedPermanently()
     ->assertRedirect('/mishwar?place=123');
 });
+
+test('list filters to one contributor and map features carry the owner', function () {
+  $guide = placesUser();
+  $mine = Place::factory()->approved()->create(['user_id' => $guide->id]);
+  Place::factory()->approved()->create();
+
+  $this->getJson('/api/v1/places')->assertOk()->assertJsonCount(2, 'data');
+
+  $this->getJson("/api/v1/places?user_id={$guide->id}")
+    ->assertOk()
+    ->assertJsonCount(1, 'data')
+    ->assertJsonPath('data.0.id', $mine->id);
+
+  // the map ships user_id so the client can filter pins without a per-user cache
+  $this->getJson('/api/v1/places/map')
+    ->assertOk()
+    ->assertJsonPath('features.0.properties.user_id', fn ($id) => is_int($id));
+});

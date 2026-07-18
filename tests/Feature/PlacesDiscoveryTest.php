@@ -208,3 +208,19 @@ test('photo grid entries carry versioned urls and the place sub shape', function
   $displayPrefix = Storage::disk(config('filesystems.media_disk'))->url("places/{$place->id}/abc_display.webp") . '?v=';
   expect($response->json('data.0.display_url'))->toStartWith($displayPrefix);
 });
+
+test('photo grid filters to one guide', function () {
+  $guide = User::factory()->create(['role' => 'user']);
+  $other = User::factory()->create(['role' => 'user']);
+  $mine = Place::factory()->approved()->create(['user_id' => $guide->id]);
+  $theirs = Place::factory()->approved()->create(['user_id' => $other->id]);
+  PlacePhoto::factory()->create(['place_id' => $mine->id]);
+  PlacePhoto::factory()->create(['place_id' => $theirs->id]);
+
+  $this->getJson('/api/v1/places/photos')->assertOk()->assertJsonCount(2, 'data');
+
+  $this->getJson("/api/v1/places/photos?user_id={$guide->id}")
+    ->assertOk()
+    ->assertJsonCount(1, 'data')
+    ->assertJsonPath('data.0.place.id', $mine->id);
+});

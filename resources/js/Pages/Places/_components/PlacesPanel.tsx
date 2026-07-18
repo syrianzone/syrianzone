@@ -197,9 +197,12 @@ export function PlacesPanel(props: {
   onSelect: (id: number | null) => void;
   hasMore: boolean;
   onLoadMore: () => void;
+  onSelectGuide: (guide: { id: number; name: string }) => void;
   className?: string;
 }) {
-  const { places, loading, selectedId, onSelect, hasMore, onLoadMore, className } = props;
+  const { places, loading, selectedId, onSelect, hasMore, onLoadMore, onSelectGuide, className } = props;
+  // controlled so picking a guide drops the user on the filtered places list
+  const [tab, setTab] = useState('places');
   const { user } = useAuth();
 
   const mainList = (
@@ -215,7 +218,7 @@ export function PlacesPanel(props: {
       {selectedId !== null ? (
         <PlaceDetailView placeId={selectedId} onClose={() => onSelect(null)} />
       ) : (
-        <Tabs defaultValue="places" className="flex min-h-0 flex-1 flex-col">
+        <Tabs value={tab} onValueChange={setTab} className="flex min-h-0 flex-1 flex-col">
           <TabsList className={cn('mx-3 mt-3 grid', user ? 'grid-cols-4' : 'grid-cols-2')}>
             <TabsTrigger value="places">الأماكن</TabsTrigger>
             {user && <TabsTrigger value="saves">محفوظاتي</TabsTrigger>}
@@ -238,7 +241,7 @@ export function PlacesPanel(props: {
           <TabsContent value="guides" className="mt-0 flex min-h-0 flex-1 flex-col">
             {/* heading المرشدون المحليون renders inside GuidesTab */}
             <div className="min-h-0 flex-1 overflow-y-auto p-3">
-              <GuidesTab />
+              <GuidesTab onSelectGuide={(g) => { onSelectGuide(g); setTab('places'); }} />
             </div>
           </TabsContent>
         </Tabs>

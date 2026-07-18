@@ -16,8 +16,8 @@ function useColumns(): number {
   return wide ? 4 : 2;
 }
 
-export function PhotoGrid(props: { active: boolean; onPhotoClick: (p: GridPhoto) => void }) {
-  const { active, onPhotoClick } = props;
+export function PhotoGrid(props: { active: boolean; guideId: number | null; onPhotoClick: (p: GridPhoto) => void }) {
+  const { active, guideId, onPhotoClick } = props;
   const [photos, setPhotos] = useState<GridPhoto[]>([]);
   // last successfully fetched page; 0 = nothing loaded yet
   const [page, setPage] = useState(0);
@@ -32,7 +32,7 @@ export function PhotoGrid(props: { active: boolean; onPhotoClick: (p: GridPhoto)
     const id = ++requestRef.current;
     setLoading(true);
     setError(false);
-    discovery.gridPhotos(p)
+    discovery.gridPhotos(p, guideId ?? undefined)
       .then((res) => {
         if (id !== requestRef.current) return;
         setPhotos((prev) => (p === 1 ? res.data : [...prev, ...res.data]));
@@ -45,12 +45,22 @@ export function PhotoGrid(props: { active: boolean; onPhotoClick: (p: GridPhoto)
       .finally(() => {
         if (id === requestRef.current) setLoading(false);
       });
-  }, []);
+  }, [guideId]);
 
   // first activation only; state survives toggling back to the map
   useEffect(() => {
     if (active && requestRef.current === 0) fetchPage(1);
   }, [active, fetchPage]);
+
+  // a guide filter change refetches from page 1 (fetchPage identity changes with guideId)
+  const firstRender = useRef(true);
+  useEffect(() => {
+    if (firstRender.current) { firstRender.current = false; return; }
+    setPhotos([]);
+    setPage(0);
+    setLastPage(1);
+    if (active) fetchPage(1);
+  }, [guideId]);
 
   useEffect(() => {
     if (!active || loading || error || page === 0 || page >= lastPage) return;

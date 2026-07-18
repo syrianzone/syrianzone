@@ -38,6 +38,8 @@ class PlaceController extends Controller
             'id' => $p->id,
             'name' => $p->name,
             'category' => $p->category,
+            // user_id lets the client filter pins to one guide without a per-user cache
+            'user_id' => (int) $p->user_id,
             'thumb_url' => $p->photos->first()?->thumb_url,
           ],
         ])->values()->all(),
@@ -55,9 +57,14 @@ class PlaceController extends Controller
       'category' => 'sometimes|string|in:historical,natural,cultural,religious,abandoned,viewpoint,market,food,other',
       'q' => 'sometimes|string|max:100',
       'sort' => 'sometimes|in:newest,popular',
+      'user_id' => 'sometimes|integer|min:1',
     ]);
 
     $query = Place::where('status', 'approved')->with(self::thumbPhotos());
+
+    if (!empty($validated['user_id'])) {
+      $query->where('user_id', $validated['user_id']);
+    }
 
     if (!empty($validated['category'])) {
       $query->where('category', $validated['category']);

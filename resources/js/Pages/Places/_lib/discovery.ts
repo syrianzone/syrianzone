@@ -28,8 +28,8 @@ export const discovery = {
     return data;
   },
 
-  async gridPhotos(page: number): Promise<Paginated<GridPhoto>> {
-    const { data } = await axios.get(`${base}/places/photos`, { params: { page } });
+  async gridPhotos(page: number, userId?: number): Promise<Paginated<GridPhoto>> {
+    const { data } = await axios.get(`${base}/places/photos`, { params: { page, user_id: userId } });
     return data;
   },
 };

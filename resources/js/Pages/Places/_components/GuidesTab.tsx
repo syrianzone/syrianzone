@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { ChevronLeft, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { discovery, type Guide, type GuidesSort } from '../_lib/discovery';
@@ -10,7 +10,7 @@ const SORTS: { value: GuidesSort; label: string }[] = [
   { value: 'recent', label: 'النشطون مؤخراً' },
 ];
 
-export function GuidesTab() {
+export function GuidesTab(props: { onSelectGuide: (guide: { id: number; name: string }) => void }) {
   const [sort, setSort] = useState<GuidesSort>('submissions');
   const [guides, setGuides] = useState<Guide[] | null>(null);
   const [error, setError] = useState(false);
@@ -69,7 +69,12 @@ export function GuidesTab() {
       {!error && guides !== null && guides.length > 0 && (
         <ul className="space-y-1">
           {guides.map((g) => (
-            <li key={g.user_id} className="flex items-center gap-3 rounded-md px-2 py-2 hover:bg-accent/50">
+            <li key={g.user_id}>
+              <button
+                type="button"
+                onClick={() => props.onSelectGuide({ id: g.user_id, name: g.name })}
+                className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-right hover:bg-accent/50"
+              >
               <span dir="ltr" className="w-5 shrink-0 text-center text-sm font-semibold tabular-nums text-muted-foreground">
                 {g.rank}
               </span>
@@ -84,6 +89,8 @@ export function GuidesTab() {
                   {sort === 'recent' && ` · ${g.recent_count} خلال 30 يوماً`}
                 </p>
               </div>
+                <ChevronLeft className="h-4 w-4 shrink-0 text-muted-foreground" />
+              </button>
             </li>
           ))}
         </ul>

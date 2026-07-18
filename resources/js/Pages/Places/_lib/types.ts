@@ -24,7 +24,7 @@ export interface MyPlace extends PlaceListItem { status: PlaceStatus; rejection_
 
 export interface AdminPlace extends PlaceDetail { rejection_reason: string | null; }
 
-export interface PlaceFeatureProps { id: number; name: string; category: PlaceCategory; thumb_url: string | null; }
+export interface PlaceFeatureProps { id: number; name: string; category: PlaceCategory; user_id: number; thumb_url: string | null; }
 
 export interface PlaceFeature {
   type: 'Feature';

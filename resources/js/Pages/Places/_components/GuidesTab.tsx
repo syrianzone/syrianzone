@@ -32,7 +32,7 @@ export function GuidesTab() {
 
   return (
     <div dir="rtl" className="min-h-0 flex-1 overflow-y-auto p-3">
-      <h3 className="mb-2 text-sm font-semibold text-foreground">الأدلة المحليون</h3>
+      <h3 className="mb-2 text-sm font-semibold text-foreground">المرشدون المحليون</h3>
       <div className="mb-3 flex flex-wrap gap-1.5">
         {SORTS.map((s) => (
           <button
@@ -52,7 +52,7 @@ export function GuidesTab() {
       </div>
       {error && (
         <div className="flex flex-col items-center gap-2 py-6">
-          <p className="text-sm text-destructive">تعذر تحميل الأدلة</p>
+          <p className="text-sm text-destructive">تعذر تحميل المرشدين</p>
           <Button type="button" variant="outline" size="sm" onClick={() => setAttempt((a) => a + 1)}>
             إعادة المحاولة
           </Button>

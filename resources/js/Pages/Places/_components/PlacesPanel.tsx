@@ -220,7 +220,7 @@ export function PlacesPanel(props: {
             <TabsTrigger value="places">الأماكن</TabsTrigger>
             {user && <TabsTrigger value="saves">محفوظاتي</TabsTrigger>}
             {user && <TabsTrigger value="mine">مساهماتي</TabsTrigger>}
-            <TabsTrigger value="guides">الأدلة</TabsTrigger>
+            <TabsTrigger value="guides">مرشدون</TabsTrigger>
           </TabsList>
           <TabsContent value="places" className="mt-0 flex min-h-0 flex-1 flex-col">
             {mainList}
@@ -236,7 +236,7 @@ export function PlacesPanel(props: {
             </TabsContent>
           )}
           <TabsContent value="guides" className="mt-0 flex min-h-0 flex-1 flex-col">
-            {/* heading الأدلة المحليون renders inside GuidesTab */}
+            {/* heading المرشدون المحليون renders inside GuidesTab */}
             <div className="min-h-0 flex-1 overflow-y-auto p-3">
               <GuidesTab />
             </div>

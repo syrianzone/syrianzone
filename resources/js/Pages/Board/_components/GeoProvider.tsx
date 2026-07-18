@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
 import { readGeo, writeGeo } from '../_lib/storage';
 
 export type GeoStatus = 'idle' | 'pending' | 'granted' | 'denied';
@@ -42,7 +42,10 @@ export function GeoProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
-  return <GeoContext.Provider value={{ coords, status, request }}>{children}</GeoContext.Provider>;
+  // stable identity: BoardTile keys its request effect on this value
+  const value = useMemo(() => ({ coords, status, request }), [coords, status, request]);
+
+  return <GeoContext.Provider value={value}>{children}</GeoContext.Provider>;
 }
 
 export function useGeo(): GeoValue {

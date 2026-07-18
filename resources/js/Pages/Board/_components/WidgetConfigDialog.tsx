@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/Components/ui/switch';
@@ -21,6 +21,7 @@ export function WidgetConfigDialog(props: {
         <div dir="rtl">
           <DialogHeader className="text-right">
             <DialogTitle>{def ? `إعدادات ${def.name}` : 'إعدادات'}</DialogTitle>
+            <DialogDescription>تُحفظ التغييرات تلقائياً</DialogDescription>
           </DialogHeader>
 
           <div className="mt-4 space-y-4">

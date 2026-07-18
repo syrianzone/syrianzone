@@ -1,4 +1,7 @@
 import { clockWidget } from '../_widgets/clock';
+import { notesWidget } from '../_widgets/notes';
+import { prayerWidget } from '../_widgets/prayer';
+import { weatherWidget } from '../_widgets/weather';
 import { defaultConfig, newId, nowStamp } from './layout';
 import type { BoardDoc, WidgetDefinition } from './types';
 
@@ -9,6 +12,9 @@ import type { BoardDoc, WidgetDefinition } from './types';
 // hides the dependency graph to save a single line.
 export const WIDGETS: WidgetDefinition<any>[] = [
   clockWidget,
+  weatherWidget,
+  prayerWidget,
+  notesWidget,
 ];
 
 export const WIDGETS_BY_ID: Record<string, WidgetDefinition<any>> = Object.fromEntries(
@@ -21,7 +27,7 @@ export function findWidget(id: string): WidgetDefinition<any> | undefined {
 
 // Widgets seeded onto a brand new board, in order. Unregistered ids are skipped
 // so this list can name a widget before it ships.
-const SEED_IDS = ['clock'];
+const SEED_IDS = ['clock', 'weather', 'prayer', 'notes'];
 
 export function defaultDoc(): BoardDoc {
   const widgets = SEED_IDS

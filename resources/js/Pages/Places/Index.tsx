@@ -259,9 +259,12 @@ export default function Index() {
         <PhotoGrid active={view === 'grid'} guideId={guide?.id ?? null} onPhotoClick={handleGridPhotoClick} />
 
         {/* pr-96 keeps the floating bar clear of the side panel on desktop (map view only);
-            z-20 keeps the search dropdown above the z-10 bottom sheet (later sibling) */}
-        <div className={`absolute top-3 inset-x-3 z-20 max-w-xl mx-auto space-y-2 md:max-w-3xl ${view === 'map' ? 'md:pr-96' : ''}`}>
+            z-20 keeps the search dropdown above the z-10 bottom sheet (later sibling).
+            pointer-events-none: this box overlaps the panel's tabs, and being on top it
+            swallowed their clicks; every child opts back in individually */}
+        <div className={`pointer-events-none absolute top-3 inset-x-3 z-20 max-w-xl mx-auto space-y-2 md:max-w-3xl ${view === 'map' ? 'md:pr-96' : ''}`}>
           <FilterBar
+            className="pointer-events-auto"
             category={category}
             onCategoryChange={setCategory}
             query={query}
@@ -274,9 +277,9 @@ export default function Index() {
             onSelectGeo={(s) => handleGoToCoord({ lat: s.lat, lng: s.lng })}
             onGoToCoord={handleGoToCoord}
           />
-          <ViewToggle view={view} onChange={changeView} />
+          <ViewToggle view={view} onChange={changeView} className="pointer-events-auto" />
           {guide && (
-            <div className="flex justify-center">
+            <div className="pointer-events-auto flex justify-center">
               <span className="flex items-center gap-2 rounded-full border border-primary/40 bg-card/95 px-3 py-1 text-xs text-foreground shadow-sm">
                 مساهمات {guide.name}
                 <button type="button" aria-label="إلغاء التصفية" onClick={() => selectGuide(null)}>
@@ -286,14 +289,14 @@ export default function Index() {
             </div>
           )}
           {addMode && (
-            <div className="flex justify-center">
+            <div className="pointer-events-auto flex justify-center">
               <span className="rounded-full border border-border bg-card/90 px-3 py-1 text-xs text-muted-foreground shadow-sm">
                 انقر على الخريطة لتحديد الموقع
               </span>
             </div>
           )}
           {notice && (
-            <Alert variant={notice.destructive ? 'destructive' : 'default'} className="flex items-start justify-between gap-2">
+            <Alert variant={notice.destructive ? 'destructive' : 'default'} className="pointer-events-auto flex items-start justify-between gap-2">
               <AlertDescription>{notice.text}</AlertDescription>
               <button type="button" aria-label="إغلاق" onClick={() => setNotice(null)}>
                 <X className="h-4 w-4" />

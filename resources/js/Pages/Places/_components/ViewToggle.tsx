@@ -1,6 +1,6 @@
 import { LayoutGrid, Map as MapIcon } from 'lucide-react';
 
-export function ViewToggle(props: { view: 'map' | 'grid'; onChange: (v: 'map' | 'grid') => void }) {
+export function ViewToggle(props: { view: 'map' | 'grid'; onChange: (v: 'map' | 'grid') => void; className?: string }) {
   const { view, onChange } = props;
 
   const item = (value: 'map' | 'grid', label: string, Icon: typeof MapIcon) => (
@@ -20,7 +20,7 @@ export function ViewToggle(props: { view: 'map' | 'grid'; onChange: (v: 'map' | 
   );
 
   return (
-    <div dir="rtl" className="flex justify-center">
+    <div dir="rtl" className={`flex justify-center ${props.className ?? ''}`}>
       <div className="flex gap-1 rounded-full border border-border bg-card/90 p-1 shadow-sm">
         {item('map', 'خريطة', MapIcon)}
         {item('grid', 'معرض', LayoutGrid)}

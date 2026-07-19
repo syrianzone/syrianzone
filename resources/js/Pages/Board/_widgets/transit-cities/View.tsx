@@ -24,7 +24,7 @@ export default function TransitCitiesView(_props: WidgetProps<Record<string, nev
         {cities.map((c) => (
           <li key={c.id}>
             <a href={`/transit/city/${c.id}`} className="flex items-center gap-2 px-3 py-2 hover:bg-accent/50">
-              <span className="min-w-0 flex-1 truncate text-sm text-foreground">{c.name_ar}</span>
+              <span className="min-w-0 flex-1 truncate text-sm text-foreground">{c.nameAr}</span>
               <span dir="ltr" className="shrink-0 text-xs tabular-nums text-muted-foreground">
                 {c.routeCount} خط
               </span>

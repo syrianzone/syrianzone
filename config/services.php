@@ -45,6 +45,12 @@ return [
         'key' => env('GOOGLE_PLACES_API_KEY'),
     ],
 
+    // proxied server-side: the worker only sends CORS headers for the production
+    // origin, so a browser call fails on staging and in local dev.
+    'weather' => [
+        'url' => env('WEATHER_WORKER_URL', 'https://syrianzone.hade-alahmad1.workers.dev/'),
+    ],
+
     // read at runtime, not baked into the bundle, so staging turns analytics off
     // by leaving GA_MEASUREMENT_ID empty in its .env. production keeps the id it
     // has always used.

@@ -51,6 +51,13 @@ return [
         'url' => env('WEATHER_WORKER_URL', 'https://syrianzone.hade-alahmad1.workers.dev/'),
     ],
 
+    // proxied server-side like the weather worker: a third-party host is never
+    // called from the browser, and going through the app gets us caching plus
+    // the today-only filtering the upstream query cannot express.
+    'events' => [
+        'url' => env('EVENTS_GRAPHQL_URL', 'https://event-backend-production-18c4.up.railway.app/graphql'),
+    ],
+
     // read at runtime, not baked into the bundle, so staging turns analytics off
     // by leaving GA_MEASUREMENT_ID empty in its .env. production keeps the id it
     // has always used.

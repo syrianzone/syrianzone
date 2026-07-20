@@ -19,6 +19,17 @@ export interface Weather {
   icon: string;
 }
 
+// Normalized server-side from the Apache Answer instance. `url` is an absolute
+// permalink on answers.syrian.zone, built by the backend, not by the widget.
+export interface AnswerQuestion {
+  id: string;
+  title: string;
+  url: string;
+  tags: string[];
+  answer_count: number;
+  created_at: number;
+}
+
 export const sources = {
   async transitCities(): Promise<TransitCity[]> {
     const { data } = await axios.get('/api/v1/cities');
@@ -30,5 +41,12 @@ export const sources = {
   async weather(governorate: string): Promise<Weather> {
     const { data } = await axios.get('/api/weather', { params: { governorate } });
     return data;
+  },
+
+  // proxied through the app for the same reason as the weather worker: the
+  // browser never talks to a third-party host directly
+  async answers(limit: number): Promise<AnswerQuestion[]> {
+    const { data } = await axios.get('/api/answers', { params: { limit } });
+    return data.items ?? [];
   },
 };

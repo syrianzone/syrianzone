@@ -51,6 +51,12 @@ return [
         'url' => env('WEATHER_WORKER_URL', 'https://syrianzone.hade-alahmad1.workers.dev/'),
     ],
 
+    // proxied server-side like the weather worker: a browser call would be
+    // cross-origin, and fetching here gives us caching and a stable payload.
+    'answers' => [
+        'url' => env('ANSWERS_API_URL', 'https://answers.syrian.zone'),
+    ],
+
     // read at runtime, not baked into the bundle, so staging turns analytics off
     // by leaving GA_MEASUREMENT_ID empty in its .env. production keeps the id it
     // has always used.

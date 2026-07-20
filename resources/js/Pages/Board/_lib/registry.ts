@@ -1,3 +1,4 @@
+import { answersWidget } from '../_widgets/answers';
 import { clockWidget } from '../_widgets/clock';
 import { guidesWidget } from '../_widgets/guides';
 import { notesWidget } from '../_widgets/notes';
@@ -19,6 +20,7 @@ export const WIDGETS: WidgetDefinition<any>[] = [
   prayerWidget,
   placesNearbyWidget,
   guidesWidget,
+  answersWidget,
   transitCitiesWidget,
   notesWidget,
 ];

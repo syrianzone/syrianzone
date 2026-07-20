@@ -20,6 +20,7 @@ export interface Weather {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Normalized server-side from the Apache Answer instance. `url` is an absolute
 // permalink on answers.syrian.zone, built by the backend, not by the widget.
 export interface AnswerQuestion {
@@ -63,6 +64,18 @@ export interface TodayEvents {
   is_fallback: boolean;
   events: TodayEvent[];
 >>>>>>> board/events-widget
+=======
+export interface FeedItem {
+  title: string;
+  link: string | null;
+  published_at: string | null;
+}
+
+export interface Feed {
+  source: string;
+  title: string;
+  items: FeedItem[];
+>>>>>>> board/rss-widget
 }
 
 export const sources = {
@@ -78,6 +91,7 @@ export const sources = {
     return data;
   },
 
+<<<<<<< HEAD
 <<<<<<< HEAD
   // proxied through the app for the same reason as the weather worker: the
   // browser never talks to a third-party host directly
@@ -95,5 +109,12 @@ export const sources = {
     const { data } = await axios.get('/api/events/today', { params: { governorate } });
     return data;
 >>>>>>> board/events-widget
+=======
+  // proxied through the app for the same reason as the weather worker: no news
+  // publisher sends cors headers, so the browser can never fetch a feed directly
+  async feed(source: string): Promise<Feed> {
+    const { data } = await axios.get('/api/feed', { params: { source } });
+    return data;
+>>>>>>> board/rss-widget
   },
 };

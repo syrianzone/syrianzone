@@ -30,11 +30,15 @@ Route::get('/weather', [\App\Http\Controllers\WeatherController::class, 'show'])
     ->middleware('throttle:60,1');
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 Route::get('/answers', [\App\Http\Controllers\AnswersController::class, 'index'])
 Route::get('/recipe-of-the-day', [\App\Http\Controllers\RecipeController::class, 'ofTheDay'])
 =======
 Route::get('/events/today', [\App\Http\Controllers\EventsController::class, 'today'])
 >>>>>>> board/events-widget
+=======
+Route::get('/feed', [\App\Http\Controllers\FeedController::class, 'show'])
+>>>>>>> board/rss-widget
     ->middleware('throttle:60,1');
 
 Route::get('/metrics', [MetricsController::class, 'index']);

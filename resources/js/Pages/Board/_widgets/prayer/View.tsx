@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Moon } from 'lucide-react';
 import { WidgetShell } from '../../_components/WidgetShell';
 import { useWidgetQuery } from '../../_lib/query';
-import { GOVERNORATES, coordsOf } from '../../_lib/governorates';
+import { sources, type PrayerTimes } from '../../_lib/sources';
+import { GOVERNORATES } from '../../_lib/governorates';
 import type { WidgetProps } from '../../_lib/types';
 import { prayerWidget, type PrayerConfig } from './index';
 
@@ -16,18 +17,6 @@ const PRAYERS: { key: string; label: string }[] = [
 ];
 
 type Timings = Record<string, string>;
-
-// Method 3 is the Muslim World League calculation, the Syrian standard.
-// Cross-origin, so plain fetch rather than the app's axios instance.
-async function fetchTimings(lat: number, lon: number): Promise<Timings> {
-  const now = new Date();
-  const date = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
-  const res = await fetch(`https://api.aladhan.com/v1/timings/${date}?latitude=${lat}&longitude=${lon}&method=3`);
-  if (!res.ok) throw new Error('prayer');
-  const data = await res.json();
-  if (data.code !== 200 || !data.data?.timings) throw new Error('prayer');
-  return data.data.timings as Timings;
-}
 
 // Returns the next prayer today, or null once Isha has passed.
 function nextPrayer(timings: Timings, now: Date) {
@@ -51,16 +40,18 @@ function countdown(to: Date, now: Date): string {
 
 export default function PrayerView({ config }: WidgetProps<PrayerConfig>) {
   const governorate = config.governorate ?? 'damascus';
-  const { lat, lon } = coordsOf(governorate);
-  const query = useWidgetQuery(prayerWidget, governorate, () => fetchTimings(lat, lon));
+  const query = useWidgetQuery(prayerWidget, governorate, () => sources.prayerTimes(governorate));
   const [now, setNow] = useState(() => new Date());
 
+  // the countdown ticks locally; refetching once a day is enough for the timings
   useEffect(() => {
     const tick = window.setInterval(() => setNow(new Date()), 30_000);
     return () => window.clearInterval(tick);
   }, []);
 
-  const next = query.data ? nextPrayer(query.data, now) : null;
+  const data: PrayerTimes | undefined = query.data;
+  const next = data ? nextPrayer(data.timings, now) : null;
+  const hijri = data?.hijri;
 
   return (
     <WidgetShell
@@ -79,6 +70,12 @@ export default function PrayerView({ config }: WidgetProps<PrayerConfig>) {
           <p className="text-lg font-semibold text-foreground">{next.label}</p>
           <p dir="ltr" className="text-sm tabular-nums text-muted-foreground">{next.time}</p>
           <p className="text-xs text-muted-foreground">بعد {countdown(next.at, now)}</p>
+          {hijri && (
+            <p className="mt-1 border-t border-border pt-1 text-xs text-muted-foreground">
+              <span dir="ltr" className="tabular-nums">{hijri.day}</span> {hijri.month}{' '}
+              <span dir="ltr" className="tabular-nums">{hijri.year}</span> هـ
+            </p>
+          )}
         </div>
       )}
     </WidgetShell>

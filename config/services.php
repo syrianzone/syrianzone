@@ -52,6 +52,7 @@ return [
     ],
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     // proxied server-side like the weather worker: a browser call would be
     // cross-origin, and fetching here gives us caching and a stable payload.
     'answers' => [
@@ -67,6 +68,12 @@ return [
     'events' => [
         'url' => env('EVENTS_GRAPHQL_URL', 'https://event-backend-production-18c4.up.railway.app/graphql'),
 >>>>>>> board/events-widget
+=======
+    // proxied server-side for the same reason as the weather worker: relying on
+    // a third party's CORS policy staying permissive is what broke that widget.
+    'prayer' => [
+        'url' => env('PRAYER_API_URL', 'https://api.aladhan.com/v1/timings'),
+>>>>>>> board/prayer-weather-extend
     ],
 
     // read at runtime, not baked into the bundle, so staging turns analytics off

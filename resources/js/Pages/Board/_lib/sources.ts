@@ -17,6 +17,23 @@ export interface Weather {
   temp: number;
   description: string;
   icon: string;
+  // additive: an empty array is a normal answer when the forecast upstream is
+  // down, and current conditions still render
+  forecast: ForecastDay[];
+}
+
+export interface ForecastDay {
+  date: string;
+  min: number;
+  max: number;
+  // raw WMO code; the widget owns the arabic labels, as it does for description
+  code: number;
+}
+
+export interface PrayerTimes {
+  governorate: string;
+  timings: Record<string, string>;
+  hijri: { day: string; month: string; year: string } | null;
 }
 
 <<<<<<< HEAD
@@ -93,6 +110,7 @@ export const sources = {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   // proxied through the app for the same reason as the weather worker: the
   // browser never talks to a third-party host directly
   async answers(limit: number): Promise<AnswerQuestion[]> {
@@ -116,5 +134,12 @@ export const sources = {
     const { data } = await axios.get('/api/feed', { params: { source } });
     return data;
 >>>>>>> board/rss-widget
+=======
+  // also proxied: aladhan's permissive CORS is a policy we do not control, and
+  // the weather worker already showed what happens when we depend on one
+  async prayerTimes(governorate: string): Promise<PrayerTimes> {
+    const { data } = await axios.get('/api/prayer-times', { params: { governorate } });
+    return data;
+>>>>>>> board/prayer-weather-extend
   },
 };

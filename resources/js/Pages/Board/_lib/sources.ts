@@ -19,6 +19,12 @@ export interface Weather {
   icon: string;
 }
 
+export interface PrayerTimes {
+  governorate: string;
+  timings: Record<string, string>;
+  hijri: { day: string; month: string; year: string } | null;
+}
+
 export const sources = {
   async transitCities(): Promise<TransitCity[]> {
     const { data } = await axios.get('/api/v1/cities');
@@ -29,6 +35,13 @@ export const sources = {
   // production origin, so calling it from the browser fails everywhere else
   async weather(governorate: string): Promise<Weather> {
     const { data } = await axios.get('/api/weather', { params: { governorate } });
+    return data;
+  },
+
+  // also proxied: aladhan's permissive CORS is a policy we do not control, and
+  // the weather worker already showed what happens when we depend on one
+  async prayerTimes(governorate: string): Promise<PrayerTimes> {
+    const { data } = await axios.get('/api/prayer-times', { params: { governorate } });
     return data;
   },
 };

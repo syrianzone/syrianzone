@@ -51,6 +51,12 @@ return [
         'url' => env('WEATHER_WORKER_URL', 'https://syrianzone.hade-alahmad1.workers.dev/'),
     ],
 
+    // proxied server-side for the same reason as the weather worker: relying on
+    // a third party's CORS policy staying permissive is what broke that widget.
+    'prayer' => [
+        'url' => env('PRAYER_API_URL', 'https://api.aladhan.com/v1/timings'),
+    ],
+
     // read at runtime, not baked into the bundle, so staging turns analytics off
     // by leaving GA_MEASUREMENT_ID empty in its .env. production keeps the id it
     // has always used.

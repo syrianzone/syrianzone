@@ -29,6 +29,9 @@ Route::get('/population/env-report', [PopulationAtlasController::class, 'getEnvi
 Route::get('/weather', [\App\Http\Controllers\WeatherController::class, 'show'])
     ->middleware('throttle:60,1');
 
+Route::get('/prayer-times', [\App\Http\Controllers\PrayerController::class, 'show'])
+    ->middleware('throttle:60,1');
+
 Route::get('/metrics', [MetricsController::class, 'index']);
 
 Route::get('/app-icon', function (Request $request) {

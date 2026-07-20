@@ -275,7 +275,6 @@ test('submit validation rejects bad payloads', function () {
   $post = fn (array $overrides) => $this->actingAs($user)
     ->post('/api/v1/places', array_merge($valid(), $overrides), ['Accept' => 'application/json']);
 
-  // Submit throttle is 5 per hour: keep this test at 4 requests, photo rules get their own test.
   $post(['photos' => []])->assertStatus(422)->assertJsonValidationErrors('photos');
   $post(['description' => 'قصير'])->assertStatus(422)->assertJsonValidationErrors('description');
   $post(['lat' => 45.0])->assertStatus(422)->assertJsonValidationErrors('lat');
@@ -357,29 +356,12 @@ test('reprocess-photos command regenerates variants from the originals', functio
   expect($height)->toBeGreaterThan($width);
 });
 
-test('failed validation attempts do not consume the submit quota', function () {
-  Storage::fake('public');
-  $user = placesUser();
-
-  foreach (range(1, 6) as $i) {
-    $this->actingAs($user)->postJson('/api/v1/places', [])->assertStatus(422);
-  }
-
-  $this->actingAs($user)->postJson('/api/v1/places', [
-    'name' => 'مكان تجريبي',
-    'category' => 'natural',
-    'description' => 'وصف تجريبي طويل بما يكفي لتجاوز الحد الأدنى للتحقق',
-    'lat' => 33.5,
-    'lng' => 36.3,
-    'photos' => [UploadedFile::fake()->image('a.jpg', 800, 600)],
-  ])->assertStatus(201);
-});
-
-test('submit quota rejects a sixth place within an hour', function () {
+test('there is no per-user submission cap', function () {
   Storage::fake('public');
   $user = placesUser();
   Place::factory()->count(5)->create(['user_id' => $user->id]);
 
+  // a sixth place in the same hour used to 429; moderation is the real gate now
   $this->actingAs($user)->postJson('/api/v1/places', [
     'name' => 'مكان سادس',
     'category' => 'natural',
@@ -387,7 +369,7 @@ test('submit quota rejects a sixth place within an hour', function () {
     'lat' => 33.5,
     'lng' => 36.3,
     'photos' => [UploadedFile::fake()->image('b.jpg', 800, 600)],
-  ])->assertStatus(429);
+  ])->assertStatus(201);
 });
 
 test('my places lists own places with status and rejection_reason', function () {

@@ -215,10 +215,10 @@ Route::middleware('auth')->group(function () {
 
     // Hidden Places: authenticated writes (session + CSRF via the web group)
     Route::prefix('api/v1')->group(function () {
-        // Coarse abuse shield only; the real 5-per-hour quota counts created
-        // places in the controller, so failed validation attempts don't lock users out.
+        // No per-user submission cap: moderation gates everything to the public map,
+        // so this throttle is only a flood backstop no normal use touches.
         Route::post('/places', [\App\Http\Controllers\PlaceController::class, 'store'])
-            ->middleware('throttle:20,60');
+            ->middleware('throttle:60,1');
         Route::get('/my/places', [\App\Http\Controllers\PlaceController::class, 'mine'])
             ->middleware('throttle:60,1');
         // Every accepted move re-enters the moderation queue, so mirror the

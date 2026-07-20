@@ -215,14 +215,6 @@ class PlaceController extends Controller
       return response()->json(['message' => 'تم حظر حسابك من المساهمة'], 403);
     }
 
-    // quota counts created places, not attempts (route throttle is only a coarse shield)
-    $recentCount = Place::where('user_id', $request->user()->id)
-      ->where('created_at', '>=', now()->subHour())
-      ->count();
-    if ($recentCount >= 5) {
-      return response()->json(['message' => 'وصلت الحد الأقصى من المساهمات لهذه الساعة، حاول لاحقاً'], 429);
-    }
-
     $validated = $request->validate([
       'name' => 'required|string|max:160',
       'category' => 'required|string|in:historical,natural,cultural,religious,abandoned,viewpoint,market,food,other',

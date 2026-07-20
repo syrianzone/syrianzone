@@ -3,7 +3,9 @@ import { clockWidget } from '../_widgets/clock';
 import { guidesWidget } from '../_widgets/guides';
 import { notesWidget } from '../_widgets/notes';
 import { placesNearbyWidget } from '../_widgets/places-nearby';
+import { pomodoroWidget } from '../_widgets/pomodoro';
 import { prayerWidget } from '../_widgets/prayer';
+import { todoWidget } from '../_widgets/todo';
 import { transitCitiesWidget } from '../_widgets/transit-cities';
 import { weatherWidget } from '../_widgets/weather';
 import { defaultConfig, newId, nowStamp } from './layout';
@@ -23,6 +25,8 @@ export const WIDGETS: WidgetDefinition<any>[] = [
   answersWidget,
   transitCitiesWidget,
   notesWidget,
+  todoWidget,
+  pomodoroWidget,
 ];
 
 export const WIDGETS_BY_ID: Record<string, WidgetDefinition<any>> = Object.fromEntries(

@@ -19,6 +19,18 @@ export interface Weather {
   icon: string;
 }
 
+export interface FeedItem {
+  title: string;
+  link: string | null;
+  published_at: string | null;
+}
+
+export interface Feed {
+  source: string;
+  title: string;
+  items: FeedItem[];
+}
+
 export const sources = {
   async transitCities(): Promise<TransitCity[]> {
     const { data } = await axios.get('/api/v1/cities');
@@ -29,6 +41,13 @@ export const sources = {
   // production origin, so calling it from the browser fails everywhere else
   async weather(governorate: string): Promise<Weather> {
     const { data } = await axios.get('/api/weather', { params: { governorate } });
+    return data;
+  },
+
+  // proxied through the app for the same reason as the weather worker: no news
+  // publisher sends cors headers, so the browser can never fetch a feed directly
+  async feed(source: string): Promise<Feed> {
+    const { data } = await axios.get('/api/feed', { params: { source } });
     return data;
   },
 };

@@ -28,6 +28,17 @@ export interface AnswerQuestion {
   tags: string[];
   answer_count: number;
   created_at: number;
+// food.syrian.zone is a sibling app on another origin. The pick is made and
+// cached server-side, so every visitor sees the same recipe for the whole day.
+export interface Recipe {
+  id: number | null;
+  name: string;
+  url: string;
+  image_url: string | null;
+  city: string | null;
+  time_needed: { label: string; value: string }[];
+  difficulty: string | null;
+  tags: string[];
 }
 
 export const sources = {
@@ -48,5 +59,9 @@ export const sources = {
   async answers(limit: number): Promise<AnswerQuestion[]> {
     const { data } = await axios.get('/api/answers', { params: { limit } });
     return data.items ?? [];
+  // proxied through the app for the same reason as the weather worker
+  async recipeOfTheDay(): Promise<Recipe> {
+    const { data } = await axios.get('/api/recipe-of-the-day');
+    return data.recipe;
   },
 };

@@ -55,6 +55,10 @@ return [
     // cross-origin, and fetching here gives us caching and a stable payload.
     'answers' => [
         'url' => env('ANSWERS_API_URL', 'https://answers.syrian.zone'),
+    // proxied server-side for the same reason as the weather worker: a sibling
+    // app on another origin, so the browser must never call it directly.
+    'recipes' => [
+        'url' => env('RECIPES_BASE_URL', 'https://food.syrian.zone'),
     ],
 
     // read at runtime, not baked into the bundle, so staging turns analytics off

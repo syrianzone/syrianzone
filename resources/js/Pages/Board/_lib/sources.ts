@@ -17,6 +17,17 @@ export interface Weather {
   temp: number;
   description: string;
   icon: string;
+  // additive: an empty array is a normal answer when the forecast upstream is
+  // down, and current conditions still render
+  forecast: ForecastDay[];
+}
+
+export interface ForecastDay {
+  date: string;
+  min: number;
+  max: number;
+  // raw WMO code; the widget owns the arabic labels, as it does for description
+  code: number;
 }
 
 export interface PrayerTimes {

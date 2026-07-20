@@ -19,6 +19,7 @@ export interface Weather {
   icon: string;
 }
 
+<<<<<<< HEAD
 // Normalized server-side from the Apache Answer instance. `url` is an absolute
 // permalink on answers.syrian.zone, built by the backend, not by the widget.
 export interface AnswerQuestion {
@@ -39,6 +40,29 @@ export interface Recipe {
   time_needed: { label: string; value: string }[];
   difficulty: string | null;
   tags: string[];
+=======
+// Normalized by the server. `ticket_price` is null for a free event rather than
+// 0, so the widget never has to render a price of zero.
+export interface TodayEvent {
+  id: string;
+  name: string;
+  url: string;
+  address: string;
+  is_online: boolean;
+  is_free: boolean;
+  ticket_price: number | null;
+  event_date: string;
+  event_time: string | null;
+  category: string | null;
+  organizer: string | null;
+}
+
+export interface TodayEvents {
+  governorate: string;
+  // true when the governorate had nothing on today and we widened to all of syria
+  is_fallback: boolean;
+  events: TodayEvent[];
+>>>>>>> board/events-widget
 }
 
 export const sources = {
@@ -54,6 +78,7 @@ export const sources = {
     return data;
   },
 
+<<<<<<< HEAD
   // proxied through the app for the same reason as the weather worker: the
   // browser never talks to a third-party host directly
   async answers(limit: number): Promise<AnswerQuestion[]> {
@@ -63,5 +88,12 @@ export const sources = {
   async recipeOfTheDay(): Promise<Recipe> {
     const { data } = await axios.get('/api/recipe-of-the-day');
     return data.recipe;
+=======
+  // proxied through the app for the same reason as the weather worker, plus the
+  // "happening today" filter, which the upstream query cannot express
+  async eventsToday(governorate: string): Promise<TodayEvents> {
+    const { data } = await axios.get('/api/events/today', { params: { governorate } });
+    return data;
+>>>>>>> board/events-widget
   },
 };

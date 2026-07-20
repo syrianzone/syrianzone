@@ -51,6 +51,7 @@ return [
         'url' => env('WEATHER_WORKER_URL', 'https://syrianzone.hade-alahmad1.workers.dev/'),
     ],
 
+<<<<<<< HEAD
     // proxied server-side like the weather worker: a browser call would be
     // cross-origin, and fetching here gives us caching and a stable payload.
     'answers' => [
@@ -59,6 +60,13 @@ return [
     // app on another origin, so the browser must never call it directly.
     'recipes' => [
         'url' => env('RECIPES_BASE_URL', 'https://food.syrian.zone'),
+=======
+    // proxied server-side like the weather worker: a third-party host is never
+    // called from the browser, and going through the app gets us caching plus
+    // the today-only filtering the upstream query cannot express.
+    'events' => [
+        'url' => env('EVENTS_GRAPHQL_URL', 'https://event-backend-production-18c4.up.railway.app/graphql'),
+>>>>>>> board/events-widget
     ],
 
     // read at runtime, not baked into the bundle, so staging turns analytics off

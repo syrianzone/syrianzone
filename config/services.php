@@ -51,6 +51,12 @@ return [
         'url' => env('WEATHER_WORKER_URL', 'https://syrianzone.hade-alahmad1.workers.dev/'),
     ],
 
+    // proxied server-side for the same reason as the weather worker: a sibling
+    // app on another origin, so the browser must never call it directly.
+    'recipes' => [
+        'url' => env('RECIPES_BASE_URL', 'https://food.syrian.zone'),
+    ],
+
     // read at runtime, not baked into the bundle, so staging turns analytics off
     // by leaving GA_MEASUREMENT_ID empty in its .env. production keeps the id it
     // has always used.

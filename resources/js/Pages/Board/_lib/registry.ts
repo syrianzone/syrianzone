@@ -3,6 +3,7 @@ import { guidesWidget } from '../_widgets/guides';
 import { notesWidget } from '../_widgets/notes';
 import { placesNearbyWidget } from '../_widgets/places-nearby';
 import { prayerWidget } from '../_widgets/prayer';
+import { recipeWidget } from '../_widgets/recipe';
 import { transitCitiesWidget } from '../_widgets/transit-cities';
 import { weatherWidget } from '../_widgets/weather';
 import { defaultConfig, newId, nowStamp } from './layout';
@@ -20,6 +21,7 @@ export const WIDGETS: WidgetDefinition<any>[] = [
   placesNearbyWidget,
   guidesWidget,
   transitCitiesWidget,
+  recipeWidget,
   notesWidget,
 ];
 

@@ -19,6 +19,19 @@ export interface Weather {
   icon: string;
 }
 
+// food.syrian.zone is a sibling app on another origin. The pick is made and
+// cached server-side, so every visitor sees the same recipe for the whole day.
+export interface Recipe {
+  id: number | null;
+  name: string;
+  url: string;
+  image_url: string | null;
+  city: string | null;
+  time_needed: { label: string; value: string }[];
+  difficulty: string | null;
+  tags: string[];
+}
+
 export const sources = {
   async transitCities(): Promise<TransitCity[]> {
     const { data } = await axios.get('/api/v1/cities');
@@ -30,5 +43,11 @@ export const sources = {
   async weather(governorate: string): Promise<Weather> {
     const { data } = await axios.get('/api/weather', { params: { governorate } });
     return data;
+  },
+
+  // proxied through the app for the same reason as the weather worker
+  async recipeOfTheDay(): Promise<Recipe> {
+    const { data } = await axios.get('/api/recipe-of-the-day');
+    return data.recipe;
   },
 };

@@ -6,12 +6,9 @@ import { notesWidget } from '../_widgets/notes';
 import { placesNearbyWidget } from '../_widgets/places-nearby';
 import { pomodoroWidget } from '../_widgets/pomodoro';
 import { prayerWidget } from '../_widgets/prayer';
-<<<<<<< HEAD
-import { todoWidget } from '../_widgets/todo';
 import { recipeWidget } from '../_widgets/recipe';
-=======
 import { rssWidget } from '../_widgets/rss';
->>>>>>> board/rss-widget
+import { todoWidget } from '../_widgets/todo';
 import { transitCitiesWidget } from '../_widgets/transit-cities';
 import { weatherWidget } from '../_widgets/weather';
 import { defaultConfig, newId, nowStamp } from './layout';
@@ -28,15 +25,9 @@ export const WIDGETS: WidgetDefinition<any>[] = [
   prayerWidget,
   placesNearbyWidget,
   guidesWidget,
-<<<<<<< HEAD
-<<<<<<< HEAD
   answersWidget,
-=======
   eventsTodayWidget,
->>>>>>> board/events-widget
-=======
   rssWidget,
->>>>>>> board/rss-widget
   transitCitiesWidget,
   recipeWidget,
   notesWidget,

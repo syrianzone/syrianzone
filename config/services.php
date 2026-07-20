@@ -51,29 +51,24 @@ return [
         'url' => env('WEATHER_WORKER_URL', 'https://syrianzone.hade-alahmad1.workers.dev/'),
     ],
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-    // proxied server-side like the weather worker: a browser call would be
-    // cross-origin, and fetching here gives us caching and a stable payload.
+    // all proxied server-side for the same reason as the weather worker above:
+    // the browser never calls a third-party host directly, and going through
+    // the app gets us caching plus a payload we control.
     'answers' => [
         'url' => env('ANSWERS_API_URL', 'https://answers.syrian.zone'),
-    // proxied server-side for the same reason as the weather worker: a sibling
-    // app on another origin, so the browser must never call it directly.
+    ],
+
     'recipes' => [
         'url' => env('RECIPES_BASE_URL', 'https://food.syrian.zone'),
-=======
-    // proxied server-side like the weather worker: a third-party host is never
-    // called from the browser, and going through the app gets us caching plus
-    // the today-only filtering the upstream query cannot express.
+    ],
+
+    // graphql proxy also does the today-only filtering the upstream query cannot express
     'events' => [
         'url' => env('EVENTS_GRAPHQL_URL', 'https://event-backend-production-18c4.up.railway.app/graphql'),
->>>>>>> board/events-widget
-=======
-    // proxied server-side for the same reason as the weather worker: relying on
-    // a third party's CORS policy staying permissive is what broke that widget.
+    ],
+
     'prayer' => [
         'url' => env('PRAYER_API_URL', 'https://api.aladhan.com/v1/timings'),
->>>>>>> board/prayer-weather-extend
     ],
 
     // read at runtime, not baked into the bundle, so staging turns analytics off

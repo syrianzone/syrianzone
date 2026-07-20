@@ -36,8 +36,6 @@ export interface PrayerTimes {
   hijri: { day: string; month: string; year: string } | null;
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 // Normalized server-side from the Apache Answer instance. `url` is an absolute
 // permalink on answers.syrian.zone, built by the backend, not by the widget.
 export interface AnswerQuestion {
@@ -47,6 +45,8 @@ export interface AnswerQuestion {
   tags: string[];
   answer_count: number;
   created_at: number;
+}
+
 // food.syrian.zone is a sibling app on another origin. The pick is made and
 // cached server-side, so every visitor sees the same recipe for the whole day.
 export interface Recipe {
@@ -58,7 +58,8 @@ export interface Recipe {
   time_needed: { label: string; value: string }[];
   difficulty: string | null;
   tags: string[];
-=======
+}
+
 // Normalized by the server. `ticket_price` is null for a free event rather than
 // 0, so the widget never has to render a price of zero.
 export interface TodayEvent {
@@ -80,8 +81,8 @@ export interface TodayEvents {
   // true when the governorate had nothing on today and we widened to all of syria
   is_fallback: boolean;
   events: TodayEvent[];
->>>>>>> board/events-widget
-=======
+}
+
 export interface FeedItem {
   title: string;
   link: string | null;
@@ -92,7 +93,12 @@ export interface Feed {
   source: string;
   title: string;
   items: FeedItem[];
->>>>>>> board/rss-widget
+}
+
+export interface PrayerTimes {
+  governorate: string;
+  timings: Record<string, string>;
+  hijri: { day: string; month: string; year: string } | null;
 }
 
 export const sources = {
@@ -108,38 +114,31 @@ export const sources = {
     return data;
   },
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-  // proxied through the app for the same reason as the weather worker: the
-  // browser never talks to a third-party host directly
+  // every method below is proxied through the app for the same reason as the
+  // weather worker: the browser never talks to a third-party host directly
   async answers(limit: number): Promise<AnswerQuestion[]> {
     const { data } = await axios.get('/api/answers', { params: { limit } });
     return data.items ?? [];
-  // proxied through the app for the same reason as the weather worker
+  },
+
   async recipeOfTheDay(): Promise<Recipe> {
     const { data } = await axios.get('/api/recipe-of-the-day');
     return data.recipe;
-=======
-  // proxied through the app for the same reason as the weather worker, plus the
-  // "happening today" filter, which the upstream query cannot express
+  },
+
+  // plus the "happening today" filter, which the upstream graphql query cannot express
   async eventsToday(governorate: string): Promise<TodayEvents> {
     const { data } = await axios.get('/api/events/today', { params: { governorate } });
     return data;
->>>>>>> board/events-widget
-=======
-  // proxied through the app for the same reason as the weather worker: no news
-  // publisher sends cors headers, so the browser can never fetch a feed directly
+  },
+
   async feed(source: string): Promise<Feed> {
     const { data } = await axios.get('/api/feed', { params: { source } });
     return data;
->>>>>>> board/rss-widget
-=======
-  // also proxied: aladhan's permissive CORS is a policy we do not control, and
-  // the weather worker already showed what happens when we depend on one
+  },
+
   async prayerTimes(governorate: string): Promise<PrayerTimes> {
     const { data } = await axios.get('/api/prayer-times', { params: { governorate } });
     return data;
->>>>>>> board/prayer-weather-extend
   },
 };

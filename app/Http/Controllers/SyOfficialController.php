@@ -16,7 +16,7 @@ class SyOfficialController extends Controller
      */
     public function index()
     {
-        $entities = Cache::remember('external_syofficial_data_v4', 600, function () {
+        $entities = Cache::remember('external_syofficial_data_v5', 600, function () {
             $entities = [];
             try {
                 $response = Http::get(self::CSV_URL);

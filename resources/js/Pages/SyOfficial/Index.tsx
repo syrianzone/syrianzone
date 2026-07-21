@@ -120,7 +120,8 @@ const TRANSLATIONS = {
 };
 
 const getSocialIcon = (platform: string) => {
-    switch (platform) {
+    const base = platform.replace('_secondary', '');
+    switch (base) {
         case 'facebook': return <Facebook className="h-4 w-4" />;
         case 'twitter': return <Twitter className="h-4 w-4" />;
         case 'instagram': return <Instagram className="h-4 w-4" />;
@@ -131,6 +132,26 @@ const getSocialIcon = (platform: string) => {
         case 'website': return <Globe className="h-4 w-4" />;
         default: return <LinkIcon className="h-4 w-4" />;
     }
+};
+
+const getSocialTitle = (platform: string, lang: Language) => {
+    const titles: Record<string, { ar: string; en: string }> = {
+        facebook: { ar: 'فيسبوك', en: 'Facebook' },
+        facebook_secondary: { ar: 'فيسبوك (إعلامي/فرعي)', en: 'Facebook (Secondary)' },
+        twitter: { ar: 'إكس / تويتر', en: 'X / Twitter' },
+        twitter_secondary: { ar: 'إكس / تويتر (إعلامي/فرعي)', en: 'X / Twitter (Secondary)' },
+        instagram: { ar: 'إنستغرام', en: 'Instagram' },
+        instagram_secondary: { ar: 'إنستغرام (إعلامي/فرعي)', en: 'Instagram (Secondary)' },
+        telegram: { ar: 'تلغرام', en: 'Telegram' },
+        telegram_secondary: { ar: 'تلغرام (إعلامي/فرعي)', en: 'Telegram (Secondary)' },
+        linkedin: { ar: 'لينكد إن', en: 'LinkedIn' },
+        youtube: { ar: 'يوتيوب', en: 'YouTube' },
+        whatsapp: { ar: 'واتساب', en: 'WhatsApp' },
+        website: { ar: 'الموقع الرسمي', en: 'Official Website' },
+    };
+    const t = titles[platform];
+    if (!t) return platform;
+    return lang === 'ar' || lang === 'ku' ? t.ar : t.en;
 };
 
 export default function Index({ initialData }: SyOfficialClientProps) {
@@ -396,7 +417,7 @@ export default function Index({ initialData }: SyOfficialClientProps) {
                                                                         target="_blank"
                                                                         rel="noopener noreferrer"
                                                                         className="text-muted-foreground hover:text-primary transition-colors p-1"
-                                                                        title={plat}
+                                                                        title={getSocialTitle(plat, language)}
                                                                     >
                                                                         {getSocialIcon(plat)}
                                                                     </a>
@@ -456,6 +477,7 @@ export default function Index({ initialData }: SyOfficialClientProps) {
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
                                                                 className="bg-muted hover:bg-primary hover:text-primary-foreground text-foreground rounded p-1.5 transition-colors"
+                                                                title={getSocialTitle(plat, language)}
                                                             >
                                                                 {getSocialIcon(plat)}
                                                             </a>

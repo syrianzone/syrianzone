@@ -16,7 +16,7 @@ class SyOfficialController extends Controller
      */
     public function index()
     {
-        $entities = Cache::remember('external_syofficial_data', 600, function () {
+        $entities = Cache::remember('external_syofficial_data_v2', 600, function () {
             $entities = [];
             try {
                 $response = Http::get(self::CSV_URL);
@@ -51,9 +51,18 @@ class SyOfficialController extends Controller
         $data = [];
 
         $socialPlatforms = [
-            'Facebook URL', 'Instagram URL', 'LinkedIn URL',
-            'Telegram URL', 'Telegram URL (Secondary)',
-            'Twitter/X URL', 'Website URL', 'WhatsApp URL', 'YouTube URL'
+            'Facebook URL' => 'facebook',
+            'Facebook URL (Secondary)' => 'facebook_secondary',
+            'Instagram URL' => 'instagram',
+            'Instagram URL (Secondary)' => 'instagram_secondary',
+            'LinkedIn URL' => 'linkedin',
+            'Telegram URL' => 'telegram',
+            'Telegram URL (Secondary)' => 'telegram_secondary',
+            'Twitter/X URL' => 'twitter',
+            'Twitter/X URL (Secondary)' => 'twitter_secondary',
+            'Website URL' => 'website',
+            'WhatsApp URL' => 'whatsapp',
+            'YouTube URL' => 'youtube',
         ];
 
         for ($i = 1; $i < count($lines); $i++) {
@@ -71,10 +80,9 @@ class SyOfficialController extends Controller
             if (empty($category)) continue;
 
             $socials = [];
-            foreach ($socialPlatforms as $platform) {
-                $url = $row[$platform] ?? '';
+            foreach ($socialPlatforms as $columnHeader => $key) {
+                $url = $row[$columnHeader] ?? '';
                 if (!empty(trim($url))) {
-                    $key = str_replace([' url', ' (secondary)', 'twitter/x'], ['', '', 'twitter'], strtolower($platform));
                     $socials[$key] = trim($url);
                 }
             }

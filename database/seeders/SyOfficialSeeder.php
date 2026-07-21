@@ -92,11 +92,30 @@ class SyOfficialSeeder extends Seeder
                 ]);
             }
 
+            $removedUrls = [
+                'https://twitter.com/AllltyraN',
+                'https://x.com/SanaAjel',
+                'https://twitter.com/Syrianborders',
+                'https://x.com/SyTransitionalJ',
+                'https://youtube.com/@sytransitionalj',
+                'https://www.linkedin.com/in/abdulkader-husrieh',
+                'https://twitter.com/abulrhmanalamaa',
+                'https://www.linkedin.com/in/abdulsalamhaykal/',
+                'https://www.linkedin.com/in/hind-aboud-kabawat-9a084b53/',
+                'https://www.linkedin.com/in/marwanalhalabi',
+                'https://x.com/IdlebPolitical',
+                'https://x.com/SyrianMoiSpokes',
+                'https://twitter.com/obaidaarnaout',
+                'https://www.linkedin.com/in/raed-alsaleh-68590ab8',
+                'https://www.linkedin.com/in/yarob-badr-08b4986',
+                'https://www.linkedin.com/in/yisr-barnieh-3846a88a',
+            ];
+
             $socials = [];
             foreach ($socialPlatforms as $columnHeader => $key) {
-                $url = $row[$columnHeader] ?? '';
-                if (!empty(trim($url))) {
-                    $socials[$key] = trim($url);
+                $url = trim($row[$columnHeader] ?? '');
+                if (!empty($url) && !in_array($url, $removedUrls)) {
+                    $socials[$key] = $url;
                 }
             }
 

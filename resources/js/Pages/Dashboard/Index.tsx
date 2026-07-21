@@ -17,6 +17,7 @@ import {
   MapPin,
   Loader2,
   Globe,
+  Smartphone,
 } from 'lucide-react';
 import MainLayout from '@/Layouts/MainLayout';
 import { useAuth } from '@/Contexts/AuthContext';
@@ -425,6 +426,17 @@ export default function Dashboard({
                   >
                     <Globe className="h-5 w-5" />
                     إدارة الحسابات الرسمية (SyOfficial)
+                  </Link>
+                )}
+
+                {/* GovApps Admin Tab (Admins, GovApps Admins, Superadmins) */}
+                {(role === 'admin' || role === 'govapps_admin' || role === 'superadmin') && (
+                  <Link
+                    href="/admin/govapps"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  >
+                    <Smartphone className="h-5 w-5" />
+                    إدارة التطبيقات الحكومية (GovApps)
                   </Link>
                 )}
 

@@ -359,20 +359,6 @@ export default function Index({ initialData }: SyOfficialClientProps) {
                                 </button>
                             </div>
                         </div>
-
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm text-muted-foreground">{t.sortBy}:</span>
-                            <Select value={sortOption} onValueChange={(value: SortOption) => setSortOption(value)}>
-                                <SelectTrigger className="w-[140px] bg-card border-border rounded-lg shadow-sm">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="name-asc">{t.sortNameAsc}</SelectItem>
-                                    <SelectItem value="name-desc">{t.sortNameDesc}</SelectItem>
-                                    <SelectItem value="category">{t.sortCategory}</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
                     </div>
                 </div>
 

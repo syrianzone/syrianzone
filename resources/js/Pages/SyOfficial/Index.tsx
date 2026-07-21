@@ -402,7 +402,7 @@ export default function Index({ initialData }: SyOfficialClientProps) {
                                                     <div className="relative aspect-square w-full overflow-hidden bg-muted/40">
                                                         {isSuperAdmin && (
                                                             <a
-                                                                href="/admin/syofficial"
+                                                                href={`/admin/syofficial?edit=${item.id}`}
                                                                 className="absolute top-2 start-2 z-10 p-1.5 rounded-lg bg-background/90 hover:bg-primary hover:text-primary-foreground text-foreground backdrop-blur-md border border-border/70 shadow-md transition-all duration-200 opacity-90 hover:opacity-100 hover:scale-110 flex items-center gap-1 text-xs font-bold"
                                                                 title="تعديل هذا الكرت في لوحة التحكم"
                                                             >
@@ -512,7 +512,7 @@ export default function Index({ initialData }: SyOfficialClientProps) {
                                                 {isSuperAdmin && (
                                                     <TableCell className="text-end">
                                                         <a
-                                                            href="/admin/syofficial"
+                                                            href={`/admin/syofficial?edit=${item.id}`}
                                                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground text-xs font-bold transition-all border border-primary/20"
                                                         >
                                                             <Pencil className="w-3.5 h-3.5" />

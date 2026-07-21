@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Head, router } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Button } from '@/Components/ui/button';
@@ -27,6 +27,19 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
 
     const [entityDialogOpen, setEntityDialogOpen] = useState(false);
     const [selectedEntity, setSelectedEntity] = useState<EntityData | null>(null);
+
+    // Auto open edit dialog if URL contains ?edit={entityId}
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const editId = params.get('edit');
+        if (editId) {
+            const target = entities.find((e) => e.id === editId);
+            if (target) {
+                setSelectedEntity(target);
+                setEntityDialogOpen(true);
+            }
+        }
+    }, [entities]);
 
     // Filter Entities
     const filteredEntities = entities.filter((item) => {

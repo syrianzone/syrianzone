@@ -214,10 +214,9 @@ export default function Index({ initialData }: SyOfficialClientProps) {
         return items;
     }, [initialData, searchTerm, currentCategory, sortOption, language]);
 
-    // Group items for Grid View if "All" is selected, or just list them
-            return 0;
-        });
-    }, [entities, currentCategory, searchTerm, sortBy, language]);
+    const { auth } = usePage().props as any;
+    const userRole = auth?.user?.role;
+    const isSuperAdmin = userRole === 'superadmin' || userRole === 'admin' || userRole === 'syofficial_admin';
 
     const groupedData = useMemo(() => {
         if (currentCategory !== 'all') {

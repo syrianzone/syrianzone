@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ListTodo, X } from 'lucide-react';
+import { ScrollArea } from '@/Components/ui/scroll-area';
 import { WidgetShell } from '../../_components/WidgetShell';
 import type { WidgetProps } from '../../_lib/types';
 import type { TodoConfig, TodoItem } from './index';
@@ -72,7 +73,7 @@ export default function TodoView({ config, onConfigChange }: WidgetProps<TodoCon
   const full = items.length >= MAX_ITEMS;
 
   return (
-    <WidgetShell title="مهامي" icon={ListTodo}>
+    <WidgetShell title="مهامي" icon={ListTodo} scroll={false}>
       <div dir="rtl" className="flex h-full min-h-0 flex-col">
         <div className="flex shrink-0 items-center gap-2 px-3 pt-2">
           <input
@@ -97,7 +98,8 @@ export default function TodoView({ config, onConfigChange }: WidgetProps<TodoCon
           </span>
         </div>
 
-        <ul className="min-h-0 flex-1 overflow-auto p-2">
+        <ScrollArea className="min-h-0 flex-1">
+        <ul className="p-2">
           {visible.length === 0 && (
             <li className="p-2 text-center text-sm text-muted-foreground">لا توجد مهام</li>
           )}
@@ -127,6 +129,7 @@ export default function TodoView({ config, onConfigChange }: WidgetProps<TodoCon
             </li>
           ))}
         </ul>
+        </ScrollArea>
       </div>
     </WidgetShell>
   );

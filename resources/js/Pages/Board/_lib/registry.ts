@@ -43,21 +43,32 @@ export function findWidget(id: string): WidgetDefinition<any> | undefined {
   return WIDGETS_BY_ID[id];
 }
 
-// Widgets seeded onto a brand new board, in order. Unregistered ids are skipped
-// so this list can name a widget before it ships.
-const SEED_IDS = ['clock', 'weather', 'prayer', 'places-nearby', 'guides', 'notes'];
+// The default board, in RTL reading order (right to left, top to bottom).
+// Explicit sizes rather than each widget's defaultSize, so the seeded arrangement
+// matches the intended three-then-two-then-three-then-two grid. Unregistered ids
+// are skipped, so this list can name a widget before it ships.
+const SEED_LAYOUT: { id: string; w: number; h: number }[] = [
+  { id: 'clock', w: 4, h: 2 },
+  { id: 'prayer', w: 4, h: 2 },
+  { id: 'weather', w: 4, h: 2 },
+  { id: 'answers', w: 6, h: 3 },
+  { id: 'rss', w: 6, h: 3 },
+  { id: 'todo', w: 4, h: 4 },
+  { id: 'notes', w: 4, h: 4 },
+  { id: 'recipe', w: 4, h: 4 },
+  { id: 'events-today', w: 6, h: 3 },
+  { id: 'pomodoro', w: 6, h: 3 },
+];
 
 export function defaultDoc(): BoardDoc {
-  const widgets = SEED_IDS
-    .map(findWidget)
-    .filter((def): def is WidgetDefinition<any> => def !== undefined)
-    .map((def) => ({
-      i: newId('w'),
-      d: def.id,
-      w: def.defaultSize.w,
-      h: def.defaultSize.h,
-      c: defaultConfig(def),
-    }));
+  const widgets = SEED_LAYOUT.flatMap((seed) => {
+    const def = findWidget(seed.id);
+    if (!def) return [];
+    // clamp to the widget's own bounds so a seed size can never violate min/max
+    const w = Math.min(Math.max(seed.w, def.minSize.w), def.maxSize.w);
+    const h = Math.min(Math.max(seed.h, def.minSize.h), def.maxSize.h);
+    return [{ i: newId('w'), d: def.id, w, h, c: defaultConfig(def) }];
+  });
 
   return {
     v: 1,

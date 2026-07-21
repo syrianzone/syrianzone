@@ -2,10 +2,16 @@ import type { ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/Lib/utils';
 import { Button } from '@/Components/ui/button';
+import { ScrollArea } from '@/Components/ui/scroll-area';
 import { useTileActions } from './TileChrome';
 
 // Every widget's chrome and every non-happy state lives here, so no widget ships
 // its own spinner and they all degrade the same way.
+//
+// scroll: the shell wraps the body in a shadcn ScrollArea by default, so list
+// widgets get one styled, auto-hiding scrollbar instead of the native one. A
+// widget that owns its own scroll region (notes' textarea, todo's list) passes
+// scroll={false} and manages it, so the two never stack.
 export function WidgetShell(props: {
   title: string;
   icon: LucideIcon;
@@ -15,10 +21,12 @@ export function WidgetShell(props: {
   empty?: boolean;
   emptyText?: string;
   onRetry?: () => void;
+  scroll?: boolean;
   children?: ReactNode;
 }) {
   const Icon = props.icon;
   const showBody = !props.loading && !props.error && !props.empty;
+  const scroll = props.scroll ?? true;
   const tileActions = useTileActions();
 
   return (
@@ -35,7 +43,7 @@ export function WidgetShell(props: {
         {tileActions}
       </div>
 
-      <div className={cn('min-h-0 flex-1', showBody ? 'overflow-auto' : 'overflow-hidden')}>
+      <div className="min-h-0 flex-1 overflow-hidden">
         {props.loading && <WidgetSkeleton />}
 
         {!props.loading && props.error && (
@@ -55,7 +63,7 @@ export function WidgetShell(props: {
           </div>
         )}
 
-        {showBody && props.children}
+        {showBody && (scroll ? <ScrollArea className="h-full">{props.children}</ScrollArea> : props.children)}
       </div>
     </div>
   );

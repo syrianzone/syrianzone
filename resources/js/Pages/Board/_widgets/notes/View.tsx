@@ -38,7 +38,7 @@ export default function NotesView({ config, onConfigChange }: WidgetProps<NotesC
   }
 
   return (
-    <WidgetShell title="ملاحظات" icon={StickyNote}>
+    <WidgetShell title="ملاحظات" icon={StickyNote} scroll={false}>
       <textarea
         dir="rtl"
         value={text}

@@ -25,19 +25,26 @@ interface GovAppsClientProps {
     initialData: GovApp[];
 }
 
-function AppIcon({ app, className, placeholderClassName }: {
+const DEFAULT_GOVAPP_ICON = 'https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/govapps/mofa/icon.webp';
+
+function AppIcon({ app, className }: {
     app: GovApp;
     className?: string;
     placeholderClassName?: string;
 }) {
-    if (app.icon) {
-        return <img src={app.icon} alt={app.name} loading="lazy" decoding="async" className={className} />;
-    }
+    const iconUrl = app.icon || DEFAULT_GOVAPP_ICON;
 
     return (
-        <div className={`flex items-center justify-center ${className || ''}`}>
-            <Smartphone className={placeholderClassName || 'h-8 w-8 text-muted-foreground/30'} />
-        </div>
+        <img
+            src={iconUrl}
+            alt={app.name}
+            loading="lazy"
+            decoding="async"
+            className={className}
+            onError={(e) => {
+                (e.target as HTMLImageElement).src = DEFAULT_GOVAPP_ICON;
+            }}
+        />
     );
 }
 

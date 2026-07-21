@@ -131,11 +131,14 @@ export default function GovAppsAdminIndex({ apps }: AdminGovAppsProps) {
                                                 <TableCell className="font-medium">
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-10 h-10 rounded-xl overflow-hidden bg-muted flex-shrink-0 border flex items-center justify-center">
-                                                            {item.icon ? (
-                                                                <img src={item.icon} alt="" className="w-full h-full object-cover" />
-                                                            ) : (
-                                                                <Smartphone className="w-5 h-5 text-muted-foreground/40" />
-                                                            )}
+                                                            <img
+                                                                src={item.icon || 'https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/govapps/mofa/icon.webp'}
+                                                                alt=""
+                                                                className="w-full h-full object-cover"
+                                                                onError={(e) => {
+                                                                    (e.target as HTMLImageElement).src = 'https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/govapps/mofa/icon.webp';
+                                                                }}
+                                                            />
                                                         </div>
                                                         <div>
                                                             <div className="text-foreground font-semibold text-sm">{item.name_ar || item.name}</div>

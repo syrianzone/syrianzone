@@ -81,11 +81,14 @@ export default function SortableList({ items: initialItems }: SortableListProps)
                         <div className="flex items-center gap-3">
                             <GripVertical className="w-5 h-5 text-muted-foreground flex-shrink-0" />
                             <div className="w-10 h-10 rounded-xl overflow-hidden bg-muted flex items-center justify-center flex-shrink-0 border">
-                                {item.icon ? (
-                                    <img src={item.icon} alt="" className="w-full h-full object-cover" />
-                                ) : (
-                                    <Smartphone className="w-5 h-5 text-muted-foreground/40" />
-                                )}
+                                <img
+                                    src={item.icon || 'https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/govapps/mofa/icon.webp'}
+                                    alt=""
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                        (e.target as HTMLImageElement).src = 'https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/govapps/mofa/icon.webp';
+                                    }}
+                                />
                             </div>
                             <div>
                                 <h4 className="font-semibold text-sm text-foreground">{item.name_ar || item.name}</h4>

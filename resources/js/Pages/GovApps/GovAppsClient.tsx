@@ -1,24 +1,8 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { GovApp } from './types';
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import {
-    Sheet,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
-    SheetDescription
-} from "@/components/ui/sheet";
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-} from "@/components/ui/dialog";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { ExternalLink, Smartphone, Images as ImageIcon, Globe, Pencil, Settings } from "lucide-react";
+import { Smartphone, Globe, Pencil, Settings } from "lucide-react";
 import { usePage } from '@inertiajs/react';
 
 function AndroidIcon({ className }: { className?: string }) {
@@ -37,26 +21,9 @@ function IosIcon({ className }: { className?: string }) {
     );
 }
 
-
 interface GovAppsClientProps {
     initialData: GovApp[];
 }
-
-function useMediaQuery(query: string) {
-    const [matches, setMatches] = useState(false);
-    useEffect(() => {
-        const media = window.matchMedia(query);
-        if (media.matches !== matches) {
-            setMatches(media.matches);
-        }
-        const listener = () => setMatches(media.matches);
-        window.addEventListener('resize', listener);
-        return () => window.removeEventListener('resize', listener);
-    }, [matches, query]);
-    return matches;
-}
-
-// ─── Icon Component ─────────────────────────────────────────────────────────
 
 function AppIcon({ app, className, placeholderClassName }: {
     app: GovApp;
@@ -74,129 +41,7 @@ function AppIcon({ app, className, placeholderClassName }: {
     );
 }
 
-// ─── Detail View ────────────────────────────────────────────────────────────
-
-function AppDetailView({ app, isDesktop }: {
-    app: GovApp;
-    isDesktop: boolean;
-}) {
-    const scrollRef = React.useRef<HTMLDivElement>(null);
-    const [isDragging, setIsDragging] = useState(false);
-    const [startX, setStartX] = useState(0);
-    const [scrollLeft, setScrollLeft] = useState(0);
-
-    const handleMouseDown = (e: React.MouseEvent) => {
-        if (!scrollRef.current) return;
-        setIsDragging(true);
-        setStartX(e.pageX - scrollRef.current.offsetLeft);
-        setScrollLeft(scrollRef.current.scrollLeft);
-    };
-    const handleMouseLeave = () => setIsDragging(false);
-    const handleMouseUp = () => setIsDragging(false);
-    const handleMouseMove = (e: React.MouseEvent) => {
-        if (!isDragging || !scrollRef.current) return;
-        e.preventDefault();
-        const x = e.pageX - scrollRef.current.offsetLeft;
-        const walk = (x - startX) * 2;
-        scrollRef.current.scrollLeft = scrollLeft - walk;
-    };
-
-    return (
-        <div className="flex flex-col h-full bg-background">
-            {/* Handle for visual bottom sheet feel - mobile only */}
-            {!isDesktop && (
-                <div className="w-12 h-1.5 bg-muted rounded-full mx-auto my-3 flex-shrink-0" />
-            )}
-
-            {/* Compact Row Header — icon + name only, no description */}
-            <div className="px-6 py-4 flex items-center gap-4">
-                <div className="relative h-16 w-16 rounded-2xl overflow-hidden border shadow-sm flex-shrink-0 bg-white">
-                    <AppIcon app={app} className="absolute inset-0 h-full w-full object-cover" placeholderClassName="h-8 w-8 text-gray-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                    <div className="text-xl font-bold truncate">{app.name}</div>
-                </div>
-            </div>
-
-            {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto px-6 pb-10 space-y-8 min-w-0">
-                {/* Action Buttons — grid so they never overflow the modal */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
-                    {app.links.android && (
-                        <Button asChild variant="outline" className="h-10 rounded-xl w-full">
-                            <a href={app.links.android} target="_blank" rel="noopener noreferrer">
-                                <AndroidIcon className="ml-2 h-5 w-5" />
-                                أندرويد
-                            </a>
-                        </Button>
-                    )}
-                    {app.links.apple && (
-                        <Button asChild variant="outline" className="h-10 rounded-xl w-full">
-                            <a href={app.links.apple} target="_blank" rel="noopener noreferrer">
-                                <IosIcon className="ml-2 h-5 w-5" />
-                                آيفون
-                            </a>
-                        </Button>
-                    )}
-                    {app.links.official && (
-                        <Button asChild variant="outline" className="h-10 rounded-xl w-full">
-                            <a href={app.links.official} target="_blank" rel="noopener noreferrer">
-                                <Globe className="ml-2 h-5 w-5" />
-                                الموقع الرسمي
-                            </a>
-                        </Button>
-                    )}
-                </div>
-
-                {/* Full Description — shown once, not duplicated in header */}
-                {app.description && (
-                    <div className="text-foreground/80 text-sm leading-relaxed whitespace-pre-wrap">
-                        {app.description}
-                    </div>
-                )}
-
-                {/* Screenshot Slider */}
-                {app.images && app.images.length > 0 && (
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                            <h4 className="font-bold text-base text-foreground">لقطات الشاشة</h4>
-                            <span className="text-xs text-muted-foreground">{app.images.length} صور</span>
-                        </div>
-                        <div className="relative w-full overflow-hidden">
-                            <div
-                                ref={scrollRef}
-                                className={`flex gap-3 pb-2 overflow-x-auto scrollbar-hide select-none touch-pan-x ${isDesktop ? 'cursor-grab' : ''} ${isDragging ? 'cursor-grabbing snap-none' : 'snap-x snap-mandatory'}`}
-                                onMouseDown={handleMouseDown}
-                                onMouseLeave={handleMouseLeave}
-                                onMouseUp={handleMouseUp}
-                                onMouseMove={handleMouseMove}
-                                dir="rtl"
-                            >
-                                {app.images.map((img, i) => (
-                                    <div key={i} className="relative w-32 sm:w-36 aspect-[9/16] shrink-0 overflow-hidden rounded-xl border bg-muted/20 shadow-md snap-start">
-                                        <img
-                                            src={img}
-                                            alt={`Screenshot ${i + 1}`}
-                                            className="absolute inset-0 h-full w-full object-contain"
-                                            draggable={false}
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-}
-
-// ─── Main Component ───────────────────────────────────────────────────────────
-
 export default function GovAppsClient({ initialData }: GovAppsClientProps) {
-    const [selectedApp, setSelectedApp] = useState<GovApp | null>(null);
-    const isDesktop = useMediaQuery('(min-width: 768px)');
-
     const { auth } = usePage().props as any;
     const userRole = auth?.user?.role;
     const isSuperAdmin = userRole === 'superadmin' || userRole === 'admin' || userRole === 'govapps_admin';
@@ -218,7 +63,7 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
                     )}
                     <h1 className="text-3xl md:text-4xl font-bold mb-3 text-foreground">تطبيقات حكومية</h1>
                     <p className="text-lg text-muted-foreground">
-                        دليل التطبيقات الحكومية الرسمية
+                        دليل التطبيقات والخدمات الحكومية الإلكترونية الرسمية
                     </p>
                 </div>
             </section>
@@ -230,43 +75,52 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
                         <h3 className="text-xl font-medium text-foreground">لم يتم العثور على تطبيقات</h3>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2 md:gap-3">
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3.5 sm:gap-4">
                         {initialData.map((app) => (
-                            <Card key={app.id} className="overflow-hidden hover:shadow-md transition-shadow border-0 shadow-sm bg-card group flex flex-col h-full relative">
-                                <div className="aspect-square w-full bg-muted relative overflow-hidden cursor-pointer" onClick={() => setSelectedApp(app)}>
+                            <Card
+                                key={app.id}
+                                className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card/90 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
+                            >
+                                <div className="relative aspect-square w-full overflow-hidden bg-muted/40">
                                     {isSuperAdmin && (
                                         <a
                                             href={`/admin/govapps?edit=${app.id}`}
-                                            onClick={(e) => e.stopPropagation()}
-                                            className="absolute top-1.5 start-1.5 z-10 p-1 rounded-md bg-background/90 hover:bg-primary hover:text-primary-foreground text-foreground backdrop-blur-md border shadow-sm transition-all text-xs font-bold flex items-center gap-1"
+                                            className="absolute top-2 start-2 z-10 p-1.5 rounded-lg bg-background/90 hover:bg-primary hover:text-primary-foreground text-foreground backdrop-blur-md border border-border/70 shadow-md transition-all duration-200 opacity-90 hover:opacity-100 hover:scale-110 flex items-center gap-1 text-xs font-bold"
                                             title="تعديل التطبيق في لوحة التحكم"
                                         >
-                                            <Pencil className="w-3 h-3" />
+                                            <Pencil className="w-3.5 h-3.5" />
+                                            <span className="hidden sm:inline">تعديل</span>
                                         </a>
                                     )}
                                     <AppIcon
                                         app={app}
-                                        className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+                                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                         placeholderClassName="h-10 w-10 text-muted-foreground/30"
                                     />
                                 </div>
 
-                                <CardContent className="p-2.5 text-center flex-grow flex flex-col justify-between">
-                                    <h3 className="font-semibold text-foreground text-sm leading-tight line-clamp-2 cursor-pointer hover:text-primary transition-colors mb-1" onClick={() => setSelectedApp(app)}>
-                                        {app.name}
-                                    </h3>
+                                <CardContent className="p-3.5 text-center flex-1 flex flex-col justify-between">
+                                    <div>
+                                        <h3 className="font-bold text-sm sm:text-base text-foreground mb-1.5 leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+                                            {app.name}
+                                        </h3>
+                                        {app.description && (
+                                            <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2 mb-3">
+                                                {app.description}
+                                            </p>
+                                        )}
+                                    </div>
 
-                                    <div className="flex flex-wrap justify-center gap-1 pt-1.5 border-t border-border mt-auto">
+                                    <div className="flex flex-wrap justify-center gap-1.5 pt-1">
                                         {app.links.android && (
                                             <a
                                                 href={app.links.android}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="text-muted-foreground hover:text-[#3DDC84] transition-colors p-0.5"
-                                                title="Android"
-                                                onClick={(e) => e.stopPropagation()}
+                                                className="p-1.5 rounded-lg border border-border/50 bg-muted/50 text-muted-foreground transition-all duration-200 hover:scale-105 hover:text-[#3DDC84] shadow-2xs"
+                                                title="تحميل لأندرويد"
                                             >
-                                                <AndroidIcon className="h-6 w-6" />
+                                                <AndroidIcon className="h-4 w-4" />
                                             </a>
                                         )}
                                         {app.links.apple && (
@@ -274,11 +128,10 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
                                                 href={app.links.apple}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="text-muted-foreground hover:text-foreground transition-colors p-0.5"
-                                                title="iOS"
-                                                onClick={(e) => e.stopPropagation()}
+                                                className="p-1.5 rounded-lg border border-border/50 bg-muted/50 text-muted-foreground transition-all duration-200 hover:scale-105 hover:text-foreground shadow-2xs"
+                                                title="تحميل لآيفون"
                                             >
-                                                <IosIcon className="h-6 w-6" />
+                                                <IosIcon className="h-4 w-4" />
                                             </a>
                                         )}
                                         {app.links.official && (
@@ -286,11 +139,10 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
                                                 href={app.links.official}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="text-muted-foreground hover:text-primary transition-colors p-0.5"
-                                                title="Website"
-                                                onClick={(e) => e.stopPropagation()}
+                                                className="p-1.5 rounded-lg border border-border/50 bg-muted/50 text-muted-foreground transition-all duration-200 hover:scale-105 hover:text-primary shadow-2xs"
+                                                title="الموقع الرسمي"
                                             >
-                                                <Globe className="h-6 w-6" />
+                                                <Globe className="h-4 w-4" />
                                             </a>
                                         )}
                                     </div>
@@ -300,35 +152,6 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
                     </div>
                 )}
             </div>
-
-            {/* Desktop: Dialog Modal */}
-            {isDesktop && (
-                <Dialog open={!!selectedApp} onOpenChange={(open) => !open && setSelectedApp(null)}>
-                    <DialogContent className="max-w-2xl p-0 overflow-hidden" dir="rtl">
-                        <DialogHeader className="sr-only">
-                            <DialogTitle>{selectedApp?.name || 'تفاصيل التطبيق'}</DialogTitle>
-                            <DialogDescription>{selectedApp?.description || ''}</DialogDescription>
-                        </DialogHeader>
-                        {selectedApp && <AppDetailView app={selectedApp} isDesktop={true} />}
-                    </DialogContent>
-                </Dialog>
-            )}
-
-            {/* Mobile: Sheet Bottom Drawer */}
-            {!isDesktop && (
-                <Sheet open={!!selectedApp} onOpenChange={(open) => !open && setSelectedApp(null)}>
-                    <SheetContent
-                        side="bottom"
-                        className="h-[90vh] rounded-t-3xl border-t p-0 overflow-hidden shadow-2xl border-none"
-                    >
-                        <SheetHeader className="sr-only">
-                            <SheetTitle>{selectedApp?.name || 'تفاصيل التطبيق'}</SheetTitle>
-                            <SheetDescription>{selectedApp?.description || ''}</SheetDescription>
-                        </SheetHeader>
-                        {selectedApp && <AppDetailView app={selectedApp} isDesktop={false} />}
-                    </SheetContent>
-                </Sheet>
-            )}
         </div>
     );
 }

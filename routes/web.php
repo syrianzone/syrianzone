@@ -54,7 +54,7 @@ Route::get('/sites', [ExternalDataController::class, 'sites']);
 Route::get('/party', [ExternalDataController::class, 'party']);
 Route::get('/house', [ExternalDataController::class, 'house']);
 Route::get('/alignment', [ExternalDataController::class, 'alignment']);
-Route::get('/govapps', [ExternalDataController::class, 'govapps']);
+Route::get('/govapps', [\App\Http\Controllers\GovAppController::class, 'index']);
 Route::get('/population', [PopulationAtlasController::class, 'renderIndex']);
 
 Route::get('/guesswho', [GuessWhoController::class, 'index']);
@@ -321,6 +321,19 @@ Route::middleware('auth')->group(function () {
 
             Route::post('/reorder/categories', [\App\Http\Controllers\SyOfficialAdminController::class, 'reorderCategories']);
             Route::post('/reorder/entities', [\App\Http\Controllers\SyOfficialAdminController::class, 'reorderEntities']);
+        });
+    });
+
+    // 5. GovApps Admin Panel
+    Route::middleware(\App\Http\Middleware\GovAppsAdmin::class)->group(function () {
+        Route::get('/admin/govapps', [\App\Http\Controllers\GovAppsAdminController::class, 'renderIndex']);
+
+        Route::prefix('api/v1/admin/govapps')->group(function () {
+            Route::post('/', [\App\Http\Controllers\GovAppsAdminController::class, 'store']);
+            Route::post('/{id}', [\App\Http\Controllers\GovAppsAdminController::class, 'update']);
+            Route::put('/{id}', [\App\Http\Controllers\GovAppsAdminController::class, 'update']);
+            Route::delete('/{id}', [\App\Http\Controllers\GovAppsAdminController::class, 'destroy']);
+            Route::post('/reorder', [\App\Http\Controllers\GovAppsAdminController::class, 'reorder']);
         });
     });
 });

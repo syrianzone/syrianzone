@@ -41,6 +41,9 @@ class User extends Authenticatable implements FilamentUser
         if ($this->role === 'transit_admin' && str_starts_with($permission, 'transit.')) {
             return true;
         }
+        if ($this->role === 'govapps_admin' && str_starts_with($permission, 'govapps.')) {
+            return true;
+        }
 
         $userPerms = $this->permissions ?? [];
         return in_array($permission, $userPerms) || in_array('*', $userPerms);

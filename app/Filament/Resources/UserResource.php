@@ -39,6 +39,7 @@ class UserResource extends Resource
                                 'admin' => 'Admin (Core)',
                                 'transit_admin' => 'Transit Admin',
                                 'syofficial_admin' => 'SyOfficial Admin',
+                                'govapps_admin' => 'GovApps Admin',
                                 'user' => 'Normal User',
                             ])
                             ->default('user')
@@ -65,6 +66,13 @@ class UserResource extends Resource
                                 'syofficial.toggle' => 'SyOfficial: Toggle Entity/Category Visibility',
                                 'syofficial.delete' => 'SyOfficial: Delete Entities & Categories',
                                 'syofficial.reorder' => 'SyOfficial: Drag & Drop Sorting',
+
+                                // GovApps
+                                'govapps.create' => 'GovApps: Add Government Apps',
+                                'govapps.edit' => 'GovApps: Edit App Details & Links',
+                                'govapps.toggle' => 'GovApps: Toggle Visibility',
+                                'govapps.delete' => 'GovApps: Delete Apps',
+                                'govapps.reorder' => 'GovApps: Drag & Drop Sorting',
 
                                 // Transit
                                 'transit.review_drafts' => 'Transit: Review Proposed Routes',

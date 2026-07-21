@@ -18,7 +18,8 @@ import {
     DialogDescription,
 } from "@/components/ui/dialog";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { ExternalLink, Smartphone, Images as ImageIcon, Globe } from "lucide-react";
+import { ExternalLink, Smartphone, Images as ImageIcon, Globe, Pencil, Settings } from "lucide-react";
+import { usePage } from '@inertiajs/react';
 
 function AndroidIcon({ className }: { className?: string }) {
     return (
@@ -183,7 +184,7 @@ function AppIcon({ app, storeIcon, className, placeholderClassName }: {
     const src = storeIcon || app.icon || getFaviconUrl(app.links.official) || null;
 
     if (src) {
-        return <img src={src} alt={app.name} className={className} />;
+        return <img src={src} alt={app.name} loading="lazy" decoding="async" className={className} />;
     }
 
     return (
@@ -342,12 +343,25 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
         return () => { cancelled = true; };
     }, [initialData]);
 
-    const getIconForApp = useCallback((app: GovApp) => storeIcons[app.id] || null, [storeIcons]);
+    const { auth } = usePage().props as any;
+    const userRole = auth?.user?.role;
+    const isSuperAdmin = userRole === 'superadmin' || userRole === 'admin' || userRole === 'govapps_admin';
 
     return (
         <div className="min-h-screen bg-background" dir="rtl">
             <section className="bg-card py-10 shadow-sm border-b border-border">
                 <div className="container mx-auto px-4 text-center max-w-4xl">
+                    {isSuperAdmin && (
+                        <div className="mb-4 flex justify-center">
+                            <a
+                                href="/admin/govapps"
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-bold shadow-lg hover:bg-primary/90 transition-all transform hover:-translate-y-0.5"
+                            >
+                                <Settings className="w-4 h-4" />
+                                <span>لوحة تحكم إدارة التطبيقات (Admin Panel)</span>
+                            </a>
+                        </div>
+                    )}
                     <h1 className="text-3xl md:text-4xl font-bold mb-3 text-foreground">تطبيقات حكومية</h1>
                     <p className="text-lg text-muted-foreground">
                         دليل التطبيقات الحكومية الرسمية
@@ -364,8 +378,18 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
                 ) : (
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2 md:gap-3">
                         {initialData.map((app) => (
-                            <Card key={app.id} className="overflow-hidden hover:shadow-md transition-shadow border-0 shadow-sm bg-card group flex flex-col h-full">
+                            <Card key={app.id} className="overflow-hidden hover:shadow-md transition-shadow border-0 shadow-sm bg-card group flex flex-col h-full relative">
                                 <div className="aspect-square w-full bg-muted relative overflow-hidden cursor-pointer" onClick={() => setSelectedApp(app)}>
+                                    {isSuperAdmin && (
+                                        <a
+                                            href={`/admin/govapps?edit=${app.id}`}
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="absolute top-1.5 start-1.5 z-10 p-1 rounded-md bg-background/90 hover:bg-primary hover:text-primary-foreground text-foreground backdrop-blur-md border shadow-sm transition-all text-xs font-bold flex items-center gap-1"
+                                            title="تعديل التطبيق في لوحة التحكم"
+                                        >
+                                            <Pencil className="w-3 h-3" />
+                                        </a>
+                                    )}
                                     <AppIcon
                                         app={app}
                                         storeIcon={getIconForApp(app)}

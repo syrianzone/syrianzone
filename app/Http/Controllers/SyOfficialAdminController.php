@@ -225,13 +225,27 @@ class SyOfficialAdminController extends Controller
 
         $fileName = "syofficial/entities/{$entityId}_" . time() . ".webp";
 
-        // Read image file and convert to webp if imagick/gd available, or save directly
+        // Read image file, resize to 200x200 max resolution, and convert to optimized webp
         if (function_exists('imagecreatefromstring')) {
             $imageStr = file_get_contents($file->getRealPath());
             $im = @imagecreatefromstring($imageStr);
             if ($im !== false) {
+                $origW = imagesx($im);
+                $origH = imagesy($im);
+                $targetW = 200;
+                $targetH = 200;
+
+                $canvas = imagecreatetruecolor($targetW, $targetH);
+                imagealphablending($canvas, false);
+                imagesavealpha($canvas, true);
+                $transparent = imagecolorallocatealpha($canvas, 255, 255, 255, 127);
+                imagefilledrectangle($canvas, 0, 0, $targetW, $targetH, $transparent);
+
+                imagecopyresampled($canvas, $im, 0, 0, 0, 0, $targetW, $targetH, $origW, $origH);
+
                 ob_start();
-                imagewebp($im, null, 85);
+                imagewebp($canvas, null, 85);
+                imagedestroy($canvas);
                 imagedestroy($im);
                 $webpContent = ob_get_clean();
 

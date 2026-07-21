@@ -129,13 +129,32 @@ class SyOfficialSeeder extends Seeder
                 }
             }
 
-            // Auto-upload local asset to R2 if R2 disk is configured
+            // Auto-upload local asset to R2 if R2 disk is configured, optimized to 200x200 WebP
             $mediaDisk = config('filesystems.media_disk');
             if ($mediaDisk === 'r2' && !empty($image) && !str_starts_with($image, 'http')) {
                 $localPath = public_path("syofficial-assets/{$image}");
                 if (file_exists($localPath)) {
                     $r2Path = "syofficial/entities/" . basename($image);
-                    Storage::disk('r2')->put($r2Path, file_get_contents($localPath), 'public');
+                    $content = file_get_contents($localPath);
+                    if (function_exists('imagecreatefromstring')) {
+                        $im = @imagecreatefromstring($content);
+                        if ($im !== false) {
+                            $targetW = 200;
+                            $targetH = 200;
+                            $canvas = imagecreatetruecolor($targetW, $targetH);
+                            imagealphablending($canvas, false);
+                            imagesavealpha($canvas, true);
+                            $transparent = imagecolorallocatealpha($canvas, 255, 255, 255, 127);
+                            imagefilledrectangle($canvas, 0, 0, $targetW, $targetH, $transparent);
+                            imagecopyresampled($canvas, $im, 0, 0, 0, 0, $targetW, $targetH, imagesx($im), imagesy($im));
+                            ob_start();
+                            imagewebp($canvas, null, 85);
+                            imagedestroy($canvas);
+                            imagedestroy($im);
+                            $content = ob_get_clean();
+                        }
+                    }
+                    Storage::disk('r2')->put($r2Path, $content, 'public');
                     $image = Storage::disk('r2')->url($r2Path);
                 }
             }

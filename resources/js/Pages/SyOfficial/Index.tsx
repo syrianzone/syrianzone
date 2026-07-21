@@ -364,7 +364,7 @@ export default function Index({ initialData }: SyOfficialClientProps) {
                                                 {getCategoryLabel(catKey)}
                                             </h2>
                                         )}
-                                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 md:gap-4">
                                             {items.map(item => (
                                                 <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow border-0 shadow-md bg-card group">
                                                     <div className="aspect-square w-full bg-muted relative overflow-hidden">
@@ -377,18 +377,18 @@ export default function Index({ initialData }: SyOfficialClientProps) {
                                                             }}
                                                         />
                                                     </div>
-                                                    <CardContent className="p-4 text-center">
-                                                        <h3 className="font-bold text-foreground mb-2 leading-tight">
+                                                    <CardContent className="p-3 text-center">
+                                                        <h3 className="font-bold text-sm text-foreground mb-1 leading-tight line-clamp-2">
                                                             {language === 'ar' ? item.name_ar : item.name}
                                                         </h3>
                                                         {(item.description || item.description_ar) && (
-                                                            <p className="text-xs text-muted-foreground mb-4 line-clamp-2">
+                                                            <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
                                                                 {language === 'ar' ? (item.description_ar || item.description) : item.description}
                                                             </p>
                                                         )}
 
                                                         {item.socials && Object.keys(item.socials).length > 0 && (
-                                                            <div className="flex flex-wrap justify-center gap-2 pt-2 border-t border-border">
+                                                            <div className="flex flex-wrap justify-center gap-1.5 pt-2 border-t border-border">
                                                                 {Object.entries(item.socials).map(([plat, url]) => (
                                                                     <a
                                                                         key={plat}

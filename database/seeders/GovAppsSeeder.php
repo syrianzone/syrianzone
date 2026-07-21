@@ -89,6 +89,32 @@ class GovAppsSeeder extends Seeder
                 $finalIcon = Storage::disk('r2')->url($r2Path);
             }
 
+            // Stream screenshots to R2 if R2 is active
+            if ($mediaDisk === 'r2' && !empty($images)) {
+                $r2Images = [];
+                foreach ($images as $idx => $localImgPath) {
+                    $fullLocalPath = public_path($localImgPath);
+                    if (!file_exists($fullLocalPath)) continue;
+
+                    $r2ImgPath = "govapps/{$id}/screenshots/screen_" . ($idx + 1) . ".webp";
+                    $content = file_get_contents($fullLocalPath);
+                    if (function_exists('imagecreatefromstring')) {
+                        $im = @imagecreatefromstring($content);
+                        if ($im !== false) {
+                            ob_start();
+                            imagewebp($im, null, 85);
+                            imagedestroy($im);
+                            $content = ob_get_clean();
+                        }
+                    }
+                    Storage::disk('r2')->put($r2ImgPath, $content, 'public');
+                    $r2Images[] = Storage::disk('r2')->url($r2ImgPath);
+                }
+                if (!empty($r2Images)) {
+                    $images = $r2Images;
+                }
+            }
+
             $links = [
                 'official' => $row['official site'] ?? null,
                 'android' => $row['android download'] ?? null,

@@ -88,7 +88,7 @@ export default function GovAppsAdminIndex({ apps }: AdminGovAppsProps) {
                             <ArrowUpDown className="w-4 h-4" />
                             <span>ترتيب العرض</span>
                         </TabsTrigger>
-                    </TabsList
+                    </TabsList>
 
                     <TabsContent value="list" className="mt-6 space-y-4">
                         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">

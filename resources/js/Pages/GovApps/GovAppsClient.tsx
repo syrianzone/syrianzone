@@ -343,6 +343,8 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
         return () => { cancelled = true; };
     }, [initialData]);
 
+    const getIconForApp = useCallback((app: GovApp) => storeIcons[app.id] || null, [storeIcons]);
+
     const { auth } = usePage().props as any;
     const userRole = auth?.user?.role;
     const isSuperAdmin = userRole === 'superadmin' || userRole === 'admin' || userRole === 'govapps_admin';

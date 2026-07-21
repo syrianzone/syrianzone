@@ -11,7 +11,7 @@ class SyOfficialAdmin
     {
         $user = $request->user();
 
-        if (!$user || (!in_array($user->role, ['admin', 'superadmin', 'syofficial_admin']))) {
+        if (!$user || !$user->hasAnyPermission(['syofficial.create', 'syofficial.edit', 'syofficial.toggle', 'syofficial.delete', 'syofficial.reorder'])) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Unauthorized'], 403);
             }

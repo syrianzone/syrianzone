@@ -23,5 +23,11 @@ class AppServiceProvider extends ServiceProvider
             )
         );
 
+        \Illuminate\Support\Facades\Gate::before(function ($user, $ability) {
+            if ($user->isSuperAdmin()) {
+                return true;
+            }
+        });
+
     }
 }

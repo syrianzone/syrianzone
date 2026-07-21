@@ -14,15 +14,47 @@ class User extends Authenticatable implements FilamentUser
 {
     use HasFactory, Notifiable, SoftDeletes;
 
-    protected $fillable = ['name', 'email', 'password', 'google_id', 'avatar_url', 'role', 'is_banned'];
+    protected $fillable = ['name', 'email', 'password', 'google_id', 'avatar_url', 'role', 'permissions', 'is_banned'];
     protected $hidden = ['password', 'remember_token'];
 
     protected function casts(): array
     {
-        return ['email_verified_at' => 'datetime', 'password' => 'hashed', 'is_banned' => 'boolean'];
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+            'is_banned' => 'boolean',
+            'permissions' => 'array',
+        ];
     }
 
     public function isSuperAdmin(): bool { return $this->role === 'superadmin'; }
+
+    public function hasPermission(string $permission): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        if ($this->role === 'syofficial_admin' && str_starts_with($permission, 'syofficial.')) {
+            return true;
+        }
+        if ($this->role === 'transit_admin' && str_starts_with($permission, 'transit.')) {
+            return true;
+        }
+
+        $userPerms = $this->permissions ?? [];
+        return in_array($permission, $userPerms) || in_array('*', $userPerms);
+    }
+
+    public function hasAnyPermission(array $permissions): bool
+    {
+        foreach ($permissions as $perm) {
+            if ($this->hasPermission($perm)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     public function canAccessPanel(Panel $panel): bool
     {

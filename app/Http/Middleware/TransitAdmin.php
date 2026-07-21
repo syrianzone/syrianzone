@@ -11,7 +11,7 @@ class TransitAdmin
     {
         $user = $request->user();
 
-        if (!$user || ($user->role !== 'admin' && $user->role !== 'transit_admin' && $user->role !== 'superadmin')) {
+        if (!$user || !$user->hasAnyPermission(['transit.review_drafts', 'transit.approve', 'transit.reject', 'transit.edit_routes'])) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Unauthorized'], 403);
             }

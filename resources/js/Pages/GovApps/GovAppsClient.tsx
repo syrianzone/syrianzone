@@ -48,6 +48,25 @@ function AppIcon({ app, className }: {
     );
 }
 
+function DescriptionText({ description }: { description: string }) {
+    const [expanded, setExpanded] = React.useState(false);
+
+    return (
+        <p
+            onClick={(e) => {
+                e.stopPropagation();
+                setExpanded((prev) => !prev);
+            }}
+            className={`text-xs text-muted-foreground leading-relaxed mb-3 cursor-pointer select-none transition-all ${
+                expanded ? 'line-clamp-none font-medium text-foreground/90' : 'line-clamp-2 hover:text-foreground/80'
+            }`}
+            title={expanded ? 'اضغط للتقليص' : 'اضغط لإظهار النص كاملاً'}
+        >
+            {description}
+        </p>
+    );
+}
+
 export default function GovAppsClient({ initialData }: GovAppsClientProps) {
     const { auth } = usePage().props as any;
     const userRole = auth?.user?.role;
@@ -112,9 +131,7 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
                                             {app.name}
                                         </h3>
                                         {app.description && (
-                                            <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2 mb-3">
-                                                {app.description}
-                                            </p>
+                                            <DescriptionText description={app.description} />
                                         )}
                                     </div>
 

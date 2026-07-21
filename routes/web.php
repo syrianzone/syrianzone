@@ -183,6 +183,10 @@ Route::get('/mishwar', [\App\Http\Controllers\PlaceController::class, 'renderInd
 // legacy slug: share links from the first release said /places
 Route::get('/places', fn () => redirect('/mishwar'.(request()->getQueryString() ? '?'.request()->getQueryString() : ''), 301));
 
+// The board page is public: guests get a fully customizable board backed by
+// localStorage, and only the sync endpoints below require auth.
+Route::get('/board', [\App\Http\Controllers\BoardController::class, 'renderIndex']);
+
 Route::get('/user', [AuthController::class, 'user']);
 Route::get('/auth/google', [AuthController::class, 'redirectToProvider'])->name('login');
 Route::get('/auth/google/callback', [AuthController::class, 'handleProviderCallback']);
@@ -197,6 +201,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/api/account/update', [DashboardController::class, 'updateAccount']);
     Route::post('/api/account/avatar', [DashboardController::class, 'updateAvatar'])->middleware('throttle:10,1');
     Route::post('/api/account/delete', [DashboardController::class, 'deleteAccount']);
+
+    // Board layout sync. Session + CSRF, so it lives here rather than api.php.
+    Route::get('/api/v1/board', [\App\Http\Controllers\BoardController::class, 'show'])
+        ->middleware('throttle:60,1');
+    Route::put('/api/v1/board', [\App\Http\Controllers\BoardController::class, 'update'])
+        ->middleware('throttle:60,1');
 
     Route::prefix('api')->group(function () {
         Route::get('/user', function (\Illuminate\Http\Request $request) {

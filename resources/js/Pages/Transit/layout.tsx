@@ -2,7 +2,7 @@ import React from 'react'
 import { usePage } from '@inertiajs/react'
 import './transit.css'
 import { TransitThemeProvider, useTransitTheme } from './_components/TransitThemeContext'
-import { QueryProvider } from './_providers/QueryProvider'
+import { QueryProvider } from '@/Providers/QueryProvider'
 import MainLayout from '@/Layouts/MainLayout'
 
 export default function TransitLayout({

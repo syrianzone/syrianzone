@@ -45,6 +45,32 @@ return [
         'key' => env('GOOGLE_PLACES_API_KEY'),
     ],
 
+    // proxied server-side: the worker only sends CORS headers for the production
+    // origin, so a browser call fails on staging and in local dev.
+    'weather' => [
+        'url' => env('WEATHER_WORKER_URL', 'https://syrianzone.hade-alahmad1.workers.dev/'),
+    ],
+
+    // all proxied server-side for the same reason as the weather worker above:
+    // the browser never calls a third-party host directly, and going through
+    // the app gets us caching plus a payload we control.
+    'answers' => [
+        'url' => env('ANSWERS_API_URL', 'https://answers.syrian.zone'),
+    ],
+
+    'recipes' => [
+        'url' => env('RECIPES_BASE_URL', 'https://food.syrian.zone'),
+    ],
+
+    // graphql proxy also does the today-only filtering the upstream query cannot express
+    'events' => [
+        'url' => env('EVENTS_GRAPHQL_URL', 'https://event-backend-production-18c4.up.railway.app/graphql'),
+    ],
+
+    'prayer' => [
+        'url' => env('PRAYER_API_URL', 'https://api.aladhan.com/v1/timings'),
+    ],
+
     // read at runtime, not baked into the bundle, so staging turns analytics off
     // by leaving GA_MEASUREMENT_ID empty in its .env. production keeps the id it
     // has always used.

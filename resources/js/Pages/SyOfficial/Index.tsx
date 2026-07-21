@@ -362,7 +362,7 @@ export default function Index({ initialData }: SyOfficialClientProps) {
 
                         <div className="flex items-center gap-2">
                             <span className="text-sm text-muted-foreground">{t.sortBy}:</span>
-                            <Select value={sortBy} onValueChange={(value: SortOption) => setSortBy(value)}>
+                            <Select value={sortOption} onValueChange={(value: SortOption) => setSortOption(value)}>
                                 <SelectTrigger className="w-[140px] bg-card border-border rounded-lg shadow-sm">
                                     <SelectValue />
                                 </SelectTrigger>

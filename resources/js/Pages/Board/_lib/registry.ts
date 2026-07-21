@@ -43,21 +43,28 @@ export function findWidget(id: string): WidgetDefinition<any> | undefined {
   return WIDGETS_BY_ID[id];
 }
 
-// The default board, in RTL reading order (right to left, top to bottom).
-// Explicit sizes rather than each widget's defaultSize, so the seeded arrangement
-// matches the intended three-then-two-then-three-then-two grid. Unregistered ids
-// are skipped, so this list can name a widget before it ships.
+// The default board. Array order is grid order, and in RTL the first item lands
+// on the RIGHT, so each row reads right to left: the row rendered as
+// clock | prayer | weather on screen is stored weather, prayer, clock.
+//
+// Explicit sizes rather than each widget's defaultSize, so the seeded
+// arrangement is the intended 3 / 2 / 3 / 2 grid. Unregistered ids are skipped,
+// so this list can name a widget before it ships.
 const SEED_LAYOUT: { id: string; w: number; h: number }[] = [
-  { id: 'clock', w: 4, h: 2 },
-  { id: 'prayer', w: 4, h: 2 },
+  // row 1: clock, prayer, weather (screen left to right)
   { id: 'weather', w: 4, h: 2 },
-  { id: 'answers', w: 6, h: 3 },
+  { id: 'prayer', w: 4, h: 2 },
+  { id: 'clock', w: 4, h: 2 },
+  // row 2: answers, news
   { id: 'rss', w: 6, h: 3 },
-  { id: 'todo', w: 4, h: 4 },
-  { id: 'notes', w: 4, h: 4 },
+  { id: 'answers', w: 6, h: 3 },
+  // row 3: todo, notes, recipe
   { id: 'recipe', w: 4, h: 4 },
-  { id: 'events-today', w: 6, h: 3 },
+  { id: 'notes', w: 4, h: 4 },
+  { id: 'todo', w: 4, h: 4 },
+  // row 4: events, pomodoro
   { id: 'pomodoro', w: 6, h: 3 },
+  { id: 'events-today', w: 6, h: 3 },
 ];
 
 export function defaultDoc(): BoardDoc {

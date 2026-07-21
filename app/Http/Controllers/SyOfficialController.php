@@ -16,7 +16,7 @@ class SyOfficialController extends Controller
      */
     public function index()
     {
-        $entities = Cache::remember('external_syofficial_data_v2', 600, function () {
+        $entities = Cache::remember('external_syofficial_data_v4', 600, function () {
             $entities = [];
             try {
                 $response = Http::get(self::CSV_URL);
@@ -87,13 +87,23 @@ class SyOfficialController extends Controller
                 }
             }
 
+            $id = $row['ID'] ?? "entity-{$i}";
+            $image = $row['Image Path'] ?? '';
+            if (($image === 'images/governorates/placeholder.webp' || empty($image)) && str_starts_with($id, 'gov-')) {
+                if ($id === 'gov-raqqa') {
+                    $image = 'images/governorates/gov-raqqa.webp';
+                } elseif ($id === 'gov-hasakah') {
+                    $image = 'images/governorates/gov-hasakah.webp';
+                }
+            }
+
             $data[] = [
-                'id' => $row['ID'] ?? "entity-{$i}",
+                'id' => $id,
                 'name' => $row['Name (English)'] ?? '',
                 'name_ar' => $row['Name (Arabic)'] ?? '',
                 'description' => $row['Description (English)'] ?? '',
                 'description_ar' => $row['Description (Arabic)'] ?? '',
-                'image' => $row['Image Path'] ?? '',
+                'image' => $image,
                 'category' => preg_replace('/\s+/', '_', $category),
                 'socials' => (object)$socials
             ];

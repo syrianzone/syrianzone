@@ -154,6 +154,21 @@ const getSocialTitle = (platform: string, lang: Language) => {
     return lang === 'ar' || lang === 'ku' ? t.ar : t.en;
 };
 
+const getSocialStyle = (platform: string) => {
+    const base = platform.replace('_secondary', '');
+    switch (base) {
+        case 'facebook': return 'hover:bg-blue-500/15 hover:text-blue-500 hover:border-blue-500/40 dark:hover:text-blue-400';
+        case 'twitter': return 'hover:bg-sky-500/15 hover:text-sky-400 hover:border-sky-500/40 dark:hover:text-sky-400';
+        case 'instagram': return 'hover:bg-pink-500/15 hover:text-pink-500 hover:border-pink-500/40 dark:hover:text-pink-400';
+        case 'telegram': return 'hover:bg-sky-400/15 hover:text-sky-400 hover:border-sky-400/40 dark:hover:text-sky-300';
+        case 'youtube': return 'hover:bg-red-500/15 hover:text-red-500 hover:border-red-500/40 dark:hover:text-red-400';
+        case 'whatsapp': return 'hover:bg-emerald-500/15 hover:text-emerald-500 hover:border-emerald-500/40 dark:hover:text-emerald-400';
+        case 'linkedin': return 'hover:bg-blue-700/15 hover:text-blue-600 hover:border-blue-700/40 dark:hover:text-blue-400';
+        case 'website': return 'hover:bg-indigo-500/15 hover:text-indigo-500 hover:border-indigo-500/40 dark:hover:text-indigo-400';
+        default: return 'hover:bg-primary/15 hover:text-primary hover:border-primary/40';
+    }
+};
+
 export default function Index({ initialData }: SyOfficialClientProps) {
     const [language, setLanguage] = useState<Language>('ar');
     const [searchTerm, setSearchTerm] = useState('');
@@ -286,18 +301,18 @@ export default function Index({ initialData }: SyOfficialClientProps) {
                     {/* Search & Filter Bar */}
                     <div className="flex flex-col md:flex-row gap-4 max-w-2xl mx-auto items-center">
                         <div className="relative w-full">
-                            <Search className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                            <Search className="absolute start-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
                             <Input
                                 type="text"
                                 placeholder={t.searchPlaceholder}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-4 pr-12 h-14 text-lg bg-card border-border rounded-xl shadow-sm focus:ring-2 focus:ring-primary focus:border-transparent"
+                                className="w-full ps-12 pe-10 h-14 text-lg bg-card border-border rounded-xl shadow-sm focus:ring-2 focus:ring-primary focus:border-transparent"
                             />
                             {searchTerm && (
                                 <button
                                     onClick={() => setSearchTerm('')}
-                                    className={`absolute top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground ${language === 'ar' || language === 'ku' ? 'left-3' : 'right-3'}`}
+                                    className="absolute end-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 rounded-md transition-colors"
                                 >
                                     <X className="h-4 w-4" />
                                 </button>
@@ -385,38 +400,47 @@ export default function Index({ initialData }: SyOfficialClientProps) {
                                                 {getCategoryLabel(catKey)}
                                             </h2>
                                         )}
-                                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 md:gap-4">
+                                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3.5 sm:gap-4">
                                             {items.map(item => (
-                                                <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow border-0 shadow-md bg-card group">
-                                                    <div className="aspect-square w-full bg-muted relative overflow-hidden">
+                                                <Card
+                                                    key={item.id}
+                                                    className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card/90 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
+                                                >
+                                                    {/* Image Container with Hover Zoom */}
+                                                    <div className="relative aspect-square w-full overflow-hidden bg-muted/40">
                                                         <img
                                                             src={`/syofficial-assets/${item.image}`}
                                                             alt={language === 'ar' ? item.name_ar : item.name}
-                                                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                                                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                                             onError={(e) => {
-                                                                (e.target as HTMLImageElement).src = '/syofficial-assets/images/placeholder.png'; // Fallback
+                                                                (e.target as HTMLImageElement).src = '/syofficial-assets/images/placeholder.png';
                                                             }}
                                                         />
                                                     </div>
-                                                    <CardContent className="p-3 text-center">
-                                                        <h3 className="font-bold text-sm text-foreground mb-1 leading-tight line-clamp-2">
-                                                            {language === 'ar' ? item.name_ar : item.name}
-                                                        </h3>
-                                                        {(item.description || item.description_ar) && (
-                                                            <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
-                                                                {language === 'ar' ? (item.description_ar || item.description) : item.description}
-                                                            </p>
-                                                        )}
 
+                                                    {/* Card Content */}
+                                                    <CardContent className="p-3.5 text-center flex-1 flex flex-col justify-between">
+                                                        <div>
+                                                            <h3 className="font-bold text-sm sm:text-base text-foreground mb-1.5 leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+                                                                {language === 'ar' ? item.name_ar : item.name}
+                                                            </h3>
+                                                            {(item.description || item.description_ar) && (
+                                                                <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2 mb-3">
+                                                                    {language === 'ar' ? (item.description_ar || item.description) : item.description}
+                                                                </p>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Social Buttons */}
                                                         {item.socials && Object.keys(item.socials).length > 0 && (
-                                                            <div className="flex flex-wrap justify-center gap-1.5 pt-2 border-t border-border">
+                                                            <div className="flex flex-wrap justify-center gap-1.5 pt-1">
                                                                 {Object.entries(item.socials).map(([plat, url]) => (
                                                                     <a
                                                                         key={plat}
                                                                         href={url}
                                                                         target="_blank"
                                                                         rel="noopener noreferrer"
-                                                                        className="text-muted-foreground hover:text-primary transition-colors p-1"
+                                                                        className={`p-1.5 rounded-lg border border-border/50 bg-muted/50 text-muted-foreground transition-all duration-200 hover:scale-105 shadow-2xs ${getSocialStyle(plat)}`}
                                                                         title={getSocialTitle(plat, language)}
                                                                     >
                                                                         {getSocialIcon(plat)}
@@ -432,22 +456,22 @@ export default function Index({ initialData }: SyOfficialClientProps) {
                                 ))}
                             </div>
                         ) : (
-                            <div className="bg-card rounded-lg shadow border border-border overflow-hidden">
+                            <div className="bg-card/90 rounded-2xl shadow-sm border border-border/60 overflow-hidden backdrop-blur-sm">
                                 <Table>
-                                    <TableHeader className="bg-muted">
-                                        <TableRow>
-                                            <TableHead className={`text-${language === 'ar' || language === 'ku' ? 'right' : 'left'}`}>{t.tableName}</TableHead>
-                                            <TableHead className={`text-${language === 'ar' || language === 'ku' ? 'right' : 'left'}`}>{t.tableCategory}</TableHead>
-                                            <TableHead className={`text-${language === 'ar' || language === 'ku' ? 'right' : 'left'}`}>{t.tableDesc}</TableHead>
-                                            <TableHead className={`text-${language === 'ar' || language === 'ku' ? 'right' : 'left'}`}>{t.tableSocial}</TableHead>
+                                    <TableHeader className="bg-muted/60">
+                                        <TableRow className="border-border/60">
+                                            <TableHead className="text-start font-bold">{t.tableName}</TableHead>
+                                            <TableHead className="text-start font-bold">{t.tableCategory}</TableHead>
+                                            <TableHead className="text-start font-bold">{t.tableDesc}</TableHead>
+                                            <TableHead className="text-start font-bold">{t.tableSocial}</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {filteredData.map(item => (
-                                            <TableRow key={item.id} className="hover:bg-muted/50">
+                                            <TableRow key={item.id} className="hover:bg-muted/40 transition-colors border-border/40">
                                                 <TableCell className="font-medium">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
+                                                        <div className="w-10 h-10 rounded-xl overflow-hidden bg-muted flex-shrink-0 ring-1 ring-border/50 shadow-2xs">
                                                             <img
                                                                 src={`/syofficial-assets/${item.image}`}
                                                                 alt=""
@@ -457,15 +481,15 @@ export default function Index({ initialData }: SyOfficialClientProps) {
                                                                 }}
                                                             />
                                                         </div>
-                                                        <span className="text-foreground">{language === 'ar' ? item.name_ar : item.name}</span>
+                                                        <span className="text-foreground font-semibold text-sm">{language === 'ar' ? item.name_ar : item.name}</span>
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Badge variant="secondary" className="font-normal bg-accent text-accent-foreground border-transparent">
+                                                    <Badge variant="secondary" className="font-normal bg-accent/80 text-accent-foreground border-border/40 rounded-lg">
                                                         {getCategoryLabel(item.category)}
                                                     </Badge>
                                                 </TableCell>
-                                                <TableCell className="text-muted-foreground max-w-xs truncate">
+                                                <TableCell className="text-muted-foreground text-xs max-w-xs truncate">
                                                     {language === 'ar' ? (item.description_ar || item.description) : item.description}
                                                 </TableCell>
                                                 <TableCell>
@@ -476,7 +500,7 @@ export default function Index({ initialData }: SyOfficialClientProps) {
                                                                 href={url}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
-                                                                className="bg-muted hover:bg-primary hover:text-primary-foreground text-foreground rounded p-1.5 transition-colors"
+                                                                className={`p-1.5 rounded-lg border border-border/40 bg-muted/40 text-muted-foreground transition-all duration-200 hover:scale-105 ${getSocialStyle(plat)}`}
                                                                 title={getSocialTitle(plat, language)}
                                                             >
                                                                 {getSocialIcon(plat)}

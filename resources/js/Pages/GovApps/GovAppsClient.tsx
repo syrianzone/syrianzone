@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GovApp } from './types';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -56,135 +56,15 @@ function useMediaQuery(query: string) {
     return matches;
 }
 
-// ─── Browser Icon Cache ─────────────────────────────────────────────────────
-
-const ICON_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
-const ICON_CACHE_KEY = 'sz_app_icons_v1';
-
-interface IconCacheEntry {
-    icon: string;
-    ts: number;
-}
-
-function getBrowserIconCache(): Record<string, IconCacheEntry> {
-    try {
-        const raw = localStorage.getItem(ICON_CACHE_KEY);
-        if (!raw) return {};
-        return JSON.parse(raw);
-    } catch {
-        return {};
-    }
-}
-
-function setBrowserIconCache(cache: Record<string, IconCacheEntry>) {
-    try {
-        localStorage.setItem(ICON_CACHE_KEY, JSON.stringify(cache));
-    } catch {
-        // storage full or disabled
-    }
-}
-
-function getCachedIcon(appId: string): string | null {
-    const cache = getBrowserIconCache();
-    const entry = cache[appId];
-    if (!entry) return null;
-    if (Date.now() - entry.ts > ICON_CACHE_TTL_MS) {
-        // expired
-        delete cache[appId];
-        setBrowserIconCache(cache);
-        return null;
-    }
-    return entry.icon;
-}
-
-function setCachedIcon(appId: string, icon: string) {
-    const cache = getBrowserIconCache();
-    cache[appId] = { icon, ts: Date.now() };
-    setBrowserIconCache(cache);
-}
-
-// ─── Store Icon Resolvers (via backend proxy) ───────────────────────────────
-
-function extractAppleAppId(url: string): string | null {
-    const match = url.match(/id(\d+)/);
-    return match ? match[1] : null;
-}
-
-function extractGooglePlayPackage(url: string): string | null {
-    const match = url.match(/[?&]id=([^&]+)/);
-    return match ? match[1] : null;
-}
-
-async function fetchStoreIcon(app: GovApp): Promise<string | null> {
-    // Check browser cache first
-    const cached = getCachedIcon(app.id);
-    if (cached) return cached;
-
-    // 1. Google Play Store (priority)
-    if (app.links.android) {
-        const pkg = extractGooglePlayPackage(app.links.android);
-        if (pkg) {
-            try {
-                const res = await fetch(`/api/app-icon?store=play&package=${encodeURIComponent(pkg)}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.icon) {
-                        setCachedIcon(app.id, data.icon);
-                        return data.icon;
-                    }
-                }
-            } catch {
-                // ignore
-            }
-        }
-    }
-
-    // 2. Apple App Store
-    if (app.links.apple) {
-        const appId = extractAppleAppId(app.links.apple);
-        if (appId) {
-            try {
-                const res = await fetch(`/api/app-icon?store=apple&id=${encodeURIComponent(appId)}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.icon) {
-                        setCachedIcon(app.id, data.icon);
-                        return data.icon;
-                    }
-                }
-            } catch {
-                // ignore
-            }
-        }
-    }
-
-    return null;
-}
-
 // ─── Icon Component ─────────────────────────────────────────────────────────
 
-function getFaviconUrl(officialUrl: string | undefined): string | null {
-    if (!officialUrl) return null;
-    try {
-        const url = new URL(officialUrl);
-        return `https://www.google.com/s2/favicons?domain=${url.hostname}&sz=128`;
-    } catch {
-        return null;
-    }
-}
-
-function AppIcon({ app, storeIcon, className, placeholderClassName }: {
+function AppIcon({ app, className, placeholderClassName }: {
     app: GovApp;
-    storeIcon?: string | null;
     className?: string;
     placeholderClassName?: string;
 }) {
-    // Priority: 1) Store icon  2) Local CSV icon  3) Website favicon  4) Placeholder
-    // Use || instead of ?? so empty strings are treated as falsy
-    const src = storeIcon || app.icon || getFaviconUrl(app.links.official) || null;
-
-    if (src) {
-        return <img src={src} alt={app.name} loading="lazy" decoding="async" className={className} />;
+    if (app.icon) {
+        return <img src={app.icon} alt={app.name} loading="lazy" decoding="async" className={className} />;
     }
 
     return (
@@ -196,10 +76,9 @@ function AppIcon({ app, storeIcon, className, placeholderClassName }: {
 
 // ─── Detail View ────────────────────────────────────────────────────────────
 
-function AppDetailView({ app, isDesktop, storeIcon }: {
+function AppDetailView({ app, isDesktop }: {
     app: GovApp;
     isDesktop: boolean;
-    storeIcon?: string | null;
 }) {
     const scrollRef = React.useRef<HTMLDivElement>(null);
     const [isDragging, setIsDragging] = useState(false);
@@ -232,7 +111,7 @@ function AppDetailView({ app, isDesktop, storeIcon }: {
             {/* Compact Row Header — icon + name only, no description */}
             <div className="px-6 py-4 flex items-center gap-4">
                 <div className="relative h-16 w-16 rounded-2xl overflow-hidden border shadow-sm flex-shrink-0 bg-white">
-                    <AppIcon app={app} storeIcon={storeIcon} className="absolute inset-0 h-full w-full object-cover" placeholderClassName="h-8 w-8 text-gray-400" />
+                    <AppIcon app={app} className="absolute inset-0 h-full w-full object-cover" placeholderClassName="h-8 w-8 text-gray-400" />
                 </div>
                 <div className="flex-1 min-w-0">
                     <div className="text-xl font-bold truncate">{app.name}</div>
@@ -316,34 +195,7 @@ function AppDetailView({ app, isDesktop, storeIcon }: {
 
 export default function GovAppsClient({ initialData }: GovAppsClientProps) {
     const [selectedApp, setSelectedApp] = useState<GovApp | null>(null);
-    const [storeIcons, setStoreIcons] = useState<Record<string, string>>({});
     const isDesktop = useMediaQuery('(min-width: 768px)');
-
-    // Fetch store icons on mount
-    useEffect(() => {
-        let cancelled = false;
-
-        async function loadIcons() {
-            const resolved: Record<string, string> = {};
-
-            for (const app of initialData) {
-                if (cancelled) return;
-                const icon = await fetchStoreIcon(app);
-                if (icon) {
-                    resolved[app.id] = icon;
-                }
-            }
-
-            if (!cancelled) {
-                setStoreIcons(resolved);
-            }
-        }
-
-        loadIcons();
-        return () => { cancelled = true; };
-    }, [initialData]);
-
-    const getIconForApp = useCallback((app: GovApp) => storeIcons[app.id] || null, [storeIcons]);
 
     const { auth } = usePage().props as any;
     const userRole = auth?.user?.role;
@@ -394,7 +246,6 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
                                     )}
                                     <AppIcon
                                         app={app}
-                                        storeIcon={getIconForApp(app)}
                                         className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
                                         placeholderClassName="h-10 w-10 text-muted-foreground/30"
                                     />
@@ -458,7 +309,7 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
                             <DialogTitle>{selectedApp?.name || 'تفاصيل التطبيق'}</DialogTitle>
                             <DialogDescription>{selectedApp?.description || ''}</DialogDescription>
                         </DialogHeader>
-                        {selectedApp && <AppDetailView app={selectedApp} isDesktop={true} storeIcon={getIconForApp(selectedApp)} />}
+                        {selectedApp && <AppDetailView app={selectedApp} isDesktop={true} />}
                     </DialogContent>
                 </Dialog>
             )}
@@ -474,7 +325,7 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
                             <SheetTitle>{selectedApp?.name || 'تفاصيل التطبيق'}</SheetTitle>
                             <SheetDescription>{selectedApp?.description || ''}</SheetDescription>
                         </SheetHeader>
-                        {selectedApp && <AppDetailView app={selectedApp} isDesktop={false} storeIcon={getIconForApp(selectedApp)} />}
+                        {selectedApp && <AppDetailView app={selectedApp} isDesktop={false} />}
                     </SheetContent>
                 </Sheet>
             )}

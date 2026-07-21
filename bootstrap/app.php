@@ -28,9 +28,10 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\HandleInertiaRequests::class,
         ]);
         $middleware->alias([
-            'admin'         => \App\Http\Middleware\Admin::class,
-            'transit_admin' => \App\Http\Middleware\TransitAdmin::class,
-            'superadmin'    => \App\Http\Middleware\SuperAdmin::class,
+            'admin'           => \App\Http\Middleware\Admin::class,
+            'transit_admin'   => \App\Http\Middleware\TransitAdmin::class,
+            'syofficial_admin' => \App\Http\Middleware\SyOfficialAdmin::class,
+            'superadmin'      => \App\Http\Middleware\SuperAdmin::class,
         ]);
         $middleware->statefulApi();
         $middleware->validateCsrfTokens(except: [

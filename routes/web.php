@@ -302,7 +302,25 @@ Route::middleware('auth')->group(function () {
             Route::post('/admin/routes/combine', [\App\Http\Controllers\TransitAdminController::class, 'combineRoutes']);
             Route::post('/admin/routes/split', [\App\Http\Controllers\TransitAdminController::class, 'splitRoute']);
             Route::get('/admin/routes/{id}/stops', [\App\Http\Controllers\TransitAdminController::class, 'getRouteStops']);
-            Route::get('/admin/routes/{id}/geojson', [\App\Http\Controllers\TransitAdminController::class, 'getRouteGeoJson']);
+        });
+    });
+
+    // 4. SyOfficial Admin Panel (accessible to core admins, syofficial_admin, and superadmins)
+    Route::middleware('syofficial_admin')->group(function () {
+        Route::get('/admin/syofficial', [\App\Http\Controllers\SyOfficialAdminController::class, 'renderIndex']);
+
+        Route::prefix('api/v1/admin/syofficial')->group(function () {
+            Route::post('/categories', [\App\Http\Controllers\SyOfficialAdminController::class, 'storeCategory']);
+            Route::put('/categories/{id}', [\App\Http\Controllers\SyOfficialAdminController::class, 'updateCategory']);
+            Route::delete('/categories/{id}', [\App\Http\Controllers\SyOfficialAdminController::class, 'destroyCategory']);
+
+            Route::post('/entities', [\App\Http\Controllers\SyOfficialAdminController::class, 'storeEntity']);
+            Route::post('/entities/{id}', [\App\Http\Controllers\SyOfficialAdminController::class, 'updateEntity']);
+            Route::put('/entities/{id}', [\App\Http\Controllers\SyOfficialAdminController::class, 'updateEntity']);
+            Route::delete('/entities/{id}', [\App\Http\Controllers\SyOfficialAdminController::class, 'destroyEntity']);
+
+            Route::post('/reorder/categories', [\App\Http\Controllers\SyOfficialAdminController::class, 'reorderCategories']);
+            Route::post('/reorder/entities', [\App\Http\Controllers\SyOfficialAdminController::class, 'reorderEntities']);
         });
     });
 });

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { OfficialEntity } from './types';
-import { Search, X, Table as TableIcon, LayoutGrid, Globe, Send, Link as LinkIcon, MessageCircle } from 'lucide-react';
+import { Search, X, Table as TableIcon, LayoutGrid, Globe, Send, Link as LinkIcon, MessageCircle, Pencil, Settings } from 'lucide-react';
 import { Facebook, Instagram, Linkedin, Twitter, Youtube } from '@/Components/ui/icons';
 import { Input } from "@/Components/ui/input";
 import { Button } from "@/Components/ui/button";
@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/Components/ui/tabs";
 import { Badge } from "@/Components/ui/badge";
 import MainLayout from '@/Layouts/MainLayout';
-import { Head } from '@inertiajs/react';
+import { Head, usePage, Link } from '@inertiajs/react';
 
 interface SyOfficialClientProps {
     initialData: OfficialEntity[];
@@ -215,31 +215,22 @@ export default function Index({ initialData }: SyOfficialClientProps) {
     }, [initialData, searchTerm, currentCategory, sortOption, language]);
 
     // Group items for Grid View if "All" is selected, or just list them
-    // Original implementation grouped by category section when "All" was selected in grid view.
-    // For simplicity and better UX in Shadcn, we can just show a flat grid or grouped.
-    // Let's stick to flat grid for "All" or grouped? The original had sections.
-    // Let's implement grouped sections for "All" in Grid View.
+            return 0;
+        });
+    }, [entities, currentCategory, searchTerm, sortBy, language]);
+
     const groupedData = useMemo(() => {
-        if (currentCategory !== 'all') return { [currentCategory]: filteredData };
+        if (currentCategory !== 'all') {
+            return { [currentCategory]: filteredData };
+        }
 
         const groups: { [key: string]: OfficialEntity[] } = {};
-
-        // Initialize groups in specific order based on CATEGORIES
         CATEGORIES.forEach(cat => {
-            if (cat.key !== 'all') groups[cat.key] = [];
-        });
-
-        filteredData.forEach(item => {
-            if (groups[item.category]) {
-                groups[item.category].push(item);
-            } else {
-                // Fallback for unknown categories
-                if (!groups['other']) groups['other'] = [];
-                groups['other'].push(item);
+            if (cat.key !== 'all') {
+                groups[cat.key] = filteredData.filter(item => item.category === cat.key);
             }
         });
 
-        // Remove empty groups
         Object.keys(groups).forEach(key => {
             if (groups[key].length === 0) delete groups[key];
         });
@@ -249,7 +240,6 @@ export default function Index({ initialData }: SyOfficialClientProps) {
 
     const t = TRANSLATIONS[language];
 
-    // Helper to get category label
     const getCategoryLabel = (key: string) => {
         const cat = CATEGORIES.find(c => c.key === key);
         return cat ? (language === 'ar' ? cat.label.ar : cat.label.en) : key;
@@ -263,13 +253,22 @@ export default function Index({ initialData }: SyOfficialClientProps) {
             </Head>
             <div className="min-h-screen transition-colors" dir={language === 'ar' || language === 'ku' ? 'rtl' : 'ltr'}>
 
-            {/* Header / Hero */}
             <section className="bg-card py-10 shadow-sm border-b border-border">
                 <div className="container mx-auto px-4 text-center max-w-4xl">
+                    {isSuperAdmin && (
+                        <div className="mb-6 flex justify-center">
+                            <a
+                                href="/admin/syofficial"
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-bold shadow-lg hover:bg-primary/90 transition-all transform hover:-translate-y-0.5"
+                            >
+                                <Settings className="w-4 h-4" />
+                                <span>لوحة تحكم إدارة الحسابات (Admin Panel)</span>
+                            </a>
+                        </div>
+                    )}
                     <h1 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">{t.title}</h1>
                     <p className="text-lg text-muted-foreground mb-8">{t.description}</p>
 
-                    {/* Social Lists Links */}
                     <div className="flex justify-center gap-4 mb-8">
                         <a href="https://x.com/i/lists/1906101934660174006" target="_blank" rel="noopener" className="flex items-center gap-2 px-5 py-2 rounded-full bg-muted hover:bg-muted/80 text-foreground transition-colors font-medium border border-border text-sm">
                             <Twitter className="h-4 w-4 text-blue-400" />
@@ -281,7 +280,6 @@ export default function Index({ initialData }: SyOfficialClientProps) {
                         </a>
                     </div>
 
-                    {/* Language Switcher */}
                     <div className="flex justify-center gap-2 mb-8">
                         {(['ar', 'en', 'tr', 'ku'] as Language[]).map(lang => (
                             <button
@@ -298,7 +296,6 @@ export default function Index({ initialData }: SyOfficialClientProps) {
                         ))}
                     </div>
 
-                    {/* Search & Filter Bar */}
                     <div className="flex flex-col md:flex-row gap-4 max-w-2xl mx-auto items-center">
                         <div className="relative w-full">
                             <Search className="absolute start-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
@@ -320,7 +317,6 @@ export default function Index({ initialData }: SyOfficialClientProps) {
                         </div>
                     </div>
 
-                    {/* Category Tabs (Desktop) / Scrollable (Mobile) */}
                     <div className="mt-6 flex flex-wrap justify-center gap-2">
                         {CATEGORIES.map(cat => (
                             <Button
@@ -337,10 +333,8 @@ export default function Index({ initialData }: SyOfficialClientProps) {
                 </div>
             </section>
 
-            {/* Content Area */}
             <div className="container mx-auto px-4 py-8">
 
-                {/* Visual Controls */}
                 <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
                     <div className="text-sm text-muted-foreground font-medium">
                         {filteredData.length > 0 ? (
@@ -369,8 +363,8 @@ export default function Index({ initialData }: SyOfficialClientProps) {
 
                         <div className="flex items-center gap-2">
                             <span className="text-sm text-muted-foreground">{t.sortBy}:</span>
-                            <Select value={sortOption} onValueChange={(val: SortOption) => setSortOption(val)}>
-                                <SelectTrigger className="w-[140px] h-8 text-sm bg-card border-border">
+                            <Select value={sortBy} onValueChange={(value: SortOption) => setSortBy(value)}>
+                                <SelectTrigger className="w-[140px] bg-card border-border rounded-lg shadow-sm">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -384,10 +378,10 @@ export default function Index({ initialData }: SyOfficialClientProps) {
                 </div>
 
                 {filteredData.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 bg-card rounded-lg shadow-sm border border-dashed border-border">
-                        <Search className="h-16 w-16 text-muted-foreground/30 mb-4" />
-                        <h3 className="text-lg font-semibold text-foreground mb-2">{t.noResults}</h3>
-                        <p className="text-muted-foreground">{t.noResultsDesc}</p>
+                    <div className="text-center py-16 bg-card rounded-2xl border border-border shadow-xs">
+                        <Globe className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
+                        <h3 className="text-xl font-semibold mb-2 text-foreground">{t.noResults}</h3>
+                        <p className="text-muted-foreground max-w-sm mx-auto">{t.noResultsDesc}</p>
                     </div>
                 ) : (
                     <>
@@ -406,10 +400,19 @@ export default function Index({ initialData }: SyOfficialClientProps) {
                                                     key={item.id}
                                                     className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card/90 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
                                                 >
-                                                    {/* Image Container with Hover Zoom */}
                                                     <div className="relative aspect-square w-full overflow-hidden bg-muted/40">
+                                                        {isSuperAdmin && (
+                                                            <a
+                                                                href="/admin/syofficial"
+                                                                className="absolute top-2 start-2 z-10 p-1.5 rounded-lg bg-background/90 hover:bg-primary hover:text-primary-foreground text-foreground backdrop-blur-md border border-border/70 shadow-md transition-all duration-200 opacity-90 hover:opacity-100 hover:scale-110 flex items-center gap-1 text-xs font-bold"
+                                                                title="تعديل هذا الكرت في لوحة التحكم"
+                                                            >
+                                                                <Pencil className="w-3.5 h-3.5" />
+                                                                <span className="hidden sm:inline">تعديل</span>
+                                                            </a>
+                                                        )}
                                                         <img
-                                                            src={`/syofficial-assets/${item.image}`}
+                                                            src={item.image?.startsWith('http') || item.image?.startsWith('/') ? item.image : `/syofficial-assets/${item.image}`}
                                                             alt={language === 'ar' ? item.name_ar : item.name}
                                                             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                                             onError={(e) => {
@@ -418,7 +421,6 @@ export default function Index({ initialData }: SyOfficialClientProps) {
                                                         />
                                                     </div>
 
-                                                    {/* Card Content */}
                                                     <CardContent className="p-3.5 text-center flex-1 flex flex-col justify-between">
                                                         <div>
                                                             <h3 className="font-bold text-sm sm:text-base text-foreground mb-1.5 leading-snug line-clamp-2 group-hover:text-primary transition-colors">
@@ -431,7 +433,6 @@ export default function Index({ initialData }: SyOfficialClientProps) {
                                                             )}
                                                         </div>
 
-                                                        {/* Social Buttons */}
                                                         {item.socials && Object.keys(item.socials).length > 0 && (
                                                             <div className="flex flex-wrap justify-center gap-1.5 pt-1">
                                                                 {Object.entries(item.socials).map(([plat, url]) => (
@@ -464,6 +465,7 @@ export default function Index({ initialData }: SyOfficialClientProps) {
                                             <TableHead className="text-start font-bold">{t.tableCategory}</TableHead>
                                             <TableHead className="text-start font-bold">{t.tableDesc}</TableHead>
                                             <TableHead className="text-start font-bold">{t.tableSocial}</TableHead>
+                                            {isSuperAdmin && <TableHead className="text-end font-bold">إجراءات الإدارة</TableHead>}
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -473,7 +475,7 @@ export default function Index({ initialData }: SyOfficialClientProps) {
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-10 h-10 rounded-xl overflow-hidden bg-muted flex-shrink-0 ring-1 ring-border/50 shadow-2xs">
                                                             <img
-                                                                src={`/syofficial-assets/${item.image}`}
+                                                                src={item.image?.startsWith('http') || item.image?.startsWith('/') ? item.image : `/syofficial-assets/${item.image}`}
                                                                 alt=""
                                                                 className="w-full h-full object-cover"
                                                                 onError={(e) => {
@@ -508,6 +510,17 @@ export default function Index({ initialData }: SyOfficialClientProps) {
                                                         ))}
                                                     </div>
                                                 </TableCell>
+                                                {isSuperAdmin && (
+                                                    <TableCell className="text-end">
+                                                        <a
+                                                            href="/admin/syofficial"
+                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground text-xs font-bold transition-all border border-primary/20"
+                                                        >
+                                                            <Pencil className="w-3.5 h-3.5" />
+                                                            <span>تعديل</span>
+                                                        </a>
+                                                    </TableCell>
+                                                )}
                                             </TableRow>
                                         ))}
                                     </TableBody>

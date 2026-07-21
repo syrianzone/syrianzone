@@ -7,6 +7,7 @@ use App\Models\OfficialEntity;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class SyOfficialSeeder extends Seeder
 {
@@ -106,6 +107,17 @@ class SyOfficialSeeder extends Seeder
                     $image = 'images/governorates/gov-raqqa.webp';
                 } elseif ($id === 'gov-hasakah') {
                     $image = 'images/governorates/gov-hasakah.webp';
+                }
+            }
+
+            // Auto-upload local asset to R2 if R2 disk is configured
+            $mediaDisk = config('filesystems.media_disk');
+            if ($mediaDisk === 'r2' && !empty($image) && !str_starts_with($image, 'http')) {
+                $localPath = public_path("syofficial-assets/{$image}");
+                if (file_exists($localPath)) {
+                    $r2Path = "syofficial/entities/" . basename($image);
+                    Storage::disk('r2')->put($r2Path, file_get_contents($localPath), 'public');
+                    $image = Storage::disk('r2')->url($r2Path);
                 }
             }
 

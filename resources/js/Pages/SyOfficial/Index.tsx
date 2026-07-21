@@ -1,35 +1,41 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { OfficialEntity } from './types';
 import { Search, X, Table as TableIcon, LayoutGrid, Globe, Send, Link as LinkIcon, MessageCircle, Pencil, Settings } from 'lucide-react';
 import { Facebook, Instagram, Linkedin, Twitter, Youtube } from '@/Components/ui/icons';
 import { Input } from "@/Components/ui/input";
 import { Button } from "@/Components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/Components/ui/select";
 import { Card, CardContent } from "@/Components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/Components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/Components/ui/tabs";
 import { Badge } from "@/Components/ui/badge";
 import MainLayout from '@/Layouts/MainLayout';
-import { Head, usePage, Link } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
+
+interface CategoryData {
+    id: string;
+    label_ar: string;
+    label_en: string;
+    icon?: string;
+    order_column: number;
+}
 
 interface SyOfficialClientProps {
     initialData: OfficialEntity[];
+    categories?: CategoryData[];
 }
 
 type Language = 'ar' | 'en' | 'tr' | 'ku';
 type ViewMode = 'grid' | 'table';
-type SortOption = 'name-asc' | 'name-desc' | 'category';
 
-const CATEGORIES = [
-    { key: 'all', label: { ar: 'الكل', en: 'All' } },
-    { key: 'governorates', label: { ar: 'المحافظات', en: 'Governorates' } },
-    { key: 'ministries', label: { ar: 'الوزارات', en: 'Ministries' } },
-    { key: 'ministers', label: { ar: 'الوزراء', en: 'Ministers' } },
-    { key: 'public_figures', label: { ar: 'الشخصيات العامة', en: 'Public Figures' } },
-    { key: 'syndicates', label: { ar: 'النقابات', en: 'Syndicates' } },
-    { key: 'universities', label: { ar: 'الجامعات', en: 'Universities' } },
-    { key: 'embassies', label: { ar: 'السفارات', en: 'Embassies' } },
-    { key: 'other', label: { ar: 'أخرى', en: 'Other' } },
+const FALLBACK_CATEGORIES = [
+    { key: 'all', label_ar: 'الكل', label_en: 'All' },
+    { key: 'governorates', label_ar: 'المحافظات', label_en: 'Governorates' },
+    { key: 'ministries', label_ar: 'الوزارات', label_en: 'Ministries' },
+    { key: 'ministers', label_ar: 'الوزراء', label_en: 'Ministers' },
+    { key: 'public_figures', label_ar: 'الشخصيات العامة', label_en: 'Public Figures' },
+    { key: 'syndicates', label_ar: 'النقابات', label_en: 'Syndicates' },
+    { key: 'universities', label_ar: 'الجامعات', label_en: 'Universities' },
+    { key: 'embassies', label_ar: 'السفارات', label_en: 'Embassies' },
+    { key: 'other', label_ar: 'أخرى', label_en: 'Other' },
 ];
 
 const TRANSLATIONS = {
@@ -43,10 +49,6 @@ const TRANSLATIONS = {
         view: 'عرض',
         table: 'جدول',
         grid: 'شبكة',
-        sortBy: 'ترتيب حسب',
-        sortNameAsc: 'الاسم (أ-ي)',
-        sortNameDesc: 'الاسم (ي-أ)',
-        sortCategory: 'الفئة',
         tableCategory: 'الفئة',
         tableName: 'الاسم',
         tableDesc: 'الوصف',
@@ -64,10 +66,6 @@ const TRANSLATIONS = {
         view: 'View',
         table: 'Table',
         grid: 'Grid',
-        sortBy: 'Sort by',
-        sortNameAsc: 'Name (A-Z)',
-        sortNameDesc: 'Name (Z-A)',
-        sortCategory: 'Category',
         tableCategory: 'Category',
         tableName: 'Name',
         tableDesc: 'Description',
@@ -85,10 +83,6 @@ const TRANSLATIONS = {
         view: 'Görünüm',
         table: 'Tablo',
         grid: 'Izgara',
-        sortBy: 'Sıralama',
-        sortNameAsc: 'İsim (A-Z)',
-        sortNameDesc: 'İsim (Z-A)',
-        sortCategory: 'Kategori',
         tableCategory: 'Kategori',
         tableName: 'İsim',
         tableDesc: 'Açıklama',
@@ -106,10 +100,6 @@ const TRANSLATIONS = {
         view: 'Dîtin',
         table: 'Tablo',
         grid: 'Tor',
-        sortBy: 'Rêzkirin',
-        sortNameAsc: 'Nav (A-Z)',
-        sortNameDesc: 'Nav (Z-A)',
-        sortCategory: 'Kategorî',
         tableCategory: 'Kategorî',
         tableName: 'Nav',
         tableDesc: 'Ravekirin',
@@ -169,15 +159,23 @@ const getSocialStyle = (platform: string) => {
     }
 };
 
-export default function Index({ initialData }: SyOfficialClientProps) {
+export default function Index({ initialData, categories }: SyOfficialClientProps) {
     const [language, setLanguage] = useState<Language>('ar');
     const [searchTerm, setSearchTerm] = useState('');
     const [currentCategory, setCurrentCategory] = useState('all');
     const [viewMode, setViewMode] = useState<ViewMode>('grid');
-    const [sortOption, setSortOption] = useState<SortOption>('name-asc');
-    const [loading, setLoading] = useState(false); // Since data passed from server, mostly used for client-side ops if needed
 
-    // Filter and Sort Data
+    const categoryList = useMemo(() => {
+        if (categories && categories.length > 0) {
+            return [
+                { key: 'all', label_ar: 'الكل', label_en: 'All' },
+                ...categories.map(c => ({ key: c.id, label_ar: c.label_ar, label_en: c.label_en }))
+            ];
+        }
+        return FALLBACK_CATEGORIES;
+    }, [categories]);
+
+    // Filter Data maintaining natural DB order
     const filteredData = useMemo(() => {
         let items = initialData;
 
@@ -197,22 +195,8 @@ export default function Index({ initialData }: SyOfficialClientProps) {
             );
         }
 
-        // Sort
-        items.sort((a, b) => {
-            if (sortOption === 'category') {
-                return a.category.localeCompare(b.category);
-            }
-
-            const nameA = language === 'ar' ? a.name_ar : a.name;
-            const nameB = language === 'ar' ? b.name_ar : b.name;
-
-            return sortOption === 'name-asc'
-                ? nameA.localeCompare(nameB, language === 'ar' ? 'ar' : 'en')
-                : nameB.localeCompare(nameA, language === 'ar' ? 'ar' : 'en');
-        });
-
         return items;
-    }, [initialData, searchTerm, currentCategory, sortOption, language]);
+    }, [initialData, searchTerm, currentCategory]);
 
     const { auth } = usePage().props as any;
     const userRole = auth?.user?.role;
@@ -224,7 +208,7 @@ export default function Index({ initialData }: SyOfficialClientProps) {
         }
 
         const groups: { [key: string]: OfficialEntity[] } = {};
-        CATEGORIES.forEach(cat => {
+        categoryList.forEach(cat => {
             if (cat.key !== 'all') {
                 groups[cat.key] = filteredData.filter(item => item.category === cat.key);
             }
@@ -235,13 +219,13 @@ export default function Index({ initialData }: SyOfficialClientProps) {
         });
 
         return groups;
-    }, [filteredData, currentCategory]);
+    }, [filteredData, currentCategory, categoryList]);
 
     const t = TRANSLATIONS[language];
 
     const getCategoryLabel = (key: string) => {
-        const cat = CATEGORIES.find(c => c.key === key);
-        return cat ? (language === 'ar' ? cat.label.ar : cat.label.en) : key;
+        const cat = categoryList.find(c => c.key === key);
+        return cat ? (language === 'ar' ? cat.label_ar : cat.label_en) : key;
     };
 
     return (
@@ -317,7 +301,7 @@ export default function Index({ initialData }: SyOfficialClientProps) {
                     </div>
 
                     <div className="mt-6 flex flex-wrap justify-center gap-2">
-                        {CATEGORIES.map(cat => (
+                        {categoryList.map(cat => (
                             <Button
                                 key={cat.key}
                                 variant={currentCategory === cat.key ? "default" : "outline"}
@@ -325,7 +309,7 @@ export default function Index({ initialData }: SyOfficialClientProps) {
                                 className="rounded-full"
                                 size="sm"
                             >
-                                {language === 'ar' ? cat.label.ar : cat.label.en}
+                                {language === 'ar' ? cat.label_ar : cat.label_en}
                             </Button>
                         ))}
                     </div>

@@ -261,6 +261,7 @@ class SyOfficialAdminController extends Controller
 
     private function flushCache(): void
     {
-        Cache::forget('syofficial:db_entities_v1');
+        Cache::forget('syofficial:db_categories_v2');
+        Cache::forget('syofficial:db_entities_v2');
     }
 }

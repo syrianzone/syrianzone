@@ -14,16 +14,22 @@ class SyOfficialController extends Controller
      */
     public function index()
     {
-        $entities = Cache::remember('syofficial:db_entities_v2', 600, function () {
-            // If database is empty, auto seed initial dataset
-            if (OfficialCategory::count() === 0) {
-                try {
-                    (new \Database\Seeders\SyOfficialSeeder())->run();
-                } catch (\Exception $e) {
-                    // Fail gracefully
-                }
+        // If database is empty, auto seed initial dataset
+        if (OfficialCategory::count() === 0) {
+            try {
+                (new \Database\Seeders\SyOfficialSeeder())->run();
+            } catch (\Exception $e) {
+                // Fail gracefully
             }
+        }
 
+        $categories = Cache::remember('syofficial:db_categories_v2', 600, function () {
+            return OfficialCategory::where('is_active', true)
+                ->orderBy('order_column')
+                ->get();
+        });
+
+        $entities = Cache::remember('syofficial:db_entities_v2', 600, function () {
             return OfficialEntity::with('category')
                 ->where('is_active', true)
                 ->whereHas('category', function ($q) {
@@ -47,7 +53,8 @@ class SyOfficialController extends Controller
         });
 
         return Inertia::render('SyOfficial/Index', [
-            'initialData' => $entities
+            'initialData' => $entities,
+            'categories' => $categories,
         ]);
     }
 }

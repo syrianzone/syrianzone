@@ -35,9 +35,10 @@ class UserResource extends Resource
                             ->maxLength(255),
                         Forms\Components\Select::make('role')
                             ->options([
-                                'superadmin' => 'Superadmin',
-                                'admin' => 'Admin',
+                                'superadmin' => 'Superadmin (Full Unrestricted Access)',
+                                'admin' => 'Admin (Core)',
                                 'transit_admin' => 'Transit Admin',
+                                'syofficial_admin' => 'SyOfficial Admin',
                                 'user' => 'Normal User',
                             ])
                             ->default('user')
@@ -51,7 +52,41 @@ class UserResource extends Resource
                             ->dehydrateStateUsing(fn ($state) => \Illuminate\Support\Facades\Hash::make($state))
                             ->dehydrated(fn ($state) => filled($state))
                             ->required(fn (string $context): bool => $context === 'create'),
-                    ])
+                    ]),
+                Forms\Components\Section::make('Granular Permissions')
+                    ->description('Grant custom module capabilities for non-superadmin users')
+                    ->schema([
+                        Forms\Components\CheckboxList::make('permissions')
+                            ->label('Module Capabilities')
+                            ->options([
+                                // SyOfficial
+                                'syofficial.create' => 'SyOfficial: Create Entities & Categories',
+                                'syofficial.edit' => 'SyOfficial: Edit Entity Data & Social Links',
+                                'syofficial.toggle' => 'SyOfficial: Toggle Entity/Category Visibility',
+                                'syofficial.delete' => 'SyOfficial: Delete Entities & Categories',
+                                'syofficial.reorder' => 'SyOfficial: Drag & Drop Sorting',
+
+                                // Transit
+                                'transit.review_drafts' => 'Transit: Review Proposed Routes',
+                                'transit.approve' => 'Transit: Approve & Publish Routes',
+                                'transit.reject' => 'Transit: Reject Route Drafts',
+                                'transit.edit_routes' => 'Transit: Edit Published Routes & Stops',
+                                'transit.delete_routes' => 'Transit: Delete Routes',
+
+                                // Mishwar Places
+                                'places.review' => 'Mishwar: Review Pending Places',
+                                'places.approve' => 'Mishwar: Approve & Publish Places',
+                                'places.edit' => 'Mishwar: Edit Place Details',
+                                'places.moderate_photos' => 'Mishwar: Rotate/Delete Photos',
+                                'places.delete' => 'Mishwar: Delete Places',
+
+                                // Polls
+                                'polls.create' => 'Polls: Create Polls',
+                                'polls.edit' => 'Polls: Edit Polls & Candidates',
+                                'polls.delete' => 'Polls: Delete Polls',
+                            ])
+                            ->columns(2),
+                    ]),
             ]);
     }
 

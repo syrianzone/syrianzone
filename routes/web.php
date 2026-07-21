@@ -56,9 +56,6 @@ Route::get('/house', [ExternalDataController::class, 'house']);
 Route::get('/alignment', [ExternalDataController::class, 'alignment']);
 Route::get('/govapps', [ExternalDataController::class, 'govapps']);
 Route::get('/population', [PopulationAtlasController::class, 'renderIndex']);
-Route::get('/central', function () {
-    return Inertia::render('Central/Index');
-});
 
 Route::get('/guesswho', [GuessWhoController::class, 'index']);
 Route::post('/guesswho/rooms', [GuessWhoController::class, 'createRoom']);
@@ -225,10 +222,10 @@ Route::middleware('auth')->group(function () {
 
     // Hidden Places: authenticated writes (session + CSRF via the web group)
     Route::prefix('api/v1')->group(function () {
-        // Coarse abuse shield only; the real 5-per-hour quota counts created
-        // places in the controller, so failed validation attempts don't lock users out.
+        // No per-user submission cap: moderation gates everything to the public map,
+        // so this throttle is only a flood backstop no normal use touches.
         Route::post('/places', [\App\Http\Controllers\PlaceController::class, 'store'])
-            ->middleware('throttle:20,60');
+            ->middleware('throttle:60,1');
         Route::get('/my/places', [\App\Http\Controllers\PlaceController::class, 'mine'])
             ->middleware('throttle:60,1');
         // Every accepted move re-enters the moderation queue, so mirror the
@@ -315,7 +312,25 @@ Route::middleware('auth')->group(function () {
             Route::post('/admin/routes/combine', [\App\Http\Controllers\TransitAdminController::class, 'combineRoutes']);
             Route::post('/admin/routes/split', [\App\Http\Controllers\TransitAdminController::class, 'splitRoute']);
             Route::get('/admin/routes/{id}/stops', [\App\Http\Controllers\TransitAdminController::class, 'getRouteStops']);
-            Route::get('/admin/routes/{id}/geojson', [\App\Http\Controllers\TransitAdminController::class, 'getRouteGeoJson']);
+        });
+    });
+
+    // 4. SyOfficial Admin Panel (accessible to core admins, syofficial_admin, and superadmins)
+    Route::middleware('syofficial_admin')->group(function () {
+        Route::get('/admin/syofficial', [\App\Http\Controllers\SyOfficialAdminController::class, 'renderIndex']);
+
+        Route::prefix('api/v1/admin/syofficial')->group(function () {
+            Route::post('/categories', [\App\Http\Controllers\SyOfficialAdminController::class, 'storeCategory']);
+            Route::put('/categories/{id}', [\App\Http\Controllers\SyOfficialAdminController::class, 'updateCategory']);
+            Route::delete('/categories/{id}', [\App\Http\Controllers\SyOfficialAdminController::class, 'destroyCategory']);
+
+            Route::post('/entities', [\App\Http\Controllers\SyOfficialAdminController::class, 'storeEntity']);
+            Route::post('/entities/{id}', [\App\Http\Controllers\SyOfficialAdminController::class, 'updateEntity']);
+            Route::put('/entities/{id}', [\App\Http\Controllers\SyOfficialAdminController::class, 'updateEntity']);
+            Route::delete('/entities/{id}', [\App\Http\Controllers\SyOfficialAdminController::class, 'destroyEntity']);
+
+            Route::post('/reorder/categories', [\App\Http\Controllers\SyOfficialAdminController::class, 'reorderCategories']);
+            Route::post('/reorder/entities', [\App\Http\Controllers\SyOfficialAdminController::class, 'reorderEntities']);
         });
     });
 });

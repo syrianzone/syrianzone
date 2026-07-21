@@ -413,6 +413,8 @@ export default function Index({ initialData }: SyOfficialClientProps) {
                                                         <img
                                                             src={item.image?.startsWith('http') || item.image?.startsWith('/') ? item.image : `/syofficial-assets/${item.image}`}
                                                             alt={language === 'ar' ? item.name_ar : item.name}
+                                                            loading="lazy"
+                                                            decoding="async"
                                                             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                                             onError={(e) => {
                                                                 (e.target as HTMLImageElement).src = '/syofficial-assets/images/placeholder.png';
@@ -476,6 +478,8 @@ export default function Index({ initialData }: SyOfficialClientProps) {
                                                             <img
                                                                 src={item.image?.startsWith('http') || item.image?.startsWith('/') ? item.image : `/syofficial-assets/${item.image}`}
                                                                 alt=""
+                                                                loading="lazy"
+                                                                decoding="async"
                                                                 className="w-full h-full object-cover"
                                                                 onError={(e) => {
                                                                     (e.target as HTMLImageElement).src = '/syofficial-assets/images/placeholder.png';

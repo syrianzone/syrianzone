@@ -88,6 +88,13 @@ class UserResource extends Resource
                                 'places.moderate_photos' => 'Mishwar: Rotate/Delete Photos',
                                 'places.delete' => 'Mishwar: Delete Places',
 
+                                // Phonebook
+                                'phonebook.create' => 'Phonebook: Create Phone Entries & Categories',
+                                'phonebook.edit' => 'Phonebook: Edit Numbers, Names & Details',
+                                'phonebook.toggle' => 'Phonebook: Toggle Active/Hidden Visibility',
+                                'phonebook.delete' => 'Phonebook: Delete Entries & Categories',
+                                'phonebook.reorder' => 'Phonebook: Drag & Drop Sorting',
+
                                 // Polls
                                 'polls.create' => 'Polls: Create Polls',
                                 'polls.edit' => 'Polls: Edit Polls & Candidates',

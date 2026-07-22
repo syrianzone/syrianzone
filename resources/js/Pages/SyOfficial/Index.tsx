@@ -253,29 +253,32 @@ export default function Index({ initialData, categories }: SyOfficialClientProps
                     <p className="text-lg text-muted-foreground mb-8">{t.description}</p>
 
                     <div className="flex justify-center gap-4 mb-8">
-                        <a href="https://x.com/i/lists/1906101934660174006" target="_blank" rel="noopener" className="flex items-center gap-2 px-5 py-2 rounded-full bg-muted hover:bg-muted/80 text-foreground transition-colors font-medium border border-border text-sm">
-                            <Twitter className="h-4 w-4 text-blue-400" />
-                            <span>{t.socialTwitterList}</span>
-                        </a>
-                        <a href="https://t.me/addlist/fKrhEy2yNeEwODQ0" target="_blank" rel="noopener" className="flex items-center gap-2 px-5 py-2 rounded-full bg-muted hover:bg-muted/80 text-foreground transition-colors font-medium border border-border text-sm">
-                            <Send className="h-4 w-4 text-blue-500" />
-                            <span>{t.socialTelegramList}</span>
-                        </a>
+                        <Button variant="outline" size="sm" asChild className="rounded-full gap-2">
+                            <a href="https://x.com/i/lists/1906101934660174006" target="_blank" rel="noopener noreferrer">
+                                <Twitter className="h-4 w-4 text-sky-400" />
+                                <span>{t.socialTwitterList}</span>
+                            </a>
+                        </Button>
+                        <Button variant="outline" size="sm" asChild className="rounded-full gap-2">
+                            <a href="https://t.me/addlist/fKrhEy2yNeEwODQ0" target="_blank" rel="noopener noreferrer">
+                                <Send className="h-4 w-4 text-sky-500" />
+                                <span>{t.socialTelegramList}</span>
+                            </a>
+                        </Button>
                     </div>
 
                     <div className="flex justify-center gap-2 mb-8">
                         {(['ar', 'en', 'tr', 'ku'] as Language[]).map(lang => (
-                            <button
+                            <Button
                                 key={lang}
+                                variant={language === lang ? "default" : "secondary"}
+                                size="sm"
                                 onClick={() => setLanguage(lang)}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm transition-colors ${language === lang
-                                    ? 'bg-primary text-primary-foreground shadow-md'
-                                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                                    }`}
+                                className="rounded-full gap-1.5 px-3"
                             >
-                                <img src={`/syofficial-assets/assets/flags/${lang}.svg`} alt={lang} className="w-5 h-3.5 object-cover rounded shadow-sm" />
-                                <span className="uppercase">{lang}</span>
-                            </button>
+                                <img src={`/syofficial-assets/assets/flags/${lang}.svg`} alt={lang} className="w-4 h-3 object-cover rounded shadow-2xs" />
+                                <span className="uppercase text-xs font-semibold">{lang}</span>
+                            </Button>
                         ))}
                     </div>
 
@@ -290,12 +293,14 @@ export default function Index({ initialData, categories }: SyOfficialClientProps
                                 className="w-full ps-12 pe-10 h-14 text-lg bg-card border-border rounded-xl shadow-sm focus:ring-2 focus:ring-primary focus:border-transparent"
                             />
                             {searchTerm && (
-                                <button
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
                                     onClick={() => setSearchTerm('')}
-                                    className="absolute end-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 rounded-md transition-colors"
+                                    className="absolute end-3 top-1/2 -translate-y-1/2 h-8 w-8 text-muted-foreground hover:text-foreground"
                                 >
                                     <X className="h-4 w-4" />
-                                </button>
+                                </Button>
                             )}
                         </div>
                     </div>
@@ -328,19 +333,23 @@ export default function Index({ initialData, categories }: SyOfficialClientProps
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
                             <span className="text-sm text-muted-foreground">{t.view}:</span>
-                            <div className="bg-card rounded-lg p-1 shadow-sm border border-border flex">
-                                <button
+                            <div className="bg-card rounded-lg p-1 shadow-xs border border-border flex gap-1">
+                                <Button
+                                    variant={viewMode === 'table' ? 'secondary' : 'ghost'}
+                                    size="icon"
                                     onClick={() => setViewMode('table')}
-                                    className={`p-1.5 rounded transition-all ${viewMode === 'table' ? 'bg-accent text-primary' : 'text-muted-foreground'}`}
+                                    className="h-8 w-8"
                                 >
                                     <TableIcon className="h-4 w-4" />
-                                </button>
-                                <button
+                                </Button>
+                                <Button
+                                    variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+                                    size="icon"
                                     onClick={() => setViewMode('grid')}
-                                    className={`p-1.5 rounded transition-all ${viewMode === 'grid' ? 'bg-accent text-primary' : 'text-muted-foreground'}`}
+                                    className="h-8 w-8"
                                 >
                                     <LayoutGrid className="h-4 w-4" />
-                                </button>
+                                </Button>
                             </div>
                         </div>
                     </div>

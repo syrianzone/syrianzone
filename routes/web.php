@@ -346,6 +346,26 @@ Route::middleware('auth')->group(function () {
             Route::post('/reorder', [\App\Http\Controllers\GovAppsAdminController::class, 'reorder']);
         });
     });
+
+    // 6. Phonebook Admin Panel
+    Route::middleware('phonebook_admin')->group(function () {
+        Route::get('/admin/phonebook', [\App\Http\Controllers\PhonebookAdminController::class, 'renderIndex']);
+
+        Route::prefix('api/v1/admin/phonebook')->group(function () {
+            Route::post('/categories', [\App\Http\Controllers\PhonebookAdminController::class, 'storeCategory']);
+            Route::put('/categories/{id}', [\App\Http\Controllers\PhonebookAdminController::class, 'updateCategory']);
+            Route::delete('/categories/{id}', [\App\Http\Controllers\PhonebookAdminController::class, 'destroyCategory']);
+
+            Route::post('/entries', [\App\Http\Controllers\PhonebookAdminController::class, 'storeEntry']);
+            Route::post('/entries/{id}', [\App\Http\Controllers\PhonebookAdminController::class, 'updateEntry']);
+            Route::put('/entries/{id}', [\App\Http\Controllers\PhonebookAdminController::class, 'updateEntry']);
+            Route::post('/entries/{id}/toggle', [\App\Http\Controllers\PhonebookAdminController::class, 'toggleEntryActive']);
+            Route::delete('/entries/{id}', [\App\Http\Controllers\PhonebookAdminController::class, 'destroyEntry']);
+
+            Route::post('/reorder/categories', [\App\Http\Controllers\PhonebookAdminController::class, 'reorderCategories']);
+            Route::post('/reorder/entries', [\App\Http\Controllers\PhonebookAdminController::class, 'reorderEntries']);
+        });
+    });
 });
 
 // Dev-only: impersonate a user role for local development (never registered in production).

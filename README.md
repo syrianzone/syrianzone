@@ -69,3 +69,8 @@ npm run dev
 ندعوكم للمساهمة في هذا المشروع بأي طريقة ممكنة. سواء كانت بتقديم أفكار جديدة، المساعدة في البرمجة، التصميم، الترجمة، أو حتى مجرد استخدام الموقع وتقديم الملاحظات.
 
 للمساهمة، يمكنكم فتح مشكلة (Issue) أو طلب سحب (Pull Request) على مستودع المشروع على GitHub، أو التواصل مع المساهمين الرئيسيين عبر حساباتهم المذكورة أعلاه.
+
+## الإسنادات والترخيص للموارد (Attributions & Licenses)
+
+* **أيقونات المشاريع (Project Icons)**: الأيقونات الملونة المستوحاة والمستخدمة لمشاريع وأدوات الموقع مأخوذة من مجموعات [Streamline Icons](https://www.streamlinehq.com/) عبر [Icones](https://icones.js.org/) ومتاحة بموجب رخصة [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/).
+

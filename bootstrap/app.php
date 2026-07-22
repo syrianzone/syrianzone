@@ -31,6 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin'           => \App\Http\Middleware\Admin::class,
             'transit_admin'   => \App\Http\Middleware\TransitAdmin::class,
             'syofficial_admin' => \App\Http\Middleware\SyOfficialAdmin::class,
+            'phonebook_admin'  => \App\Http\Middleware\PhonebookAdmin::class,
             'superadmin'      => \App\Http\Middleware\SuperAdmin::class,
         ]);
         $middleware->statefulApi();

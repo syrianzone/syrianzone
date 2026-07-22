@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import {
-    Phone, MessageSquare, Copy, Check, ExternalLink, Search, X, LayoutGrid, Table as TableIcon, PhoneCall, Info
+    Phone, MessageSquare, Copy, Check, ExternalLink, Search, X, LayoutGrid, Table as TableIcon, PhoneCall, Info, Settings, Pencil
 } from 'lucide-react';
 import { Card, CardContent } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
@@ -19,6 +19,7 @@ import MainLayout from '@/Layouts/MainLayout';
 
 interface PhonebookEntry {
     id: string;
+    category_id?: string;
     category_ar: string;
     category_en: string;
     name_ar: string;
@@ -30,9 +31,14 @@ interface PhonebookEntry {
 
 interface PhonebookProps {
     initialData: PhonebookEntry[];
+    categories?: any[];
 }
 
 export default function Index({ initialData }: PhonebookProps) {
+    const { auth } = usePage().props as any;
+    const user = auth?.user;
+    const canManage = user?.role === 'superadmin' || user?.role === 'admin' || user?.permissions?.includes('phonebook.edit') || user?.permissions?.includes('phonebook.create');
+
     const [searchTerm, setSearchTerm] = useState('');
     const [currentCategory, setCurrentCategory] = useState('all');
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
@@ -75,7 +81,7 @@ export default function Index({ initialData }: PhonebookProps) {
             const term = searchTerm.toLowerCase();
             items = items.filter(item => 
                 item.name_ar.toLowerCase().includes(term) ||
-                item.name_en.toLowerCase().includes(term) ||
+                (item.name_en && item.name_en.toLowerCase().includes(term)) ||
                 item.category_ar.toLowerCase().includes(term) ||
                 item.category_en.toLowerCase().includes(term) ||
                 item.number.replace(/[\s\-\(\)\+]/g, '').includes(term.replace(/[\s\-\(\)\+]/g, ''))
@@ -151,6 +157,17 @@ export default function Index({ initialData }: PhonebookProps) {
                 {/* Hero Header (Styled like SyOfficial) */}
                 <section className="bg-card py-10 shadow-sm border-b border-border">
                     <div className="container mx-auto px-4 text-center max-w-4xl">
+                        {canManage && (
+                            <div className="mb-6 flex justify-center">
+                                <a
+                                    href="/admin/phonebook"
+                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-bold shadow-lg hover:bg-primary/90 transition-all transform hover:-translate-y-0.5"
+                                >
+                                    <Settings className="w-4 h-4" />
+                                    <span>لوحة تحكم إدارة دليل الهاتف (Admin Panel)</span>
+                                </a>
+                            </div>
+                        )}
                         <h1 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">دليل الهاتف والواتساب</h1>
                         <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
                             أرقام التواصل والشكاوى والطوارئ للجهات الرسمية والخدمية السورية.

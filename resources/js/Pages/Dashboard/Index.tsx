@@ -18,6 +18,7 @@ import {
   Loader2,
   Globe,
   Smartphone,
+  Phone,
 } from 'lucide-react';
 import MainLayout from '@/Layouts/MainLayout';
 import { useAuth } from '@/Contexts/AuthContext';
@@ -437,6 +438,17 @@ export default function Dashboard({
                   >
                     <Smartphone className="h-5 w-5" />
                     إدارة التطبيقات الحكومية (GovApps)
+                  </Link>
+                )}
+
+                {/* Phonebook Admin Tab */}
+                {(role === 'admin' || role === 'superadmin' || user?.permissions?.includes('phonebook.edit') || user?.permissions?.includes('phonebook.create')) && (
+                  <Link
+                    href="/admin/phonebook"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  >
+                    <Phone className="h-5 w-5" />
+                    إدارة دليل الهاتف (Phonebook)
                   </Link>
                 )}
 

@@ -2,88 +2,60 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
+use App\Models\PhonebookCategory;
+use App\Models\PhonebookEntry;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 
 class PhonebookController extends Controller
 {
-    const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT59DuQe_jOSrhrjVS7J7kB8YdVJiUHMxkB1-LsZc5MlAVFnUQrDXGM0n4qFm5yqQpPqFn5zkhTGgHS/pub?output=csv';
-
     /**
      * Display the official phonebook page.
      */
     public function index()
     {
-        $numbers = Cache::remember('external_phonebook_data', 600, function () {
-            $numbers = [];
+        // Auto seed database if empty
+        if (PhonebookCategory::count() === 0) {
             try {
-                $response = Http::get(self::CSV_URL);
-                if ($response->successful()) {
-                    $numbers = $this->parseCSV($response->body());
-                } else {
-                    Log::warning('Failed to fetch external phonebook data: HTTP ' . $response->status());
-                }
+                (new \Database\Seeders\PhonebookSeeder())->run();
             } catch (\Exception $e) {
-                Log::warning('Failed to fetch external data', [
-                    'controller' => static::class,
-                    'error'      => $e->getMessage(),
-                ]);
+                // Fail gracefully
             }
-            return $numbers;
+        }
+
+        $categories = Cache::remember('phonebook:db_categories_v1', 600, function () {
+            return PhonebookCategory::where('is_active', true)
+                ->orderBy('order_column')
+                ->get();
+        });
+
+        $entries = Cache::remember('phonebook:db_entries_v1', 600, function () {
+            return PhonebookEntry::with('category')
+                ->where('is_active', true)
+                ->whereHas('category', function ($q) {
+                    $q->where('is_active', true);
+                })
+                ->orderBy('order_column')
+                ->get()
+                ->map(function ($item) {
+                    return [
+                        'id' => $item->id,
+                        'category_id' => $item->category_id,
+                        'category_ar' => $item->category?->label_ar ?? '',
+                        'category_en' => $item->category?->label_en ?? '',
+                        'name_ar' => $item->name_ar,
+                        'name_en' => $item->name_en ?? '',
+                        'number' => $item->number,
+                        'is_whatsapp' => (bool)$item->is_whatsapp,
+                        'source_url' => $item->source_url ?? '',
+                    ];
+                })
+                ->toArray();
         });
 
         return Inertia::render('Phonebook/Index', [
-            'initialData' => $numbers
+            'initialData' => $entries,
+            'categories' => $categories,
         ]);
-    }
-
-    /**
-     * Parse the published spreadsheet CSV data.
-     */
-    private function parseCSV($csvText)
-    {
-        $lines = explode("\n", trim($csvText));
-        if (count($lines) < 2) return [];
-
-        // Parse headers and clean any byte-order mark (BOM)
-        $firstLine = $lines[0];
-        if (str_starts_with($firstLine, "\xEF\xBB\xBF")) {
-            $firstLine = substr($firstLine, 3);
-        }
-        $headers = str_getcsv($firstLine);
-        $data = [];
-
-        for ($i = 1; $i < count($lines); $i++) {
-            if (empty(trim($lines[$i]))) continue;
-
-            $values = str_getcsv($lines[$i]);
-            $row = [];
-            foreach ($headers as $index => $header) {
-                $headerName = trim($header);
-                if ($index < count($values)) {
-                    $row[$headerName] = trim($values[$index]);
-                } else {
-                    $row[$headerName] = '';
-                }
-            }
-
-            $number = $row['Number'] ?? '';
-            if (empty($number)) continue;
-
-            $data[] = [
-                'id' => $row['ID'] ?? "phone-{$i}",
-                'category_ar' => $row['Category_AR'] ?? '',
-                'category_en' => $row['Category_EN'] ?? '',
-                'name_ar' => $row['Name_AR'] ?? '',
-                'name_en' => $row['Name_EN'] ?? '',
-                'number' => $number,
-                'is_whatsapp' => strtolower($row['Is_WhatsApp'] ?? '') === 'yes' || $row['Is_WhatsApp'] === '1' || strtolower($row['Is_WhatsApp'] ?? '') === 'true',
-                'source_url' => $row['Source_URL'] ?? ''
-            ];
-        }
-
-        return $data;
     }
 }

@@ -4,7 +4,7 @@ import {
     CheckCircle2, Palette, Users2, ListOrdered, Landmark, Compass,
     Settings, Sun, Link, Moon, Utensils, Globe, Plus, Edit, X, Download, Upload, RotateCcw,
     Cloud, CloudRain, CloudLightning, Snowflake, Wind, MessageSquareCode, Smartphone, Bus,
-    Newspaper, Sliders, Calendar, Clock, Sunrise, Sunset, SunDim, MoonStar, Phone, Scale, Search, Shield, FileText, HelpCircle, MapPin
+    Newspaper, Sliders, Calendar, Clock, Sunrise, Sunset, SunDim, MoonStar, Phone, Scale, Search, Shield, FileText, HelpCircle, MapPin, LayoutGrid
 } from 'lucide-react';
 import { Button } from "@/Components/ui/button";
 import { ScrollArea } from "@/Components/ui/scroll-area";
@@ -71,6 +71,7 @@ const PRESET_LINKS: PresetLink[] = [
     { href: '/transit', icon: Bus, text: 'ترانزيت' },
     { href: '/justice', icon: Scale, text: 'العدالة الانتقالية' },
     { href: '/mishwar', icon: MapPin, text: 'مشوار' },
+    { href: '/board', icon: LayoutGrid, text: 'اللوحة العامة' },
     { href: 'https://joory.chat', icon: null, image: 'https://joory.chat/favicon.svg', text: 'جوري AI', external: true },
     { href: 'https://jard.chat', icon: null, image: 'https://jard.chat/images/logo-light.svg', text: 'جرد', external: true },
     { href: 'https://food.syrian.zone', icon: Utensils, text: 'وصفاتنا' },

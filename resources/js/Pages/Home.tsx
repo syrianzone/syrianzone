@@ -71,7 +71,7 @@ const PRESET_LINKS: PresetLink[] = [
     { href: '/transit', icon: Bus, text: 'ترانزيت' },
     { href: '/justice', icon: Scale, text: 'العدالة الانتقالية' },
     { href: '/mishwar', icon: MapPin, text: 'مشوار' },
-    { href: '/board', icon: LayoutGrid, text: 'اللوحة العامة' },
+    { href: '/board', icon: LayoutGrid, text: 'لوح' },
     { href: 'https://joory.chat', icon: null, image: 'https://joory.chat/favicon.svg', text: 'جوري AI', external: true },
     { href: 'https://jard.chat', icon: null, image: 'https://jard.chat/images/logo-light.svg', text: 'جرد', external: true },
     { href: 'https://food.syrian.zone', icon: Utensils, text: 'وصفاتنا' },

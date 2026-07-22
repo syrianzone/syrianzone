@@ -75,7 +75,7 @@ const navLinks = [
   { href: '/shawarma', text: 'تير ليست الشاورما', icon: Sandwich },
   { href: '/justice', text: 'العدالة الانتقالية', icon: Scale },
   { href: '/mishwar', text: 'مشوار', icon: MapPin },
-  { href: '/board', text: 'اللوحة العامة', icon: LayoutGrid },
+  { href: '/board', text: 'لوح', icon: LayoutGrid },
 ];
 
 const externalLinks = [

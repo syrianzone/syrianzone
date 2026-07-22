@@ -2,13 +2,12 @@
 
 import React, { useState, useMemo } from 'react';
 import { Website } from './types';
-import { Search, X, FilterX, Globe, Building, Newspaper, User, ExternalLink, List, LayoutGrid, ChevronDown, Plus } from 'lucide-react';
+import { Search, X, Globe, List, LayoutGrid, Plus, ExternalLink } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface SitesClientProps {
     initialWebsites: Website[];
@@ -42,7 +41,7 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
     const handleLoadMore = () => setDisplayCount(prev => prev + ITEMS_PER_PAGE);
 
     const clearFilters = () => {
-        setTypeFilter('all');
+        setTypeFilter('');
         setSearchTerm('');
     };
 
@@ -70,7 +69,7 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
     return (
         <div className="min-h-screen transition-colors" dir="rtl">
             {/* Header & Filters */}
-            <section className="bg-card py-10 shadow-sm border-b border-border">
+            <section className="bg-card py-10 shadow-xs border-b border-border">
                 <div className="container mx-auto px-4 text-center max-w-4xl space-y-6">
                     <div className="relative">
                         <h1 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">المواقع السورية</h1>
@@ -97,21 +96,23 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
                     {/* Search Box */}
                     <div className="flex flex-col md:flex-row gap-4 max-w-2xl mx-auto items-center">
                         <div className="relative w-full">
-                            <Search className="absolute top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 right-3" />
+                            <Search className="absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground start-3 pointer-events-none" />
                             <Input
                                 type="text"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 placeholder="ابحث في المواقع السورية..."
-                                className="w-full pr-10 pl-10 bg-card"
+                                className="w-full ps-10 pe-10 bg-card border-border"
                             />
                             {searchTerm && (
-                                <button
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
                                     onClick={() => setSearchTerm('')}
-                                    className="absolute top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 left-3"
+                                    className="absolute top-1/2 -translate-y-1/2 end-2 h-7 w-7 text-muted-foreground hover:text-foreground"
                                 >
                                     <X className="h-4 w-4" />
-                                </button>
+                                </Button>
                             )}
                         </div>
                     </div>
@@ -154,29 +155,35 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
                             <span className="text-sm text-muted-foreground">عرض:</span>
-                            <div className="bg-card rounded-lg p-1 shadow-sm border border-border flex">
-                                <button
+                            <div className="bg-card rounded-lg p-1 shadow-xs border border-border flex gap-1">
+                                <Button
+                                    variant={viewMode === 'table' ? 'secondary' : 'ghost'}
+                                    size="icon"
                                     onClick={() => setViewMode('table')}
-                                    className={`p-1.5 rounded transition-all ${viewMode === 'table' ? 'bg-accent text-primary' : 'text-muted-foreground'}`}
+                                    className="h-8 w-8"
+                                    title="عرض كجدول"
                                 >
                                     <List className="h-4 w-4" />
-                                </button>
-                                <button
+                                </Button>
+                                <Button
+                                    variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+                                    size="icon"
                                     onClick={() => setViewMode('grid')}
-                                    className={`p-1.5 rounded transition-all ${viewMode === 'grid' ? 'bg-accent text-primary' : 'text-muted-foreground'}`}
+                                    className="h-8 w-8"
+                                    title="عرض كبطاقات"
                                 >
                                     <LayoutGrid className="h-4 w-4" />
-                                </button>
+                                </Button>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {filteredWebsites.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 bg-card rounded-lg shadow-sm border border-dashed border-border text-center">
-                        <Search className="h-16 w-16 text-muted-foreground mb-4 opacity-20" />
+                    <div className="flex flex-col items-center justify-center py-20 bg-card rounded-2xl border border-dashed border-border shadow-xs text-center">
+                        <Search className="h-16 w-16 text-muted-foreground/30 mb-4" />
                         <h3 className="text-lg font-semibold text-foreground mb-2">لم يتم العثور على مواقع</h3>
-                        <p className="text-muted-foreground">جرب تغيير مصطلحات البحث أو الفلاتر</p>
+                        <p className="text-muted-foreground text-sm">جرب تغيير مصطلحات البحث أو الفلاتر</p>
                         <Button onClick={clearFilters} variant="link" className="mt-2 text-primary">
                             مسح جميع الفلاتر
                         </Button>
@@ -184,7 +191,7 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
                 ) : (
                     <>
                         {viewMode === 'grid' ? (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-4">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-3.5 sm:gap-4">
                                 {displayedWebsites.map(site => (
                                     <a
                                         key={site.id}
@@ -193,31 +200,34 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
                                         rel="noopener noreferrer"
                                         className="block h-full group"
                                     >
-                                        <Card className="h-full hover:shadow-lg transition-all duration-300 border-border hover:border-primary bg-card flex flex-col items-center text-center">
-                                            <CardContent className="p-5 flex flex-col items-center h-full w-full">
-                                                <div className="w-16 h-16 mb-4 bg-muted rounded-xl p-2 flex items-center justify-center relative overflow-hidden ring-1 ring-border">
-                                                    <img
-                                                        src={getFaviconUrl(site.url)}
-                                                        alt={site.name}
-                                                        className="w-10 h-10 object-contain"
-                                                        onError={(e) => {
-                                                            e.currentTarget.style.display = 'none';
-                                                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                                                        }}
-                                                    />
-                                                    <Globe className="w-8 h-8 text-muted-foreground hidden" />
+                                        <Card className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card/90 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-full text-center">
+                                            <CardContent className="p-4 flex flex-col items-center h-full w-full justify-between">
+                                                <div className="flex flex-col items-center w-full">
+                                                    {/* Light-shaded icon frame for optimal icon contrast even in dark mode */}
+                                                    <div className="w-14 h-14 mb-3.5 bg-white dark:bg-slate-100 rounded-xl p-2.5 flex items-center justify-center relative overflow-hidden shadow-xs ring-1 ring-border/80 group-hover:scale-105 transition-transform shrink-0">
+                                                        <img
+                                                            src={getFaviconUrl(site.url)}
+                                                            alt={site.name}
+                                                            className="w-9 h-9 object-contain"
+                                                            onError={(e) => {
+                                                                e.currentTarget.style.display = 'none';
+                                                                e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                                            }}
+                                                        />
+                                                        <Globe className="w-8 h-8 text-zinc-700 hidden" />
+                                                    </div>
+
+                                                    <h3 className="font-bold text-sm text-foreground mb-1.5 group-hover:text-primary transition-colors line-clamp-2 leading-snug">
+                                                        {site.name}
+                                                    </h3>
+
+                                                    <Badge variant="outline" className="text-[10px] font-semibold px-2 py-0.5 bg-primary/5 text-primary border-primary/20 shrink-0">
+                                                        {getTypeDisplayName(site.type)}
+                                                    </Badge>
                                                 </div>
 
-                                                <h3 className="font-bold text-foreground mb-2 group-hover:text-primary line-clamp-2 leading-tight">
-                                                    {site.name}
-                                                </h3>
-
-                                                <Badge variant="secondary" className="mb-3 text-[10px] font-normal px-2 py-0.5 bg-muted text-muted-foreground">
-                                                    {getTypeDisplayName(site.type)}
-                                                </Badge>
-
                                                 {site.description && (
-                                                    <p className="text-xs text-muted-foreground line-clamp-2 mt-auto w-full pt-3 border-t border-border">
+                                                    <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2 mt-3 pt-2.5 border-t border-border/50 w-full">
                                                         {site.description}
                                                     </p>
                                                 )}
@@ -227,14 +237,14 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
                                 ))}
                             </div>
                         ) : (
-                            <div className="bg-card rounded-lg shadow border border-border overflow-hidden">
+                            <div className="bg-card rounded-2xl shadow-xs border border-border overflow-hidden">
                                 <Table>
                                     <TableHeader className="bg-muted">
                                         <TableRow>
-                                            <TableHead className="text-right">الموقع</TableHead>
-                                            <TableHead className="text-right">النوع</TableHead>
-                                            <TableHead className="text-right w-1/3">الوصف</TableHead>
-                                            <TableHead className="text-right">الرابط</TableHead>
+                                            <TableHead className="text-start font-bold">الموقع</TableHead>
+                                            <TableHead className="text-start font-bold">النوع</TableHead>
+                                            <TableHead className="text-start font-bold w-1/3">الوصف</TableHead>
+                                            <TableHead className="text-start font-bold">الرابط</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -242,7 +252,7 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
                                             <TableRow key={site.id} className="hover:bg-muted/50 transition-colors">
                                                 <TableCell className="font-medium">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-8 h-8 rounded bg-muted flex items-center justify-center shrink-0">
+                                                        <div className="w-8 h-8 rounded-lg bg-white dark:bg-slate-100 border border-border/80 flex items-center justify-center shrink-0 p-1">
                                                             <img
                                                                 src={getFaviconUrl(site.url)}
                                                                 alt=""
@@ -252,13 +262,13 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
                                                                     e.currentTarget.nextElementSibling?.classList.remove('hidden');
                                                                 }}
                                                             />
-                                                            <Globe className="w-4 h-4 text-muted-foreground hidden" />
+                                                            <Globe className="w-4 h-4 text-zinc-700 hidden" />
                                                         </div>
-                                                        <span className="text-foreground">{site.name}</span>
+                                                        <span className="text-foreground font-semibold">{site.name}</span>
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Badge variant="outline" className="font-normal">
+                                                    <Badge variant="outline" className="font-normal text-[11px]">
                                                         {getTypeDisplayName(site.type)}
                                                     </Badge>
                                                 </TableCell>
@@ -266,8 +276,8 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
                                                     {site.description}
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Button variant="link" asChild className="h-auto p-0 text-primary">
-                                                        <a href={site.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 dir-ltr">
+                                                    <Button variant="link" asChild className="h-auto p-0 text-primary font-semibold">
+                                                        <a href={site.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
                                                             <span className="text-xs">زيارة</span>
                                                             <ExternalLink size={12} />
                                                         </a>
@@ -285,7 +295,7 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
                                 <Button
                                     onClick={handleLoadMore}
                                     size="lg"
-                                    className="bg-primary hover:bg-primary/90 text-primary-foreground min-w-[200px]"
+                                    className="bg-primary hover:bg-primary/90 text-primary-foreground min-w-[200px] rounded-full font-bold shadow-md hover:shadow-lg transition-all"
                                 >
                                     تحميل المزيد
                                 </Button>

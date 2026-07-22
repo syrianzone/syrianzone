@@ -5,7 +5,6 @@ import { Website } from './types';
 import { Search, X, FilterX, Globe, Building, Newspaper, User, ExternalLink, List, LayoutGrid, ChevronDown, Plus } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +19,6 @@ const ITEMS_PER_PAGE = 24;
 export default function SitesClient({ initialWebsites }: SitesClientProps) {
     const [searchTerm, setSearchTerm] = useState('');
     const [typeFilter, setTypeFilter] = useState('');
-    const [sortOption, setSortOption] = useState('name');
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
     const [displayCount, setDisplayCount] = useState(ITEMS_PER_PAGE);
 
@@ -36,15 +34,8 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
             const matchType = typeFilter === '' || site.type === typeFilter;
 
             return matchSearch && matchType;
-        }).sort((a, b) => {
-            switch (sortOption) {
-                case 'name': return a.name.localeCompare(b.name, 'ar');
-                case 'name-desc': return b.name.localeCompare(a.name, 'ar');
-                case 'type': return a.type.localeCompare(b.type, 'ar');
-                default: return 0;
-            }
         });
-    }, [initialWebsites, searchTerm, typeFilter, sortOption]);
+    }, [initialWebsites, searchTerm, typeFilter]);
 
     const displayedWebsites = filteredWebsites.slice(0, displayCount);
 
@@ -58,7 +49,7 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
     // Reset display count when filters change
     React.useEffect(() => {
         setDisplayCount(ITEMS_PER_PAGE);
-    }, [searchTerm, typeFilter, sortOption]);
+    }, [searchTerm, typeFilter]);
 
     const getTypeDisplayName = (type: string) => {
         if (type.includes('مدونة شخصية')) return 'المدونات الشخصية';
@@ -125,33 +116,27 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
                         </div>
                     </div>
 
-                    {/* Filters Grid */}
-                    <div className="flex flex-wrap gap-4 justify-center items-center">
-                        <div className="flex flex-col space-y-1 min-w-[200px]">
-                            <Select value={typeFilter || 'all'} onValueChange={(val) => setTypeFilter(val === 'all' ? '' : val)}>
-                                <SelectTrigger className="w-full bg-card">
-                                    <SelectValue placeholder="نوع الموقع" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">جميع الأنواع</SelectItem>
-                                    {categories.map((c) => (
-                                        <SelectItem key={c} value={c}>
-                                            {getTypeDisplayName(c)}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
+                    {/* Category Filter Chips (Styled like SyOfficial) */}
+                    <div className="mt-6 flex flex-wrap justify-center gap-2">
                         <Button
-                            variant="outline"
-                            onClick={clearFilters}
-                            disabled={!typeFilter && !searchTerm}
-                            className="bg-muted hover:bg-muted/80 text-foreground"
+                            variant={typeFilter === '' ? "default" : "outline"}
+                            onClick={() => setTypeFilter('')}
+                            className="rounded-full"
+                            size="sm"
                         >
-                            <FilterX className="mr-2 h-4 w-4 ml-2" />
-                            مسح الفلاتر
+                            الكل
                         </Button>
+                        {categories.map((c) => (
+                            <Button
+                                key={c}
+                                variant={typeFilter === c ? "default" : "outline"}
+                                onClick={() => setTypeFilter(c)}
+                                className="rounded-full"
+                                size="sm"
+                            >
+                                {getTypeDisplayName(c)}
+                            </Button>
+                        ))}
                     </div>
                 </div>
             </section>
@@ -184,19 +169,6 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
                                 </button>
                             </div>
                         </div>
-
-                        <div className="flex items-center gap-2">
-                            <Select value={sortOption} onValueChange={setSortOption}>
-                                <SelectTrigger className="w-[160px] h-9 text-sm">
-                                    <SelectValue placeholder="ترتيب حسب" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="name">الاسم (أ-ي)</SelectItem>
-                                    <SelectItem value="name-desc">الاسم (ي-أ)</SelectItem>
-                                    <SelectItem value="type">النوع</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
                     </div>
                 </div>
 
@@ -212,7 +184,7 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
                 ) : (
                     <>
                         {viewMode === 'grid' ? (
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-4">
                                 {displayedWebsites.map(site => (
                                     <a
                                         key={site.id}

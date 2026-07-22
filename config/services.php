@@ -45,10 +45,9 @@ return [
         'key' => env('GOOGLE_PLACES_API_KEY'),
     ],
 
-    // proxied server-side: the worker only sends CORS headers for the production
-    // origin, so a browser call fails on staging and in local dev.
-    'weather' => [
-        'url' => env('WEATHER_WORKER_URL', 'https://syrianzone.hade-alahmad1.workers.dev/'),
+    'openweather' => [
+        'key' => env('OPENWEATHER_API_KEY'),
+        'url' => env('OPENWEATHER_API_URL', 'https://api.openweathermap.org/data/2.5/weather'),
     ],
 
     // all proxied server-side for the same reason as the weather worker above:

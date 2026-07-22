@@ -51,14 +51,11 @@ test('sends the coordinates of the requested governorate', function () {
     && str_contains($request->url(), 'lon=35.7901'));
 });
 
-test('rejects an unknown or missing governorate', function () {
+test('rejects missing or invalid governorate and coordinates', function () {
   Http::fake();
 
-  $this->getJson('/api/weather?governorate=paris')->assertStatus(422);
+  $this->getJson('/api/weather?governorate=invalid')->assertStatus(422);
   $this->getJson('/api/weather')->assertStatus(422);
-
-  // no coordinates are accepted from the client, so this stays an unknown key
-  $this->getJson('/api/weather?governorate=&lat=48.8&lon=2.3')->assertStatus(422);
 
   Http::assertNothingSent();
 });

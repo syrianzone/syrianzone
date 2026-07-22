@@ -44,29 +44,42 @@ class WeatherController extends Controller
 
   public function show(Request $request)
   {
-    $validated = $request->validate([
-      'governorate' => 'required|string|in:'.implode(',', array_keys(self::COORDS)),
-    ], [
-      'governorate.required' => 'المحافظة مطلوبة',
-      'governorate.in' => 'محافظة غير معروفة',
-    ]);
+    $governorate = $request->query('governorate');
+    $lat = $request->query('lat');
+    $lon = $request->query('lon');
 
-    $governorate = $validated['governorate'];
-    $cached = Cache::get("weather:{$governorate}");
+    if ($governorate && isset(self::COORDS[$governorate])) {
+      [$lat, $lon] = self::COORDS[$governorate];
+      $cacheKey = "weather:{$governorate}";
+    } elseif ($lat !== null && $lon !== null && is_numeric($lat) && is_numeric($lon)) {
+      $governorate = $governorate ?: 'custom';
+      $lat = (float) $lat;
+      $lon = (float) $lon;
+      $cacheKey = "weather:{$governorate}:".round($lat, 4).':'.round($lon, 4);
+    } else {
+      return response()->json(['message' => 'المحافظة مطلوبة أو إحداثيات صالحة'], 422);
+    }
+
+    $cached = Cache::get($cacheKey);
     if ($cached !== null) {
       return response()->json($cached)->header('Cache-Control', 'public, max-age=300');
     }
 
-    [$lat, $lon] = self::COORDS[$governorate];
-
     try {
-      $response = Http::timeout(5)->get(config('services.weather.url'), ['lat' => $lat, 'lon' => $lon]);
+      $apiKey = config('services.openweather.key');
+      $apiUrl = config('services.openweather.url', 'https://api.openweathermap.org/data/2.5/weather');
+
+      $response = Http::timeout(5)->get($apiUrl, [
+        'lat' => $lat,
+        'lon' => $lon,
+        'appid' => $apiKey,
+        'units' => 'metric',
+      ]);
     } catch (\Throwable $e) {
       return response()->json(['message' => 'تعذر تحميل الطقس'], 502);
     }
 
     if (! $response->successful()) {
-      // not cached: a transient upstream error must not stick for the whole ttl
       return response()->json(['message' => 'تعذر تحميل الطقس'], 502);
     }
 
@@ -78,15 +91,14 @@ class WeatherController extends Controller
     $payload = [
       'governorate' => $governorate,
       'temp' => (int) round($temp),
-      // english, as the upstream sends it; the widget owns the arabic mapping
       'description' => $response->json('weather.0.description') ?? '',
       'icon' => $response->json('weather.0.icon') ?? '',
-      // additive and non-fatal: an empty array here is a normal answer, never a
-      // 502. Losing the forecast must not take the current temperature with it.
-      'forecast' => $this->forecast($governorate, $lat, $lon),
+      'main' => $response->json('main'),
+      'weather' => $response->json('weather'),
+      'forecast' => $this->forecast($governorate, (float) $lat, (float) $lon),
     ];
 
-    Cache::put("weather:{$governorate}", $payload, self::TTL);
+    Cache::put($cacheKey, $payload, self::TTL);
 
     return response()->json($payload)->header('Cache-Control', 'public, max-age=300');
   }

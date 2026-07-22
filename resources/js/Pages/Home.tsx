@@ -259,7 +259,7 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
 
                 if (isNaN(coords.lat) || isNaN(coords.lon)) return;
 
-                const response = await fetch(`https://syrianzone.hade-alahmad1.workers.dev/?lat=${coords.lat}&lon=${coords.lon}`);
+                const response = await fetch(`/api/weather?lat=${coords.lat}&lon=${coords.lon}`);
                 if (!response.ok) throw new Error('Weather fetch failed');
                 const data = await response.json();
 

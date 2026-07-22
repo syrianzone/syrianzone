@@ -5,7 +5,7 @@ import { formatSocialUrl, getLanguageName } from './data';
 import { Organization } from './types';
 import {
     Search, X, FilterX, MapPin, Globe, FileText, Users,
-    LayoutGrid, Table as TableIcon, Send, ExternalLink
+    LayoutGrid, List, Plus, ExternalLink, Send
 } from 'lucide-react';
 import { Twitter, Facebook, Instagram, Youtube } from '@/components/ui/icons';
 import { Input } from "@/components/ui/input";
@@ -19,7 +19,7 @@ interface PartyClientProps {
     initialOrganizations: Organization[];
 }
 
-const ITEMS_PER_PAGE = 12;
+const ITEMS_PER_PAGE = 15;
 
 export default function PartyClient({ initialOrganizations }: PartyClientProps) {
     const [searchTerm, setSearchTerm] = useState('');
@@ -27,7 +27,6 @@ export default function PartyClient({ initialOrganizations }: PartyClientProps) 
     const [countryFilter, setCountryFilter] = useState('all');
     const [cityFilter, setCityFilter] = useState('all');
     const [langFilter, setLangFilter] = useState('all');
-    const [sortOption, setSortOption] = useState('name');
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
     const [displayCount, setDisplayCount] = useState(ITEMS_PER_PAGE);
 
@@ -37,7 +36,7 @@ export default function PartyClient({ initialOrganizations }: PartyClientProps) 
     const cities = useMemo(() => Array.from(new Set(initialOrganizations.map(o => o.city).filter(Boolean))).sort(), [initialOrganizations]);
     const languages = useMemo(() => Array.from(new Set(initialOrganizations.map(o => o.lang).filter(Boolean))).sort(), [initialOrganizations]);
 
-    // --- Filter & Sort Logic ---
+    // --- Filter Logic ---
     const filteredOrganizations = useMemo(() => {
         return initialOrganizations.filter(org => {
             const matchSearch = searchTerm === '' ||
@@ -52,17 +51,8 @@ export default function PartyClient({ initialOrganizations }: PartyClientProps) 
             const matchLang = langFilter === 'all' || org.lang === langFilter;
 
             return matchSearch && matchCategory && matchCountry && matchCity && matchLang;
-        }).sort((a, b) => {
-            switch (sortOption) {
-                case 'name': return a.name.localeCompare(b.name, 'ar');
-                case 'name-desc': return b.name.localeCompare(a.name, 'ar');
-                case 'category': return (a.type || '').localeCompare(b.type || '', 'ar');
-                case 'country': return (a.country || '').localeCompare(b.country || '', 'ar');
-                case 'city': return (a.city || '').localeCompare(b.city || '', 'ar');
-                default: return 0;
-            }
         });
-    }, [initialOrganizations, searchTerm, categoryFilter, countryFilter, cityFilter, langFilter, sortOption]);
+    }, [initialOrganizations, searchTerm, categoryFilter, countryFilter, cityFilter, langFilter]);
 
     const displayedOrganizations = filteredOrganizations.slice(0, displayCount);
 
@@ -79,42 +69,67 @@ export default function PartyClient({ initialOrganizations }: PartyClientProps) 
         setSearchTerm('');
     };
 
+    // Reset display count when filters change
+    React.useEffect(() => {
+        setDisplayCount(ITEMS_PER_PAGE);
+    }, [searchTerm, categoryFilter, countryFilter, cityFilter, langFilter]);
+
     return (
-        <div className="bg-background min-h-screen font-sans" dir="rtl">
-            {/* Header & Filters */}
-            <section className="bg-card py-10 shadow-sm border-b border-border">
+        <div className="min-h-screen transition-colors font-sans" dir="rtl">
+            {/* Header & Hero Section */}
+            <section className="bg-card py-10 shadow-xs border-b border-border">
                 <div className="container mx-auto px-4 text-center max-w-4xl space-y-6">
-                    <div>
+                    <div className="relative">
                         <h1 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">دليل المنظمات السياسية السورية</h1>
                         <p className="text-lg text-muted-foreground">تصفح واكتشف المنظمات والأحزاب والحركات السياسية السورية العاملة في مختلف أنحاء العالم</p>
+
+                        <div className="mt-4 flex justify-center">
+                            <Button
+                                asChild
+                                variant="outline"
+                                className="gap-2 border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary"
+                            >
+                                <a
+                                    href="https://forms.gle/vLAxoz5RNt6z6qyj9"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    <Plus size={16} />
+                                    إضافة منظمة جديدة
+                                </a>
+                            </Button>
+                        </div>
                     </div>
 
-                    {/* Search Box */}
+                    {/* SyOfficial-styled Search Box */}
                     <div className="flex flex-col md:flex-row gap-4 max-w-2xl mx-auto items-center">
                         <div className="relative w-full">
-                            <Search className="absolute top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground right-3" />
+                            <Search className="absolute start-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
                             <Input
                                 type="text"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 placeholder="ابحث في المنظمات السياسية بالاسم أو النوع أو المكان..."
-                                className="w-full pr-10 pl-10 bg-background"
+                                className="w-full ps-12 pe-10 h-14 text-lg bg-card border-border rounded-xl shadow-sm focus:ring-2 focus:ring-primary focus:border-transparent"
                             />
                             {searchTerm && (
-                                <button
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
                                     onClick={() => setSearchTerm('')}
-                                    className="absolute top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground left-3"
+                                    className="absolute end-3 top-1/2 -translate-y-1/2 h-8 w-8 text-muted-foreground hover:text-foreground"
                                 >
                                     <X className="h-4 w-4" />
-                                </button>
+                                </Button>
                             )}
                         </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-4 justify-center items-center">
-                        <div className="flex flex-col space-y-1 min-w-[150px]">
+                    {/* Filter Dropdowns */}
+                    <div className="flex flex-wrap gap-3 justify-center items-center pt-2">
+                        <div className="min-w-[140px]">
                             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                                <SelectTrigger className="w-full bg-background text-foreground">
+                                <SelectTrigger className="w-full bg-card border-border text-foreground">
                                     <SelectValue placeholder="نوع المنظمة" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-card text-foreground">
@@ -124,9 +139,9 @@ export default function PartyClient({ initialOrganizations }: PartyClientProps) 
                             </Select>
                         </div>
 
-                        <div className="flex flex-col space-y-1 min-w-[150px]">
+                        <div className="min-w-[140px]">
                             <Select value={countryFilter} onValueChange={setCountryFilter}>
-                                <SelectTrigger className="w-full bg-background text-foreground">
+                                <SelectTrigger className="w-full bg-card border-border text-foreground">
                                     <SelectValue placeholder="البلد" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-card text-foreground">
@@ -136,9 +151,9 @@ export default function PartyClient({ initialOrganizations }: PartyClientProps) 
                             </Select>
                         </div>
 
-                        <div className="flex flex-col space-y-1 min-w-[150px]">
+                        <div className="min-w-[140px]">
                             <Select value={cityFilter} onValueChange={setCityFilter}>
-                                <SelectTrigger className="w-full bg-background text-foreground">
+                                <SelectTrigger className="w-full bg-card border-border text-foreground">
                                     <SelectValue placeholder="المدينة" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-card text-foreground">
@@ -148,9 +163,9 @@ export default function PartyClient({ initialOrganizations }: PartyClientProps) 
                             </Select>
                         </div>
 
-                        <div className="flex flex-col space-y-1 min-w-[150px]">
+                        <div className="min-w-[140px]">
                             <Select value={langFilter} onValueChange={setLangFilter}>
-                                <SelectTrigger className="w-full bg-background text-foreground">
+                                <SelectTrigger className="w-full bg-card border-border text-foreground">
                                     <SelectValue placeholder="اللغة" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-card text-foreground">
@@ -160,15 +175,17 @@ export default function PartyClient({ initialOrganizations }: PartyClientProps) 
                             </Select>
                         </div>
 
-                        <Button
-                            variant="outline"
-                            onClick={clearFilters}
-                            disabled={categoryFilter === 'all' && countryFilter === 'all' && cityFilter === 'all' && langFilter === 'all' && !searchTerm}
-                            className="bg-muted hover:bg-accent text-muted-foreground border-border"
-                        >
-                            <FilterX className="mr-2 h-4 w-4 ml-2" />
-                            مسح الفلاتر
-                        </Button>
+                        {(categoryFilter !== 'all' || countryFilter !== 'all' || cityFilter !== 'all' || langFilter !== 'all' || searchTerm) && (
+                            <Button
+                                variant="outline"
+                                onClick={clearFilters}
+                                className="border-border text-muted-foreground hover:text-foreground gap-2"
+                                size="sm"
+                            >
+                                <FilterX className="h-4 w-4" />
+                                مسح الفلاتر
+                            </Button>
+                        )}
                     </div>
                 </div>
             </section>
@@ -186,44 +203,35 @@ export default function PartyClient({ initialOrganizations }: PartyClientProps) 
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
                             <span className="text-sm text-muted-foreground">عرض:</span>
-                            <div className="bg-card rounded-lg p-1 shadow-sm border border-border flex">
-                                <button
+                            <div className="bg-card rounded-lg p-1 shadow-xs border border-border flex gap-1">
+                                <Button
+                                    variant={viewMode === 'table' ? 'secondary' : 'ghost'}
+                                    size="icon"
                                     onClick={() => setViewMode('table')}
-                                    className={`p-1.5 rounded transition-all ${viewMode === 'table' ? 'bg-muted text-primary' : 'text-muted-foreground'}`}
+                                    className="h-8 w-8"
+                                    title="عرض كجدول"
                                 >
-                                    <TableIcon className="h-4 w-4" />
-                                </button>
-                                <button
+                                    <List className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                    variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+                                    size="icon"
                                     onClick={() => setViewMode('grid')}
-                                    className={`p-1.5 rounded transition-all ${viewMode === 'grid' ? 'bg-muted text-primary' : 'text-muted-foreground'}`}
+                                    className="h-8 w-8"
+                                    title="عرض كبطاقات"
                                 >
                                     <LayoutGrid className="h-4 w-4" />
-                                </button>
+                                </Button>
                             </div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                            <Select value={sortOption} onValueChange={setSortOption}>
-                                <SelectTrigger className="w-[180px] h-9 text-sm">
-                                    <SelectValue placeholder="ترتيب حسب" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="name">الاسم (أ-ي)</SelectItem>
-                                    <SelectItem value="name-desc">الاسم (ي-أ)</SelectItem>
-                                    <SelectItem value="category">النوع</SelectItem>
-                                    <SelectItem value="country">البلد</SelectItem>
-                                    <SelectItem value="city">المدينة</SelectItem>
-                                </SelectContent>
-                            </Select>
                         </div>
                     </div>
                 </div>
 
                 {filteredOrganizations.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 bg-card rounded-lg shadow-sm border border-dashed border-border text-center">
-                        <Search className="h-16 w-16 text-muted-foreground mb-4" />
+                    <div className="flex flex-col items-center justify-center py-20 bg-card rounded-2xl border border-dashed border-border shadow-xs text-center">
+                        <Search className="h-16 w-16 text-muted-foreground/30 mb-4" />
                         <h3 className="text-lg font-semibold text-foreground mb-2">لم يتم العثور على منظمات</h3>
-                        <p className="text-muted-foreground">جرب تغيير مصطلحات البحث أو الفلاتر</p>
+                        <p className="text-muted-foreground text-sm">جرب تغيير مصطلحات البحث أو الفلاتر</p>
                         <Button onClick={clearFilters} variant="link" className="mt-2 text-primary">
                             مسح جميع الفلاتر
                         </Button>
@@ -231,109 +239,116 @@ export default function PartyClient({ initialOrganizations }: PartyClientProps) 
                 ) : (
                     <>
                         {viewMode === 'grid' ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-4">
                                 {displayedOrganizations.map(org => {
-                                    // Helper for social links inside the map
                                     const socials = [
                                         { url: org.socialFb, icon: Facebook, key: 'facebook' as const },
                                         { url: org.socialX, icon: Twitter, key: 'x' as const },
                                         { url: org.socialInsta, icon: Instagram, key: 'instagram' as const },
                                         { url: org.youtube, icon: Youtube, key: 'youtube' as const },
-                                        { url: org.telegram, icon: ExternalLink, key: 'telegram' as const } // Fallback icon
+                                        { url: org.telegram, icon: Send, key: 'telegram' as const }
                                     ].filter(s => s.url);
 
                                     return (
-                                        <Card key={org.id} className="group hover:shadow-lg transition-shadow border border-border bg-card flex flex-col h-full">
-                                            <CardContent className="p-6 flex flex-col h-full">
-                                                <div className="mb-4">
-                                                    <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
-                                                        {org.name}
-                                                    </h3>
-                                                    <div className="flex flex-wrap gap-2 text-xs">
-                                                        {org.type && <Badge variant="secondary" className="font-normal text-muted-foreground">{org.type}</Badge>}
-                                                        {org.politicalLeanings?.map((l: string, idx: number) => (
-                                                            <Badge key={idx} variant="outline" className="font-normal text-primary border-primary/30 bg-primary/5">
-                                                                {l}
-                                                            </Badge>
-                                                        ))}
+                                        <Card key={org.id} className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card/90 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-full">
+                                            <CardContent className="p-4 flex flex-col justify-between h-full">
+                                                <div>
+                                                    <div className="mb-3">
+                                                        <h3 className="text-base font-bold text-foreground mb-2 group-hover:text-primary transition-colors leading-snug line-clamp-2">
+                                                            {org.name}
+                                                        </h3>
+                                                        <div className="flex flex-wrap gap-1.5 text-xs">
+                                                            {org.type && (
+                                                                <Badge variant="secondary" className="font-normal text-[10px] text-muted-foreground bg-muted/60 border-border/40 px-2 py-0.5">
+                                                                    {org.type}
+                                                                </Badge>
+                                                            )}
+                                                            {org.politicalLeanings?.map((l: string, idx: number) => (
+                                                                <Badge key={idx} variant="outline" className="font-normal text-[10px] text-primary border-primary/20 bg-primary/5 px-2 py-0.5">
+                                                                    {l}
+                                                                </Badge>
+                                                            ))}
+                                                        </div>
                                                     </div>
-                                                </div>
 
-                                                {org.description && (
-                                                    <p className="text-muted-foreground text-sm leading-relaxed mb-6 line-clamp-3 overflow-hidden">
-                                                        {org.description}
-                                                    </p>
-                                                )}
-
-                                                <div className="space-y-3 mt-auto pt-4 border-t border-border text-sm">
-                                                    {org.formattedLocation && (
-                                                        <div className="flex items-start gap-2 text-muted-foreground">
-                                                            <MapPin className="h-4 w-4 text-primary mt-1 shrink-0" />
-                                                            <span>{org.formattedLocation}</span>
-                                                        </div>
-                                                    )}
-                                                    {org.website && (
-                                                        <div className="flex items-start gap-2">
-                                                            <Globe className="h-4 w-4 text-primary mt-1 shrink-0" />
-                                                            <a href={org.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline truncate">
-                                                                {org.website.replace(/^https?:\/\//, '')}
-                                                            </a>
-                                                        </div>
-                                                    )}
-                                                    {org.manifesto && (
-                                                        <div className="flex items-start gap-2">
-                                                            <FileText className="h-4 w-4 text-primary mt-1 shrink-0" />
-                                                            <a href={org.manifesto} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">
-                                                                البيان التأسيسي
-                                                            </a>
-                                                        </div>
-                                                    )}
-                                                    {org.mvpMembers && (
-                                                        <div className="flex items-start gap-2 text-muted-foreground text-xs">
-                                                            <Users className="h-3 w-3 text-primary mt-0.5 shrink-0" />
-                                                            <span className="line-clamp-1">{org.mvpMembers}</span>
-                                                        </div>
+                                                    {org.description && (
+                                                        <p className="text-muted-foreground text-xs leading-relaxed mb-4 line-clamp-3">
+                                                            {org.description}
+                                                        </p>
                                                     )}
                                                 </div>
 
-                                                {/* Social Links */}
-                                                {socials.length > 0 && (
-                                                    <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-border">
-                                                        {socials.map(s => {
-                                                            const Icon = s.icon;
-                                                            return (
-                                                                <a
-                                                                    key={s.key}
-                                                                    href={formatSocialUrl(s.key, s.url || '')}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    className="p-1.5 rounded bg-muted text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors"
-                                                                >
-                                                                    <Icon className="h-4 w-4" />
+                                                <div>
+                                                    <div className="space-y-2 pt-3 border-t border-border/50 text-xs">
+                                                        {org.formattedLocation && (
+                                                            <div className="flex items-start gap-1.5 text-muted-foreground">
+                                                                <MapPin className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
+                                                                <span className="line-clamp-1">{org.formattedLocation}</span>
+                                                            </div>
+                                                        )}
+                                                        {org.website && (
+                                                            <div className="flex items-start gap-1.5">
+                                                                <Globe className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
+                                                                <a href={org.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate font-medium">
+                                                                    {org.website.replace(/^https?:\/\//, '')}
                                                                 </a>
-                                                            )
-                                                        })}
+                                                            </div>
+                                                        )}
+                                                        {org.manifesto && (
+                                                            <div className="flex items-start gap-1.5">
+                                                                <FileText className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
+                                                                <a href={org.manifesto} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">
+                                                                    البيان التأسيسي
+                                                                </a>
+                                                            </div>
+                                                        )}
+                                                        {org.mvpMembers && (
+                                                            <div className="flex items-start gap-1.5 text-muted-foreground text-[11px]">
+                                                                <Users className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
+                                                                <span className="line-clamp-1">{org.mvpMembers}</span>
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                )}
+
+                                                    {/* Social Links */}
+                                                    {socials.length > 0 && (
+                                                        <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-border/50">
+                                                            {socials.map(s => {
+                                                                const Icon = s.icon;
+                                                                return (
+                                                                    <a
+                                                                        key={s.key}
+                                                                        href={formatSocialUrl(s.key, s.url || '')}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="p-1.5 rounded-md bg-muted/60 text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-all border border-border/40"
+                                                                    >
+                                                                        <Icon className="h-3.5 w-3.5" />
+                                                                    </a>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </CardContent>
                                         </Card>
                                     );
                                 })}
                             </div>
                         ) : (
-                            <div className="bg-card rounded-lg shadow border border-border overflow-hidden">
+                            <div className="bg-card rounded-2xl shadow-xs border border-border overflow-hidden">
                                 <Table>
                                     <TableHeader className="bg-muted">
                                         <TableRow>
-                                            <TableHead className="text-right">المنظمة</TableHead>
-                                            <TableHead className="text-right">النوع</TableHead>
-                                            <TableHead className="text-right">الموقع</TableHead>
-                                            <TableHead className="text-right">تواصل</TableHead>
+                                            <TableHead className="text-start font-bold">المنظمة</TableHead>
+                                            <TableHead className="text-start font-bold">النوع</TableHead>
+                                            <TableHead className="text-start font-bold">الموقع</TableHead>
+                                            <TableHead className="text-start font-bold">تواصل</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {displayedOrganizations.map(org => (
-                                            <TableRow key={org.id} className="hover:bg-muted/50 border-border">
+                                            <TableRow key={org.id} className="hover:bg-muted/50 border-border transition-colors">
                                                 <TableCell className="font-medium align-top">
                                                     <div className="text-base text-foreground font-semibold">{org.name}</div>
                                                     {org.description && (
@@ -352,9 +367,27 @@ export default function PartyClient({ initialOrganizations }: PartyClientProps) 
                                                 </TableCell>
                                                 <TableCell className="align-top">
                                                     <div className="flex flex-wrap gap-2 text-muted-foreground">
-                                                        {org.website && <a href={org.website} target="_blank" className="text-blue-600 dark:text-blue-400 hover:text-blue-800"><Globe className="h-4 w-4" /></a>}
-                                                        {org.socialX && <a href={formatSocialUrl('x', org.socialX)} target="_blank" className="hover:text-foreground"><Twitter className="h-4 w-4" /></a>}
-                                                        {org.socialFb && <a href={formatSocialUrl('facebook', org.socialFb)} target="_blank" className="text-blue-600 dark:text-blue-400 hover:text-blue-800"><Facebook className="h-4 w-4" /></a>}
+                                                        {org.website && (
+                                                            <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-primary">
+                                                                <a href={org.website} target="_blank" rel="noopener noreferrer" title="الموقع الإلكتروني">
+                                                                    <Globe className="h-4 w-4" />
+                                                                </a>
+                                                            </Button>
+                                                        )}
+                                                        {org.socialX && (
+                                                            <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                                                                <a href={formatSocialUrl('x', org.socialX)} target="_blank" rel="noopener noreferrer" title="X">
+                                                                    <Twitter className="h-4 w-4" />
+                                                                </a>
+                                                            </Button>
+                                                        )}
+                                                        {org.socialFb && (
+                                                            <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-primary">
+                                                                <a href={formatSocialUrl('facebook', org.socialFb)} target="_blank" rel="noopener noreferrer" title="Facebook">
+                                                                    <Facebook className="h-4 w-4" />
+                                                                </a>
+                                                            </Button>
+                                                        )}
                                                     </div>
                                                 </TableCell>
                                             </TableRow>
@@ -366,11 +399,11 @@ export default function PartyClient({ initialOrganizations }: PartyClientProps) 
 
                         {/* Load More */}
                         {displayedOrganizations.length < filteredOrganizations.length && (
-                            <div className="flex justify-center mt-12">
+                            <div className="flex justify-center mt-12 pb-8">
                                 <Button
                                     onClick={handleLoadMore}
                                     size="lg"
-                                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                                    className="bg-primary hover:bg-primary/90 text-primary-foreground min-w-[200px] rounded-full font-bold shadow-md hover:shadow-lg transition-all"
                                 >
                                     تحميل المزيد
                                 </Button>
@@ -381,7 +414,7 @@ export default function PartyClient({ initialOrganizations }: PartyClientProps) 
             </div>
 
             {/* About Section */}
-            <section className="bg-background border-t border-border py-16 px-4">
+            <section className="bg-card border-t border-border py-16 px-4 mt-12">
                 <div className="max-w-3xl mx-auto text-center">
                     <h2 className="text-3xl font-bold mb-6 text-foreground">حول دليل المنظمات السياسية السورية</h2>
                     <p className="text-muted-foreground mb-8 leading-relaxed">
@@ -390,7 +423,7 @@ export default function PartyClient({ initialOrganizations }: PartyClientProps) 
                     <Button
                         asChild
                         size="lg"
-                        className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-full shadow-md"
                     >
                         <a
                             href="https://forms.gle/vLAxoz5RNt6z6qyj9"

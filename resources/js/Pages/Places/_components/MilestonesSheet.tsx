@@ -5,7 +5,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { LevelBadge } from './LevelBadge';
+import { LevelBadge, rankName } from './LevelBadge';
 
 // mirrors GuideLevelService::LEVELS; the API threshold test keeps the two in sync
 const LEVELS: { level: number; points: number; perk: string }[] = [
@@ -46,11 +46,11 @@ export function MilestonesSheet(props: { open: boolean; onOpenChange: (open: boo
             </ul>
           </section>
           <section>
-            <h4 className="mb-2 text-sm font-semibold text-foreground">المستويات</h4>
+            <h4 className="mb-2 text-sm font-semibold text-foreground">الرتب</h4>
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-right text-xs text-muted-foreground">
-                  <th className="py-1.5 pl-2 font-medium">المستوى</th>
+                  <th className="py-1.5 pl-2 font-medium">الرتبة</th>
                   <th className="py-1.5 pl-2 font-medium">النقاط المطلوبة</th>
                   <th className="py-1.5 font-medium">الميزة</th>
                 </tr>
@@ -61,7 +61,8 @@ export function MilestonesSheet(props: { open: boolean; onOpenChange: (open: boo
                     <td className="py-1.5 pl-2">
                       <span className="flex items-center gap-1.5">
                         <LevelBadge level={l.level} />
-                        <span dir="ltr" className="tabular-nums text-foreground">{l.level}</span>
+                        <span className="text-foreground">{rankName(l.level)}</span>
+                        <span dir="ltr" className="tabular-nums text-xs text-muted-foreground">{l.level}</span>
                       </span>
                     </td>
                     <td className="py-1.5 pl-2">

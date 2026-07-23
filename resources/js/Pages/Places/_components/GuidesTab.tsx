@@ -38,7 +38,7 @@ export function GuidesTab(props: { onSelectGuide: (guide: { id: number; name: st
       <div className="mb-2 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-foreground">المرشدون المحليون</h3>
         <Button type="button" variant="ghost" size="sm" onClick={() => setMilestonesOpen(true)}>
-          كيف أرتقي؟
+          الرتب
         </Button>
       </div>
       <div className="mb-3 flex flex-wrap gap-1.5">
@@ -93,7 +93,7 @@ export function GuidesTab(props: { onSelectGuide: (guide: { id: number; name: st
               <div className="min-w-0 flex-1">
                 <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
                   <span className="truncate">{g.name}</span>
-                  <LevelBadge level={g.level} />
+                  <LevelBadge level={g.level} showLabel />
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {g.points} نقطة · {g.approved_count} مساهمة · {g.saves_total} حفظ

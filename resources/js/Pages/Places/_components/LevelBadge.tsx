@@ -26,6 +26,21 @@ const TIER_STYLES: Record<'brand' | 'gold' | 'premium', CSSProperties> = {
 
 const tierFor = (level: number) => (level >= 8 ? 'premium' : level >= 6 ? 'gold' : 'brand');
 
+// rank names, 1..10; the single home every surface reads from
+export const RANK_NAMES: Record<number, string> = {
+  1: 'مبتدئ',
+  2: 'جوّال',
+  3: 'مستطلع',
+  4: 'مستكشف',
+  5: 'مرشد محلي',
+  6: 'مرشد خبير',
+  7: 'رحّالة',
+  8: 'رائد السياحة',
+  9: 'سفير السياحة',
+  10: 'وزير السياحة',
+};
+export const rankName = (level: number) => RANK_NAMES[Math.min(Math.max(Math.trunc(level), 1), 10)];
+
 // star-number ink per tier: #fff on the gold fill is ~2.2:1, illegible at 7px;
 // dark amber ink reaches ~5.3:1 there. white holds on the olive and rose fills
 const STAR_INK: Record<'brand' | 'gold' | 'premium', string> = {
@@ -43,7 +58,8 @@ export function LevelBadge(props: { level: number; showLabel?: boolean; classNam
     return (
       <span
         role="img"
-        aria-label={`المستوى ${level}`}
+        title={rankName(level)}
+        aria-label={`${rankName(level)}، المستوى ${level}`}
         className={cn(
           'inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-secondary px-1 text-[10px] font-semibold tabular-nums text-secondary-foreground',
           className,
@@ -57,8 +73,8 @@ export function LevelBadge(props: { level: number; showLabel?: boolean; classNam
   return (
     <span
       role="img"
-      title="مرشد محلي"
-      aria-label={`مرشد محلي، المستوى ${level}`}
+      title={rankName(level)}
+      aria-label={`${rankName(level)}، المستوى ${level}`}
       style={TIER_STYLES[tier]}
       className={cn(
         'inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold',
@@ -74,7 +90,7 @@ export function LevelBadge(props: { level: number; showLabel?: boolean; classNam
           </span>
         </span>
       )}
-      {showLabel && <span>مرشد محلي</span>}
+      {showLabel && <span>{rankName(level)}</span>}
     </span>
   );
 }

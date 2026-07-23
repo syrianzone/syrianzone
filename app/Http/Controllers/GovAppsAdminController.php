@@ -42,6 +42,7 @@ class GovAppsAdminController extends Controller
             $iconPath = $this->uploadIcon($request->file('icon_file'), $validated['id']);
         }
 
+        $maxOrder = GovApp::max('order_column') ?? 0;
         $links = array_filter($validated['links'] ?? [], fn($url) => !empty($url) && is_string($url) && !empty(trim($url)));
 
         GovApp::create([

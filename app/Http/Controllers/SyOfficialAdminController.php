@@ -103,6 +103,7 @@ class SyOfficialAdminController extends Controller
             $imagePath = $this->uploadImage($request->file('image_file'), $validated['id']);
         }
 
+        $maxOrder = OfficialEntity::where('category_id', $validated['category_id'])->max('order_column') ?? 0;
         $socials = array_filter($validated['socials'] ?? [], fn($url) => !empty($url) && is_string($url) && !empty(trim($url)));
 
         OfficialEntity::create([

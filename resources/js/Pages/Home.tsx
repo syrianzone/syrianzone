@@ -153,7 +153,7 @@ const WEATHER_TRANSLATIONS: Record<string, string> = {
 
 
 export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
-    const { props } = usePage<{ auth?: { user: { id: number; name: string; email: string; avatar_url: string; role: string } | null } }>();
+    const { props } = usePage<{ auth?: { user: { id: number; name: string; email: string; avatar_url: string; role: string; settings?: Record<string, any> | null } | null } }>();
     const user = props.auth?.user ?? null;
     const [aboutHtml, setAboutHtml] = useState('');
 
@@ -204,53 +204,105 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
     // Custom search engine URL state
     const [customSearchUrl, setCustomSearchUrl] = useState('');
 
+    const saveAccountSettings = async (partialSettings: Record<string, any>) => {
+        if (!user) return;
+        try {
+            await fetch('/api/user/settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || ''
+                },
+                body: JSON.stringify({ settings: partialSettings })
+            });
+        } catch (e) {
+            console.error('Failed to save settings to account', e);
+        }
+    };
+
     // Load settings from localStorage
     useEffect(() => {
-        const savedTheme = getThemePreference();
-        const savedLang = localStorage.getItem('sz-language') as 'ar' | 'en' || 'ar';
-        const savedLinks = localStorage.getItem('customLinks');
-        const savedGovernorate = localStorage.getItem('governorate') || 'damascus';
-        const savedClockFormat = localStorage.getItem('clockFormat') as '12' | '24' || '24';
-        const savedSearchEngine = localStorage.getItem('sz-searchEngine') || 'duckduckgo';
+        const accSettings = user?.settings || {};
 
-        // Load widget visibility
-        const savedShowClock = localStorage.getItem('sz-showClock') !== 'false';
-        const savedShowWeather = localStorage.getItem('sz-showWeather') !== 'false';
-        const savedShowPrayerTimes = localStorage.getItem('sz-showPrayerTimes') !== 'false';
-        const savedShowEvents = localStorage.getItem('sz-showEvents') !== 'false';
-        const savedShowSearch = localStorage.getItem('sz-showSearch') !== 'false';
+        const savedTheme = accSettings.theme ?? getThemePreference();
+        const savedLang = (accSettings.language ?? (localStorage.getItem('sz-language') || 'ar')) as 'ar' | 'en';
+        const savedGovernorate = accSettings.governorate ?? (localStorage.getItem('governorate') || 'damascus');
+        const savedClockFormat = (accSettings.clockFormat ?? (localStorage.getItem('clockFormat') || '24')) as '12' | '24';
+        const savedSearchEngine = accSettings.searchEngine ?? (localStorage.getItem('sz-searchEngine') || 'duckduckgo');
 
-        // Load custom coordinates
-        const savedUseCustomCoords = localStorage.getItem('useCustomCoords') === 'true';
-        const savedCustomLat = localStorage.getItem('customLat') || '';
-        const savedCustomLon = localStorage.getItem('customLon') || '';
+        const savedShowClock = accSettings.showClock ?? (localStorage.getItem('sz-showClock') !== 'false');
+        const savedShowWeather = accSettings.showWeather ?? (localStorage.getItem('sz-showWeather') !== 'false');
+        const savedShowPrayerTimes = accSettings.showPrayerTimes ?? (localStorage.getItem('sz-showPrayerTimes') !== 'false');
+        const savedShowEvents = accSettings.showEvents ?? (localStorage.getItem('sz-showEvents') !== 'false');
+        const savedShowSearch = accSettings.showSearch ?? (localStorage.getItem('sz-showSearch') !== 'false');
 
-        // Load custom search URL
-        const savedCustomSearchUrl = localStorage.getItem('customSearchUrl') || '';
+        const savedUseCustomCoords = accSettings.useCustomCoords ?? (localStorage.getItem('useCustomCoords') === 'true');
+        const savedCustomLat = accSettings.customLat ?? (localStorage.getItem('customLat') || '');
+        const savedCustomLon = accSettings.customLon ?? (localStorage.getItem('customLon') || '');
+        const savedCustomSearchUrl = accSettings.customSearchUrl ?? (localStorage.getItem('customSearchUrl') || '');
+
+        let parsedLinks: CustomLink[] = [];
+        if (accSettings.customLinks) {
+            parsedLinks = accSettings.customLinks;
+        } else {
+            const savedLinks = localStorage.getItem('customLinks');
+            if (savedLinks) {
+                try { parsedLinks = JSON.parse(savedLinks); } catch (e) { console.error(e); }
+            }
+        }
+
+        // Sync to localStorage
+        if (savedTheme) persistTheme(savedTheme);
+        localStorage.setItem('sz-language', savedLang);
+        localStorage.setItem('governorate', savedGovernorate);
+        localStorage.setItem('clockFormat', savedClockFormat);
+        localStorage.setItem('sz-searchEngine', savedSearchEngine);
+        localStorage.setItem('sz-showClock', String(savedShowClock));
+        localStorage.setItem('sz-showWeather', String(savedShowWeather));
+        localStorage.setItem('sz-showPrayerTimes', String(savedShowPrayerTimes));
+        localStorage.setItem('sz-showEvents', String(savedShowEvents));
+        localStorage.setItem('sz-showSearch', String(savedShowSearch));
+        localStorage.setItem('useCustomCoords', String(savedUseCustomCoords));
+        localStorage.setItem('customLat', savedCustomLat);
+        localStorage.setItem('customLon', savedCustomLon);
+        localStorage.setItem('customSearchUrl', savedCustomSearchUrl);
+        localStorage.setItem('customLinks', JSON.stringify(parsedLinks));
 
         setTheme(savedTheme);
         setLanguage(savedLang);
         setGovernorate(savedGovernorate);
         setClockFormat(savedClockFormat);
         setSearchEngine(savedSearchEngine);
-
         setShowClock(savedShowClock);
         setShowWeather(savedShowWeather);
         setShowPrayerTimes(savedShowPrayerTimes);
         setShowEvents(savedShowEvents);
         setShowSearch(savedShowSearch);
-
         setUseCustomCoords(savedUseCustomCoords);
         setCustomLat(savedCustomLat);
         setCustomLon(savedCustomLon);
         setCustomSearchUrl(savedCustomSearchUrl);
+        setCustomLinks(parsedLinks);
 
-        if (savedLinks) {
-            try {
-                setCustomLinks(JSON.parse(savedLinks));
-            } catch (e) {
-                console.error('Failed to parse custom links', e);
-            }
+        // If user logged in and has missing account settings, sync initial state to DB
+        if (user && Object.keys(accSettings).length === 0) {
+            saveAccountSettings({
+                theme: savedTheme,
+                language: savedLang,
+                governorate: savedGovernorate,
+                clockFormat: savedClockFormat,
+                searchEngine: savedSearchEngine,
+                showClock: savedShowClock,
+                showWeather: savedShowWeather,
+                showPrayerTimes: savedShowPrayerTimes,
+                showEvents: savedShowEvents,
+                showSearch: savedShowSearch,
+                useCustomCoords: savedUseCustomCoords,
+                customLat: savedCustomLat,
+                customLon: savedCustomLon,
+                customSearchUrl: savedCustomSearchUrl,
+                customLinks: parsedLinks,
+            });
         }
 
         document.documentElement.setAttribute('data-theme', resolveTheme(savedTheme));
@@ -447,6 +499,7 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
                 localStorage.setItem('customLat', lat);
                 localStorage.setItem('customLon', lon);
                 localStorage.setItem('useCustomCoords', 'true');
+                saveAccountSettings({ customLat: lat, customLon: lon, useCustomCoords: true });
             },
             (error) => {
                 console.error(error);
@@ -482,6 +535,7 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
     const applyTheme = (newTheme: string) => {
         setTheme(newTheme);
         persistTheme(newTheme);
+        saveAccountSettings({ theme: newTheme });
     };
 
 
@@ -490,24 +544,28 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
         const newLang = language === 'ar' ? 'en' : 'ar';
         setLanguage(newLang);
         localStorage.setItem('sz-language', newLang);
+        saveAccountSettings({ language: newLang });
     };
 
     const addCustomLink = (link: CustomLink) => {
         const updated = [...customLinks, link];
         setCustomLinks(updated);
         localStorage.setItem('customLinks', JSON.stringify(updated));
+        saveAccountSettings({ customLinks: updated });
     };
 
     const updateCustomLink = (updatedLink: CustomLink) => {
         const updated = customLinks.map(l => l.id === updatedLink.id ? updatedLink : l);
         setCustomLinks(updated);
         localStorage.setItem('customLinks', JSON.stringify(updated));
+        saveAccountSettings({ customLinks: updated });
     };
 
     const removeCustomLink = (id: string) => {
         const updated = customLinks.filter(l => l.id !== id);
         setCustomLinks(updated);
         localStorage.setItem('customLinks', JSON.stringify(updated));
+        saveAccountSettings({ customLinks: updated });
     };
 
     const formatTime = (date: Date | null) => {
@@ -718,6 +776,7 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
                                     <Select value={searchEngine} onValueChange={(val) => {
                                         setSearchEngine(val);
                                         localStorage.setItem('sz-searchEngine', val);
+                                        saveAccountSettings({ searchEngine: val });
                                     }}>
                                         <SelectTrigger className="w-[110px] border-0 bg-transparent shadow-none focus:ring-0 focus:ring-offset-0 px-2 h-auto text-xs font-bold text-muted-foreground hover:text-foreground shrink-0 gap-1.5 cursor-pointer">
                                             <SelectValue />
@@ -996,6 +1055,7 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
                                                             onClick={() => {
                                                                 setLanguage('ar');
                                                                 localStorage.setItem('sz-language', 'ar');
+                                                                saveAccountSettings({ language: 'ar' });
                                                             }}
                                                             className={`py-1.5 text-xs font-medium rounded-md transition-all ${currentLang === 'ar'
                                                                     ? 'bg-background text-foreground shadow-sm'
@@ -1009,6 +1069,7 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
                                                             onClick={() => {
                                                                 setLanguage('en');
                                                                 localStorage.setItem('sz-language', 'en');
+                                                                saveAccountSettings({ language: 'en' });
                                                             }}
                                                             className={`py-1.5 text-xs font-medium rounded-md transition-all ${currentLang === 'en'
                                                                     ? 'bg-background text-foreground shadow-sm'
@@ -1029,6 +1090,7 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
                                                             onClick={() => {
                                                                 setClockFormat('12');
                                                                 localStorage.setItem('clockFormat', '12');
+                                                                saveAccountSettings({ clockFormat: '12' });
                                                             }}
                                                             className={`py-1.5 text-xs font-medium rounded-md transition-all ${clockFormat === '12'
                                                                     ? 'bg-background text-foreground shadow-sm'
@@ -1042,6 +1104,7 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
                                                             onClick={() => {
                                                                 setClockFormat('24');
                                                                 localStorage.setItem('clockFormat', '24');
+                                                                saveAccountSettings({ clockFormat: '24' });
                                                             }}
                                                             className={`py-1.5 text-xs font-medium rounded-md transition-all ${clockFormat === '24'
                                                                     ? 'bg-background text-foreground shadow-sm'
@@ -1105,6 +1168,7 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
                                                                                 onClick={() => {
                                                                                     setGovernorate(g.value);
                                                                                     localStorage.setItem('governorate', g.value);
+                                                                                    saveAccountSettings({ governorate: g.value });
                                                                                     setGovDropdownOpen(false);
                                                                                     setGovSearch('');
                                                                                 }}
@@ -1221,6 +1285,7 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
                                                             onCheckedChange={(checked) => {
                                                                 setShowClock(checked);
                                                                 localStorage.setItem('sz-showClock', String(checked));
+                                                                saveAccountSettings({ showClock: checked });
                                                             }}
                                                         />
                                                     </div>
@@ -1232,6 +1297,7 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
                                                             onCheckedChange={(checked) => {
                                                                 setShowWeather(checked);
                                                                 localStorage.setItem('sz-showWeather', String(checked));
+                                                                saveAccountSettings({ showWeather: checked });
                                                             }}
                                                         />
                                                     </div>
@@ -1243,6 +1309,7 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
                                                             onCheckedChange={(checked) => {
                                                                 setShowPrayerTimes(checked);
                                                                 localStorage.setItem('sz-showPrayerTimes', String(checked));
+                                                                saveAccountSettings({ showPrayerTimes: checked });
                                                             }}
                                                         />
                                                     </div>
@@ -1254,6 +1321,7 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
                                                             onCheckedChange={(checked) => {
                                                                 setShowEvents(checked);
                                                                 localStorage.setItem('sz-showEvents', String(checked));
+                                                                saveAccountSettings({ showEvents: checked });
                                                             }}
                                                         />
                                                     </div>
@@ -1265,6 +1333,7 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
                                                             onCheckedChange={(checked) => {
                                                                 setShowSearch(checked);
                                                                 localStorage.setItem('sz-showSearch', String(checked));
+                                                                saveAccountSettings({ showSearch: checked });
                                                             }}
                                                         />
                                                     </div>
@@ -1291,6 +1360,7 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
                                                         onCheckedChange={(checked) => {
                                                             setUseCustomCoords(checked);
                                                             localStorage.setItem('useCustomCoords', String(checked));
+                                                            saveAccountSettings({ useCustomCoords: checked });
                                                         }}
                                                     />
                                                 </div>
@@ -1306,6 +1376,7 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
                                                                     onChange={(e) => {
                                                                         setCustomLat(e.target.value);
                                                                         localStorage.setItem('customLat', e.target.value);
+                                                                        saveAccountSettings({ customLat: e.target.value });
                                                                     }}
                                                                     placeholder="33.5138"
                                                                 />
@@ -1318,6 +1389,7 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
                                                                     onChange={(e) => {
                                                                         setCustomLon(e.target.value);
                                                                         localStorage.setItem('customLon', e.target.value);
+                                                                        saveAccountSettings({ customLon: e.target.value });
                                                                     }}
                                                                     placeholder="36.2765"
                                                                 />

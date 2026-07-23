@@ -14,7 +14,7 @@ class User extends Authenticatable implements FilamentUser
 {
     use HasFactory, Notifiable, SoftDeletes;
 
-    protected $fillable = ['name', 'email', 'password', 'google_id', 'avatar_url', 'role', 'permissions', 'is_banned'];
+    protected $fillable = ['name', 'email', 'password', 'google_id', 'avatar_url', 'role', 'permissions', 'settings', 'is_banned'];
     protected $hidden = ['password', 'remember_token'];
 
     protected function casts(): array
@@ -24,6 +24,7 @@ class User extends Authenticatable implements FilamentUser
             'password' => 'hashed',
             'is_banned' => 'boolean',
             'permissions' => 'array',
+            'settings' => 'array',
         ];
     }
 

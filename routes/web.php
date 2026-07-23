@@ -368,9 +368,27 @@ Route::middleware('auth')->group(function () {
     });
 });
 
+// User settings API endpoint
+Route::post('/api/user/settings', function (\Illuminate\Http\Request $request) {
+    $user = $request->user();
+    if (!$user) {
+        return response()->json(['error' => 'Unauthenticated'], 401);
+    }
+
+    $newSettings = $request->input('settings', []);
+    $currentSettings = $user->settings ?? [];
+
+    $mergedSettings = array_merge($currentSettings, $newSettings);
+    $user->settings = $mergedSettings;
+    $user->save();
+
+    return response()->json(['status' => 'ok', 'settings' => $user->settings]);
+});
+
 // Dev-only: impersonate a user role for local development (never registered in production).
 use App\Http\Controllers\DevController;
 
 Route::get('/dev/impersonate/{role}', [DevController::class, 'impersonate'])
     ->name('dev.impersonate')
     ->middleware(\App\Http\Middleware\AutoLoginDevUser::class);
+

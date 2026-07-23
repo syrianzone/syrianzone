@@ -22,6 +22,11 @@ class TransitAdminController extends Controller
 
     public function approve(Request $request, $id)
     {
+        $validated = $request->validate([
+            'color_index' => 'nullable|integer|min:0',
+        ]);
+        $colorIndex = $validated['color_index'] ?? null;
+
         $draft = RouteDraft::with('linkedRoute')->findOrFail($id);
 
         if ($draft->status !== 'pending') {
@@ -38,6 +43,9 @@ class TransitAdminController extends Controller
                 $route->name_ar = $draft->name_ar;
                 $route->name_en = $draft->name_en;
                 $route->price_new = $draft->price;
+                if ($colorIndex !== null) {
+                    $route->color_index = $colorIndex;
+                }
                 $route->save();
 
                 // Update geometry
@@ -123,6 +131,7 @@ class TransitAdminController extends Controller
                 'city_id' => $draft->city_id,
                 'name_ar' => $draft->name_ar,
                 'name_en' => $draft->name_en,
+                'color_index' => $colorIndex ?? 0,
                 'price_old' => null,
                 'price_new' => $draft->price,
                 'status' => 'published',
@@ -672,6 +681,7 @@ class TransitAdminController extends Controller
         $validated = $request->validate([
             'name_ar' => 'sometimes|string|max:255',
             'name_en' => 'nullable|string|max:255',
+            'color_index' => 'nullable|integer|min:0',
             'price_new' => 'nullable|integer',
             'price_old' => 'nullable|integer',
         ]);
@@ -679,6 +689,7 @@ class TransitAdminController extends Controller
         $updateData = [];
         if ($request->has('name_ar')) $updateData['name_ar'] = $validated['name_ar'];
         if ($request->has('name_en')) $updateData['name_en'] = $validated['name_en'];
+        if ($request->has('color_index')) $updateData['color_index'] = $validated['color_index'];
         if ($request->has('price_new')) $updateData['price_new'] = $validated['price_new'];
         if ($request->has('price_old')) $updateData['price_old'] = $validated['price_old'];
 
@@ -691,6 +702,7 @@ class TransitAdminController extends Controller
         $changes = [];
         if (isset($updateData['name_ar'])) $changes[] = "الاسم من '{$route->getOriginal('name_ar')}' إلى '{$updateData['name_ar']}'";
         if (isset($updateData['name_en'])) $changes[] = "الاسم الإنجليزي";
+        if (isset($updateData['color_index'])) $changes[] = "لون المسار";
         if (isset($updateData['price_new'])) $changes[] = "التعرفة من '{$route->getOriginal('price_new')}' إلى '{$updateData['price_new']}'";
 
         \App\Models\TransitRouteLog::create([

@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Head, usePage } from '@inertiajs/react';
 import {
-    CheckCircle2, Palette, Users2, ListOrdered, Landmark, Compass,
-    Settings, Sun, Link, Moon, Utensils, Globe, Plus, Edit, X, Download, Upload, RotateCcw,
-    Cloud, CloudRain, CloudLightning, Snowflake, Wind, MessageSquareCode, Smartphone, Bus,
-    Newspaper, Sliders, Calendar, Clock, Sunrise, Sunset, SunDim, MoonStar, Phone, Scale, Search, Shield, FileText, HelpCircle, MapPin, LayoutGrid
+    Compass, Settings, Sun, Link, Moon, Globe, Plus, Edit, X,
+    Cloud, CloudRain, CloudLightning, Snowflake, Wind, Clock,
+    Sunrise, Sunset, SunDim, MoonStar, Search, Shield, FileText
 } from 'lucide-react';
 import { Button } from "@/Components/ui/button";
 import { ScrollArea } from "@/Components/ui/scroll-area";
@@ -15,7 +14,6 @@ import { Card, CardContent } from "@/Components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/Components/ui/dialog";
 import { Label } from "@/Components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/Components/ui/tabs";
-import { marked } from 'marked';
 
 const GOVERNORATE_LIST = [
     { value: "damascus", nameAr: "دمشق", nameEn: "Damascus" },
@@ -160,6 +158,7 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
     useEffect(() => {
         const parseContent = async () => {
             if (aboutContent) {
+                const { marked } = await import('marked');
                 const html = await marked.parse(aboutContent);
                 setAboutHtml(html);
             }
@@ -183,7 +182,6 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
     const [mounted, setMounted] = useState(false);
 
     // Weather & Clock state
-    const [currentTime, setCurrentTime] = useState<Date | null>(null);
     const [weather, setWeather] = useState<any>(null);
     const [governorate, setGovernorate] = useState('damascus');
     const [clockFormat, setClockFormat] = useState<'12' | '24'>('24');
@@ -307,7 +305,6 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
 
         document.documentElement.setAttribute('data-theme', resolveTheme(savedTheme));
         setMounted(true);
-        setCurrentTime(new Date());
     }, []);
 
     // Track the device scheme so system-resolved UI (logo, sun/moon icon) stays in sync
@@ -319,13 +316,7 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
         return () => query.removeEventListener('change', onChange);
     }, []);
 
-    // Clock update
-    useEffect(() => {
-        const timer = setInterval(() => {
-            setCurrentTime(new Date());
-        }, 1000);
-        return () => clearInterval(timer);
-    }, []);
+
 
     const getWeatherIcon = (iconCode: string) => {
         if (iconCode.startsWith('01')) return <Sun className="w-8 h-8 text-yellow-500" />;
@@ -349,9 +340,31 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
 
                 if (isNaN(coords.lat) || isNaN(coords.lon)) return;
 
+                const cacheKey = `sz_weather_${coords.lat}_${coords.lon}`;
+                const cached = sessionStorage.getItem(cacheKey);
+                if (cached) {
+                    try {
+                        const { data, timestamp } = JSON.parse(cached);
+                        if (Date.now() - timestamp < 15 * 60 * 1000) {
+                            let description = data.weather[0].description;
+                            if (language === 'ar' && WEATHER_TRANSLATIONS[description]) {
+                                description = WEATHER_TRANSLATIONS[description];
+                            }
+                            setWeather({
+                                temp: Math.round(data.main.temp),
+                                description: description,
+                                icon: getWeatherIcon(data.weather[0].icon)
+                            });
+                            return;
+                        }
+                    } catch (err) {}
+                }
+
                 const response = await fetch(`/api/weather?lat=${coords.lat}&lon=${coords.lon}`);
                 if (!response.ok) throw new Error('Weather fetch failed');
                 const data = await response.json();
+
+                sessionStorage.setItem(cacheKey, JSON.stringify({ data, timestamp: Date.now() }));
 
                 let description = data.weather[0].description;
                 if (language === 'ar' && WEATHER_TRANSLATIONS[description]) {
@@ -391,11 +404,21 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
                 const year = now.getFullYear();
                 const dateStr = `${day}-${month}-${year}`;
 
+                const cacheKey = `sz_prayers_${coords.lat}_${coords.lon}_${dateStr}`;
+                const cached = sessionStorage.getItem(cacheKey);
+                if (cached) {
+                    try {
+                        setPrayerTimes(JSON.parse(cached));
+                        return;
+                    } catch (err) {}
+                }
+
                 // Method 3: Muslim World League (Syrian standard)
                 const response = await fetch(`https://api.aladhan.com/v1/timings/${dateStr}?latitude=${coords.lat}&longitude=${coords.lon}&method=3`);
                 if (!response.ok) throw new Error('Prayer times fetch failed');
                 const data = await response.json();
                 if (data.code === 200 && data.data) {
+                    sessionStorage.setItem(cacheKey, JSON.stringify(data.data.timings));
                     setPrayerTimes(data.data.timings);
                 }
             } catch (e) {
@@ -408,80 +431,7 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
         }
     }, [governorate, useCustomCoords, customLat, customLon, mounted, showPrayerTimes]);
 
-    // Calculate upcoming prayer in Home.tsx
-    const nextPrayerInfo = useMemo(() => {
-        if (!prayerTimes || !currentTime) return null;
 
-        const events = [
-            { key: 'Fajr', labelAr: 'الفجر', labelEn: 'Fajr' },
-            { key: 'Sunrise', labelAr: 'الشروق', labelEn: 'Sunrise' },
-            { key: 'Dhuhr', labelAr: 'الظهر', labelEn: 'Dhuhr' },
-            { key: 'Asr', labelAr: 'العصر', labelEn: 'Asr' },
-            { key: 'Maghrib', labelAr: 'المغرب', labelEn: 'Maghrib' },
-            { key: 'Isha', labelAr: 'العشاء', labelEn: 'Isha' }
-        ];
-
-        const parsedEvents = events.map(ev => {
-            const timeStr = prayerTimes[ev.key];
-            if (!timeStr) return null;
-            const [hours, minutes] = timeStr.split(':').map(Number);
-            const eventTime = new Date(currentTime);
-            eventTime.setHours(hours, minutes, 0, 0);
-            return { ...ev, time: eventTime };
-        }).filter(Boolean) as Array<{ key: string; labelAr: string; labelEn: string; time: Date }>;
-
-        if (parsedEvents.length === 0) return null;
-
-        // Sort chronologically
-        parsedEvents.sort((a, b) => a.time.getTime() - b.time.getTime());
-
-        const nextEventIndex = parsedEvents.findIndex(ev => ev.time > currentTime);
-        const currentLang = language || 'ar';
-
-        if (nextEventIndex === -1) {
-            // Next is Fajr tomorrow
-            const firstEvent = parsedEvents[0];
-            const tomorrowFajr = new Date(firstEvent.time);
-            tomorrowFajr.setDate(tomorrowFajr.getDate() + 1);
-
-            return {
-                key: firstEvent.key,
-                label: currentLang === 'ar' ? firstEvent.labelAr : firstEvent.labelEn,
-                timeStr: prayerTimes[firstEvent.key],
-                timeDiffMs: tomorrowFajr.getTime() - currentTime.getTime()
-            };
-        } else {
-            const nextEvent = parsedEvents[nextEventIndex];
-            return {
-                key: nextEvent.key,
-                label: currentLang === 'ar' ? nextEvent.labelAr : nextEvent.labelEn,
-                timeStr: prayerTimes[nextEvent.key],
-                timeDiffMs: nextEvent.time.getTime() - currentTime.getTime()
-            };
-        }
-    }, [prayerTimes, currentTime, language]);
-
-    const getPrayerIcon = (key: string, className?: string) => {
-        switch (key) {
-            case 'Fajr': return <MoonStar className={className} />;
-            case 'Sunrise': return <Sunrise className={className} />;
-            case 'Dhuhr': return <Sun className={className} />;
-            case 'Asr': return <SunDim className={className} />;
-            case 'Maghrib': return <Sunset className={className} />;
-            case 'Isha': return <Moon className={className} />;
-            default: return <Clock className={className} />;
-        }
-    };
-
-    const formatDuration = (ms: number) => {
-        const totalSecs = Math.floor(ms / 1000);
-        if (totalSecs < 0) return '00:00:00';
-        const hours = Math.floor(totalSecs / 3600);
-        const minutes = Math.floor((totalSecs % 3600) / 60);
-        const seconds = totalSecs % 60;
-        const pad = (num: number) => String(num).padStart(2, '0');
-        return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
-    };
 
     const getDeviceLocation = () => {
         const currentLang = language || 'ar';
@@ -568,57 +518,7 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
         saveAccountSettings({ customLinks: updated });
     };
 
-    const formatTime = (date: Date | null) => {
-        if (!date) return "--:--:--";
-        if (clockFormat === '12') {
-            return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-        }
-        return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-    };
 
-    const formatDate = (date: Date | null) => {
-        if (!date) return "";
-        return date.toLocaleDateString(language === 'ar' ? 'ar-SY' : 'en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-    };
-
-    const formatHijriDate = (date: Date | null) => {
-        if (!date) return "";
-        try {
-            const formatter = new Intl.DateTimeFormat(language === 'ar' ? 'ar-SY-u-ca-islamic-umalqura' : 'en-US-u-ca-islamic-umalqura', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric'
-            });
-            const formatted = formatter.format(date);
-            if (language === 'ar') {
-                return formatted.includes('هـ') ? formatted : `${formatted} هـ`;
-            } else {
-                return formatted.includes('AH') ? formatted : `${formatted} AH`;
-            }
-        } catch (e) {
-            console.error('Intl Hijri format error', e);
-            try {
-                const formatter = new Intl.DateTimeFormat(language === 'ar' ? 'ar-SY-u-ca-islamic' : 'en-US-u-ca-islamic', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric'
-                });
-                const formatted = formatter.format(date);
-                if (language === 'ar') {
-                    return formatted.includes('هـ') ? formatted : `${formatted} هـ`;
-                } else {
-                    return formatted.includes('AH') ? formatted : `${formatted} AH`;
-                }
-            } catch (err) {
-                return "";
-            }
-        }
-    };
 
     if (!mounted) return null;
 
@@ -693,50 +593,12 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
 
                             {/* Clock */}
                             {showClock ? (
-                                <div className="text-center justify-self-center">
-                                    <div className="text-4xl md:text-6xl font-bold text-foreground mb-2">
-                                        {formatTime(currentTime)}
-                                    </div>
-                                    <div className="text-sm text-muted-foreground flex flex-col items-center gap-1">
-                                        <span>{formatDate(currentTime)}</span>
-                                        {currentTime && (
-                                            <span className="text-xs text-primary/80 font-medium">
-                                                {formatHijriDate(currentTime)}
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
+                                <ClockWidget clockFormat={clockFormat} language={currentLang} />
                             ) : <div />}
 
                             {/* Next Prayer Widget */}
                             {showPrayerTimes ? (
-                                <Card className="w-full md:w-auto justify-self-stretch md:justify-self-end bg-card/40 backdrop-blur-sm border-border" dir={currentLang === 'ar' ? 'rtl' : 'ltr'}>
-                                    <CardContent className="p-3.5 flex items-center gap-3">
-                                        {nextPrayerInfo ? (
-                                            <>
-                                                <div className="p-2 bg-primary/10 rounded-xl text-primary">
-                                                    {getPrayerIcon(nextPrayerInfo.key, "w-5 h-5")}
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <span className="text-[10px] text-muted-foreground font-medium leading-none">
-                                                        {currentLang === 'ar' ? 'الصلاة القادمة' : 'Next Prayer'}
-                                                    </span>
-                                                    <div className="flex items-baseline gap-1.5 mt-1 leading-none">
-                                                        <span className="font-bold text-sm text-foreground">{nextPrayerInfo.label}</span>
-                                                        <span className="text-[10px] text-muted-foreground font-semibold">({nextPrayerInfo.timeStr})</span>
-                                                    </div>
-                                                </div>
-                                                <div className="ms-auto ps-2 border-s border-border/80 font-mono text-xs text-primary font-bold tracking-wider">
-                                                    {formatDuration(nextPrayerInfo.timeDiffMs)}
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <div className="text-xs text-muted-foreground animate-pulse py-1 px-4">
-                                                {currentLang === 'ar' ? 'جاري تحميل المواقيت...' : 'Loading times...'}
-                                            </div>
-                                        )}
-                                    </CardContent>
-                                </Card>
+                                <NextPrayerWidget prayerTimes={prayerTimes} language={currentLang} />
                             ) : <div />}
                         </div>
                     )}
@@ -818,7 +680,7 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
                                         <Card className="h-full hover:shadow-lg transition-all border-border bg-card">
                                             <CardContent className="p-4 flex flex-col items-center text-center gap-3">
                                                 {Icon && <Icon className="w-7 h-7 group-hover:scale-110 transition-transform" />}
-                                                {link.image && <img src={link.image} alt={link.text} className="w-7 h-7 group-hover:scale-110 transition-transform" />}
+                                                {link.image && <img src={link.image} alt={link.text} loading="lazy" decoding="async" className="w-7 h-7 group-hover:scale-110 transition-transform" />}
                                                 {link.className && <div className={link.className} style={{ width: '1.8rem', height: '1.8rem' }}></div>}
                                                 <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
                                                     {link.text}
@@ -850,7 +712,7 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
                                         <Card className="h-full hover:shadow-lg transition-all border-border bg-card">
                                             <CardContent className="p-4 flex flex-col items-center text-center gap-3">
                                                 {Icon && <Icon className="w-7 h-7 group-hover:scale-110 transition-transform" />}
-                                                {link.image && <img src={link.image} alt={link.text} className="w-7 h-7 group-hover:scale-110 transition-transform" />}
+                                                {link.image && <img src={link.image} alt={link.text} loading="lazy" decoding="async" className="w-7 h-7 group-hover:scale-110 transition-transform" />}
                                                 {link.className && <div className={link.className} style={{ width: '1.8rem', height: '1.8rem' }}></div>}
                                                 <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
                                                     {link.text}
@@ -1677,3 +1539,208 @@ function EditLinkDialog({
         </Dialog>
     );
 }
+// Isolated Clock Widget (Updates time every second without re-rendering parent page)
+const ClockWidget = React.memo(function ClockWidget({
+    clockFormat,
+    language
+}: {
+    clockFormat: '12' | '24';
+    language: 'ar' | 'en';
+}) {
+    const [currentTime, setCurrentTime] = useState<Date | null>(null);
+
+    useEffect(() => {
+        setCurrentTime(new Date());
+        const timer = setInterval(() => {
+            setCurrentTime(new Date());
+        }, 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const formatTime = (date: Date | null) => {
+        if (!date) return "--:--:--";
+        if (clockFormat === '12') {
+            return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+        }
+        return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+    };
+
+    const formatDate = (date: Date | null) => {
+        if (!date) return "";
+        return date.toLocaleDateString(language === 'ar' ? 'ar-SY' : 'en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    };
+
+    const formatHijriDate = (date: Date | null) => {
+        if (!date) return "";
+        try {
+            const formatter = new Intl.DateTimeFormat(language === 'ar' ? 'ar-SY-u-ca-islamic-umalqura' : 'en-US-u-ca-islamic-umalqura', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+            const formatted = formatter.format(date);
+            if (language === 'ar') {
+                return formatted.includes('هـ') ? formatted : `${formatted} هـ`;
+            } else {
+                return formatted.includes('AH') ? formatted : `${formatted} AH`;
+            }
+        } catch (e) {
+            try {
+                const formatter = new Intl.DateTimeFormat(language === 'ar' ? 'ar-SY-u-ca-islamic' : 'en-US-u-ca-islamic', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                });
+                const formatted = formatter.format(date);
+                if (language === 'ar') {
+                    return formatted.includes('هـ') ? formatted : `${formatted} هـ`;
+                } else {
+                    return formatted.includes('AH') ? formatted : `${formatted} AH`;
+                }
+            } catch (err) {
+                return "";
+            }
+        }
+    };
+
+    return (
+        <div className="text-center justify-self-center">
+            <div className="text-4xl md:text-6xl font-bold text-foreground mb-2">
+                {formatTime(currentTime)}
+            </div>
+            <div className="text-sm text-muted-foreground flex flex-col items-center gap-1">
+                <span>{formatDate(currentTime)}</span>
+                {currentTime && (
+                    <span className="text-xs text-primary/80 font-medium">
+                        {formatHijriDate(currentTime)}
+                    </span>
+                )}
+            </div>
+        </div>
+    );
+});
+
+// Isolated Next Prayer Widget (Updates countdown every second without re-rendering parent page)
+const NextPrayerWidget = React.memo(function NextPrayerWidget({
+    prayerTimes,
+    language
+}: {
+    prayerTimes: Record<string, string> | null;
+    language: 'ar' | 'en';
+}) {
+    const [currentTime, setCurrentTime] = useState<Date | null>(null);
+
+    useEffect(() => {
+        setCurrentTime(new Date());
+        const timer = setInterval(() => {
+            setCurrentTime(new Date());
+        }, 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const nextPrayerInfo = useMemo(() => {
+        if (!prayerTimes || !currentTime) return null;
+
+        const events = [
+            { key: 'Fajr', labelAr: 'الفجر', labelEn: 'Fajr' },
+            { key: 'Sunrise', labelAr: 'الشروق', labelEn: 'Sunrise' },
+            { key: 'Dhuhr', labelAr: 'الظهر', labelEn: 'Dhuhr' },
+            { key: 'Asr', labelAr: 'العصر', labelEn: 'Asr' },
+            { key: 'Maghrib', labelAr: 'المغرب', labelEn: 'Maghrib' },
+            { key: 'Isha', labelAr: 'العشاء', labelEn: 'Isha' }
+        ];
+
+        const parsedEvents = events.map(ev => {
+            const timeStr = prayerTimes[ev.key];
+            if (!timeStr) return null;
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            const eventTime = new Date(currentTime);
+            eventTime.setHours(hours, minutes, 0, 0);
+            return { ...ev, time: eventTime };
+        }).filter(Boolean) as Array<{ key: string; labelAr: string; labelEn: string; time: Date }>;
+
+        if (parsedEvents.length === 0) return null;
+
+        parsedEvents.sort((a, b) => a.time.getTime() - b.time.getTime());
+
+        const nextEventIndex = parsedEvents.findIndex(ev => ev.time > currentTime);
+
+        if (nextEventIndex === -1) {
+            const firstEvent = parsedEvents[0];
+            const tomorrowFajr = new Date(firstEvent.time);
+            tomorrowFajr.setDate(tomorrowFajr.getDate() + 1);
+
+            return {
+                key: firstEvent.key,
+                label: language === 'ar' ? firstEvent.labelAr : firstEvent.labelEn,
+                timeStr: prayerTimes[firstEvent.key],
+                timeDiffMs: tomorrowFajr.getTime() - currentTime.getTime()
+            };
+        } else {
+            const nextEvent = parsedEvents[nextEventIndex];
+            return {
+                key: nextEvent.key,
+                label: language === 'ar' ? nextEvent.labelAr : nextEvent.labelEn,
+                timeStr: prayerTimes[nextEvent.key],
+                timeDiffMs: nextEvent.time.getTime() - currentTime.getTime()
+            };
+        }
+    }, [prayerTimes, currentTime, language]);
+
+    const getPrayerIcon = (key: string, className?: string) => {
+        switch (key) {
+            case 'Fajr': return <MoonStar className={className} />;
+            case 'Sunrise': return <Sunrise className={className} />;
+            case 'Dhuhr': return <Sun className={className} />;
+            case 'Asr': return <SunDim className={className} />;
+            case 'Maghrib': return <Sunset className={className} />;
+            case 'Isha': return <Moon className={className} />;
+            default: return <Clock className={className} />;
+        }
+    };
+
+    const formatDuration = (ms: number) => {
+        const totalSecs = Math.floor(ms / 1000);
+        if (totalSecs < 0) return '00:00:00';
+        const hours = Math.floor(totalSecs / 3600);
+        const minutes = Math.floor((totalSecs % 3600) / 60);
+        const seconds = totalSecs % 60;
+        const pad = (num: number) => String(num).padStart(2, '0');
+        return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+    };
+
+    return (
+        <Card className="w-full md:w-auto justify-self-stretch md:justify-self-end bg-card/40 backdrop-blur-sm border-border" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+            <CardContent className="p-3.5 flex items-center gap-3">
+                {nextPrayerInfo ? (
+                    <>
+                        <div className="p-2 bg-primary/10 rounded-xl text-primary">
+                            {getPrayerIcon(nextPrayerInfo.key, "w-5 h-5")}
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-[10px] text-muted-foreground font-medium leading-none">
+                                {language === 'ar' ? 'الصلاة القادمة' : 'Next Prayer'}
+                            </span>
+                            <div className="flex items-baseline gap-1.5 mt-1 leading-none">
+                                <span className="font-bold text-sm text-foreground">{nextPrayerInfo.label}</span>
+                                <span className="text-[10px] text-muted-foreground font-semibold">({nextPrayerInfo.timeStr})</span>
+                            </div>
+                        </div>
+                        <div className="ms-auto ps-2 border-s border-border/80 font-mono text-xs text-primary font-bold tracking-wider">
+                            {formatDuration(nextPrayerInfo.timeDiffMs)}
+                        </div>
+                    </>
+                ) : (
+                    <div className="text-xs text-muted-foreground animate-pulse py-1 px-4">
+                        {language === 'ar' ? 'جاري تحميل المواقيت...' : 'Loading times...'}
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+});

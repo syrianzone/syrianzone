@@ -122,6 +122,19 @@ const GOVERNORATES: Record<string, { lat: number; lon: number }> = {
     'raqqa': { lat: 35.9520, lon: 39.0081 },
 };
 
+
+const getFaviconUrl = (urlStr: string) => {
+    try {
+        const formatted = urlStr.startsWith('http://') || urlStr.startsWith('https://')
+            ? urlStr
+            : `https://${urlStr}`;
+        const domain = new URL(formatted).hostname;
+        return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+    } catch {
+        return '';
+    }
+};
+
 const WEATHER_TRANSLATIONS: Record<string, string> = {
     "clear sky": "سماء صافية",
     "few clouds": "غيوم قليلة",
@@ -159,7 +172,8 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
     const [language, setLanguage] = useState<'ar' | 'en' | null>(null);
     const [searchEngine, setSearchEngine] = useState('duckduckgo');
     const [searchQuery, setSearchQuery] = useState('');
-    const [customLinks, setCustomLinks] = useState<CustomLink[]>([]);
+        const [customLinks, setCustomLinks] = useState<CustomLink[]>([]);
+    const [editingLink, setEditingLink] = useState<CustomLink | null>(null);
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [aboutOpen, setAboutOpen] = useState(false);
     const [addLinkOpen, setAddLinkOpen] = useState(false);
@@ -484,6 +498,12 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
         localStorage.setItem('customLinks', JSON.stringify(updated));
     };
 
+    const updateCustomLink = (updatedLink: CustomLink) => {
+        const updated = customLinks.map(l => l.id === updatedLink.id ? updatedLink : l);
+        setCustomLinks(updated);
+        localStorage.setItem('customLinks', JSON.stringify(updated));
+    };
+
     const removeCustomLink = (id: string) => {
         const updated = customLinks.filter(l => l.id !== id);
         setCustomLinks(updated);
@@ -792,13 +812,13 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
                             </h3>
                             <div className="flex gap-2">
                                 <Button
-                                    variant="outline"
+                                    variant={editMode ? "default" : "outline"}
                                     size="sm"
                                     onClick={() => setEditMode(!editMode)}
-                                    className="bg-muted text-foreground border-border hover:bg-accent"
+                                    className={editMode ? "" : "bg-muted text-foreground border-border hover:bg-accent"}
                                 >
                                     <Edit className="w-4 h-4 me-2" />
-                                    {language === 'ar' ? 'تعديل' : 'Edit'}
+                                    {language === 'ar' ? (editMode ? 'تم' : 'تعديل') : (editMode ? 'Done' : 'Edit')}
                                 </Button>
                                 <Button
                                     variant="outline"
@@ -814,30 +834,107 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
 
                         {customLinks.length > 0 ? (
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3.5 sm:gap-4">
-                                {customLinks.map((link) => (
-                                    <div key={link.id} className="relative group">
-                                        <a href={link.url} target="_blank" rel="noopener noreferrer">
-                                            <Card className="h-full hover:shadow-lg transition-all border-border bg-card">
-                                                <CardContent className="p-4 flex flex-col items-center text-center gap-3">
-                                                    {link.icon && <span className="text-2xl">{link.icon}</span>}
-                                                    <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
-                                                        {link.name}
-                                                    </span>
-                                                </CardContent>
-                                            </Card>
-                                        </a>
-                                        {editMode && (
-                                            <Button
-                                                variant="destructive"
-                                                size="icon"
-                                                className="absolute -top-2 -end-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                                                onClick={() => removeCustomLink(link.id)}
-                                            >
-                                                <X className="h-3 w-3" />
-                                            </Button>
-                                        )}
-                                    </div>
-                                ))}
+                                {customLinks.map((link) => {
+                                    const useFavicon = !link.icon || link.icon === '🔗';
+                                    const faviconUrl = getFaviconUrl(link.url);
+
+                                    return (
+                                        <div key={link.id} className="relative group">
+                                            {editMode ? (
+                                                <div
+                                                    onClick={() => setEditingLink(link)}
+                                                    className="block h-full cursor-pointer"
+                                                >
+                                                    <Card className="h-full border-border bg-card ring-2 ring-primary/40 transition-all hover:shadow-lg">
+                                                        <CardContent className="p-4 flex flex-col items-center text-center gap-3">
+                                                            {useFavicon ? (
+                                                                <div className="w-8 h-8 rounded-lg bg-white dark:bg-slate-100 p-1 flex items-center justify-center border border-border/80 overflow-hidden shrink-0">
+                                                                    <img
+                                                                        src={faviconUrl}
+                                                                        alt={link.name}
+                                                                        className="w-6 h-6 object-contain"
+                                                                        onError={(e) => {
+                                                                            e.currentTarget.style.display = 'none';
+                                                                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                                                        }}
+                                                                    />
+                                                                    <Globe className="w-5 h-5 text-zinc-700 hidden" />
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-2xl">{link.icon}</span>
+                                                            )}
+                                                            <span className="text-sm font-medium text-foreground line-clamp-2">
+                                                                {link.name}
+                                                            </span>
+                                                        </CardContent>
+                                                    </Card>
+                                                </div>
+                                            ) : (
+                                                <a
+                                                    href={link.url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="block h-full group"
+                                                >
+                                                    <Card className="h-full hover:shadow-lg transition-all border-border bg-card">
+                                                        <CardContent className="p-4 flex flex-col items-center text-center gap-3">
+                                                            {useFavicon ? (
+                                                                <div className="w-8 h-8 rounded-lg bg-white dark:bg-slate-100 p-1 flex items-center justify-center border border-border/80 overflow-hidden shrink-0">
+                                                                    <img
+                                                                        src={faviconUrl}
+                                                                        alt={link.name}
+                                                                        className="w-6 h-6 object-contain group-hover:scale-110 transition-transform"
+                                                                        onError={(e) => {
+                                                                            e.currentTarget.style.display = 'none';
+                                                                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                                                        }}
+                                                                    />
+                                                                    <Globe className="w-5 h-5 text-zinc-700 hidden group-hover:scale-110 transition-transform" />
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-2xl">{link.icon}</span>
+                                                            )}
+                                                            <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors line-clamp-2">
+                                                                {link.name}
+                                                            </span>
+                                                        </CardContent>
+                                                    </Card>
+                                                </a>
+                                            )}
+
+                                            {editMode && (
+                                                <div className="absolute -top-2.5 -end-2.5 flex gap-1 z-20 opacity-100 pointer-events-auto">
+                                                    <Button
+                                                        variant="secondary"
+                                                        size="icon"
+                                                        className="h-7 w-7 rounded-full shadow-md bg-background border border-border hover:bg-accent text-foreground opacity-100"
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            setEditingLink(link);
+                                                        }}
+                                                        title={currentLang === 'ar' ? 'تعديل الرابط' : 'Edit link'}
+                                                    >
+                                                        <Edit className="h-3.5 w-3.5" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="destructive"
+                                                        size="icon"
+                                                        className="h-7 w-7 rounded-full shadow-md opacity-100"
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            removeCustomLink(link.id);
+                                                        }}
+                                                        title={currentLang === 'ar' ? 'حذف الرابط' : 'Remove link'}
+                                                    >
+                                                        <X className="h-3.5 w-3.5" />
+                                                    </Button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
                             </div>
                         ) : (
                             <Card className="border-dashed border-2 border-border bg-transparent">
@@ -1296,6 +1393,15 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
                     language={currentLang}
                 />
 
+                {/* Edit Link Dialog */}
+                <EditLinkDialog
+                    link={editingLink}
+                    onOpenChange={(open) => { if (!open) setEditingLink(null); }}
+                    onSave={updateCustomLink}
+                    onDelete={removeCustomLink}
+                    language={currentLang}
+                />
+
                 {/* About Dialog */}
                 <Dialog open={aboutOpen} onOpenChange={setAboutOpen}>
                     <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col p-0" dir={currentLang === 'ar' ? 'rtl' : 'ltr'}>
@@ -1340,7 +1446,7 @@ function AddLinkDialog({
             id: Date.now().toString(),
             name,
             url,
-            icon: icon || '🔗'
+            icon: icon.trim()
         });
 
         setName('');
@@ -1351,11 +1457,11 @@ function AddLinkDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <DialogHeader>
+            <DialogContent dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                <DialogHeader className="text-start sm:text-start">
                     <DialogTitle>{language === 'ar' ? 'إضافة رابط مخصص' : 'Add Custom Link'}</DialogTitle>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4 py-4">
+                <form onSubmit={handleSubmit} className="space-y-4 py-4 text-start">
                     <div className="space-y-2">
                         <Label>{language === 'ar' ? 'الاسم' : 'Name'}</Label>
                         <Input
@@ -1366,7 +1472,7 @@ function AddLinkDialog({
                         />
                     </div>
                     <div className="space-y-2">
-                        <Label>{language === 'ar' ? 'الرابط' : 'URL'}</Label>
+                        <Label>{language === 'ar' ? 'الرابط (URL)' : 'URL'}</Label>
                         <Input
                             type="url"
                             value={url}
@@ -1376,21 +1482,123 @@ function AddLinkDialog({
                         />
                     </div>
                     <div className="space-y-2">
-                        <Label>{language === 'ar' ? 'أيقونة (اختياري)' : 'Icon (optional)'}</Label>
+                        <Label>{language === 'ar' ? 'أيقونة أو Emoji (اختياري - اتركها فارغة لجلب أيقونة الموقع تلقائياً)' : 'Icon or Emoji (optional - leave empty for website favicon)'}</Label>
                         <Input
                             value={icon}
                             onChange={(e) => setIcon(e.target.value)}
-                            placeholder="🔗"
-                            maxLength={2}
+                            placeholder={language === 'ar' ? 'تلقائي (Favicon)' : 'Auto (Favicon)'}
+                            maxLength={4}
                         />
                     </div>
-                    <div className="flex justify-end gap-2">
-                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                    <div className="flex justify-end gap-2 pt-2">
+                        <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>
                             {language === 'ar' ? 'إلغاء' : 'Cancel'}
                         </Button>
-                        <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                        <Button type="submit" size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground">
                             {language === 'ar' ? 'حفظ' : 'Save'}
                         </Button>
+                    </div>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+// Edit Link Dialog Component
+function EditLinkDialog({
+    link,
+    onOpenChange,
+    onSave,
+    onDelete,
+    language
+}: {
+    link: CustomLink | null;
+    onOpenChange: (open: boolean) => void;
+    onSave: (link: CustomLink) => void;
+    onDelete: (id: string) => void;
+    language: 'ar' | 'en';
+}) {
+    const [name, setName] = useState('');
+    const [url, setUrl] = useState('');
+    const [icon, setIcon] = useState('');
+
+    useEffect(() => {
+        if (link) {
+            setName(link.name || '');
+            setUrl(link.url || '');
+            setIcon(link.icon === '🔗' ? '' : (link.icon || ''));
+        }
+    }, [link]);
+
+    if (!link) return null;
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!name || !url) return;
+
+        onSave({
+            ...link,
+            name,
+            url,
+            icon: icon.trim()
+        });
+
+        onOpenChange(false);
+    };
+
+    const handleDelete = () => {
+        onDelete(link.id);
+        onOpenChange(false);
+    };
+
+    return (
+        <Dialog open={!!link} onOpenChange={onOpenChange}>
+            <DialogContent dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                <DialogHeader className="text-start sm:text-start">
+                    <DialogTitle>{language === 'ar' ? 'تعديل الرابط المخصص' : 'Edit Custom Link'}</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4 py-4 text-start">
+                    <div className="space-y-2">
+                        <Label>{language === 'ar' ? 'الاسم' : 'Name'}</Label>
+                        <Input
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            placeholder={language === 'ar' ? 'اسم الرابط' : 'Link name'}
+                            required
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>{language === 'ar' ? 'الرابط (URL)' : 'URL'}</Label>
+                        <Input
+                            type="url"
+                            value={url}
+                            onChange={(e) => setUrl(e.target.value)}
+                            placeholder="https://example.com"
+                            required
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>{language === 'ar' ? 'أيقونة أو Emoji (اختياري - اتركها فارغة لجلب أيقونة الموقع تلقائياً)' : 'Icon or Emoji (optional - leave empty for website favicon)'}</Label>
+                        <Input
+                            value={icon}
+                            onChange={(e) => setIcon(e.target.value)}
+                            placeholder={language === 'ar' ? 'تلقائي (Favicon)' : 'Auto (Favicon)'}
+                            maxLength={4}
+                        />
+                    </div>
+                    <div className="flex justify-between items-center pt-2">
+                        <Button type="button" variant="destructive" size="sm" onClick={handleDelete} className="gap-1.5">
+                            <X className="w-4 h-4" />
+                            {language === 'ar' ? 'حذف الرابط' : 'Remove Link'}
+                        </Button>
+                        <div className="flex gap-2">
+                            <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+                                {language === 'ar' ? 'إلغاء' : 'Cancel'}
+                            </Button>
+                            <Button type="submit" size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                                {language === 'ar' ? 'حفظ التعديلات' : 'Save Changes'}
+                            </Button>
+                        </div>
                     </div>
                 </form>
             </DialogContent>

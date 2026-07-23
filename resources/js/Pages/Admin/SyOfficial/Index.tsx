@@ -212,7 +212,7 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
 
                                                             <TableCell>
                                                                 <span className="text-xs font-semibold text-muted-foreground">
-                                                                    {ent.socials ? Object.keys(ent.socials).length : 0} روابط
+                                                                    {ent.socials ? Object.values(ent.socials).filter(url => url && typeof url === 'string' && url.trim().length > 0).length : 0} روابط
                                                                 </span>
                                                             </TableCell>
 

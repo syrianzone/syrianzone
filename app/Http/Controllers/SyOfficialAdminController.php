@@ -103,7 +103,7 @@ class SyOfficialAdminController extends Controller
             $imagePath = $this->uploadImage($request->file('image_file'), $validated['id']);
         }
 
-        $maxOrder = OfficialEntity::where('category_id', $validated['category_id'])->max('order_column') ?? 0;
+        $socials = array_filter($validated['socials'] ?? [], fn($url) => !empty($url) && is_string($url) && !empty(trim($url)));
 
         OfficialEntity::create([
             'id' => $validated['id'],
@@ -113,7 +113,7 @@ class SyOfficialAdminController extends Controller
             'description' => $validated['description'] ?? null,
             'description_ar' => $validated['description_ar'] ?? null,
             'image' => $imagePath ?? 'images/governorates/placeholder.webp',
-            'socials' => $validated['socials'] ?? [],
+            'socials' => $socials,
             'order_column' => $maxOrder + 1,
             'is_active' => $validated['is_active'] ?? true,
         ]);
@@ -145,6 +145,8 @@ class SyOfficialAdminController extends Controller
             $validated['image'] = $this->uploadImage($request->file('image_file'), $id);
         }
 
+        $socials = array_filter($validated['socials'] ?? [], fn($url) => !empty($url) && is_string($url) && !empty(trim($url)));
+
         $entity->update([
             'category_id' => $validated['category_id'],
             'name' => $validated['name'],
@@ -152,7 +154,7 @@ class SyOfficialAdminController extends Controller
             'description' => $validated['description'] ?? null,
             'description_ar' => $validated['description_ar'] ?? null,
             'image' => $validated['image'] ?? $entity->image,
-            'socials' => $validated['socials'] ?? [],
+            'socials' => $socials,
             'is_active' => $validated['is_active'] ?? $entity->is_active,
         ]);
 

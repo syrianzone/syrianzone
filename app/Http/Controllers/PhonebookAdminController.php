@@ -100,6 +100,9 @@ class PhonebookAdminController extends Controller
             $validated['id'] = 'phone_' . time() . '_' . rand(100, 999);
         }
 
+        $validated['source_url'] = !empty($validated['source_url']) && !empty(trim($validated['source_url'])) ? trim($validated['source_url']) : null;
+        $validated['name_en'] = !empty($validated['name_en']) && !empty(trim($validated['name_en'])) ? trim($validated['name_en']) : null;
+
         $maxOrder = PhonebookEntry::where('category_id', $validated['category_id'])->max('order_column') ?? 0;
         $validated['order_column'] = $maxOrder + 1;
         $validated['is_active'] = $validated['is_active'] ?? true;
@@ -127,6 +130,9 @@ class PhonebookAdminController extends Controller
             'source_url' => 'nullable|url|max:500',
             'is_active' => 'boolean',
         ]);
+
+        $validated['source_url'] = !empty($validated['source_url']) && !empty(trim($validated['source_url'])) ? trim($validated['source_url']) : null;
+        $validated['name_en'] = !empty($validated['name_en']) && !empty(trim($validated['name_en'])) ? trim($validated['name_en']) : null;
 
         $entry->update($validated);
         $this->flushCache();

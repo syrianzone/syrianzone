@@ -135,41 +135,43 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
                                         )}
                                     </div>
 
-                                    <div className="flex flex-wrap justify-center gap-1.5 pt-1">
-                                        {app.links.android && (
-                                            <a
-                                                href={app.links.android}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="p-1.5 rounded-lg border border-border/50 bg-muted/50 text-muted-foreground transition-all duration-200 hover:scale-105 hover:text-[#3DDC84] shadow-2xs"
-                                                title="تحميل لأندرويد"
-                                            >
-                                                <AndroidIcon className="h-4 w-4" />
-                                            </a>
-                                        )}
-                                        {app.links.apple && (
-                                            <a
-                                                href={app.links.apple}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="p-1.5 rounded-lg border border-border/50 bg-muted/50 text-muted-foreground transition-all duration-200 hover:scale-105 hover:text-foreground shadow-2xs"
-                                                title="تحميل لآيفون"
-                                            >
-                                                <IosIcon className="h-4 w-4" />
-                                            </a>
-                                        )}
-                                        {app.links.official && (
-                                            <a
-                                                href={app.links.official}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="p-1.5 rounded-lg border border-border/50 bg-muted/50 text-muted-foreground transition-all duration-200 hover:scale-105 hover:text-primary shadow-2xs"
-                                                title="الموقع الرسمي"
-                                            >
-                                                <Globe className="h-4 w-4" />
-                                            </a>
-                                        )}
-                                    </div>
+                                    {app.links && (app.links.android?.trim() || app.links.apple?.trim() || app.links.official?.trim()) ? (
+                                        <div className="flex flex-wrap justify-center gap-1.5 pt-1">
+                                            {app.links.android && app.links.android.trim() ? (
+                                                <a
+                                                    href={app.links.android}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="p-1.5 rounded-lg border border-border/50 bg-muted/50 text-muted-foreground transition-all duration-200 hover:scale-105 hover:text-[#3DDC84] shadow-2xs"
+                                                    title="تحميل لأندرويد"
+                                                >
+                                                    <AndroidIcon className="h-4 w-4" />
+                                                </a>
+                                            ) : null}
+                                            {app.links.apple && app.links.apple.trim() ? (
+                                                <a
+                                                    href={app.links.apple}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="p-1.5 rounded-lg border border-border/50 bg-muted/50 text-muted-foreground transition-all duration-200 hover:scale-105 hover:text-foreground shadow-2xs"
+                                                    title="تحميل لآيفون"
+                                                >
+                                                    <IosIcon className="h-4 w-4" />
+                                                </a>
+                                            ) : null}
+                                            {app.links.official && app.links.official.trim() ? (
+                                                <a
+                                                    href={app.links.official}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="p-1.5 rounded-lg border border-border/50 bg-muted/50 text-muted-foreground transition-all duration-200 hover:scale-105 hover:text-primary shadow-2xs"
+                                                    title="الموقع الرسمي"
+                                                >
+                                                    <Globe className="h-4 w-4" />
+                                                </a>
+                                            ) : null}
+                                        </div>
+                                    ) : null}
                                 </CardContent>
                             </Card>
                         ))}

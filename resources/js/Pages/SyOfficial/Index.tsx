@@ -413,20 +413,22 @@ export default function Index({ initialData, categories }: SyOfficialClientProps
                                                             )}
                                                         </div>
 
-                                                        {item.socials && Object.keys(item.socials).length > 0 && (
+                                                        {item.socials && Object.entries(item.socials).filter(([_, url]) => url && typeof url === 'string' && url.trim().length > 0).length > 0 && (
                                                             <div className="flex flex-wrap justify-center gap-1.5 pt-1">
-                                                                {Object.entries(item.socials).map(([plat, url]) => (
-                                                                    <a
-                                                                        key={plat}
-                                                                        href={url}
-                                                                        target="_blank"
-                                                                        rel="noopener noreferrer"
-                                                                        className={`p-1.5 rounded-lg border border-border/50 bg-muted/50 text-muted-foreground transition-all duration-200 hover:scale-105 shadow-2xs ${getSocialStyle(plat)}`}
-                                                                        title={getSocialTitle(plat, language)}
-                                                                    >
-                                                                        {getSocialIcon(plat)}
-                                                                    </a>
-                                                                ))}
+                                                                {Object.entries(item.socials)
+                                                                    .filter(([_, url]) => url && typeof url === 'string' && url.trim().length > 0)
+                                                                    .map(([plat, url]) => (
+                                                                        <a
+                                                                            key={plat}
+                                                                            href={url}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            className={`p-1.5 rounded-lg border border-border/50 bg-muted/50 text-muted-foreground transition-all duration-200 hover:scale-105 shadow-2xs ${getSocialStyle(plat)}`}
+                                                                            title={getSocialTitle(plat, language)}
+                                                                        >
+                                                                            {getSocialIcon(plat)}
+                                                                        </a>
+                                                                    ))}
                                                             </div>
                                                         )}
                                                     </CardContent>
@@ -478,18 +480,20 @@ export default function Index({ initialData, categories }: SyOfficialClientProps
                                                 </TableCell>
                                                 <TableCell>
                                                     <div className="flex items-center gap-1.5 flex-wrap">
-                                                        {Object.entries(item.socials).map(([plat, url]) => (
-                                                            <a
-                                                                key={plat}
-                                                                href={url}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className={`p-1.5 rounded-lg border border-border/40 bg-muted/40 text-muted-foreground transition-all duration-200 hover:scale-105 ${getSocialStyle(plat)}`}
-                                                                title={getSocialTitle(plat, language)}
-                                                            >
-                                                                {getSocialIcon(plat)}
-                                                            </a>
-                                                        ))}
+                                                        {Object.entries(item.socials || {})
+                                                            .filter(([_, url]) => url && typeof url === 'string' && url.trim().length > 0)
+                                                            .map(([plat, url]) => (
+                                                                <a
+                                                                    key={plat}
+                                                                    href={url}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className={`p-1.5 rounded-lg border border-border/40 bg-muted/40 text-muted-foreground transition-all duration-200 hover:scale-105 ${getSocialStyle(plat)}`}
+                                                                    title={getSocialTitle(plat, language)}
+                                                                >
+                                                                    {getSocialIcon(plat)}
+                                                                </a>
+                                                            ))}
                                                     </div>
                                                 </TableCell>
                                                 {isSuperAdmin && (

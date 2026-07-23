@@ -324,7 +324,7 @@ export default function Index({ initialData }: PhonebookProps) {
                                                     {item.category_ar}
                                                 </Badge>
 
-                                                {item.source_url ? (
+                                                {item.source_url && item.source_url.trim() ? (
                                                     <a
                                                         href={item.source_url}
                                                         target="_blank"
@@ -379,7 +379,7 @@ export default function Index({ initialData }: PhonebookProps) {
                                                 )}
                                             </TableCell>
                                             <TableCell>
-                                                {item.source_url ? (
+                                                {item.source_url && item.source_url.trim() ? (
                                                     <a 
                                                         href={item.source_url} 
                                                         target="_blank" 

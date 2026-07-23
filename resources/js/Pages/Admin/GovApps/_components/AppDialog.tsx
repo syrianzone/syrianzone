@@ -98,9 +98,9 @@ export default function AppDialog({ open, onOpenChange, app }: AppDialogProps) {
         formData.append('description_ar', descriptionAr);
         formData.append('is_active', isActive ? '1' : '0');
 
-        if (officialLink) formData.append('links[official]', officialLink);
-        if (androidLink) formData.append('links[android]', androidLink);
-        if (appleLink) formData.append('links[apple]', appleLink);
+        if (officialLink && officialLink.trim()) formData.append('links[official]', officialLink.trim());
+        if (androidLink && androidLink.trim()) formData.append('links[android]', androidLink.trim());
+        if (appleLink && appleLink.trim()) formData.append('links[apple]', appleLink.trim());
 
         if (iconFile) {
             formData.append('icon_file', iconFile);

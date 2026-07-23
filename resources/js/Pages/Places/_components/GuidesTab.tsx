@@ -3,20 +3,23 @@ import { ChevronLeft, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { discovery, type Guide, type GuidesSort } from '../_lib/discovery';
+import { GuideProfileCard } from './GuideProfileCard';
 import { LevelBadge } from './LevelBadge';
 import { MilestonesSheet } from './MilestonesSheet';
 
 const SORTS: { value: GuidesSort; label: string }[] = [
+  { value: 'points', label: 'الأعلى نقاطاً' },
   { value: 'submissions', label: 'الأكثر مساهمة' },
   { value: 'saves', label: 'الأكثر حفظاً' },
   { value: 'recent', label: 'النشطون مؤخراً' },
 ];
 
 export function GuidesTab(props: { onSelectGuide: (guide: { id: number; name: string }) => void }) {
-  const [sort, setSort] = useState<GuidesSort>('submissions');
+  const [sort, setSort] = useState<GuidesSort>('points');
   const [guides, setGuides] = useState<Guide[] | null>(null);
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [profile, setProfile] = useState<Guide | null>(null);
   const [milestonesOpen, setMilestonesOpen] = useState(false);
   const requestRef = useRef(0);
 
@@ -80,7 +83,7 @@ export function GuidesTab(props: { onSelectGuide: (guide: { id: number; name: st
             <li key={g.user_id}>
               <button
                 type="button"
-                onClick={() => props.onSelectGuide({ id: g.user_id, name: g.name })}
+                onClick={() => setProfile(g)}
                 className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-right hover:bg-accent/50"
               >
               <span dir="ltr" className="w-5 shrink-0 text-center text-sm font-semibold tabular-nums text-muted-foreground">
@@ -107,6 +110,11 @@ export function GuidesTab(props: { onSelectGuide: (guide: { id: number; name: st
         </ul>
       )}
       <MilestonesSheet open={milestonesOpen} onOpenChange={setMilestonesOpen} />
+      <GuideProfileCard
+        guide={profile}
+        onOpenChange={(open) => { if (!open) setProfile(null); }}
+        onShowContributions={(g) => { setProfile(null); props.onSelectGuide(g); }}
+      />
     </div>
   );
 }

@@ -14,12 +14,13 @@ class PlaceDiscoveryController extends Controller
 {
   public function guides(Request $request, GuideLevelService $levels)
   {
-    $validated = $request->validate(['sort' => 'sometimes|in:submissions,saves,recent']);
-    $sort = $validated['sort'] ?? 'submissions';
+    $validated = $request->validate(['sort' => 'sometimes|in:points,submissions,saves,recent']);
+    $sort = $validated['sort'] ?? 'points';
 
     // 5-minute staleness is accepted: no forget hooks on moderation or saves
     $rows = Cache::remember("places:guides:{$sort}", 300, function () use ($sort, $levels) {
-      $metric = ['submissions' => 'approved_count', 'saves' => 'saves_total', 'recent' => 'recent_count'][$sort];
+      // no sql limit: the points ranking needs every contributor's points first.
+      // fine at community scale (one grouped row per contributor); revisit past ~10k contributors
       $rows = Place::where('places.status', 'approved')
         ->join('users', 'users.id', '=', 'places.user_id')
         ->whereNull('users.deleted_at')
@@ -31,10 +32,6 @@ class PlaceDiscoveryController extends Controller
           [now()->subDays(30)]
         )
         ->groupBy('places.user_id', 'users.name', 'users.avatar_url')
-        ->orderByDesc($metric)
-        ->orderByDesc('approved_count')
-        ->orderBy('places.user_id')
-        ->limit(20)
         ->get()
         ->map(fn ($r) => [
           'user_id' => (int) $r->user_id,
@@ -47,12 +44,15 @@ class PlaceDiscoveryController extends Controller
         ->values()
         ->all();
 
-      // points ride the same cached payload; ordering stays on the sort metric
       $pointsByUser = $levels->forUsers(array_column($rows, 'user_id'));
-      return array_map(function ($row) use ($pointsByUser) {
+      $rows = array_map(function ($row) use ($pointsByUser) {
         $entry = $pointsByUser[$row['user_id']] ?? ['points' => 0, 'level' => 1];
         return $row + ['points' => $entry['points'], 'level' => $entry['level']];
       }, $rows);
+
+      $metric = ['points' => 'points', 'submissions' => 'approved_count', 'saves' => 'saves_total', 'recent' => 'recent_count'][$sort];
+      usort($rows, fn ($a, $b) => [$b[$metric], $b['points'], $a['user_id']] <=> [$a[$metric], $a['points'], $b['user_id']]);
+      return array_slice($rows, 0, 20);
     });
 
     $guides = array_map(fn ($row, $i) => ['rank' => $i + 1] + $row, $rows, array_keys($rows));

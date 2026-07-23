@@ -21,7 +21,7 @@ test('guides aggregates approved places per user with the exact shape', function
 
   $response = $this->getJson('/api/v1/guides')
     ->assertOk()
-    ->assertJsonPath('sort', 'submissions')
+    ->assertJsonPath('sort', 'points')
     ->assertJsonCount(1, 'guides')
     ->assertJsonPath('guides.0.rank', 1)
     ->assertJsonPath('guides.0.user_id', $guide->id)
@@ -129,18 +129,31 @@ test('guides points are computed inside the guides cache', function () {
   $this->getJson('/api/v1/guides')->assertOk()->assertJsonPath('guides.0.points', 20);
 });
 
-test('guides default sort orders by approved submissions', function () {
-  $one = discoveryUser();
-  $three = discoveryUser();
-  Place::factory()->approved()->create(['user_id' => $one->id]);
-  Place::factory()->approved()->count(3)->create(['user_id' => $three->id]);
+test('guides default sort orders by points, not submission count', function () {
+  $fewPlacesManySaves = discoveryUser();
+  $manyPlaces = discoveryUser();
+  // one place with 60 saves: 15 + 60 = 75 points, beating three bare places at 45
+  Place::factory()->approved()->create(['user_id' => $fewPlacesManySaves->id, 'saves_count' => 60, 'description' => 'قصير']);
+  Place::factory()->approved()->count(3)->create(['user_id' => $manyPlaces->id, 'description' => 'قصير']);
 
   $this->getJson('/api/v1/guides')
     ->assertOk()
-    ->assertJsonPath('guides.0.user_id', $three->id)
-    ->assertJsonPath('guides.0.rank', 1)
-    ->assertJsonPath('guides.1.user_id', $one->id)
-    ->assertJsonPath('guides.1.rank', 2);
+    ->assertJsonPath('sort', 'points')
+    ->assertJsonPath('guides.0.user_id', $fewPlacesManySaves->id)
+    ->assertJsonPath('guides.0.points', 75)
+    ->assertJsonPath('guides.1.user_id', $manyPlaces->id)
+    ->assertJsonPath('guides.1.points', 45);
+});
+
+test('guides still sorts by submissions when asked', function () {
+  $one = discoveryUser();
+  $three = discoveryUser();
+  Place::factory()->approved()->create(['user_id' => $one->id, 'saves_count' => 60]);
+  Place::factory()->approved()->count(3)->create(['user_id' => $three->id]);
+
+  $this->getJson('/api/v1/guides?sort=submissions')
+    ->assertOk()
+    ->assertJsonPath('guides.0.user_id', $three->id);
 });
 
 test('guides sorts by saves', function () {
@@ -219,7 +232,7 @@ test('guides caches per sort for five minutes', function () {
   Place::factory()->approved()->create(['user_id' => $guide->id]);
 
   $this->getJson('/api/v1/guides')->assertOk()->assertJsonCount(1, 'guides');
-  expect(Cache::has('places:guides:submissions'))->toBeTrue();
+  expect(Cache::has('places:guides:points'))->toBeTrue();
 
   // new data is invisible until the 5-minute cache expires
   Place::factory()->approved()->create(['user_id' => discoveryUser()->id]);

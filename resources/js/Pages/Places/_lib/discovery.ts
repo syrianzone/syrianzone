@@ -1,7 +1,7 @@
 import axios from '@/Lib/axios';
 import type { Paginated } from './types';
 
-export type GuidesSort = 'submissions' | 'saves' | 'recent';
+export type GuidesSort = 'points' | 'submissions' | 'saves' | 'recent';
 
 export interface Guide {
   rank: number;

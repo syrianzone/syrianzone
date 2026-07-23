@@ -29,11 +29,104 @@ test('guides aggregates approved places per user with the exact shape', function
     ->assertJsonPath('guides.0.avatar_url', null)
     ->assertJsonPath('guides.0.approved_count', 2)
     ->assertJsonPath('guides.0.saves_total', 7)
-    ->assertJsonPath('guides.0.recent_count', 2);
+    ->assertJsonPath('guides.0.recent_count', 2)
+    // 2 approved places at 15 each, saves 3 + 4, short factory descriptions, no photos
+    ->assertJsonPath('guides.0.points', 37)
+    ->assertJsonPath('guides.0.level', 2);
 
   expect(array_keys($response->json()))->toBe(['sort', 'guides']);
   expect(array_keys($response->json('guides.0')))
-    ->toBe(['rank', 'user_id', 'name', 'avatar_url', 'approved_count', 'saves_total', 'recent_count']);
+    ->toBe(['rank', 'user_id', 'name', 'avatar_url', 'approved_count', 'saves_total', 'recent_count', 'points', 'level']);
+});
+
+test('guides points follow the formula: place, photos, long description, saves', function () {
+  $guide = discoveryUser();
+  $place = Place::factory()->approved()->create([
+    'user_id' => $guide->id,
+    'description' => str_repeat('م', 200), // mb 200 chars exactly hits the bonus
+    'saves_count' => 4,
+  ]);
+  PlacePhoto::factory()->count(2)->create(['place_id' => $place->id]);
+
+  // 15 place + 2*5 photos + 5 description + 4 saves = 34 => level 2
+  $this->getJson('/api/v1/guides')
+    ->assertOk()
+    ->assertJsonPath('guides.0.points', 34)
+    ->assertJsonPath('guides.0.level', 2);
+});
+
+test('guides description one char short of 200 misses the bonus', function () {
+  $guide = discoveryUser();
+  Place::factory()->approved()->create([
+    'user_id' => $guide->id,
+    'description' => str_repeat('م', 199),
+    'saves_count' => 0,
+  ]);
+
+  $this->getJson('/api/v1/guides')
+    ->assertOk()
+    ->assertJsonPath('guides.0.points', 15);
+});
+
+test('level boundaries: 14 is L1, exactly 15 is L2, 74 is L2, 75 is L3', function () {
+  $levels = app(App\Services\GuideLevelService::class);
+  // pins the thresholds the frontend milestones table mirrors
+  expect(App\Services\GuideLevelService::LEVELS)->toBe([
+    1 => 0, 2 => 15, 3 => 75, 4 => 250, 5 => 500,
+    6 => 1500, 7 => 5000, 8 => 15000, 9 => 50000, 10 => 100000,
+  ]);
+  expect($levels->levelFor(0))->toBe(1);
+  expect($levels->levelFor(14))->toBe(1); // unreachable via one approved place (base 15) but the math holds
+  expect($levels->levelFor(15))->toBe(2);
+  expect($levels->levelFor(74))->toBe(2);
+  expect($levels->levelFor(75))->toBe(3);
+  expect($levels->levelFor(100000))->toBe(10);
+  expect($levels->levelFor(999999))->toBe(10);
+
+  // and through the API, crafted via saves_count on a single bare place
+  $l2 = discoveryUser();
+  $l3 = discoveryUser();
+  Place::factory()->approved()->create(['user_id' => $l2->id, 'saves_count' => 59]); // 74
+  Place::factory()->approved()->create(['user_id' => $l3->id, 'saves_count' => 60]); // 75
+
+  $response = $this->getJson('/api/v1/guides?sort=saves')->assertOk();
+  $byUser = collect($response->json('guides'))->keyBy('user_id');
+  expect($byUser[$l3->id]['points'])->toBe(75);
+  expect($byUser[$l3->id]['level'])->toBe(3);
+  expect($byUser[$l2->id]['points'])->toBe(74);
+  expect($byUser[$l2->id]['level'])->toBe(2);
+});
+
+test('guides points ignore pending and rejected places entirely', function () {
+  $guide = discoveryUser();
+  Place::factory()->approved()->create(['user_id' => $guide->id, 'saves_count' => 1]);
+  $pending = Place::factory()->create([
+    'user_id' => $guide->id,
+    'description' => str_repeat('م', 300),
+    'saves_count' => 50,
+  ]);
+  $rejected = Place::factory()->rejected()->create(['user_id' => $guide->id, 'saves_count' => 50]);
+  PlacePhoto::factory()->count(3)->create(['place_id' => $pending->id]);
+  PlacePhoto::factory()->count(3)->create(['place_id' => $rejected->id]);
+
+  $this->getJson('/api/v1/guides')
+    ->assertOk()
+    ->assertJsonPath('guides.0.points', 16)
+    ->assertJsonPath('guides.0.level', 2);
+});
+
+test('guides points are computed inside the guides cache', function () {
+  $guide = discoveryUser();
+  $place = Place::factory()->approved()->create(['user_id' => $guide->id, 'saves_count' => 0]);
+
+  $this->getJson('/api/v1/guides')->assertOk()->assertJsonPath('guides.0.points', 15);
+
+  // fresh photos are invisible until places:guides:{sort} expires (5-minute staleness accepted)
+  PlacePhoto::factory()->create(['place_id' => $place->id]);
+  $this->getJson('/api/v1/guides')->assertOk()->assertJsonPath('guides.0.points', 15);
+
+  Cache::flush();
+  $this->getJson('/api/v1/guides')->assertOk()->assertJsonPath('guides.0.points', 20);
 });
 
 test('guides default sort orders by approved submissions', function () {

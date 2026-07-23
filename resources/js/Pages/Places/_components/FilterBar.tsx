@@ -1,8 +1,8 @@
-import { useRef, useState } from 'react';
-import { Loader2, MapPin, Search } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Loader2, MapPin, Search, SlidersHorizontal } from 'lucide-react';
 import { Card } from '@/Components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/Components/ui/badge';
+import { Badge, badgeVariants } from '@/Components/ui/badge';
 import { cn } from '@/Lib/utils';
 import { CATEGORIES, CATEGORY_LABELS } from '../_lib/categories';
 import type { GeoSuggestion, LatLng, PlaceCategory, PlaceListItem } from '../_lib/types';
@@ -74,7 +74,29 @@ export function FilterBar(props: {
 }) {
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [filterOpen, setFilterOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const filterRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!filterOpen) return;
+    const onMouseDown = (e: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) setFilterOpen(false);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        // consumed here: don't let the page's Escape listener also cancel add-mode
+        e.stopPropagation();
+        setFilterOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onMouseDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [filterOpen]);
 
   const hasQuery = props.query.trim() !== '';
   const showDropdown = open && hasQuery;
@@ -106,9 +128,11 @@ export function FilterBar(props: {
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Escape') {
-      // consumed here: don't let the page's Escape listener also cancel add-mode
+      // consumed here: don't let the page's Escape listener also cancel add-mode.
+      // stopPropagation also starves the popover's document listener, so close it here too
       if (showDropdown) e.stopPropagation();
       close();
+      setFilterOpen(false);
       inputRef.current?.blur();
       return;
     }
@@ -126,8 +150,9 @@ export function FilterBar(props: {
   }
 
   return (
-    <Card dir="rtl" className={cn('p-2 space-y-2 shadow-md', props.className)}>
-      <div className="relative">
+    // relative here: the dropdown and popover anchor to the whole bar, not the narrow pill/button
+    <div dir="rtl" className={cn('relative flex items-center gap-2', props.className)}>
+      <div className="relative min-w-0 flex-1">
         <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           ref={inputRef}
@@ -146,7 +171,7 @@ export function FilterBar(props: {
           onBlur={close}
           onKeyDown={handleKeyDown}
           placeholder="ابحث عن مكان أو إحداثيات"
-          className="pr-9"
+          className="h-9 rounded-full border-border bg-card/95 pr-9 shadow-md"
         />
         {showDropdown && (
           <Card
@@ -154,7 +179,8 @@ export function FilterBar(props: {
             role="listbox"
             // preventDefault keeps the input focused so onBlur does not close before row clicks land
             onMouseDown={(e) => e.preventDefault()}
-            className="absolute inset-x-0 top-full mt-1 z-20 max-h-72 overflow-y-auto p-1 shadow-md"
+            // width is viewport-clamped: the pill itself can be ~110px on phones, too narrow for results
+            className="absolute right-0 top-full mt-1 z-20 max-h-72 w-[min(24rem,calc(100vw-1.5rem))] overflow-y-auto p-1 shadow-md"
           >
             {props.coordCandidate ? (
               <button
@@ -232,25 +258,63 @@ export function FilterBar(props: {
           </Card>
         )}
       </div>
-      <div className="flex gap-1.5 overflow-x-auto pb-1">
-        <Badge
-          variant={props.category === null ? 'default' : 'outline'}
-          className="cursor-pointer shrink-0"
-          onClick={() => props.onCategoryChange(null)}
+      <div
+        ref={filterRef}
+        className="shrink-0"
+        // focusout: tabbing past the chips must not leave the popover floating over the map
+        onBlur={(e) => {
+          if (e.relatedTarget instanceof Node && !e.currentTarget.contains(e.relatedTarget)) setFilterOpen(false);
+        }}
+      >
+        <button
+          type="button"
+          aria-label={props.category === null ? 'تصفية حسب الفئة' : undefined}
+          aria-expanded={filterOpen}
+          aria-controls="place-category-popover"
+          onClick={() => setFilterOpen((v) => !v)}
+          className={cn(
+            'flex h-9 items-center gap-1.5 rounded-full border bg-card/95 px-3 text-xs shadow-md',
+            props.category === null ? 'border-border text-muted-foreground' : 'border-primary/50 text-primary',
+          )}
         >
-          الكل
-        </Badge>
-        {CATEGORIES.map((c) => (
-          <Badge
-            key={c.key}
-            variant={props.category === c.key ? 'default' : 'outline'}
-            className="cursor-pointer shrink-0"
-            onClick={() => props.onCategoryChange(props.category === c.key ? null : c.key)}
+          <SlidersHorizontal className="h-4 w-4" />
+          {props.category !== null && CATEGORY_LABELS[props.category]}
+        </button>
+        {filterOpen && (
+          <div
+            id="place-category-popover"
+            // anchored to the bar root, right-0 + viewport clamp: the button sits mid-bar in RTL,
+            // so a button-anchored w-64 would clip the first chips (including الكل) off narrow screens
+            className="absolute right-0 top-full z-20 mt-1 w-[min(16rem,calc(100vw-1.5rem))] rounded-lg border border-border bg-popover p-2 shadow-md"
           >
-            {c.label}
-          </Badge>
-        ))}
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                className={cn(badgeVariants({ variant: props.category === null ? 'default' : 'outline' }), 'cursor-pointer')}
+                onClick={() => {
+                  props.onCategoryChange(null);
+                  setFilterOpen(false);
+                }}
+              >
+                الكل
+              </button>
+              {CATEGORIES.map((c) => (
+                <button
+                  key={c.key}
+                  type="button"
+                  className={cn(badgeVariants({ variant: props.category === c.key ? 'default' : 'outline' }), 'cursor-pointer')}
+                  onClick={() => {
+                    props.onCategoryChange(props.category === c.key ? null : c.key);
+                    setFilterOpen(false);
+                  }}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
-    </Card>
+    </div>
   );
 }

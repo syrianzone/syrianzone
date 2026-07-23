@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Place;
 use App\Models\PlacePhoto;
+use App\Services\GuideLevelService;
 use App\Services\PlaceImageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -183,7 +184,7 @@ class PlaceController extends Controller
     return response()->json(['places' => $places]);
   }
 
-  public function show(Request $request, int $id)
+  public function show(Request $request, GuideLevelService $levels, int $id)
   {
     $place = Place::with(['user', 'photos'])->findOrFail($id);
     $user = $request->user();
@@ -195,9 +196,17 @@ class PlaceController extends Controller
       }
     }
 
+    $guide = $levels->forUser($place->user_id);
+
     return response()->json($this->listItem($place) + [
       'status' => $place->status,
-      'user' => ['id' => $place->user->id, 'name' => $place->user->name, 'avatar_url' => $place->user->avatar_url],
+      'user' => [
+        'id' => $place->user->id,
+        'name' => $place->user->name,
+        'avatar_url' => $place->user->avatar_url,
+        'level' => $guide['level'],
+        'points' => $guide['points'],
+      ],
       'photos' => $place->photos->map(fn ($photo) => [
         'id' => $photo->id,
         'thumb_url' => $photo->thumb_url,

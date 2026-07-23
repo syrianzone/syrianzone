@@ -3,6 +3,8 @@ import { ChevronLeft, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { discovery, type Guide, type GuidesSort } from '../_lib/discovery';
+import { LevelBadge } from './LevelBadge';
+import { MilestonesSheet } from './MilestonesSheet';
 
 const SORTS: { value: GuidesSort; label: string }[] = [
   { value: 'submissions', label: 'الأكثر مساهمة' },
@@ -15,6 +17,7 @@ export function GuidesTab(props: { onSelectGuide: (guide: { id: number; name: st
   const [guides, setGuides] = useState<Guide[] | null>(null);
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [milestonesOpen, setMilestonesOpen] = useState(false);
   const requestRef = useRef(0);
 
   useEffect(() => {
@@ -32,7 +35,12 @@ export function GuidesTab(props: { onSelectGuide: (guide: { id: number; name: st
 
   return (
     <div dir="rtl" className="min-h-0 flex-1 overflow-y-auto p-3">
-      <h3 className="mb-2 text-sm font-semibold text-foreground">المرشدون المحليون</h3>
+      <div className="mb-2 flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-foreground">المرشدون المحليون</h3>
+        <Button type="button" variant="ghost" size="sm" onClick={() => setMilestonesOpen(true)}>
+          كيف أرتقي؟
+        </Button>
+      </div>
       <div className="mb-3 flex flex-wrap gap-1.5">
         {SORTS.map((s) => (
           <button
@@ -83,9 +91,12 @@ export function GuidesTab(props: { onSelectGuide: (guide: { id: number; name: st
                 <AvatarFallback>{g.name.slice(0, 1)}</AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-foreground">{g.name}</p>
+                <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+                  <span className="truncate">{g.name}</span>
+                  <LevelBadge level={g.level} />
+                </p>
                 <p className="text-xs text-muted-foreground">
-                  {g.approved_count} مساهمة · {g.saves_total} حفظ
+                  {g.points} نقطة · {g.approved_count} مساهمة · {g.saves_total} حفظ
                   {sort === 'recent' && ` · ${g.recent_count} خلال 30 يوماً`}
                 </p>
               </div>
@@ -95,6 +106,7 @@ export function GuidesTab(props: { onSelectGuide: (guide: { id: number; name: st
           ))}
         </ul>
       )}
+      <MilestonesSheet open={milestonesOpen} onOpenChange={setMilestonesOpen} />
     </div>
   );
 }

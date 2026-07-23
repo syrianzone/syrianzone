@@ -11,6 +11,8 @@ export interface Guide {
   approved_count: number;
   saves_total: number;
   recent_count: number;
+  points: number;
+  level: number;
 }
 
 export interface GridPhoto {

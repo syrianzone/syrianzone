@@ -235,6 +235,50 @@ test('show still works after the author soft-deletes their account', function ()
     ->assertJsonPath('user.name', $owner->name);
 });
 
+test('show exposes the contributor level and points', function () {
+  $owner = placesUser();
+  $place = Place::factory()->approved()->create([
+    'user_id' => $owner->id,
+    'description' => str_repeat('م', 200),
+    'saves_count' => 4,
+  ]);
+  PlacePhoto::factory()->count(2)->create(['place_id' => $place->id]);
+
+  // 15 place + 2*5 photos + 5 description + 4 saves = 34 => level 2
+  $this->getJson("/api/v1/places/{$place->id}")
+    ->assertOk()
+    ->assertJsonPath('user.level', 2)
+    ->assertJsonPath('user.points', 34);
+});
+
+test('show on an owner-visible pending place carries level and points', function () {
+  $owner = placesUser();
+  $place = Place::factory()->create(['user_id' => $owner->id, 'saves_count' => 9]);
+
+  // the pending place itself contributes nothing: 0 points, level 1
+  $this->actingAs($owner)
+    ->getJson("/api/v1/places/{$place->id}")
+    ->assertOk()
+    ->assertJsonPath('status', 'pending')
+    ->assertJsonPath('user.level', 1)
+    ->assertJsonPath('user.points', 0);
+});
+
+test('show caches contributor points per user for five minutes', function () {
+  $owner = placesUser();
+  $place = Place::factory()->approved()->create(['user_id' => $owner->id, 'saves_count' => 0]);
+
+  $this->getJson("/api/v1/places/{$place->id}")->assertOk()->assertJsonPath('user.points', 15);
+  expect(Cache::has("places:guide-points:{$owner->id}"))->toBeTrue();
+
+  // staleness accepted: fresh photos are invisible until the per-user key expires
+  PlacePhoto::factory()->create(['place_id' => $place->id]);
+  $this->getJson("/api/v1/places/{$place->id}")->assertOk()->assertJsonPath('user.points', 15);
+
+  Cache::flush();
+  $this->getJson("/api/v1/places/{$place->id}")->assertOk()->assertJsonPath('user.points', 20);
+});
+
 test('guest cannot submit a place', function () {
   $this->postJson('/api/v1/places', [])->assertUnauthorized();
 });

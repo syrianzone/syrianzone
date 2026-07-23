@@ -8,6 +8,7 @@ import { api, extractError } from '../_lib/api';
 import { CATEGORY_LABELS } from '../_lib/categories';
 import type { PlaceDetail } from '../_lib/types';
 import { EngagementBar } from './EngagementBar';
+import { LevelBadge } from './LevelBadge';
 import { PhotoGallery } from './PhotoGallery';
 
 export function PlaceDetailView(props: { placeId: number; onClose: () => void }) {
@@ -81,6 +82,7 @@ export function PlaceDetailView(props: { placeId: number; onClose: () => void })
                 <AvatarFallback>{place.user.name.slice(0, 1)}</AvatarFallback>
               </Avatar>
               <span className="text-sm text-muted-foreground">{place.user.name}</span>
+              <LevelBadge level={place.user.level} showLabel />
             </div>
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
               <span dir="ltr">

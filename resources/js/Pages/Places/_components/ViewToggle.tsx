@@ -20,11 +20,9 @@ export function ViewToggle(props: { view: 'map' | 'grid'; onChange: (v: 'map' | 
   );
 
   return (
-    <div dir="rtl" className={`flex justify-center ${props.className ?? ''}`}>
-      <div className="flex gap-1 rounded-full border border-border bg-card/90 p-1 shadow-sm">
-        {item('map', 'خريطة', MapIcon)}
-        {item('grid', 'معرض', LayoutGrid)}
-      </div>
+    <div dir="rtl" className={`flex h-9 items-center gap-1 rounded-full border border-border bg-card/90 p-1 shadow-md ${props.className ?? ''}`}>
+      {item('map', 'خريطة', MapIcon)}
+      {item('grid', 'معرض', LayoutGrid)}
     </div>
   );
 }

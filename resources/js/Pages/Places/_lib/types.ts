@@ -3,7 +3,7 @@ export type PlaceStatus = 'pending' | 'approved' | 'rejected';
 
 export interface LatLng { lat: number; lng: number; }
 
-export interface PlaceUser { id: number; name: string; avatar_url: string | null; }
+export interface PlaceUser { id: number; name: string; avatar_url: string | null; level: number; points: number; }
 
 export interface PlacePhoto { id: number; thumb_url: string; display_url: string; sort: number; }
 
@@ -41,6 +41,7 @@ export type GuidesSort = 'submissions' | 'saves' | 'recent';
 export interface Guide {
   rank: number; user_id: number; name: string; avatar_url: string | null;
   approved_count: number; saves_total: number; recent_count: number;
+  points: number; level: number;
 }
 
 export interface GridPhoto {

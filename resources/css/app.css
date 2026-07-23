@@ -198,6 +198,8 @@
     /* Reseda Green */
     --ring: 105 15.2% 36.1%;
     --sz-color-primary: 105 15.2% 36.1%;
+    /* LevelBadge brand tier: 36% olive is ~3:1 on the near-black card; lift it to ~5.4:1 */
+    --places-level-brand: 105 15.2% 55%;
 }
 
 [data-theme="dark-blue"] {

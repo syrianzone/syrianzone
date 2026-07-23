@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Head } from '@inertiajs/react';
 import { ChevronDown, ChevronUp, Plus, X } from 'lucide-react';
 import MainLayout from '@/Layouts/MainLayout';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { PlacesMap } from './_components/PlacesMap';
 import { FilterBar, parseLatLng } from './_components/FilterBar';
@@ -256,31 +255,40 @@ export default function Index() {
         />
 
         {/* stays mounted across view switches so fetched pages survive; renders null on the map view */}
-        <PhotoGrid active={view === 'grid'} guideId={guide?.id ?? null} onPhotoClick={handleGridPhotoClick} />
+        <PhotoGrid
+          active={view === 'grid'}
+          guideId={guide?.id ?? null}
+          bannerActive={guide !== null || notice !== null}
+          onPhotoClick={handleGridPhotoClick}
+        />
 
         {/* pr-96 keeps the floating bar clear of the side panel on desktop (map view only);
             z-20 keeps the search dropdown above the z-10 bottom sheet (later sibling).
             pointer-events-none: this box overlaps the panel's tabs, and being on top it
             swallowed their clicks; every child opts back in individually */}
         <div className={`pointer-events-none absolute top-3 inset-x-3 z-20 max-w-xl mx-auto space-y-2 md:max-w-3xl ${view === 'map' ? 'md:pr-96' : ''}`}>
-          <FilterBar
-            className="pointer-events-auto"
-            category={category}
-            onCategoryChange={setCategory}
-            query={query}
-            onQueryChange={setQuery}
-            results={searchResults}
-            geoResults={coordCandidate ? [] : geoResults}
-            resultsLoading={listLoading || searchPending}
-            coordCandidate={coordCandidate}
-            onSelectResult={handleSelectResult}
-            onSelectGeo={(s) => handleGoToCoord({ lat: s.lat, lng: s.lng })}
-            onGoToCoord={handleGoToCoord}
-          />
-          <ViewToggle view={view} onChange={changeView} className="pointer-events-auto" />
+          <div className="flex items-center gap-2">
+            <FilterBar
+              className="pointer-events-auto min-w-0 flex-1"
+              category={category}
+              onCategoryChange={setCategory}
+              query={query}
+              onQueryChange={setQuery}
+              results={searchResults}
+              geoResults={coordCandidate ? [] : geoResults}
+              resultsLoading={listLoading || searchPending}
+              coordCandidate={coordCandidate}
+              onSelectResult={handleSelectResult}
+              onSelectGeo={(s) => handleGoToCoord({ lat: s.lat, lng: s.lng })}
+              onGoToCoord={handleGoToCoord}
+            />
+            <ViewToggle view={view} onChange={changeView} className="pointer-events-auto shrink-0" />
+          </div>
+          {/* pointer-events-auto sits on the pill spans, not the full-width centering rows:
+              a row-wide opt-in swallowed grid-photo taps across its whole strip */}
           {guide && (
-            <div className="pointer-events-auto flex justify-center">
-              <span className="flex items-center gap-2 rounded-full border border-primary/40 bg-card/95 px-3 py-1 text-xs text-foreground shadow-sm">
+            <div className="flex justify-center">
+              <span className="pointer-events-auto flex items-center gap-2 rounded-full border border-primary/40 bg-card/95 px-3 py-1 text-xs text-foreground shadow-sm">
                 مساهمات {guide.name}
                 <button type="button" aria-label="إلغاء التصفية" onClick={() => selectGuide(null)}>
                   <X className="h-3.5 w-3.5" />
@@ -288,20 +296,27 @@ export default function Index() {
               </span>
             </div>
           )}
-          {addMode && (
-            <div className="pointer-events-auto flex justify-center">
-              <span className="rounded-full border border-border bg-card/90 px-3 py-1 text-xs text-muted-foreground shadow-sm">
+          {addMode && view === 'map' && (
+            <div className="flex justify-center">
+              <span className="pointer-events-auto flex items-center gap-2 rounded-full border border-border bg-card/95 px-3 py-1 text-xs text-muted-foreground shadow-sm">
                 انقر على الخريطة لتحديد الموقع
               </span>
             </div>
           )}
           {notice && (
-            <Alert variant={notice.destructive ? 'destructive' : 'default'} className="pointer-events-auto flex items-start justify-between gap-2">
-              <AlertDescription>{notice.text}</AlertDescription>
-              <button type="button" aria-label="إغلاق" onClick={() => setNotice(null)}>
-                <X className="h-4 w-4" />
-              </button>
-            </Alert>
+            <div className="flex justify-center">
+              <span
+                role="alert"
+                className={`pointer-events-auto flex items-center gap-2 rounded-full border bg-card/95 px-3 py-1 text-xs shadow-sm ${
+                  notice.destructive ? 'border-destructive/50 text-destructive' : 'border-border text-foreground'
+                }`}
+              >
+                {notice.text}
+                <button type="button" aria-label="إغلاق" onClick={() => setNotice(null)}>
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </span>
+            </div>
           )}
         </div>
 

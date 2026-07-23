@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Place;
 use App\Models\PlacePhoto;
+use App\Services\GuideLevelService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
@@ -11,15 +12,15 @@ use Illuminate\Support\Facades\Cache;
 // PlaceController so the owner flows and discovery flows evolve independently.
 class PlaceDiscoveryController extends Controller
 {
-  public function guides(Request $request)
+  public function guides(Request $request, GuideLevelService $levels)
   {
     $validated = $request->validate(['sort' => 'sometimes|in:submissions,saves,recent']);
     $sort = $validated['sort'] ?? 'submissions';
 
     // 5-minute staleness is accepted: no forget hooks on moderation or saves
-    $rows = Cache::remember("places:guides:{$sort}", 300, function () use ($sort) {
+    $rows = Cache::remember("places:guides:{$sort}", 300, function () use ($sort, $levels) {
       $metric = ['submissions' => 'approved_count', 'saves' => 'saves_total', 'recent' => 'recent_count'][$sort];
-      return Place::where('places.status', 'approved')
+      $rows = Place::where('places.status', 'approved')
         ->join('users', 'users.id', '=', 'places.user_id')
         ->whereNull('users.deleted_at')
         ->where('users.is_banned', false)
@@ -45,6 +46,13 @@ class PlaceDiscoveryController extends Controller
         ])
         ->values()
         ->all();
+
+      // points ride the same cached payload; ordering stays on the sort metric
+      $pointsByUser = $levels->forUsers(array_column($rows, 'user_id'));
+      return array_map(function ($row) use ($pointsByUser) {
+        $entry = $pointsByUser[$row['user_id']] ?? ['points' => 0, 'level' => 1];
+        return $row + ['points' => $entry['points'], 'level' => $entry['level']];
+      }, $rows);
     });
 
     $guides = array_map(fn ($row, $i) => ['rank' => $i + 1] + $row, $rows, array_keys($rows));

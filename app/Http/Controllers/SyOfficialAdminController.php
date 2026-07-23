@@ -238,13 +238,25 @@ class SyOfficialAdminController extends Controller
                 $targetW = 200;
                 $targetH = 200;
 
+                if ($origW > $origH) {
+                    $srcW = $origH;
+                    $srcH = $origH;
+                    $srcX = (int) (($origW - $origH) / 2);
+                    $srcY = 0;
+                } else {
+                    $srcW = $origW;
+                    $srcH = $origW;
+                    $srcX = 0;
+                    $srcY = (int) (($origH - $origW) / 2);
+                }
+
                 $canvas = imagecreatetruecolor($targetW, $targetH);
                 imagealphablending($canvas, false);
                 imagesavealpha($canvas, true);
                 $transparent = imagecolorallocatealpha($canvas, 255, 255, 255, 127);
                 imagefilledrectangle($canvas, 0, 0, $targetW, $targetH, $transparent);
 
-                imagecopyresampled($canvas, $im, 0, 0, 0, 0, $targetW, $targetH, $origW, $origH);
+                imagecopyresampled($canvas, $im, 0, 0, $srcX, $srcY, $targetW, $targetH, $srcW, $srcH);
 
                 ob_start();
                 imagewebp($canvas, null, 85);

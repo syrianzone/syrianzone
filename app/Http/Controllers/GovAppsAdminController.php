@@ -150,8 +150,22 @@ class GovAppsAdminController extends Controller
             $imageStr = file_get_contents($file->getRealPath());
             $im = @imagecreatefromstring($imageStr);
             if ($im !== false) {
+                $origW = imagesx($im);
+                $origH = imagesy($im);
                 $targetW = 200;
                 $targetH = 200;
+
+                if ($origW > $origH) {
+                    $srcW = $origH;
+                    $srcH = $origH;
+                    $srcX = (int) (($origW - $origH) / 2);
+                    $srcY = 0;
+                } else {
+                    $srcW = $origW;
+                    $srcH = $origW;
+                    $srcX = 0;
+                    $srcY = (int) (($origH - $origW) / 2);
+                }
 
                 $canvas = imagecreatetruecolor($targetW, $targetH);
                 imagealphablending($canvas, false);
@@ -159,7 +173,7 @@ class GovAppsAdminController extends Controller
                 $transparent = imagecolorallocatealpha($canvas, 255, 255, 255, 127);
                 imagefilledrectangle($canvas, 0, 0, $targetW, $targetH, $transparent);
 
-                imagecopyresampled($canvas, $im, 0, 0, 0, 0, $targetW, $targetH, imagesx($im), imagesy($im));
+                imagecopyresampled($canvas, $im, 0, 0, $srcX, $srcY, $targetW, $targetH, $srcW, $srcH);
 
                 ob_start();
                 imagewebp($canvas, null, 85);

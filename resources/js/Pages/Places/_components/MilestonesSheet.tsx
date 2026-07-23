@@ -8,17 +8,17 @@ import {
 import { LevelBadge, rankName } from './LevelBadge';
 
 // mirrors GuideLevelService::LEVELS; the API threshold test keeps the two in sync
-const LEVELS: { level: number; points: number; perk: string }[] = [
-  { level: 1, points: 0, perk: 'رقم المستوى' },
-  { level: 2, points: 15, perk: 'رقم المستوى' },
-  { level: 3, points: 75, perk: 'شارة مرشد محلي' },
-  { level: 4, points: 250, perk: 'نجمة برقم المستوى' },
-  { level: 5, points: 500, perk: 'نجمة برقم المستوى' },
-  { level: 6, points: 1500, perk: 'شارة ذهبية' },
-  { level: 7, points: 5000, perk: 'شارة ذهبية' },
-  { level: 8, points: 15000, perk: 'شارة وردية مميزة' },
-  { level: 9, points: 50000, perk: 'شارة وردية مميزة' },
-  { level: 10, points: 100000, perk: 'شارة وردية مميزة' },
+const LEVELS: { level: number; points: number }[] = [
+  { level: 1, points: 0 },
+  { level: 2, points: 15 },
+  { level: 3, points: 75 },
+  { level: 4, points: 250 },
+  { level: 5, points: 500 },
+  { level: 6, points: 1500 },
+  { level: 7, points: 5000 },
+  { level: 8, points: 15000 },
+  { level: 9, points: 50000 },
+  { level: 10, points: 100000 },
 ];
 
 const POINT_RULES = [
@@ -33,7 +33,7 @@ export function MilestonesSheet(props: { open: boolean; onOpenChange: (open: boo
     <Sheet open={props.open} onOpenChange={props.onOpenChange}>
       <SheetContent side="bottom" dir="rtl" className="max-h-[80dvh] overflow-y-auto">
         <SheetHeader className="text-right sm:text-right">
-          <SheetTitle>مستويات المرشد المحلي</SheetTitle>
+          <SheetTitle>مستويات مشوار</SheetTitle>
           <SheetDescription>اجمع النقاط بمساهماتك في مشوار وارتقِ في المستويات.</SheetDescription>
         </SheetHeader>
         <div className="mt-4 space-y-4">
@@ -52,7 +52,6 @@ export function MilestonesSheet(props: { open: boolean; onOpenChange: (open: boo
                 <tr className="border-b border-border text-right text-xs text-muted-foreground">
                   <th className="py-1.5 pl-2 font-medium">الرتبة</th>
                   <th className="py-1.5 pl-2 font-medium">النقاط المطلوبة</th>
-                  <th className="py-1.5 font-medium">الميزة</th>
                 </tr>
               </thead>
               <tbody>
@@ -68,7 +67,6 @@ export function MilestonesSheet(props: { open: boolean; onOpenChange: (open: boo
                     <td className="py-1.5 pl-2">
                       <span dir="ltr" className="tabular-nums text-foreground">{l.points}</span>
                     </td>
-                    <td className="py-1.5 text-muted-foreground">{l.perk}</td>
                   </tr>
                 ))}
               </tbody>

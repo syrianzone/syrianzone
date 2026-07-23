@@ -246,6 +246,14 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
               <Separator className="my-2" />
               <div className="flex gap-4 justify-start text-xs text-muted-foreground px-2 pt-1 pb-4">
                 <Link
+                  href="/about"
+                  onClick={() => setIsOpen(false)}
+                  className="hover:text-primary transition-colors"
+                >
+                  عن المنصة
+                </Link>
+                <span>•</span>
+                <Link
                   href="/privacy"
                   onClick={() => setIsOpen(false)}
                   className="hover:text-primary transition-colors"
@@ -476,6 +484,13 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
                       ))}
                       <Separator className="col-span-2 my-2" />
                       <li className="col-span-2 flex justify-center gap-6 text-xs text-muted-foreground py-1">
+                        <Link
+                          href="/about"
+                          className="hover:text-primary transition-colors"
+                        >
+                          عن المنصة
+                        </Link>
+                        <span>•</span>
                         <Link
                           href="/privacy"
                           className="hover:text-primary transition-colors"

@@ -13,15 +13,6 @@ class HomeController extends Controller
      */
     public function index()
     {
-        $aboutPath = resource_path('js/Data/about.md');
-        $aboutContent = '';
-        
-        if (File::exists($aboutPath)) {
-            $aboutContent = File::get($aboutPath);
-        }
-
-        return Inertia::render('Home', [
-            'aboutContent' => $aboutContent
-        ]);
+        return Inertia::render('Home');
     }
 }

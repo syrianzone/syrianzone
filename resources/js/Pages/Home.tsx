@@ -150,21 +150,10 @@ const WEATHER_TRANSLATIONS: Record<string, string> = {
 
 
 
-export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
+export default function Home() {
     const { props } = usePage<{ auth?: { user: { id: number; name: string; email: string; avatar_url: string; role: string; settings?: Record<string, any> | null } | null } }>();
     const user = props.auth?.user ?? null;
-    const [aboutHtml, setAboutHtml] = useState('');
 
-    useEffect(() => {
-        const parseContent = async () => {
-            if (aboutContent) {
-                const { marked } = await import('marked');
-                const html = await marked.parse(aboutContent);
-                setAboutHtml(html);
-            }
-        };
-        parseContent();
-    }, [aboutContent]);
 
     const [theme, setTheme] = useState<string | null>(null);
     const [systemDark, setSystemDark] = useState(false);
@@ -174,7 +163,6 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
         const [customLinks, setCustomLinks] = useState<CustomLink[]>([]);
     const [editingLink, setEditingLink] = useState<CustomLink | null>(null);
     const [settingsOpen, setSettingsOpen] = useState(false);
-    const [aboutOpen, setAboutOpen] = useState(false);
     const [addLinkOpen, setAddLinkOpen] = useState(false);
     const [govDropdownOpen, setGovDropdownOpen] = useState(false);
     const [govSearch, setGovSearch] = useState('');
@@ -535,8 +523,10 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
             <div className="min-h-screen text-foreground transition-colors" dir={currentLang === 'ar' ? 'rtl' : 'ltr'}>
                 {/* Top Controls */}
                 <div className="fixed top-4 left-4 right-4 flex justify-between items-center z-50">
-                    <Button variant="ghost" size="sm" onClick={() => setAboutOpen(true)}>
-                        {currentLang === 'ar' ? 'حول' : 'About'}
+                    <Button variant="ghost" size="sm" asChild>
+                        <a href="/about" className="text-sm font-medium">
+                            {currentLang === 'ar' ? 'حول المنصة' : 'About'}
+                        </a>
                     </Button>
 
                     <div className="flex gap-2 items-center">
@@ -1336,21 +1326,7 @@ export default function Home({ aboutContent = '' }: { aboutContent?: string }) {
                     language={currentLang}
                 />
 
-                {/* About Dialog */}
-                <Dialog open={aboutOpen} onOpenChange={setAboutOpen}>
-                    <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col p-0" dir={currentLang === 'ar' ? 'rtl' : 'ltr'}>
-                        <DialogHeader className="px-6 pt-6 pb-2 text-start sm:text-start">
-                            <DialogTitle>{currentLang === 'ar' ? 'حول Syrian Zone' : 'About Syrian Zone'}</DialogTitle>
-                        </DialogHeader>
-                        <ScrollArea className="h-[500px] max-h-[60vh] px-6 pb-6" dir={currentLang === 'ar' ? 'rtl' : 'ltr'}>
-                            <div
-                                className="py-4 space-y-4 text-start [&>h1]:text-2xl [&>h1]:font-bold [&>h1]:mb-4 [&>h2]:text-xl [&>h2]:font-bold [&>h2]:mt-6 [&>h2]:mb-2 [&>p]:mb-4 [&>p]:leading-relaxed [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:mb-4 [&_a]:text-primary [&_a]:underline"
-                                dir={currentLang === 'ar' ? 'rtl' : 'ltr'}
-                                dangerouslySetInnerHTML={{ __html: aboutHtml || (currentLang === 'ar' ? 'جاري التحميل...' : 'Loading...') }}
-                            />
-                        </ScrollArea>
-                    </DialogContent>
-                </Dialog>
+
             </div>
         </MainLayout>
     );

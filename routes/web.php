@@ -42,6 +42,9 @@ Route::get('/shawarma', function () {
 Route::get('/justice', function () {
     return Inertia::render('Justice/Index');
 });
+Route::get('/about', function () {
+    return Inertia::render('About');
+});
 Route::get('/privacy', function () {
     return Inertia::render('Privacy');
 });

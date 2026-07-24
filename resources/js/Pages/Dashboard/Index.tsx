@@ -19,6 +19,7 @@ import {
   Globe,
   Smartphone,
   Phone,
+  CloudUpload,
 } from 'lucide-react';
 import MainLayout from '@/Layouts/MainLayout';
 import { useAuth } from '@/Contexts/AuthContext';
@@ -449,6 +450,17 @@ export default function Dashboard({
                   >
                     <Phone className="h-5 w-5" />
                     إدارة دليل الهاتف (Phonebook)
+                  </Link>
+                )}
+
+                {/* R2 Asset Manager Tab (Superadmin only) */}
+                {role === 'superadmin' && (
+                  <Link
+                    href="/admin/assets"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  >
+                    <CloudUpload className="h-5 w-5" />
+                    مستودع الملفات (Cloudflare R2)
                   </Link>
                 )}
 

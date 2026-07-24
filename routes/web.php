@@ -226,6 +226,11 @@ Route::middleware('auth')->group(function () {
         });
     });
 
+    Route::middleware(['auth', 'superadmin'])->group(function () {
+        Route::get('/admin/assets', [\App\Http\Controllers\AssetUploadController::class, 'index']);
+        Route::post('/api/v1/admin/assets/upload', [\App\Http\Controllers\AssetUploadController::class, 'store']);
+    });
+
     // Hidden Places: authenticated writes (session + CSRF via the web group)
     Route::prefix('api/v1')->group(function () {
         // No per-user submission cap: moderation gates everything to the public map,

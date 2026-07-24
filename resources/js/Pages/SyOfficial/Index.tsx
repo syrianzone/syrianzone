@@ -231,8 +231,28 @@ export default function Index({ initialData, categories }: SyOfficialClientProps
     return (
         <MainLayout>
             <Head>
-                <title>{t.title}</title>
+                <title>{`${t.title} | syrian.zone`}</title>
                 <meta name="description" content={t.description} />
+                <meta name="keywords" content="روابط الحسابات الرسمية السورية, وزارات سوريا, سفارات سوريا, نقابات سوريا, الشخصيات العامة في سوريا, syrian zone" />
+                <meta property="og:title" content={`${t.title} | syrian.zone`} />
+                <meta property="og:description" content={t.description} />
+                <meta property="og:type" content="website" />
+                <meta property="og:image" content="/syofficial-assets/assets/flags/ar.svg" />
+                <meta name="twitter:card" content="summary" />
+                <meta name="twitter:title" content={`${t.title} | syrian.zone`} />
+                <meta name="twitter:description" content={t.description} />
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{
+                        __html: JSON.stringify({
+                            "@context": "https://schema.org",
+                            "@type": "ItemList",
+                            "name": t.title,
+                            "description": t.description,
+                            "numberOfItems": initialData ? initialData.length : 0
+                        })
+                    }}
+                />
             </Head>
             <div className="min-h-screen transition-colors" dir={language === 'ar' || language === 'ku' ? 'rtl' : 'ltr'}>
 

@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, Suspense } from 'react';
-import { Download, Copy, Check, ExternalLink, Map as MapIcon, FileDown } from 'lucide-react';
+import React, { useState, useMemo, Suspense } from 'react';
+import {
+    Download, Copy, Check, ExternalLink, Map as MapIcon, FileDown, Search, Tag
+} from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { featureToSVG, getGovernorateNameAr } from '@/lib/geo-utils';
 import {
     Select,
@@ -14,64 +15,71 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
 
 const SyriaMap = React.lazy(() => import('./SyriaMap'));
 
-interface SyidClientProps {
-}
-
-// Color palettes from the official Syrian identity
 const COLOR_PALETTES = [
     {
         name: 'Forest',
         colors: [
-            { hex: '#428177', cmyk: 'C76% M32% Y54% K10%', textColor: 'white' },
-            { hex: '#054239', cmyk: 'C89% M49% Y70% K50%', textColor: 'white' },
-            { hex: '#002623', cmyk: 'C87% M59% Y68% K71%', textColor: 'white' },
+            { hex: '#428177', cmyk: 'C76% M32% Y54% K10%', oklch: 'oklch(0.536 0.061 189.6)', textColor: 'white' },
+            { hex: '#054239', cmyk: 'C89% M49% Y70% K50%', oklch: 'oklch(0.334 0.057 186.2)', textColor: 'white' },
+            { hex: '#002623', cmyk: 'C87% M59% Y68% K71%', oklch: 'oklch(0.208 0.038 184.5)', textColor: 'white' },
         ]
     },
     {
         name: 'Golden Wheat',
         colors: [
-            { hex: '#edebe0', cmyk: 'C6% M9% Y19% K0%', textColor: 'black' },
-            { hex: '#b9a779', cmyk: 'C20% M29% Y52% K7%', textColor: 'black' },
-            { hex: '#988561', cmyk: 'C39% M46% Y67% K20%', textColor: 'white' },
+            { hex: '#edebe0', cmyk: 'C6% M9% Y19% K0%', oklch: 'oklch(0.938 0.010 95.8)', textColor: 'black' },
+            { hex: '#b9a779', cmyk: 'C20% M29% Y52% K7%', oklch: 'oklch(0.722 0.063 88.5)', textColor: 'black' },
+            { hex: '#988561', cmyk: 'C39% M46% Y67% K20%', oklch: 'oklch(0.598 0.058 87.2)', textColor: 'white' },
         ]
     },
     {
         name: 'Deep Umber',
         colors: [
-            { hex: '#6b1f2a', cmyk: 'C35% M92% Y72% K46%', textColor: 'white' },
-            { hex: '#4a151e', cmyk: 'C44% M86% Y68% K65%', textColor: 'white' },
-            { hex: '#260f14', cmyk: 'C60% M75% Y64% K79%', textColor: 'white' },
+            { hex: '#6b1f2a', cmyk: 'C35% M92% Y72% K46%', oklch: 'oklch(0.354 0.108 20.7)', textColor: 'white' },
+            { hex: '#4a151e', cmyk: 'C44% M86% Y68% K65%', oklch: 'oklch(0.279 0.083 19.5)', textColor: 'white' },
+            { hex: '#260f14', cmyk: 'C60% M75% Y64% K79%', oklch: 'oklch(0.183 0.039 18.2)', textColor: 'white' },
         ]
     },
     {
         name: 'Charcoal',
         colors: [
-            { hex: '#ffffff', cmyk: 'C0% M0% Y0% K0%', textColor: 'black' },
-            { hex: '#3d3a3b', cmyk: 'C67% M53% Y60% K50%', textColor: 'white' },
-            { hex: '#161616', cmyk: 'C73% M67% Y65% K80%', textColor: 'white' },
+            { hex: '#ffffff', cmyk: 'C0% M0% Y0% K0%', oklch: 'oklch(1 0 0)', textColor: 'black' },
+            { hex: '#3d3a3b', cmyk: 'C67% M53% Y60% K50%', oklch: 'oklch(0.344 0.005 348.0)', textColor: 'white' },
+            { hex: '#161616', cmyk: 'C73% M67% Y65% K80%', oklch: 'oklch(0.185 0 0)', textColor: 'white' },
         ]
     },
 ];
 
 export default function SyidClient() {
-    const [copiedColor, setCopiedColor] = useState<string | null>(null);
+    const [copiedKey, setCopiedKey] = useState<string | null>(null);
     const [notification, setNotification] = useState<string | null>(null);
     const [geoJsonData, setGeoJsonData] = useState<any>(null);
     const [selectedGov, setSelectedGov] = useState<string>("full");
     const [govSearch, setGovSearch] = useState("");
+    const [mapLoaded, setMapLoaded] = useState(false);
+    const [loadingMap, setLoadingMap] = useState(false);
 
-
-
-    useEffect(() => {
-        fetch('/assets/population/syria_provinces.geojson')
-            .then(res => res.json())
-            .then(data => setGeoJsonData(data))
-            .catch(err => console.error('Failed to load GeoJSON', err));
-    }, []);
+    const loadMapData = async () => {
+        if (geoJsonData || loadingMap) {
+            setMapLoaded(true);
+            return;
+        }
+        setLoadingMap(true);
+        try {
+            const res = await fetch('/assets/population/syria_provinces_opt.geojson');
+            const data = await res.json();
+            setGeoJsonData(data);
+            setMapLoaded(true);
+        } catch (err) {
+            console.error('Failed to load GeoJSON', err);
+            showToast('تعذر تحميل بيانات الخريطة');
+        } finally {
+            setLoadingMap(false);
+        }
+    };
 
     const governorates = useMemo(() => {
         if (!geoJsonData) return [];
@@ -89,7 +97,10 @@ export default function SyidClient() {
         );
     }, [governorates, govSearch]);
 
-    const handleExportSVG = () => {
+    const handleExportSVG = async () => {
+        if (!geoJsonData) {
+            await loadMapData();
+        }
         if (!geoJsonData) return;
 
         let svgString = "";
@@ -116,11 +127,13 @@ export default function SyidClient() {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
 
-        setNotification(`تم تحميل الملف بنجاح`);
-        setTimeout(() => setNotification(null), 3000);
+        showToast(`تم تحميل ملف SVG بنجاح`);
     };
 
-    const handleExportGeoJSON = () => {
+    const handleExportGeoJSON = async () => {
+        if (!geoJsonData) {
+            await loadMapData();
+        }
         if (!geoJsonData) return;
 
         let dataToExport = geoJsonData;
@@ -129,11 +142,7 @@ export default function SyidClient() {
         if (selectedGov !== "full") {
             const feature = geoJsonData.features.find((f: any) => f.properties.province_name === selectedGov);
             if (!feature) return;
-
-            dataToExport = {
-                type: "FeatureCollection",
-                features: [feature]
-            };
+            dataToExport = { type: "FeatureCollection", features: [feature] };
             const nameAr = getGovernorateNameAr(selectedGov);
             filename = `خريطة_سوريا_${nameAr}.geojson`;
         }
@@ -148,412 +157,481 @@ export default function SyidClient() {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
 
-        setNotification(`تم تحميل الملف بنجاح`);
-        setTimeout(() => setNotification(null), 3000);
+        showToast(`تم تحميل ملف GeoJSON بنجاح`);
     };
 
-    const copyToClipboard = (text: string, colorHex: string) => {
+    const showToast = (msg: string) => {
+        setNotification(msg);
+        setTimeout(() => setNotification(null), 2500);
+    };
+
+    const copyToClipboard = (text: string, key: string) => {
         navigator.clipboard.writeText(text);
-        setCopiedColor(colorHex);
-        setNotification(`تم نسخ ${text}`);
-        setTimeout(() => {
-            setCopiedColor(null);
-            setNotification(null);
-        }, 2000);
+        setCopiedKey(key);
+        setTimeout(() => setCopiedKey(null), 2000);
+        showToast(`تم النسخ: ${text}`);
     };
 
     return (
-        <div className="min-h-screen transition-colors" dir="rtl">
+        <div className="min-h-screen bg-background text-foreground transition-colors" dir="rtl">
 
-            {/* Hero Section */}
-            <section className="bg-card py-8 border-b border-border shadow-sm">
-                <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                    <div className="max-w-3xl mx-auto">
-                        <h1 className="text-4xl md:text-5xl font-bold mb-6 text-foreground">عناصر الهوية البصرية السورية</h1>
-                        <p className="text-xl text-muted-foreground mb-8">
-                            المواد المرتبطة بالهوية البصرية السورية - مجموعة غير رسمية ومجمّعة من أماكن متعددة بانتظار الإصدار الرسمي للهوية
-                        </p>
-                        <a
-                            href="https://syrianidentity.sy"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center justify-center whitespace-nowrap text-sm font-bold bg-[#428177] text-white hover:bg-[#054239] h-12 px-8 rounded-xl transition-all hover:-translate-y-0.5 hover:shadow-lg"
-                        >
-                            <ExternalLink className="ml-2 h-4 w-4" />
-                            زيارة الموقع الرسمي للهوية البصرية السورية
-                        </a>
-                    </div>
+            {/* Minimal Hero Header */}
+            <header className="py-12 border-b border-border text-center bg-muted/20">
+                <div className="container mx-auto px-4 max-w-4xl">
+                    <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3">
+                        عناصر الهوية البصرية السورية
+                    </h1>
+                    <p className="text-muted-foreground text-base max-w-2xl mx-auto mb-6">
+                        دليل متكامل ومجمّع للمواد الرقمية والملفات المتصلة بالهوية البصرية السورية
+                    </p>
+                    <a
+                        href="https://syrianidentity.sy"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 font-medium text-sm bg-[#428177] hover:bg-[#054239] text-white h-10 px-5 rounded-lg transition-colors shadow-xs"
+                    >
+                        <span>زيارة الموقع الرسمي</span>
+                        <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                    <p className="mt-3 text-xs text-muted-foreground max-w-xl mx-auto leading-relaxed">
+                        الموقع متوقف عن العمل منذ فترة، لتحميل الموجود فيه تحقق من قسم &quot;شعار الهوية والمواد الرسمية&quot;
+                    </p>
                 </div>
-            </section>
+            </header>
 
-            {/* Main Container */}
-            <div className="container mx-auto my-8 max-w-7xl px-4 sm:px-6">
-                <Card className="overflow-hidden border border-border shadow-xl rounded-2xl bg-card">
+            {/* Main Content Area */}
+            <main className="container mx-auto py-10 max-w-6xl px-4 space-y-14">
 
-                    {/* Color Palette Section */}
-                    <div className="p-10" id="colors">
-                        <h2 className="text-4xl font-bold text-center text-foreground mb-4">لوحة الألوان</h2>
-                        <p className="text-center text-lg mb-8 text-muted-foreground">يمكنك النقر على اللون لنسخ الرمز مباشرةً</p>
+                {/* 1. COLOR PALETTES */}
+                <section>
+                    <h2 className="text-2xl font-bold mb-6">لوحة الألوان</h2>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            {COLOR_PALETTES.map((palette) => (
-                                <div key={palette.name} className="mb-5">
-                                    <div className="text-2xl font-semibold mb-2 text-center text-foreground">{palette.name}</div>
-                                    <div className="flex overflow-hidden shadow-md border border-border rounded-xl">
-                                        {palette.colors.map((color) => (
-                                            <div
-                                                key={color.hex}
-                                                className="flex-1 p-5 min-h-[140px] flex items-end cursor-pointer transition-all duration-200 ease-in-out hover:scale-105"
-                                                style={{
-                                                    backgroundColor: color.hex,
-                                                    color: color.textColor
-                                                }}
-                                                onClick={() => copyToClipboard(color.hex, color.hex)}
-                                            >
-                                                <div className="color-text">
-                                                    <div className="font-mono text-sm font-bold mb-1">{color.hex}</div>
-                                                    <div className="text-xs opacity-80 whitespace-pre-line">{color.cmyk.replace(/ /g, '\n')}</div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {COLOR_PALETTES.map((palette) => (
+                            <Card key={palette.name} className="border border-border/80 rounded-xl overflow-hidden">
+                                <div className="p-4 bg-muted/30 border-b border-border/40 font-semibold text-sm">
+                                    {palette.name}
+                                </div>
+                                <CardContent className="p-4">
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {palette.colors.map((color) => {
+                                            const hexKey = `${color.hex}-hex`;
+                                            const cmykKey = `${color.hex}-cmyk`;
+                                            const oklchKey = `${color.hex}-oklch`;
+
+                                            return (
+                                                <div
+                                                    key={color.hex}
+                                                    className="p-3 rounded-lg flex flex-col justify-between min-h-[140px] border border-black/10 transition-all hover:scale-[1.02]"
+                                                    style={{
+                                                        backgroundColor: color.hex,
+                                                        color: color.textColor
+                                                    }}
+                                                >
+                                                    {/* HEX format click */}
+                                                    <button
+                                                        onClick={() => copyToClipboard(color.hex, hexKey)}
+                                                        className="flex items-center justify-between w-full font-mono text-xs font-bold p-1 rounded bg-black/20 hover:bg-black/30 transition-colors"
+                                                    >
+                                                        <span>{color.hex}</span>
+                                                        {copiedKey === hexKey ? <Check className="h-3 w-3 text-green-400" /> : <Copy className="h-3 w-3 opacity-70" />}
+                                                    </button>
+
+                                                    {/* CMYK & OKLCH format clicks */}
+                                                    <div className="space-y-1 text-[10px] font-mono dir-ltr mt-2">
+                                                        <button
+                                                            onClick={() => copyToClipboard(color.cmyk, cmykKey)}
+                                                            className="flex items-center justify-between w-full p-0.5 px-1 rounded bg-black/15 hover:bg-black/25 transition-colors truncate"
+                                                        >
+                                                            <span className="truncate">{color.cmyk}</span>
+                                                            {copiedKey === cmykKey ? <Check className="h-2.5 w-2.5 text-green-400 shrink-0" /> : <Copy className="h-2.5 w-2.5 opacity-60 shrink-0" />}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => copyToClipboard(color.oklch, oklchKey)}
+                                                            className="flex items-center justify-between w-full p-0.5 px-1 rounded bg-black/15 hover:bg-black/25 transition-colors truncate"
+                                                        >
+                                                            <span className="truncate">{color.oklch}</span>
+                                                            {copiedKey === oklchKey ? <Check className="h-2.5 w-2.5 text-green-400 shrink-0" /> : <Copy className="h-2.5 w-2.5 opacity-60 shrink-0" />}
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
-                                </div>
-                            ))}
-                        </div>
+                                </CardContent>
+                            </Card>
+                        ))}
                     </div>
+                </section>
 
-                    {/* Typography / Font Section */}
-                    <div className="p-10 border-t border-border" id="typography">
-                        <h2 className="text-4xl font-bold text-center text-foreground mb-4">الخطوط</h2>
-                        <p className="text-center text-lg mb-8 text-muted-foreground">احصل على خط قمرة المستخدم في الهوية البصرية السورية</p>
+                {/* 2. TYPOGRAPHY */}
+                <section>
+                    <h2 className="text-2xl font-bold mb-6">الخطوط</h2>
 
-                        <div className="text-center mb-8">
-                            <img
-                                src="/syid-assets/materials/qomra2.webp"
-                                alt="خط قمرة"
-                                className="mx-auto max-w-full h-auto shadow-lg border-4 border-border rounded-xl"
-                                style={{ maxHeight: '300px' }}
-                            />
-                        </div>
+                    <Card className="border border-border/80 rounded-xl overflow-hidden">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-6 items-center">
+                            <div className="lg:col-span-7 flex justify-center">
+                                <img
+                                    src="/syid-assets/materials/qomra2.webp"
+                                    alt="خط قمرة"
+                                    loading="lazy"
+                                    className="max-h-64 w-auto rounded-lg border border-border object-contain"
+                                />
+                            </div>
 
-                        <div className="text-center">
-                            <a
-                                href="https://iwantype.com/"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center justify-center bg-[#428177] text-white font-bold h-12 px-8 rounded-xl no-underline transition-all hover:bg-[#054239] hover:-translate-y-0.5 hover:shadow-lg"
-                            >
-                                <ExternalLink className="ml-2 h-5 w-5" />
-                                شراء الخطوط من iWantype
-                            </a>
-                            <p className="mt-4 text-muted-foreground">
-                                استخدم كود الخصم <span className="font-semibold text-foreground">syrianzone</span> للخصم 25% على خط قمرة المستخدم في الهوية البصرية السورية
-                            </p>
-                        </div>
-                    </div>
+                            <div className="lg:col-span-5 space-y-4">
+                                <h3 className="text-lg font-bold">خط قمرة (Qomra Font)</h3>
+                                <p className="text-sm text-muted-foreground leading-relaxed">
+                                    الخط المعتمد في نصوص الهوية البصرية السورية الجديدة المصمم من قبل وكالة iWantype.
+                                </p>
 
-                    {/* Flag Proportions Section */}
-                    <div className="p-10 border-t border-border" id="flag">
-                        <h2 className="text-4xl font-bold text-center text-foreground mb-4">العلم السوري ونسبه</h2>
-                        <p className="text-center text-lg mb-8 text-muted-foreground">النسب الدقيقة لتصميم العلم السوري الرسمي، كما هو موضح في المخطط أدناه.</p>
-
-                        <div className="flag-diagram-wrapper">
-                            <div className="flag-diagram-container">
-                                {/* Flag Visual */}
-                                <div className="flag-visual">
-                                    <div className="stripe green"></div>
-                                    <div className="stripe white">
-                                        <svg className="star" viewBox="0 0 100 95"><path d="M50,0 L61.2,36.2 L100,36.2 L69.1,58.8 L79.4,95 L50,72.5 L20.6,95 L30.9,58.8 L0,36.2 L38.8,36.2 Z" fill="#ce1126" /></svg>
-                                        <svg className="star" viewBox="0 0 100 95"><path d="M50,0 L61.2,36.2 L100,36.2 L69.1,58.8 L79.4,95 L50,72.5 L20.6,95 L30.9,58.8 L0,36.2 L38.8,36.2 Z" fill="#ce1126" /></svg>
-                                        <svg className="star" viewBox="0 0 100 95"><path d="M50,0 L61.2,36.2 L100,36.2 L69.1,58.8 L79.4,95 L50,72.5 L20.6,95 L30.9,58.8 L0,36.2 L38.8,36.2 Z" fill="#ce1126" /></svg>
+                                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/40 border border-border">
+                                    <div className="flex items-center gap-2 text-xs">
+                                        <Tag className="h-3.5 w-3.5 text-[#428177]" />
+                                        <span>كود الخصم (25%):</span>
+                                        <code className="font-mono font-bold text-foreground">syrianzone</code>
                                     </div>
-                                    <div className="stripe black"></div>
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => copyToClipboard('syrianzone', 'discount')}
+                                        className="h-7 text-xs px-2"
+                                    >
+                                        {copiedKey === 'discount' ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                                    </Button>
                                 </div>
 
-                                {/* Top Measurements */}
-                                <div className="dim-line h-line top-line-h"></div>
-                                <div className="measurement top-total-num">36</div>
-                                <div className="dim-line v-line top-line-v-1"></div>
-                                <div className="dim-line v-line top-line-v-2"></div>
-                                <div className="dim-line v-line top-line-v-3"></div>
-                                <div className="dim-line v-line top-line-v-4"></div>
-                                <div className="dim-line v-line top-line-v-5"></div>
-                                <div className="measurement top-num-1">9</div>
-                                <div className="measurement top-num-2">9</div>
-                                <div className="measurement top-num-3">9</div>
-                                <div className="measurement top-num-4">9</div>
-
-                                {/* Right Measurements */}
-                                <div className="dim-line v-line right-line-v"></div>
-                                <div className="measurement right-total-num">24</div>
-                                <div className="dim-line h-line right-line-h-1"></div>
-                                <div className="dim-line h-line right-line-h-2"></div>
-                                <div className="dim-line h-line right-line-h-3"></div>
-                                <div className="dim-line h-line right-line-h-4"></div>
-                                <div className="measurement right-num-1">8</div>
-                                <div className="measurement right-num-2">8</div>
-                                <div className="measurement right-num-3">8</div>
-
-                                {/* Bottom Measurements */}
-                                <div className="dim-line h-line bottom-line-h"></div>
-                                <div className="dim-line v-line bottom-line-v-1"></div>
-                                <div className="dim-line v-line bottom-line-v-2"></div>
-                                <div className="dim-line v-line bottom-line-v-3"></div>
-                                <div className="dim-line v-line bottom-line-v-4"></div>
-                                <div className="dim-line v-line bottom-line-v-5"></div>
-                                <div className="dim-line v-line bottom-line-v-6"></div>
-                                <div className="measurement bottom-num-1">6</div>
-                                <div className="measurement bottom-num-2">6</div>
-                                <div className="measurement bottom-num-3">3</div>
-                                <div className="measurement bottom-num-4">6</div>
-                                <div className="measurement bottom-num-5">3</div>
-                                <div className="measurement bottom-num-6">6</div>
-                                <div className="measurement bottom-num-7">6</div>
-
-                                {/* Left Measurements */}
-                                <div className="dim-line v-line left-line-v"></div>
-                                <div className="measurement left-num-1">6</div>
-                                <div className="dim-line h-line left-line-h-1"></div>
-                                <div className="dim-line h-line left-line-h-2"></div>
+                                <a
+                                    href="https://iwantype.com/product/qomra/"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center justify-center gap-2 w-full bg-[#428177] hover:bg-[#054239] text-white font-medium text-sm h-10 rounded-lg transition-colors"
+                                >
+                                    <span>شراء الخطوط من iWantype</span>
+                                    <ExternalLink className="h-4 w-4" />
+                                </a>
                             </div>
                         </div>
+                    </Card>
+                </section>
 
-                        <div className="flex flex-col sm:flex-row justify-center gap-4 mt-8">
+                {/* 3. FLAG & PROPORTIONS */}
+                <section>
+                    <h2 className="text-2xl font-bold mb-6">العلم السوري ونسبه</h2>
+
+                    <Card className="border border-border/80 rounded-xl overflow-hidden">
+                        <CardContent className="p-6 overflow-x-auto">
+                            {/* Diagram CSS retained */}
+                            <div className="flag-diagram-wrapper my-2">
+                                <div className="flag-diagram-container">
+                                    <div className="flag-visual">
+                                        <div className="stripe green"></div>
+                                        <div className="stripe white">
+                                            <svg className="star" viewBox="0 0 100 95"><path d="M50,0 L61.2,36.2 L100,36.2 L69.1,58.8 L79.4,95 L50,72.5 L20.6,95 L30.9,58.8 L0,36.2 L38.8,36.2 Z" fill="#ce1126" /></svg>
+                                            <svg className="star" viewBox="0 0 100 95"><path d="M50,0 L61.2,36.2 L100,36.2 L69.1,58.8 L79.4,95 L50,72.5 L20.6,95 L30.9,58.8 L0,36.2 L38.8,36.2 Z" fill="#ce1126" /></svg>
+                                            <svg className="star" viewBox="0 0 100 95"><path d="M50,0 L61.2,36.2 L100,36.2 L69.1,58.8 L79.4,95 L50,72.5 L20.6,95 L30.9,58.8 L0,36.2 L38.8,36.2 Z" fill="#ce1126" /></svg>
+                                        </div>
+                                        <div className="stripe black"></div>
+                                    </div>
+
+                                    {/* Top Measurements */}
+                                    <div className="dim-line h-line top-line-h"></div>
+                                    <div className="measurement top-total-num">36</div>
+                                    <div className="dim-line v-line top-line-v-1"></div>
+                                    <div className="dim-line v-line top-line-v-2"></div>
+                                    <div className="dim-line v-line top-line-v-3"></div>
+                                    <div className="dim-line v-line top-line-v-4"></div>
+                                    <div className="dim-line v-line top-line-v-5"></div>
+                                    <div className="measurement top-num-1">9</div>
+                                    <div className="measurement top-num-2">9</div>
+                                    <div className="measurement top-num-3">9</div>
+                                    <div className="measurement top-num-4">9</div>
+
+                                    {/* Right Measurements */}
+                                    <div className="dim-line v-line right-line-v"></div>
+                                    <div className="measurement right-total-num">24</div>
+                                    <div className="dim-line h-line right-line-h-1"></div>
+                                    <div className="dim-line h-line right-line-h-2"></div>
+                                    <div className="dim-line h-line right-line-h-3"></div>
+                                    <div className="dim-line h-line right-line-h-4"></div>
+                                    <div className="measurement right-num-1">8</div>
+                                    <div className="measurement right-num-2">8</div>
+                                    <div className="measurement right-num-3">8</div>
+
+                                    {/* Bottom Measurements */}
+                                    <div className="dim-line h-line bottom-line-h"></div>
+                                    <div className="dim-line v-line bottom-line-v-1"></div>
+                                    <div className="dim-line v-line bottom-line-v-2"></div>
+                                    <div className="dim-line v-line bottom-line-v-3"></div>
+                                    <div className="dim-line v-line bottom-line-v-4"></div>
+                                    <div className="dim-line v-line bottom-line-v-5"></div>
+                                    <div className="dim-line v-line bottom-line-v-6"></div>
+                                    <div className="measurement bottom-num-1">6</div>
+                                    <div className="measurement bottom-num-2">6</div>
+                                    <div className="measurement bottom-num-3">3</div>
+                                    <div className="measurement bottom-num-4">6</div>
+                                    <div className="measurement bottom-num-5">3</div>
+                                    <div className="measurement bottom-num-6">6</div>
+                                    <div className="measurement bottom-num-7">6</div>
+
+                                    {/* Left Measurements */}
+                                    <div className="dim-line v-line left-line-v"></div>
+                                    <div className="measurement left-num-1">6</div>
+                                    <div className="dim-line h-line left-line-h-1"></div>
+                                    <div className="dim-line h-line left-line-h-2"></div>
+                                </div>
+                            </div>
+                        </CardContent>
+
+                        <div className="p-4 bg-muted/20 border-t border-border/40 flex flex-wrap justify-center gap-3">
                             <a
                                 href="/syid-assets/materials/العلم السوري بالنسب الصحيحة.png"
                                 download
-                                className="inline-flex items-center justify-center bg-[#428177] text-white font-bold h-12 px-8 rounded-xl transition-all hover:bg-[#054239] hover:-translate-y-0.5 hover:shadow-lg text-center"
+                                className="inline-flex items-center gap-2 bg-[#428177] hover:bg-[#054239] text-white text-xs font-medium h-9 px-4 rounded-lg transition-colors"
                             >
-                                <Download className="ml-2 h-5 w-5" />
-                                تحميل PNG
+                                <Download className="h-3.5 w-3.5" />
+                                <span>PNG</span>
                             </a>
                             <a
                                 href="/syid-assets/materials/العلم السوري بالنسب الصحيحة.svg"
                                 download
-                                className="inline-flex items-center justify-center bg-[#428177] text-white font-bold h-12 px-8 rounded-xl transition-all hover:bg-[#054239] hover:-translate-y-0.5 hover:shadow-lg text-center"
+                                className="inline-flex items-center gap-2 bg-[#428177] hover:bg-[#054239] text-white text-xs font-medium h-9 px-4 rounded-lg transition-colors"
                             >
-                                <FileDown className="ml-2 h-5 w-5" />
-                                تحميل SVG
+                                <FileDown className="h-3.5 w-3.5" />
+                                <span>SVG</span>
                             </a>
                             <a
                                 href="/syid-assets/materials/علم سوريا.dwg"
                                 download
-                                className="inline-flex items-center justify-center bg-secondary text-secondary-foreground font-bold h-12 px-8 rounded-xl transition-all hover:bg-secondary/80 border-2 border-border hover:-translate-y-0.5 hover:shadow-lg text-center"
+                                className="inline-flex items-center gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border text-xs font-medium h-9 px-4 rounded-lg transition-colors"
                             >
-                                <Download className="ml-2 h-5 w-5" />
-                                تحميل DWG
+                                <Download className="h-3.5 w-3.5" />
+                                <span>DWG</span>
                             </a>
                         </div>
-                    </div>
+                    </Card>
+                </section>
 
-                    {/* Flag Guidelines Section */}
-                    <div className="p-10 border-t border-border" id="flag-guidelines">
-                        <h2 className="text-4xl font-bold text-center text-foreground mb-4">الدليل الإرشادي للعلم السوري</h2>
-                        <p className="text-center text-lg mb-4 text-muted-foreground">الدليل الإرشادي الرسمي والتعليمات الخاصة باستخدام العلم السوري ونسبه وتطبيقاته.</p>
+                {/* 4. GUIDELINES & MATERIALS */}
+                <section>
+                    <h2 className="text-2xl font-bold mb-6">المواد والدليل الإرشادي</h2>
 
-                        <p className="text-center text-sm mb-8 text-muted-foreground">
-                            إعداد ومساهمة:{" "}
-                            <a
-                                href="https://x.com/abd_hmh"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="font-semibold text-foreground hover:text-[#428177] transition-colors"
-                            >
-                                عبدالرحمن حداد (@abd_hmh)
-                            </a>
-                        </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Guideline Manual */}
+                        <Card className="border border-border/80 rounded-xl p-6 flex flex-col justify-between space-y-4">
+                            <div>
+                                <h3 className="font-bold text-lg mb-1">الدليل الإرشادي للعلم السوري</h3>
+                                <p className="text-xs text-muted-foreground">
+                                    إعداد ومساهمة:{" "}
+                                    <a
+                                        href="https://x.com/abd_hmh"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="font-medium text-foreground hover:text-[#428177] underline"
+                                    >
+                                        عبدالرحمن حداد (@abd_hmh)
+                                    </a>
+                                </p>
+                            </div>
 
-                        <div className="text-center mb-8">
-                            <a
-                                href="https://drive.google.com/uc?export=download&id=1-HbfWI2PC76TTR6rKpmGl7GDcUlcZFXl"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-block group relative overflow-hidden rounded-xl shadow-lg border-2 border-border transition-all hover:scale-[1.02] hover:shadow-2xl duration-300"
-                            >
+                            <div className="flex justify-center">
                                 <img
                                     src="/syid-assets/materials/الدليل الإرشادي للعلم السوري.webp"
                                     alt="الدليل الإرشادي للعلم السوري"
-                                    className="mx-auto max-w-full h-auto transition-transform duration-500 group-hover:scale-105"
-                                    style={{ maxHeight: '350px' }}
+                                    loading="lazy"
+                                    className="max-h-44 w-auto rounded-md border border-border object-contain"
                                 />
-                                <div className="absolute inset-0 bg-[#054239]/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                                    <div className="bg-[#428177]/90 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                                        <Download className="h-5 w-5" />
-                                        تحميل الدليل (PDF)
-                                    </div>
-                                </div>
-                            </a>
-                        </div>
+                            </div>
 
-                        <div className="text-center">
                             <a
                                 href="https://drive.google.com/uc?export=download&id=1-HbfWI2PC76TTR6rKpmGl7GDcUlcZFXl"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center justify-center bg-[#428177] text-white font-bold h-12 px-8 rounded-xl transition-all hover:bg-[#054239] hover:-translate-y-0.5 hover:shadow-lg text-center"
+                                className="inline-flex items-center justify-center gap-2 w-full bg-[#428177] hover:bg-[#054239] text-white font-medium text-sm h-10 rounded-lg transition-colors"
                             >
-                                <Download className="ml-2 h-5 w-5" />
-                                تحميل ملف الدليل الإرشادي (PDF)
+                                <Download className="h-4 w-4" />
+                                <span>تحميل الدليل (PDF)</span>
                             </a>
-                        </div>
+                        </Card>
+
+                        {/* Logo Materials Package */}
+                        <Card className="border border-border/80 rounded-xl p-6 flex flex-col justify-between space-y-4">
+                            <div>
+                                <h3 className="font-bold text-lg mb-1">شعار الهوية والمواد الرسمية</h3>
+                                <p className="text-xs text-amber-700 dark:text-amber-400 mt-1 leading-relaxed">
+                                    الموقع الرسمي متوقف عن العمل حالياً، وتم حفظ ورفع كافّة المواد هنا للتنزيل المباشر.
+                                </p>
+                            </div>
+
+                            <div className="flex justify-center items-center py-4">
+                                <img
+                                    src="/syid-assets/materials/logo.ai.svg"
+                                    alt="شعار الهوية"
+                                    loading="lazy"
+                                    className="max-h-28 w-auto object-contain"
+                                />
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row gap-2">
+                                <a
+                                    href="/syid-assets/materials/logo.ai.svg"
+                                    download="شعار_الهوية_البصرية_السورية.svg"
+                                    className="inline-flex items-center justify-center gap-2 flex-1 bg-[#428177] hover:bg-[#054239] text-white font-medium text-xs h-10 px-3 rounded-lg transition-colors"
+                                >
+                                    <FileDown className="h-4 w-4" />
+                                    <span>تحميل الشعار (SVG)</span>
+                                </a>
+                                <a
+                                    href="/syid-assets/materials/191b8f0d278fc2ab095fb4f344e3e9b4.zip"
+                                    download
+                                    className="inline-flex items-center justify-center gap-2 flex-1 bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border font-medium text-xs h-10 px-3 rounded-lg transition-colors"
+                                >
+                                    <Download className="h-4 w-4" />
+                                    <span>تحميل الحزمة (ZIP)</span>
+                                </a>
+                            </div>
+                        </Card>
                     </div>
+                </section>
 
-                    {/* Materials Section */}
-                    <div className="p-10 border-t border-border" id="materials">
-                        <h2 className="text-4xl font-bold text-center text-foreground mb-4">المواد والموارد</h2>
-                        <p className="text-center text-lg mb-8 text-muted-foreground">تحميل المواد الرسمية والموارد المرئية للهوية البصرية السورية الجديدة.</p>
+                {/* 5. SYRIA MAP (LAZY LOADED ON CLICK) */}
+                <section>
+                    <h2 className="text-2xl font-bold mb-6">خريطة سوريا الرقمية</h2>
 
-                        <div className="text-center mb-8">
-                            <img
-                                src="/syid-assets/materials/logo.ai.svg"
-                                alt="شعار الهوية البصرية السورية"
-                                className="mx-auto max-w-full h-auto shadow-lg border-4 border-border rounded-xl"
-                                style={{ maxHeight: '200px' }}
-                            />
-                        </div>
-
-                        <div className="text-center">
-                            <a
-                                href="/syid-assets/materials/191b8f0d278fc2ab095fb4f344e3e9b4.zip"
-                                download
-                                className="inline-flex items-center justify-center bg-[#428177] text-white font-bold h-12 px-8 rounded-xl no-underline transition-all hover:bg-[#054239] hover:-translate-y-0.5 hover:shadow-lg"
-                            >
-                                <Download className="ml-2 h-5 w-5" />
-                                تحميل المواد والموارد الرسمية
-                            </a>
-                        </div>
-                    </div>
-
-
-                    {/* Syria Map Section */}
-                    <div className="p-10 border-t border-border" id="map">
-                        <h2 className="text-4xl font-bold text-center text-foreground mb-4">خريطة سوريا</h2>
-                        <p className="text-center text-lg mb-8 text-muted-foreground">عرض وتحميل الخرائط الرسمية للجمهورية العربية السورية بصيغ مختلفة وبدقة عالية.</p>
-
-                        <div className="max-w-4xl mx-auto mb-8">
-                            <div className="flex flex-col md:flex-row gap-4 mb-6">
-                                <div className="flex-1">
-                                    <Select onValueChange={setSelectedGov} value={selectedGov}>
-                                        <SelectTrigger className="w-full bg-muted border-2 border-border h-12 rounded-xl">
-                                            <SelectValue placeholder="اختر المحافظة..." />
-                                        </SelectTrigger>
-                                        <SelectContent className="bg-white dark:bg-[#1A1F22] border-2 border-border shadow-2xl z-[1001] opacity-100 rounded-2xl">
-                                            <div className="p-2 sticky top-0 bg-white dark:bg-[#1A1F22] z-[1002] border-b border-border mb-1">
-                                                <div className="relative">
-                                                    <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                                    <Input
-                                                        placeholder="بحث عن محافظة..."
-                                                        value={govSearch}
-                                                        onChange={(e) => setGovSearch(e.target.value)}
-                                                        className="h-9 pr-9 bg-muted/50 border-none focus-visible:ring-1 focus-visible:ring-[#428177]"
-                                                        onKeyDown={(e) => e.stopPropagation()}
-                                                    />
+                    <Card className="border border-border/80 rounded-xl overflow-hidden">
+                        {mapLoaded ? (
+                            <>
+                                <div className="p-4 bg-muted/20 border-b border-border/40 flex flex-col sm:flex-row gap-3 items-center justify-between">
+                                    <div className="w-full sm:w-72">
+                                        <Select onValueChange={setSelectedGov} value={selectedGov}>
+                                            <SelectTrigger className="w-full bg-background border border-border h-10 rounded-lg text-sm">
+                                                <SelectValue placeholder="اختر المحافظة..." />
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-popover border border-border shadow-md rounded-lg">
+                                                <div className="p-2 sticky top-0 bg-popover border-b border-border mb-1">
+                                                    <div className="relative">
+                                                        <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                                                        <Input
+                                                            placeholder="بحث..."
+                                                            value={govSearch}
+                                                            onChange={(e) => setGovSearch(e.target.value)}
+                                                            className="h-7 pr-8 text-xs border-none bg-muted/40"
+                                                            onKeyDown={(e) => e.stopPropagation()}
+                                                        />
+                                                    </div>
                                                 </div>
+                                                <SelectItem value="full">🇸🇾 سوريا كاملة</SelectItem>
+                                                {filteredGovernorates.map((gov: any) => (
+                                                    <SelectItem key={gov.id} value={gov.id}>
+                                                        {gov.nameAr}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="flex gap-2 w-full sm:w-auto">
+                                        <Button
+                                            onClick={handleExportSVG}
+                                            className="flex-1 sm:flex-none h-10 px-4 bg-[#428177] hover:bg-[#054239] text-white text-xs font-medium rounded-lg"
+                                        >
+                                            <FileDown className="ml-1.5 h-3.5 w-3.5" />
+                                            تصدير SVG
+                                        </Button>
+                                        <Button
+                                            onClick={handleExportGeoJSON}
+                                            variant="outline"
+                                            className="flex-1 sm:flex-none h-10 px-4 text-xs font-medium rounded-lg"
+                                        >
+                                            <Download className="ml-1.5 h-3.5 w-3.5" />
+                                            تصدير GeoJSON
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <CardContent className="p-4">
+                                    <div className="h-[460px] w-full rounded-lg overflow-hidden border border-border relative">
+                                        <Suspense fallback={
+                                            <div className="h-full w-full flex items-center justify-center bg-muted/30 text-xs text-muted-foreground">
+                                                جاري تحميل الخريطة...
                                             </div>
-                                            <SelectItem value="full">سوريا كاملة</SelectItem>
-                                            {filteredGovernorates.map((gov: any) => (
-                                                <SelectItem key={gov.id} value={gov.id}>
-                                                    {gov.nameAr}
-                                                </SelectItem>
-                                            ))}
-                                            {filteredGovernorates.length === 0 && govSearch && (
-                                                <div className="py-6 text-center text-sm text-muted-foreground">
-                                                    لا توجد نتائج للبحث
-                                                </div>
-                                            )}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="flex gap-2">
+                                        }>
+                                            <SyriaMap geoJsonData={geoJsonData} selectedGovId={selectedGov} />
+                                        </Suspense>
+                                    </div>
+
+                                    <div className="mt-6 pt-4 border-t border-border/40 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                                        <a
+                                            href="https://upload.wikimedia.org/wikipedia/commons/8/88/Blank_Syria_map.svg"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border border-border hover:bg-muted/50 transition-colors"
+                                        >
+                                            <span className="font-medium">خريطة سوريا صماء (Wikimedia)</span>
+                                            <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+                                        </a>
+
+                                        <a
+                                            href="https://upload.wikimedia.org/wikipedia/commons/2/2d/Syria_physical_location_map.svg"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border border-border hover:bg-muted/50 transition-colors"
+                                        >
+                                            <span className="font-medium">خريطة تضاريس سوريا (Wikimedia)</span>
+                                            <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+                                        </a>
+                                    </div>
+                                </CardContent>
+                            </>
+                        ) : (
+                            <CardContent className="p-8">
+                                <div className="h-[380px] w-full rounded-xl bg-muted/20 border border-dashed border-border flex flex-col items-center justify-center p-6 text-center space-y-4">
+                                    <div className="p-3.5 rounded-full bg-[#428177]/10 text-[#428177]">
+                                        <MapIcon className="h-8 w-8" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-base text-foreground mb-1">خريطة سوريا التفاعلية (GeoJSON)</h3>
+                                        <p className="text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
+                                            انقر لتحميل بيانات الخريطة وعرض تضاريس المحافظات السورية وتصديرها بصيغ SVG و GeoJSON.
+                                        </p>
+                                    </div>
                                     <Button
-                                        onClick={handleExportSVG}
-                                        className="h-12 px-6 bg-[#428177] hover:bg-[#054239] transition-all rounded-xl"
+                                        onClick={loadMapData}
+                                        disabled={loadingMap}
+                                        className="bg-[#428177] hover:bg-[#054239] text-white font-medium text-xs h-10 px-6 rounded-lg transition-all shadow-xs"
                                     >
-                                        <FileDown className="ml-2 h-5 w-5" />
-                                        تحميل SVG
-                                    </Button>
-                                    <Button
-                                        onClick={handleExportGeoJSON}
-                                        className="h-12 px-6 bg-secondary text-secondary-foreground hover:bg-secondary/80 border-2 border-border transition-all rounded-xl"
-                                    >
-                                        <Download className="ml-2 h-5 w-5" />
-                                        تحميل GeoJSON
+                                        {loadingMap ? (
+                                            <span>جاري تحميل البيانات...</span>
+                                        ) : (
+                                            <>
+                                                <MapIcon className="ml-2 h-4 w-4" />
+                                                <span>تحميل وتفعيل الخريطة</span>
+                                            </>
+                                        )}
                                     </Button>
                                 </div>
-                            </div>
+                            </CardContent>
+                        )}
+                    </Card>
+                </section>
 
-                            <div className="h-[500px] w-full mb-8 rounded-2xl overflow-hidden border-2 border-border shadow-inner">
-                                <Suspense fallback={<div className="h-[400px] w-full flex items-center justify-center bg-muted text-muted-foreground rounded-xl border-2 border-dashed border-border">جاري تحميل الخريطة...</div>}>
-                                    <SyriaMap geoJsonData={geoJsonData} selectedGovId={selectedGov} />
-                                </Suspense>
-                            </div>
+            </main>
 
-                            <div className="mt-12 pt-8 border-t border-border">
-                                <h3 className="text-2xl font-bold mb-6 text-foreground flex items-center gap-2">
-                                    <ExternalLink className="h-6 w-6 text-[#428177]" />
-                                    مصادر أخرى
-                                </h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <a
-                                        href="https://upload.wikimedia.org/wikipedia/commons/8/88/Blank_Syria_map.svg"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center p-4 rounded-xl bg-muted border border-border hover:bg-accent transition-colors group"
-                                    >
-                                        <div className="ml-4 p-2 rounded-full bg-white group-hover:bg-[#428177]/10 transition-colors">
-                                            <MapIcon className="h-6 w-6 text-[#428177]" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <div className="font-bold text-foreground">خريطة سوريا (صماء)</div>
-                                            <div className="text-sm text-muted-foreground">صيغة SVG من ويكيميديا كومنز</div>
-                                        </div>
-                                        <Download className="h-5 w-5 text-muted-foreground group-hover:text-[#428177] transition-colors" />
-                                    </a>
-                                    <a
-                                        href="https://upload.wikimedia.org/wikipedia/commons/2/2d/Syria_physical_location_map.svg"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center p-4 rounded-xl bg-muted border border-border hover:bg-accent transition-colors group"
-                                    >
-                                        <div className="ml-4 p-2 rounded-full bg-white group-hover:bg-[#428177]/10 transition-colors">
-                                            <MapIcon className="h-6 w-6 text-[#428177]" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <div className="font-bold text-foreground">خريطة جغرافية</div>
-                                            <div className="text-sm text-muted-foreground">صيغة SVG تضاريس سوريا</div>
-                                        </div>
-                                        <Download className="h-5 w-5 text-muted-foreground group-hover:text-[#428177] transition-colors" />
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                </Card>
-            </div>
-
-            {/* Notification */}
+            {/* Notification Toast */}
             {notification && (
-                <div className="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-[#428177] text-white px-6 py-4 shadow-lg z-50">
-                    {notification}
+                <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-[#054239] text-white px-4 py-2.5 rounded-lg shadow-xl z-50 flex items-center gap-2 text-xs font-medium">
+                    <Check className="h-3.5 w-3.5 text-green-400" />
+                    <span>{notification}</span>
                 </div>
             )}
 
-            {/* Footer */}
-            <footer className="bg-card border-t border-border py-6 mt-12 transition-colors">
-                <div className="container mx-auto px-4 text-center">
-                    <p className="text-foreground">&copy; 2025 syrian.zone</p>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                        تم التطوير بواسطة <span className="font-semibold">هادي الأحمد</span>
-                    </p>
-                    <div className="mt-2 flex justify-center gap-4">
-                        <a href="http://hadealahmad.com/" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-[#428177] transition-colors flex items-center">
-                            الموقع الشخصي
-                        </a>
-                        <a href="https://x.com/hadealahmad" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-[#428177] transition-colors flex items-center">
-                            حساب X
-                        </a>
-                    </div>
+            {/* Simple Footer */}
+            <footer className="border-t border-border py-8 mt-16 text-center text-xs text-muted-foreground bg-muted/10">
+                <p>&copy; 2025 syrian.zone • التطوير بواسطة هادي الأحمد</p>
+                <div className="mt-2 flex justify-center gap-4">
+                    <a href="http://hadealahmad.com/" target="_blank" rel="noopener noreferrer" className="hover:text-foreground">الموقع الشخصي</a>
+                    <span>•</span>
+                    <a href="https://x.com/hadealahmad" target="_blank" rel="noopener noreferrer" className="hover:text-foreground">حساب X</a>
                 </div>
             </footer>
         </div>

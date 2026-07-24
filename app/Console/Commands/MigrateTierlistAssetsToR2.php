@@ -78,25 +78,22 @@ class MigrateTierlistAssetsToR2 extends Command
             $this->info("Found " . count($files) . " files in {$relDir}.");
 
             foreach ($files as $file) {
+                $relativePathname = str_replace('\\', '/', $file->getRelativePathname());
                 $filename = $file->getFilename();
+
+                // Store both with subfolder (tierlist/candidates/jolani/jolani75.png) and flat (tierlist/candidates/jolani75.png)
                 $r2Path = 'tierlist/candidates/' . $filename;
                 $cdnUrl = ($r2Url ? $r2Url : 'https://cdn.example.com') . '/' . $r2Path;
 
-                // Map local path prefixes to R2 CDN URL
-                $localPath1 = '/' . ltrim($relDir, 'public/') . '/' . $filename;
-                $localPath2 = '/' . trim($relDir, '/') . '/' . $filename;
-                $urlMap[$localPath1] = $cdnUrl;
-                $urlMap[$localPath2] = $cdnUrl;
-
-                // Special mapping for StagingPollsSeeder / LegacyPollSeeder style paths
-                if ($relDir === 'public/tierlist-assets/images') {
-                    $urlMap['/tierlist-assets/images/' . $filename] = $cdnUrl;
-                } elseif ($relDir === 'public/assets/tierlist') {
-                    $urlMap['/assets/tierlist/' . $filename] = $cdnUrl;
-                }
+                // Map local path with relative subfolder (e.g. /tierlist-assets/images/jolani/jolani75.png)
+                $relBaseDir = ltrim($relDir, 'public/');
+                $urlMap['/' . $relBaseDir . '/' . $relativePathname] = $cdnUrl;
+                $urlMap['/' . trim($relDir, '/') . '/' . $relativePathname] = $cdnUrl;
+                $urlMap['/' . $relBaseDir . '/' . $filename] = $cdnUrl;
+                $urlMap['/' . trim($relDir, '/') . '/' . $filename] = $cdnUrl;
 
                 if ($isDryRun) {
-                    $this->line(" [DRY-RUN] Would upload: {$file->getRelativePathname()} -> R2: {$r2Path}");
+                    $this->line(" [DRY-RUN] Would upload: {$relativePathname} -> R2: {$r2Path}");
                     $uploadedCount++;
                     continue;
                 }

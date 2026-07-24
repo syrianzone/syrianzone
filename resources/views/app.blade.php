@@ -21,8 +21,17 @@
     <link rel="shortcut icon" type="image/png" href="/assets/favicon.png" />
     <link rel="apple-touch-icon" href="/assets/favicon.png" />
     
-    <!-- Theme Flash Prevention -->
+    @php
+        $country = request()->header('CF-IPCountry')
+            ?: (request()->header('X-Country-Code')
+            ?: (request()->server('HTTP_CF_IPCOUNTRY')
+            ?: ''));
+        $isSyrianIp = strtoupper($country) === 'SY';
+    @endphp
+
+    <!-- Theme & Font Flash Prevention -->
     <script>
+        window.IS_SYRIAN_IP = {{ $isSyrianIp ? 'true' : 'false' }};
         (function(){
             try {
                 var s = localStorage.getItem('sz-theme');
@@ -32,11 +41,22 @@
                         s = (JSON.parse(sp)||{}).theme;
                     }
                 }
-                // no saved choice (or explicit 'system'): follow the device scheme
                 if(!s || s === 'system') {
                     s = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
                 }
                 document.documentElement.setAttribute('data-theme', s);
+
+                var f = localStorage.getItem('sz-font');
+                if(!f) {
+                    var spFont = localStorage.getItem('startpage-settings');
+                    if(spFont) {
+                        f = (JSON.parse(spFont)||{}).fontFamily;
+                    }
+                }
+                if(!f || (f !== 'system' && f !== 'ibm-plex')) {
+                    f = window.IS_SYRIAN_IP ? 'system' : 'ibm-plex';
+                }
+                document.documentElement.setAttribute('data-font', f);
             } catch(e) {}
         })();
     </script>

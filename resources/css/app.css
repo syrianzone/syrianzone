@@ -10,7 +10,7 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, [data-theme="dark-blue"], [data-theme="dark-blue"] *, [data-theme="dark-purple"], [data-theme="dark-purple"] *, [data-theme="dark-green"], [data-theme="dark-green"] *, [data-theme="high-contrast"], [data-theme="high-contrast"] *, [data-theme="damascus-rose"], [data-theme="damascus-rose"] *, .dark, .dark *));
 
 @theme {
-    --font-sans: 'IBM Plex Sans Arabic', sans-serif;
+    --font-sans: var(--site-font, 'IBM Plex Sans Arabic', sans-serif);
 
     /* Theme mappings */
     --color-background: hsl(var(--background));
@@ -76,6 +76,7 @@
 
 /* Main theme variables */
 :root {
+    --site-font: 'IBM Plex Sans Arabic', sans-serif;
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
@@ -399,4 +400,16 @@ html {
     .flex {
         display: flex;
     }
+}
+
+html[data-font="system"],
+html[data-font="system"] body {
+    --site-font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+}
+
+html[data-font="ibm-plex"],
+html[data-font="ibm-plex"] body {
+    --site-font: 'IBM Plex Sans Arabic', sans-serif;
+    font-family: 'IBM Plex Sans Arabic', sans-serif !important;
 }

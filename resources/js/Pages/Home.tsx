@@ -33,6 +33,7 @@ const GOVERNORATE_LIST = [
 ];
 import MainLayout from '@/Layouts/MainLayout';
 import { applyTheme as persistTheme, getThemePreference, resolveTheme, SYSTEM_THEME, THEME_REGISTRY, isDarkTheme } from '@/lib/theme';
+import { applyFont, getFontPreference, FontPreference } from '@/Lib/font';
 import { ThemeToggle } from '@/Components/ThemeToggle';
 import UserNav from '@/Components/UserNav';
 import F3aliaEvents from '@/Components/F3aliaEvents';
@@ -187,8 +188,8 @@ export default function Home() {
     const [customLat, setCustomLat] = useState('');
     const [customLon, setCustomLon] = useState('');
 
-    // Custom search engine URL state
-    const [customSearchUrl, setCustomSearchUrl] = useState('');
+    // Theme & Font state
+    const [fontFamily, setFontFamily] = useState<FontPreference>('ibm-plex');
 
     const saveAccountSettings = async (partialSettings: Record<string, any>) => {
         if (!user) return;
@@ -204,6 +205,7 @@ export default function Home() {
         const accSettings = user?.settings || {};
 
         const savedTheme = accSettings.theme ?? getThemePreference();
+        const savedFont = (accSettings.fontFamily ?? getFontPreference()) as FontPreference;
         const savedLang = (accSettings.language ?? (localStorage.getItem('sz-language') || 'ar')) as 'ar' | 'en';
         const savedGovernorate = accSettings.governorate ?? (localStorage.getItem('governorate') || 'damascus');
         const savedClockFormat = (accSettings.clockFormat ?? (localStorage.getItem('clockFormat') || '24')) as '12' | '24';
@@ -232,6 +234,7 @@ export default function Home() {
 
         // Sync to localStorage
         if (savedTheme) persistTheme(savedTheme);
+        if (savedFont) applyFont(savedFont);
         localStorage.setItem('sz-language', savedLang);
         localStorage.setItem('governorate', savedGovernorate);
         localStorage.setItem('clockFormat', savedClockFormat);
@@ -889,8 +892,8 @@ export default function Home() {
                                 <TabsContent value="simple" className="h-full m-0">
                                     <ScrollArea className="h-[450px] max-h-[50vh] px-6 pb-6" dir={currentLang === 'ar' ? 'rtl' : 'ltr'}>
                                         <div className="space-y-6 py-4 text-start">
-                                            {/* Row with Language & Clock segmented controls */}
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            {/* Row with Language, Clock & Font segmented controls */}
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                                 {/* Language Selection */}
                                                 <div className="space-y-2">
                                                     <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{currentLang === 'ar' ? 'اللغة' : 'Language'}</Label>
@@ -926,7 +929,7 @@ export default function Home() {
                                                     </div>
                                                 </div>
 
-                                                {/* Clock Format Selection */}
+                                                {/* Time Format Selection */}
                                                 <div className="space-y-2">
                                                     <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{currentLang === 'ar' ? 'تنسيق الوقت' : 'Time Format'}</Label>
                                                     <div className="grid grid-cols-2 gap-1 p-1 bg-muted rounded-lg border border-border/50">

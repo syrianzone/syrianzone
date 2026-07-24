@@ -8,6 +8,7 @@ import { Card } from '@/Components/ui/card';
 import { Badge } from '@/Components/ui/badge';
 import axios from 'axios';
 import { getGuessWhoSessionId } from '@/Lib/guessWhoSession';
+import { initEcho } from '@/echo';
 
 interface Character {
   id: number;
@@ -249,83 +250,85 @@ export default function GameRoom({ game }: GameProps) {
   useEffect(() => {
     if (!isJoined) return;
 
-    if (!window.Echo) {
-      console.warn('Laravel Echo is not configured. Broadcasting won\'t work.');
-      return;
-    }
-
+    let activeEcho: any = null;
+    let isMounted = true;
     const channelName = `guesswho.${game.room_code}`;
-    console.log('[GuessWho] Joining presence channel:', channelName, 'as session:', sessionUuid);
 
-    const channel = window.Echo.join(channelName)
-      .here((users: any[]) => {
-        console.log('[GuessWho] .here() fired, users in channel:', users);
-        const other = users.find(u => u.session_id !== sessionUuid);
-        if (other) {
-          console.log('[GuessWho] Peer already in channel:', other.session_id);
-          setPeerUuid(other.session_id);
-          setOpponentName(other.name || 'لاعب آخر');
-          // Smaller UUID initiates the WebRTC call — debounced to absorb Reverb reconnect flicker
-          if (sessionUuid < other.session_id) {
-            console.log('[GuessWho] I have smaller UUID, scheduling call');
-            scheduleCall(other.session_id);
-          } else {
-            console.log('[GuessWho] I have larger UUID, waiting for offer');
-          }
-        } else {
-          console.log('[GuessWho] No peer in channel yet, waiting for joining event');
-        }
-      })
-      .joining((user: any) => {
-        console.log('[GuessWho] .joining() fired, new user:', user.session_id);
-        setPeerUuid(user.session_id);
-        setOpponentName(user.name || 'لاعب آخر');
-        // Clear any disconnect banner since the peer is back
-        setPeerDisconnected(false);
-        if (peerReconnectTimer.current) {
-          clearTimeout(peerReconnectTimer.current);
-          peerReconnectTimer.current = null;
-        }
-        // Smaller UUID initiates the WebRTC call — debounced to absorb Reverb reconnect flicker
-        if (sessionUuid < user.session_id) {
-          console.log('[GuessWho] I have smaller UUID, scheduling call to joiner');
-          scheduleCall(user.session_id);
-        } else {
-          console.log('[GuessWho] I have larger UUID, waiting for offer from joiner');
-        }
-      })
-      .leaving((user: any) => {
-        console.log('[GuessWho] .leaving() fired, user left:', user.session_id);
-        if (user.session_id === peerUuidRef.current) {
-          setPeerConnected(false);
-          if (peerConnection.current) {
-            try {
-              peerConnection.current.close();
-            } catch (err) {
-              console.error('[GuessWho] Error closing peer connection on leaving:', err);
+    initEcho().then((echo) => {
+      if (!echo || !isMounted) return;
+      activeEcho = echo;
+
+      console.log('[GuessWho] Joining presence channel:', channelName, 'as session:', sessionUuid);
+
+      echo.join(channelName)
+        .here((users: any[]) => {
+          console.log('[GuessWho] .here() fired, users in channel:', users);
+          const other = users.find(u => u.session_id !== sessionUuid);
+          if (other) {
+            console.log('[GuessWho] Peer already in channel:', other.session_id);
+            setPeerUuid(other.session_id);
+            setOpponentName(other.name || 'لاعب آخر');
+            if (sessionUuid < other.session_id) {
+              console.log('[GuessWho] I have smaller UUID, scheduling call');
+              scheduleCall(other.session_id);
+            } else {
+              console.log('[GuessWho] I have larger UUID, waiting for offer');
             }
-            peerConnection.current = null;
-            dataChannel.current = null;
-            iceCandidateQueue.current = [];
+          } else {
+            console.log('[GuessWho] No peer in channel yet, waiting for joining event');
           }
-          // Give 5s grace period for reconnection before showing disconnect banner
-          peerReconnectTimer.current = setTimeout(() => {
-            setPeerDisconnected(true);
-          }, 5000);
-        }
-      })
-      .error((error: any) => {
-        console.error('[GuessWho] Presence channel subscription error:', error);
-      })
-      .listen('.signal', (e: any) => {
-        console.log('[GuessWho] Signal received:', e.type, 'targetSession:', e.targetSession);
-        if (e.targetSession === sessionUuid) {
-          handleSignal(e);
-        }
-      });
+        })
+        .joining((user: any) => {
+          console.log('[GuessWho] .joining() fired, new user:', user.session_id);
+          setPeerUuid(user.session_id);
+          setOpponentName(user.name || 'لاعب آخر');
+          setPeerDisconnected(false);
+          if (peerReconnectTimer.current) {
+            clearTimeout(peerReconnectTimer.current);
+            peerReconnectTimer.current = null;
+          }
+          if (sessionUuid < user.session_id) {
+            console.log('[GuessWho] I have smaller UUID, scheduling call to joiner');
+            scheduleCall(user.session_id);
+          } else {
+            console.log('[GuessWho] I have larger UUID, waiting for offer from joiner');
+          }
+        })
+        .leaving((user: any) => {
+          console.log('[GuessWho] .leaving() fired, user left:', user.session_id);
+          if (user.session_id === peerUuidRef.current) {
+            setPeerConnected(false);
+            if (peerConnection.current) {
+              try {
+                peerConnection.current.close();
+              } catch (err) {
+                console.error('[GuessWho] Error closing peer connection on leaving:', err);
+              }
+              peerConnection.current = null;
+              dataChannel.current = null;
+              iceCandidateQueue.current = [];
+            }
+            peerReconnectTimer.current = setTimeout(() => {
+              setPeerDisconnected(true);
+            }, 5000);
+          }
+        })
+        .error((error: any) => {
+          console.error('[GuessWho] Presence channel subscription error:', error);
+        })
+        .listen('.signal', (e: any) => {
+          console.log('[GuessWho] Signal received:', e.type, 'targetSession:', e.targetSession);
+          if (e.targetSession === sessionUuid) {
+            handleSignal(e);
+          }
+        });
+    });
 
     return () => {
-      window.Echo.leave(channelName);
+      isMounted = false;
+      if (activeEcho) {
+        activeEcho.leave(channelName);
+      }
       peerConnection.current?.close();
       if (initiateCallTimer.current) clearTimeout(initiateCallTimer.current);
     };

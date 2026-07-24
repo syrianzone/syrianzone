@@ -193,14 +193,7 @@ export default function Home() {
     const saveAccountSettings = async (partialSettings: Record<string, any>) => {
         if (!user) return;
         try {
-            await fetch('/api/user/settings', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || ''
-                },
-                body: JSON.stringify({ settings: partialSettings })
-            });
+            await axios.post('/api/user/settings', { settings: partialSettings });
         } catch (e) {
             console.error('Failed to save settings to account', e);
         }

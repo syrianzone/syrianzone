@@ -305,7 +305,7 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                     </p>
 
                     {/* Language Switcher */}
-                    <div className="flex justify-center gap-2 mb-8">
+                    <div className="flex justify-center gap-2 mb-6">
                         {(['ar', 'en', 'tr', 'ku'] as Language[]).map(lang => (
                             <Button
                                 key={lang}
@@ -318,6 +318,28 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                                 <span className="uppercase text-xs font-semibold">{lang}</span>
                             </Button>
                         ))}
+                    </div>
+
+                    {/* Social List Links */}
+                    <div className="flex justify-center gap-4 mb-8">
+                        <a
+                            href="https://x.com/i/lists/1906101934660174006"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3 rounded-full gap-2 shadow-2xs"
+                        >
+                            <Twitter className="h-4 w-4 text-sky-400" />
+                            <span>قائمة تويتر</span>
+                        </a>
+                        <a
+                            href="https://t.me/addlist/fKrhEy2yNeEwODQ0"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3 rounded-full gap-2 shadow-2xs"
+                        >
+                            <Send className="h-4 w-4 text-sky-500" />
+                            <span>قائمة تلغرام</span>
+                        </a>
                     </div>
 
                     <div className="flex flex-col md:flex-row gap-4 max-w-2xl mx-auto items-center">

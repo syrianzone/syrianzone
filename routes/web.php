@@ -45,6 +45,9 @@ Route::get('/justice', function () {
 Route::get('/about', function () {
     return Inertia::render('About');
 });
+Route::get('/stats', function () {
+    return Inertia::render('Stats');
+});
 Route::get('/privacy', function () {
     return Inertia::render('Privacy');
 });

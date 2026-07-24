@@ -483,12 +483,19 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
                         </li>
                       ))}
                       <Separator className="col-span-2 my-2" />
-                      <li className="col-span-2 flex justify-center gap-6 text-xs text-muted-foreground py-1">
+                      <li className="col-span-2 flex flex-wrap justify-center gap-4 text-xs text-muted-foreground py-1">
                         <Link
                           href="/about"
                           className="hover:text-primary transition-colors"
                         >
                           عن المنصة
+                        </Link>
+                        <span>•</span>
+                        <Link
+                          href="/stats"
+                          className="hover:text-primary transition-colors"
+                        >
+                          الإحصائيات
                         </Link>
                         <span>•</span>
                         <Link

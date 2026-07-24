@@ -41,6 +41,9 @@ export default function AssetManagerIndex() {
     const [files, setFiles] = useState<R2File[]>([]);
     const [totalSize, setTotalSize] = useState<number>(0);
     const [loadingFiles, setLoadingFiles] = useState<boolean>(true);
+    const [loadingMore, setLoadingMore] = useState<boolean>(false);
+    const [nextCursor, setNextCursor] = useState<string | null>(null);
+    const [hasMore, setHasMore] = useState<boolean>(false);
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [selectedFolder, setSelectedFolder] = useState<string>('all');
     const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
@@ -49,6 +52,10 @@ export default function AssetManagerIndex() {
 
     const fetchFiles = async (refresh: boolean = false) => {
         setLoadingFiles(true);
+        setFiles([]);
+        setNextCursor(null);
+        setHasMore(false);
+        setTotalSize(0);
         try {
             const res = await axios.get('/api/v1/admin/assets/list', {
                 params: { refresh: refresh ? 1 : 0 }
@@ -56,11 +63,33 @@ export default function AssetManagerIndex() {
             if (res.data.success) {
                 setFiles(res.data.files);
                 setTotalSize(res.data.total_size);
+                setNextCursor(res.data.next_cursor ?? null);
+                setHasMore(res.data.has_more ?? false);
             }
         } catch (err) {
             console.error('Failed to fetch R2 files:', err);
         } finally {
             setLoadingFiles(false);
+        }
+    };
+
+    const loadMore = async () => {
+        if (!nextCursor || loadingMore) return;
+        setLoadingMore(true);
+        try {
+            const res = await axios.get('/api/v1/admin/assets/list', {
+                params: { cursor: nextCursor }
+            });
+            if (res.data.success) {
+                setFiles(prev => [...prev, ...res.data.files]);
+                setTotalSize(prev => prev + res.data.total_size);
+                setNextCursor(res.data.next_cursor ?? null);
+                setHasMore(res.data.has_more ?? false);
+            }
+        } catch (err) {
+            console.error('Failed to load more R2 files:', err);
+        } finally {
+            setLoadingMore(false);
         }
     };
 
@@ -235,7 +264,7 @@ export default function AssetManagerIndex() {
                                     <div>
                                         <CardTitle className="text-lg">مستكشف ملفات R2</CardTitle>
                                         <CardDescription>
-                                            إجمالي الحجم: <span className="font-semibold text-foreground">{formatBytes(totalSize)}</span> | عدد الملفات: <span className="font-semibold text-foreground">{files.length}</span>
+                                            الحجم المحمّل: <span className="font-semibold text-foreground">{formatBytes(totalSize)}</span> | الملفات المحمّلة: <span className="font-semibold text-foreground">{files.length}</span>{hasMore && <span className="text-muted-foreground"> (يوجد المزيد)</span>}
                                         </CardDescription>
                                     </div>
 
@@ -284,7 +313,7 @@ export default function AssetManagerIndex() {
                                 {loadingFiles ? (
                                     <div className="py-12 text-center text-muted-foreground space-y-2">
                                         <RefreshCw className="h-8 w-8 animate-spin mx-auto text-primary" />
-                                        <p>جاري تحميل قائمة ملفات R2...</p>
+                                        <p>جاري تحميل الصفحة الأولى من ملفات R2...</p>
                                     </div>
                                 ) : filteredFiles.length === 0 ? (
                                     <div className="py-12 text-center text-muted-foreground">
@@ -363,6 +392,30 @@ export default function AssetManagerIndex() {
                                             </div>
                                         ))}
                                     </div>
+                                )}
+
+                                {/* Load More */}
+                                {hasMore && !loadingFiles && (
+                                    <div className="mt-6 text-center">
+                                        <Button
+                                            variant="outline"
+                                            onClick={loadMore}
+                                            disabled={loadingMore}
+                                            className="min-w-[180px]"
+                                        >
+                                            {loadingMore ? (
+                                                <><RefreshCw className="h-4 w-4 ml-2 animate-spin" /> جاري التحميل...</>
+                                            ) : (
+                                                <><Download className="h-4 w-4 ml-2" /> تحميل المزيد ({files.length} محمّل حتى الآن)</>
+                                            )}
+                                        </Button>
+                                    </div>
+                                )}
+
+                                {!hasMore && files.length > 0 && !loadingFiles && (
+                                    <p className="mt-4 text-center text-xs text-muted-foreground">
+                                        تم تحميل جميع الملفات ({files.length})
+                                    </p>
                                 )}
                             </CardContent>
                         </Card>

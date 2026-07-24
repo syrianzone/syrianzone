@@ -34,27 +34,6 @@
 تحميل ملفات الهوية البصرية للمساحة السورية: [حملها من هنا](https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/downloads/brandkit-y5sZMu.zip)
 نقدر كل مساهمة، كبيرة كانت أم صغيرة، وندعوكم للانضمام والمساهمة في تطوير هذا المشروع.
 
-## Structure
-
-This is a Laravel + Inertia.js monolith. There is no separate frontend directory.
-
-- **`app/`** — PHP controllers, models, middleware, services
-- **`resources/js/`** — React/TypeScript frontend pages and components (rendered via Inertia)
-- **`routes/web.php`** — Web routes (Inertia-rendered pages + authenticated API)
-- **`routes/api.php`** — Public API routes (voting, transit data)
-- **`database/`** — Migrations and seeders
-
-## Getting Started
-
-```bash
-composer install
-cp .env.example .env
-php artisan key:generate
-php artisan migrate
-npm install
-npm run dev
-```
-
 ## المستودع على GitHub
 
 المستودع العام للمشروع متاح على GitHub:
@@ -62,9 +41,6 @@ npm run dev
 - [github.com/syrianzone/syrianzone](https://github.com/syrianzone/syrianzone)
 
 نرحب بأي مساهمات واقتراحات وتحسينات عبر Issues و Pull Requests.
-
-
-## قادم قريبًا
 
 ندعوكم للمساهمة في هذا المشروع بأي طريقة ممكنة. سواء كانت بتقديم أفكار جديدة، المساعدة في البرمجة، التصميم، الترجمة، أو حتى مجرد استخدام الموقع وتقديم الملاحظات.
 

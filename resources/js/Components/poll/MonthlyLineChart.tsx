@@ -1,7 +1,7 @@
 "use client";
 import * as React from "react";
 import { Card } from "@/components/ui/card";
-import { useTheme } from "next-themes";
+import { getThemePreference, isDarkTheme } from "@/Lib/theme";
 
 type Series = {
     name: string;
@@ -35,8 +35,20 @@ export default function MonthlyLineChart({ months, series, height = 260 }: Props
     const padding = { top: 16, right: 16, bottom: 36, left: 40 };
     const [containerRef, setContainerRef] = React.useState<HTMLDivElement | null>(null);
     const [selected, setSelected] = React.useState<Set<string>>(new Set());
-    const { resolvedTheme } = useTheme();
-    const isDark = resolvedTheme === "dark";
+    const [isDark, setIsDark] = React.useState(false);
+
+    React.useEffect(() => {
+        const updateTheme = () => {
+            const pref = getThemePreference();
+            const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+            setIsDark(isDarkTheme(pref, systemDark));
+        };
+        updateTheme();
+
+        const observer = new MutationObserver(updateTheme);
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+        return () => observer.disconnect();
+    }, []);
     const width = containerRef?.clientWidth || 800;
     const innerWidth = Math.max(10, width - padding.left - padding.right);
     const innerHeight = Math.max(10, height - padding.top - padding.bottom);

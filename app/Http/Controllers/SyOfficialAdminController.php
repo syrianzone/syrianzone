@@ -183,8 +183,12 @@ class SyOfficialAdminController extends Controller
         $socials = array_filter($validated['socials'] ?? [], fn ($url) => ! empty($url) && is_string($url) && ! empty(trim($url)));
 
         try {
-            DB::transaction(function () use ($id, $socials, $storedImage, $validated): void {
+            DB::transaction(function () use ($id, $request, $socials, $storedImage, $validated): void {
                 $entity = OfficialEntity::query()->lockForUpdate()->findOrFail($id);
+                $nextIsActive = (bool) ($validated['is_active'] ?? $entity->is_active);
+                if ($nextIsActive !== (bool) $entity->is_active) {
+                    $this->access->authorizeAction($request, 'syofficial', 'toggle');
+                }
                 $oldImage = $entity->image;
                 $entity->update([
                     'category_id' => $validated['category_id'],

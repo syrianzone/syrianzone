@@ -83,8 +83,11 @@ final class GovAppsAdminController extends Controller
             : null;
 
         try {
-            $app = DB::transaction(function () use ($data, $id, $storedIcon): GovApp {
+            $app = DB::transaction(function () use ($data, $id, $request, $storedIcon): GovApp {
                 $locked = GovApp::query()->lockForUpdate()->findOrFail($id);
+                if ((bool) $data['is_active'] !== (bool) $locked->is_active) {
+                    $this->access->authorizeAction($request, 'govapps', 'toggle');
+                }
                 $oldIcon = $locked->icon;
                 $locked->update([
                     'description' => $data['description'] ?? null,

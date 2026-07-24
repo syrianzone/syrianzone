@@ -667,6 +667,80 @@ test('visibility requires toggle permission instead of general edit permission',
     'phonebook edit' => ['phonebook.edit', '/api/mobile/admin/phonebook/entries/ambulance/visibility'],
 ]);
 
+test('general mobile edits cannot change visibility through update endpoints', function () {
+    seedMobileOfficialCategory();
+    seedMobileOfficialEntity();
+    GovApp::create([
+        'id' => 'services',
+        'images' => [],
+        'is_active' => true,
+        'links' => [],
+        'name' => 'Services',
+        'name_ar' => 'خدماتي',
+        'order_column' => 1,
+    ]);
+    seedMobilePhonebookCategory();
+    PhonebookEntry::create([
+        'category_id' => 'emergency',
+        'id' => 'ambulance',
+        'is_active' => true,
+        'is_whatsapp' => false,
+        'name_ar' => 'الإسعاف',
+        'number' => '110',
+        'order_column' => 1,
+    ]);
+    [, $token] = mobileDirectoryAdminCredentials([
+        'permissions' => [
+            'govapps.edit',
+            'phonebook.edit',
+            'syofficial.edit',
+        ],
+    ]);
+
+    $this->withToken($token)
+        ->postJson('/api/mobile/admin/govapps/services', [
+            'is_active' => true,
+            'links' => [],
+            'name' => 'Services Syria',
+            'name_ar' => 'خدمات سوريا',
+        ])
+        ->assertOk()
+        ->assertJsonPath('data.name', 'Services Syria');
+
+    $this->withToken($token)
+        ->postJson('/api/mobile/admin/govapps/services', [
+            'is_active' => false,
+            'links' => [],
+            'name' => 'Services Syria',
+            'name_ar' => 'خدمات سوريا',
+        ])
+        ->assertForbidden();
+    $this->withToken($token)
+        ->postJson('/api/mobile/admin/syofficial/entities/health', [
+            'category_id' => 'ministries',
+            'is_active' => false,
+            'name' => 'Health',
+            'name_ar' => 'الصحة',
+            'socials' => [],
+        ])
+        ->assertForbidden();
+    $this->withToken($token)
+        ->putJson('/api/mobile/admin/phonebook/entries/ambulance', [
+            'category_id' => 'emergency',
+            'is_active' => false,
+            'is_whatsapp' => false,
+            'name_ar' => 'الإسعاف',
+            'name_en' => null,
+            'number' => '110',
+            'source_url' => null,
+        ])
+        ->assertForbidden();
+
+    expect(GovApp::query()->findOrFail('services')->is_active)->toBeTrue()
+        ->and(OfficialEntity::query()->findOrFail('health')->is_active)->toBeTrue()
+        ->and(PhonebookEntry::query()->findOrFail('ambulance')->is_active)->toBeTrue();
+});
+
 test('directory image uploads reject oversized files unsafe dimensions and unsupported types', function (
     UploadedFile $image,
 ) {

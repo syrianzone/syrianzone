@@ -107,8 +107,12 @@ class GovAppsAdminController extends Controller
         $links = array_filter($validated['links'] ?? [], fn ($url) => ! empty($url) && is_string($url) && ! empty(trim($url)));
 
         try {
-            DB::transaction(function () use ($id, $links, $storedIcon, $validated): void {
+            DB::transaction(function () use ($id, $links, $request, $storedIcon, $validated): void {
                 $app = GovApp::query()->lockForUpdate()->findOrFail($id);
+                $nextIsActive = (bool) ($validated['is_active'] ?? $app->is_active);
+                if ($nextIsActive !== (bool) $app->is_active) {
+                    $this->access->authorizeAction($request, 'govapps', 'toggle');
+                }
                 $oldIcon = $app->icon;
                 $app->update([
                     'name' => $validated['name'],

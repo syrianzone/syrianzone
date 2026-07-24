@@ -7,6 +7,7 @@ use App\Models\PhonebookEntry;
 use App\Services\DirectoryAdminAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class PhonebookAdminController extends Controller
 {
@@ -143,7 +144,14 @@ class PhonebookAdminController extends Controller
         $validated['source_url'] = ! empty($validated['source_url']) && ! empty(trim($validated['source_url'])) ? trim($validated['source_url']) : null;
         $validated['name_en'] = ! empty($validated['name_en']) && ! empty(trim($validated['name_en'])) ? trim($validated['name_en']) : null;
 
-        $entry->update($validated);
+        DB::transaction(function () use ($entry, $request, $validated): void {
+            $locked = PhonebookEntry::query()->lockForUpdate()->findOrFail($entry->id);
+            $nextIsActive = (bool) ($validated['is_active'] ?? $locked->is_active);
+            if ($nextIsActive !== (bool) $locked->is_active) {
+                $this->access->authorizeAction($request, 'phonebook', 'toggle');
+            }
+            $locked->update($validated);
+        });
         $this->flushCache();
 
         return redirect()->back()->with('success', 'تم تحديث البيانات بنجاح');

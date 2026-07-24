@@ -164,8 +164,11 @@ final class SyOfficialAdminController extends Controller
             : null;
 
         try {
-            $entity = DB::transaction(function () use ($data, $id, $storedImage): OfficialEntity {
+            $entity = DB::transaction(function () use ($data, $id, $request, $storedImage): OfficialEntity {
                 $locked = OfficialEntity::query()->lockForUpdate()->findOrFail($id);
+                if ((bool) $data['is_active'] !== (bool) $locked->is_active) {
+                    $this->access->authorizeAction($request, 'syofficial', 'toggle');
+                }
                 $oldImage = $locked->image;
                 $locked->update([
                     'category_id' => $data['category_id'],

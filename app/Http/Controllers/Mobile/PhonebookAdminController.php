@@ -113,17 +113,24 @@ final class PhonebookAdminController extends Controller
     public function updateEntry(Request $request, string $id): JsonResponse
     {
         $this->access->authorizeAction($request, 'phonebook', 'edit');
-        $entry = PhonebookEntry::query()->findOrFail($id);
         $data = $this->validateEntry($request, false);
-        $entry->update([
-            'category_id' => $data['category_id'],
-            'is_active' => $data['is_active'],
-            'is_whatsapp' => $data['is_whatsapp'],
-            'name_ar' => $data['name_ar'],
-            'name_en' => $data['name_en'] ?? null,
-            'number' => $data['number'],
-            'source_url' => $data['source_url'] ?? null,
-        ]);
+        $entry = DB::transaction(function () use ($data, $id, $request): PhonebookEntry {
+            $entry = PhonebookEntry::query()->lockForUpdate()->findOrFail($id);
+            if ((bool) $data['is_active'] !== (bool) $entry->is_active) {
+                $this->access->authorizeAction($request, 'phonebook', 'toggle');
+            }
+            $entry->update([
+                'category_id' => $data['category_id'],
+                'is_active' => $data['is_active'],
+                'is_whatsapp' => $data['is_whatsapp'],
+                'name_ar' => $data['name_ar'],
+                'name_en' => $data['name_en'] ?? null,
+                'number' => $data['number'],
+                'source_url' => $data['source_url'] ?? null,
+            ]);
+
+            return $entry;
+        });
         $this->flushCache();
 
         return response()->json(['data' => $this->entryResource($entry->fresh())]);

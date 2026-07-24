@@ -286,7 +286,11 @@ test('show on an owner-visible pending place carries level and points', function
 
 test('show caches contributor points per user for five minutes', function () {
     $owner = placesUser();
-    $place = Place::factory()->approved()->create(['user_id' => $owner->id, 'saves_count' => 0]);
+    $place = Place::factory()->approved()->create([
+        'user_id' => $owner->id,
+        'description' => 'Short description',
+        'saves_count' => 0,
+    ]);
 
     $this->getJson("/api/v1/places/{$place->id}")->assertOk()->assertJsonPath('user.points', 15);
     expect(Cache::has("places:guide-points:{$owner->id}"))->toBeTrue();

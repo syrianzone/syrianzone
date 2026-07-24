@@ -34,8 +34,17 @@ self.addEventListener('activate', (event) => {
 
 // Fetch Event - Network-first strategy with cache fallback
 self.addEventListener('fetch', (event) => {
-    // Only intercept local GET requests
-    if (event.request.method !== 'GET' || !event.request.url.startsWith(self.location.origin)) {
+    const url = new URL(event.request.url);
+
+    // Only intercept local GET requests, excluding API and admin routes
+    if (
+        event.request.method !== 'GET' ||
+        url.origin !== self.location.origin ||
+        url.pathname.startsWith('/api/') ||
+        url.pathname.startsWith('/transit/api/') ||
+        url.pathname.startsWith('/admin') ||
+        url.pathname.startsWith('/transit/admin')
+    ) {
         return;
     }
 
@@ -51,9 +60,10 @@ self.addEventListener('fetch', (event) => {
                 }
                 return response;
             })
-            .catch(() => {
-                // Fallback to cache if network fails
-                return caches.match(event.request);
+            .catch(async () => {
+                // Fallback to cache if network fails, or return error response
+                const cachedResponse = await caches.match(event.request);
+                return cachedResponse || Response.error();
             })
     );
 });

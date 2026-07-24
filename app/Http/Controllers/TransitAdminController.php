@@ -695,20 +695,25 @@ class TransitAdminController extends Controller
             return response()->json(['message' => 'No fields to update'], 400);
         }
 
+        $oldNameAr = $route->name_ar;
         $route->update($updateData);
 
         $changes = [];
-        if (isset($updateData['name_ar'])) $changes[] = "الاسم من '{$route->getOriginal('name_ar')}' إلى '{$updateData['name_ar']}'";
+        if (isset($updateData['name_ar'])) $changes[] = "الاسم من '{$oldNameAr}' إلى '{$updateData['name_ar']}'";
         if (isset($updateData['name_en'])) $changes[] = "الاسم الإنجليزي";
         if (isset($updateData['color_index'])) $changes[] = "لون المسار";
-        if (isset($updateData['price_new'])) $changes[] = "التعرفة من '{$route->getOriginal('price_new')}' إلى '{$updateData['price_new']}'";
+        if (isset($updateData['price_new'])) $changes[] = "التعرفة إلى '{$updateData['price_new']}'";
 
-        \App\Models\TransitRouteLog::create([
-            'route_id' => $route->id,
-            'action' => 'admin_updated',
-            'description' => "تعديل مباشر للخط '{$route->name_ar}': " . implode(', ', $changes),
-            'user_id' => auth()->id(),
-        ]);
+        try {
+            \App\Models\TransitRouteLog::create([
+                'route_id' => (string) $route->id,
+                'action' => 'admin_updated',
+                'description' => "تعديل مباشر للخط '{$route->name_ar}': " . (empty($changes) ? 'تحديث البيانات' : implode(', ', $changes)),
+                'user_id' => auth()->id(),
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning("Failed to create TransitRouteLog: " . $e->getMessage());
+        }
 
         $this->clearCityMapCache($route->city_id);
 

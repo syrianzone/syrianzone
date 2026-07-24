@@ -72,7 +72,7 @@ class UploadGeojsonToR2 extends Command
                 continue;
             }
 
-            $cdnUrl = ($r2Url ? $r2Url : 'https://pub-r2.syrianzone.com') . '/' . $r2Path;
+            $cdnUrl = ($r2Url ? $r2Url : 'https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev') . '/' . $r2Path;
 
             if ($isDryRun) {
                 $this->line(" [DRY-RUN] Would upload: {$relPath} -> R2: {$r2Path} ({$cdnUrl})");

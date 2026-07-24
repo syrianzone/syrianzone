@@ -1,7 +1,7 @@
 import axios from '@/Lib/axios';
 import type { Paginated } from './types';
 
-export type GuidesSort = 'submissions' | 'saves' | 'recent';
+export type GuidesSort = 'points' | 'submissions' | 'saves' | 'recent';
 
 export interface Guide {
   rank: number;
@@ -11,6 +11,8 @@ export interface Guide {
   approved_count: number;
   saves_total: number;
   recent_count: number;
+  points: number;
+  level: number;
 }
 
 export interface GridPhoto {
@@ -28,8 +30,8 @@ export const discovery = {
     return data;
   },
 
-  async gridPhotos(page: number): Promise<Paginated<GridPhoto>> {
-    const { data } = await axios.get(`${base}/places/photos`, { params: { page } });
+  async gridPhotos(page: number, userId?: number): Promise<Paginated<GridPhoto>> {
+    const { data } = await axios.get(`${base}/places/photos`, { params: { page, user_id: userId } });
     return data;
   },
 };

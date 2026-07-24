@@ -14,7 +14,7 @@ export default function OfflineBanner() {
         borderColor: 'var(--banner-border)',
       }}
     >
-      أنت غير متصل — خطوط الباص متاحة، الخريطة قد تكون محدودة
+      أنت غير متصل: خطوط الباص متاحة، والخريطة قد تكون محدودة
     </div>
   )
 }

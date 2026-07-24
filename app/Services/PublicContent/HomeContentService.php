@@ -8,6 +8,7 @@ final class HomeContentService
 {
     private const QUICK_LINKS = [
         ['official-accounts', 'الحسابات الرسمية', 'Official accounts', 'feature', 'syofficial'],
+        ['board', 'لوح', 'Board', 'feature', 'board'],
         ['calendar', 'الروزنامة', 'Calendar', 'feature', 'roznama'],
         ['phonebook', 'دليل الهاتف', 'Phonebook', 'feature', 'phonebook'],
         ['visual-identity', 'الهوية البصرية', 'Visual identity', 'feature', 'syid'],

@@ -31,6 +31,15 @@ test('shared GD budget rejects the first pixel above eight million', function ()
         ->and(app(PlaceImageService::class)->dimensionsAreSafe($image))->toBeFalse();
 });
 
+test('preflight distinguishes unsafe dimensions from undecodable files', function () {
+    $unsafe = declaredPngDimensions(4001, 2000);
+    $undecodable = UploadedFile::fake()->create('document.pdf', 10, 'application/pdf');
+    $guard = app(ImageDecodeGuard::class);
+
+    expect($guard->dimensionsExceedBudget($unsafe, 200))->toBeTrue()
+        ->and($guard->dimensionsExceedBudget($undecodable, 200))->toBeFalse();
+});
+
 test('shared GD budget also checks stored image bytes', function () {
     $safe = file_get_contents(declaredPngDimensions(4000, 2000)->getRealPath());
     $unsafe = file_get_contents(declaredPngDimensions(4001, 2000)->getRealPath());

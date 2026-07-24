@@ -7,6 +7,7 @@ import type { FeatureCollection } from 'geojson'
 import { useAdminDrafts, useMapData } from '../_hooks/useMapData'
 import { router, Head } from '@inertiajs/react'
 import { useTransitTheme } from '../_components/TransitThemeContext'
+import { ROUTE_PALETTE, getRouteColor } from '../_lib/mapColors'
 import TransitLayout from '../layout'
 import { Button } from '@/Components/ui/button'
 import { Badge } from '@/Components/ui/badge'
@@ -56,6 +57,7 @@ interface PublishedRoute {
   city: { name_ar: string; name_en: string } | null
   name_ar: string
   name_en: string | null
+  color_index?: number
   price_old: number | null
   price_new: number | null
   status: RouteStatus
@@ -160,6 +162,8 @@ function TransitAdminPageContent() {
   const [editRouteNameAr, setEditRouteNameAr] = useState('')
   const [editRouteNameEn, setEditRouteNameEn] = useState('')
   const [editRoutePrice, setEditRoutePrice] = useState('')
+  const [editRouteColorIndex, setEditRouteColorIndex] = useState<number>(0)
+  const [approveColorIndex, setApproveColorIndex] = useState<number>(0)
 
   const { data: drafts = [], isLoading, error: draftsError } = useAdminDrafts()
 
@@ -265,16 +269,20 @@ function TransitAdminPageContent() {
   }, [mobileView])
 
   // ─── API Handlers ─────────────────────────────────────────────────────────
-  const handleApprove = useCallback(async (id: number) => {
+  const handleApprove = useCallback(async (id: number, colorIndex?: number) => {
     setActionLoading(true)
+    const selectedColor = colorIndex ?? approveColorIndex
     try {
       const res = await fetch(`/api/v1/admin/route-drafts/${id}/approve`, {
-        method: 'POST', headers: { 'X-XSRF-TOKEN': getCsrfToken() }, credentials: 'include',
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
+        credentials: 'include',
+        body: JSON.stringify({ color_index: selectedColor }),
       })
       if (res.ok) { showToast('تمت الموافقة على المسار ونشره'); setSelectedDraft(null) }
       else { const e = await res.json().catch(() => ({})); showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false) }
     } catch { showToast('تعذّر الاتصال بالخادم', false) } finally { setActionLoading(false) }
-  }, [showToast])
+  }, [approveColorIndex, showToast])
 
   const handleRejectConfirm = useCallback(async () => {
     if (!selectedDraft) return
@@ -369,17 +377,18 @@ function TransitAdminPageContent() {
         body: JSON.stringify({
           name_ar: editRouteNameAr.trim() || undefined,
           name_en: editRouteNameEn.trim() || null,
+          color_index: editRouteColorIndex,
           price: editRoutePrice ? parseInt(editRoutePrice) : null,
         }),
       })
       if (res.ok) {
         showToast('تم تحديث الخط')
         setIsEditRouteModalOpen(false)
-        setSelectedRoute(p => p ? { ...p, name_ar: editRouteNameAr.trim() || p.name_ar, name_en: editRouteNameEn.trim() || null, price_new: editRoutePrice ? parseInt(editRoutePrice) : p.price_new } : null)
+        setSelectedRoute(p => p ? { ...p, name_ar: editRouteNameAr.trim() || p.name_ar, name_en: editRouteNameEn.trim() || null, color_index: editRouteColorIndex, price_new: editRoutePrice ? parseInt(editRoutePrice) : p.price_new } : null)
         fetchRoutes()
       } else { const e = await res.json().catch(() => ({})); showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false) }
     } catch { showToast('تعذّر الاتصال بالخادم', false) } finally { setActionLoading(false) }
-  }, [selectedRoute, editRouteNameAr, editRouteNameEn, editRoutePrice, fetchRoutes, showToast])
+  }, [selectedRoute, editRouteNameAr, editRouteNameEn, editRouteColorIndex, editRoutePrice, fetchRoutes, showToast])
 
   // ─── Derived ──────────────────────────────────────────────────────────────
   const stats = {
@@ -558,7 +567,10 @@ function TransitAdminPageContent() {
                     className={`w-full text-right p-3 rounded-lg border transition-colors ${selectedRoute?.id === route.id ? 'border-primary bg-primary/5' : 'border-border bg-background hover:border-primary/50'}`}
                     onClick={() => handleSelectRoute(route)}>
                     <div className="flex items-start justify-between gap-2">
-                      <span className="text-sm font-semibold leading-tight">{route.name_ar}</span>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="w-3 h-3 rounded-full shrink-0 border border-black/10 shadow-xs" style={{ backgroundColor: getRouteColor(route.color_index ?? 0) }} title={`لون المسار ${((route.color_index ?? 0) % 8) + 1}`} />
+                        <span className="text-sm font-semibold leading-tight truncate">{route.name_ar}</span>
+                      </div>
                       <Badge variant={route.status === 'published' ? 'default' : route.status === 'disapproved' ? 'destructive' : 'secondary'} className="text-[10px] shrink-0">
                         {ROUTE_STATUS_LABELS[route.status]}
                       </Badge>
@@ -604,7 +616,7 @@ function TransitAdminPageContent() {
         </Tabs>
       </aside>
 
-      {/* Map panel — always rendered so MapLibre has real dimensions on init */}
+      {/* Map panel stays rendered so MapLibre has real dimensions on init */}
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
         <div ref={mapContainer} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
 
@@ -637,14 +649,31 @@ function TransitAdminPageContent() {
               <p className="text-[10px] text-muted-foreground text-center">الخطوط الباهتة = البيانات المنشورة. الخط اللامع = المسار المقترح.</p>
 
               {selectedDraft.status === 'pending' && (
-                <div className="flex gap-2 pt-1">
-                  <Button className="flex-1" size="sm" disabled={actionLoading} onClick={() => handleApprove(selectedDraft.id)}>
-                    {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                    {selectedDraft.route_id ? 'تطبيق التعديلات' : 'موافقة ونشر'}
-                  </Button>
-                  <Button variant="destructive" size="sm" className="flex-1" disabled={actionLoading} onClick={() => { setRejectReason(''); setRejectOpen(true) }}>
-                    <XCircle className="h-4 w-4" /> رفض
-                  </Button>
+                <div className="space-y-2 pt-1 border-t border-border/50">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-semibold text-muted-foreground block">اختيار لون الخط على الخريطة:</label>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {ROUTE_PALETTE.map((colorHex, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setApproveColorIndex(idx)}
+                          className={`w-6 h-6 rounded-full border-2 transition-all ${approveColorIndex === idx ? 'scale-110 border-foreground shadow-md ring-2 ring-primary/40' : 'border-transparent opacity-75 hover:opacity-100'}`}
+                          style={{ backgroundColor: colorHex }}
+                          title={`لون ${idx + 1}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <Button className="flex-1" size="sm" disabled={actionLoading} onClick={() => handleApprove(selectedDraft.id, approveColorIndex)}>
+                      {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                      {selectedDraft.route_id ? 'تطبيق التعديلات' : 'موافقة ونشر'}
+                    </Button>
+                    <Button variant="destructive" size="sm" className="flex-1" disabled={actionLoading} onClick={() => { setRejectReason(''); setRejectOpen(true) }}>
+                      <XCircle className="h-4 w-4" /> رفض
+                    </Button>
+                  </div>
                 </div>
               )}
 
@@ -670,7 +699,10 @@ function TransitAdminPageContent() {
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <CardTitle className="text-base">{selectedRoute.name_ar}</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <span className="w-3.5 h-3.5 rounded-full shrink-0 border border-black/10 shadow-xs" style={{ backgroundColor: getRouteColor(selectedRoute.color_index ?? 0) }} />
+                    <CardTitle className="text-base">{selectedRoute.name_ar}</CardTitle>
+                  </div>
                   {selectedRoute.name_en && <p className="text-xs text-muted-foreground mt-0.5" dir="ltr">{selectedRoute.name_en}</p>}
                 </div>
                 <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => { setSelectedRoute(null); setSelectedRouteGeoJson(null) }}>✕</Button>
@@ -686,8 +718,8 @@ function TransitAdminPageContent() {
               <p className="text-[10px] text-muted-foreground text-center">الخط اللامع = المسار المحدد. الخطوط الباهتة = باقي خطوط المدينة.</p>
 
               <div className="grid grid-cols-2 gap-2">
-                <Button variant="outline" size="sm" className="text-xs" onClick={() => { setEditRouteNameAr(selectedRoute.name_ar); setEditRouteNameEn(selectedRoute.name_en ?? ''); setEditRoutePrice(selectedRoute.price_new != null ? String(selectedRoute.price_new) : ''); setIsEditRouteModalOpen(true) }}>
-                  <Pencil className="h-3.5 w-3.5" /> تعديل الاسم والتعرفة
+                <Button variant="outline" size="sm" className="text-xs" onClick={() => { setEditRouteNameAr(selectedRoute.name_ar); setEditRouteNameEn(selectedRoute.name_en ?? ''); setEditRoutePrice(selectedRoute.price_new != null ? String(selectedRoute.price_new) : ''); setEditRouteColorIndex(selectedRoute.color_index ?? 0); setIsEditRouteModalOpen(true) }}>
+                  <Pencil className="h-3.5 w-3.5" /> تعديل الاسم واللون
                 </Button>
                 <Button variant="outline" size="sm" className="text-xs" onClick={() => router.get(`/transit/studio?edit=${selectedRoute.id}`)}>
                   <Pencil className="h-3.5 w-3.5" /> تعديل في الاستوديو
@@ -754,7 +786,7 @@ function TransitAdminPageContent() {
         <DialogContent dir="rtl" className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>رفض المسار</DialogTitle>
-            <DialogDescription>أضف سبب الرفض — سيظهر للمساهم.</DialogDescription>
+            <DialogDescription>أضف سبب الرفض، وسيظهر للمساهم.</DialogDescription>
           </DialogHeader>
           <Textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)} placeholder="سبب الرفض (اختياري)…" rows={4} />
           <DialogFooter className="flex-row-reverse gap-2">
@@ -883,7 +915,7 @@ function TransitAdminPageContent() {
         <DialogContent dir="rtl" className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>تعديل الخط</DialogTitle>
-            <DialogDescription>تعديل اسم و/أو تعرفة <strong>{selectedRoute?.name_ar}</strong>.</DialogDescription>
+            <DialogDescription>تعديل اسم، لون، و/أو تعرفة <strong>{selectedRoute?.name_ar}</strong>.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
@@ -893,6 +925,21 @@ function TransitAdminPageContent() {
             <div className="space-y-1.5">
               <label className="text-xs font-medium">الاسم بالإنجليزية</label>
               <Input value={editRouteNameEn} onChange={e => setEditRouteNameEn(e.target.value)} className="h-9 text-xs" dir="ltr" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium block">لون المسار على الخريطة</label>
+              <div className="flex items-center gap-2 flex-wrap">
+                {ROUTE_PALETTE.map((colorHex, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setEditRouteColorIndex(idx)}
+                    className={`w-7 h-7 rounded-full border-2 transition-all ${editRouteColorIndex === idx ? 'scale-110 border-foreground shadow-md ring-2 ring-primary' : 'border-transparent opacity-75 hover:opacity-100'}`}
+                    style={{ backgroundColor: colorHex }}
+                    title={`لون ${idx + 1}`}
+                  />
+                ))}
+              </div>
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium">التعرفة (ل.س)</label>

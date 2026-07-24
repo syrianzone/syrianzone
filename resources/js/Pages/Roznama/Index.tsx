@@ -214,7 +214,7 @@ export default function Index() {
         const fetchWeather = async () => {
             try {
                 const coords = GOVERNORATES[governorate] || GOVERNORATES['damascus'];
-                const response = await fetch(`https://syrianzone.hade-alahmad1.workers.dev/?lat=${coords.lat}&lon=${coords.lon}`);
+                const response = await fetch(`/api/weather?lat=${coords.lat}&lon=${coords.lon}`);
                 if (!response.ok) throw new Error('Weather fetch failed');
                 const data = await response.json();
 

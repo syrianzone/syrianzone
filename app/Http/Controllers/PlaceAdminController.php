@@ -70,9 +70,14 @@ class PlaceAdminController extends Controller
             'photo' => [
                 'bail',
                 'required',
+                'max:12288',
+                function (string $attribute, mixed $value, callable $fail) use ($images) {
+                    if ($value instanceof UploadedFile && $images->dimensionsExceedBudget($value)) {
+                        $fail('أبعاد الصورة يجب أن تكون بين 200x200 و 6000x6000 بكسل');
+                    }
+                },
                 'image',
                 'mimes:jpg,jpeg,png,webp',
-                'max:12288',
                 function (string $attribute, mixed $value, callable $fail) use ($images) {
                     if (! $value instanceof UploadedFile || ! $images->dimensionsAreSafe($value)) {
                         $fail('أبعاد الصورة يجب أن تكون بين 200x200 و 6000x6000 بكسل');
@@ -224,9 +229,14 @@ class PlaceAdminController extends Controller
             'photo' => [
                 'bail',
                 'required',
+                'max:12288',
+                function (string $attribute, mixed $value, callable $fail) use ($images) {
+                    if ($value instanceof UploadedFile && $images->dimensionsExceedBudget($value)) {
+                        $fail('أبعاد الصورة يجب أن تكون بين 200x200 و 6000x6000 بكسل');
+                    }
+                },
                 'image',
                 'mimes:jpg,jpeg,png,webp',
-                'max:12288',
                 function (string $attribute, mixed $value, callable $fail) use ($images) {
                     if (! $value instanceof UploadedFile || ! $images->dimensionsAreSafe($value)) {
                         $fail('أبعاد الصورة يجب أن تكون بين 200x200 و 6000x6000 بكسل');

@@ -1,20 +1,26 @@
 import { useEffect, useRef, useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { ChevronLeft, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { discovery, type Guide, type GuidesSort } from '../_lib/discovery';
+import { GuideProfileCard } from './GuideProfileCard';
+import { LevelBadge } from './LevelBadge';
+import { MilestonesSheet } from './MilestonesSheet';
 
 const SORTS: { value: GuidesSort; label: string }[] = [
+  { value: 'points', label: 'الأعلى نقاطاً' },
   { value: 'submissions', label: 'الأكثر مساهمة' },
   { value: 'saves', label: 'الأكثر حفظاً' },
   { value: 'recent', label: 'النشطون مؤخراً' },
 ];
 
-export function GuidesTab() {
-  const [sort, setSort] = useState<GuidesSort>('submissions');
+export function GuidesTab(props: { onSelectGuide: (guide: { id: number; name: string }) => void }) {
+  const [sort, setSort] = useState<GuidesSort>('points');
   const [guides, setGuides] = useState<Guide[] | null>(null);
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [profile, setProfile] = useState<Guide | null>(null);
+  const [milestonesOpen, setMilestonesOpen] = useState(false);
   const requestRef = useRef(0);
 
   useEffect(() => {
@@ -32,7 +38,12 @@ export function GuidesTab() {
 
   return (
     <div dir="rtl" className="min-h-0 flex-1 overflow-y-auto p-3">
-      <h3 className="mb-2 text-sm font-semibold text-foreground">المرشدون المحليون</h3>
+      <div className="mb-2 flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-foreground">المرشدون المحليون</h3>
+        <Button type="button" variant="ghost" size="sm" onClick={() => setMilestonesOpen(true)}>
+          الرتب
+        </Button>
+      </div>
       <div className="mb-3 flex flex-wrap gap-1.5">
         {SORTS.map((s) => (
           <button
@@ -69,7 +80,12 @@ export function GuidesTab() {
       {!error && guides !== null && guides.length > 0 && (
         <ul className="space-y-1">
           {guides.map((g) => (
-            <li key={g.user_id} className="flex items-center gap-3 rounded-md px-2 py-2 hover:bg-accent/50">
+            <li key={g.user_id}>
+              <button
+                type="button"
+                onClick={() => setProfile(g)}
+                className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-right hover:bg-accent/50"
+              >
               <span dir="ltr" className="w-5 shrink-0 text-center text-sm font-semibold tabular-nums text-muted-foreground">
                 {g.rank}
               </span>
@@ -78,16 +94,27 @@ export function GuidesTab() {
                 <AvatarFallback>{g.name.slice(0, 1)}</AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-foreground">{g.name}</p>
+                <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+                  <span className="truncate">{g.name}</span>
+                  <LevelBadge level={g.level} showLabel />
+                </p>
                 <p className="text-xs text-muted-foreground">
-                  {g.approved_count} مساهمة · {g.saves_total} حفظ
+                  {g.points} نقطة · {g.approved_count} مساهمة · {g.saves_total} حفظ
                   {sort === 'recent' && ` · ${g.recent_count} خلال 30 يوماً`}
                 </p>
               </div>
+                <ChevronLeft className="h-4 w-4 shrink-0 text-muted-foreground" />
+              </button>
             </li>
           ))}
         </ul>
       )}
+      <MilestonesSheet open={milestonesOpen} onOpenChange={setMilestonesOpen} />
+      <GuideProfileCard
+        guide={profile}
+        onOpenChange={(open) => { if (!open) setProfile(null); }}
+        onShowContributions={(g) => { setProfile(null); props.onSelectGuide(g); }}
+      />
     </div>
   );
 }

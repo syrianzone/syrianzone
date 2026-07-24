@@ -15,6 +15,14 @@ final class ImageDecodeGuard
         return $this->dimensionsMeetBudget(@getimagesize($file->getRealPath()), $minimumDimension);
     }
 
+    public function dimensionsExceedBudget(UploadedFile $file, int $minimumDimension): bool
+    {
+        $dimensions = @getimagesize($file->getRealPath());
+
+        return is_array($dimensions)
+            && ! $this->dimensionsMeetBudget($dimensions, $minimumDimension);
+    }
+
     public function binaryDimensionsAreSafe(string $binary, int $minimumDimension): bool
     {
         return $this->dimensionsMeetBudget(@getimagesizefromstring($binary), $minimumDimension);

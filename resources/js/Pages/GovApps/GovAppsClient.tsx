@@ -1,24 +1,9 @@
 "use client";
-import React, { useState, useEffect, useCallback } from 'react';
+import React from 'react';
 import { GovApp } from './types';
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import {
-    Sheet,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
-    SheetDescription
-} from "@/components/ui/sheet";
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-} from "@/components/ui/dialog";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { ExternalLink, Smartphone, Images as ImageIcon, Globe } from "lucide-react";
+import { Smartphone, Globe, Pencil, Settings } from "lucide-react";
+import { usePage } from '@inertiajs/react';
 
 function AndroidIcon({ className }: { className?: string }) {
     return (
@@ -36,321 +21,75 @@ function IosIcon({ className }: { className?: string }) {
     );
 }
 
-
 interface GovAppsClientProps {
     initialData: GovApp[];
 }
 
-function useMediaQuery(query: string) {
-    const [matches, setMatches] = useState(false);
-    useEffect(() => {
-        const media = window.matchMedia(query);
-        if (media.matches !== matches) {
-            setMatches(media.matches);
-        }
-        const listener = () => setMatches(media.matches);
-        window.addEventListener('resize', listener);
-        return () => window.removeEventListener('resize', listener);
-    }, [matches, query]);
-    return matches;
-}
+const DEFAULT_GOVAPP_ICON = 'https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/govapps/mofa/icon.webp';
 
-// ─── Browser Icon Cache ─────────────────────────────────────────────────────
-
-const ICON_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
-const ICON_CACHE_KEY = 'sz_app_icons_v1';
-
-interface IconCacheEntry {
-    icon: string;
-    ts: number;
-}
-
-function getBrowserIconCache(): Record<string, IconCacheEntry> {
-    try {
-        const raw = localStorage.getItem(ICON_CACHE_KEY);
-        if (!raw) return {};
-        return JSON.parse(raw);
-    } catch {
-        return {};
-    }
-}
-
-function setBrowserIconCache(cache: Record<string, IconCacheEntry>) {
-    try {
-        localStorage.setItem(ICON_CACHE_KEY, JSON.stringify(cache));
-    } catch {
-        // storage full or disabled
-    }
-}
-
-function getCachedIcon(appId: string): string | null {
-    const cache = getBrowserIconCache();
-    const entry = cache[appId];
-    if (!entry) return null;
-    if (Date.now() - entry.ts > ICON_CACHE_TTL_MS) {
-        // expired
-        delete cache[appId];
-        setBrowserIconCache(cache);
-        return null;
-    }
-    return entry.icon;
-}
-
-function setCachedIcon(appId: string, icon: string) {
-    const cache = getBrowserIconCache();
-    cache[appId] = { icon, ts: Date.now() };
-    setBrowserIconCache(cache);
-}
-
-// ─── Store Icon Resolvers (via backend proxy) ───────────────────────────────
-
-function extractAppleAppId(url: string): string | null {
-    const match = url.match(/id(\d+)/);
-    return match ? match[1] : null;
-}
-
-function extractGooglePlayPackage(url: string): string | null {
-    const match = url.match(/[?&]id=([^&]+)/);
-    return match ? match[1] : null;
-}
-
-async function fetchStoreIcon(app: GovApp): Promise<string | null> {
-    // Check browser cache first
-    const cached = getCachedIcon(app.id);
-    if (cached) return cached;
-
-    // 1. Google Play Store (priority)
-    if (app.links.android) {
-        const pkg = extractGooglePlayPackage(app.links.android);
-        if (pkg) {
-            try {
-                const res = await fetch(`/api/app-icon?store=play&package=${encodeURIComponent(pkg)}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.icon) {
-                        setCachedIcon(app.id, data.icon);
-                        return data.icon;
-                    }
-                }
-            } catch {
-                // ignore
-            }
-        }
-    }
-
-    // 2. Apple App Store
-    if (app.links.apple) {
-        const appId = extractAppleAppId(app.links.apple);
-        if (appId) {
-            try {
-                const res = await fetch(`/api/app-icon?store=apple&id=${encodeURIComponent(appId)}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.icon) {
-                        setCachedIcon(app.id, data.icon);
-                        return data.icon;
-                    }
-                }
-            } catch {
-                // ignore
-            }
-        }
-    }
-
-    return null;
-}
-
-// ─── Icon Component ─────────────────────────────────────────────────────────
-
-function getFaviconUrl(officialUrl: string | undefined): string | null {
-    if (!officialUrl) return null;
-    try {
-        const url = new URL(officialUrl);
-        return `https://www.google.com/s2/favicons?domain=${url.hostname}&sz=128`;
-    } catch {
-        return null;
-    }
-}
-
-function AppIcon({ app, storeIcon, className, placeholderClassName }: {
+function AppIcon({ app, className }: {
     app: GovApp;
-    storeIcon?: string | null;
     className?: string;
     placeholderClassName?: string;
 }) {
-    // Priority: 1) Store icon  2) Local CSV icon  3) Website favicon  4) Placeholder
-    // Use || instead of ?? so empty strings are treated as falsy
-    const src = storeIcon || app.icon || getFaviconUrl(app.links.official) || null;
-
-    if (src) {
-        return <img src={src} alt={app.name} className={className} />;
-    }
+    const iconUrl = app.icon || DEFAULT_GOVAPP_ICON;
 
     return (
-        <div className={`flex items-center justify-center ${className || ''}`}>
-            <Smartphone className={placeholderClassName || 'h-8 w-8 text-muted-foreground/30'} />
-        </div>
+        <img
+            src={iconUrl}
+            alt={app.name}
+            loading="lazy"
+            decoding="async"
+            className={className}
+            onError={(e) => {
+                (e.target as HTMLImageElement).src = DEFAULT_GOVAPP_ICON;
+            }}
+        />
     );
 }
 
-// ─── Detail View ────────────────────────────────────────────────────────────
-
-function AppDetailView({ app, isDesktop, storeIcon }: {
-    app: GovApp;
-    isDesktop: boolean;
-    storeIcon?: string | null;
-}) {
-    const scrollRef = React.useRef<HTMLDivElement>(null);
-    const [isDragging, setIsDragging] = useState(false);
-    const [startX, setStartX] = useState(0);
-    const [scrollLeft, setScrollLeft] = useState(0);
-
-    const handleMouseDown = (e: React.MouseEvent) => {
-        if (!scrollRef.current) return;
-        setIsDragging(true);
-        setStartX(e.pageX - scrollRef.current.offsetLeft);
-        setScrollLeft(scrollRef.current.scrollLeft);
-    };
-    const handleMouseLeave = () => setIsDragging(false);
-    const handleMouseUp = () => setIsDragging(false);
-    const handleMouseMove = (e: React.MouseEvent) => {
-        if (!isDragging || !scrollRef.current) return;
-        e.preventDefault();
-        const x = e.pageX - scrollRef.current.offsetLeft;
-        const walk = (x - startX) * 2;
-        scrollRef.current.scrollLeft = scrollLeft - walk;
-    };
+function DescriptionText({ description }: { description: string }) {
+    const [expanded, setExpanded] = React.useState(false);
 
     return (
-        <div className="flex flex-col h-full bg-background">
-            {/* Handle for visual bottom sheet feel - mobile only */}
-            {!isDesktop && (
-                <div className="w-12 h-1.5 bg-muted rounded-full mx-auto my-3 flex-shrink-0" />
-            )}
-
-            {/* Compact Row Header — icon + name only, no description */}
-            <div className="px-6 py-4 flex items-center gap-4">
-                <div className="relative h-16 w-16 rounded-2xl overflow-hidden border shadow-sm flex-shrink-0 bg-white">
-                    <AppIcon app={app} storeIcon={storeIcon} className="absolute inset-0 h-full w-full object-cover" placeholderClassName="h-8 w-8 text-gray-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                    <div className="text-xl font-bold truncate">{app.name}</div>
-                </div>
-            </div>
-
-            {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto px-6 pb-10 space-y-8 min-w-0">
-                {/* Action Buttons — grid so they never overflow the modal */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
-                    {app.links.android && (
-                        <Button asChild variant="outline" className="h-10 rounded-xl w-full">
-                            <a href={app.links.android} target="_blank" rel="noopener noreferrer">
-                                <AndroidIcon className="ml-2 h-5 w-5" />
-                                أندرويد
-                            </a>
-                        </Button>
-                    )}
-                    {app.links.apple && (
-                        <Button asChild variant="outline" className="h-10 rounded-xl w-full">
-                            <a href={app.links.apple} target="_blank" rel="noopener noreferrer">
-                                <IosIcon className="ml-2 h-5 w-5" />
-                                آيفون
-                            </a>
-                        </Button>
-                    )}
-                    {app.links.official && (
-                        <Button asChild variant="outline" className="h-10 rounded-xl w-full">
-                            <a href={app.links.official} target="_blank" rel="noopener noreferrer">
-                                <Globe className="ml-2 h-5 w-5" />
-                                الموقع الرسمي
-                            </a>
-                        </Button>
-                    )}
-                </div>
-
-                {/* Full Description — shown once, not duplicated in header */}
-                {app.description && (
-                    <div className="text-foreground/80 text-sm leading-relaxed whitespace-pre-wrap">
-                        {app.description}
-                    </div>
-                )}
-
-                {/* Screenshot Slider */}
-                {app.images && app.images.length > 0 && (
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                            <h4 className="font-bold text-base text-foreground">لقطات الشاشة</h4>
-                            <span className="text-xs text-muted-foreground">{app.images.length} صور</span>
-                        </div>
-                        <div className="relative w-full overflow-hidden">
-                            <div
-                                ref={scrollRef}
-                                className={`flex gap-3 pb-2 overflow-x-auto scrollbar-hide select-none touch-pan-x ${isDesktop ? 'cursor-grab' : ''} ${isDragging ? 'cursor-grabbing snap-none' : 'snap-x snap-mandatory'}`}
-                                onMouseDown={handleMouseDown}
-                                onMouseLeave={handleMouseLeave}
-                                onMouseUp={handleMouseUp}
-                                onMouseMove={handleMouseMove}
-                                dir="rtl"
-                            >
-                                {app.images.map((img, i) => (
-                                    <div key={i} className="relative w-32 sm:w-36 aspect-[9/16] shrink-0 overflow-hidden rounded-xl border bg-muted/20 shadow-md snap-start">
-                                        <img
-                                            src={img}
-                                            alt={`Screenshot ${i + 1}`}
-                                            className="absolute inset-0 h-full w-full object-contain"
-                                            draggable={false}
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </div>
-        </div>
+        <p
+            onClick={(e) => {
+                e.stopPropagation();
+                setExpanded((prev) => !prev);
+            }}
+            className={`text-xs text-muted-foreground leading-relaxed mb-3 cursor-pointer select-none transition-all ${
+                expanded ? 'line-clamp-none font-medium text-foreground/90' : 'line-clamp-2 hover:text-foreground/80'
+            }`}
+            title={expanded ? 'اضغط للتقليص' : 'اضغط لإظهار النص كاملاً'}
+        >
+            {description}
+        </p>
     );
 }
-
-// ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function GovAppsClient({ initialData }: GovAppsClientProps) {
-    const [selectedApp, setSelectedApp] = useState<GovApp | null>(null);
-    const [storeIcons, setStoreIcons] = useState<Record<string, string>>({});
-    const isDesktop = useMediaQuery('(min-width: 768px)');
-
-    // Fetch store icons on mount
-    useEffect(() => {
-        let cancelled = false;
-
-        async function loadIcons() {
-            const resolved: Record<string, string> = {};
-
-            for (const app of initialData) {
-                if (cancelled) return;
-                const icon = await fetchStoreIcon(app);
-                if (icon) {
-                    resolved[app.id] = icon;
-                }
-            }
-
-            if (!cancelled) {
-                setStoreIcons(resolved);
-            }
-        }
-
-        loadIcons();
-        return () => { cancelled = true; };
-    }, [initialData]);
-
-    const getIconForApp = useCallback((app: GovApp) => storeIcons[app.id] || null, [storeIcons]);
+    const { auth } = usePage().props as any;
+    const userRole = auth?.user?.role;
+    const isSuperAdmin = userRole === 'superadmin' || userRole === 'admin' || userRole === 'govapps_admin';
 
     return (
         <div className="min-h-screen bg-background" dir="rtl">
             <section className="bg-card py-10 shadow-sm border-b border-border">
                 <div className="container mx-auto px-4 text-center max-w-4xl">
+                    {isSuperAdmin && (
+                        <div className="mb-4 flex justify-center">
+                            <a
+                                href="/admin/govapps"
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-bold shadow-lg hover:bg-primary/90 transition-all transform hover:-translate-y-0.5"
+                            >
+                                <Settings className="w-4 h-4" />
+                                <span>لوحة تحكم إدارة التطبيقات (Admin Panel)</span>
+                            </a>
+                        </div>
+                    )}
                     <h1 className="text-3xl md:text-4xl font-bold mb-3 text-foreground">تطبيقات حكومية</h1>
                     <p className="text-lg text-muted-foreground">
-                        دليل التطبيقات الحكومية الرسمية
+                        دليل التطبيقات والخدمات الحكومية الإلكترونية الرسمية
                     </p>
                 </div>
             </section>
@@ -362,96 +101,83 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
                         <h3 className="text-xl font-medium text-foreground">لم يتم العثور على تطبيقات</h3>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2 md:gap-3">
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3.5 sm:gap-4">
                         {initialData.map((app) => (
-                            <Card key={app.id} className="overflow-hidden hover:shadow-md transition-shadow border-0 shadow-sm bg-card group flex flex-col h-full">
-                                <div className="aspect-square w-full bg-muted relative overflow-hidden cursor-pointer" onClick={() => setSelectedApp(app)}>
+                            <Card
+                                key={app.id}
+                                className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card/90 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
+                            >
+                                <div className="relative aspect-square w-full overflow-hidden bg-muted/40">
+                                    {isSuperAdmin && (
+                                        <a
+                                            href={`/admin/govapps?edit=${app.id}`}
+                                            className="absolute top-2 start-2 z-10 p-1.5 rounded-lg bg-background/90 hover:bg-primary hover:text-primary-foreground text-foreground backdrop-blur-md border border-border/70 shadow-md transition-all duration-200 opacity-90 hover:opacity-100 hover:scale-110 flex items-center gap-1 text-xs font-bold"
+                                            title="تعديل التطبيق في لوحة التحكم"
+                                        >
+                                            <Pencil className="w-3.5 h-3.5" />
+                                            <span className="hidden sm:inline">تعديل</span>
+                                        </a>
+                                    )}
                                     <AppIcon
                                         app={app}
-                                        storeIcon={getIconForApp(app)}
-                                        className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+                                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                         placeholderClassName="h-10 w-10 text-muted-foreground/30"
                                     />
                                 </div>
 
-                                <CardContent className="p-2.5 text-center flex-grow flex flex-col justify-between">
-                                    <h3 className="font-semibold text-foreground text-sm leading-tight line-clamp-2 cursor-pointer hover:text-primary transition-colors mb-1" onClick={() => setSelectedApp(app)}>
-                                        {app.name}
-                                    </h3>
-
-                                    <div className="flex flex-wrap justify-center gap-1 pt-1.5 border-t border-border mt-auto">
-                                        {app.links.android && (
-                                            <a
-                                                href={app.links.android}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-muted-foreground hover:text-[#3DDC84] transition-colors p-0.5"
-                                                title="Android"
-                                                onClick={(e) => e.stopPropagation()}
-                                            >
-                                                <AndroidIcon className="h-6 w-6" />
-                                            </a>
-                                        )}
-                                        {app.links.apple && (
-                                            <a
-                                                href={app.links.apple}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-muted-foreground hover:text-foreground transition-colors p-0.5"
-                                                title="iOS"
-                                                onClick={(e) => e.stopPropagation()}
-                                            >
-                                                <IosIcon className="h-6 w-6" />
-                                            </a>
-                                        )}
-                                        {app.links.official && (
-                                            <a
-                                                href={app.links.official}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-muted-foreground hover:text-primary transition-colors p-0.5"
-                                                title="Website"
-                                                onClick={(e) => e.stopPropagation()}
-                                            >
-                                                <Globe className="h-6 w-6" />
-                                            </a>
+                                <CardContent className="p-3.5 text-center flex-1 flex flex-col justify-between">
+                                    <div>
+                                        <h3 className="font-bold text-sm sm:text-base text-foreground mb-1.5 leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+                                            {app.name}
+                                        </h3>
+                                        {app.description && (
+                                            <DescriptionText description={app.description} />
                                         )}
                                     </div>
+
+                                    {app.links && (app.links.android?.trim() || app.links.apple?.trim() || app.links.official?.trim()) ? (
+                                        <div className="flex flex-wrap justify-center gap-1.5 pt-1">
+                                            {app.links.android && app.links.android.trim() ? (
+                                                <a
+                                                    href={app.links.android}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="p-1.5 rounded-lg border border-border/50 bg-muted/50 text-muted-foreground transition-all duration-200 hover:scale-105 hover:text-[#3DDC84] shadow-2xs"
+                                                    title="تحميل لأندرويد"
+                                                >
+                                                    <AndroidIcon className="h-4 w-4" />
+                                                </a>
+                                            ) : null}
+                                            {app.links.apple && app.links.apple.trim() ? (
+                                                <a
+                                                    href={app.links.apple}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="p-1.5 rounded-lg border border-border/50 bg-muted/50 text-muted-foreground transition-all duration-200 hover:scale-105 hover:text-foreground shadow-2xs"
+                                                    title="تحميل لآيفون"
+                                                >
+                                                    <IosIcon className="h-4 w-4" />
+                                                </a>
+                                            ) : null}
+                                            {app.links.official && app.links.official.trim() ? (
+                                                <a
+                                                    href={app.links.official}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="p-1.5 rounded-lg border border-border/50 bg-muted/50 text-muted-foreground transition-all duration-200 hover:scale-105 hover:text-primary shadow-2xs"
+                                                    title="الموقع الرسمي"
+                                                >
+                                                    <Globe className="h-4 w-4" />
+                                                </a>
+                                            ) : null}
+                                        </div>
+                                    ) : null}
                                 </CardContent>
                             </Card>
                         ))}
                     </div>
                 )}
             </div>
-
-            {/* Desktop: Dialog Modal */}
-            {isDesktop && (
-                <Dialog open={!!selectedApp} onOpenChange={(open) => !open && setSelectedApp(null)}>
-                    <DialogContent className="max-w-2xl p-0 overflow-hidden" dir="rtl">
-                        <DialogHeader className="sr-only">
-                            <DialogTitle>{selectedApp?.name || 'تفاصيل التطبيق'}</DialogTitle>
-                            <DialogDescription>{selectedApp?.description || ''}</DialogDescription>
-                        </DialogHeader>
-                        {selectedApp && <AppDetailView app={selectedApp} isDesktop={true} storeIcon={getIconForApp(selectedApp)} />}
-                    </DialogContent>
-                </Dialog>
-            )}
-
-            {/* Mobile: Sheet Bottom Drawer */}
-            {!isDesktop && (
-                <Sheet open={!!selectedApp} onOpenChange={(open) => !open && setSelectedApp(null)}>
-                    <SheetContent
-                        side="bottom"
-                        className="h-[90vh] rounded-t-3xl border-t p-0 overflow-hidden shadow-2xl border-none"
-                    >
-                        <SheetHeader className="sr-only">
-                            <SheetTitle>{selectedApp?.name || 'تفاصيل التطبيق'}</SheetTitle>
-                            <SheetDescription>{selectedApp?.description || ''}</SheetDescription>
-                        </SheetHeader>
-                        {selectedApp && <AppDetailView app={selectedApp} isDesktop={false} storeIcon={getIconForApp(selectedApp)} />}
-                    </SheetContent>
-                </Sheet>
-            )}
         </div>
     );
 }

@@ -5,26 +5,34 @@ import { discovery, type GridPhoto } from '../_lib/discovery';
 
 // media-query hook instead of md: utilities: the code-split css chunks each emit
 // their own tailwind layer, so responsive classes lose cascade order here (see Lightbox)
-function useColumns(): number {
-  const [wide, setWide] = useState(() => window.matchMedia('(min-width: 768px)').matches);
+function useMedia(query: string): boolean {
+  const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
   useEffect(() => {
-    const mq = window.matchMedia('(min-width: 768px)');
-    const onChange = () => setWide(mq.matches);
+    const mq = window.matchMedia(query);
+    const onChange = () => setMatches(mq.matches);
     mq.addEventListener('change', onChange);
     return () => mq.removeEventListener('change', onChange);
-  }, []);
-  return wide ? 4 : 2;
+  }, [query]);
+  return matches;
 }
 
-export function PhotoGrid(props: { active: boolean; onPhotoClick: (p: GridPhoto) => void }) {
-  const { active, onPhotoClick } = props;
+export function PhotoGrid(props: {
+  active: boolean;
+  guideId: number | null;
+  bannerActive: boolean;
+  onPhotoClick: (p: GridPhoto) => void;
+}) {
+  const { active, guideId, bannerActive, onPhotoClick } = props;
   const [photos, setPhotos] = useState<GridPhoto[]>([]);
   // last successfully fetched page; 0 = nothing loaded yet
   const [page, setPage] = useState(0);
   const [lastPage, setLastPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
-  const columns = useColumns();
+  const columns = useMedia('(min-width: 768px)') ? 4 : 2;
+  // captions hide-until-hover only where hover exists: a wide iPad has no hover,
+  // and tapping a tile opens the lightbox, so a width branch would never reveal them
+  const hoverable = useMedia('(hover: hover) and (pointer: fine)');
   const sentinelRef = useRef<HTMLDivElement>(null);
   const requestRef = useRef(0);
 
@@ -32,7 +40,7 @@ export function PhotoGrid(props: { active: boolean; onPhotoClick: (p: GridPhoto)
     const id = ++requestRef.current;
     setLoading(true);
     setError(false);
-    discovery.gridPhotos(p)
+    discovery.gridPhotos(p, guideId ?? undefined)
       .then((res) => {
         if (id !== requestRef.current) return;
         setPhotos((prev) => (p === 1 ? res.data : [...prev, ...res.data]));
@@ -45,12 +53,22 @@ export function PhotoGrid(props: { active: boolean; onPhotoClick: (p: GridPhoto)
       .finally(() => {
         if (id === requestRef.current) setLoading(false);
       });
-  }, []);
+  }, [guideId]);
 
   // first activation only; state survives toggling back to the map
   useEffect(() => {
     if (active && requestRef.current === 0) fetchPage(1);
   }, [active, fetchPage]);
+
+  // a guide filter change refetches from page 1 (fetchPage identity changes with guideId)
+  const firstRender = useRef(true);
+  useEffect(() => {
+    if (firstRender.current) { firstRender.current = false; return; }
+    setPhotos([]);
+    setPage(0);
+    setLastPage(1);
+    if (active) fetchPage(1);
+  }, [guideId]);
 
   useEffect(() => {
     if (!active || loading || error || page === 0 || page >= lastPage) return;
@@ -70,15 +88,16 @@ export function PhotoGrid(props: { active: boolean; onPhotoClick: (p: GridPhoto)
 
   return (
     <div dir="rtl" className="absolute inset-0 z-10 overflow-y-auto bg-background">
-      <div className="mx-auto max-w-5xl px-3 pb-8 pt-28">
+      {/* pt-16 clears the slim top row; a guide/notice banner stacks ~34px more below it */}
+      <div className={'mx-auto max-w-5xl px-3 pb-8 ' + (bannerActive ? 'pt-28' : 'pt-16')}>
         {photos.length > 0 && (
-          <div style={{ columnCount: columns, columnGap: '0.5rem' }}>
+          <div style={{ columnCount: columns, columnGap: '0.75rem' }}>
             {photos.map((p) => (
               <button
                 key={p.id}
                 type="button"
                 onClick={() => onPhotoClick(p)}
-                className="mb-2 block w-full overflow-hidden rounded-md border border-border bg-card text-right [break-inside:avoid]"
+                className="group relative mb-3 block w-full overflow-hidden rounded-xl text-right [break-inside:avoid]"
               >
                 <img
                   src={p.thumb_url}
@@ -87,7 +106,13 @@ export function PhotoGrid(props: { active: boolean; onPhotoClick: (p: GridPhoto)
                   decoding="async"
                   className="w-full"
                 />
-                <span className="block truncate px-2 py-1.5 text-xs text-muted-foreground">
+                <span
+                  aria-hidden
+                  className={
+                    'pointer-events-none absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/60 to-transparent px-2 pb-1.5 pt-6 text-xs text-white' +
+                    (hoverable ? ' opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100' : '')
+                  }
+                >
                   {p.place.name}
                 </span>
               </button>

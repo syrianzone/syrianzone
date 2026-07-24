@@ -4,25 +4,22 @@ namespace App\Http\Controllers;
 
 use App\Models\Place;
 use App\Models\PlacePhoto;
+use App\Services\GuideLevelService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
 // Public discovery reads stay separate from owner mutation flows.
 class PlaceDiscoveryController extends Controller
 {
-    public function guides(Request $request)
+    public function guides(Request $request, GuideLevelService $levels)
     {
-        $validated = $request->validate(['sort' => 'sometimes|in:submissions,saves,recent']);
-        $sort = $validated['sort'] ?? 'submissions';
+        $validated = $request->validate([
+            'sort' => 'sometimes|in:points,submissions,saves,recent',
+        ]);
+        $sort = $validated['sort'] ?? 'points';
 
-        $rows = Cache::remember("places:guides:{$sort}", 300, function () use ($sort) {
-            $metric = [
-                'submissions' => 'approved_count',
-                'saves' => 'saves_total',
-                'recent' => 'recent_count',
-            ][$sort];
-
-            return Place::where('places.status', 'approved')
+        $rows = Cache::remember("places:guides:{$sort}", 300, function () use ($sort, $levels) {
+            $rows = Place::where('places.status', 'approved')
                 ->join('users', 'users.id', '=', 'places.user_id')
                 ->whereNull('users.deleted_at')
                 ->where('users.is_banned', false)
@@ -33,10 +30,6 @@ class PlaceDiscoveryController extends Controller
                     [now()->subDays(30)],
                 )
                 ->groupBy('places.user_id', 'users.name', 'users.avatar_url')
-                ->orderByDesc($metric)
-                ->orderByDesc('approved_count')
-                ->orderBy('places.user_id')
-                ->limit(20)
                 ->get()
                 ->map(fn ($row) => [
                     'user_id' => (int) $row->user_id,
@@ -48,6 +41,40 @@ class PlaceDiscoveryController extends Controller
                 ])
                 ->values()
                 ->all();
+
+            $pointsByUser = $levels->forUsers(array_column($rows, 'user_id'));
+            $rows = array_map(function ($row) use ($pointsByUser) {
+                $entry = $pointsByUser[$row['user_id']] ?? [
+                    'points' => 0,
+                    'level' => 1,
+                ];
+
+                return $row + [
+                    'points' => $entry['points'],
+                    'level' => $entry['level'],
+                ];
+            }, $rows);
+
+            $metric = [
+                'points' => 'points',
+                'submissions' => 'approved_count',
+                'saves' => 'saves_total',
+                'recent' => 'recent_count',
+            ][$sort];
+            usort(
+                $rows,
+                fn ($left, $right) => [
+                    $right[$metric],
+                    $right['points'],
+                    $left['user_id'],
+                ] <=> [
+                    $left[$metric],
+                    $left['points'],
+                    $right['user_id'],
+                ],
+            );
+
+            return array_slice($rows, 0, 20);
         });
 
         $guides = array_map(
@@ -60,10 +87,18 @@ class PlaceDiscoveryController extends Controller
             ->header('Cache-Control', 'public, max-age=60');
     }
 
-    public function photos()
+    public function photos(Request $request)
     {
+        $validated = $request->validate([
+            'user_id' => 'sometimes|integer|min:1',
+        ]);
+
         $page = PlacePhoto::join('places', 'places.id', '=', 'place_photos.place_id')
             ->where('places.status', 'approved')
+            ->when(
+                ! empty($validated['user_id']),
+                fn ($query) => $query->where('places.user_id', $validated['user_id']),
+            )
             ->select(
                 'place_photos.*',
                 'places.name as place_name',
@@ -87,6 +122,7 @@ class PlaceDiscoveryController extends Controller
             ],
         ]);
 
-        return response()->json($page)->header('Cache-Control', 'public, max-age=60');
+        return response()->json($page)
+            ->header('Cache-Control', 'public, max-age=60');
     }
 }

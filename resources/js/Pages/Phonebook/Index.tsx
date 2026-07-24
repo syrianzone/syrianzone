@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import {
-    Phone, MessageSquare, Copy, Check, ExternalLink, Search, X, LayoutGrid, Table as TableIcon, PhoneCall, Info
+    Phone, MessageSquare, Copy, Check, ExternalLink, Search, X, LayoutGrid, Table as TableIcon, PhoneCall, Info, Settings, Pencil
 } from 'lucide-react';
 import { Card, CardContent } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
@@ -19,6 +19,7 @@ import MainLayout from '@/Layouts/MainLayout';
 
 interface PhonebookEntry {
     id: string;
+    category_id?: string;
     category_ar: string;
     category_en: string;
     name_ar: string;
@@ -30,9 +31,14 @@ interface PhonebookEntry {
 
 interface PhonebookProps {
     initialData: PhonebookEntry[];
+    categories?: any[];
 }
 
 export default function Index({ initialData }: PhonebookProps) {
+    const { auth } = usePage().props as any;
+    const user = auth?.user;
+    const canManage = user?.role === 'superadmin' || user?.role === 'admin' || user?.permissions?.includes('phonebook.edit') || user?.permissions?.includes('phonebook.create');
+
     const [searchTerm, setSearchTerm] = useState('');
     const [currentCategory, setCurrentCategory] = useState('all');
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
@@ -75,7 +81,7 @@ export default function Index({ initialData }: PhonebookProps) {
             const term = searchTerm.toLowerCase();
             items = items.filter(item => 
                 item.name_ar.toLowerCase().includes(term) ||
-                item.name_en.toLowerCase().includes(term) ||
+                (item.name_en && item.name_en.toLowerCase().includes(term)) ||
                 item.category_ar.toLowerCase().includes(term) ||
                 item.category_en.toLowerCase().includes(term) ||
                 item.number.replace(/[\s\-\(\)\+]/g, '').includes(term.replace(/[\s\-\(\)\+]/g, ''))
@@ -151,6 +157,17 @@ export default function Index({ initialData }: PhonebookProps) {
                 {/* Hero Header (Styled like SyOfficial) */}
                 <section className="bg-card py-10 shadow-sm border-b border-border">
                     <div className="container mx-auto px-4 text-center max-w-4xl">
+                        {canManage && (
+                            <div className="mb-6 flex justify-center">
+                                <a
+                                    href="/admin/phonebook"
+                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-bold shadow-lg hover:bg-primary/90 transition-all transform hover:-translate-y-0.5"
+                                >
+                                    <Settings className="w-4 h-4" />
+                                    <span>لوحة تحكم إدارة دليل الهاتف (Admin Panel)</span>
+                                </a>
+                            </div>
+                        )}
                         <h1 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">دليل الهاتف والواتساب</h1>
                         <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
                             أرقام التواصل والشكاوى والطوارئ للجهات الرسمية والخدمية السورية.
@@ -237,114 +254,88 @@ export default function Index({ initialData }: PhonebookProps) {
                         </div>
                     ) : viewMode === 'grid' ? (
                         
-                        // Card Grid View
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        // Card Grid View (5 items per row on PC)
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                             {filteredData.map(item => (
-                                <Card key={item.id} className="overflow-hidden hover:shadow-md transition-all border border-border/80 bg-card flex flex-col justify-between">
-                                    <CardContent className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                                <Card key={item.id} className="overflow-hidden hover:shadow-md transition-all border border-border bg-card flex flex-col justify-between">
+                                    <CardContent className="p-4 flex-1 flex flex-col justify-between space-y-3">
                                         <div>
-                                            <div className="flex justify-between items-start gap-2 mb-2">
-                                                <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-[10px] font-semibold py-0.5 px-2">
-                                                    {item.category_ar}
-                                                </Badge>
-                                                {item.is_whatsapp && (
-                                                    <Badge className="bg-emerald-500/10 hover:bg-emerald-500/15 text-emerald-600 border border-emerald-500/20 text-[9px] font-bold py-0.2 px-1.5">
-                                                        واتساب
-                                                    </Badge>
-                                                )}
-                                            </div>
-                                            <h3 className="font-bold text-foreground text-base leading-snug">
+                                            <h3 className="font-bold text-foreground text-sm leading-snug line-clamp-2 mb-1">
                                                 {item.name_ar}
                                             </h3>
                                             {item.name_en && (
-                                                <p className="text-xs text-muted-foreground mt-0.5 font-normal">
+                                                <p className="text-[11px] text-muted-foreground font-normal truncate">
                                                     {item.name_en}
                                                 </p>
                                             )}
                                         </div>
 
-                                        <div className="space-y-3">
-                                            {/* Number display */}
-                                            <div className="text-center py-2 bg-muted/40 rounded-xl border border-border/40 font-mono text-lg font-extrabold text-foreground tracking-wide">
-                                                {item.number}
-                                            </div>
+                                        <div className="space-y-2">
+                                            {/* Clickable Number display (copies on click) */}
+                                            <button
+                                                onClick={() => handleCopy(item.number, item.id)}
+                                                className="w-full text-center py-2 bg-muted/50 hover:bg-muted/80 rounded-xl border border-border/60 font-mono text-base font-extrabold text-foreground tracking-wide transition-colors cursor-pointer group flex items-center justify-center gap-2"
+                                                title="انقر لنسخ الرقم"
+                                            >
+                                                <span>{item.number}</span>
+                                                {copiedId === item.id ? (
+                                                    <Check className="h-4 w-4 text-emerald-500 animate-in zoom-in-50" />
+                                                ) : (
+                                                    <Copy className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                                                )}
+                                            </button>
 
-                                            {/* Actions */}
-                                            <div className="grid grid-cols-4 gap-2 pt-1">
-                                                {/* Copy */}
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => handleCopy(item.number, item.id)}
-                                                    className="w-full flex items-center justify-center gap-1.5 text-xs h-9"
-                                                    title="نسخ الرقم"
-                                                >
-                                                    {copiedId === item.id ? (
-                                                        <Check className="h-4 w-4 text-emerald-500" />
-                                                    ) : (
-                                                        <Copy className="h-4 w-4" />
-                                                    )}
-                                                </Button>
-
+                                            {/* Action Buttons Row */}
+                                            <div className="flex items-center gap-2 pt-1">
                                                 {/* Call */}
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
                                                     asChild
-                                                    className="w-full flex items-center justify-center gap-1.5 text-xs h-9"
+                                                    className="flex-1 flex items-center justify-center gap-1.5 text-xs h-8 px-2"
                                                     title="اتصال هاتفي"
                                                 >
                                                     <a href={getTelUrl(item.number)}>
-                                                        <Phone className="h-4 w-4 text-primary" />
+                                                        <Phone className="h-3.5 w-3.5 text-primary" />
+                                                        <span>اتصال</span>
                                                     </a>
                                                 </Button>
 
-                                                {/* WhatsApp */}
-                                                {item.is_whatsapp ? (
+                                                {/* WhatsApp (shown only if available) */}
+                                                {item.is_whatsapp && (
                                                     <Button
                                                         variant="outline"
                                                         size="sm"
                                                         asChild
-                                                        className="w-full flex items-center justify-center gap-1.5 text-xs h-9 border-emerald-500/20 hover:bg-emerald-500/5"
+                                                        className="flex-1 flex items-center justify-center gap-1.5 text-xs h-8 px-2 border-emerald-500/30 hover:bg-emerald-500/10 text-emerald-600"
                                                         title="مراسلة عبر واتساب"
                                                     >
                                                         <a href={getWhatsAppUrl(item.number)} target="_blank" rel="noopener noreferrer">
-                                                            <MessageSquare className="h-4 w-4 text-emerald-500" />
+                                                            <MessageSquare className="h-3.5 w-3.5 text-emerald-500" />
+                                                            <span>واتساب</span>
                                                         </a>
-                                                    </Button>
-                                                ) : (
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        disabled
-                                                        className="w-full opacity-40 cursor-not-allowed h-9"
-                                                    >
-                                                        <MessageSquare className="h-4 w-4" />
                                                     </Button>
                                                 )}
+                                            </div>
 
-                                                {/* Source */}
-                                                {item.source_url ? (
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        asChild
-                                                        className="w-full flex items-center justify-center gap-1.5 text-xs h-9"
-                                                        title="رابط المصدر"
+                                            {/* Bottom Row: Category tag on one side, Source link on the opposite side */}
+                                            <div className="pt-1 flex items-center justify-between text-[11px]">
+                                                <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-[10px] font-semibold py-0.5 px-2 shrink-0">
+                                                    {item.category_ar}
+                                                </Badge>
+
+                                                {item.source_url && item.source_url.trim() ? (
+                                                    <a
+                                                        href={item.source_url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1 font-normal"
                                                     >
-                                                        <a href={item.source_url} target="_blank" rel="noopener noreferrer">
-                                                            <ExternalLink className="h-4 w-4" />
-                                                        </a>
-                                                    </Button>
+                                                        <span>المصدر</span>
+                                                        <ExternalLink className="h-3 w-3" />
+                                                    </a>
                                                 ) : (
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        disabled
-                                                        className="w-full opacity-40 cursor-not-allowed h-9"
-                                                    >
-                                                        <ExternalLink className="h-4 w-4" />
-                                                    </Button>
+                                                    <span className="text-muted-foreground/40 text-[10px]">بدون مصدر</span>
                                                 )}
                                             </div>
                                         </div>
@@ -388,7 +379,7 @@ export default function Index({ initialData }: PhonebookProps) {
                                                 )}
                                             </TableCell>
                                             <TableCell>
-                                                {item.source_url ? (
+                                                {item.source_url && item.source_url.trim() ? (
                                                     <a 
                                                         href={item.source_url} 
                                                         target="_blank" 

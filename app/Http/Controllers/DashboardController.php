@@ -11,6 +11,7 @@ use App\Services\UserDeletionService;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class DashboardController extends Controller
@@ -80,9 +81,14 @@ class DashboardController extends Controller
             'avatar' => [
                 'bail',
                 'required',
+                'max:4096',
+                function (string $attribute, mixed $value, callable $fail) use ($avatars) {
+                    if ($value instanceof UploadedFile && $avatars->dimensionsExceedBudget($value)) {
+                        $fail('أبعاد الصورة يجب أن تكون بين 64x64 و 6000x6000 بكسل');
+                    }
+                },
                 'image',
                 'mimes:jpg,jpeg,png,webp',
-                'max:4096',
                 function (string $attribute, mixed $value, callable $fail) use ($avatars) {
                     if (! $value instanceof UploadedFile || ! $avatars->dimensionsAreSafe($value)) {
                         $fail('أبعاد الصورة يجب أن تكون بين 64x64 و 6000x6000 بكسل');
@@ -136,23 +142,72 @@ class DashboardController extends Controller
      */
     public function toggleBan(Request $request, $id)
     {
-        $user = $request->user();
-        if ($user->role !== 'admin' && $user->role !== 'transit_admin' && $user->role !== 'superadmin') {
+        $actor = $request->user();
+        if (! in_array($actor->role, ['admin', 'transit_admin', 'superadmin'], true)) {
             abort(403, 'Unauthorized.');
         }
 
-        $userToBan = User::findOrFail($id);
-
-        if ($userToBan->isSuperAdmin()) {
-            return response()->json(['message' => 'Cannot ban a superadmin'], 403);
+        if ((string) $actor->id === (string) $id) {
+            return response()->json([
+                'code' => 'cannot_ban_self',
+                'message' => 'You cannot change your own ban status.',
+            ], 403);
         }
 
-        $userToBan->update(['is_banned' => ! $userToBan->is_banned]);
+        $data = $request->validate([
+            'is_banned' => ['sometimes', 'required', 'boolean'],
+        ]);
+        $result = DB::transaction(function () use ($actor, $data, $id): array {
+            $target = User::query()->lockForUpdate()->findOrFail($id);
+
+            if ($target->isSuperAdmin()) {
+                return [
+                    'code' => 'protected_superadmin',
+                    'message' => 'Superadmin accounts cannot be banned here.',
+                ];
+            }
+            if (! $this->canModerate($actor, $target)) {
+                return [
+                    'code' => 'insufficient_target_role',
+                    'message' => 'You cannot change this account ban status.',
+                ];
+            }
+
+            $isBanned = array_key_exists('is_banned', $data)
+                ? (bool) $data['is_banned']
+                : ! $target->is_banned;
+            if ((bool) $target->is_banned !== $isBanned) {
+                $target->forceFill(['is_banned' => $isBanned])->save();
+            }
+            if ($isBanned) {
+                $target->tokens()->delete();
+            }
+
+            return ['target' => $target];
+        });
+
+        if (isset($result['code'])) {
+            return response()->json($result, 403);
+        }
+
+        $target = $result['target'];
 
         return response()->json([
             'ok' => true,
-            'is_banned' => $userToBan->is_banned,
-            'message' => $userToBan->is_banned ? 'تم حظر المستخدم بنجاح' : 'تم إلغاء حظر المستخدم',
+            'is_banned' => (bool) $target->is_banned,
+            'message' => $target->is_banned ? 'تم حظر المستخدم بنجاح' : 'تم إلغاء حظر المستخدم',
         ]);
+    }
+
+    private function canModerate(User $actor, User $target): bool
+    {
+        $targetRoles = match ($actor->role) {
+            'superadmin' => ['admin', 'transit_admin', 'user'],
+            'admin' => ['transit_admin', 'user'],
+            'transit_admin' => ['user'],
+            default => [],
+        };
+
+        return in_array($target->role, $targetRoles, true);
     }
 }

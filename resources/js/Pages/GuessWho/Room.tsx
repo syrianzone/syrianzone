@@ -265,7 +265,7 @@ export default function GameRoom({ game }: GameProps) {
           console.log('[GuessWho] Peer already in channel:', other.session_id);
           setPeerUuid(other.session_id);
           setOpponentName(other.name || 'لاعب آخر');
-          // Smaller UUID initiates the WebRTC call — debounced to absorb Reverb reconnect flicker
+          // Smaller UUID initiates the WebRTC call, debounced to absorb Reverb reconnect flicker.
           if (sessionUuid < other.session_id) {
             console.log('[GuessWho] I have smaller UUID, scheduling call');
             scheduleCall(other.session_id);
@@ -286,7 +286,7 @@ export default function GameRoom({ game }: GameProps) {
           clearTimeout(peerReconnectTimer.current);
           peerReconnectTimer.current = null;
         }
-        // Smaller UUID initiates the WebRTC call — debounced to absorb Reverb reconnect flicker
+        // Smaller UUID initiates the WebRTC call, debounced to absorb Reverb reconnect flicker.
         if (sessionUuid < user.session_id) {
           console.log('[GuessWho] I have smaller UUID, scheduling call to joiner');
           scheduleCall(user.session_id);
@@ -331,14 +331,14 @@ export default function GameRoom({ game }: GameProps) {
     };
   }, [game.room_code, sessionUuid, isJoined]);
 
-  // Debounced call initiator — collapses rapid leave/join events into one stable attempt
+  // Debounced call initiator collapses rapid leave/join events into one stable attempt.
   const scheduleCall = (targetSession: string) => {
     if (initiateCallTimer.current) clearTimeout(initiateCallTimer.current);
     initiateCallTimer.current = setTimeout(async () => {
       try {
         console.log('[GuessWho] Debounce resolved, initiating call to:', targetSession);
         await initiateCall(targetSession);
-        console.log('[GuessWho] initiateCall completed — offer sent, waiting for answer');
+        console.log('[GuessWho] initiateCall completed, offer sent and waiting for answer');
       } catch (err) {
         console.error('[GuessWho] initiateCall failed:', err);
       }
@@ -349,10 +349,10 @@ export default function GameRoom({ game }: GameProps) {
   const createPeerConnection = (targetSession: string) => {
     const pc = new RTCPeerConnection({
       iceServers: [
-        // STUN — direct connection when NAT allows
+        // STUN provides a direct connection when NAT allows.
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
-        // TURN — relay fallback for symmetric NATs (Open Relay by Metered, free)
+        // TURN provides the relay fallback for symmetric NATs (Open Relay by Metered, free).
         {
           urls: 'turn:openrelay.metered.ca:80',
           username: 'openrelayproject',
@@ -434,7 +434,7 @@ export default function GameRoom({ game }: GameProps) {
     await pc.setLocalDescription(offer);
     console.log('[GuessWho] Sending offer, sdpType:', offer.type);
     await sendSignal(targetSession, 'offer', offer);
-    console.log('[GuessWho] Offer sent — waiting for answer from:', targetSession);
+    console.log('[GuessWho] Offer sent, waiting for answer from:', targetSession);
   };
 
   const handleSignal = async (e: any) => {
@@ -559,11 +559,11 @@ export default function GameRoom({ game }: GameProps) {
   const handleChooseSecret = (id: number) => {
     setMySecret(id);
     if (peerConnected) {
-      // Peer is already connected — data channel is open, transition immediately.
+      // Peer is already connected. The data channel is open, so transition immediately.
       sendStateUpdate('select_ready', { id });
       setGameState('playing');
     } else {
-      // Peer not yet connected — move to a waiting state; the useEffect above
+      // Peer is not yet connected. Move to a waiting state. The useEffect above
       // will complete the transition once the peer joins and data channel opens.
       setGameState('selecting');
     }
@@ -647,7 +647,7 @@ export default function GameRoom({ game }: GameProps) {
             }
           `}</style>
 
-          {/* Peer Disconnect Banner — non-blocking, dismissible, auto-clears on reconnect */}
+          {/* Peer disconnect banner: non-blocking, dismissible, and clears on reconnect. */}
           {peerDisconnected && (
             <div className="flex items-center justify-between gap-3 bg-destructive/10 border border-destructive/30 text-destructive rounded-xl px-4 py-3 mb-4 text-sm font-bold">
               <span>انقطع اتصال الخصم. في انتظار إعادة الاتصال...</span>

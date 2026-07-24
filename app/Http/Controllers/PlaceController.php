@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Place;
 use App\Models\PlacePhoto;
-use App\Models\User;
+use App\Services\GuideLevelService;
 use App\Services\PlaceImageService;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -42,6 +42,7 @@ class PlaceController extends Controller
                         'id' => $p->id,
                         'name' => $p->name,
                         'category' => $p->category,
+                        'user_id' => (int) $p->user_id,
                         'thumb_url' => $p->photos->first()?->thumb_url,
                     ],
                 ])->values()->all(),
@@ -58,9 +59,14 @@ class PlaceController extends Controller
             'page' => 'sometimes|integer|min:1',
             'q' => 'sometimes|string|max:100',
             'sort' => 'sometimes|in:newest,popular',
+            'user_id' => 'sometimes|integer|min:1',
         ]);
 
         $query = Place::where('status', 'approved')->with(self::thumbPhotos());
+
+        if (! empty($validated['user_id'])) {
+            $query->where('user_id', $validated['user_id']);
+        }
 
         if (! empty($validated['category'])) {
             $query->where('category', $validated['category']);
@@ -180,7 +186,7 @@ class PlaceController extends Controller
         return response()->json(['places' => $places]);
     }
 
-    public function show(Request $request, int $id)
+    public function show(Request $request, GuideLevelService $levels, int $id)
     {
         $place = Place::with(['user', 'photos'])->findOrFail($id);
         $user = $request->user();
@@ -192,9 +198,17 @@ class PlaceController extends Controller
             }
         }
 
+        $guide = $levels->forUser($place->user_id);
+
         return response()->json($this->listItem($place) + [
             'status' => $place->status,
-            'user' => ['id' => $place->user->id, 'name' => $place->user->name, 'avatar_url' => $place->user->avatar_url],
+            'user' => [
+                'id' => $place->user->id,
+                'name' => $place->user->name,
+                'avatar_url' => $place->user->avatar_url,
+                'level' => $guide['level'],
+                'points' => $guide['points'],
+            ],
             'photos' => $place->photos->map(fn ($photo) => [
                 'id' => $photo->id,
                 'thumb_url' => $photo->thumb_url,
@@ -222,9 +236,14 @@ class PlaceController extends Controller
             'photos.*' => [
                 'bail',
                 'required',
+                'max:12288',
+                function (string $attribute, mixed $value, callable $fail) use ($images) {
+                    if ($value instanceof UploadedFile && $images->dimensionsExceedBudget($value)) {
+                        $fail('أبعاد الصورة يجب أن تكون بين 200x200 و 6000x6000 بكسل');
+                    }
+                },
                 'image',
                 'mimes:jpg,jpeg,png,webp',
-                'max:12288',
                 function (string $attribute, mixed $value, callable $fail) use ($images) {
                     if (! $value instanceof UploadedFile || ! $images->dimensionsAreSafe($value)) {
                         $fail('أبعاد الصورة يجب أن تكون بين 200x200 و 6000x6000 بكسل');
@@ -262,21 +281,12 @@ class PlaceController extends Controller
         $stored = [];
         try {
             $place = DB::transaction(function () use ($request, $validated, $images, &$stored) {
-                $user = User::whereKey($request->user()->id)->lockForUpdate()->firstOrFail();
-                if ($user->is_banned) {
+                if ($request->user()->is_banned) {
                     abort(403, 'تم حظر حسابك من المساهمة');
                 }
 
-                // Locking the user makes the five-per-hour quota atomic across submissions.
-                $recentCount = Place::where('user_id', $user->id)
-                    ->where('created_at', '>=', now()->subHour())
-                    ->count();
-                if ($recentCount >= 5) {
-                    abort(429, 'وصلت الحد الأقصى من المساهمات لهذه الساعة، حاول لاحقاً');
-                }
-
                 $place = Place::create([
-                    'user_id' => $user->id,
+                    'user_id' => $request->user()->id,
                     'name' => $validated['name'],
                     'category' => $validated['category'],
                     'description' => $validated['description'],
@@ -388,9 +398,14 @@ class PlaceController extends Controller
             'photo' => [
                 'bail',
                 'required',
+                'max:12288',
+                function (string $attribute, mixed $value, callable $fail) use ($images) {
+                    if ($value instanceof UploadedFile && $images->dimensionsExceedBudget($value)) {
+                        $fail('أبعاد الصورة يجب أن تكون بين 200x200 و 6000x6000 بكسل');
+                    }
+                },
                 'image',
                 'mimes:jpg,jpeg,png,webp',
-                'max:12288',
                 function (string $attribute, mixed $value, callable $fail) use ($images) {
                     if (! $value instanceof UploadedFile || ! $images->dimensionsAreSafe($value)) {
                         $fail('أبعاد الصورة يجب أن تكون بين 200x200 و 6000x6000 بكسل');

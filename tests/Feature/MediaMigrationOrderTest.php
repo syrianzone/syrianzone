@@ -34,3 +34,16 @@ test('the cleanup schema migration tolerates the legacy table already existing',
 
     expect(Schema::hasTable('media_cleanup_jobs'))->toBeTrue();
 });
+
+test('place schema tables have one creation migration each', function (string $table) {
+    $matches = glob(database_path("migrations/*_create_{$table}_table.php"));
+
+    expect($matches)->toHaveCount(1);
+})->with([
+    'places',
+    'place_photos',
+    'place_likes',
+    'place_saves',
+    'place_comments',
+    'place_reports',
+]);

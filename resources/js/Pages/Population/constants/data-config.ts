@@ -18,7 +18,7 @@ export const DATA_TYPE_CONFIG = {
         legend: [
             { label: 'لا توجد بيانات', color: '#1e293b' },
             { label: 'أقل من ١٠٠ ألف', color: '#3b82f6' },
-            { label: '١٠٠ ألف – ٥٠٠ ألف', color: '#6366f1' },
+            { label: '١٠٠ ألف - ٥٠٠ ألف', color: '#6366f1' },
             { label: 'أكثر من مليون', color: '#8b5cf6' }
         ]
     },
@@ -31,7 +31,7 @@ export const DATA_TYPE_CONFIG = {
         legend: [
             { label: 'لا توجد بيانات', color: '#1e293b' },
             { label: 'أقل من ١٠٠ ألف', color: '#f97316' },
-            { label: '١٠٠ ألف – ٥٠٠ ألف', color: '#ea580c' },
+            { label: '١٠٠ ألف - ٥٠٠ ألف', color: '#ea580c' },
             { label: 'أكثر من ٥٠٠ ألف', color: '#ef4444' }
         ]
     },
@@ -44,7 +44,7 @@ export const DATA_TYPE_CONFIG = {
         legend: [
             { label: 'لا توجد بيانات', color: '#1e293b' },
             { label: 'أقل من ٥٠ ألف', color: '#22c55e' },
-            { label: '٥٠ ألف – ١٠٠ ألف', color: '#16a34a' },
+            { label: '٥٠ ألف - ١٠٠ ألف', color: '#16a34a' },
             { label: 'أكثر من ١٠٠ ألف', color: '#4ade80' }
         ]
     },

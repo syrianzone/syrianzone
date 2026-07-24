@@ -35,16 +35,24 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
-        $devMode = \App\Http\Middleware\AutoLoginDevUser::isDevMode();
+        $devMode = AutoLoginDevUser::isDevMode();
 
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $request->user() ? [
+                    'id' => $request->user()->id,
+                    'name' => $request->user()->name,
+                    'email' => $request->user()->email,
+                    'role' => $request->user()->role,
+                    'avatar_url' => $request->user()->avatar_url,
+                    'permissions' => $request->user()->permissions ?? [],
+                    'settings' => $request->user()->settings ?? null,
+                ] : null,
             ],
             'dev' => [
                 'enabled' => $devMode,
-                'roles' => $devMode ? \App\Http\Middleware\AutoLoginDevUser::DEV_ROLES : [],
+                'roles' => $devMode ? AutoLoginDevUser::DEV_ROLES : [],
                 'currentRole' => $devMode && $request->user()
                     ? $request->user()->role
                     : null,

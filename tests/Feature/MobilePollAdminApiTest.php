@@ -2,6 +2,7 @@
 
 use App\Models\Candidate;
 use App\Models\CandidateGroup;
+use App\Models\MediaCleanupJob;
 use App\Models\Poll;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
@@ -10,6 +11,17 @@ use Illuminate\Support\Facades\Storage;
 function mobileAdminBearer(User $user): string
 {
     return $user->createToken('mobile:admin-test', ['mobile'])->plainTextToken;
+}
+
+function oversizedCandidatePixelUpload(): UploadedFile
+{
+    $header = pack('NNCCCCC', 4001, 2000, 8, 2, 0, 0, 0);
+    $chunk = 'IHDR'.$header;
+    $bytes = "\x89PNG\r\n\x1a\n".pack('N', strlen($header)).$chunk.pack('N', crc32($chunk));
+    $path = tempnam(sys_get_temp_dir(), 'candidate-pixels').'.png';
+    file_put_contents($path, $bytes);
+
+    return new UploadedFile($path, 'candidate-pixels.png', 'image/png', null, true);
 }
 
 test('mobile poll administration rejects non-admin and non-mobile tokens', function () {
@@ -143,8 +155,9 @@ test('mobile admins create edit archive restore and delete candidates within one
         ->assertOk()->assertExactJson(['data' => ['deleted' => true]]);
 });
 
-test('mobile candidate uploads accept bounded raster images on the public disk', function () {
-    Storage::fake('public');
+test('mobile candidate uploads use the configured media disk and expire when unclaimed', function () {
+    Storage::fake('r2');
+    config()->set('filesystems.media_disk', 'r2');
     $admin = User::factory()->create(['role' => 'admin']);
 
     $response = $this->withToken(mobileAdminBearer($admin))->post('/api/mobile/admin/uploads', [
@@ -152,10 +165,106 @@ test('mobile candidate uploads accept bounded raster images on the public disk',
     ], ['Accept' => 'application/json']);
 
     $response->assertCreated()->assertJsonStructure(['data' => ['url']]);
-    expect($response->json('data.url'))->toStartWith('/storage/candidates/');
-    Storage::disk('public')->assertExists('candidates/'.basename($response->json('data.url')));
+    $path = 'candidates/'.basename($response->json('data.url'));
+    Storage::disk('r2')->assertExists($path);
+    $cleanup = MediaCleanupJob::query()->where('disk', 'r2')->where('path', $path)->firstOrFail();
+    expect($cleanup->available_at->greaterThan(now()->addHours(23)))->toBeTrue();
 
     $this->withToken(mobileAdminBearer($admin))->post('/api/mobile/admin/uploads', [
         'image' => UploadedFile::fake()->create('candidate.svg', 4, 'image/svg+xml'),
     ], ['Accept' => 'application/json'])->assertUnprocessable()->assertJsonValidationErrors('image');
+
+    $this->travel(25)->hours();
+    $this->artisan('media:cleanup')->assertSuccessful();
+    Storage::disk('r2')->assertMissing($path);
+});
+
+test('mobile candidate image adoption replacement deletion and poll cascade are durable', function () {
+    Storage::fake('r2');
+    config()->set('filesystems.media_disk', 'r2');
+    $admin = User::factory()->create(['role' => 'admin']);
+    $token = mobileAdminBearer($admin);
+    $poll = Poll::factory()->create();
+    $group = CandidateGroup::factory()->create(['poll_id' => $poll->id]);
+
+    $upload = function (string $filename) use ($token): array {
+        $url = $this->withToken($token)->post('/api/mobile/admin/uploads', [
+            'image' => UploadedFile::fake()->image($filename, 320, 320),
+        ], ['Accept' => 'application/json'])->assertCreated()->json('data.url');
+
+        return [$url, 'candidates/'.basename($url)];
+    };
+
+    [$firstUrl, $firstPath] = $upload('first.png');
+    $candidateId = $this->withToken($token)->postJson('/api/mobile/admin/candidates', [
+        'groupId' => $group->id,
+        'imageUrl' => $firstUrl,
+        'name' => 'مرشح الصور',
+        'pollId' => $poll->id,
+        'title' => null,
+    ])->assertCreated()->json('data.id');
+    expect(MediaCleanupJob::query()->where('path', $firstPath)->exists())->toBeFalse();
+    Storage::disk('r2')->assertExists($firstPath);
+
+    [$secondUrl, $secondPath] = $upload('second.webp');
+    $this->withToken($token)->putJson("/api/mobile/admin/candidates/{$candidateId}", [
+        'groupId' => $group->id,
+        'imageUrl' => $secondUrl,
+        'name' => 'مرشح الصور',
+        'title' => null,
+    ])->assertOk();
+    Storage::disk('r2')->assertMissing($firstPath);
+    Storage::disk('r2')->assertExists($secondPath);
+    expect(MediaCleanupJob::query()->where('path', $secondPath)->exists())->toBeFalse();
+
+    $this->withToken($token)->deleteJson("/api/mobile/admin/candidates/{$candidateId}")->assertOk();
+    Storage::disk('r2')->assertMissing($secondPath);
+
+    [$cascadeUrl, $cascadePath] = $upload('cascade.jpg');
+    $this->withToken($token)->postJson('/api/mobile/admin/candidates', [
+        'groupId' => $group->id,
+        'imageUrl' => $cascadeUrl,
+        'name' => 'مرشح الحذف',
+        'pollId' => $poll->id,
+        'title' => null,
+    ])->assertCreated();
+    $this->withToken($token)->deleteJson("/api/mobile/admin/polls/{$poll->id}")->assertOk();
+    Storage::disk('r2')->assertMissing($cascadePath);
+});
+
+test('mobile candidate uploads reject decoded images above the shared pixel budget', function () {
+    Storage::fake('public');
+    $admin = User::factory()->create(['role' => 'admin']);
+
+    $this->withToken(mobileAdminBearer($admin))->post('/api/mobile/admin/uploads', [
+        'image' => oversizedCandidatePixelUpload(),
+    ], ['Accept' => 'application/json'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('image');
+
+    expect(Storage::disk('public')->allFiles('candidates'))->toBe([]);
+});
+
+test('mobile candidate uploads fail when the configured media disk refuses the write', function () {
+    Storage::fake('r2');
+    config()->set('filesystems.media_disk', 'r2');
+    $disk = Storage::disk('r2');
+    $failingDisk = Mockery::mock($disk)->makePartial();
+    $failingDisk->shouldReceive('putFileAs')->once()->andReturnFalse();
+    Storage::set('r2', $failingDisk);
+    $admin = User::factory()->create(['role' => 'admin']);
+    $this->withoutExceptionHandling();
+
+    try {
+        expect(fn () => $this->withToken(mobileAdminBearer($admin))
+            ->post('/api/mobile/admin/uploads', [
+                'image' => UploadedFile::fake()->image('candidate.png', 320, 320),
+            ], ['Accept' => 'application/json']))
+            ->toThrow(RuntimeException::class, 'Could not store candidate image');
+    } finally {
+        Storage::set('r2', $disk);
+        $this->withExceptionHandling();
+    }
+
+    expect($disk->allFiles('candidates'))->toBe([]);
 });

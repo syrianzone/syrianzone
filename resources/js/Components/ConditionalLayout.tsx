@@ -7,7 +7,7 @@ export default function ConditionalLayout({ children }: { children: React.ReactN
   const { url } = usePage()
   const path = url.split('?')[0]
   const isTransit = path.startsWith('/transit')
-  // Full-height pages: studio, admin, and city map — no body scrollbar, navbar non-sticky
+  // Full-height pages: studio, admin, and city map. No body scrollbar, navbar non-sticky.
   const isFullHeight =
     path.startsWith('/transit/studio') ||
     path.startsWith('/transit/admin') ||

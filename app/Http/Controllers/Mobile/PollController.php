@@ -7,6 +7,7 @@ use App\Models\Candidate;
 use App\Models\CandidateGroup;
 use App\Models\DailyScore;
 use App\Models\Poll;
+use App\Services\CandidateImageService;
 use App\Services\VotingService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
@@ -24,6 +25,8 @@ class PollController extends Controller
     private const HISTORY_DAYS_MAXIMUM = 730;
 
     private const TIER_KEYS = ['S', 'A', 'B', 'C', 'D', 'F'];
+
+    public function __construct(private readonly CandidateImageService $images) {}
 
     public function index(): JsonResponse
     {
@@ -94,11 +97,18 @@ class PollController extends Controller
 
     public function adminDestroyPoll(string $id): JsonResponse
     {
-        $poll = Poll::findOrFail($id);
+        $poll = Poll::query()->findOrFail($id);
         if ($poll->slug === 'best-ministers') {
             return response()->json(['message' => 'لا يمكن حذف استطلاع تقييم الحكومة الأساسي.'], 403);
         }
-        $poll->delete();
+        DB::transaction(function () use ($id): void {
+            $poll = Poll::query()->lockForUpdate()->findOrFail($id);
+            $images = $poll->candidates()->pluck('image_url')->filter()->unique()->values();
+            $poll->delete();
+            foreach ($images as $image) {
+                $this->images->release($image);
+            }
+        });
 
         return response()->json(['data' => ['deleted' => true]]);
     }
@@ -169,36 +179,53 @@ class PollController extends Controller
     public function adminStoreCandidate(Request $request): JsonResponse
     {
         $data = $this->validateCandidate($request);
-        $candidate = Candidate::create([
-            'candidate_group_id' => $data['groupId'],
-            'category' => 'minister',
-            'image_url' => $data['imageUrl'],
-            'name' => $data['name'],
-            'poll_id' => $data['pollId'],
-            'sort' => (Candidate::where('poll_id', $data['pollId'])->max('sort') ?? -1) + 1,
-            'title' => $data['title'],
-        ]);
+        $candidate = DB::transaction(function () use ($data): Candidate {
+            $candidate = Candidate::create([
+                'candidate_group_id' => $data['groupId'],
+                'category' => 'minister',
+                'image_url' => $data['imageUrl'],
+                'name' => $data['name'],
+                'poll_id' => $data['pollId'],
+                'sort' => (Candidate::where('poll_id', $data['pollId'])->max('sort') ?? -1) + 1,
+                'title' => $data['title'],
+            ]);
+            $this->images->adopt($candidate->image_url);
+
+            return $candidate;
+        });
 
         return response()->json(['data' => $this->candidateResource($candidate)], 201);
     }
 
     public function adminUpdateCandidate(Request $request, string $id): JsonResponse
     {
-        $candidate = Candidate::findOrFail($id);
+        $candidate = Candidate::query()->findOrFail($id);
         $data = $this->validateCandidate($request, $candidate);
-        $candidate->update([
-            'candidate_group_id' => $data['groupId'],
-            'image_url' => $data['imageUrl'],
-            'name' => $data['name'],
-            'title' => $data['title'],
-        ]);
+        $candidate = DB::transaction(function () use ($data, $id): Candidate {
+            $candidate = Candidate::query()->lockForUpdate()->findOrFail($id);
+            $oldImage = $candidate->image_url;
+            $candidate->update([
+                'candidate_group_id' => $data['groupId'],
+                'image_url' => $data['imageUrl'],
+                'name' => $data['name'],
+                'title' => $data['title'],
+            ]);
+            $this->images->replace($oldImage, $candidate->image_url);
+
+            return $candidate;
+        });
 
         return response()->json(['data' => $this->candidateResource($candidate->fresh())]);
     }
 
     public function adminDestroyCandidate(string $id): JsonResponse
     {
-        Candidate::findOrFail($id)->delete();
+        DB::transaction(function () use ($id): void {
+            $candidate = Candidate::query()->lockForUpdate()->findOrFail($id);
+            $image = $candidate->image_url;
+            $candidate->delete();
+            $this->images->release($image);
+        });
 
         return response()->json(['data' => ['deleted' => true]]);
     }

@@ -23,19 +23,73 @@ class User extends Authenticatable implements FilamentUser
         'is_banned',
         'name',
         'password',
+        'permissions',
         'role',
+        'settings',
     ];
 
     protected $hidden = ['password', 'remember_token'];
 
     protected function casts(): array
     {
-        return ['email_verified_at' => 'datetime', 'password' => 'hashed', 'is_banned' => 'boolean'];
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+            'is_banned' => 'boolean',
+            'permissions' => 'array',
+            'settings' => 'array',
+        ];
     }
 
     public function isSuperAdmin(): bool
     {
         return $this->role === 'superadmin';
+    }
+
+    public function hasPermission(string $permission): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        if ($this->role === 'admin' && in_array(strtok($permission, '.'), [
+            'govapps',
+            'phonebook',
+            'places',
+            'polls',
+            'syofficial',
+            'transit',
+        ], true)) {
+            return true;
+        }
+
+        if ($this->role === 'syofficial_admin' && str_starts_with($permission, 'syofficial.')) {
+            return true;
+        }
+        if ($this->role === 'transit_admin' && str_starts_with($permission, 'transit.')) {
+            return true;
+        }
+        if ($this->role === 'govapps_admin' && str_starts_with($permission, 'govapps.')) {
+            return true;
+        }
+        if ($this->role === 'phonebook_admin' && str_starts_with($permission, 'phonebook.')) {
+            return true;
+        }
+
+        $userPerms = $this->permissions ?? [];
+
+        return in_array($permission, $userPerms, true) || in_array('*', $userPerms, true);
+    }
+
+    public function hasAnyPermission(array $permissions): bool
+    {
+        foreach ($permissions as $perm) {
+            if ($this->hasPermission($perm)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function canAccessPanel(Panel $panel): bool

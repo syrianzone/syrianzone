@@ -66,15 +66,17 @@ class GoogleAccountService
 
         $superadminEmail = $this->email(config('app.superadmin_email'));
         $isSuperadmin = $superadminEmail !== null && hash_equals($superadminEmail, $email);
-        $name = $this->requiredString($googleUser->getName()) ?? $email;
-
+        $isNewUser = $user === null;
         $user ??= new User;
         $attributes = [
             'email' => $email,
             'google_id' => $googleId,
-            'name' => $name,
             'role' => $isSuperadmin ? 'superadmin' : ($user->role ?? 'user'),
         ];
+
+        if ($isNewUser) {
+            $attributes['name'] = $this->requiredString($googleUser->getName()) ?? $email;
+        }
 
         if (! $this->hasCustomAvatar($user)) {
             $attributes['avatar_disk'] = null;

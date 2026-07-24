@@ -40,6 +40,24 @@ function seedMobileTransitAdminCity(): void
     ]);
 }
 
+function seedMobileTransitAdminStop(
+    string $id,
+    string $name,
+    array $coordinates,
+): void {
+    DB::table('stops')->insert([
+        'id' => $id,
+        'city_id' => 'damascus',
+        'name_ar' => $name,
+        'geometry' => mobileTransitAdminGeometry([
+            'type' => 'Point',
+            'coordinates' => $coordinates,
+        ]),
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+}
+
 function mobileTransitAdminUser(string $role): array
 {
     $user = User::factory()->create(['role' => $role, 'is_banned' => false]);
@@ -129,7 +147,7 @@ test('mobile route administration exposes the current main route contracts', fun
 });
 
 test('a mobile transit reviewer can list routes and change publication status', function () {
-    [, $token] = mobileTransitAdminUser('transit_admin');
+    [$user, $token] = mobileTransitAdminUser('transit_admin');
     $route = Route::create([
         'id' => 'route-damascus-mobile-admin',
         'city_id' => 'damascus',
@@ -148,10 +166,133 @@ test('a mobile transit reviewer can list routes and change publication status', 
         ->assertJsonPath('route.status', 'hidden');
 
     $this->assertDatabaseHas('routes', ['id' => $route->id, 'status' => 'hidden']);
+    $this->assertDatabaseHas('transit_route_logs', [
+        'action' => 'hidden',
+        'route_id' => $route->id,
+        'user_id' => $user->id,
+    ]);
     $this->withToken($token)
         ->getJson('/api/mobile/admin/routes/logs')
         ->assertOk()
-        ->assertJsonPath('0.route_id', $route->id);
+        ->assertJsonPath('0.route_id', $route->id)
+        ->assertJsonPath('0.user_id', $user->id);
+});
+
+test('published route listing exposes the assigned color index', function () {
+    [, $token] = mobileTransitAdminUser('transit_admin');
+    $route = Route::create([
+        'color_index' => 4,
+        'id' => 'route-damascus-color-list',
+        'city_id' => 'damascus',
+        'name_ar' => 'خط ملون',
+        'status' => 'published',
+    ]);
+
+    $this->withToken($token)
+        ->getJson('/api/mobile/admin/routes')
+        ->assertOk()
+        ->assertJsonPath('0.id', $route->id)
+        ->assertJsonPath('0.color_index', 4);
+});
+
+test('a mobile transit reviewer can update a published route color', function () {
+    [, $token] = mobileTransitAdminUser('transit_admin');
+    $route = Route::create([
+        'color_index' => 1,
+        'id' => 'route-damascus-color-update',
+        'city_id' => 'damascus',
+        'name_ar' => 'خط قابل للتلوين',
+        'status' => 'published',
+    ]);
+
+    $this->withToken($token)
+        ->putJson("/api/mobile/admin/routes/{$route->id}", ['color_index' => 7])
+        ->assertOk()
+        ->assertJsonPath('route.color_index', 7);
+
+    $this->assertDatabaseHas('routes', [
+        'color_index' => 7,
+        'id' => $route->id,
+    ]);
+});
+
+test('transit approval and route updates reject colors outside the palette', function (int $colorIndex) {
+    [$user, $token] = mobileTransitAdminUser('transit_admin');
+    $draft = seedMobileTransitDraft($user);
+    $route = Route::create([
+        'color_index' => 1,
+        'id' => 'route-damascus-invalid-color',
+        'city_id' => 'damascus',
+        'name_ar' => 'خط بلون ثابت',
+        'status' => 'published',
+    ]);
+
+    $this->withToken($token)
+        ->postJson("/api/mobile/admin/transit-drafts/{$draft->id}/approve", [
+            'color_index' => $colorIndex,
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('color_index');
+    $this->withToken($token)
+        ->putJson("/api/mobile/admin/routes/{$route->id}", [
+            'color_index' => $colorIndex,
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('color_index');
+
+    expect($draft->fresh()->status)->toBe('pending')
+        ->and($route->fresh()->color_index)->toBe(1);
+})->with([8, 80]);
+
+test('published route updates reject an explicit null color', function () {
+    [, $token] = mobileTransitAdminUser('transit_admin');
+    $route = Route::create([
+        'color_index' => 3,
+        'id' => 'route-damascus-null-color',
+        'city_id' => 'damascus',
+        'name_ar' => 'خط بلون مطلوب',
+        'status' => 'published',
+    ]);
+
+    $this->withToken($token)
+        ->putJson("/api/mobile/admin/routes/{$route->id}", ['color_index' => null])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('color_index');
+
+    expect($route->fresh()->color_index)->toBe(3);
+});
+
+test('an invalid split stop closes its database transaction', function () {
+    $initialTransactionLevel = DB::transactionLevel();
+    [, $token] = mobileTransitAdminUser('transit_admin');
+    $route = Route::create([
+        'id' => 'route-damascus-invalid-split',
+        'city_id' => 'damascus',
+        'name_ar' => 'خط لا يضم المحطة',
+        'status' => 'published',
+    ]);
+    seedMobileTransitAdminStop(
+        'stop-damascus-not-on-route',
+        'محطة خارج الخط',
+        [36.25, 33.45],
+    );
+
+    $this->withToken($token)
+        ->postJson('/api/mobile/admin/routes/split', [
+            'route_id' => $route->id,
+            'split_stop_id' => 'stop-damascus-not-on-route',
+            'name_a_ar' => 'القسم الأول',
+            'name_b_ar' => 'القسم الثاني',
+        ])
+        ->assertBadRequest()
+        ->assertJsonPath('message', 'Invalid split stop: cannot split at start or end stop');
+
+    $finalTransactionLevel = DB::transactionLevel();
+    while (DB::transactionLevel() > $initialTransactionLevel) {
+        DB::rollBack();
+    }
+
+    expect($finalTransactionLevel)->toBe($initialTransactionLevel);
 });
 
 test('transit draft mutation routes require numeric draft identifiers', function () {
@@ -215,6 +356,52 @@ test('a reviewer can publish draft geometry and ordered stops transactionally', 
         ->pluck('stops.name_ar')
         ->all();
     expect($orderedStops)->toBe(['البرامكة', 'ساحة الأمويين']);
+});
+
+test('initial approval links the draft so reapproval updates one route', function () {
+    [$contributor, $contributorToken] = mobileTransitAdminUser('user');
+    [, $reviewerToken] = mobileTransitAdminUser('transit_admin');
+    $draft = seedMobileTransitDraft($contributor);
+
+    $firstApproval = $this->withToken($reviewerToken)
+        ->postJson("/api/mobile/admin/transit-drafts/{$draft->id}/approve")
+        ->assertOk();
+    $routeId = $firstApproval->json('route.id');
+
+    expect($draft->fresh()->route_id)->toBe($routeId);
+
+    $this->withToken($contributorToken)
+        ->putJson("/api/v1/studio/routes/{$draft->id}", [
+            'name_ar' => 'الخط بعد التعديل',
+        ])
+        ->assertOk()
+        ->assertJsonPath('status', 'pending');
+
+    $this->withToken($reviewerToken)
+        ->postJson("/api/mobile/admin/transit-drafts/{$draft->id}/approve")
+        ->assertOk()
+        ->assertJsonPath('route.id', $routeId)
+        ->assertJsonPath('route.name_ar', 'الخط بعد التعديل');
+
+    expect(Route::query()->count())->toBe(1)
+        ->and($draft->fresh()->route_id)->toBe($routeId);
+});
+
+test('draft approval creates a route with the supplied color index', function () {
+    [$user, $token] = mobileTransitAdminUser('transit_admin');
+    $draft = seedMobileTransitDraft($user);
+
+    $response = $this->withToken($token)
+        ->postJson("/api/mobile/admin/transit-drafts/{$draft->id}/approve", [
+            'color_index' => 6,
+        ])
+        ->assertOk()
+        ->assertJsonPath('route.color_index', 6);
+
+    $this->assertDatabaseHas('routes', [
+        'color_index' => 6,
+        'id' => $response->json('route.id'),
+    ]);
 });
 
 test('draft review permits only one terminal transition and one published route', function () {
@@ -312,7 +499,45 @@ test('mobile bearers can read and update their transit drafts', function () {
     ]);
 });
 
-test('a linked mobile draft unpublishes and then atomically updates its route on approval', function () {
+test('studio draft updates preserve the submission value limits', function (
+    string $field,
+    mixed $value,
+) {
+    [$user, $token] = mobileTransitAdminUser('user');
+    $draft = seedMobileTransitDraft($user);
+    $draft->update(['status' => 'rejected']);
+
+    $this->withToken($token)
+        ->putJson("/api/v1/studio/routes/{$draft->id}", [$field => $value])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors($field);
+
+    expect($draft->fresh()->status)->toBe('rejected');
+})->with([
+    'negative fare' => ['price', -1],
+    'oversized notes' => ['notes', str_repeat('x', 5_001)],
+]);
+
+test('anonymous studio contributions cannot target a published route', function () {
+    $route = Route::create([
+        'id' => 'route-damascus-anonymous-link',
+        'city_id' => 'damascus',
+        'name_ar' => 'خط منشور',
+        'status' => 'published',
+    ]);
+
+    $this->postJson('/api/v1/studio/routes', [
+        'route_id' => $route->id,
+        'city_id' => 'damascus',
+        'name_ar' => 'تعديل مجهول',
+        'geojson' => seedMobileTransitDraft()->geojson,
+    ])->assertUnauthorized();
+
+    expect($route->fresh()->status)->toBe('published');
+    $this->assertDatabaseMissing('route_drafts', ['route_id' => $route->id]);
+});
+
+test('a linked mobile draft keeps its route live and atomically updates it on approval', function () {
     [$contributor, $contributorToken] = mobileTransitAdminUser('user');
     $route = Route::create([
         'id' => 'route-damascus-linked-mobile',
@@ -333,9 +558,13 @@ test('a linked mobile draft unpublishes and then atomically updates its route on
         ->assertCreated()
         ->assertJsonPath('route_id', $route->id);
     $draftId = $response->json('id');
-    expect($route->fresh()->status)->toBe('disapproved');
+    expect($route->fresh()->status)->toBe('published');
+    $this->assertDatabaseMissing('transit_route_logs', [
+        'action' => 'unpublished_for_edit',
+        'route_id' => $route->id,
+    ]);
 
-    [, $reviewerToken] = mobileTransitAdminUser('transit_admin');
+    [$reviewer, $reviewerToken] = mobileTransitAdminUser('transit_admin');
     $this->withToken($reviewerToken)
         ->postJson("/api/mobile/admin/transit-drafts/{$draftId}/approve")
         ->assertOk()
@@ -348,6 +577,146 @@ test('a linked mobile draft unpublishes and then atomically updates its route on
         ->and($route->status)->toBe('published');
     $this->assertDatabaseHas('route_geometries', ['route_id' => $route->id]);
     $this->assertDatabaseHas('route_drafts', ['id' => $draftId, 'status' => 'approved']);
+    $this->assertDatabaseHas('transit_route_logs', [
+        'action' => 'updated_via_draft',
+        'route_id' => $route->id,
+        'user_id' => $reviewer->id,
+    ]);
+});
+
+test('updating a linked draft keeps the published route live until approval', function () {
+    [$contributor, $token] = mobileTransitAdminUser('user');
+    $route = Route::create([
+        'id' => 'route-damascus-linked-update',
+        'city_id' => 'damascus',
+        'name_ar' => 'الخط المنشور',
+        'status' => 'published',
+    ]);
+    $draft = seedMobileTransitDraft($contributor);
+    $draft->update([
+        'route_id' => $route->id,
+        'status' => 'rejected',
+        'rejection_reason' => 'راجع المسار',
+    ]);
+
+    $this->withToken($token)
+        ->putJson("/api/v1/studio/routes/{$draft->id}", ['name_ar' => 'المسار المصحح'])
+        ->assertOk()
+        ->assertJsonPath('status', 'pending');
+
+    expect($route->fresh()->status)->toBe('published');
+    $this->assertDatabaseMissing('transit_route_logs', [
+        'action' => 'unpublished_for_edit',
+        'route_id' => $route->id,
+    ]);
+});
+
+test('linked draft approval preserves route color when color is omitted', function () {
+    [$user, $token] = mobileTransitAdminUser('transit_admin');
+    $route = Route::create([
+        'color_index' => 5,
+        'id' => 'route-damascus-color-preserved',
+        'city_id' => 'damascus',
+        'name_ar' => 'خط بلونه الحالي',
+        'status' => 'published',
+    ]);
+    $draft = seedMobileTransitDraft($user);
+    $draft->update(['route_id' => $route->id]);
+
+    $this->withToken($token)
+        ->postJson("/api/mobile/admin/transit-drafts/{$draft->id}/approve")
+        ->assertOk()
+        ->assertJsonPath('route.color_index', 5);
+
+    expect($route->fresh()->color_index)->toBe(5);
+});
+
+test('linked approval removes exclusive old stops and preserves shared stops', function () {
+    [$user, $token] = mobileTransitAdminUser('transit_admin');
+    $route = Route::create([
+        'id' => 'route-damascus-stop-replacement',
+        'city_id' => 'damascus',
+        'name_ar' => 'خط سيحدث',
+        'status' => 'published',
+    ]);
+    $sharingRoute = Route::create([
+        'id' => 'route-damascus-shared-stop',
+        'city_id' => 'damascus',
+        'name_ar' => 'خط مشترك',
+        'status' => 'published',
+    ]);
+    seedMobileTransitAdminStop(
+        'stop-damascus-exclusive-old',
+        'محطة قديمة حصرية',
+        [36.21, 33.41],
+    );
+    seedMobileTransitAdminStop(
+        'stop-damascus-shared-old',
+        'محطة قديمة مشتركة',
+        [36.22, 33.42],
+    );
+    DB::table('route_stop')->insert([
+        [
+            'route_id' => $route->id,
+            'stop_id' => 'stop-damascus-exclusive-old',
+            'order' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ],
+        [
+            'route_id' => $route->id,
+            'stop_id' => 'stop-damascus-shared-old',
+            'order' => 2,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ],
+        [
+            'route_id' => $sharingRoute->id,
+            'stop_id' => 'stop-damascus-shared-old',
+            'order' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ],
+    ]);
+    $draft = seedMobileTransitDraft($user);
+    $draft->update(['route_id' => $route->id]);
+
+    $this->withToken($token)
+        ->postJson("/api/mobile/admin/transit-drafts/{$draft->id}/approve")
+        ->assertOk();
+
+    $this->assertDatabaseMissing('stops', ['id' => 'stop-damascus-exclusive-old']);
+    $this->assertDatabaseHas('stops', ['id' => 'stop-damascus-shared-old']);
+    $this->assertDatabaseHas('route_stop', [
+        'route_id' => $sharingRoute->id,
+        'stop_id' => 'stop-damascus-shared-old',
+    ]);
+    $this->assertDatabaseMissing('route_stop', [
+        'route_id' => $route->id,
+        'stop_id' => 'stop-damascus-shared-old',
+    ]);
+});
+
+test('linked draft approval updates route color when supplied', function () {
+    [$user, $token] = mobileTransitAdminUser('transit_admin');
+    $route = Route::create([
+        'color_index' => 5,
+        'id' => 'route-damascus-color-replaced',
+        'city_id' => 'damascus',
+        'name_ar' => 'خط بلون جديد',
+        'status' => 'published',
+    ]);
+    $draft = seedMobileTransitDraft($user);
+    $draft->update(['route_id' => $route->id]);
+
+    $this->withToken($token)
+        ->postJson("/api/mobile/admin/transit-drafts/{$draft->id}/approve", [
+            'color_index' => 2,
+        ])
+        ->assertOk()
+        ->assertJsonPath('route.color_index', 2);
+
+    expect($route->fresh()->color_index)->toBe(2);
 });
 
 test('mobile bearers can load a published route into Transit Studio', function () {

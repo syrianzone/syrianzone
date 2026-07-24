@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\DailyScore;
 use App\Models\Poll;
+use App\Services\CandidateImageService;
 use App\Services\VotingService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -13,11 +14,14 @@ use Inertia\Inertia;
 
 class PollController extends Controller
 {
+    public function __construct(private readonly CandidateImageService $images) {}
+
     public function renderIndex(Request $request)
     {
         $polls = Poll::all();
+
         return Inertia::render('Polls/Index', [
-            'polls' => $polls
+            'polls' => $polls,
         ]);
     }
 
@@ -27,11 +31,11 @@ class PollController extends Controller
         $today = Carbon::now($poll->timezone ?: 'UTC')->startOfDay();
 
         $candidatesQuery = $poll->candidates()->orderBy('sort');
-        if (!$request->boolean('include_archived')) {
+        if (! $request->boolean('include_archived')) {
             $candidatesQuery->where('status', 'active');
         }
 
-        $candidates = $candidatesQuery->get()->map(fn($c) => [
+        $candidates = $candidatesQuery->get()->map(fn ($c) => [
             'id' => $c->id,
             'name' => $c->name,
             'title' => $c->title,
@@ -61,7 +65,7 @@ class PollController extends Controller
         $poll = Poll::where('slug', 'best-ministers')->firstOrFail();
         $today = Carbon::now($poll->timezone ?: 'UTC')->startOfDay();
 
-        $candidates = $poll->candidates()->where('status', 'active')->orderBy('sort')->get()->map(fn($c) => [
+        $candidates = $poll->candidates()->where('status', 'active')->orderBy('sort')->get()->map(fn ($c) => [
             'id' => $c->id,
             'name' => $c->name,
             'title' => $c->title,
@@ -94,11 +98,11 @@ class PollController extends Controller
     public function adminEdit(Request $request, $id)
     {
         $poll = Poll::findOrFail($id);
-        
+
         $candidates = $poll->candidates()
             ->orderBy('sort')
             ->get()
-            ->map(fn($c) => [
+            ->map(fn ($c) => [
                 'id' => $c->id,
                 'candidate_group_id' => $c->candidate_group_id,
                 'name' => $c->name,
@@ -113,7 +117,7 @@ class PollController extends Controller
             'id' => $poll->id,
             'poll' => $poll,
             'candidates' => $candidates,
-            'groups' => $poll->groups()->orderBy('sort_order')->get()
+            'groups' => $poll->groups()->orderBy('sort_order')->get(),
         ]);
     }
 
@@ -144,10 +148,11 @@ class PollController extends Controller
         $poll = Poll::findOrFail($id);
         $poll->update($request->validate([
             'title' => 'string|max:200',
-            'slug' => 'string|max:100|unique:polls,slug,' . $id,
+            'slug' => 'string|max:100|unique:polls,slug,'.$id,
             'timezone' => 'string|max:64',
             'is_active' => 'boolean',
         ]));
+
         return response()->json($poll);
     }
 
@@ -157,7 +162,15 @@ class PollController extends Controller
         if ($poll->slug === 'best-ministers') {
             return response()->json(['message' => 'Cannot delete the core Best Ministers poll.'], 403);
         }
-        $poll->delete();
+        DB::transaction(function () use ($id): void {
+            $poll = Poll::query()->lockForUpdate()->findOrFail($id);
+            $images = $poll->candidates()->pluck('image_url')->filter()->unique()->values();
+            $poll->delete();
+            foreach ($images as $image) {
+                $this->images->release($image);
+            }
+        });
+
         return response()->json(null, 204);
     }
 
@@ -167,7 +180,7 @@ class PollController extends Controller
         $today = Carbon::now($poll->timezone ?: 'UTC')->startOfDay();
 
         $candidatesQuery = $poll->candidates()->orderBy('sort');
-        if (!$request->boolean('include_archived')) {
+        if (! $request->boolean('include_archived')) {
             $candidatesQuery->where('status', 'active');
         }
 
@@ -184,7 +197,7 @@ class PollController extends Controller
     {
         $poll = Poll::where('slug', $slug)->firstOrFail();
         $statusFilter = $request->query('status', 'active');
-        if (!in_array($statusFilter, ['active', 'former', 'all'], true)) {
+        if (! in_array($statusFilter, ['active', 'former', 'all'], true)) {
             $statusFilter = 'active';
         }
 
@@ -217,7 +230,7 @@ class PollController extends Controller
                 })
                 ->groupBy('candidate_id')
                 ->get()
-                ->map(fn($row) => $this->mapCandidateScore($row, $candidates))
+                ->map(fn ($row) => $this->mapCandidateScore($row, $candidates))
                 ->sortByDesc('avg')
                 ->values();
         }
@@ -236,9 +249,9 @@ class PollController extends Controller
         foreach ($poll->groups as $group) {
             $key = $this->normalizeGroupKey($group->key ?? $group->id);
             $results[$key] = $allTimeAgg
-                ->filter(fn($item) => $item['groupId'] === $group->id)
+                ->filter(fn ($item) => $item['groupId'] === $group->id)
                 ->values()
-                ->map(fn($item, $i) => [...$item, 'rank' => $i + 1]);
+                ->map(fn ($item, $i) => [...$item, 'rank' => $i + 1]);
         }
 
         return response()->json($results);
@@ -272,6 +285,7 @@ class PollController extends Controller
     private function mapCandidateScore($row, $candidates): array
     {
         $c = $candidates->get($row->candidate_id);
+
         return [
             'candidateId' => $row->candidate_id,
             'name' => $c?->name ?? '',
@@ -308,7 +322,9 @@ class PollController extends Controller
             ->orderBy('day');
 
         if ($candidates !== null) {
-            if ($candidates->isEmpty()) return [];
+            if ($candidates->isEmpty()) {
+                return [];
+            }
             $query->whereIn('candidate_id', $candidates->keys());
         }
 
@@ -317,17 +333,20 @@ class PollController extends Controller
         if ($candidates !== null) {
             $rows = $rows->filter(function ($row) use ($candidates) {
                 $c = $candidates->get($row->candidate_id);
-                if (!$c) return false;
+                if (! $c) {
+                    return false;
+                }
                 if ($c->status === 'archived' && $c->term_ended_at) {
                     return $row->day <= $c->term_ended_at->toDateString();
                 }
+
                 return true;
             });
         }
 
         return $rows
             ->groupBy('candidate_id')
-            ->map(fn($items) => $items->values()->map(fn($i) => [
+            ->map(fn ($items) => $items->values()->map(fn ($i) => [
                 'date' => $i->day,
                 'votes' => (int) $i->votes,
                 'score' => (int) $i->score,

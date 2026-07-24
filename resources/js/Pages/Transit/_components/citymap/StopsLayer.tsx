@@ -48,7 +48,7 @@ export default function StopsLayer({ data }: StopsLayerProps) {
       const feature = e.features[0]
       const props = feature.properties as unknown as StopProperties
 
-      // MapLibre serializes array properties as JSON strings — parse them back
+      // MapLibre serializes array properties as JSON strings, so parse them back.
       const rawRouteIds = props.routeIds
       const routeIds: string[] = Array.isArray(rawRouteIds)
         ? rawRouteIds

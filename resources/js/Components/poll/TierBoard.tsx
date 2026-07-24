@@ -87,7 +87,7 @@ export default function TierBoard({
         D: [],
         F: [],
     });
-    // Single-select tier modal disabled — multi-select only
+    // Single-select tier modal disabled. Multi-select only.
     // const [selectedForTier, setSelectedForTier] = useState<string | null>(null);
     // const [modalPosition, setModalPosition] = useState<{
     //     top: number;
@@ -287,7 +287,7 @@ export default function TierBoard({
         e.dataTransfer.dropEffect = "move";
     }
 
-    // Single-select tier modal click handler disabled — clicks now toggle multi-select
+    // Single-select tier modal click handler disabled. Clicks now toggle multi-select.
     // function handleCandidateClick(e: React.MouseEvent, candidateId: string) {
     //     e.stopPropagation();
     //     if (e.shiftKey || e.ctrlKey || e.metaKey) {
@@ -613,7 +613,7 @@ export default function TierBoard({
                 </div>
             </div>
 
-            {/* Single-select tier modal disabled — multi-select only */}
+            {/* Single-select tier modal disabled. Multi-select only. */}
             {/* {selectedForTier && modalPosition && (
                 <div className="fixed inset-0 z-50" onClick={() => { setSelectedForTier(null); setModalPosition(null); }}>
                     <div className="absolute bg-card rounded-lg shadow-2xl border-2 border-border p-1.5"

@@ -1,5 +1,10 @@
 <?php
 
+use App\Models\GovApp;
+use App\Models\OfficialCategory;
+use App\Models\OfficialEntity;
+use App\Models\PhonebookCategory;
+use App\Models\PhonebookEntry;
 use App\Services\PublicContent\DirectoryDataService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -10,21 +15,33 @@ beforeEach(function () {
     $this->withoutVite();
 });
 
-test('home web page keeps its about content prop', function () {
-    $content = file_get_contents(resource_path('js/Data/about.md'));
-
+test('about is a standalone page instead of a home prop', function () {
     $this->get('/')
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('Home')
-            ->where('aboutContent', $content));
+            ->missing('aboutContent'));
+
+    $this->get('/about')
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->component('About'));
 });
 
-test('official accounts web page keeps its initial data prop', function () {
-    Http::fake([
-        DirectoryDataService::OFFICIAL_ACCOUNTS_URL => Http::response(
-            "ID,Name (English),Name (Arabic),Category\nhealth,Health,الصحة,Government"
-        ),
+test('official accounts web page reads its categories and entities from the database', function () {
+    OfficialCategory::create([
+        'id' => 'government',
+        'label_ar' => 'الحكومة',
+        'label_en' => 'Government',
+        'is_active' => true,
+        'order_column' => 1,
+    ]);
+    OfficialEntity::create([
+        'id' => 'health',
+        'category_id' => 'government',
+        'name' => 'Health',
+        'name_ar' => 'الصحة',
+        'is_active' => true,
+        'order_column' => 1,
     ]);
 
     $this->get('/syofficial')
@@ -32,15 +49,28 @@ test('official accounts web page keeps its initial data prop', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->component('SyOfficial/Index')
             ->where('initialData.0.id', 'health')
-            ->where('initialData.0.name_ar', 'الصحة'));
+            ->where('initialData.0.name_ar', 'الصحة')
+            ->where('categories.0.id', 'government'));
 });
 
-test('phonebook web page keeps its initial data prop', function () {
-    Http::fake([
-        DirectoryDataService::PHONEBOOK_URL => Http::response(
-            "ID,Category_AR,Category_EN,Name_AR,Name_EN,Number,Is_WhatsApp,Source_URL\n".
-            'fire,طوارئ,Emergency,الإطفاء,Fire,113,yes,https://source.example'
-        ),
+test('phonebook web page reads its categories and entries from the database', function () {
+    PhonebookCategory::create([
+        'id' => 'emergency',
+        'label_ar' => 'طوارئ',
+        'label_en' => 'Emergency',
+        'is_active' => true,
+        'order_column' => 1,
+    ]);
+    PhonebookEntry::create([
+        'id' => 'fire',
+        'category_id' => 'emergency',
+        'name_ar' => 'الإطفاء',
+        'name_en' => 'Fire',
+        'number' => '113',
+        'is_whatsapp' => true,
+        'source_url' => 'https://source.example',
+        'is_active' => true,
+        'order_column' => 1,
     ]);
 
     $this->get('/phonebook')
@@ -48,7 +78,25 @@ test('phonebook web page keeps its initial data prop', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->component('Phonebook/Index')
             ->where('initialData.0.id', 'fire')
-            ->where('initialData.0.is_whatsapp', true));
+            ->where('initialData.0.is_whatsapp', true)
+            ->where('categories.0.id', 'emergency'));
+});
+
+test('government apps web page reads active records from the database', function () {
+    GovApp::create([
+        'id' => 'sham',
+        'name' => 'Sham App',
+        'name_ar' => 'تطبيق شام',
+        'is_active' => true,
+        'order_column' => 1,
+    ]);
+
+    $this->get('/govapps')
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('GovApps/Index')
+            ->where('initialData.0.id', 'sham')
+            ->where('initialData.0.name', 'تطبيق شام'));
 });
 
 test('external directory web pages keep their named props', function (
@@ -86,14 +134,5 @@ test('external directory web pages keep their named props', function (
         'initialOrganizations',
         'initialOrganizations.0.formattedLocation',
         'Damascus, Syria',
-    ],
-    'government apps' => [
-        '/govapps',
-        DirectoryDataService::GOVERNMENT_APPS_URL,
-        "ID,Name\nsham,Sham App",
-        'GovApps/Index',
-        'initialData',
-        'initialData.0.id',
-        'sham',
     ],
 ]);

@@ -15,7 +15,7 @@ export default function Hero({ cities: propCities }: HeroProps) {
       <div className="mx-auto px-4 max-w-4xl">
         <h1 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">ترانزيت سوريا</h1>
         <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto mb-6 leading-relaxed">
-          دليل وخرائط تفاعلية لشبكات وخطوط المواصلات العامة والسرافيس في المدن السورية — يجمعها المجتمع ويحدّثها، ومتاحة للجميع مجاناً.
+          دليل وخرائط تفاعلية لشبكات وخطوط المواصلات العامة والسرافيس في المدن السورية، يجمعها المجتمع ويحدّثها، ومتاحة للجميع مجاناً.
         </p>
         <div className="flex justify-center items-center gap-6 text-sm">
           <div className="flex items-center gap-2">

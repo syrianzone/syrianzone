@@ -188,7 +188,7 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
                                                                 <div className="flex items-center gap-3">
                                                                     <div className="w-10 h-10 rounded-lg overflow-hidden bg-muted flex-shrink-0 border">
                                                                         <img
-                                                                            src={ent.image ? (ent.image.startsWith('http') || ent.image.startsWith('/') ? ent.image : `/syofficial-assets/${ent.image}`) : '/syofficial-assets/images/placeholder.png'}
+                                                                            src={ent.image ? (ent.image.startsWith('http') || ent.image.startsWith('/') ? ent.image : `/syofficial-assets/${ent.image}`) : '/placeholder-user.jpg'}
                                                                             alt=""
                                                                             className="w-full h-full object-cover"
                                                                         />

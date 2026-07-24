@@ -237,7 +237,7 @@ export default function Index({ initialData, categories }: SyOfficialClientProps
                 <meta property="og:title" content={`${t.title} | syrian.zone`} />
                 <meta property="og:description" content={t.description} />
                 <meta property="og:type" content="website" />
-                <meta property="og:image" content="/syofficial-assets/assets/flags/ar.svg" />
+                <meta property="og:image" content="/assets/ar.svg" />
                 <meta name="twitter:card" content="summary" />
                 <meta name="twitter:title" content={`${t.title} | syrian.zone`} />
                 <meta name="twitter:description" content={t.description} />
@@ -296,7 +296,7 @@ export default function Index({ initialData, categories }: SyOfficialClientProps
                                 onClick={() => setLanguage(lang)}
                                 className="rounded-full gap-1.5 px-3"
                             >
-                                <img src={`/syofficial-assets/assets/flags/${lang}.svg`} alt={lang} className="w-4 h-3 object-cover rounded shadow-2xs" />
+                                <img src={`/assets/flags/${lang}.svg`} alt={lang} className="w-4 h-3 object-cover rounded shadow-2xs" />
                                 <span className="uppercase text-xs font-semibold">{lang}</span>
                             </Button>
                         ))}
@@ -416,7 +416,7 @@ export default function Index({ initialData, categories }: SyOfficialClientProps
                                                             decoding="async"
                                                             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                                             onError={(e) => {
-                                                                (e.target as HTMLImageElement).src = '/syofficial-assets/images/placeholder.png';
+                                                                (e.target as HTMLImageElement).src = '/placeholder-user.jpg';
                                                             }}
                                                         />
                                                     </div>
@@ -483,7 +483,7 @@ export default function Index({ initialData, categories }: SyOfficialClientProps
                                                                 decoding="async"
                                                                 className="w-full h-full object-cover"
                                                                 onError={(e) => {
-                                                                    (e.target as HTMLImageElement).src = '/syofficial-assets/images/placeholder.png';
+                                                                    (e.target as HTMLImageElement).src = '/placeholder-user.jpg';
                                                                 }}
                                                             />
                                                         </div>

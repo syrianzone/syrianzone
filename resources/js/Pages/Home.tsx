@@ -188,6 +188,9 @@ export default function Home() {
     const [customLat, setCustomLat] = useState('');
     const [customLon, setCustomLon] = useState('');
 
+    // Custom search engine URL state
+    const [customSearchUrl, setCustomSearchUrl] = useState('');
+
     // Theme & Font state
     const [fontFamily, setFontFamily] = useState<FontPreference>('ibm-plex');
 

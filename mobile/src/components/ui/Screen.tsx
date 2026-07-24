@@ -43,7 +43,10 @@ export function Screen({
   const { theme } = useAppTheme();
   const endReached = useRef(false);
   const content = (
-    <View style={[styles.content, contentStyle]}>
+    <View
+      style={[styles.content, !scroll && styles.fixedContent, contentStyle]}
+      testID="screen-content"
+    >
       {title ? (
         <View style={styles.headingRow}>
           <View style={styles.headingCopy}>
@@ -109,6 +112,9 @@ const styles = StyleSheet.create({
   content: {
     gap: 16,
     width: '100%',
+  },
+  fixedContent: {
+    flex: 1,
   },
   headingCopy: {
     flex: 1,

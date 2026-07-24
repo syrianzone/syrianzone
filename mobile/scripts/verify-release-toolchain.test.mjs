@@ -76,15 +76,17 @@ for (const [platform, device, expectedArguments] of [
   ],
   [
     'android',
-    'android-device',
-    ['run:android', '--variant', 'release', '--no-bundler', '--device', 'android-device'],
+    'emulator-5554',
+    ['run:android', '--variant', 'release', '--no-bundler', '--device', 'syrianzone_api36'],
   ],
 ]) {
   test(`installs the ${platform} Release build on the selected device`, () => {
     const calls = [];
     const environment = {
+      ANDROID_HOME: '/android-sdk',
+      ANDROID_SDK_ROOT: '/stale-android-sdk',
       JAVA_HOME: '/jdk-17',
-      MAESTRO_ANDROID_DEVICE_ID: 'android-device',
+      MAESTRO_ANDROID_DEVICE_ID: 'emulator-5554',
       MAESTRO_IOS_DEVICE_ID: 'ios-device',
       PATH: '/usr/bin',
     };
@@ -100,6 +102,24 @@ for (const [platform, device, expectedArguments] of [
             stdout: '',
           };
         }
+        if (command === '/android-sdk/platform-tools/adb') {
+          if (arguments_[0] === 'devices') {
+            assert.deepEqual(arguments_, ['devices', '-l']);
+            return {
+              status: 0,
+              stderr: '',
+              stdout:
+                'List of devices attached\n' +
+                'emulator-5554 device product:sdk model:sdk_gphone64_arm64\n',
+            };
+          }
+          assert.deepEqual(arguments_, ['-s', 'emulator-5554', 'emu', 'avd', 'name']);
+          return {
+            status: 0,
+            stderr: '',
+            stdout: 'syrianzone_api36\nOK\n',
+          };
+        }
         return { status: 0 };
       },
     });
@@ -108,9 +128,87 @@ for (const [platform, device, expectedArguments] of [
     const release = calls.at(-1);
     assert.equal(release.command, 'expo');
     assert.deepEqual(release.arguments, expectedArguments);
-    assert.equal(release.arguments.at(-1), device);
+    if (platform === 'ios') {
+      assert.equal(release.arguments.at(-1), device);
+    } else {
+      assert.equal(release.options.env.ANDROID_SERIAL, device);
+      assert.equal(release.options.env.ANDROID_HOME, '/android-sdk');
+      assert.equal(release.options.env.ANDROID_SDK_ROOT, '/android-sdk');
+    }
   });
 }
+
+test('rejects an Android identifier that is not connected and authorized', () => {
+  assert.throws(
+    () =>
+      runRelease('android', {
+        environment: {
+          ANDROID_HOME: '/android-sdk',
+          JAVA_HOME: '/jdk-17',
+          MAESTRO_ANDROID_DEVICE_ID: 'emulator-5554',
+          PATH: '/usr/bin',
+        },
+        nodeVersion: '24.18.0',
+        spawn: (command) => {
+          if (command === 'java') {
+            return {
+              status: 0,
+              stderr: 'openjdk version "17.0.19"',
+              stdout: '',
+            };
+          }
+          return {
+            status: 0,
+            stderr: '',
+            stdout:
+              'List of devices attached\n' +
+              'emulator-5554 offline product:sdk model:sdk_gphone64_arm64\n',
+          };
+        },
+      }),
+    /connected, authorized device or emulator/,
+  );
+});
+
+test('rejects duplicate Expo names before installing an Android build', () => {
+  assert.throws(
+    () =>
+      runRelease('android', {
+        environment: {
+          ANDROID_HOME: '/android-sdk',
+          JAVA_HOME: '/jdk-17',
+          MAESTRO_ANDROID_DEVICE_ID: 'emulator-5554',
+          PATH: '/usr/bin',
+        },
+        nodeVersion: '24.18.0',
+        spawn: (command, arguments_) => {
+          if (command === 'java') {
+            return {
+              status: 0,
+              stderr: 'openjdk version "17.0.19"',
+              stdout: '',
+            };
+          }
+          if (arguments_[0] === 'devices') {
+            return {
+              status: 0,
+              stderr: '',
+              stdout:
+                'List of devices attached\n' +
+                'emulator-5554 device product:sdk model:sdk_gphone64_arm64\n' +
+                'emulator-5556 device product:sdk model:sdk_gphone64_arm64\n',
+            };
+          }
+          return {
+            status: 0,
+            stderr: '',
+            stdout: 'syrianzone_api36\nOK\n',
+          };
+        },
+      }),
+    /does not uniquely identify emulator-5554/,
+  );
+});
 
 test('runs Maestro on the same device with JAVA_HOME on PATH', () => {
   const calls = [];
@@ -180,6 +278,46 @@ test('keeps release smoke coverage for native route surfaces', () => {
   ]) {
     assert.ok(smoke.includes(`runFlow: ${flow}`), `Smoke does not run ${flow}`);
   }
+  assert.match(
+    smoke,
+    /visible: "أفضل المساهمين السوريين في GitHub"/u,
+    'Contributors smoke must match the rendered page title.',
+  );
+  assert.match(
+    flows,
+    /visible: "سجل الدخول للوصول إلى إدارة المسارات\."/u,
+    'Transit admin smoke must match the rendered guest message.',
+  );
+  assert.match(
+    flows,
+    /platform: iOS[\s\S]*?location: never/u,
+    'iOS Transit smoke must use the granular never location value.',
+  );
+  assert.match(
+    flows,
+    /platform: Android[\s\S]*?location: deny/u,
+    'Android Transit smoke must deny location with its platform value.',
+  );
+  assert.match(
+    flows,
+    /platform: Android[\s\S]*?visible:\s+id: "com\.android\.permissioncontroller:id\/permission_deny\.\*button"[\s\S]*?tapOn:\s+id: "com\.android\.permissioncontroller:id\/permission_deny\.\*button"/u,
+    'Android Transit smoke must dismiss the runtime location prompt by resource ID.',
+  );
+  assert.match(
+    flows,
+    /id: "transit-studio-city-damascus"/u,
+    'Transit Studio smoke must select a city through a stable native ID.',
+  );
+  assert.doesNotMatch(
+    smoke,
+    /^\s*-\s+tapOn:\s+["']الرئيسية["']\s*$/mu,
+    'Home has no navigation control to tap while the root route is active.',
+  );
+  assert.match(
+    smoke,
+    /- openLink: "syrianzone:\/\/"\n- runFlow: accept-deep-link\.yaml\n- extendedWaitUntil:\n    visible: "أهلا بك"/u,
+    'Smoke must return to Home through the root custom-scheme deep link.',
+  );
 });
 
 function findRouteTests(directory) {

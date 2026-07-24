@@ -101,7 +101,7 @@ test('moves through five distinct contribution steps before submission', async (
   expect(view.getByText('1. اختر المدينة')).toBeTruthy();
   expect(view.queryByText('2. ارسم المسار')).toBeNull();
 
-  await fireEvent.press(view.getByText('دمشق'));
+  await fireEvent.press(view.getByTestId('transit-studio-city-damascus'));
   expect(view.getByText('2. ارسم المسار')).toBeTruthy();
   await fireEvent.press(view.getByTestId('studio-map'));
   await fireEvent.press(view.getByTestId('studio-map'));

@@ -1,9 +1,20 @@
 appId: zone.syrian.app
 name: Syrian Zone native transit surfaces
 ---
-- setPermissions:
-    permissions:
-      location: deny
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - setPermissions:
+          permissions:
+            location: never
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - setPermissions:
+          permissions:
+            location: deny
 - openLink: "syrianzone://transit/city/damascus"
 - runFlow: accept-deep-link.yaml
 - extendedWaitUntil:
@@ -15,6 +26,14 @@ name: Syrian Zone native transit surfaces
     visible: "ابحث عن خط أو محطة"
     timeout: 30000
 - tapOn: "المحطات القريبة"
+- runFlow:
+    when:
+      platform: Android
+      visible:
+        id: "com.android.permissioncontroller:id/permission_deny.*button"
+    commands:
+      - tapOn:
+          id: "com.android.permissioncontroller:id/permission_deny.*button"
 - extendedWaitUntil:
     visible: "يلزم السماح بالموقع لعرض المحطات القريبة."
     timeout: 30000
@@ -23,7 +42,8 @@ name: Syrian Zone native transit surfaces
 - extendedWaitUntil:
     visible: "1. اختر المدينة"
     timeout: 30000
-- tapOn: "دمشق"
+- tapOn:
+    id: "transit-studio-city-damascus"
 - extendedWaitUntil:
     visible: "2. ارسم المسار"
     timeout: 30000

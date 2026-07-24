@@ -1,4 +1,5 @@
 import { fireEvent, render } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 
 import { LocaleProvider } from '@/contexts/LocaleContext';
 import { AppThemeProvider } from '@/contexts/ThemeContext';
@@ -62,4 +63,20 @@ test('can notify again after the user scrolls away from the end', async () => {
   await fireEvent.scroll(scroll, event(420));
 
   expect(onEndReached).toHaveBeenCalledTimes(2);
+});
+
+test('fills the safe area when scrolling is disabled', async () => {
+  const view = await render(
+    <LocaleProvider>
+      <AppThemeProvider>
+        <Screen scroll={false}>
+          <AppText>content</AppText>
+        </Screen>
+      </AppThemeProvider>
+    </LocaleProvider>,
+  );
+
+  expect(
+    StyleSheet.flatten(view.getByTestId('screen-content').props.style),
+  ).toMatchObject({ flex: 1 });
 });

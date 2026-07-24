@@ -3,7 +3,10 @@ import { StatusBar } from 'expo-status-bar';
 
 import { ConditionalLayout } from '@/components/shell/ConditionalLayout';
 import { useAppTheme } from '@/contexts/ThemeContext';
+import { configureMapLibreLogging } from '@/lib/maplibre/logging';
 import { AppProviders } from '@/providers/AppProviders';
+
+configureMapLibreLogging();
 
 function AppNavigator() {
   const { theme } = useAppTheme();

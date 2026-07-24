@@ -4,8 +4,6 @@ name: Syrian Zone complete feature smoke
 - launchApp:
     clearState: true
     clearKeychain: true
-- runFlow: accept-deep-link.yaml
-- tapOn: "الرئيسية"
 - extendedWaitUntil:
     visible: "أهلا بك"
     timeout: 30000
@@ -131,7 +129,7 @@ name: Syrian Zone complete feature smoke
 - openLink: "syrianzone://feature/contributors"
 - runFlow: accept-deep-link.yaml
 - extendedWaitUntil:
-    visible: "أفضل المساهمين في GitHub"
+    visible: "أفضل المساهمين السوريين في GitHub"
     timeout: 30000
 - openLink: "syrianzone://feature/dashboard"
 - runFlow: accept-deep-link.yaml
@@ -156,7 +154,8 @@ name: Syrian Zone complete feature smoke
 - runFlow: admin-guest.yaml
 - runFlow: auth-callback-failure.yaml
 - runFlow: transit-native.yaml
-- tapOn: "الرئيسية"
+- openLink: "syrianzone://"
+- runFlow: accept-deep-link.yaml
 - extendedWaitUntil:
     visible: "أهلا بك"
     timeout: 30000

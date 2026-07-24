@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ExternalLink, X } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -24,12 +24,18 @@ export const unblockSyriaContent = {
   title: 'صوتك بيعمل فرق!',
 } as const;
 
+const dismissalQueryKey = [
+  'preference',
+  preferenceKeys.dismissUnblockSyria,
+] as const;
+
 export default function UnblockSyriaNotification() {
   const { theme } = useAppTheme();
+  const queryClient = useQueryClient();
   const [visible, setVisible] = useState(false);
   const dismissal = useQuery({
     queryFn: () => readStringPreference(preferenceKeys.dismissUnblockSyria),
-    queryKey: ['preference', preferenceKeys.dismissUnblockSyria],
+    queryKey: dismissalQueryKey,
     staleTime: Infinity,
   });
 
@@ -43,7 +49,14 @@ export default function UnblockSyriaNotification() {
 
   const dismiss = () => {
     setVisible(false);
-    void writeStringPreference(preferenceKeys.dismissUnblockSyria, 'true');
+    queryClient.setQueryData(dismissalQueryKey, 'true');
+    void writeStringPreference(
+      preferenceKeys.dismissUnblockSyria,
+      'true',
+    ).catch(() => {
+      queryClient.setQueryData(dismissalQueryKey, null);
+      setVisible(true);
+    });
   };
 
   if (!visible) {

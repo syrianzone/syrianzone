@@ -29,5 +29,5 @@ name: Syrian Zone admin guest gates
 - openLink: "syrianzone://transit/admin"
 - runFlow: accept-deep-link.yaml
 - extendedWaitUntil:
-    visible: "سجل الدخول للوصول إلى مراجعة المسارات."
+    visible: "سجل الدخول للوصول إلى إدارة المسارات."
     timeout: 30000

@@ -354,6 +354,7 @@ export default function TransitStudioScreen() {
                           : theme.palette.border,
                     },
                   ]}
+                  testID={`transit-studio-city-${item.id}`}
                 >
                   <AppText variant="label">{item.nameAr}</AppText>
                   <AppText color="muted" variant="caption">

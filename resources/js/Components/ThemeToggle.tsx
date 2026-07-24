@@ -12,12 +12,31 @@ import {
 import { cn } from '@/lib/utils';
 import { applyTheme, getThemePreference, SYSTEM_THEME, THEME_KEY, THEME_REGISTRY } from '@/lib/theme';
 import { applyFont, getFontPreference, FontPreference, FONT_KEY } from '@/Lib/font';
+import { useAuth } from '@/Contexts/AuthContext';
+import axios from 'axios';
 
 export function ThemeToggle() {
+    const { user } = useAuth();
     const [currentTheme, setCurrentTheme] = React.useState<string>(SYSTEM_THEME);
     const [currentFont, setCurrentFont] = React.useState<FontPreference>('ibm-plex');
     const [language, setLanguage] = React.useState<'ar' | 'en'>('ar');
     const [mounted, setMounted] = React.useState(false);
+
+    const handleThemeChange = (themeId: string) => {
+        applyTheme(themeId);
+        setCurrentTheme(themeId);
+        if (user) {
+            axios.post('/api/user/settings', { settings: { theme: themeId } }).catch(() => {});
+        }
+    };
+
+    const handleFontChange = (font: FontPreference) => {
+        applyFont(font);
+        setCurrentFont(font);
+        if (user) {
+            axios.post('/api/user/settings', { settings: { fontFamily: font } }).catch(() => {});
+        }
+    };
 
     React.useEffect(() => {
         setMounted(true);
@@ -86,10 +105,7 @@ export function ThemeToggle() {
                     return (
                         <DropdownMenuItem
                             key={t.id}
-                            onClick={() => {
-                                applyTheme(t.id);
-                                setCurrentTheme(t.id);
-                            }}
+                            onClick={() => handleThemeChange(t.id)}
                             className={cn(
                                 "flex items-center gap-2.5 px-3 py-1.5 cursor-pointer text-sm",
                                 isActive && "bg-accent text-accent-foreground font-semibold"
@@ -108,10 +124,7 @@ export function ThemeToggle() {
                     {isAr ? 'خط الموقع' : 'Site Font'}
                 </DropdownMenuLabel>
                 <DropdownMenuItem
-                    onClick={() => {
-                        applyFont('ibm-plex');
-                        setCurrentFont('ibm-plex');
-                    }}
+                    onClick={() => handleFontChange('ibm-plex')}
                     className={cn(
                         "flex items-center gap-2.5 px-3 py-1.5 cursor-pointer text-sm",
                         currentFont === 'ibm-plex' && "bg-accent text-accent-foreground font-semibold"
@@ -122,10 +135,7 @@ export function ThemeToggle() {
                     {currentFont === 'ibm-plex' && <span className="text-xs">✓</span>}
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                    onClick={() => {
-                        applyFont('system');
-                        setCurrentFont('system');
-                    }}
+                    onClick={() => handleFontChange('system')}
                     className={cn(
                         "flex items-center gap-2.5 px-3 py-1.5 cursor-pointer text-sm",
                         currentFont === 'system' && "bg-accent text-accent-foreground font-semibold"

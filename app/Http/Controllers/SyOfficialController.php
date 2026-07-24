@@ -38,13 +38,18 @@ class SyOfficialController extends Controller
                 ->orderBy('order_column')
                 ->get()
                 ->map(function ($item) {
+                    $image = $item->image;
+                    if ($image && !str_starts_with($image, 'http') && !str_starts_with($image, '/')) {
+                        $r2Url = env('R2_PUBLIC_URL') ?: (config('filesystems.disks.r2.url') ?: 'https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev');
+                        $image = rtrim($r2Url, '/') . '/syofficial/entities/' . basename($image);
+                    }
                     return [
                         'id' => $item->id,
                         'name' => $item->name,
                         'name_ar' => $item->name_ar,
                         'description' => $item->description ?? '',
                         'description_ar' => $item->description_ar ?? '',
-                        'image' => $item->image,
+                        'image' => $image,
                         'category' => $item->category_id,
                         'socials' => (object)($item->socials ?? []),
                     ];

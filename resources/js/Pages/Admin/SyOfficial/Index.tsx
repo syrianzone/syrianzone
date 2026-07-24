@@ -11,6 +11,7 @@ import { Plus, Search, Edit3, Trash2, Layers, FolderPlus, ArrowUpDown, Globe, Ey
 import CategoryDialog, { CategoryData } from './_components/CategoryDialog';
 import EntityDialog, { EntityData } from './_components/EntityDialog';
 import SortableList from './_components/SortableList';
+import { formatEntityImage } from '@/Pages/SyOfficial/Index';
 
 interface AdminSyOfficialProps {
     categories: CategoryData[];
@@ -188,7 +189,7 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
                                                                 <div className="flex items-center gap-3">
                                                                     <div className="w-10 h-10 rounded-lg overflow-hidden bg-muted flex-shrink-0 border">
                                                                         <img
-                                                                            src={ent.image && (ent.image.startsWith('http') || ent.image.startsWith('/')) ? ent.image : '/placeholder-user.jpg'}
+                                                                            src={formatEntityImage(ent.image)}
                                                                             alt=""
                                                                             className="w-full h-full object-cover"
                                                                         />

@@ -228,7 +228,9 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware(['auth', 'superadmin'])->group(function () {
         Route::get('/admin/assets', [\App\Http\Controllers\AssetUploadController::class, 'index']);
+        Route::get('/api/v1/admin/assets/list', [\App\Http\Controllers\AssetUploadController::class, 'list']);
         Route::post('/api/v1/admin/assets/upload', [\App\Http\Controllers\AssetUploadController::class, 'store']);
+        Route::delete('/api/v1/admin/assets/delete', [\App\Http\Controllers\AssetUploadController::class, 'destroy']);
     });
 
     // Hidden Places: authenticated writes (session + CSRF via the web group)

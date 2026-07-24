@@ -10,6 +10,16 @@ import { Badge } from "@/Components/ui/badge";
 import MainLayout from '@/Layouts/MainLayout';
 import { Head, usePage } from '@inertiajs/react';
 
+const R2_BASE = 'https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/syofficial/entities/';
+
+export function formatEntityImage(img: string | null | undefined): string {
+    if (!img || img.trim().length === 0) return '/placeholder-user.jpg';
+    if (img.startsWith('http://') || img.startsWith('https://')) return img;
+    if (img.startsWith('/assets/') || img.startsWith('/storage/')) return img;
+    const filename = img.split('/').pop() || img;
+    return `${R2_BASE}${filename}`;
+}
+
 interface CategoryData {
     id: string;
     label_ar: string;
@@ -49,16 +59,14 @@ const TRANSLATIONS = {
         view: 'عرض',
         table: 'جدول',
         grid: 'شبكة',
-        tableCategory: 'الفئة',
-        tableName: 'الاسم',
+        tableName: 'الجهة / المؤسسة',
+        tableCategory: 'التصنيف',
         tableDesc: 'الوصف',
-        tableSocial: 'روابط التواصل',
-        socialTwitterList: 'قائمة تويتر',
-        socialTelegramList: 'قائمة تلغرام',
+        tableSocial: 'الحسابات الرسمية',
     },
     en: {
-        title: 'Syrian Official Accounts Links',
-        description: 'Social media directory for Syrian official entities - Click on the entity name to visit their official pages',
+        title: 'Official Syrian Social Links',
+        description: 'Directory of official social media accounts for Syrian government entities and public figures',
         searchPlaceholder: 'Search official accounts by name or description...',
         noResults: 'No official accounts found',
         noResultsDesc: 'Try adjusting your search terms or filters.',
@@ -66,127 +74,156 @@ const TRANSLATIONS = {
         view: 'View',
         table: 'Table',
         grid: 'Grid',
+        tableName: 'Entity / Institution',
         tableCategory: 'Category',
-        tableName: 'Name',
         tableDesc: 'Description',
-        tableSocial: 'Social Links',
-        socialTwitterList: 'Twitter List',
-        socialTelegramList: 'Telegram List',
+        tableSocial: 'Official Accounts',
     },
     tr: {
-        title: 'Suriye Resmi Hesap Bağlantıları',
-        description: 'Suriye resmi kurumlarının sosyal medya rehberi - Resmi sayfalarına ulaşmak için kurum adına tıklayın',
-        searchPlaceholder: 'İsim veya açıklama ile arayın...',
+        title: 'Resmi Suriye Sosyal Medya Bağlantıları',
+        description: 'Resmi Suriye kurumları ve kamu figürleri için sosyal medya hesapları rehberi',
+        searchPlaceholder: 'Resmi hesapları isim veya açıklamaya göre arayın...',
         noResults: 'Resmi hesap bulunamadı',
-        noResultsDesc: 'Arama terimlerini veya filtreleri değiştirmeyi deneyin.',
-        loading: 'Yükleniyor...',
+        noResultsDesc: 'Arama terimlerinizi veya filtrelerinizi ayarlamayı deneyin.',
+        loading: 'Resmi hesaplar yükleniyor...',
         view: 'Görünüm',
         table: 'Tablo',
         grid: 'Izgara',
+        tableName: 'Kurum / Kuruluş',
         tableCategory: 'Kategori',
-        tableName: 'İsim',
         tableDesc: 'Açıklama',
-        tableSocial: 'Sosyal Bağlantılar',
-        socialTwitterList: 'Twitter Listesi',
-        socialTelegramList: 'Telegram Listesi',
+        tableSocial: 'Resmi Hesaplar',
     },
     ku: {
-        title: 'Girêdanên Hesabên Fermî yên Sûriyê',
-        description: 'Rêberê medyaya civakî ji bo saziyên fermî yên Sûriyê - Li ser navê saziyê bitikînin da ku hûn bigihîjin rûpelên wan ên fermî',
-        searchPlaceholder: 'Li gorî nav an ravekirinê bigerin...',
-        noResults: 'Hesabên fermî nehatin dîtin',
-        noResultsDesc: 'Hewl bidin ku peyvên lêgerînê an fîlteran biguherînin.',
-        loading: 'Tê barkirin...',
+        title: 'Girêdanên Medyaya Civakî yên Fermî yên Sûrî',
+        description: 'Rêberê hesabên medyaya civakî ji bo saziyên fermî û kesayetên giştî yên Sûrî',
+        searchPlaceholder: 'Li hesabên fermî li gorî nav an ravekirinê bigerin...',
+        noResults: 'Tu hesabên fermî nehatin dîtin',
+        noResultsDesc: 'Meylên lêgerînê an fîlterên xwe biguherînin.',
+        loading: 'Hesabên fermî têne barkirin...',
         view: 'Dîtin',
-        table: 'Tablo',
+        table: 'Jadwal',
         grid: 'Tor',
+        tableName: 'Sazî / Dezgeh',
         tableCategory: 'Kategorî',
-        tableName: 'Nav',
         tableDesc: 'Ravekirin',
-        tableSocial: 'Girêdanên Civakî',
-        socialTwitterList: 'Lîsteya Twitter',
-        socialTelegramList: 'Lîsteya Telegram',
+        tableSocial: 'Hesabên Fermî',
     }
 };
 
 const getSocialIcon = (platform: string) => {
-    const base = platform.replace('_secondary', '');
-    switch (base) {
-        case 'facebook': return <Facebook className="h-4 w-4" />;
-        case 'twitter': return <Twitter className="h-4 w-4" />;
-        case 'instagram': return <Instagram className="h-4 w-4" />;
-        case 'linkedin': return <Linkedin className="h-4 w-4" />;
-        case 'telegram': return <Send className="h-4 w-4" />;
-        case 'youtube': return <Youtube className="h-4 w-4" />;
-        case 'whatsapp': return <MessageCircle className="h-4 w-4" />;
-        case 'website': return <Globe className="h-4 w-4" />;
-        default: return <LinkIcon className="h-4 w-4" />;
+    switch (platform) {
+        case 'facebook':
+        case 'facebook_secondary':
+            return <Facebook className="w-4 h-4 text-[#1877F2]" />;
+        case 'instagram':
+        case 'instagram_secondary':
+            return <Instagram className="w-4 h-4 text-[#E4405F]" />;
+        case 'twitter':
+        case 'twitter_secondary':
+            return <Twitter className="w-4 h-4 text-[#1DA1F2]" />;
+        case 'telegram':
+        case 'telegram_secondary':
+            return <Send className="w-4 h-4 text-[#26A5E4]" />;
+        case 'linkedin':
+            return <Linkedin className="w-4 h-4 text-[#0A66C2]" />;
+        case 'youtube':
+            return <Youtube className="w-4 h-4 text-[#FF0000]" />;
+        case 'whatsapp':
+            return <MessageCircle className="w-4 h-4 text-[#25D366]" />;
+        case 'website':
+            return <Globe className="w-4 h-4 text-primary" />;
+        default:
+            return <LinkIcon className="w-4 h-4" />;
     }
 };
 
 const getSocialTitle = (platform: string, lang: Language) => {
-    const titles: Record<string, { ar: string; en: string }> = {
-        facebook: { ar: 'فيسبوك', en: 'Facebook' },
-        facebook_secondary: { ar: 'فيسبوك (إعلامي/فرعي)', en: 'Facebook (Secondary)' },
-        twitter: { ar: 'إكس / تويتر', en: 'X / Twitter' },
-        twitter_secondary: { ar: 'إكس / تويتر (إعلامي/فرعي)', en: 'X / Twitter (Secondary)' },
-        instagram: { ar: 'إنستغرام', en: 'Instagram' },
-        instagram_secondary: { ar: 'إنستغرام (إعلامي/فرعي)', en: 'Instagram (Secondary)' },
-        telegram: { ar: 'تلغرام', en: 'Telegram' },
-        telegram_secondary: { ar: 'تلغرام (إعلامي/فرعي)', en: 'Telegram (Secondary)' },
-        linkedin: { ar: 'لينكد إن', en: 'LinkedIn' },
-        youtube: { ar: 'يوتيوب', en: 'YouTube' },
-        whatsapp: { ar: 'واتساب', en: 'WhatsApp' },
-        website: { ar: 'الموقع الرسمي', en: 'Official Website' },
-    };
-    const t = titles[platform];
-    if (!t) return platform;
-    return lang === 'ar' || lang === 'ku' ? t.ar : t.en;
-};
-
-const getSocialStyle = (platform: string) => {
-    const base = platform.replace('_secondary', '');
-    switch (base) {
-        case 'facebook': return 'hover:bg-blue-500/15 hover:text-blue-500 hover:border-blue-500/40 dark:hover:text-blue-400';
-        case 'twitter': return 'hover:bg-sky-500/15 hover:text-sky-400 hover:border-sky-500/40 dark:hover:text-sky-400';
-        case 'instagram': return 'hover:bg-pink-500/15 hover:text-pink-500 hover:border-pink-500/40 dark:hover:text-pink-400';
-        case 'telegram': return 'hover:bg-sky-400/15 hover:text-sky-400 hover:border-sky-400/40 dark:hover:text-sky-300';
-        case 'youtube': return 'hover:bg-red-500/15 hover:text-red-500 hover:border-red-500/40 dark:hover:text-red-400';
-        case 'whatsapp': return 'hover:bg-emerald-500/15 hover:text-emerald-500 hover:border-emerald-500/40 dark:hover:text-emerald-400';
-        case 'linkedin': return 'hover:bg-blue-700/15 hover:text-blue-600 hover:border-blue-700/40 dark:hover:text-blue-400';
-        case 'website': return 'hover:bg-indigo-500/15 hover:text-indigo-500 hover:border-indigo-500/40 dark:hover:text-indigo-400';
-        default: return 'hover:bg-primary/15 hover:text-primary hover:border-primary/40';
+    const isAr = lang === 'ar';
+    switch (platform) {
+        case 'facebook':
+            return isAr ? 'فيسبوك' : 'Facebook';
+        case 'facebook_secondary':
+            return isAr ? 'فيسبوك (احتياطي)' : 'Facebook (Secondary)';
+        case 'instagram':
+            return isAr ? 'إنستغرام' : 'Instagram';
+        case 'instagram_secondary':
+            return isAr ? 'إنستغرام (احتياطي)' : 'Instagram (Secondary)';
+        case 'twitter':
+            return isAr ? 'تويتر / منصة إكس' : 'Twitter / X';
+        case 'twitter_secondary':
+            return isAr ? 'تويتر / منصة إكس (احتياطي)' : 'Twitter / X (Secondary)';
+        case 'telegram':
+            return isAr ? 'تلغرام' : 'Telegram';
+        case 'telegram_secondary':
+            return isAr ? 'تلغرام (احتياطي)' : 'Telegram (Secondary)';
+        case 'linkedin':
+            return isAr ? 'لينكد إن' : 'LinkedIn';
+        case 'youtube':
+            return isAr ? 'يوتيوب' : 'YouTube';
+        case 'whatsapp':
+            return isAr ? 'واتساب' : 'WhatsApp';
+        case 'website':
+            return isAr ? 'الموقع الرسمي' : 'Official Website';
+        default:
+            return platform;
     }
 };
 
-export default function Index({ initialData, categories }: SyOfficialClientProps) {
-    const [language, setLanguage] = useState<Language>('ar');
+const getSocialStyle = (platform: string) => {
+    switch (platform) {
+        case 'facebook':
+        case 'facebook_secondary':
+            return 'hover:border-[#1877F2]/50 hover:bg-[#1877F2]/10';
+        case 'instagram':
+        case 'instagram_secondary':
+            return 'hover:border-[#E4405F]/50 hover:bg-[#E4405F]/10';
+        case 'twitter':
+        case 'twitter_secondary':
+            return 'hover:border-[#1DA1F2]/50 hover:bg-[#1DA1F2]/10';
+        case 'telegram':
+        case 'telegram_secondary':
+            return 'hover:border-[#26A5E4]/50 hover:bg-[#26A5E4]/10';
+        case 'linkedin':
+            return 'hover:border-[#0A66C2]/50 hover:bg-[#0A66C2]/10';
+        case 'youtube':
+            return 'hover:border-[#FF0000]/50 hover:bg-[#FF0000]/10';
+        case 'whatsapp':
+            return 'hover:border-[#25D366]/50 hover:bg-[#25D366]/10';
+        case 'website':
+            return 'hover:border-primary/50 hover:bg-primary/10';
+        default:
+            return '';
+    }
+};
+
+export default function SyOfficialIndex({ initialData = [], categories = [] }: SyOfficialClientProps) {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentCategory, setCurrentCategory] = useState('all');
+    const [language, setLanguage] = useState<Language>('ar');
     const [viewMode, setViewMode] = useState<ViewMode>('grid');
 
     const categoryList = useMemo(() => {
         if (categories && categories.length > 0) {
-            return [
-                { key: 'all', label_ar: 'الكل', label_en: 'All' },
-                ...categories.map(c => ({ key: c.id, label_ar: c.label_ar, label_en: c.label_en }))
-            ];
+            const dynamicCats = categories.map(c => ({
+                key: c.id,
+                label_ar: c.label_ar,
+                label_en: c.label_en,
+            }));
+            return [{ key: 'all', label_ar: 'الكل', label_en: 'All' }, ...dynamicCats];
         }
         return FALLBACK_CATEGORIES;
     }, [categories]);
 
-    // Filter Data maintaining natural DB order
     const filteredData = useMemo(() => {
         let items = initialData;
 
-        // Filter by Category
         if (currentCategory !== 'all') {
             items = items.filter(item => item.category === currentCategory);
         }
 
-        // Search
-        if (searchTerm) {
-            const term = searchTerm.toLowerCase();
+        if (searchTerm.trim()) {
+            const term = searchTerm.toLowerCase().trim();
             items = items.filter(item =>
                 item.name.toLowerCase().includes(term) ||
                 item.name_ar.toLowerCase().includes(term) ||
@@ -241,52 +278,33 @@ export default function Index({ initialData, categories }: SyOfficialClientProps
                 <meta name="twitter:card" content="summary" />
                 <meta name="twitter:title" content={`${t.title} | syrian.zone`} />
                 <meta name="twitter:description" content={t.description} />
-                <script
-                    type="application/ld+json"
-                    dangerouslySetInnerHTML={{
-                        __html: JSON.stringify({
-                            "@context": "https://schema.org",
-                            "@type": "ItemList",
-                            "name": t.title,
-                            "description": t.description,
-                            "numberOfItems": initialData ? initialData.length : 0
-                        })
-                    }}
-                />
             </Head>
-            <div className="min-h-screen transition-colors" dir={language === 'ar' || language === 'ku' ? 'rtl' : 'ltr'}>
 
-            <section className="bg-card py-10 shadow-sm border-b border-border">
-                <div className="container mx-auto px-4 text-center max-w-4xl">
-                    {isSuperAdmin && (
-                        <div className="mb-6 flex justify-center">
+            {/* Header / Hero Section */}
+            <section className="relative overflow-hidden bg-gradient-to-b from-primary/10 via-background to-background py-12 md:py-16 border-b border-border/40">
+                <div className="container mx-auto px-4 text-center relative z-10 max-w-4xl">
+
+                    <div className="flex items-center justify-center gap-3 mb-4">
+                        <h1 className="text-3xl md:text-5xl font-black text-foreground tracking-tight leading-tight">
+                            {t.title}
+                        </h1>
+                        {isSuperAdmin && (
                             <a
                                 href="/admin/syofficial"
-                                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-bold shadow-lg hover:bg-primary/90 transition-all transform hover:-translate-y-0.5"
+                                className="p-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-md flex items-center gap-1 text-xs font-bold shrink-0"
+                                title="إدارة وإضافة وتعديل الحسابات الرسمية"
                             >
                                 <Settings className="w-4 h-4" />
-                                <span>لوحة تحكم إدارة الحسابات (Admin Panel)</span>
+                                <span className="hidden sm:inline">لوحة التحكم</span>
                             </a>
-                        </div>
-                    )}
-                    <h1 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">{t.title}</h1>
-                    <p className="text-lg text-muted-foreground mb-8">{t.description}</p>
-
-                    <div className="flex justify-center gap-4 mb-8">
-                        <Button variant="outline" size="sm" asChild className="rounded-full gap-2">
-                            <a href="https://x.com/i/lists/1906101934660174006" target="_blank" rel="noopener noreferrer">
-                                <Twitter className="h-4 w-4 text-sky-400" />
-                                <span>{t.socialTwitterList}</span>
-                            </a>
-                        </Button>
-                        <Button variant="outline" size="sm" asChild className="rounded-full gap-2">
-                            <a href="https://t.me/addlist/fKrhEy2yNeEwODQ0" target="_blank" rel="noopener noreferrer">
-                                <Send className="h-4 w-4 text-sky-500" />
-                                <span>{t.socialTelegramList}</span>
-                            </a>
-                        </Button>
+                        )}
                     </div>
 
+                    <p className="text-muted-foreground text-sm md:text-base max-w-2xl mx-auto mb-8 leading-relaxed">
+                        {t.description}
+                    </p>
+
+                    {/* Language Switcher */}
                     <div className="flex justify-center gap-2 mb-8">
                         {(['ar', 'en', 'tr', 'ku'] as Language[]).map(lang => (
                             <Button
@@ -341,8 +359,8 @@ export default function Index({ initialData, categories }: SyOfficialClientProps
                 </div>
             </section>
 
+            {/* Main Content / Entity Grid */}
             <div className="container mx-auto px-4 py-8">
-
                 <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
                     <div className="text-sm text-muted-foreground font-medium">
                         {filteredData.length > 0 ? (
@@ -350,27 +368,25 @@ export default function Index({ initialData, categories }: SyOfficialClientProps
                         ) : t.noResults}
                     </div>
 
-                    <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm text-muted-foreground">{t.view}:</span>
-                            <div className="bg-card rounded-lg p-1 shadow-xs border border-border flex gap-1">
-                                <Button
-                                    variant={viewMode === 'table' ? 'secondary' : 'ghost'}
-                                    size="icon"
-                                    onClick={() => setViewMode('table')}
-                                    className="h-8 w-8"
-                                >
-                                    <TableIcon className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                    variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
-                                    size="icon"
-                                    onClick={() => setViewMode('grid')}
-                                    className="h-8 w-8"
-                                >
-                                    <LayoutGrid className="h-4 w-4" />
-                                </Button>
-                            </div>
+                    {/* View Switcher (Grid / Table) */}
+                    <div className="flex items-center gap-2">
+                        <div className="bg-muted p-1 rounded-xl flex items-center gap-1 border border-border">
+                            <Button
+                                variant={viewMode === 'table' ? 'secondary' : 'ghost'}
+                                size="icon"
+                                onClick={() => setViewMode('table')}
+                                className="h-8 w-8"
+                            >
+                                <TableIcon className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+                                size="icon"
+                                onClick={() => setViewMode('grid')}
+                                className="h-8 w-8"
+                            >
+                                <LayoutGrid className="h-4 w-4" />
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -410,7 +426,7 @@ export default function Index({ initialData, categories }: SyOfficialClientProps
                                                             </a>
                                                         )}
                                                         <img
-                                                            src={item.image && (item.image.startsWith('http') || item.image.startsWith('/')) ? item.image : '/placeholder-user.jpg'}
+                                                            src={formatEntityImage(item.image)}
                                                             alt={language === 'ar' ? item.name_ar : item.name}
                                                             loading="lazy"
                                                             decoding="async"
@@ -477,7 +493,7 @@ export default function Index({ initialData, categories }: SyOfficialClientProps
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-10 h-10 rounded-xl overflow-hidden bg-muted flex-shrink-0 ring-1 ring-border/50 shadow-2xs">
                                                             <img
-                                                                src={item.image && (item.image.startsWith('http') || item.image.startsWith('/')) ? item.image : '/placeholder-user.jpg'}
+                                                                src={formatEntityImage(item.image)}
                                                                 alt={language === 'ar' ? item.name_ar : item.name}
                                                                 loading="lazy"
                                                                 decoding="async"
@@ -520,10 +536,10 @@ export default function Index({ initialData, categories }: SyOfficialClientProps
                                                     <TableCell className="text-end">
                                                         <a
                                                             href={`/admin/syofficial?edit=${item.id}`}
-                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground text-xs font-bold transition-all border border-primary/20"
+                                                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground hover:bg-primary hover:text-primary-foreground text-xs font-bold transition-colors"
                                                         >
                                                             <Pencil className="w-3.5 h-3.5" />
-                                                            <span>تعديل</span>
+                                                            تعديل
                                                         </a>
                                                     </TableCell>
                                                 )}
@@ -536,9 +552,6 @@ export default function Index({ initialData, categories }: SyOfficialClientProps
                     </>
                 )}
             </div>
-
-
-        </div>
         </MainLayout>
     );
 }

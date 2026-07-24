@@ -18,7 +18,7 @@ class LegacyPollSeeder extends Seeder
             ['title' => 'Best Ministers / Governors', 'is_active' => true]
         );
 
-        $r2BaseUrl = rtrim((string) config('filesystems.disks.r2.url', 'https://pub-r2.syrianzone.com'), '/');
+        $r2BaseUrl = rtrim((string) (env('R2_PUBLIC_URL') ?: (config('filesystems.disks.r2.url') ?: 'https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev')), '/');
         $governors = [
             ['text' => 'ماهر مروان (دمشق)', 'image_url' => $r2BaseUrl . '/tierlist/candidates/gov01.jpg'],
             ['text' => 'عزام غريب (حلب)', 'image_url' => $r2BaseUrl . '/tierlist/candidates/gov02.jpg'],

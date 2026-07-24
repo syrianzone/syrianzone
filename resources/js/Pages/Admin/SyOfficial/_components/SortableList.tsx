@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowUp, ArrowDown, GripVertical } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
+import { formatEntityImage } from '@/Pages/SyOfficial/Index';
 import axios from 'axios';
 
 export interface SortableItem {
@@ -66,7 +67,7 @@ export default function SortableList({ items: initialItems, endpoint, onSaveSucc
                             <GripVertical className="w-5 h-5 text-muted-foreground/50 cursor-grab" />
                             {item.image && (
                                 <img
-                                    src={item.image && (item.image.startsWith('http') || item.image.startsWith('/')) ? item.image : '/placeholder-user.jpg'}
+                                    src={formatEntityImage(item.image)}
                                     alt=""
                                     className="w-8 h-8 rounded-lg object-cover bg-muted"
                                 />

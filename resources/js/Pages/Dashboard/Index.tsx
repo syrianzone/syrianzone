@@ -420,6 +420,17 @@ export default function Dashboard({
                   </Link>
                 )}
 
+                {/* Cloudflare R2 Asset Browser (Superadmins) */}
+                {role === 'superadmin' && (
+                  <Link
+                    href="/admin/assets"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  >
+                    <CloudUpload className="h-5 w-5" />
+                    إدارة ومستكشف أصول R2 CDN
+                  </Link>
+                )}
+
                 {/* SyOfficial Admin Tab (Admins, SyOfficial Admins, Superadmins) */}
                 {(role === 'admin' || role === 'syofficial_admin' || role === 'superadmin') && (
                   <Link

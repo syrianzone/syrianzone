@@ -3,7 +3,7 @@ import { Head, usePage } from '@inertiajs/react';
 import {
     Compass, Settings, Sun, Link, Moon, Globe, Plus, Edit, X,
     Cloud, CloudRain, CloudLightning, Snowflake, Wind, Clock,
-    Sunrise, Sunset, SunDim, MoonStar, Search, Shield, FileText
+    Sunrise, Sunset, SunDim, MoonStar, Search, Shield, FileText, BarChart3, Info
 } from 'lucide-react';
 import { Button } from "@/Components/ui/button";
 import { ScrollArea } from "@/Components/ui/scroll-area";
@@ -1328,7 +1328,17 @@ export default function Home() {
                         </Tabs>
 
                         <div className="border-t bg-muted/20 p-4">
-                            <div className="flex justify-center gap-4 text-xs text-muted-foreground">
+                            <div className="flex flex-wrap justify-center gap-3 sm:gap-4 text-xs text-muted-foreground">
+                                <a href="/about" className="hover:text-primary transition-colors flex items-center gap-1.5">
+                                    <Info className="w-3.5 h-3.5 text-muted-foreground hover:text-primary" />
+                                    {currentLang === 'ar' ? 'عن المنصة' : 'About'}
+                                </a>
+                                <span>•</span>
+                                <a href="/stats" className="hover:text-primary transition-colors flex items-center gap-1.5">
+                                    <BarChart3 className="w-3.5 h-3.5 text-muted-foreground hover:text-primary" />
+                                    {currentLang === 'ar' ? 'الإحصائيات' : 'Statistics'}
+                                </a>
+                                <span>•</span>
                                 <a href="/privacy" className="hover:text-primary transition-colors flex items-center gap-1.5">
                                     <Shield className="w-3.5 h-3.5 text-muted-foreground hover:text-primary" />
                                     {currentLang === 'ar' ? 'سياسة الخصوصية' : 'Privacy Policy'}

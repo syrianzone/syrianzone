@@ -268,7 +268,8 @@ class StagingPollsSeeder extends StagingSeed
 
         foreach ($groupSpec['candidates'] as [$name, $title, $status]) {
           $imageCursor++;
-          $image = sprintf('/tierlist-assets/images/gov%02d.jpg', ($imageCursor % self::IMAGES) + 1);
+          $r2BaseUrl = rtrim((string) config('filesystems.disks.r2.url', 'https://pub-r2.syrianzone.com'), '/');
+          $image = sprintf('%s/tierlist/candidates/gov%02d.jpg', $r2BaseUrl, ($imageCursor % self::IMAGES) + 1);
 
           $candidate = Candidate::updateOrCreate(
             ['poll_id' => $poll->id, 'name' => $name],

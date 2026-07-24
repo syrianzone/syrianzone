@@ -9,6 +9,10 @@ echo "🚀 Running production startup tasks..."
 echo "🔄 Running database migrations..."
 php /var/www/html/artisan migrate --force
 
+# 1b. Migrate local tierlist images to Cloudflare R2 if present
+echo "📦 Migrating TierList assets to R2..."
+php /var/www/html/artisan tierlist:migrate-to-r2 || echo "⚠️ Tierlist asset migration skipped or failed."
+
 # 2. Seed the database (runs each seeder independently to avoid DatabaseSeeder factory dependency on dev-only Faker)
 # Skipped on staging: without the real best-ministers poll this seeder falls back
 # to 12 dummy characters whose image files do not exist, which just fills the

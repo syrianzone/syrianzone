@@ -1,7 +1,7 @@
 import './bootstrap';
 import '../css/app.css';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createInertiaApp, router } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
@@ -37,14 +37,34 @@ const appName = import.meta.env.VITE_APP_NAME || 'Syrian Zone';
 // configured. undefined on staging, so the navigate handler below no-ops.
 const GA_ID = (window as unknown as { GA_ID?: string }).GA_ID;
 
+const pages = import.meta.glob('./Pages/**/*.tsx');
+
 createInertiaApp({
     title: (title) => title ? `${title} - ${appName}` : appName,
-    resolve: (name) => resolvePageComponent(`./Pages/${name}.tsx`, import.meta.glob('./Pages/**/*.tsx')),
+    resolve: (name) => {
+        const path = `./Pages/${name}.tsx`;
+        const page = pages[path];
+        if (!page) throw new Error(`Page not found: ${name}`);
+
+        if (name.startsWith('Transit/admin')) {
+            return {
+                default: React.lazy(() =>
+                    typeof page === 'function' ? page() : Promise.resolve(page)
+                ),
+            };
+        }
+
+        return resolvePageComponent(path, pages);
+    },
     setup({ el, App, props }) {
         const root = createRoot(el);
         root.render(
             <DirectionProvider dir="rtl">
-                <QueryProvider><App {...props} /></QueryProvider>
+                <QueryProvider>
+                    <Suspense fallback={<div className="h-screen w-screen flex items-center justify-center text-muted-foreground">جاري التحميل...</div>}>
+                        <App {...props} />
+                    </Suspense>
+                </QueryProvider>
             </DirectionProvider>
         );
     },

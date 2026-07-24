@@ -3,7 +3,9 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    
+    {{-- links the browser pageload trace to the backend request that rendered it --}}
+    {!! \Sentry\Laravel\Integration::sentryMeta() !!}
+
     <title inertia>{{ config('app.name', 'المساحة السورية | Syrian Zone') }}</title>
     
     <!-- Fonts -->

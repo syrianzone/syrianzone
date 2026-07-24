@@ -46,7 +46,7 @@ class PlaceAdminController extends Controller
 
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:160',
-            'category' => 'sometimes|required|string|in:historical,natural,cultural,religious,abandoned,viewpoint,market,other',
+            'category' => 'sometimes|required|string|in:historical,natural,cultural,religious,abandoned,viewpoint,market,food,other',
             'description' => 'sometimes|required|string|min:20|max:1000',
             'lat' => 'sometimes|required|numeric|between:32.0,37.5',
             'lng' => 'sometimes|required|numeric|between:35.5,42.5',
@@ -72,24 +72,24 @@ class PlaceAdminController extends Controller
                 'required',
                 'image',
                 'mimes:jpg,jpeg,png,webp',
-                'max:8192',
+                'max:12288',
                 function (string $attribute, mixed $value, callable $fail) use ($images) {
                     if (! $value instanceof UploadedFile || ! $images->dimensionsAreSafe($value)) {
-                        $fail('The image dimensions are not supported.');
+                        $fail('أبعاد الصورة يجب أن تكون بين 200x200 و 6000x6000 بكسل');
                     }
                 },
             ],
-        ]);
+        ], $this->photoMessages());
 
         $place = Place::findOrFail($id);
 
         // guard + store under a lock on the place row so two concurrent adds cannot
-        // both read count 4 and end at 6 (sqlite ignores FOR UPDATE but serializes writes)
+        // both read count 9 and end at 11 (sqlite ignores FOR UPDATE but serializes writes)
         $photo = null;
         try {
             DB::transaction(function () use ($place, $request, $images, &$photo) {
                 Place::whereKey($place->id)->lockForUpdate()->firstOrFail();
-                if ($place->photos()->count() >= 5) {
+                if ($place->photos()->count() >= 10) {
                     return;
                 }
 
@@ -104,7 +104,7 @@ class PlaceAdminController extends Controller
             throw $error;
         }
         if ($photo === null) {
-            return response()->json(['message' => 'لا يمكن إضافة أكثر من خمس صور'], 422);
+            return response()->json(['message' => 'لا يمكن إضافة أكثر من 10 صور'], 422);
         }
         // a first-position thumb can change the map thumb_url; forget unconditionally
         Cache::forget('places:map');
@@ -226,14 +226,14 @@ class PlaceAdminController extends Controller
                 'required',
                 'image',
                 'mimes:jpg,jpeg,png,webp',
-                'max:8192',
+                'max:12288',
                 function (string $attribute, mixed $value, callable $fail) use ($images) {
                     if (! $value instanceof UploadedFile || ! $images->dimensionsAreSafe($value)) {
-                        $fail('The image dimensions are not supported.');
+                        $fail('أبعاد الصورة يجب أن تكون بين 200x200 و 6000x6000 بكسل');
                     }
                 },
             ],
-        ]);
+        ], $this->photoMessages());
 
         $photo = PlacePhoto::findOrFail($id);
         $images->replace($photo, $request->file('photo'));
@@ -244,6 +244,17 @@ class PlaceAdminController extends Controller
             'thumb_url' => $photo->thumb_url,
             'display_url' => $photo->display_url,
         ]);
+    }
+
+    private function photoMessages(): array
+    {
+        return [
+            'photo.required' => 'أضف صورة',
+            'photo.image' => 'الملف يجب أن يكون صورة',
+            'photo.mimes' => 'الصورة يجب أن تكون بصيغة JPG أو PNG أو WebP',
+            'photo.max' => 'حجم الصورة يجب ألا يتجاوز 12 ميغابايت',
+            'photo.uploaded' => 'تعذر رفع الصورة، تأكد أن حجمها لا يتجاوز 12 ميغابايت',
+        ];
     }
 
     private function adminItem(Place $p): array

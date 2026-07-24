@@ -178,8 +178,30 @@ class PlaceImageService
             DB::transaction(function () use ($photo, $rotateClockwise, &$newPaths): void {
                 $locked = PlacePhoto::query()->lockForUpdate()->findOrFail($photo->id);
                 $disk = $this->disk();
+                if ($rotateClockwise && ! $disk->exists($locked->display_path)) {
+                    throw new RuntimeException("Display image is missing: {$locked->display_path}");
+                }
+
                 if (! $disk->exists($locked->original_path)) {
-                    throw new RuntimeException("Original image is missing: {$locked->original_path}");
+                    if (! $rotateClockwise) {
+                        throw new RuntimeException("Original image is missing: {$locked->original_path}");
+                    }
+
+                    $binary = $disk->get($locked->display_path);
+                    if (! $this->decodeGuard->binaryDimensionsAreSafe($binary, 200)) {
+                        throw new RuntimeException('Unsafe stored place image');
+                    }
+
+                    $oldPaths = [$locked->display_path, $locked->thumb_path];
+                    $newPaths = $this->writeVariants($binary, $locked->place_id, 90);
+                    DB::afterRollBack(fn () => $disk->delete(array_values($newPaths)));
+                    $locked->forceFill([
+                        ...$newPaths,
+                        'rotation_degrees' => ((int) $locked->rotation_degrees + 90) % 360,
+                    ])->save();
+                    $this->cleanup->queueFiles($oldPaths);
+
+                    return;
                 }
 
                 $binary = $disk->get($locked->original_path);

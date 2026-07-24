@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\City;
 use App\Models\Route;
 use App\Models\Stop;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class TransitController extends Controller
 {
@@ -19,7 +19,7 @@ class TransitController extends Controller
                 'id', 'name_ar', 'name_en', 'zoom', 'status',
                 DB::raw('ST_AsGeoJSON(center) as center_geojson'),
                 DB::raw('ST_AsGeoJSON(bounds) as bounds_geojson')
-            )->withCount(['routes as routeCount' => fn($q) => $q->where('status', 'published')])->get();
+            )->withCount(['routes as routeCount' => fn ($q) => $q->where('status', 'published')])->get();
 
             return $cities->map(function ($city) {
                 $centerJson = json_decode($city->center_geojson, true);
@@ -39,7 +39,7 @@ class TransitController extends Controller
                     'center' => $centerJson['coordinates'],
                     'bounds' => [
                         [$minLng, $minLat],
-                        [$maxLng, $maxLat]
+                        [$maxLng, $maxLat],
                     ],
                     'routeCount' => $city->routeCount,
                 ];
@@ -51,7 +51,8 @@ class TransitController extends Controller
 
     public function getRoutes($id)
     {
-        $routes = Route::where('city_id', $id)->where('status', 'published')->get();
+        $routes = Route::where('city_id', $id)->where('status', 'published')->withCount('stops')->get();
+
         return response()->json($routes->map(function ($r) {
             return [
                 'id' => $r->id,
@@ -60,6 +61,7 @@ class TransitController extends Controller
                 'colorIndex' => $r->color_index,
                 'priceOld' => $r->price_old,
                 'priceNew' => $r->price_new,
+                'stopsCount' => $r->stops_count,
             ];
         }));
     }
@@ -91,7 +93,7 @@ class TransitController extends Controller
 
             $stops = DB::table('stops')
                 ->where('city_id', $id)
-                ->select('id', 'name_ar', DB::raw('ST_AsGeoJSON(geometry) as geojson'))
+                ->select('id', 'name_ar', 'name_en', DB::raw('ST_AsGeoJSON(geometry) as geojson'))
                 ->get();
 
             // Batch load all route associations, one query instead of one per stop
@@ -103,7 +105,7 @@ class TransitController extends Controller
                 ->select('route_stop.stop_id', 'route_stop.route_id')
                 ->get()
                 ->groupBy('stop_id')
-                ->map(fn($rows) => $rows->pluck('route_id')->values());
+                ->map(fn ($rows) => $rows->pluck('route_id')->values());
 
             $stopFeatures = $stops->map(function ($s) use ($routeMap) {
                 return [
@@ -112,20 +114,21 @@ class TransitController extends Controller
                     'properties' => [
                         'id' => $s->id,
                         'nameAr' => $s->name_ar,
+                        'nameEn' => $s->name_en,
                         'routeIds' => $routeMap->get($s->id, collect())->values(),
-                    ]
+                    ],
                 ];
             });
 
             return [
                 'routes' => [
                     'type' => 'FeatureCollection',
-                    'features' => $routeFeatures
+                    'features' => $routeFeatures,
                 ],
                 'stops' => [
                     'type' => 'FeatureCollection',
-                    'features' => $stopFeatures
-                ]
+                    'features' => $stopFeatures,
+                ],
             ];
         });
 
@@ -137,7 +140,7 @@ class TransitController extends Controller
         $request->validate([
             'lat' => 'required|numeric',
             'lng' => 'required|numeric',
-            'radius' => 'nullable|numeric|min:1|max:5000'
+            'radius' => 'nullable|numeric|min:1|max:5000',
         ]);
 
         $lat = $request->lat;
@@ -151,8 +154,8 @@ class TransitController extends Controller
         $pointJson = json_encode(['type' => 'Point', 'coordinates' => [(float) $lng, (float) $lat]]);
 
         $stops = DB::table('stops')
-            ->select('id', 'name_ar', 'city_id', DB::raw('ST_AsGeoJSON(geometry) as geojson'))
-            ->whereRaw("ST_Distance_Sphere(geometry, ST_GeomFromGeoJSON(?)) <= ?", [$pointJson, $radius])
+            ->select('id', 'name_ar', 'name_en', 'city_id', DB::raw('ST_AsGeoJSON(geometry) as geojson'))
+            ->whereRaw('ST_Distance_Sphere(geometry, ST_GeomFromGeoJSON(?)) <= ?', [$pointJson, $radius])
             ->get();
 
         // Batch load routes for all nearby stops, one query instead of one per stop
@@ -169,9 +172,10 @@ class TransitController extends Controller
             return [
                 'id' => $s->id,
                 'nameAr' => $s->name_ar,
+                'nameEn' => $s->name_en,
                 'cityId' => $s->city_id,
                 'coordinates' => json_decode($s->geojson, true)['coordinates'],
-                'routes' => $routesByStop->get($s->id, collect())->map(fn($r) => [
+                'routes' => $routesByStop->get($s->id, collect())->map(fn ($r) => [
                     'id' => $r->id,
                     'name_ar' => $r->name_ar,
                 ])->values(),
@@ -223,6 +227,7 @@ class TransitController extends Controller
                 'type' => 'stop',
                 'id' => $stop->id,
                 'nameAr' => $stop->name_ar,
+                'nameEn' => $stop->name_en,
                 'cityId' => $stop->city_id,
                 'coordinates' => $coordinates,
             ];

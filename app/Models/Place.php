@@ -17,6 +17,7 @@ class Place extends Model
         'abandoned',
         'viewpoint',
         'market',
+        'food',
         'other',
     ];
 

@@ -81,7 +81,7 @@ test('rotation publishes new variants while failed old-file cleanup stays retrya
     $oldPaths = [$photo->display_path, $photo->thumb_path];
     $disk = Storage::disk('public');
     $failingDisk = Mockery::mock($disk)->makePartial();
-    $failingDisk->shouldReceive('exists')->with($oldPaths[0])->once()->andReturnTrue();
+    $failingDisk->shouldReceive('exists')->with($oldPaths[0])->twice()->andReturnTrue();
     $failingDisk->shouldReceive('exists')->with($oldPaths[1])->once()->andReturnTrue();
     $failingDisk->shouldReceive('delete')->twice()->andReturnFalse();
     Storage::set('public', $failingDisk);

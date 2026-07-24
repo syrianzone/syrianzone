@@ -1,4 +1,4 @@
-export type PlaceCategory = 'historical' | 'natural' | 'cultural' | 'religious' | 'abandoned' | 'viewpoint' | 'market' | 'other';
+export type PlaceCategory = 'historical' | 'natural' | 'cultural' | 'religious' | 'abandoned' | 'viewpoint' | 'market' | 'food' | 'other';
 export type PlaceStatus = 'pending' | 'approved' | 'rejected';
 
 export interface LatLng { lat: number; lng: number; }
@@ -24,7 +24,7 @@ export interface MyPlace extends PlaceListItem { status: PlaceStatus; rejection_
 
 export interface AdminPlace extends PlaceDetail { rejection_reason: string | null; }
 
-export interface PlaceFeatureProps { id: number; name: string; category: PlaceCategory; thumb_url: string | null; }
+export interface PlaceFeatureProps { id: number; name: string; category: PlaceCategory; user_id: number; thumb_url: string | null; }
 
 export interface PlaceFeature {
   type: 'Feature';
@@ -35,3 +35,17 @@ export interface PlaceFeature {
 export interface PlaceFeatureCollection { type: 'FeatureCollection'; features: PlaceFeature[]; }
 
 export interface Paginated<T> { data: T[]; current_page: number; last_page: number; total: number; }
+
+export type GuidesSort = 'submissions' | 'saves' | 'recent';
+
+export interface Guide {
+  rank: number; user_id: number; name: string; avatar_url: string | null;
+  approved_count: number; saves_total: number; recent_count: number;
+}
+
+export interface GridPhoto {
+  id: number; thumb_url: string; display_url: string;
+  place: { id: number; name: string; category: string; lat: number; lng: number };
+}
+
+export interface GeoSuggestion { name: string; address: string; lat: number; lng: number; }

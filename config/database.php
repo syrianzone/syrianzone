@@ -60,6 +60,14 @@ return [
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 \Pdo\Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
+            // spatie/laravel-backup dump flags. --hex-blob is load-bearing: transit
+            // tables carry binary geometry columns that a text dump mangles.
+            // --skip-ssl: mariadb-dump 11+ verifies tls by default and the managed
+            // mysql presents a self-signed cert; the app itself connects without tls.
+            'dump' => [
+                'use_single_transaction' => true,
+                'add_extra_option' => '--routines --triggers --hex-blob --default-character-set=utf8mb4 --skip-ssl',
+            ],
         ],
 
         'mariadb' => [

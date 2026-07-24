@@ -16,7 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->trustProxies(at: '*');
         
-        $middleware->web(prepend: [
+        $middleware->web(append: [
             \App\Http\Middleware\AutoLoginDevUser::class,
         ]);
         
@@ -35,11 +35,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->statefulApi();
         $middleware->validateCsrfTokens(except: [
             'api/v1/studio/routes',
+            'api/v1/studio/routes/*',
             'api/polls/*/vote',
             'api/submit',
             'guesswho/broadcasting/auth',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        \Sentry\Laravel\Integration::handles($exceptions);
     })->create();

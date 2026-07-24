@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, createContext, useContext } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { MapContext } from './MapContext'
+import { useTransitTheme } from '../TransitThemeContext'
 
 export const LocationContext = createContext<{ lng: number; lat: number } | null>(null)
 export const LocationStatusContext = createContext<'idle' | 'loading' | 'available' | 'denied'>('idle')
@@ -27,6 +28,7 @@ export default function MapCanvas({ bounds, children }: MapCanvasProps) {
   const [error, setError] = useState<string | null>(null)
   const [userLocation, setUserLocation] = useState<{ lng: number; lat: number } | null>(null)
   const [locationStatus, setLocationStatus] = useState<'idle' | 'loading' | 'available' | 'denied'>('idle')
+  const { theme } = useTransitTheme()
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -40,7 +42,7 @@ export default function MapCanvas({ bounds, children }: MapCanvasProps) {
 
     const instance = new maplibregl.Map({
       container: containerRef.current,
-      style: '/styles/styles/dark-matter.json',
+      style: theme === 'jasmine' ? '/styles/styles/positron.json' : '/styles/styles/dark-matter.json',
       bounds: bounds as maplibregl.LngLatBoundsLike,
       fitBoundsOptions: { padding: 60 },
       maxBounds,
@@ -62,7 +64,7 @@ export default function MapCanvas({ bounds, children }: MapCanvasProps) {
       setMap(null)
       setError(null)
     }
-  }, [bounds])
+  }, [bounds, theme])
 
   useEffect(() => {
     if (!map) return

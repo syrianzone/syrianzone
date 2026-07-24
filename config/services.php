@@ -49,4 +49,8 @@ return [
         'username' => env('X_USERNAME', 'syrianzone'),
     ],
 
+    'google_places' => [
+        'key' => env('GOOGLE_PLACES_API_KEY'),
+    ],
+
 ];

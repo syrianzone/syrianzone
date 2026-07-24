@@ -3,12 +3,12 @@ import { ImagePlus, X } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 
-const MAX_BYTES = 8 * 1024 * 1024;
+export const MAX_BYTES = 12 * 1024 * 1024;
 // mirrors the server's dimensions rule so users get an Arabic message before uploading
-const MIN_DIM = 200;
-const MAX_DIM = 6000;
+export const MIN_DIM = 200;
+export const MAX_DIM = 6000;
 
-async function imageDimensions(file: File): Promise<{ width: number; height: number } | null> {
+export async function imageDimensions(file: File): Promise<{ width: number; height: number } | null> {
   try {
     const bitmap = await createImageBitmap(file);
     const dims = { width: bitmap.width, height: bitmap.height };
@@ -25,7 +25,7 @@ export function PhotoPicker(props: {
   onChange: (files: File[]) => void;
   max?: number;
 }) {
-  const { files, onChange, max = 5 } = props;
+  const { files, onChange, max = 10 } = props;
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,7 +38,7 @@ export function PhotoPicker(props: {
     const accepted = [...files];
     for (const file of Array.from(picked)) {
       if (file.size > MAX_BYTES) {
-        errors.push(`الصورة ${file.name} تتجاوز 8 ميغابايت`);
+        errors.push(`الصورة ${file.name} تتجاوز 12 ميغابايت`);
         continue;
       }
       const dims = await imageDimensions(file);
@@ -111,7 +111,7 @@ export function PhotoPicker(props: {
         )}
       </div>
       <p className="text-xs text-muted-foreground">
-        من 1 إلى {max} صور، بحد أقصى 8 ميغابايت لكل صورة
+        من 1 إلى {max} صور، بحد أقصى 12 ميغابايت لكل صورة
       </p>
     </div>
   );

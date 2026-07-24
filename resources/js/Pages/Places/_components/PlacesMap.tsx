@@ -7,11 +7,16 @@ import type { LatLng, PlaceFeatureCollection } from '../_lib/types';
 const SOURCE_ID = 'places';
 const LAYERS = ['clusters', 'cluster-count', 'place-pin'];
 
+// shapes Arabic labels on the vector basemap; lazy = loads only when RTL text appears
+if (maplibregl.getRTLTextPluginStatus() === 'unloaded') {
+  maplibregl.setRTLTextPlugin('/styles/mapbox-gl-rtl-text.min.js', true);
+}
+
 // data-theme on <html> always holds a concrete theme id (set pre-hydration by app.blade.php)
 function styleUrl(): string {
   const id = document.documentElement.getAttribute('data-theme');
   const dark = THEME_REGISTRY.find((t) => t.id === id)?.isDark ?? true;
-  return dark ? '/styles/styles/dark-matter.json' : '/styles/styles/light.json';
+  return dark ? '/styles/styles/dark-matter-vector.json' : '/styles/styles/light-vector.json';
 }
 
 export function PlacesMap(props: {
@@ -92,7 +97,7 @@ export function PlacesMap(props: {
         type: 'symbol',
         source: SOURCE_ID,
         filter: ['has', 'point_count'],
-        layout: { 'text-field': '{point_count_abbreviated}', 'text-size': 13 },
+        layout: { 'text-field': '{point_count_abbreviated}', 'text-size': 13, 'text-font': ['IBM Plex Sans Arabic Bold'] },
         paint: { 'text-color': '#ffffff' },
       });
 

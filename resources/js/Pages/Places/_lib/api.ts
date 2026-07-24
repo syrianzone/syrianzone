@@ -1,6 +1,11 @@
 import axios from '@/Lib/axios';
 import type {
+  GeoSuggestion,
   AdminPlace,
+  GridPhoto,
+  Guide,
+  GuidesSort,
+  LatLng,
   MyPlace,
   NearbyPlace,
   Paginated,
@@ -18,8 +23,13 @@ export const api = {
     return data;
   },
 
-  async listPlaces(params: { category?: PlaceCategory; q?: string; sort?: 'newest' | 'popular'; page?: number }): Promise<Paginated<PlaceListItem>> {
+  async listPlaces(params: { category?: PlaceCategory; q?: string; sort?: 'newest' | 'popular'; page?: number; user_id?: number }): Promise<Paginated<PlaceListItem>> {
     const { data } = await axios.get(`${base}/places`, { params });
+    return data;
+  },
+
+  async geocode(q: string): Promise<{ suggestions: GeoSuggestion[] }> {
+    const { data } = await axios.get(`${base}/places/geocode`, { params: { q } });
     return data;
   },
 
@@ -47,6 +57,52 @@ export const api = {
 
   async myPlaces(page?: number): Promise<Paginated<MyPlace>> {
     const { data } = await axios.get(`${base}/my/places`, { params: { page } });
+    return data;
+  },
+
+  async updateMyPlaceLocation(id: number, coords: LatLng): Promise<{ id: number; lat: number; lng: number; status: 'pending' }> {
+    const { data } = await axios.patch(`${base}/my/places/${id}/location`, coords);
+    return data;
+  },
+
+  async updateMyPlace(id: number, data: Partial<{ name: string; category: PlaceCategory; description: string }>): Promise<{ id: number; name: string; category: PlaceCategory; description: string; status: 'pending' }> {
+    const { data: res } = await axios.patch(`${base}/my/places/${id}`, data);
+    return res;
+  },
+
+  async addMyPhoto(id: number, file: File): Promise<{ id: number; thumb_url: string; display_url: string; sort: number; place_status: 'pending' }> {
+    const form = new FormData();
+    form.append('photo', file);
+    const { data } = await axios.post(`${base}/my/places/${id}/photos`, form);
+    return data;
+  },
+
+  async deleteMyPhoto(photoId: number): Promise<{ id: number; place_status: 'pending' }> {
+    const { data } = await axios.delete(`${base}/my/place-photos/${photoId}`);
+    return data;
+  },
+
+  async rotateMyPhoto(photoId: number): Promise<{ id: number; thumb_url: string; display_url: string }> {
+    const { data } = await axios.post(`${base}/my/place-photos/${photoId}/rotate`);
+    return data;
+  },
+
+  async deleteMyPlace(id: number): Promise<void> {
+    await axios.delete(`${base}/my/places/${id}`);
+  },
+
+  async resubmitMyPlace(id: number): Promise<{ id: number; status: 'pending' }> {
+    const { data } = await axios.post(`${base}/my/places/${id}/resubmit`);
+    return data;
+  },
+
+  async guides(sort: GuidesSort): Promise<{ sort: GuidesSort; guides: Guide[] }> {
+    const { data } = await axios.get(`${base}/guides`, { params: { sort } });
+    return data;
+  },
+
+  async gridPhotos(page: number): Promise<Paginated<GridPhoto>> {
+    const { data } = await axios.get(`${base}/places/photos`, { params: { page } });
     return data;
   },
 
@@ -118,6 +174,7 @@ const STATUS_MESSAGES: Record<number, string> = {
   401: 'سجل الدخول للمتابعة',
   403: 'غير مسموح لك بهذا الإجراء',
   404: 'العنصر غير موجود',
+  413: 'الصور المرفوعة كبيرة جداً، الحد الأقصى 12 ميغابايت لكل صورة',
   419: 'انتهت الجلسة، أعد تحميل الصفحة',
   422: 'تحقق من البيانات المدخلة',
   429: 'محاولات كثيرة، انتظر قليلاً ثم أعد المحاولة',
@@ -130,4 +187,17 @@ export function extractError(e: unknown): string {
   if (message && /[\u0600-\u06FF]/.test(message)) return message;
   const status = err.response?.status;
   return (status !== undefined && STATUS_MESSAGES[status]) || 'حدث خطأ، حاول مجدداً';
+}
+
+export function extractFieldErrors(e: unknown): Record<string, string> | null {
+  const err = e as { response?: { status?: number; data?: { errors?: Record<string, string[]> } } };
+  if (err.response?.status !== 422 || !err.response.data?.errors) return null;
+  const out: Record<string, string> = {};
+  for (const [key, msgs] of Object.entries(err.response.data.errors)) {
+    // photos.0, photos.1 ... collapse onto the photos field
+    const field = key.startsWith('photos') ? 'photos' : key.split('.')[0];
+    // same guard as extractError: only trust the app's own Arabic messages
+    if (!(field in out) && msgs[0] && /[؀-ۿ]/.test(msgs[0])) out[field] = msgs[0];
+  }
+  return Object.keys(out).length ? out : null;
 }

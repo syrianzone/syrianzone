@@ -18,7 +18,8 @@ return [
             'compression_method' => ZipArchive::CM_DEFAULT,
             'compression_level' => 9,
             'filename_prefix' => '',
-            'disks' => ['backups'],
+            // r2-backups only when the bucket is configured, so local/dev backups still work
+            'disks' => array_filter(['backups', env('R2_BACKUP_BUCKET') ? 'r2-backups' : null]),
         ],
         'temporary_directory' => storage_path('app/backup-temp'),
         'password' => env('BACKUP_ARCHIVE_PASSWORD'),
@@ -27,11 +28,13 @@ return [
         'retry_delay' => 0,
     ],
     'notifications' => [
+        // no webhook configured = no channels: an empty webhook_url makes guzzle
+        // throw on every backup, which pollutes sentry every 6h for nothing
         'notifications' => [
-            \Spatie\Backup\Notifications\Notifications\BackupHasFailedNotification::class => ['discord'],
-            \Spatie\Backup\Notifications\Notifications\BackupWasSuccessfulNotification::class => ['discord'],
-            \Spatie\Backup\Notifications\Notifications\CleanupHasFailedNotification::class => ['discord'],
-            \Spatie\Backup\Notifications\Notifications\CleanupWasSuccessfulNotification::class => ['discord'],
+            \Spatie\Backup\Notifications\Notifications\BackupHasFailedNotification::class => env('DISCORD_BACKUP_WEBHOOK') ? ['discord'] : [],
+            \Spatie\Backup\Notifications\Notifications\BackupWasSuccessfulNotification::class => env('DISCORD_BACKUP_WEBHOOK') ? ['discord'] : [],
+            \Spatie\Backup\Notifications\Notifications\CleanupHasFailedNotification::class => env('DISCORD_BACKUP_WEBHOOK') ? ['discord'] : [],
+            \Spatie\Backup\Notifications\Notifications\CleanupWasSuccessfulNotification::class => env('DISCORD_BACKUP_WEBHOOK') ? ['discord'] : [],
         ],
         'notifiable' => \Spatie\Backup\Notifications\Notifiable::class,
         'mail' => ['to' => 'backup@syrian.zone', 'from' => ['address' => 'noreply@syrian.zone', 'name' => 'Backup']],

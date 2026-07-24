@@ -8,6 +8,7 @@ export const CATEGORIES: { key: PlaceCategory; label: string }[] = [
   { key: 'abandoned', label: 'مهجور' },
   { key: 'viewpoint', label: 'إطلالة' },
   { key: 'market', label: 'سوق' },
+  { key: 'food', label: 'مأكولات' },
   { key: 'other', label: 'آخر' },
 ];
 

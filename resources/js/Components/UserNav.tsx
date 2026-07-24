@@ -58,9 +58,11 @@ export default function UserNav() {
                         <span>إدارة التصويت</span>
                     </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer">
-                    <UserIcon className="ml-2 h-4 w-4" />
-                    <span>الملف الشخصي</span>
+                <DropdownMenuItem asChild>
+                    <Link href="/dashboard?tab=profile" className="cursor-pointer">
+                        <UserIcon className="ml-2 h-4 w-4" />
+                        <span>الملف الشخصي</span>
+                    </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem className="cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive" onClick={logout}>
                     <LogOut className="ml-2 h-4 w-4" />

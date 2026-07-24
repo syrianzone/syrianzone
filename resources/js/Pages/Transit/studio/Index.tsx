@@ -9,6 +9,8 @@ import { useStudioStore, type StopFeature, type WizardStep } from '../_store/use
 import { useMapData } from '../_hooks/useMapData'
 import cities from '../_data/cities.json'
 import TransitLayout from '../layout'
+import { useTransitTheme } from '../_components/TransitThemeContext'
+import { useAuth } from '@/Contexts/AuthContext'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type DrawMode = 'idle' | 'line' | 'point'
@@ -45,6 +47,40 @@ function checkConflict(drawnLine: [number, number][], routeFeatures: any[]): boo
     }
   }
   return false
+}
+
+// Find nearest point on a line segment (ax,ay)→(bx,by) from point (px,py)
+function nearestOnSegment(px: number, py: number, ax: number, ay: number, bx: number, by: number) {
+  const dx = bx - ax, dy = by - ay
+  const lenSq = dx * dx + dy * dy
+  if (lenSq === 0) return { x: ax, y: ay, t: 0 }
+  let t = ((px - ax) * dx + (py - ay) * dy) / lenSq
+  t = Math.max(0, Math.min(1, t))
+  return { x: ax + t * dx, y: ay + t * dy, t }
+}
+
+// Find the nearest segment in a polyline and return insertion index + pixel distance
+function findNearestSegment(coords: [number, number][], px: number, py: number, map: maplibregl.Map) {
+  let minDist = Infinity
+  let insertIdx = 0
+  let bestNearest = { x: 0, y: 0 }
+
+  const pxC = map.project([px, py])
+
+  for (let i = 0; i < coords.length - 1; i++) {
+    const [ax, ay] = coords[i]
+    const [bx, by] = coords[i + 1]
+    const np = nearestOnSegment(px, py, ax, ay, bx, by)
+    const npPx = map.project([np.x, np.y])
+    const dist = Math.hypot(pxC.x - npPx.x, pxC.y - npPx.y)
+    if (dist < minDist) {
+      minDist = dist
+      insertIdx = i + 1
+      bestNearest = { x: np.x, y: np.y }
+    }
+  }
+
+  return { insertIdx, distance: minDist, nearest: bestNearest }
 }
 
 const STEP_LABELS: { label: string; num: WizardStep }[] = [
@@ -135,10 +171,13 @@ function Step2Draw({
           {isDrawing && <span className="studio-tool-pill">نشط</span>}
         </button>
       ) : (
-        <div className="studio-done-badge">
-          <span>✓ المسار مرسوم ({drawnLine.length} نقطة)</span>
-          <button type="button" className="studio-link-btn" onClick={onRedraw}>إعادة الرسم</button>
-        </div>
+        <>
+          <div className="studio-done-badge">
+            <span>✓ المسار مرسوم ({drawnLine.length} نقطة)</span>
+            <button type="button" className="studio-link-btn" onClick={onRedraw}>إعادة الرسم</button>
+          </div>
+          <p className="studio-hint" style={{ marginTop: '0.35rem' }}>انقر مرتين على الخريطة لإضافة نقطة • اسحب النقاط • انقر يمينًا / اضغط مطولاً لحذف نقطة</p>
+        </>
       )}
 
       {isDrawing && (
@@ -317,12 +356,33 @@ function Step5Review({
   onSubmit: () => void
   onBack: () => void
 }) {
-  const { cityId, nameAr, nameEn, price, notes, drawnLine, stops } = useStudioStore()
+  const { cityId, nameAr, nameEn, price, notes, drawnLine, stops, setStep } = useStudioStore()
   const city = cities.find(c => c.id === cityId)
+
+  const steps = [
+    { num: 1 as const, label: 'المدينة' },
+    { num: 2 as const, label: 'المسار' },
+    { num: 3 as const, label: 'المحطات' },
+    { num: 4 as const, label: 'البيانات' },
+  ]
 
   return (
     <div className="studio-step-panel">
       <p className="studio-step-intro">راجع بيانات مساهمتك قبل الإرسال.</p>
+
+      {/* Edit steps */}
+      <div className="flex gap-1.5 mb-3">
+        {steps.map(s => (
+          <button
+            key={s.num}
+            type="button"
+            className="studio-review-step-badge"
+            onClick={() => setStep(s.num)}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
 
       <div className="studio-review-card">
         <div className="studio-review-row">
@@ -394,15 +454,18 @@ function Step5Review({
   )
 }
 
-function SuccessPanel({ draftId, onReset, onExit }: { draftId: number; onReset: () => void; onExit: () => void }) {
+function SuccessPanel({ draftId, isEditMode, onReset, onEdit, onExit }: { draftId: number; isEditMode: boolean; onReset: () => void; onEdit: () => void; onExit: () => void }) {
   return (
     <div className="studio-success">
       <div className="studio-success-icon">✓</div>
-      <h2 className="studio-success-title">تم إرسال مسارك بنجاح!</h2>
-      <p className="studio-success-sub">سيراجع الفريق مساهمتك خلال 48 ساعة.</p>
+      <h2 className="studio-success-title">{isEditMode ? 'تم تحديث مسارك بنجاح!' : 'تم إرسال مسارك بنجاح!'}</h2>
+      <p className="studio-success-sub">{isEditMode ? 'سيتمت مراجعة التعديلات خلال 48 ساعة.' : 'سيراجع الفريق مساهمتك خلال 48 ساعة.'}</p>
       <p className="studio-success-id">رقم المساهمة: #{draftId}</p>
       <div className="studio-success-actions">
-        <button type="button" className="studio-submit-btn" onClick={onReset}>
+        <button type="button" className="studio-submit-btn" onClick={onEdit}>
+          تعديل المسار
+        </button>
+        <button type="button" className="studio-submit-btn studio-submit-btn--outline" onClick={onReset}>
           إرسال مسار آخر
         </button>
         <button type="button" className="studio-nav-back" style={{ justifyContent: 'center' }} onClick={onExit}>
@@ -455,11 +518,16 @@ function TransitStudioPageContent() {
   const modeRef      = useRef<DrawMode>('idle')
   const activeLine   = useRef<Position[]>([])
   const isMobileRef  = useRef(false)
+  const vertexMarkersRef = useRef<maplibregl.Marker[]>([])
 
   const {
     step, cityId, drawnLine, stops, nameAr, submittedDraftId,
-    setStep, setCity, setDrawnLine, updateStopName, setSubmittedDraftId, reset,
+    isEditMode, editingDraftId, editingRouteId,
+    setStep, setCity, setDrawnLine, updateStopName, setSubmittedDraftId,
+    setEditMode, loadDraft, reset,
   } = useStudioStore()
+  const { theme } = useTransitTheme()
+  const { user } = useAuth()
 
   const [mapReady,           setMapReady]           = useState(false)
   const [drawMode,           setDrawMode]           = useState<DrawMode>('idle')
@@ -508,16 +576,71 @@ function TransitStudioPageContent() {
     if (canvas) canvas.style.cursor = mode !== 'idle' ? 'crosshair' : ''
   }, [clearActive])
 
+  // ─── Restore pending session after login redirect ─────────────────────────
+  useEffect(() => {
+    const pending = localStorage.getItem('transit:studio:pending')
+    if (pending) {
+      try {
+        const s = JSON.parse(pending)
+        const patch: any = {}
+        if (s.cityId) patch.cityId = s.cityId
+        if (s.drawnLine) patch.drawnLine = s.drawnLine
+        if (s.stops) patch.stops = s.stops
+        if (s.nameAr !== undefined) patch.nameAr = s.nameAr
+        if (s.nameEn !== undefined) patch.nameEn = s.nameEn
+        if (s.price !== undefined) patch.price = s.price
+        if (s.notes !== undefined) patch.notes = s.notes
+        if (s.editingRouteId) { patch.editingRouteId = s.editingRouteId; patch.isEditMode = true }
+        if (s.cityId) patch.step = 5 as WizardStep
+        useStudioStore.setState(patch)
+        addToast('تمت استعادة مسارك بعد تسجيل الدخول', 'success')
+      } catch { /* */ }
+      localStorage.removeItem('transit:studio:pending')
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─── Load draft for editing (?edit=DRAFT_ID) ──────────────────────────────
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const editId = params.get('edit')
+    if (!editId || isEditMode) return
+    // Try loading as draft first
+    fetch(`/api/v1/studio/routes/${editId}`, { credentials: 'include' })
+      .then(r => {
+        if (r.ok) return r.json().then(draft => ({ draft, isRoute: false }))
+        // Not found as draft → try as published route
+        return fetch(`/api/v1/studio/routes/${editId}/from-route`, { credentials: 'include' })
+          .then(r2 => r2.ok ? r2.json().then(d => ({ draft: d, isRoute: true })) : null)
+      })
+      .then(result => {
+        if (result) {
+          loadDraft(result.draft)
+          addToast(result.isRoute ? 'تم تحميل الخط المنشور للتعديل' : 'تم تحميل المسار للتعديل', 'success')
+        }
+      })
+      .catch(() => addToast('تعذّر تحميل المسار للتعديل', 'error'))
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─── Zoom to fit route when editing ───────────────────────────────────────
+  useEffect(() => {
+    if (!mapReady || !mapRef.current || !drawnLine || drawnLine.length < 2 || !isEditMode) return
+    const map = mapRef.current
+    const coords = drawnLine as maplibregl.LngLatLike[]
+    const bounds = coords.reduce((b, c) => b.extend(c), new maplibregl.LngLatBounds(coords[0], coords[0]))
+    map.fitBounds(bounds, { padding: 80, maxZoom: 15, duration: 500 })
+  }, [mapReady, drawnLine, isEditMode])
+
   // ─── Map init ───────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return
 
     const map = new maplibregl.Map({
       container: mapContainer.current,
-      style: '/styles/styles/dark-matter.json',
+      style: theme === 'jasmine' ? '/styles/styles/positron.json' : '/styles/styles/dark-matter.json',
       center: [36.2913, 33.5138],
       zoom: 5,
       attributionControl: false,
+      doubleClickZoom: false,
     })
 
     map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right')
@@ -608,12 +731,42 @@ function TransitStudioPageContent() {
 
     map.on('dblclick', (e) => {
       e.preventDefault()
-      if (modeRef.current !== 'line') return
+      const mode = modeRef.current
+      const state = useStudioStore.getState()
+
+      // Idle mode with existing line → insert/extend vertex
+      if (mode === 'idle' && state.drawnLine && state.drawnLine.length >= 2) {
+        const clickCoord: [number, number] = [e.lngLat.lng, e.lngLat.lat]
+        const coords = state.drawnLine
+        const { insertIdx, distance } = findNearestSegment(coords, clickCoord[0], clickCoord[1], map)
+
+        // Threshold: 40px → on/near line, insert between segments
+        if (distance < 40) {
+          const updated = [...coords]
+          updated.splice(insertIdx, 0, clickCoord)
+          state.setDrawnLine(updated as [number, number][])
+        } else {
+          // Far from line → extend start or end, whichever is closer
+          const startPx = map.project(coords[0] as maplibregl.LngLatLike)
+          const endPx = map.project(coords[coords.length - 1] as maplibregl.LngLatLike)
+          const clickPx = map.project(e.lngLat)
+          const distStart = Math.hypot(clickPx.x - startPx.x, clickPx.y - startPx.y)
+          const distEnd = Math.hypot(clickPx.x - endPx.x, clickPx.y - endPx.y)
+          const updated = distStart <= distEnd
+            ? [clickCoord, ...coords]
+            : [...coords, clickCoord]
+          state.setDrawnLine(updated as [number, number][])
+        }
+        return
+      }
+
+      // Line drawing mode → finish line
+      if (mode !== 'line') return
       const coords = activeLine.current
       if (coords.length >= 2) {
         const finalCoords = coords.slice(0, -1) as [number, number][]
         if (finalCoords.length >= 2) {
-          useStudioStore.getState().setDrawnLine(finalCoords)
+          state.setDrawnLine(finalCoords)
         }
       }
       activeLine.current = []
@@ -648,9 +801,9 @@ function TransitStudioPageContent() {
       window.removeEventListener('keydown', onKeyDown)
       map.remove()
       mapRef.current = null
+      setMapReady(false)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [theme])
 
   // ─── Sync drawn line → map ───────────────────────────────────────────────────
   useEffect(() => {
@@ -663,6 +816,162 @@ function TransitStudioPageContent() {
         : [],
     })
   }, [mapReady, drawnLine])
+
+  // ─── Draggable vertex markers for route editing ─────────────────────────────
+  useEffect(() => {
+    if (!mapReady || !mapRef.current) return
+    const map = mapRef.current
+
+    // Clear existing markers
+    vertexMarkersRef.current.forEach(m => m.remove())
+    vertexMarkersRef.current = []
+
+    // Remove any lingering tooltip
+    const existingTooltip = mapContainer.current?.querySelector('.studio-vertex-remove-tooltip')
+    if (existingTooltip) existingTooltip.remove()
+
+    // Only show when line exists and we're not actively drawing
+    if (!drawnLine || drawnLine.length < 2 || drawMode !== 'idle') return
+
+    let activeTooltip: { el: HTMLDivElement; marker: maplibregl.Marker } | null = null
+
+    const dismissTooltip = () => {
+      if (activeTooltip) {
+        activeTooltip.el.remove()
+        activeTooltip = null
+      }
+    }
+
+    const showRemoveTooltip = (marker: maplibregl.Marker, idx: number) => {
+      dismissTooltip()
+
+      const tooltipEl = document.createElement('div')
+      tooltipEl.className = 'studio-vertex-remove-tooltip'
+      tooltipEl.style.cssText = `
+        position:absolute; z-index:20;
+        display:inline-flex; align-items:center; gap:4px;
+        background:var(--surface,#1e1e1e); border:1px solid var(--border,#333);
+        border-radius:8px; padding:3px 6px;
+        box-shadow:0 2px 12px rgba(0,0,0,0.4);
+        pointer-events:all; cursor:default;
+        animation:tooltip-pop 0.15s ease both;
+        direction:rtl;
+      `
+      tooltipEl.innerHTML = `
+        <button data-action="cancel" style="
+          background:transparent;color:var(--muted,#888);border:none;border-radius:4px;
+          padding:1px 4px;font-size:12px;font-family:inherit;
+          cursor:pointer;line-height:1;
+        ">✕</button>
+        <button data-action="remove" style="
+          background:#ef4444;color:#fff;border:none;border-radius:5px;
+          padding:2px 8px;font-size:11px;font-weight:700;font-family:inherit;
+          cursor:pointer;
+        ">حذف</button>
+      `
+
+      // Position above the marker
+      const containerRect = mapContainer.current!.getBoundingClientRect()
+      const markerPos = marker.getElement().getBoundingClientRect()
+      const tooltipWidth = 110
+      let left = markerPos.left - containerRect.left + markerPos.width / 2 - tooltipWidth / 2
+      left = Math.max(4, Math.min(left, containerRect.width - tooltipWidth - 4))
+      tooltipEl.style.left = `${left}px`
+      tooltipEl.style.top = `${markerPos.top - containerRect.top - 32}px`
+      tooltipEl.style.width = `${tooltipWidth}px`
+
+      tooltipEl.querySelector('[data-action="remove"]')!.addEventListener('click', (e) => {
+        e.stopPropagation()
+        const current = useStudioStore.getState().drawnLine
+        if (!current || current.length <= 2) {
+          dismissTooltip()
+          return
+        }
+        const updated = [...current]
+        updated.splice(idx, 1)
+        useStudioStore.getState().setDrawnLine(updated as [number, number][])
+        dismissTooltip()
+      })
+
+      tooltipEl.querySelector('[data-action="cancel"]')!.addEventListener('click', (e) => {
+        e.stopPropagation()
+        dismissTooltip()
+      })
+
+      mapContainer.current!.appendChild(tooltipEl)
+      activeTooltip = { el: tooltipEl, marker }
+    }
+
+    drawnLine.forEach((coord, idx) => {
+      const el = document.createElement('div')
+      el.className = 'studio-vertex-handle'
+      el.style.cssText = 'width:16px;height:16px;border-radius:50%;background:#f5a623;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.4);cursor:grab;touch-action:none;'
+
+      const marker = new maplibregl.Marker({ element: el, draggable: true, offset: [0, 0] })
+        .setLngLat(coord as maplibregl.LngLatLike)
+        .addTo(map)
+
+      // Drag handling
+      marker.on('dragend', () => {
+        const pos = marker.getLngLat()
+        const newCoord: [number, number] = [pos.lng, pos.lat]
+        const current = useStudioStore.getState().drawnLine
+        if (!current) return
+        const updated = [...current]
+        updated[idx] = newCoord
+        useStudioStore.getState().setDrawnLine(updated as [number, number][])
+      })
+
+      // Right-click → show remove tooltip (desktop)
+      el.addEventListener('contextmenu', (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        showRemoveTooltip(marker, idx)
+      })
+
+      // Long-press → show remove tooltip (mobile)
+      let longPressTimer: ReturnType<typeof setTimeout> | null = null
+      let touchStartPos = { x: 0, y: 0 }
+
+      el.addEventListener('touchstart', (e) => {
+        touchStartPos = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+        longPressTimer = setTimeout(() => {
+          showRemoveTooltip(marker, idx)
+        }, 500)
+      }, { passive: true })
+
+      el.addEventListener('touchmove', (e) => {
+        if (longPressTimer) {
+          const dx = e.touches[0].clientX - touchStartPos.x
+          const dy = e.touches[0].clientY - touchStartPos.y
+          if (Math.hypot(dx, dy) > 10) {
+            clearTimeout(longPressTimer)
+            longPressTimer = null
+          }
+        }
+      }, { passive: true })
+
+      el.addEventListener('touchend', () => {
+        if (longPressTimer) {
+          clearTimeout(longPressTimer)
+          longPressTimer = null
+        }
+      })
+
+      vertexMarkersRef.current.push(marker)
+    })
+
+    // Dismiss tooltip when clicking on the map (not on a vertex)
+    const onMapMouseDown = () => { dismissTooltip() }
+    map.on('mousedown', onMapMouseDown)
+
+    return () => {
+      map.off('mousedown', onMapMouseDown)
+      dismissTooltip()
+      vertexMarkersRef.current.forEach(m => m.remove())
+      vertexMarkersRef.current = []
+    }
+  }, [mapReady, drawnLine, drawMode])
 
   // ─── Sync stops → map ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -799,6 +1108,25 @@ function TransitStudioPageContent() {
     if (!drawnLine) { addToast('الرجاء رسم المسار أولاً', 'error'); return }
     if (!nameAr.trim()) { addToast('اسم المسار بالعربية مطلوب', 'error'); return }
 
+    // Require auth: guests must login before submitting so the route is assigned to their account
+    if (!user) {
+      const storeState = useStudioStore.getState()
+      try {
+        localStorage.setItem('transit:studio:pending', JSON.stringify({
+          cityId: storeState.cityId,
+          drawnLine: storeState.drawnLine,
+          stops: storeState.stops,
+          nameAr: storeState.nameAr,
+          nameEn: storeState.nameEn,
+          price: storeState.price,
+          notes: storeState.notes,
+          editingRouteId: storeState.editingRouteId,
+        }))
+      } catch { /* ignore */ }
+      window.location.href = '/auth/google?redirect=/transit/studio'
+      return
+    }
+
     const storeState = useStudioStore.getState()
     const geojson: FeatureCollection = {
       type: 'FeatureCollection',
@@ -819,21 +1147,46 @@ function TransitStudioPageContent() {
     setSubmitting(true)
     try {
       const baseUrl = '/api'
-      const res = await fetch(`${baseUrl}/v1/studio/routes`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          city_id:  storeState.cityId,
-          name_ar:  storeState.nameAr.trim(),
-          name_en:  storeState.nameEn.trim() || null,
-          price:    parseInt(storeState.price) || null,
-          notes:    storeState.notes.trim() || null,
-          geojson,
-        }),
-      })
+      const payload: Record<string, any> = {
+        city_id:  storeState.cityId,
+        name_ar:  storeState.nameAr.trim(),
+        name_en:  storeState.nameEn.trim() || null,
+        price:    parseInt(storeState.price) || null,
+        notes:    storeState.notes.trim() || null,
+        geojson,
+      }
+
+      let res: Response
+
+      if (isEditMode && editingDraftId) {
+        // Updating an existing draft
+        res = await fetch(`${baseUrl}/v1/studio/routes/${editingDraftId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(payload),
+        })
+      } else if (isEditMode && editingRouteId) {
+        // Creating a new draft linked to a published route
+        payload.route_id = editingRouteId
+        res = await fetch(`${baseUrl}/v1/studio/routes`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+      } else {
+        // Creating a brand new draft
+        res = await fetch(`${baseUrl}/v1/studio/routes`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+      }
+
       if (res.ok) {
         const data = await res.json().catch(() => ({}))
         setSubmittedDraftId(data?.id ?? 0)
+        if (isEditMode) addToast('تم تحديث المسار', 'success')
       } else {
         const err = await res.json().catch(() => ({}))
         addToast('حدث خطأ: ' + (err.message || `HTTP ${res.status}`), 'error')
@@ -843,15 +1196,16 @@ function TransitStudioPageContent() {
     } finally {
       setSubmitting(false)
     }
-  }, [drawnLine, nameAr, addToast, setSubmittedDraftId])
+  }, [drawnLine, nameAr, addToast, setSubmittedDraftId, user, isEditMode, editingDraftId, editingRouteId])
 
   const handleReset = useCallback(() => {
     reset()
+    setEditMode(null)
     clearActive()
     setMode('idle')
     setConflictWarning(false)
     setConflictDismissed(false)
-  }, [reset, clearActive, setMode])
+  }, [reset, setEditMode, clearActive, setMode])
 
   // Step progress can go back to completed steps
   const canGoToStep = (num: WizardStep) => num < step
@@ -878,6 +1232,11 @@ function TransitStudioPageContent() {
           <div className="studio-header-status">
             <span className={`studio-dot ${mapReady ? 'studio-dot--ready' : 'studio-dot--loading'}`} />
             <span className="studio-status-text">{mapReady ? 'الخريطة جاهزة' : 'تحميل الخريطة…'}</span>
+            {user && (
+              <Link href="/dashboard" className="studio-my-contrib-btn" title="مساهماتي">
+                مساهماتي
+              </Link>
+            )}
           </div>
         </div>
       </header>
@@ -960,7 +1319,9 @@ function TransitStudioPageContent() {
               submittedDraftId !== null ? (
                 <SuccessPanel
                   draftId={submittedDraftId}
+                  isEditMode={isEditMode}
                   onReset={handleReset}
+                  onEdit={() => { setSubmittedDraftId(null); setStep(5) }}
                   onExit={() => router.push('/transit')}
                 />
               ) : (
@@ -1031,9 +1392,9 @@ function TransitStudioPageContent() {
       <style>{`
         .studio-shell {
           display: flex; flex-direction: column;
-          height: 100svh; overflow: hidden;
+          height: 100%; overflow: hidden;
           background: var(--bg); color: var(--text);
-          font-family: var(--font-ar, 'Cairo', sans-serif);
+          font-family: var(--font-ar, 'IBM Plex Sans Arabic', sans-serif);
         }
 
         /* Header */
@@ -1055,6 +1416,21 @@ function TransitStudioPageContent() {
         .studio-brand-sep   { color: var(--muted); font-size: 0.875rem; }
         .studio-title       { font-size: 0.95rem; font-weight: 700; color: var(--text); margin: 0; }
         .studio-header-status { display: flex; align-items: center; gap: 0.45rem; }
+        .studio-my-contrib-btn {
+          margin-inline-start: 0.5rem;
+          padding: 0.3rem 0.7rem;
+          border-radius: 9999px;
+          font-size: 0.75rem;
+          font-weight: 700;
+          color: var(--gold);
+          background: color-mix(in srgb, var(--gold) 12%, transparent);
+          border: 1px solid color-mix(in srgb, var(--gold) 35%, transparent);
+          transition: background 0.15s ease, color 0.15s ease;
+        }
+        .studio-my-contrib-btn:hover {
+          background: color-mix(in srgb, var(--gold) 22%, transparent);
+          color: var(--gold);
+        }
         .studio-dot { width: 8px; height: 8px; border-radius: 50%; }
         .studio-dot--ready   { background: #22c55e; box-shadow: 0 0 6px #22c55e88; }
         .studio-dot--loading { background: var(--muted); animation: pulse 1.2s ease-in-out infinite; }
@@ -1241,6 +1617,14 @@ function TransitStudioPageContent() {
           background: var(--bg); border: 1px solid var(--border); color: var(--muted);
         }
 
+        .studio-review-step-badge {
+          flex: 1; padding: 0.35rem 0.5rem; border-radius: 7px;
+          border: 1px solid var(--border); background: var(--surface);
+          color: var(--muted); font-family: inherit; font-size: 0.72rem; font-weight: 600;
+          cursor: pointer; transition: all 0.15s; text-align: center;
+        }
+        .studio-review-step-badge:hover { background: var(--gold); color: var(--bg); border-color: var(--gold); }
+
         /* Submit */
         .studio-submit-btn {
           display: flex; align-items: center; justify-content: center; gap: 0.45rem;
@@ -1251,6 +1635,10 @@ function TransitStudioPageContent() {
         }
         .studio-submit-btn:not(:disabled):hover { opacity: 0.87; }
         .studio-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .studio-submit-btn--outline {
+          background: transparent; color: var(--gold); border: 1.5px solid var(--gold);
+        }
+        .studio-submit-btn--outline:hover { background: var(--gold); color: var(--bg); }
         .studio-spinner {
           width: 15px; height: 15px; border-radius: 50%;
           border: 2px solid rgba(255,255,255,0.35); border-top-color: #fff;
@@ -1345,6 +1733,7 @@ function TransitStudioPageContent() {
           animation: badge-in 0.2s ease both;
         }
         @keyframes badge-in { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:none} }
+        @keyframes tooltip-pop { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
         .studio-mode-badge--line  { background: rgba(56,142,60,0.92); color:#fff; }
         .studio-mode-badge--point { background: rgba(25,118,210,0.92); color:#fff; }
 

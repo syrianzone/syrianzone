@@ -59,6 +59,7 @@ test('transit route detail returns published route stops in travel order', funct
             'id' => 'stop-a',
             'city_id' => 'damascus',
             'name_ar' => 'المحطة أ',
+            'name_en' => 'Stop A',
             'geometry' => mobileTransitGeometry(['type' => 'Point', 'coordinates' => [36.3, 33.5]]),
             'created_at' => now(),
             'updated_at' => now(),
@@ -67,6 +68,7 @@ test('transit route detail returns published route stops in travel order', funct
             'id' => 'stop-b',
             'city_id' => 'damascus',
             'name_ar' => 'المحطة ب',
+            'name_en' => 'Stop B',
             'geometry' => mobileTransitGeometry(['type' => 'Point', 'coordinates' => [36.4, 33.6]]),
             'created_at' => now(),
             'updated_at' => now(),
@@ -97,8 +99,10 @@ test('transit route detail returns published route stops in travel order', funct
         ->assertJsonPath('data.route.id', 'route-1')
         ->assertJsonPath('data.route.colorIndex', 3)
         ->assertJsonPath('data.stops.0.properties.id', 'stop-b')
+        ->assertJsonPath('data.stops.0.properties.nameEn', 'Stop B')
         ->assertJsonPath('data.stops.0.coordinates', [36.4, 33.6])
-        ->assertJsonPath('data.stops.1.properties.id', 'stop-a');
+        ->assertJsonPath('data.stops.1.properties.id', 'stop-a')
+        ->assertJsonPath('data.stops.1.properties.nameEn', 'Stop A');
 });
 
 test('unknown transit routes return a JSON 404', function () {

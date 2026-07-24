@@ -103,6 +103,12 @@ Route::prefix('v1')->group(function () {
         ->middleware(ResolveOptionalMobileBearerToken::class)
         ->middleware('throttle:5,1');
 
+    Route::middleware([ResolveOptionalMobileBearerToken::class, 'auth:sanctum'])->group(function () {
+        Route::get('/studio/routes/{id}', [TransitStudioController::class, 'show']);
+        Route::put('/studio/routes/{id}', [TransitStudioController::class, 'update'])
+            ->middleware('throttle:10,1');
+        Route::get('/studio/routes/{id}/from-route', [TransitStudioController::class, 'showForEdit']);
+    });
 });
 
 require __DIR__.'/mobile-public.php';

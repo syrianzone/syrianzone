@@ -4,18 +4,40 @@ import React, { useEffect, useRef, useState, useCallback } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { FeatureCollection } from 'geojson'
-import { useQueryClient } from '@tanstack/react-query'
 import { useAdminDrafts, useMapData } from '../_hooks/useMapData'
-import TransitLayout from '../layout'
 import { router, Head } from '@inertiajs/react'
+import { useTransitTheme } from '../_components/TransitThemeContext'
+import TransitLayout from '../layout'
+import { Button } from '@/Components/ui/button'
+import { Badge } from '@/Components/ui/badge'
+import { Card, CardHeader, CardTitle, CardContent } from '@/Components/ui/card'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/Components/ui/tabs'
+import { Input } from '@/Components/ui/input'
+import { Textarea } from '@/Components/ui/textarea'
+import { ScrollArea } from '@/Components/ui/scroll-area'
+import { Separator } from '@/Components/ui/separator'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+} from '@/Components/ui/select'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
+} from '@/Components/ui/dialog'
+import {
+  ArrowRight, MapPin, CheckCircle2, XCircle, Eye, EyeOff,
+  GitMerge, GitBranch, MoveRight, LogOut, Map, Loader2,
+  Route, Users, History, Pencil
+} from 'lucide-react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type DraftStatus = 'pending' | 'approved' | 'rejected'
+type RouteStatus = 'published' | 'disapproved' | 'hidden'
 
 interface Draft {
   id: number
   user_id: number
   user: { name: string } | null
+  route_id: string | null
+  linked_route: { name_ar: string; name_en: string } | null
   city_id: string
   city: { name_ar: string; name_en: string } | null
   name_ar: string
@@ -28,26 +50,38 @@ interface Draft {
   created_at: string
 }
 
-type StatusFilter = 'all' | DraftStatus
+interface PublishedRoute {
+  id: string
+  city_id: string
+  city: { name_ar: string; name_en: string } | null
+  name_ar: string
+  name_en: string | null
+  price_old: number | null
+  price_new: number | null
+  status: RouteStatus
+  stops_count: number
+  created_at: string
+}
+
+interface ActivityLog {
+  id: number
+  route_id: string | null
+  action: string
+  description: string
+  user: { name: string } | null
+  created_at: string
+}
 
 const STATUS_LABELS: Record<DraftStatus, string> = {
-  pending:  'قيد الانتظار',
+  pending: 'قيد الانتظار',
   approved: 'مقبول',
   rejected: 'مرفوض',
 }
 
-const API = () => '/api'
-
-function stopCount(draft: Draft) {
-  let geojson = draft.geojson
-  if (typeof geojson === 'string') {
-    try {
-      geojson = JSON.parse(geojson)
-    } catch (e) {
-      console.error(e)
-    }
-  }
-  return geojson?.features?.filter((f: any) => f.geometry?.type === 'Point').length ?? 0
+const ROUTE_STATUS_LABELS: Record<RouteStatus, string> = {
+  published: 'منشور',
+  disapproved: 'معطل',
+  hidden: 'مخفي',
 }
 
 function getCsrfToken(): string {
@@ -55,756 +89,833 @@ function getCsrfToken(): string {
   return match ? decodeURIComponent(match[1]) : ''
 }
 
+function stopCount(draft: Draft) {
+  let geojson = draft.geojson
+  if (typeof geojson === 'string') {
+    try { geojson = JSON.parse(geojson) } catch { /* */ }
+  }
+  return geojson?.features?.filter((f: any) => f.geometry?.type === 'Point').length ?? 0
+}
 
+function LogIcon({ action }: { action: string }) {
+  switch (action) {
+    case 'approved': return <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+    case 'disapproved': return <XCircle className="h-3.5 w-3.5 text-red-500" />
+    case 'restored': return <CheckCircle2 className="h-3.5 w-3.5 text-blue-500" />
+    case 'hidden': return <EyeOff className="h-3.5 w-3.5 text-zinc-500" />
+    case 'combined': return <GitMerge className="h-3.5 w-3.5 text-purple-500" />
+    case 'split': return <GitBranch className="h-3.5 w-3.5 text-pink-500" />
+    case 'moved': return <MoveRight className="h-3.5 w-3.5 text-teal-500" />
+    default: return <History className="h-3.5 w-3.5 text-muted-foreground" />
+  }
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 function TransitAdminPageContent() {
   const mapContainer = useRef<HTMLDivElement>(null)
-  const mapRef       = useRef<maplibregl.Map | null>(null)
-  const [mapReady,       setMapReady]       = useState(false)
-  const [selectedDraft,  setSelectedDraft]  = useState<Draft | null>(null)
-  const [statusFilter,   setStatusFilter]   = useState<StatusFilter>('all')
-  const [cityFilter,     setCityFilter]     = useState('all')
-  const [rejectOpen,     setRejectOpen]     = useState(false)
-  const [rejectReason,   setRejectReason]   = useState('')
-  const [actionLoading,  setActionLoading]  = useState(false)
-  const [toast,          setToast]          = useState<{ msg: string; ok: boolean } | null>(null)
-  const [mobileView,     setMobileView]     = useState<'list' | 'map'>('list')
+  const mapRef = useRef<maplibregl.Map | null>(null)
+  const [mapReady, setMapReady] = useState(false)
+  const { theme } = useTransitTheme()
+  const [selectedDraft, setSelectedDraft] = useState<Draft | null>(null)
+  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [cityFilter, setCityFilter] = useState('all')
+  const [rejectOpen, setRejectOpen] = useState(false)
+  const [rejectReason, setRejectReason] = useState('')
+  const [actionLoading, setActionLoading] = useState(false)
+  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
+  const [mobileView, setMobileView] = useState<'list' | 'map'>('list')
+  const [adminTab, setAdminTab] = useState<string>('drafts')
+
+  const [publishedRoutes, setPublishedRoutes] = useState<PublishedRoute[]>([])
+  const [loadingRoutes, setLoadingRoutes] = useState(false)
+  const [selectedRoute, setSelectedRoute] = useState<PublishedRoute | null>(null)
+  const [selectedRouteGeoJson, setSelectedRouteGeoJson] = useState<any>(null)
+  const [routeSearchQuery, setRouteSearchQuery] = useState('')
+  const [routeCityFilter, setRouteCityFilter] = useState('all')
+  const [routeStatusFilter, setRouteStatusFilter] = useState<string>('all')
+  const [logs, setLogs] = useState<ActivityLog[]>([])
+  const [loadingLogs, setLoadingLogs] = useState(false)
+  const [cities, setCities] = useState<any[]>([])
+
+  const [isCombineModalOpen, setIsCombineModalOpen] = useState(false)
+  const [combineCityId, setCombineCityId] = useState('')
+  const [combineRouteAId, setCombineRouteAId] = useState('')
+  const [combineRouteBId, setCombineRouteBId] = useState('')
+  const [combineNameAr, setCombineNameAr] = useState('')
+  const [combineNameEn, setCombineNameEn] = useState('')
+  const [combinePrice, setCombinePrice] = useState('')
+
+  const [isSplitModalOpen, setIsSplitModalOpen] = useState(false)
+  const [splitAtStopId, setSplitAtStopId] = useState('')
+  const [splitNameAAr, setSplitNameAAr] = useState('')
+  const [splitNameAEn, setSplitNameAEn] = useState('')
+  const [splitNameBAr, setSplitNameBAr] = useState('')
+  const [splitNameBEn, setSplitNameBEn] = useState('')
+  const [routeStops, setRouteStops] = useState<any[]>([])
+
+  const [isMoveModalOpen, setIsMoveModalOpen] = useState(false)
+  const [targetCityId, setTargetCityId] = useState('')
+
+  const [isEditRouteModalOpen, setIsEditRouteModalOpen] = useState(false)
+  const [editRouteNameAr, setEditRouteNameAr] = useState('')
+  const [editRouteNameEn, setEditRouteNameEn] = useState('')
+  const [editRoutePrice, setEditRoutePrice] = useState('')
 
   const { data: drafts = [], isLoading, error: draftsError } = useAdminDrafts()
 
-  const { data: refData } = useMapData(selectedDraft?.city_id)
-  const queryClient = useQueryClient()
+  const activeCityId = adminTab === 'drafts' ? selectedDraft?.city_id : selectedRoute?.city_id
+  const { data: refData } = useMapData(activeCityId)
 
-  // ─── Toast helper ────────────────────────────────────────────────────────────
   const showToast = useCallback((msg: string, ok = true) => {
     setToast({ msg, ok })
     setTimeout(() => setToast(null), 4000)
   }, [])
 
-  // ─── Map init ────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    fetch('/api/v1/cities').then(r => r.json()).then(setCities).catch(() => {})
+  }, [])
+
+  const fetchRoutes = useCallback(async () => {
+    setLoadingRoutes(true)
+    try {
+      const res = await fetch('/api/v1/admin/routes')
+      if (res.ok) setPublishedRoutes(await res.json())
+    } catch { /* */ } finally { setLoadingRoutes(false) }
+  }, [])
+
+  const fetchLogs = useCallback(async () => {
+    setLoadingLogs(true)
+    try {
+      const res = await fetch('/api/v1/admin/routes/logs')
+      if (res.ok) setLogs(await res.json())
+    } catch { /* */ } finally { setLoadingLogs(false) }
+  }, [])
+
+  // ─── Map init ──────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return
 
     const map = new maplibregl.Map({
       container: mapContainer.current,
-      style: '/styles/styles/dark-matter.json',
+      style: theme === 'jasmine' ? '/styles/styles/positron.json' : '/styles/styles/dark-matter.json',
       center: [36.29, 33.51],
       zoom: 7,
       attributionControl: false,
     })
-
     map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right')
     map.addControl(new maplibregl.NavigationControl(), 'bottom-right')
-
     map.on('load', () => {
       const empty: FeatureCollection = { type: 'FeatureCollection', features: [] }
-
-      // Reference layers (existing published data — behind draft)
       map.addSource('ref-routes', { type: 'geojson', data: empty })
-      map.addSource('ref-stops',  { type: 'geojson', data: empty })
-      map.addLayer({ id: 'ref-layer-routes', type: 'line',   source: 'ref-routes', paint: { 'line-color': '#c8963a', 'line-width': 2, 'line-opacity': 0.22 } })
-      map.addLayer({ id: 'ref-layer-stops',  type: 'circle', source: 'ref-stops',  paint: { 'circle-radius': 4, 'circle-color': '#d4956a', 'circle-opacity': 0.28 } })
-
-      // Draft layers (in front)
+      map.addSource('ref-stops', { type: 'geojson', data: empty })
+      map.addLayer({ id: 'ref-layer-routes', type: 'line', source: 'ref-routes', paint: { 'line-color': '#c8963a', 'line-width': 2, 'line-opacity': 0.22 } })
+      map.addLayer({ id: 'ref-layer-stops', type: 'circle', source: 'ref-stops', paint: { 'circle-radius': 4, 'circle-color': '#c8963a', 'circle-opacity': 0.28 } })
       map.addSource('draft-source', { type: 'geojson', data: empty })
       map.addLayer({
         id: 'draft-line', type: 'line', source: 'draft-source',
         layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: { 'line-color': '#f59e0b', 'line-width': 4 },
+        paint: { 'line-color': '#c8963a', 'line-width': 4 },
         filter: ['==', '$type', 'LineString'],
       })
       map.addLayer({
         id: 'draft-points', type: 'circle', source: 'draft-source',
-        paint: { 'circle-radius': 7, 'circle-color': '#ef4444', 'circle-stroke-width': 2, 'circle-stroke-color': '#fff' },
+        paint: { 'circle-radius': 7, 'circle-color': '#c44b4b', 'circle-stroke-width': 2, 'circle-stroke-color': '#ffffff' },
         filter: ['==', '$type', 'Point'],
       })
-
+      map.resize()
       mapRef.current = map
       setMapReady(true)
     })
+    return () => { map.remove(); mapRef.current = null; setMapReady(false) }
+  }, [theme])
 
-    return () => { map.remove(); mapRef.current = null }
-  }, [])
-
-  // ─── Update draft layer when selection changes ───────────────────────────────
   useEffect(() => {
     if (!mapReady || !mapRef.current) return
     const src = mapRef.current.getSource('draft-source') as maplibregl.GeoJSONSource | undefined
     const empty: FeatureCollection = { type: 'FeatureCollection', features: [] }
-    
-    let geojsonData = selectedDraft?.geojson ?? empty
-    if (typeof geojsonData === 'string') {
-      try {
-        geojsonData = JSON.parse(geojsonData)
-      } catch (e) {
-        console.error('Failed to parse geojson', e)
-        geojsonData = empty
-      }
+    let geojsonData: any = empty
+    if (adminTab === 'drafts') {
+      geojsonData = selectedDraft?.geojson ?? empty
+      if (typeof geojsonData === 'string') { try { geojsonData = JSON.parse(geojsonData) } catch { geojsonData = empty } }
+    } else if (adminTab === 'routes') {
+      geojsonData = selectedRouteGeoJson ?? empty
     }
     src?.setData(geojsonData)
-
-    if (selectedDraft && geojsonData) {
-      const line = geojsonData.features?.find((f: any) => f.geometry?.type === 'LineString')
-      if (line && line.geometry?.coordinates && Array.isArray(line.geometry.coordinates) && line.geometry.coordinates.length > 0) {
-        const coords: [number, number][] = line.geometry.coordinates
-        const bounds = coords.reduce(
-          (b, c) => b.extend(c as maplibregl.LngLatLike),
-          new maplibregl.LngLatBounds(coords[0], coords[0])
-        )
-        mapRef.current.fitBounds(bounds, { padding: 80 })
+    if (geojsonData?.features) {
+      const line = geojsonData.features.find((f: any) => f.geometry?.type === 'LineString' || f.geometry?.type === 'MultiLineString')
+      if (line?.geometry?.coordinates) {
+        let coords: [number, number][] = line.geometry.coordinates
+        if (line.geometry.type === 'MultiLineString') coords = coords.flat()
+        if (coords.length > 0) {
+          mapRef.current.fitBounds(coords.reduce((b, c) => b.extend(c as maplibregl.LngLatLike), new maplibregl.LngLatBounds(coords[0], coords[0])), { padding: 80 })
+        }
       }
     }
-  }, [mapReady, selectedDraft])
+  }, [mapReady, selectedDraft, selectedRouteGeoJson, adminTab])
 
-  // ─── Update reference layer when refData or selection changes ───────────────
   useEffect(() => {
     if (!mapReady || !mapRef.current) return
     const empty: FeatureCollection = { type: 'FeatureCollection', features: [] }
     ;(mapRef.current.getSource('ref-routes') as maplibregl.GeoJSONSource | undefined)?.setData((refData?.routes ?? empty) as any)
-    ;(mapRef.current.getSource('ref-stops')  as maplibregl.GeoJSONSource | undefined)?.setData((refData?.stops  ?? empty) as any)
+    ;(mapRef.current.getSource('ref-stops') as maplibregl.GeoJSONSource | undefined)?.setData((refData?.stops ?? empty) as any)
   }, [mapReady, refData])
 
-  // ─── Resize map when switching to map view on mobile ───────────────────────
   useEffect(() => {
-    if (mobileView === 'map') {
-      setTimeout(() => mapRef.current?.resize(), 60)
-    }
+    if (mobileView === 'map') setTimeout(() => mapRef.current?.resize(), 60)
   }, [mobileView])
 
-  // ─── Approve ────────────────────────────────────────────────────────────────
+  // ─── API Handlers ─────────────────────────────────────────────────────────
   const handleApprove = useCallback(async (id: number) => {
     setActionLoading(true)
     try {
-      const res = await fetch(`${API()}/v1/admin/route-drafts/${id}/approve`, {
-        method: 'POST',
-        headers: {
-          'X-XSRF-TOKEN': getCsrfToken(),
-        },
-        credentials: 'include',
+      const res = await fetch(`/api/v1/admin/route-drafts/${id}/approve`, {
+        method: 'POST', headers: { 'X-XSRF-TOKEN': getCsrfToken() }, credentials: 'include',
       })
-      if (res.ok) {
-        showToast('تمت الموافقة على المسار ونشره')
-        setSelectedDraft(null)
-        queryClient.invalidateQueries({ queryKey: ['admin-drafts'] })
-      } else {
-        const err = await res.json().catch(() => ({}))
-        showToast('خطأ: ' + (err.message ?? `HTTP ${res.status}`), false)
-      }
-    } catch { showToast('تعذّر الاتصال بالخادم', false) }
-    finally { setActionLoading(false) }
-  }, [queryClient, showToast])
+      if (res.ok) { showToast('تمت الموافقة على المسار ونشره'); setSelectedDraft(null) }
+      else { const e = await res.json().catch(() => ({})); showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false) }
+    } catch { showToast('تعذّر الاتصال بالخادم', false) } finally { setActionLoading(false) }
+  }, [showToast])
 
-  // ─── Reject ─────────────────────────────────────────────────────────────────
   const handleRejectConfirm = useCallback(async () => {
     if (!selectedDraft) return
     setActionLoading(true)
     try {
-      const res = await fetch(`${API()}/v1/admin/route-drafts/${selectedDraft.id}/reject`, {
+      const res = await fetch(`/api/v1/admin/route-drafts/${selectedDraft.id}/reject`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-XSRF-TOKEN': getCsrfToken(),
-        },
+        headers: { 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
         credentials: 'include',
         body: JSON.stringify({ reason: rejectReason.trim() || null }),
       })
-      if (res.ok) {
-        showToast('تم رفض المسار')
-        setSelectedDraft(null)
-        setRejectOpen(false)
-        setRejectReason('')
-        queryClient.invalidateQueries({ queryKey: ['admin-drafts'] })
-      } else {
-        const err = await res.json().catch(() => ({}))
-        showToast('خطأ: ' + (err.message ?? `HTTP ${res.status}`), false)
-      }
-    } catch { showToast('تعذّر الاتصال بالخادم', false) }
-    finally { setActionLoading(false) }
-  }, [selectedDraft, rejectReason, queryClient, showToast])
+      if (res.ok) { showToast('تم رفض المسار'); setSelectedDraft(null); setRejectOpen(false); setRejectReason('') }
+      else { const e = await res.json().catch(() => ({})); showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false) }
+    } catch { showToast('تعذّر الاتصال بالخادم', false) } finally { setActionLoading(false) }
+  }, [selectedDraft, rejectReason, showToast])
 
-  // ─── Derived data ────────────────────────────────────────────────────────────
+  const handleSelectRoute = useCallback(async (route: PublishedRoute) => {
+    setSelectedRoute(route)
+    setMobileView('map')
+    try {
+      const res = await fetch(`/api/v1/admin/routes/${route.id}/geojson`)
+      if (res.ok) setSelectedRouteGeoJson(await res.json())
+    } catch { /* */ }
+  }, [])
+
+  const handleUpdateStatus = useCallback(async (routeId: string, newStatus: string) => {
+    setActionLoading(true)
+    try {
+      const res = await fetch(`/api/v1/admin/routes/${routeId}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
+        credentials: 'include',
+        body: JSON.stringify({ status: newStatus }),
+      })
+      if (res.ok) { showToast('تم تحديث حالة الخط'); fetchRoutes(); if (selectedRoute?.id === routeId) setSelectedRoute(p => p ? { ...p, status: newStatus as RouteStatus } : null) }
+      else { const e = await res.json().catch(() => ({})); showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false) }
+    } catch { showToast('تعذّر الاتصال بالخادم', false) } finally { setActionLoading(false) }
+  }, [fetchRoutes, selectedRoute, showToast])
+
+  const handleMoveRoute = useCallback(async () => {
+    if (!selectedRoute) return
+    setActionLoading(true)
+    try {
+      const res = await fetch(`/api/v1/admin/routes/${selectedRoute.id}/move`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
+        credentials: 'include',
+        body: JSON.stringify({ city_id: targetCityId }),
+      })
+      if (res.ok) { showToast('تم نقل الخط'); setIsMoveModalOpen(false); setSelectedRoute(null); setSelectedRouteGeoJson(null); fetchRoutes() }
+      else { const e = await res.json().catch(() => ({})); showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false) }
+    } catch { showToast('تعذّر الاتصال بالخادم', false) } finally { setActionLoading(false) }
+  }, [selectedRoute, targetCityId, fetchRoutes, showToast])
+
+  const handleCombineRoutes = useCallback(async () => {
+    setActionLoading(true)
+    try {
+      const res = await fetch('/api/v1/admin/routes/combine', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
+        credentials: 'include',
+        body: JSON.stringify({ route_a_id: combineRouteAId, route_b_id: combineRouteBId, name_ar: combineNameAr.trim(), name_en: combineNameEn.trim() || null, price: combinePrice ? parseInt(combinePrice) : null }),
+      })
+      if (res.ok) { showToast('تم دمج الخطين'); setIsCombineModalOpen(false); setCombineRouteAId(''); setCombineRouteBId(''); setCombineNameAr(''); setCombineNameEn(''); setCombinePrice(''); fetchRoutes() }
+      else { const e = await res.json().catch(() => ({})); showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false) }
+    } catch { showToast('تعذّر الاتصال بالخادم', false) } finally { setActionLoading(false) }
+  }, [combineRouteAId, combineRouteBId, combineNameAr, combineNameEn, combinePrice, fetchRoutes, showToast])
+
+  const handleSplitRoute = useCallback(async () => {
+    if (!selectedRoute) return
+    setActionLoading(true)
+    try {
+      const res = await fetch('/api/v1/admin/routes/split', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
+        credentials: 'include',
+        body: JSON.stringify({ route_id: selectedRoute.id, split_stop_id: splitAtStopId, name_a_ar: splitNameAAr.trim(), name_a_en: splitNameAEn.trim() || null, name_b_ar: splitNameBAr.trim(), name_b_en: splitNameBEn.trim() || null }),
+      })
+      if (res.ok) { showToast('تم تقسيم الخط'); setIsSplitModalOpen(false); setSelectedRoute(null); setSelectedRouteGeoJson(null); fetchRoutes() }
+      else { const e = await res.json().catch(() => ({})); showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false) }
+    } catch { showToast('تعذّر الاتصال بالخادم', false) } finally { setActionLoading(false) }
+  }, [selectedRoute, splitAtStopId, splitNameAAr, splitNameAEn, splitNameBAr, splitNameBEn, fetchRoutes, showToast])
+
+  const handleUpdateRoute = useCallback(async () => {
+    if (!selectedRoute) return
+    setActionLoading(true)
+    try {
+      const res = await fetch(`/api/v1/admin/routes/${selectedRoute.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
+        credentials: 'include',
+        body: JSON.stringify({
+          name_ar: editRouteNameAr.trim() || undefined,
+          name_en: editRouteNameEn.trim() || null,
+          price: editRoutePrice ? parseInt(editRoutePrice) : null,
+        }),
+      })
+      if (res.ok) {
+        showToast('تم تحديث الخط')
+        setIsEditRouteModalOpen(false)
+        setSelectedRoute(p => p ? { ...p, name_ar: editRouteNameAr.trim() || p.name_ar, name_en: editRouteNameEn.trim() || null, price_new: editRoutePrice ? parseInt(editRoutePrice) : p.price_new } : null)
+        fetchRoutes()
+      } else { const e = await res.json().catch(() => ({})); showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false) }
+    } catch { showToast('تعذّر الاتصال بالخادم', false) } finally { setActionLoading(false) }
+  }, [selectedRoute, editRouteNameAr, editRouteNameEn, editRoutePrice, fetchRoutes, showToast])
+
+  // ─── Derived ──────────────────────────────────────────────────────────────
   const stats = {
-    pending:  drafts.filter((d: Draft) => d.status === 'pending').length,
+    pending: drafts.filter((d: Draft) => d.status === 'pending').length,
     approved: drafts.filter((d: Draft) => d.status === 'approved').length,
     rejected: drafts.filter((d: Draft) => d.status === 'rejected').length,
   }
-
-  const uniqueCities = Array.from(new Set(drafts.map((d: Draft) => d.city_id))) as string[]
-
-  const filtered: Draft[] = drafts
+  const uniqueCities = [...new Set(drafts.map((d: Draft) => d.city_id))]
+  const filteredDrafts = drafts
     .filter((d: Draft) => statusFilter === 'all' || d.status === statusFilter)
     .filter((d: Draft) => cityFilter === 'all' || d.city_id === cityFilter)
     .sort((a: Draft, b: Draft) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-
-  const handleLogout = useCallback(() => {
-    router.post('/logout')
-  }, [])
-
-  // ─── Render ──────────────────────────────────────────────────────────────────
+  const filteredRoutes = publishedRoutes
+    .filter(r => routeStatusFilter === 'all' || r.status === routeStatusFilter)
+    .filter(r => routeCityFilter === 'all' || r.city_id === routeCityFilter)
+    .filter(r => {
+      const q = routeSearchQuery.trim().toLowerCase()
+      if (!q) return true
+      return r.name_ar.toLowerCase().includes(q) || (r.name_en?.toLowerCase() || '').includes(q)
+    })
 
   return (
-    <div className={`adm-shell${mobileView === 'map' ? ' adm-shell--map-view' : ''}`} dir="rtl">
-
+    <>
+    <div className="h-full overflow-hidden flex flex-col lg:flex-row bg-background text-foreground" dir="rtl">
       {/* Sidebar */}
-      <aside className="adm-sidebar">
-        <header className="adm-sidebar-header">
+      <aside className="w-full lg:w-[400px] xl:w-[440px] flex-shrink-0 flex flex-col border-l border-border bg-card overflow-hidden max-h-full">
+        <header className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div>
-            <h1 className="adm-title">لوحة الإدارة</h1>
-            <p className="adm-subtitle">مراجعة مسارات المجتمع</p>
+            <h1 className="text-lg font-bold text-foreground">لوحة إدارة النقل</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">إدارة ومراجعة خطوط النقل</p>
           </div>
-          <button type="button" className="adm-logout-btn" onClick={handleLogout} title="تسجيل الخروج">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
-            </svg>
-          </button>
+          <Button variant="ghost" size="icon" onClick={() => router.post('/logout')} title="تسجيل الخروج">
+            <LogOut className="h-4 w-4" />
+          </Button>
         </header>
 
-        {/* Stats */}
-        <div className="adm-stats">
-          <div className="adm-stat adm-stat--pending">
-            <span className="adm-stat-num">{stats.pending}</span>
-            <span className="adm-stat-label">بانتظار المراجعة</span>
-          </div>
-          <div className="adm-stat adm-stat--approved">
-            <span className="adm-stat-num">{stats.approved}</span>
-            <span className="adm-stat-label">مقبول</span>
-          </div>
-          <div className="adm-stat adm-stat--rejected">
-            <span className="adm-stat-num">{stats.rejected}</span>
-            <span className="adm-stat-label">مرفوض</span>
-          </div>
-        </div>
+        <Tabs value={adminTab} onValueChange={(v) => {
+          setAdminTab(v)
+          if (v === 'drafts') { setSelectedRoute(null); setSelectedRouteGeoJson(null) }
+          if (v === 'routes') { setSelectedDraft(null); fetchRoutes() }
+          if (v === 'logs') { setSelectedDraft(null); setSelectedRoute(null); setSelectedRouteGeoJson(null); fetchLogs() }
+        }} className="flex flex-col flex-1 overflow-hidden">
+          <TabsList className="mx-4 mt-3" dir="rtl">
+            <TabsTrigger value="drafts" className="flex-1 text-xs gap-1.5">
+              <Users className="h-3.5 w-3.5" /> المسودات
+            </TabsTrigger>
+            <TabsTrigger value="routes" className="flex-1 text-xs gap-1.5">
+              <Route className="h-3.5 w-3.5" /> الخطوط
+            </TabsTrigger>
+            <TabsTrigger value="logs" className="flex-1 text-xs gap-1.5">
+              <History className="h-3.5 w-3.5" /> السجل
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Filters */}
-        <div className="adm-filters">
-          <div className="adm-status-tabs">
-            {(['all', 'pending', 'approved', 'rejected'] as const).map(s => (
-              <button
-                key={s}
-                type="button"
-                className={`adm-tab ${statusFilter === s ? 'adm-tab--active' : ''}`}
-                onClick={() => setStatusFilter(s)}
-              >
-                {s === 'all' ? 'الكل' : STATUS_LABELS[s]}
-              </button>
-            ))}
-          </div>
-          {uniqueCities.length > 1 && (
-            <div className="adm-select-wrap">
-              <select
-                className="adm-select"
-                value={cityFilter}
-                onChange={e => setCityFilter(e.target.value)}
-              >
-                <option value="all">جميع المدن</option>
-                {uniqueCities.map(id => (
-                  <option key={id} value={id}>{id}</option>
+          {/* ── DRAFTS TAB ─────────────────────────────────────────────── */}
+          <TabsContent value="drafts" className="flex-1 flex flex-col overflow-hidden mt-0">
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-2 px-4 pt-3">
+              <Card className="py-2 text-center"><CardContent className="p-1"><span className="text-xl font-bold text-amber-500">{stats.pending}</span><p className="text-[10px] text-muted-foreground">بانتظار المراجعة</p></CardContent></Card>
+              <Card className="py-2 text-center"><CardContent className="p-1"><span className="text-xl font-bold text-green-500">{stats.approved}</span><p className="text-[10px] text-muted-foreground">مقبول</p></CardContent></Card>
+              <Card className="py-2 text-center"><CardContent className="p-1"><span className="text-xl font-bold text-red-500">{stats.rejected}</span><p className="text-[10px] text-muted-foreground">مرفوض</p></CardContent></Card>
+            </div>
+
+            {/* Filters */}
+            <div className="px-4 pt-3 space-y-2">
+              <div className="flex gap-1.5">
+                {(['all', 'pending', 'approved', 'rejected'] as const).map(s => (
+                  <Badge key={s} variant={statusFilter === s ? 'default' : 'outline'} className="cursor-pointer text-[10px] px-2" onClick={() => setStatusFilter(s)}>
+                    {s === 'all' ? 'الكل' : STATUS_LABELS[s]}
+                  </Badge>
                 ))}
-              </select>
-              <svg className="adm-select-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6"/></svg>
-            </div>
-          )}
-        </div>
-
-        {/* Draft list */}
-        <div className="adm-list">
-          {isLoading ? (
-            <div className="adm-empty">جاري التحميل…</div>
-          ) : draftsError ? (
-            <div className="adm-empty adm-empty--error">
-              تعذّر تحميل البيانات<br/>
-              <span className="adm-empty-detail">{String(draftsError)}</span>
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="adm-empty">لا توجد نتائج</div>
-          ) : filtered.map((draft: Draft) => (
-            <button
-              key={draft.id}
-              type="button"
-              className={`adm-draft-item ${selectedDraft?.id === draft.id ? 'adm-draft-item--active' : ''}`}
-              onClick={() => { setSelectedDraft(draft); setMobileView('map') }}
-            >
-              <div className="adm-draft-top">
-                <span className="adm-draft-name">{draft.name_ar}</span>
-                <span className={`adm-badge adm-badge--${draft.status}`}>
-                  {STATUS_LABELS[draft.status]}
-                </span>
               </div>
-              <div className="adm-draft-meta">
-                <span>{draft.city?.name_ar ?? draft.city_id}</span>
-                <span className="adm-meta-sep">·</span>
-                <span>{draft.user?.name ?? 'مجهول'}</span>
-                <span className="adm-meta-sep">·</span>
-                <span>{stopCount(draft)} محطة</span>
-                <span className="adm-meta-sep">·</span>
-                <span>{new Date(draft.created_at).toLocaleDateString('ar-SY')}</span>
-              </div>
-              {draft.status === 'rejected' && draft.rejection_reason && (
-                <p className="adm-rejection-reason">{draft.rejection_reason}</p>
+              {uniqueCities.length > 1 && (
+                <Select value={cityFilter} onValueChange={setCityFilter}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="جميع المدن" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">جميع المدن</SelectItem>
+                    {uniqueCities.map(id => <SelectItem key={id} value={id}>{id}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               )}
-            </button>
-          ))}
-        </div>
+            </div>
+
+            <Separator className="my-2" />
+
+            {/* List */}
+            <ScrollArea className="flex-1 px-4">
+              <div className="space-y-2 pb-4">
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-8 text-muted-foreground text-sm"><Loader2 className="h-4 w-4 animate-spin ms-2" /> جاري التحميل…</div>
+                ) : draftsError ? (
+                  <div className="text-center py-8 text-destructive text-sm">تعذّر تحميل البيانات</div>
+                ) : filteredDrafts.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground text-sm">لا توجد نتائج</div>
+                ) : filteredDrafts.map(draft => (
+                  <button key={draft.id} type="button"
+                    className={`w-full text-right p-3 rounded-lg border transition-colors ${selectedDraft?.id === draft.id ? 'border-primary bg-primary/5' : 'border-border bg-background hover:border-primary/50'}`}
+                    onClick={() => { setSelectedDraft(draft); setMobileView('map') }}>
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="text-sm font-semibold leading-tight">{draft.name_ar}</span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {draft.route_id && (
+                          <Badge variant="outline" className="text-[10px] bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-300">
+                            تعديل مقترح
+                          </Badge>
+                        )}
+                        <Badge variant={draft.status === 'pending' ? 'secondary' : draft.status === 'approved' ? 'default' : 'destructive'} className="text-[10px]">
+                          {STATUS_LABELS[draft.status]}
+                        </Badge>
+                        <button
+                          type="button"
+                          className="p-1 rounded-md hover:bg-muted transition-colors"
+                          title="تعديل في الاستوديو"
+                          onClick={(e) => { e.stopPropagation(); router.get(`/transit/studio?edit=${draft.id}`) }}
+                        >
+                          <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-muted-foreground flex-wrap">
+                      <span>{draft.city?.name_ar ?? draft.city_id}</span>
+                      <span>·</span>
+                      <span>{draft.user?.name ?? 'مجهول'}</span>
+                      <span>·</span>
+                      <span>{stopCount(draft)} محطة</span>
+                      <span>·</span>
+                      <span>{new Date(draft.created_at).toLocaleDateString('ar-SY')}</span>
+                    </div>
+                    {draft.status === 'rejected' && draft.rejection_reason && (
+                      <p className="text-[11px] text-destructive mt-1 italic">{draft.rejection_reason}</p>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </ScrollArea>
+          </TabsContent>
+
+          {/* ── ROUTES TAB ─────────────────────────────────────────────── */}
+          <TabsContent value="routes" className="flex-1 flex flex-col overflow-hidden mt-0">
+            {/* Quick Actions */}
+            <div className="px-4 pt-3">
+              <Button variant="default" size="sm" className="w-full text-xs gap-1.5" onClick={() => { setCombineCityId(''); setCombineRouteAId(''); setCombineRouteBId(''); setCombineNameAr(''); setCombineNameEn(''); setCombinePrice(''); setIsCombineModalOpen(true) }}>
+                <GitMerge className="h-3.5 w-3.5" /> دمج خطين
+              </Button>
+            </div>
+
+            {/* Filters */}
+            <div className="px-4 pt-3 space-y-2">
+              <Input placeholder="بحث باسم الخط..." value={routeSearchQuery} onChange={e => setRouteSearchQuery(e.target.value)} className="h-8 text-xs" />
+              <div className="flex gap-1.5">
+                {(['all', 'published', 'disapproved', 'hidden'] as const).map(s => (
+                  <Badge key={s} variant={routeStatusFilter === s ? 'default' : 'outline'} className="cursor-pointer text-[10px] px-2" onClick={() => setRouteStatusFilter(s)}>
+                    {s === 'all' ? 'الكل' : ROUTE_STATUS_LABELS[s]}
+                  </Badge>
+                ))}
+              </div>
+              <Select value={routeCityFilter} onValueChange={setRouteCityFilter}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="جميع المدن" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">جميع المدن</SelectItem>
+                  {cities.map(c => <SelectItem key={c.id} value={c.id}>{c.nameAr}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Separator className="my-2" />
+
+            <ScrollArea className="flex-1 px-4">
+              <div className="space-y-2 pb-4">
+                {loadingRoutes ? (
+                  <div className="flex items-center justify-center py-8 text-muted-foreground text-sm"><Loader2 className="h-4 w-4 animate-spin ms-2" /> جاري التحميل…</div>
+                ) : filteredRoutes.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground text-sm">لا توجد خطوط مطابقة</div>
+                ) : filteredRoutes.map(route => (
+                  <button key={route.id} type="button"
+                    className={`w-full text-right p-3 rounded-lg border transition-colors ${selectedRoute?.id === route.id ? 'border-primary bg-primary/5' : 'border-border bg-background hover:border-primary/50'}`}
+                    onClick={() => handleSelectRoute(route)}>
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="text-sm font-semibold leading-tight">{route.name_ar}</span>
+                      <Badge variant={route.status === 'published' ? 'default' : route.status === 'disapproved' ? 'destructive' : 'secondary'} className="text-[10px] shrink-0">
+                        {ROUTE_STATUS_LABELS[route.status]}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-muted-foreground">
+                      <span>{route.city?.name_ar ?? route.city_id}</span>
+                      <span>·</span>
+                      <span>{route.stops_count} موقف</span>
+                      {route.price_new && <><span>·</span><span className="text-primary font-semibold">{route.price_new} ل.س</span></>}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </ScrollArea>
+          </TabsContent>
+
+          {/* ── LOGS TAB ───────────────────────────────────────────────── */}
+          <TabsContent value="logs" className="flex-1 flex flex-col overflow-hidden mt-0">
+            <ScrollArea className="flex-1 px-4 pt-3">
+              <div className="space-y-2 pb-4">
+                {loadingLogs ? (
+                  <div className="flex items-center justify-center py-8 text-muted-foreground text-sm"><Loader2 className="h-4 w-4 animate-spin ms-2" /> جاري التحميل…</div>
+                ) : logs.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground text-sm">لا يوجد سجل عمليات</div>
+                ) : logs.map(log => (
+                  <Card key={log.id} className="py-3">
+                    <CardContent className="p-0 px-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <LogIcon action={log.action} />
+                          <Badge variant="outline" className="text-[10px]">{log.action}</Badge>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground">{new Date(log.created_at).toLocaleString('ar-SY')}</span>
+                      </div>
+                      <p className="text-xs mt-1.5 leading-relaxed">{log.description}</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">المسؤول: {log.user?.name ?? 'مجهول'}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </ScrollArea>
+          </TabsContent>
+        </Tabs>
       </aside>
 
-      {/* Map panel */}
-      <div className="adm-map-panel">
-        <button
-          type="button"
-          className="adm-mobile-back"
-          onClick={() => setMobileView('list')}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 12H5M12 5l-7 7 7 7" />
-          </svg>
-          القائمة
-        </button>
-        <div ref={mapContainer} className="adm-map" />
+      {/* Map panel — always rendered so MapLibre has real dimensions on init */}
+      <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+        <div ref={mapContainer} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
 
-        {/* Detail overlay */}
-        {selectedDraft && (
-          <div className="adm-detail">
-            <div className="adm-detail-header">
-              <div>
-                <h2 className="adm-detail-title">{selectedDraft.name_ar}</h2>
-                {selectedDraft.name_en && <p className="adm-detail-subtitle" dir="ltr">{selectedDraft.name_en}</p>}
+        {/* Draft detail overlay */}
+        {selectedDraft && adminTab === 'drafts' && (
+          <Card className="absolute bottom-4 end-4 z-10 w-[360px] max-w-[calc(100vw-2rem)] shadow-xl" dir="rtl">
+            <CardHeader className="pb-3">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <CardTitle className="text-base">{selectedDraft.name_ar}</CardTitle>
+                  {selectedDraft.name_en && <p className="text-xs text-muted-foreground mt-0.5" dir="ltr">{selectedDraft.name_en}</p>}
+                </div>
+                <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => setSelectedDraft(null)}>✕</Button>
               </div>
-              <button type="button" className="adm-detail-close" onClick={() => setSelectedDraft(null)}>✕</button>
-            </div>
-
-            <div className="adm-detail-rows">
-              <div className="adm-detail-row">
-                <span className="adm-detail-label">المدينة</span>
-                <span>{selectedDraft.city?.name_ar ?? selectedDraft.city_id}</span>
+            </CardHeader>
+            <CardContent className="space-y-3 pt-0">
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div><span className="text-muted-foreground">المدينة</span><p className="font-medium">{selectedDraft.city?.name_ar ?? selectedDraft.city_id}</p></div>
+                <div><span className="text-muted-foreground">المساهم</span><p className="font-medium">{selectedDraft.user?.name ?? 'مجهول'}</p></div>
+                <div><span className="text-muted-foreground">التعرفة</span><p className="font-medium">{selectedDraft.price ? `${selectedDraft.price} ل.س` : 'غير محدد'}</p></div>
+                <div><span className="text-muted-foreground">المحطات</span><p className="font-medium">{stopCount(selectedDraft)} محطة</p></div>
               </div>
-              <div className="adm-detail-row">
-                <span className="adm-detail-label">المساهم</span>
-                <span>{selectedDraft.user?.name ?? 'مجهول'}</span>
-              </div>
-              <div className="adm-detail-row">
-                <span className="adm-detail-label">التعرفة</span>
-                <span>{selectedDraft.price ? `${selectedDraft.price} ل.س` : 'غير محدد'}</span>
-              </div>
-              <div className="adm-detail-row">
-                <span className="adm-detail-label">المحطات</span>
-                <span>{stopCount(selectedDraft)} محطة</span>
-              </div>
-              {selectedDraft.notes && (
-                <div className="adm-detail-row">
-                  <span className="adm-detail-label">ملاحظات</span>
-                  <span>{selectedDraft.notes}</span>
+              {selectedDraft.route_id && (
+                <div className="bg-blue-500/10 border border-blue-300 rounded-lg px-3 py-2 text-xs">
+                  <span className="font-semibold text-blue-600 dark:text-blue-400">تعديل مقترح للخط:</span>{' '}
+                  <span className="font-medium">{selectedDraft.linked_route?.name_ar ?? selectedDraft.route_id}</span>
                 </div>
               )}
-            </div>
+              {selectedDraft.notes && <p className="text-xs text-muted-foreground border-t border-border pt-2">{selectedDraft.notes}</p>}
+              <p className="text-[10px] text-muted-foreground text-center">الخطوط الباهتة = البيانات المنشورة. الخط اللامع = المسار المقترح.</p>
 
-            <div className="adm-detail-hint">
-              الخطوط الباهتة = البيانات المنشورة الحالية. الخط البرتقالي = المسار المقترح.
-            </div>
+              {selectedDraft.status === 'pending' && (
+                <div className="flex gap-2 pt-1">
+                  <Button className="flex-1" size="sm" disabled={actionLoading} onClick={() => handleApprove(selectedDraft.id)}>
+                    {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                    {selectedDraft.route_id ? 'تطبيق التعديلات' : 'موافقة ونشر'}
+                  </Button>
+                  <Button variant="destructive" size="sm" className="flex-1" disabled={actionLoading} onClick={() => { setRejectReason(''); setRejectOpen(true) }}>
+                    <XCircle className="h-4 w-4" /> رفض
+                  </Button>
+                </div>
+              )}
 
-            {selectedDraft.status === 'pending' && (
-              <div className="adm-detail-actions">
-                <button
-                  type="button"
-                  className="adm-btn adm-btn--approve"
-                  disabled={actionLoading}
-                  onClick={() => handleApprove(selectedDraft.id)}
-                >
-                  {actionLoading ? '…' : 'موافقة ونشر'}
-                </button>
-                <button
-                  type="button"
-                  className="adm-btn adm-btn--reject"
-                  disabled={actionLoading}
-                  onClick={() => { setRejectReason(''); setRejectOpen(true) }}
-                >
-                  رفض
-                </button>
-              </div>
-            )}
-
-            {selectedDraft.status !== 'pending' && (
-              <div className={`adm-status-resolved adm-status-resolved--${selectedDraft.status}`}>
-                {selectedDraft.status === 'approved' ? '✓ تم نشر هذا المسار' : '✕ تم رفض هذا المسار'}
-                {selectedDraft.rejection_reason && (
-                  <p className="adm-resolved-reason">{selectedDraft.rejection_reason}</p>
-                )}
-              </div>
-            )}
-          </div>
+              {selectedDraft.status !== 'pending' && (
+                <>
+                  <div className="flex gap-2 pt-1">
+                    <Button variant="outline" size="sm" className="flex-1" onClick={() => router.get(`/transit/studio?edit=${selectedDraft.id}`)}>
+                      <Pencil className="h-3.5 w-3.5" /> تعديل في الاستوديو
+                    </Button>
+                  </div>
+                  <div className={`text-center py-2 rounded-lg text-xs font-semibold ${selectedDraft.status === 'approved' ? 'bg-green-500/10 text-green-600 dark:text-green-400' : 'bg-red-500/10 text-red-600 dark:text-red-400'}`}>
+                    {selectedDraft.status === 'approved' ? '✓ تم نشر هذا المسار' : '✕ تم رفض هذا المسار'}
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
         )}
 
-        {/* Empty state hint */}
-        {!selectedDraft && (
-          <div className="adm-map-hint">
-            اختر مسودة من القائمة لمعاينتها على الخريطة
+        {/* Route detail overlay */}
+        {selectedRoute && adminTab === 'routes' && (
+          <Card className="absolute bottom-4 end-4 z-10 w-[360px] max-w-[calc(100vw-2rem)] shadow-xl" dir="rtl">
+            <CardHeader className="pb-3">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <CardTitle className="text-base">{selectedRoute.name_ar}</CardTitle>
+                  {selectedRoute.name_en && <p className="text-xs text-muted-foreground mt-0.5" dir="ltr">{selectedRoute.name_en}</p>}
+                </div>
+                <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => { setSelectedRoute(null); setSelectedRouteGeoJson(null) }}>✕</Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3 pt-0">
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div><span className="text-muted-foreground">المدينة</span><p className="font-medium">{selectedRoute.city?.name_ar ?? selectedRoute.city_id}</p></div>
+                <div><span className="text-muted-foreground">الحالة</span><p className="font-medium">{ROUTE_STATUS_LABELS[selectedRoute.status]}</p></div>
+                <div><span className="text-muted-foreground">التعرفة</span><p className="font-medium">{selectedRoute.price_new ? `${selectedRoute.price_new} ل.س` : 'غير محدد'}</p></div>
+                <div><span className="text-muted-foreground">المواقف</span><p className="font-medium">{selectedRoute.stops_count} موقف</p></div>
+              </div>
+              <p className="text-[10px] text-muted-foreground text-center">الخط اللامع = المسار المحدد. الخطوط الباهتة = باقي خطوط المدينة.</p>
+
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" size="sm" className="text-xs" onClick={() => { setEditRouteNameAr(selectedRoute.name_ar); setEditRouteNameEn(selectedRoute.name_en ?? ''); setEditRoutePrice(selectedRoute.price_new != null ? String(selectedRoute.price_new) : ''); setIsEditRouteModalOpen(true) }}>
+                  <Pencil className="h-3.5 w-3.5" /> تعديل الاسم والتعرفة
+                </Button>
+                <Button variant="outline" size="sm" className="text-xs" onClick={() => router.get(`/transit/studio?edit=${selectedRoute.id}`)}>
+                  <Pencil className="h-3.5 w-3.5" /> تعديل في الاستوديو
+                </Button>
+                {selectedRoute.status === 'published' ? (
+                  <Button variant="destructive" size="sm" className="text-xs" disabled={actionLoading} onClick={() => handleUpdateStatus(selectedRoute.id, 'disapproved')}>
+                    <XCircle className="h-3.5 w-3.5" /> تعطيل
+                  </Button>
+                ) : (
+                  <Button size="sm" className="text-xs" disabled={actionLoading} onClick={() => handleUpdateStatus(selectedRoute.id, 'published')}>
+                    <CheckCircle2 className="h-3.5 w-3.5" /> تفعيل
+                  </Button>
+                )}
+                {selectedRoute.status !== 'hidden' && (
+                  <Button variant="secondary" size="sm" className="text-xs" disabled={actionLoading} onClick={() => handleUpdateStatus(selectedRoute.id, 'hidden')}>
+                    <EyeOff className="h-3.5 w-3.5" /> إخفاء
+                  </Button>
+                )}
+                <Button variant="outline" size="sm" className="text-xs" disabled={actionLoading} onClick={() => { setTargetCityId(selectedRoute.city_id); setIsMoveModalOpen(true) }}>
+                  <MoveRight className="h-3.5 w-3.5" /> نقل لمدينة
+                </Button>
+                <Button variant="outline" size="sm" className="text-xs" disabled={actionLoading} onClick={async () => {
+                  setActionLoading(true)
+                  try {
+                    const res = await fetch(`/api/v1/admin/routes/${selectedRoute.id}/stops`)
+                    if (res.ok) {
+                      const sd = await res.json(); setRouteStops(sd)
+                      setSplitAtStopId(sd[1]?.id || '')
+                      setSplitNameAAr(`${selectedRoute.name_ar} (القسم الأول)`)
+                      setSplitNameBAr(`${selectedRoute.name_ar} (القسم الثاني)`)
+                      setSplitNameAEn(selectedRoute.name_en ? `${selectedRoute.name_en} (Part 1)` : '')
+                      setSplitNameBEn(selectedRoute.name_en ? `${selectedRoute.name_en} (Part 2)` : '')
+                      setIsSplitModalOpen(true)
+                    }
+                  } catch { showToast('خطأ في الاتصال', false) } finally { setActionLoading(false) }
+                }}>
+                  <GitBranch className="h-3.5 w-3.5" /> تقسيم الخط
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Empty state */}
+        {!selectedDraft && adminTab === 'drafts' && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="bg-card/80 backdrop-blur-sm border border-border rounded-xl px-5 py-3 text-sm text-muted-foreground">اختر مسودة لمعاينتها على الخريطة</div>
+          </div>
+        )}
+        {!selectedRoute && adminTab === 'routes' && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="bg-card/80 backdrop-blur-sm border border-border rounded-xl px-5 py-3 text-sm text-muted-foreground">اختر خطاً للمعاينة والتحكم</div>
+          </div>
+        )}
+        {adminTab === 'logs' && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="bg-card/80 backdrop-blur-sm border border-border rounded-xl px-5 py-3 text-sm text-muted-foreground">تصفح سجل العمليات في القائمة الجانبية</div>
           </div>
         )}
       </div>
 
-      {/* Reject dialog */}
-      {rejectOpen && (
-        <div className="adm-overlay" onClick={e => { if (e.target === e.currentTarget) setRejectOpen(false) }}>
-          <div className="adm-dialog" dir="rtl">
-            <div className="adm-dialog-header">
-              <h3 className="adm-dialog-title">رفض المسار</h3>
-              <button type="button" className="adm-detail-close" onClick={() => setRejectOpen(false)}>✕</button>
+      {/* ── Reject Dialog ───────────────────────────────────────────────── */}
+      <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
+        <DialogContent dir="rtl" className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>رفض المسار</DialogTitle>
+            <DialogDescription>أضف سبب الرفض — سيظهر للمساهم.</DialogDescription>
+          </DialogHeader>
+          <Textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)} placeholder="سبب الرفض (اختياري)…" rows={4} />
+          <DialogFooter className="flex-row-reverse gap-2">
+            <Button variant="outline" size="sm" onClick={() => setRejectOpen(false)}>إلغاء</Button>
+            <Button variant="destructive" size="sm" disabled={actionLoading} onClick={handleRejectConfirm}>
+              {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'تأكيد الرفض'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Combine Dialog ─────────────────────────────────────────────── */}
+      <Dialog open={isCombineModalOpen} onOpenChange={setIsCombineModalOpen}>
+        <DialogContent dir="rtl" className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>دمج خطوط النقل</DialogTitle>
+            <DialogDescription>اختر خطين في نفس المدينة لدمجهما في خط جديد.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium">المدينة</label>
+              <Select value={combineCityId} onValueChange={v => { setCombineCityId(v); setCombineRouteAId(''); setCombineRouteBId('') }}>
+                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="اختر المدينة…" /></SelectTrigger>
+                <SelectContent>{cities.map(c => <SelectItem key={c.id} value={c.id}>{c.nameAr}</SelectItem>)}</SelectContent>
+              </Select>
             </div>
-            <p className="adm-dialog-desc">
-              أضف سبب الرفض — سيظهر للمساهم ليتمكن من التحسين.
-            </p>
-            <textarea
-              className="adm-textarea"
-              value={rejectReason}
-              onChange={e => setRejectReason(e.target.value)}
-              placeholder="سبب الرفض (اختياري)…"
-              rows={4}
-              autoFocus
-            />
-            <div className="adm-dialog-actions">
-              <button type="button" className="adm-btn adm-btn--ghost" onClick={() => setRejectOpen(false)}>
-                إلغاء
-              </button>
-              <button
-                type="button"
-                className="adm-btn adm-btn--reject"
-                disabled={actionLoading}
-                onClick={handleRejectConfirm}
-              >
-                {actionLoading ? '…' : 'تأكيد الرفض'}
-              </button>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium">الخط الأول (البداية)</label>
+              <Select value={combineRouteAId} onValueChange={setCombineRouteAId} disabled={!combineCityId}>
+                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="اختر الخط…" /></SelectTrigger>
+                <SelectContent>{publishedRoutes.filter(r => r.city_id === combineCityId && r.status === 'published').map(r => <SelectItem key={r.id} value={r.id}>{r.name_ar}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium">الخط الثاني (الامتداد)</label>
+              <Select value={combineRouteBId} onValueChange={setCombineRouteBId} disabled={!combineCityId}>
+                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="اختر الخط…" /></SelectTrigger>
+                <SelectContent>{publishedRoutes.filter(r => r.city_id === combineCityId && r.status === 'published' && r.id !== combineRouteAId).map(r => <SelectItem key={r.id} value={r.id}>{r.name_ar}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium">الاسم بالعربية</label>
+                <Input value={combineNameAr} onChange={e => setCombineNameAr(e.target.value)} placeholder="مثال: الدوار الجنوبي" className="h-9 text-xs" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium">الاسم بالإنجليزية</label>
+                <Input value={combineNameEn} onChange={e => setCombineNameEn(e.target.value)} placeholder="e.g. Southern Ring" className="h-9 text-xs" dir="ltr" />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium">التعرفة الجديدة (ل.س)</label>
+              <Input type="number" value={combinePrice} onChange={e => setCombinePrice(e.target.value)} placeholder="اترك فارغاً للحفاظ على التعرفة الأصلية" className="h-9 text-xs" />
             </div>
           </div>
-        </div>
-      )}
+          <DialogFooter className="flex-row-reverse gap-2">
+            <Button variant="outline" size="sm" onClick={() => setIsCombineModalOpen(false)}>إلغاء</Button>
+            <Button size="sm" disabled={actionLoading || !combineRouteAId || !combineRouteBId || !combineNameAr.trim()} onClick={handleCombineRoutes}>
+              {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <GitMerge className="h-4 w-4" />} تأكيد الدمج
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      {/* Toast */}
+      {/* ── Split Dialog ───────────────────────────────────────────────── */}
+      <Dialog open={isSplitModalOpen} onOpenChange={setIsSplitModalOpen}>
+        <DialogContent dir="rtl" className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>تقسيم خط النقل</DialogTitle>
+            <DialogDescription>سيتم تقسيم <strong>{selectedRoute?.name_ar}</strong> إلى خطين عند المحطة المحددة.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium">نقطة التقسيم</label>
+              <Select value={splitAtStopId} onValueChange={setSplitAtStopId}>
+                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="اختر محطة…" /></SelectTrigger>
+                <SelectContent>
+                  {routeStops.map((stop, i) => {
+                    if (i === 0 || i === routeStops.length - 1) return null
+                    return <SelectItem key={stop.id} value={stop.id}>{i + 1}. {stop.name_ar}</SelectItem>
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5"><label className="text-xs font-medium">اسم القسم الأول (عربي)</label><Input value={splitNameAAr} onChange={e => setSplitNameAAr(e.target.value)} className="h-9 text-xs" /></div>
+              <div className="space-y-1.5"><label className="text-xs font-medium">اسم القسم الأول (إنجليزي)</label><Input value={splitNameAEn} onChange={e => setSplitNameAEn(e.target.value)} className="h-9 text-xs" dir="ltr" /></div>
+              <div className="space-y-1.5"><label className="text-xs font-medium">اسم القسم الثاني (عربي)</label><Input value={splitNameBAr} onChange={e => setSplitNameBAr(e.target.value)} className="h-9 text-xs" /></div>
+              <div className="space-y-1.5"><label className="text-xs font-medium">اسم القسم الثاني (إنجليزي)</label><Input value={splitNameBEn} onChange={e => setSplitNameBEn(e.target.value)} className="h-9 text-xs" dir="ltr" /></div>
+            </div>
+          </div>
+          <DialogFooter className="flex-row-reverse gap-2">
+            <Button variant="outline" size="sm" onClick={() => setIsSplitModalOpen(false)}>إلغاء</Button>
+            <Button size="sm" disabled={actionLoading || !splitAtStopId || !splitNameAAr.trim() || !splitNameBAr.trim()} onClick={handleSplitRoute} className="bg-purple-600 hover:bg-purple-700">
+              {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <GitBranch className="h-4 w-4" />} تأكيد التقسيم
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Move Dialog ────────────────────────────────────────────────── */}
+      <Dialog open={isMoveModalOpen} onOpenChange={setIsMoveModalOpen}>
+        <DialogContent dir="rtl" className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>نقل الخط لمدينة أخرى</DialogTitle>
+            <DialogDescription>نقل <strong>{selectedRoute?.name_ar}</strong> والمواقف غير المشتركة مع خطوط أخرى.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium">المدينة المستهدفة</label>
+            <Select value={targetCityId} onValueChange={setTargetCityId}>
+              <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="اختر مدينة…" /></SelectTrigger>
+              <SelectContent>{cities.map(c => <SelectItem key={c.id} value={c.id}>{c.nameAr}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <DialogFooter className="flex-row-reverse gap-2">
+            <Button variant="outline" size="sm" onClick={() => setIsMoveModalOpen(false)}>إلغاء</Button>
+            <Button size="sm" disabled={actionLoading || !targetCityId || targetCityId === selectedRoute?.city_id} onClick={handleMoveRoute} className="bg-blue-600 hover:bg-blue-700">
+              {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoveRight className="h-4 w-4" />} تأكيد النقل
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Edit Route Dialog ──────────────────────────────────────────────── */}
+      <Dialog open={isEditRouteModalOpen} onOpenChange={setIsEditRouteModalOpen}>
+        <DialogContent dir="rtl" className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>تعديل الخط</DialogTitle>
+            <DialogDescription>تعديل اسم و/أو تعرفة <strong>{selectedRoute?.name_ar}</strong>.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium">الاسم بالعربية</label>
+              <Input value={editRouteNameAr} onChange={e => setEditRouteNameAr(e.target.value)} className="h-9 text-xs" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium">الاسم بالإنجليزية</label>
+              <Input value={editRouteNameEn} onChange={e => setEditRouteNameEn(e.target.value)} className="h-9 text-xs" dir="ltr" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium">التعرفة (ل.س)</label>
+              <Input type="number" value={editRoutePrice} onChange={e => setEditRoutePrice(e.target.value)} placeholder="اترك فارغاً للحفاظ على التعرفة الحالية" className="h-9 text-xs" />
+            </div>
+          </div>
+          <DialogFooter className="flex-row-reverse gap-2">
+            <Button variant="outline" size="sm" onClick={() => setIsEditRouteModalOpen(false)}>إلغاء</Button>
+            <Button size="sm" disabled={actionLoading || !editRouteNameAr.trim()} onClick={handleUpdateRoute}>
+              {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pencil className="h-4 w-4" />} حفظ التعديلات
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Toast ──────────────────────────────────────────────────────── */}
       {toast && (
-        <div className={`adm-toast ${toast.ok ? 'adm-toast--ok' : 'adm-toast--err'}`}>
+        <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-lg text-sm font-medium shadow-lg animate-in fade-in slide-in-from-bottom-4 ${toast.ok ? 'bg-green-600 text-white' : 'bg-destructive text-destructive-foreground'}`}>
           {toast.msg}
         </div>
       )}
-
-      <style>{`
-        .adm-shell {
-          display: flex; height: 100svh; overflow: hidden;
-          background: var(--bg); color: var(--text);
-          font-family: var(--font-ar, 'Cairo', sans-serif);
-        }
-
-        /* Sidebar */
-        .adm-sidebar {
-          width: 420px; flex-shrink: 0; display: flex; flex-direction: column;
-          border-left: 1px solid var(--border); background: var(--surface);
-          overflow: hidden;
-        }
-        .adm-sidebar-header {
-          flex-shrink: 0; padding: 1.25rem 1.25rem 1rem;
-          border-bottom: 1px solid var(--border);
-        }
-        .adm-title    { font-size: 1.1rem; font-weight: 800; color: var(--gold); margin: 0 0 0.2rem; }
-        .adm-subtitle { font-size: 0.78rem; color: var(--muted); margin: 0; }
-
-        /* Stats */
-        .adm-stats {
-          display: flex; gap: 0; flex-shrink: 0;
-          border-bottom: 1px solid var(--border);
-        }
-        .adm-stat {
-          flex: 1; display: flex; flex-direction: column; align-items: center;
-          padding: 0.75rem 0.5rem; border-left: 1px solid var(--border);
-          gap: 0.15rem;
-        }
-        .adm-stat:last-child { border-left: none; }
-        .adm-stat-num { font-size: 1.25rem; font-weight: 800; }
-        .adm-stat-label { font-size: 0.67rem; color: var(--muted); text-align: center; }
-        .adm-stat--pending  .adm-stat-num { color: #f59e0b; }
-        .adm-stat--approved .adm-stat-num { color: #22c55e; }
-        .adm-stat--rejected .adm-stat-num { color: #ef4444; }
-
-        /* Filters */
-        .adm-filters {
-          flex-shrink: 0; padding: 0.75rem 1rem;
-          border-bottom: 1px solid var(--border);
-          display: flex; flex-direction: column; gap: 0.5rem;
-        }
-        .adm-status-tabs { display: flex; gap: 0.25rem; }
-        .adm-tab {
-          flex: 1; padding: 0.35rem 0.25rem; border-radius: 7px;
-          border: 1px solid var(--border); background: transparent;
-          color: var(--muted); font-family: inherit; font-size: 0.75rem; font-weight: 500;
-          cursor: pointer; transition: all 0.12s; white-space: nowrap;
-        }
-        .adm-tab:hover { background: var(--surface-2); }
-        .adm-tab--active { background: var(--gold); border-color: var(--gold); color: var(--bg); font-weight: 700; }
-        .adm-select-wrap { position: relative; }
-        .adm-select {
-          width: 100%; padding: 0.4rem 1.5rem 0.4rem 0.7rem;
-          background: var(--bg); border: 1px solid var(--border); border-radius: 7px;
-          color: var(--text); font-family: inherit; font-size: 0.8rem;
-          appearance: none; cursor: pointer; outline: none;
-        }
-        .adm-select:focus { border-color: var(--gold); }
-        .adm-select-icon {
-          position: absolute; left: 0.6rem; top: 50%; transform: translateY(-50%);
-          pointer-events: none; color: var(--muted);
-        }
-
-        /* Draft list */
-        .adm-list { flex: 1; overflow-y: auto; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
-        .adm-empty { text-align: center; color: var(--muted); font-size: 0.85rem; padding: 2rem; line-height: 1.6; }
-        .adm-empty--error { color: #ef4444; }
-        .adm-empty-detail { font-size: 0.72rem; color: var(--muted); word-break: break-all; }
-
-        .adm-draft-item {
-          display: flex; flex-direction: column; gap: 0.3rem;
-          padding: 0.75rem 0.875rem; border-radius: 10px;
-          border: 1px solid var(--border); background: var(--surface-2);
-          cursor: pointer; text-align: right; width: 100%;
-          font-family: inherit; transition: all 0.12s;
-        }
-        .adm-draft-item:hover { border-color: var(--gold); background: var(--bg); }
-        .adm-draft-item--active { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 8%, var(--bg)); }
-        .adm-draft-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
-        .adm-draft-name { font-size: 0.9rem; font-weight: 700; color: var(--text); flex: 1; text-align: right; }
-        .adm-draft-meta { font-size: 0.72rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 0.2rem; }
-        .adm-meta-sep { opacity: 0.4; }
-        .adm-rejection-reason { font-size: 0.72rem; color: #ef4444; font-style: italic; margin: 0; text-align: right; }
-
-        /* Status badges */
-        .adm-badge {
-          font-size: 0.67rem; font-weight: 700; padding: 0.15rem 0.5rem;
-          border-radius: 20px; flex-shrink: 0;
-        }
-        .adm-badge--pending  { background: color-mix(in srgb, #f59e0b 18%, transparent); color: #f59e0b; }
-        .adm-badge--approved { background: color-mix(in srgb, #22c55e 18%, transparent); color: #22c55e; }
-        .adm-badge--rejected { background: color-mix(in srgb, #ef4444 18%, transparent); color: #ef4444; }
-
-        /* Map panel */
-        .adm-map-panel { flex: 1; position: relative; background: #111; overflow: hidden; }
-        .adm-map { position: absolute; inset: 0; }
-
-        .adm-map-hint {
-          position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-          background: var(--surface); border: 1px solid var(--border);
-          border-radius: 10px; padding: 0.875rem 1.25rem;
-          font-size: 0.85rem; color: var(--muted); pointer-events: none;
-          white-space: nowrap;
-        }
-
-        /* Detail overlay */
-        .adm-detail {
-          position: absolute; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
-          width: min(420px, calc(100% - 2rem));
-          background: var(--surface); border: 1px solid var(--border);
-          border-radius: 12px; padding: 1.25rem;
-          box-shadow: 0 8px 32px rgba(0,0,0,0.35);
-          display: flex; flex-direction: column; gap: 0.875rem;
-        }
-        .adm-detail-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
-        .adm-detail-title  { font-size: 1rem; font-weight: 800; color: var(--text); margin: 0; }
-        .adm-detail-subtitle { font-size: 0.78rem; color: var(--muted); margin: 0.15rem 0 0; }
-        .adm-detail-close {
-          width: 28px; height: 28px; border-radius: 6px; flex-shrink: 0;
-          background: var(--surface-2); border: 1px solid var(--border);
-          color: var(--muted); cursor: pointer; font-size: 0.75rem;
-          display: flex; align-items: center; justify-content: center;
-          transition: all 0.12s;
-        }
-        .adm-detail-close:hover { color: var(--text); background: var(--border); }
-        .adm-detail-rows { display: flex; flex-direction: column; gap: 0.4rem; }
-        .adm-detail-row { display: flex; gap: 0.5rem; font-size: 0.82rem; }
-        .adm-detail-label { color: var(--muted); min-width: 70px; flex-shrink: 0; }
-        .adm-detail-hint {
-          font-size: 0.72rem; color: var(--muted);
-          border-top: 1px solid var(--border); padding-top: 0.625rem;
-        }
-        .adm-detail-actions { display: flex; gap: 0.5rem; }
-
-        .adm-status-resolved {
-          font-size: 0.82rem; font-weight: 600; padding: 0.5rem 0.75rem;
-          border-radius: 8px; text-align: center;
-        }
-        .adm-status-resolved--approved { background: color-mix(in srgb, #22c55e 12%, transparent); color: #22c55e; }
-        .adm-status-resolved--rejected { background: color-mix(in srgb, #ef4444 12%, transparent); color: #ef4444; }
-        .adm-resolved-reason { font-size: 0.75rem; font-weight: 400; color: var(--muted); margin: 0.3rem 0 0; font-style: italic; }
-
-        /* Buttons */
-        .adm-btn {
-          flex: 1; padding: 0.55rem 0.75rem; border-radius: 8px;
-          font-family: inherit; font-size: 0.85rem; font-weight: 700;
-          cursor: pointer; transition: opacity 0.12s; border: none;
-        }
-        .adm-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .adm-btn--approve { background: #16a34a; color: #fff; }
-        .adm-btn--approve:not(:disabled):hover { opacity: 0.88; }
-        .adm-btn--reject  { background: #dc2626; color: #fff; }
-        .adm-btn--reject:not(:disabled):hover  { opacity: 0.88; }
-        .adm-btn--ghost {
-          background: transparent; color: var(--muted);
-          border: 1px solid var(--border);
-        }
-        .adm-btn--ghost:hover { background: var(--surface-2); color: var(--text); }
-
-        /* Dialog */
-        .adm-overlay {
-          position: fixed; inset: 0; z-index: 50;
-          background: rgba(0,0,0,0.55); backdrop-filter: blur(2px);
-          display: flex; align-items: center; justify-content: center;
-        }
-        .adm-dialog {
-          background: var(--surface); border: 1px solid var(--border);
-          border-radius: 14px; padding: 1.5rem;
-          width: min(440px, calc(100vw - 2rem));
-          box-shadow: 0 16px 48px rgba(0,0,0,0.4);
-          display: flex; flex-direction: column; gap: 1rem;
-        }
-        .adm-dialog-header { display: flex; align-items: center; justify-content: space-between; }
-        .adm-dialog-title  { font-size: 1rem; font-weight: 800; color: var(--text); margin: 0; }
-        .adm-dialog-desc   { font-size: 0.82rem; color: var(--muted); margin: 0; line-height: 1.6; }
-        .adm-textarea {
-          width: 100%; background: var(--bg); border: 1px solid var(--border);
-          border-radius: 8px; color: var(--text); font-family: inherit;
-          font-size: 0.85rem; padding: 0.6rem 0.75rem; resize: vertical;
-          outline: none; transition: border-color 0.15s;
-        }
-        .adm-textarea:focus { border-color: var(--gold); }
-        .adm-textarea::placeholder { color: var(--muted); opacity: 0.65; }
-        .adm-dialog-actions { display: flex; gap: 0.5rem; }
-
-        /* Toast */
-        .adm-toast {
-          position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
-          z-index: 100; padding: 0.65rem 1.25rem; border-radius: 10px;
-          font-family: inherit; font-size: 0.875rem; font-weight: 600;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-          animation: adm-toast-in 0.25s cubic-bezier(.34,1.56,.64,1) both;
-        }
-        @keyframes adm-toast-in { from{opacity:0;transform:translate(-50%,10px)} to{opacity:1;transform:translate(-50%,0)} }
-        .adm-toast--ok  { background: rgba(21,128,61,0.96); color: #dcfce7; }
-        .adm-toast--err { background: rgba(153,27,27,0.96); color: #fee2e2; }
-
-        /* Logout button */
-        .adm-sidebar-header { display: flex; align-items: flex-start; justify-content: space-between; }
-        .adm-logout-btn {
-          width: 30px; height: 30px; border-radius: 7px; flex-shrink: 0;
-          border: 1px solid var(--border); background: transparent;
-          color: var(--muted); cursor: pointer; display: flex;
-          align-items: center; justify-content: center; transition: all 0.12s;
-        }
-        .adm-logout-btn:hover { color: #ef4444; border-color: #ef4444; }
-
-        /* Login screen */
-        .adm-login-shell {
-          display: flex; align-items: center; justify-content: center;
-          min-height: 100svh; background: var(--bg);
-          font-family: var(--font-ar, 'Cairo', sans-serif);
-          padding: 1.5rem;
-        }
-        .adm-login-card {
-          width: 100%; max-width: 360px;
-          background: var(--surface); border: 1px solid var(--border);
-          border-radius: 16px; padding: 2rem 1.75rem;
-          display: flex; flex-direction: column; gap: 1.1rem;
-          box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-        }
-        .adm-login-brand { display: flex; flex-direction: column; gap: 0.2rem; margin-bottom: 0.25rem; }
-        .adm-login-logo  { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; color: var(--gold); text-transform: uppercase; }
-        .adm-login-title { font-size: 1.15rem; font-weight: 800; color: var(--text); margin: 0; }
-        .adm-login-field { display: flex; flex-direction: column; gap: 0.35rem; }
-        .adm-login-label { font-size: 0.8rem; font-weight: 600; color: var(--text); }
-        .adm-login-input {
-          width: 100%; background: var(--bg); border: 1px solid var(--border);
-          border-radius: 8px; color: var(--text); font-family: inherit;
-          font-size: 0.9rem; padding: 0.6rem 0.75rem; outline: none;
-          transition: border-color 0.15s, box-shadow 0.15s;
-        }
-        .adm-login-input:focus {
-          border-color: var(--gold);
-          box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 15%, transparent);
-        }
-        .adm-login-error { font-size: 0.8rem; color: #ef4444; margin: 0; }
-        .adm-login-btn {
-          width: 100%; padding: 0.7rem; border-radius: 9px;
-          border: none; background: var(--gold); color: var(--bg);
-          font-family: inherit; font-size: 0.9rem; font-weight: 700;
-          cursor: pointer; transition: opacity 0.15s; margin-top: 0.25rem;
-        }
-        .adm-login-btn:hover:not(:disabled) { opacity: 0.87; }
-        .adm-login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-        /* Mobile back button — hidden on desktop */
-        .adm-mobile-back { display: none; }
-
-        /* MapLibre controls */
-        .maplibregl-ctrl-group {
-          background-color: var(--surface) !important;
-          border: 1px solid var(--border) !important;
-          border-radius: 8px !important; overflow: hidden;
-          box-shadow: 0 2px 12px rgba(0,0,0,0.25) !important;
-        }
-        .maplibregl-ctrl-group button {
-          width: 34px !important; height: 34px !important;
-          background-color: transparent !important; border: none !important;
-        }
-        .maplibregl-ctrl-group button:hover { background-color: var(--surface-2) !important; }
-        .maplibregl-ctrl-group button + button { border-top: 1px solid var(--border) !important; }
-
-        /* ── Mobile layout ──────────────────────────────────────────────────── */
-        @media (max-width: 767px) {
-          .adm-shell { flex-direction: column; }
-
-          /* Sidebar fills screen in list view */
-          .adm-sidebar {
-            width: 100%; border-left: none;
-            border-bottom: 1px solid var(--border);
-          }
-
-          /* List view: full-screen sidebar, map hidden */
-          .adm-shell:not(.adm-shell--map-view) .adm-sidebar   { flex: 1; overflow: hidden; }
-          .adm-shell:not(.adm-shell--map-view) .adm-map-panel { display: none; }
-
-          /* Map view: full-screen map, sidebar hidden */
-          .adm-shell--map-view .adm-sidebar   { display: none; }
-          .adm-shell--map-view .adm-map-panel { flex: 1; }
-
-          /* Back button */
-          .adm-mobile-back {
-            display: flex; align-items: center; gap: 0.45rem;
-            position: absolute; top: 0.75rem; right: 0.75rem; z-index: 10;
-            padding: 0.45rem 0.875rem; border-radius: 20px;
-            border: 1px solid var(--border); background: var(--surface);
-            color: var(--text); font-family: inherit; font-size: 0.82rem; font-weight: 600;
-            cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.25);
-            touch-action: manipulation;
-          }
-
-          /* Stats bar — tighter on mobile */
-          .adm-stat { padding: 0.6rem 0.25rem; }
-          .adm-stat-num { font-size: 1.1rem; }
-
-          /* Filters — compact */
-          .adm-filters { padding: 0.6rem 0.75rem; }
-          .adm-tab { font-size: 0.7rem; padding: 0.3rem 0.2rem; }
-
-          /* List */
-          .adm-list { padding: 0.6rem; }
-
-          /* Detail overlay — full-width bottom sheet on mobile */
-          .adm-detail {
-            bottom: 0; left: 0; right: 0;
-            transform: none;
-            width: 100%;
-            border-radius: 16px 16px 0 0;
-            border-bottom: none;
-            max-height: 60vh; overflow-y: auto;
-          }
-
-          /* Toast above detail card */
-          .adm-toast { bottom: 4rem; }
-        }
-      `}</style>
     </div>
+    </>
   )
 }
 
@@ -812,8 +923,7 @@ export default function TransitAdminPage() {
   return (
     <TransitLayout>
       <Head>
-        <title>لوحة التحكم بالترانزيت</title>
-        <meta name="description" content="مراجعة وتدقيق خطوط ومحطات النقل المقترحة من قبل المساهمين في منصة ترانزيت." />
+        <title>لوحة إدارة النقل | Syrian Zone</title>
       </Head>
       <TransitAdminPageContent />
     </TransitLayout>

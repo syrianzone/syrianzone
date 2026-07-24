@@ -3,9 +3,11 @@ set -e
 
 echo "🚀 Running production startup tasks..."
 
-# 1. Run database migrations safely first
+# 1. Run database migrations first. A failed migration must kill the boot (set -e):
+# the container stays unhealthy, compose up --wait fails, and the deploy goes red
+# instead of silently serving a half-migrated schema.
 echo "🔄 Running database migrations..."
-php /var/www/html/artisan migrate --force || echo "⚠️ Database migrations failed or skipped."
+php /var/www/html/artisan migrate --force
 
 # 2. Seed the database (runs each seeder independently to avoid DatabaseSeeder factory dependency on dev-only Faker)
 echo "🌱 Seeding database..."

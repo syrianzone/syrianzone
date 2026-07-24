@@ -1,9 +1,11 @@
 <?php
 
+use App\Models\Route;
 use App\Models\RouteDraft;
 use App\Models\User;
 use App\Services\TransitDraftGeoJson;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Route as RouteFacade;
 
 function mobileTransitAdminGeometry(array $geometry): mixed
 {
@@ -93,6 +95,71 @@ test('transit draft review requires a valid mobile bearer and reviewer role', fu
     $this->withToken($token)
         ->getJson('/api/mobile/admin/transit-drafts')
         ->assertForbidden();
+});
+
+test('published route administration requires mobile provenance and reviewer role', function () {
+    $this->getJson('/api/mobile/admin/routes')->assertUnauthorized();
+
+    $reviewer = User::factory()->create(['role' => 'transit_admin']);
+    $wildcard = $reviewer->createToken('browser-token');
+    $this->withToken($wildcard->plainTextToken)
+        ->getJson('/api/mobile/admin/routes')
+        ->assertUnauthorized();
+
+    [, $contributorToken] = mobileTransitAdminUser('user');
+    $this->withToken($contributorToken)
+        ->getJson('/api/mobile/admin/routes')
+        ->assertForbidden();
+});
+
+test('mobile route administration exposes the current main route contracts', function () {
+    $uris = collect(RouteFacade::getRoutes())->map(fn ($route): string => $route->uri());
+
+    expect($uris)->toContain(
+        'api/mobile/admin/routes',
+        'api/mobile/admin/routes/logs',
+        'api/mobile/admin/routes/combine',
+        'api/mobile/admin/routes/split',
+        'api/mobile/admin/routes/{id}/status',
+        'api/mobile/admin/routes/{id}',
+        'api/mobile/admin/routes/{id}/move',
+        'api/mobile/admin/routes/{id}/stops',
+        'api/mobile/admin/routes/{id}/geojson',
+    );
+});
+
+test('a mobile transit reviewer can list routes and change publication status', function () {
+    [, $token] = mobileTransitAdminUser('transit_admin');
+    $route = Route::create([
+        'id' => 'route-damascus-mobile-admin',
+        'city_id' => 'damascus',
+        'name_ar' => 'خط إدارة الجوال',
+        'status' => 'published',
+    ]);
+
+    $this->withToken($token)
+        ->getJson('/api/mobile/admin/routes')
+        ->assertOk()
+        ->assertJsonPath('0.id', $route->id);
+
+    $this->withToken($token)
+        ->postJson("/api/mobile/admin/routes/{$route->id}/status", ['status' => 'hidden'])
+        ->assertOk()
+        ->assertJsonPath('route.status', 'hidden');
+
+    $this->assertDatabaseHas('routes', ['id' => $route->id, 'status' => 'hidden']);
+    $this->withToken($token)
+        ->getJson('/api/mobile/admin/routes/logs')
+        ->assertOk()
+        ->assertJsonPath('0.route_id', $route->id);
+});
+
+test('transit draft mutation routes require numeric draft identifiers', function () {
+    [, $token] = mobileTransitAdminUser('transit_admin');
+
+    $this->withToken($token)
+        ->postJson('/api/mobile/admin/transit-drafts/not-a-number/approve')
+        ->assertNotFound();
 });
 
 test('transit reviewers can list and reject a route draft', function (string $role) {
@@ -221,6 +288,82 @@ test('studio submissions remain anonymous or bind a verified mobile bearer', fun
         ->postJson('/api/v1/studio/routes', $payload)
         ->assertCreated()
         ->assertJsonPath('user_id', $user->id);
+});
+
+test('mobile bearers can read and update their transit drafts', function () {
+    [$user, $token] = mobileTransitAdminUser('user');
+    $draft = seedMobileTransitDraft($user);
+
+    $this->getJson("/api/v1/studio/routes/{$draft->id}")->assertUnauthorized();
+
+    $this->withToken($token)
+        ->getJson("/api/v1/studio/routes/{$draft->id}")
+        ->assertOk()
+        ->assertJsonPath('id', $draft->id);
+
+    $this->withToken($token)
+        ->putJson("/api/v1/studio/routes/{$draft->id}", ['name_ar' => 'خط جوال معدل'])
+        ->assertOk()
+        ->assertJsonPath('name_ar', 'خط جوال معدل');
+
+    $this->assertDatabaseHas('route_drafts', [
+        'id' => $draft->id,
+        'name_ar' => 'خط جوال معدل',
+    ]);
+});
+
+test('a linked mobile draft unpublishes and then atomically updates its route on approval', function () {
+    [$contributor, $contributorToken] = mobileTransitAdminUser('user');
+    $route = Route::create([
+        'id' => 'route-damascus-linked-mobile',
+        'city_id' => 'damascus',
+        'name_ar' => 'الخط القديم',
+        'status' => 'published',
+    ]);
+    $payload = [
+        'route_id' => $route->id,
+        'city_id' => 'damascus',
+        'name_ar' => 'الخط المعدل',
+        'price' => 4_500,
+        'geojson' => seedMobileTransitDraft($contributor)->geojson,
+    ];
+
+    $response = $this->withToken($contributorToken)
+        ->postJson('/api/v1/studio/routes', $payload)
+        ->assertCreated()
+        ->assertJsonPath('route_id', $route->id);
+    $draftId = $response->json('id');
+    expect($route->fresh()->status)->toBe('disapproved');
+
+    [, $reviewerToken] = mobileTransitAdminUser('transit_admin');
+    $this->withToken($reviewerToken)
+        ->postJson("/api/mobile/admin/transit-drafts/{$draftId}/approve")
+        ->assertOk()
+        ->assertJsonPath('message', 'Draft approved and route updated')
+        ->assertJsonPath('route.id', $route->id);
+
+    $route->refresh();
+    expect($route->name_ar)->toBe('الخط المعدل')
+        ->and($route->price_new)->toBe(4_500)
+        ->and($route->status)->toBe('published');
+    $this->assertDatabaseHas('route_geometries', ['route_id' => $route->id]);
+    $this->assertDatabaseHas('route_drafts', ['id' => $draftId, 'status' => 'approved']);
+});
+
+test('mobile bearers can load a published route into Transit Studio', function () {
+    [, $token] = mobileTransitAdminUser('user');
+    $route = Route::create([
+        'id' => 'route-damascus-studio-source',
+        'city_id' => 'damascus',
+        'name_ar' => 'خط مصدر',
+        'status' => 'published',
+    ]);
+
+    $this->withToken($token)
+        ->getJson("/api/v1/studio/routes/{$route->id}/from-route")
+        ->assertOk()
+        ->assertJsonPath('route_id', $route->id)
+        ->assertJsonPath('geojson.type', 'FeatureCollection');
 });
 
 test('studio submissions reject disabled mobile accounts', function () {

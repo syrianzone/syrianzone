@@ -112,8 +112,8 @@ class ImportTransitGeoJson extends Command
             
             if (!Stop::find($stopId)) {
                 DB::statement(
-                    'INSERT INTO stops (id, city_id, name_ar, geometry, created_at, updated_at) VALUES (?, ?, ?, ST_GeomFromGeoJSON(?), ?, ?)',
-                    [$stopId, $cityId, $props['nameAr'] ?? '', json_encode($geom), now(), now()]
+                    'INSERT INTO stops (id, city_id, name_ar, name_en, geometry, created_at, updated_at) VALUES (?, ?, ?, ?, ST_GeomFromGeoJSON(?), ?, ?)',
+                    [$stopId, $cityId, $props['nameAr'] ?? '', $props['nameEn'] ?? null, json_encode($geom), now(), now()]
                 );
             }
             

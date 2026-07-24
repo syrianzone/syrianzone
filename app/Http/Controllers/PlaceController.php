@@ -227,7 +227,7 @@ class PlaceController extends Controller
                 'max:12288',
                 function (string $attribute, mixed $value, callable $fail) use ($images) {
                     if (! $value instanceof UploadedFile || ! $images->dimensionsAreSafe($value)) {
-                        $fail('The image dimensions are not supported.');
+                        $fail('أبعاد الصورة يجب أن تكون بين 200x200 و 6000x6000 بكسل');
                     }
                 },
             ],

@@ -85,10 +85,16 @@ class DashboardController extends Controller
                 'max:4096',
                 function (string $attribute, mixed $value, callable $fail) use ($avatars) {
                     if (! $value instanceof UploadedFile || ! $avatars->dimensionsAreSafe($value)) {
-                        $fail('The image dimensions are not supported.');
+                        $fail('أبعاد الصورة يجب أن تكون بين 64x64 و 6000x6000 بكسل');
                     }
                 },
             ],
+        ], [
+            'avatar.required' => 'اختر صورة',
+            'avatar.uploaded' => 'تعذر رفع الصورة، تأكد أن حجمها لا يتجاوز 4 ميغابايت',
+            'avatar.image' => 'الملف يجب أن يكون صورة',
+            'avatar.mimes' => 'الصورة يجب أن تكون بصيغة JPG أو PNG أو WebP',
+            'avatar.max' => 'حجم الصورة يجب ألا يتجاوز 4 ميغابايت',
         ]);
 
         try {

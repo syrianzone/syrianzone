@@ -101,12 +101,36 @@ test('rejects a non-image upload', function () {
     ])->assertStatus(422)->assertJsonValidationErrors('avatar');
 });
 
+test('rejects an unsupported image format with the arabic mimes message', function () {
+    Storage::fake('public');
+
+    $this->actingAs(avatarUser())->postJson('/api/account/avatar', [
+        'avatar' => UploadedFile::fake()->image('avatar.gif', 300, 300),
+    ])->assertUnprocessable()
+        ->assertJsonPath('errors.avatar.0', 'الصورة يجب أن تكون بصيغة JPG أو PNG أو WebP');
+});
+
+test('rejects a missing avatar with the arabic required message', function () {
+    $this->actingAs(avatarUser())->postJson('/api/account/avatar')
+        ->assertUnprocessable()
+        ->assertJsonPath('errors.avatar.0', 'اختر صورة');
+});
+
 test('rejects an upload above 4MB', function () {
     Storage::fake('public');
 
     $this->actingAs(avatarUser())->postJson('/api/account/avatar', [
         'avatar' => UploadedFile::fake()->image('big.jpg')->size(5000),
     ])->assertStatus(422)->assertJsonValidationErrors('avatar');
+});
+
+test('rejects a too-small avatar with the arabic dimensions message', function () {
+    Storage::fake('public');
+
+    $this->actingAs(avatarUser())->postJson('/api/account/avatar', [
+        'avatar' => UploadedFile::fake()->image('small.jpg', 32, 32),
+    ])->assertUnprocessable()
+        ->assertJsonPath('errors.avatar.0', 'أبعاد الصورة يجب أن تكون بين 64x64 و 6000x6000 بكسل');
 });
 
 function oversizedAvatarPixelUpload(): UploadedFile

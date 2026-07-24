@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { api, extractError } from '../_lib/api';
+import { api, extractError, extractFieldErrors } from '../_lib/api';
 import { CATEGORIES } from '../_lib/categories';
 import type { LatLng, NearbyPlace, PlaceCategory } from '../_lib/types';
 import { DuplicateSuggestions } from './DuplicateSuggestions';
@@ -58,6 +58,7 @@ export function SubmitSheet(props: {
   const [description, setDescription] = useState('');
   const [photos, setPhotos] = useState<File[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submittedId, setSubmittedId] = useState<number | null>(null);
 
@@ -68,6 +69,7 @@ export function SubmitSheet(props: {
     setDescription('');
     setPhotos([]);
     setError(null);
+    setFieldErrors({});
     setSubmitting(false);
     setSubmittedId(null);
     setNearby(null);
@@ -106,6 +108,8 @@ export function SubmitSheet(props: {
 
   const handleSubmit = async () => {
     if (!point || submitting) return;
+    setError(null);
+    setFieldErrors({});
     const trimmedName = name.trim();
     const trimmedDesc = description.trim();
     if (!trimmedName || trimmedName.length > 160) {
@@ -120,11 +124,10 @@ export function SubmitSheet(props: {
       setError('الوصف يجب أن يكون بين 20 و 1000 حرف');
       return;
     }
-    if (photos.length < 1 || photos.length > 5) {
-      setError('أضف من صورة واحدة إلى 5 صور');
+    if (photos.length < 1 || photos.length > 10) {
+      setError('أضف من صورة واحدة إلى 10 صور');
       return;
     }
-    setError(null);
     setSubmitting(true);
     try {
       const res = await api.submitPlace({
@@ -138,7 +141,14 @@ export function SubmitSheet(props: {
       setSubmittedId(res.id);
       setStep('done');
     } catch (e) {
-      setError(extractError(e));
+      const fe = extractFieldErrors(e);
+      if (fe) {
+        setFieldErrors(fe);
+        setError(null);
+      } else {
+        setFieldErrors({});
+        setError(extractError(e));
+      }
     } finally {
       setSubmitting(false);
     }
@@ -210,6 +220,7 @@ export function SubmitSheet(props: {
                   onChange={(e) => setName(e.target.value)}
                   placeholder="مثال: مقهى النوفرة"
                 />
+                {fieldErrors.name && <p className="text-xs text-destructive">{fieldErrors.name}</p>}
               </div>
               <div className="space-y-1.5">
                 <Label>التصنيف</Label>
@@ -225,6 +236,7 @@ export function SubmitSheet(props: {
                     ))}
                   </SelectContent>
                 </Select>
+                {fieldErrors.category && <p className="text-xs text-destructive">{fieldErrors.category}</p>}
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="place-description">الوصف</Label>
@@ -236,6 +248,9 @@ export function SubmitSheet(props: {
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="صف المكان وما يميزه (20 حرفاً على الأقل)"
                 />
+                {fieldErrors.description && (
+                  <p className="text-xs text-destructive">{fieldErrors.description}</p>
+                )}
                 <p className="text-xs text-muted-foreground">
                   <span dir="ltr">{description.length} / 1000</span>
                 </p>
@@ -247,10 +262,13 @@ export function SubmitSheet(props: {
                     {point.lat.toFixed(5)}, {point.lng.toFixed(5)}
                   </span>
                 </p>
+                {fieldErrors.lat && <p className="text-xs text-destructive">{fieldErrors.lat}</p>}
+                {fieldErrors.lng && <p className="text-xs text-destructive">{fieldErrors.lng}</p>}
               </div>
               <div className="space-y-1.5">
                 <Label>الصور</Label>
                 <PhotoPicker files={photos} onChange={setPhotos} />
+                {fieldErrors.photos && <p className="text-xs text-destructive">{fieldErrors.photos}</p>}
               </div>
               <Button type="submit" className="w-full" disabled={submitting}>
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" />}

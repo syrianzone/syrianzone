@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CandidateController;
 use App\Http\Controllers\CandidateGroupController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DevController;
 use App\Http\Controllers\ExternalDataController;
 use App\Http\Controllers\GuessWhoController;
 use App\Http\Controllers\HomeController;
@@ -16,8 +17,11 @@ use App\Http\Controllers\PollController;
 use App\Http\Controllers\SignalingController;
 use App\Http\Controllers\SyOfficialController;
 use App\Http\Controllers\TransitAdminController;
+use App\Http\Middleware\AutoLoginDevUser;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Models\City;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -65,6 +69,9 @@ Route::get('/house', [ExternalDataController::class, 'house']);
 Route::get('/alignment', [ExternalDataController::class, 'alignment']);
 Route::get('/govapps', [ExternalDataController::class, 'govapps']);
 Route::get('/population', [PopulationAtlasController::class, 'renderIndex']);
+Route::get('/central', function () {
+    return Inertia::render('Central/Index');
+});
 
 Route::get('/guesswho', [GuessWhoController::class, 'index']);
 Route::post('/guesswho/rooms', [GuessWhoController::class, 'createRoom']);
@@ -74,7 +81,39 @@ Route::post('/guesswho/room/{roomCode}/signal', [SignalingController::class, 'si
 Route::post('/guesswho/broadcasting/auth', [GuessWhoController::class, 'authenticateBroadcasting']);
 
 Route::get('/transit', function () {
-    return Inertia::render('Transit/Index');
+    $cities = Cache::remember('transit:cities', 3600, function () {
+        $citiesModel = City::select(
+            'id', 'name_ar', 'name_en', 'zoom', 'status',
+            DB::raw('ST_AsGeoJSON(center) as center_geojson'),
+            DB::raw('ST_AsGeoJSON(bounds) as bounds_geojson')
+        )->withCount(['routes as routeCount' => fn ($q) => $q->where('status', 'published')])->get();
+
+        return $citiesModel->map(function ($city) {
+            $centerJson = json_decode($city->center_geojson, true);
+            $boundsJson = json_decode($city->bounds_geojson, true);
+
+            $minLng = $boundsJson['coordinates'][0][0][0] ?? 0;
+            $minLat = $boundsJson['coordinates'][0][0][1] ?? 0;
+            $maxLng = $boundsJson['coordinates'][0][2][0] ?? 0;
+            $maxLat = $boundsJson['coordinates'][0][2][1] ?? 0;
+
+            return [
+                'id' => $city->id,
+                'nameAr' => $city->name_ar,
+                'nameEn' => $city->name_en,
+                'status' => $city->status,
+                'zoom' => $city->zoom,
+                'center' => $centerJson['coordinates'] ?? [0, 0],
+                'bounds' => [
+                    [$minLng, $minLat],
+                    [$maxLng, $maxLat],
+                ],
+                'routeCount' => $city->routeCount,
+            ];
+        })->toArray();
+    });
+
+    return Inertia::render('Transit/Index', ['cities' => $cities]);
 });
 
 Route::get('/transit/city/{id}', function ($id) {
@@ -128,7 +167,7 @@ Route::get('/transit/city/{id}/route/{routeId}', function ($id, $routeId) {
             ->join('stops', 'route_stop.stop_id', '=', 'stops.id')
             ->where('route_stop.route_id', $routeId)
             ->orderBy('route_stop.order')
-            ->select('stops.id', 'stops.name_ar', DB::raw('ST_AsGeoJSON(stops.geometry) as geojson'))
+            ->select('stops.id', 'stops.name_ar', 'stops.name_en', DB::raw('ST_AsGeoJSON(stops.geometry) as geojson'))
             ->get();
 
         $stopsData = $stops->map(function ($s) {
@@ -138,6 +177,7 @@ Route::get('/transit/city/{id}/route/{routeId}', function ($id, $routeId) {
                 'properties' => [
                     'id' => $s->id,
                     'nameAr' => $s->name_ar,
+                    'nameEn' => $s->name_en,
                 ],
                 'coordinates' => $coordinates,
             ];
@@ -221,6 +261,19 @@ Route::middleware(['auth', EnsureUserIsActive::class])->group(function () {
             Route::get('/admin/route-drafts', [TransitAdminController::class, 'index']);
             Route::post('/admin/route-drafts/{id}/approve', [TransitAdminController::class, 'approve']);
             Route::post('/admin/route-drafts/{id}/reject', [TransitAdminController::class, 'reject']);
+            Route::get('/admin/routes', [TransitAdminController::class, 'getPublishedRoutes']);
+            Route::get('/admin/routes/logs', [TransitAdminController::class, 'getLogs']);
+            Route::post('/admin/routes/{id}/status', [TransitAdminController::class, 'updateRouteStatus']);
+            Route::put('/admin/routes/{id}', [TransitAdminController::class, 'updateRoute']);
+            Route::post('/admin/routes/{id}/move', [TransitAdminController::class, 'moveRoute']);
+            Route::post('/admin/routes/combine', [TransitAdminController::class, 'combineRoutes']);
+            Route::post('/admin/routes/split', [TransitAdminController::class, 'splitRoute']);
+            Route::get('/admin/routes/{id}/stops', [TransitAdminController::class, 'getRouteStops']);
+            Route::get('/admin/routes/{id}/geojson', [TransitAdminController::class, 'getRouteGeoJson']);
         });
     });
 });
+
+Route::get('/dev/impersonate/{role}', [DevController::class, 'impersonate'])
+    ->name('dev.impersonate')
+    ->middleware(AutoLoginDevUser::class);

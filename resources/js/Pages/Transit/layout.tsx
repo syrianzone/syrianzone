@@ -1,6 +1,7 @@
 import React from 'react'
+import { usePage } from '@inertiajs/react'
 import './transit.css'
-import { TransitThemeProvider } from './_components/TransitThemeContext'
+import { TransitThemeProvider, useTransitTheme } from './_components/TransitThemeContext'
 import { QueryProvider } from './_providers/QueryProvider'
 import MainLayout from '@/Layouts/MainLayout'
 
@@ -11,17 +12,32 @@ export default function TransitLayout({
 }) {
   return (
     <MainLayout>
-      <div className="transit-root min-h-svh" data-transit-theme="jasmine">
-        {/* Prevent flash of main-site theme during hydration */}
-        <style>{`
-          body { background: var(--bg); }
-        `}</style>
-        <QueryProvider>
-          <TransitThemeProvider>
+      <QueryProvider>
+        <TransitThemeProvider>
+          <TransitRootWrapper>
             {children}
-          </TransitThemeProvider>
-        </QueryProvider>
-      </div>
+          </TransitRootWrapper>
+        </TransitThemeProvider>
+      </QueryProvider>
     </MainLayout>
+  )
+}
+
+function TransitRootWrapper({ children }: { children: React.ReactNode }) {
+  const { theme } = useTransitTheme()
+  const { url } = usePage()
+  const path = url.split('?')[0]
+  const isFullHeight =
+    path.startsWith('/transit/studio') ||
+    path.startsWith('/transit/admin') ||
+    path.match(/^\/transit\/city\/[^/]+\/map$/) !== null
+
+  return (
+    <div
+      className={`transit-root ${isFullHeight ? 'h-full' : 'min-h-svh'}`}
+      data-transit-theme={theme}
+    >
+      {children}
+    </div>
   )
 }

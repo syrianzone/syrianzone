@@ -1,19 +1,29 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # Stage 1: Build Vite/React assets using Bun
 # ─────────────────────────────────────────────────────────────────────────────
-ARG SKEW=local
 FROM oven/bun:alpine AS frontend-builder
-LABEL skew=${SKEW}
 WORKDIR /app
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 COPY . .
-RUN bun run build
+# client-visible sentry/posthog config baked into the bundle; empty locally = sdks no-op
+ARG VITE_SENTRY_DSN
+ARG VITE_SENTRY_TRACES_SAMPLE_RATE
+ARG VITE_POSTHOG_KEY
+ARG SENTRY_ORG
+ARG SENTRY_PROJECT
+ARG GIT_SHA=dev
+ENV VITE_SENTRY_DSN=${VITE_SENTRY_DSN} VITE_SENTRY_RELEASE=${GIT_SHA} \
+    VITE_SENTRY_TRACES_SAMPLE_RATE=${VITE_SENTRY_TRACES_SAMPLE_RATE} \
+    VITE_POSTHOG_KEY=${VITE_POSTHOG_KEY} \
+    SENTRY_ORG=${SENTRY_ORG} SENTRY_PROJECT=${SENTRY_PROJECT}
+# the upload token must never land in a layer (public image): secret mount, ci-only
+RUN --mount=type=secret,id=sentry_auth_token \
+    SENTRY_AUTH_TOKEN="$(cat /run/secrets/sentry_auth_token 2>/dev/null || true)" bun run build
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Stage 2: Production image, serversideup/php with S6 Overlay v3
 # ─────────────────────────────────────────────────────────────────────────────
-ARG SKEW=local
 FROM serversideup/php:8.4-fpm-nginx
 
 # Performance & Stability (PHP-FPM)
@@ -27,13 +37,21 @@ ENV NGINX_FASTCGI_READ_TIMEOUT=65s
 # Enable OPcache for production performance
 ENV PHP_OPCACHE_ENABLE=1
 
+# ties backend sentry events to the deployed image
+ARG GIT_SHA=dev
+ENV SENTRY_RELEASE=${GIT_SHA}
+
 HEALTHCHECK --interval=1m --timeout=10s --retries=3 \
     CMD curl -f http://localhost:8080/healthcheck || exit 1
 
 USER root
 
+# mariadb-client: spatie/laravel-backup shells out to mysqldump; without it the
+# scheduled db backups fail silently. Debian ships no Oracle mysql-client; the
+# mariadb dump works against MySQL 8 (hence no --set-gtid-purged in config/database.php).
 RUN apt-get update && apt-get install -y --no-install-recommends \
         curl \
+        mariadb-client \
     && rm -rf /var/lib/apt/lists/*
 
 # gd: PlaceImageService encodes uploaded photos to webp; the base image ships without it.

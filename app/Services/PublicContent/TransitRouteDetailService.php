@@ -35,12 +35,13 @@ final class TransitRouteDetailService
             ->join('stops', 'route_stop.stop_id', '=', 'stops.id')
             ->where('route_stop.route_id', $routeId)
             ->orderBy('route_stop.order')
-            ->select('stops.id', 'stops.name_ar', $geometry)
+            ->select('stops.id', 'stops.name_ar', 'stops.name_en', $geometry)
             ->get()
             ->map(fn (object $stop): array => [
                 'properties' => [
                     'id' => $stop->id,
                     'nameAr' => $stop->name_ar,
+                    'nameEn' => $stop->name_en,
                 ],
                 'coordinates' => $this->coordinates($stop->geojson),
             ])

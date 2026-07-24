@@ -7,6 +7,7 @@ export interface RouteProperties {
   notes: string
   priceOld: number
   priceNew: number
+  stopsCount?: number
 }
 
 export interface StopProperties {

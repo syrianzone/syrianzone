@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect, useMemo, lazy, useState } from 'react'
+import React, { Suspense, useEffect, useMemo, lazy } from 'react'
 import citiesData from '../../../_data/cities.json'
 import { useMapData } from '../../../_hooks/useMapData'
 import { useOffline } from '../../../_hooks/useOffline'
@@ -6,7 +6,7 @@ import Header from '../../../_components/layout/Header'
 import OfflineBanner from '../../../_components/citymap/OfflineBanner'
 import type { City, FeatureCollection, RouteProperties, StopProperties } from '../../../_types'
 import TransitLayout from '../../../layout'
-import { Head } from '@inertiajs/react'
+import { Head, usePage } from '@inertiajs/react'
 
 const cities = citiesData as City[]
 
@@ -18,14 +18,12 @@ interface CityMapPageProps {
 }
 
 function CityMapPageContent({ id }: CityMapPageProps) {
-  const [routeId, setRouteId] = useState<string | null>(null)
+  const { url } = usePage()
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const searchParams = new URLSearchParams(window.location.search)
-      setRouteId(searchParams.get('route'))
-    }
-  }, [])
+  const routeId = useMemo(() => {
+    const searchParams = new URLSearchParams(url.split('?')[1] ?? '')
+    return searchParams.get('route')
+  }, [url])
 
   const city = cities.find((c) => c.id === id)
   const { data, loading, error } = useMapData(city?.id)
@@ -70,7 +68,7 @@ function CityMapPageContent({ id }: CityMapPageProps) {
 
   if (!city || !city.bounds) {
     return (
-      <div className="flex h-svh flex-col bg-[var(--bg)]">
+      <div className="flex h-full flex-col bg-[var(--bg)]">
         <Header />
         <div className="flex flex-1 items-center justify-center text-[var(--muted)]">
           المدينة غير موجودة
@@ -80,7 +78,7 @@ function CityMapPageContent({ id }: CityMapPageProps) {
   }
 
   return (
-    <div className="flex h-svh flex-col bg-[var(--bg)]">
+    <div className="flex h-full flex-col bg-[var(--bg)]">
       <Header />
       {isOffline && <OfflineBanner />}
 
@@ -111,6 +109,7 @@ function CityMapPageContent({ id }: CityMapPageProps) {
               bounds={bounds}
               routes={filteredRoutes}
               stops={filteredStops}
+              fitToData={!!routeId}
             />
           </Suspense>
         )}

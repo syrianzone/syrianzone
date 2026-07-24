@@ -84,7 +84,7 @@ syrianzone/                          # Root Directory
 ├── routes/                          # Unified route definitions
 │   ├── web.php                      # Handles ALL page routes (Inertia) & session authentication
 │   └── api.php                      # Handles dynamic spatial, search, and map-data endpoints
-├── deploy.sh                        # Shell script for server deployments
+├── .github/workflows/deploy.yml     # CI: depot image build + ssh deploy on push to main
 ├── .github/workflows/deploy.yml     # CI/CD deployment workflow for self-hosted GitHub runners
 ├── tailwind.config.js               # Unified Tailwind styling rules
 ├── tsconfig.json                    # Consolidated TypeScript rules

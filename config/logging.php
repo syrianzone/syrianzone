@@ -58,6 +58,13 @@ return [
             'ignore_exceptions' => false,
         ],
 
+        // ships log records to sentry logs; inert unless SENTRY_ENABLE_LOGS=true.
+        // production runs LOG_CHANNEL=stack with LOG_STACK=stderr,sentry_logs
+        'sentry_logs' => [
+            'driver' => 'sentry_logs',
+            'level' => env('SENTRY_LOGS_LEVEL', 'info'),
+        ],
+
         'single' => [
             'driver' => 'single',
             'path' => storage_path('logs/laravel.log'),

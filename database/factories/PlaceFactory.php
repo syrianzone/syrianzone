@@ -38,6 +38,7 @@ class PlaceFactory extends Factory
     {
         return $this->state(fn () => [
             'approved_at' => null,
+            'rejection_reason' => fake()->sentence(),
             'status' => 'rejected',
         ]);
     }

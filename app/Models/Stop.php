@@ -8,13 +8,16 @@ use Laravel\Scout\Searchable;
 class Stop extends Model
 {
     use Searchable;
+
     protected $keyType = 'string';
+
     public $incrementing = false;
 
     protected $fillable = [
         'id',
         'city_id',
         'name_ar',
+        'name_en',
         'geometry',
     ];
 
@@ -33,6 +36,7 @@ class Stop extends Model
         return [
             'id' => $this->id,
             'name_ar' => $this->name_ar,
+            'name_en' => $this->name_en,
             'city_id' => $this->city_id,
         ];
     }

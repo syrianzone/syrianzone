@@ -4,13 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { HouseRow, PROVINCES, Mode } from './types';
 import { fetchHouseData } from './data';
 import { Search, RotateCcw, ChartBar, Users, Gavel, Filter, Sparkles } from 'lucide-react';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement } from 'chart.js';
-import { Doughnut, Bar } from 'react-chartjs-2';
-
-ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement);
-
-// Set default font
-ChartJS.defaults.font.family = "'IBM Plex Sans Arabic', 'Tahoma', sans-serif";
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface HouseClientProps {
     initialData: HouseRow[];
@@ -172,24 +166,18 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
     }, [filteredData]);
 
     // Chart Data
-    const sexChartData = {
-        labels: ['ذكر', 'أنثى'],
-        datasets: [{
-            data: [stats.male, stats.female],
-            backgroundColor: [COLORS.male, COLORS.female],
-            borderWidth: 0
-        }]
-    };
+    const sexChartData = [
+        { name: 'ذكر', value: stats.male },
+        { name: 'أنثى', value: stats.female }
+    ];
 
-    const ageChartData = {
-        labels: ['<30', '30-39', '40-49', '50-59', '60+'],
-        datasets: [{
-            label: 'عدد الأشخاص', // Required for accessibility/tooltip
-            data: [stats.ageGroups.lt30, stats.ageGroups['30s'], stats.ageGroups['40s'], stats.ageGroups['50s'], stats.ageGroups['60p']],
-            backgroundColor: sexFilter === 'أنثى' ? COLORS.female : COLORS.male,
-            borderRadius: 4
-        }]
-    };
+    const ageChartData = [
+        { name: '<30', value: stats.ageGroups.lt30 },
+        { name: '30-39', value: stats.ageGroups['30s'] },
+        { name: '40-49', value: stats.ageGroups['40s'] },
+        { name: '50-59', value: stats.ageGroups['50s'] },
+        { name: '60+', value: stats.ageGroups['60p'] }
+    ];
 
     const handleSort = (col: string) => {
         if (sortColumn === col) {
@@ -427,7 +415,25 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                             <Users className="h-4 w-4" /> توزيع الجنس
                         </h3>
                         <div className="w-48">
-                            <Doughnut data={sexChartData} options={{ maintainAspectRatio: true, plugins: { legend: { position: 'bottom' } } }} />
+                            <ResponsiveContainer width="100%" height={192}>
+                                <PieChart>
+                                    <Pie
+                                        data={sexChartData}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={60}
+                                        outerRadius={90}
+                                        dataKey="value"
+                                        stroke="none"
+                                    >
+                                        {sexChartData.map((entry, index) => (
+                                            <Cell key={entry.name} fill={index === 0 ? COLORS.male : COLORS.female} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip />
+                                    <Legend />
+                                </PieChart>
+                            </ResponsiveContainer>
                         </div>
                     </div>
                     <div className="bg-card p-6 rounded-lg shadow-sm border border-border flex flex-col items-center">
@@ -435,7 +441,18 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                             <ChartBar className="h-4 w-4" /> توزيع الأعمار
                         </h3>
                         <div className="w-full h-48">
-                            <Bar data={ageChartData} options={{ maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }} />
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={ageChartData}>
+                                    <XAxis dataKey="name" />
+                                    <YAxis />
+                                    <Tooltip />
+                                    <Bar
+                                        dataKey="value"
+                                        fill={sexFilter === 'أنثى' ? COLORS.female : COLORS.male}
+                                        radius={[4, 4, 0, 0]}
+                                    />
+                                </BarChart>
+                            </ResponsiveContainer>
                         </div>
                     </div>
                 </div>

@@ -8,7 +8,7 @@ import { TierAvatar as Avatar } from "@/Components/poll/TierAvatar";
 import { Badge } from "@/Components/ui/badge";
 import { Button } from "@/Components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/Components/ui/tabs";
-import { TimeseriesChart } from "./TimeseriesChart";
+import { TimeseriesChart } from "@/Components/charts/TimeseriesChart";
 import MainLayout from '@/Layouts/MainLayout';
 
 type StatusFilter = "active" | "former" | "all";

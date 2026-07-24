@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import html2canvas from 'html2canvas-pro';
 import {
-  Chart as ChartJS,
-  RadialLinearScale,
-  PointElement,
-  LineElement,
-  Filler,
-  Tooltip,
-  Legend
-} from 'chart.js';
-import { Radar } from 'react-chartjs-2';
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Tooltip as RechartsTooltip,
+  Legend,
+  ResponsiveContainer
+} from 'recharts';
 import {
   RotateCcw,
   Share2,
@@ -48,15 +48,6 @@ import {
   Topic,
   SubFile
 } from './data';
-
-ChartJS.register(
-  RadialLinearScale,
-  PointElement,
-  LineElement,
-  Filler,
-  Tooltip,
-  Legend
-);
 
 const TOPIC_ICONS: Record<string, React.ComponentType<any>> = {
   economy: Briefcase,
@@ -446,76 +437,23 @@ export default function PrioritiesApp() {
   }), [activeThemeConfig]);
 
   const chartData = useMemo(() => {
-    return {
-      labels: topics.map(t => {
-        if (t.id === 'economy') return 'الاقتصاد';
-        if (t.id === 'justice') return 'العدالة';
-        if (t.id === 'housing') return 'السكن';
-        if (t.id === 'security') return 'الأمن';
-        if (t.id === 'politics') return 'السياسة';
-        if (t.id === 'digital') return 'الرقمنة';
-        return t.name;
-      }),
-      datasets: [
-        {
-          label: 'نقاط موازنتك الحالية',
-          data: topics.map(t => t.points),
-          fill: true,
-          backgroundColor: `rgba(${themeColors.primaryRgb}, 0.15)`,
-          borderColor: themeColors.primary,
-          pointBackgroundColor: themeColors.primary,
-          pointBorderColor: '#fff',
-          borderWidth: 2.5
-        },
-        {
-          label: COMPARISONS[activeComparisonKey]?.title || '',
-          data: topics.map(t => COMPARISONS[activeComparisonKey]?.points[t.id] || 0),
-          fill: true,
-          backgroundColor: 'rgba(128, 128, 128, 0.05)',
-          borderColor: 'rgba(128, 128, 128, 0.6)',
-          pointBackgroundColor: 'rgba(128, 128, 128, 0.8)',
-          pointBorderColor: '#fff',
-          borderDash: [4, 4],
-          borderWidth: 1.5
-        }
-      ]
+    const topicLabels: Record<string, string> = {
+      economy: 'الاقتصاد',
+      justice: 'العدالة',
+      housing: 'السكن',
+      security: 'الأمن',
+      politics: 'السياسة',
+      digital: 'الرقمنة'
     };
-  }, [topics, activeComparisonKey, themeColors]);
+    return topics.map(t => ({
+      topic: topicLabels[t.id] || t.name,
+      current: t.points,
+      comparison: COMPARISONS[activeComparisonKey]?.points[t.id] || 0
+    }));
+  }, [topics, activeComparisonKey]);
 
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    scales: {
-      r: {
-        angleLines: { display: true, color: 'rgba(128, 128, 128, 0.15)' },
-        grid: { color: 'rgba(128, 128, 128, 0.15)' },
-        suggestedMin: 0,
-        suggestedMax: 45,
-        ticks: { display: false },
-        pointLabels: {
-          font: { family: 'IBM Plex Sans Arabic', size: 10, weight: 'bold' },
-          color: activeTheme.includes('dark') || activeTheme === 'damascus-rose' ? '#ffffff' : '#475569'
-        }
-      }
-    },
-    plugins: {
-      legend: {
-        position: 'bottom' as const,
-        labels: {
-          font: { family: 'IBM Plex Sans Arabic', size: 11 },
-          boxWidth: 10,
-          color: activeTheme.includes('dark') || activeTheme === 'damascus-rose' ? '#ffffff' : '#1e293b'
-        }
-      },
-      tooltip: {
-        callbacks: {
-          label: function (context: any) {
-            return ` ${context.dataset.label}: %${context.raw}`;
-          }
-        }
-      }
-    }
-  };
+  const isDark = activeTheme.includes('dark') || activeTheme === 'damascus-rose';
+  const labelColor = isDark ? '#ffffff' : '#475569';
 
   // Export & Sharing actions
   const handleCopyText = () => {
@@ -1071,7 +1009,54 @@ export default function PrioritiesApp() {
 
             {/* Interactive Chart Container */}
             <div className="relative w-full h-[260px] flex items-center justify-center bg-muted/20 rounded-xl border border-border p-2 mb-4">
-              <Radar data={chartData} options={chartOptions} />
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart cx="50%" cy="50%" outerRadius="70%" data={chartData}>
+                  <PolarGrid stroke="rgba(128, 128, 128, 0.15)" />
+                  <PolarAngleAxis
+                    dataKey="topic"
+                    tick={{
+                      fontSize: 10,
+                      fontWeight: 'bold',
+                      fontFamily: 'IBM Plex Sans Arabic',
+                      fill: labelColor
+                    }}
+                  />
+                  <PolarRadiusAxis
+                    angle={90}
+                    domain={[0, 45]}
+                    tick={false}
+                    axisLine={false}
+                  />
+                  <RechartsTooltip
+                    formatter={(value: number, name: string) => {
+                      const label = name === 'current' ? 'نقاط موازنتك الحالية' : COMPARISONS[activeComparisonKey]?.title || '';
+                      return [`%${value}`, label];
+                    }}
+                  />
+                  <Legend
+                    formatter={(value: string) => value === 'current' ? 'نقاط موازنتك الحالية' : COMPARISONS[activeComparisonKey]?.title || ''}
+                  />
+                  <Radar
+                    name="current"
+                    dataKey="current"
+                    stroke={themeColors.primary}
+                    strokeWidth={2.5}
+                    fill={themeColors.primary}
+                    fillOpacity={0.15}
+                    dot={{ r: 4, fill: themeColors.primary, stroke: '#fff', strokeWidth: 1 }}
+                  />
+                  <Radar
+                    name="comparison"
+                    dataKey="comparison"
+                    stroke="rgba(128, 128, 128, 0.6)"
+                    strokeWidth={1.5}
+                    strokeDasharray="4 4"
+                    fill="rgba(128, 128, 128, 0.05)"
+                    fillOpacity={1}
+                    dot={{ r: 3, fill: 'rgba(128, 128, 128, 0.8)', stroke: '#fff', strokeWidth: 1 }}
+                  />
+                </RadarChart>
+              </ResponsiveContainer>
             </div>
 
             {/* Persona Badge & Description */}

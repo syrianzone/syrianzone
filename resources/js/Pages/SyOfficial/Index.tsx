@@ -296,7 +296,7 @@ export default function Index({ initialData, categories }: SyOfficialClientProps
                                 onClick={() => setLanguage(lang)}
                                 className="rounded-full gap-1.5 px-3"
                             >
-                                <img src={`/assets/flags/${lang}.svg`} alt={lang} className="w-4 h-3 object-cover rounded shadow-2xs" />
+                                <img src={`/assets/${lang}.svg`} alt={lang} className="w-4 h-3 object-cover rounded shadow-2xs" />
                                 <span className="uppercase text-xs font-semibold">{lang}</span>
                             </Button>
                         ))}

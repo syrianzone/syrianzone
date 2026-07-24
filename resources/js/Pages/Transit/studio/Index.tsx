@@ -11,6 +11,7 @@ import cities from '../_data/cities.json'
 import TransitLayout from '../layout'
 import { useTransitTheme } from '../_components/TransitThemeContext'
 import { useAuth } from '@/Contexts/AuthContext'
+import { ROUTE_PALETTE, getRouteColor, buildColorMatch } from '../_lib/mapColors'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type DrawMode = 'idle' | 'line' | 'point'
@@ -274,7 +275,7 @@ function Step3Stops({
 }
 
 function Step4Meta({ onBack, onNext }: { onBack: () => void; onNext: () => void }) {
-  const { nameAr, nameEn, price, notes, setMeta } = useStudioStore()
+  const { nameAr, nameEn, price, notes, colorIndex, setMeta } = useStudioStore()
 
   return (
     <div className="studio-step-panel">
@@ -292,6 +293,23 @@ function Step4Meta({ onBack, onNext }: { onBack: () => void; onNext: () => void 
             onChange={e => setMeta({ nameAr: e.target.value })}
             placeholder="مثال: باب توما — برامكة"
           />
+        </div>
+        <div className="studio-field">
+          <label className="studio-label">
+            لون المسار على الخريطة
+          </label>
+          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+            {ROUTE_PALETTE.map((colorHex, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => setMeta({ colorIndex: idx })}
+                className={`w-7 h-7 rounded-full border-2 transition-all ${colorIndex === idx ? 'scale-110 border-foreground shadow-md ring-2 ring-primary' : 'border-transparent opacity-75 hover:opacity-100'}`}
+                style={{ backgroundColor: colorHex }}
+                title={`لون ${idx + 1}`}
+              />
+            ))}
+          </div>
         </div>
         <div className="studio-field">
           <label className="studio-label" htmlFor="s-name-en">
@@ -522,6 +540,7 @@ function TransitStudioPageContent() {
 
   const {
     step, cityId, drawnLine, stops, nameAr, submittedDraftId,
+    colorIndex, setColorIndex,
     isEditMode, editingDraftId, editingRouteId,
     setStep, setCity, setDrawnLine, updateStopName, setSubmittedDraftId,
     setEditMode, loadDraft, reset,
@@ -664,7 +683,7 @@ function TransitStudioPageContent() {
         id: 'ref-layer-routes',
         type: 'line',
         source: SRC_REF_ROUTES,
-        paint: { 'line-color': '#c8963a', 'line-width': 2, 'line-opacity': 0.25 },
+        paint: { 'line-color': buildColorMatch() as any, 'line-width': 2.5, 'line-opacity': 0.35 },
       })
       map.addLayer({
         id: 'ref-layer-stops',
@@ -678,11 +697,13 @@ function TransitStudioPageContent() {
       map.addSource(SRC_STOPS,  { type: 'geojson', data: empty })
       map.addSource(SRC_ACTIVE, { type: 'geojson', data: empty })
 
+      const activeColor = getRouteColor(colorIndex)
+
       map.addLayer({
         id: 'studio-layer-lines',
         type: 'line',
         source: SRC_LINES,
-        paint: { 'line-color': '#f5a623', 'line-width': 3, 'line-opacity': 0.9 },
+        paint: { 'line-color': activeColor, 'line-width': 4, 'line-opacity': 0.95 },
       })
       map.addLayer({
         id: 'studio-layer-stops',
@@ -695,19 +716,43 @@ function TransitStudioPageContent() {
         type: 'line',
         source: SRC_ACTIVE,
         filter: ['==', '$type', 'LineString'],
-        paint: { 'line-color': '#f5a623', 'line-width': 2.5, 'line-dasharray': [2, 2], 'line-opacity': 0.8 },
+        paint: { 'line-color': activeColor, 'line-width': 3, 'line-dasharray': [2, 2], 'line-opacity': 0.85 },
       })
       map.addLayer({
         id: 'studio-layer-vertices',
         type: 'circle',
         source: SRC_ACTIVE,
         filter: ['==', '$type', 'Point'],
-        paint: { 'circle-radius': 5, 'circle-color': '#f5a623', 'circle-stroke-color': '#fff', 'circle-stroke-width': 1.5 },
+        paint: { 'circle-radius': 5, 'circle-color': activeColor, 'circle-stroke-color': '#fff', 'circle-stroke-width': 1.5 },
       })
 
       mapRef.current = map
       setMapReady(true)
     })
+
+    return () => { map.remove(); mapRef.current = null; setMapReady(false) }
+  }, [theme])
+
+  // Sync studio layer paint colors with colorIndex
+  useEffect(() => {
+    if (!mapReady || !mapRef.current) return
+    const color = getRouteColor(colorIndex)
+    try {
+      if (mapRef.current.getLayer('studio-layer-lines')) {
+        mapRef.current.setPaintProperty('studio-layer-lines', 'line-color', color)
+      }
+      if (mapRef.current.getLayer('studio-layer-active')) {
+        mapRef.current.setPaintProperty('studio-layer-active', 'line-color', color)
+      }
+      if (mapRef.current.getLayer('studio-layer-vertices')) {
+        mapRef.current.setPaintProperty('studio-layer-vertices', 'circle-color', color)
+      }
+    } catch { /* */ }
+  }, [mapReady, colorIndex])
+
+  useEffect(() => {
+    if (!mapReady || !mapRef.current) return
+    const map = mapRef.current
 
     map.on('click', (e) => {
       const mode = modeRef.current
@@ -1133,7 +1178,7 @@ function TransitStudioPageContent() {
       features: [
         {
           type: 'Feature',
-          properties: { type: 'route' },
+          properties: { type: 'route', colorIndex: storeState.colorIndex, color_index: storeState.colorIndex },
           geometry: { type: 'LineString', coordinates: drawnLine },
         },
         ...storeState.stops.map(s => ({
@@ -1153,6 +1198,7 @@ function TransitStudioPageContent() {
         name_en:  storeState.nameEn.trim() || null,
         price:    parseInt(storeState.price) || null,
         notes:    storeState.notes.trim() || null,
+        color_index: storeState.colorIndex,
         geojson,
       }
 

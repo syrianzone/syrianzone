@@ -5,9 +5,10 @@ import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { FeatureCollection } from 'geojson'
 import { useAdminDrafts, useMapData } from '../_hooks/useMapData'
+import { useQueryClient } from '@tanstack/react-query'
 import { router, Head } from '@inertiajs/react'
 import { useTransitTheme } from '../_components/TransitThemeContext'
-import { ROUTE_PALETTE, getRouteColor } from '../_lib/mapColors'
+import { ROUTE_PALETTE, getRouteColor, buildColorMatch } from '../_lib/mapColors'
 import TransitLayout from '../layout'
 import { Button } from '@/Components/ui/button'
 import { Badge } from '@/Components/ui/badge'
@@ -165,10 +166,11 @@ function TransitAdminPageContent() {
   const [editRouteColorIndex, setEditRouteColorIndex] = useState<number>(0)
   const [approveColorIndex, setApproveColorIndex] = useState<number>(0)
 
+  const queryClient = useQueryClient()
   const { data: drafts = [], isLoading, error: draftsError } = useAdminDrafts()
 
   const activeCityId = adminTab === 'drafts' ? selectedDraft?.city_id : selectedRoute?.city_id
-  const { data: refData } = useMapData(activeCityId)
+  const { data: refData, refetch: refetchRefData } = useMapData(activeCityId)
 
   const showToast = useCallback((msg: string, ok = true) => {
     setToast({ msg, ok })
@@ -212,18 +214,19 @@ function TransitAdminPageContent() {
       const empty: FeatureCollection = { type: 'FeatureCollection', features: [] }
       map.addSource('ref-routes', { type: 'geojson', data: empty })
       map.addSource('ref-stops', { type: 'geojson', data: empty })
-      map.addLayer({ id: 'ref-layer-routes', type: 'line', source: 'ref-routes', paint: { 'line-color': '#c8963a', 'line-width': 2, 'line-opacity': 0.22 } })
-      map.addLayer({ id: 'ref-layer-stops', type: 'circle', source: 'ref-stops', paint: { 'circle-radius': 4, 'circle-color': '#c8963a', 'circle-opacity': 0.28 } })
+      map.addLayer({ id: 'ref-layer-routes', type: 'line', source: 'ref-routes', paint: { 'line-color': buildColorMatch() as any, 'line-width': 3, 'line-opacity': 0.45 } })
+      map.addLayer({ id: 'ref-layer-routes-hit', type: 'line', source: 'ref-routes', paint: { 'line-width': 16, 'line-opacity': 0 } })
+      map.addLayer({ id: 'ref-layer-stops', type: 'circle', source: 'ref-stops', paint: { 'circle-radius': 4, 'circle-color': '#c8963a', 'circle-opacity': 0.35 } })
+      
       map.addSource('draft-source', { type: 'geojson', data: empty })
       map.addLayer({
         id: 'draft-line', type: 'line', source: 'draft-source',
         layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: { 'line-color': '#c8963a', 'line-width': 4 },
-        filter: ['==', '$type', 'LineString'],
+        paint: { 'line-color': '#c8963a', 'line-width': 5, 'line-opacity': 0.9 },
       })
       map.addLayer({
         id: 'draft-points', type: 'circle', source: 'draft-source',
-        paint: { 'circle-radius': 7, 'circle-color': '#c44b4b', 'circle-stroke-width': 2, 'circle-stroke-color': '#ffffff' },
+        paint: { 'circle-radius': 5, 'circle-color': '#c44b4b', 'circle-stroke-width': 1.5, 'circle-stroke-color': '#ffffff' },
         filter: ['==', '$type', 'Point'],
       })
       map.resize()
@@ -232,6 +235,38 @@ function TransitAdminPageContent() {
     })
     return () => { map.remove(); mapRef.current = null; setMapReady(false) }
   }, [theme])
+
+function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
+  if (!geojson) return null
+  const coords: [number, number][] = []
+
+  const extractCoords = (geom: any) => {
+    if (!geom || !geom.coordinates) return
+    const { type, coordinates } = geom
+    if (type === 'Point') {
+      coords.push(coordinates as [number, number])
+    } else if (type === 'LineString' || type === 'MultiPoint') {
+      coordinates.forEach((c: any) => coords.push(c as [number, number]))
+    } else if (type === 'MultiLineString' || type === 'Polygon') {
+      coordinates.forEach((line: any) => line.forEach((c: any) => coords.push(c as [number, number])))
+    } else if (type === 'MultiPolygon') {
+      coordinates.forEach((poly: any) => poly.forEach((line: any) => line.forEach((c: any) => coords.push(c as [number, number]))))
+    }
+  }
+
+  if (geojson.type === 'FeatureCollection' && Array.isArray(geojson.features)) {
+    geojson.features.forEach((f: any) => extractCoords(f.geometry))
+  } else if (geojson.type === 'Feature') {
+    extractCoords(geojson.geometry)
+  } else {
+    extractCoords(geojson)
+  }
+
+  if (coords.length === 0) return null
+  const bounds = new maplibregl.LngLatBounds(coords[0], coords[0])
+  coords.forEach(c => bounds.extend(c as maplibregl.LngLatLike))
+  return bounds
+}
 
   useEffect(() => {
     if (!mapReady || !mapRef.current) return
@@ -245,17 +280,40 @@ function TransitAdminPageContent() {
       geojsonData = selectedRouteGeoJson ?? empty
     }
     src?.setData(geojsonData)
-    if (geojsonData?.features) {
-      const line = geojsonData.features.find((f: any) => f.geometry?.type === 'LineString' || f.geometry?.type === 'MultiLineString')
-      if (line?.geometry?.coordinates) {
-        let coords: [number, number][] = line.geometry.coordinates
-        if (line.geometry.type === 'MultiLineString') coords = coords.flat()
-        if (coords.length > 0) {
-          mapRef.current.fitBounds(coords.reduce((b, c) => b.extend(c as maplibregl.LngLatLike), new maplibregl.LngLatBounds(coords[0], coords[0])), { padding: 80 })
-        }
-      }
+
+    const bounds = getGeoJsonBounds(geojsonData)
+    if (bounds) {
+      mapRef.current.fitBounds(bounds, { padding: 80, maxZoom: 15, duration: 800 })
     }
   }, [mapReady, selectedDraft, selectedRouteGeoJson, adminTab])
+
+  // Update line color, casing, points, and background dimming dynamically
+  useEffect(() => {
+    if (!mapReady || !mapRef.current) return
+    const map = mapRef.current
+
+    let color = '#c8963a'
+    if (adminTab === 'drafts' && selectedDraft) {
+      color = getRouteColor(approveColorIndex)
+    } else if (adminTab === 'routes' && selectedRoute) {
+      color = getRouteColor(selectedRoute.color_index ?? 0)
+    }
+
+    if (map.getLayer('draft-line')) {
+      map.setPaintProperty('draft-line', 'line-color', color)
+      map.setPaintProperty('draft-line', 'line-width', 5)
+      map.setPaintProperty('draft-line', 'line-opacity', 0.9)
+    }
+    if (map.getLayer('draft-points')) {
+      map.setPaintProperty('draft-points', 'circle-color', color)
+    }
+
+    if (map.getLayer('ref-layer-routes')) {
+      const isSelected = (adminTab === 'drafts' && !!selectedDraft) || (adminTab === 'routes' && !!selectedRoute)
+      map.setPaintProperty('ref-layer-routes', 'line-opacity', isSelected ? 0.15 : 0.45)
+      map.setPaintProperty('ref-layer-routes', 'line-width', 3)
+    }
+  }, [mapReady, adminTab, approveColorIndex, selectedRoute, selectedDraft])
 
   useEffect(() => {
     if (!mapReady || !mapRef.current) return
@@ -279,10 +337,16 @@ function TransitAdminPageContent() {
         credentials: 'include',
         body: JSON.stringify({ color_index: selectedColor }),
       })
-      if (res.ok) { showToast('تمت الموافقة على المسار ونشره'); setSelectedDraft(null) }
+      if (res.ok) {
+        showToast('تمت الموافقة على المسار ونشره')
+        setSelectedDraft(null)
+        queryClient.invalidateQueries({ queryKey: ['admin-drafts'] })
+        queryClient.invalidateQueries({ queryKey: ['mapData'] })
+        queryClient.invalidateQueries({ queryKey: ['routes'] })
+      }
       else { const e = await res.json().catch(() => ({})); showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false) }
     } catch { showToast('تعذّر الاتصال بالخادم', false) } finally { setActionLoading(false) }
-  }, [approveColorIndex, showToast])
+  }, [approveColorIndex, showToast, queryClient])
 
   const handleRejectConfirm = useCallback(async () => {
     if (!selectedDraft) return
@@ -302,11 +366,31 @@ function TransitAdminPageContent() {
   const handleSelectRoute = useCallback(async (route: PublishedRoute) => {
     setSelectedRoute(route)
     setMobileView('map')
+
+    // 1. Zoom in immediately using memory geometry from refData if present
+    const featureFromRef = refData?.routes?.features?.find((f: any) => String(f.properties?.id) === String(route.id))
+    if (featureFromRef) {
+      const geojson = { type: 'FeatureCollection', features: [featureFromRef] }
+      setSelectedRouteGeoJson(geojson)
+      if (mapRef.current) {
+        const bounds = getGeoJsonBounds(geojson)
+        if (bounds) mapRef.current.fitBounds(bounds, { padding: 80, maxZoom: 15, duration: 800 })
+      }
+    }
+
+    // 2. Fetch full GeoJSON (with stops) from server
     try {
       const res = await fetch(`/api/v1/admin/routes/${route.id}/geojson`)
-      if (res.ok) setSelectedRouteGeoJson(await res.json())
+      if (res.ok) {
+        const fullGeojson = await res.json()
+        setSelectedRouteGeoJson(fullGeojson)
+        if (mapRef.current) {
+          const bounds = getGeoJsonBounds(fullGeojson)
+          if (bounds) mapRef.current.fitBounds(bounds, { padding: 80, maxZoom: 15, duration: 800 })
+        }
+      }
     } catch { /* */ }
-  }, [])
+  }, [refData])
 
   const handleUpdateStatus = useCallback(async (routeId: string, newStatus: string) => {
     setActionLoading(true)
@@ -378,17 +462,89 @@ function TransitAdminPageContent() {
           name_ar: editRouteNameAr.trim() || undefined,
           name_en: editRouteNameEn.trim() || null,
           color_index: editRouteColorIndex,
-          price: editRoutePrice ? parseInt(editRoutePrice) : null,
+          price_new: editRoutePrice ? parseInt(editRoutePrice) : null,
         }),
       })
       if (res.ok) {
         showToast('تم تحديث الخط')
         setIsEditRouteModalOpen(false)
-        setSelectedRoute(p => p ? { ...p, name_ar: editRouteNameAr.trim() || p.name_ar, name_en: editRouteNameEn.trim() || null, color_index: editRouteColorIndex, price_new: editRoutePrice ? parseInt(editRoutePrice) : p.price_new } : null)
+        const updatedRoute = {
+          ...selectedRoute,
+          name_ar: editRouteNameAr.trim() || selectedRoute.name_ar,
+          name_en: editRouteNameEn.trim() || null,
+          color_index: editRouteColorIndex,
+          price_new: editRoutePrice ? parseInt(editRoutePrice) : selectedRoute.price_new,
+        }
+        setSelectedRoute(updatedRoute)
+        setPublishedRoutes(prev => prev.map(r => r.id === selectedRoute.id ? { ...r, color_index: editRouteColorIndex, name_ar: editRouteNameAr.trim() || r.name_ar } : r))
+
+        const resGeo = await fetch(`/api/v1/admin/routes/${selectedRoute.id}/geojson`)
+        if (resGeo.ok) setSelectedRouteGeoJson(await resGeo.json())
+
+        queryClient.invalidateQueries({ queryKey: ['mapData'] })
+        queryClient.invalidateQueries({ queryKey: ['routes'] })
+        refetchRefData()
         fetchRoutes()
-      } else { const e = await res.json().catch(() => ({})); showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false) }
-    } catch { showToast('تعذّر الاتصال بالخادم', false) } finally { setActionLoading(false) }
-  }, [selectedRoute, editRouteNameAr, editRouteNameEn, editRouteColorIndex, editRoutePrice, fetchRoutes, showToast])
+      } else {
+        const e = await res.json().catch(() => ({}))
+        showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false)
+      }
+    } catch {
+      showToast('تعذّر الاتصال بالخادم', false)
+    } finally {
+      setActionLoading(false)
+    }
+  }, [selectedRoute, editRouteNameAr, editRouteNameEn, editRouteColorIndex, editRoutePrice, fetchRoutes, showToast, queryClient, refetchRefData])
+
+  const handleQuickUpdateColor = useCallback(async (newColorIndex: number) => {
+    if (!selectedRoute) return
+    setActionLoading(true)
+    try {
+      const res = await fetch(`/api/v1/admin/routes/${selectedRoute.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
+        credentials: 'include',
+        body: JSON.stringify({ color_index: newColorIndex }),
+      })
+      if (res.ok) {
+        showToast('تم تحديث لون الخط')
+        const updatedRoute = { ...selectedRoute, color_index: newColorIndex }
+        setSelectedRoute(updatedRoute)
+        setPublishedRoutes(prev => prev.map(r => r.id === selectedRoute.id ? { ...r, color_index: newColorIndex } : r))
+
+        // Update active geojson properties in state immediately so map reflects color
+        setSelectedRouteGeoJson((prev: any) => {
+          if (!prev) return null
+          return {
+            ...prev,
+            features: (prev.features || []).map((f: any) => ({
+              ...f,
+              properties: { ...f.properties, colorIndex: newColorIndex, color_index: newColorIndex }
+            }))
+          }
+        })
+
+        if (mapRef.current?.getLayer('draft-line')) {
+          mapRef.current.setPaintProperty('draft-line', 'line-color', getRouteColor(newColorIndex))
+        }
+        if (mapRef.current?.getLayer('draft-points')) {
+          mapRef.current.setPaintProperty('draft-points', 'circle-color', getRouteColor(newColorIndex))
+        }
+
+        queryClient.invalidateQueries({ queryKey: ['mapData'] })
+        queryClient.invalidateQueries({ queryKey: ['routes'] })
+        refetchRefData()
+        fetchRoutes()
+      } else {
+        const e = await res.json().catch(() => ({}))
+        showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false)
+      }
+    } catch {
+      showToast('تعذّر الاتصال بالخادم', false)
+    } finally {
+      setActionLoading(false)
+    }
+  }, [selectedRoute, fetchRoutes, showToast, queryClient, refetchRefData])
 
   // ─── Derived ──────────────────────────────────────────────────────────────
   const stats = {
@@ -484,9 +640,10 @@ function TransitAdminPageContent() {
                 ) : filteredDrafts.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground text-sm">لا توجد نتائج</div>
                 ) : filteredDrafts.map(draft => (
-                  <button key={draft.id} type="button"
-                    className={`w-full text-right p-3 rounded-lg border transition-colors ${selectedDraft?.id === draft.id ? 'border-primary bg-primary/5' : 'border-border bg-background hover:border-primary/50'}`}
-                    onClick={() => { setSelectedDraft(draft); setMobileView('map') }}>
+                  <div key={draft.id} role="button" tabIndex={0}
+                    className={`w-full text-right p-3 rounded-lg border transition-colors cursor-pointer ${selectedDraft?.id === draft.id ? 'border-primary bg-primary/5' : 'border-border bg-background hover:border-primary/50'}`}
+                    onClick={() => { setSelectedDraft(draft); setMobileView('map') }}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setSelectedDraft(draft); setMobileView('map') } }}>
                     <div className="flex items-start justify-between gap-2">
                       <span className="text-sm font-semibold leading-tight">{draft.name_ar}</span>
                       <div className="flex items-center gap-1.5 shrink-0">
@@ -520,7 +677,7 @@ function TransitAdminPageContent() {
                     {draft.status === 'rejected' && draft.rejection_reason && (
                       <p className="text-[11px] text-destructive mt-1 italic">{draft.rejection_reason}</p>
                     )}
-                  </button>
+                  </div>
                 ))}
               </div>
             </ScrollArea>
@@ -563,11 +720,12 @@ function TransitAdminPageContent() {
                 ) : filteredRoutes.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground text-sm">لا توجد خطوط مطابقة</div>
                 ) : filteredRoutes.map(route => (
-                  <button key={route.id} type="button"
-                    className={`w-full text-right p-3 rounded-lg border transition-colors ${selectedRoute?.id === route.id ? 'border-primary bg-primary/5' : 'border-border bg-background hover:border-primary/50'}`}
-                    onClick={() => handleSelectRoute(route)}>
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2 min-w-0">
+                  <div key={route.id} role="button" tabIndex={0}
+                    className={`w-full max-w-full box-border text-right p-3 rounded-lg border transition-colors cursor-pointer ${selectedRoute?.id === route.id ? 'border-primary bg-primary/5' : 'border-border bg-background hover:border-primary/50'}`}
+                    onClick={() => handleSelectRoute(route)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleSelectRoute(route) }}>
+                    <div className="flex items-start justify-between gap-2 min-w-0">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
                         <span className="w-3 h-3 rounded-full shrink-0 border border-black/10 shadow-xs" style={{ backgroundColor: getRouteColor(route.color_index ?? 0) }} title={`لون المسار ${((route.color_index ?? 0) % 8) + 1}`} />
                         <span className="text-sm font-semibold leading-tight truncate">{route.name_ar}</span>
                       </div>
@@ -575,13 +733,13 @@ function TransitAdminPageContent() {
                         {ROUTE_STATUS_LABELS[route.status]}
                       </Badge>
                     </div>
-                    <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-muted-foreground">
+                    <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-muted-foreground flex-wrap">
                       <span>{route.city?.name_ar ?? route.city_id}</span>
                       <span>·</span>
                       <span>{route.stops_count} موقف</span>
                       {route.price_new && <><span>·</span><span className="text-primary font-semibold">{route.price_new} ل.س</span></>}
                     </div>
-                  </button>
+                  </div>
                 ))}
               </div>
             </ScrollArea>
@@ -622,7 +780,7 @@ function TransitAdminPageContent() {
 
         {/* Draft detail overlay */}
         {selectedDraft && adminTab === 'drafts' && (
-          <Card className="absolute bottom-4 end-4 z-10 w-[360px] max-w-[calc(100vw-2rem)] shadow-xl" dir="rtl">
+          <Card className="absolute bottom-4 left-4 z-10 w-[360px] max-w-[calc(100%-2rem)] max-h-[calc(100%-2rem)] overflow-y-auto shadow-2xl bg-card/95 backdrop-blur-sm" dir="rtl">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between gap-2">
                 <div>
@@ -695,7 +853,7 @@ function TransitAdminPageContent() {
 
         {/* Route detail overlay */}
         {selectedRoute && adminTab === 'routes' && (
-          <Card className="absolute bottom-4 end-4 z-10 w-[360px] max-w-[calc(100vw-2rem)] shadow-xl" dir="rtl">
+          <Card className="absolute bottom-4 left-4 z-10 w-[360px] max-w-[calc(100%-2rem)] max-h-[calc(100%-2rem)] overflow-y-auto shadow-2xl bg-card/95 backdrop-blur-sm" dir="rtl">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between gap-2">
                 <div>
@@ -716,6 +874,23 @@ function TransitAdminPageContent() {
                 <div><span className="text-muted-foreground">المواقف</span><p className="font-medium">{selectedRoute.stops_count} موقف</p></div>
               </div>
               <p className="text-[10px] text-muted-foreground text-center">الخط اللامع = المسار المحدد. الخطوط الباهتة = باقي خطوط المدينة.</p>
+
+              <div className="space-y-1 pt-1 border-t border-border/50">
+                <label className="text-[11px] font-semibold text-muted-foreground block">تغيير لون المسار سريعاً:</label>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {ROUTE_PALETTE.map((colorHex, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      disabled={actionLoading}
+                      onClick={() => handleQuickUpdateColor(idx)}
+                      className={`w-6 h-6 rounded-full border-2 transition-all ${selectedRoute.color_index === idx ? 'scale-110 border-foreground shadow-md ring-2 ring-primary/40' : 'border-transparent opacity-75 hover:opacity-100'}`}
+                      style={{ backgroundColor: colorHex }}
+                      title={`تغيير للون ${idx + 1}`}
+                    />
+                  ))}
+                </div>
+              </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <Button variant="outline" size="sm" className="text-xs" onClick={() => { setEditRouteNameAr(selectedRoute.name_ar); setEditRouteNameEn(selectedRoute.name_en ?? ''); setEditRoutePrice(selectedRoute.price_new != null ? String(selectedRoute.price_new) : ''); setEditRouteColorIndex(selectedRoute.color_index ?? 0); setIsEditRouteModalOpen(true) }}>

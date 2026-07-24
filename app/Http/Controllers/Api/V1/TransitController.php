@@ -51,10 +51,12 @@ class TransitController extends Controller
 
     public function getRoutes($id)
     {
-        $routes = Route::where('city_id', $id)->where('status', 'published')->withCount('stops')->get();
+        $cityIds = ($id === 'damascus' || $id === 'rif-dimashq') ? ['damascus', 'rif-dimashq'] : [$id];
+        $routes = Route::whereIn('city_id', $cityIds)->where('status', 'published')->withCount('stops')->get();
         return response()->json($routes->map(function ($r) {
             return [
                 'id' => $r->id,
+                'cityId' => $r->city_id,
                 'nameAr' => $r->name_ar,
                 'nameEn' => $r->name_en,
                 'colorIndex' => $r->color_index,
@@ -68,9 +70,10 @@ class TransitController extends Controller
     public function getMapData($id)
     {
         $data = Cache::remember("transit:map-data:{$id}", 600, function () use ($id) {
+            $cityIds = ($id === 'damascus' || $id === 'rif-dimashq') ? ['damascus', 'rif-dimashq'] : [$id];
             $routeGeometries = DB::table('route_geometries')
                 ->join('routes', 'route_geometries.route_id', '=', 'routes.id')
-                ->where('routes.city_id', $id)
+                ->whereIn('routes.city_id', $cityIds)
                 ->where('routes.status', 'published')
                 ->select('routes.*', DB::raw('ST_AsGeoJSON(route_geometries.geometry) as geojson'))
                 ->get();
@@ -83,7 +86,8 @@ class TransitController extends Controller
                         'id' => $r->id,
                         'nameAr' => $r->name_ar,
                         'nameEn' => $r->name_en,
-                        'colorIndex' => $r->color_index,
+                        'colorIndex' => (int) ($r->color_index ?? 0),
+                        'color_index' => (int) ($r->color_index ?? 0),
                         'priceOld' => $r->price_old,
                         'priceNew' => $r->price_new,
                     ],
@@ -91,7 +95,7 @@ class TransitController extends Controller
             });
 
             $stops = DB::table('stops')
-                ->where('city_id', $id)
+                ->whereIn('city_id', $cityIds)
                 ->select('id', 'name_ar', DB::raw('ST_AsGeoJSON(geometry) as geojson'))
                 ->get();
 
@@ -183,15 +187,16 @@ class TransitController extends Controller
     public function search(Request $request)
     {
         $query = $request->input('q');
-        $cityId = $request->input('city_id');
-
         if (empty($query)) {
             return response()->json(['routes' => [], 'stops' => []]);
         }
 
+        $cityId = $request->input('city_id');
+        $cityIds = ($cityId === 'damascus' || $cityId === 'rif-dimashq') ? ['damascus', 'rif-dimashq'] : ($cityId ? [$cityId] : null);
+
         $routeSearch = Route::search($query);
-        if ($cityId) {
-            $routeSearch->where('city_id', $cityId);
+        if ($cityIds) {
+            $routeSearch->whereIn('city_id', $cityIds);
         }
         $routes = $routeSearch->get()->map(function ($route) {
             return [
@@ -204,8 +209,8 @@ class TransitController extends Controller
         });
 
         $stopSearch = Stop::search($query);
-        if ($cityId) {
-            $stopSearch->where('city_id', $cityId);
+        if ($cityIds) {
+            $stopSearch->whereIn('city_id', $cityIds);
         }
         $stopResults = $stopSearch->get();
 

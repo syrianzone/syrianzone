@@ -17,6 +17,7 @@ interface StudioState {
   nameEn: string
   price: string
   notes: string
+  colorIndex: number
   submittedDraftId: number | null
 
   // Edit mode
@@ -30,7 +31,8 @@ interface StudioState {
   addStop: (coord: [number, number]) => void
   updateStopName: (id: number, nameAr: string) => void
   removeStop: (id: number) => void
-  setMeta: (fields: Partial<Pick<StudioState, 'nameAr' | 'nameEn' | 'price' | 'notes'>>) => void
+  setMeta: (fields: Partial<Pick<StudioState, 'nameAr' | 'nameEn' | 'price' | 'notes' | 'colorIndex'>>) => void
+  setColorIndex: (idx: number) => void
   setSubmittedDraftId: (id: number | null) => void
   setEditMode: (draftId: number | null, routeId?: string | null) => void
   loadDraft: (draft: any) => void
@@ -46,6 +48,7 @@ const initialState = {
   nameEn: '',
   price: '',
   notes: '',
+  colorIndex: 0,
   submittedDraftId: null,
   editingDraftId: null,
   editingRouteId: null,
@@ -69,6 +72,7 @@ export const useStudioStore = create<StudioState>((set) => ({
   removeStop: (id) =>
     set((state) => ({ stops: state.stops.filter((s) => s.id !== id) })),
   setMeta: (fields) => set(fields),
+  setColorIndex: (colorIndex) => set({ colorIndex }),
   setSubmittedDraftId: (id) => set({ submittedDraftId: id }),
   setEditMode: (draftId, routeId) =>
     set({ editingDraftId: draftId, editingRouteId: routeId ?? null, isEditMode: draftId !== null || routeId !== null }),
@@ -76,7 +80,10 @@ export const useStudioStore = create<StudioState>((set) => ({
     const geojson = typeof draft.geojson === 'string' ? JSON.parse(draft.geojson) : draft.geojson
     let drawnLine: [number, number][] | null = null
     const stops: StopFeature[] = []
+    let extractedColorIndex = draft.color_index ?? draft.colorIndex ?? 0
     for (const f of geojson?.features ?? []) {
+      if (f.properties?.colorIndex !== undefined) extractedColorIndex = f.properties.colorIndex
+      if (f.properties?.color_index !== undefined) extractedColorIndex = f.properties.color_index
       if (f.geometry?.type === 'LineString') {
         drawnLine = f.geometry.coordinates as [number, number][]
       } else if (f.geometry?.type === 'Point') {
@@ -96,6 +103,7 @@ export const useStudioStore = create<StudioState>((set) => ({
       nameEn: draft.name_en ?? '',
       price: draft.price != null ? String(draft.price) : '',
       notes: draft.notes ?? '',
+      colorIndex: Number(extractedColorIndex) || 0,
       step: 5,
       editingDraftId: isPublishedRoute ? null : (draft.id ?? null),
       editingRouteId: isPublishedRoute ? draft.route_id : null,

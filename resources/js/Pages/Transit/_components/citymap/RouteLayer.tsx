@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import type maplibregl from 'maplibre-gl'
 import { useMap } from './MapContext'
-import { getRouteColor } from '../../_lib/mapColors'
+import { getRouteColor, buildColorMatch } from '../../_lib/mapColors'
 import type { FeatureCollection, RouteProperties } from '../../_types'
 import { useMapStore } from '../../_store/useMapStore'
 
@@ -15,22 +15,6 @@ interface ActiveRoute {
   props: RouteProperties
   x: number
   y: number
-}
-
-function buildColorMatch(): unknown {
-  return [
-    'match',
-    ['%', ['get', 'colorIndex'], 8],
-    0, getRouteColor(0),
-    1, getRouteColor(1),
-    2, getRouteColor(2),
-    3, getRouteColor(3),
-    4, getRouteColor(4),
-    5, getRouteColor(5),
-    6, getRouteColor(6),
-    7, getRouteColor(7),
-    getRouteColor(0),
-  ]
 }
 
 

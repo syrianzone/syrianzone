@@ -9,6 +9,28 @@ export const ROUTE_PALETTE = [
   '#c9784a', // burnt sienna
 ]
 
-export function getRouteColor(colorIndex: number): string {
-  return ROUTE_PALETTE[colorIndex % ROUTE_PALETTE.length]
+export function getRouteColor(colorIndex: number | null | undefined): string {
+  const index = typeof colorIndex === 'number' && !isNaN(colorIndex) 
+    ? Math.abs(Math.floor(colorIndex)) 
+    : typeof colorIndex === 'string' && !isNaN(parseInt(colorIndex, 10))
+    ? Math.abs(parseInt(colorIndex, 10))
+    : 0
+  return ROUTE_PALETTE[index % ROUTE_PALETTE.length]
 }
+
+export function buildColorMatch(): unknown {
+  return [
+    'match',
+    ['%', ['to-number', ['coalesce', ['get', 'colorIndex'], ['get', 'color_index'], 0], 0], 8],
+    0, getRouteColor(0),
+    1, getRouteColor(1),
+    2, getRouteColor(2),
+    3, getRouteColor(3),
+    4, getRouteColor(4),
+    5, getRouteColor(5),
+    6, getRouteColor(6),
+    7, getRouteColor(7),
+    getRouteColor(0),
+  ]
+}
+

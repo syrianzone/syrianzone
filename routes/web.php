@@ -319,6 +319,7 @@ Route::middleware('auth')->group(function () {
 
             Route::get('/admin/routes', [\App\Http\Controllers\TransitAdminController::class, 'getPublishedRoutes']);
             Route::get('/admin/routes/logs', [\App\Http\Controllers\TransitAdminController::class, 'getLogs']);
+            Route::get('/admin/routes/{id}/geojson', [\App\Http\Controllers\TransitAdminController::class, 'getRouteGeoJson']);
             Route::post('/admin/routes/{id}/status', [\App\Http\Controllers\TransitAdminController::class, 'updateRouteStatus']);
             Route::put('/admin/routes/{id}', [\App\Http\Controllers\TransitAdminController::class, 'updateRoute']);
             Route::post('/admin/routes/{id}/move', [\App\Http\Controllers\TransitAdminController::class, 'moveRoute']);

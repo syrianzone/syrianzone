@@ -44,7 +44,7 @@ class TransitAdminController extends Controller
                 $route->name_en = $draft->name_en;
                 $route->price_new = $draft->price;
                 if ($colorIndex !== null) {
-                    $route->color_index = $colorIndex;
+                    $route->color_index = (int) $colorIndex;
                 }
                 $route->save();
 
@@ -108,8 +108,7 @@ class TransitAdminController extends Controller
 
                 DB::commit();
 
-                Cache::forget("transit:map-data:{$draft->city_id}");
-                Cache::forget('transit:cities');
+                $this->clearCityMapCache($draft->city_id);
 
                 return response()->json(['message' => 'Draft approved and route updated', 'route' => $route]);
             } catch (\Exception $e) {
@@ -186,8 +185,7 @@ class TransitAdminController extends Controller
 
             DB::commit();
 
-            Cache::forget("transit:map-data:{$draft->city_id}");
-            Cache::forget('transit:cities');
+            $this->clearCityMapCache($draft->city_id);
 
             return response()->json(['message' => 'Draft approved', 'route' => $route]);
         } catch (\Exception $e) {
@@ -267,8 +265,7 @@ class TransitAdminController extends Controller
 
             DB::commit();
 
-            Cache::forget("transit:map-data:{$route->city_id}");
-            Cache::forget('transit:cities');
+            $this->clearCityMapCache($route->city_id);
 
             return response()->json(['message' => 'Route status updated successfully', 'route' => $route]);
         } catch (\Exception $e) {
@@ -343,9 +340,8 @@ class TransitAdminController extends Controller
 
             DB::commit();
 
-            Cache::forget("transit:map-data:{$oldCityId}");
-            Cache::forget("transit:map-data:{$targetCityId}");
-            Cache::forget('transit:cities');
+            $this->clearCityMapCache($oldCityId);
+            $this->clearCityMapCache($targetCityId);
 
             return response()->json(['message' => 'Route moved successfully', 'route' => $route]);
         } catch (\Exception $e) {
@@ -465,8 +461,7 @@ class TransitAdminController extends Controller
 
             DB::commit();
 
-            Cache::forget("transit:map-data:{$cityId}");
-            Cache::forget('transit:cities');
+            $this->clearCityMapCache($cityId);
 
             return response()->json(['message' => 'Routes combined successfully', 'route' => $newRoute]);
         } catch (\Exception $e) {
@@ -609,8 +604,7 @@ class TransitAdminController extends Controller
 
             DB::commit();
 
-            Cache::forget("transit:map-data:{$cityId}");
-            Cache::forget('transit:cities');
+            $this->clearCityMapCache($cityId);
 
             return response()->json(['message' => 'Route split successfully', 'route_a' => $routeA, 'route_b' => $routeB]);
         } catch (\Exception $e) {
@@ -648,7 +642,11 @@ class TransitAdminController extends Controller
                 'properties' => [
                     'id' => $route->id,
                     'nameAr' => $route->name_ar,
-                    'colorIndex' => $route->color_index,
+                    'nameEn' => $route->name_en,
+                    'colorIndex' => (int) ($route->color_index ?? 0),
+                    'color_index' => (int) ($route->color_index ?? 0),
+                    'priceOld' => $route->price_old,
+                    'priceNew' => $route->price_new,
                 ]
             ];
         }
@@ -689,7 +687,7 @@ class TransitAdminController extends Controller
         $updateData = [];
         if ($request->has('name_ar')) $updateData['name_ar'] = $validated['name_ar'];
         if ($request->has('name_en')) $updateData['name_en'] = $validated['name_en'];
-        if ($request->has('color_index')) $updateData['color_index'] = $validated['color_index'];
+        if ($request->has('color_index')) $updateData['color_index'] = (int) $validated['color_index'];
         if ($request->has('price_new')) $updateData['price_new'] = $validated['price_new'];
         if ($request->has('price_old')) $updateData['price_old'] = $validated['price_old'];
 
@@ -712,9 +710,18 @@ class TransitAdminController extends Controller
             'user_id' => auth()->id(),
         ]);
 
-        Cache::forget("transit:map-data:{$route->city_id}");
-        Cache::forget('transit:cities');
+        $this->clearCityMapCache($route->city_id);
 
         return response()->json(['message' => 'Route updated', 'route' => $route->fresh()]);
+    }
+
+    private function clearCityMapCache($cityId)
+    {
+        Cache::forget("transit:map-data:{$cityId}");
+        if ($cityId === 'damascus' || $cityId === 'rif-dimashq') {
+            Cache::forget('transit:map-data:damascus');
+            Cache::forget('transit:map-data:rif-dimashq');
+        }
+        Cache::forget('transit:cities');
     }
 }

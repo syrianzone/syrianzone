@@ -966,6 +966,41 @@ export default function Home() {
                                                         </button>
                                                     </div>
                                                 </div>
+
+                                                {/* Font Family Selection */}
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{currentLang === 'ar' ? 'خط الموقع' : 'Site Font'}</Label>
+                                                    <div className="grid grid-cols-2 gap-1 p-1 bg-muted rounded-lg border border-border/50">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setFontFamily('ibm-plex');
+                                                                applyFont('ibm-plex');
+                                                                saveAccountSettings({ fontFamily: 'ibm-plex' });
+                                                            }}
+                                                            className={`py-1.5 text-xs font-medium rounded-md transition-all ${fontFamily === 'ibm-plex'
+                                                                    ? 'bg-background text-foreground shadow-sm'
+                                                                    : 'text-muted-foreground hover:text-foreground'
+                                                                }`}
+                                                        >
+                                                            {currentLang === 'ar' ? 'خطّ الموقع' : 'Site Font'}
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setFontFamily('system');
+                                                                applyFont('system');
+                                                                saveAccountSettings({ fontFamily: 'system' });
+                                                            }}
+                                                            className={`py-1.5 text-xs font-medium rounded-md transition-all ${fontFamily === 'system'
+                                                                    ? 'bg-background text-foreground shadow-sm'
+                                                                    : 'text-muted-foreground hover:text-foreground'
+                                                                }`}
+                                                        >
+                                                            {currentLang === 'ar' ? 'خط النظام' : 'System Font'}
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </div>
 
                                             {/* Governorate dropdown with search */}

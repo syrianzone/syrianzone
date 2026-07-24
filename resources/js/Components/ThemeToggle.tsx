@@ -131,7 +131,7 @@ export function ThemeToggle() {
                     )}
                 >
                     <Type className="h-4 w-4 text-muted-foreground" />
-                    <span className="flex-1">{isAr ? 'IBM Plex Sans Arabic' : 'IBM Plex Sans'}</span>
+                    <span className="flex-1">{isAr ? 'خطّ الموقع' : 'Site Font'}</span>
                     {currentFont === 'ibm-plex' && <span className="text-xs">✓</span>}
                 </DropdownMenuItem>
                 <DropdownMenuItem
@@ -142,7 +142,7 @@ export function ThemeToggle() {
                     )}
                 >
                     <Type className="h-4 w-4 text-muted-foreground" />
-                    <span className="flex-1">{isAr ? 'خط النظام الافتراضي' : 'System Font'}</span>
+                    <span className="flex-1">{isAr ? 'خط النظام' : 'System Font'}</span>
                     {currentFont === 'system' && <span className="text-xs">✓</span>}
                 </DropdownMenuItem>
             </DropdownMenuContent>

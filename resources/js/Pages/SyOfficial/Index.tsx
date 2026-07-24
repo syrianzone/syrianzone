@@ -410,7 +410,7 @@ export default function Index({ initialData, categories }: SyOfficialClientProps
                                                             </a>
                                                         )}
                                                         <img
-                                                            src={item.image?.startsWith('http') || item.image?.startsWith('/') ? item.image : `/syofficial-assets/${item.image}`}
+                                                            src={item.image && (item.image.startsWith('http') || item.image.startsWith('/')) ? item.image : '/placeholder-user.jpg'}
                                                             alt={language === 'ar' ? item.name_ar : item.name}
                                                             loading="lazy"
                                                             decoding="async"
@@ -477,8 +477,8 @@ export default function Index({ initialData, categories }: SyOfficialClientProps
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-10 h-10 rounded-xl overflow-hidden bg-muted flex-shrink-0 ring-1 ring-border/50 shadow-2xs">
                                                             <img
-                                                                src={item.image?.startsWith('http') || item.image?.startsWith('/') ? item.image : `/syofficial-assets/${item.image}`}
-                                                                alt=""
+                                                                src={item.image && (item.image.startsWith('http') || item.image.startsWith('/')) ? item.image : '/placeholder-user.jpg'}
+                                                                alt={language === 'ar' ? item.name_ar : item.name}
                                                                 loading="lazy"
                                                                 decoding="async"
                                                                 className="w-full h-full object-cover"

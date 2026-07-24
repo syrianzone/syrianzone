@@ -89,7 +89,7 @@ export default function EntityDialog({ open, onOpenChange, entity, categories }:
                     linkedin: entity.socials?.linkedin || '',
                 },
             });
-            setImagePreview(entity.image ? (entity.image.startsWith('http') || entity.image.startsWith('/') ? entity.image : `/syofficial-assets/${entity.image}`) : null);
+            setImagePreview(entity.image && (entity.image.startsWith('http') || entity.image.startsWith('/')) ? entity.image : null);
         } else {
             reset();
             setImagePreview(null);

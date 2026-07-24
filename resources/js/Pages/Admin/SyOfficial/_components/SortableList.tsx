@@ -66,7 +66,7 @@ export default function SortableList({ items: initialItems, endpoint, onSaveSucc
                             <GripVertical className="w-5 h-5 text-muted-foreground/50 cursor-grab" />
                             {item.image && (
                                 <img
-                                    src={item.image.startsWith('http') || item.image.startsWith('/') ? item.image : `/syofficial-assets/${item.image}`}
+                                    src={item.image && (item.image.startsWith('http') || item.image.startsWith('/')) ? item.image : '/placeholder-user.jpg'}
                                     alt=""
                                     className="w-8 h-8 rounded-lg object-cover bg-muted"
                                 />

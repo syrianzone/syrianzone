@@ -561,7 +561,17 @@ export default function SyidClient() {
                                         </Suspense>
                                     </div>
 
-                                    <div className="mt-6 pt-4 border-t border-border/40 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                                    <div className="mt-6 pt-4 border-t border-border/40 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                                        <a
+                                            href="https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/downloads/syria_provinces.geojson"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border border-border hover:bg-muted/50 transition-colors"
+                                        >
+                                            <span className="font-medium">تحميل GeoJSON بدقة كاملة (R2)</span>
+                                            <FileDown className="h-3.5 w-3.5 text-[#428177]" />
+                                        </a>
+
                                         <a
                                             href="https://upload.wikimedia.org/wikipedia/commons/8/88/Blank_Syria_map.svg"
                                             target="_blank"

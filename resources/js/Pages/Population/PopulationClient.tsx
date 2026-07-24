@@ -65,7 +65,7 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        fetch('/assets/population/syr_admin1.geojson')
+        fetch('/assets/population/syr_admin1_opt.geojson')
             .then(res => res.json())
             .then(data => setGeoJsonData(data))
             .catch(err => console.error('Failed to load GeoJSON', err));

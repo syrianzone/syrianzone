@@ -2,17 +2,18 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Models\City;
 use App\Models\Route;
 use App\Models\RouteGeometry;
 use App\Models\Stop;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 
 class ImportTransitGeoJson extends Command
 {
     protected $signature = 'transit:import-geojson';
+
     protected $description = 'Import transit data from GeoJSON files';
 
     public function handle()
@@ -20,13 +21,14 @@ class ImportTransitGeoJson extends Command
         $this->info('Importing cities...');
         $citiesPath = resource_path('js/Pages/Transit/_data/cities.json');
 
-        if (!File::exists($citiesPath)) {
+        if (! File::exists($citiesPath)) {
             $this->error("cities.json not found at {$citiesPath}");
+
             return;
         }
 
         $cities = json_decode(File::get($citiesPath), true);
-        
+
         // Disable foreign key checks for truncation
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         DB::table('route_stop')->truncate();
@@ -43,13 +45,13 @@ class ImportTransitGeoJson extends Command
             $minLat = $bounds[0][1];
             $maxLng = $bounds[1][0];
             $maxLat = $bounds[1][1];
-            
+
             $polygonWkt = "POLYGON(($minLng $minLat, $maxLng $minLat, $maxLng $maxLat, $minLng $maxLat, $minLng $minLat))";
             $centerWkt = "POINT({$cityData['center'][0]} {$cityData['center'][1]})";
 
             DB::statement(
                 'INSERT INTO cities (id, name_ar, name_en, center, bounds, zoom, status, created_at, updated_at) '
-                . 'VALUES (?, ?, ?, ST_GeomFromText(?), ST_GeomFromText(?), ?, ?, ?, ?)',
+                .'VALUES (?, ?, ?, ST_GeomFromText(?), ST_GeomFromText(?), ?, ?, ?, ?)',
                 [
                     $cityData['id'], $cityData['nameAr'], $cityData['nameEn'],
                     $centerWkt, $polygonWkt, $cityData['zoom'], $cityData['status'],
@@ -60,22 +62,26 @@ class ImportTransitGeoJson extends Command
             $this->importRoutes($cityData['id']);
             $this->importStops($cityData['id']);
         }
-        
+
         $this->info('Done importing.');
     }
 
     private function importRoutes($cityId)
     {
         $path = public_path("data/{$cityId}/routes.geojson");
-        if (!File::exists($path)) return;
-        
+        if (! File::exists($path)) {
+            return;
+        }
+
         $data = json_decode(File::get($path), true);
-        if (empty($data['features'])) return;
+        if (empty($data['features'])) {
+            return;
+        }
 
         foreach ($data['features'] as $feature) {
             $props = $feature['properties'];
             $geom = $feature['geometry'];
-            
+
             $route = Route::create([
                 'id' => $props['id'],
                 'city_id' => $cityId,
@@ -97,36 +103,42 @@ class ImportTransitGeoJson extends Command
     private function importStops($cityId)
     {
         $path = public_path("data/{$cityId}/stops.geojson");
-        if (!File::exists($path)) return;
-        
+        if (! File::exists($path)) {
+            return;
+        }
+
         $data = json_decode(File::get($path), true);
-        if (empty($data['features'])) return;
+        if (empty($data['features'])) {
+            return;
+        }
 
         $orderCounts = [];
 
         foreach ($data['features'] as $feature) {
             $props = $feature['properties'];
             $geom = $feature['geometry'];
-            
+
             $stopId = $props['id'];
-            
-            if (!Stop::find($stopId)) {
+
+            if (! Stop::find($stopId)) {
                 DB::statement(
                     'INSERT INTO stops (id, city_id, name_ar, name_en, geometry, created_at, updated_at) VALUES (?, ?, ?, ?, ST_GeomFromGeoJSON(?), ?, ?)',
                     [$stopId, $cityId, $props['nameAr'] ?? '', $props['nameEn'] ?? null, json_encode($geom), now(), now()]
                 );
             }
-            
+
             if (isset($props['routeId'])) {
                 $routeId = $props['routeId'];
                 // Ensure route exists
-                if (!Route::find($routeId)) continue;
+                if (! Route::find($routeId)) {
+                    continue;
+                }
 
-                if (!isset($orderCounts[$routeId])) {
+                if (! isset($orderCounts[$routeId])) {
                     $orderCounts[$routeId] = 0;
                 }
                 $orderCounts[$routeId]++;
-                
+
                 DB::table('route_stop')->insert([
                     'route_id' => $routeId,
                     'stop_id' => $stopId,

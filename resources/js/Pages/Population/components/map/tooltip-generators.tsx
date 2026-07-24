@@ -26,7 +26,7 @@ export function generateRainChartHtml(name: string, data: any[]) {
     const latest = sorted[sorted.length - 1];
 
     return `
-        <div class="text-right" style="font-family: 'IBM Plex Sans Arabic', sans-serif; min-width: 130px;">
+        <div class="text-right" style="font-family: var(--site-font, inherit); min-width: 130px;">
             <div class="font-bold text-base mb-1 text-slate-100">${displayName}</div>
             <div class="flex justify-between items-end mb-2 mt-2">
                 <div>
@@ -46,7 +46,7 @@ export function generatePopulationTooltipHtml(name: string, value: number, label
     const valueStr = value ? value.toLocaleString('en-US') : 'لا توجد بيانات';
 
     return `
-        <div class="text-right" style="font-family: 'IBM Plex Sans Arabic', sans-serif;">
+        <div class="text-right" style="font-family: var(--site-font, inherit);">
             <div class="font-bold text-base mb-1">${displayName}</div>
             <div class="text-sm">${label}: ${valueStr}</div>
         </div>
@@ -96,7 +96,7 @@ export function generateEnvironmentalTooltipHtml(name: string, data: any) {
     else if (droughtRisk === 'Moderate') droughtColor = '#eab308';
 
     return `
-        <div style="font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif; min-width: 180px; direction: rtl;">
+        <div style="font-family: var(--site-font, inherit); min-width: 180px; direction: rtl;">
             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1);">
                 <div style="font-size: 28px; line-height: 1;">${weatherIcon}</div>
                 <div style="flex: 1;">

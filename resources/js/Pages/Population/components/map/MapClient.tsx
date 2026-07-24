@@ -132,7 +132,7 @@ export default function MapClient({
                 /* --- LEAFLET OVERRIDES --- */
                 .leaflet-container {
                     background: transparent !important;
-                    font-family: 'IBM Plex Sans Arabic', sans-serif;
+                    font-family: var(--site-font, inherit);
                 }
 
                 /* SVG Region Styling */

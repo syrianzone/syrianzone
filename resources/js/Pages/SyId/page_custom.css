@@ -185,7 +185,7 @@
     max-width: 900px;
     margin: 40px auto;
     padding: 4rem 5rem;
-    font-family: "IBM Plex Sans Arabic", sans-serif;
+    font-family: var(--site-font, inherit);
     direction: ltr;
     /* Ensure LTR for the diagram positioning */
 }

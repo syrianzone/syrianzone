@@ -151,7 +151,7 @@ export default function Index({ initialData }: PhonebookProps) {
             <div 
                 className="min-h-screen text-foreground transition-colors" 
                 dir="rtl"
-                style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+                style={{ fontFamily: "var(--site-font, inherit)" }}
             >
                 
                 {/* Hero Header (Styled like SyOfficial) */}

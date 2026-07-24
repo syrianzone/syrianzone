@@ -1394,7 +1394,7 @@ function TransitStudioPageContent() {
           display: flex; flex-direction: column;
           height: 100%; overflow: hidden;
           background: var(--bg); color: var(--text);
-          font-family: var(--font-ar, 'IBM Plex Sans Arabic', sans-serif);
+          font-family: var(--site-font, inherit);
         }
 
         /* Header */

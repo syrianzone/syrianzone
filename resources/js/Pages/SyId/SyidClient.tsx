@@ -482,8 +482,9 @@ export default function SyidClient() {
                                     <span>تحميل الشعار (SVG)</span>
                                 </a>
                                 <a
-                                    href="/syid-assets/materials/191b8f0d278fc2ab095fb4f344e3e9b4.zip"
-                                    download
+                                    href="https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/downloads/brandkit-y5sZMu.zip"
+                                    target="_blank"
+                                    rel="noreferrer"
                                     className="inline-flex items-center justify-center gap-2 flex-1 bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border font-medium text-xs h-10 px-3 rounded-lg transition-colors"
                                 >
                                     <Download className="h-4 w-4" />

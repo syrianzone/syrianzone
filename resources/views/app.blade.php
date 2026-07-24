@@ -64,7 +64,7 @@
             if (event.persisted) {
                 // Page was restored from back/forward cache.
                 // If the Inertia app root has no rendered children, the browser is
-                // displaying the raw JSON payload — force a fresh load.
+                // displaying the raw JSON payload, force a fresh load.
                 var root = document.getElementById('app');
                 if (!root || !root.firstChild) {
                     window.location.reload();
@@ -88,13 +88,16 @@
         }
     </script>
 
-    <!-- Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-K4H98TC203"></script>
+    <!-- Google Analytics: id is runtime config, so staging omits it and loads nothing -->
+    @if (config('services.google_analytics.id'))
+    <script>window.GA_ID = "{{ config('services.google_analytics.id') }}";</script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ config('services.google_analytics.id') }}"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
-        gtag('config', 'G-K4H98TC203');
+        gtag('config', "{{ config('services.google_analytics.id') }}");
     </script>
+    @endif
 </body>
 </html>

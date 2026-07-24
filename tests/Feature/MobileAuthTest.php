@@ -128,6 +128,24 @@ test('mobile Google login rejects unlisted callbacks and malformed PKCE input', 
     expect(DB::table('mobile_auth_codes')->count())->toBe(0);
 });
 
+test('mobile Google login returns safely when OAuth credentials are unavailable', function () {
+    config([
+        'services.google.client_id' => null,
+        'services.google.client_secret' => null,
+    ]);
+    $state = 'state_'.str_repeat('a', 48);
+
+    $response = $this->get('/api/mobile/auth/google?'.http_build_query([
+        'redirect_uri' => 'syrianzone://auth/callback',
+        'state' => $state,
+        'code_challenge' => mobileAuthChallenge(mobileAuthVerifier()),
+        'code_challenge_method' => 'S256',
+    ]));
+
+    $response->assertRedirect('syrianzone://auth/callback?error=auth_unavailable&state='.$state);
+    expect(DB::table('mobile_auth_codes')->count())->toBe(0);
+});
+
 test('Google callback returns a single-use code and the original app state', function () {
     $user = User::factory()->create(['email' => 'admin@example.test']);
     $record = seedMobileAuthRecord([

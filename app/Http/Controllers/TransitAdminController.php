@@ -26,10 +26,16 @@ class TransitAdminController extends Controller
         return response()->json($drafts);
     }
 
-    public function approve($id)
+    public function approve(Request $request, $id)
     {
+        $validated = $request->validate([
+            'color_index' => 'nullable|integer|min:0|max:7',
+        ]);
+        $colorIndex = $validated['color_index'] ?? null;
+        $actorId = $request->user()?->getKey();
+
         try {
-            $result = DB::transaction(function () use ($id) {
+            $result = DB::transaction(function () use ($id, $colorIndex, $actorId) {
                 $draft = RouteDraft::query()
                     ->with(['city', 'user:id,name'])
                     ->lockForUpdate()
@@ -41,7 +47,7 @@ class TransitAdminController extends Controller
 
                 $geojson = TransitDraftGeoJson::validate($draft->geojson);
                 if ($draft->route_id) {
-                    return $this->publishLinkedDraft($draft, $geojson);
+                    return $this->publishLinkedDraft($draft, $geojson, $colorIndex, $actorId);
                 }
 
                 $citySlug = Str::slug($draft->city->name_en ?? $draft->city->name_ar);
@@ -51,6 +57,7 @@ class TransitAdminController extends Controller
                     'city_id' => $draft->city_id,
                     'name_ar' => $draft->name_ar,
                     'name_en' => $draft->name_en,
+                    'color_index' => $colorIndex ?? 0,
                     'price_old' => null,
                     'price_new' => $draft->price,
                     'status' => 'published',
@@ -95,7 +102,10 @@ class TransitAdminController extends Controller
                     ]);
                 }
 
-                $draft->update(['status' => 'approved']);
+                $draft->update([
+                    'route_id' => $routeId,
+                    'status' => 'approved',
+                ]);
 
                 return [
                     'city_id' => $draft->city_id,
@@ -153,18 +163,35 @@ class TransitAdminController extends Controller
      * @param  array<string, mixed>  $geojson
      * @return array{city_id: string, linked: true, route: Route}
      */
-    private function publishLinkedDraft(RouteDraft $draft, array $geojson): array
-    {
+    private function publishLinkedDraft(
+        RouteDraft $draft,
+        array $geojson,
+        ?int $colorIndex,
+        mixed $actorId,
+    ): array {
         $route = Route::query()->lockForUpdate()->findOrFail($draft->route_id);
-        $route->update([
+        $routeData = [
             'name_ar' => $draft->name_ar,
             'name_en' => $draft->name_en,
             'price_new' => $draft->price,
             'status' => 'published',
-        ]);
+        ];
+        if ($colorIndex !== null) {
+            $routeData['color_index'] = $colorIndex;
+        }
+        $route->update($routeData);
 
         RouteGeometry::where('route_id', $route->id)->delete();
+        $oldStopIds = DB::table('route_stop')
+            ->where('route_id', $route->id)
+            ->pluck('stop_id');
         DB::table('route_stop')->where('route_id', $route->id)->delete();
+        Stop::query()
+            ->whereIn('id', $oldStopIds)
+            ->whereDoesntHave('routes')
+            ->get()
+            ->each
+            ->delete();
 
         $routeLine = null;
         $stops = [];
@@ -206,7 +233,7 @@ class TransitAdminController extends Controller
             'route_id' => $route->id,
             'action' => 'updated_via_draft',
             'description' => "تحديث الخط '{$route->name_ar}' بناءً على مساهمة #{$draft->id} من ".($draft->user?->name ?? 'مجهول'),
-            'user_id' => auth()->id(),
+            'user_id' => $actorId,
         ]);
 
         return [
@@ -267,7 +294,7 @@ class TransitAdminController extends Controller
                 'route_id' => $route->id,
                 'action' => $action,
                 'description' => "تغيير حالة الخط '{$route->name_ar}' من '".($statusLabels[$oldStatus] ?? $oldStatus)."' إلى '".$statusLabels[$validated['status']]."'",
-                'user_id' => auth()->id(),
+                'user_id' => $request->user()?->getKey(),
             ]);
 
             DB::commit();
@@ -344,7 +371,7 @@ class TransitAdminController extends Controller
                 'route_id' => $route->id,
                 'action' => 'moved',
                 'description' => "نقل الخط '{$route->name_ar}' من مدينة '{$oldCityName}' إلى مدينة '{$newCityName}'",
-                'user_id' => auth()->id(),
+                'user_id' => $request->user()?->getKey(),
             ]);
 
             DB::commit();
@@ -467,7 +494,7 @@ class TransitAdminController extends Controller
                 'route_id' => $newRoute->id,
                 'action' => 'combined',
                 'description' => "دمج الخطين '{$routeA->name_ar}' و '{$routeB->name_ar}' في خط جديد باسم '{$newRoute->name_ar}'",
-                'user_id' => auth()->id(),
+                'user_id' => $request->user()?->getKey(),
             ]);
 
             DB::commit();
@@ -511,6 +538,8 @@ class TransitAdminController extends Controller
             }
 
             if ($splitIndex === -1 || $splitIndex === 0 || $splitIndex === count($stops) - 1) {
+                DB::rollBack();
+
                 return response()->json(['message' => 'Invalid split stop: cannot split at start or end stop'], 400);
             }
 
@@ -612,7 +641,7 @@ class TransitAdminController extends Controller
                 'route_id' => $route->id,
                 'action' => 'split',
                 'description' => "تقسيم الخط '{$route->name_ar}' إلى خطين: '{$routeA->name_ar}' و '{$routeB->name_ar}' عند موقف '{$stops[$splitIndex]->name_ar}'",
-                'user_id' => auth()->id(),
+                'user_id' => $request->user()?->getKey(),
             ]);
 
             DB::commit();
@@ -692,6 +721,7 @@ class TransitAdminController extends Controller
         $validated = $request->validate([
             'name_ar' => 'sometimes|string|max:255',
             'name_en' => 'nullable|string|max:255',
+            'color_index' => 'sometimes|required|integer|min:0|max:7',
             'price_new' => 'nullable|integer',
             'price_old' => 'nullable|integer',
         ]);
@@ -702,6 +732,9 @@ class TransitAdminController extends Controller
         }
         if ($request->has('name_en')) {
             $updateData['name_en'] = $validated['name_en'];
+        }
+        if ($request->has('color_index')) {
+            $updateData['color_index'] = $validated['color_index'];
         }
         if ($request->has('price_new')) {
             $updateData['price_new'] = $validated['price_new'];
@@ -723,6 +756,9 @@ class TransitAdminController extends Controller
         if (isset($updateData['name_en'])) {
             $changes[] = 'الاسم الإنجليزي';
         }
+        if (isset($updateData['color_index'])) {
+            $changes[] = 'لون المسار';
+        }
         if (isset($updateData['price_new'])) {
             $changes[] = "التعرفة من '{$route->getOriginal('price_new')}' إلى '{$updateData['price_new']}'";
         }
@@ -731,7 +767,7 @@ class TransitAdminController extends Controller
             'route_id' => $route->id,
             'action' => 'admin_updated',
             'description' => "تعديل مباشر للخط '{$route->name_ar}': ".implode(', ', $changes),
-            'user_id' => auth()->id(),
+            'user_id' => $request->user()?->getKey(),
         ]);
 
         Cache::forget("transit:map-data:{$route->city_id}");

@@ -101,7 +101,7 @@ function Step1City({ onSelect }: { onSelect: (id: string) => void }) {
   return (
     <div className="studio-step-panel">
       <p className="studio-step-intro">
-        اختر المدينة التي تعرف مساراتها — ستظهر الخطوط المنشورة على الخريطة كمرجع.
+        اختر المدينة التي تعرف مساراتها. ستظهر الخطوط المنشورة على الخريطة كمرجع.
       </p>
       <div className="studio-city-grid">
         {activeCities.map(city => (
@@ -148,7 +148,7 @@ function Step2Draw({
   return (
     <div className="studio-step-panel">
       <p className="studio-step-intro">
-        ارسم خط المسار على الخريطة. الخطوط الباهتة هي المسارات المنشورة — تأكد أن مسارك مختلف أو يكمّلها.
+        ارسم خط المسار على الخريطة. الخطوط الباهتة هي المسارات المنشورة. تأكد أن مسارك مختلف أو يكمّلها.
       </p>
 
       {conflictWarning && !conflictDismissed && (
@@ -290,7 +290,7 @@ function Step4Meta({ onBack, onNext }: { onBack: () => void; onNext: () => void 
             className="studio-input"
             value={nameAr}
             onChange={e => setMeta({ nameAr: e.target.value })}
-            placeholder="مثال: باب توما — برامكة"
+            placeholder="مثال: باب توما إلى برامكة"
           />
         </div>
         <div className="studio-field">
@@ -302,7 +302,7 @@ function Step4Meta({ onBack, onNext }: { onBack: () => void; onNext: () => void 
             className="studio-input"
             value={nameEn}
             onChange={e => setMeta({ nameEn: e.target.value })}
-            placeholder="e.g. Bab Touma — Baramkeh"
+            placeholder="e.g. Bab Touma to Baramkeh"
             dir="ltr"
           />
         </div>
@@ -1348,7 +1348,7 @@ function TransitStudioPageContent() {
           {drawMode !== 'idle' && (
             <div className={`studio-mode-badge studio-mode-badge--${drawMode}`}>
               {drawMode === 'line'  && '✏ رسم مسار'}
-              {drawMode === 'point' && '📍 إضافة محطة — انقر لوضع محطة'}
+              {drawMode === 'point' && '📍 إضافة محطة: انقر لوضع محطة'}
             </div>
           )}
 
@@ -1758,7 +1758,7 @@ function TransitStudioPageContent() {
         .studio-toast--error   { background: rgba(153,27,27,0.96);  color:#fee2e2; }
         .studio-toast--info    { background: rgba(30,58,138,0.96);  color:#dbeafe; }
 
-        /* Panel handle — hidden on desktop, shown on mobile */
+        /* Panel handle is hidden on desktop and shown on mobile. */
         .studio-panel-handle { display: none; }
         .studio-panel-pill   { display: none; }
         .studio-panel-label  { flex: 1; text-align: right; }

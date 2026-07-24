@@ -1,16 +1,52 @@
 <?php
 
 use App\Models\User;
+use GuzzleHttp\Handler\MockHandler;
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Psr7\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\GoogleProvider;
 use Laravel\Socialite\Two\User as SocialiteUser;
 
+function configureStatefulWebGoogle(array $responses = []): void
+{
+    $handler = new MockHandler($responses);
+
+    config([
+        'services.google' => [
+            'client_id' => 'web-google-client',
+            'client_secret' => 'web-google-secret',
+            'redirect' => 'http://localhost/auth/google/callback',
+            'guzzle' => ['handler' => HandlerStack::create($handler)],
+        ],
+    ]);
+
+    Socialite::forgetDrivers();
+}
+
+function statefulWebGoogleResponses(
+    string $subject = 'state-check-subject',
+    string $email = 'state-check@example.test',
+): array {
+    return [
+        new Response(200, ['Content-Type' => 'application/json'], json_encode([
+            'access_token' => 'web-access-token',
+            'token_type' => 'Bearer',
+        ], JSON_THROW_ON_ERROR)),
+        new Response(200, ['Content-Type' => 'application/json'], json_encode([
+            'sub' => $subject,
+            'name' => 'Stateful Google User',
+            'email' => $email,
+            'picture' => 'https://images.example.test/stateful.png',
+        ], JSON_THROW_ON_ERROR)),
+    ];
+}
+
 function fakeWebGoogleAccount(string $email, string $subject = 'web-google-subject'): void
 {
     $provider = Mockery::mock(GoogleProvider::class);
-    $provider->shouldReceive('stateless')->once()->andReturnSelf();
     $provider->shouldReceive('user')->once()->andReturn(
         (new SocialiteUser)->setRaw([])->map([
             'id' => $subject,
@@ -21,6 +57,91 @@ function fakeWebGoogleAccount(string $email, string $subject = 'web-google-subje
     );
     Socialite::shouldReceive('driver')->with('google')->once()->andReturn($provider);
 }
+
+test('web Google redirect stores only same origin paths', function (string $redirect, ?string $intended) {
+    configureStatefulWebGoogle();
+
+    $response = $this->get('/auth/google?'.http_build_query(['redirect' => $redirect]));
+    $response->assertRedirect();
+
+    if ($intended === null) {
+        $response->assertSessionMissing('url.intended');
+
+        return;
+    }
+
+    $response->assertSessionHas('url.intended', $intended);
+})->with([
+    'absolute URL' => ['https://attacker.example/path', null],
+    'network path' => ['//attacker.example/path', null],
+    'backslash network path' => ['\\attacker.example/path', null],
+    'encoded network path' => ['/%2Fattacker.example/path', null],
+    'double encoded backslash path' => ['%255Cattacker.example/path', null],
+    'control character' => ["/transit/studio\r\nX-Test: injected", null],
+    'local path' => ['/transit/studio?tab=drafts#review', '/transit/studio?tab=drafts#review'],
+    'local path without slash' => ['transit/studio', '/transit/studio'],
+]);
+
+test('web Google callback rejects a missing state before contacting Google', function () {
+    configureStatefulWebGoogle(statefulWebGoogleResponses(
+        'missing-state-subject',
+        'missing-state@example.test',
+    ));
+
+    $this->get('/auth/google/callback?code=missing-state')
+        ->assertRedirect('/?error=auth_failed');
+
+    $this->assertGuest();
+    expect(User::query()->count())->toBe(0);
+});
+
+test('web Google callback rejects an invalid state before contacting Google', function () {
+    configureStatefulWebGoogle(statefulWebGoogleResponses(
+        'invalid-state-subject',
+        'invalid-state@example.test',
+    ));
+
+    $response = $this->get('/auth/google')->assertRedirect();
+    parse_str((string) parse_url($response->headers->get('Location'), PHP_URL_QUERY), $query);
+
+    expect($query['state'] ?? null)->toBeString()->not->toBe('');
+
+    Socialite::forgetDrivers();
+    $this->get('/auth/google/callback?'.http_build_query([
+        'code' => 'invalid-state',
+        'state' => 'not-the-issued-state',
+    ]))->assertRedirect('/?error=auth_failed');
+
+    $this->assertGuest();
+    expect(User::query()->count())->toBe(0);
+});
+
+test('web Google callback consumes a valid state and rejects its replay', function () {
+    configureStatefulWebGoogle(array_merge(
+        statefulWebGoogleResponses('stateful-google-subject', 'stateful@example.test'),
+        statefulWebGoogleResponses('stateful-google-subject', 'stateful@example.test'),
+    ));
+
+    $response = $this->get('/auth/google')->assertRedirect();
+    parse_str((string) parse_url($response->headers->get('Location'), PHP_URL_QUERY), $query);
+    $state = $query['state'] ?? null;
+
+    expect($state)->toBeString()->not->toBe('');
+
+    Socialite::forgetDrivers();
+    $this->get('/auth/google/callback?'.http_build_query([
+        'code' => 'valid-state',
+        'state' => $state,
+    ]))->assertRedirect('/dashboard');
+
+    expect(User::where('google_id', 'stateful-google-subject')->exists())->toBeTrue();
+
+    Socialite::forgetDrivers();
+    $this->get('/auth/google/callback?'.http_build_query([
+        'code' => 'replayed-state',
+        'state' => $state,
+    ]))->assertRedirect('/?error=auth_failed');
+});
 
 test('web Google login creates an unknown account with the regular user role', function () {
     fakeWebGoogleAccount('new-user@example.test');

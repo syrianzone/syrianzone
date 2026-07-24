@@ -1,0 +1,75 @@
+name: deploy staging
+
+on:
+  push:
+    branches: [staging]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "branch, tag or sha to deploy to staging"
+        required: false
+        default: staging
+
+# staging is a single box; a newer run supersedes an in-flight one.
+# separate group from production so a staging deploy never queues behind prod.
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    name: build and push staging image
+    if: github.repository == 'syrianzone/syrianzone'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: log in to ghcr
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # deliberately NOT passing VITE_SENTRY_DSN, VITE_POSTHOG_KEY or
+      # sentry_auth_token: those are baked into the js bundle at build time, so a
+      # staging box running the production image would report browser errors and
+      # analytics into the production projects. omitting them makes both sdks
+      # no-op (they are guarded on the env var in resources/js/app.tsx).
+      # GA is runtime config now, so staging just leaves GA_MEASUREMENT_ID unset.
+      - name: build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ghcr.io/syrianzone/syrianzone:staging-${{ github.sha }}
+          # shares the production layer cache: same Dockerfile, so a staging
+          # build after a prod build is mostly cache hits. scope-free on purpose.
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            GIT_SHA=${{ github.sha }}
+
+  deploy:
+    name: deploy to vps
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: run remote staging deploy script
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          fingerprint: ${{ secrets.VPS_HOST_FINGERPRINT }}
+          command_timeout: 10m
+          script: /opt/syrianzone-staging/deploy.sh staging-${{ github.sha }}

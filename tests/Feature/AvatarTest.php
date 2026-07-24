@@ -19,7 +19,6 @@ function avatarUser(array $attrs = []): User
 function fakeGoogleLogin(string $email): void
 {
     $provider = Mockery::mock(GoogleProvider::class);
-    $provider->shouldReceive('stateless')->andReturnSelf();
     $provider->shouldReceive('user')->andReturn((new SocialiteUser)->setRaw([])->map([
         'id' => 'google-id-1',
         'name' => 'Google Name',
@@ -239,4 +238,22 @@ test('google login ignores avatar-looking urls without recorded storage ownershi
     expect($user->fresh()->avatar_url)->toBe('https://lh3.googleusercontent.com/fresh-avatar')
         ->and($user->fresh()->avatar_disk)->toBeNull()
         ->and($user->fresh()->avatar_path)->toBeNull();
+});
+
+test('google login keeps a display name the user chose', function () {
+    $user = User::factory()->create(['email' => 'macdoos@example.com', 'name' => 'macdoos', 'role' => 'user']);
+
+    $google = Mockery::mock();
+    $google->shouldReceive('getEmail')->andReturn('macdoos@example.com');
+    $google->shouldReceive('getName')->andReturn('Real Name');
+    $google->shouldReceive('getId')->andReturn('google-123');
+    $google->shouldReceive('getAvatar')->andReturn('https://lh3.googleusercontent.com/a/x');
+
+    $provider = Mockery::mock(GoogleProvider::class);
+    $provider->shouldReceive('user')->andReturn($google);
+    Socialite::shouldReceive('driver')->with('google')->andReturn($provider);
+
+    $this->get('/auth/google/callback');
+
+    expect($user->fresh()->name)->toBe('macdoos');
 });

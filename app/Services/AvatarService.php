@@ -24,6 +24,11 @@ class AvatarService
         return $this->decodeGuard->dimensionsAreSafe($file, 64);
     }
 
+    public function dimensionsExceedBudget(UploadedFile $file): bool
+    {
+        return $this->decodeGuard->dimensionsExceedBudget($file, 64);
+    }
+
     public function update(User $user, UploadedFile $file): string
     {
         if (! $this->dimensionsAreSafe($file)) {

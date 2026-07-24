@@ -60,9 +60,9 @@ function CityMapPageContent({ id }: CityMapPageProps) {
 
   useEffect(() => {
     if (!city) return
-    document.title = `${city.nameAr} — ترانزيت`
+    document.title = `${city.nameAr}: ترانزيت`
     return () => {
-      document.title = 'ترانزيت — Syria Transit'
+      document.title = 'ترانزيت: Syria Transit'
     }
   }, [city])
 

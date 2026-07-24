@@ -53,3 +53,6 @@ android/*.keystore
 android/*.jks
 android/*.apk
 android/*.aab
+
+# Temp source image folders
+syrianzonepp/

@@ -1,11 +1,18 @@
 <?php
 
+use App\Http\Controllers\AnswersController;
 use App\Http\Controllers\Api\PopulationAtlasController;
 use App\Http\Controllers\Api\V1\TransitController;
+use App\Http\Controllers\BoardController;
 use App\Http\Controllers\ContributorController;
+use App\Http\Controllers\EventsController;
+use App\Http\Controllers\FeedController;
 use App\Http\Controllers\MetricsController;
 use App\Http\Controllers\PollController;
+use App\Http\Controllers\PrayerController;
+use App\Http\Controllers\RecipeController;
 use App\Http\Controllers\TransitStudioController;
+use App\Http\Controllers\WeatherController;
 use App\Http\Middleware\ResolveOptionalMobileBearerToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -24,6 +31,24 @@ Route::get('/contributors/{contributor}', [ContributorController::class, 'show']
 
 Route::get('/population/master', [PopulationAtlasController::class, 'getData']);
 Route::get('/population/env-report', [PopulationAtlasController::class, 'getEnvironmentalDetails']);
+
+Route::get('/weather', [WeatherController::class, 'show'])
+    ->middleware('throttle:60,1');
+
+Route::get('/answers', [AnswersController::class, 'index'])
+    ->middleware('throttle:60,1');
+
+Route::get('/recipe-of-the-day', [RecipeController::class, 'ofTheDay'])
+    ->middleware('throttle:60,1');
+
+Route::get('/events/today', [EventsController::class, 'today'])
+    ->middleware('throttle:60,1');
+
+Route::get('/feed', [FeedController::class, 'show'])
+    ->middleware('throttle:60,1');
+
+Route::get('/prayer-times', [PrayerController::class, 'show'])
+    ->middleware('throttle:60,1');
 
 Route::get('/metrics', [MetricsController::class, 'index']);
 
@@ -92,6 +117,11 @@ Route::get('/app-icon', function (Request $request) {
 });
 
 Route::prefix('v1')->group(function () {
+    Route::middleware([ResolveOptionalMobileBearerToken::class, 'auth:sanctum'])->group(function () {
+        Route::get('/board', [BoardController::class, 'show'])->middleware('throttle:60,1');
+        Route::put('/board', [BoardController::class, 'update'])->middleware('throttle:60,1');
+    });
+
     Route::get('/cities', [TransitController::class, 'getCities']);
     Route::get('/cities/{id}/routes', [TransitController::class, 'getRoutes']);
     Route::get('/cities/{id}/map-data', [TransitController::class, 'getMapData']);
@@ -112,6 +142,7 @@ Route::prefix('v1')->group(function () {
 });
 
 require __DIR__.'/mobile-public.php';
+require __DIR__.'/mobile-directory-admin.php';
 require __DIR__.'/mobile-transit-admin.php';
 require __DIR__.'/mobile-polls.php';
 require __DIR__.'/mobile-account.php';

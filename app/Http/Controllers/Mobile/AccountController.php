@@ -8,6 +8,7 @@ use App\Models\RouteDraft;
 use App\Models\User;
 use App\Services\AvatarService;
 use App\Services\UserDeletionService;
+use App\Services\UserSettingsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -16,6 +17,8 @@ use Illuminate\Validation\Rule;
 
 class AccountController extends Controller
 {
+    private const MAX_SETTINGS_BYTES = 65_536;
+
     public function show(Request $request): JsonResponse
     {
         return response()->json(['data' => $this->workspace($request->user())]);
@@ -39,9 +42,14 @@ class AccountController extends Controller
             'avatar' => [
                 'bail',
                 'required',
+                'max:4096',
+                function (string $attribute, mixed $value, callable $fail) use ($avatars) {
+                    if ($value instanceof UploadedFile && $avatars->dimensionsExceedBudget($value)) {
+                        $fail('The image dimensions are not supported.');
+                    }
+                },
                 'image',
                 'mimes:jpg,jpeg,png,webp',
-                'max:4096',
                 function (string $attribute, mixed $value, callable $fail) use ($avatars) {
                     if (! $value instanceof UploadedFile || ! $avatars->dimensionsAreSafe($value)) {
                         $fail('The image dimensions are not supported.');
@@ -55,6 +63,22 @@ class AccountController extends Controller
         return response()->json([
             'data' => ['user' => $this->userResource($request->user()->fresh())],
         ]);
+    }
+
+    public function updateSettings(
+        Request $request,
+        UserSettingsService $settings,
+    ): JsonResponse {
+        if (strlen($request->getContent()) > self::MAX_SETTINGS_BYTES) {
+            return response()->json(['message' => 'The settings document is too large.'], 422);
+        }
+
+        $validated = $request->validate([
+            'settings' => ['required', 'array'],
+        ]);
+        $merged = $settings->merge($request->user(), $validated['settings']);
+
+        return response()->json(['data' => ['settings' => $merged]]);
     }
 
     public function destroy(Request $request, UserDeletionService $deletion): JsonResponse
@@ -167,7 +191,9 @@ class AccountController extends Controller
             'id' => $user->id,
             'is_banned' => (bool) $user->is_banned,
             'name' => $user->name,
+            'permissions' => array_values($user->permissions ?? []),
             'role' => $user->role,
+            'settings' => (object) ($user->settings ?? []),
         ];
     }
 }

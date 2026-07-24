@@ -52,7 +52,7 @@ function FitToRoutes({ routes, enabled }: { routes: FeatureCollection<RoutePrope
       const latSpan = Math.abs(maxLat - minLat)
 
       // Degenerate / tiny bounds (e.g. a stub route with 2 near-identical points)
-      // make fitBounds invalid — fall back to a fixed zoom centered on the geometry.
+      // make fitBounds invalid. Fall back to a fixed zoom centered on the geometry.
       if (lngSpan < 0.001 && latSpan < 0.001) {
         const center = bounds.getCenter()
         map.flyTo({ center, zoom: 14, duration: 600 })

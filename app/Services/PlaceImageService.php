@@ -31,16 +31,26 @@ class PlaceImageService
         return $this->decodeGuard->dimensionsAreSafe($file, 200);
     }
 
+    public function dimensionsExceedBudget(UploadedFile $file): bool
+    {
+        return $this->decodeGuard->dimensionsExceedBudget($file, 200);
+    }
+
     public function store(UploadedFile $file, int $placeId, int $sort): PlacePhoto
     {
         $paths = $this->writeSet($file, $placeId);
 
         try {
-            return PlacePhoto::create([
+            $photo = PlacePhoto::create([
                 'place_id' => $placeId,
                 'sort' => $sort,
                 ...$paths,
             ]);
+            if (DB::transactionLevel() > 0) {
+                DB::afterRollBack(fn () => $this->discardAfterRollback($paths));
+            }
+
+            return $photo;
         } catch (Throwable $error) {
             $this->disk()->delete(array_values($paths));
 
@@ -58,7 +68,7 @@ class PlaceImageService
                 $oldPaths = [$locked->original_path, $locked->display_path, $locked->thumb_path];
                 $locked->forceFill([...$newPaths, 'rotation_degrees' => 0])->save();
                 $this->cleanup->queueFiles($oldPaths);
-                DB::afterRollBack(fn () => $this->disk()->delete(array_values($newPaths)));
+                DB::afterRollBack(fn () => $this->discardAfterRollback($newPaths));
             });
         } catch (Throwable $error) {
             $this->disk()->delete(array_values($newPaths));
@@ -194,7 +204,7 @@ class PlaceImageService
 
                     $oldPaths = [$locked->display_path, $locked->thumb_path];
                     $newPaths = $this->writeVariants($binary, $locked->place_id, 90);
-                    DB::afterRollBack(fn () => $disk->delete(array_values($newPaths)));
+                    DB::afterRollBack(fn () => $this->discardAfterRollback($newPaths));
                     $locked->forceFill([
                         ...$newPaths,
                         'rotation_degrees' => ((int) $locked->rotation_degrees + 90) % 360,
@@ -220,7 +230,7 @@ class PlaceImageService
                     $locked->place_id,
                     $rotation,
                 );
-                DB::afterRollBack(fn () => $disk->delete(array_values($newPaths)));
+                DB::afterRollBack(fn () => $this->discardAfterRollback($newPaths));
                 $locked->forceFill([
                     ...$newPaths,
                     'rotation_degrees' => $rotation,
@@ -273,5 +283,21 @@ class PlaceImageService
         }
 
         return "places/{$placeId}";
+    }
+
+    /**
+     * @param  array<string, string>  $paths
+     */
+    private function discardAfterRollback(array $paths): void
+    {
+        try {
+            $this->cleanup->queueFiles(array_values($paths));
+        } catch (Throwable) {
+            try {
+                $this->disk()->delete(array_values($paths));
+            } catch (Throwable) {
+                // Preserve the transaction failure.
+            }
+        }
     }
 }

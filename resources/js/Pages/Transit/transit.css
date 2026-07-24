@@ -1,4 +1,4 @@
-/* Transit-specific styles — applied dynamically using global site themes */
+/* Transit-specific styles applied dynamically using global site themes */
 
 .transit-root {
   --bg: hsl(var(--background));
@@ -28,7 +28,7 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* City card reveal animation — `backwards` (not `both`) so the lingering
+/* City card reveal animation uses `backwards` (not `both`) so the lingering
    end-frame transform doesn't override the :hover lift after it plays */
 .transit-root .city-card {
   position: relative;

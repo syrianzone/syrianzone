@@ -3,21 +3,23 @@
 namespace App\Http\Controllers\Mobile;
 
 use App\Http\Controllers\Controller;
+use App\Services\CandidateImageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class AdminUploadController extends Controller
 {
+    public function __construct(private readonly CandidateImageService $images) {}
+
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'image' => 'required|image|mimes:jpeg,png,webp|max:5120',
+            'image' => ['required', ...$this->images->rules()],
         ]);
-        $path = $data['image']->storePublicly('candidates', 'public');
+        $stored = $this->images->store($data['image']);
 
         return response()->json([
-            'data' => ['url' => Storage::disk('public')->url($path)],
+            'data' => ['url' => $stored->url],
         ], 201);
     }
 }

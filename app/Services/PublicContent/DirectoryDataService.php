@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace App\Services\PublicContent;
 
+use App\Models\GovApp;
+use App\Models\OfficialCategory;
+use App\Models\OfficialEntity;
+use App\Models\PhonebookCategory;
+use App\Models\PhonebookEntry;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -11,36 +16,75 @@ use Throwable;
 
 final class DirectoryDataService
 {
-    public const OFFICIAL_ACCOUNTS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTAtwovmqnk0722ikCNL1RAeoEWyJ2tec3L0-sGHe-0kbmKs0ZPOIyCxOP4e74ndkPooauvG9ZeLTWT/pub?gid=0&single=true&output=csv';
-
-    public const PHONEBOOK_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT59DuQe_jOSrhrjVS7J7kB8YdVJiUHMxkB1-LsZc5MlAVFnUQrDXGM0n4qFm5yqQpPqFn5zkhTGgHS/pub?output=csv';
-
     public const SITES_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTCrz7GpfTDmtgKipQd3IqyMPle1ehoG77VO2SQRDqKC9zRRKO3FDI60VoYhA_XqlzoKQ6gZDrIuIjL/pub?output=csv';
 
     public const PARTIES_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTxa48kbdV2X5Umd3WGDeU7xX5qFVRpyA3uDFhI9w2FAOuxSiGebSpKrVpjU-13XswnNgxHvfWw-sbJ/pub?output=csv';
 
-    public const GOVERNMENT_APPS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRW4BMKTSgWlF6ppCgGxzVxvFIdADOG7G5MxIuiRuOCysCIdC_BYpLURlyQwOsrsJj_5q_vn7JwheCF/pub?gid=0&single=true&output=csv';
-
     public function __construct(private readonly CsvDocument $csv) {}
 
-    /** @return list<array<string, mixed>> */
+    /** @return array{categories: list<array<string, mixed>>, entities: list<array<string, mixed>>} */
     public function officialAccounts(): array
     {
-        return $this->cachedCsv(
-            'external_syofficial_data',
-            self::OFFICIAL_ACCOUNTS_URL,
-            fn (string $body): array => $this->parseOfficialAccounts($body),
-        );
+        $categories = OfficialCategory::query()
+            ->where('is_active', true)
+            ->orderBy('order_column')
+            ->get();
+        $entities = OfficialEntity::query()
+            ->where('is_active', true)
+            ->whereHas('category', fn ($query) => $query->where('is_active', true))
+            ->orderBy('order_column')
+            ->get();
+
+        return [
+            'categories' => collect($categories)->map(fn (OfficialCategory $category): array => [
+                'id' => $category->id,
+                'label_ar' => $category->label_ar,
+                'label_en' => $category->label_en,
+                'icon' => $category->icon,
+                'is_active' => (bool) $category->is_active,
+                'order_column' => (int) $category->order_column,
+            ])->values()->all(),
+            'entities' => collect($entities)->map(fn (OfficialEntity $entity): array => [
+                'id' => $entity->id,
+                'name' => $entity->name,
+                'name_ar' => $entity->name_ar,
+                'description' => $entity->description ?? '',
+                'description_ar' => $entity->description_ar ?? '',
+                'image' => $entity->image ?? '',
+                'category' => $entity->category_id,
+                'socials' => (object) ($entity->socials ?? []),
+            ])->values()->all(),
+        ];
     }
 
     /** @return list<array<string, mixed>> */
     public function phonebook(): array
     {
-        return $this->cachedCsv(
-            'external_phonebook_data',
-            self::PHONEBOOK_URL,
-            fn (string $body): array => $this->parsePhonebook($body),
-        );
+        $categories = PhonebookCategory::query()
+            ->where('is_active', true)
+            ->orderBy('order_column')
+            ->get()
+            ->keyBy('id');
+        $entries = PhonebookEntry::query()
+            ->where('is_active', true)
+            ->whereHas('category', fn ($query) => $query->where('is_active', true))
+            ->orderBy('order_column')
+            ->get();
+
+        return collect($entries)->map(function (PhonebookEntry $entry) use ($categories): array {
+            $category = collect($categories)->get($entry->category_id);
+
+            return [
+                'id' => $entry->id,
+                'category_ar' => $category?->label_ar ?? '',
+                'category_en' => $category?->label_en ?? '',
+                'name_ar' => $entry->name_ar,
+                'name_en' => $entry->name_en ?? '',
+                'number' => $entry->number,
+                'is_whatsapp' => (bool) $entry->is_whatsapp,
+                'source_url' => $entry->source_url ?? '',
+            ];
+        })->values()->all();
     }
 
     /** @return list<array<string, mixed>> */
@@ -66,11 +110,23 @@ final class DirectoryDataService
     /** @return list<array<string, mixed>> */
     public function governmentApps(): array
     {
-        return $this->cachedCsv(
-            'external_govapps_data',
-            self::GOVERNMENT_APPS_URL,
-            fn (string $body): array => $this->parseGovernmentApps($body),
-        );
+        $apps = GovApp::query()
+            ->where('is_active', true)
+            ->orderBy('order_column')
+            ->get();
+
+        return collect($apps)->map(fn (GovApp $app): array => [
+            'id' => $app->id,
+            'name' => $app->name_ar ?: $app->name,
+            'description' => $app->description_ar ?: ($app->description ?? ''),
+            'icon' => $app->icon ?? '',
+            'images' => array_values($app->images ?? []),
+            'links' => array_replace([
+                'official' => null,
+                'android' => null,
+                'apple' => null,
+            ], $app->links ?? []),
+        ])->values()->all();
     }
 
     /**
@@ -99,87 +155,6 @@ final class DirectoryDataService
 
             return [];
         });
-    }
-
-    /** @return list<array<string, mixed>> */
-    private function parseOfficialAccounts(string $body): array
-    {
-        $socialPlatforms = [
-            'Facebook URL',
-            'Instagram URL',
-            'LinkedIn URL',
-            'Telegram URL',
-            'Telegram URL (Secondary)',
-            'Twitter/X URL',
-            'Website URL',
-            'WhatsApp URL',
-            'YouTube URL',
-        ];
-        $accounts = [];
-
-        foreach ($this->csv->rows($body) as $csvRow) {
-            $row = $csvRow['values'];
-            $category = strtolower(trim($row['Category'] ?? ''));
-            if ($category === '') {
-                continue;
-            }
-
-            $socials = [];
-            foreach ($socialPlatforms as $platform) {
-                $url = trim($row[$platform] ?? '');
-                if ($url === '') {
-                    continue;
-                }
-
-                $key = str_replace(
-                    [' url', ' (secondary)', 'twitter/x'],
-                    ['', '', 'twitter'],
-                    strtolower($platform),
-                );
-                $socials[$key] = $url;
-            }
-
-            $accounts[] = [
-                'id' => $row['ID'] ?? "entity-{$csvRow['number']}",
-                'name' => $row['Name (English)'] ?? '',
-                'name_ar' => $row['Name (Arabic)'] ?? '',
-                'description' => $row['Description (English)'] ?? '',
-                'description_ar' => $row['Description (Arabic)'] ?? '',
-                'image' => $row['Image Path'] ?? '',
-                'category' => preg_replace('/\s+/', '_', $category),
-                'socials' => (object) $socials,
-            ];
-        }
-
-        return $accounts;
-    }
-
-    /** @return list<array<string, mixed>> */
-    private function parsePhonebook(string $body): array
-    {
-        $numbers = [];
-
-        foreach ($this->csv->rows($body) as $csvRow) {
-            $row = array_map(fn (string $value): string => trim($value), $csvRow['values']);
-            $number = $row['Number'] ?? '';
-            if ($number === '') {
-                continue;
-            }
-
-            $whatsapp = strtolower($row['Is_WhatsApp'] ?? '');
-            $numbers[] = [
-                'id' => $row['ID'] ?? "phone-{$csvRow['number']}",
-                'category_ar' => $row['Category_AR'] ?? '',
-                'category_en' => $row['Category_EN'] ?? '',
-                'name_ar' => $row['Name_AR'] ?? '',
-                'name_en' => $row['Name_EN'] ?? '',
-                'number' => $number,
-                'is_whatsapp' => in_array($whatsapp, ['yes', '1', 'true'], true),
-                'source_url' => $row['Source_URL'] ?? '',
-            ];
-        }
-
-        return $numbers;
     }
 
     /** @return list<array<string, mixed>> */
@@ -250,42 +225,5 @@ final class DirectoryDataService
         }
 
         return $parties;
-    }
-
-    /** @return list<array<string, mixed>> */
-    private function parseGovernmentApps(string $body): array
-    {
-        $apps = [];
-
-        foreach ($this->csv->rows($body, true) as $csvRow) {
-            $row = $csvRow['values'];
-            $name = $row['name'] ?? '';
-            $candidateId = $row['id'] ?? $name ?: "app-{$csvRow['number']}";
-            $id = preg_replace('/[^a-z0-9\-]/', '', strtolower(trim($candidateId))) ?: "app-{$csvRow['number']}";
-
-            $iconPath = "/assets/apps/{$id}/{$id}icon.png";
-            $images = [];
-            for ($number = 1; $number <= 10; $number++) {
-                $imagePath = "/assets/apps/{$id}/{$id}{$number}.png";
-                if (is_file(public_path($imagePath))) {
-                    $images[] = $imagePath;
-                }
-            }
-
-            $apps[] = [
-                'id' => $id,
-                'name' => $name !== '' ? $name : $id,
-                'description' => $row['description'] ?? '',
-                'icon' => is_file(public_path($iconPath)) ? $iconPath : '',
-                'images' => $images,
-                'links' => [
-                    'official' => $row['official site'] ?? null,
-                    'android' => $row['android download'] ?? null,
-                    'apple' => $row['apple download'] ?? null,
-                ],
-            ];
-        }
-
-        return $apps;
     }
 }

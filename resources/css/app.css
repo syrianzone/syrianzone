@@ -1,9 +1,10 @@
 @import "tailwindcss";
+@import "./poll.css";
+
 /* explicit sources: v4 auto-detection missed classes in some environments,
    silently dropping utilities only these files use (e.g. the lightbox sm:hidden) */
 @source "../js";
 @source "../views";
-@import "./poll.css";
 
 @plugin "tailwindcss-animate";
 
@@ -198,6 +199,8 @@
     /* Reseda Green */
     --ring: 105 15.2% 36.1%;
     --sz-color-primary: 105 15.2% 36.1%;
+    /* LevelBadge brand tier: 36% olive is ~3:1 on the near-black card; lift it to ~5.4:1 */
+    --places-level-brand: 105 15.2% 55%;
 }
 
 [data-theme="dark-blue"] {
@@ -293,7 +296,7 @@
 }
 
 [data-theme="damascus-rose"] {
-    /* Rich warm rose-black — like dried rose petals */
+    /* Rich warm rose-black, like dried rose petals */
     --background: 345 28% 8%;
     --foreground: 10 15% 96%;
 
@@ -304,7 +307,7 @@
     --popover: 345 28% 7%;
     --popover-foreground: 10 15% 96%;
 
-    /* Blooming rose — the heart of the theme */
+    /* Blooming rose, the heart of the theme */
     --primary: 340 68% 58%;
     --primary-foreground: 0 0% 100%;
 
@@ -313,7 +316,7 @@
     --secondary-foreground: 10 15% 95%;
 
     --muted: 345 22% 11%;
-    /* Dusty rose muted text — warm, not cold */
+    /* Dusty rose muted text, warm rather than cold */
     --muted-foreground: 340 18% 62%;
 
     --accent: 345 22% 15%;
@@ -327,7 +330,7 @@
     --input: 340 30% 18%;
     --ring: 340 68% 58%;
 
-    /* Charts — rose palette */
+    /* Charts use the rose palette */
     --chart-1: 340 68% 58%;
     /* Rose */
     --chart-2: 38 75% 52%;
@@ -339,7 +342,7 @@
     --chart-5: 170 40% 45%;
     /* Muted teal */
 
-    /* Sidebar — even deeper rose-black */
+    /* Sidebar uses an even deeper rose-black */
     --sidebar: 345 35% 4%;
     --sidebar-foreground: 10 15% 96%;
     --sidebar-primary: 340 68% 58%;

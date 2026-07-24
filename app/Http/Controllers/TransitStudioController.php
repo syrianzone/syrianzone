@@ -4,10 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Route;
 use App\Models\RouteDraft;
-use App\Models\TransitRouteLog;
 use App\Services\TransitDraftGeoJson;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class TransitStudioController extends Controller
@@ -16,6 +14,9 @@ class TransitStudioController extends Controller
     {
         if ($request->user() && $request->user()->is_banned) {
             return response()->json(['message' => 'Your account has been banned from submitting route drafts.'], 403);
+        }
+        if ($request->filled('route_id') && ! $request->user()) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
         }
 
         $validated = $request->validate([
@@ -43,12 +44,6 @@ class TransitStudioController extends Controller
             'geojson' => $geojson,
             'status' => 'pending',
         ]);
-
-        // If this submission is an edit suggestion for an already-published route,
-        // unpublish that route immediately so the live map reflects the pending state.
-        if (isset($validated['route_id'])) {
-            $this->unpublishLinkedRoute($validated['route_id'], $draft->id);
-        }
 
         return response()->json($draft, 201);
     }
@@ -129,8 +124,8 @@ class TransitStudioController extends Controller
             'city_id' => 'sometimes|exists:cities,id',
             'name_ar' => 'sometimes|string|max:255',
             'name_en' => 'nullable|string|max:255',
-            'price' => 'nullable|integer',
-            'notes' => 'nullable|string',
+            'price' => 'nullable|integer|min:0',
+            'notes' => 'nullable|string|max:5000',
             'geojson' => 'sometimes|array',
             'geojson.features' => 'required_with:geojson|array|min:1',
             'geojson.features.*.geometry.type' => 'required_with:geojson|string',
@@ -158,17 +153,12 @@ class TransitStudioController extends Controller
 
         $user = $request->user();
 
-        // Any edit submission is a resubmission for review: the draft always goes
-        // back to the pending queue (even when an admin edits someone else's draft
-        // or an anonymous submission). If the draft is linked to a published route
-        // we also take that live route offline until the edit is reviewed.
+        // Any edit submission is a resubmission for review. The draft returns to
+        // the pending queue while an existing published route stays live until an
+        // administrator approves and atomically applies the linked draft.
         if ($draft->status !== 'pending' || $draft->route_id) {
             $updateData['status'] = 'pending';
             $updateData['rejection_reason'] = null;
-        }
-
-        if ($draft->route_id) {
-            $this->unpublishLinkedRoute($draft->route_id, $draft->id);
         }
 
         $draft->update($updateData);
@@ -203,38 +193,5 @@ class TransitStudioController extends Controller
         return $query
             ->selectRaw('ST_AsGeoJSON(geometry) as geojson')
             ->value('geojson');
-    }
-
-    /**
-     * Unpublish a route that is being edited via a draft submission.
-     *
-     * The live (published) route is taken offline immediately so the public map
-     * does not show stale geometry/data while the edit is pending review. The
-     * route is set to 'disapproved' (the same off-map status used elsewhere) and
-     * a log entry records why it was withdrawn.
-     */
-    private function unpublishLinkedRoute($routeId, $draftId)
-    {
-        if (! $routeId) {
-            return;
-        }
-
-        $route = Route::find($routeId);
-        if (! $route || $route->status !== 'published') {
-            return;
-        }
-
-        $route->status = 'disapproved';
-        $route->save();
-
-        TransitRouteLog::create([
-            'route_id' => $route->id,
-            'action' => 'unpublished_for_edit',
-            'description' => "سحب الخط '{$route->name_ar}' مؤقتاً من الخريطة بانتظار مراجعة التعديلات (مساهمة #{$draftId})",
-            'user_id' => auth()->id(),
-        ]);
-
-        Cache::forget("transit:map-data:{$route->city_id}");
-        Cache::forget('transit:cities');
     }
 }

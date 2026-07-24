@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\MediaCleanupJob;
+use DateTimeInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -22,12 +23,36 @@ class MediaCleanupService
      */
     public function queueFiles(array $paths, ?string $disk = null): void
     {
-        $this->queue($paths, false, $disk);
+        $this->queue($paths, false, $disk, now());
+    }
+
+    /**
+     * @param  array<int, string>  $paths
+     */
+    public function queueFilesAfter(
+        array $paths,
+        DateTimeInterface $availableAt,
+        ?string $disk = null,
+    ): void {
+        $this->queue($paths, false, $disk, $availableAt);
+    }
+
+    /**
+     * @param  array<int, string>  $paths
+     */
+    public function cancelFiles(array $paths, ?string $disk = null): void
+    {
+        $disk ??= (string) config('filesystems.media_disk');
+        MediaCleanupJob::query()
+            ->where('disk', $disk)
+            ->whereIn('path', array_values(array_unique(array_filter($paths))))
+            ->whereNull('claimed_at')
+            ->delete();
     }
 
     public function queueDirectory(string $path, ?string $disk = null): void
     {
-        $this->queue([$path], true, $disk);
+        $this->queue([$path], true, $disk, now());
     }
 
     /**
@@ -70,8 +95,12 @@ class MediaCleanupService
     /**
      * @param  array<int, string>  $paths
      */
-    private function queue(array $paths, bool $isDirectory, ?string $disk): void
-    {
+    private function queue(
+        array $paths,
+        bool $isDirectory,
+        ?string $disk,
+        DateTimeInterface $availableAt,
+    ): void {
         $disk ??= (string) config('filesystems.media_disk');
         $ids = [];
 
@@ -79,7 +108,7 @@ class MediaCleanupService
             $job = MediaCleanupJob::query()->firstOrCreate(
                 ['disk' => $disk, 'path' => $path],
                 [
-                    'available_at' => now(),
+                    'available_at' => $availableAt,
                     'is_directory' => $isDirectory,
                 ],
             );

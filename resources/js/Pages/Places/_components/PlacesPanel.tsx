@@ -82,7 +82,7 @@ function ListShell(props: {
 }) {
   const { loading, empty, hasMore, onLoadMore, failed = false, onRetry, children } = props;
   return (
-    <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
+    <div className="min-h-0 flex-1 space-y-1 overflow-y-auto px-2 py-2">
       {children}
       {!loading && failed && (
         <div className="space-y-2 py-4 text-center">
@@ -239,10 +239,8 @@ export function PlacesPanel(props: {
             </TabsContent>
           )}
           <TabsContent value="guides" className="mt-0 flex min-h-0 flex-1 flex-col">
-            {/* heading المرشدون المحليون renders inside GuidesTab */}
-            <div className="min-h-0 flex-1 overflow-y-auto p-3">
-              <GuidesTab onSelectGuide={(g) => { onSelectGuide(g); setTab('places'); }} />
-            </div>
+            {/* heading المرشدون المحليون renders inside GuidesTab; it scrolls itself */}
+            <GuidesTab onSelectGuide={(g) => { onSelectGuide(g); setTab('places'); }} />
           </TabsContent>
         </Tabs>
       )}

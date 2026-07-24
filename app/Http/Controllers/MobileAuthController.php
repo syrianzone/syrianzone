@@ -30,6 +30,13 @@ class MobileAuthController extends Controller
             'code_challenge_method' => ['required', Rule::in(['S256'])],
         ]);
 
+        if (! $this->googleIsConfigured()) {
+            return $this->redirectToUri($validated['redirect_uri'], [
+                'error' => 'auth_unavailable',
+                'state' => $validated['state'],
+            ]);
+        }
+
         $oauthState = Str::random(64);
 
         MobileAuthCode::create([
@@ -206,10 +213,16 @@ class MobileAuthController extends Controller
     private function redirectToApp(MobileAuthCode $record, array $query): RedirectResponse
     {
         $query['state'] = $record->app_state;
-        $fragment = parse_url($record->redirect_uri, PHP_URL_FRAGMENT);
+
+        return $this->redirectToUri($record->redirect_uri, $query);
+    }
+
+    private function redirectToUri(string $redirectUri, array $query): RedirectResponse
+    {
+        $fragment = parse_url($redirectUri, PHP_URL_FRAGMENT);
         $base = $fragment === null
-          ? $record->redirect_uri
-          : substr($record->redirect_uri, 0, -strlen($fragment) - 1);
+          ? $redirectUri
+          : substr($redirectUri, 0, -strlen($fragment) - 1);
         $separator = str_contains($base, '?') ? '&' : '?';
         $url = $base.$separator.http_build_query($query, '', '&', PHP_QUERY_RFC3986);
 
@@ -218,6 +231,12 @@ class MobileAuthController extends Controller
         }
 
         return redirect()->away($url);
+    }
+
+    private function googleIsConfigured(): bool
+    {
+        return filled(config('services.google.client_id'))
+            && filled(config('services.google.client_secret'));
     }
 
     private function userPayload(User $user): array
@@ -229,6 +248,8 @@ class MobileAuthController extends Controller
             'avatar_url' => $user->avatar_url,
             'role' => $user->role,
             'is_banned' => $user->is_banned,
+            'permissions' => array_values($user->permissions ?? []),
+            'settings' => (object) ($user->settings ?? []),
         ];
     }
 

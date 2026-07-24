@@ -1,8 +1,16 @@
 <?php
 
+use App\Http\Middleware\Admin;
+use App\Http\Middleware\AutoLoginDevUser;
+use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\PhonebookAdmin;
+use App\Http\Middleware\SuperAdmin;
+use App\Http\Middleware\SyOfficialAdmin;
+use App\Http\Middleware\TransitAdmin;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Sentry\Laravel\Integration;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -15,22 +23,24 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->trustProxies(at: '*');
-        
+
         $middleware->web(append: [
-            \App\Http\Middleware\AutoLoginDevUser::class,
+            AutoLoginDevUser::class,
         ]);
-        
+
         $middleware->api(prepend: [
-            \App\Http\Middleware\AutoLoginDevUser::class,
+            AutoLoginDevUser::class,
         ]);
-        
+
         $middleware->web(append: [
-            \App\Http\Middleware\HandleInertiaRequests::class,
+            HandleInertiaRequests::class,
         ]);
         $middleware->alias([
-            'admin'         => \App\Http\Middleware\Admin::class,
-            'transit_admin' => \App\Http\Middleware\TransitAdmin::class,
-            'superadmin'    => \App\Http\Middleware\SuperAdmin::class,
+            'admin' => Admin::class,
+            'transit_admin' => TransitAdmin::class,
+            'syofficial_admin' => SyOfficialAdmin::class,
+            'phonebook_admin' => PhonebookAdmin::class,
+            'superadmin' => SuperAdmin::class,
         ]);
         $middleware->statefulApi();
         $middleware->validateCsrfTokens(except: [
@@ -42,5 +52,5 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        \Sentry\Laravel\Integration::handles($exceptions);
+        Integration::handles($exceptions);
     })->create();

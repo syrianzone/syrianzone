@@ -75,8 +75,8 @@ export function PlacesMap(props: {
         type: 'geojson',
         data: featuresRef.current as GeoJSON.FeatureCollection,
         cluster: true,
-        clusterRadius: 50,
-        clusterMaxZoom: 14,
+        clusterRadius: 25,
+        clusterMaxZoom: 10,
       });
 
       m.addLayer({
@@ -85,10 +85,12 @@ export function PlacesMap(props: {
         source: SOURCE_ID,
         filter: ['has', 'point_count'],
         paint: {
-          'circle-color': ['step', ['get', 'point_count'], 'hsl(105, 15%, 36%)', 10, 'hsl(105, 18%, 30%)', 30, 'hsl(105, 20%, 25%)'],
-          'circle-radius': ['step', ['get', 'point_count'], 15, 10, 20, 30, 25],
-          'circle-stroke-width': 2,
+          'circle-color': 'hsl(105, 12%, 38%)',
+          'circle-opacity': 0.85,
+          'circle-radius': ['step', ['get', 'point_count'], 10, 10, 13, 30, 16],
+          'circle-stroke-width': 1.5,
           'circle-stroke-color': '#ffffff',
+          'circle-stroke-opacity': 0.8,
         },
       });
 
@@ -97,7 +99,7 @@ export function PlacesMap(props: {
         type: 'symbol',
         source: SOURCE_ID,
         filter: ['has', 'point_count'],
-        layout: { 'text-field': '{point_count_abbreviated}', 'text-size': 13, 'text-font': ['IBM Plex Sans Arabic Bold'] },
+        layout: { 'text-field': '{point_count_abbreviated}', 'text-size': 11, 'text-font': ['IBM Plex Sans Arabic Bold'] },
         paint: { 'text-color': '#ffffff' },
       });
 
@@ -107,10 +109,11 @@ export function PlacesMap(props: {
         source: SOURCE_ID,
         filter: ['!', ['has', 'point_count']],
         paint: {
-          'circle-radius': selectedIdRef.current == null ? 7 : ['case', ['==', ['get', 'id'], selectedIdRef.current], 10, 7],
+          'circle-radius': selectedIdRef.current == null ? 6 : ['case', ['==', ['get', 'id'], selectedIdRef.current], 9, 6],
           'circle-color': '#7d8a5c',
-          'circle-stroke-width': 2,
+          'circle-stroke-width': 1.5,
           'circle-stroke-color': '#ffffff',
+          'circle-stroke-opacity': 0.9,
         },
       });
     };
@@ -188,7 +191,7 @@ export function PlacesMap(props: {
     map.setPaintProperty(
       'place-pin',
       'circle-radius',
-      props.selectedId == null ? 7 : ['case', ['==', ['get', 'id'], props.selectedId], 10, 7],
+      props.selectedId == null ? 6 : ['case', ['==', ['get', 'id'], props.selectedId], 9, 6],
     );
   }, [props.selectedId, mapReady]);
 

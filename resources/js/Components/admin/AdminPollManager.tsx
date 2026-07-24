@@ -209,7 +209,7 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
         const file = files?.[0];
         if (!file) return;
         if (!/^image\/(jpeg|png|webp)$/i.test(file.type)) {
-            setUploadError("نوع الملف غير مدعوم — JPEG/PNG/WEBP فقط");
+            setUploadError("نوع الملف غير مدعوم: JPEG/PNG/WEBP فقط");
             return;
         }
         startUpload([file]);
@@ -555,7 +555,7 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                                         {isUploading ? "جاري الرفع..." : (
                                             <>
                                                 {isDragging ? "أفلت الصورة هنا" : "اسحب صورة هنا أو اضغط للاختيار"}
-                                                <div className="text-[10px] opacity-70 mt-0.5">JPEG / PNG / WEBP — حتى 4MB</div>
+                                                <div className="text-[10px] opacity-70 mt-0.5">JPEG / PNG / WEBP، حتى 4MB</div>
                                             </>
                                         )}
                                     </div>
@@ -609,7 +609,7 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                     <DialogHeader>
                         <DialogTitle>أرشفة المرشح</DialogTitle>
                         <DialogDescription>
-                            {archiveTarget?.name} — سيُحفظ سجله ويُستثنى من التصويت والترتيب الحالي.
+                            {archiveTarget?.name}: سيُحفظ سجله ويُستثنى من التصويت والترتيب الحالي.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
@@ -643,7 +643,7 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                                 <SelectContent>
                                     <SelectItem value="none">لا يوجد</SelectItem>
                                     {successorOptions.map(c => (
-                                        <SelectItem key={c.id} value={c.id}>{c.name}{c.title ? ` — ${c.title}` : ""}</SelectItem>
+                                        <SelectItem key={c.id} value={c.id}>{c.name}{c.title ? `: ${c.title}` : ""}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>

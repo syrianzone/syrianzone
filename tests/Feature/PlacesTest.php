@@ -4,8 +4,10 @@ use App\Models\Place;
 use App\Models\PlacePhoto;
 use App\Models\User;
 use App\Services\PlaceImageService;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
@@ -25,6 +27,10 @@ function oversizedPlacePixelUpload(): UploadedFile
 
     return new UploadedFile($path, 'place-pixels.png', 'image/png', null, true);
 }
+
+beforeEach(function (): void {
+    Cache::flush();
+});
 
 test('map returns approved places as geojson', function () {
     $place = Place::factory()->approved()->create(['lat' => 33.5104, 'lng' => 36.2913]);
@@ -249,6 +255,50 @@ test('show still works after the author soft-deletes their account', function ()
         ->assertJsonPath('user.name', $owner->name);
 });
 
+test('show exposes the contributor level and points', function () {
+    $owner = placesUser();
+    $place = Place::factory()->approved()->create([
+        'user_id' => $owner->id,
+        'description' => str_repeat('م', 200),
+        'saves_count' => 4,
+    ]);
+    PlacePhoto::factory()->count(2)->create(['place_id' => $place->id]);
+
+    // 15 place + 2*5 photos + 5 description + 4 saves = 34 => level 2
+    $this->getJson("/api/v1/places/{$place->id}")
+        ->assertOk()
+        ->assertJsonPath('user.level', 2)
+        ->assertJsonPath('user.points', 34);
+});
+
+test('show on an owner-visible pending place carries level and points', function () {
+    $owner = placesUser();
+    $place = Place::factory()->create(['user_id' => $owner->id, 'saves_count' => 9]);
+
+    // the pending place itself contributes nothing: 0 points, level 1
+    $this->actingAs($owner)
+        ->getJson("/api/v1/places/{$place->id}")
+        ->assertOk()
+        ->assertJsonPath('status', 'pending')
+        ->assertJsonPath('user.level', 1)
+        ->assertJsonPath('user.points', 0);
+});
+
+test('show caches contributor points per user for five minutes', function () {
+    $owner = placesUser();
+    $place = Place::factory()->approved()->create(['user_id' => $owner->id, 'saves_count' => 0]);
+
+    $this->getJson("/api/v1/places/{$place->id}")->assertOk()->assertJsonPath('user.points', 15);
+    expect(Cache::has("places:guide-points:{$owner->id}"))->toBeTrue();
+
+    // staleness accepted: fresh photos are invisible until the per-user key expires
+    PlacePhoto::factory()->create(['place_id' => $place->id]);
+    $this->getJson("/api/v1/places/{$place->id}")->assertOk()->assertJsonPath('user.points', 15);
+
+    Cache::flush();
+    $this->getJson("/api/v1/places/{$place->id}")->assertOk()->assertJsonPath('user.points', 20);
+});
+
 test('guest cannot submit a place', function () {
     $this->postJson('/api/v1/places', [])->assertUnauthorized();
 });
@@ -289,7 +339,6 @@ test('submit validation rejects bad payloads', function () {
     $post = fn (array $overrides) => $this->actingAs($user)
         ->post('/api/v1/places', array_merge($valid(), $overrides), ['Accept' => 'application/json']);
 
-    // Submit throttle is 5 per hour: keep this test at 4 requests, photo rules get their own test.
     $post(['photos' => []])->assertStatus(422)->assertJsonValidationErrors('photos');
     $post(['description' => 'قصير'])->assertStatus(422)->assertJsonValidationErrors('description');
     $post(['lat' => 45.0])->assertStatus(422)->assertJsonValidationErrors('lat');
@@ -392,29 +441,12 @@ test('reprocess-photos command regenerates variants from the originals', functio
     expect($height)->toBeGreaterThan($width);
 });
 
-test('failed validation attempts do not consume the submit quota', function () {
-    Storage::fake('public');
-    $user = placesUser();
-
-    foreach (range(1, 6) as $i) {
-        $this->actingAs($user)->postJson('/api/v1/places', [])->assertStatus(422);
-    }
-
-    $this->actingAs($user)->postJson('/api/v1/places', [
-        'name' => 'مكان تجريبي',
-        'category' => 'natural',
-        'description' => 'وصف تجريبي طويل بما يكفي لتجاوز الحد الأدنى للتحقق',
-        'lat' => 33.5,
-        'lng' => 36.3,
-        'photos' => [UploadedFile::fake()->image('a.jpg', 800, 600)],
-    ])->assertStatus(201);
-});
-
-test('submit quota rejects a sixth place within an hour', function () {
+test('there is no per-user submission cap', function () {
     Storage::fake('public');
     $user = placesUser();
     Place::factory()->count(5)->create(['user_id' => $user->id]);
 
+    // A sixth place in the same hour used to return 429. Moderation is the public gate now.
     $this->actingAs($user)->postJson('/api/v1/places', [
         'name' => 'مكان سادس',
         'category' => 'natural',
@@ -422,7 +454,7 @@ test('submit quota rejects a sixth place within an hour', function () {
         'lat' => 33.5,
         'lng' => 36.3,
         'photos' => [UploadedFile::fake()->image('b.jpg', 800, 600)],
-    ])->assertStatus(429);
+    ])->assertStatus(201);
 });
 
 test('my places lists own places with status and rejection_reason', function () {
@@ -704,6 +736,33 @@ test('owner adds a photo and the place goes back to pending', function () {
     expect(Cache::missing('places:map'))->toBeTrue();
 });
 
+test('owner photo creation rollback removes every newly written file', function () {
+    Storage::fake('public');
+    $user = placesUser();
+    $place = Place::factory()->approved()->create(['user_id' => $user->id]);
+    $existing = app(PlaceImageService::class)
+        ->store(UploadedFile::fake()->image('existing.jpg', 800, 600), $place->id, 0);
+    $existingPaths = [$existing->original_path, $existing->display_path, $existing->thumb_path];
+    DB::unprepared(
+        "CREATE TRIGGER reject_owner_place_update BEFORE UPDATE ON places
+        BEGIN SELECT RAISE(ABORT, 'forced owner place update failure'); END",
+    );
+    $this->withoutExceptionHandling();
+
+    try {
+        expect(fn () => $this->actingAs($user)
+            ->postJson("/api/v1/my/places/{$place->id}/photos", [
+                'photo' => UploadedFile::fake()->image('new.jpg', 800, 600),
+            ]))->toThrow(QueryException::class);
+    } finally {
+        DB::unprepared('DROP TRIGGER reject_owner_place_update');
+        $this->withExceptionHandling();
+    }
+
+    expect(Storage::disk('public')->allFiles("places/{$place->id}"))->toEqualCanonicalizing($existingPaths)
+        ->and($place->photos()->count())->toBe(1);
+});
+
 test('owner add photo is refused at ten photos', function () {
     Storage::fake('public');
     $user = placesUser();
@@ -937,6 +996,7 @@ test('stranger cannot resubmit another user place', function () {
 
 test('mishwar page renders with a place deep link param', function () {
     // The share URL is /mishwar?place={id}; the page route must ignore the param.
+    $this->withoutVite();
     $this->get('/mishwar?place=123')->assertOk();
 });
 
@@ -944,4 +1004,22 @@ test('legacy places slug redirects permanently and keeps the query', function ()
     $this->get('/places?place=123')
         ->assertMovedPermanently()
         ->assertRedirect('/mishwar?place=123');
+});
+
+test('list filters to one contributor and map features carry the owner', function () {
+    $guide = placesUser();
+    $mine = Place::factory()->approved()->create(['user_id' => $guide->id]);
+    Place::factory()->approved()->create();
+
+    $this->getJson('/api/v1/places')->assertOk()->assertJsonCount(2, 'data');
+
+    $this->getJson("/api/v1/places?user_id={$guide->id}")
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $mine->id);
+
+    // the map ships user_id so the client can filter pins without a per-user cache
+    $this->getJson('/api/v1/places/map')
+        ->assertOk()
+        ->assertJsonPath('features.0.properties.user_id', fn ($id) => is_int($id));
 });

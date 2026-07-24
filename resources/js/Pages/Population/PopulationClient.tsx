@@ -293,7 +293,7 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                     <h1 className="text-base font-bold text-foreground mb-0.5">أطلس سوريا</h1>
                     <p className="text-xs text-muted-foreground leading-relaxed">
                         {currentDataType === DATA_TYPES.RAINFALL
-                            ? 'بيانات الهطولات المطرية السنوية (٢٠٢١–٢٠٢٥)'
+                            ? 'بيانات الهطولات المطرية السنوية (٢٠٢١-٢٠٢٥)'
                             : currentDataType === DATA_TYPES.ENVIRONMENTAL
                                 ? 'بيانات المناخ وجودة الهواء'
                                 : 'خريطة تفاعلية للبيانات السكانية والإنسانية'}
@@ -513,10 +513,10 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                                         </div>
                                         <div className="mt-3 text-center">
                                             <span className="text-4xl font-bold bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
-                                                {selectedEnvProvince.data.current_conditions?.temperature_celsius ?? '—'}°C
+                                                {selectedEnvProvince.data.current_conditions?.temperature_celsius ?? '-'}°C
                                             </span>
                                             <p className="text-xs text-muted-foreground mt-1">
-                                                المحسوسة {selectedEnvProvince.data.current_conditions?.feels_like_celsius ?? '—'}°C
+                                                المحسوسة {selectedEnvProvince.data.current_conditions?.feels_like_celsius ?? '-'}°C
                                             </p>
                                             <p className="text-sm text-foreground/80 mt-1">
                                                 {selectedEnvProvince.data.current_conditions?.weather_description ?? ''}
@@ -535,7 +535,7 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                                                 <div className="text-center">
                                                     <TrendingUp size={14} className="mx-auto text-red-400 mb-1" />
                                                     <span className="text-lg font-bold text-red-400">
-                                                        {selectedEnvProvince.data.daily_forecast_summary?.tomorrow_max_temp_c ?? '—'}°
+                                                        {selectedEnvProvince.data.daily_forecast_summary?.tomorrow_max_temp_c ?? '-'}°
                                                     </span>
                                                     <p className="text-[10px] text-muted-foreground">القصوى</p>
                                                 </div>
@@ -543,7 +543,7 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                                                 <div className="text-center">
                                                     <TrendingDown size={14} className="mx-auto text-blue-400 mb-1" />
                                                     <span className="text-lg font-bold text-blue-400">
-                                                        {selectedEnvProvince.data.daily_forecast_summary?.tomorrow_min_temp_c ?? '—'}°
+                                                        {selectedEnvProvince.data.daily_forecast_summary?.tomorrow_min_temp_c ?? '-'}°
                                                     </span>
                                                     <p className="text-[10px] text-muted-foreground">الدنيا</p>
                                                 </div>
@@ -551,7 +551,7 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                                             <div className="text-center">
                                                 <CloudRain size={16} className="mx-auto text-cyan-400 mb-1" />
                                                 <span className="text-sm font-bold text-cyan-400">
-                                                    {selectedEnvProvince.data.daily_forecast_summary?.tomorrow_precipitation_mm ?? '—'} ملم
+                                                    {selectedEnvProvince.data.daily_forecast_summary?.tomorrow_precipitation_mm ?? '-'} ملم
                                                 </span>
                                                 <p className="text-[10px] text-muted-foreground">الهطول المتوقع</p>
                                             </div>
@@ -569,14 +569,14 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                                                 <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                                                     <Thermometer size={12} className="group-hover:text-orange-400 transition-colors" /> درجة الحرارة
                                                 </div>
-                                                <span className="text-lg font-bold">{selectedEnvProvince.data.current_conditions?.temperature_celsius ?? '—'}°C</span>
-                                                <p className="text-[10px] text-muted-foreground">المحسوسة: {selectedEnvProvince.data.current_conditions?.feels_like_celsius ?? '—'}°</p>
+                                                <span className="text-lg font-bold">{selectedEnvProvince.data.current_conditions?.temperature_celsius ?? '-'}°C</span>
+                                                <p className="text-[10px] text-muted-foreground">المحسوسة: {selectedEnvProvince.data.current_conditions?.feels_like_celsius ?? '-'}°</p>
                                             </div>
                                             <div className="bg-card/80 backdrop-blur-sm p-2.5 rounded-lg border border-border/30 hover:border-blue-500/30 transition-colors group">
                                                 <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                                                     <Droplets size={12} className="group-hover:text-blue-400 transition-colors" /> الرطوبة
                                                 </div>
-                                                <span className="text-lg font-bold">{selectedEnvProvince.data.current_conditions?.humidity_percent ?? '—'}%</span>
+                                                <span className="text-lg font-bold">{selectedEnvProvince.data.current_conditions?.humidity_percent ?? '-'}%</span>
                                                 <div className="mt-1 h-1 bg-muted rounded-full overflow-hidden">
                                                     <div className="h-full bg-gradient-to-r from-blue-400 to-cyan-400 transition-all duration-500" style={{ width: `${selectedEnvProvince.data.current_conditions?.humidity_percent ?? 0}%` }}></div>
                                                 </div>
@@ -585,7 +585,7 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                                                 <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                                                     <Wind size={12} className="group-hover:text-slate-400 transition-colors" /> الرياح
                                                 </div>
-                                                <span className="text-lg font-bold">{selectedEnvProvince.data.current_conditions?.wind_speed_kmh ?? '—'}</span>
+                                                <span className="text-lg font-bold">{selectedEnvProvince.data.current_conditions?.wind_speed_kmh ?? '-'}</span>
                                                 <span className="text-xs text-muted-foreground mr-1">كم/س</span>
                                                 <div className="flex items-center gap-1 mt-1">
                                                     <Compass size={10} className="text-slate-400" style={{ transform: `rotate(${selectedEnvProvince.data.current_conditions?.wind_direction_degrees ?? 0}deg)` }} />
@@ -596,14 +596,14 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                                                 <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                                                     <Gauge size={12} className="group-hover:text-purple-400 transition-colors" /> الضغط الجوي
                                                 </div>
-                                                <span className="text-lg font-bold">{selectedEnvProvince.data.current_conditions?.pressure_msl_hpa?.toFixed(0) ?? '—'}</span>
+                                                <span className="text-lg font-bold">{selectedEnvProvince.data.current_conditions?.pressure_msl_hpa?.toFixed(0) ?? '-'}</span>
                                                 <span className="text-[10px] text-muted-foreground mr-1">hPa</span>
                                             </div>
                                             <div className="bg-card/80 backdrop-blur-sm p-2.5 rounded-lg border border-border/30 hover:border-sky-500/30 transition-colors group">
                                                 <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                                                     <Cloud size={12} className="group-hover:text-sky-400 transition-colors" /> الغطاء السحابي
                                                 </div>
-                                                <span className="text-lg font-bold">{selectedEnvProvince.data.current_conditions?.cloud_cover_percent ?? '—'}%</span>
+                                                <span className="text-lg font-bold">{selectedEnvProvince.data.current_conditions?.cloud_cover_percent ?? '-'}%</span>
                                                 <div className="mt-1 h-1 bg-muted rounded-full overflow-hidden">
                                                     <div className="h-full bg-gradient-to-r from-slate-400 to-slate-600 transition-all duration-500" style={{ width: `${selectedEnvProvince.data.current_conditions?.cloud_cover_percent ?? 0}%` }}></div>
                                                 </div>
@@ -612,7 +612,7 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                                                 <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                                                     <CloudRain size={12} className="group-hover:text-cyan-400 transition-colors" /> الهطول الحالي
                                                 </div>
-                                                <span className="text-lg font-bold">{selectedEnvProvince.data.current_conditions?.precipitation_mm ?? '—'}</span>
+                                                <span className="text-lg font-bold">{selectedEnvProvince.data.current_conditions?.precipitation_mm ?? '-'}</span>
                                                 <span className="text-[10px] text-muted-foreground mr-1">ملم</span>
                                             </div>
                                         </div>
@@ -748,7 +748,7 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                                                         <span className="text-xs text-muted-foreground">نطاق الحرارة</span>
                                                         <span className="text-xs font-medium">
                                                             <span className="text-blue-400">{selectedEnvProvince.data.historical_summary.avg_min_temp_c}°</span>
-                                                            <span className="text-muted-foreground mx-1">—</span>
+                                                            <span className="text-muted-foreground mx-1">-</span>
                                                             <span className="text-red-400">{selectedEnvProvince.data.historical_summary.avg_max_temp_c}°</span>
                                                         </span>
                                                     </div>

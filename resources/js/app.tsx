@@ -6,7 +6,7 @@ import { createRoot } from 'react-dom/client';
 import { createInertiaApp, router } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { watchSystemTheme } from '@/lib/theme';
-import { QueryProvider } from '@/Pages/Transit/_providers/QueryProvider';
+import { QueryProvider } from '@/Providers/QueryProvider';
 import { DirectionProvider } from '@radix-ui/react-direction';
 import * as Sentry from '@sentry/react';
 import posthog from 'posthog-js';
@@ -42,7 +42,9 @@ if (import.meta.env.VITE_POSTHOG_KEY) {
 watchSystemTheme();
 
 const appName = import.meta.env.VITE_APP_NAME || 'Syrian Zone';
-const GA_ID = 'G-K4H98TC203';
+// set by the gtag snippet in app.blade.php, which only renders when the id is
+// configured. undefined on staging, so the navigate handler below no-ops.
+const GA_ID = (window as unknown as { GA_ID?: string }).GA_ID;
 
 createInertiaApp({
     title: (title) => title ? `${title} - ${appName}` : appName,
@@ -63,7 +65,7 @@ createInertiaApp({
 // Track page views for every Inertia SPA navigation.
 // The initial load is already tracked by the gtag snippet in app.blade.php.
 router.on('navigate', (event) => {
-    if (typeof window.gtag !== 'function') return;
+    if (!GA_ID || typeof window.gtag !== 'function') return;
 
     window.gtag('config', GA_ID, {
         page_path: event.detail.page.url,

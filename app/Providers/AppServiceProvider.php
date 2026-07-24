@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Observers\UserObserver;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -46,10 +47,16 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('guess-who-signal', function (Request $request) {
             $credential = (string) $request->header('X-Guess-Who-Session-ID');
             $identity = $credential !== ''
-              ? hash('sha256', $credential)
-              : $request->ip();
+                ? hash('sha256', $credential)
+                : $request->ip();
 
             return Limit::perMinute(360)->by($identity);
+        });
+
+        Gate::before(function ($user, $ability) {
+            if ($user->isSuperAdmin()) {
+                return true;
+            }
         });
     }
 }

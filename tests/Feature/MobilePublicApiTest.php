@@ -1,5 +1,10 @@
 <?php
 
+use App\Models\GovApp;
+use App\Models\OfficialCategory;
+use App\Models\OfficialEntity;
+use App\Models\PhonebookCategory;
+use App\Models\PhonebookEntry;
 use App\Services\PublicContent\DirectoryDataService;
 use App\Services\PublicContent\HouseDataService;
 use Illuminate\Support\Facades\Cache;
@@ -28,81 +33,117 @@ test('home returns bounded start page content for native clients', function () {
     expect(array_keys($data))->toBe(['about_content', 'quick_links', 'search_providers'])
         ->and($data['about_content'])->toBe(file_get_contents(resource_path('js/Data/about.md')))
         ->and(array_column($data['quick_links'], 'id'))->toBe([
-          'official-accounts', 'calendar', 'phonebook', 'visual-identity',
-          'organizations', 'government-ranking', 'legislative-council',
-          'political-compass', 'syria-priorities', 'web-directory', 'syria-atlas',
-          'government-apps', 'transit', 'transitional-justice', 'joory', 'jard',
-          'recipes', 'news', 'answers', 'codex-community', 'flag-replacer',
-      ])
+            'official-accounts', 'board', 'calendar', 'phonebook', 'visual-identity',
+            'organizations', 'government-ranking', 'legislative-council',
+            'political-compass', 'syria-priorities', 'web-directory', 'syria-atlas',
+            'government-apps', 'transit', 'transitional-justice', 'joory', 'jard',
+            'recipes', 'news', 'answers', 'codex-community', 'flag-replacer',
+        ])
         ->and($data['quick_links'][0])->toBe([
-          'id' => 'official-accounts',
-          'label_ar' => 'الحسابات الرسمية',
-          'label_en' => 'Official accounts',
-          'type' => 'feature',
-          'target' => 'syofficial',
-      ])
-        ->and($data['quick_links'][14])->toBe([
-          'id' => 'joory',
-          'label_ar' => 'جوري AI',
-          'label_en' => 'Joory AI',
-          'type' => 'external',
-          'target' => 'https://joory.chat',
-      ])
+            'id' => 'official-accounts',
+            'label_ar' => 'الحسابات الرسمية',
+            'label_en' => 'Official accounts',
+            'type' => 'feature',
+            'target' => 'syofficial',
+        ])
+        ->and($data['quick_links'][15])->toBe([
+            'id' => 'joory',
+            'label_ar' => 'جوري AI',
+            'label_en' => 'Joory AI',
+            'type' => 'external',
+            'target' => 'https://joory.chat',
+        ])
         ->and($data['search_providers'])->toBe([
-          ['id' => 'duckduckgo', 'label' => 'DuckDuckGo', 'template' => 'https://duckduckgo.com/?q=%s'],
-          ['id' => 'searx', 'label' => 'SearX', 'template' => 'https://searx.be/search?q=%s'],
-          ['id' => 'google', 'label' => 'Google', 'template' => 'https://www.google.com/search?q=%s'],
-          ['id' => 'bing', 'label' => 'Bing', 'template' => 'https://www.bing.com/search?q=%s'],
-      ]);
+            ['id' => 'duckduckgo', 'label' => 'DuckDuckGo', 'template' => 'https://duckduckgo.com/?q=%s'],
+            ['id' => 'searx', 'label' => 'SearX', 'template' => 'https://searx.be/search?q=%s'],
+            ['id' => 'google', 'label' => 'Google', 'template' => 'https://www.google.com/search?q=%s'],
+            ['id' => 'bing', 'label' => 'Bing', 'template' => 'https://www.bing.com/search?q=%s'],
+        ]);
 
     foreach ($data['quick_links'] as $link) {
         expect(array_keys($link))->toBe(['id', 'label_ar', 'label_en', 'type', 'target']);
     }
 });
 
-test('official accounts keep the existing page data shape', function () {
-    Http::fake([
-        DirectoryDataService::OFFICIAL_ACCOUNTS_URL => Http::response(implode("\n", [
-            'ID,Name (English),Name (Arabic),Description (English),Description (Arabic),Image Path,Category,Facebook URL,Telegram URL (Secondary),Twitter/X URL',
-            'ministry-health,Health Ministry,وزارة الصحة,Public health,الصحة العامة,/syofficial-assets/health.png,Government,https://facebook.example/health,https://t.me/health-news,https://x.com/health',
-            'skip,No category,بلا تصنيف,,,,,,,',
-        ])),
+test('official accounts expose active database categories and entities', function () {
+    OfficialCategory::create([
+        'id' => 'government',
+        'label_ar' => 'الحكومة',
+        'label_en' => 'Government',
+        'icon' => 'landmark',
+        'is_active' => true,
+        'order_column' => 1,
+    ]);
+    OfficialEntity::create([
+        'id' => 'ministry-health',
+        'category_id' => 'government',
+        'name' => 'Health Ministry',
+        'name_ar' => 'وزارة الصحة',
+        'description' => 'Public health',
+        'description_ar' => 'الصحة العامة',
+        'image' => '/syofficial-assets/health.png',
+        'socials' => [
+            'facebook' => 'https://facebook.example/health',
+            'telegram_secondary' => 'https://t.me/health-news',
+        ],
+        'is_active' => true,
+        'order_column' => 1,
     ]);
 
     $this->getJson('/api/mobile/official-accounts')
         ->assertOk()
         ->assertExactJson([
-            'data' => [[
-                'id' => 'ministry-health',
-                'name' => 'Health Ministry',
-                'name_ar' => 'وزارة الصحة',
-                'description' => 'Public health',
-                'description_ar' => 'الصحة العامة',
-                'image' => '/syofficial-assets/health.png',
-                'category' => 'government',
-                'socials' => [
-                    'facebook' => 'https://facebook.example/health',
-                    'telegram' => 'https://t.me/health-news',
-                    'twitter' => 'https://x.com/health',
-                ],
-            ]],
+            'data' => [
+                'categories' => [[
+                    'id' => 'government',
+                    'label_ar' => 'الحكومة',
+                    'label_en' => 'Government',
+                    'icon' => 'landmark',
+                    'is_active' => true,
+                    'order_column' => 1,
+                ]],
+                'entities' => [[
+                    'id' => 'ministry-health',
+                    'name' => 'Health Ministry',
+                    'name_ar' => 'وزارة الصحة',
+                    'description' => 'Public health',
+                    'description_ar' => 'الصحة العامة',
+                    'image' => '/syofficial-assets/health.png',
+                    'category' => 'government',
+                    'socials' => [
+                        'facebook' => 'https://facebook.example/health',
+                        'telegram_secondary' => 'https://t.me/health-news',
+                    ],
+                ]],
+            ],
         ]);
 });
 
-test('phonebook strips a byte order mark and normalizes whatsapp values', function () {
-    Http::fake([
-        DirectoryDataService::PHONEBOOK_URL => Http::response(
-            "\xEF\xBB\xBFID,Category_AR,Category_EN,Name_AR,Name_EN,Number,Is_WhatsApp,Source_URL\n".
-            "emergency,طوارئ,Emergency,الإطفاء,Fire brigade,113,TRUE,https://source.example/113\n".
-            'missing,خدمات,Services,فارغ,Empty,,yes,https://source.example/empty'
-        ),
+test('phonebook exposes active database entries with category labels', function () {
+    PhonebookCategory::create([
+        'id' => 'emergency',
+        'label_ar' => 'طوارئ',
+        'label_en' => 'Emergency',
+        'is_active' => true,
+        'order_column' => 1,
+    ]);
+    PhonebookEntry::create([
+        'id' => 'fire',
+        'category_id' => 'emergency',
+        'name_ar' => 'الإطفاء',
+        'name_en' => 'Fire brigade',
+        'number' => '113',
+        'is_whatsapp' => true,
+        'source_url' => 'https://source.example/113',
+        'is_active' => true,
+        'order_column' => 1,
     ]);
 
     $this->getJson('/api/mobile/phonebook')
         ->assertOk()
         ->assertExactJson([
             'data' => [[
-                'id' => 'emergency',
+                'id' => 'fire',
                 'category_ar' => 'طوارئ',
                 'category_en' => 'Emergency',
                 'name_ar' => 'الإطفاء',
@@ -171,29 +212,36 @@ test('parties include location, political leanings, and contact fields', functio
         ]);
 });
 
-test('government apps expose server asset paths and download links', function () {
-    Http::fake([
-        DirectoryDataService::GOVERNMENT_APPS_URL => Http::response(implode("\n", [
-            'ID,Name,Description,Official Site,Android Download,Apple Download',
-            'sham,Sham App,City services,https://sham.example,https://play.example/sham,https://apps.example/sham',
-        ])),
+test('government apps expose active database records and download links', function () {
+    GovApp::create([
+        'id' => 'sham',
+        'name' => 'Sham App',
+        'name_ar' => 'تطبيق شام',
+        'description' => 'City services',
+        'description_ar' => 'خدمات المدينة',
+        'icon' => '/assets/apps/sham/icon.png',
+        'images' => [],
+        'links' => [
+            'official' => 'https://sham.example',
+            'android' => 'https://play.example/sham',
+            'apple' => 'https://apps.example/sham',
+        ],
+        'is_active' => true,
+        'order_column' => 1,
     ]);
 
     $response = $this->getJson('/api/mobile/government-apps')->assertOk();
 
     $response
         ->assertJsonPath('data.0.id', 'sham')
-        ->assertJsonPath('data.0.icon', '/assets/apps/sham/shamicon.png')
+        ->assertJsonPath('data.0.name', 'تطبيق شام')
+        ->assertJsonPath('data.0.description', 'خدمات المدينة')
+        ->assertJsonPath('data.0.icon', '/assets/apps/sham/icon.png')
         ->assertJsonPath('data.0.links.official', 'https://sham.example')
         ->assertJsonPath('data.0.links.android', 'https://play.example/sham')
         ->assertJsonPath('data.0.links.apple', 'https://apps.example/sham');
 
-    expect($response->json('data.0.images'))->toBe([
-        '/assets/apps/sham/sham1.png',
-        '/assets/apps/sham/sham2.png',
-        '/assets/apps/sham/sham3.png',
-        '/assets/apps/sham/sham4.png',
-    ]);
+    expect($response->json('data.0.images'))->toBe([]);
 });
 
 test('directory endpoints return an empty list when an upstream request fails', function () {

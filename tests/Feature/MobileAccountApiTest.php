@@ -63,16 +63,60 @@ test('mobile account endpoints require a mobile bearer token', function () {
 });
 
 test('mobile account returns a bounded user and personal draft workspace', function () {
-    $user = User::factory()->create(['role' => 'admin']);
+    $user = User::factory()->create([
+        'permissions' => ['places.review'],
+        'role' => 'admin',
+        'settings' => ['showWeather' => false],
+    ]);
     Poll::factory()->create(['user_id' => $user->id]);
 
     $this->withToken(mobileAccountBearer($user))->getJson('/api/mobile/account')
         ->assertOk()
         ->assertJsonPath('data.user.id', $user->id)
+        ->assertJsonPath('data.user.permissions.0', 'places.review')
+        ->assertJsonPath('data.user.settings.showWeather', false)
         ->assertJsonPath('data.role', 'admin')
         ->assertJsonCount(0, 'data.myDrafts')
         ->assertJsonCount(1, 'data.polls')
         ->assertJsonMissingPath('data.user.password');
+});
+
+test('mobile account settings merge bounded preference documents', function () {
+    $user = User::factory()->create([
+        'settings' => [
+            'showWeather' => true,
+            'language' => 'ar',
+        ],
+    ]);
+    $token = mobileAccountBearer($user);
+    DB::table('users')->where('id', $user->id)->update([
+        'settings' => json_encode([
+            'showWeather' => true,
+            'language' => 'ar',
+            'serverRevision' => 3,
+        ], JSON_THROW_ON_ERROR),
+    ]);
+
+    $this->withToken($token)->patchJson('/api/mobile/account/settings', [
+        'settings' => [
+            'showWeather' => false,
+            'customLinks' => [],
+        ],
+    ])->assertOk()
+        ->assertJsonPath('data.settings.showWeather', false)
+        ->assertJsonPath('data.settings.serverRevision', 3)
+        ->assertJsonPath('data.settings.language', 'ar');
+
+    expect($user->fresh()->settings)->toMatchArray([
+        'showWeather' => false,
+        'customLinks' => [],
+        'language' => 'ar',
+        'serverRevision' => 3,
+    ]);
+
+    $this->withToken($token)->patchJson('/api/mobile/account/settings', [
+        'settings' => ['value' => str_repeat('x', 70_000)],
+    ])->assertUnprocessable();
 });
 
 test('mobile account update validates uniqueness and returns the updated user', function () {

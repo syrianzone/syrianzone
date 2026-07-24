@@ -38,11 +38,11 @@
 
 This is a Laravel + Inertia.js monolith. There is no separate frontend directory.
 
-- **`app/`** — PHP controllers, models, middleware, services
-- **`resources/js/`** — React/TypeScript frontend pages and components (rendered via Inertia)
-- **`routes/web.php`** — Web routes (Inertia-rendered pages + authenticated API)
-- **`routes/api.php`** — Public API routes (voting, transit data)
-- **`database/`** — Migrations and seeders
+- **`app/`**: PHP controllers, models, middleware, services
+- **`resources/js/`**: React/TypeScript frontend pages and components (rendered via Inertia)
+- **`routes/web.php`**: Web routes (Inertia-rendered pages + authenticated API)
+- **`routes/api.php`**: Public API routes (voting, transit data)
+- **`database/`**: Migrations and seeders
 
 ## Getting Started
 
@@ -96,3 +96,7 @@ php artisan tierlist:post-rank-changes
 ندعوكم للمساهمة في هذا المشروع بأي طريقة ممكنة. سواء كانت بتقديم أفكار جديدة، المساعدة في البرمجة، التصميم، الترجمة، أو حتى مجرد استخدام الموقع وتقديم الملاحظات.
 
 للمساهمة، يمكنكم فتح مشكلة (Issue) أو طلب سحب (Pull Request) على مستودع المشروع على GitHub، أو التواصل مع المساهمين الرئيسيين عبر حساباتهم المذكورة أعلاه.
+
+## الإسنادات والترخيص للموارد (Attributions & Licenses)
+
+* **أيقونات المشاريع (Project Icons)**: الأيقونات الملونة المستوحاة والمستخدمة لمشاريع وأدوات الموقع مأخوذة من مجموعات [Streamline Icons](https://www.streamlinehq.com/) عبر [Icones](https://icones.js.org/) ومتاحة بموجب رخصة [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/).

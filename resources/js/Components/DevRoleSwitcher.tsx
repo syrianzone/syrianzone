@@ -45,7 +45,7 @@ export function DevRoleSwitcher() {
                 {open && (
                     <div className="absolute bottom-full mb-2 w-52 rounded-xl border border-border bg-card p-1.5 shadow-xl">
                         <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                            وضع التطوير — تبديل الدور
+                            وضع التطوير: تبديل الدور
                         </p>
                         {dev.roles.map((role: string) => {
                             const Meta = ROLE_META[role] ?? { label: role, icon: Shield };

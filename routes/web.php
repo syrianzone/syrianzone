@@ -3,23 +3,30 @@
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\Api\PopulationAtlasController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BoardController;
 use App\Http\Controllers\CandidateController;
 use App\Http\Controllers\CandidateGroupController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DevController;
 use App\Http\Controllers\ExternalDataController;
+use App\Http\Controllers\GovAppController;
+use App\Http\Controllers\GovAppsAdminController;
 use App\Http\Controllers\GuessWhoController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\PhonebookAdminController;
 use App\Http\Controllers\PhonebookController;
 use App\Http\Controllers\PlaceAdminController;
 use App\Http\Controllers\PlaceController;
 use App\Http\Controllers\PollController;
 use App\Http\Controllers\SignalingController;
+use App\Http\Controllers\SyOfficialAdminController;
 use App\Http\Controllers\SyOfficialController;
 use App\Http\Controllers\TransitAdminController;
 use App\Http\Middleware\AutoLoginDevUser;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\GovAppsAdmin;
 use App\Models\City;
+use App\Services\UserSettingsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -55,6 +62,9 @@ Route::get('/shawarma', function () {
 Route::get('/justice', function () {
     return Inertia::render('Justice/Index');
 });
+Route::get('/about', function () {
+    return Inertia::render('About');
+});
 Route::get('/privacy', function () {
     return Inertia::render('Privacy');
 });
@@ -67,11 +77,8 @@ Route::get('/sites', [ExternalDataController::class, 'sites']);
 Route::get('/party', [ExternalDataController::class, 'party']);
 Route::get('/house', [ExternalDataController::class, 'house']);
 Route::get('/alignment', [ExternalDataController::class, 'alignment']);
-Route::get('/govapps', [ExternalDataController::class, 'govapps']);
+Route::get('/govapps', [GovAppController::class, 'index']);
 Route::get('/population', [PopulationAtlasController::class, 'renderIndex']);
-Route::get('/central', function () {
-    return Inertia::render('Central/Index');
-});
 
 Route::get('/guesswho', [GuessWhoController::class, 'index']);
 Route::post('/guesswho/rooms', [GuessWhoController::class, 'createRoom']);
@@ -200,6 +207,10 @@ Route::get('/mishwar', [PlaceController::class, 'renderIndex']);
 // legacy slug: share links from the first release said /places
 Route::get('/places', fn () => redirect('/mishwar'.(request()->getQueryString() ? '?'.request()->getQueryString() : ''), 301));
 
+// The board page is public: guests get a fully customizable board backed by
+// localStorage, and only the sync endpoints below require auth.
+Route::get('/board', [BoardController::class, 'renderIndex']);
+
 Route::get('/user', [AuthController::class, 'user'])->middleware(EnsureUserIsActive::class);
 Route::get('/auth/google', [AuthController::class, 'redirectToProvider'])->name('login');
 Route::get('/auth/google/callback', [AuthController::class, 'handleProviderCallback']);
@@ -258,21 +269,102 @@ Route::middleware(['auth', EnsureUserIsActive::class])->group(function () {
         Route::post('/api/admin/users/{id}/toggle-ban', [DashboardController::class, 'toggleBan']);
 
         Route::prefix('api/v1')->group(function () {
-            Route::get('/admin/route-drafts', [TransitAdminController::class, 'index']);
-            Route::post('/admin/route-drafts/{id}/approve', [TransitAdminController::class, 'approve']);
-            Route::post('/admin/route-drafts/{id}/reject', [TransitAdminController::class, 'reject']);
-            Route::get('/admin/routes', [TransitAdminController::class, 'getPublishedRoutes']);
-            Route::get('/admin/routes/logs', [TransitAdminController::class, 'getLogs']);
-            Route::post('/admin/routes/{id}/status', [TransitAdminController::class, 'updateRouteStatus']);
-            Route::put('/admin/routes/{id}', [TransitAdminController::class, 'updateRoute']);
-            Route::post('/admin/routes/{id}/move', [TransitAdminController::class, 'moveRoute']);
-            Route::post('/admin/routes/combine', [TransitAdminController::class, 'combineRoutes']);
-            Route::post('/admin/routes/split', [TransitAdminController::class, 'splitRoute']);
-            Route::get('/admin/routes/{id}/stops', [TransitAdminController::class, 'getRouteStops']);
-            Route::get('/admin/routes/{id}/geojson', [TransitAdminController::class, 'getRouteGeoJson']);
+            Route::get('/admin/route-drafts', [TransitAdminController::class, 'index'])
+                ->middleware('transit_admin:transit.review_drafts');
+            Route::post('/admin/route-drafts/{id}/approve', [TransitAdminController::class, 'approve'])
+                ->middleware('transit_admin:transit.approve');
+            Route::post('/admin/route-drafts/{id}/reject', [TransitAdminController::class, 'reject'])
+                ->middleware('transit_admin:transit.reject');
+            Route::get('/admin/routes', [TransitAdminController::class, 'getPublishedRoutes'])
+                ->middleware('transit_admin:transit.edit_routes');
+            Route::get('/admin/routes/logs', [TransitAdminController::class, 'getLogs'])
+                ->middleware('transit_admin:transit.view_logs');
+            Route::post('/admin/routes/{id}/status', [TransitAdminController::class, 'updateRouteStatus'])
+                ->middleware('transit_admin:transit.edit_routes');
+            Route::put('/admin/routes/{id}', [TransitAdminController::class, 'updateRoute'])
+                ->middleware('transit_admin:transit.edit_routes');
+            Route::post('/admin/routes/{id}/move', [TransitAdminController::class, 'moveRoute'])
+                ->middleware('transit_admin:transit.move_routes');
+            Route::post('/admin/routes/combine', [TransitAdminController::class, 'combineRoutes'])
+                ->middleware('transit_admin:transit.combine_routes');
+            Route::post('/admin/routes/split', [TransitAdminController::class, 'splitRoute'])
+                ->middleware('transit_admin:transit.split_routes');
+            Route::get('/admin/routes/{id}/stops', [TransitAdminController::class, 'getRouteStops'])
+                ->middleware('transit_admin:transit.edit_routes');
+            Route::get('/admin/routes/{id}/geojson', [TransitAdminController::class, 'getRouteGeoJson'])
+                ->middleware('transit_admin:transit.edit_routes');
+        });
+    });
+
+    // 4. SyOfficial Admin Panel (accessible to core admins, syofficial_admin, and superadmins)
+    Route::middleware('syofficial_admin')->group(function () {
+        Route::get('/admin/syofficial', [SyOfficialAdminController::class, 'renderIndex']);
+
+        Route::prefix('api/v1/admin/syofficial')->group(function () {
+            Route::post('/categories', [SyOfficialAdminController::class, 'storeCategory']);
+            Route::put('/categories/{id}', [SyOfficialAdminController::class, 'updateCategory']);
+            Route::delete('/categories/{id}', [SyOfficialAdminController::class, 'destroyCategory']);
+
+            Route::post('/entities', [SyOfficialAdminController::class, 'storeEntity']);
+            Route::post('/entities/{id}', [SyOfficialAdminController::class, 'updateEntity']);
+            Route::put('/entities/{id}', [SyOfficialAdminController::class, 'updateEntity']);
+            Route::delete('/entities/{id}', [SyOfficialAdminController::class, 'destroyEntity']);
+
+            Route::post('/reorder/categories', [SyOfficialAdminController::class, 'reorderCategories']);
+            Route::post('/reorder/entities', [SyOfficialAdminController::class, 'reorderEntities']);
+        });
+    });
+
+    // 5. GovApps Admin Panel
+    Route::middleware(GovAppsAdmin::class)->group(function () {
+        Route::get('/admin/govapps', [GovAppsAdminController::class, 'renderIndex']);
+
+        Route::prefix('api/v1/admin/govapps')->group(function () {
+            Route::post('/', [GovAppsAdminController::class, 'store']);
+            Route::post('/reorder', [GovAppsAdminController::class, 'reorder']);
+            Route::post('/{id}', [GovAppsAdminController::class, 'update']);
+            Route::put('/{id}', [GovAppsAdminController::class, 'update']);
+            Route::delete('/{id}', [GovAppsAdminController::class, 'destroy']);
+        });
+    });
+
+    // 6. Phonebook Admin Panel
+    Route::middleware('phonebook_admin')->group(function () {
+        Route::get('/admin/phonebook', [PhonebookAdminController::class, 'renderIndex']);
+
+        Route::prefix('api/v1/admin/phonebook')->group(function () {
+            Route::post('/categories', [PhonebookAdminController::class, 'storeCategory']);
+            Route::put('/categories/{id}', [PhonebookAdminController::class, 'updateCategory']);
+            Route::delete('/categories/{id}', [PhonebookAdminController::class, 'destroyCategory']);
+
+            Route::post('/entries', [PhonebookAdminController::class, 'storeEntry']);
+            Route::post('/entries/{id}', [PhonebookAdminController::class, 'updateEntry']);
+            Route::put('/entries/{id}', [PhonebookAdminController::class, 'updateEntry']);
+            Route::post('/entries/{id}/toggle', [PhonebookAdminController::class, 'toggleEntryActive']);
+            Route::delete('/entries/{id}', [PhonebookAdminController::class, 'destroyEntry']);
+
+            Route::post('/reorder/categories', [PhonebookAdminController::class, 'reorderCategories']);
+            Route::post('/reorder/entries', [PhonebookAdminController::class, 'reorderEntries']);
         });
     });
 });
+
+// User settings API endpoint
+Route::post('/api/user/settings', function (
+    Request $request,
+    UserSettingsService $settings,
+) {
+    if (strlen($request->getContent()) > 65_536) {
+        return response()->json(['message' => 'The settings document is too large.'], 422);
+    }
+
+    $validated = $request->validate([
+        'settings' => ['required', 'array'],
+    ]);
+    $mergedSettings = $settings->merge($request->user(), $validated['settings']);
+
+    return response()->json(['status' => 'ok', 'settings' => $mergedSettings]);
+})->middleware(['auth', EnsureUserIsActive::class, 'throttle:60,1']);
 
 Route::get('/dev/impersonate/{role}', [DevController::class, 'impersonate'])
     ->name('dev.impersonate')

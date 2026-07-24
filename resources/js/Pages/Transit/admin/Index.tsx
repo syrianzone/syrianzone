@@ -453,6 +453,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
   const handleUpdateRoute = useCallback(async () => {
     if (!selectedRoute) return
     setActionLoading(true)
+    let success = false
     try {
       const res = await fetch(`/api/v1/admin/routes/${selectedRoute.id}`, {
         method: 'PUT',
@@ -466,25 +467,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
         }),
       })
       if (res.ok) {
-        showToast('تم تحديث الخط')
-        setIsEditRouteModalOpen(false)
-        const updatedRoute = {
-          ...selectedRoute,
-          name_ar: editRouteNameAr.trim() || selectedRoute.name_ar,
-          name_en: editRouteNameEn.trim() || null,
-          color_index: editRouteColorIndex,
-          price_new: editRoutePrice ? parseInt(editRoutePrice) : selectedRoute.price_new,
-        }
-        setSelectedRoute(updatedRoute)
-        setPublishedRoutes(prev => prev.map(r => r.id === selectedRoute.id ? { ...r, color_index: editRouteColorIndex, name_ar: editRouteNameAr.trim() || r.name_ar } : r))
-
-        const resGeo = await fetch(`/api/v1/admin/routes/${selectedRoute.id}/geojson`)
-        if (resGeo.ok) setSelectedRouteGeoJson(await resGeo.json())
-
-        queryClient.invalidateQueries({ queryKey: ['mapData'] })
-        queryClient.invalidateQueries({ queryKey: ['routes'] })
-        refetchRefData()
-        fetchRoutes()
+        success = true
       } else {
         const e = await res.json().catch(() => ({}))
         showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false)
@@ -494,11 +477,36 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
     } finally {
       setActionLoading(false)
     }
+
+    if (success) {
+      showToast('تم تحديث الخط')
+      setIsEditRouteModalOpen(false)
+      const updatedRoute = {
+        ...selectedRoute,
+        name_ar: editRouteNameAr.trim() || selectedRoute.name_ar,
+        name_en: editRouteNameEn.trim() || null,
+        color_index: editRouteColorIndex,
+        price_new: editRoutePrice ? parseInt(editRoutePrice) : selectedRoute.price_new,
+      }
+      setSelectedRoute(updatedRoute)
+      setPublishedRoutes(prev => prev.map(r => r.id === selectedRoute.id ? { ...r, color_index: editRouteColorIndex, name_ar: editRouteNameAr.trim() || r.name_ar } : r))
+
+      try {
+        const resGeo = await fetch(`/api/v1/admin/routes/${selectedRoute.id}/geojson`)
+        if (resGeo.ok) setSelectedRouteGeoJson(await resGeo.json())
+      } catch { /* */ }
+
+      queryClient.invalidateQueries({ queryKey: ['mapData'] })
+      queryClient.invalidateQueries({ queryKey: ['routes'] })
+      try { refetchRefData?.() } catch { /* */ }
+      try { fetchRoutes() } catch { /* */ }
+    }
   }, [selectedRoute, editRouteNameAr, editRouteNameEn, editRouteColorIndex, editRoutePrice, fetchRoutes, showToast, queryClient, refetchRefData])
 
   const handleQuickUpdateColor = useCallback(async (newColorIndex: number) => {
     if (!selectedRoute) return
     setActionLoading(true)
+    let success = false
     try {
       const res = await fetch(`/api/v1/admin/routes/${selectedRoute.id}`, {
         method: 'PUT',
@@ -507,34 +515,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
         body: JSON.stringify({ color_index: newColorIndex }),
       })
       if (res.ok) {
-        showToast('تم تحديث لون الخط')
-        const updatedRoute = { ...selectedRoute, color_index: newColorIndex }
-        setSelectedRoute(updatedRoute)
-        setPublishedRoutes(prev => prev.map(r => r.id === selectedRoute.id ? { ...r, color_index: newColorIndex } : r))
-
-        // Update active geojson properties in state immediately so map reflects color
-        setSelectedRouteGeoJson((prev: any) => {
-          if (!prev) return null
-          return {
-            ...prev,
-            features: (prev.features || []).map((f: any) => ({
-              ...f,
-              properties: { ...f.properties, colorIndex: newColorIndex, color_index: newColorIndex }
-            }))
-          }
-        })
-
-        if (mapRef.current?.getLayer('draft-line')) {
-          mapRef.current.setPaintProperty('draft-line', 'line-color', getRouteColor(newColorIndex))
-        }
-        if (mapRef.current?.getLayer('draft-points')) {
-          mapRef.current.setPaintProperty('draft-points', 'circle-color', getRouteColor(newColorIndex))
-        }
-
-        queryClient.invalidateQueries({ queryKey: ['mapData'] })
-        queryClient.invalidateQueries({ queryKey: ['routes'] })
-        refetchRefData()
-        fetchRoutes()
+        success = true
       } else {
         const e = await res.json().catch(() => ({}))
         showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false)
@@ -543,6 +524,37 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
       showToast('تعذّر الاتصال بالخادم', false)
     } finally {
       setActionLoading(false)
+    }
+
+    if (success) {
+      showToast('تم تحديث لون الخط')
+      const updatedRoute = { ...selectedRoute, color_index: newColorIndex }
+      setSelectedRoute(updatedRoute)
+      setPublishedRoutes(prev => prev.map(r => r.id === selectedRoute.id ? { ...r, color_index: newColorIndex } : r))
+
+      // Update active geojson properties in state immediately so map reflects color
+      setSelectedRouteGeoJson((prev: any) => {
+        if (!prev) return null
+        return {
+          ...prev,
+          features: (prev.features || []).map((f: any) => ({
+            ...f,
+            properties: { ...f.properties, colorIndex: newColorIndex, color_index: newColorIndex }
+          }))
+        }
+      })
+
+      if (mapRef.current?.getLayer('draft-line')) {
+        mapRef.current.setPaintProperty('draft-line', 'line-color', getRouteColor(newColorIndex))
+      }
+      if (mapRef.current?.getLayer('draft-points')) {
+        mapRef.current.setPaintProperty('draft-points', 'circle-color', getRouteColor(newColorIndex))
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['mapData'] })
+      queryClient.invalidateQueries({ queryKey: ['routes'] })
+      try { refetchRefData?.() } catch { /* */ }
+      try { fetchRoutes() } catch { /* */ }
     }
   }, [selectedRoute, fetchRoutes, showToast, queryClient, refetchRefData])
 

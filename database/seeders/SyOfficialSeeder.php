@@ -120,14 +120,7 @@ class SyOfficialSeeder extends Seeder
             }
 
             $id = $row['ID'] ?? "entity-{$i}";
-            $image = $row['Image Path'] ?? '';
-            if (($image === 'images/governorates/placeholder.webp' || empty($image)) && str_starts_with($id, 'gov-')) {
-                if ($id === 'gov-raqqa') {
-                    $image = 'images/governorates/gov-raqqa.webp';
-                } elseif ($id === 'gov-hasakah') {
-                    $image = 'images/governorates/gov-hasakah.webp';
-                }
-            }
+            $image = $row['Image Path'] ?? null;
 
             // Auto-upload local asset to R2 if R2 disk is configured, optimized to 200x200 WebP
             $mediaDisk = config('filesystems.media_disk');

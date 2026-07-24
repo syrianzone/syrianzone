@@ -39,6 +39,7 @@ export function PlacesPanel({
   onLoadMore,
   onMutated,
   onSelect,
+  onSelectGuide,
   places,
   selectedId,
 }: {
@@ -47,6 +48,7 @@ export function PlacesPanel({
   onLoadMore: () => void;
   onMutated: () => Promise<void>;
   onSelect: (id: number | null) => void;
+  onSelectGuide: (guide: { id: number; name: string }) => void;
   places: readonly PlaceListItem[];
   selectedId: number | null;
 }) {
@@ -125,7 +127,14 @@ export function PlacesPanel({
             </Pressable>
           ))}
       </View>
-      {tab === 'guides' ? <GuidesTab /> : null}
+      {tab === 'guides' ? (
+        <GuidesTab
+          onSelectGuide={(guide) => {
+            onSelectGuide(guide);
+            setTab('places');
+          }}
+        />
+      ) : null}
       {listFailed ? <QueryState detail="تعذر تحميل قائمتك." onRetry={() => void privateQuery.refetch()} type="error" /> : null}
       {resubmitError ? <AppText color="danger">{resubmitError}</AppText> : null}
       {tab !== 'guides' && !listFailed ? visible.map((place) => (
@@ -182,8 +191,8 @@ const styles = StyleSheet.create({
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Places/_components/PlacesPanel.tsx (248 lines)
+  source:     resources/js/Pages/Places/_components/PlacesPanel.tsx (249 lines)
   confidence: high
   todos:      0
-  notes:      Native public, saved, owner management, resubmission, guides, detail, paging, and error states preserve the panel.
+  notes:      Native public, saved, owner management, guide selection, detail, paging, and error states preserve the panel.
 */

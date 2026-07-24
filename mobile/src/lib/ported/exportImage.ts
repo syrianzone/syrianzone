@@ -1,24 +1,36 @@
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import type { RefObject } from 'react';
-import type { View } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 
-export async function shareCapturedView(ref: RefObject<View | null>, name: string): Promise<void> {
-  if (!ref.current) {
+export type CapturedViewTarget = Parameters<typeof captureRef>[0];
+
+export async function shareCapturedView(
+  target: CapturedViewTarget,
+  name: string,
+): Promise<boolean> {
+  if (!target) {
     throw new Error('لا يوجد محتوى جاهز للمشاركة.');
   }
-  const captured = await captureRef(ref, { format: 'png', quality: 1, result: 'tmpfile' });
+  if (!await Sharing.isAvailableAsync()) {
+    return false;
+  }
+  const captured = await captureRef(target, {
+    format: 'png',
+    quality: 1,
+    result: 'tmpfile',
+  });
   const source = new File(captured);
-  const target = new File(Paths.cache, `${name}.png`);
+  const sharedFile = new File(Paths.cache, `${name}.png`);
   try {
-    source.copy(target);
-    if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(target.uri, { mimeType: 'image/png' });
-    }
+    source.copy(sharedFile);
+    await Sharing.shareAsync(sharedFile.uri, {
+      mimeType: 'image/png',
+      UTI: 'public.png',
+    });
+    return true;
   } finally {
-    if (target.exists) {
-      target.delete();
+    if (sharedFile.exists) {
+      sharedFile.delete();
     }
     if (source.exists) {
       source.delete();

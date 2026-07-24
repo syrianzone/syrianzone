@@ -13,8 +13,8 @@ export const placeQueryKeys = {
   all: ['places'] as const,
   detail: (accountId: AccountId, placeId: number) =>
     ['places', 'detail', accountKey(accountId), placeId] as const,
-  list: (accountId: AccountId, category: string | null, query: string) =>
-    ['places', 'list', accountKey(accountId), category, query] as const,
+  list: (accountId: AccountId, category: string | null, query: string, guideId?: number) =>
+    ['places', 'list', accountKey(accountId), category, query, guideId ?? 'all'] as const,
   map: (accountId: AccountId) =>
     ['places', 'map', accountKey(accountId)] as const,
   privateList: (accountId: AccountId, tab: string) =>

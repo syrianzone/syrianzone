@@ -205,13 +205,13 @@ test('keeps every source external link available when Home content is offline', 
   expect(view.getByText('الحسابات الرسمية')).toBeTruthy();
 });
 
-test('opens the central directory from the Home tools', async () => {
+test('opens Board from the Home tools', async () => {
   const view = await renderScreen();
 
   await waitFor(() => expect(view.getByText('الروزنامة')).toBeTruthy());
   await waitFor(() => expect(view.getByText('29°C')).toBeTruthy());
-  await waitFor(() => expect(view.getByText('الدليل المركزي')).toBeTruthy());
-  await fireEvent.press(view.getByText('الدليل المركزي'));
+  await waitFor(() => expect(view.getByText('لوح')).toBeTruthy());
+  await fireEvent.press(view.getByText('لوح'));
 
-  expect(router.push).toHaveBeenCalledWith('/central');
+  expect(router.push).toHaveBeenCalledWith('/board');
 });

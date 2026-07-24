@@ -9,12 +9,16 @@ import { useAppTheme } from '@/contexts/ThemeContext';
 import cities from '../../_data/cities';
 import { useRoutes } from '../../_hooks/useMapData';
 import { RoutesList } from './_components/RoutesList';
+import CityLoading from './loading';
 
 export default function TransitCityScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const city = cities.find((item) => item.id === id);
   const routes = useRoutes(id);
   const { theme } = useAppTheme();
+  if (routes.isPending) {
+    return <CityLoading />;
+  }
   return (
     <Screen
       subtitle={city?.nameEn ?? id}
@@ -53,5 +57,5 @@ PORT STATUS
   source:     resources/js/Pages/Transit/city/[id]/Index.tsx (85 lines)
   confidence: high
   todos:      0
-  notes:      Route parameters and refresh behavior moved to Expo Router and React Query.
+  notes:      Route parameters, pending state, and refresh behavior use Expo Router and React Query.
 */

@@ -1,4 +1,4 @@
-import type { PropsWithChildren, ReactNode, RefObject } from 'react';
+import { useRef, type PropsWithChildren, type ReactNode, type RefObject } from 'react';
 import {
   RefreshControl,
   ScrollView,
@@ -15,6 +15,8 @@ import { AppText } from './AppText';
 interface ScreenProps {
   contentStyle?: ViewStyle;
   onContentSizeChange?: (width: number, height: number) => void;
+  onEndReached?: () => void;
+  onEndReachedThreshold?: number;
   onRefresh?: () => void;
   refreshing?: boolean;
   scroll?: boolean;
@@ -28,6 +30,8 @@ export function Screen({
   children,
   contentStyle,
   onContentSizeChange,
+  onEndReached,
+  onEndReachedThreshold = 120,
   onRefresh,
   refreshing = false,
   scroll = true,
@@ -37,6 +41,7 @@ export function Screen({
   trailing,
 }: PropsWithChildren<ScreenProps>) {
   const { theme } = useAppTheme();
+  const endReached = useRef(false);
   const content = (
     <View style={[styles.content, contentStyle]}>
       {title ? (
@@ -61,6 +66,21 @@ export function Screen({
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           onContentSizeChange={onContentSizeChange}
+          onScroll={(event) => {
+            if (!onEndReached) {
+              return;
+            }
+            const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+            const distance = contentSize.height - layoutMeasurement.height - contentOffset.y;
+            if (distance <= onEndReachedThreshold) {
+              if (!endReached.current) {
+                endReached.current = true;
+                onEndReached();
+              }
+            } else {
+              endReached.current = false;
+            }
+          }}
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
           refreshControl={
@@ -73,6 +93,8 @@ export function Screen({
             ) : undefined
           }
           ref={scrollViewRef}
+          scrollEventThrottle={100}
+          testID="screen-scroll"
         >
           {content}
         </ScrollView>

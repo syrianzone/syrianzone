@@ -1,0 +1,9 @@
+appId: zone.syrian.app
+name: Syrian Zone auth callback failure
+---
+- openLink: "syrianzone://auth/callback?error=access_denied&state=maestro"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "تعذر إكمال تسجيل الدخول."
+    timeout: 30000
+- assertVisible: "العودة إلى الحساب"

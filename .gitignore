@@ -9,6 +9,7 @@ build/
 # Package manager locks
 pnpm-lock.yaml
 package-lock.json
+!/mobile/package-lock.json
 
 # IDE and tool configs
 .cursor

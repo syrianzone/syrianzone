@@ -16,6 +16,7 @@ import {
 } from './components/AtlasDetails';
 import { DemographicPanel } from './components/GovernorateComparison';
 import MapClient from './components/map/MapClient';
+import { ProvinceSummary } from './components/map/tooltip-generators';
 import {
   DATA_TYPE_CONFIG,
   DATA_TYPE_ORDER,
@@ -198,10 +199,10 @@ export default function PopulationClient() {
         <>
           {selectedName && selectedPopulation !== null ? (
             <AppCard>
-              <AppText variant="heading">{selectedName}</AppText>
-              <AppText>
-                {config.label}: {selectedPopulation.toLocaleString('en-US')}
-              </AppText>
+              <ProvinceSummary
+                label={selectedName}
+                value={`${config.label}: ${selectedPopulation.toLocaleString('en-US')}`}
+              />
             </AppCard>
           ) : null}
           <DemographicPanel
@@ -243,7 +244,7 @@ const styles = StyleSheet.create({
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Population/PopulationClient.tsx (995 lines)
+  source:     resources/js/Pages/Population/PopulationClient.tsx (996 lines)
   confidence: high
   todos:      0
   notes:      Native atlas renders every data layer, source, province detail, climate report, and comparison flow.

@@ -1,0 +1,34 @@
+appId: zone.syrian.app
+name: Syrian Zone native transit surfaces
+---
+- setPermissions:
+    permissions:
+      location: deny
+- openLink: "syrianzone://transit/city/damascus"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "عرض الكل على الخريطة"
+    timeout: 30000
+- openLink: "syrianzone://transit/city/damascus/map"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "ابحث عن خط أو محطة"
+    timeout: 30000
+- tapOn: "المحطات القريبة"
+- extendedWaitUntil:
+    visible: "يلزم السماح بالموقع لعرض المحطات القريبة."
+    timeout: 30000
+- openLink: "syrianzone://transit/studio"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "1. اختر المدينة"
+    timeout: 30000
+- tapOn: "دمشق"
+- extendedWaitUntil:
+    visible: "2. ارسم المسار"
+    timeout: 30000
+- openLink: "syrianzone://transit/city/damascus/route/maestro-missing-route"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "تعذر العثور على الخط."
+    timeout: 30000

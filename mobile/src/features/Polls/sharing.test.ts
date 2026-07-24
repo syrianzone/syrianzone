@@ -1,10 +1,15 @@
 import type { PollCandidate } from '@/lib/api/polls';
+import { shareCapturedView } from '@/lib/ported/exportImage';
 
 import {
   createAndShareCandidateArchive,
   resolvePollImageUrl,
   shareCapturedPollImage,
 } from './sharing';
+
+jest.mock('@/lib/ported/exportImage', () => ({
+  shareCapturedView: jest.fn(),
+}));
 
 function candidate(id: string, imageUrl: string | null): PollCandidate {
   return {
@@ -58,6 +63,14 @@ test('shares a captured tier board only when native sharing is available', async
     }),
   ).resolves.toBe(false);
   expect(share).not.toHaveBeenCalled();
+});
+
+test('uses the shared native image exporter for the default capture path', async () => {
+  jest.mocked(shareCapturedView).mockResolvedValue(true);
+
+  await expect(shareCapturedPollImage(null)).resolves.toBe(true);
+
+  expect(shareCapturedView).toHaveBeenCalledWith(null, 'tier-board');
 });
 
 test('creates a bounded candidate archive and always cleans temporary files', async () => {

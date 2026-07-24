@@ -4,7 +4,7 @@ import { Alert } from 'react-native';
 
 import { LocaleProvider } from '@/contexts/LocaleContext';
 import { AppThemeProvider } from '@/contexts/ThemeContext';
-import { adminPlace } from '@/test/fixtures/places';
+import { adminPlace, placeDetail } from '@/test/fixtures/places';
 
 import { placesApi } from '../_lib/api';
 import type { MyPlace } from '../_lib/types';
@@ -63,7 +63,7 @@ async function renderDialog(
 
 beforeEach(() => {
   jest.clearAllMocks();
-  jest.mocked(placesApi.getPlace).mockResolvedValue({ ...adminPlace, status: 'approved' });
+  jest.mocked(placesApi.getPlace).mockResolvedValue({ ...placeDetail, status: 'approved' });
   jest.mocked(placesApi.updateMyPlace).mockResolvedValue({
     category: 'food',
     description: adminPlace.description,

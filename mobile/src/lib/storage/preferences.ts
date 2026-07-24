@@ -8,6 +8,19 @@ export const preferenceKeys = {
   homeSettings: 'startpage-settings',
 } as const;
 
+export const homeSettingsGuestClaim = {
+  key: `${preferenceKeys.homeSettings}:guest-claimed:v1`,
+  value: '1',
+} as const;
+
+export function homeSettingsPreferenceKey(
+  accountId: number | null,
+): string {
+  return accountId === null
+    ? preferenceKeys.homeSettings
+    : `${preferenceKeys.homeSettings}:account:${accountId}`;
+}
+
 export async function readStringPreference(
   key: string,
 ): Promise<string | null> {

@@ -110,3 +110,11 @@ const styles = StyleSheet.create({
     gap: 8,
   },
 });
+
+/*
+PORT STATUS
+  source:     resources/js/Pages/About.tsx (371 lines)
+  confidence: high
+  todos:      0
+  notes:      Native About renders the canonical project, founder, contributor, repository, BrandKit, and license content with safe links.
+*/

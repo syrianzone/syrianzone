@@ -5,6 +5,7 @@ import { StyleSheet, View } from 'react-native';
 import {
   DirectoryCard,
   DirectoryFilterChips,
+  DirectoryImage,
   DirectoryLinkAction,
   DirectorySearchField,
   DirectoryViewToggle,
@@ -16,11 +17,11 @@ import { useAppTheme } from '@/contexts/ThemeContext';
 import { isSafeExternalUrl, openSafeExternalUrl } from '@/lib/linking';
 
 import {
-  filterAndSortWebsites,
+  filterWebsites,
   getWebsiteCategories,
+  getWebsiteFaviconUrl,
   getWebsiteTypeDisplayName,
   SITES_PAGE_SIZE,
-  type SiteSort,
 } from './data';
 import type { Website } from './types';
 
@@ -35,7 +36,6 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
   const { theme } = useAppTheme();
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
-  const [sortOption, setSortOption] = useState<SiteSort>('name');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [displayCount, setDisplayCount] = useState(SITES_PAGE_SIZE);
   const categories = useMemo(
@@ -44,12 +44,11 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
   );
   const filteredWebsites = useMemo(
     () =>
-      filterAndSortWebsites(initialWebsites, {
+      filterWebsites(initialWebsites, {
         search: searchTerm,
-        sort: sortOption,
         type: typeFilter,
       }),
-    [initialWebsites, searchTerm, sortOption, typeFilter],
+    [initialWebsites, searchTerm, typeFilter],
   );
   const displayedWebsites = filteredWebsites.slice(0, displayCount);
 
@@ -66,11 +65,6 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
 
   const updateType = (value: string) => {
     setTypeFilter(value);
-    setDisplayCount(SITES_PAGE_SIZE);
-  };
-
-  const updateSort = (value: SiteSort) => {
-    setSortOption(value);
     setDisplayCount(SITES_PAGE_SIZE);
   };
 
@@ -117,17 +111,6 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
           value={viewMode}
         />
       </View>
-
-      <DirectoryFilterChips
-        label="ترتيب حسب"
-        onSelect={updateSort}
-        options={[
-          { label: 'الاسم (أ-ي)', value: 'name' },
-          { label: 'الاسم (ي-أ)', value: 'name-desc' },
-          { label: 'النوع', value: 'type' },
-        ]}
-        selected={sortOption}
-      />
 
       {searchTerm || typeFilter ? (
         <AppButton
@@ -180,7 +163,11 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
                         { backgroundColor: theme.palette.surfaceRaised },
                       ]}
                     >
-                      <Globe2 color={theme.palette.mutedForeground} size={38} />
+                      <DirectoryImage
+                        accessibilityLabel={`أيقونة ${site.name}`}
+                        style={styles.siteIcon}
+                        uri={getWebsiteFaviconUrl(site.url)}
+                      />
                     </View>
                   ) : undefined
                 }
@@ -270,12 +257,17 @@ const styles = StyleSheet.create({
     height: 88,
     justifyContent: 'center',
   },
+  siteIcon: {
+    borderRadius: 8,
+    height: 38,
+    width: 38,
+  },
 });
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Sites/SitesClient.tsx (337 lines)
+  source:     resources/js/Pages/Sites/SitesClient.tsx (319 lines)
   confidence: high
   todos:      0
-  notes:      Native cards use a globe placeholder and filter clearing restores all types.
+  notes:      Native favicon cards, exact filter chips, table mode, and pagination preserve final source behavior.
 */

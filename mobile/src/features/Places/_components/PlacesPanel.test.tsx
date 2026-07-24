@@ -33,8 +33,14 @@ jest.mock('./ManagePlaceDialog', () => {
 });
 jest.mock('./GuidesTab', () => {
   const React = jest.requireActual<typeof import('react')>('react');
-  const { Text } = jest.requireActual<typeof import('react-native')>('react-native');
-  return { GuidesTab: () => <Text>المرشدون المحليون</Text> };
+  const { Pressable, Text } = jest.requireActual<typeof import('react-native')>('react-native');
+  return {
+    GuidesTab: ({ onSelectGuide }: { onSelectGuide: (guide: { id: number; name: string }) => void }) => (
+      <Pressable onPress={() => onSelectGuide({ id: 5, name: 'ليلى' })}>
+        <Text>المرشدون المحليون</Text>
+      </Pressable>
+    ),
+  };
 });
 
 const rejected: MyPlace = {
@@ -51,7 +57,7 @@ const rejected: MyPlace = {
   thumb_url: null,
 };
 
-async function renderPanel(onMutated = jest.fn(async () => undefined)) {
+async function renderPanel(onMutated = jest.fn(async () => undefined), onSelectGuide = jest.fn()) {
   const view = await render(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { gcTime: 0, retry: false } } })}>
       <LocaleProvider>
@@ -62,6 +68,7 @@ async function renderPanel(onMutated = jest.fn(async () => undefined)) {
             onLoadMore={jest.fn()}
             onMutated={onMutated}
             onSelect={jest.fn()}
+            onSelectGuide={onSelectGuide}
             places={[]}
             selectedId={null}
           />
@@ -69,7 +76,7 @@ async function renderPanel(onMutated = jest.fn(async () => undefined)) {
       </LocaleProvider>
     </QueryClientProvider>,
   );
-  return { onMutated, view };
+  return { onMutated, onSelectGuide, view };
 }
 
 beforeEach(() => {
@@ -130,4 +137,14 @@ test('keeps the public guides tab available to guests', async () => {
   expect(view.getByText('المرشدون المحليون')).toBeTruthy();
   expect(view.queryByText('محفوظاتي')).toBeNull();
   expect(view.queryByText('مساهماتي')).toBeNull();
+});
+
+test('returns to the places tab after choosing a guide filter', async () => {
+  const { onSelectGuide, view } = await renderPanel();
+
+  await fireEvent.press(view.getByText('مرشدون'));
+  await fireEvent.press(view.getByText('المرشدون المحليون'));
+
+  expect(onSelectGuide).toHaveBeenCalledWith({ id: 5, name: 'ليلى' });
+  expect(view.getByText('لا توجد أماكن.')).toBeTruthy();
 });

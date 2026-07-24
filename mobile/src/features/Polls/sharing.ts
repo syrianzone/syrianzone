@@ -1,15 +1,18 @@
 import { Directory, File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import JSZip from 'jszip';
-import { captureRef, releaseCapture } from 'react-native-view-shot';
 
 import type { PollCandidate } from '@/lib/api/polls';
 import { apiOrigin } from '@/lib/env';
+import {
+  shareCapturedView,
+  type CapturedViewTarget,
+} from '@/lib/ported/exportImage';
 
 const MAX_ARCHIVE_CANDIDATES = 20;
 const MAX_ARCHIVE_FILE_BYTES = 5 * 1024 * 1024;
 const MAX_ARCHIVE_TOTAL_BYTES = 40 * 1024 * 1024;
-type CaptureTarget = Parameters<typeof captureRef>[0];
+type CaptureTarget = CapturedViewTarget;
 
 interface CapturedImageDependencies {
   capture: (target: CaptureTarget) => Promise<string>;
@@ -33,13 +36,6 @@ export interface CandidateArchiveDependencies {
   shareArchive: (bytes: Uint8Array, name: string) => Promise<void>;
 }
 
-const capturedImageDependencies: CapturedImageDependencies = {
-  capture: (target) => captureRef(target, { format: 'png', result: 'tmpfile' }),
-  isAvailable: Sharing.isAvailableAsync,
-  release: releaseCapture,
-  share: Sharing.shareAsync,
-};
-
 export function resolvePollImageUrl(
   value: null | string | undefined,
 ): string | null {
@@ -59,8 +55,11 @@ export function resolvePollImageUrl(
 
 export async function shareCapturedPollImage(
   target: CaptureTarget,
-  dependencies: CapturedImageDependencies = capturedImageDependencies,
+  dependencies?: CapturedImageDependencies,
 ): Promise<boolean> {
+  if (!dependencies) {
+    return shareCapturedView(target, 'tier-board');
+  }
   if (!await dependencies.isAvailable()) {
     return false;
   }

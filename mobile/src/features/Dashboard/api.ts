@@ -20,6 +20,7 @@ export const dashboardDraftSchema = z.object({
   notes: z.string().nullable(),
   price: z.number().nullable(),
   rejection_reason: z.string().nullable(),
+  route_id: z.string().nullable().optional(),
   status: z.enum(['approved', 'pending', 'rejected']),
   user_id: z.number().int().positive().nullable(),
 });

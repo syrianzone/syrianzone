@@ -4,6 +4,7 @@ import { apiOrigin } from '@/lib/env';
 import {
   guideSchema,
   placeCategorySchema,
+  placeFeatureCollectionSchema,
   placeListItemSchema,
   placesApi,
 } from './api';
@@ -40,7 +41,9 @@ describe('Places API', () => {
       guideSchema.safeParse({
         approved_count: 3,
         avatar_url: null,
+        level: 2,
         name: 'ليلى',
+        points: 48,
         rank: 1,
         recent_count: 2,
         saves_total: 9,
@@ -51,11 +54,73 @@ describe('Places API', () => {
       guideSchema.safeParse({
         approved_count: -1,
         avatar_url: null,
+        level: 2,
         name: 'ليلى',
+        points: 48,
         rank: 1,
         recent_count: 2,
         saves_total: 9,
         user_id: 4,
+      }).success,
+    ).toBe(false);
+    expect(
+      guideSchema.safeParse({
+        approved_count: 3,
+        avatar_url: null,
+        level: 11,
+        name: 'ليلى',
+        points: 48,
+        rank: 1,
+        recent_count: 2,
+        saves_total: 9,
+        user_id: 4,
+      }).success,
+    ).toBe(false);
+    expect(
+      guideSchema.safeParse({
+        approved_count: 3,
+        avatar_url: null,
+        level: 2,
+        name: 'ليلى',
+        points: -1,
+        rank: 1,
+        recent_count: 2,
+        saves_total: 9,
+        user_id: 4,
+      }).success,
+    ).toBe(false);
+  });
+
+  test('requires a contributor id on every map pin', () => {
+    const feature = {
+      geometry: { coordinates: [36.3, 33.5], type: 'Point' },
+      properties: {
+        category: 'historical',
+        id: 1,
+        name: 'خان',
+        thumb_url: null,
+        user_id: 5,
+      },
+      type: 'Feature',
+    };
+    expect(
+      placeFeatureCollectionSchema.safeParse({
+        features: [feature],
+        type: 'FeatureCollection',
+      }).success,
+    ).toBe(true);
+    expect(
+      placeFeatureCollectionSchema.safeParse({
+        features: [{
+          ...feature,
+          properties: {
+            category: feature.properties.category,
+            id: feature.properties.id,
+            name: feature.properties.name,
+            thumb_url: feature.properties.thumb_url,
+          },
+        }],
+        type: 'FeatureCollection',
       }).success,
     ).toBe(false);
   });
@@ -74,10 +139,10 @@ describe('Places API', () => {
   });
 
   test('keeps public lists anonymous and sends optional identity for detail reads', async () => {
-    const calls: { auth: boolean | undefined; path: string }[] = [];
+    const calls: { auth: boolean | undefined; path: string; query: unknown }[] = [];
     jest.spyOn(apiClient, 'request').mockImplementation(
       async <T>(path: string, options: ApiRequestOptions<T>): Promise<T> => {
-        calls.push({ auth: options.auth, path });
+        calls.push({ auth: options.auth, path, query: options.query });
         const value = path.endsWith('/1')
           ? {
               ...place,
@@ -85,19 +150,19 @@ describe('Places API', () => {
               photos: [],
               saved_by_me: false,
               status: 'approved',
-              user: { avatar_url: null, id: 2, name: 'مساهم' },
+              user: { avatar_url: null, id: 2, level: 4, name: 'مساهم', points: 280 },
             }
           : { current_page: 1, data: [place], last_page: 1, total: 1 };
         return options.schema.parse(value);
       },
     );
 
-    await placesApi.listPlaces({ page: 1 });
+    await placesApi.listPlaces({ page: 1, user_id: 5 });
     await placesApi.getPlace(1);
 
     expect(calls).toEqual([
-      { auth: false, path: '/api/v1/places' },
-      { auth: undefined, path: '/api/v1/places/1' },
+      { auth: false, path: '/api/v1/places', query: { page: 1, user_id: 5 } },
+      { auth: undefined, path: '/api/v1/places/1', query: undefined },
     ]);
   });
 
@@ -120,13 +185,15 @@ describe('Places API', () => {
                 guides: [{
                   approved_count: 2,
                   avatar_url: null,
+                  level: 2,
                   name: 'ليلى',
+                  points: 37,
                   rank: 1,
                   recent_count: 1,
                   saves_total: 7,
                   user_id: 5,
                 }],
-                sort: 'saves',
+                sort: 'points',
               }
             : {
                 current_page: 1,
@@ -157,13 +224,13 @@ describe('Places API', () => {
         name: 'سوق الحميدية',
       }],
     });
-    await placesApi.guides('saves');
-    await placesApi.gridPhotos(2);
+    await placesApi.guides('points');
+    await placesApi.gridPhotos(2, 5);
 
     expect(calls).toEqual([
       { auth: false, path: '/api/v1/places/geocode', query: { q: 'الحميدية' } },
-      { auth: false, path: '/api/v1/guides', query: { sort: 'saves' } },
-      { auth: false, path: '/api/v1/places/photos', query: { page: 2 } },
+      { auth: false, path: '/api/v1/guides', query: { sort: 'points' } },
+      { auth: false, path: '/api/v1/places/photos', query: { page: 2, user_id: 5 } },
     ]);
   });
 

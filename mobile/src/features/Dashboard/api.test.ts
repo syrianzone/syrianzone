@@ -43,6 +43,38 @@ describe('dashboard account API', () => {
     expect(request).toHaveBeenCalledTimes(1);
   });
 
+  test('keeps the linked published route identifier on account drafts', async () => {
+    jest.spyOn(apiClient, 'request').mockImplementation(
+      async <T>(
+        _path: string,
+        options: ApiRequestOptions<T>,
+      ): Promise<T> =>
+        options.schema.parse({
+          data: {
+            myDrafts: [{
+              city: null,
+              city_id: 'damascus',
+              created_at: '2026-07-24T10:00:00Z',
+              id: 42,
+              name_ar: 'تعديل خط منشور',
+              name_en: null,
+              notes: null,
+              price: null,
+              rejection_reason: null,
+              route_id: 'route-damascus-a',
+              status: 'approved',
+              user_id: 7,
+            }],
+            user,
+          },
+        }),
+    );
+
+    await expect(fetchDashboardAccount()).resolves.toMatchObject({
+      myDrafts: [{ route_id: 'route-damascus-a' }],
+    });
+  });
+
   test('sends profile updates as PATCH and returns the refreshed user', async () => {
     const request = jest
       .spyOn(apiClient, 'request')

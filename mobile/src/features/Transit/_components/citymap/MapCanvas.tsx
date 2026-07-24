@@ -3,12 +3,13 @@ import {
   Map,
   type MapRef,
   type StyleSpecification,
+  ViewAnnotation,
 } from '@maplibre/maplibre-react-native';
 import { forwardRef, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import darkMapStyle from '@/assets/styles/dark-matter-vector.json';
-import lightMapStyle from '@/assets/styles/light-vector.json';
+import darkMapStyle from '../../../../../assets/styles/dark-matter-vector.json';
+import lightMapStyle from '../../../../../assets/styles/light-vector.json';
 
 import { useTransitTheme } from '../TransitThemeContext';
 import { buildTransitMapStyle } from '../../_lib/mapStyle';
@@ -21,14 +22,28 @@ import { UserLocationLayer } from './UserLocationLayer';
 interface MapCanvasProps {
   city: City;
   data: MapDataResponse;
+  editableVertices?: readonly [number, number][];
   fitToData?: boolean;
   onMapPress?: (coordinate: [number, number]) => void;
+  onVertexChange?: (index: number, coordinate: [number, number]) => void;
+  onVertexPress?: (index: number) => void;
+  selectedVertexIndex?: number | null;
   showUserLocation?: boolean;
 }
 
 export const MapCanvas = forwardRef<MapRef, MapCanvasProps>(
   function MapCanvas(
-    { city, data, fitToData = false, onMapPress, showUserLocation = false },
+    {
+      city,
+      data,
+      editableVertices,
+      fitToData = false,
+      onMapPress,
+      onVertexChange,
+      onVertexPress,
+      selectedVertexIndex = null,
+      showUserLocation = false,
+    },
     ref,
   ) {
     const { theme } = useTransitTheme();
@@ -96,6 +111,38 @@ export const MapCanvas = forwardRef<MapRef, MapCanvasProps>(
           <RouteLayer routes={data.routes} />
           <StopsLayer stops={data.stops} />
           <UserLocationLayer visible={showUserLocation} />
+          {editableVertices?.map((coordinate, index) => {
+            const selected = selectedVertexIndex === index;
+            return (
+              <ViewAnnotation
+                draggable
+                id={`transit-edit-vertex-${index}`}
+                key={`transit-edit-vertex-${index}`}
+                lngLat={coordinate}
+                onDrag={(event) => {
+                  const [longitude, latitude] = event.nativeEvent.lngLat;
+                  onVertexChange?.(index, [longitude, latitude]);
+                }}
+                onPress={() => onVertexPress?.(index)}
+                selected={selected}
+              >
+                <View
+                  style={[
+                    styles.vertex,
+                    {
+                      backgroundColor: selected
+                        ? '#c44b4b'
+                        : '#c8963a',
+                      borderColor: '#ffffff',
+                      height: selected ? 24 : 18,
+                      width: selected ? 24 : 18,
+                    },
+                  ]}
+                  testID={`transit-edit-vertex-dot-${index}`}
+                />
+              </ViewAnnotation>
+            );
+          })}
         </Map>
       </View>
     );
@@ -110,6 +157,10 @@ const styles = StyleSheet.create({
   map: {
     flex: 1,
   },
+  vertex: {
+    borderRadius: 12,
+    borderWidth: 3,
+  },
 });
 
 /*
@@ -117,5 +168,5 @@ PORT STATUS
   source:     resources/js/Pages/Transit/_components/citymap/MapCanvas.tsx (119 lines)
   confidence: high
   todos:      0
-  notes:      Theme-aware MapLibre styles and bounded route focus replace the web canvas camera.
+  notes:      Theme-aware MapLibre styles, bounded route focus, and draggable route vertices preserve native editing.
 */

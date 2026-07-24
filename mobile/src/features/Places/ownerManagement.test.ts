@@ -17,7 +17,7 @@ const place: PlaceDetail = {
   saves_count: 2,
   status: 'approved',
   thumb_url: null,
-  user: { avatar_url: null, id: 3, name: 'ليلى' },
+  user: { avatar_url: null, id: 3, level: 2, name: 'ليلى', points: 37 },
 };
 
 describe('owner place management', () => {

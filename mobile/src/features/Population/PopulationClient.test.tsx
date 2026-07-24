@@ -229,6 +229,13 @@ test('switches demographic sources and compares two governorates', async () => {
 
   await waitFor(() => expect(view.getByTestId('population-map')).toBeTruthy());
   expect(view.getAllByText('Population source A').length).toBeGreaterThan(0);
+  await fireEvent.press(view.getByTestId('population-map-Damascus'));
+  expect(view.getByTestId('population-province-summary')).toHaveTextContent(
+    /دمشق/,
+  );
+  expect(view.getByTestId('population-province-summary')).toHaveTextContent(
+    /1,000/,
+  );
   await fireEvent.press(view.getByTestId('population-source-2'));
   expect(view.getAllByText('Population source B').length).toBeGreaterThan(0);
 

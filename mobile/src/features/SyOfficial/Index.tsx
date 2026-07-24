@@ -39,11 +39,10 @@ import {
   getOfficialName,
   groupOfficialEntities,
   isOfficialRtl,
-  OFFICIAL_CATEGORIES,
+  normalizeOfficialCategories,
   type OfficialLanguage,
-  type OfficialSort,
 } from './logic';
-import type { OfficialEntity } from './types';
+import type { OfficialCategory, OfficialEntity } from './types';
 
 type ViewMode = 'grid' | 'table';
 
@@ -196,7 +195,7 @@ export default function Index() {
     queryFn: ({ signal }) => fetchOfficialAccounts({ signal }),
     queryKey: directoryQueryKeys.officialAccounts,
   });
-  const entities = query.data;
+  const catalog = query.data;
   const state = getDirectoryQueryPresentation(query);
   const retry = () => {
     void query.refetch();
@@ -217,9 +216,10 @@ export default function Index() {
       textAlign={rtl ? 'right' : 'left'}
       title={t.title}
     >
-      {entities ? (
+      {catalog ? (
         <OfficialDirectory
-          entities={entities}
+          categories={catalog.categories}
+          entities={catalog.entities}
           language={language}
           onLanguageChange={setLanguage}
         />
@@ -229,10 +229,12 @@ export default function Index() {
 }
 
 export function OfficialDirectory({
+  categories = [],
   entities,
   language,
   onLanguageChange,
 }: {
+  categories?: readonly OfficialCategory[];
   entities: readonly OfficialEntity[];
   language: OfficialLanguage;
   onLanguageChange: (language: OfficialLanguage) => void;
@@ -241,7 +243,6 @@ export function OfficialDirectory({
   const [searchTerm, setSearchTerm] = useState('');
   const [currentCategory, setCurrentCategory] = useState('all');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [sortOption, setSortOption] = useState<OfficialSort>('name-asc');
   const rtl = isOfficialRtl(language);
   const textAlign = rtl ? 'right' : 'left';
   const t = TRANSLATIONS[language];
@@ -251,13 +252,17 @@ export function OfficialDirectory({
         category: currentCategory,
         language,
         search: searchTerm,
-        sort: sortOption,
+        sort: 'name-asc',
       }),
-    [currentCategory, entities, language, searchTerm, sortOption],
+    [currentCategory, entities, language, searchTerm],
   );
   const groups = useMemo(
-    () => groupOfficialEntities(filteredEntities, currentCategory),
-    [currentCategory, filteredEntities],
+    () => groupOfficialEntities(filteredEntities, currentCategory, categories),
+    [categories, currentCategory, filteredEntities],
+  );
+  const categoryOptions = useMemo(
+    () => normalizeOfficialCategories(categories),
+    [categories],
   );
 
   return (
@@ -295,7 +300,7 @@ export function OfficialDirectory({
       <DirectoryFilterChips
         direction={rtl ? 'rtl' : 'ltr'}
         onSelect={setCurrentCategory}
-        options={OFFICIAL_CATEGORIES.map((category) => ({
+        options={categoryOptions.map((category) => ({
           label:
             language === 'ar' ? category.label.ar : category.label.en,
           value: category.key,
@@ -319,18 +324,6 @@ export function OfficialDirectory({
         />
       </View>
 
-      <DirectoryFilterChips
-        direction={rtl ? 'rtl' : 'ltr'}
-        label={t.sortBy}
-        onSelect={setSortOption}
-        options={[
-          { label: t.sortNameAsc, value: 'name-asc' },
-          { label: t.sortNameDesc, value: 'name-desc' },
-          { label: t.sortCategory, value: 'category' },
-        ]}
-        selected={sortOption}
-      />
-
       {filteredEntities.length === 0 ? (
         <AppCard style={styles.empty}>
           <Users color={theme.palette.mutedForeground} size={40} />
@@ -347,7 +340,7 @@ export function OfficialDirectory({
             <View key={category} style={styles.group}>
               {currentCategory === 'all' ? (
                 <AppText style={{ textAlign }} variant="heading">
-                  {getOfficialCategoryLabel(category, language)}
+                  {getOfficialCategoryLabel(category, language, categories)}
                 </AppText>
               ) : null}
               <View style={styles.grid}>
@@ -355,6 +348,7 @@ export function OfficialDirectory({
                   <View key={item.id} style={styles.gridItem}>
                     <OfficialCard
                       item={item}
+                      categories={categories}
                       language={language}
                       mode="grid"
                     />
@@ -369,6 +363,7 @@ export function OfficialDirectory({
           {filteredEntities.map((item) => (
             <OfficialCard
               item={item}
+              categories={categories}
               key={item.id}
               language={language}
               mode="table"
@@ -381,10 +376,12 @@ export function OfficialDirectory({
 }
 
 function OfficialCard({
+  categories,
   item,
   language,
   mode,
 }: {
+  categories: readonly OfficialCategory[];
   item: OfficialEntity;
   language: OfficialLanguage;
   mode: ViewMode;
@@ -399,16 +396,19 @@ function OfficialCard({
         <>
           {Object.entries(item.socials).map(([platform, url]) => (
             <DirectoryLinkAction
+              accessibilityLabel={platform}
               icon={socialIcon(platform, theme.palette.foreground)}
               key={platform}
-              label={platform}
+              label={socialLabel(platform, language)}
               url={url}
             />
           ))}
         </>
       }
       badges={
-        compact ? [getOfficialCategoryLabel(item.category, language)] : []
+        compact
+          ? [getOfficialCategoryLabel(item.category, language, categories)]
+          : []
       }
       compact={compact}
       media={
@@ -428,7 +428,7 @@ function OfficialCard({
 }
 
 function socialIcon(platform: string, color: string): ReactNode {
-  switch (platform.toLowerCase()) {
+  switch (platform.toLowerCase().replace('_secondary', '')) {
     case 'facebook':
       return <Users color={color} size={16} />;
     case 'twitter':
@@ -448,6 +448,43 @@ function socialIcon(platform: string, color: string): ReactNode {
     default:
       return <Link2 color={color} size={16} />;
   }
+}
+
+function socialLabel(
+  platform: string,
+  language: OfficialLanguage,
+): string {
+  const labels: Record<string, { ar: string; en: string }> = {
+    facebook: { ar: 'فيسبوك', en: 'Facebook' },
+    facebook_secondary: {
+      ar: 'فيسبوك ثانوي',
+      en: 'Facebook Secondary',
+    },
+    instagram: { ar: 'إنستغرام', en: 'Instagram' },
+    instagram_secondary: {
+      ar: 'إنستغرام ثانوي',
+      en: 'Instagram Secondary',
+    },
+    linkedin: { ar: 'لينكد إن', en: 'LinkedIn' },
+    telegram: { ar: 'تلغرام', en: 'Telegram' },
+    telegram_secondary: {
+      ar: 'تلغرام ثانوي',
+      en: 'Telegram Secondary',
+    },
+    twitter: { ar: 'إكس / تويتر', en: 'X / Twitter' },
+    twitter_secondary: {
+      ar: 'إكس / تويتر ثانوي',
+      en: 'X / Twitter Secondary',
+    },
+    website: { ar: 'الموقع الرسمي', en: 'Official Website' },
+    whatsapp: { ar: 'واتساب', en: 'WhatsApp' },
+    youtube: { ar: 'يوتيوب', en: 'YouTube' },
+  };
+  const label = labels[platform.toLowerCase()];
+  if (!label) {
+    return platform;
+  }
+  return language === 'ar' || language === 'ku' ? label.ar : label.en;
 }
 
 const styles = StyleSheet.create({
@@ -501,8 +538,8 @@ const styles = StyleSheet.create({
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/SyOfficial/Index.tsx (479 lines)
+  source:     resources/js/Pages/SyOfficial/Index.tsx (524 lines)
   confidence: high
   todos:      0
-  notes:      Four local languages, grouped ordering, safe social links, and native query states are preserved.
+  notes:      Dynamic database categories, R2 media, secondary links, four languages, and native query states are preserved.
 */

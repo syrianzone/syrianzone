@@ -8,6 +8,15 @@ import { envelopeSchema } from './schemas';
 const requiredText = z.string();
 const optionalText = z.string().optional().default('');
 
+export const officialCategorySchema = z.object({
+  icon: z.string().nullable().optional().default(null),
+  id: requiredText.min(1),
+  is_active: z.boolean().optional().default(true),
+  label_ar: requiredText.min(1),
+  label_en: requiredText.min(1),
+  order_column: z.number().int().nonnegative().optional().default(0),
+});
+
 export const officialEntitySchema = z.object({
   category: requiredText,
   description: requiredText,
@@ -22,6 +31,7 @@ export const officialEntitySchema = z.object({
 export const phonebookEntrySchema = z.object({
   category_ar: requiredText,
   category_en: requiredText,
+  category_id: z.string().optional(),
   id: requiredText.min(1),
   is_whatsapp: z.boolean(),
   name_ar: requiredText,
@@ -61,8 +71,8 @@ export const organizationSchema = z.object({
 });
 
 export const governmentAppSchema = z.object({
-  description: requiredText,
-  icon: requiredText,
+  description: z.string().nullable().transform((value) => value ?? ''),
+  icon: z.string().nullable().transform((value) => value ?? ''),
   id: requiredText.min(1),
   images: z.array(z.string()),
   links: z.object({
@@ -73,9 +83,20 @@ export const governmentAppSchema = z.object({
   name: requiredText.min(1),
 });
 
-const officialEntitiesResponseSchema = envelopeSchema(
-  z.array(officialEntitySchema),
-);
+const officialEntityListSchema = z.array(officialEntitySchema);
+const officialCatalogSchema = z.object({
+  categories: z.array(officialCategorySchema),
+  entities: officialEntityListSchema,
+});
+// Accept the previous array contract while installed clients and servers roll forward.
+const officialCatalogDataSchema = z.union([
+  officialCatalogSchema,
+  officialEntityListSchema.transform((entities) => ({
+    categories: [],
+    entities,
+  })),
+]);
+const officialEntitiesResponseSchema = envelopeSchema(officialCatalogDataSchema);
 const phonebookResponseSchema = envelopeSchema(z.array(phonebookEntrySchema));
 const websitesResponseSchema = envelopeSchema(z.array(websiteSchema));
 const organizationsResponseSchema = envelopeSchema(
@@ -89,6 +110,8 @@ const storeIconResponseSchema = z.object({
 });
 
 export type DirectoryOfficialEntity = z.infer<typeof officialEntitySchema>;
+export type DirectoryOfficialCategory = z.infer<typeof officialCategorySchema>;
+export type DirectoryOfficialCatalog = z.infer<typeof officialCatalogSchema>;
 export type DirectoryPhonebookEntry = z.infer<typeof phonebookEntrySchema>;
 export type DirectoryWebsite = z.infer<typeof websiteSchema>;
 export type DirectoryOrganization = z.infer<typeof organizationSchema>;
@@ -109,7 +132,7 @@ export const directoryQueryKeys = {
 
 export async function fetchOfficialAccounts({
   signal,
-}: RequestOptions = {}): Promise<DirectoryOfficialEntity[]> {
+}: RequestOptions = {}): Promise<DirectoryOfficialCatalog> {
   const response = await apiClient.request('/api/mobile/official-accounts', {
     auth: false,
     schema: officialEntitiesResponseSchema,

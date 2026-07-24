@@ -2,6 +2,8 @@ import type { PlaceFeatureCollection } from './_lib/types';
 import { apiOrigin } from '@/lib/env';
 import {
   filterPlaceFeatures,
+  guideFilterFromParam,
+  guideSearchParam,
   googleMapsUrl,
   isGeoSuggestionQuery,
   isPointInSyria,
@@ -11,8 +13,8 @@ import {
 
 const fixture: PlaceFeatureCollection = {
   features: [
-    { geometry: { coordinates: [36.29, 33.51], type: 'Point' }, properties: { category: 'historical', id: 1, name: 'خان أسعد باشا', thumb_url: null }, type: 'Feature' },
-    { geometry: { coordinates: [35.78, 35.52], type: 'Point' }, properties: { category: 'natural', id: 2, name: 'غابات الفرلق', thumb_url: null }, type: 'Feature' },
+    { geometry: { coordinates: [36.29, 33.51], type: 'Point' }, properties: { category: 'historical', id: 1, name: 'خان أسعد باشا', thumb_url: null, user_id: 7 }, type: 'Feature' },
+    { geometry: { coordinates: [35.78, 35.52], type: 'Point' }, properties: { category: 'natural', id: 2, name: 'غابات الفرلق', thumb_url: null, user_id: 9 }, type: 'Feature' },
   ],
   type: 'FeatureCollection',
 };
@@ -32,8 +34,32 @@ describe('place map filtering', () => {
     expect(filterPlaceFeatures(fixture, null, '33.51, 36.29')).toEqual(fixture);
   });
 
+  it('filters pins to the selected local guide', () => {
+    expect(filterPlaceFeatures(fixture, null, '', 9).features.map((feature) => feature.properties.id)).toEqual([2]);
+  });
+
   it('returns an empty collection when source data is absent', () => {
     expect(filterPlaceFeatures(undefined, null, '')).toEqual({ features: [], type: 'FeatureCollection' });
+  });
+});
+
+describe('guide search parameter', () => {
+  it('opens a positive guide id with an unresolved display name', () => {
+    expect(guideFilterFromParam('12')).toEqual({ id: 12, name: '' });
+    expect(guideFilterFromParam(['9', '12'])).toEqual({ id: 9, name: '' });
+  });
+
+  it('rejects missing, zero, signed, decimal, and nonnumeric guide ids', () => {
+    expect(guideFilterFromParam(undefined)).toBeNull();
+    expect(guideFilterFromParam('0')).toBeNull();
+    expect(guideFilterFromParam('-4')).toBeNull();
+    expect(guideFilterFromParam('4.5')).toBeNull();
+    expect(guideFilterFromParam('ليلى')).toBeNull();
+  });
+
+  it('serializes and clears the selected guide', () => {
+    expect(guideSearchParam({ id: 12, name: 'ليلى' })).toBe('12');
+    expect(guideSearchParam(null)).toBeUndefined();
   });
 });
 

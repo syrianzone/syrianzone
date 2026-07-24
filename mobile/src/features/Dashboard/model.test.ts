@@ -5,27 +5,47 @@ import {
   draftStatusLabel,
   roleLabel,
 } from './model';
+import { TRANSIT_ADMIN_PERMISSIONS } from '../Transit/admin/model';
 
 describe('dashboard role contract', () => {
   test('maps all four source roles to their permitted sections', () => {
-    expect(dashboardCapabilities('user')).toEqual({
+    expect(dashboardCapabilities({ role: 'user' })).toEqual({
       canManagePolls: false,
       canReviewTransit: false,
       canViewSubmissions: true,
     });
-    expect(dashboardCapabilities('transit_admin')).toEqual({
+    expect(dashboardCapabilities({ role: 'transit_admin' })).toEqual({
       canManagePolls: false,
       canReviewTransit: true,
       canViewSubmissions: false,
     });
-    expect(dashboardCapabilities('admin')).toEqual({
+    expect(dashboardCapabilities({ role: 'admin' })).toEqual({
       canManagePolls: true,
       canReviewTransit: true,
       canViewSubmissions: false,
     });
-    expect(dashboardCapabilities('superadmin')).toEqual(
-      dashboardCapabilities('admin'),
+    expect(dashboardCapabilities({ role: 'superadmin' })).toEqual(
+      dashboardCapabilities({ role: 'admin' }),
     );
+  });
+
+  test.each(Object.values(TRANSIT_ADMIN_PERMISSIONS))(
+    'links an ordinary permission holder to Transit admin for %s',
+    (permission) => {
+      expect(
+        dashboardCapabilities({
+          permissions: [permission],
+          role: 'user',
+        }).canReviewTransit,
+      ).toBe(true);
+    },
+  );
+
+  test('preserves wildcard Transit access in the dashboard', () => {
+    expect(
+      dashboardCapabilities({ permissions: ['*'], role: 'user' })
+        .canReviewTransit,
+    ).toBe(true);
   });
 
   test('preserves source default tabs and human role labels', () => {

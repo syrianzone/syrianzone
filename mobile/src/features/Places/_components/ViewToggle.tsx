@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Places/_components/ViewToggle.tsx (30 lines)
+  source:     resources/js/Pages/Places/_components/ViewToggle.tsx (28 lines)
   confidence: high
   todos:      0
   notes:      Native map and gallery selection preserves the shared view switch.

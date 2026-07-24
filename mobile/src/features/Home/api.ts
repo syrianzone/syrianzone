@@ -88,7 +88,7 @@ export async function fetchHomeContent(
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Home.tsx (1327 lines)
+  source:     resources/js/Pages/Home.tsx (1722 lines)
   confidence: high
   todos:      0
   notes:      The native start page validates links and search providers at the API boundary.

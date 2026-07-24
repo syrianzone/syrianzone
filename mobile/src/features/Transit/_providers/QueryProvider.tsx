@@ -6,8 +6,8 @@ export function QueryProvider({ children }: PropsWithChildren) {
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Transit/_providers/QueryProvider.tsx (24 lines)
+  source:     resources/js/Providers/QueryProvider.tsx (24 lines)
   confidence: high
   todos:      0
-  notes:      Transit reuses the application-wide offline-first QueryClient.
+  notes:      The reachable no-op wrapper preserves Transit composition without creating a second QueryClient cache.
 */

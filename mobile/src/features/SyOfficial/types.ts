@@ -2,6 +2,15 @@ export interface SocialLinks {
   [key: string]: string;
 }
 
+export interface OfficialCategory {
+  icon: null | string;
+  id: string;
+  is_active: boolean;
+  label_ar: string;
+  label_en: string;
+  order_column: number;
+}
+
 export interface OfficialEntity {
   category: string;
   description: string;

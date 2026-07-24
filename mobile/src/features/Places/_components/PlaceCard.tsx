@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Places/_components/PlaceCard.tsx (67 lines)
+  source:     resources/js/Pages/Places/_components/PlaceCard.tsx (66 lines)
   confidence: high
   todos:      0
   notes:      Native cards retain thumbnails, fallbacks, category, save count, and selection.

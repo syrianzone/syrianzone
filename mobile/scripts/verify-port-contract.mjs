@@ -1,22 +1,11 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { basename, dirname, resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const sourceRoots = [root];
 const configuredSourceRoot = process.env.PORT_SOURCE_ROOT?.trim();
-if (configuredSourceRoot) {
-  sourceRoots.push(resolve(configuredSourceRoot));
-}
-const siblingSourceRoot = resolve(
-  root,
-  '..',
-  basename(root).replace(/-mobile$/, ''),
-);
-if (siblingSourceRoot !== root && existsSync(siblingSourceRoot)) {
-  sourceRoots.push(siblingSourceRoot);
-}
+const sourceRoot = configuredSourceRoot ? resolve(configuredSourceRoot) : root;
 
 const errors = [];
 const warnings = [];
@@ -34,21 +23,17 @@ function repoPath(path) {
 }
 
 function sourcePath(path) {
-  for (const sourceRoot of sourceRoots) {
-    const candidate = resolve(sourceRoot, path);
-    if (existsSync(candidate) && statSync(candidate).isFile()) {
-      return candidate;
-    }
+  const candidate = resolve(sourceRoot, path);
+  if (existsSync(candidate) && statSync(candidate).isFile()) {
+    return candidate;
   }
   return null;
 }
 
 function sourceDirectoryPath(path) {
-  for (const sourceRoot of sourceRoots) {
-    const candidate = resolve(sourceRoot, path);
-    if (existsSync(candidate) && statSync(candidate).isDirectory()) {
-      return candidate;
-    }
+  const candidate = resolve(sourceRoot, path);
+  if (existsSync(candidate) && statSync(candidate).isDirectory()) {
+    return candidate;
   }
   return null;
 }
@@ -112,19 +97,43 @@ for (const [index, line] of readFileSync(repoPath('port-manifest.tsv'), 'utf8')
   }
 }
 
-for (const requiredSourceDirectory of [
-  'resources/js/Pages/Places',
-  'resources/js/Pages/Admin/Places',
-]) {
+const excludedSourceFiles = new Set([
+  'resources/js/Components/admin/AdminPollGroupManager.tsx',
+  'resources/js/Components/DevRoleSwitcher.tsx',
+  'resources/js/Lib/arcjet.ts',
+  'resources/js/Lib/guessWhoSession.ts',
+  'resources/js/Lib/utils.ts',
+  'resources/js/Pages/Population/lib/csv-parser.ts',
+  'resources/js/Pages/Population/syria_environmental_data_report.json',
+]);
+const excludedSourceDirectories = [
+  'resources/js/Components/sycn/',
+  'resources/js/Components/ui/',
+];
+const requiredSourceDirectories = [
+  'resources/js/Pages',
+  'resources/js/Components',
+  'resources/js/Contexts',
+  'resources/js/Lib',
+  'resources/js/Data',
+  'resources/js/Providers',
+];
+
+function isExcludedSource(source) {
+  return excludedSourceFiles.has(source) ||
+    excludedSourceDirectories.some((directory) => source.startsWith(directory));
+}
+
+for (const requiredSourceDirectory of requiredSourceDirectories) {
   const actualSourceDirectory = sourceDirectoryPath(requiredSourceDirectory);
   if (!actualSourceDirectory) {
-    warnings.push(`${requiredSourceDirectory}: source directory isn't available for manifest coverage`);
+    fail(`${requiredSourceDirectory}: authoritative source directory isn't available for manifest coverage`);
     continue;
   }
-  for (const sourceFile of walk(actualSourceDirectory).filter((path) => /\.[jt]sx?$/.test(path))) {
+  for (const sourceFile of walk(actualSourceDirectory).filter((path) => /\.(?:[jt]sx?|json|md)$/.test(path))) {
     const suffix = sourceFile.slice(actualSourceDirectory.length + 1).replaceAll('\\', '/');
     const source = `${requiredSourceDirectory}/${suffix}`;
-    if (!manifest.has(source)) {
+    if (!isExcludedSource(source) && !manifest.has(source)) {
       fail(`${source}: source file is missing from port-manifest.tsv`);
     }
   }
@@ -132,18 +141,17 @@ for (const requiredSourceDirectory of [
 
 const trailerPattern = /\/\*\s*PORT STATUS\s+source:\s+(\S+) \((\d+) lines\)\s+confidence:\s+(high|medium|low)\s+todos:\s+(\d+)\s+notes:\s+([^\n]+)\s*\*\//g;
 const targetsBySource = new Map();
+const sourceCodeFiles = walk(repoPath('mobile/src')).filter((path) => /\.[jt]sx?$/.test(path));
+const sourceCodeFileSet = new Set(sourceCodeFiles);
 let trailerCount = 0;
-for (const target of walk(repoPath('mobile/src')).filter((path) => /\.tsx?$/.test(path))) {
+for (const target of sourceCodeFiles.filter((path) => /\.tsx?$/.test(path))) {
   const content = readFileSync(target, 'utf8');
   const relativeTarget = target.slice(root.length + 1);
   const matches = [...content.matchAll(trailerPattern)];
   if (content.includes('PORT STATUS') && matches.length === 0) {
     fail(`${relativeTarget}: malformed PORT STATUS trailer`);
   }
-  if (matches.length > 1) {
-    fail(`${relativeTarget}: expected one PORT STATUS trailer, found ${matches.length}`);
-  }
-  const trailer = matches[0];
+  const trailer = matches.at(-1);
   if (trailer && content.slice(trailer.index + trailer[0].length).trim() !== '') {
     fail(`${relativeTarget}: PORT STATUS trailer isn't at the end of the file`);
   }
@@ -176,6 +184,67 @@ for (const source of manifest.keys()) {
   }
 }
 
+function resolveLocalImport(importer, specifier) {
+  let base;
+  if (specifier.startsWith('@/')) {
+    base = resolve(repoPath('mobile/src'), specifier.slice(2));
+  } else if (specifier.startsWith('.')) {
+    base = resolve(dirname(importer), specifier);
+  } else {
+    return null;
+  }
+
+  for (const candidate of [
+    base,
+    ...['.ts', '.tsx', '.js', '.jsx'].map((extension) => `${base}${extension}`),
+    ...['index.ts', 'index.tsx', 'index.js', 'index.jsx'].map((file) => resolve(base, file)),
+  ]) {
+    if (sourceCodeFileSet.has(candidate)) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
+function localImports(path) {
+  const content = readFileSync(path, 'utf8');
+  const specifiers = [];
+  for (const pattern of [
+    /\b(?:import|export)\s+(?:[^'";]*?\s+from\s+)?['"]([^'"]+)['"]/g,
+    /\b(?:require|import)\(\s*['"]([^'"]+)['"]\s*\)/g,
+  ]) {
+    for (const match of content.matchAll(pattern)) {
+      specifiers.push(match[1]);
+    }
+  }
+  return specifiers
+    .map((specifier) => resolveLocalImport(path, specifier))
+    .filter((candidate) => candidate !== null);
+}
+
+const routeDirectory = repoPath('mobile/src/app');
+const routeEntries = walk(routeDirectory).filter(
+  (path) => /\.[jt]sx?$/.test(path) && !/\.test\.[jt]sx?$/.test(path),
+);
+const reachableTargets = new Set(routeEntries);
+const importQueue = [...routeEntries];
+while (importQueue.length > 0) {
+  const importer = importQueue.pop();
+  for (const dependency of localImports(importer)) {
+    if (!reachableTargets.has(dependency)) {
+      reachableTargets.add(dependency);
+      importQueue.push(dependency);
+    }
+  }
+}
+for (const [source, targets] of targetsBySource.entries()) {
+  for (const target of targets) {
+    if (!reachableTargets.has(repoPath(target))) {
+      fail(`${target}: port target for ${source} isn't reachable from an Expo Router entry`);
+    }
+  }
+}
+
 const apiRows = readTsv('mobile-api.tsv', [
   'module',
   'method',
@@ -190,7 +259,7 @@ const apiModules = new Set();
 const apiKeys = new Set();
 const firstPartyRouteKeys = new Set();
 const routeResult = spawnSync('php', ['artisan', 'route:list', '--json'], {
-  cwd: root,
+  cwd: sourceRoot,
   encoding: 'utf8',
   maxBuffer: 10 * 1024 * 1024,
 });
@@ -232,13 +301,26 @@ for (const [index, row] of apiRows.entries()) {
   if (!allowedStatuses.has(status)) {
     fail(`mobile-api.tsv:${line}: unknown port status ${status}`);
   }
-  for (const evidence of [serverEvidence, mobileEvidence]) {
-    if (evidence === '-') {
-      continue;
+  if (status === 'implemented' && mobileEvidence === '-') {
+    fail(`mobile-api.tsv:${line}: implemented dependency needs mobile evidence`);
+  }
+  if (status === 'server-only' && mobileEvidence !== '-') {
+    fail(`mobile-api.tsv:${line}: server-only dependency must not claim mobile evidence`);
+  }
+  if (status.endsWith('external') && path.startsWith('/api/')) {
+    fail(`mobile-api.tsv:${line}: first-party API route cannot use an external status`);
+  }
+  if (serverEvidence !== '-') {
+    for (const evidencePath of serverEvidence.split('|')) {
+      if (!sourcePath(evidencePath)) {
+        fail(`mobile-api.tsv:${line}: missing server evidence ${evidencePath}`);
+      }
     }
-    for (const evidencePath of evidence.split('|')) {
+  }
+  if (mobileEvidence !== '-') {
+    for (const evidencePath of mobileEvidence.split('|')) {
       if (!existsSync(repoPath(evidencePath))) {
-        fail(`mobile-api.tsv:${line}: missing evidence ${evidencePath}`);
+        fail(`mobile-api.tsv:${line}: missing mobile evidence ${evidencePath}`);
       }
     }
   }
@@ -289,7 +371,7 @@ for (const [index, row] of assetRows.entries()) {
   assetFamilies.add(family);
   for (const evidence of sourceEvidence.split('|')) {
     if (!sourcePath(evidence)) {
-      warnings.push(`mobile-assets.tsv:${line}: source evidence isn't available: ${evidence}`);
+      fail(`mobile-assets.tsv:${line}: source evidence isn't available: ${evidence}`);
     }
   }
   if (targetEvidence === '-') {

@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Population/PopulationClient.tsx (995 lines)
+  source:     resources/js/Pages/Population/PopulationClient.tsx (996 lines)
   confidence: high
   todos:      0
   notes:      Native source controls and the two-governorate comparison preserve all demographic layers.

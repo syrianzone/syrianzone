@@ -1,21 +1,52 @@
 module	method	path	server_evidence	mobile_evidence	auth	role	port_status
 home	GET	/api/mobile/home	app/Http/Controllers/Mobile/PublicContentController.php	mobile/src/features/Home/api.ts	public	none	implemented
+board_sync_get	GET	/api/v1/board	app/Http/Controllers/BoardController.php	mobile/src/features/Board/api.ts	stateful session or verified mobile bearer	authenticated	implemented
+board_sync_put	PUT	/api/v1/board	app/Http/Controllers/BoardController.php	mobile/src/features/Board/api.ts	stateful session or verified mobile bearer	authenticated	implemented
+board_answers	GET	/api/answers?limit={limit}	app/Http/Controllers/AnswersController.php	mobile/src/features/Board/sources.ts	public	none	implemented
+board_events	GET	/api/events/today?governorate={governorate}	app/Http/Controllers/EventsController.php	mobile/src/features/Board/sources.ts	public	none	implemented
+board_feed	GET	/api/feed?source={source}	app/Http/Controllers/FeedController.php	mobile/src/features/Board/sources.ts	public	none	implemented
+board_prayer_times	GET	/api/prayer-times?governorate={governorate}	app/Http/Controllers/PrayerController.php	mobile/src/features/Board/sources.ts	public	none	implemented
+board_recipe	GET	/api/recipe-of-the-day	app/Http/Controllers/RecipeController.php	mobile/src/features/Board/sources.ts	public	none	implemented
+board_weather	GET	/api/weather?governorate={governorate}	app/Http/Controllers/WeatherController.php	mobile/src/features/Board/sources.ts	public	none	implemented
 weather	GET	https://syrianzone.hade-alahmad1.workers.dev	-	mobile/src/lib/home/widgets.ts	public	none	direct-external
 prayer_times	GET	https://api.aladhan.com/v1/timings/{date}	-	mobile/src/lib/home/widgets.ts|mobile/src/features/Roznama/data.ts	public	none	direct-external
 events	POST	https://event-backend-production-18c4.up.railway.app/graphql	-	mobile/src/components/F3aliaEvents.model.ts	public	none	direct-external
-official_accounts	GET	/api/mobile/official-accounts	app/Http/Controllers/Mobile/PublicContentController.php	mobile/src/lib/api/directories.ts	public	none	implemented
-official_accounts_upstream	GET	https://docs.google.com/spreadsheets/d/e/2PACX-1vTAtwovmqnk0722ikCNL1RAeoEWyJ2tec3L0-sGHe-0kbmKs0ZPOIyCxOP4e74ndkPooauvG9ZeLTWT/pub?gid=0&single=true&output=csv	app/Services/PublicContent/DirectoryDataService.php	-	server-only	none	server-only-external
-phonebook	GET	/api/mobile/phonebook	app/Http/Controllers/Mobile/PublicContentController.php	mobile/src/lib/api/directories.ts	public	none	implemented
-phonebook_upstream	GET	https://docs.google.com/spreadsheets/d/e/2PACX-1vT59DuQe_jOSrhrjVS7J7kB8YdVJiUHMxkB1-LsZc5MlAVFnUQrDXGM0n4qFm5yqQpPqFn5zkhTGgHS/pub?output=csv	app/Services/PublicContent/DirectoryDataService.php	-	server-only	none	server-only-external
+official_accounts	GET	/api/mobile/official-accounts	app/Http/Controllers/Mobile/PublicContentController.php|app/Services/PublicContent/DirectoryDataService.php	mobile/src/lib/api/directories.ts	public	none	implemented
+phonebook	GET	/api/mobile/phonebook	app/Http/Controllers/Mobile/PublicContentController.php|app/Services/PublicContent/DirectoryDataService.php	mobile/src/lib/api/directories.ts	public	none	implemented
 sites	GET	/api/mobile/sites	app/Http/Controllers/Mobile/PublicContentController.php	mobile/src/lib/api/directories.ts	public	none	implemented
 sites_upstream	GET	https://docs.google.com/spreadsheets/d/e/2PACX-1vTCrz7GpfTDmtgKipQd3IqyMPle1ehoG77VO2SQRDqKC9zRRKO3FDI60VoYhA_XqlzoKQ6gZDrIuIjL/pub?output=csv	app/Services/PublicContent/DirectoryDataService.php	-	server-only	none	server-only-external
 parties	GET	/api/mobile/parties	app/Http/Controllers/Mobile/PublicContentController.php	mobile/src/lib/api/directories.ts	public	none	implemented
 parties_upstream	GET	https://docs.google.com/spreadsheets/d/e/2PACX-1vTxa48kbdV2X5Umd3WGDeU7xX5qFVRpyA3uDFhI9w2FAOuxSiGebSpKrVpjU-13XswnNgxHvfWw-sbJ/pub?output=csv	app/Services/PublicContent/DirectoryDataService.php	-	server-only	none	server-only-external
-government_apps	GET	/api/mobile/government-apps	app/Http/Controllers/Mobile/PublicContentController.php	mobile/src/lib/api/directories.ts	public	none	implemented
-government_apps_upstream	GET	https://docs.google.com/spreadsheets/d/e/2PACX-1vRW4BMKTSgWlF6ppCgGxzVxvFIdADOG7G5MxIuiRuOCysCIdC_BYpLURlyQwOsrsJj_5q_vn7JwheCF/pub?gid=0&single=true&output=csv	app/Services/PublicContent/DirectoryDataService.php	-	server-only	none	server-only-external
+government_apps	GET	/api/mobile/government-apps	app/Http/Controllers/Mobile/PublicContentController.php|app/Services/PublicContent/DirectoryDataService.php	mobile/src/lib/api/directories.ts	public	none	implemented
 government_app_icon	GET	/api/app-icon	routes/api.php	mobile/src/lib/api/directories.ts	public	none	implemented
 government_app_icon_apple_upstream	GET	https://itunes.apple.com/lookup?id={id}	routes/api.php	-	server-only	none	server-only-external
 government_app_icon_play_upstream	GET	https://play.google.com/store/apps/details?id={package}&hl=en	routes/api.php	-	server-only	none	server-only-external
+admin_syofficial_list	GET	/api/mobile/admin/syofficial	app/Http/Controllers/Mobile/SyOfficialAdminController.php	mobile/src/lib/api/directories/admin.ts	bearer	admin|superadmin|syofficial_admin|syofficial.create|syofficial.delete|syofficial.edit|syofficial.reorder|syofficial.toggle|*	implemented
+admin_syofficial_category_create	POST	/api/mobile/admin/syofficial/categories	app/Http/Controllers/Mobile/SyOfficialAdminController.php	mobile/src/lib/api/directories/admin.ts	bearer	admin|superadmin|syofficial_admin|syofficial.create|*	implemented
+admin_syofficial_category_update	PUT	/api/mobile/admin/syofficial/categories/{id}	app/Http/Controllers/Mobile/SyOfficialAdminController.php	mobile/src/lib/api/directories/admin.ts	bearer	admin|superadmin|syofficial_admin|syofficial.edit|*	implemented
+admin_syofficial_category_delete	DELETE	/api/mobile/admin/syofficial/categories/{id}	app/Http/Controllers/Mobile/SyOfficialAdminController.php	mobile/src/lib/api/directories/admin.ts	bearer	admin|superadmin|syofficial_admin|syofficial.delete|*	implemented
+admin_syofficial_entity_create	POST	/api/mobile/admin/syofficial/entities	app/Http/Controllers/Mobile/SyOfficialAdminController.php	mobile/src/lib/api/directories/admin.ts	bearer	admin|superadmin|syofficial_admin|syofficial.create|*	implemented
+admin_syofficial_entity_update	POST	/api/mobile/admin/syofficial/entities/{id}	app/Http/Controllers/Mobile/SyOfficialAdminController.php	mobile/src/lib/api/directories/admin.ts	bearer	admin|superadmin|syofficial_admin|syofficial.edit|*	implemented
+admin_syofficial_entity_visibility	PATCH	/api/mobile/admin/syofficial/entities/{id}/visibility	app/Http/Controllers/Mobile/SyOfficialAdminController.php	mobile/src/lib/api/directories/admin.ts	bearer	admin|superadmin|syofficial_admin|syofficial.toggle|*	implemented
+admin_syofficial_entity_delete	DELETE	/api/mobile/admin/syofficial/entities/{id}	app/Http/Controllers/Mobile/SyOfficialAdminController.php	mobile/src/lib/api/directories/admin.ts	bearer	admin|superadmin|syofficial_admin|syofficial.delete|*	implemented
+admin_syofficial_categories_reorder	POST	/api/mobile/admin/syofficial/reorder/categories	app/Http/Controllers/Mobile/SyOfficialAdminController.php	mobile/src/lib/api/directories/admin.ts	bearer	admin|superadmin|syofficial_admin|syofficial.reorder|*	implemented
+admin_syofficial_entities_reorder	POST	/api/mobile/admin/syofficial/reorder/entities	app/Http/Controllers/Mobile/SyOfficialAdminController.php	mobile/src/lib/api/directories/admin.ts	bearer	admin|superadmin|syofficial_admin|syofficial.reorder|*	implemented
+admin_govapps_list	GET	/api/mobile/admin/govapps	app/Http/Controllers/Mobile/GovAppsAdminController.php	mobile/src/lib/api/directories/admin.ts	bearer	admin|superadmin|govapps_admin|govapps.create|govapps.delete|govapps.edit|govapps.reorder|govapps.toggle|*	implemented
+admin_govapps_create	POST	/api/mobile/admin/govapps	app/Http/Controllers/Mobile/GovAppsAdminController.php	mobile/src/lib/api/directories/admin.ts	bearer	admin|superadmin|govapps_admin|govapps.create|*	implemented
+admin_govapps_update	POST	/api/mobile/admin/govapps/{id}	app/Http/Controllers/Mobile/GovAppsAdminController.php	mobile/src/lib/api/directories/admin.ts	bearer	admin|superadmin|govapps_admin|govapps.edit|*	implemented
+admin_govapps_visibility	PATCH	/api/mobile/admin/govapps/{id}/visibility	app/Http/Controllers/Mobile/GovAppsAdminController.php	mobile/src/lib/api/directories/admin.ts	bearer	admin|superadmin|govapps_admin|govapps.toggle|*	implemented
+admin_govapps_delete	DELETE	/api/mobile/admin/govapps/{id}	app/Http/Controllers/Mobile/GovAppsAdminController.php	mobile/src/lib/api/directories/admin.ts	bearer	admin|superadmin|govapps_admin|govapps.delete|*	implemented
+admin_govapps_reorder	POST	/api/mobile/admin/govapps/reorder	app/Http/Controllers/Mobile/GovAppsAdminController.php	mobile/src/lib/api/directories/admin.ts	bearer	admin|superadmin|govapps_admin|govapps.reorder|*	implemented
+admin_phonebook_list	GET	/api/mobile/admin/phonebook	app/Http/Controllers/Mobile/PhonebookAdminController.php	mobile/src/lib/api/directories/admin.ts	bearer	admin|superadmin|phonebook_admin|phonebook.create|phonebook.delete|phonebook.edit|phonebook.reorder|phonebook.toggle|*	implemented
+admin_phonebook_category_create	POST	/api/mobile/admin/phonebook/categories	app/Http/Controllers/Mobile/PhonebookAdminController.php	mobile/src/lib/api/directories/admin.ts	bearer	admin|superadmin|phonebook_admin|phonebook.create|*	implemented
+admin_phonebook_category_update	PUT	/api/mobile/admin/phonebook/categories/{id}	app/Http/Controllers/Mobile/PhonebookAdminController.php	mobile/src/lib/api/directories/admin.ts	bearer	admin|superadmin|phonebook_admin|phonebook.edit|*	implemented
+admin_phonebook_category_delete	DELETE	/api/mobile/admin/phonebook/categories/{id}	app/Http/Controllers/Mobile/PhonebookAdminController.php	mobile/src/lib/api/directories/admin.ts	bearer	admin|superadmin|phonebook_admin|phonebook.delete|*	implemented
+admin_phonebook_entry_create	POST	/api/mobile/admin/phonebook/entries	app/Http/Controllers/Mobile/PhonebookAdminController.php	mobile/src/lib/api/directories/admin.ts	bearer	admin|superadmin|phonebook_admin|phonebook.create|*	implemented
+admin_phonebook_entry_update	PUT	/api/mobile/admin/phonebook/entries/{id}	app/Http/Controllers/Mobile/PhonebookAdminController.php	mobile/src/lib/api/directories/admin.ts	bearer	admin|superadmin|phonebook_admin|phonebook.edit|*	implemented
+admin_phonebook_entry_visibility	PATCH	/api/mobile/admin/phonebook/entries/{id}/visibility	app/Http/Controllers/Mobile/PhonebookAdminController.php	mobile/src/lib/api/directories/admin.ts	bearer	admin|superadmin|phonebook_admin|phonebook.toggle|*	implemented
+admin_phonebook_entry_delete	DELETE	/api/mobile/admin/phonebook/entries/{id}	app/Http/Controllers/Mobile/PhonebookAdminController.php	mobile/src/lib/api/directories/admin.ts	bearer	admin|superadmin|phonebook_admin|phonebook.delete|*	implemented
+admin_phonebook_categories_reorder	POST	/api/mobile/admin/phonebook/reorder/categories	app/Http/Controllers/Mobile/PhonebookAdminController.php	mobile/src/lib/api/directories/admin.ts	bearer	admin|superadmin|phonebook_admin|phonebook.reorder|*	implemented
+admin_phonebook_entries_reorder	POST	/api/mobile/admin/phonebook/reorder/entries	app/Http/Controllers/Mobile/PhonebookAdminController.php	mobile/src/lib/api/directories/admin.ts	bearer	admin|superadmin|phonebook_admin|phonebook.reorder|*	implemented
 house	GET	/api/mobile/house?mode={mode}&province={province}	app/Http/Controllers/Mobile/PublicContentController.php	mobile/src/features/House/data.ts	public	none	implemented
 house_upstream	GET	https://docs.google.com/spreadsheets/d/{sheetId}/export?format=csv&gid={gid}	app/Services/PublicContent/HouseDataService.php	-	server-only	none	server-only-external
 polls	GET	/api/mobile/polls	app/Http/Controllers/Mobile/PollController.php	mobile/src/lib/api/polls.ts	public	none	implemented
@@ -61,9 +92,9 @@ transit_nearby	GET	/api/v1/stops/nearby	app/Http/Controllers/Api/V1/TransitContr
 transit_search	GET	/api/v1/search	app/Http/Controllers/Api/V1/TransitController.php	mobile/src/features/Transit/api.ts	public	none	implemented
 transit_route_detail	GET	/api/mobile/transit/cities/{cityId}/routes/{routeId}	app/Http/Controllers/Mobile/PublicContentController.php	mobile/src/features/Transit/api.ts	public	none	implemented
 transit_contribution	POST	/api/v1/studio/routes	app/Http/Controllers/TransitStudioController.php	mobile/src/features/Transit/api.ts	optional bearer	none	implemented
-transit_studio_draft	GET	/api/v1/studio/routes/{id}	app/Http/Controllers/TransitStudioController.php	-	stateful web session	owner|admin|transit_admin|superadmin	server-only
-transit_studio_draft_update	PUT	/api/v1/studio/routes/{id}	app/Http/Controllers/TransitStudioController.php	-	stateful web session	owner|admin|transit_admin|superadmin	server-only
-transit_studio_from_route	GET	/api/v1/studio/routes/{id}/from-route	app/Http/Controllers/TransitStudioController.php	-	stateful web session	authenticated	server-only
+transit_studio_draft	GET	/api/v1/studio/routes/{id}	app/Http/Controllers/TransitStudioController.php	mobile/src/features/Transit/api.ts	stateful session or verified mobile bearer	owner|admin|transit_admin|superadmin	implemented
+transit_studio_draft_update	PUT	/api/v1/studio/routes/{id}	app/Http/Controllers/TransitStudioController.php	mobile/src/features/Transit/api.ts	stateful session or verified mobile bearer	owner|admin|transit_admin|superadmin	implemented
+transit_studio_from_route	GET	/api/v1/studio/routes/{id}/from-route	app/Http/Controllers/TransitStudioController.php	mobile/src/features/Transit/api.ts	stateful session or verified mobile bearer	authenticated	implemented
 transit_admin_routes	GET	/api/v1/admin/routes	app/Http/Controllers/TransitAdminController.php	-	stateful web session	admin|transit_admin|superadmin	server-only
 transit_admin_route_logs	GET	/api/v1/admin/routes/logs	app/Http/Controllers/TransitAdminController.php	-	stateful web session	admin|transit_admin|superadmin	server-only
 transit_admin_route_status	POST	/api/v1/admin/routes/{id}/status	app/Http/Controllers/TransitAdminController.php	-	stateful web session	admin|transit_admin|superadmin	server-only
@@ -73,8 +104,17 @@ transit_admin_route_combine	POST	/api/v1/admin/routes/combine	app/Http/Controlle
 transit_admin_route_split	POST	/api/v1/admin/routes/split	app/Http/Controllers/TransitAdminController.php	-	stateful web session	admin|transit_admin|superadmin	server-only
 transit_admin_route_stops	GET	/api/v1/admin/routes/{id}/stops	app/Http/Controllers/TransitAdminController.php	-	stateful web session	admin|transit_admin|superadmin	server-only
 transit_admin_route_geojson	GET	/api/v1/admin/routes/{id}/geojson	app/Http/Controllers/TransitAdminController.php	-	stateful web session	admin|transit_admin|superadmin	server-only
+transit_mobile_admin_routes	GET	/api/mobile/admin/routes	app/Http/Controllers/TransitAdminController.php	mobile/src/features/Transit/api.ts	bearer	admin|transit_admin|superadmin	implemented
+transit_mobile_admin_route_logs	GET	/api/mobile/admin/routes/logs	app/Http/Controllers/TransitAdminController.php	mobile/src/features/Transit/api.ts	bearer	admin|transit_admin|superadmin	implemented
+transit_mobile_admin_route_status	POST	/api/mobile/admin/routes/{id}/status	app/Http/Controllers/TransitAdminController.php	mobile/src/features/Transit/api.ts	bearer	admin|transit_admin|superadmin	implemented
+transit_mobile_admin_route_update	PUT	/api/mobile/admin/routes/{id}	app/Http/Controllers/TransitAdminController.php	mobile/src/features/Transit/api.ts|mobile/src/features/Transit/admin/RouteColorSelector.tsx	bearer	admin|transit_admin|superadmin	implemented
+transit_mobile_admin_route_move	POST	/api/mobile/admin/routes/{id}/move	app/Http/Controllers/TransitAdminController.php	mobile/src/features/Transit/api.ts	bearer	admin|transit_admin|superadmin	implemented
+transit_mobile_admin_route_combine	POST	/api/mobile/admin/routes/combine	app/Http/Controllers/TransitAdminController.php	mobile/src/features/Transit/api.ts	bearer	admin|transit_admin|superadmin	implemented
+transit_mobile_admin_route_split	POST	/api/mobile/admin/routes/split	app/Http/Controllers/TransitAdminController.php	mobile/src/features/Transit/api.ts	bearer	admin|transit_admin|superadmin	implemented
+transit_mobile_admin_route_stops	GET	/api/mobile/admin/routes/{id}/stops	app/Http/Controllers/TransitAdminController.php	mobile/src/features/Transit/api.ts	bearer	admin|transit_admin|superadmin	implemented
+transit_mobile_admin_route_geojson	GET	/api/mobile/admin/routes/{id}/geojson	app/Http/Controllers/TransitAdminController.php	mobile/src/features/Transit/api.ts	bearer	admin|transit_admin|superadmin	implemented
 transit_admin_drafts	GET	/api/mobile/admin/transit-drafts	app/Http/Controllers/TransitAdminController.php	mobile/src/features/Transit/api.ts	bearer	admin|transit_admin|superadmin	implemented
-transit_admin_approve	POST	/api/mobile/admin/transit-drafts/{id}/approve	app/Http/Controllers/TransitAdminController.php	mobile/src/features/Transit/api.ts	bearer	admin|transit_admin|superadmin	implemented
+transit_admin_approve	POST	/api/mobile/admin/transit-drafts/{id}/approve	app/Http/Controllers/TransitAdminController.php	mobile/src/features/Transit/api.ts|mobile/src/features/Transit/admin/RouteColorSelector.tsx	bearer	admin|transit_admin|superadmin	implemented
 transit_admin_reject	POST	/api/mobile/admin/transit-drafts/{id}/reject	app/Http/Controllers/TransitAdminController.php	mobile/src/features/Transit/api.ts	bearer	admin|transit_admin|superadmin	implemented
 map_vector_tile_manifest	GET	https://tiles.basemaps.cartocdn.com/vector/carto.streets/v1/tiles.json	-	mobile/assets/styles/dark-matter-vector.json|mobile/assets/styles/light-vector.json	public	none	declared-external
 map_vector_tiles	GET	https://tiles-{a|b|c|d}.basemaps.cartocdn.com/vectortiles/carto.streets/v1/{z}/{x}/{y}.mvt	-	mobile/assets/styles/dark-matter-vector.json|mobile/assets/styles/light-vector.json	public	none	declared-external
@@ -88,6 +128,7 @@ auth_user	GET	/api/mobile/user	app/Http/Controllers/MobileAuthController.php	mob
 auth_logout	POST	/api/mobile/logout	app/Http/Controllers/MobileAuthController.php	mobile/src/lib/auth/api.ts	bearer	none	implemented
 account	GET	/api/mobile/account	app/Http/Controllers/Mobile/AccountController.php	mobile/src/features/Dashboard/api.ts	bearer	none	implemented
 account_update	PATCH	/api/mobile/account	app/Http/Controllers/Mobile/AccountController.php	mobile/src/features/Dashboard/api.ts	bearer	none	implemented
+account_settings	PATCH	/api/mobile/account/settings	app/Http/Controllers/Mobile/AccountController.php	mobile/src/lib/auth/accountSettings.ts	bearer	none	implemented
 account_avatar	POST	/api/mobile/account/avatar	app/Http/Controllers/Mobile/AccountController.php	mobile/src/features/Dashboard/api.ts	bearer	none	implemented
 account_delete	DELETE	/api/mobile/account	app/Http/Controllers/Mobile/AccountController.php	mobile/src/features/Dashboard/api.ts	bearer	none	implemented
 account_draft_withdraw	DELETE	/api/mobile/account/transit-drafts/{id}	app/Http/Controllers/Mobile/AccountController.php	mobile/src/features/Dashboard/api.ts	bearer	owner	implemented

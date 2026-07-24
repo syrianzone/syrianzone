@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
 
 /*
 PORT STATUS
-  source:     resources/js/Components/UserNav.tsx (72 lines)
+  source:     resources/js/Components/UserNav.tsx (74 lines)
   confidence: high
   todos:      0
   notes:      Native account actions replace browser dropdown links and reload.

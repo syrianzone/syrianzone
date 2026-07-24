@@ -2,7 +2,7 @@ import { fetchOrganizations as fetchDirectoryOrganizations } from '@/lib/api/dir
 
 import type { Organization } from './types';
 
-export const PARTY_PAGE_SIZE = 12;
+export const PARTY_PAGE_SIZE = 15;
 export type PartySort = 'category' | 'city' | 'country' | 'name' | 'name-desc';
 export type SocialPlatform =
   | 'facebook'
@@ -17,7 +17,7 @@ export interface PartyFilters {
   country: string;
   language: string;
   search: string;
-  sort: PartySort;
+  sort?: PartySort;
 }
 
 export async function fetchOrganizations(
@@ -71,13 +71,12 @@ export function getPartyFilterOptions(
   ].sort();
 }
 
-export function filterAndSortOrganizations(
+export function filterOrganizations(
   organizations: readonly Organization[],
   filters: PartyFilters,
 ): Organization[] {
   const term = filters.search.toLowerCase();
-  return organizations
-    .filter((organization) => {
+  return organizations.filter((organization) => {
       const searchMatches =
         !term ||
         organization.name.toLowerCase().includes(term) ||
@@ -94,24 +93,14 @@ export function filterAndSortOrganizations(
         (filters.language === 'all' ||
           organization.lang === filters.language)
       );
-    })
-    .sort((first, second) => {
-      switch (filters.sort) {
-        case 'name-desc':
-          return second.name.localeCompare(first.name, 'ar');
-        case 'category':
-          return (first.type ?? '').localeCompare(second.type ?? '', 'ar');
-        case 'country':
-          return (first.country ?? '').localeCompare(
-            second.country ?? '',
-            'ar',
-          );
-        case 'city':
-          return (first.city ?? '').localeCompare(second.city ?? '', 'ar');
-        default:
-          return first.name.localeCompare(second.name, 'ar');
-      }
     });
+}
+
+export function filterAndSortOrganizations(
+  organizations: readonly Organization[],
+  filters: PartyFilters,
+): Organization[] {
+  return filterOrganizations(organizations, filters);
 }
 
 /*

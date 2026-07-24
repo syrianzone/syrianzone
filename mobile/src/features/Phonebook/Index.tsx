@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Phonebook/Index.tsx (475 lines)
+  source:     resources/js/Pages/Phonebook/Index.tsx (466 lines)
   confidence: high
   todos:      0
   notes:      Native clipboard, safe calling links, and validated query states preserve directory behavior.

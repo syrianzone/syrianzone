@@ -1,24 +1,34 @@
 import { useQuery } from '@tanstack/react-query';
-import { Image } from 'expo-image';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppButton } from '@/components/ui/AppButton';
 import { AppText } from '@/components/ui/AppText';
+import { Avatar } from '@/components/ui/Avatar';
 import { useAppTheme } from '@/contexts/ThemeContext';
 
 import { discovery } from '../_lib/discovery';
-import type { GuidesSort } from '../_lib/types';
+import type { Guide, GuideFilter, GuidesSort } from '../_lib/types';
+import { GuideProfileCard } from './GuideProfileCard';
+import { LevelBadge } from './LevelBadge';
+import { MilestonesSheet } from './MilestonesSheet';
 
 const SORTS: readonly { label: string; value: GuidesSort }[] = [
+  { label: 'الأعلى نقاطاً', value: 'points' },
   { label: 'الأكثر مساهمة', value: 'submissions' },
   { label: 'الأكثر حفظاً', value: 'saves' },
   { label: 'النشطون مؤخراً', value: 'recent' },
 ];
 
-export function GuidesTab() {
+export function GuidesTab({
+  onSelectGuide,
+}: {
+  onSelectGuide: (guide: GuideFilter) => void;
+}) {
   const { theme } = useAppTheme();
-  const [sort, setSort] = useState<GuidesSort>('submissions');
+  const [milestonesOpen, setMilestonesOpen] = useState(false);
+  const [profile, setProfile] = useState<Guide | null>(null);
+  const [sort, setSort] = useState<GuidesSort>('points');
   const query = useQuery({
     queryFn: () => discovery.guides(sort),
     queryKey: ['places', 'guides', sort],
@@ -28,7 +38,10 @@ export function GuidesTab() {
 
   return (
     <View style={styles.root}>
-      <AppText variant="heading">المرشدون المحليون</AppText>
+      <View style={styles.header}>
+        <AppText variant="heading">المرشدون المحليون</AppText>
+        <AppButton onPress={() => setMilestonesOpen(true)} variant="ghost">الرتب</AppButton>
+      </View>
       <View style={styles.sorts}>
         {SORTS.map((item) => {
           const active = item.value === sort;
@@ -63,33 +76,45 @@ export function GuidesTab() {
       ) : guides.length === 0 ? (
         <AppText color="muted">لا يوجد مساهمون بعد</AppText>
       ) : guides.map((guide) => (
-        <View key={guide.user_id} style={[styles.guide, { borderColor: theme.palette.border }]}>
+        <Pressable
+          accessibilityLabel={`فتح ملف ${guide.name}`}
+          accessibilityRole="button"
+          key={guide.user_id}
+          onPress={() => setProfile(guide)}
+          style={[styles.guide, { borderColor: theme.palette.border }]}
+        >
           <AppText color="muted" style={styles.rank} variant="label">{guide.rank}</AppText>
-          {guide.avatar_url ? (
-            <Image accessibilityLabel={guide.name} source={guide.avatar_url} style={styles.avatar} />
-          ) : (
-            <View style={[styles.avatar, styles.fallback, { backgroundColor: theme.palette.surfaceRaised }]}>
-              <AppText variant="label">{guide.name.slice(0, 1)}</AppText>
-            </View>
-          )}
+          <Avatar label={guide.name} uri={guide.avatar_url} />
           <View style={styles.copy}>
-            <AppText numberOfLines={1} variant="label">{guide.name}</AppText>
+            <View style={styles.name}>
+              <AppText numberOfLines={1} variant="label">{guide.name}</AppText>
+              <LevelBadge level={guide.level} showLabel />
+            </View>
             <AppText color="muted" variant="caption">
-              {guide.approved_count} مساهمة · {guide.saves_total} حفظ
+              {guide.points} نقطة · {guide.approved_count} مساهمة · {guide.saves_total} حفظ
               {sort === 'recent' ? ` · ${guide.recent_count} خلال 30 يوماً` : ''}
             </AppText>
           </View>
-        </View>
+        </Pressable>
       ))}
+      <MilestonesSheet onClose={() => setMilestonesOpen(false)} open={milestonesOpen} />
+      <GuideProfileCard
+        guide={profile}
+        onClose={() => setProfile(null)}
+        onShowContributions={(guide) => {
+          setProfile(null);
+          onSelectGuide(guide);
+        }}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  avatar: { borderRadius: 18, height: 36, width: 36 },
   copy: { flex: 1, gap: 2 },
-  fallback: { alignItems: 'center', justifyContent: 'center' },
   guide: { alignItems: 'center', borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row-reverse', gap: 10, minHeight: 54, paddingVertical: 7 },
+  header: { alignItems: 'center', flexDirection: 'row-reverse', justifyContent: 'space-between' },
+  name: { alignItems: 'center', flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 6 },
   rank: { textAlign: 'center', width: 24 },
   root: { gap: 10 },
   sort: { borderRadius: 18, borderWidth: 1, paddingHorizontal: 11, paddingVertical: 7 },
@@ -99,8 +124,8 @@ const styles = StyleSheet.create({
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Places/_components/GuidesTab.tsx (93 lines)
+  source:     resources/js/Pages/Places/_components/GuidesTab.tsx (120 lines)
   confidence: high
   todos:      0
-  notes:      Native ranking modes, avatars, counts, loading, empty, error, and retry states preserve the guides board.
+  notes:      Points-first ranking, named levels, profiles, ranks, filtering, loading, error, and retry preserve the guides board.
 */

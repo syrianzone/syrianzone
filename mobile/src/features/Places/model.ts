@@ -1,4 +1,5 @@
 import type {
+  GuideFilter,
   LatLng,
   PlaceCategory,
   PlaceFeatureCollection,
@@ -101,10 +102,35 @@ export function googleMapsUrl(point: LatLng): string {
   return url.toString();
 }
 
-export function filterPlaceFeatures(data: PlaceFeatureCollection | null | undefined, category: PlaceCategory | null, query: string): PlaceFeatureCollection {
+export function guideFilterFromParam(
+  value: string | string[] | undefined,
+): GuideFilter | null {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (!raw || !/^\d+$/.test(raw)) {
+    return null;
+  }
+  const id = Number(raw);
+  return id > 0 ? { id, name: '' } : null;
+}
+
+export function guideSearchParam(guide: GuideFilter | null): string | undefined {
+  return guide ? String(guide.id) : undefined;
+}
+
+export function filterPlaceFeatures(
+  data: PlaceFeatureCollection | null | undefined,
+  category: PlaceCategory | null,
+  query: string,
+  guideId: number | null = null,
+): PlaceFeatureCollection {
   const search = parseLatLng(query) ? '' : query.trim();
   return {
-    features: (data?.features ?? []).filter((feature) => (category === null || feature.properties.category === category) && (!search || feature.properties.name.includes(search))),
+    features: (data?.features ?? []).filter(
+      (feature) =>
+        (category === null || feature.properties.category === category)
+        && (guideId === null || feature.properties.user_id === guideId)
+        && (!search || feature.properties.name.includes(search)),
+    ),
     type: 'FeatureCollection',
   };
 }

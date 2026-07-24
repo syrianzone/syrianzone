@@ -1,14 +1,12 @@
 export const routeColors = [
-  '#e11d48',
-  '#2563eb',
-  '#16a34a',
-  '#9333ea',
-  '#ea580c',
-  '#0891b2',
-  '#ca8a04',
-  '#db2777',
-  '#4f46e5',
-  '#059669',
+  '#e8a838',
+  '#c44b4b',
+  '#4a8fa8',
+  '#7ab87a',
+  '#d4956a',
+  '#9b6bb5',
+  '#5ba08a',
+  '#c9784a',
 ] as const;
 
 export function routeColor(index: number): string {

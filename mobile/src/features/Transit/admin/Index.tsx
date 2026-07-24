@@ -11,6 +11,7 @@ import { QueryState } from '@/components/ui/QueryState';
 import { Screen } from '@/components/ui/Screen';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppTheme } from '@/contexts/ThemeContext';
+import type { AuthUser } from '@/lib/auth/types';
 
 import { TransitMapView } from '../_components/citymap/MapView';
 import cities from '../_data/cities';
@@ -24,13 +25,16 @@ import {
 } from '../api';
 import {
   buildDraftMapData,
-  canReviewTransit,
   type DraftStatusFilter,
   filterTransitDrafts,
+  transitAdminAccess,
+  type TransitAdminAccess,
   transitAdminDraftsQueryKey,
   transitDraftStats,
   transitDraftStopCount,
 } from './model';
+import { PublishedRoutesPanel } from './PublishedRoutesPanel';
+import { RouteColorSelector } from './RouteColorSelector';
 
 const statusLabels = {
   all: 'الكل',
@@ -78,24 +82,52 @@ export function confirmTransitSubmitterBan({
   );
 }
 
-export default function TransitAdminScreen() {
-  const { loading: authLoading, login, user } = useAuth();
+function positiveInteger(value: string): number | null {
+  const parsed = Number(value.trim());
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
+interface TransitAdminWorkspaceProps {
+  access: TransitAdminAccess;
+  user: AuthUser;
+}
+
+function TransitAdminWorkspace({
+  access,
+  user,
+}: TransitAdminWorkspaceProps) {
   const { theme } = useAppTheme();
   const queryClient = useQueryClient();
-  const permitted = canReviewTransit(user?.role);
   const [statusFilter, setStatusFilter] = useState<DraftStatusFilter>('all');
+  const [requestedAdminView, setRequestedAdminView] = useState<
+    'drafts' | 'routes'
+  >(access.canManageDrafts ? 'drafts' : 'routes');
   const [cityFilter, setCityFilter] = useState('all');
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [approveColorIndex, setApproveColorIndex] = useState(0);
+  const [approveDraftId, setApproveDraftId] = useState('');
+  const [rejectDraftId, setRejectDraftId] = useState('');
   const [rejectReason, setRejectReason] = useState('');
   const [submitterBanStates, setSubmitterBanStates] = useState<
     Readonly<Record<number, boolean>>
   >({});
+  const adminView =
+    requestedAdminView === 'drafts' && access.canManageDrafts
+      ? 'drafts'
+      : requestedAdminView === 'routes' && access.canManagePublishedRoutes
+        ? 'routes'
+        : access.canManageDrafts
+          ? 'drafts'
+          : 'routes';
   const draftsQuery = useQuery({
-    enabled: permitted,
+    enabled: access.reviewDrafts,
     queryFn: getTransitDrafts,
-    queryKey: transitAdminDraftsQueryKey(user?.id ?? 0),
+    queryKey: transitAdminDraftsQueryKey(user.id),
   });
-  const drafts = useMemo(() => draftsQuery.data ?? [], [draftsQuery.data]);
+  const drafts = useMemo(
+    () => (access.reviewDrafts ? draftsQuery.data ?? [] : []),
+    [access.reviewDrafts, draftsQuery.data],
+  );
   const selected = drafts.find((draft) => draft.id === selectedId) ?? null;
   const reference = useMapData(selected?.city_id);
   const selectedCity =
@@ -104,7 +136,7 @@ export default function TransitAdminScreen() {
     ) ??
     fallbackCity;
   const preview = selected
-    ? buildDraftMapData(selected, reference.data)
+    ? buildDraftMapData(selected, reference.data, approveColorIndex)
     : null;
   const selectedSubmitterId = selected?.user?.id ?? selected?.user_id ?? null;
   const selectedSubmitterBanned = selectedSubmitterId === null
@@ -121,11 +153,19 @@ export default function TransitAdminScreen() {
   );
 
   const approve = useMutation({
-    mutationFn: approveTransitDraft,
+    mutationFn: ({
+      colorIndex,
+      id,
+    }: {
+      colorIndex: number;
+      id: number;
+    }) => approveTransitDraft(id, colorIndex),
     onSuccess: async () => {
+      setApproveColorIndex(0);
+      setApproveDraftId('');
       setSelectedId(null);
       await queryClient.invalidateQueries({
-        queryKey: transitAdminDraftsQueryKey(user?.id ?? 0),
+        queryKey: transitAdminDraftsQueryKey(user.id),
       });
     },
   });
@@ -133,10 +173,11 @@ export default function TransitAdminScreen() {
     mutationFn: ({ id, reason }: { id: number; reason: string }) =>
       rejectTransitDraft(id, reason),
     onSuccess: async () => {
+      setRejectDraftId('');
       setRejectReason('');
       setSelectedId(null);
       await queryClient.invalidateQueries({
-        queryKey: transitAdminDraftsQueryKey(user?.id ?? 0),
+        queryKey: transitAdminDraftsQueryKey(user.id),
       });
     },
   });
@@ -162,36 +203,49 @@ export default function TransitAdminScreen() {
     });
   };
 
-  if (authLoading) {
-    return (
-      <Screen title="لوحة إدارة الترانزيت">
-        <AppText color="muted">جار التحقق من الحساب...</AppText>
-      </Screen>
-    );
-  }
-  if (!user) {
-    return (
-      <Screen title="لوحة إدارة الترانزيت">
-        <QueryState detail="سجل الدخول للوصول إلى مراجعة المسارات." type="error" />
-        <AppButton onPress={() => void login()}>تسجيل الدخول</AppButton>
-      </Screen>
-    );
-  }
-  if (!permitted) {
-    return (
-      <Screen title="لوحة إدارة الترانزيت">
-        <QueryState detail="لا يملك هذا الحساب صلاحية مراجعة المسارات." type="error" />
-      </Screen>
-    );
-  }
-
   return (
     <Screen
-      onRefresh={() => void draftsQuery.refetch()}
-      refreshing={draftsQuery.isRefetching}
-      subtitle="مراجعة مسارات المجتمع"
+      onRefresh={
+        adminView === 'drafts' && access.reviewDrafts
+          ? () => void draftsQuery.refetch()
+          : undefined
+      }
+      refreshing={
+        adminView === 'drafts' &&
+        access.reviewDrafts &&
+        draftsQuery.isRefetching
+      }
+      subtitle="إدارة مسارات المجتمع"
       title="لوحة إدارة الترانزيت"
     >
+      <View style={styles.filters}>
+        {access.canManageDrafts ? (
+          <AppButton
+            onPress={() => setRequestedAdminView('drafts')}
+            variant={adminView === 'drafts' ? 'primary' : 'secondary'}
+          >
+            مراجعة المقترحات
+          </AppButton>
+        ) : null}
+        {access.canManagePublishedRoutes ? (
+          <AppButton
+            onPress={() => setRequestedAdminView('routes')}
+            variant={adminView === 'routes' ? 'primary' : 'secondary'}
+          >
+            إدارة الخطوط المنشورة
+          </AppButton>
+        ) : null}
+      </View>
+      {adminView === 'routes' ? (
+        <PublishedRoutesPanel
+          access={access}
+          accountId={user.id}
+          cities={cities as unknown as readonly City[]}
+        />
+      ) : (
+        <>
+      {access.reviewDrafts ? (
+        <>
       <View style={styles.stats}>
         <AppCard style={styles.stat}>
           <AppText color="primary" variant="heading">{stats.pending}</AppText>
@@ -247,9 +301,13 @@ export default function TransitAdminScreen() {
       ) : (
         filtered.map((draft) => (
           <Pressable
+            accessibilityLabel={`مراجعة ${draft.name_ar}`}
             accessibilityRole="button"
             key={draft.id}
-            onPress={() => setSelectedId(draft.id)}
+            onPress={() => {
+              setApproveColorIndex(0);
+              setSelectedId(draft.id);
+            }}
           >
             <AppCard
               style={[
@@ -291,6 +349,8 @@ export default function TransitAdminScreen() {
           </Pressable>
         ))
       )}
+        </>
+      ) : null}
 
       {selected && preview ? (
         <AppCard style={styles.detail}>
@@ -338,28 +398,65 @@ export default function TransitAdminScreen() {
           )}
           {selected.status === 'pending' ? (
             <>
-              <AppButton
-                icon={<CheckCircle2 color={theme.palette.primaryForeground} size={18} />}
-                loading={approve.isPending}
-                onPress={() => approve.mutate(selected.id)}
-              >
-                موافقة ونشر
-              </AppButton>
-              <AppInput
-                maxLength={1_000}
-                multiline
-                onChangeText={setRejectReason}
-                placeholder="سبب الرفض (اختياري)"
-                value={rejectReason}
-              />
-              <AppButton
-                icon={<XCircle color={theme.palette.primaryForeground} size={18} />}
-                loading={reject.isPending}
-                onPress={() => reject.mutate({ id: selected.id, reason: rejectReason })}
-                variant="danger"
-              >
-                تأكيد الرفض
-              </AppButton>
+              {access.approve ? (
+                <>
+                  <RouteColorSelector
+                    onChange={setApproveColorIndex}
+                    value={approveColorIndex}
+                  />
+                  <AppButton
+                    icon={
+                      <CheckCircle2
+                        color={theme.palette.primaryForeground}
+                        size={18}
+                      />
+                    }
+                    loading={approve.isPending}
+                    onPress={() =>
+                      approve.mutate({
+                        colorIndex: approveColorIndex,
+                        id: selected.id,
+                      })
+                    }
+                  >
+                    موافقة ونشر
+                  </AppButton>
+                </>
+              ) : null}
+              {access.reject ? (
+                <>
+                  <AppInput
+                    maxLength={1_000}
+                    multiline
+                    onChangeText={setRejectReason}
+                    placeholder="سبب الرفض (اختياري)"
+                    value={rejectReason}
+                  />
+                  <AppButton
+                    icon={
+                      <XCircle
+                        color={theme.palette.primaryForeground}
+                        size={18}
+                      />
+                    }
+                    loading={reject.isPending}
+                    onPress={() =>
+                      reject.mutate({
+                        id: selected.id,
+                        reason: rejectReason,
+                      })
+                    }
+                    variant="danger"
+                  >
+                    تأكيد الرفض
+                  </AppButton>
+                </>
+              ) : null}
+              {!access.approve && !access.reject ? (
+                <AppText color="muted">
+                  يمكنك مراجعة المقترح، لكن لا تملك صلاحية اتخاذ قرار بشأنه.
+                </AppText>
+              ) : null}
             </>
           ) : (
             <View style={styles.resolved}>
@@ -374,7 +471,137 @@ export default function TransitAdminScreen() {
           ) : null}
         </AppCard>
       ) : null}
+      {!access.reviewDrafts && access.approve ? (
+        <AppCard style={styles.detail}>
+          <AppText variant="heading">الموافقة على مقترح بالمعرف</AppText>
+          <AppText color="muted">
+            أدخل معرف المقترح الذي حصلت عليه من فريق المراجعة.
+          </AppText>
+          <AppInput
+            keyboardType="number-pad"
+            onChangeText={setApproveDraftId}
+            placeholder="معرف المقترح للموافقة"
+            value={approveDraftId}
+          />
+          <RouteColorSelector
+            onChange={setApproveColorIndex}
+            value={approveColorIndex}
+          />
+          <AppButton
+            disabled={positiveInteger(approveDraftId) === null}
+            icon={
+              <CheckCircle2
+                color={theme.palette.primaryForeground}
+                size={18}
+              />
+            }
+            loading={approve.isPending}
+            onPress={() => {
+              const id = positiveInteger(approveDraftId);
+              if (id !== null) {
+                approve.mutate({ colorIndex: approveColorIndex, id });
+              }
+            }}
+          >
+            موافقة ونشر
+          </AppButton>
+          {approve.isError ? (
+            <AppText color="danger">تعذر حفظ القرار. حاول مرة أخرى.</AppText>
+          ) : null}
+        </AppCard>
+      ) : null}
+      {!access.reviewDrafts && access.reject ? (
+        <AppCard style={styles.detail}>
+          <AppText variant="heading">رفض مقترح بالمعرف</AppText>
+          <AppText color="muted">
+            أدخل معرف المقترح الذي حصلت عليه من فريق المراجعة.
+          </AppText>
+          <AppInput
+            keyboardType="number-pad"
+            onChangeText={setRejectDraftId}
+            placeholder="معرف المقترح للرفض"
+            value={rejectDraftId}
+          />
+          <AppInput
+            maxLength={1_000}
+            multiline
+            onChangeText={setRejectReason}
+            placeholder="سبب الرفض (اختياري)"
+            value={rejectReason}
+          />
+          <AppButton
+            disabled={positiveInteger(rejectDraftId) === null}
+            icon={
+              <XCircle
+                color={theme.palette.primaryForeground}
+                size={18}
+              />
+            }
+            loading={reject.isPending}
+            onPress={() => {
+              const id = positiveInteger(rejectDraftId);
+              if (id !== null) {
+                reject.mutate({ id, reason: rejectReason });
+              }
+            }}
+            variant="danger"
+          >
+            تأكيد الرفض
+          </AppButton>
+          {reject.isError ? (
+            <AppText color="danger">تعذر حفظ القرار. حاول مرة أخرى.</AppText>
+          ) : null}
+        </AppCard>
+      ) : null}
+        </>
+      )}
     </Screen>
+  );
+}
+
+export default function TransitAdminScreen() {
+  const { loading: authLoading, login, user } = useAuth();
+
+  if (authLoading) {
+    return (
+      <Screen title="لوحة إدارة الترانزيت">
+        <AppText color="muted">جار التحقق من الحساب...</AppText>
+      </Screen>
+    );
+  }
+  if (!user) {
+    return (
+      <Screen title="لوحة إدارة الترانزيت">
+        <QueryState
+          detail="سجل الدخول للوصول إلى إدارة المسارات."
+          type="error"
+        />
+        <AppButton onPress={() => void login()}>تسجيل الدخول</AppButton>
+      </Screen>
+    );
+  }
+
+  const access = transitAdminAccess(user);
+  if (!access.canAccess) {
+    return (
+      <Screen title="لوحة إدارة الترانزيت">
+        <QueryState
+          detail="لا يملك هذا الحساب صلاحية إدارة الترانزيت."
+          type="error"
+        />
+      </Screen>
+    );
+  }
+
+  const workspaceKey = [
+    user.id,
+    user.role,
+    user.is_banned ? 'banned' : 'active',
+    [...(user.permissions ?? [])].sort().join(','),
+  ].join(':');
+
+  return (
+    <TransitAdminWorkspace access={access} key={workspaceKey} user={user} />
   );
 }
 
@@ -427,8 +654,8 @@ const styles = StyleSheet.create({
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Transit/admin/Index.tsx (931 lines)
+  source:     resources/js/Pages/Transit/admin/Index.tsx (978 lines)
   confidence: high
   todos:      0
-  notes:      Bearer role gates, filters, preview, moderation, decisions, counts, and refresh preserve native review behavior.
+  notes:      Bearer role gates cover proposal review plus full published-route administration and activity history.
 */

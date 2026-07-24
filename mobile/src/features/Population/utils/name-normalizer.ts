@@ -1,8 +1,7 @@
+import { normalizeForMatching } from '@/lib/ported/city-name-standardizer';
+
 export function normalizeCityName(name: string): string {
-  if (!name) {
-    return '';
-  }
-  return name.trim().replace(/['`]/g, '').replace(/Ḥ/g, 'H').toLowerCase();
+  return normalizeForMatching(name);
 }
 
 /*
@@ -10,5 +9,5 @@ PORT STATUS
   source:     resources/js/Pages/Population/utils/name-normalizer.ts (3 lines)
   confidence: high
   todos:      0
-  notes:      The source normalization remains available for imported atlas records.
+  notes:      Population lookups use this source adapter around the shared canonical normalizer.
 */

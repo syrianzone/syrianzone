@@ -101,7 +101,7 @@ export const DATA_TYPE_ORDER = Object.values(DATA_TYPES);
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Population/constants/data-config.ts (78 lines)
+  source:     resources/js/Pages/Population/constants/data-config.ts (79 lines)
   confidence: high
   todos:      0
   notes:      Thresholds and colors stay exact, with English labels added for native locale switching.

@@ -6,6 +6,7 @@ import { useAppTheme } from '@/contexts/ThemeContext';
 import { isSafeExternalUrl, openSafeExternalUrl } from '@/lib/linking';
 
 interface DirectoryActionProps {
+  accessibilityLabel?: string;
   disabled?: boolean;
   icon?: ReactNode;
   label: string;
@@ -13,6 +14,7 @@ interface DirectoryActionProps {
 }
 
 export function DirectoryAction({
+  accessibilityLabel,
   disabled = false,
   icon,
   label,
@@ -22,7 +24,7 @@ export function DirectoryAction({
 
   return (
     <Pressable
-      accessibilityLabel={label}
+      accessibilityLabel={accessibilityLabel ?? label}
       accessibilityRole="button"
       accessibilityState={{ disabled }}
       disabled={disabled}
@@ -46,6 +48,7 @@ export function DirectoryAction({
 }
 
 interface DirectoryLinkActionProps {
+  accessibilityLabel?: string;
   disabledWhenMissing?: boolean;
   icon?: ReactNode;
   label: string;
@@ -53,6 +56,7 @@ interface DirectoryLinkActionProps {
 }
 
 export function DirectoryLinkAction({
+  accessibilityLabel,
   disabledWhenMissing = false,
   icon,
   label,
@@ -65,6 +69,7 @@ export function DirectoryLinkAction({
 
   return (
     <DirectoryAction
+      accessibilityLabel={accessibilityLabel}
       disabled={!safe}
       icon={icon}
       label={label}

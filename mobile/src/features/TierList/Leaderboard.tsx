@@ -1,12 +1,22 @@
-import PollLeaderboard from '@/features/Polls/Leaderboard';
+import PollLeaderboard, {
+  type PollLeaderboardProps,
+} from '@/features/Polls/Leaderboard';
 
-interface TierListLeaderboardProps {
-  onBack?: () => void;
-  onVote?: () => void;
-}
+import { TimeseriesChart } from './TimeseriesChart';
+
+type TierListLeaderboardProps = Pick<
+  PollLeaderboardProps,
+  'onBack' | 'onVote'
+>;
 
 export default function TierListLeaderboard(props: TierListLeaderboardProps) {
-  return <PollLeaderboard identifier="best-ministers" {...props} />;
+  return (
+    <PollLeaderboard
+      ChartComponent={TimeseriesChart}
+      identifier="best-ministers"
+      {...props}
+    />
+  );
 }
 
 /*

@@ -1,6 +1,6 @@
 import { resolveDirectoryImageUrl } from '@/lib/api/directories';
 
-import type { OfficialEntity } from './types';
+import type { OfficialCategory, OfficialEntity } from './types';
 
 export type OfficialLanguage = 'ar' | 'en' | 'ku' | 'tr';
 export type OfficialSort = 'category' | 'name-asc' | 'name-desc';
@@ -19,6 +19,30 @@ export const OFFICIAL_CATEGORIES = [
   { key: 'embassies', label: { ar: 'السفارات', en: 'Embassies' } },
   { key: 'other', label: { ar: 'أخرى', en: 'Other' } },
 ] as const;
+
+export interface OfficialCategoryOption {
+  key: string;
+  label: { ar: string; en: string };
+}
+
+export function normalizeOfficialCategories(
+  categories: readonly OfficialCategory[],
+): readonly OfficialCategoryOption[] {
+  if (categories.length === 0) {
+    return OFFICIAL_CATEGORIES;
+  }
+
+  return [
+    { key: 'all', label: { ar: 'الكل', en: 'All' } },
+    ...categories
+      .filter((category) => category.is_active)
+      .sort((first, second) => first.order_column - second.order_column)
+      .map((category) => ({
+        key: category.id,
+        label: { ar: category.label_ar, en: category.label_en },
+      })),
+  ];
+}
 
 export function isOfficialRtl(language: OfficialLanguage): boolean {
   return language === 'ar' || language === 'ku';
@@ -43,8 +67,11 @@ export function getOfficialDescription(
 export function getOfficialCategoryLabel(
   key: string,
   language: OfficialLanguage,
+  categories: readonly OfficialCategory[] = [],
 ): string {
-  const category = OFFICIAL_CATEGORIES.find((entry) => entry.key === key);
+  const category = normalizeOfficialCategories(categories).find(
+    (entry) => entry.key === key,
+  );
   if (!category) {
     return key;
   }
@@ -60,10 +87,10 @@ interface OfficialFilterOptions {
 
 export function filterAndSortOfficialEntities(
   items: readonly OfficialEntity[],
-  { category, language, search, sort }: OfficialFilterOptions,
+  { category, search }: OfficialFilterOptions,
 ): OfficialEntity[] {
   const term = search.toLowerCase();
-  const filtered = items.filter((item) => {
+  return items.filter((item) => {
     const categoryMatches = category === 'all' || item.category === category;
     const searchMatches =
       !term ||
@@ -73,31 +100,19 @@ export function filterAndSortOfficialEntities(
       item.description_ar.toLowerCase().includes(term);
     return categoryMatches && searchMatches;
   });
-
-  return filtered.sort((first, second) => {
-    if (sort === 'category') {
-      return first.category.localeCompare(second.category);
-    }
-
-    const firstName = getOfficialName(first, language);
-    const secondName = getOfficialName(second, language);
-    const locale = language === 'ar' ? 'ar' : 'en';
-    return sort === 'name-asc'
-      ? firstName.localeCompare(secondName, locale)
-      : secondName.localeCompare(firstName, locale);
-  });
 }
 
 export function groupOfficialEntities(
   items: readonly OfficialEntity[],
   category: string,
+  categories: readonly OfficialCategory[] = [],
 ): readonly (readonly [string, OfficialEntity[]])[] {
   if (category !== 'all') {
     return [[category, [...items]]];
   }
 
   const groups = new Map<string, OfficialEntity[]>();
-  for (const entry of OFFICIAL_CATEGORIES) {
+  for (const entry of normalizeOfficialCategories(categories)) {
     if (entry.key !== 'all') {
       groups.set(entry.key, []);
     }
@@ -112,12 +127,18 @@ export function groupOfficialEntities(
 }
 
 export function getOfficialImageUrl(image: string): string | null {
-  const normalized = image.replace(/^\/+/, '');
+  const normalized = image.trim();
   if (!normalized) {
     return null;
   }
-  const path = normalized.startsWith('syofficial-assets/')
-    ? `/${normalized}`
-    : `/syofficial-assets/${normalized}`;
-  return resolveDirectoryImageUrl(path);
+
+  if (/^https?:\/\//i.test(normalized)) {
+    return resolveDirectoryImageUrl(normalized);
+  }
+
+  const path = normalized.replace(/^\/+/, '');
+  if (path.startsWith('storage/') || path.startsWith('syofficial-assets/')) {
+    return resolveDirectoryImageUrl(`/${path}`);
+  }
+  return resolveDirectoryImageUrl(`/syofficial-assets/${path}`);
 }

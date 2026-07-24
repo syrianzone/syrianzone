@@ -25,6 +25,13 @@ import { AppText } from '@/components/ui/AppText';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import { buildMapStyle } from '@/lib/maps/style';
 
+import {
+  PLACE_CLUSTER_COUNT_LAYOUT,
+  PLACE_CLUSTER_MAX_ZOOM,
+  PLACE_CLUSTER_PAINT,
+  PLACE_CLUSTER_RADIUS,
+  placePointPaint,
+} from '../_lib/mapStyle';
 import type { LatLng, PlaceFeatureCollection } from '../_lib/types';
 
 const defaultCenter: [number, number] = [38, 35];
@@ -163,8 +170,8 @@ export function PlacesMap({
         {showUserLocation ? <UserLocation accuracy heading /> : null}
         <GeoJSONSource
           cluster
-          clusterMaxZoom={14}
-          clusterRadius={50}
+          clusterMaxZoom={PLACE_CLUSTER_MAX_ZOOM}
+          clusterRadius={PLACE_CLUSTER_RADIUS}
           data={data}
           id="places"
           onPress={(event) => void select(event)}
@@ -173,59 +180,20 @@ export function PlacesMap({
           <Layer
             filter={['has', 'point_count']}
             id="place-clusters"
-            paint={{
-              'circle-color': [
-                'step',
-                ['get', 'point_count'],
-                '#657149',
-                10,
-                '#53603c',
-                30,
-                '#414c30',
-              ],
-              'circle-radius': [
-                'step',
-                ['get', 'point_count'],
-                16,
-                10,
-                21,
-                30,
-                26,
-              ],
-              'circle-stroke-color': '#ffffff',
-              'circle-stroke-width': 2,
-            }}
+            paint={PLACE_CLUSTER_PAINT}
             type="circle"
           />
           <Layer
             filter={['has', 'point_count']}
             id="place-cluster-count"
-            layout={{
-              'text-field': ['get', 'point_count_abbreviated'],
-              'text-size': 13,
-            }}
+            layout={PLACE_CLUSTER_COUNT_LAYOUT}
             paint={{ 'text-color': '#ffffff' }}
             type="symbol"
           />
           <Layer
             filter={['!', ['has', 'point_count']]}
             id="place-points"
-            paint={{
-              'circle-color': [
-                'case',
-                ['==', ['get', 'id'], selectedId ?? -1],
-                '#ef4444',
-                '#7d8a5c',
-              ],
-              'circle-radius': [
-                'case',
-                ['==', ['get', 'id'], selectedId ?? -1],
-                10,
-                7,
-              ],
-              'circle-stroke-color': '#ffffff',
-              'circle-stroke-width': 2,
-            }}
+            paint={placePointPaint(selectedId)}
             type="circle"
           />
         </GeoJSONSource>
@@ -324,8 +292,8 @@ const styles = StyleSheet.create({
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Places/_components/PlacesMap.tsx (232 lines)
+  source:     resources/js/Pages/Places/_components/PlacesMap.tsx (235 lines)
   confidence: high
   todos:      0
-  notes:      Theme basemaps, clusters, location, selection, focus, highlight, and explicit pin mode are native.
+  notes:      Theme basemaps, calmer clusters and pins, location, selection, focus, highlight, and pin mode are native.
 */

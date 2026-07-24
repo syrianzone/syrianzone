@@ -4,7 +4,7 @@ import type { AuthApi } from './api';
 import { AuthError } from './errors';
 import {
   createBrowserLogin,
-  selectAuthRedirectUri,
+  validateAuthRedirectUri,
   type OpenAuthSession,
 } from './browser';
 
@@ -45,7 +45,7 @@ function createDependencies() {
     async () => ({
       type: 'success' as const,
       url:
-        'https://syrian.zone/mobile/auth/callback?code=one-time-code&state=expected-state',
+        'syrianzone://auth/callback?code=one-time-code&state=expected-state',
     }),
   );
 
@@ -59,7 +59,7 @@ function createDependencies() {
     })),
     deviceName: 'syrianzone-ios',
     getRedirectUri: jest.fn(() =>
-      'https://syrian.zone/mobile/auth/callback'
+      'syrianzone://auth/callback'
     ),
     openAuthSession,
     pendingAuth,
@@ -80,13 +80,13 @@ test('opens the system browser and exchanges a verified callback once', async ()
   expect(Object.fromEntries(startUrl.searchParams)).toEqual({
     code_challenge: 'challenge'.padEnd(43, 'c'),
     code_challenge_method: 'S256',
-    redirect_uri: 'https://syrian.zone/mobile/auth/callback',
+    redirect_uri: 'syrianzone://auth/callback',
     state: 'expected-state',
   });
   expect(dependencies.openAuthSession).toHaveBeenCalledWith(
     startUrl.toString(),
-    'https://syrian.zone/mobile/auth/callback',
-    { preferUniversalLinks: true },
+    'syrianzone://auth/callback',
+    { preferUniversalLinks: false },
   );
   expect(dependencies.api.exchange).toHaveBeenCalledTimes(1);
   expect(dependencies.api.exchange).toHaveBeenCalledWith({
@@ -98,7 +98,7 @@ test('opens the system browser and exchanges a verified callback once', async ()
   expect(dependencies.pendingAuth.save).toHaveBeenCalledWith(
     expect.objectContaining({
       deviceName: 'syrianzone-ios',
-      redirectUri: 'https://syrian.zone/mobile/auth/callback',
+      redirectUri: 'syrianzone://auth/callback',
       state: 'expected-state',
       verifier: 'verifier'.padEnd(43, 'v'),
     }),
@@ -126,7 +126,7 @@ test('rejects a callback with a different state before exchanging', async () => 
   dependencies.openAuthSession.mockResolvedValueOnce({
     type: 'success',
     url:
-      'https://syrian.zone/mobile/auth/callback?code=one-time-code&state=attacker-state',
+      'syrianzone://auth/callback?code=one-time-code&state=attacker-state',
   });
 
   await expect(createBrowserLogin(dependencies)()).rejects.toMatchObject({
@@ -141,7 +141,7 @@ test('rejects a redirect from a different callback path', async () => {
   dependencies.openAuthSession.mockResolvedValueOnce({
     type: 'success',
     url:
-      'https://syrian.zone/attacker/callback?code=one-time-code&state=expected-state',
+      'syrianzone://attacker/callback?code=one-time-code&state=expected-state',
   });
 
   await expect(createBrowserLogin(dependencies)()).rejects.toMatchObject({
@@ -155,7 +155,7 @@ test('maps server callback failures without exposing raw values', async () => {
   dependencies.openAuthSession.mockResolvedValueOnce({
     type: 'success',
     url:
-      'https://syrian.zone/mobile/auth/callback?error=access_denied&state=expected-state',
+      'syrianzone://auth/callback?error=access_denied&state=expected-state',
   });
 
   await expect(createBrowserLogin(dependencies)()).rejects.toEqual(
@@ -164,32 +164,33 @@ test('maps server callback failures without exposing raw values', async () => {
   expect(dependencies.api.exchange).not.toHaveBeenCalled();
 });
 
-test.each([
-  ['ios', '17.3', 'syrianzone://auth/callback'],
-  ['ios', '17.4', 'https://syrian.zone/mobile/auth/callback'],
-  ['android', 36, 'https://syrian.zone/mobile/auth/callback'],
-] as const)(
-  'selects a compatible callback on %s %s',
-  (platform, version, expected) => {
-    expect(
-      selectAuthRedirectUri(
-        'https://syrian.zone/mobile/auth/callback',
-        platform,
-        version,
-      ),
-    ).toBe(expected);
-  },
-);
+test('rejects an HTTPS callback without native app-link registration', () => {
+  expect(() =>
+    validateAuthRedirectUri('https://syrian.zone/mobile/auth/callback'),
+  ).toThrow(new AuthError('invalid_callback'));
+});
 
-test('keeps an explicitly configured custom callback on older iOS', () => {
-  expect(
-    selectAuthRedirectUri('syrianzone://auth/callback', 'ios', '16.7'),
-  ).toBe('syrianzone://auth/callback');
+test('keeps the registered custom callback', () => {
+  expect(validateAuthRedirectUri('syrianzone://auth/callback')).toBe(
+    'syrianzone://auth/callback',
+  );
+});
+
+test('rejects an HTTPS callback before saving or opening a login', async () => {
+  const dependencies = createDependencies();
+  dependencies.getRedirectUri.mockReturnValue(
+    'https://syrian.zone/mobile/auth/callback',
+  );
+
+  await expect(createBrowserLogin(dependencies)()).rejects.toEqual(
+    new AuthError('invalid_callback'),
+  );
+  expect(dependencies.pendingAuth.save).not.toHaveBeenCalled();
+  expect(dependencies.openAuthSession).not.toHaveBeenCalled();
 });
 
 test('uses the custom callback without universal-link mode', async () => {
   const dependencies = createDependencies();
-  dependencies.getRedirectUri.mockReturnValue('syrianzone://auth/callback');
   dependencies.openAuthSession.mockResolvedValueOnce({
     type: 'success',
     url:
@@ -208,6 +209,12 @@ test('uses the custom callback without universal-link mode', async () => {
 
 test('rejects unsupported callback schemes', () => {
   expect(() =>
-    selectAuthRedirectUri('javascript:alert(1)', 'android', 36),
+    validateAuthRedirectUri('javascript:alert(1)'),
+  ).toThrow(new AuthError('invalid_callback'));
+});
+
+test('rejects an unregistered custom callback path', () => {
+  expect(() =>
+    validateAuthRedirectUri('syrianzone://attacker/callback'),
   ).toThrow(new AuthError('invalid_callback'));
 });

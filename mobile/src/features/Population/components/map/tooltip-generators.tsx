@@ -2,9 +2,15 @@ import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/ui/AppText';
 
-export function ProvinceSummary({ label, value }: { label: string; value: string }) {
+export function ProvinceSummary({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
   return (
-    <View style={styles.root}>
+    <View style={styles.root} testID="population-province-summary">
       <AppText variant="label">{label}</AppText>
       <AppText color="muted">{value}</AppText>
     </View>

@@ -1,0 +1,33 @@
+appId: zone.syrian.app
+name: Syrian Zone admin guest gates
+---
+- openLink: "syrianzone://admin/govapps"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "سجل الدخول للوصول إلى الإدارة."
+    timeout: 30000
+- openLink: "syrianzone://admin/phonebook"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "سجل الدخول للوصول إلى الإدارة."
+    timeout: 30000
+- openLink: "syrianzone://admin/syofficial"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "سجل الدخول للوصول إلى الإدارة."
+    timeout: 30000
+- openLink: "syrianzone://admin/places"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "سجل الدخول للوصول إلى المراجعة."
+    timeout: 30000
+- openLink: "syrianzone://admin/users"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "سجل الدخول للوصول إلى إدارة المستخدمين."
+    timeout: 30000
+- openLink: "syrianzone://transit/admin"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "سجل الدخول للوصول إلى مراجعة المسارات."
+    timeout: 30000

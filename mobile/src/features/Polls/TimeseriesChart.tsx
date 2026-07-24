@@ -16,7 +16,7 @@ import {
 import { shareCapturedPollImage } from '@/features/Polls/sharing';
 import type { PollCandidate, PollHistory, PollRanking } from '@/lib/api/polls';
 
-interface TimeseriesChartProps {
+export interface TimeseriesChartProps {
   candidates: readonly PollRanking[];
   history: PollHistory;
   title: string;

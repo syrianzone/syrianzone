@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Places/_components/FilterBar.tsx (256 lines)
+  source:     resources/js/Pages/Places/_components/FilterBar.tsx (320 lines)
   confidence: high
   todos:      0
   notes:      Native coordinate parsing, local and Google results, attribution, submit selection, and category toggles preserve search behavior.

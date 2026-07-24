@@ -11,7 +11,8 @@ import { useAppTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 
 import { FilterBar } from './_components/FilterBar';
-import { PhotoGrid } from './_components/PhotoGrid';
+import { GuideFilterChip } from './_components/GuideFilterChip';
+import { PhotoGrid, type PhotoGridHandle } from './_components/PhotoGrid';
 import { PlacesMap } from './_components/PlacesMap';
 import { PlacesPanel } from './_components/PlacesPanel';
 import { SubmitSheet } from './_components/SubmitSheet';
@@ -21,12 +22,14 @@ import {
   ViewToggle,
 } from './_components/ViewToggle';
 import { placesApi } from './_lib/api';
+import { discovery } from './_lib/discovery';
 import {
   invalidatePlaceQueries,
   placeQueryKeys,
 } from './_lib/queries';
 import type {
   GridPhoto,
+  GuideFilter,
   LatLng,
   Paginated,
   PlaceCategory,
@@ -34,6 +37,8 @@ import type {
 } from './_lib/types';
 import {
   filterPlaceFeatures,
+  guideFilterFromParam,
+  guideSearchParam,
   isGeoSuggestionQuery,
   isPointInSyria,
   parseLatLng,
@@ -43,7 +48,9 @@ export default function PlacesIndex() {
   const { theme } = useAppTheme();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const photoGridRef = useRef<PhotoGridHandle>(null);
   const params = useLocalSearchParams<{
+    guide?: string | string[];
     place?: string | string[];
     view?: string | string[];
   }>();
@@ -51,6 +58,7 @@ export default function PlacesIndex() {
   const [category, setCategory] = useState<PlaceCategory | null>(null);
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [focus, setFocus] = useState<{ key: number; lat: number; lng: number; zoom?: number } | null>(null);
+  const [guide, setGuide] = useState<GuideFilter | null>(() => guideFilterFromParam(params.guide));
   const [highlight, setHighlight] = useState<LatLng | null>(null);
   const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -86,8 +94,9 @@ export default function PlacesIndex() {
       category: category ?? undefined,
       page: pageParam,
       q: serverQuery || undefined,
+      user_id: guide?.id,
     }),
-    queryKey: placeQueryKeys.list(user?.id, category, serverQuery),
+    queryKey: placeQueryKeys.list(user?.id, category, serverQuery, guide?.id),
   });
   const geoQuery = useQuery({
     enabled: isGeoSuggestionQuery(debouncedQuery),
@@ -95,7 +104,7 @@ export default function PlacesIndex() {
     queryKey: ['places', 'geocode', debouncedQuery],
     staleTime: 60 * 60 * 1_000,
   });
-  const features = filterPlaceFeatures(mapQuery.data, category, query);
+  const features = filterPlaceFeatures(mapQuery.data, category, query, guide?.id ?? null);
   const places = (listQuery.data?.pages as Paginated<PlaceListItem>[] | undefined)?.flatMap((page) => page.data) ?? [];
 
   const flyTo = (point: LatLng, zoom = 15) => {
@@ -126,6 +135,38 @@ export default function PlacesIndex() {
         Alert.alert('تعذر فتح المكان');
       });
   }, [params.place]);
+
+  useEffect(() => {
+    if (!guide || guide.name) {
+      return;
+    }
+    const guideId = guide.id;
+    let active = true;
+    void discovery.guides('submissions')
+      .then((response) => {
+        if (!active) {
+          return;
+        }
+        const match = response.guides.find((item) => item.user_id === guideId);
+        setGuide((current) =>
+          current?.id === guideId
+            ? { id: guideId, name: match?.name ?? 'مرشد' }
+            : current,
+        );
+      })
+      .catch(() => {
+        if (active) {
+          setGuide((current) =>
+            current?.id === guideId
+              ? { ...current, name: 'مرشد' }
+              : current,
+          );
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [guide]);
 
   const refresh = async () => {
     await Promise.all([mapQuery.refetch(), listQuery.refetch()]);
@@ -173,6 +214,12 @@ export default function PlacesIndex() {
     router.setParams({ view: next === 'grid' ? 'grid' : undefined });
   };
 
+  const selectGuide = (next: GuideFilter | null) => {
+    setGuide(next);
+    setSelectedId(null);
+    router.setParams({ guide: guideSearchParam(next) });
+  };
+
   const selectGridPhoto = (photo: GridPhoto) => {
     changeView('map');
     setSelectedId(photo.place.id);
@@ -190,6 +237,11 @@ export default function PlacesIndex() {
         if (pendingDetailScroll.current) {
           pendingDetailScroll.current = false;
           screenRef.current?.scrollToEnd({ animated: true });
+        }
+      }}
+      onEndReached={() => {
+        if (view === 'grid') {
+          photoGridRef.current?.loadNextPage();
         }
       }}
       onRefresh={() => void refresh()}
@@ -212,7 +264,13 @@ export default function PlacesIndex() {
         resultsLoading={listQuery.isFetching || searchPending || geoQuery.isFetching}
       />
       <ViewToggle onChange={changeView} view={view} />
-      <PhotoGrid active={view === 'grid'} onPhotoClick={selectGridPhoto} />
+      {guide ? <GuideFilterChip guide={guide} onClear={() => selectGuide(null)} /> : null}
+      <PhotoGrid
+        active={view === 'grid'}
+        guideId={guide?.id}
+        onPhotoClick={selectGridPhoto}
+        ref={photoGridRef}
+      />
       {view === 'map' ? (
         <>
           <AppButton
@@ -239,7 +297,7 @@ export default function PlacesIndex() {
       ) : null}
       {submitPoint ? (
         <SubmitSheet
-          key={`${submitPoint.lat}:${submitPoint.lng}`}
+          key={`${user?.id ?? 'guest'}:${submitPoint.lat}:${submitPoint.lng}`}
           latitude={submitPoint.lat}
           longitude={submitPoint.lng}
           onSelectExisting={(id) => {
@@ -273,11 +331,13 @@ export default function PlacesIndex() {
         <>
           {listQuery.isError ? <QueryState detail="تعذر تحميل قائمة الأماكن." onRetry={() => void listQuery.refetch()} type="error" /> : null}
           <PlacesPanel
+            key={user?.id ?? 'guest'}
             hasMore={Boolean(listQuery.hasNextPage)}
             loading={listQuery.isLoading || listQuery.isFetchingNextPage}
             onLoadMore={() => void listQuery.fetchNextPage()}
             onMutated={refreshAfterMutation}
             onSelect={setSelectedId}
+            onSelectGuide={selectGuide}
             places={places}
             selectedId={selectedId}
           />
@@ -289,8 +349,8 @@ export default function PlacesIndex() {
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Places/Index.tsx (317 lines)
+  source:     resources/js/Pages/Places/Index.tsx (372 lines)
   confidence: high
   todos:      0
-  notes:      Native map, gallery, local and Google search, deep links, paging, pin mode, submission, guides, and owner management preserve the screen.
+  notes:      Native map, gallery, guide filtering, search params, paging, pin mode, submission, and owner management preserve the screen.
 */

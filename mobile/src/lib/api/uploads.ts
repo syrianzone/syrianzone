@@ -2,12 +2,34 @@ import { z } from 'zod';
 
 import { apiClient } from './client';
 
-const uploadSchema = z.object({ data: z.object({ url: z.string().url() }) });
+const uploadSchema = z.object({ data: z.object({ url: z.string().min(1) }) });
 
-export async function uploadImage(uri: string, filename = 'image.jpg'): Promise<string> {
+function imageMediaType(filename: string): string {
+  const extension = filename.split('.').pop()?.toLocaleLowerCase('en');
+  if (extension === 'png') {
+    return 'image/png';
+  }
+  if (extension === 'webp') {
+    return 'image/webp';
+  }
+  return 'image/jpeg';
+}
+
+export async function uploadImage(
+  uri: string,
+  filename = 'image.jpg',
+): Promise<string> {
   const form = new FormData();
-  form.append('image', { name: filename, type: 'image/jpeg', uri } as unknown as Blob);
-  const response = await apiClient.request('/api/mobile/admin/uploads', { auth: true, body: form, method: 'POST', schema: uploadSchema });
+  form.append(
+    'image',
+    { name: filename, type: imageMediaType(filename), uri } as unknown as Blob,
+  );
+  const response = await apiClient.request('/api/mobile/admin/uploads', {
+    auth: true,
+    body: form,
+    method: 'POST',
+    schema: uploadSchema,
+  });
   return response.data.url;
 }
 

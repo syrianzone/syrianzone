@@ -51,10 +51,14 @@ const mediaUrlSchema = z
   })
   .transform((value) => new URL(value, `${apiOrigin}/`).toString());
 const nullableUrlSchema = mediaUrlSchema.nullable();
-const placeUserSchema = z.object({
+const placeContributorSchema = z.object({
   avatar_url: nullableUrlSchema,
   id: z.number().int().positive(),
   name: z.string().min(1),
+});
+const placeUserSchema = placeContributorSchema.extend({
+  level: z.number().int().min(1).max(10),
+  points: z.number().int().nonnegative(),
 });
 const placePhotoSchema = z.object({
   display_url: mediaUrlSchema,
@@ -89,8 +93,9 @@ const myPlaceSchema = placeListItemSchema.extend({
 });
 const adminPlaceSchema = placeDetailSchema.extend({
   rejection_reason: z.string().nullable(),
+  user: placeContributorSchema,
 });
-const placeFeatureCollectionSchema = z.object({
+export const placeFeatureCollectionSchema = z.object({
   features: z.array(
     z.object({
       geometry: z.object({
@@ -102,6 +107,7 @@ const placeFeatureCollectionSchema = z.object({
         id: z.number().int().positive(),
         name: z.string().min(1),
         thumb_url: nullableUrlSchema,
+        user_id: z.number().int().positive(),
       }),
       type: z.literal('Feature'),
     }),
@@ -147,7 +153,9 @@ const geocodeSchema = z.object({ suggestions: z.array(geoSuggestionSchema).max(5
 export const guideSchema = z.object({
   approved_count: z.number().int().nonnegative(),
   avatar_url: nullableUrlSchema,
+  level: z.number().int().min(1).max(10),
   name: z.string().min(1),
+  points: z.number().int().nonnegative(),
   rank: z.number().int().positive().max(20),
   recent_count: z.number().int().nonnegative(),
   saves_total: z.number().int().nonnegative(),
@@ -155,7 +163,7 @@ export const guideSchema = z.object({
 });
 const guidesSchema = z.object({
   guides: z.array(guideSchema).max(20),
-  sort: z.enum(['submissions', 'saves', 'recent']),
+  sort: z.enum(['points', 'submissions', 'saves', 'recent']),
 });
 const gridPhotoSchema = z.object({
   display_url: mediaUrlSchema,
@@ -215,6 +223,7 @@ export const placesApi = {
     page?: number;
     q?: string;
     sort?: 'newest' | 'popular';
+    user_id?: number;
   }): Promise<Paginated<PlaceListItem>> =>
     apiClient.request(`${basePath}/places`, {
       auth: false,
@@ -236,10 +245,10 @@ export const placesApi = {
       schema: guidesSchema,
     }),
 
-  gridPhotos: (page = 1): Promise<Paginated<GridPhoto>> =>
+  gridPhotos: (page = 1, userId?: number): Promise<Paginated<GridPhoto>> =>
     apiClient.request(`${basePath}/places/photos`, {
       auth: false,
-      query: { page },
+      query: { page, user_id: userId },
       schema: gridPhotosSchema,
     }),
 
@@ -422,5 +431,5 @@ PORT STATUS
   source:     resources/js/Pages/Places/_lib/api.ts (203 lines)
   confidence: high
   todos:      0
-  notes:      Public, discovery, owner, save, edit, photo, and moderation routes use validated native contracts.
+  notes:      Public, guide-filtered discovery, level, owner, save, photo, and moderation routes use validated native contracts.
 */

@@ -41,6 +41,37 @@ export const officialDirectoryFixture: readonly OfficialEntity[] = [
   },
 ];
 
+// Source: tests/Feature/MobilePublicApiTest.php.
+export const officialAccountsResponseFixture = {
+  data: {
+    categories: [
+      {
+        icon: 'landmark',
+        id: 'government',
+        is_active: true,
+        label_ar: 'الحكومة',
+        label_en: 'Government',
+        order_column: 1,
+      },
+    ],
+    entities: [
+      {
+        category: 'government',
+        description: 'Public health',
+        description_ar: 'الصحة العامة',
+        id: 'ministry-health',
+        image: '/syofficial-assets/health.png',
+        name: 'Health Ministry',
+        name_ar: 'وزارة الصحة',
+        socials: {
+          facebook: 'https://facebook.example/health',
+          telegram_secondary: 'https://t.me/health-news',
+        },
+      },
+    ],
+  },
+} as const;
+
 // Source: resources/js/Pages/Phonebook/Index.tsx.
 export const phonebookFixture: readonly PhonebookEntry[] = [
   {

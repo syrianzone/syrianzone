@@ -1,14 +1,15 @@
 import { useState } from 'react';
 
-import PollLeaderboard from '@/features/Polls/Leaderboard';
 import PollShow from '@/features/Polls/Show';
+
+import TierListLeaderboard from './Leaderboard';
 
 const governmentPoll = 'best-ministers';
 
 export default function TierListIndex() {
   const [results, setResults] = useState(false);
   return results
-    ? <PollLeaderboard identifier={governmentPoll} onVote={() => setResults(false)} />
+    ? <TierListLeaderboard onVote={() => setResults(false)} />
     : <PollShow identifier={governmentPoll} onLeaderboard={() => setResults(true)} />;
 }
 

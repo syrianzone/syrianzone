@@ -6,7 +6,9 @@ export const authUserSchema = z.object({
   id: z.number().int().positive(),
   is_banned: z.boolean(),
   name: z.string().min(1),
+  permissions: z.array(z.string()).optional(),
   role: z.string().min(1),
+  settings: z.record(z.string(), z.unknown()).optional(),
 });
 
 export type AuthUser = z.infer<typeof authUserSchema>;

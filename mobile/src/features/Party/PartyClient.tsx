@@ -22,12 +22,11 @@ import { AppText } from '@/components/ui/AppText';
 import { useAppTheme } from '@/contexts/ThemeContext';
 
 import {
-  filterAndSortOrganizations,
+  filterOrganizations,
   formatSocialUrl,
   getLanguageName,
   getPartyFilterOptions,
   PARTY_PAGE_SIZE,
-  type PartySort,
   type SocialPlatform,
 } from './data';
 import type { Organization } from './types';
@@ -47,7 +46,6 @@ export default function PartyClient({
   const [countryFilter, setCountryFilter] = useState('all');
   const [cityFilter, setCityFilter] = useState('all');
   const [languageFilter, setLanguageFilter] = useState('all');
-  const [sortOption, setSortOption] = useState<PartySort>('name');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [displayCount, setDisplayCount] = useState(PARTY_PAGE_SIZE);
 
@@ -69,13 +67,12 @@ export default function PartyClient({
   );
   const filteredOrganizations = useMemo(
     () =>
-      filterAndSortOrganizations(initialOrganizations, {
+      filterOrganizations(initialOrganizations, {
         category: categoryFilter,
         city: cityFilter,
         country: countryFilter,
         language: languageFilter,
         search: searchTerm,
-        sort: sortOption,
       }),
     [
       categoryFilter,
@@ -84,7 +81,6 @@ export default function PartyClient({
       initialOrganizations,
       languageFilter,
       searchTerm,
-      sortOption,
     ],
   );
   const displayedOrganizations = filteredOrganizations.slice(0, displayCount);
@@ -162,19 +158,6 @@ export default function PartyClient({
           value={viewMode}
         />
       </View>
-
-      <DirectoryFilterChips
-        label="ترتيب حسب"
-        onSelect={setSortOption}
-        options={[
-          { label: 'الاسم (أ-ي)', value: 'name' },
-          { label: 'الاسم (ي-أ)', value: 'name-desc' },
-          { label: 'النوع', value: 'category' },
-          { label: 'البلد', value: 'country' },
-          { label: 'المدينة', value: 'city' },
-        ]}
-        selected={sortOption}
-      />
 
       {filteredOrganizations.length === 0 ? (
         <AppCard style={styles.empty}>
@@ -381,8 +364,8 @@ const styles = StyleSheet.create({
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Party/PartyClient.tsx (407 lines)
+  source:     resources/js/Pages/Party/PartyClient.tsx (440 lines)
   confidence: high
   todos:      0
-  notes:      Native controls preserve exact filters, reduced list fields, and retained pagination.
+  notes:      Native controls preserve exact filters, source ordering, responsive cards, and retained pagination.
 */

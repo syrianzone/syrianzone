@@ -1,12 +1,13 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
+import { createRef } from 'react';
 
 import { LocaleProvider } from '@/contexts/LocaleContext';
 import { AppThemeProvider } from '@/contexts/ThemeContext';
 
 import { placesApi } from '../_lib/api';
 import type { GridPhoto } from '../_lib/types';
-import { PhotoGrid } from './PhotoGrid';
+import { PhotoGrid, type PhotoGridHandle } from './PhotoGrid';
 import { placesViewFromParam, ViewToggle } from './ViewToggle';
 
 jest.mock('../_lib/api', () => ({
@@ -40,9 +41,11 @@ function wrapper(children: React.ReactNode) {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  jest.mocked(placesApi.gridPhotos).mockImplementation(async (page = 1) => ({
+  jest.mocked(placesApi.gridPhotos).mockImplementation(async (page = 1, userId) => ({
     current_page: page,
-    data: page === 1 ? photos : [{ ...photos[0]!, id: 12 }],
+    data: page === 1
+      ? photos.map((photo) => ({ ...photo, place: { ...photo.place, name: userId ? `دليل ${userId}` : photo.place.name } }))
+      : [{ ...photos[0]!, id: 12 }],
     last_page: 2,
     total: 3,
   }));
@@ -60,17 +63,32 @@ test('loads the gallery only when active and opens a photo place', async () => {
   expect(onPhotoClick).toHaveBeenCalledWith(photos[1]);
 });
 
-test('loads another gallery page without discarding the first page', async () => {
-  const view = await render(wrapper(<PhotoGrid active onPhotoClick={jest.fn()} />));
+test('loads another gallery page through the screen end sentinel', async () => {
+  const ref = createRef<PhotoGridHandle>();
+  const view = await render(wrapper(<PhotoGrid active onPhotoClick={jest.fn()} ref={ref} />));
 
-  await waitFor(() => expect(view.getByText('عرض المزيد')).toBeTruthy());
+  await waitFor(() => expect(view.getByText('مطبخ دمشقي')).toBeTruthy());
+  expect(view.queryByText('عرض المزيد')).toBeNull();
   await act(async () => {
-    fireEvent.press(view.getByText('عرض المزيد'));
+    ref.current?.loadNextPage();
   });
 
-  await waitFor(() => expect(placesApi.gridPhotos).toHaveBeenLastCalledWith(2));
+  await waitFor(() => expect(placesApi.gridPhotos).toHaveBeenLastCalledWith(2, undefined));
   await waitFor(() => expect(view.getAllByText('مطبخ دمشقي')).toHaveLength(2));
   expect(view.getByText('غابة الفرلق')).toBeTruthy();
+});
+
+test('starts paging over when the active guide changes', async () => {
+  const view = await render(wrapper(<PhotoGrid active guideId={5} onPhotoClick={jest.fn()} />));
+
+  await waitFor(() => expect(view.getAllByText('دليل 5')).toHaveLength(2));
+  expect(placesApi.gridPhotos).toHaveBeenLastCalledWith(1, 5);
+
+  await view.rerender(wrapper(<PhotoGrid active guideId={6} onPhotoClick={jest.fn()} />));
+
+  await waitFor(() => expect(view.getAllByText('دليل 6')).toHaveLength(2));
+  expect(view.queryByText('دليل 5')).toBeNull();
+  expect(placesApi.gridPhotos).toHaveBeenLastCalledWith(1, 6);
 });
 
 test('switches between the map and gallery views', async () => {

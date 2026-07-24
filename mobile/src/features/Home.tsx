@@ -579,8 +579,8 @@ export default function Home({ liveClock = true, now = defaultNow }: HomeProps) 
 }
 
 function openFeature(slug: string): void {
-  if (slug === 'central') {
-    router.push('/central');
+  if (slug === 'board') {
+    router.push('/board');
     return;
   }
   router.push({
@@ -721,7 +721,7 @@ const styles = StyleSheet.create({
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Home.tsx (1327 lines)
+  source:     resources/js/Pages/Home.tsx (1722 lines)
   confidence: high
   todos:      0
   notes:      Native Home keeps configurable widgets, F3alia, search, source quick links, personal links, and location settings.

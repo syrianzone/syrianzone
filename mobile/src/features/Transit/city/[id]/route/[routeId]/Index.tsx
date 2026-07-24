@@ -120,6 +120,11 @@ export default function TransitRouteScreen() {
                 <MapPin color={theme.palette.primary} size={20} />
                 <View style={styles.copy}>
                   <AppText variant="label">{stop.properties.nameAr}</AppText>
+                  {stop.properties.nameEn ? (
+                    <AppText color="muted" variant="caption">
+                      {stop.properties.nameEn}
+                    </AppText>
+                  ) : null}
                 </View>
                 <DirectionsButton
                   coordinate={stop.coordinates}
@@ -193,5 +198,5 @@ PORT STATUS
   source:     resources/js/Pages/Transit/city/[id]/route/[routeId]/Index.tsx (226 lines)
   confidence: high
   todos:      0
-  notes:      The native detail preserves fare history, stop totals, focused map entry, route color, and directions.
+  notes:      The native detail preserves fare history, bilingual stops, focused map entry, route color, and directions.
 */

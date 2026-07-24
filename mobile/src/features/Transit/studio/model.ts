@@ -18,6 +18,51 @@ export function appendCoordinate(
   return [...(coordinates ?? []), coordinate];
 }
 
+function distanceToSegmentSquared(
+  point: [number, number],
+  start: [number, number],
+  end: [number, number],
+): number {
+  const deltaLongitude = end[0] - start[0];
+  const deltaLatitude = end[1] - start[1];
+  const lengthSquared = deltaLongitude ** 2 + deltaLatitude ** 2;
+  if (lengthSquared === 0) {
+    return (point[0] - start[0]) ** 2 + (point[1] - start[1]) ** 2;
+  }
+  const position = Math.max(0, Math.min(1,
+    ((point[0] - start[0]) * deltaLongitude +
+      (point[1] - start[1]) * deltaLatitude) / lengthSquared,
+  ));
+  const projectedLongitude = start[0] + position * deltaLongitude;
+  const projectedLatitude = start[1] + position * deltaLatitude;
+  return (point[0] - projectedLongitude) ** 2 +
+    (point[1] - projectedLatitude) ** 2;
+}
+
+export function nearestSegmentInsertIndex(
+  coordinates: readonly [number, number][],
+  point: [number, number],
+): number {
+  if (coordinates.length < 2) {
+    return coordinates.length;
+  }
+  let nearestIndex = 1;
+  let nearestDistance = Number.POSITIVE_INFINITY;
+  for (let index = 0; index < coordinates.length - 1; index += 1) {
+    const start = coordinates[index];
+    const end = coordinates[index + 1];
+    if (!start || !end) {
+      continue;
+    }
+    const distance = distanceToSegmentSquared(point, start, end);
+    if (distance < nearestDistance) {
+      nearestDistance = distance;
+      nearestIndex = index + 1;
+    }
+  }
+  return nearestIndex;
+}
+
 function boundingBox(
   coordinates: readonly (readonly number[])[],
 ): [number, number, number, number] | null {

@@ -4,7 +4,6 @@ import * as Clipboard from 'expo-clipboard';
 import type { PropsWithChildren } from 'react';
 
 import GovAppsClient from '@/features/GovApps/GovAppsClient';
-import { fetchStoreIcon } from '@/features/GovApps/data';
 import PartyClient from '@/features/Party/PartyClient';
 import { PhonebookDirectory } from '@/features/Phonebook/Index';
 import SitesClient from '@/features/Sites/SitesClient';
@@ -30,12 +29,6 @@ jest.mock('expo-clipboard', () => ({
 jest.mock('@/lib/linking', () => ({
   ...jest.requireActual('@/lib/linking'),
   openSafeExternalUrl: jest.fn(async () => true),
-}));
-
-jest.mock('@/features/GovApps/data', () => ({
-  ...jest.requireActual('@/features/GovApps/data'),
-  fetchStoreIcon: jest.fn(async () => 'https://cdn.example.com/store-icon.png'),
-  STORE_ICON_CACHE_MS: 0,
 }));
 
 function FeatureProviders({ children }: PropsWithChildren) {
@@ -178,16 +171,17 @@ test('sites clear action restores all raw types', async () => {
 
 test('party filters exact country values and preserves expanded pagination', async () => {
   const view = await render(
-    <PartyClient initialOrganizations={makeOrganizationFixture(13)} />,
+    <PartyClient initialOrganizations={makeOrganizationFixture(16)} />,
     { wrapper: FeatureProviders },
   );
 
-  expect(view.queryByText('منظمة 13')).toBeNull();
+  expect(view.getByText('منظمة 15')).toBeTruthy();
+  expect(view.queryByText('منظمة 16')).toBeNull();
   await fireEvent.press(view.getByText('تحميل المزيد'));
-  expect(view.getByText('منظمة 13')).toBeTruthy();
+  expect(view.getByText('منظمة 16')).toBeTruthy();
   await fireEvent.press(view.getByLabelText('دمشق'));
   await fireEvent.press(view.getByText('مسح الفلاتر'));
-  expect(view.getByText('منظمة 13')).toBeTruthy();
+  expect(view.getByText('منظمة 16')).toBeTruthy();
 });
 
 test('party cards expose source website and social formatting', async () => {
@@ -209,24 +203,29 @@ test('party cards expose source website and social formatting', async () => {
   expect(view.queryByText('الحزب المدني السوري')).toBeNull();
 });
 
-test('government app cards open a native detail modal with screenshots', async () => {
+test('government app cards use database media and expandable descriptions without a gallery', async () => {
+  const app = governmentAppsFixture[0];
+  expect(app).toBeDefined();
+  if (!app) {
+    return;
+  }
+  const databaseIcon = 'https://media.example.com/govapps/services.webp';
   const view = await render(
-    <GovAppsClient initialData={governmentAppsFixture} />,
+    <GovAppsClient initialData={[{ ...app, icon: databaseIcon }]} />,
     { wrapper: FeatureProviders },
   );
 
-  await fireEvent.press(view.getByLabelText('عرض تفاصيل خدماتي'));
-  expect(
-    view.getByText('تطبيق رسمي للوصول إلى الخدمات الحكومية الرقمية.'),
-  ).toBeTruthy();
-  expect(view.getByText('2 صور')).toBeTruthy();
-  expect(view.getByLabelText('لقطة شاشة 1 من خدماتي')).toBeTruthy();
-  await fireEvent.press(view.getByLabelText('إغلاق التفاصيل'));
+  expect(view.getByLabelText('أيقونة خدماتي').props.source).toEqual([
+    { uri: databaseIcon },
+  ]);
+  const description = view.getByText(app.description);
+  expect(description.props.numberOfLines).toBe(2);
+  await fireEvent.press(view.getByTestId('govapp-description-services'));
   await waitFor(() =>
-    expect(
-      view.queryByText('تطبيق رسمي للوصول إلى الخدمات الحكومية الرقمية.'),
-    ).toBeNull(),
+    expect(view.getByText(app.description).props.numberOfLines).toBeUndefined(),
   );
+  expect(view.queryByText('لقطات الشاشة')).toBeNull();
+  expect(view.queryByLabelText('لقطة شاشة 1 من خدماتي')).toBeNull();
 });
 
 test('government app store actions use the shared safe linking helper', async () => {
@@ -241,24 +240,19 @@ test('government app store actions use the shared safe linking helper', async ()
   );
 });
 
-test('government store icon lookups remain sequential and bounded', async () => {
-  let resolveFirst: ((value: null | string) => void) | undefined;
-  const firstIcon = new Promise<null | string>((resolve) => {
-    resolveFirst = resolve;
-  });
-  jest
-    .mocked(fetchStoreIcon)
-    .mockReset()
-    .mockImplementationOnce(async () => firstIcon)
-    .mockResolvedValueOnce(null);
-
-  await render(<GovAppsClient initialData={governmentAppsFixture} />, {
+test('government apps use the fixed first-party fallback when database media is missing', async () => {
+  const app = governmentAppsFixture[1];
+  expect(app).toBeDefined();
+  if (!app) {
+    return;
+  }
+  const view = await render(<GovAppsClient initialData={[app]} />, {
     wrapper: FeatureProviders,
   });
-  await waitFor(() => expect(fetchStoreIcon).toHaveBeenCalledTimes(1));
 
-  resolveFirst?.(null);
-  await waitFor(() => expect(fetchStoreIcon).toHaveBeenCalledTimes(2));
-  expect(jest.mocked(fetchStoreIcon).mock.calls[0]?.[0].id).toBe('services');
-  expect(jest.mocked(fetchStoreIcon).mock.calls[1]?.[0].id).toBe('notices');
+  expect(view.getByLabelText('أيقونة البلاغات الرسمية').props.source).toEqual([
+    {
+      uri: 'https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/govapps/mofa/icon.webp',
+    },
+  ]);
 });

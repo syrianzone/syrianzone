@@ -1,5 +1,6 @@
 import type {
   AdminPlace,
+  PlaceDetail,
   PlacePhoto,
 } from '@/features/Places/_lib/types';
 
@@ -36,5 +37,14 @@ export const adminPlace: AdminPlace = {
     avatar_url: null,
     id: 3,
     name: 'مساهم سوري',
+  },
+};
+
+export const placeDetail: PlaceDetail = {
+  ...adminPlace,
+  user: {
+    ...adminPlace.user,
+    level: 4,
+    points: 280,
   },
 };

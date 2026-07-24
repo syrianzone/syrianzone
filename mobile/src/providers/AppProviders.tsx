@@ -17,6 +17,7 @@ import { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { AccountBoundary } from '@/components/auth/AccountBoundary';
 import { LocaleProvider } from '@/contexts/LocaleContext';
 import { HomeSettingsProvider } from '@/contexts/HomeSettingsContext';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -59,7 +60,9 @@ export function AppProviders({ children }: PropsWithChildren) {
           <LocaleProvider>
             <AppThemeProvider>
               <AuthProvider queryClient={queryClient}>
-                <HomeSettingsProvider>{children}</HomeSettingsProvider>
+                <HomeSettingsProvider>
+                  <AccountBoundary>{children}</AccountBoundary>
+                </HomeSettingsProvider>
               </AuthProvider>
             </AppThemeProvider>
           </LocaleProvider>
@@ -68,3 +71,11 @@ export function AppProviders({ children }: PropsWithChildren) {
     </GestureHandlerRootView>
   );
 }
+
+/*
+PORT STATUS
+  source:     resources/js/Providers/QueryProvider.tsx (24 lines)
+  confidence: high
+  todos:      0
+  notes:      AppProviders owns the application-wide offline-first QueryClient and provider lifecycle.
+*/

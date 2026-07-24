@@ -191,7 +191,7 @@ export function buildGovernorateComparison(
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Population/PopulationClient.tsx (995 lines)
+  source:     resources/js/Pages/Population/PopulationClient.tsx (996 lines)
   confidence: high
   todos:      0
   notes:      Map values, source thresholds, and two-governorate comparison stay deterministic and testable.

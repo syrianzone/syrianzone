@@ -3,6 +3,7 @@ import {
   buildTransitDraftGeoJson,
   hasPublishedRouteConflict,
   moveCoordinate,
+  nearestSegmentInsertIndex,
   selfIntersections,
   undoCoordinate,
 } from './model';
@@ -14,6 +15,17 @@ describe('transit studio geometry', () => {
     expect(moveCoordinate(points, 1, 0)).toEqual([[2, 2], [1, 1]]);
     expect(undoCoordinate(points)).toEqual([[1, 1]]);
     expect(undoCoordinate([[1, 1]])).toBeNull();
+  });
+
+  test('inserts a tapped vertex after the nearest route segment', () => {
+    expect(
+      nearestSegmentInsertIndex(
+        [[36.1, 33.1], [36.2, 33.2], [37, 34]],
+        [36.15, 33.15],
+      ),
+    ).toBe(1);
+    expect(nearestSegmentInsertIndex([], [36.15, 33.15])).toBe(0);
+    expect(nearestSegmentInsertIndex([[36.1, 33.1]], [36.15, 33.15])).toBe(1);
   });
 
   test('flags crossing non-adjacent segments', () => {

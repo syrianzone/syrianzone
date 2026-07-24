@@ -31,13 +31,12 @@ export function getWebsiteCategories(
 
 interface WebsiteFilterOptions {
   search: string;
-  sort: SiteSort;
   type: string;
 }
 
-export function filterAndSortWebsites(
+export function filterWebsites(
   websites: readonly Website[],
-  { search, sort, type }: WebsiteFilterOptions,
+  { search, type }: WebsiteFilterOptions,
 ): Website[] {
   const term = search.toLowerCase();
   return websites
@@ -49,16 +48,26 @@ export function filterAndSortWebsites(
         website.url.toLowerCase().includes(term);
       const typeMatches = !type || website.type === type;
       return searchMatches && typeMatches;
-    })
-    .sort((first, second) => {
-      if (sort === 'name-desc') {
-        return second.name.localeCompare(first.name, 'ar');
-      }
-      if (sort === 'type') {
-        return first.type.localeCompare(second.type, 'ar');
-      }
-      return first.name.localeCompare(second.name, 'ar');
     });
+}
+
+export function filterAndSortWebsites(
+  websites: readonly Website[],
+  options: WebsiteFilterOptions & { sort?: SiteSort },
+): Website[] {
+  return filterWebsites(websites, options);
+}
+
+export function getWebsiteFaviconUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return null;
+    }
+    return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(parsed.hostname)}&sz=64`;
+  } catch {
+    return null;
+  }
 }
 
 /*

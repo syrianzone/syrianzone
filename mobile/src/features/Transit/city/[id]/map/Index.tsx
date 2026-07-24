@@ -13,6 +13,7 @@ import { transitFallback } from '../../../_data/fallback';
 import { useMapData } from '../../../_hooks/useMapData';
 import type { City } from '../../../_types';
 import { focusTransitMapData } from '../../../model';
+import MapLoading from './loading';
 
 export default function TransitCityMapScreen() {
   const { id, route } = useLocalSearchParams<{ id: string; route?: string }>();
@@ -22,6 +23,9 @@ export default function TransitCityMapScreen() {
   const data = rawData ? focusTransitMapData(rawData, route) : null;
   if (!city) {
     return <QueryState detail="المدينة غير معروفة." type="error" />;
+  }
+  if (!data && query.loading) {
+    return <MapLoading />;
   }
   return (
     <Screen contentStyle={styles.screen} scroll={false}>
@@ -65,5 +69,5 @@ PORT STATUS
   source:     resources/js/Pages/Transit/city/[id]/map/Index.tsx (139 lines)
   confidence: high
   todos:      0
-  notes:      Native MapLibre preserves live or offline geometry, focused route links, search, nearby stops, and refresh.
+  notes:      Native MapLibre preserves pending state, live or offline geometry, focused route links, search, nearby stops, and refresh.
 */

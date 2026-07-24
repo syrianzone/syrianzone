@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
 
 /*
 PORT STATUS
-  source:     resources/js/Components/Navbar.tsx (313 lines)
+  source:     resources/js/Components/Navbar.tsx (555 lines)
   confidence: high
   todos:      0
   notes:      Expo Router navigation replaces browser links and responsive menus.

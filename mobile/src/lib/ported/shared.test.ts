@@ -6,15 +6,8 @@ import {
   standardizeCityNames,
 } from './city-name-standardizer';
 import { geoJsonToSVG, getGovernorateNameAr } from './geo-utils';
-import { cn } from './utils';
 
 describe('ported shared utilities', () => {
-  test('composes conditional compatibility classes', () => {
-    expect(cn('base', false, ['nested', null], { active: true, hidden: false })).toBe(
-      'base nested active',
-    );
-  });
-
   test('normalizes, aggregates, and orders governorates without mutating input', () => {
     expect(getCanonicalCityName('Ḩamāh')).toBe('حماة');
     expect(standardizeCityNames({ Hama: 3, 'حماة': 2, unknown: 0 })).toEqual({

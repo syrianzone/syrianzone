@@ -1,3 +1,6 @@
+import { transitAdminAccess } from '@/features/Transit/admin/model';
+import type { AuthUser } from '@/lib/auth/types';
+
 export type DashboardTab = 'polls' | 'profile' | 'submissions';
 
 export interface DashboardCapabilities {
@@ -6,16 +9,16 @@ export interface DashboardCapabilities {
   canViewSubmissions: boolean;
 }
 
+type DashboardIdentity = Pick<AuthUser, 'role'> &
+  Partial<Pick<AuthUser, 'is_banned' | 'permissions'>>;
+
 export function dashboardCapabilities(
-  role: string | null | undefined,
+  user: DashboardIdentity,
 ): DashboardCapabilities {
   return {
-    canManagePolls: role === 'admin' || role === 'superadmin',
-    canReviewTransit:
-      role === 'admin' ||
-      role === 'superadmin' ||
-      role === 'transit_admin',
-    canViewSubmissions: role === 'user',
+    canManagePolls: user.role === 'admin' || user.role === 'superadmin',
+    canReviewTransit: transitAdminAccess(user).canAccess,
+    canViewSubmissions: user.role === 'user',
   };
 }
 

@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Population/PopulationClient.tsx (995 lines)
+  source:     resources/js/Pages/Population/PopulationClient.tsx (996 lines)
   confidence: high
   todos:      0
   notes:      Native cards expose rainfall, weather, AQI, drought, climate trends, history, and national context.

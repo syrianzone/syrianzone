@@ -16,7 +16,7 @@ import {
 import { createPkceTransaction, type PkceTransaction } from './pkce';
 import type { BrowserLoginResult } from './types';
 
-const legacyIosRedirectUri = 'syrianzone://auth/callback';
+const nativeAuthRedirectUri = 'syrianzone://auth/callback';
 
 export type OpenAuthSession = (
   url: string,
@@ -40,53 +40,26 @@ export interface BrowserLoginDependencies {
   tokenStorage: TokenStore;
 }
 
-export function selectAuthRedirectUri(
+export function validateAuthRedirectUri(
   configuredUri: string,
-  platform: string,
-  platformVersion: number | string,
 ): string {
-  let protocol: string;
-  try {
-    protocol = new URL(configuredUri).protocol;
-  } catch {
+  if (configuredUri !== nativeAuthRedirectUri) {
     throw new AuthError('invalid_callback');
   }
-  if (protocol !== 'https:' && protocol !== 'syrianzone:') {
-    throw new AuthError('invalid_callback');
-  }
-
-  const numericVersion =
-    typeof platformVersion === 'number'
-      ? platformVersion
-      : Number.parseFloat(platformVersion);
-  const needsLegacyIosCallback =
-    platform === 'ios' &&
-    protocol === 'https:' &&
-    (!Number.isFinite(numericVersion) || numericVersion < 17.4);
-
-  return needsLegacyIosCallback ? legacyIosRedirectUri : configuredUri;
+  return configuredUri;
 }
 
 function defaultRedirectUri(): string {
   const configuredUri =
     process.env.EXPO_PUBLIC_AUTH_REDIRECT_URL?.trim() ||
-    legacyIosRedirectUri;
-  const native = selectAuthRedirectUri(
-    configuredUri,
-    Platform.OS,
-    Platform.Version,
-  );
+    nativeAuthRedirectUri;
+  const native = validateAuthRedirectUri(configuredUri);
   const redirectUri = AuthSession.makeRedirectUri({
     native,
     path: 'auth/callback',
     scheme: 'syrianzone',
   });
-  if (
-    selectAuthRedirectUri(redirectUri, Platform.OS, Platform.Version) !==
-    redirectUri
-  ) {
-    throw new AuthError('invalid_callback');
-  }
+  validateAuthRedirectUri(redirectUri);
   return redirectUri;
 }
 
@@ -107,8 +80,8 @@ export function createBrowserLogin(
   dependencies: BrowserLoginDependencies,
 ): () => Promise<BrowserLoginResult> {
   return async () => {
+    const redirectUri = validateAuthRedirectUri(dependencies.getRedirectUri());
     const transaction = await dependencies.createPkce();
-    const redirectUri = dependencies.getRedirectUri();
     const startUrl = buildStartUrl(
       dependencies.apiOrigin,
       redirectUri,
@@ -125,7 +98,7 @@ export function createBrowserLogin(
     let result;
     try {
       result = await dependencies.openAuthSession(startUrl, redirectUri, {
-        preferUniversalLinks: redirectUri.startsWith('https://'),
+        preferUniversalLinks: false,
       });
     } catch (error) {
       await dependencies.pendingAuth.clear();

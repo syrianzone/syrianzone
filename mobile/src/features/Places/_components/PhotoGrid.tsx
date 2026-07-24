@@ -1,8 +1,8 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
+import { forwardRef, useImperativeHandle } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { AppButton } from '@/components/ui/AppButton';
 import { AppText } from '@/components/ui/AppText';
 import { QueryState } from '@/components/ui/QueryState';
 import { useAppTheme } from '@/contexts/ThemeContext';
@@ -10,23 +10,38 @@ import { useAppTheme } from '@/contexts/ThemeContext';
 import { discovery } from '../_lib/discovery';
 import type { GridPhoto, Paginated } from '../_lib/types';
 
-export function PhotoGrid({
-  active,
-  onPhotoClick,
-}: {
+export interface PhotoGridHandle {
+  loadNextPage: () => void;
+}
+
+interface PhotoGridProps {
   active: boolean;
+  guideId?: number | null;
   onPhotoClick: (photo: GridPhoto) => void;
-}) {
+}
+
+export const PhotoGrid = forwardRef<PhotoGridHandle, PhotoGridProps>(function PhotoGrid(
+  { active, guideId = null, onPhotoClick },
+  ref,
+) {
   const { theme } = useAppTheme();
   const query = useInfiniteQuery<Paginated<GridPhoto>>({
     enabled: active,
     getNextPageParam: (page) => page.current_page < page.last_page ? page.current_page + 1 : undefined,
     initialPageParam: 1,
-    queryFn: ({ pageParam }) => discovery.gridPhotos(Number(pageParam)),
-    queryKey: ['places', 'gallery'],
+    queryFn: ({ pageParam }) => discovery.gridPhotos(Number(pageParam), guideId ?? undefined),
+    queryKey: ['places', 'gallery', guideId ?? 'all'],
     retry: false,
   });
   const photos = query.data?.pages.flatMap((page) => page.data) ?? [];
+
+  useImperativeHandle(ref, () => ({
+    loadNextPage: () => {
+      if (active && query.hasNextPage && !query.isFetchingNextPage) {
+        void query.fetchNextPage();
+      }
+    },
+  }), [active, query]);
 
   if (!active) {
     return null;
@@ -57,18 +72,10 @@ export function PhotoGrid({
       ) : photos.length === 0 ? (
         <QueryState detail="لا توجد صور بعد." type="empty" />
       ) : null}
-      {query.hasNextPage ? (
-        <AppButton
-          loading={query.isFetchingNextPage}
-          onPress={() => void query.fetchNextPage()}
-          variant="secondary"
-        >
-          عرض المزيد
-        </AppButton>
-      ) : null}
+      {query.isFetchingNextPage ? <AppText color="muted">جارٍ تحميل المزيد...</AppText> : null}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   card: { borderRadius: 12, borderWidth: 1, overflow: 'hidden', width: '48%' },
@@ -80,8 +87,8 @@ const styles = StyleSheet.create({
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Places/_components/PhotoGrid.tsx (117 lines)
+  source:     resources/js/Pages/Places/_components/PhotoGrid.tsx (142 lines)
   confidence: high
   todos:      0
-  notes:      Native lazy activation, paged photos, place selection, loading, empty, error, and retry states preserve the gallery.
+  notes:      Native lazy activation, guide-aware automatic paging, place selection, loading, empty, error, and retry preserve the gallery.
 */

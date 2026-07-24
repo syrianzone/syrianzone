@@ -8,7 +8,12 @@ const user = {
   id: 9,
   is_banned: false,
   name: 'Admin',
+  permissions: ['account.settings.update'],
   role: 'admin',
+  settings: {
+    governorate: 'damascus',
+    showClock: false,
+  },
 };
 
 interface ClientCall {

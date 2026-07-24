@@ -1,5 +1,19 @@
 import mockAsyncStorage from '@react-native-async-storage/async-storage/jest/async-storage-mock';
 import mockNetInfo from '@react-native-community/netinfo/jest/netinfo-mock';
+import { notifyManager } from '@tanstack/react-query';
+import { act } from 'react';
+
+notifyManager.setNotifyFunction((callback) => {
+  const previous = globalThis.IS_REACT_ACT_ENVIRONMENT;
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  try {
+    act(() => {
+      callback();
+    });
+  } finally {
+    globalThis.IS_REACT_ACT_ENVIRONMENT = previous;
+  }
+});
 
 jest.mock('@react-native-async-storage/async-storage', () => mockAsyncStorage);
 jest.mock('@react-native-community/netinfo', () => mockNetInfo);

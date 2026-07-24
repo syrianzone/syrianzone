@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import * as Clipboard from 'expo-clipboard';
-import { Image } from 'expo-image';
 import { ArrowRight, Check, Copy } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -8,6 +7,7 @@ import { StyleSheet, View } from 'react-native';
 import { AppButton } from '@/components/ui/AppButton';
 import { AppCard } from '@/components/ui/AppCard';
 import { AppText } from '@/components/ui/AppText';
+import { Avatar } from '@/components/ui/Avatar';
 import { QueryState } from '@/components/ui/QueryState';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppTheme } from '@/contexts/ThemeContext';
@@ -16,6 +16,7 @@ import { CATEGORY_LABELS } from '../_lib/categories';
 import { placesApi } from '../_lib/api';
 import { placeQueryKeys } from '../_lib/queries';
 import { EngagementBar } from './EngagementBar';
+import { LevelBadge } from './LevelBadge';
 import { PhotoGallery } from './PhotoGallery';
 
 const STATUS_LABELS = {
@@ -67,14 +68,9 @@ export function PlaceDetailView({ onClose, placeId }: { onClose: () => void; pla
             </View>
             <AppText>{place.description}</AppText>
             <View style={styles.contributor}>
-              {place.user.avatar_url ? (
-                <Image accessibilityLabel={place.user.name} source={place.user.avatar_url} style={styles.avatar} />
-              ) : (
-                <View style={[styles.avatar, styles.avatarFallback, { backgroundColor: theme.palette.surfaceRaised }]}>
-                  <AppText variant="label">{place.user.name.slice(0, 1)}</AppText>
-                </View>
-              )}
+              <Avatar label={place.user.name} uri={place.user.avatar_url} />
               <AppText color="muted">{place.user.name}</AppText>
+              <LevelBadge level={place.user.level} showLabel />
             </View>
             <AppButton
               icon={copied ? <Check color={theme.palette.foreground} size={16} /> : <Copy color={theme.palette.foreground} size={16} />}
@@ -105,8 +101,6 @@ export function PlaceDetailView({ onClose, placeId }: { onClose: () => void; pla
 }
 
 const styles = StyleSheet.create({
-  avatar: { borderRadius: 18, height: 36, width: 36 },
-  avatarFallback: { alignItems: 'center', justifyContent: 'center' },
   contributor: { alignItems: 'center', flexDirection: 'row-reverse', gap: 8 },
   copy: { gap: 10 },
   heading: { gap: 3 },
@@ -115,8 +109,8 @@ const styles = StyleSheet.create({
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Places/_components/PlaceDetailView.tsx (121 lines)
+  source:     resources/js/Pages/Places/_components/PlaceDetailView.tsx (123 lines)
   confidence: high
   todos:      0
-  notes:      Native detail preserves gallery, contributor, coordinates, status, saves, sharing, and map links.
+  notes:      Native detail preserves gallery, contributor rank, coordinates, status, saves, sharing, and map links.
 */

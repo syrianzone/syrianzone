@@ -1,7 +1,6 @@
 import type { LucideIcon } from 'lucide-react-native';
 import {
   BarChart3,
-  Building2,
   Bus,
   CalendarDays,
   CheckCircle2,
@@ -13,6 +12,7 @@ import {
   Globe2,
   Landmark,
   Link,
+  LayoutDashboard,
   ListOrdered,
   MapPinned,
   Palette,
@@ -36,12 +36,12 @@ export interface FeatureDefinition {
 
 export const featureRegistry: readonly FeatureDefinition[] = [
   {
-    slug: 'central',
-    labelAr: 'الدليل المركزي',
-    labelEn: 'Central directory',
-    descriptionAr: 'دليل المحافظات والوزارات والهيئات الرسمية',
-    descriptionEn: 'Governorates, ministries, and public bodies',
-    icon: Building2,
+    slug: 'board',
+    labelAr: 'لوح',
+    labelEn: 'Board',
+    descriptionAr: 'لوحات شخصية تجمع أدواتك اليومية',
+    descriptionEn: 'Personal boards for your everyday tools',
+    icon: LayoutDashboard,
   },
   {
     slug: 'syofficial',
@@ -229,3 +229,11 @@ export const featureRegistry: readonly FeatureDefinition[] = [
     icon: FileText,
   },
 ] as const;
+
+/*
+PORT STATUS
+  source:     resources/js/Components/Icons/ProjectIcons.tsx (316 lines)
+  confidence: high
+  todos:      0
+  notes:      The native feature registry assigns semantic Lucide icons to the corresponding project modules.
+*/

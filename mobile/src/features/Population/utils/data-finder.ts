@@ -1,7 +1,4 @@
-import {
-  getCanonicalCityName,
-  normalizeForMatching,
-} from '@/lib/ported/city-name-standardizer';
+import { getCanonicalCityName } from '@/lib/ported/city-name-standardizer';
 
 import { ARABIC_TO_ENGLISH_CITY_MAP, PROVINCE_TO_PCODE } from '../constants/province-mappings';
 import type {
@@ -12,6 +9,7 @@ import type {
   RainfallData,
   RainfallYear,
 } from '../types';
+import { normalizeCityName } from './name-normalizer';
 
 export function findPopulation(
   provinceName: string,
@@ -27,11 +25,11 @@ export function findPopulation(
     return direct;
   }
 
-  const normalized = normalizeForMatching(provinceName);
+  const normalized = normalizeCityName(provinceName);
   for (const [city, value] of Object.entries(populationData)) {
     if (
       getCanonicalCityName(city) === canonicalName ||
-      normalizeForMatching(city) === normalized
+      normalizeCityName(city) === normalized
     ) {
       return value;
     }
@@ -79,7 +77,7 @@ export function findRainData(
     if (typeof name !== 'string') {
       continue;
     }
-    const mappedCode = PROVINCE_TO_PCODE[normalizeForMatching(name)];
+    const mappedCode = PROVINCE_TO_PCODE[normalizeCityName(name)];
     if (mappedCode && rainData[mappedCode]) {
       return rainData[mappedCode] ?? null;
     }

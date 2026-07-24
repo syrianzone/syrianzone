@@ -15,19 +15,27 @@ export function getPhonebookCategoryKey(value: string): string {
 export function getPhonebookCategories(
   items: readonly PhonebookEntry[],
 ): PhonebookCategory[] {
-  const categories = new Map<string, string>();
+  const categories = new Map<
+    string,
+    { labelAr: string; labelEn: string }
+  >();
   for (const item of items) {
     if (item.category_en) {
-      categories.set(item.category_en, item.category_ar);
+      categories.set(
+        item.category_id ?? getPhonebookCategoryKey(item.category_en),
+        {
+          labelAr: item.category_ar,
+          labelEn: item.category_en,
+        },
+      );
     }
   }
 
   return [
     { key: 'all', labelAr: 'الكل', labelEn: 'All' },
-    ...[...categories.entries()].map(([labelEn, labelAr]) => ({
-      key: getPhonebookCategoryKey(labelEn),
-      labelAr,
-      labelEn,
+    ...[...categories.entries()].map(([key, labels]) => ({
+      key,
+      ...labels,
     })),
   ];
 }
@@ -47,7 +55,8 @@ export function filterPhonebookEntries(
     .filter((item) => {
       const categoryMatches =
         category === 'all' ||
-        getPhonebookCategoryKey(item.category_en) === category;
+        (item.category_id ?? getPhonebookCategoryKey(item.category_en)) ===
+          category;
       const searchMatches =
         !term ||
         item.name_ar.toLowerCase().includes(term) ||

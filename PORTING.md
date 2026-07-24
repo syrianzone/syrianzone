@@ -7,11 +7,11 @@ Read this whole document before changing mobile code. A draft must preserve beha
 ## Ground rules
 
 - File placement: `resources/js/Pages/<Feature>/<path>` maps to `mobile/src/features/<Feature>/<path>`, preserving the full top-level feature name and nested path. `resources/js/Pages/Home.tsx` maps to `mobile/src/features/Home.tsx`.
-- Shared source files preserve their remaining path: `resources/js/Components/<path>` maps to `mobile/src/components/<path>`, `Contexts/<path>` maps to `mobile/src/contexts/<path>`, and `Lib/<path>` maps to `mobile/src/lib/ported/<path>`. Named exclusions below map to one shared native primitive instead of an empty placeholder.
+- Shared source files preserve their remaining path: `resources/js/Components/<path>` maps to `mobile/src/components/<path>`, `Contexts/<path>` maps to `mobile/src/contexts/<path>`, `Providers/<path>` maps to `mobile/src/providers/<path>`, and `Lib/<path>` maps to `mobile/src/lib/ported/<path>`. Named exclusions below map to one shared native primitive instead of an empty placeholder.
 - `resources/js/Data/<path>` maps to `mobile/src/data/<path>`. A manifest `.json` or `.md` source becomes a typed `.ts` module with the same basename, so strict data syntax never receives comments. `resources/js/echo.js` is the only startup special case and maps to `mobile/src/lib/realtime.ts`.
-- Exact shared-code specials are `Components/Navbar.tsx` to `mobile/src/components/shell/Navbar.tsx`, `Components/ThemeToggle.tsx` to `mobile/src/components/shell/ThemeToggle.tsx`, `Components/ConditionalLayout.tsx` to `mobile/src/components/shell/ConditionalLayout.tsx`, `Lib/axios.ts` to `mobile/src/lib/api/client.ts`, and `Lib/uploadthing.ts` to `mobile/src/lib/api/uploads.ts`.
+- Exact shared-code specials are `Components/Navbar.tsx` to `mobile/src/components/shell/Navbar.tsx`, `Components/ThemeToggle.tsx` to `mobile/src/components/shell/ThemeToggle.tsx`, `Components/ConditionalLayout.tsx` to `mobile/src/components/shell/ConditionalLayout.tsx`, `Providers/QueryProvider.tsx` to `mobile/src/providers/AppProviders.tsx`, `Lib/axios.ts` to `mobile/src/lib/api/client.ts`, and `Lib/uploadthing.ts` to `mobile/src/lib/api/uploads.ts`.
 - An intentional native split may give one source file several target files. Every target repeats the same source path and line count in its `PORT STATUS` trailer, and the contract verifier derives the exact target set from those trailers.
-- One target can't merge several manifest sources. The four `Pages/Admin/Places` source components keep separate targets under `mobile/src/features/Admin/Places/`, even when they share native state and API helpers.
+- A defensible native consolidation may give several source files one target. The target repeats the complete `PORT STATUS` block once per source at the end of the file. Consolidation is valid only when the target demonstrably owns every mapped behavior. The separate `Pages/Admin/Places` targets remain separate because each owns distinct visible behavior.
 - Keep exported type and function names in camelCase or PascalCase. Preserve API field names exactly at the network boundary.
 - Don't import Inertia, React DOM, Radix, Tailwind, CSS, browser globals, or the web map libraries into mobile code.
 - Flag over guess: use `TODO(port): <reason>`, `PERF(port): <source idiom>`, or `PORT NOTE: <why>` when a translation isn't settled.
@@ -21,7 +21,7 @@ Read this whole document before changing mobile code. A draft must preserve beha
 - Native code requests location only at the action that needs it. A denial must leave the rest of the screen usable.
 - Android and iOS share behavior. Platform branches are limited to permissions, store links, system sharing, maps, and OS presentation details.
 - Mobile bearer tokens carry no authority by themselves. Every protected endpoint enforces the same `admin`, `transit_admin`, or `superadmin` role gate as its web counterpart.
-- Google login uses the system browser and a single-use callback code. The app exchanges that code for a revocable Sanctum token, stores it in secure storage, and never copies browser cookies.
+- Google login uses the system browser, the registered `syrianzone://auth/callback` scheme, and a single-use callback code. HTTPS redirect configuration is rejected until both platforms have verified app-link associations. The app exchanges the code for a revocable Sanctum token, stores it in secure storage, and never copies browser cookies.
 - Google login uses PKCE. The app creates the verifier, challenge, and random state nonce; the server binds them to one login transaction; the app checks state on the deep link; and exchange fails unless the verifier matches.
 - Guess Who sessions are server-issued opaque credentials. A public session endpoint issues an unbound credential; create or join transactionally binds it to one room and player slot. Signal, presence auth, reconnect, and room reads reject a credential that isn't bound to that room. TURN credentials are short-lived.
 
@@ -31,7 +31,7 @@ Read this whole document before changing mobile code. A draft must preserve beha
 |---|---|---|
 | Server | Laravel 11 baseline | Laravel 12.64.0 under the `^12.61` constraint |
 | View runtime | React 19.2.6 with Inertia 2.3 | React 19.2.3 with React Native 0.86.0 |
-| Native framework | No native client | Expo SDK 57.0.7 with Expo Router 57.0.7 |
+| Native framework | No native client | Expo SDK 57.0.8 with Expo Router 57.0.8 |
 | Web build | Vite 6.4 | Vite 6.4 for the retained web client, Expo CLI for native bundles |
 | Node baseline | Local Node 25.6.1 | Node 24 LTS, with Node 22.13 or newer also supported |
 | Android | Bubblewrap TWA | Native Android 7+ (API 24), compile and target SDK 36 |
@@ -47,7 +47,7 @@ Read this whole document before changing mobile code. A draft must preserve beha
 | `Pages/Polls`, `TierList`, `Components/poll` | Matching feature and component folders | Preserve tier assignment, cooldown, submission, results, history, sharing, and archived filters. |
 | `Pages/Compass`, `Alignment`, `Priorities` | Matching folders under `mobile/src/features/` | Keep question order, scoring, result labels, custom alignment, and share output. |
 | `Pages/Transit` | `mobile/src/features/Transit/` | Use `@maplibre/maplibre-react-native@11.3.6`. Preserve city, route, stop, nearby, search, studio, and review flows. |
-| `Pages/Central` | `mobile/src/features/Central/` | Keep the typed directory, search, section filters, record details, and safe external links available at `/central`. |
+| `Pages/Board` | `mobile/src/features/Board/` | Preserve dashboards, layouts, widget discovery, configuration, refresh behavior, local persistence, and authenticated synchronization. Native Board consolidates browser component and widget modules where one screen or renderer owns their behavior. |
 | `Pages/Population` | `mobile/src/features/Population/` | Use `@maplibre/maplibre-react-native@11.3.6` and keep layer, source, legend, city, climate, and rainfall behavior. |
 | `Pages/Places`, `Pages/Admin/Places` | Matching folders under `mobile/src/features/` | Mishwar keeps map, list, and photo-grid views, local and Google place search, nearby results, explicit pin mode, detail deep links, guides, photo submission, saves, sharing, lightbox downloads, owner edits, and full place and photo moderation. Likes, comments, and reports no longer exist. |
 | `Pages/GuessWho` | `mobile/src/features/GuessWho/` | Keep room creation, join, signaling, presence, selection, guessing, reconnect, and end-game states. |
@@ -60,7 +60,7 @@ Read this whole document before changing mobile code. A draft must preserve beha
 | `localStorage` and `sessionStorage` | `mobile/src/lib/storage/` | Async storage for preferences, secure storage for tokens and device identity, memory for tab-only state. |
 | `public/` | `mobile/assets` or server asset URLs | Follow `mobile-assets.tsv`. Bundle app identity, required fonts, transit fallback data, and the shared province boundary. Keep SyID, official-account, government-app, justice, and tier-list media on Laravel. |
 
-Fallback rule: a source file without a named special case keeps its complete source-relative path under the mapped target root. The only extension rewrite is the `.json` or `.md` to `.ts` data-module rule above. This rule is mechanical and can't merge two source files into one target.
+Fallback rule: a source file without a named special case keeps its complete source-relative path under the mapped target root. The only extension rewrite is the `.json` or `.md` to `.ts` data-module rule above. An aggregate target is an explicit reviewed exception and must carry one trailer block for every consolidated source.
 
 ## Type map
 
@@ -127,28 +127,36 @@ The About screen imports the bundled `about.md` content through its typed data m
 
 ## Cross-file analysis
 
-`mobile-api.tsv` records every first-party data route and direct service dependency with its server implementation, native client, auth mode, required role, and port status. `implemented` means the registered Laravel route and native client evidence both exist. `server-only` marks a registered first-party route that no native client calls. Test results belong to the verification runs below instead of a hand-maintained row status. External rows distinguish direct native calls, server-only upstream calls, and map resources declared in a bundled style. User-initiated external links and media URLs returned by validated payloads aren't service calls, so they stay outside this table. Treat the table as the source of truth before adding a request. A missing first-party contract must be added to Laravel and tested there before the native screen calls it.
+`mobile-api.tsv` records 163 first-party data routes and direct service dependencies with their server implementation, native client, auth mode, required role, and port status. `implemented` means the registered Laravel route and native client evidence both exist. `server-only` marks a registered first-party route that no native client calls. Test results belong to the verification runs below instead of a hand-maintained row status. External rows distinguish direct native calls, server-only upstream calls, and map resources declared in a bundled style. User-initiated external links and media URLs returned by validated payloads aren't service calls, so they stay outside this table. Treat the table as the source of truth before adding a request. A missing first-party contract must be added to Laravel and tested there before the native screen calls it.
 
-Transit draft editing and published-route administration remain `server-only` because those endpoints accept a stateful web session and do not yet accept verified mobile bearer tokens. Native screens must not expose actions that would call those contracts until Laravel provides equivalent bearer authentication and feature tests.
+Board uses two authenticated sync routes and six public widget-source routes. Account home settings use one bearer-authenticated patch route. Official accounts, phonebook, and government apps now read database-backed public routes, while Sites and Parties retain their declared spreadsheet upstreams. Native directory administration uses all 26 bearer routes for reads, CRUD, visibility, and reordering with module roles and granular permissions.
+
+Transit draft editing and published-route administration use verified mobile bearer contracts and the same transit administrator role gate as the web routes. Native Studio can reopen and update owned drafts through the shared `/api/v1/studio` routes. Native Transit administration can inspect logs and geometry, update status, metadata, and the bounded route color index, move, combine, split, and inspect stops. Draft approval can also select the bounded route color index. Laravel feature tests must cover every mobile action before the native screen exposes it.
 
 `mobile-assets.tsv` records each asset family, whether it ships in the binary or stays server-hosted, and the source and target paths that prove it's used. It covers `public/assets`, `public/syid-assets`, `public/syofficial-assets`, transit and population GeoJSON, both map styles, root SVG files, fonts, contributor data, and media-disk uploads. The verifier also checks that both bundled map style files match their source bytes.
 
 Offline scope is explicit: the shell, legal text, static civic questionnaires, app identity, bundled map boundaries, persisted widget data, and in-memory last-good API responses remain usable. Server-hosted images use the native disk cache where the screen declares it, then show their fallback when unavailable. The port does not promise a full offline mirror of the 184 MB public tree.
 
-`port-manifest.tsv` lists source files that carry behavior or data into the app. Its order is leaf-first where practical. Pending work is any manifest source without a matching target trailer. `mobile/scripts/verify-port-contract.mjs` checks source line counts, requires every public and admin Mishwar TypeScript source in the manifest, derives every exact target path from its trailer, and rejects missing, stale, low-confidence, or flagged targets.
+`port-manifest.tsv` lists source files that carry behavior or data into the app. Its order is leaf-first where practical. Pending work is any manifest source without a matching target trailer. `mobile/scripts/verify-port-contract.mjs` checks source line counts, requires every eligible source in the manifest, derives every exact target path from its trailer, and rejects missing, stale, low-confidence, or flagged targets.
 
-The verifier checks manifest line counts against this worktree first, then an explicit `PORT_SOURCE_ROOT`, then the sibling source checkout. This keeps the contract tied to the merged Mishwar snapshot while still supporting an isolated mobile worktree.
+The verifier checks manifest line counts against one authoritative source tree. It uses this merged worktree by default, or only the explicit `PORT_SOURCE_ROOT` when that variable is set. It never falls back to a mutable sibling checkout. The same gate scans every eligible page, component, context, library, and data source, then proves each declared native target is reachable from an Expo Router entry.
 
 ## Don't translate
 
 - `resources/js/Components/sycn/` and `resources/js/Components/ui/`: replace them with a small native component set.
+- `resources/js/Components/DevRoleSwitcher.tsx`: it is a local web development control. Native authorization is exercised with deterministic test accounts and never ships a role switcher.
+- `resources/js/Components/admin/AdminPollGroupManager.tsx`: the web application never imports it. The shipped poll editor uses `AdminPollManager` for group operations.
 - CSS files, Tailwind classes, Radix composition, HTML metadata, and Vite chunk boundaries: preserve their visible behavior through native styles and routing.
 - `resources/js/app.tsx`, `bootstrap.js`, and Inertia layouts: Expo owns startup, bundling, linking, and update boundaries. Translate the Reverb connection, transport, timeout, auth endpoint, and session-header behavior from `echo.js` into the native realtime adapter.
 - `resources/js/Lib/arcjet.ts`: it's an unused Next.js server artifact. Laravel middleware and endpoint-specific rate limits own mobile API protection.
+- `resources/js/Lib/guessWhoSession.ts`: its browser tab identity is replaced by server-issued, room-bound credentials. Reintroducing the shim would weaken authorization.
+- `resources/js/Lib/utils.ts`: it merges Tailwind class strings, while native views use typed `StyleSheet` values.
 - Browser map objects, DOM export internals, object URLs, and custom scrollbar rules: use native maps, capture, files, and scrolling.
 - Google S2 favicon requests in Sites and Government Apps: use the first-party image when available, then a bundled native globe or app placeholder. Don't send browsing domains to the favicon service.
 - Generated build output under `public/build`, legacy untracked `frontend/` and `backend/`, dependency folders, caches, and local environment files.
-- Population aggregation scripts, raw CSV, and generated environmental reports: Laravel's seeded database and JSON APIs own that data at runtime.
+- Population aggregation scripts, raw CSV, and `resources/js/Pages/Population/syria_environmental_data_report.json`: Laravel's seeded database and JSON APIs own that data at runtime.
+- `resources/js/Pages/Population/lib/csv-parser.ts`: no shipped web module imports it, and the native atlas consumes validated Laravel JSON instead of source CSV.
+- `resources/js/Pages/Central/`: the authoritative source retired this duplicate directory. Official accounts, Phonebook, Sites, Party, and Government Apps own the maintained directory catalogs and native routes.
 - The root `android/` Bubblewrap wrapper: remove it after the React Native Android build replaces its purpose.
 
 ## Verification contract
@@ -156,12 +164,15 @@ The verifier checks manifest line counts against this worktree first, then an ex
 - `node mobile/scripts/verify-port-contract.mjs` must pass. Set `PORT_SOURCE_ROOT=/path/to/source-checkout` when the required source snapshot is outside this branch.
 - At the repository root, `composer validate --strict`, `composer audit --locked`, `php artisan test`, and `npm run build` must pass.
 - Under `mobile/`, `npm audit --omit=dev` and `npx expo install --check` must pass. Run `npm run lint`, `npm run typecheck`, `npm test -- --runInBand`, `npm run doctor`, and `npm run export` twice.
+- `npm run test:ci` collects every production TypeScript and TSX module outside Expo Router wrappers. Global coverage must stay at or above 55 percent for statements, branches, functions, and lines. React Native Testing Library and Maestro cover visible branches that are impractical to measure through module instrumentation.
 - Run two native cycles. Each cycle starts with `npm run prebuild:clean`, then runs `npm run build:ios` and `npm run build:android` against the fresh generated projects.
-- Android builds and Maestro use JDK 17. On this Homebrew host, use `JAVA_HOME="${JAVA_HOME:-/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home}"`; other hosts must point `JAVA_HOME` at their JDK 17 installation.
-- `npm run smoke:ios` and `npm run smoke:android` must drive every top-level module on an iOS simulator and Android emulator.
+- `npm run build:ios` and `npm run build:android` install local Release variants for device smoke verification. Store archives and distribution signing require a separate credentialed release workflow.
+- Android builds and Maestro use JDK 17. On this Homebrew host, use `JAVA_HOME="${JAVA_HOME:-/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home}"`; other hosts must point `JAVA_HOME` at their JDK 17 installation. The release build command verifies the active Java major before Gradle starts.
+- `npm run smoke:ios` and `npm run smoke:android` must drive every top-level module, admin guest gate, auth callback failure, and deterministic native Transit surface on an iOS simulator and Android emulator.
+- Set `MAESTRO_IOS_DEVICE_ID` and `MAESTRO_ANDROID_DEVICE_ID` to the exact booted simulator and emulator identifiers. Release build and smoke scripts reject implicit device selection and use the same identifier.
 - `rg -n 'TODO\(port\)|PERF\(port\)|confidence: (low|medium)' mobile app routes tests` must find nothing unless this guide records a specific accepted deferral.
 
-Node 24 is the release verification runtime. When the active shell uses another Node version, prefix native commands with `mise exec node@24.18.0 --` or use another version manager that selects Node 24.
+Node 24 is the release verification runtime. Release build scripts reject another major version. When the active shell uses another Node version, prefix native commands with `mise exec node@24.18.0 --` or use another version manager that selects Node 24.
 
 `@maplibre/maplibre-react-native@11.3.6` is the selected native map because it supports React Native 0.80+, the required new architecture, GeoJSON shape sources, line layers, symbols, map presses, and both target platforms. Transit Studio owns edit state in React: map presses add coordinates or stops, drag gestures edit selected points, and declarative layers render active, reference, and conflict geometry. Undo, conflict checks, stop ordering, and GeoJSON export are pure functions with characterization tests.
 
@@ -169,7 +180,7 @@ The app bundles exact dark and light vector map styles. Mishwar and Transit sele
 
 Charts use `react-native-svg@15.15.4` inside the feature that owns each chart. House charts live in `mobile/src/features/House/HouseCharts.tsx`, Priorities uses `mobile/src/features/Priorities/RadarChart.tsx`, and poll history uses the poll and tier-list `TimeseriesChart.tsx` files plus `mobile/src/components/poll/MonthlyLineChart.tsx`. Their models preserve source scales, labels, legends, RTL text, empty states, and theme colors. Share output uses the Expo SDK 57 compatible `react-native-view-shot@5.1.0` where a rendered native view must become an image.
 
-Guess Who uses `react-native-webrtc@124.0.7`, autolinked by clean Expo prebuild, and a repository config plugin at `mobile/plugins/withDataChannelWebRtc.js`. The plugin adds only data-channel network and release keep settings. It does not add camera or microphone permissions. Expo Go is unsupported, so all Guess Who runs use a native development or release build. SDP uses `js-base64@3.9.1` instead of browser globals. One peer generation may exist per room: stale signals and ICE are ignored by generation, ICE waits for a remote description, the channel is ordered and reliable, and every room change, sign-out, terminal game state, background transition, or unmount removes handlers, closes the data channel and peer, clears queued ICE, and nulls refs. Returning active requests a fresh room snapshot, then retries negotiation after 1, 2, and 4 seconds before showing a manual reconnect action. TURN credentials always come from the short-lived server endpoint.
+Guess Who uses `react-native-webrtc@124.0.7`, autolinked by clean Expo prebuild, and a repository config plugin at `mobile/plugins/withDataChannelWebRtc.js`. The plugin pins Jitsi WebRTC to the locally proven `124.0.0` Android artifact and `124.0.2` iOS pod, pins React Android to the app's `0.86.0` runtime, and adds only data-channel network and release keep settings. It does not add camera or microphone permissions. Expo Go is unsupported, so all Guess Who runs use a native development or release build. SDP uses `js-base64@3.9.1` instead of browser globals. One peer generation may exist per room: stale signals and ICE are ignored by generation, ICE waits for a remote description, the channel is ordered and reliable, and every room change, sign-out, terminal game state, background transition, or unmount removes handlers, closes the data channel and peer, clears queued ICE, and nulls refs. Returning active requests a fresh room snapshot, then retries negotiation after 1, 2, and 4 seconds before showing a manual reconnect action. TURN credentials always come from the short-lived server endpoint.
 
 ## Source test caveat and characterization plan
 
@@ -189,7 +200,7 @@ Source-derived fixtures live beside their feature tests or under `mobile/src/tes
 
 ## Output format
 
-End every directly ported TypeScript target file with this trailer comment. The typed data-module rule means every manifest target can carry it without invalid syntax:
+End every directly ported TypeScript target file with this trailer comment. Repeat the complete block once per source when one reviewed native target consolidates several source files. The typed data-module rule means every manifest target can carry the block without invalid syntax:
 
     /*
     PORT STATUS

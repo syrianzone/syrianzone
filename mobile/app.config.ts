@@ -13,6 +13,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     scheme: 'syrianzone',
     userInterfaceStyle: 'automatic',
     ios: {
+      buildNumber: '1',
       bundleIdentifier: 'zone.syrian.app',
       supportsTablet: true,
       icon: './assets/images/icon.png',
@@ -21,7 +22,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       },
     },
     android: {
+      versionCode: 1,
       package: 'zone.syrian.app',
+      blockedPermissions: ['android.permission.SYSTEM_ALERT_WINDOW'],
       adaptiveIcon: {
         backgroundColor: '#f6f4ed',
         foregroundImage: './assets/images/icon.png',
@@ -60,6 +63,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       ],
       'expo-localization',
       'expo-sharing',
+      'expo-web-browser',
       [
         'expo-splash-screen',
         {

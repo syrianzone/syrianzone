@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { apiClient } from '@/lib/api/client';
+import { uploadImage } from '@/lib/api/uploads';
 import {
   pollCandidateSchema,
   pollGroupSchema,
@@ -29,7 +30,6 @@ const deleteResponseSchema = envelopeSchema(z.object({ deleted: z.literal(true) 
 const reorderResponseSchema = envelopeSchema(
   z.object({ groups: z.array(pollGroupSchema) }),
 );
-const uploadResponseSchema = envelopeSchema(z.object({ url: z.string().min(1) }));
 
 export type AdminPollCatalogItem = z.infer<
   typeof adminPollCatalogItemSchema
@@ -255,20 +255,5 @@ export async function uploadAdminCandidateImage(
   uri: string,
   filename = 'candidate-image.jpg',
 ): Promise<string> {
-  const extension = filename.split('.').pop()?.toLocaleLowerCase('en');
-  const type =
-    extension === 'png'
-      ? 'image/png'
-      : extension === 'webp'
-        ? 'image/webp'
-        : 'image/jpeg';
-  const form = new FormData();
-  form.append('image', { name: filename, type, uri } as unknown as Blob);
-  const response = await apiClient.request('/api/mobile/admin/uploads', {
-    auth: true,
-    body: form,
-    method: 'POST',
-    schema: uploadResponseSchema,
-  });
-  return response.data.url;
+  return uploadImage(uri, filename);
 }

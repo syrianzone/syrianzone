@@ -29,6 +29,7 @@ import { useAppTheme } from '@/contexts/ThemeContext';
 import { apiOrigin } from '@/lib/env';
 
 import { fetchContributors } from './api';
+import { contributorScreenOptions } from './layout';
 import {
   CONTRIBUTION_PERIODS,
   contributorInitials,
@@ -192,8 +193,8 @@ export default function SyrianContributorsPage() {
     <Screen
       onRefresh={() => void query.refetch()}
       refreshing={query.isRefetching}
-      subtitle="تكريم المطورين السوريين المساهمين في المصادر المفتوحة"
-      title="أفضل المساهمين في GitHub"
+      subtitle={contributorScreenOptions.description}
+      title={contributorScreenOptions.title}
     >
       <Pressable
         accessibilityLabel={showEagle ? 'عرض علم سوريا' : 'عرض النسر السوري'}

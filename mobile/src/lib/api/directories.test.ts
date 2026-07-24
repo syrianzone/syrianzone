@@ -7,6 +7,7 @@ import {
   fetchPhonebook,
   fetchWebsites,
   governmentAppSchema,
+  officialCategorySchema,
   officialEntitySchema,
   organizationSchema,
   phonebookEntrySchema,
@@ -17,6 +18,7 @@ import { apiClient, type ApiRequestOptions } from './client';
 
 import {
   governmentAppsFixture,
+  officialAccountsResponseFixture,
   officialDirectoryFixture,
   organizationFixture,
   phonebookFixture,
@@ -30,6 +32,16 @@ describe('directory API schemas', () => {
     expect(websiteSchema.parse(websiteFixture[0])).toBeDefined();
     expect(organizationSchema.parse(organizationFixture[0])).toBeDefined();
     expect(governmentAppSchema.parse(governmentAppsFixture[0])).toBeDefined();
+    expect(
+      officialCategorySchema.parse({
+        icon: null,
+        id: 'ministries',
+        is_active: true,
+        label_ar: 'الوزارات',
+        label_en: 'Ministries',
+        order_column: 1,
+      }),
+    ).toBeDefined();
   });
 
   it('rejects malformed public data at the boundary', () => {
@@ -103,6 +115,34 @@ describe('directory API requests', () => {
     expect(request.mock.calls[1]?.[1].query).toEqual({
       id: '123456789',
       store: 'apple',
+    });
+  });
+
+  it('matches the backend official accounts response contract', async () => {
+    jest.spyOn(apiClient, 'request').mockImplementation(
+      async <T>(
+        _path: string,
+        options: ApiRequestOptions<T>,
+      ): Promise<T> => options.schema.parse(officialAccountsResponseFixture),
+    );
+
+    await expect(fetchOfficialAccounts()).resolves.toEqual(
+      officialAccountsResponseFixture.data,
+    );
+  });
+
+  it('normalizes the legacy entity array during backend rollout', async () => {
+    jest.spyOn(apiClient, 'request').mockImplementation(
+      async <T>(
+        _path: string,
+        options: ApiRequestOptions<T>,
+      ): Promise<T> =>
+        options.schema.parse({ data: [officialDirectoryFixture[0]] }),
+    );
+
+    await expect(fetchOfficialAccounts()).resolves.toEqual({
+      categories: [],
+      entities: [officialDirectoryFixture[0]],
     });
   });
 });

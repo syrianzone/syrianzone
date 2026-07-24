@@ -32,7 +32,11 @@ jest.mock('@tanstack/react-query', () => ({
       stops: [
         {
           coordinates: [36.2, 33.4],
-          properties: { id: 'stop-a', nameAr: 'الموقف الأول' },
+          properties: {
+            id: 'stop-a',
+            nameAr: 'الموقف الأول',
+            nameEn: 'First stop',
+          },
         },
         {
           coordinates: [36.3, 33.5],
@@ -66,6 +70,7 @@ test('shows route fare history, stop total, and a focused map action', async () 
   expect(view.getByText('عدد المواقف')).toBeTruthy();
   expect(view.getAllByText('٢ موقف').length).toBeGreaterThan(0);
   expect(view.getByText('٢٬٠٠٠ ليرة سورية قديمة')).toBeTruthy();
+  expect(view.getByText('First stop')).toBeTruthy();
 
   await fireEvent.press(view.getByLabelText('فتح خط الاختبار على الخريطة'));
   expect(router.push).toHaveBeenCalledWith({

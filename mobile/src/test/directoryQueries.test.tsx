@@ -21,7 +21,7 @@ import {
 
 import {
   governmentAppsFixture,
-  officialDirectoryFixture,
+  officialAccountsResponseFixture,
   organizationFixture,
   phonebookFixture,
   websiteFixture,
@@ -66,9 +66,10 @@ async function renderPage(page: ReactElement) {
 beforeEach(() => {
   jest.clearAllMocks();
   jest.mocked(fetchGovernmentApps).mockResolvedValue([...governmentAppsFixture]);
-  jest.mocked(fetchOfficialAccounts).mockResolvedValue([
-    ...officialDirectoryFixture,
-  ]);
+  jest.mocked(fetchOfficialAccounts).mockResolvedValue({
+    categories: [...officialAccountsResponseFixture.data.categories],
+    entities: [...officialAccountsResponseFixture.data.entities],
+  });
   jest
     .mocked(fetchOrganizations)
     .mockResolvedValue(
@@ -174,7 +175,10 @@ test('phonebook keeps its provenance note around a valid empty result', async ()
 });
 
 test('official accounts keep local languages and filters when empty', async () => {
-  jest.mocked(fetchOfficialAccounts).mockResolvedValueOnce([]);
+  jest.mocked(fetchOfficialAccounts).mockResolvedValueOnce({
+    categories: [],
+    entities: [],
+  });
   const { view } = await renderPage(<OfficialAccountsPage />);
 
   await waitFor(() =>

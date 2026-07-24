@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, Vote } from 'lucide-react-native';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ComponentType } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { TierAvatar } from '@/components/poll/TierAvatar';
@@ -22,9 +22,13 @@ import {
   type PollStatus,
 } from '@/lib/api/polls';
 
-import { TimeseriesChart } from './TimeseriesChart';
+import {
+  TimeseriesChart,
+  type TimeseriesChartProps,
+} from './TimeseriesChart';
 
-interface PollLeaderboardProps {
+export interface PollLeaderboardProps {
+  ChartComponent?: ComponentType<TimeseriesChartProps>;
   identifier: string;
   onBack?: () => void;
   onVote?: () => void;
@@ -37,6 +41,7 @@ const statusOptions: readonly [PollStatus, string][] = [
 ];
 
 export default function PollLeaderboard({
+  ChartComponent = TimeseriesChart,
   identifier,
   onBack,
   onVote,
@@ -150,7 +155,7 @@ export default function PollLeaderboard({
             <QueryState detail="لا توجد نتائج لهذه الفئة بعد." type="empty" />
           ) : (
             <>
-              <TimeseriesChart
+              <ChartComponent
                 candidates={rows}
                 history={query.data.history}
                 title={`تقدم ${activeGroup?.name ?? 'المرشحين'}`}

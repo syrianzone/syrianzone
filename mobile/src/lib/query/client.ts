@@ -1,5 +1,10 @@
 import NetInfo from '@react-native-community/netinfo';
-import { focusManager, onlineManager, QueryClient } from '@tanstack/react-query';
+import {
+  environmentManager,
+  focusManager,
+  onlineManager,
+  QueryClient,
+} from '@tanstack/react-query';
 import { AppState, type AppStateStatus, Platform } from 'react-native';
 
 let configured = false;
@@ -38,7 +43,7 @@ export function createQueryClient(): QueryClient {
         networkMode: 'offlineFirst',
         retry: 2,
         staleTime: 5 * 60 * 1000,
-        gcTime: 30 * 60 * 1000,
+        gcTime: environmentManager.isServer() ? Infinity : 30 * 60 * 1000,
       },
       mutations: {
         networkMode: 'online',

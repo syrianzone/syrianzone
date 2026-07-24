@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query';
-import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
 import {
@@ -27,12 +26,16 @@ import { AppButton } from '@/components/ui/AppButton';
 import { AppCard } from '@/components/ui/AppCard';
 import { AppInput } from '@/components/ui/AppInput';
 import { AppText } from '@/components/ui/AppText';
+import { Avatar } from '@/components/ui/Avatar';
 import { QueryState } from '@/components/ui/QueryState';
 import { Screen } from '@/components/ui/Screen';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import CreatePoll from '@/features/Admin/Polls/Create';
 import EditPoll from '@/features/Admin/Polls/Edit';
+import { canManageGovernmentApps } from '@/features/GovApps/Admin/Index';
+import { canManagePhonebook } from '@/features/Phonebook/Admin/Index';
+import { canManageSyOfficial } from '@/features/SyOfficial/Admin/Index';
 import { apiOrigin } from '@/lib/env';
 import type { AuthUser } from '@/lib/auth/types';
 
@@ -87,7 +90,10 @@ function DashboardContent({
     queryKey: ['dashboard-account', user.id],
   });
   const accountUser = accountQuery.data?.user ?? user;
-  const capabilities = dashboardCapabilities(accountUser.role);
+  const capabilities = dashboardCapabilities(accountUser);
+  const canManageGovApps = canManageGovernmentApps(accountUser);
+  const canManagePhoneDirectory = canManagePhonebook(accountUser);
+  const canManageOfficialDirectory = canManageSyOfficial(accountUser);
   const allowedTabs = useMemo(() => {
     const tabs: DashboardTab[] = ['profile'];
     if (capabilities.canViewSubmissions) {
@@ -378,7 +384,7 @@ function DashboardContent({
             onPress={() => router.push('/transit/admin')}
             variant="secondary"
           >
-            مراجعة الخطوط المقترحة
+            إدارة الترانزيت
           </AppButton>
         ) : null}
         {capabilities.canManagePolls ? (
@@ -388,6 +394,33 @@ function DashboardContent({
             variant="secondary"
           >
             مراجعة الأماكن والبلاغات
+          </AppButton>
+        ) : null}
+        {canManageGovApps ? (
+          <AppButton
+            icon={<Settings color={theme.palette.foreground} size={18} />}
+            onPress={() => router.push('/admin/govapps')}
+            variant="secondary"
+          >
+            إدارة التطبيقات الحكومية
+          </AppButton>
+        ) : null}
+        {canManagePhoneDirectory ? (
+          <AppButton
+            icon={<ListOrdered color={theme.palette.foreground} size={18} />}
+            onPress={() => router.push('/admin/phonebook')}
+            variant="secondary"
+          >
+            إدارة دليل الهاتف
+          </AppButton>
+        ) : null}
+        {canManageOfficialDirectory ? (
+          <AppButton
+            icon={<Shield color={theme.palette.foreground} size={18} />}
+            onPress={() => router.push('/admin/syofficial')}
+            variant="secondary"
+          >
+            إدارة الحسابات الرسمية
           </AppButton>
         ) : null}
         <AppButton
@@ -455,20 +488,57 @@ function DashboardContent({
               <AppText color="muted" variant="caption">
                 المدينة: {draft.city?.name_ar ?? draft.city_id}، تاريخ التقديم: {new Date(draft.created_at).toLocaleDateString('ar-SY')}
               </AppText>
+              {draft.route_id ? (
+                <AppText color="primary" variant="caption">
+                  تعديل مقترح لخط منشور
+                </AppText>
+              ) : null}
               {draft.status === 'rejected' && draft.rejection_reason ? (
                 <AppText color="danger" variant="caption">
                   ملاحظات التدقيق: {draft.rejection_reason}
                 </AppText>
               ) : null}
-              {draft.status === 'pending' ? (
+              <View style={styles.cardActions}>
+                {draft.status === 'pending' ? (
+                  <AppButton
+                    loading={withdrawingDraftId === draft.id}
+                    onPress={() => withdrawDraft(draft.id)}
+                    variant="danger"
+                  >
+                    سحب الاقتراح
+                  </AppButton>
+                ) : null}
                 <AppButton
-                  loading={withdrawingDraftId === draft.id}
-                  onPress={() => withdrawDraft(draft.id)}
-                  variant="danger"
+                  accessibilityLabel={`تعديل ${draft.name_ar}`}
+                  icon={<Edit color={theme.palette.foreground} size={18} />}
+                  onPress={() =>
+                    router.push({
+                      params: { edit: String(draft.id) },
+                      pathname: '/transit/studio',
+                    })
+                  }
+                  variant="secondary"
                 >
-                  سحب الاقتراح
+                  تعديل
                 </AppButton>
-              ) : null}
+                {draft.status === 'approved' && draft.route_id ? (
+                  <AppButton
+                    accessibilityLabel={`عرض ${draft.name_ar}`}
+                    onPress={() =>
+                      router.push({
+                        params: {
+                          id: draft.city_id,
+                          routeId: draft.route_id,
+                        },
+                        pathname: '/transit/city/[id]/route/[routeId]',
+                      })
+                    }
+                    variant="secondary"
+                  >
+                    عرض الخط المنشور
+                  </AppButton>
+                ) : null}
+              </View>
             </AppCard>
           ))}
         </View>
@@ -559,27 +629,11 @@ function DashboardContent({
           ) : null}
           <AppCard style={styles.form}>
             <View style={styles.avatarRow}>
-              {accountUser.avatar_url ? (
-                <Image
-                  accessibilityLabel="صورة الحساب الحالية"
-                  contentFit="cover"
-                  source={accountUser.avatar_url}
-                  style={styles.profileAvatar}
-                />
-              ) : (
-                <View
-                  accessibilityLabel="صورة الحساب الافتراضية"
-                  style={[
-                    styles.profileAvatar,
-                    styles.avatarFallback,
-                    { backgroundColor: theme.palette.surfaceRaised },
-                  ]}
-                >
-                  <AppText variant="heading">
-                    {accountUser.name.trim().charAt(0).toUpperCase() || '؟'}
-                  </AppText>
-                </View>
-              )}
+              <Avatar
+                label={accountUser.name}
+                size={88}
+                uri={accountUser.avatar_url}
+              />
               <View style={styles.grow}>
                 <AppText variant="label">صورة الحساب</AppText>
                 <AppText color="muted" variant="caption">
@@ -678,10 +732,6 @@ export default function Dashboard() {
 }
 
 const styles = StyleSheet.create({
-  avatarFallback: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   avatarRow: {
     alignItems: 'center',
     flexDirection: 'row-reverse',
@@ -712,11 +762,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
     gap: 12,
   },
-  profileAvatar: {
-    borderRadius: 44,
-    height: 88,
-    width: 88,
-  },
   row: {
     alignItems: 'center',
     flexDirection: 'row-reverse',
@@ -740,8 +785,8 @@ const styles = StyleSheet.create({
 
 /*
 PORT STATUS
-  source:     resources/js/Pages/Dashboard/Index.tsx (694 lines)
+  source:     resources/js/Pages/Dashboard/Index.tsx (720 lines)
   confidence: high
   todos:      0
-  notes:      Native role gates, submissions, poll administration, avatar and profile updates, and account deletion preserve the source dashboard.
+  notes:      Native role gates, linked route journeys, poll administration, resilient avatars, profile updates, and account deletion preserve the source dashboard.
 */

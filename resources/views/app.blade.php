@@ -17,7 +17,6 @@
     <!-- Meta/Icons -->
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" type="image/png" href="/assets/favicon.png" />
-    <link rel="shortcut icon" type="image/png" href="/assets/favicon.png" />
     <link rel="apple-touch-icon" href="/assets/favicon.png" />
     
     @php

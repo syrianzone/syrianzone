@@ -3,6 +3,7 @@ import { Loader2, Pencil } from 'lucide-react';
 import { useAuth } from '@/Contexts/AuthContext';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/Components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/Lib/utils';
 import { api, extractError } from '../_lib/api';
@@ -84,32 +85,34 @@ function ListShell(props: {
 }) {
   const { loading, empty, hasMore, onLoadMore, failed = false, onRetry, children } = props;
   return (
-    <div className="min-h-0 flex-1 space-y-1 overflow-y-auto px-2 py-2">
-      {children}
-      {!loading && failed && (
-        <div className="space-y-2 py-4 text-center">
-          <p className="text-sm text-destructive">تعذر تحميل القائمة</p>
-          {onRetry && (
-            <Button type="button" variant="outline" size="sm" onClick={onRetry}>
-              إعادة المحاولة
-            </Button>
-          )}
-        </div>
-      )}
-      {!loading && !failed && empty && (
-        <p className="py-8 text-center text-sm text-muted-foreground">لا توجد أماكن</p>
-      )}
-      {loading && (
-        <div className="flex justify-center py-3">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-        </div>
-      )}
-      {hasMore && !loading && (
-        <Button type="button" variant="outline" className="w-full" onClick={onLoadMore}>
-          عرض المزيد
-        </Button>
-      )}
-    </div>
+    <ScrollArea className="min-h-0 flex-1">
+      <div className="space-y-1 px-2 py-2">
+        {children}
+        {!loading && failed && (
+          <div className="space-y-2 py-4 text-center">
+            <p className="text-sm text-destructive">تعذر تحميل القائمة</p>
+            {onRetry && (
+              <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+                إعادة المحاولة
+              </Button>
+            )}
+          </div>
+        )}
+        {!loading && !failed && empty && (
+          <p className="py-8 text-center text-sm text-muted-foreground">لا توجد أماكن</p>
+        )}
+        {loading && (
+          <div className="flex justify-center py-3">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        )}
+        {hasMore && !loading && (
+          <Button type="button" variant="outline" className="w-full" onClick={onLoadMore}>
+            عرض المزيد
+          </Button>
+        )}
+      </div>
+    </ScrollArea>
   );
 }
 

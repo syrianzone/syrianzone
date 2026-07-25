@@ -58,9 +58,13 @@ export function parseLatLng(q: string): LatLng | null {
   return { lat, lng };
 }
 
+export type ViewFilter = 'all' | 'places' | 'hotels';
+
 export function FilterBar(props: {
   category: PlaceCategory | null;
   onCategoryChange: (c: PlaceCategory | null) => void;
+  viewFilter: ViewFilter;
+  onViewFilterChange: (v: ViewFilter) => void;
   query: string;
   onQueryChange: (q: string) => void;
   results: PlaceListItem[];
@@ -148,6 +152,8 @@ export function FilterBar(props: {
       activate(activeIndex);
     }
   }
+
+  const hasActiveFilter = props.category !== null || props.viewFilter !== 'all';
 
   return (
     // relative here: the dropdown and popover anchor to the whole bar, not the narrow pill/button
@@ -268,50 +274,75 @@ export function FilterBar(props: {
       >
         <button
           type="button"
-          aria-label={props.category === null ? 'تصفية حسب الفئة' : undefined}
+          aria-label="تصفية"
           aria-expanded={filterOpen}
-          aria-controls="place-category-popover"
+          aria-controls="place-filter-popover"
           onClick={() => setFilterOpen((v) => !v)}
           className={cn(
             'flex h-9 items-center gap-1.5 rounded-full border bg-card/95 px-3 text-xs shadow-md',
-            props.category === null ? 'border-border text-muted-foreground' : 'border-primary/50 text-primary',
+            hasActiveFilter ? 'border-primary/50 text-primary' : 'border-border text-muted-foreground',
           )}
         >
           <SlidersHorizontal className="h-4 w-4" />
+          {props.viewFilter === 'hotels' && 'فنادق'}
+          {props.viewFilter === 'places' && 'أماكن'}
           {props.category !== null && CATEGORY_LABELS[props.category]}
+          {!hasActiveFilter && 'تصفية'}
         </button>
         {filterOpen && (
           <div
-            id="place-category-popover"
-            // anchored to the bar root, right-0 + viewport clamp: the button sits mid-bar in RTL,
-            // so a button-anchored w-64 would clip the first chips (including الكل) off narrow screens
+            id="place-filter-popover"
             className="absolute right-0 top-full z-20 mt-1 w-[min(16rem,calc(100vw-1.5rem))] rounded-lg border border-border bg-popover p-2 shadow-md"
           >
-            <div className="flex flex-wrap gap-1.5">
-              <button
-                type="button"
-                className={cn(badgeVariants({ variant: props.category === null ? 'default' : 'outline' }), 'cursor-pointer')}
-                onClick={() => {
-                  props.onCategoryChange(null);
-                  setFilterOpen(false);
-                }}
-              >
-                الكل
-              </button>
-              {CATEGORIES.map((c) => (
+            {/* View type filter */}
+            <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">النوع</p>
+            <div className="mb-3 flex flex-wrap gap-1.5">
+              {([
+                { key: 'all' as const, label: 'الكل' },
+                { key: 'places' as const, label: 'أماكن' },
+                { key: 'hotels' as const, label: 'فنادق' },
+              ]).map((v) => (
                 <button
-                  key={c.key}
+                  key={v.key}
                   type="button"
-                  className={cn(badgeVariants({ variant: props.category === c.key ? 'default' : 'outline' }), 'cursor-pointer')}
-                  onClick={() => {
-                    props.onCategoryChange(props.category === c.key ? null : c.key);
-                    setFilterOpen(false);
-                  }}
+                  className={cn(badgeVariants({ variant: props.viewFilter === v.key ? 'default' : 'outline' }), 'cursor-pointer')}
+                  onClick={() => props.onViewFilterChange(v.key)}
                 >
-                  {c.label}
+                  {v.label}
                 </button>
               ))}
             </div>
+            {/* Category filter (only for places) */}
+            {props.viewFilter !== 'hotels' && (
+              <>
+                <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">الفئة</p>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    className={cn(badgeVariants({ variant: props.category === null ? 'default' : 'outline' }), 'cursor-pointer')}
+                    onClick={() => {
+                      props.onCategoryChange(null);
+                      setFilterOpen(false);
+                    }}
+                  >
+                    الكل
+                  </button>
+                  {CATEGORIES.map((c) => (
+                    <button
+                      key={c.key}
+                      type="button"
+                      className={cn(badgeVariants({ variant: props.category === c.key ? 'default' : 'outline' }), 'cursor-pointer')}
+                      onClick={() => {
+                        props.onCategoryChange(props.category === c.key ? null : c.key);
+                        setFilterOpen(false);
+                      }}
+                    >
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>

@@ -4,7 +4,7 @@ import { ChevronDown, ChevronUp, Plus, X } from 'lucide-react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Button } from '@/components/ui/button';
 import { PlacesMap } from './_components/PlacesMap';
-import { FilterBar, parseLatLng } from './_components/FilterBar';
+import { FilterBar, parseLatLng, type ViewFilter } from './_components/FilterBar';
 import { PhotoGrid } from './_components/PhotoGrid';
 import { PlacesPanel } from './_components/PlacesPanel';
 import { SubmitSheet } from './_components/SubmitSheet';
@@ -19,6 +19,7 @@ export default function Index() {
   const [features, setFeatures] = useState<PlaceFeatureCollection | null>(null);
   const [hotelFeatures, setHotelFeatures] = useState<HotelFeatureCollection>(EMPTY_HOTEL_GEOJSON);
   const [category, setCategory] = useState<PlaceCategory | null>(null);
+  const [viewFilter, setViewFilter] = useState<ViewFilter>('all');
   const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [selectedType, setSelectedType] = useState<'place' | 'hotel' | null>(null);
@@ -178,6 +179,8 @@ export default function Index() {
   const coordCandidate = useMemo(() => parseLatLng(query), [query]);
 
   const filteredFeatures = useMemo<PlaceFeatureCollection>(() => {
+    // when viewFilter is 'hotels', hide all place pins
+    if (viewFilter === 'hotels') return { type: 'FeatureCollection', features: [] };
     // a coordinate query jumps the map; it must not filter the pins away
     const q = coordCandidate ? '' : query.trim();
     return {
@@ -189,7 +192,13 @@ export default function Index() {
           (q === '' || f.properties.name.includes(q)),
       ),
     };
-  }, [features, category, query, coordCandidate, guide]);
+  }, [features, category, query, coordCandidate, guide, viewFilter]);
+
+  const filteredHotelFeatures = useMemo<HotelFeatureCollection>(() => {
+    // when viewFilter is 'places', hide all hotel pins
+    if (viewFilter === 'places') return EMPTY_HOTEL_GEOJSON;
+    return hotelFeatures;
+  }, [hotelFeatures, viewFilter]);
 
   // during the debounce window listPlaces still holds the previous query's results
   const searchPending = query.trim() !== '' && !coordCandidate && fetchedQuery !== query.trim();
@@ -272,7 +281,7 @@ export default function Index() {
       <main dir="rtl" className="relative h-[calc(100dvh-4rem)] overflow-hidden">
         <PlacesMap
           features={filteredFeatures}
-          hotelFeatures={hotelFeatures}
+          hotelFeatures={filteredHotelFeatures}
           selectedId={selectedId}
           selectedType={selectedType}
           addMode={addMode}
@@ -303,6 +312,8 @@ export default function Index() {
               className="pointer-events-auto min-w-0 flex-1"
               category={category}
               onCategoryChange={setCategory}
+              viewFilter={viewFilter}
+              onViewFilterChange={setViewFilter}
               query={query}
               onQueryChange={setQuery}
               results={searchResults}

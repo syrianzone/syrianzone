@@ -35,7 +35,11 @@ if [ "${APP_ENV}" = "staging" ]; then
   php /var/www/html/artisan db:seed --class=StagingSeeder --force || echo "⚠️ Staging seeding failed."
 fi
 
-# 4. Optimize configurations and cache
+# 4. Sync hotel data from HalaSyria (idempotent: updateOrCreate, safe to run on every boot)
+echo "🏨 Syncing HalaSyria hotels..."
+php /var/www/html/artisan hotels:sync || echo "⚠️ HalaSyria hotel sync skipped or failed."
+
+# 5. Optimize configurations and cache
 echo "⚡ Optimizing Laravel application..."
 php /var/www/html/artisan optimize:clear
 php /var/www/html/artisan config:cache

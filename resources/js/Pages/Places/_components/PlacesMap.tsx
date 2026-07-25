@@ -36,7 +36,7 @@ export function PlacesMap(props: {
       <MapInteractions addMode={props.addMode} onMapClick={props.onMapClick} />
       <HighlightMarker point={props.highlight} />
       {props.focus && (
-        <FlyTo lng={props.focus.lng} lat={props.focus.lat} zoom={props.focus.zoom} key={props.focus.key} />
+        <FlyTo lng={props.focus.lng} lat={props.focus.lat} zoom={props.focus.zoom} trigger={props.focus.key} />
       )}
     </MapCanvas>
   );

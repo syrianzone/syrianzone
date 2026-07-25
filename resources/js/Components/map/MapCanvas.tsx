@@ -34,32 +34,42 @@ export function MapCanvas({
   const [map, setMap] = useState<maplibregl.Map | null>(null);
   const styleRef = useRef('');
 
+  // Capture initial values in refs so they don't become effect deps.
+  // center/zoom/bounds are init-only: changing them after mount has no effect
+  // (use map.flyTo / map.fitBounds for programmatic moves instead).
+  const initRef = useRef({ center, zoom, bounds, fitBounds, maxBounds, minZoom, maxZoom });
+
+  // Empty deps: map is created once on mount and torn down on unmount only.
+  // Never put center/zoom/bounds here — they're new object references every
+  // render and would cause the map to be destroyed and recreated each time.
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
+
+    const { center: initCenter, zoom: initZoom, bounds: initBounds, fitBounds: initFitBounds, maxBounds: initMaxBounds, minZoom: initMinZoom, maxZoom: initMaxZoom } = initRef.current;
 
     styleRef.current = resolveBasemapStyle();
     const mapOptions: maplibregl.MapOptions = {
       container: containerRef.current,
       style: styleRef.current,
-      center: center ?? [38.0, 35.0],
-      zoom: zoom ?? 6.2,
+      center: initCenter ?? [38.0, 35.0],
+      zoom: initZoom ?? 6.2,
       attributionControl: false,
     };
-    if (bounds) {
-      mapOptions.bounds = bounds;
+    if (initBounds) {
+      mapOptions.bounds = initBounds;
       mapOptions.fitBoundsOptions = { padding: 60 };
     }
-    if (maxBounds) mapOptions.maxBounds = maxBounds;
-    if (minZoom !== undefined) mapOptions.minZoom = minZoom;
-    if (maxZoom !== undefined) mapOptions.maxZoom = maxZoom;
+    if (initMaxBounds) mapOptions.maxBounds = initMaxBounds;
+    if (initMinZoom !== undefined) mapOptions.minZoom = initMinZoom;
+    if (initMaxZoom !== undefined) mapOptions.maxZoom = initMaxZoom;
 
     const mapInstance = new maplibregl.Map(mapOptions);
 
     mapInstance.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
     mapInstance.addControl(new maplibregl.NavigationControl(), 'bottom-left');
 
-    if (fitBounds) {
-      mapInstance.fitBounds(fitBounds.bounds, { padding: fitBounds.padding ?? 60 });
+    if (initFitBounds) {
+      mapInstance.fitBounds(initFitBounds.bounds, { padding: initFitBounds.padding ?? 60 });
     }
 
     mapInstance.on('load', () => {
@@ -85,7 +95,7 @@ export function MapCanvas({
       mapRef.current = null;
       setMap(null);
     };
-  }, [center, zoom, bounds]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className={className}>

@@ -96,8 +96,8 @@ export default function Index() {
       .then(setFeatures)
       .catch((e) => setNotice({ text: extractError(e), destructive: true }));
     api.hotelMapData()
-      .then(setHotelFeatures)
-      .catch(() => {}); // hotels are optional; don't show error if API key not configured
+      .then((data) => { console.log('[Index] hotelMapData resolved, features:', data.features?.length); setHotelFeatures(data); })
+      .catch((e) => { console.warn('[Index] hotelMapData failed:', e); });
   }, []);
 
   // ?place=ID deep link: open the detail and fly to the place once the map is ready
@@ -195,9 +195,8 @@ export default function Index() {
   }, [features, category, query, coordCandidate, guide, viewFilter]);
 
   const filteredHotelFeatures = useMemo<HotelFeatureCollection>(() => {
-    // when viewFilter is 'places', hide all hotel pins
-    if (viewFilter === 'places') return EMPTY_HOTEL_GEOJSON;
-    return hotelFeatures;
+    const result = viewFilter === 'places' ? EMPTY_HOTEL_GEOJSON : hotelFeatures;
+    return result;
   }, [hotelFeatures, viewFilter]);
 
   // during the debounce window listPlaces still holds the previous query's results

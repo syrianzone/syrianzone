@@ -18,15 +18,20 @@ export function PlacesLayer(props: {
   onClusterClickRef.current = props.onClusterClick;
   const selectedIdRef = useRef(props.selectedId);
   selectedIdRef.current = props.selectedId;
+  const dataRef = useRef(props.data);
+  dataRef.current = props.data;
 
-  // add source + layers on mount (re-adds after setStyle via style.load)
-  useEffect(() => {
-    const addSourceAndLayers = () => {
-      if (map.getSource(SOURCE_ID)) return;
+  const addSourceAndLayers = () => {
+    if (map.getSource(SOURCE_ID)) return;
+    if (!map.isStyleLoaded?.()) {
+      console.warn('[PlacesLayer] addSourceAndLayers skipped: style not loaded');
+      return;
+    }
 
+    try {
       map.addSource(SOURCE_ID, {
         type: 'geojson',
-        data: props.data,
+        data: dataRef.current,
         cluster: true,
         clusterRadius: 25,
         clusterMaxZoom: 10,
@@ -69,28 +74,50 @@ export function PlacesLayer(props: {
           'circle-stroke-opacity': 0.9,
         },
       });
+    } catch (e) {
+      console.warn('[PlacesLayer] addSource/addLayer failed:', e);
+    }
+  };
+
+  // add source + layers on mount (re-adds after setStyle via style.load)
+  useEffect(() => {
+    const onStyleLoad = () => {
+      console.log('[PlacesLayer] style.load fired');
+      addSourceAndLayers();
+    };
+    let idleFired = false;
+    const onIdle = () => {
+      if (idleFired) return;
+      idleFired = true;
+      console.log('[PlacesLayer] idle fired, isStyleLoaded:', map.isStyleLoaded?.(), 'sourceExists:', !!map.getSource(SOURCE_ID));
+      addSourceAndLayers();
+      map.off('idle', onIdle);
     };
 
-    map.on('style.load', addSourceAndLayers);
+    addSourceAndLayers();
+    map.on('style.load', onStyleLoad);
+    map.on('idle', onIdle);
 
-    map.on('load', () => {
-      addSourceAndLayers();
+    map.on('click', 'clusters', async (e) => {
+      const feature = e.features?.[0];
+      if (!feature) return;
+      const source = map.getSource(SOURCE_ID) as maplibregl.GeoJSONSource;
+      const zoom = await source.getClusterExpansionZoom(feature.properties?.cluster_id);
+      const coords = (feature.geometry as GeoJSON.Point).coordinates as [number, number];
+      map.easeTo({ center: coords, zoom });
+      onClusterClickRef.current(zoom, coords);
+    });
 
-      map.on('click', 'clusters', async (e) => {
-        const feature = e.features?.[0];
-        if (!feature) return;
-        const source = map.getSource(SOURCE_ID) as maplibregl.GeoJSONSource;
-        const zoom = await source.getClusterExpansionZoom(feature.properties?.cluster_id);
-        onClusterClickRef.current(zoom, (feature.geometry as GeoJSON.Point).coordinates as [number, number]);
-      });
-
-      map.on('click', 'place-pin', (e) => {
-        const id = e.features?.[0]?.properties?.id;
-        if (typeof id === 'number') onPinClickRef.current(id);
-      });
+    map.on('click', 'place-pin', (e) => {
+      // MapLibre serialises GeoJSON properties to strings; coerce before use
+      const raw = e.features?.[0]?.properties?.id;
+      const id = raw != null ? Number(raw) : NaN;
+      if (!isNaN(id)) onPinClickRef.current(id);
     });
 
     return () => {
+      map.off('style.load', onStyleLoad);
+      map.off('idle', onIdle);
       try {
         for (const layer of LAYERS) if (map.getLayer(layer)) map.removeLayer(layer);
         if (map.getSource(SOURCE_ID)) map.removeSource(SOURCE_ID);
@@ -100,17 +127,28 @@ export function PlacesLayer(props: {
 
   // update data
   useEffect(() => {
-    (map.getSource(SOURCE_ID) as maplibregl.GeoJSONSource | undefined)?.setData(props.data);
+    try {
+      let src = map.getSource(SOURCE_ID);
+      if (!src && map.isStyleLoaded?.()) {
+        console.log('[PlacesLayer] setData effect: adding source because it was missing');
+        addSourceAndLayers();
+        src = map.getSource(SOURCE_ID);
+      }
+      console.log('[PlacesLayer] setData effect, source exists:', !!src, 'dataFeatures:', props.data?.features?.length ?? 0);
+      if (src) (src as maplibregl.GeoJSONSource).setData(props.data);
+    } catch { /* map style may not be ready */ }
   }, [props.data, map]);
 
   // update selection ring
   useEffect(() => {
-    if (!map.getLayer('place-pin')) return;
-    map.setPaintProperty(
-      'place-pin',
-      'circle-radius',
-      props.selectedId == null ? 6 : ['case', ['==', ['get', 'id'], props.selectedId], 9, 6],
-    );
+    try {
+      if (!map.getLayer('place-pin')) return;
+      map.setPaintProperty(
+        'place-pin',
+        'circle-radius',
+        props.selectedId == null ? 6 : ['case', ['==', ['get', 'id'], props.selectedId], 9, 6],
+      );
+    } catch { /* layer not ready */ }
   }, [props.selectedId, map]);
 
   return null;

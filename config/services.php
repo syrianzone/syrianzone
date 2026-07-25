@@ -77,4 +77,9 @@ return [
         'id' => env('GA_MEASUREMENT_ID'),
     ],
 
+    'halasyria' => [
+        'api_key' => env('HALASYRIA_API'),
+        'base_url' => 'https://cfooumftuesvlmphgyhb.supabase.co/rest/v1',
+    ],
+
 ];

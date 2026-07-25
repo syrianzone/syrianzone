@@ -2,10 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { THEME_REGISTRY } from '@/Lib/theme';
-import type { LatLng, PlaceFeatureCollection } from '../_lib/types';
+import type { HotelFeatureCollection, LatLng, PlaceFeatureCollection } from '../_lib/types';
 
-const SOURCE_ID = 'places';
-const LAYERS = ['clusters', 'cluster-count', 'place-pin'];
+const PLACES_SOURCE = 'places';
+const PLACES_LAYERS = ['clusters', 'cluster-count', 'place-pin'];
+
+const HOTELS_SOURCE = 'hotels';
+const HOTELS_LAYERS = ['hotel-clusters', 'hotel-cluster-count', 'hotel-pin'];
 
 // shapes Arabic labels on the vector basemap; lazy = loads only when RTL text appears
 if (maplibregl.getRTLTextPluginStatus() === 'unloaded') {
@@ -21,11 +24,14 @@ function styleUrl(): string {
 
 export function PlacesMap(props: {
   features: PlaceFeatureCollection;
+  hotelFeatures: HotelFeatureCollection;
   selectedId: number | null;
+  selectedType: 'place' | 'hotel' | null;
   addMode: boolean;
   focus: { lng: number; lat: number; zoom?: number; key: number } | null;
   highlight: LatLng | null;
   onPinClick: (id: number) => void;
+  onHotelPinClick: (id: number) => void;
   onMapClick: (point: LatLng) => void;
   className?: string;
 }) {
@@ -37,13 +43,19 @@ export function PlacesMap(props: {
   // refs so map handlers registered once always see the latest props
   const featuresRef = useRef(props.features);
   featuresRef.current = props.features;
+  const hotelFeaturesRef = useRef(props.hotelFeatures);
+  hotelFeaturesRef.current = props.hotelFeatures;
   const addModeRef = useRef(props.addMode);
   addModeRef.current = props.addMode;
   const selectedIdRef = useRef(props.selectedId);
   selectedIdRef.current = props.selectedId;
+  const selectedTypeRef = useRef(props.selectedType);
+  selectedTypeRef.current = props.selectedType;
   const styleUrlRef = useRef('');
   const onPinClickRef = useRef(props.onPinClick);
   onPinClickRef.current = props.onPinClick;
+  const onHotelPinClickRef = useRef(props.onHotelPinClick);
+  onHotelPinClickRef.current = props.onHotelPinClick;
   const onMapClickRef = useRef(props.onMapClick);
   onMapClickRef.current = props.onMapClick;
 
@@ -69,53 +81,103 @@ export function PlacesMap(props: {
     // runs on the initial style AND after every setStyle (which wipes custom sources/layers);
     // reads refs so a theme swap keeps current data and the selection ring
     const addSourcesAndLayers = (m: maplibregl.Map) => {
-      if (m.getSource(SOURCE_ID)) return;
+      // --- Places source ---
+      if (!m.getSource(PLACES_SOURCE)) {
+        m.addSource(PLACES_SOURCE, {
+          type: 'geojson',
+          data: featuresRef.current as GeoJSON.FeatureCollection,
+          cluster: true,
+          clusterRadius: 25,
+          clusterMaxZoom: 10,
+        });
 
-      m.addSource(SOURCE_ID, {
-        type: 'geojson',
-        data: featuresRef.current as GeoJSON.FeatureCollection,
-        cluster: true,
-        clusterRadius: 25,
-        clusterMaxZoom: 10,
-      });
+        m.addLayer({
+          id: 'clusters',
+          type: 'circle',
+          source: PLACES_SOURCE,
+          filter: ['has', 'point_count'],
+          paint: {
+            'circle-color': 'hsl(105, 12%, 38%)',
+            'circle-opacity': 0.85,
+            'circle-radius': ['step', ['get', 'point_count'], 10, 10, 13, 30, 16],
+            'circle-stroke-width': 1.5,
+            'circle-stroke-color': '#ffffff',
+            'circle-stroke-opacity': 0.8,
+          },
+        });
 
-      m.addLayer({
-        id: 'clusters',
-        type: 'circle',
-        source: SOURCE_ID,
-        filter: ['has', 'point_count'],
-        paint: {
-          'circle-color': 'hsl(105, 12%, 38%)',
-          'circle-opacity': 0.85,
-          'circle-radius': ['step', ['get', 'point_count'], 10, 10, 13, 30, 16],
-          'circle-stroke-width': 1.5,
-          'circle-stroke-color': '#ffffff',
-          'circle-stroke-opacity': 0.8,
-        },
-      });
+        m.addLayer({
+          id: 'cluster-count',
+          type: 'symbol',
+          source: PLACES_SOURCE,
+          filter: ['has', 'point_count'],
+          layout: { 'text-field': '{point_count_abbreviated}', 'text-size': 11, 'text-font': ['IBM Plex Sans Arabic Bold'] },
+          paint: { 'text-color': '#ffffff' },
+        });
 
-      m.addLayer({
-        id: 'cluster-count',
-        type: 'symbol',
-        source: SOURCE_ID,
-        filter: ['has', 'point_count'],
-        layout: { 'text-field': '{point_count_abbreviated}', 'text-size': 11, 'text-font': ['IBM Plex Sans Arabic Bold'] },
-        paint: { 'text-color': '#ffffff' },
-      });
+        m.addLayer({
+          id: 'place-pin',
+          type: 'circle',
+          source: PLACES_SOURCE,
+          filter: ['!', ['has', 'point_count']],
+          paint: {
+            'circle-radius': selectedIdRef.current == null || selectedTypeRef.current !== 'place' ? 6 : ['case', ['==', ['get', 'id'], selectedIdRef.current], 9, 6],
+            'circle-color': '#7d8a5c',
+            'circle-stroke-width': 1.5,
+            'circle-stroke-color': '#ffffff',
+            'circle-stroke-opacity': 0.9,
+          },
+        });
+      }
 
-      m.addLayer({
-        id: 'place-pin',
-        type: 'circle',
-        source: SOURCE_ID,
-        filter: ['!', ['has', 'point_count']],
-        paint: {
-          'circle-radius': selectedIdRef.current == null ? 6 : ['case', ['==', ['get', 'id'], selectedIdRef.current], 9, 6],
-          'circle-color': '#7d8a5c',
-          'circle-stroke-width': 1.5,
-          'circle-stroke-color': '#ffffff',
-          'circle-stroke-opacity': 0.9,
-        },
-      });
+      // --- Hotels source ---
+      if (!m.getSource(HOTELS_SOURCE)) {
+        m.addSource(HOTELS_SOURCE, {
+          type: 'geojson',
+          data: hotelFeaturesRef.current as GeoJSON.FeatureCollection,
+          cluster: true,
+          clusterRadius: 25,
+          clusterMaxZoom: 10,
+        });
+
+        m.addLayer({
+          id: 'hotel-clusters',
+          type: 'circle',
+          source: HOTELS_SOURCE,
+          filter: ['has', 'point_count'],
+          paint: {
+            'circle-color': 'hsl(16, 70%, 35%)',
+            'circle-opacity': 0.85,
+            'circle-radius': ['step', ['get', 'point_count'], 10, 10, 13, 30, 16],
+            'circle-stroke-width': 1.5,
+            'circle-stroke-color': '#ffffff',
+            'circle-stroke-opacity': 0.8,
+          },
+        });
+
+        m.addLayer({
+          id: 'hotel-cluster-count',
+          type: 'symbol',
+          source: HOTELS_SOURCE,
+          filter: ['has', 'point_count'],
+          layout: { 'text-field': '{point_count_abbreviated}', 'text-size': 11, 'text-font': ['IBM Plex Sans Arabic Bold'] },
+          paint: { 'text-color': '#ffffff' },
+        });
+
+        m.addLayer({
+          id: 'hotel-pin',
+          type: 'circle',
+          source: HOTELS_SOURCE,
+          filter: ['!', ['has', 'point_count']],
+          paint: {
+            'circle-radius': selectedIdRef.current == null || selectedTypeRef.current !== 'hotel' ? 6 : ['case', ['==', ['get', 'id'], selectedIdRef.current], 9, 6],
+            'circle-color': '#c05621',
+            'circle-stroke-width': 1.5,
+            'circle-stroke-color': '#ffffff',
+            'circle-stroke-opacity': 0.9,
+          },
+        });
+      }
     };
 
     map.on('style.load', () => addSourcesAndLayers(map));
@@ -126,7 +188,15 @@ export function PlacesMap(props: {
       map.on('click', 'clusters', async (e) => {
         const feature = e.features?.[0];
         if (!feature) return;
-        const source = map.getSource(SOURCE_ID) as maplibregl.GeoJSONSource;
+        const source = map.getSource(PLACES_SOURCE) as maplibregl.GeoJSONSource;
+        const zoom = await source.getClusterExpansionZoom(feature.properties?.cluster_id);
+        map.easeTo({ center: (feature.geometry as GeoJSON.Point).coordinates as [number, number], zoom });
+      });
+
+      map.on('click', 'hotel-clusters', async (e) => {
+        const feature = e.features?.[0];
+        if (!feature) return;
+        const source = map.getSource(HOTELS_SOURCE) as maplibregl.GeoJSONSource;
         const zoom = await source.getClusterExpansionZoom(feature.properties?.cluster_id);
         map.easeTo({ center: (feature.geometry as GeoJSON.Point).coordinates as [number, number], zoom });
       });
@@ -136,14 +206,19 @@ export function PlacesMap(props: {
         if (typeof id === 'number') onPinClickRef.current(id);
       });
 
+      map.on('click', 'hotel-pin', (e) => {
+        const id = e.features?.[0]?.properties?.id;
+        if (typeof id === 'number') onHotelPinClickRef.current(id);
+      });
+
       map.on('click', (e) => {
-        const hits = map.queryRenderedFeatures(e.point, { layers: LAYERS });
+        const hits = map.queryRenderedFeatures(e.point, { layers: [...PLACES_LAYERS, ...HOTELS_LAYERS] });
         if (hits.length > 0) return;
         onMapClickRef.current({ lng: e.lngLat.lng, lat: e.lngLat.lat });
       });
 
       // consult the add-mode ref so hovering/leaving a pin never drops the crosshair
-      for (const layer of ['clusters', 'place-pin']) {
+      for (const layer of ['clusters', 'place-pin', 'hotel-clusters', 'hotel-pin']) {
         map.on('mouseenter', layer, () => { map.getCanvas().style.cursor = addModeRef.current ? 'crosshair' : 'pointer'; });
         map.on('mouseleave', layer, () => { map.getCanvas().style.cursor = addModeRef.current ? 'crosshair' : ''; });
       }
@@ -166,8 +241,9 @@ export function PlacesMap(props: {
     return () => {
       observer.disconnect();
       try {
-        for (const layer of LAYERS) if (map.getLayer(layer)) map.removeLayer(layer);
-        if (map.getSource(SOURCE_ID)) map.removeSource(SOURCE_ID);
+        for (const layer of [...PLACES_LAYERS, ...HOTELS_LAYERS]) if (map.getLayer(layer)) map.removeLayer(layer);
+        if (map.getSource(PLACES_SOURCE)) map.removeSource(PLACES_SOURCE);
+        if (map.getSource(HOTELS_SOURCE)) map.removeSource(HOTELS_SOURCE);
       } catch {
         // map may already be tearing down mid-load
       }
@@ -180,20 +256,36 @@ export function PlacesMap(props: {
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
-    (map.getSource(SOURCE_ID) as maplibregl.GeoJSONSource | undefined)?.setData(props.features as GeoJSON.FeatureCollection);
+    (map.getSource(PLACES_SOURCE) as maplibregl.GeoJSONSource | undefined)?.setData(props.features as GeoJSON.FeatureCollection);
   }, [props.features, mapReady]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    (map.getSource(HOTELS_SOURCE) as maplibregl.GeoJSONSource | undefined)?.setData(props.hotelFeatures as GeoJSON.FeatureCollection);
+  }, [props.hotelFeatures, mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;
     // getLayer guard: between setStyle and its style.load the layer briefly does not exist;
     // addSourcesAndLayers reads selectedIdRef, so the ring is restored on re-add anyway
-    if (!map || !mapReady || !map.getLayer('place-pin')) return;
-    map.setPaintProperty(
-      'place-pin',
-      'circle-radius',
-      props.selectedId == null ? 6 : ['case', ['==', ['get', 'id'], props.selectedId], 9, 6],
-    );
-  }, [props.selectedId, mapReady]);
+    if (!map || !mapReady) return;
+
+    if (map.getLayer('place-pin')) {
+      map.setPaintProperty(
+        'place-pin',
+        'circle-radius',
+        props.selectedId == null || props.selectedType !== 'place' ? 6 : ['case', ['==', ['get', 'id'], props.selectedId], 9, 6],
+      );
+    }
+    if (map.getLayer('hotel-pin')) {
+      map.setPaintProperty(
+        'hotel-pin',
+        'circle-radius',
+        props.selectedId == null || props.selectedType !== 'hotel' ? 6 : ['case', ['==', ['get', 'id'], props.selectedId], 9, 6],
+      );
+    }
+  }, [props.selectedId, props.selectedType, mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;

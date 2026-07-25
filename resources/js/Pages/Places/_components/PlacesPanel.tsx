@@ -6,8 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/Lib/utils';
 import { api, extractError } from '../_lib/api';
-import type { MyPlace, Paginated, PlaceListItem, PlaceStatus } from '../_lib/types';
+import type { HotelListItem, MyPlace, Paginated, PlaceListItem, PlaceStatus } from '../_lib/types';
 import { GuidesTab } from './GuidesTab';
+import { HotelCard } from './HotelCard';
+import { HotelDetailView } from './HotelDetailView';
 import { ManagePlaceDialog } from './ManagePlaceDialog';
 import { PlaceCard } from './PlaceCard';
 import { PlaceDetailView } from './PlaceDetailView';
@@ -190,20 +192,54 @@ function MineTab(props: { onSelect: (id: number) => void }) {
   );
 }
 
+function HotelsTab(props: { onSelectHotel: (id: number) => void }) {
+  const { items, loading, failed, reload, hasMore, loadMore } = usePagedList<HotelListItem>((page) => api.listHotels({ page }));
+  return (
+    <ListShell loading={loading} empty={items.length === 0} hasMore={hasMore} onLoadMore={loadMore} failed={failed} onRetry={reload}>
+      {items.map((h) => (
+        <HotelCard key={h.id} hotel={h} onClick={props.onSelectHotel} />
+      ))}
+    </ListShell>
+  );
+}
+
 export function PlacesPanel(props: {
   places: PlaceListItem[];
   loading: boolean;
   selectedId: number | null;
+  selectedType: 'place' | 'hotel' | null;
   onSelect: (id: number | null) => void;
+  onSelectHotel: (id: number | null) => void;
   hasMore: boolean;
   onLoadMore: () => void;
   onSelectGuide: (guide: { id: number; name: string }) => void;
   className?: string;
 }) {
-  const { places, loading, selectedId, onSelect, hasMore, onLoadMore, onSelectGuide, className } = props;
+  const {
+    places, loading, selectedId, selectedType, onSelect, onSelectHotel,
+    hasMore, onLoadMore, onSelectGuide, className,
+  } = props;
   // controlled so picking a guide drops the user on the filtered places list
   const [tab, setTab] = useState('places');
   const { user } = useAuth();
+
+  // when a detail view is open, show it based on type
+  if (selectedId !== null) {
+    if (selectedType === 'hotel') {
+      return (
+        <div dir="rtl" className={cn('flex flex-col overflow-hidden bg-background', className)}>
+          <HotelDetailView hotelId={selectedId} onClose={() => onSelectHotel(null)} />
+        </div>
+      );
+    }
+    return (
+      <div dir="rtl" className={cn('flex flex-col overflow-hidden bg-background', className)}>
+        <PlaceDetailView placeId={selectedId} onClose={() => onSelect(null)} />
+      </div>
+    );
+  }
+
+  const tabCount = user ? 5 : 3;
 
   const mainList = (
     <ListShell loading={loading} empty={places.length === 0} hasMore={hasMore} onLoadMore={onLoadMore}>
@@ -215,35 +251,35 @@ export function PlacesPanel(props: {
 
   return (
     <div dir="rtl" className={cn('flex flex-col overflow-hidden bg-background', className)}>
-      {selectedId !== null ? (
-        <PlaceDetailView placeId={selectedId} onClose={() => onSelect(null)} />
-      ) : (
-        <Tabs value={tab} onValueChange={setTab} className="flex min-h-0 flex-1 flex-col">
-          <TabsList className={cn('mx-3 mt-3 grid', user ? 'grid-cols-4' : 'grid-cols-2')}>
-            <TabsTrigger value="places">الأماكن</TabsTrigger>
-            {user && <TabsTrigger value="saves">محفوظاتي</TabsTrigger>}
-            {user && <TabsTrigger value="mine">مساهماتي</TabsTrigger>}
-            <TabsTrigger value="guides">مرشدون</TabsTrigger>
-          </TabsList>
-          <TabsContent value="places" className="mt-0 flex min-h-0 flex-1 flex-col">
-            {mainList}
+      <Tabs value={tab} onValueChange={setTab} className="flex min-h-0 flex-1 flex-col">
+        <TabsList className={cn('mx-3 mt-3 grid', tabCount === 5 ? 'grid-cols-5' : 'grid-cols-3')}>
+          <TabsTrigger value="places">الأماكن</TabsTrigger>
+          <TabsTrigger value="hotels">الفنادق</TabsTrigger>
+          {user && <TabsTrigger value="saves">محفوظاتي</TabsTrigger>}
+          {user && <TabsTrigger value="mine">مساهماتي</TabsTrigger>}
+          <TabsTrigger value="guides">مرشدون</TabsTrigger>
+        </TabsList>
+        <TabsContent value="places" className="mt-0 flex min-h-0 flex-1 flex-col">
+          {mainList}
+        </TabsContent>
+        <TabsContent value="hotels" className="mt-0 flex min-h-0 flex-1 flex-col">
+          <HotelsTab onSelectHotel={(id) => onSelectHotel(id)} />
+        </TabsContent>
+        {user && (
+          <TabsContent value="saves" className="mt-0 flex min-h-0 flex-1 flex-col">
+            <SavesTab onSelect={onSelect} />
           </TabsContent>
-          {user && (
-            <TabsContent value="saves" className="mt-0 flex min-h-0 flex-1 flex-col">
-              <SavesTab onSelect={onSelect} />
-            </TabsContent>
-          )}
-          {user && (
-            <TabsContent value="mine" className="mt-0 flex min-h-0 flex-1 flex-col">
-              <MineTab onSelect={onSelect} />
-            </TabsContent>
-          )}
-          <TabsContent value="guides" className="mt-0 flex min-h-0 flex-1 flex-col">
-            {/* heading المرشدون المحليون renders inside GuidesTab; it scrolls itself */}
-            <GuidesTab onSelectGuide={(g) => { onSelectGuide(g); setTab('places'); }} />
+        )}
+        {user && (
+          <TabsContent value="mine" className="mt-0 flex min-h-0 flex-1 flex-col">
+            <MineTab onSelect={onSelect} />
           </TabsContent>
-        </Tabs>
-      )}
+        )}
+        <TabsContent value="guides" className="mt-0 flex min-h-0 flex-1 flex-col">
+          {/* heading المرشدون المحليون renders inside GuidesTab; it scrolls itself */}
+          <GuidesTab onSelectGuide={(g) => { onSelectGuide(g); setTab('places'); }} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

@@ -5,6 +5,9 @@ import type {
   GridPhoto,
   Guide,
   GuidesSort,
+  HotelDetail,
+  HotelFeatureCollection,
+  HotelListItem,
   LatLng,
   MyPlace,
   NearbyPlace,
@@ -165,6 +168,22 @@ export const api = {
     const form = new FormData();
     form.append('photo', file);
     const { data } = await axios.post(`${base}/admin/place-photos/${photoId}/replace`, form);
+    return data;
+  },
+
+  // Hotels (HalaSyria)
+  async hotelMapData(): Promise<HotelFeatureCollection> {
+    const { data } = await axios.get(`${base}/hotels/map`);
+    return data;
+  },
+
+  async listHotels(params: { city?: string; q?: string; min_stars?: number; max_price?: number; page?: number }): Promise<Paginated<HotelListItem>> {
+    const { data } = await axios.get(`${base}/hotels`, { params });
+    return data;
+  },
+
+  async getHotel(id: number): Promise<HotelDetail> {
+    const { data } = await axios.get(`${base}/hotels/${id}`);
     return data;
   },
 };

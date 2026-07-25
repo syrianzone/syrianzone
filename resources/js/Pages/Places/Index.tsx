@@ -11,13 +11,17 @@ import { SubmitSheet } from './_components/SubmitSheet';
 import { ViewToggle } from './_components/ViewToggle';
 import { api, extractError } from './_lib/api';
 import { discovery, type GridPhoto } from './_lib/discovery';
-import type { GeoSuggestion, LatLng, Paginated, PlaceCategory, PlaceFeatureCollection, PlaceListItem } from './_lib/types';
+import type { GeoSuggestion, HotelFeatureCollection, LatLng, Paginated, PlaceCategory, PlaceFeatureCollection, PlaceListItem } from './_lib/types';
+
+const EMPTY_HOTEL_GEOJSON: HotelFeatureCollection = { type: 'FeatureCollection', features: [] };
 
 export default function Index() {
   const [features, setFeatures] = useState<PlaceFeatureCollection | null>(null);
+  const [hotelFeatures, setHotelFeatures] = useState<HotelFeatureCollection>(EMPTY_HOTEL_GEOJSON);
   const [category, setCategory] = useState<PlaceCategory | null>(null);
   const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedType, setSelectedType] = useState<'place' | 'hotel' | null>(null);
   const [submitPoint, setSubmitPoint] = useState<LatLng | null>(null);
   const [submitOpen, setSubmitOpen] = useState(false);
   const [listPlaces, setListPlaces] = useState<Paginated<PlaceListItem> | null>(null);
@@ -60,6 +64,7 @@ export default function Index() {
   function selectGuide(g: { id: number; name: string } | null) {
     setGuide(g);
     setSelectedId(null);
+    setSelectedType(null);
     const url = new URL(window.location.href);
     if (g) url.searchParams.set('guide', String(g.id));
     else url.searchParams.delete('guide');
@@ -69,6 +74,7 @@ export default function Index() {
   function handleGridPhotoClick(p: GridPhoto) {
     changeView('map');
     setSelectedId(p.place.id);
+    setSelectedType('place');
     setExpanded(true);
     flyTo(p.place.lng, p.place.lat);
   }
@@ -88,6 +94,9 @@ export default function Index() {
     api.mapData()
       .then(setFeatures)
       .catch((e) => setNotice({ text: extractError(e), destructive: true }));
+    api.hotelMapData()
+      .then(setHotelFeatures)
+      .catch(() => {}); // hotels are optional; don't show error if API key not configured
   }, []);
 
   // ?place=ID deep link: open the detail and fly to the place once the map is ready
@@ -97,6 +106,7 @@ export default function Index() {
     const id = Number(raw);
     if (id <= 0) return;
     setSelectedId(id);
+    setSelectedType('place');
     setExpanded(true);
     api.getPlace(id)
       .then((place) => flyTo(place.lng, place.lat))
@@ -188,6 +198,7 @@ export default function Index() {
   function handleMapClick(point: LatLng) {
     if (!addMode) {
       setSelectedId(null);
+      setSelectedType(null);
       return;
     }
     // mirror the server's Syria bounding box so users learn before filling the form
@@ -202,12 +213,21 @@ export default function Index() {
 
   function handlePinClick(id: number) {
     setSelectedId(id);
+    setSelectedType('place');
+    setExpanded(true);
+    setAddMode(false);
+  }
+
+  function handleHotelPinClick(id: number) {
+    setSelectedId(id);
+    setSelectedType('hotel');
     setExpanded(true);
     setAddMode(false);
   }
 
   function handleSelectResult(place: PlaceListItem) {
     setSelectedId(place.id);
+    setSelectedType('place');
     setExpanded(true);
     flyTo(place.lng, place.lat);
   }
@@ -222,6 +242,13 @@ export default function Index() {
   // panel taps must expand the mobile sheet too, or the detail opens 224px tall
   function handlePanelSelect(id: number | null) {
     setSelectedId(id);
+    setSelectedType(id !== null ? 'place' : null);
+    if (id !== null) setExpanded(true);
+  }
+
+  function handlePanelSelectHotel(id: number | null) {
+    setSelectedId(id);
+    setSelectedType(id !== null ? 'hotel' : null);
     if (id !== null) setExpanded(true);
   }
 
@@ -232,6 +259,7 @@ export default function Index() {
   function handleSelectExisting(id: number) {
     setSubmitOpen(false);
     setSelectedId(id);
+    setSelectedType('place');
     setExpanded(true);
   }
 
@@ -244,11 +272,14 @@ export default function Index() {
       <main dir="rtl" className="relative h-[calc(100dvh-4rem)] overflow-hidden">
         <PlacesMap
           features={filteredFeatures}
+          hotelFeatures={hotelFeatures}
           selectedId={selectedId}
+          selectedType={selectedType}
           addMode={addMode}
           focus={focus}
           highlight={highlight}
           onPinClick={handlePinClick}
+          onHotelPinClick={handleHotelPinClick}
           onMapClick={handleMapClick}
           // bottom-56 keeps the map's bottom-left controls above the collapsed mobile sheet
           className="absolute inset-x-0 top-0 bottom-56 md:inset-0"
@@ -349,7 +380,9 @@ export default function Index() {
                 places={listPlaces?.data ?? []}
                 loading={listLoading}
                 selectedId={selectedId}
+                selectedType={selectedType}
                 onSelect={handlePanelSelect}
+                onSelectHotel={handlePanelSelectHotel}
                 hasMore={listPlaces !== null && listPlaces.current_page < listPlaces.last_page}
                 onLoadMore={() => listPlaces && fetchList(listPlaces.current_page + 1)}
                 onSelectGuide={selectGuide}

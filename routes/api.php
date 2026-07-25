@@ -138,5 +138,10 @@ Route::prefix('v1')->group(function () {
         Route::get('/places', [\App\Http\Controllers\PlaceController::class, 'index']);
         Route::get('/guides', [\App\Http\Controllers\PlaceDiscoveryController::class, 'guides']);
         Route::get('/places/{id}', [\App\Http\Controllers\PlaceController::class, 'show'])->whereNumber('id');
+
+        // HalaSyria hotels (cached in local DB, synced every 2 days)
+        Route::get('/hotels/map', [\App\Http\Controllers\HotelController::class, 'mapData']);
+        Route::get('/hotels', [\App\Http\Controllers\HotelController::class, 'index']);
+        Route::get('/hotels/{id}', [\App\Http\Controllers\HotelController::class, 'show'])->whereNumber('id');
     });
 });

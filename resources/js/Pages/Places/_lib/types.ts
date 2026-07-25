@@ -50,3 +50,35 @@ export interface GridPhoto {
 }
 
 export interface GeoSuggestion { name: string; address: string; lat: number; lng: number; }
+
+// Hotels (HalaSyria)
+export interface HotelListItem {
+  id: number; name: string; name_ar: string | null; city: string; city_ar: string | null;
+  slug: string; lat: number; lng: number; star_rating: number | null;
+  now_show_rate: number | null; currency: string; thumb_url: string | null; source_url: string;
+}
+
+export interface HotelDetail extends HotelListItem {
+  city_slug: string; rating: number | null; review_count: number;
+  address: string | null; address_ar: string | null;
+  phone: string | null; email: string | null;
+  description: string | null; description_ar: string | null;
+  images: string[] | null;
+  has_restaurant: boolean; has_swimming_pool: boolean; has_spa: boolean;
+  has_fitness_center: boolean; has_parking: boolean; has_airport_shuttle: boolean;
+  has_bar: boolean; has_room_service: boolean;
+}
+
+export interface HotelFeatureProps {
+  id: number; name: string; name_ar: string | null; type: 'hotel';
+  star_rating: number | null; now_show_rate: number | null;
+  city: string; city_ar: string | null; thumb_url: string | null; slug: string;
+}
+
+export interface HotelFeature {
+  type: 'Feature';
+  geometry: { type: 'Point'; coordinates: [number, number] };
+  properties: HotelFeatureProps;
+}
+
+export interface HotelFeatureCollection { type: 'FeatureCollection'; features: HotelFeature[]; }

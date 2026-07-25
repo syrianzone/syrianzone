@@ -17,3 +17,6 @@ if (app()->environment('production')) {
   Schedule::command('backup:run --only-db')->everySixHours();
   Schedule::command('population:update-climate')->hourly();
 }
+
+// Sync hotel data from HalaSyria every 2 days at 03:00
+Schedule::command('hotels:sync')->cron('0 3 */2 * *');

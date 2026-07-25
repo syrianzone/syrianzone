@@ -8,6 +8,7 @@ import { useAdminDrafts, useMapData } from '../_hooks/useMapData'
 import { useQueryClient } from '@tanstack/react-query'
 import { router, Head } from '@inertiajs/react'
 import { useTransitTheme } from '../_components/TransitThemeContext'
+import { THEME_REGISTRY } from '@/Lib/theme'
 import { ROUTE_PALETTE, getRouteColor, buildColorMatch } from '../_lib/mapColors'
 import TransitLayout from '../layout'
 import { Button } from '@/Components/ui/button'
@@ -18,6 +19,11 @@ import { Input } from '@/Components/ui/input'
 import { Textarea } from '@/Components/ui/textarea'
 import { ScrollArea } from '@/Components/ui/scroll-area'
 import { Separator } from '@/Components/ui/separator'
+
+// RTL text shaping for Arabic labels on the vector basemap
+if (maplibregl.getRTLTextPluginStatus() === 'unavailable') {
+  maplibregl.setRTLTextPlugin('/styles/mapbox-gl-rtl-text.min.js', true)
+}
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/Components/ui/select'
@@ -201,9 +207,10 @@ function TransitAdminPageContent() {
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return
 
+    const dark = THEME_REGISTRY.find((t) => t.id === theme)?.isDark ?? true
     const map = new maplibregl.Map({
       container: mapContainer.current,
-      style: theme === 'jasmine' ? '/styles/styles/positron.json' : '/styles/styles/dark-matter.json',
+      style: dark ? '/styles/styles/dark-matter-vector.json' : '/styles/styles/light-vector.json',
       center: [36.29, 33.51],
       zoom: 7,
       attributionControl: false,

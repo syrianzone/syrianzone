@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import maplibregl from 'maplibre-gl'
-import { useMap } from './MapContext'
+import { useMap } from '@/Components/map/MapContext'
 import type { FeatureCollection, StopProperties } from '../../_types'
 
 interface StopsLayerProps {

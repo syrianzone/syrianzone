@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import maplibregl from 'maplibre-gl'
 import MapCanvas from './MapCanvas'
-import { useMap } from './MapContext'
+import { useMap } from '@/Components/map/MapContext'
 import RouteLayer from './RouteLayer'
 import StopsLayer from './StopsLayer'
 import UserLocationLayer from './UserLocationLayer'

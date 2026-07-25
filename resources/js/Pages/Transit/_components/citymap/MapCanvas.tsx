@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useRef, useState, createContext, useContext } from 'react'
-import maplibregl from 'maplibre-gl'
-import 'maplibre-gl/dist/maplibre-gl.css'
-import { MapContext } from './MapContext'
+import { useEffect, useState, createContext, useContext } from 'react'
+import type maplibregl from 'maplibre-gl'
+import { MapCanvas as SharedMapCanvas } from '@/Components/map/MapCanvas'
+import { useMap } from '@/Components/map/MapContext'
 import { useTransitTheme } from '../TransitThemeContext'
+import { THEME_REGISTRY } from '@/Lib/theme'
 
 export const LocationContext = createContext<{ lng: number; lat: number } | null>(null)
 export const LocationStatusContext = createContext<'idle' | 'loading' | 'available' | 'denied'>('idle')
@@ -22,53 +23,13 @@ interface MapCanvasProps {
   children?: React.ReactNode
 }
 
-export default function MapCanvas({ bounds, children }: MapCanvasProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [map, setMap] = useState<maplibregl.Map | null>(null)
-  const [error, setError] = useState<string | null>(null)
+function Geolocator({ children }: { children: React.ReactNode }) {
+  const map = useMap()
   const [userLocation, setUserLocation] = useState<{ lng: number; lat: number } | null>(null)
   const [locationStatus, setLocationStatus] = useState<'idle' | 'loading' | 'available' | 'denied'>('idle')
-  const { theme } = useTransitTheme()
-
-  useEffect(() => {
-    if (!containerRef.current) return
-
-    const lngPad = (bounds[1][0] - bounds[0][0]) * 0.6
-    const latPad = (bounds[1][1] - bounds[0][1]) * 0.6
-    const maxBounds: maplibregl.LngLatBoundsLike = [
-      [bounds[0][0] - lngPad, bounds[0][1] - latPad],
-      [bounds[1][0] + lngPad, bounds[1][1] + latPad],
-    ]
-
-    const instance = new maplibregl.Map({
-      container: containerRef.current,
-      style: theme === 'jasmine' ? '/styles/styles/positron.json' : '/styles/styles/dark-matter.json',
-      bounds: bounds as maplibregl.LngLatBoundsLike,
-      fitBoundsOptions: { padding: 60 },
-      maxBounds,
-      minZoom: 8,
-      maxZoom: 18,
-    })
-
-    instance.on('load', () => {
-      setMap(instance)
-    })
-
-    instance.on('error', (e: maplibregl.ErrorEvent) => {
-      console.error('MapLibre error:', e)
-      setError('تعذر تحميل الخريطة')
-    })
-
-    return () => {
-      instance.remove()
-      setMap(null)
-      setError(null)
-    }
-  }, [bounds, theme])
 
   useEffect(() => {
     if (!map) return
-
     let watchId: number | null = null
 
     if ('geolocation' in navigator) {
@@ -76,16 +37,10 @@ export default function MapCanvas({ bounds, children }: MapCanvasProps) {
       watchId = navigator.geolocation.watchPosition(
         (pos) => {
           setLocationStatus('available')
-          setUserLocation({
-            lng: pos.coords.longitude,
-            lat: pos.coords.latitude,
-          })
+          setUserLocation({ lng: pos.coords.longitude, lat: pos.coords.latitude })
         },
-        (err) => {
-          console.warn('Geolocation error:', err)
-          setLocationStatus('denied')
-        },
-        { enableHighAccuracy: false, maximumAge: 60000, timeout: 10000 }
+        () => setLocationStatus('denied'),
+        { enableHighAccuracy: false, maximumAge: 60000, timeout: 10000 },
       )
     } else {
       setLocationStatus('denied')
@@ -97,23 +52,34 @@ export default function MapCanvas({ bounds, children }: MapCanvasProps) {
   }, [map])
 
   return (
-    <div className="absolute inset-0">
-      <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
-      {error && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-[var(--bg)]/90">
-          <div className="text-center text-[var(--pomegranate)]">
-            <p className="mb-2">{error}</p>
-            <p className="text-sm text-[var(--muted)]">تحقق من اتصالك بالإنترنت</p>
-          </div>
-        </div>
-      )}
-      <MapContext.Provider value={map}>
-        <LocationContext.Provider value={userLocation}>
-          <LocationStatusContext.Provider value={locationStatus}>
-            {map ? children : null}
-          </LocationStatusContext.Provider>
-        </LocationContext.Provider>
-      </MapContext.Provider>
-    </div>
+    <LocationContext.Provider value={userLocation}>
+      <LocationStatusContext.Provider value={locationStatus}>
+        {children}
+      </LocationStatusContext.Provider>
+    </LocationContext.Provider>
+  )
+}
+
+export default function MapCanvas({ bounds, children }: MapCanvasProps) {
+  const { theme } = useTransitTheme()
+  const dark = THEME_REGISTRY.find((t) => t.id === theme)?.isDark ?? true
+
+  const lngPad = (bounds[1][0] - bounds[0][0]) * 0.6
+  const latPad = (bounds[1][1] - bounds[0][1]) * 0.6
+  const maxBounds: maplibregl.LngLatBoundsLike = [
+    [bounds[0][0] - lngPad, bounds[0][1] - latPad],
+    [bounds[1][0] + lngPad, bounds[1][1] + latPad],
+  ]
+
+  return (
+    <SharedMapCanvas
+      bounds={bounds}
+      maxBounds={maxBounds}
+      minZoom={8}
+      maxZoom={18}
+      className="absolute inset-0"
+    >
+      <Geolocator>{children}</Geolocator>
+    </SharedMapCanvas>
   )
 }

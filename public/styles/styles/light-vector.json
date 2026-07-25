@@ -3,12 +3,16 @@
   "name": "Positron",
   "metadata": {
     "sz:vendored": "carto positron-gl-style fetched 2026-07-18; glyphs self-hosted, fonts rebranded",
-    "syrianzone:label-overrides": "country labels: Israel renders as Palestine (editorial choice)"
+    "syrianzone:label-overrides": "country labels: Israel & Palestine render as \u0641\u0644\u0633\u0637\u064a\u0646; disputed borders de-emphasized"
   },
   "sources": {
     "carto": {
       "type": "vector",
       "url": "https://tiles.basemaps.cartocdn.com/vector/carto.streets/v1/tiles.json"
+    },
+    "syria": {
+      "type": "geojson",
+      "data": "/assets/population/syria_border.geojson"
     }
   },
   "sprite": "https://tiles.basemaps.cartocdn.com/gl/positron-gl-style/sprite",
@@ -639,7 +643,7 @@
         ]
       ],
       "layout": {
-        "text-field": "{name_en}",
+        "text-field": "{name}",
         "text-font": [
           "IBM Plex Sans Arabic Regular"
         ],
@@ -4122,6 +4126,11 @@
           "==",
           "maritime",
           0
+        ],
+        [
+          "!=",
+          "disputed",
+          1
         ]
       ],
       "layout": {
@@ -4152,8 +4161,62 @@
           "==",
           "maritime",
           0
+        ],
+        [
+          "!=",
+          "disputed",
+          1
         ]
       ],
+      "layout": {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      "paint": {
+        "line-color": {
+          "stops": [
+            [
+              4,
+              "#f2e6e7"
+            ],
+            [
+              5,
+              "#ebd6d8"
+            ],
+            [
+              6,
+              "#ebd6d8"
+            ]
+          ]
+        },
+        "line-opacity": 1,
+        "line-width": {
+          "stops": [
+            [
+              3,
+              1
+            ],
+            [
+              6,
+              1.5
+            ]
+          ]
+        },
+        "line-offset": 0
+      }
+    },
+    {
+      "id": "syria_fill",
+      "type": "fill",
+      "source": "syria",
+      "paint": {
+        "fill-opacity": 0
+      }
+    },
+    {
+      "id": "syria_border",
+      "type": "line",
+      "source": "syria",
       "layout": {
         "line-cap": "round",
         "line-join": "round"
@@ -4327,7 +4390,7 @@
           "stops": [
             [
               8,
-              "{name_en}"
+              "{name}"
             ],
             [
               13,
@@ -4399,7 +4462,7 @@
           "stops": [
             [
               8,
-              "{name_en}"
+              "{name}"
             ],
             [
               13,
@@ -4468,18 +4531,35 @@
         ]
       ],
       "layout": {
-        "text-field": {
-          "stops": [
+        "text-field": [
+          "step",
+          [
+            "zoom"
+          ],
+          [
+            "coalesce",
             [
-              8,
-              "{name_en}"
+              "get",
+              "name:ar"
             ],
             [
-              14,
-              "{name}"
+              "get",
+              "name"
+            ]
+          ],
+          14,
+          [
+            "coalesce",
+            [
+              "get",
+              "name:ar"
+            ],
+            [
+              "get",
+              "name"
             ]
           ]
-        },
+        ],
         "text-font": [
           "IBM Plex Sans Arabic Regular"
         ],
@@ -4549,18 +4629,35 @@
         ]
       ],
       "layout": {
-        "text-field": {
-          "stops": [
+        "text-field": [
+          "step",
+          [
+            "zoom"
+          ],
+          [
+            "coalesce",
             [
-              8,
-              "{name_en}"
+              "get",
+              "name:ar"
             ],
             [
-              13,
-              "{name}"
+              "get",
+              "name"
+            ]
+          ],
+          13,
+          [
+            "coalesce",
+            [
+              "get",
+              "name:ar"
+            ],
+            [
+              "get",
+              "name"
             ]
           ]
-        },
+        ],
         "text-font": [
           "IBM Plex Sans Arabic Regular"
         ],
@@ -4638,18 +4735,35 @@
         ]
       ],
       "layout": {
-        "text-field": {
-          "stops": [
+        "text-field": [
+          "step",
+          [
+            "zoom"
+          ],
+          [
+            "coalesce",
             [
-              8,
-              "{name_en}"
+              "get",
+              "name:ar"
             ],
             [
-              13,
-              "{name}"
+              "get",
+              "name"
+            ]
+          ],
+          13,
+          [
+            "coalesce",
+            [
+              "get",
+              "name:ar"
+            ],
+            [
+              "get",
+              "name"
             ]
           ]
-        },
+        ],
         "text-font": [
           "IBM Plex Sans Arabic Bold"
         ],
@@ -4716,18 +4830,35 @@
         ]
       ],
       "layout": {
-        "text-field": {
-          "stops": [
+        "text-field": [
+          "step",
+          [
+            "zoom"
+          ],
+          [
+            "coalesce",
             [
-              8,
-              "{name_en}"
+              "get",
+              "name:ar"
             ],
             [
-              13,
-              "{name}"
+              "get",
+              "name"
+            ]
+          ],
+          13,
+          [
+            "coalesce",
+            [
+              "get",
+              "name:ar"
+            ],
+            [
+              "get",
+              "name"
             ]
           ]
-        },
+        ],
         "text-font": [
           "IBM Plex Sans Arabic Bold"
         ],
@@ -4806,17 +4937,35 @@
         "text-field": [
           "case",
           [
-            "==",
+            "any",
+            [
+              "==",
+              [
+                "get",
+                "iso_a2"
+              ],
+              "IL"
+            ],
+            [
+              "==",
+              [
+                "get",
+                "iso_a2"
+              ],
+              "PS"
+            ]
+          ],
+          "\u0641\u0644\u0633\u0637\u064a\u0646",
+          [
+            "coalesce",
             [
               "get",
-              "name_en"
+              "name:ar"
             ],
-            "Israel"
-          ],
-          "Palestine",
-          [
-            "get",
-            "name_en"
+            [
+              "get",
+              "name"
+            ]
           ]
         ],
         "text-font": [
@@ -4845,8 +4994,7 @@
               14
             ]
           ]
-        },
-        "text-transform": "uppercase"
+        }
       },
       "paint": {
         "text-color": {
@@ -4893,17 +5041,35 @@
         "text-field": [
           "case",
           [
-            "==",
+            "any",
+            [
+              "==",
+              [
+                "get",
+                "iso_a2"
+              ],
+              "IL"
+            ],
+            [
+              "==",
+              [
+                "get",
+                "iso_a2"
+              ],
+              "PS"
+            ]
+          ],
+          "\u0641\u0644\u0633\u0637\u064a\u0646",
+          [
+            "coalesce",
             [
               "get",
-              "name_en"
+              "name:ar"
             ],
-            "Israel"
-          ],
-          "Palestine",
-          [
-            "get",
-            "name_en"
+            [
+              "get",
+              "name"
+            ]
           ]
         ],
         "text-font": [
@@ -4929,7 +5095,6 @@
             ]
           ]
         },
-        "text-transform": "uppercase",
         "text-max-width": {
           "stops": [
             [
@@ -4993,7 +5158,17 @@
         ]
       ],
       "layout": {
-        "text-field": "{name_en}",
+        "text-field": [
+          "coalesce",
+          [
+            "get",
+            "name:ar"
+          ],
+          [
+            "get",
+            "name"
+          ]
+        ],
         "text-font": [
           "IBM Plex Sans Arabic Bold"
         ],
@@ -5009,7 +5184,6 @@
             ]
           ]
         },
-        "text-transform": "uppercase",
         "text-max-width": 9
       },
       "paint": {
@@ -5034,11 +5208,20 @@
         ]
       ],
       "layout": {
-        "text-field": "{name_en}",
+        "text-field": [
+          "coalesce",
+          [
+            "get",
+            "name:ar"
+          ],
+          [
+            "get",
+            "name"
+          ]
+        ],
         "text-font": [
           "IBM Plex Sans Arabic Bold"
         ],
-        "text-transform": "uppercase",
         "text-size": 14,
         "text-letter-spacing": 0.1,
         "text-max-width": 9,
@@ -5072,18 +5255,35 @@
         ]
       ],
       "layout": {
-        "text-field": {
-          "stops": [
+        "text-field": [
+          "step",
+          [
+            "zoom"
+          ],
+          [
+            "coalesce",
             [
-              8,
-              "{name_en}"
+              "get",
+              "name:ar"
             ],
             [
-              13,
-              "{name}"
+              "get",
+              "name"
+            ]
+          ],
+          13,
+          [
+            "coalesce",
+            [
+              "get",
+              "name:ar"
+            ],
+            [
+              "get",
+              "name"
             ]
           ]
-        },
+        ],
         "text-font": [
           "IBM Plex Sans Arabic Bold"
         ],
@@ -5123,8 +5323,7 @@
         "text-offset": [
           0.2,
           0.2
-        ],
-        "text-transform": "uppercase"
+        ]
       },
       "paint": {
         "text-color": "#697b89",
@@ -5160,18 +5359,35 @@
         ]
       ],
       "layout": {
-        "text-field": {
-          "stops": [
+        "text-field": [
+          "step",
+          [
+            "zoom"
+          ],
+          [
+            "coalesce",
             [
-              8,
-              "{name_en}"
+              "get",
+              "name:ar"
             ],
             [
-              13,
-              "{name}"
+              "get",
+              "name"
+            ]
+          ],
+          13,
+          [
+            "coalesce",
+            [
+              "get",
+              "name:ar"
+            ],
+            [
+              "get",
+              "name"
             ]
           ]
-        },
+        ],
         "text-font": [
           "IBM Plex Sans Arabic Bold"
         ],
@@ -5207,8 +5423,7 @@
         "text-offset": [
           0.2,
           0.2
-        ],
-        "text-transform": "uppercase"
+        ]
       },
       "paint": {
         "text-color": "#697b89",
@@ -5239,7 +5454,17 @@
         ]
       ],
       "layout": {
-        "text-field": "{name_en}",
+        "text-field": [
+          "coalesce",
+          [
+            "get",
+            "name:ar"
+          ],
+          [
+            "get",
+            "name"
+          ]
+        ],
         "text-font": [
           "IBM Plex Sans Arabic Bold"
         ],
@@ -5287,7 +5512,17 @@
         ]
       ],
       "layout": {
-        "text-field": "{name_en}",
+        "text-field": [
+          "coalesce",
+          [
+            "get",
+            "name:ar"
+          ],
+          [
+            "get",
+            "name"
+          ]
+        ],
         "text-font": [
           "IBM Plex Sans Arabic Bold"
         ],
@@ -5335,7 +5570,17 @@
         ]
       ],
       "layout": {
-        "text-field": "{name_en}",
+        "text-field": [
+          "coalesce",
+          [
+            "get",
+            "name:ar"
+          ],
+          [
+            "get",
+            "name"
+          ]
+        ],
         "text-font": [
           "IBM Plex Sans Arabic Bold"
         ],
@@ -5383,7 +5628,17 @@
         ]
       ],
       "layout": {
-        "text-field": "{name_en}",
+        "text-field": [
+          "coalesce",
+          [
+            "get",
+            "name:ar"
+          ],
+          [
+            "get",
+            "name"
+          ]
+        ],
         "text-font": [
           "IBM Plex Sans Arabic Bold"
         ],
@@ -5426,7 +5681,17 @@
         ]
       ],
       "layout": {
-        "text-field": "{name_en}",
+        "text-field": [
+          "coalesce",
+          [
+            "get",
+            "name:ar"
+          ],
+          [
+            "get",
+            "name"
+          ]
+        ],
         "text-font": [
           "IBM Plex Sans Arabic Bold"
         ],
@@ -5443,8 +5708,7 @@
         "text-offset": [
           0.2,
           0.2
-        ],
-        "text-transform": "uppercase"
+        ]
       },
       "paint": {
         "text-color": "#697b89",

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useContext } from 'react'
-import { MapContext } from './MapContext'
+import { MapContext } from '@/Components/map/MapContext'
 import { LocationContext, LocationStatusContext } from './MapCanvas'
 import { useMapStore } from '../../_store/useMapStore'
 

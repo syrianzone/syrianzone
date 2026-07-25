@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import type maplibregl from 'maplibre-gl'
-import { useMap } from './MapContext'
+import { useMap } from '@/Components/map/MapContext'
 import { getRouteColor, buildColorMatch } from '../../_lib/mapColors'
 import type { FeatureCollection, RouteProperties } from '../../_types'
 import { useMapStore } from '../../_store/useMapStore'

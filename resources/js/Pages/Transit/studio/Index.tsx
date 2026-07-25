@@ -10,8 +10,14 @@ import { useMapData } from '../_hooks/useMapData'
 import cities from '../_data/cities.json'
 import TransitLayout from '../layout'
 import { useTransitTheme } from '../_components/TransitThemeContext'
+import { THEME_REGISTRY } from '@/Lib/theme'
 import { useAuth } from '@/Contexts/AuthContext'
 import { ROUTE_PALETTE, getRouteColor, buildColorMatch } from '../_lib/mapColors'
+
+// RTL text shaping for Arabic labels on the vector basemap
+if (maplibregl.getRTLTextPluginStatus() === 'unavailable') {
+  maplibregl.setRTLTextPlugin('/styles/mapbox-gl-rtl-text.min.js', true)
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type DrawMode = 'idle' | 'line' | 'point'
@@ -653,9 +659,10 @@ function TransitStudioPageContent() {
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return
 
+    const dark = THEME_REGISTRY.find((t) => t.id === theme)?.isDark ?? true
     const map = new maplibregl.Map({
       container: mapContainer.current,
-      style: theme === 'jasmine' ? '/styles/styles/positron.json' : '/styles/styles/dark-matter.json',
+      style: dark ? '/styles/styles/dark-matter-vector.json' : '/styles/styles/light-vector.json',
       center: [36.2913, 33.5138],
       zoom: 5,
       attributionControl: false,

@@ -27,7 +27,7 @@ const CATEGORY_ICONS: Record<PlaceCategory, LucideIcon> = {
   other: MapPin,
 };
 
-export function PlaceCard(props: { place: PlaceListItem; onClick: (id: number) => void }) {
+export function PlaceCard(props: { place: PlaceListItem; onClick: (id: number, lat: number, lng: number) => void }) {
   const { place, onClick } = props;
   const [broken, setBroken] = useState(false);
   const Icon = CATEGORY_ICONS[place.category];
@@ -35,7 +35,7 @@ export function PlaceCard(props: { place: PlaceListItem; onClick: (id: number) =
   return (
     <button
       type="button"
-      onClick={() => onClick(place.id)}
+      onClick={() => onClick(place.id, place.lat, place.lng)}
       className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-right transition-colors hover:bg-accent/50"
     >
       {place.thumb_url && !broken ? (

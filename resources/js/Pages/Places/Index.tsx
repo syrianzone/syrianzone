@@ -249,16 +249,28 @@ export default function Index() {
   }
 
   // panel taps must expand the mobile sheet too, or the detail opens 224px tall
-  function handlePanelSelect(id: number | null) {
+  function handlePanelSelect(id: number, lat: number, lng: number) {
     setSelectedId(id);
-    setSelectedType(id !== null ? 'place' : null);
-    if (id !== null) setExpanded(true);
+    setSelectedType('place');
+    setExpanded(true);
+    flyTo(lng, lat);
   }
 
-  function handlePanelSelectHotel(id: number | null) {
+  function handlePanelSelectHotel(id: number, lat: number, lng: number) {
     setSelectedId(id);
-    setSelectedType(id !== null ? 'hotel' : null);
-    if (id !== null) setExpanded(true);
+    setSelectedType('hotel');
+    setExpanded(true);
+    flyTo(lng, lat);
+  }
+
+  function handleClose() {
+    setSelectedId(null);
+    setSelectedType(null);
+  }
+
+  function handleCloseHotel() {
+    setSelectedId(null);
+    setSelectedType(null);
   }
 
   function handleSubmitted() {
@@ -393,7 +405,9 @@ export default function Index() {
                 selectedId={selectedId}
                 selectedType={selectedType}
                 onSelect={handlePanelSelect}
+                onClose={handleClose}
                 onSelectHotel={handlePanelSelectHotel}
+                onCloseHotel={handleCloseHotel}
                 hasMore={listPlaces !== null && listPlaces.current_page < listPlaces.last_page}
                 onLoadMore={() => listPlaces && fetchList(listPlaces.current_page + 1)}
                 onSelectGuide={selectGuide}

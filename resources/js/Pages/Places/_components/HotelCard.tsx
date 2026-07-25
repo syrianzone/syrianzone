@@ -2,14 +2,14 @@ import { useState } from 'react';
 import { Hotel, Star } from 'lucide-react';
 import type { HotelListItem } from '../_lib/types';
 
-export function HotelCard(props: { hotel: HotelListItem; onClick: (id: number) => void }) {
+export function HotelCard(props: { hotel: HotelListItem; onClick: (id: number, lat: number, lng: number) => void }) {
   const { hotel, onClick } = props;
   const [broken, setBroken] = useState(false);
 
   return (
     <button
       type="button"
-      onClick={() => onClick(hotel.id)}
+      onClick={() => onClick(hotel.id, hotel.lat, hotel.lng)}
       className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-right transition-colors hover:bg-accent/50"
     >
       {hotel.thumb_url && !broken ? (

@@ -116,7 +116,7 @@ function ListShell(props: {
   );
 }
 
-function SavesTab(props: { onSelect: (id: number) => void }) {
+function SavesTab(props: { onSelect: (id: number, lat: number, lng: number) => void }) {
   const { items, loading, failed, reload, hasMore, loadMore } = usePagedList<PlaceListItem>((page) => api.mySaves(page));
   return (
     <ListShell loading={loading} empty={items.length === 0} hasMore={hasMore} onLoadMore={loadMore} failed={failed} onRetry={reload}>
@@ -127,7 +127,7 @@ function SavesTab(props: { onSelect: (id: number) => void }) {
   );
 }
 
-function MineTab(props: { onSelect: (id: number) => void }) {
+function MineTab(props: { onSelect: (id: number, lat: number, lng: number) => void }) {
   const { items, loading, failed, reload, hasMore, loadMore } = usePagedList<MyPlace>((page) => api.myPlaces(page));
   const [managing, setManaging] = useState<MyPlace | null>(null);
   const [resubmitting, setResubmitting] = useState<number | null>(null);
@@ -195,7 +195,7 @@ function MineTab(props: { onSelect: (id: number) => void }) {
   );
 }
 
-function HotelsTab(props: { onSelectHotel: (id: number) => void }) {
+function HotelsTab(props: { onSelectHotel: (id: number, lat: number, lng: number) => void }) {
   const { items, loading, failed, reload, hasMore, loadMore } = usePagedList<HotelListItem>((page) => api.listHotels({ page }));
   return (
     <ListShell loading={loading} empty={items.length === 0} hasMore={hasMore} onLoadMore={loadMore} failed={failed} onRetry={reload}>
@@ -211,15 +211,17 @@ export function PlacesPanel(props: {
   loading: boolean;
   selectedId: number | null;
   selectedType: 'place' | 'hotel' | null;
-  onSelect: (id: number | null) => void;
-  onSelectHotel: (id: number | null) => void;
+  onSelect: (id: number, lat: number, lng: number) => void;
+  onClose: () => void;
+  onSelectHotel: (id: number, lat: number, lng: number) => void;
+  onCloseHotel: () => void;
   hasMore: boolean;
   onLoadMore: () => void;
   onSelectGuide: (guide: { id: number; name: string }) => void;
   className?: string;
 }) {
   const {
-    places, loading, selectedId, selectedType, onSelect, onSelectHotel,
+    places, loading, selectedId, selectedType, onSelect, onClose, onSelectHotel, onCloseHotel,
     hasMore, onLoadMore, onSelectGuide, className,
   } = props;
   // controlled so picking a guide drops the user on the filtered places list
@@ -231,13 +233,13 @@ export function PlacesPanel(props: {
     if (selectedType === 'hotel') {
       return (
         <div dir="rtl" className={cn('flex flex-col overflow-hidden bg-background', className)}>
-          <HotelDetailView hotelId={selectedId} onClose={() => onSelectHotel(null)} />
+          <HotelDetailView hotelId={selectedId} onClose={onCloseHotel} />
         </div>
       );
     }
     return (
       <div dir="rtl" className={cn('flex flex-col overflow-hidden bg-background', className)}>
-        <PlaceDetailView placeId={selectedId} onClose={() => onSelect(null)} />
+        <PlaceDetailView placeId={selectedId} onClose={onClose} />
       </div>
     );
   }
@@ -266,7 +268,7 @@ export function PlacesPanel(props: {
           {mainList}
         </TabsContent>
         <TabsContent value="hotels" className="mt-0 flex min-h-0 flex-1 flex-col">
-          <HotelsTab onSelectHotel={(id) => onSelectHotel(id)} />
+          <HotelsTab onSelectHotel={(id, lat, lng) => onSelectHotel(id, lat, lng)} />
         </TabsContent>
         {user && (
           <TabsContent value="saves" className="mt-0 flex min-h-0 flex-1 flex-col">

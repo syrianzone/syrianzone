@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Loader2, Pencil } from 'lucide-react';
+import { Loader2, Pencil, Plus, X } from 'lucide-react';
 import { useAuth } from '@/Contexts/AuthContext';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -218,11 +218,13 @@ export function PlacesPanel(props: {
   hasMore: boolean;
   onLoadMore: () => void;
   onSelectGuide: (guide: { id: number; name: string }) => void;
+  addMode: boolean;
+  onAddToggle: () => void;
   className?: string;
 }) {
   const {
     places, loading, selectedId, selectedType, onSelect, onClose, onSelectHotel, onCloseHotel,
-    hasMore, onLoadMore, onSelectGuide, className,
+    hasMore, onLoadMore, onSelectGuide, addMode, onAddToggle, className,
   } = props;
   // controlled so picking a guide drops the user on the filtered places list
   const [tab, setTab] = useState('places');
@@ -256,6 +258,17 @@ export function PlacesPanel(props: {
 
   return (
     <div dir="rtl" className={cn('flex flex-col overflow-hidden bg-background', className)}>
+      <div className="px-3 pt-3">
+        <Button
+          type="button"
+          variant={addMode ? 'destructive' : 'default'}
+          className="w-full"
+          onClick={onAddToggle}
+        >
+          {addMode ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+          {addMode ? 'إلغاء الإضافة' : 'أضف مكاناً'}
+        </Button>
+      </div>
       <Tabs value={tab} onValueChange={setTab} className="flex min-h-0 flex-1 flex-col">
         <TabsList className={cn('mx-3 mt-3 grid', tabCount === 5 ? 'grid-cols-5' : 'grid-cols-3')}>
           <TabsTrigger value="places">الأماكن</TabsTrigger>

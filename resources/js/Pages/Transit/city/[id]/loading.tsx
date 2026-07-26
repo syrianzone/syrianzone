@@ -1,9 +1,6 @@
-import Header from '../../_components/layout/Header'
-
 export default function CityRoutesLoading() {
   return (
     <div className="flex min-h-svh flex-col bg-[var(--bg)]">
-      <Header />
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6">
         <div className="mb-6">
           <div className="mb-2 h-8 w-40 animate-pulse rounded-lg bg-[var(--surface)]" />

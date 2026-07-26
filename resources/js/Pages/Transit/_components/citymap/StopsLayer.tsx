@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import maplibregl from 'maplibre-gl'
 import { useMap } from '@/Components/map/MapContext'
+import { useMapStore } from '../../_store/useMapStore'
 import type { FeatureCollection, StopProperties } from '../../_types'
 
 interface StopsLayerProps {
@@ -11,6 +12,8 @@ interface StopsLayerProps {
 
 export default function StopsLayer({ data }: StopsLayerProps) {
   const map = useMap()
+  const showStops = useMapStore(s => s.showStops)
+  const selectedRouteId = useMapStore(s => s.selectedRouteId)
 
   useEffect(() => {
     if (!map) return
@@ -82,6 +85,24 @@ export default function StopsLayer({ data }: StopsLayerProps) {
       } catch { /* map may have been removed already */ }
     }
   }, [map, data])
+
+  // React to showStops changes
+  useEffect(() => {
+    if (!map) return
+    if (map.getLayer('stops-circle')) {
+      map.setLayoutProperty('stops-circle', 'visibility', showStops ? 'visible' : 'none')
+    }
+  }, [map, showStops])
+
+  // Hide stops not belonging to the selected route
+  useEffect(() => {
+    if (!map || !map.getLayer('stops-circle')) return
+    if (selectedRouteId) {
+      map.setFilter('stops-circle', ['in', selectedRouteId, ['get', 'routeIds']])
+    } else {
+      map.setFilter('stops-circle', null)
+    }
+  }, [map, selectedRouteId])
 
   return null
 }

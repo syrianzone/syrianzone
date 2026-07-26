@@ -72,21 +72,21 @@ export default function CityCard({ city, index }: CityCardProps) {
   const preloadCityData = usePreloadCity()
 
   const base = cn(
-    'city-card group relative flex flex-col items-center justify-center text-center gap-3 rounded-xl border border-border bg-[var(--surface)] p-5 transition-all duration-200',
+    'city-card group relative flex flex-col items-center justify-center text-center gap-3 rounded-xl border border-border bg-card p-5 transition-all duration-200',
     isReady ? 'hover:-translate-y-0.5 hover:border-primary/50 cursor-pointer' : 'opacity-55 cursor-not-allowed'
   )
 
   const cardContent = (
     <>
       <span className={cn(
-        "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[var(--surface-2)] text-[var(--gold)] transition-colors duration-200",
-        isReady && "group-hover:bg-[var(--gold)] group-hover:text-[var(--surface)]"
+        "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-muted text-primary transition-colors duration-200",
+        isReady && "group-hover:bg-primary group-hover:text-primary-foreground"
       )}>
         <GovernorateIcon cityId={city.id} />
       </span>
       <div className="flex flex-col items-center gap-1.5">
-        <h3 className="text-sm font-bold text-[var(--text)] leading-none">{city.nameAr}</h3>
-        <span className="text-xs text-[var(--muted)] font-medium">
+        <h3 className="text-sm font-bold text-foreground leading-none">{city.nameAr}</h3>
+        <span className="text-xs text-muted-foreground font-medium">
           {city.routeCount > 0 ? `${city.routeCount} خط` : 'قريباً'}
         </span>
       </div>

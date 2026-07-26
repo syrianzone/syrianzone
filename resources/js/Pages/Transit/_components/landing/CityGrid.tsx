@@ -25,8 +25,8 @@ export default function CityGrid({ cities: propCities }: CityGridProps) {
     <section className="px-4 pb-14 pt-8 sm:pt-10">
       <div className="mx-auto max-w-7xl">
         <div className="mb-5 flex items-baseline justify-between">
-          <h2 className="text-lg font-bold text-[var(--text)] sm:text-xl">المدن المتاحة</h2>
-          <span className="text-xs text-[var(--muted)]" style={{ fontFamily: 'var(--font-mono)' }}>
+          <h2 className="text-lg font-bold text-foreground sm:text-xl">المدن المتاحة</h2>
+          <span className="text-xs text-muted-foreground" style={{ fontFamily: 'var(--font-mono)' }}>
             {readyCount} / {cities.length}
           </span>
         </div>
@@ -40,21 +40,21 @@ export default function CityGrid({ cities: propCities }: CityGridProps) {
         {/* Contribute CTA */}
         <Link
           href="/transit/studio"
-          className="group mt-6 flex items-center justify-between gap-3 rounded-xl border border-dashed border-[var(--border)] p-4 no-underline transition-colors duration-200 hover:border-[var(--gold)] hover:bg-[var(--surface)] sm:p-5"
+          className="group mt-6 flex items-center justify-between gap-3 rounded-xl border border-dashed border-border p-4 no-underline transition-colors duration-200 hover:border-primary hover:bg-card sm:p-5"
         >
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--surface-2)] text-[var(--gold)] transition-colors duration-200 group-hover:bg-[var(--gold)] group-hover:text-[var(--surface)]">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-primary transition-colors duration-200 group-hover:bg-primary group-hover:text-primary-foreground">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M12 5v14M5 12h14" />
               </svg>
             </span>
             <div className="flex flex-col items-start">
-              <h3 className="text-base font-bold text-[var(--text)]">ساهم بإضافة خط</h3>
-              <p className="text-xs text-[var(--muted)]">تعرف على مسار سيرفيس غير مسجّل؟ ارسمه على الخريطة</p>
+              <h3 className="text-base font-bold text-foreground">ساهم بإضافة خط</h3>
+              <p className="text-xs text-muted-foreground">تعرف على مسار سيرفيس غير مسجّل؟ ارسمه على الخريطة</p>
             </div>
           </div>
           <svg
-            className="shrink-0 text-[var(--muted)] transition-all duration-200 group-hover:-translate-x-1 group-hover:text-[var(--gold)]"
+            className="shrink-0 text-muted-foreground transition-all duration-200 group-hover:-translate-x-1 group-hover:text-primary"
             width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
           >
             <path d="M19 12H5M12 19l-7-7 7-7" />

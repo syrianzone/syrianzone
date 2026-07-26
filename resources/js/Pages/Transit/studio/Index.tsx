@@ -210,12 +210,13 @@ function Step2Draw({
 }
 
 function Step3Stops({
-  drawMode, onActivatePoint, onBack, onNext,
+  drawMode, onActivatePoint, onBack, onNext, isEditMode,
 }: {
   drawMode: DrawMode
   onActivatePoint: () => void
   onBack: () => void
   onNext: () => void
+  isEditMode: boolean
 }) {
   const { stops, removeStop, updateStopName } = useStudioStore()
   const isPointing = drawMode === 'point'
@@ -240,6 +241,15 @@ function Step3Stops({
 
       {isPointing && (
         <p className="studio-hint">انقر على الخريطة بمحاذاة مسارك • سيظهر نموذج التسمية فور الوضع</p>
+      )}
+
+      {isEditMode && stops.length > 0 && (
+        <p className="studio-hint text-[var(--gold)] mb-3 flex items-center gap-1">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" />
+          </svg>
+          <span>وضع التعديل: اسحب المحطات على الخريطة لتغيير مواقعها</span>
+        </p>
       )}
 
       {stops.length > 0 ? (
@@ -543,12 +553,13 @@ function TransitStudioPageContent() {
   const activeLine   = useRef<Position[]>([])
   const isMobileRef  = useRef(false)
   const vertexMarkersRef = useRef<maplibregl.Marker[]>([])
+  const stopMarkersRef = useRef<maplibregl.Marker[]>([])
 
   const {
     step, cityId, drawnLine, stops, nameAr, submittedDraftId,
     colorIndex, setColorIndex,
     isEditMode, editingDraftId, editingRouteId,
-    setStep, setCity, setDrawnLine, updateStopName, setSubmittedDraftId,
+    setStep, setCity, setDrawnLine, updateStopName, updateStopCoordinates, setSubmittedDraftId,
     setEditMode, loadDraft, reset,
   } = useStudioStore()
   const { theme } = useTransitTheme()
@@ -1025,6 +1036,58 @@ function TransitStudioPageContent() {
     }
   }, [mapReady, drawnLine, drawMode])
 
+  // ─── Draggable stop markers for EDIT MODE ─────────────────────────────────────
+  useEffect(() => {
+    if (!mapReady || !mapRef.current || !isEditMode) return
+    const map = mapRef.current
+
+    stopMarkersRef.current.forEach(m => m.remove())
+    stopMarkersRef.current = []
+
+    if (!stops.length) return
+
+    stops.forEach((stop) => {
+      const el = document.createElement('div')
+      el.className = 'studio-stop-handle'
+      el.style.cssText = `
+        width:20px;height:20px;border-radius:50%;
+        background:#4a9eff;border:2px solid #fff;
+        box-shadow:0 2px 8px rgba(0,0,0,0.3);
+        cursor:grab;touch-action:none;
+        transition:transform 0.1s, box-shadow 0.1s;
+      `
+      el.dataset.stopId = String(stop.id)
+
+      const marker = new maplibregl.Marker({ element: el, draggable: true, offset: [0, -10] })
+        .setLngLat(stop.coordinates as maplibregl.LngLatLike)
+        .addTo(map)
+
+      marker.on('dragstart', () => {
+        el.style.transform = 'scale(1.3)'
+        el.style.boxShadow = '0 4px 16px rgba(0,0,0,0.4)'
+        el.style.cursor = 'grabbing'
+      })
+
+      marker.on('dragend', () => {
+        el.style.transform = 'scale(1)'
+        el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)'
+        el.style.cursor = 'grab'
+        const pos = marker.getLngLat()
+        const newCoord: [number, number] = [pos.lng, pos.lat]
+        updateStopCoordinates(stop.id, newCoord)
+      })
+
+      el.title = `اسحب لنقل "${stop.nameAr || 'محطة بدون اسم'}"`
+
+      stopMarkersRef.current.push(marker)
+    })
+
+    return () => {
+      stopMarkersRef.current.forEach(m => m.remove())
+      stopMarkersRef.current = []
+    }
+  }, [mapReady, stops, isEditMode])
+
   // ─── Sync stops → map ────────────────────────────────────────────────────────
   useEffect(() => {
     if (!mapReady) return
@@ -1360,6 +1423,7 @@ function TransitStudioPageContent() {
                 onActivatePoint={handleActivatePoint}
                 onBack={() => { setMode('idle'); setStep(2) }}
                 onNext={() => { setMode('idle'); setStep(4) }}
+                isEditMode={isEditMode}
               />
             )}
             {step === 4 && (

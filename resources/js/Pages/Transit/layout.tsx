@@ -4,6 +4,7 @@ import './transit.css'
 import { TransitThemeProvider, useTransitTheme } from './_components/TransitThemeContext'
 import { QueryProvider } from '@/Providers/QueryProvider'
 import MainLayout from '@/Layouts/MainLayout'
+import TransitSidebarLayout from './TransitSidebarLayout'
 
 export default function TransitLayout({
   children,
@@ -14,30 +15,11 @@ export default function TransitLayout({
     <MainLayout>
       <QueryProvider>
         <TransitThemeProvider>
-          <TransitRootWrapper>
+          <TransitSidebarLayout>
             {children}
-          </TransitRootWrapper>
+          </TransitSidebarLayout>
         </TransitThemeProvider>
       </QueryProvider>
     </MainLayout>
-  )
-}
-
-function TransitRootWrapper({ children }: { children: React.ReactNode }) {
-  const { theme } = useTransitTheme()
-  const { url } = usePage()
-  const path = url.split('?')[0]
-  const isFullHeight =
-    path.startsWith('/transit/studio') ||
-    path.startsWith('/transit/admin') ||
-    path.match(/^\/transit\/city\/[^/]+\/map$/) !== null
-
-  return (
-    <div
-      className={`transit-root ${isFullHeight ? 'h-full' : 'min-h-svh'}`}
-      data-transit-theme={theme}
-    >
-      {children}
-    </div>
   )
 }

@@ -30,6 +30,7 @@ interface StudioState {
   setDrawnLine: (coords: [number, number][] | null) => void
   addStop: (coord: [number, number]) => void
   updateStopName: (id: number, nameAr: string) => void
+  updateStopCoordinates: (id: number, coords: [number, number]) => void
   removeStop: (id: number) => void
   setMeta: (fields: Partial<Pick<StudioState, 'nameAr' | 'nameEn' | 'price' | 'notes' | 'colorIndex'>>) => void
   setColorIndex: (idx: number) => void
@@ -68,6 +69,10 @@ export const useStudioStore = create<StudioState>((set) => ({
   updateStopName: (id, nameAr) =>
     set((state) => ({
       stops: state.stops.map((s) => (s.id === id ? { ...s, nameAr } : s)),
+    })),
+  updateStopCoordinates: (id, coords) =>
+    set((state) => ({
+      stops: state.stops.map((s) => (s.id === id ? { ...s, coordinates: coords } : s)),
     })),
   removeStop: (id) =>
     set((state) => ({ stops: state.stops.filter((s) => s.id !== id) })),

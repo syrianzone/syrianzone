@@ -11,7 +11,7 @@ export default function Hero({ cities: propCities }: HeroProps) {
   const totalRoutes = cities.reduce((sum, c) => sum + (c.routeCount || 0), 0)
 
   return (
-    <section className="bg-[var(--surface)] border-b border-border py-12 text-center" dir="rtl">
+    <section className="bg-card border-b border-border py-12 text-center">
       <div className="mx-auto px-4 max-w-4xl">
         <h1 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">ترانزيت سوريا</h1>
         <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto mb-6 leading-relaxed">

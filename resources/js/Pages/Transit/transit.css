@@ -107,3 +107,24 @@
   content-visibility: auto;
   contain-intrinsic-size: auto 80px;
 }
+
+/* ─── Sidebar transitions ─────────────────────────────────────────────────── */
+.transit-sidebar {
+  transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.transit-shell {
+  min-height: 100vh;
+}
+
+/* Map full height inside main */
+.transit-shell main > .flex-1 {
+  height: 100%;
+}
+
+/* Mobile drawer overlay */
+@media (max-width: 767px) {
+  .transit-sidebar {
+    box-shadow: 0 0 40px rgba(0,0,0,0.3);
+  }
+}

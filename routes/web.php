@@ -111,74 +111,11 @@ Route::get('/transit/city/{id}', function ($id) {
 })->where('id', '[a-z0-9\-]+');
 
 Route::get('/transit/city/{id}/map', function ($id) {
-    return Inertia::render('Transit/city/[id]/map/Index', ['id' => $id]);
+    return redirect("/transit/city/{$id}", 301);
 })->where('id', '[a-z0-9\-]+');
 
 Route::get('/transit/city/{id}/route/{routeId}', function ($id, $routeId) {
-    $citiesPath = resource_path('js/Pages/Transit/_data/cities.json');
-    if (! file_exists($citiesPath)) {
-        abort(404, 'Cities configuration not found.');
-    }
-
-    $cities = json_decode(file_get_contents($citiesPath), true);
-    $city = collect($cities)->firstWhere('id', $id);
-
-    if (! $city) {
-        return Inertia::render('Transit/city/[id]/route/[routeId]/Index', [
-            'id' => $id,
-            'city' => null,
-            'route' => null,
-            'stops' => [],
-        ]);
-    }
-
-    // Read route + stops from the database — the same source the live map uses — so
-    // admin-approved community routes appear here too (the old static GeoJSON files in
-    // public/data are never updated on approval, so they drifted out of sync).
-    $route = \Illuminate\Support\Facades\DB::table('routes')
-        ->where('id', $routeId)
-        ->where('city_id', $id)
-        ->where('status', 'published')
-        ->first();
-
-    $routeData = $route ? [
-        'id' => $route->id,
-        'nameAr' => $route->name_ar,
-        'nameEn' => $route->name_en,
-        'colorIndex' => $route->color_index,
-        'priceOld' => $route->price_old,
-        'priceNew' => $route->price_new,
-    ] : null;
-
-    $stopsData = [];
-
-    if ($routeData) {
-        $stops = \Illuminate\Support\Facades\DB::table('route_stop')
-            ->join('stops', 'route_stop.stop_id', '=', 'stops.id')
-            ->where('route_stop.route_id', $routeId)
-            ->orderBy('route_stop.order')
-            ->select('stops.id', 'stops.name_ar', \Illuminate\Support\Facades\DB::raw('ST_AsGeoJSON(stops.geometry) as geojson'))
-            ->get();
-
-        $stopsData = $stops->map(function ($s) {
-            $coordinates = json_decode($s->geojson, true)['coordinates'] ?? [0, 0];
-
-            return [
-                'properties' => [
-                    'id' => $s->id,
-                    'nameAr' => $s->name_ar,
-                ],
-                'coordinates' => $coordinates,
-            ];
-        })->all();
-    }
-
-    return Inertia::render('Transit/city/[id]/route/[routeId]/Index', [
-        'id' => $id,
-        'city' => $city,
-        'route' => $routeData,
-        'stops' => $stopsData,
-    ]);
+    return redirect("/transit/city/{$id}?route={$routeId}", 301);
 })->where(['id' => '[a-z0-9\-]+', 'routeId' => '[a-z0-9\-]+']);
 
 Route::get('/transit/studio', function () {

@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Head } from '@inertiajs/react';
-import { ChevronDown, ChevronUp, Plus, X } from 'lucide-react';
-import MainLayout from '@/Layouts/MainLayout';
-import { Button } from '@/components/ui/button';
+import { X } from 'lucide-react';import MainLayout from '@/Layouts/MainLayout';
 import { PlacesMap } from './_components/PlacesMap';
 import { FilterBar, parseLatLng, type ViewFilter } from './_components/FilterBar';
 import { PhotoGrid } from './_components/PhotoGrid';
 import { PlacesPanel } from './_components/PlacesPanel';
 import { SubmitSheet } from './_components/SubmitSheet';
 import { ViewToggle } from './_components/ViewToggle';
+import { BottomSheet } from '../Transit/_components/BottomSheet';
 import { api, extractError } from './_lib/api';
 import { discovery, type GridPhoto } from './_lib/discovery';
 import type { GeoSuggestion, HotelFeatureCollection, LatLng, Paginated, PlaceCategory, PlaceFeatureCollection, PlaceListItem } from './_lib/types';
@@ -27,7 +26,6 @@ export default function Index() {
   const [submitOpen, setSubmitOpen] = useState(false);
   const [listPlaces, setListPlaces] = useState<Paginated<PlaceListItem> | null>(null);
   const [listLoading, setListLoading] = useState(false);
-  const [expanded, setExpanded] = useState(false);
   const [notice, setNotice] = useState<{ text: string; destructive: boolean } | null>(null);
   const [addMode, setAddMode] = useState(false);
   const [focus, setFocus] = useState<{ lng: number; lat: number; zoom?: number; key: number } | null>(null);
@@ -76,7 +74,6 @@ export default function Index() {
     changeView('map');
     setSelectedId(p.place.id);
     setSelectedType('place');
-    setExpanded(true);
     flyTo(p.place.lng, p.place.lat);
   }
 
@@ -108,7 +105,6 @@ export default function Index() {
     if (id <= 0) return;
     setSelectedId(id);
     setSelectedType('place');
-    setExpanded(true);
     api.getPlace(id)
       .then((place) => flyTo(place.lng, place.lat))
       .catch((e) => {
@@ -222,21 +218,18 @@ export default function Index() {
   function handlePinClick(id: number) {
     setSelectedId(id);
     setSelectedType('place');
-    setExpanded(true);
     setAddMode(false);
   }
 
   function handleHotelPinClick(id: number) {
     setSelectedId(id);
     setSelectedType('hotel');
-    setExpanded(true);
     setAddMode(false);
   }
 
   function handleSelectResult(place: PlaceListItem) {
     setSelectedId(place.id);
     setSelectedType('place');
-    setExpanded(true);
     flyTo(place.lng, place.lat);
   }
 
@@ -251,14 +244,12 @@ export default function Index() {
   function handlePanelSelect(id: number, lat: number, lng: number) {
     setSelectedId(id);
     setSelectedType('place');
-    setExpanded(true);
     flyTo(lng, lat);
   }
 
   function handlePanelSelectHotel(id: number, lat: number, lng: number) {
     setSelectedId(id);
     setSelectedType('hotel');
-    setExpanded(true);
     flyTo(lng, lat);
   }
 
@@ -280,7 +271,6 @@ export default function Index() {
     setSubmitOpen(false);
     setSelectedId(id);
     setSelectedType('place');
-    setExpanded(true);
   }
 
   return (
@@ -302,7 +292,7 @@ export default function Index() {
           onHotelPinClick={handleHotelPinClick}
           onMapClick={handleMapClick}
           // bottom-56 keeps the map's bottom-left controls above the collapsed mobile sheet
-          className="absolute inset-x-0 top-0 bottom-56 md:inset-0"
+          className="absolute inset-0"
         />
 
         {/* stays mounted across view switches so fetched pages survive; renders null on the map view */}
@@ -376,28 +366,8 @@ export default function Index() {
         {/* FAB and the sheet/panel are conditionally unmounted in grid view (not css-hidden) */}
         {view === 'map' && (
           <>
-            {/* bottom-60 clears the collapsed mobile sheet; left-14 clears the map controls.
-                hidden while the mobile sheet is expanded: the sheet would cover both FAB and map */}
-            <Button
-              type="button"
-              className={`absolute left-14 bottom-60 z-10 shadow-lg md:bottom-6 ${expanded ? 'hidden md:inline-flex' : ''}`}
-              onClick={() => setAddMode((v) => !v)}
-            >
-              {addMode ? <X /> : <Plus />}
-              {addMode ? 'إلغاء الإضافة' : 'أضف مكاناً'}
-            </Button>
-
-            <div
-              className={`absolute inset-x-0 bottom-0 z-10 flex flex-col bg-card border-t border-border md:inset-x-auto md:top-0 md:right-0 md:h-full md:w-96 md:border-t-0 md:border-l ${expanded ? 'h-[65dvh]' : 'h-56'}`}
-            >
-              <button
-                type="button"
-                className="flex w-full items-center justify-center py-1 text-muted-foreground md:hidden"
-                aria-label={expanded ? 'تصغير القائمة' : 'توسيع القائمة'}
-                onClick={() => setExpanded((v) => !v)}
-              >
-                {expanded ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
-              </button>
+            {/* Desktop sidebar */}
+            <div className="hidden md:flex absolute top-0 right-0 h-full w-96 flex-col bg-card border-l border-border z-10">
               <PlacesPanel
                 places={listPlaces?.data ?? []}
                 loading={listLoading}
@@ -410,9 +380,31 @@ export default function Index() {
                 hasMore={listPlaces !== null && listPlaces.current_page < listPlaces.last_page}
                 onLoadMore={() => listPlaces && fetchList(listPlaces.current_page + 1)}
                 onSelectGuide={selectGuide}
+                addMode={addMode}
+                onAddToggle={() => setAddMode((v) => !v)}
                 className="min-h-0 flex-1"
               />
             </div>
+
+            {/* Mobile bottom sheet */}
+            <BottomSheet storageKey="mishwar-sheet-height">
+              <PlacesPanel
+                places={listPlaces?.data ?? []}
+                loading={listLoading}
+                selectedId={selectedId}
+                selectedType={selectedType}
+                onSelect={handlePanelSelect}
+                onClose={handleClose}
+                onSelectHotel={handlePanelSelectHotel}
+                onCloseHotel={handleCloseHotel}
+                hasMore={listPlaces !== null && listPlaces.current_page < listPlaces.last_page}
+                onLoadMore={() => listPlaces && fetchList(listPlaces.current_page + 1)}
+                onSelectGuide={selectGuide}
+                addMode={addMode}
+                onAddToggle={() => setAddMode((v) => !v)}
+                className="min-h-0 flex-1"
+              />
+            </BottomSheet>
           </>
         )}
 

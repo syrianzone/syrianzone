@@ -11,7 +11,9 @@ export default function ConditionalLayout({ children }: { children: React.ReactN
   const isFullHeight =
     path.startsWith('/transit/studio') ||
     path.startsWith('/transit/admin') ||
-    path.match(/^\/transit\/city\/[^/]+\/map$/) !== null
+    path.match(/^\/transit\/city\/[^/]+\/map$/) !== null ||
+    path.match(/^\/transit\/city\/[^/]+\/route\/[^/]+$/) !== null ||
+    path.match(/^\/transit\/city\/[^/]+$/) !== null
 
   return (
     <div className={isFullHeight ? 'flex flex-col h-screen overflow-hidden' : ''}>

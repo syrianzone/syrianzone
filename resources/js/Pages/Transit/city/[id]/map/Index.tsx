@@ -1,9 +1,6 @@
 import React, { Suspense, useEffect, useMemo, lazy } from 'react'
 import citiesData from '../../../_data/cities.json'
 import { useMapData } from '../../../_hooks/useMapData'
-import { useOffline } from '../../../_hooks/useOffline'
-import Header from '../../../_components/layout/Header'
-import OfflineBanner from '../../../_components/citymap/OfflineBanner'
 import type { City, FeatureCollection, RouteProperties, StopProperties } from '../../../_types'
 import TransitLayout from '../../../layout'
 import { Head, usePage } from '@inertiajs/react'
@@ -27,7 +24,6 @@ function CityMapPageContent({ id }: CityMapPageProps) {
 
   const city = cities.find((c) => c.id === id)
   const { data, loading, error } = useMapData(city?.id)
-  const isOffline = useOffline()
 
   const bounds = useMemo(() => {
     if (!city?.bounds) return null
@@ -69,7 +65,6 @@ function CityMapPageContent({ id }: CityMapPageProps) {
   if (!city || !city.bounds) {
     return (
       <div className="flex h-full flex-col bg-[var(--bg)]">
-        <Header />
         <div className="flex flex-1 items-center justify-center text-[var(--muted)]">
           المدينة غير موجودة
         </div>
@@ -79,8 +74,6 @@ function CityMapPageContent({ id }: CityMapPageProps) {
 
   return (
     <div className="flex h-full flex-col bg-[var(--bg)]">
-      <Header />
-      {isOffline && <OfflineBanner />}
 
       <div className="relative flex-1 overflow-hidden">
         {loading && (

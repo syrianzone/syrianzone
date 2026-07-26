@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import type maplibregl from 'maplibre-gl'
 import { useMap } from '@/Components/map/MapContext'
 import { getRouteColor, buildColorMatch } from '../../_lib/mapColors'
@@ -22,6 +22,8 @@ export default function RouteLayer({ data }: RouteLayerProps) {
   const map = useMap()
   const { selectedRouteId, setSelectedRouteId } = useMapStore()
   const [activeRoute, setActiveRoute] = useState<ActiveRoute | null>(null)
+  const selectedRouteIdRef = useRef(selectedRouteId)
+  selectedRouteIdRef.current = selectedRouteId
 
   // Build source + line layer; wire click/hover events
   useEffect(() => {
@@ -60,14 +62,16 @@ export default function RouteLayer({ data }: RouteLayerProps) {
       },
     })
 
-    const onEnter = () => { map.getCanvas().style.cursor = 'pointer' }
+    const onEnter = () => {
+      if (!selectedRouteIdRef.current) map.getCanvas().style.cursor = 'pointer'
+    }
     const onLeave = () => { map.getCanvas().style.cursor = '' }
 
     const onRouteClick = (e: maplibregl.MapMouseEvent & { features?: maplibregl.MapGeoJSONFeature[] }) => {
+      if (selectedRouteIdRef.current) return
       if (!e.features || e.features.length === 0) return
       const props = e.features[0].properties as RouteProperties
       const container = map.getContainer()
-      // Clamp so modal never overflows the map container
       const mx = Math.min(Math.max(e.point.x, 140), container.clientWidth - 140)
       const my = e.point.y
       setActiveRoute({ props, x: mx, y: my })
@@ -75,6 +79,7 @@ export default function RouteLayer({ data }: RouteLayerProps) {
     }
 
     const onMapClick = (e: maplibregl.MapMouseEvent) => {
+      if (selectedRouteIdRef.current) return
       const hits = map.queryRenderedFeatures(e.point, { layers: ['routes-line-hit'] })
       if (hits.length === 0) {
         setActiveRoute(null)
@@ -115,6 +120,9 @@ export default function RouteLayer({ data }: RouteLayerProps) {
       map.setPaintProperty('routes-line', 'line-opacity', 0.85)
       map.setPaintProperty('routes-line', 'line-width', 4)
     }
+
+    // Close the map popup when selection changes from sidebar
+    setActiveRoute(null)
   }, [map, selectedRouteId])
 
   if (!activeRoute) return null

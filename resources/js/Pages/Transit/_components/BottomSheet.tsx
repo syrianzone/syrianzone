@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 
 const MINIMAL_HEIGHT = 250
 const MAX_RATIO = 0.92
+const HANDLE_HEIGHT = 40
 
 interface BottomSheetProps {
   children: React.ReactNode
@@ -33,11 +34,23 @@ export function BottomSheet({ children, className, storageKey, initialHeight, on
   const dragStartY = useRef(0)
   const dragStartHeight = useRef(0)
   const isDraggingRef = useRef(false)
+  const contentRef = useRef<HTMLDivElement>(null)
+  const [contentNaturalHeight, setContentNaturalHeight] = useState(0)
 
   const updateHeight = useCallback((h: number) => {
     setSheetHeight(h)
     onHeightChange?.(h)
   }, [onHeightChange])
+
+  // measure content natural height
+  useEffect(() => {
+    if (!contentRef.current) return
+    const ro = new ResizeObserver(([entry]) => {
+      setContentNaturalHeight(entry.contentRect.height)
+    })
+    ro.observe(contentRef.current)
+    return () => ro.disconnect()
+  }, [children])
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     dragStartY.current = e.touches[0].clientY
@@ -74,6 +87,11 @@ export function BottomSheet({ children, className, storageKey, initialHeight, on
   const maxH = typeof window !== 'undefined' ? window.innerHeight * MAX_RATIO : 800
   const progress = Math.min(1, Math.max(0, (sheetHeight - MINIMAL_HEIGHT) / (maxH - MINIMAL_HEIGHT)))
 
+  // use the smaller of dragged height vs content natural height + handle
+  const contentHeight = contentNaturalHeight
+  const naturalTotal = contentHeight + HANDLE_HEIGHT
+  const renderedHeight = isDragging ? sheetHeight : Math.min(sheetHeight, Math.max(MINIMAL_HEIGHT, naturalTotal))
+
   return (
     <div
       className={cn(
@@ -82,7 +100,7 @@ export function BottomSheet({ children, className, storageKey, initialHeight, on
         isDragging ? 'transition-none' : 'transition-[height] duration-200 ease-out',
         className
       )}
-      style={{ height: sheetHeight }}
+      style={{ height: renderedHeight }}
     >
       <div
         className="flex items-center justify-center py-2 touch-none select-none cursor-grab active:cursor-grabbing"
@@ -99,8 +117,8 @@ export function BottomSheet({ children, className, storageKey, initialHeight, on
       </div>
 
       <div
+        ref={contentRef}
         className="overflow-y-auto overscroll-contain"
-        style={{ height: Math.max(0, sheetHeight - MINIMAL_HEIGHT) }}
       >
         {children}
       </div>

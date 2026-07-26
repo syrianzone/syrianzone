@@ -6,6 +6,7 @@ import { TierAvatar as Avatar } from "@/components/poll/TierAvatar";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CheckCircle2Icon, AlertCircleIcon, Download } from "lucide-react";
 import { exportTierListFromData } from "@/lib/exportImage";
+import { getOriginalImageUrl } from "@/Lib/imageUtils";
 import axios from "@/lib/axios";
 import JSZip from "jszip";
 import "./poll.css";
@@ -16,6 +17,7 @@ type Candidate = {
     name: string;
     title?: string | null;
     imageUrl: string | null;
+    originalUrl?: string | null;
     category?: string | null; // Keep for legacy fallback if needed
 };
 
@@ -476,7 +478,9 @@ export default function TierBoard({
         return extFromUrlPath(url) || extFromMime(blob.type) || 'png';
     }
 
-    async function downloadImage(url: string, name: string) {
+    async function downloadSingleCandidateImage(candidate: Candidate) {
+        const url = getOriginalImageUrl(candidate);
+        if (!url) return;
         try {
             const res = await fetch(url);
             const blob = await res.blob();
@@ -484,7 +488,7 @@ export default function TierBoard({
             const blobUrl = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = blobUrl;
-            a.download = `${safeFilename(name)}.${ext}`;
+            a.download = `${safeFilename(candidate.name)}.${ext}`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -496,22 +500,23 @@ export default function TierBoard({
 
     const [isDownloadingAll, setIsDownloadingAll] = useState(false);
 
-    async function downloadAllImages(candidates: Candidate[]) {
+    async function downloadAllImages(candidates: Candidate[], groupName?: string) {
         setIsDownloadingAll(true);
         try {
             const zip = new JSZip();
             for (const c of candidates) {
-                if (!c.imageUrl) continue;
-                const res = await fetch(c.imageUrl);
+                const url = getOriginalImageUrl(c);
+                if (!url) continue;
+                const res = await fetch(url);
                 const blob = await res.blob();
-                const ext = pickExtension(c.imageUrl, blob);
+                const ext = pickExtension(url, blob);
                 zip.file(`${safeFilename(c.name)}.${ext}`, blob);
             }
             const content = await zip.generateAsync({ type: 'blob' });
             const blobUrl = URL.createObjectURL(content);
             const a = document.createElement('a');
             a.href = blobUrl;
-            a.download = 'jolani-images.zip';
+            a.download = `${safeFilename(groupName || 'tierlist')}-images.zip`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -580,12 +585,12 @@ export default function TierBoard({
                                     } w-[104px] sm:w-[120px]`}
                                 data-selected={selected ? "1" : undefined}
                             >
-                                {isJolaniGroup && c.imageUrl && (
+                                {c.imageUrl && (
                                     <button
                                         type="button"
-                                        onClick={(e) => { e.stopPropagation(); downloadImage(c.imageUrl!, c.name); }}
+                                        onClick={(e) => { e.stopPropagation(); downloadSingleCandidateImage(c); }}
                                         className="absolute top-1 left-1 z-10 p-0.5 rounded bg-black/50 text-white hidden sm:block sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-black/70"
-                                        title="تحميل الصورة"
+                                        title="تحميل الصورة الأصلية"
                                     >
                                         <Download size={14} />
                                     </button>
@@ -649,12 +654,15 @@ export default function TierBoard({
                 </div>
             )}
 
-            {isJolaniGroup && (
+            {[...bank, ...tierKeys.flatMap(k => tiers[k])].length > 0 && (
                 <div className="flex justify-center mb-4">
                     <Button
                         type="button"
                         variant="outline"
-                        onClick={() => downloadAllImages([...bank, ...tierKeys.flatMap(k => tiers[k])])}
+                        onClick={() => {
+                            const activeGroup = groups.find(g => g.id === selectedGroupId);
+                            downloadAllImages([...bank, ...tierKeys.flatMap(k => tiers[k])], activeGroup?.name);
+                        }}
                         disabled={isDownloadingAll}
                         className="gap-1.5"
                     >
@@ -667,10 +675,10 @@ export default function TierBoard({
                                 جاري التحميل...
                             </span>
                         ) : (
-                            <>
-                                <Download size={14} />
-                               تحميل صور جميع الشخصيات
-                            </>
+                            <span className="inline-flex items-center gap-2">
+                                <Download size={16} />
+                                تحميل جميع صور {groups.find(g => g.id === selectedGroupId)?.name || 'التصنيف'}
+                            </span>
                         )}
                     </Button>
                 </div>
@@ -755,12 +763,12 @@ export default function TierBoard({
                                             } w-[104px] sm:w-[120px]`}
                                         data-selected={selected ? "1" : undefined}
                                     >
-                                        {isJolaniGroup && c.imageUrl && (
+                                        {c.imageUrl && (
                                             <button
                                                 type="button"
-                                                onClick={(e) => { e.stopPropagation(); downloadImage(c.imageUrl!, c.name); }}
+                                                onClick={(e) => { e.stopPropagation(); downloadSingleCandidateImage(c); }}
                                                 className="absolute top-1 left-1 z-10 p-0.5 rounded bg-black/50 text-white hidden sm:block sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-black/70"
-                                                title="تحميل الصورة"
+                                                title="تحميل الصورة الأصلية"
                                             >
                                                 <Download size={14} />
                                             </button>

@@ -36,6 +36,7 @@ class PollController extends Controller
             'name' => $c->name,
             'title' => $c->title,
             'imageUrl' => $c->image_url ?: null,
+            'originalUrl' => $c->image_url ?: null,
             'category' => $c->category,
             'candidate_group_id' => $c->candidate_group_id,
         ]);
@@ -66,6 +67,7 @@ class PollController extends Controller
             'name' => $c->name,
             'title' => $c->title,
             'imageUrl' => $c->image_url ?: null,
+            'originalUrl' => $c->image_url ?: null,
             'category' => $c->category,
             'candidate_group_id' => $c->candidate_group_id,
         ]);
@@ -277,6 +279,7 @@ class PollController extends Controller
             'name' => $c?->name ?? '',
             'title' => $c?->title,
             'imageUrl' => $c?->image_url,
+            'originalUrl' => $c?->image_url,
             'category' => $c?->category,
             'groupId' => $c?->candidate_group_id,
             'status' => $c?->status ?? 'active',

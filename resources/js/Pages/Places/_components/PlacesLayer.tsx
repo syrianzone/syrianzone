@@ -35,6 +35,7 @@ export function PlacesLayer(props: {
         cluster: true,
         clusterRadius: 25,
         clusterMaxZoom: 10,
+        promoteId: 'id',
       });
 
       map.addLayer({
@@ -67,7 +68,7 @@ export function PlacesLayer(props: {
         source: SOURCE_ID,
         filter: ['!', ['has', 'point_count']],
         paint: {
-          'circle-radius': selectedIdRef.current == null ? 6 : ['case', ['==', ['get', 'id'], selectedIdRef.current], 9, 6],
+          'circle-radius': ['case', ['boolean', ['feature-state', 'selected'], false], 9, 6],
           'circle-color': '#7d8a5c',
           'circle-stroke-width': 1.5,
           'circle-stroke-color': '#ffffff',
@@ -139,15 +140,18 @@ export function PlacesLayer(props: {
     } catch { /* map style may not be ready */ }
   }, [props.data, map]);
 
-  // update selection ring
+  // update selection using fast GPU feature-state
+  const prevSelectedIdRef = useRef<number | null>(null);
   useEffect(() => {
     try {
-      if (!map.getLayer('place-pin')) return;
-      map.setPaintProperty(
-        'place-pin',
-        'circle-radius',
-        props.selectedId == null ? 6 : ['case', ['==', ['get', 'id'], props.selectedId], 9, 6],
-      );
+      if (!map.getSource(SOURCE_ID)) return;
+      if (prevSelectedIdRef.current !== null) {
+        map.setFeatureState({ source: SOURCE_ID, id: prevSelectedIdRef.current }, { selected: false });
+      }
+      if (props.selectedId !== null) {
+        map.setFeatureState({ source: SOURCE_ID, id: props.selectedId }, { selected: true });
+      }
+      prevSelectedIdRef.current = props.selectedId;
     } catch { /* layer not ready */ }
   }, [props.selectedId, map]);
 

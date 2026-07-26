@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
 import { Head } from '@inertiajs/react';
 import { X } from 'lucide-react';import MainLayout from '@/Layouts/MainLayout';
-import { PlacesMap } from './_components/PlacesMap';
 import { FilterBar, parseLatLng, type ViewFilter } from './_components/FilterBar';
 import { PhotoGrid } from './_components/PhotoGrid';
 import { PlacesPanel } from './_components/PlacesPanel';
@@ -11,6 +10,8 @@ import { BottomSheet } from '../Transit/_components/BottomSheet';
 import { api, extractError } from './_lib/api';
 import { discovery, type GridPhoto } from './_lib/discovery';
 import type { GeoSuggestion, HotelFeatureCollection, LatLng, Paginated, PlaceCategory, PlaceFeatureCollection, PlaceListItem } from './_lib/types';
+
+const PlacesMap = lazy(() => import('./_components/PlacesMap').then(m => ({ default: m.PlacesMap })));
 
 const EMPTY_HOTEL_GEOJSON: HotelFeatureCollection = { type: 'FeatureCollection', features: [] };
 
@@ -177,18 +178,15 @@ export default function Index() {
   const filteredFeatures = useMemo<PlaceFeatureCollection>(() => {
     // when viewFilter is 'hotels', hide all place pins
     if (viewFilter === 'hotels') return { type: 'FeatureCollection', features: [] };
-    // a coordinate query jumps the map; it must not filter the pins away
-    const q = coordCandidate ? '' : query.trim();
     return {
       type: 'FeatureCollection',
       features: (features?.features ?? []).filter(
         (f) =>
           (category === null || f.properties.category === category) &&
-          (guide === null || f.properties.user_id === guide.id) &&
-          (q === '' || f.properties.name.includes(q)),
+          (guide === null || f.properties.user_id === guide.id),
       ),
     };
-  }, [features, category, query, coordCandidate, guide, viewFilter]);
+  }, [features, category, guide, viewFilter]);
 
   const filteredHotelFeatures = useMemo<HotelFeatureCollection>(() => {
     const result = viewFilter === 'places' ? EMPTY_HOTEL_GEOJSON : hotelFeatures;
@@ -280,20 +278,22 @@ export default function Index() {
         <meta name="description" content="خريطة تفاعلية لأماكن تستحق المشوار في سوريا" />
       </Head>
       <main dir="rtl" className="relative h-[calc(100dvh-4rem)] overflow-hidden">
-        <PlacesMap
-          features={filteredFeatures}
-          hotelFeatures={filteredHotelFeatures}
-          selectedId={selectedId}
-          selectedType={selectedType}
-          addMode={addMode}
-          focus={focus}
-          highlight={highlight}
-          onPinClick={handlePinClick}
-          onHotelPinClick={handleHotelPinClick}
-          onMapClick={handleMapClick}
-          // bottom-56 keeps the map's bottom-left controls above the collapsed mobile sheet
-          className="absolute inset-0"
-        />
+        <Suspense fallback={<div className="absolute inset-0 bg-background flex items-center justify-center text-muted-foreground">جاري تحميل الخريطة...</div>}>
+          <PlacesMap
+            features={filteredFeatures}
+            hotelFeatures={filteredHotelFeatures}
+            selectedId={selectedId}
+            selectedType={selectedType}
+            addMode={addMode}
+            focus={focus}
+            highlight={highlight}
+            onPinClick={handlePinClick}
+            onHotelPinClick={handleHotelPinClick}
+            onMapClick={handleMapClick}
+            // bottom-56 keeps the map's bottom-left controls above the collapsed mobile sheet
+            className="absolute inset-0"
+          />
+        </Suspense>
 
         {/* stays mounted across view switches so fetched pages survive; renders null on the map view */}
         <PhotoGrid

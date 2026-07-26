@@ -9,7 +9,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Trash2, Edit2, Save, X, MoreVertical, Star as StarIcon, ArrowLeft, ArrowRight, Archive, Undo2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { useUploadThing } from "@/lib/uploadthing";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -192,18 +191,28 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [isDragging, setIsDragging] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
 
-    const { startUpload, isUploading } = useUploadThing("candidateImage", {
-        onClientUploadComplete: (res) => {
-            const url = (res?.[0] as any)?.serverData?.url || (res?.[0] as any)?.ufsUrl || (res?.[0] as any)?.url;
+    const startUpload = async (files: File[]) => {
+        if (!files || files.length === 0) return;
+        setIsUploading(true);
+        try {
+            const formData = new FormData();
+            formData.append("file", files[0]);
+            formData.append("folder", "candidates");
+            const res = await axios.post("/api/v1/admin/assets/upload", formData, {
+                headers: { "Content-Type": "multipart/form-data" },
+            });
+            const url = res.data?.url;
             if (url) setCImage(url);
             setUploadError(null);
-        },
-        onUploadError: (err) => {
+        } catch (err: any) {
             console.error(err);
-            setUploadError(err.message || "Upload failed");
-        },
-    });
+            setUploadError(err.response?.data?.message || err.message || "Upload failed");
+        } finally {
+            setIsUploading(false);
+        }
+    };
 
     const handleDroppedFiles = (files: FileList | null) => {
         const file = files?.[0];

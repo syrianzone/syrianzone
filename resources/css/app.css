@@ -7,6 +7,12 @@
 
 @plugin "tailwindcss-animate";
 
+/* Ensure all typography declarations swap instantly to avoid FOIT */
+@font-face {
+    font-family: 'IBM Plex Sans Arabic';
+    font-display: swap;
+}
+
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, [data-theme="dark-blue"], [data-theme="dark-blue"] *, [data-theme="dark-purple"], [data-theme="dark-purple"] *, [data-theme="dark-green"], [data-theme="dark-green"] *, [data-theme="high-contrast"], [data-theme="high-contrast"] *, [data-theme="damascus-rose"], [data-theme="damascus-rose"] *, .dark, .dark *));
 
 @theme {

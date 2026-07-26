@@ -51,54 +51,43 @@ export default function RouteLayer({ data }: RouteLayerProps) {
       },
     })
 
-    // Wider invisible hit target so thin lines are easy to click
-    map.addLayer({
-      id: 'routes-line-hit',
-      type: 'line',
-      source: 'routes-source',
-      paint: {
-        'line-width': 16,
-        'line-opacity': 0,
-      },
-    })
-
-    const onEnter = () => {
-      if (!selectedRouteIdRef.current) map.getCanvas().style.cursor = 'pointer'
-    }
-    const onLeave = () => { map.getCanvas().style.cursor = '' }
-
-    const onRouteClick = (e: maplibregl.MapMouseEvent & { features?: maplibregl.MapGeoJSONFeature[] }) => {
+    const onMouseMove = (e: maplibregl.MapMouseEvent) => {
       if (selectedRouteIdRef.current) return
-      if (!e.features || e.features.length === 0) return
-      const props = e.features[0].properties as RouteProperties
-      const container = map.getContainer()
-      const mx = Math.min(Math.max(e.point.x, 140), container.clientWidth - 140)
-      const my = e.point.y
-      setActiveRoute({ props, x: mx, y: my })
-      setSelectedRouteId(props.id)
+      const bbox: [maplibregl.PointLike, maplibregl.PointLike] = [
+        [e.point.x - 8, e.point.y - 8],
+        [e.point.x + 8, e.point.y + 8],
+      ]
+      const hits = map.queryRenderedFeatures(bbox, { layers: ['routes-line'] })
+      map.getCanvas().style.cursor = hits.length > 0 ? 'pointer' : ''
     }
 
     const onMapClick = (e: maplibregl.MapMouseEvent) => {
       if (selectedRouteIdRef.current) return
-      const hits = map.queryRenderedFeatures(e.point, { layers: ['routes-line-hit'] })
-      if (hits.length === 0) {
+      const bbox: [maplibregl.PointLike, maplibregl.PointLike] = [
+        [e.point.x - 8, e.point.y - 8],
+        [e.point.x + 8, e.point.y + 8],
+      ]
+      const hits = map.queryRenderedFeatures(bbox, { layers: ['routes-line'] })
+      if (hits.length > 0) {
+        const props = hits[0].properties as RouteProperties
+        const container = map.getContainer()
+        const mx = Math.min(Math.max(e.point.x, 140), container.clientWidth - 140)
+        const my = e.point.y
+        setActiveRoute({ props, x: mx, y: my })
+        setSelectedRouteId(props.id)
+      } else {
         setActiveRoute(null)
         setSelectedRouteId(null)
       }
     }
 
-    map.on('mouseenter', 'routes-line-hit', onEnter)
-    map.on('mouseleave', 'routes-line-hit', onLeave)
-    map.on('click', 'routes-line-hit', onRouteClick)
+    map.on('mousemove', onMouseMove)
     map.on('click', onMapClick)
 
     return () => {
-      map.off('mouseenter', 'routes-line-hit', onEnter)
-      map.off('mouseleave', 'routes-line-hit', onLeave)
-      map.off('click', 'routes-line-hit', onRouteClick)
+      map.off('mousemove', onMouseMove)
       map.off('click', onMapClick)
       try {
-        if (map.getLayer('routes-line-hit')) map.removeLayer('routes-line-hit')
         if (map.getLayer('routes-line')) map.removeLayer('routes-line')
         if (map.getSource('routes-source')) map.removeSource('routes-source')
       } catch { /* map already removed */ }

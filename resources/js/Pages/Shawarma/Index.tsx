@@ -37,34 +37,34 @@ const tiers: Tier[] = [
         rank: 'S',
         color: 'text-red-500',
         spots: [
-            { name: 'Just Shawarma', logo: '/assets/shawarma/just-shawarma.png', href: 'https://www.instagram.com/justshawarma.sy/', social: 'instagram' },
-            { name: 'Alger', logo: '/assets/shawarma/alager.png', href: 'https://www.instagram.com/shawrma.alaghr/', social: 'instagram' },
-            { name: 'Check In', logo: '/assets/shawarma/checkin.jpg', href: 'https://www.instagram.com/checkin.sy/', social: 'instagram' },
-            { name: 'Sbenti', logo: '/assets/shawarma/sbenti.png', href: 'https://www.facebook.com/p/Spenti-snak-100063744110605/', social: 'facebook' },
+            { name: 'Just Shawarma', logo: '/assets/shawarma/just-shawarma.webp', href: 'https://www.instagram.com/justshawarma.sy/', social: 'instagram' },
+            { name: 'Alger', logo: '/assets/shawarma/alager.webp', href: 'https://www.instagram.com/shawrma.alaghr/', social: 'instagram' },
+            { name: 'Check In', logo: '/assets/shawarma/checkin.webp', href: 'https://www.instagram.com/checkin.sy/', social: 'instagram' },
+            { name: 'Sbenti', logo: '/assets/shawarma/sbenti.webp', href: 'https://www.facebook.com/p/Spenti-snak-100063744110605/', social: 'facebook' },
         ],
     },
     {
         rank: 'A',
         color: 'text-orange-500',
         spots: [
-            { name: 'Kamal Ayash', logo: '/assets/shawarma/Kamal-Ayash.jpg', href: 'https://www.instagram.com/kamalayash1/', social: 'instagram' },
-            { name: 'Paprika', logo: '/assets/shawarma/paprika.jpg', href: 'https://www.instagram.com/paprika.syria', social: 'instagram' },
+            { name: 'Kamal Ayash', logo: '/assets/shawarma/Kamal-Ayash.webp', href: 'https://www.instagram.com/kamalayash1/', social: 'instagram' },
+            { name: 'Paprika', logo: '/assets/shawarma/paprika.webp', href: 'https://www.instagram.com/paprika.syria', social: 'instagram' },
         ],
     },
     {
         rank: 'B',
         color: 'text-yellow-400',
         spots: [
-            { name: 'Shawerha', logo: '/assets/shawarma/SHAWERHA.png', href: 'https://www.instagram.com/shawerhaofficial/', social: 'instagram' },
-            { name: 'Faruk', logo: '/assets/shawarma/faruk.jpg', href: 'https://www.instagram.com/alfarouk.res/', social: 'instagram' },
-            { name: 'Abu Rateb', logo: '/assets/shawarma/abu-rateb.png', href: 'https://www.instagram.com/aburatebchicken', social: 'instagram' },
+            { name: 'Shawerha', logo: '/assets/shawarma/SHAWERHA.webp', href: 'https://www.instagram.com/shawerhaofficial/', social: 'instagram' },
+            { name: 'Faruk', logo: '/assets/shawarma/faruk.webp', href: 'https://www.instagram.com/alfarouk.res/', social: 'instagram' },
+            { name: 'Abu Rateb', logo: '/assets/shawarma/abu-rateb.webp', href: 'https://www.instagram.com/aburatebchicken', social: 'instagram' },
         ],
     },
     {
         rank: 'C',
         color: 'text-green-500',
         spots: [
-            { name: 'Alaga', logo: '/assets/shawarma/alaga.png', href: 'https://www.facebook.com/alagha.Broast.shawarma/', social: 'facebook' },
+            { name: 'Alaga', logo: '/assets/shawarma/alaga.webp', href: 'https://www.facebook.com/alagha.Broast.shawarma/', social: 'facebook' },
         ],
     },
 ];

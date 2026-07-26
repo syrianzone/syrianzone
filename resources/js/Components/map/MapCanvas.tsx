@@ -54,6 +54,8 @@ export function MapCanvas({
       center: initCenter ?? [38.0, 35.0],
       zoom: initZoom ?? 6.2,
       attributionControl: false,
+      fadeDuration: 0,
+      maxTileCacheSize: 50,
     };
     if (initBounds) {
       mapOptions.bounds = initBounds;

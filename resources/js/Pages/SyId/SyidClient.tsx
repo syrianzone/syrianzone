@@ -22,33 +22,33 @@ const COLOR_PALETTES = [
     {
         name: 'Forest',
         colors: [
-            { hex: '#428177', cmyk: 'C76% M32% Y54% K10%', oklch: 'oklch(0.536 0.061 189.6)', textColor: 'white' },
-            { hex: '#054239', cmyk: 'C89% M49% Y70% K50%', oklch: 'oklch(0.334 0.057 186.2)', textColor: 'white' },
-            { hex: '#002623', cmyk: 'C87% M59% Y68% K71%', oklch: 'oklch(0.208 0.038 184.5)', textColor: 'white' },
+            { hex: '#428177', hsl: 'hsl(171 32% 38%)', cmyk: 'C76% M32% Y54% K10%', oklch: 'oklch(0.536 0.061 189.6)', textColor: 'white' },
+            { hex: '#054239', hsl: 'hsl(171 86% 14%)', cmyk: 'C89% M49% Y70% K50%', oklch: 'oklch(0.334 0.057 186.2)', textColor: 'white' },
+            { hex: '#002623', hsl: 'hsl(173 100% 7%)', cmyk: 'C87% M59% Y68% K71%', oklch: 'oklch(0.208 0.038 184.5)', textColor: 'white' },
         ]
     },
     {
         name: 'Golden Wheat',
         colors: [
-            { hex: '#edebe0', cmyk: 'C6% M9% Y19% K0%', oklch: 'oklch(0.938 0.010 95.8)', textColor: 'black' },
-            { hex: '#b9a779', cmyk: 'C20% M29% Y52% K7%', oklch: 'oklch(0.722 0.063 88.5)', textColor: 'black' },
-            { hex: '#988561', cmyk: 'C39% M46% Y67% K20%', oklch: 'oklch(0.598 0.058 87.2)', textColor: 'white' },
+            { hex: '#edebe0', hsl: 'hsl(49 26% 90%)', cmyk: 'C6% M9% Y19% K0%', oklch: 'oklch(0.938 0.010 95.8)', textColor: 'black' },
+            { hex: '#b9a779', hsl: 'hsl(43 32% 60%)', cmyk: 'C20% M29% Y52% K7%', oklch: 'oklch(0.722 0.063 88.5)', textColor: 'black' },
+            { hex: '#988561', hsl: 'hsl(40 22% 49%)', cmyk: 'C39% M46% Y67% K20%', oklch: 'oklch(0.598 0.058 87.2)', textColor: 'white' },
         ]
     },
     {
         name: 'Deep Umber',
         colors: [
-            { hex: '#6b1f2a', cmyk: 'C35% M92% Y72% K46%', oklch: 'oklch(0.354 0.108 20.7)', textColor: 'white' },
-            { hex: '#4a151e', cmyk: 'C44% M86% Y68% K65%', oklch: 'oklch(0.279 0.083 19.5)', textColor: 'white' },
-            { hex: '#260f14', cmyk: 'C60% M75% Y64% K79%', oklch: 'oklch(0.183 0.039 18.2)', textColor: 'white' },
+            { hex: '#6b1f2a', hsl: 'hsl(351 55% 27%)', cmyk: 'C35% M92% Y72% K46%', oklch: 'oklch(0.354 0.108 20.7)', textColor: 'white' },
+            { hex: '#4a151e', hsl: 'hsl(350 56% 19%)', cmyk: 'C44% M86% Y68% K65%', oklch: 'oklch(0.279 0.083 19.5)', textColor: 'white' },
+            { hex: '#260f14', hsl: 'hsl(348 43% 10%)', cmyk: 'C60% M75% Y64% K79%', oklch: 'oklch(0.183 0.039 18.2)', textColor: 'white' },
         ]
     },
     {
         name: 'Charcoal',
         colors: [
-            { hex: '#ffffff', cmyk: 'C0% M0% Y0% K0%', oklch: 'oklch(1 0 0)', textColor: 'black' },
-            { hex: '#3d3a3b', cmyk: 'C67% M53% Y60% K50%', oklch: 'oklch(0.344 0.005 348.0)', textColor: 'white' },
-            { hex: '#161616', cmyk: 'C73% M67% Y65% K80%', oklch: 'oklch(0.185 0 0)', textColor: 'white' },
+            { hex: '#ffffff', hsl: 'hsl(0 0% 100%)', cmyk: 'C0% M0% Y0% K0%', oklch: 'oklch(1 0 0)', textColor: 'black' },
+            { hex: '#3d3a3b', hsl: 'hsl(340 3% 24%)', cmyk: 'C67% M53% Y60% K50%', oklch: 'oklch(0.344 0.005 348.0)', textColor: 'white' },
+            { hex: '#161616', hsl: 'hsl(0 0% 9%)', cmyk: 'C73% M67% Y65% K80%', oklch: 'oklch(0.185 0 0)', textColor: 'white' },
         ]
     },
 ];
@@ -216,6 +216,7 @@ export default function SyidClient() {
                                     <div className="grid grid-cols-3 gap-2">
                                         {palette.colors.map((color) => {
                                             const hexKey = `${color.hex}-hex`;
+                                            const hslKey = `${color.hex}-hsl`;
                                             const cmykKey = `${color.hex}-cmyk`;
                                             const oklchKey = `${color.hex}-oklch`;
 
@@ -237,8 +238,15 @@ export default function SyidClient() {
                                                         {copiedKey === hexKey ? <Check className="h-3 w-3 text-green-400" /> : <Copy className="h-3 w-3 opacity-70" />}
                                                     </button>
 
-                                                    {/* CMYK & OKLCH format clicks */}
+                                                    {/* HSL, CMYK & OKLCH format clicks */}
                                                     <div className="space-y-1 text-[10px] font-mono dir-ltr mt-2">
+                                                        <button
+                                                            onClick={() => copyToClipboard(color.hsl, hslKey)}
+                                                            className="flex items-center justify-between w-full p-0.5 px-1 rounded bg-black/15 hover:bg-black/25 transition-colors truncate"
+                                                        >
+                                                            <span className="truncate">{color.hsl}</span>
+                                                            {copiedKey === hslKey ? <Check className="h-2.5 w-2.5 text-green-400 shrink-0" /> : <Copy className="h-2.5 w-2.5 opacity-60 shrink-0" />}
+                                                        </button>
                                                         <button
                                                             onClick={() => copyToClipboard(color.cmyk, cmykKey)}
                                                             className="flex items-center justify-between w-full p-0.5 px-1 rounded bg-black/15 hover:bg-black/25 transition-colors truncate"

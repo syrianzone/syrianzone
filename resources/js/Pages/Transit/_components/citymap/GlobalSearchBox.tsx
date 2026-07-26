@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useContext, useRef } from 'react'
 import { MapContext } from '@/Components/map/MapContext'
+import { useMapStore } from '../../_store/useMapStore'
 import { Input } from '@/Components/ui/input'
 import { Card } from '@/Components/ui/card'
 import { Badge } from '@/Components/ui/badge'

@@ -12,6 +12,7 @@ interface BottomSheetProps {
   className?: string
   storageKey?: string
   initialHeight?: number
+  hideBreakpoint?: 'sm' | 'md' | 'lg'
   onHeightChange?: (height: number) => void
 }
 
@@ -27,7 +28,14 @@ function getInitialHeight(storageKey?: string, initial?: number) {
   return initial ?? MINIMAL_HEIGHT
 }
 
-export function BottomSheet({ children, className, storageKey, initialHeight, onHeightChange }: BottomSheetProps) {
+export function BottomSheet({
+  children,
+  className,
+  storageKey,
+  initialHeight,
+  hideBreakpoint = 'sm',
+  onHeightChange
+}: BottomSheetProps) {
   const [sheetHeight, setSheetHeight] = useState(() => getInitialHeight(storageKey, initialHeight))
   const [isDragging, setIsDragging] = useState(false)
 
@@ -92,11 +100,13 @@ export function BottomSheet({ children, className, storageKey, initialHeight, on
   const naturalTotal = contentHeight + HANDLE_HEIGHT
   const renderedHeight = isDragging ? sheetHeight : Math.min(sheetHeight, Math.max(MINIMAL_HEIGHT, naturalTotal))
 
+  const hideClass = hideBreakpoint === 'md' ? 'md:!hidden' : hideBreakpoint === 'lg' ? 'lg:!hidden' : 'sm:!hidden'
+
   return (
     <div
       className={cn(
         'fixed inset-x-0 bottom-0 z-40 bg-card border-t border-border flex flex-col overflow-hidden',
-        'sm:hidden',
+        hideClass,
         isDragging ? 'transition-none' : 'transition-[height] duration-200 ease-out',
         className
       )}
@@ -125,7 +135,7 @@ export function BottomSheet({ children, className, storageKey, initialHeight, on
 
       {progress > 0.85 && (
         <div
-          className="fixed inset-0 -z-10 bg-black/40 sm:hidden transition-opacity duration-200"
+          className={cn('fixed inset-0 -z-10 bg-black/40 transition-opacity duration-200', hideClass)}
           style={{ opacity: (progress - 0.85) / 0.15 * 0.5 }}
           onClick={() => {
             updateHeight(MINIMAL_HEIGHT)

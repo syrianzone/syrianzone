@@ -1474,13 +1474,16 @@ function TransitStudioPageContent() {
         </aside>
 
         {/* Mobile Resizable Bottom Sheet Drawer (visible on mobile, hidden on md+) */}
-        <BottomSheet
-          storageKey="transit:studio:sheet-height"
-          initialHeight={340}
-          className="md:hidden border-t border-border shadow-2xl z-30"
-        >
-          {sidebarControlsContent}
-        </BottomSheet>
+        <div className="block md:hidden">
+          <BottomSheet
+            storageKey="transit:studio:sheet-height"
+            initialHeight={340}
+            hideBreakpoint="md"
+            className="border-t border-border shadow-2xl z-30"
+          >
+            {sidebarControlsContent}
+          </BottomSheet>
+        </div>
 
         {/* Map Container */}
         <div className="studio-map-wrapper flex-1 relative h-full">

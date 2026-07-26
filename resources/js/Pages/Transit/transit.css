@@ -114,7 +114,7 @@
 }
 
 .transit-shell {
-  min-height: 100vh;
+  height: 100%;
 }
 
 /* Map full height inside main */
@@ -122,8 +122,13 @@
   height: 100%;
 }
 
-/* Mobile drawer overlay */
+/* Mobile bottom sheet offset for MapLibre controls */
 @media (max-width: 767px) {
+  .transit-root .maplibregl-ctrl-bottom-left,
+  .transit-root .maplibregl-ctrl-bottom-right {
+    bottom: 260px !important;
+  }
+
   .transit-sidebar {
     box-shadow: 0 0 40px rgba(0,0,0,0.3);
   }

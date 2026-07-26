@@ -143,7 +143,7 @@ export default function NearbyTransitDrawer() {
   return (
     <>
       {/* Floating action buttons */}
-      <div className="absolute bottom-6 left-4 z-20 flex flex-col gap-2">
+      <div className="absolute bottom-[270px] sm:bottom-6 left-4 z-20 flex flex-col gap-2">
         <button
           onClick={panToLocation}
           disabled={locationStatus !== 'available'}

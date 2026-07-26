@@ -25,9 +25,13 @@ function FitToCity({ bounds }: { bounds: [[number, number], [number, number]] })
   useEffect(() => {
     if (!map) return
 
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
     const fit = () => {
       if (!map.loaded()) return
-      map.fitBounds(bounds, { padding: 40, duration: 0 })
+      map.fitBounds(bounds, {
+        padding: { top: 40, bottom: isMobile ? 260 : 40, left: 40, right: 40 },
+        duration: 0
+      })
     }
 
     if (map.loaded()) {
@@ -50,6 +54,8 @@ function FitToSelectedRoute({ routes }: { routes: FeatureCollection<RoutePropert
 
     const feature = routes.features.find(f => f.properties.id === selectedRouteId)
     if (!feature) return
+
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
 
     const fit = () => {
       if (!map.loaded()) return
@@ -75,7 +81,11 @@ function FitToSelectedRoute({ routes }: { routes: FeatureCollection<RoutePropert
         const center = b.getCenter()
         map.flyTo({ center, zoom: 14, duration: 600 })
       } else {
-        map.fitBounds(b, { padding: 80, duration: 600, maxZoom: 16 })
+        map.fitBounds(b, {
+          padding: { top: 80, bottom: isMobile ? 270 : 80, left: 60, right: 60 },
+          duration: 600,
+          maxZoom: 16
+        })
       }
     }
 

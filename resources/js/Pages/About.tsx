@@ -52,7 +52,16 @@ export default function About() {
                                     مرحبًا بكم في <strong>المساحة السورية (Syrian Zone)</strong>! هذا المشروع هو جهد تعاوني مفتوح المصدر يهدف إلى توفير أدوات وموارد متنوعة ومفيدة للمجتمع السوري.
                                 </p>
                                 <p>
-                                    نهدف من خلال هذا المشروع إلى بناء مساحة برمجية تتميز بالبساطة والقيمة العالية، وسهولة الوصول، والإطلاق السريع للأدوات المفتوحة التي تهم السوريين في الداخل والدول المجاورة ودول الاغتراب.
+                                    تضم المنصة مجموعة من المشاريع التفاعلية الأساسية:
+                                </p>
+                                <ul className="list-disc list-inside space-y-1.5 mr-2">
+                                    <li><strong>مشوار (Mishwar):</strong> دليل مجتمعي تفاعلي للأماكن، الفنادق، والمرشدين المحليين في مختلف المحافظات.</li>
+                                    <li><strong>النقل والمواصلات (Transit):</strong> خرائط تفاعلية لخطوط السرافيس والنقل الداخلي والمواقف واستوديو الرسم التشاركي.</li>
+                                    <li><strong>أطلس السكان (Population Atlas):</strong> خرائط ومعلومات ديمغرافية تفاعلية للمحافظات والتقسيمات الإدارية.</li>
+                                    <li><strong>تقييم الأداء والحسابات الرسمية:</strong> نظام استطلاعات الرأي (التيير ليست) ودليل الحسابات والأرقام الخدمية الرسمية.</li>
+                                </ul>
+                                <p>
+                                    نهدف من خلال هذا المشروع إلى بناء مساحة برمجية تتميز بالبساطة والقيمة العالية، وسهولة الوصول، والإطلاق السريع للأدوات المفتوحة التي تهم السوريين في الداخل ودول الاغتراب.
                                 </p>
                             </CardContent>
                         </Card>
@@ -190,8 +199,9 @@ export default function About() {
                                     حقوق الموارد والأيقونات (Attributions)
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="text-xs leading-relaxed text-muted-foreground">
-                                الأيقونات المستعملة في أدوات ومشاريع المنصة مأخوذة من مجموعات Streamline Icons ومتاحة بموجب رخصة Creative Commons Attribution 4.0 International (CC BY 4.0).
+                            <CardContent className="text-xs leading-relaxed text-muted-foreground space-y-2">
+                                <p>الأيقونات المستعملة في أدوات ومشاريع المنصة مأخوذة من مجموعات Streamline Icons ومتاحة بموجب رخصة Creative Commons Attribution 4.0 International (CC BY 4.0).</p>
+                                <p>بيانات الخرائط التفاعلية في الترانزيت ومشوار مستندة إلى OpenStreetMap وMapLibre GL JS بموجب رخصة ODbL / Open Data Commons.</p>
                             </CardContent>
                         </Card>
                     </TabsContent>
@@ -211,6 +221,15 @@ export default function About() {
                                 <p>
                                     Welcome to <strong>Syrian Zone (المساحة السورية)</strong>! This project is an open-source collaborative effort aimed at building open resources, interactive tools, and data hubs for the Syrian community.
                                 </p>
+                                <p>
+                                    Key platform features include:
+                                </p>
+                                <ul className="list-disc list-inside space-y-1.5 ml-2">
+                                    <li><strong>Mishwar:</strong> Interactive community guide for local places, hotels, and guides across Syrian governorates.</li>
+                                    <li><strong>Transit & Navigation:</strong> Interactive maps for public microbus lines, stops, and collaborative route studio drawing.</li>
+                                    <li><strong>Population Atlas:</strong> Interactive demographic maps and administrative divisions.</li>
+                                    <li><strong>Community Evaluations & Official Accounts:</strong> Cabinet performance tierlists, public polls, and official directory hub.</li>
+                                </ul>
                                 <p>
                                     We aim to create high-value, accessible, and lightweight open software solutions for Syrians locally and across the diaspora.
                                 </p>
@@ -350,8 +369,9 @@ export default function About() {
                                     Resource Attributions
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="text-xs leading-relaxed text-muted-foreground">
-                                Tool and project icons are derived from Streamline Icons via Icones under Creative Commons Attribution 4.0 International (CC BY 4.0).
+                            <CardContent className="text-xs leading-relaxed text-muted-foreground space-y-2">
+                                <p>Tool and project icons are derived from Streamline Icons via Icones under Creative Commons Attribution 4.0 International (CC BY 4.0).</p>
+                                <p>Interactive transit and place map data is powered by OpenStreetMap contributors and MapLibre GL JS under Open Data Commons (ODbL).</p>
                             </CardContent>
                         </Card>
                     </TabsContent>

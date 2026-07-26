@@ -22,7 +22,7 @@ export default function Privacy() {
                     </div>
                     <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">سياسة الخصوصية | Privacy Policy</h1>
                     <p className="text-muted-foreground max-w-xl mx-auto text-sm md:text-base">
-                        آخر تحديث: 10 يوليو 2026 | Last Updated: July 10, 2026
+                        آخر تحديث: 26 يوليو 2026 | Last Updated: July 26, 2026
                     </p>
                 </div>
 
@@ -49,7 +49,7 @@ export default function Privacy() {
                                     تلتزم منصة <strong>المساحة السورية (Syrian Zone)</strong> بحماية خصوصية مستخدميها. نحن منصة مفتوحة المصادر وغير تجارية، نهدف إلى تقديم أدوات تفاعلية وموارد مفتوحة للشعب السوري.
                                 </p>
                                 <p>
-                                    توضح هذه السياسة نوع البيانات التي نجمعها، وكيفية استخدامها، والتحكم الذي تمتلكه في بياناتك عند استخدام ميزاتنا التفاعلية مثل نظام التصويت (الاستطلاعات)، الترانزيت، وألعاب الأقران (Guess Who).
+                                    توضح هذه السياسة نوع البيانات التي نجمعها، وكيفية استخدامها، والتحكم الذي تمتلكه في بياناتك عند استخدام ميزاتنا التفاعلية مثل دليل الأماكن (مشوار)، خرائط النقل (الترانزيت)، نظام التصويت (الاستطلاعات)، وألعاب الأقران (Guess Who).
                                 </p>
                             </CardContent>
                         </Card>
@@ -64,11 +64,11 @@ export default function Privacy() {
                             </CardHeader>
                             <CardContent className="space-y-4 text-sm leading-relaxed text-muted-foreground">
                                 <p>
-                                    لتسهيل مساهمتك في "استوديو الترانزيت" (Transit Studio) واقتراح مسارات ومواقف حافلات جديدة، نتيح تسجيل الدخول الاختياري عبر حساب Google (Google OAuth). لا يتطلب تصفح الموقع أو المشاركة في استطلاعات الرأي وتقييمات الأداء (التيير ليست) تسجيل الدخول أو إنشاء أي حساب.
+                                    لتسهيل مساهمتك في "استوديو الترانزيت" (Transit Studio) وإضافة الأماكن أو الفنادق المحفوظة في "مشوار" (Mishwar)، نتيح تسجيل الدخول الاختياري عبر حساب Google (Google OAuth). لا يتطلب تصفح الموقع أو البحث في الخرائط والاستطلاعات تسجيل الدخول.
                                 </p>
                                 <ul className="list-disc list-inside space-y-2 mr-4">
                                     <li><strong>البيانات التي نجمعها:</strong> الاسم الكامل، البريد الإلكتروني، معرف جوجل الفريد (Google ID)، ورابط الصورة الشخصية (Avatar URL).</li>
-                                    <li><strong>الغرض:</strong> مصادقة الهوية، السماح لك بمتابعة وإدارة حسابك، وإرسال ومراجعة مسودات خطوط النقل والمواقف في "استوديو الترانزيت".</li>
+                                    <li><strong>الغرض:</strong> مصادقة الهوية، حفظ أفعالك ومساهماتك الشخصية، وإدارة مسودات النقل والأماكن المقترحة.</li>
                                     <li><strong>حذف الحساب والبيانات:</strong> يمكنك في أي وقت الانتقال إلى <Link href="/dashboard" className="text-primary hover:underline font-semibold">لوحة التحكم</Link> وحذف حسابك بشكل نهائي وفوري. يؤدي ذلك إلى مسح كافة بيانات ملفك الشخصي بالكامل من قاعدة بياناتنا.</li>
                                 </ul>
                             </CardContent>
@@ -86,14 +86,18 @@ export default function Privacy() {
                                 <p>
                                     نقوم بتخزين كمية محدودة جداً من البيانات لضمان تشغيل الخدمات التفاعلية:
                                 </p>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
                                     <div className="p-4 bg-muted/30 rounded-xl border border-border/50">
-                                        <h4 className="font-bold text-foreground mb-1.5 text-sm">استطلاعات الرأي والتقييمات (التيير ليست)</h4>
-                                        <p className="text-xs">المشاركة في التصويتات لا تتطلب تسجيل الدخول. لحماية نزاهة النتائج ومنع التصويت المتكرر، نقوم بتوليد مفتاح تعريف فريد يُحفظ في متصفحك (Cookies/LocalStorage) بالإضافة إلى بصمة مجزأة لعنوان الـ IP (hashed IP) ونوع المتصفح بشكل مؤقت. لا ترتبط هذه المعلومات بهويتك الحقيقية أبداً.</p>
+                                        <h4 className="font-bold text-foreground mb-1.5 text-sm">استطلاعات الرأي والتقييمات</h4>
+                                        <p className="text-xs">المشاركة في التصويتات لا تتطلب تسجيل الدخول. لحماية النتائج من التكرار، نقوم بتوليد مفتاح تعريف فريد في المتصفح وبصمة مجزأة لعنوان الـ IP بشكل مؤقت دون ربطها بهويتك.</p>
                                     </div>
                                     <div className="p-4 bg-muted/30 rounded-xl border border-border/50">
                                         <h4 className="font-bold text-foreground mb-1.5 text-sm">مسودات الترانزيت (Transit Studio)</h4>
-                                        <p className="text-xs">عند اقتراحك لمسارات أو مواقف باصات جديدة، نقوم بحفظ المسودة في قاعدة البيانات ليتسنى لمشرفي النظام مراجعتها واعتمادها.</p>
+                                        <p className="text-xs">عند اقتراح مسارات أو مواقف جديدة، نحفظ المسودة في قاعدة البيانات ليتسنى للمشرفين مراجعتها واعتمادها.</p>
+                                    </div>
+                                    <div className="p-4 bg-muted/30 rounded-xl border border-border/50">
+                                        <h4 className="font-bold text-foreground mb-1.5 text-sm">دليل الأماكن (مشوار)</h4>
+                                        <p className="text-xs">نحفظ اقتراحات الأماكن والأماكن المحفوظة الخاصة بحسابك، ويتم رفع وتخزين الصور المرفقة بأمان على Cloudflare R2.</p>
                                     </div>
                                 </div>
                             </CardContent>
@@ -118,7 +122,7 @@ export default function Privacy() {
                                             صلاحيات الموقع الجغرافي (Geolocation API)
                                         </h4>
                                         <p className="text-xs mt-1">
-                                            يطلب قسم "ترانزيت" صلاحية الوصول لموقعك الجغرافي لعرض موقعك الحالي على خريطة المواصلات وحساب المسارات القريبة منك. 
+                                            تطلب أقسام "الترانزيت" و"مشوار" صلاحية الوصول لموقعك الجغرافي لعرض موقعك الحالي وحساب الفنادق والمواقف والأماكن القريبة منك. 
                                             <strong className="text-foreground"> لا يتم إرسال أو تخزين إحداثيات موقعك الجغرافي على خوادمنا أبداً</strong>، حيث تتم معالجة بيانات الموقع بالكامل محلياً داخل جهازك.
                                         </p>
                                     </div>
@@ -152,7 +156,8 @@ export default function Privacy() {
                                 <ul className="list-disc list-inside space-y-2 mr-4">
                                     <li><strong>Google OAuth:</strong> لإدارة تسجيل الدخول الآمن.</li>
                                     <li><strong>Pusher / WebSockets:</strong> لإرسال إشارات الربط اللحظية للاعبي Guess Who وبث التحديثات الفورية.</li>
-                                    <li><strong>خرائط Leaflet و OpenStreetMap:</strong> لتوفير خرائط تفاعلية في قسم الترانزيت.</li>
+                                    <li><strong>خرائط MapLibre GL JS و OpenStreetMap:</strong> لتوفير خرائط تفاعلية متجهة في قسمي الترانزيت ومشوار.</li>
+                                    <li><strong>تخزين Cloudflare R2:</strong> لتخزين الصور والوسائط الخاصة بالأماكن والهوية البصرية بأمان وسرعة عالية.</li>
                                     <li><strong>بوابة F3alia:</strong> لجلب الفعاليات والأنشطة المحلية.</li>
                                     <li><strong>مواقيت الصلاة (AlAdhan API):</strong> لحساب أوقات الصلاة بدقة بناءً على الموقع الجغرافي المرسل، دون تخزين الإحداثيات على خوادمنا.</li>
                                     <li><strong>خدمة الطقس (OpenWeather / Cloudflare Workers):</strong> لجلب وعرض حالة الطقس المحلية بناءً على محافظتك أو إحداثياتك التقريبية.</li>
@@ -192,11 +197,11 @@ export default function Privacy() {
                             </CardHeader>
                             <CardContent className="space-y-4 text-sm leading-relaxed text-muted-foreground">
                                 <p>
-                                    To facilitate contributions to the Transit Studio (proposing new routes and bus stops), we support secure sign-in via Google (Google OAuth). Browsing the website or participating in polls and tierlist evaluations does NOT require creating an account or logging in.
+                                    To facilitate contributions to the Transit Studio (proposing new routes and bus stops) and saving or submitting places in Mishwar, we support secure sign-in via Google (Google OAuth). Browsing maps or participating in polls and tierlist evaluations does NOT require creating an account or logging in.
                                 </p>
                                 <ul className="list-disc list-inside space-y-2 ml-4">
                                     <li><strong>Data we collect:</strong> Full name, email address, unique Google ID, and profile picture URL (Avatar URL).</li>
-                                    <li><strong>Purpose:</strong> Authenticating identity, allowing you to manage your profile, and submitting/tracking route and stop drafts in the Transit Studio.</li>
+                                    <li><strong>Purpose:</strong> Authenticating identity, allowing you to manage your profile, and managing your submitted transit drafts or saved places in Mishwar.</li>
                                     <li><strong>Account & Data Deletion:</strong> You can permanently and immediately delete your account at any time by going to your <Link href="/dashboard" className="text-primary hover:underline font-semibold">Dashboard</Link>. This action wipes all of your profile details entirely from our database.</li>
                                 </ul>
                             </CardContent>
@@ -214,14 +219,18 @@ export default function Privacy() {
                                 <p>
                                     We store a very limited amount of information to run our interactive features:
                                 </p>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
                                     <div className="p-4 bg-muted/30 rounded-xl border border-border/50">
                                         <h4 className="font-bold text-foreground mb-1.5 text-sm">Polls & Evaluations (Tierlists)</h4>
-                                        <p className="text-xs">Participating in polls and evaluations does not require signing in. To protect results against spam, we generate a unique token stored in your browser (Cookies/LocalStorage) alongside a secure hashed representation of your IP address (hashed IP) and User-Agent. This data is never linked to your identity.</p>
+                                        <p className="text-xs">Participating in polls and evaluations does not require signing in. To protect results against spam, we generate a unique browser token alongside a secure hashed IP representation and User-Agent. This data is never linked to your identity.</p>
                                     </div>
                                     <div className="p-4 bg-muted/30 rounded-xl border border-border/50">
                                         <h4 className="font-bold text-foreground mb-1.5 text-sm">Transit Drafts (Transit Studio)</h4>
                                         <p className="text-xs">When proposing new routes or stops, your submission details are stored as a draft in our database for administrators to review and approve.</p>
+                                    </div>
+                                    <div className="p-4 bg-muted/30 rounded-xl border border-border/50">
+                                        <h4 className="font-bold text-foreground mb-1.5 text-sm">Mishwar Directory</h4>
+                                        <p className="text-xs">We store your submitted place suggestions and saved locations. Uploaded media assets are securely stored on Cloudflare R2.</p>
                                     </div>
                                 </div>
                             </CardContent>
@@ -246,7 +255,7 @@ export default function Privacy() {
                                             Geolocation Access (HTML5 / Android GPS)
                                         </h4>
                                         <p className="text-xs mt-1">
-                                            The Transit tool requests access to your location to center the map on your position and show nearby bus/transit lines. 
+                                            The Transit and Mishwar modules request access to your location to center the map on your position and show nearby transit lines, stops, and places. 
                                             <strong className="text-foreground"> We never send or store your coordinates on our servers</strong>. All location-based math is done locally in your browser.
                                         </p>
                                     </div>
@@ -280,7 +289,8 @@ export default function Privacy() {
                                 <ul className="list-disc list-inside space-y-2 ml-4">
                                     <li><strong>Google OAuth:</strong> For secure authentication.</li>
                                     <li><strong>Pusher / WebSockets:</strong> To handle real-time signaling for game coordination and live notifications.</li>
-                                    <li><strong>Leaflet & OpenStreetMap:</strong> For rendering interactive maps on the Transit subpages.</li>
+                                    <li><strong>MapLibre GL JS & OpenStreetMap:</strong> For rendering interactive vector maps on Transit and Mishwar subpages.</li>
+                                    <li><strong>Cloudflare R2:</strong> For storing place media assets and brand files securely with fast global distribution.</li>
                                     <li><strong>F3alia API:</strong> To populate local events dynamically.</li>
                                     <li><strong>Prayer Times (AlAdhan API):</strong> To calculate accurate prayer times based on approximate location coordinates. No coordinates are stored on our servers.</li>
                                     <li><strong>Weather Integration (OpenWeather / Cloudflare Workers):</strong> To retrieve and present real-time local weather reports based on your location/governorate selection.</li>

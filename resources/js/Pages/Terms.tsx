@@ -22,7 +22,7 @@ export default function Terms() {
                     </div>
                     <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">الشروط والأحكام | Terms & Conditions</h1>
                     <p className="text-muted-foreground max-w-xl mx-auto text-sm md:text-base">
-                        آخر تحديث: 10 يوليو 2026 | Last Updated: July 10, 2026
+                        آخر تحديث: 26 يوليو 2026 | Last Updated: July 26, 2026
                     </p>
                 </div>
 
@@ -88,6 +88,24 @@ export default function Terms() {
                                 </p>
                                 <p>
                                     بإرسالك لمسودة خط نقل أو موقف باص، فإنك تمنح <strong>المساحة السورية</strong> حقاً دائماً، وغير حصري، ومجانياً بالكامل لنشر هذه البيانات، تعديلها، ودمجها مع خرائط المواصلات العامة لتصبح متاحة لكافة المستخدمين تحت رخصة الموارد الحرة والمفتوحة.
+                                </p>
+                            </CardContent>
+                        </Card>
+
+                        {/* Mishwar Directory Rights */}
+                        <Card className="border-border bg-card/50 backdrop-blur-sm">
+                            <CardHeader>
+                                <CardTitle className="text-xl font-bold flex items-center gap-2">
+                                    <Info className="w-5 h-5 text-primary" />
+                                    دليل "مشوار" ومساهمات الأماكن والفنادق
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4 text-sm leading-relaxed text-muted-foreground">
+                                <p>
+                                    يتيح لك قسم "مشوار" إضافة اقتراحات للأماكن الخدمية والسياحية والفنادق، بالإضافة لتسجيل بيانات المرشدين المحليين في مختلف المحافظات.
+                                </p>
+                                <p>
+                                    يجب أن تكون المحتويات والصور المرفقة دقيقة، لطبقة الاستخدام العام، وخالية من المواد المسيئة أو المخالفة للقوانين. تحتفظ المنصة بالحق الكامل في مراجعة وتعديل أو حذف أي مكان أو مساهمة لا تلتزم بمعايير الدقة والجودة المجتمعية.
                                 </p>
                             </CardContent>
                         </Card>
@@ -184,6 +202,24 @@ export default function Terms() {
                                 </p>
                                 <p>
                                     By submitting a draft transit route or stop coordinates, you grant <strong>Syrian Zone</strong> a perpetual, non-exclusive, royalty-free, worldwide license to publish, distribute, modify, and integrate this data into the public transit maps for the benefit of all users.
+                                </p>
+                            </CardContent>
+                        </Card>
+
+                        {/* Mishwar Directory Rights */}
+                        <Card className="border-border bg-card/50 backdrop-blur-sm">
+                            <CardHeader>
+                                <CardTitle className="text-xl font-bold flex items-center gap-2">
+                                    <Info className="w-5 h-5 text-primary" />
+                                    Mishwar Directory & Submissions
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4 text-sm leading-relaxed text-muted-foreground">
+                                <p>
+                                    The "Mishwar" module enables community members to suggest places, hotels, and local guides across Syrian governorates.
+                                </p>
+                                <p>
+                                    All submitted entries and photos must be factual, suitable for public viewing, and free of inappropriate content. Syrian Zone reserves the right to review, edit, or reject any place or guide submission that does not meet quality and community guidelines.
                                 </p>
                             </CardContent>
                         </Card>

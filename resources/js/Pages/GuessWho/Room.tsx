@@ -616,8 +616,11 @@ export default function GameRoom({ game }: GameProps) {
     <MainLayout>
       <div className="min-h-screen bg-background text-foreground p-6 font-sans select-none" dir="rtl">
         <Head>
-          <title>{`غرفة لعب: ${game.category.name_ar}`}</title>
-          <meta name="description" content={`غرفة لعب تفاعلية مباشرة لتخمين شخصيات فئة ${game.category.name_ar} مع خصمك.`} />
+          <title>{`غرفة لعب: ${game.category.name_ar} | Guess Who`}</title>
+          <meta name="description" content={`انضم إلى غرفة لعب تفاعلية مباشرة لتخمين شخصيات فئة ${game.category.name_ar} مع أصدقائك.`} />
+          <meta property="og:type" content="website" />
+          <meta property="og:title" content={`انضم إلى غرفتي في لعبة خمن من؟ (${game.category.name_ar})`} />
+          <meta property="og:description" content={`انضم فوراً إلى غرفة اللعب المباشرة لتخمين شخصيات فئة ${game.category.name_ar}.`} />
         </Head>
         <div className="max-w-6xl mx-auto">
           {/* Style block for 3D flip card animations */}

@@ -274,8 +274,11 @@ export default function Index() {
   return (
     <MainLayout>
       <Head>
-        <title>مشوار</title>
-        <meta name="description" content="خريطة تفاعلية لأماكن تستحق المشوار في سوريا" />
+        <title>مشوار | دليل وخريطة الأماكن والخدمات والمعالم في سوريا</title>
+        <meta name="description" content="دليل وخريطة تفاعلية لاكتشاف وتصفح الأماكن الخدمية، المعالم، المطاعم، المقاهي، والأماكن المخفية في سوريا مع التوصيات والتقييمات." />
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="مشوار | دليل وخريطة الأماكن والخدمات والمعالم في سوريا" />
+        <meta property="og:description" content="دليل وخريطة تفاعلية لاكتشاف وتصفح الأماكن الخدمية، المعالم، المطاعم، المقاهي، والأماكن المخفية في سوريا مع التوصيات والتقييمات." />
       </Head>
       <main dir="rtl" className="relative h-[calc(100dvh-4rem)] overflow-hidden">
         <Suspense fallback={<div className="absolute inset-0 bg-background flex items-center justify-center text-muted-foreground">جاري تحميل الخريطة...</div>}>

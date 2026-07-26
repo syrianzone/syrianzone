@@ -12,8 +12,11 @@ export default function PartyPage({ initialOrganizations }: PartyPageProps) {
     return (
         <MainLayout>
             <Head>
-                <title>دليل الأحزاب والقوى السياسية</title>
+                <title>دليل الأحزاب والقوى السياسية | Syrian Zone</title>
                 <meta name="description" content="دليل تفاعلي للتعرف على الأحزاب، والتنظيمات، والقوى السياسية والمدنية الفاعلة في الساحة السورية." />
+                <meta property="og:type" content="website" />
+                <meta property="og:title" content="دليل الأحزاب والقوى السياسية | Syrian Zone" />
+                <meta property="og:description" content="دليل تفاعلي للتعرف على الأحزاب، والتنظيمات، والقوى السياسية والمدنية الفاعلة في الساحة السورية." />
             </Head>
             <PartyClient initialOrganizations={initialOrganizations} />
         </MainLayout>

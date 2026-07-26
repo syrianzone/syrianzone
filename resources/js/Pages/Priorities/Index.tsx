@@ -8,8 +8,11 @@ export default function PrioritiesPage() {
     return (
         <MainLayout>
             <Head>
-                <title>أولويات سوريا المستقبل</title>
+                <title>أولويات سوريا المستقبل | Syrian Zone</title>
                 <meta name="description" content="رتب أولوياتك للجمهورية العربية السورية المستقبلية وشاركها مع المجتمع عبر بطاقات مخصصة وتفاعلية." />
+                <meta property="og:type" content="website" />
+                <meta property="og:title" content="أولويات سوريا المستقبل | Syrian Zone" />
+                <meta property="og:description" content="رتب أولوياتك للجمهورية العربية السورية المستقبلية وشاركها مع المجتمع عبر بطاقات مخصصة وتفاعلية." />
             </Head>
             <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors">
                 {/* Hero Section */}

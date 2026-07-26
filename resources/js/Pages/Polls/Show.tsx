@@ -40,8 +40,11 @@ export default function Show({ poll, candidates, groups, voteDay }: PollShowProp
     return (
         <MainLayout>
             <Head>
-                <title>{poll.title}</title>
+                <title>{`${poll.title} | استطلاعات سوريا زون`}</title>
                 <meta name="description" content={`شارك في استطلاع الرأي والتقييم المجتمعي لـ ${poll.title} وصوّت وشارك رأيك معنا.`} />
+                <meta property="og:type" content="website" />
+                <meta property="og:title" content={`${poll.title} | استطلاعات سوريا زون`} />
+                <meta property="og:description" content={`شارك في استطلاع الرأي والتقييم المجتمعي لـ ${poll.title} وصوّت وشارك رأيك معنا.`} />
             </Head>
             <div className="min-h-screen bg-background pb-12">
                 <main className="container mx-auto px-4 pt-6" dir="rtl">

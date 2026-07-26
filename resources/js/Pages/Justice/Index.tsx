@@ -73,8 +73,11 @@ export default function JusticePage() {
     return (
         <MainLayout>
             <Head>
-                <title>العدالة الانتقالية</title>
+                <title>العدالة الانتقالية | Syrian Zone</title>
                 <meta name="description" content="العدالة الانتقالية - قوائم وإحصائيات رموز نظام الأسد والمجرمين الموقوفين لدى وزارة الداخلية السورية وهيكل القيادة العسكرية والأمنية." />
+                <meta property="og:type" content="website" />
+                <meta property="og:title" content="العدالة الانتقالية | Syrian Zone" />
+                <meta property="og:description" content="العدالة الانتقالية - قوائم وإحصائيات رموز نظام الأسد والمجرمين الموقوفين لدى وزارة الداخلية السورية وهيكل القيادة العسكرية والأمنية." />
             </Head>
             <main className="container mx-auto max-w-screen-xl px-4 pt-6 pb-16" dir="rtl">
                 {/* Header */}

@@ -14,6 +14,9 @@ export default function About() {
             <Head>
                 <title>عن المنصة | About Syrian Zone</title>
                 <meta name="description" content="تعرف على منصة المساحة السورية (Syrian Zone) - مشروع تفاعلي غير تجاري ومفتوح المصدر يقدم أدوات وموارد بالشأن السوري." />
+                <meta property="og:type" content="website" />
+                <meta property="og:title" content="عن المنصة | About Syrian Zone" />
+                <meta property="og:description" content="تعرف على منصة المساحة السورية (Syrian Zone) - مشروع تفاعلي غير تجاري ومفتوح المصدر يقدم أدوات وموارد بالشأن السوري." />
             </Head>
 
             <div className="container mx-auto px-4 py-12 max-w-4xl min-h-screen text-foreground">

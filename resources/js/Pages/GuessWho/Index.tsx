@@ -66,8 +66,11 @@ export default function GuessWhoIndex({ categories, total_characters }: IndexPro
     <MainLayout>
       <div className="min-h-screen bg-background text-foreground font-sans antialiased pb-16" dir="rtl">
         <Head>
-          <title>لعبة من هو؟ - Guess Who</title>
+          <title>لعبة من هو؟ - Guess Who | Syrian Zone</title>
           <meta name="description" content="تحدّ صديقك في لعبة التخمين الشهيرة 'من هو؟' بالاتصال المباشر! اطرح الأسئلة واستبعد الشخصيات لتكشف بطاقة خصمك السرية." />
+          <meta property="og:type" content="website" />
+          <meta property="og:title" content="لعبة من هو؟ - Guess Who | Syrian Zone" />
+          <meta property="og:description" content="تحدّ صديقك في لعبة التخمين الشهيرة 'من هو؟' بالاتصال المباشر! اطرح الأسئلة واستبعد الشخصيات لتكشف بطاقة خصمك السرية." />
         </Head>
         
         {/* Ambient background glows */}

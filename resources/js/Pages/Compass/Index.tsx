@@ -8,8 +8,11 @@ export default function CompassPage() {
     return (
         <MainLayout>
             <Head>
-                <title>البوصلة السياسية السورية</title>
+                <title>البوصلة السياسية السورية | Syrian Zone</title>
                 <meta name="description" content="البوصلة السياسية السورية - اختبار تفاعلي لاكتشاف توجهاتك وميولك السياسية على ستة محاور مختلفة للشأن السوري." />
+                <meta property="og:type" content="website" />
+                <meta property="og:title" content="البوصلة السياسية السورية | Syrian Zone" />
+                <meta property="og:description" content="البوصلة السياسية السورية - اختبار تفاعلي لاكتشاف توجهاتك وميولك السياسية على ستة محاور مختلفة للشأن السوري." />
             </Head>
             <div className="min-h-screen flex flex-col bg-background">
                 {/* Hero Section */}

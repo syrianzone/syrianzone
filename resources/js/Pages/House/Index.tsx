@@ -7,8 +7,11 @@ export default function HousePage() {
     return (
         <MainLayout>
             <Head>
-                <title>المجلس التشريعي السوري</title>
+                <title>المجلس التشريعي السوري | Syrian Zone</title>
                 <meta name="description" content="منصة تفاعلية لاستكشاف، ومتابعة، وتحليل أداء وبيانات أعضاء المجلس التشريعي السوري." />
+                <meta property="og:type" content="website" />
+                <meta property="og:title" content="المجلس التشريعي السوري | Syrian Zone" />
+                <meta property="og:description" content="منصة تفاعلية لاستكشاف، ومتابعة، وتحليل أداء وبيانات أعضاء المجلس التشريعي السوري." />
             </Head>
             <div className="min-h-screen bg-background pb-16">
                 <div className="container mx-auto px-4 py-8 max-w-7xl">

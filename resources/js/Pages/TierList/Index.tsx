@@ -39,8 +39,11 @@ export default function Index({ poll, candidates = [], groups = [], voteDay }: T
     return (
         <MainLayout>
             <Head>
-                <title>تير ليست الحكومة السورية</title>
+                <title>تير ليست الحكومة السورية | Syrian Zone</title>
                 <meta name="description" content="شارك في تقييم وتصنيف أداء أعضاء الحكومة السورية الجديدة عبر منصة تير ليست تفاعلية وشاركه مع الآخرين." />
+                <meta property="og:type" content="website" />
+                <meta property="og:title" content="تير ليست الحكومة السورية | Syrian Zone" />
+                <meta property="og:description" content="شارك في تقييم وتصنيف أداء أعضاء الحكومة السورية الجديدة عبر منصة تير ليست تفاعلية وشاركه مع الآخرين." />
             </Head>
             <main className="container mx-auto px-4 pt-6 pb-8" dir="rtl">
                 {/* Results Link */}

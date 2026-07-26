@@ -58,7 +58,19 @@ export default function Index() {
 
   return (
     <MainLayout>
-      <Head title="لوحتي" />
+      <Head>
+        <title>لوحتي | لوحة أدواتك اليومية المخصصة في سوريا زون</title>
+        <meta
+          name="description"
+          content="لوحتك الشخصية المخصصة لمتابعة مواقيت الصلاة، الطقس، قائمة المهام، أوقات البومودورو، أحداث اليوم، والقرآن الكريم في مكان واحد."
+        />
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="لوحتي | لوحة أدواتك اليومية المخصصة في سوريا زون" />
+        <meta
+          property="og:description"
+          content="لوحتك الشخصية المخصصة لمتابعة مواقيت الصلاة، الطقس، قائمة المهام، أوقات البومودورو، أحداث اليوم، والقرآن الكريم في مكان واحد."
+        />
+      </Head>
       <main dir="rtl" className="mx-auto w-full max-w-7xl px-3 py-4">
         <BoardToolbar
           title={dashboard.name}

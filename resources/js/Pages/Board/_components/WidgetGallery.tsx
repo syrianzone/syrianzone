@@ -2,7 +2,7 @@ import { Plus } from 'lucide-react';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/Components/ui/button';
 import { WIDGETS } from '../_lib/registry';
-import { CATEGORY_LABELS, type WidgetCategory, type WidgetDefinition } from '../_lib/types';
+import { CATEGORY_LABELS, CATEGORY_ORDER, type WidgetCategory, type WidgetDefinition } from '../_lib/types';
 
 // The "marketplace": a browsable view over the in-repo registry. A new widget
 // appears here by existing, with no change to this file.
@@ -12,7 +12,7 @@ export function WidgetGallery(props: {
   placedIds: string[];
   onAdd: (def: WidgetDefinition) => void;
 }) {
-  const categories = [...new Set(WIDGETS.map((w) => w.category))] as WidgetCategory[];
+  const categories = CATEGORY_ORDER.filter((cat) => WIDGETS.some((w) => w.category === cat));
 
   return (
     <Sheet open={props.open} onOpenChange={props.onOpenChange}>

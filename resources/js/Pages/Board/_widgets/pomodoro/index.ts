@@ -15,8 +15,8 @@ export const pomodoroWidget: WidgetDefinition<PomodoroConfig> = {
   category: 'personal',
   // phase label, the MM:SS readout, the progress bar and one row of buttons:
   // h:3 is the smallest that fits all four without scrolling.
-  defaultSize: { w: 3, h: 3 },
-  minSize: { w: 2, h: 2 },
+  defaultSize: { w: 4, h: 2 },
+  minSize: { w: 3, h: 2 },
   maxSize: { w: 6, h: 4 },
   // Only the durations persist. The running countdown deliberately does not:
   // see the comment in View.tsx.

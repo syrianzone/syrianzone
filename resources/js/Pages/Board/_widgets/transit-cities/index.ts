@@ -7,7 +7,7 @@ export const transitCitiesWidget: WidgetDefinition<Record<string, never>> = {
   name: 'المواصلات',
   description: 'المدن وعدد الخطوط المنشورة',
   icon: Bus,
-  category: 'transit',
+  category: 'places',
   defaultSize: { w: 6, h: 3 },
   minSize: { w: 3, h: 2 },
   maxSize: { w: 12, h: 6 },

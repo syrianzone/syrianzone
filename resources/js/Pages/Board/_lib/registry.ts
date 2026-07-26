@@ -6,6 +6,7 @@ import { notesWidget } from '../_widgets/notes';
 import { placesNearbyWidget } from '../_widgets/places-nearby';
 import { pomodoroWidget } from '../_widgets/pomodoro';
 import { prayerWidget } from '../_widgets/prayer';
+import { quranWidget } from '../_widgets/quran';
 import { recipeWidget } from '../_widgets/recipe';
 import { rssWidget } from '../_widgets/rss';
 import { todoWidget } from '../_widgets/todo';
@@ -20,19 +21,25 @@ import type { BoardDoc, WidgetDefinition } from './types';
 // Deliberately not import.meta.glob: it kills config generic inference and
 // hides the dependency graph to save a single line.
 export const WIDGETS: WidgetDefinition<any>[] = [
+  // 1. الوقت والعبادات
   clockWidget,
   weatherWidget,
   prayerWidget,
-  placesNearbyWidget,
-  guidesWidget,
+  quranWidget,
+  // 2. الإنتاجية والشخصي
+  pomodoroWidget,
+  todoWidget,
+  notesWidget,
+  // 3. المجتمع والأخبار
+  rssWidget,
   answersWidget,
   eventsTodayWidget,
-  rssWidget,
+  guidesWidget,
+  // 4. الأماكن والمواصلات
+  placesNearbyWidget,
   transitCitiesWidget,
+  // 5. المطبخ والمأكولات
   recipeWidget,
-  notesWidget,
-  todoWidget,
-  pomodoroWidget,
 ];
 
 export const WIDGETS_BY_ID: Record<string, WidgetDefinition<any>> = Object.fromEntries(
@@ -55,16 +62,16 @@ const SEED_LAYOUT: { id: string; w: number; h: number }[] = [
   { id: 'weather', w: 4, h: 2 },
   { id: 'prayer', w: 4, h: 2 },
   { id: 'clock', w: 4, h: 2 },
-  // row 2: answers, news
+  // row 2: quran, pomodoro, recipe
+  { id: 'quran', w: 4, h: 2 },
+  { id: 'pomodoro', w: 4, h: 2 },
+  { id: 'recipe', w: 4, h: 3 },
+  // row 3: rss, answers
   { id: 'rss', w: 6, h: 3 },
   { id: 'answers', w: 6, h: 3 },
-  // row 3: todo, notes, recipe
-  { id: 'recipe', w: 4, h: 4 },
-  { id: 'notes', w: 4, h: 4 },
-  { id: 'todo', w: 4, h: 4 },
-  // row 4: events, pomodoro
-  { id: 'pomodoro', w: 6, h: 3 },
-  { id: 'events-today', w: 6, h: 3 },
+  // row 4: todo, notes
+  { id: 'notes', w: 6, h: 3 },
+  { id: 'todo', w: 6, h: 3 },
 ];
 
 export function defaultDoc(): BoardDoc {

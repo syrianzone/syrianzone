@@ -13,17 +13,21 @@ import type { WidgetDefinition, WidgetSize } from '../_lib/types';
 // is where the RTL and touch bugs live; corner-drag can come later without
 // changing the stored format.
 const WIDTHS: { w: number; label: string }[] = [
-  { w: 3, label: 'ربع' },
-  { w: 4, label: 'ثلث' },
-  { w: 6, label: 'نصف' },
-  { w: 12, label: 'كامل' },
+  { w: 2, label: 'سدس (2)' },
+  { w: 3, label: 'ربع (3)' },
+  { w: 4, label: 'ثلث (4)' },
+  { w: 6, label: 'نصف (6)' },
+  { w: 8, label: 'ثلثين (8)' },
+  { w: 12, label: 'كامل (12)' },
 ];
 
 const HEIGHTS: { h: number; label: string }[] = [
-  { h: 1, label: 'قصير' },
-  { h: 2, label: 'متوسط' },
-  { h: 4, label: 'طويل' },
-  { h: 6, label: 'ممتد' },
+  { h: 1, label: 'صف واحد (1)' },
+  { h: 2, label: 'صفين (2)' },
+  { h: 3, label: '3 صفوف (3)' },
+  { h: 4, label: '4 صفوف (4)' },
+  { h: 6, label: '6 صفوف (6)' },
+  { h: 8, label: '8 صفوف (8)' },
 ];
 
 export function SizeMenu(props: {
@@ -31,8 +35,8 @@ export function SizeMenu(props: {
   size: WidgetSize;
   onResize: (size: WidgetSize) => void;
 }) {
-  const widths = WIDTHS.filter((o) => o.w >= props.def.minSize.w && o.w <= props.def.maxSize.w);
-  const heights = HEIGHTS.filter((o) => o.h >= props.def.minSize.h && o.h <= props.def.maxSize.h);
+  const widths = WIDTHS;
+  const heights = HEIGHTS;
 
   return (
     <DropdownMenu>

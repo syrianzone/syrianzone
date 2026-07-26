@@ -68,11 +68,19 @@ export interface WidgetDefinition<C = Record<string, unknown>> {
   Component: LazyExoticComponent<ComponentType<WidgetProps<C>>>;
 }
 
+export const CATEGORY_ORDER: WidgetCategory[] = [
+  'time',
+  'personal',
+  'community',
+  'places',
+  'food',
+];
+
 export const CATEGORY_LABELS: Record<WidgetCategory, string> = {
-  places: 'الأماكن',
+  time: 'الوقت والعبادات',
+  personal: 'الإنتاجية والشخصي',
+  community: 'المجتمع والأخبار',
+  places: 'الأماكن والمواصلات',
   transit: 'المواصلات',
-  time: 'الوقت والطقس',
-  personal: 'شخصي',
-  community: 'المجتمع',
-  food: 'المطبخ',
+  food: 'المطبخ والمأكولات',
 };

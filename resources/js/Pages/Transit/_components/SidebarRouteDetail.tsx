@@ -28,8 +28,8 @@ export function SidebarRouteDetail({ route, city, stops }: SidebarRouteDetailPro
   }
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="p-4">
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="p-4 shrink-0">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={handleBack} aria-label="رجوع للقائمة">
             <ChevronRight className="h-5 w-5" />
@@ -84,7 +84,7 @@ export function SidebarRouteDetail({ route, city, stops }: SidebarRouteDetailPro
 
       <Separator />
 
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 min-h-0">
         <div className="p-4">
           <div className="mb-3 flex items-center justify-between">
             <h4 className="text-sm font-semibold text-muted-foreground">المواقف</h4>

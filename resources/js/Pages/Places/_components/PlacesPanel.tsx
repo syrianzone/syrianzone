@@ -257,8 +257,8 @@ export function PlacesPanel(props: {
   );
 
   return (
-    <div dir="rtl" className={cn('flex flex-col overflow-hidden bg-background', className)}>
-      <div className="px-3 pt-3">
+    <div dir="rtl" className={cn('flex flex-col min-h-0 flex-1 overflow-hidden bg-background', className)}>
+      <div className="px-3 pt-3 shrink-0">
         <Button
           type="button"
           variant={addMode ? 'destructive' : 'default'}

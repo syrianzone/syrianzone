@@ -72,8 +72,8 @@ export function SidebarRoutes({ city, routes }: SidebarRoutesProps) {
   )
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="p-4">
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="p-4 shrink-0">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild>
             <Link href="/transit" aria-label="رجوع للمدن">
@@ -98,7 +98,7 @@ export function SidebarRoutes({ city, routes }: SidebarRoutesProps) {
 
       <Separator />
 
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 min-h-0">
         <div className="p-4 space-y-4">
           {isDamascusRegion ? (
             <>

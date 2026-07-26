@@ -95,7 +95,7 @@ export function BottomSheet({ children, className, storageKey, initialHeight, on
   return (
     <div
       className={cn(
-        'fixed inset-x-0 bottom-0 z-40 bg-card border-t border-border',
+        'fixed inset-x-0 bottom-0 z-40 bg-card border-t border-border flex flex-col overflow-hidden',
         'sm:hidden',
         isDragging ? 'transition-none' : 'transition-[height] duration-200 ease-out',
         className
@@ -103,7 +103,7 @@ export function BottomSheet({ children, className, storageKey, initialHeight, on
       style={{ height: renderedHeight }}
     >
       <div
-        className="flex items-center justify-center py-2 touch-none select-none cursor-grab active:cursor-grabbing"
+        className="flex items-center justify-center py-2 shrink-0 touch-none select-none cursor-grab active:cursor-grabbing"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -118,7 +118,7 @@ export function BottomSheet({ children, className, storageKey, initialHeight, on
 
       <div
         ref={contentRef}
-        className="overflow-y-auto overscroll-contain"
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain flex flex-col"
       >
         {children}
       </div>

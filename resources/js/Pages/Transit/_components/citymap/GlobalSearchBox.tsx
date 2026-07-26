@@ -3,9 +3,7 @@
 import { useState, useEffect, useContext, useRef } from 'react'
 import { MapContext } from '@/Components/map/MapContext'
 import { useMapStore } from '../../_store/useMapStore'
-import { Input } from '@/Components/ui/input'
-import { Card } from '@/Components/ui/card'
-import { Badge } from '@/Components/ui/badge'
+import { Button } from '@/Components/ui/button'
 import { Search, Loader2, X, Bus, MapPin } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -30,7 +28,7 @@ export default function GlobalSearchBox({ cityId, className }: GlobalSearchBoxPr
   const [loading, setLoading] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
   const map = useContext(MapContext)
-  const { setSelectedRouteId, setHoveredStopId } = useMapStore()
+  const { setSelectedRouteId, setHoveredStopId, showStops, setShowStops } = useMapStore()
   const inputRef = useRef<HTMLInputElement>(null)
 
   const allItems = [...results.routes, ...results.stops]
@@ -104,8 +102,8 @@ export default function GlobalSearchBox({ cityId, className }: GlobalSearchBoxPr
   }
 
   return (
-    <div dir="rtl" className={cn("pointer-events-auto absolute top-3 inset-x-3 z-20 mx-auto max-w-md", className)}>
-      <div className="relative">
+    <div dir="rtl" className={cn("pointer-events-auto absolute top-3 inset-x-3 z-20 mx-auto max-w-md flex items-center gap-2", className)}>
+      <div className="relative flex-1 min-w-0">
         <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
         <Input
           ref={inputRef}
@@ -202,6 +200,23 @@ export default function GlobalSearchBox({ cityId, className }: GlobalSearchBoxPr
           </Card>
         )}
       </div>
+
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        onClick={() => setShowStops(!showStops)}
+        className={cn(
+          "h-9 w-9 shrink-0 rounded-full shadow-md transition-all border-border",
+          showStops
+            ? "bg-primary text-primary-foreground hover:bg-primary/90 border-primary"
+            : "bg-card/95 text-muted-foreground hover:text-foreground backdrop-blur-md"
+        )}
+        title={showStops ? "إخفاء نقاط المواقف" : "إظهار نقاط المواقف"}
+        aria-label={showStops ? "إخفاء نقاط المواقف" : "إظهار نقاط المواقف"}
+      >
+        <MapPin className={cn("h-4 w-4 transition-transform", !showStops && "opacity-50 scale-90")} />
+      </Button>
     </div>
   )
 }

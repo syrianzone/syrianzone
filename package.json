@@ -42,6 +42,7 @@
     "react-dom": "19.2.6",
     "react-leaflet": "^5.0.0",
     "recharts": "^3.8.1",
+    "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
     "tailwindcss-animate": "^1.0.7",
     "uploadthing": "^7.4.4",

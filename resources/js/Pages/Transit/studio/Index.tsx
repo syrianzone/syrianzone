@@ -5,7 +5,24 @@ import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { router, Link, Head } from '@inertiajs/react'
 import type { FeatureCollection, Position } from 'geojson'
-import { useStudioStore, type StopFeature, type WizardStep } from '../_store/useStudioStore'
+import {
+  Route,
+  MapPin,
+  Palette,
+  FileText,
+  Check,
+  RotateCcw,
+  Undo2,
+  Send,
+  Loader2,
+  Sparkles,
+  ArrowLeft,
+  Plus,
+  Trash2,
+  UserCheck,
+  UserX
+} from 'lucide-react'
+import { useStudioStore, type StopFeature } from '../_store/useStudioStore'
 import { useMapData } from '../_hooks/useMapData'
 import cities from '../_data/cities.json'
 import TransitLayout from '../layout'
@@ -13,6 +30,25 @@ import { useTransitTheme } from '../_components/TransitThemeContext'
 import { THEME_REGISTRY } from '@/Lib/theme'
 import { useAuth } from '@/Contexts/AuthContext'
 import { ROUTE_PALETTE, getRouteColor, buildColorMatch } from '../_lib/mapColors'
+import { BottomSheet } from '../_components/BottomSheet'
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from '@/Components/ui/accordion'
+import { Button } from '@/Components/ui/button'
+import { Input } from '@/Components/ui/input'
+import { Textarea } from '@/Components/ui/textarea'
+import { Badge } from '@/Components/ui/badge'
+import { Toaster, toast } from '@/Components/ui/sonner'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/Components/ui/select'
 
 // RTL text shaping for Arabic labels on the vector basemap
 if (maplibregl.getRTLTextPluginStatus() === 'unavailable') {
@@ -21,8 +57,6 @@ if (maplibregl.getRTLTextPluginStatus() === 'unavailable') {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type DrawMode = 'idle' | 'line' | 'point'
-type ToastType = 'success' | 'error' | 'info'
-interface Toast { id: number; msg: string; type: ToastType }
 
 // ─── Map layer IDs ────────────────────────────────────────────────────────────
 const SRC_LINES      = 'studio-lines'
@@ -56,7 +90,7 @@ function checkConflict(drawnLine: [number, number][], routeFeatures: any[]): boo
   return false
 }
 
-// Find nearest point on a line segment (ax,ay)→(bx,by) from point (px,py)
+// Find nearest point on a line segment
 function nearestOnSegment(px: number, py: number, ax: number, ay: number, bx: number, by: number) {
   const dx = bx - ax, dy = by - ay
   const lenSq = dx * dx + dy * dy
@@ -66,12 +100,11 @@ function nearestOnSegment(px: number, py: number, ax: number, ay: number, bx: nu
   return { x: ax + t * dx, y: ay + t * dy, t }
 }
 
-// Find the nearest segment in a polyline and return insertion index + pixel distance
+// Find the nearest segment in a polyline
 function findNearestSegment(coords: [number, number][], px: number, py: number, map: maplibregl.Map) {
   let minDist = Infinity
   let insertIdx = 0
-  let bestNearest = { x: 0, y: 0 }
-
+  let bestNearest = { x: px, y: py }
   const pxC = map.project([px, py])
 
   for (let i = 0; i < coords.length - 1; i++) {
@@ -86,425 +119,45 @@ function findNearestSegment(coords: [number, number][], px: number, py: number, 
       bestNearest = { x: np.x, y: np.y }
     }
   }
-
   return { insertIdx, distance: minDist, nearest: bestNearest }
 }
 
-const STEP_LABELS: { label: string; num: WizardStep }[] = [
-  { label: 'المدينة', num: 1 },
-  { label: 'المسار', num: 2 },
-  { label: 'المحطات', num: 3 },
-  { label: 'التفاصيل', num: 4 },
-  { label: 'المراجعة', num: 5 },
-]
-
-// ─── Step sub-components ──────────────────────────────────────────────────────
-
-function Step1City({ onSelect }: { onSelect: (id: string) => void }) {
-  const { cityId } = useStudioStore()
-  const activeCities = cities.filter(c => c.status === 'active')
-  const comingSoon = cities.filter(c => c.status === 'coming_soon')
-
-  return (
-    <div className="studio-step-panel">
-      <p className="studio-step-intro">
-        اختر المدينة التي تعرف مساراتها — ستظهر الخطوط المنشورة على الخريطة كمرجع.
-      </p>
-      <div className="studio-city-grid">
-        {activeCities.map(city => (
-          <button
-            key={city.id}
-            type="button"
-            className={`studio-city-card ${cityId === city.id ? 'studio-city-card--active' : ''}`}
-            onClick={() => onSelect(city.id)}
-          >
-            <span className="studio-city-name">{city.nameAr}</span>
-            <span className="studio-city-meta">{city.routeCount} مسار</span>
-          </button>
-        ))}
-        {comingSoon.map(city => (
-          <div key={city.id} className="studio-city-card studio-city-card--soon">
-            <span className="studio-city-name">{city.nameAr}</span>
-            <span className="studio-city-badge">قريباً</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function Step2Draw({
-  drawMode, activeVertexCount, conflictWarning, conflictDismissed,
-  onStartDraw, onUndo, onRedraw, onDismissConflict, onBack, onNext,
-}: {
-  drawMode: DrawMode
-  activeVertexCount: number
-  conflictWarning: boolean
-  conflictDismissed: boolean
-  onStartDraw: () => void
-  onUndo: () => void
-  onRedraw: () => void
-  onDismissConflict: () => void
-  onBack: () => void
-  onNext: () => void
-}) {
-  const { drawnLine } = useStudioStore()
-  const isDrawing = drawMode === 'line'
-  const isDone = !!drawnLine
-
-  return (
-    <div className="studio-step-panel">
-      <p className="studio-step-intro">
-        ارسم خط المسار على الخريطة. الخطوط الباهتة هي المسارات المنشورة — تأكد أن مسارك مختلف أو يكمّلها.
-      </p>
-
-      {conflictWarning && !conflictDismissed && (
-        <div className="studio-warning">
-          <span>⚠ يبدو أن هناك مساراً قريباً بالفعل. تأكد أن مسارك يختلف قبل المتابعة.</span>
-          <button type="button" className="studio-warning-dismiss" onClick={onDismissConflict}>✕</button>
-        </div>
-      )}
-
-      {!isDone ? (
-        <button
-          type="button"
-          className={`studio-action-btn ${isDrawing ? 'studio-action-btn--active' : ''}`}
-          onClick={onStartDraw}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-          </svg>
-          {isDrawing ? 'جاري الرسم…' : 'ابدأ رسم المسار'}
-          {isDrawing && <span className="studio-tool-pill">نشط</span>}
-        </button>
-      ) : (
-        <>
-          <div className="studio-done-badge">
-            <span>✓ المسار مرسوم ({drawnLine.length} نقطة)</span>
-            <button type="button" className="studio-link-btn" onClick={onRedraw}>إعادة الرسم</button>
-          </div>
-          <p className="studio-hint" style={{ marginTop: '0.35rem' }}>انقر مرتين على الخريطة لإضافة نقطة • اسحب النقاط • انقر يمينًا / اضغط مطولاً لحذف نقطة</p>
-        </>
-      )}
-
-      {isDrawing && (
-        <div className="studio-draw-hints">
-          <p className="studio-hint">انقر لإضافة نقاط • انقر مرتين لإنهاء المسار • Esc للإلغاء</p>
-          {activeVertexCount > 0 && (
-            <p className="studio-vertex-count">{activeVertexCount} نقطة مضافة</p>
-          )}
-          <button type="button" className="studio-util-btn" onClick={onUndo} disabled={activeVertexCount === 0}>
-            ↩ تراجع
-          </button>
-        </div>
-      )}
-
-      <div className="studio-step-nav">
-        <button type="button" className="studio-nav-back" onClick={onBack}>← رجوع</button>
-        <button type="button" className="studio-nav-next" onClick={onNext} disabled={!isDone}>
-          التالي ←
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function Step3Stops({
-  drawMode, onActivatePoint, onBack, onNext, isEditMode,
-}: {
-  drawMode: DrawMode
-  onActivatePoint: () => void
-  onBack: () => void
-  onNext: () => void
+function SuccessPanel({ draftId, isEditMode, isAnonymous, onReset, onEdit, onExit }: {
+  draftId: number
   isEditMode: boolean
+  isAnonymous?: boolean
+  onReset: () => void
+  onEdit: () => void
+  onExit: () => void
 }) {
-  const { stops, removeStop, updateStopName } = useStudioStore()
-  const isPointing = drawMode === 'point'
-
   return (
-    <div className="studio-step-panel">
-      <p className="studio-step-intro">
-        ضع محطات التوقف على طول مسارك وامنح كلاً منها اسماً بالعربية. هذه الخطوة اختيارية.
-      </p>
-
-      <button
-        type="button"
-        className={`studio-action-btn ${isPointing ? 'studio-action-btn--active' : ''}`}
-        onClick={onActivatePoint}
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
-        </svg>
-        {isPointing ? 'جاري إضافة المحطات…' : 'إضافة محطات'}
-        {isPointing && <span className="studio-tool-pill">نشط</span>}
-      </button>
-
-      {isPointing && (
-        <p className="studio-hint">انقر على الخريطة بمحاذاة مسارك • سيظهر نموذج التسمية فور الوضع</p>
-      )}
-
-      {isEditMode && stops.length > 0 && (
-        <p className="studio-hint text-[var(--gold)] mb-3 flex items-center gap-1">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" />
-          </svg>
-          <span>وضع التعديل: اسحب المحطات على الخريطة لتغيير مواقعها</span>
+    <div className="p-4 bg-card rounded-xl border border-border shadow-xs text-center space-y-4">
+      <div className="w-12 h-12 bg-emerald-500/10 rounded-full flex items-center justify-center text-emerald-500 mx-auto">
+        <Check className="w-6 h-6 stroke-[3]" />
+      </div>
+      <div>
+        <h3 className="text-base font-bold text-foreground">
+          {isEditMode ? 'تم تحديث المسار بنجاح!' : 'تم إرسال المسودة بنجاح!'}
+        </h3>
+        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+          {isAnonymous
+            ? `تم إرسال المسودة كزائر (رقم المسودة #${draftId}). سيقوم مشرفو النظام بمراجعتها ونشرها قريباً.`
+            : isEditMode
+            ? 'تم حفظ التعديلات بنجاح وستظهر فوراً على الخريطة التفاعلية.'
+            : `رقم المسودة #${draftId}. تمت مراجعة المساهمة وسيقوم المشرفون بالتحقق منها قريباً.`}
         </p>
-      )}
-
-      {stops.length > 0 ? (
-        <div className="studio-stops-list">
-          <div className="studio-section-label" style={{ marginBottom: '0.5rem' }}>
-            المحطات المضافة ({stops.length})
-          </div>
-          {stops.map((stop, i) => (
-            <div key={stop.id} className="studio-stop-item">
-              <span className="studio-stop-num">{i + 1}</span>
-              <input
-                type="text"
-                className="studio-input studio-stop-input"
-                value={stop.nameAr}
-                placeholder="اسم المحطة بالعربية…"
-                onChange={e => updateStopName(stop.id, e.target.value)}
-              />
-              <button
-                type="button"
-                className="studio-stop-remove"
-                onClick={() => removeStop(stop.id)}
-                aria-label="حذف المحطة"
-              >✕</button>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className="studio-empty-hint">لم تضف أي محطات بعد.</p>
-      )}
-
-      <div className="studio-step-nav">
-        <button type="button" className="studio-nav-back" onClick={onBack}>← رجوع</button>
-        <button type="button" className="studio-nav-next" onClick={onNext}>
-          التالي ←
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function Step4Meta({ onBack, onNext }: { onBack: () => void; onNext: () => void }) {
-  const { nameAr, nameEn, price, notes, colorIndex, setMeta } = useStudioStore()
-
-  return (
-    <div className="studio-step-panel">
-      <p className="studio-step-intro">أضف معلومات المسار. الاسم بالعربية مطلوب.</p>
-
-      <div className="studio-form">
-        <div className="studio-field">
-          <label className="studio-label" htmlFor="s-name-ar">
-            اسم المسار <span className="studio-req">*</span>
-          </label>
-          <input
-            id="s-name-ar" type="text" required
-            className="studio-input"
-            value={nameAr}
-            onChange={e => setMeta({ nameAr: e.target.value })}
-            placeholder="مثال: باب توما — برامكة"
-          />
-        </div>
-        <div className="studio-field">
-          <label className="studio-label">
-            لون المسار على الخريطة
-          </label>
-          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-            {ROUTE_PALETTE.map((colorHex, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => setMeta({ colorIndex: idx })}
-                className={`w-7 h-7 rounded-full border-2 transition-all ${colorIndex === idx ? 'scale-110 border-foreground shadow-md ring-2 ring-primary' : 'border-transparent opacity-75 hover:opacity-100'}`}
-                style={{ backgroundColor: colorHex }}
-                title={`لون ${idx + 1}`}
-              />
-            ))}
-          </div>
-        </div>
-        <div className="studio-field">
-          <label className="studio-label" htmlFor="s-name-en">
-            الاسم بالإنجليزية <span className="studio-opt">اختياري</span>
-          </label>
-          <input
-            id="s-name-en" type="text"
-            className="studio-input"
-            value={nameEn}
-            onChange={e => setMeta({ nameEn: e.target.value })}
-            placeholder="e.g. Bab Touma — Baramkeh"
-            dir="ltr"
-          />
-        </div>
-        <div className="studio-field">
-          <label className="studio-label" htmlFor="s-price">
-            التعرفة (ل.س) <span className="studio-opt">اختياري</span>
-          </label>
-          <input
-            id="s-price" type="number" min="0"
-            className="studio-input"
-            value={price}
-            onChange={e => setMeta({ price: e.target.value })}
-            placeholder="مثال: 1500"
-            dir="ltr"
-          />
-        </div>
-        <div className="studio-field">
-          <label className="studio-label" htmlFor="s-notes">
-            ملاحظات <span className="studio-opt">اختياري</span>
-          </label>
-          <textarea
-            id="s-notes"
-            className="studio-textarea"
-            value={notes}
-            onChange={e => setMeta({ notes: e.target.value })}
-            placeholder="محطات بارزة، جداول التشغيل، تفاصيل إضافية…"
-            rows={3}
-          />
-        </div>
       </div>
 
-      <div className="studio-step-nav">
-        <button type="button" className="studio-nav-back" onClick={onBack}>← رجوع</button>
-        <button
-          type="button"
-          className="studio-nav-next"
-          onClick={onNext}
-          disabled={!nameAr.trim()}
-        >
-          التالي ←
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function Step5Review({
-  submitting, onSubmit, onBack,
-}: {
-  submitting: boolean
-  onSubmit: () => void
-  onBack: () => void
-}) {
-  const { cityId, nameAr, nameEn, price, notes, drawnLine, stops, setStep } = useStudioStore()
-  const city = cities.find(c => c.id === cityId)
-
-  const steps = [
-    { num: 1 as const, label: 'المدينة' },
-    { num: 2 as const, label: 'المسار' },
-    { num: 3 as const, label: 'المحطات' },
-    { num: 4 as const, label: 'البيانات' },
-  ]
-
-  return (
-    <div className="studio-step-panel">
-      <p className="studio-step-intro">راجع بيانات مساهمتك قبل الإرسال.</p>
-
-      {/* Edit steps */}
-      <div className="flex gap-1.5 mb-3">
-        {steps.map(s => (
-          <button
-            key={s.num}
-            type="button"
-            className="studio-review-step-badge"
-            onClick={() => setStep(s.num)}
-          >
-            {s.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="studio-review-card">
-        <div className="studio-review-row">
-          <span className="studio-review-label">المدينة</span>
-          <span className="studio-review-value">{city?.nameAr ?? cityId}</span>
-        </div>
-        <div className="studio-review-row">
-          <span className="studio-review-label">اسم المسار</span>
-          <span className="studio-review-value">{nameAr}</span>
-        </div>
-        {nameEn && (
-          <div className="studio-review-row">
-            <span className="studio-review-label">الاسم بالإنجليزية</span>
-            <span className="studio-review-value" dir="ltr">{nameEn}</span>
-          </div>
-        )}
-        {price && (
-          <div className="studio-review-row">
-            <span className="studio-review-label">التعرفة</span>
-            <span className="studio-review-value">{price} ل.س</span>
-          </div>
-        )}
-        {notes && (
-          <div className="studio-review-row">
-            <span className="studio-review-label">ملاحظات</span>
-            <span className="studio-review-value">{notes}</span>
-          </div>
-        )}
-        <div className="studio-review-row">
-          <span className="studio-review-label">نقاط المسار</span>
-          <span className="studio-review-value">{drawnLine?.length ?? 0} نقطة</span>
-        </div>
-        <div className="studio-review-row">
-          <span className="studio-review-label">المحطات</span>
-          <span className="studio-review-value">{stops.length > 0 ? `${stops.length} محطة` : 'لا يوجد'}</span>
-        </div>
-        {stops.length > 0 && (
-          <div className="studio-review-stops">
-            {stops.map((s, i) => (
-              <span key={s.id} className="studio-review-stop-chip">
-                {i + 1}. {s.nameAr || 'بدون اسم'}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <button
-        type="button"
-        className="studio-submit-btn"
-        disabled={submitting}
-        onClick={onSubmit}
-      >
-        {submitting
-          ? <><span className="studio-spinner" />جاري الإرسال…</>
-          : <>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/>
-              </svg>
-              إرسال المسار
-            </>
-        }
-      </button>
-
-      <div className="studio-step-nav">
-        <button type="button" className="studio-nav-back" onClick={onBack}>← تعديل</button>
-      </div>
-    </div>
-  )
-}
-
-function SuccessPanel({ draftId, isEditMode, onReset, onEdit, onExit }: { draftId: number; isEditMode: boolean; onReset: () => void; onEdit: () => void; onExit: () => void }) {
-  return (
-    <div className="studio-success">
-      <div className="studio-success-icon">✓</div>
-      <h2 className="studio-success-title">{isEditMode ? 'تم تحديث مسارك بنجاح!' : 'تم إرسال مسارك بنجاح!'}</h2>
-      <p className="studio-success-sub">{isEditMode ? 'سيتمت مراجعة التعديلات خلال 48 ساعة.' : 'سيراجع الفريق مساهمتك خلال 48 ساعة.'}</p>
-      <p className="studio-success-id">رقم المساهمة: #{draftId}</p>
-      <div className="studio-success-actions">
-        <button type="button" className="studio-submit-btn" onClick={onEdit}>
-          تعديل المسار
-        </button>
-        <button type="button" className="studio-submit-btn studio-submit-btn--outline" onClick={onReset}>
-          إرسال مسار آخر
-        </button>
-        <button type="button" className="studio-nav-back" style={{ justifyContent: 'center' }} onClick={onExit}>
-          العودة للخريطة
-        </button>
+      <div className="space-y-2 pt-2">
+        <Button type="button" onClick={onEdit} variant="outline" className="w-full text-xs h-9">
+          تعديل المسار الحالي
+        </Button>
+        <Button type="button" onClick={onReset} className="w-full text-xs h-9">
+          رسم مسار جديد
+        </Button>
+        <Button type="button" onClick={onExit} variant="ghost" className="w-full text-xs h-8 text-muted-foreground">
+          العودة لخريطة المواصلات
+        </Button>
       </div>
     </div>
   )
@@ -549,18 +202,20 @@ function StopNamePopup({ stop, pixel, onConfirm, onDismiss }: {
 function TransitStudioPageContent() {
   const mapContainer = useRef<HTMLDivElement>(null)
   const mapRef       = useRef<maplibregl.Map | null>(null)
+  const currentStyleRef = useRef<string | null>(null)
   const modeRef      = useRef<DrawMode>('idle')
   const activeLine   = useRef<Position[]>([])
   const isMobileRef  = useRef(false)
   const vertexMarkersRef = useRef<maplibregl.Marker[]>([])
   const stopMarkersRef = useRef<maplibregl.Marker[]>([])
+  const lastTouchTimeRef = useRef<number>(0)
 
   const {
-    step, cityId, drawnLine, stops, nameAr, submittedDraftId,
+    cityId, drawnLine, stops, nameAr, nameEn, price, notes, submittedDraftId,
     colorIndex, setColorIndex,
     isEditMode, editingDraftId, editingRouteId,
-    setStep, setCity, setDrawnLine, updateStopName, updateStopCoordinates, setSubmittedDraftId,
-    setEditMode, loadDraft, reset,
+    setCity, setDrawnLine, addStop, removeStop, updateStopName, updateStopCoordinates, setMeta, setSubmittedDraftId,
+    reset, loadDraft
   } = useStudioStore()
   const { theme } = useTransitTheme()
   const { user } = useAuth()
@@ -573,37 +228,107 @@ function TransitStudioPageContent() {
   const [conflictWarning,    setConflictWarning]    = useState(false)
   const [conflictDismissed,  setConflictDismissed]  = useState(false)
   const [submitting,         setSubmitting]         = useState(false)
-  const [panelExpanded,      setPanelExpanded]      = useState(true)
-  const [toasts,             setToasts]             = useState<Toast[]>([])
+  const [accordionValue,     setAccordionValue]     = useState<string>('line')
+  const [lastSubmittedIsAnon, setLastSubmittedIsAnon] = useState(false)
 
   const { data: refData } = useMapData(cityId || undefined)
+  const activeCities = cities.filter(c => c.status === 'active')
+  const currentCity = cities.find(c => c.id === cityId) || activeCities[0]
 
-  // ─── Toast ──────────────────────────────────────────────────────────────────
-  const addToast = useCallback((msg: string, type: ToastType = 'info') => {
-    const id = Date.now()
-    setToasts(prev => [...prev, { id, msg, type }])
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4500)
+  // ─── Shadcn Sonner Toast Notification Handler ───────────────────────────────
+  const addToast = useCallback((msg: string, type: 'success' | 'destructive' | 'info' | 'warning' = 'info') => {
+    if (type === 'success') {
+      toast.success(msg)
+    } else if (type === 'destructive') {
+      toast.error(msg)
+    } else if (type === 'warning') {
+      toast.warning(msg)
+    } else {
+      toast.info(msg)
+    }
   }, [])
 
-  // ─── Active-line source helpers ─────────────────────────────────────────────
+  // Helper to ensure MapLibre custom sources & layers exist (survives setStyle)
+  const ensureMapLayers = useCallback((map: maplibregl.Map, currentColorIndex: number) => {
+    const empty: FeatureCollection = { type: 'FeatureCollection', features: [] }
+    const activeColor = getRouteColor(currentColorIndex)
+
+    if (!map.getSource(SRC_REF_ROUTES)) {
+      map.addSource(SRC_REF_ROUTES, { type: 'geojson', data: empty })
+      map.addLayer({
+        id: 'ref-layer-routes',
+        type: 'line',
+        source: SRC_REF_ROUTES,
+        paint: { 'line-color': buildColorMatch() as any, 'line-width': 3, 'line-opacity': 0.4 },
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+      })
+    }
+
+    if (!map.getSource(SRC_REF_STOPS)) {
+      map.addSource(SRC_REF_STOPS, { type: 'geojson', data: empty })
+      map.addLayer({
+        id: 'ref-layer-stops',
+        type: 'circle',
+        source: SRC_REF_STOPS,
+        paint: { 'circle-radius': 4, 'circle-color': '#d4956a', 'circle-opacity': 0.4 },
+      })
+    }
+
+    if (!map.getSource(SRC_LINES)) {
+      map.addSource(SRC_LINES, { type: 'geojson', data: empty })
+      map.addLayer({
+        id: 'studio-layer-lines',
+        type: 'line',
+        source: SRC_LINES,
+        paint: { 'line-color': activeColor, 'line-width': 6, 'line-opacity': 0.95 },
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+      })
+    }
+
+    if (!map.getSource(SRC_ACTIVE)) {
+      map.addSource(SRC_ACTIVE, { type: 'geojson', data: empty })
+      map.addLayer({
+        id: 'studio-layer-active',
+        type: 'line',
+        source: SRC_ACTIVE,
+        filter: ['==', '$type', 'LineString'],
+        paint: { 'line-color': activeColor, 'line-width': 5, 'line-dasharray': [2, 2], 'line-opacity': 0.9 },
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+      })
+      map.addLayer({
+        id: 'studio-layer-vertices',
+        type: 'circle',
+        source: SRC_ACTIVE,
+        filter: ['==', '$type', 'Point'],
+        paint: { 'circle-radius': 6, 'circle-color': activeColor, 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2 },
+      })
+    }
+  }, [])
+
+  // Active-line source helpers
   const flushActive = useCallback((coords: Position[], cursor?: Position) => {
-    const src = mapRef.current?.getSource(SRC_ACTIVE) as maplibregl.GeoJSONSource | undefined
+    if (!mapRef.current) return
+    const map = mapRef.current
+    ensureMapLayers(map, colorIndex)
+
+    const src = map.getSource(SRC_ACTIVE) as maplibregl.GeoJSONSource | undefined
     if (!src) return
     const features: any[] = []
     const all = cursor && coords.length > 0 ? [...coords, cursor] : coords
     if (all.length >= 2) features.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: all } })
     coords.forEach(c => features.push({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: c } }))
     src.setData({ type: 'FeatureCollection', features })
-  }, [])
+  }, [ensureMapLayers, colorIndex])
 
   const clearActive = useCallback(() => {
     activeLine.current = []
     setActiveVertexCount(0)
-    const src = mapRef.current?.getSource(SRC_ACTIVE) as maplibregl.GeoJSONSource | undefined
+    if (!mapRef.current) return
+    const src = mapRef.current.getSource(SRC_ACTIVE) as maplibregl.GeoJSONSource | undefined
     src?.setData({ type: 'FeatureCollection', features: [] })
   }, [])
 
-  // ─── Mode switching ─────────────────────────────────────────────────────────
+  // Mode switching
   const setMode = useCallback((mode: DrawMode) => {
     clearActive()
     modeRef.current = mode
@@ -612,7 +337,48 @@ function TransitStudioPageContent() {
     if (canvas) canvas.style.cursor = mode !== 'idle' ? 'crosshair' : ''
   }, [clearActive])
 
-  // ─── Restore pending session after login redirect ─────────────────────────
+  // Finish / End line editing or drawing on double-click / double-tap
+  const finishLineEditing = useCallback(() => {
+    if (modeRef.current !== 'line') return
+
+    if (activeLine.current.length >= 2) {
+      const finalLine = [...activeLine.current]
+      setDrawnLine(finalLine)
+      setMode('idle')
+      addToast(`اكتمل رسم المسار (${finalLine.length} نقطة)`, 'success')
+
+      if (refData?.routes?.features?.length) {
+        const conflict = checkConflict(finalLine, refData.routes.features)
+        setConflictWarning(conflict)
+        setConflictDismissed(false)
+      }
+      setAccordionValue('stops')
+    } else {
+      const curDrawn = useStudioStore.getState().drawnLine
+      if (curDrawn && curDrawn.length >= 2) {
+        setMode('idle')
+        addToast(`تم إنهاء تعديل المسار (${curDrawn.length} نقطة)`, 'success')
+        setAccordionValue('stops')
+      } else {
+        addToast('يجب رسم نقطتين على الأقل', 'destructive')
+      }
+    }
+  }, [addToast, refData, setDrawnLine, setMode])
+
+  // Focus station input in sidebar and scroll to it
+  const handleFocusStationInput = useCallback((stopId: number) => {
+    setAccordionValue('stops')
+    setActiveStopId(stopId)
+    setTimeout(() => {
+      const inputEl = document.getElementById(`stop-input-${stopId}`)
+      if (inputEl) {
+        inputEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        inputEl.focus()
+      }
+    }, 150)
+  }, [])
+
+  // Restore pending session after login redirect
   useEffect(() => {
     const pending = localStorage.getItem('transit:studio:pending')
     if (pending) {
@@ -627,24 +393,21 @@ function TransitStudioPageContent() {
         if (s.price !== undefined) patch.price = s.price
         if (s.notes !== undefined) patch.notes = s.notes
         if (s.editingRouteId) { patch.editingRouteId = s.editingRouteId; patch.isEditMode = true }
-        if (s.cityId) patch.step = 5 as WizardStep
         useStudioStore.setState(patch)
-        addToast('تمت استعادة مسارك بعد تسجيل الدخول', 'success')
+        addToast('تمت استعادة مسارك لتقديمه تحت حسابك المسجل', 'success')
       } catch { /* */ }
       localStorage.removeItem('transit:studio:pending')
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ─── Load draft for editing (?edit=DRAFT_ID) ──────────────────────────────
+  // Load draft for editing
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const editId = params.get('edit')
     if (!editId || isEditMode) return
-    // Try loading as draft first
     fetch(`/api/v1/studio/routes/${editId}`, { credentials: 'include' })
       .then(r => {
         if (r.ok) return r.json().then(draft => ({ draft, isRoute: false }))
-        // Not found as draft → try as published route
         return fetch(`/api/v1/studio/routes/${editId}/from-route`, { credentials: 'include' })
           .then(r2 => r2.ok ? r2.json().then(d => ({ draft: d, isRoute: true })) : null)
       })
@@ -654,10 +417,35 @@ function TransitStudioPageContent() {
           addToast(result.isRoute ? 'تم تحميل الخط المنشور للتعديل' : 'تم تحميل المسار للتعديل', 'success')
         }
       })
-      .catch(() => addToast('تعذّر تحميل المسار للتعديل', 'error'))
+      .catch(() => addToast('تعذّر تحميل المسار للتعديل', 'destructive'))
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ─── Zoom to fit route when editing ───────────────────────────────────────
+  // Center & Fit bounds on city select, bounding user to city boundaries
+  const handleCitySelect = useCallback((cId: string) => {
+    setCity(cId)
+    const c = cities.find(x => x.id === cId)
+    if (c && mapRef.current) {
+      const sw = c.bounds[0] as [number, number]
+      const ne = c.bounds[1] as [number, number]
+
+      mapRef.current.fitBounds([sw, ne], { padding: 50, duration: 1200 })
+
+      const paddedBounds: maplibregl.LngLatBoundsLike = [
+        [sw[0] - 0.08, sw[1] - 0.08],
+        [ne[0] + 0.08, ne[1] + 0.08]
+      ]
+      mapRef.current.setMaxBounds(paddedBounds)
+    }
+  }, [setCity])
+
+  // Set default city if empty
+  useEffect(() => {
+    if (!cityId && activeCities.length > 0) {
+      handleCitySelect(activeCities[0].id)
+    }
+  }, [cityId, activeCities, handleCitySelect])
+
+  // Zoom to fit route when editing
   useEffect(() => {
     if (!mapReady || !mapRef.current || !drawnLine || drawnLine.length < 2 || !isEditMode) return
     const map = mapRef.current
@@ -666,19 +454,40 @@ function TransitStudioPageContent() {
     map.fitBounds(bounds, { padding: 80, maxZoom: 15, duration: 500 })
   }, [mapReady, drawnLine, isEditMode])
 
-  // ─── Map init ───────────────────────────────────────────────────────────────
+  // Helper to check dark mode state
+  const isDarkMode = useCallback(() => {
+    const html = document.documentElement
+    const themeConfig = THEME_REGISTRY.find((t) => t.id === theme)
+    return (
+      html.classList.contains('dark') ||
+      html.getAttribute('data-theme') === 'dark' ||
+      (themeConfig?.isDark ?? false)
+    )
+  }, [theme])
+
+  // Map initialization with User's Color Theme
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return
 
-    const dark = THEME_REGISTRY.find((t) => t.id === theme)?.isDark ?? true
+    const dark = isDarkMode()
+    const initCity = cities.find(c => c.id === cityId) || activeCities[0]
+    const initialStyle = dark ? '/styles/styles/dark-matter-vector.json' : '/styles/styles/light-vector.json'
+    currentStyleRef.current = initialStyle
+
     const map = new maplibregl.Map({
       container: mapContainer.current,
-      style: dark ? '/styles/styles/dark-matter-vector.json' : '/styles/styles/light-vector.json',
-      center: [36.2913, 33.5138],
-      zoom: 5,
+      style: initialStyle,
+      center: initCity ? (initCity.center as [number, number]) : [36.2913, 33.5138],
+      zoom: initCity ? initCity.zoom : 12,
       attributionControl: false,
       doubleClickZoom: false,
     })
+
+    if (initCity) {
+      const sw = initCity.bounds[0] as [number, number]
+      const ne = initCity.bounds[1] as [number, number]
+      map.setMaxBounds([[sw[0] - 0.08, sw[1] - 0.08], [ne[0] + 0.08, ne[1] + 0.08]])
+    }
 
     map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right')
     map.addControl(new maplibregl.NavigationControl(), 'bottom-right')
@@ -691,1257 +500,1027 @@ function TransitStudioPageContent() {
     )
 
     map.on('load', () => {
-      const empty: FeatureCollection = { type: 'FeatureCollection', features: [] }
-
-      // Reference layers (behind draw layers)
-      map.addSource(SRC_REF_ROUTES, { type: 'geojson', data: empty })
-      map.addSource(SRC_REF_STOPS,  { type: 'geojson', data: empty })
-
-      map.addLayer({
-        id: 'ref-layer-routes',
-        type: 'line',
-        source: SRC_REF_ROUTES,
-        paint: { 'line-color': buildColorMatch() as any, 'line-width': 2.5, 'line-opacity': 0.35 },
-      })
-      map.addLayer({
-        id: 'ref-layer-stops',
-        type: 'circle',
-        source: SRC_REF_STOPS,
-        paint: { 'circle-radius': 4, 'circle-color': '#d4956a', 'circle-opacity': 0.3 },
-      })
-
-      // Draw layers (in front)
-      map.addSource(SRC_LINES,  { type: 'geojson', data: empty })
-      map.addSource(SRC_STOPS,  { type: 'geojson', data: empty })
-      map.addSource(SRC_ACTIVE, { type: 'geojson', data: empty })
-
-      const activeColor = getRouteColor(colorIndex)
-
-      map.addLayer({
-        id: 'studio-layer-lines',
-        type: 'line',
-        source: SRC_LINES,
-        paint: { 'line-color': activeColor, 'line-width': 4, 'line-opacity': 0.95 },
-      })
-      map.addLayer({
-        id: 'studio-layer-stops',
-        type: 'circle',
-        source: SRC_STOPS,
-        paint: { 'circle-radius': 7, 'circle-color': '#4a9eff', 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 },
-      })
-      map.addLayer({
-        id: 'studio-layer-active',
-        type: 'line',
-        source: SRC_ACTIVE,
-        filter: ['==', '$type', 'LineString'],
-        paint: { 'line-color': activeColor, 'line-width': 3, 'line-dasharray': [2, 2], 'line-opacity': 0.85 },
-      })
-      map.addLayer({
-        id: 'studio-layer-vertices',
-        type: 'circle',
-        source: SRC_ACTIVE,
-        filter: ['==', '$type', 'Point'],
-        paint: { 'circle-radius': 5, 'circle-color': activeColor, 'circle-stroke-color': '#fff', 'circle-stroke-width': 1.5 },
-      })
-
+      ensureMapLayers(map, colorIndex)
       mapRef.current = map
       setMapReady(true)
     })
 
-    return () => { map.remove(); mapRef.current = null; setMapReady(false) }
-  }, [theme])
-
-  // Sync studio layer paint colors with colorIndex
-  useEffect(() => {
-    if (!mapReady || !mapRef.current) return
-    const color = getRouteColor(colorIndex)
-    try {
-      if (mapRef.current.getLayer('studio-layer-lines')) {
-        mapRef.current.setPaintProperty('studio-layer-lines', 'line-color', color)
-      }
-      if (mapRef.current.getLayer('studio-layer-active')) {
-        mapRef.current.setPaintProperty('studio-layer-active', 'line-color', color)
-      }
-      if (mapRef.current.getLayer('studio-layer-vertices')) {
-        mapRef.current.setPaintProperty('studio-layer-vertices', 'circle-color', color)
-      }
-    } catch { /* */ }
-  }, [mapReady, colorIndex])
-
-  useEffect(() => {
-    if (!mapReady || !mapRef.current) return
-    const map = mapRef.current
-
-    map.on('click', (e) => {
-      const mode = modeRef.current
-      const coord: [number, number] = [e.lngLat.lng, e.lngLat.lat]
-
-      if (mode === 'line') {
-        activeLine.current = [...activeLine.current, coord]
-        setActiveVertexCount(activeLine.current.length)
-        flushActive(activeLine.current)
-      } else if (mode === 'point') {
-        useStudioStore.getState().addStop(coord)
-        const newStops = useStudioStore.getState().stops
-        const last = newStops[newStops.length - 1]
-        if (last) {
-          setActiveStopId(last.id)
-          const px = map.project(e.lngLat)
-          setActiveStopPixel({ x: px.x, y: px.y })
-        }
-      }
-    })
-
-    map.on('dblclick', (e) => {
-      e.preventDefault()
-      const mode = modeRef.current
-      const state = useStudioStore.getState()
-
-      // Idle mode with existing line → insert/extend vertex
-      if (mode === 'idle' && state.drawnLine && state.drawnLine.length >= 2) {
-        const clickCoord: [number, number] = [e.lngLat.lng, e.lngLat.lat]
-        const coords = state.drawnLine
-        const { insertIdx, distance } = findNearestSegment(coords, clickCoord[0], clickCoord[1], map)
-
-        // Threshold: 40px → on/near line, insert between segments
-        if (distance < 40) {
-          const updated = [...coords]
-          updated.splice(insertIdx, 0, clickCoord)
-          state.setDrawnLine(updated as [number, number][])
-        } else {
-          // Far from line → extend start or end, whichever is closer
-          const startPx = map.project(coords[0] as maplibregl.LngLatLike)
-          const endPx = map.project(coords[coords.length - 1] as maplibregl.LngLatLike)
-          const clickPx = map.project(e.lngLat)
-          const distStart = Math.hypot(clickPx.x - startPx.x, clickPx.y - startPx.y)
-          const distEnd = Math.hypot(clickPx.x - endPx.x, clickPx.y - endPx.y)
-          const updated = distStart <= distEnd
-            ? [clickCoord, ...coords]
-            : [...coords, clickCoord]
-          state.setDrawnLine(updated as [number, number][])
-        }
-        return
-      }
-
-      // Line drawing mode → finish line
-      if (mode !== 'line') return
-      const coords = activeLine.current
-      if (coords.length >= 2) {
-        const finalCoords = coords.slice(0, -1) as [number, number][]
-        if (finalCoords.length >= 2) {
-          state.setDrawnLine(finalCoords)
-        }
-      }
-      activeLine.current = []
-      setActiveVertexCount(0)
-      flushActive([])
-      modeRef.current = 'idle'
-      setDrawMode('idle')
-      map.getCanvas().style.cursor = ''
-      if (isMobileRef.current) setPanelExpanded(true)
-    })
-
-    map.on('mousemove', (e) => {
-      if (modeRef.current !== 'line' || activeLine.current.length === 0) return
-      flushActive(activeLine.current, [e.lngLat.lng, e.lngLat.lat])
-    })
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        activeLine.current = []
-        setActiveVertexCount(0)
-        const src = map.getSource(SRC_ACTIVE) as maplibregl.GeoJSONSource | undefined
-        src?.setData({ type: 'FeatureCollection', features: [] })
-        modeRef.current = 'idle'
-        setDrawMode('idle')
-        setActiveStopId(null)
-        map.getCanvas().style.cursor = ''
-      }
-    }
-    window.addEventListener('keydown', onKeyDown)
-
+    isMobileRef.current = window.innerWidth <= 768
+    const handleResize = () => { isMobileRef.current = window.innerWidth <= 768 }
+    window.addEventListener('resize', handleResize)
     return () => {
-      window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('resize', handleResize)
       map.remove()
       mapRef.current = null
-      setMapReady(false)
     }
-  }, [theme])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ─── Sync drawn line → map ───────────────────────────────────────────────────
-  useEffect(() => {
-    if (!mapReady) return
-    const src = mapRef.current?.getSource(SRC_LINES) as maplibregl.GeoJSONSource | undefined
-    src?.setData({
-      type: 'FeatureCollection',
-      features: drawnLine
-        ? [{ type: 'Feature', properties: { type: 'route' }, geometry: { type: 'LineString', coordinates: drawnLine } }]
-        : [],
-    })
-  }, [mapReady, drawnLine])
-
-  // ─── Draggable vertex markers for route editing ─────────────────────────────
+  // Dynamically sync Map vector style ONLY when dark/light style actually changes
   useEffect(() => {
     if (!mapReady || !mapRef.current) return
     const map = mapRef.current
 
-    // Clear existing markers
+    const applyStyleIfNeeded = () => {
+      const dark = isDarkMode()
+      const targetStyle = dark ? '/styles/styles/dark-matter-vector.json' : '/styles/styles/light-vector.json'
+
+      if (currentStyleRef.current !== targetStyle) {
+        currentStyleRef.current = targetStyle
+        map.setStyle(targetStyle)
+        map.once('styledata', () => {
+          ensureMapLayers(map, colorIndex)
+          if (useStudioStore.getState().drawnLine) {
+            const lSrc = map.getSource(SRC_LINES) as maplibregl.GeoJSONSource
+            lSrc?.setData({
+              type: 'FeatureCollection',
+              features: [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: useStudioStore.getState().drawnLine } }]
+            })
+          }
+        })
+      }
+    }
+
+    applyStyleIfNeeded()
+
+    const observer = new MutationObserver(applyStyleIfNeeded)
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme'] })
+    return () => observer.disconnect()
+  }, [mapReady, theme, isDarkMode, colorIndex, ensureMapLayers])
+
+  // Sync reference routes/stops for current city
+  useEffect(() => {
+    if (!mapReady || !mapRef.current) return
+    const map = mapRef.current
+    ensureMapLayers(map, colorIndex)
+    const rSrc = map.getSource(SRC_REF_ROUTES) as maplibregl.GeoJSONSource | undefined
+    const sSrc = map.getSource(SRC_REF_STOPS) as maplibregl.GeoJSONSource | undefined
+
+    if (refData) {
+      rSrc?.setData(refData.routes)
+      sSrc?.setData(refData.stops)
+    } else {
+      const empty: FeatureCollection = { type: 'FeatureCollection', features: [] }
+      rSrc?.setData(empty)
+      sSrc?.setData(empty)
+    }
+  }, [mapReady, refData, colorIndex, ensureMapLayers])
+
+  // Sync line color on vector map
+  useEffect(() => {
+    if (!mapReady || !mapRef.current) return
+    const map = mapRef.current
+    ensureMapLayers(map, colorIndex)
+
+    const color = getRouteColor(colorIndex)
+    if (map.getLayer('studio-layer-lines')) {
+      map.setPaintProperty('studio-layer-lines', 'line-color', color)
+    }
+    if (map.getLayer('studio-layer-active')) {
+      map.setPaintProperty('studio-layer-active', 'line-color', color)
+    }
+    if (map.getLayer('studio-layer-vertices')) {
+      map.setPaintProperty('studio-layer-vertices', 'circle-color', color)
+    }
+  }, [mapReady, colorIndex, ensureMapLayers])
+
+  // Sync drawn line to vector map layer
+  useEffect(() => {
+    if (!mapReady || !mapRef.current) return
+    const map = mapRef.current
+    ensureMapLayers(map, colorIndex)
+
+    const src = map.getSource(SRC_LINES) as maplibregl.GeoJSONSource | undefined
+    if (!src) return
+    if (drawnLine && drawnLine.length >= 2) {
+      src.setData({
+        type: 'FeatureCollection',
+        features: [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: drawnLine } }],
+      })
+    } else {
+      src.setData({ type: 'FeatureCollection', features: [] })
+    }
+  }, [mapReady, drawnLine, colorIndex, ensureMapLayers])
+
+  // Render draggable vertex markers on the drawn line with live bus stop re-snapping
+  useEffect(() => {
+    if (!mapReady || !mapRef.current) return
+    const map = mapRef.current
+
     vertexMarkersRef.current.forEach(m => m.remove())
     vertexMarkersRef.current = []
 
-    // Remove any lingering tooltip
-    const existingTooltip = mapContainer.current?.querySelector('.studio-vertex-remove-tooltip')
-    if (existingTooltip) existingTooltip.remove()
+    if (!drawnLine || drawnLine.length < 2) return
 
-    // Only show when line exists and we're not actively drawing
-    if (!drawnLine || drawnLine.length < 2 || drawMode !== 'idle') return
-
-    let activeTooltip: { el: HTMLDivElement; marker: maplibregl.Marker } | null = null
-
-    const dismissTooltip = () => {
-      if (activeTooltip) {
-        activeTooltip.el.remove()
-        activeTooltip = null
-      }
-    }
-
-    const showRemoveTooltip = (marker: maplibregl.Marker, idx: number) => {
-      dismissTooltip()
-
-      const tooltipEl = document.createElement('div')
-      tooltipEl.className = 'studio-vertex-remove-tooltip'
-      tooltipEl.style.cssText = `
-        position:absolute; z-index:20;
-        display:inline-flex; align-items:center; gap:4px;
-        background:var(--surface,#1e1e1e); border:1px solid var(--border,#333);
-        border-radius:8px; padding:3px 6px;
-        box-shadow:0 2px 12px rgba(0,0,0,0.4);
-        pointer-events:all; cursor:default;
-        animation:tooltip-pop 0.15s ease both;
-        direction:rtl;
-      `
-      tooltipEl.innerHTML = `
-        <button data-action="cancel" style="
-          background:transparent;color:var(--muted,#888);border:none;border-radius:4px;
-          padding:1px 4px;font-size:12px;font-family:inherit;
-          cursor:pointer;line-height:1;
-        ">✕</button>
-        <button data-action="remove" style="
-          background:#ef4444;color:#fff;border:none;border-radius:5px;
-          padding:2px 8px;font-size:11px;font-weight:700;font-family:inherit;
-          cursor:pointer;
-        ">حذف</button>
-      `
-
-      // Position above the marker
-      const containerRect = mapContainer.current!.getBoundingClientRect()
-      const markerPos = marker.getElement().getBoundingClientRect()
-      const tooltipWidth = 110
-      let left = markerPos.left - containerRect.left + markerPos.width / 2 - tooltipWidth / 2
-      left = Math.max(4, Math.min(left, containerRect.width - tooltipWidth - 4))
-      tooltipEl.style.left = `${left}px`
-      tooltipEl.style.top = `${markerPos.top - containerRect.top - 32}px`
-      tooltipEl.style.width = `${tooltipWidth}px`
-
-      tooltipEl.querySelector('[data-action="remove"]')!.addEventListener('click', (e) => {
-        e.stopPropagation()
-        const current = useStudioStore.getState().drawnLine
-        if (!current || current.length <= 2) {
-          dismissTooltip()
-          return
-        }
-        const updated = [...current]
-        updated.splice(idx, 1)
-        useStudioStore.getState().setDrawnLine(updated as [number, number][])
-        dismissTooltip()
-      })
-
-      tooltipEl.querySelector('[data-action="cancel"]')!.addEventListener('click', (e) => {
-        e.stopPropagation()
-        dismissTooltip()
-      })
-
-      mapContainer.current!.appendChild(tooltipEl)
-      activeTooltip = { el: tooltipEl, marker }
-    }
+    const activeColor = getRouteColor(colorIndex)
 
     drawnLine.forEach((coord, idx) => {
       const el = document.createElement('div')
-      el.className = 'studio-vertex-handle'
-      el.style.cssText = 'width:16px;height:16px;border-radius:50%;background:#f5a623;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.4);cursor:grab;touch-action:none;'
+      el.className = 'studio-vertex-marker w-4 h-4 rounded-full border-2 border-white shadow-md cursor-grab active:cursor-grabbing hover:scale-125 transition-transform z-10'
+      el.style.backgroundColor = activeColor
+      el.title = `نقطة ${idx + 1} — اسحب للتعديل • انقر مرتين لإنهاء التعديل • انقر يميناً للحذف`
 
-      const marker = new maplibregl.Marker({ element: el, draggable: true, offset: [0, 0] })
+      const marker = new maplibregl.Marker({ element: el, draggable: true })
         .setLngLat(coord as maplibregl.LngLatLike)
         .addTo(map)
 
-      // Drag handling
-      marker.on('dragend', () => {
-        const pos = marker.getLngLat()
-        const newCoord: [number, number] = [pos.lng, pos.lat]
-        const current = useStudioStore.getState().drawnLine
-        if (!current) return
-        const updated = [...current]
-        updated[idx] = newCoord
-        useStudioStore.getState().setDrawnLine(updated as [number, number][])
-      })
+      // Live dragging of vertex points with real-time bus stop re-snapping
+      marker.on('drag', () => {
+        const newPos = marker.getLngLat()
+        const curLine = [...useStudioStore.getState().drawnLine!]
+        curLine[idx] = [newPos.lng, newPos.lat]
 
-      // Right-click → show remove tooltip (desktop)
-      el.addEventListener('contextmenu', (e) => {
-        e.preventDefault()
-        e.stopPropagation()
-        showRemoveTooltip(marker, idx)
-      })
+        // 1. Update line vector layer live
+        const src = map.getSource(SRC_LINES) as maplibregl.GeoJSONSource
+        src?.setData({
+          type: 'FeatureCollection',
+          features: [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: curLine } }]
+        })
 
-      // Long-press → show remove tooltip (mobile)
-      let longPressTimer: ReturnType<typeof setTimeout> | null = null
-      let touchStartPos = { x: 0, y: 0 }
-
-      el.addEventListener('touchstart', (e) => {
-        touchStartPos = { x: e.touches[0].clientX, y: e.touches[0].clientY }
-        longPressTimer = setTimeout(() => {
-          showRemoveTooltip(marker, idx)
-        }, 500)
-      }, { passive: true })
-
-      el.addEventListener('touchmove', (e) => {
-        if (longPressTimer) {
-          const dx = e.touches[0].clientX - touchStartPos.x
-          const dy = e.touches[0].clientY - touchStartPos.y
-          if (Math.hypot(dx, dy) > 10) {
-            clearTimeout(longPressTimer)
-            longPressTimer = null
+        // 2. Re-snap stop markers on the map live in real-time to the updated line
+        const curStops = useStudioStore.getState().stops
+        stopMarkersRef.current.forEach((stopMarker, sIdx) => {
+          const stop = curStops[sIdx]
+          if (stop && curLine.length >= 2) {
+            const { nearest } = findNearestSegment(curLine, stop.coordinates[0], stop.coordinates[1], map)
+            stopMarker.setLngLat([nearest.x, nearest.y])
           }
-        }
-      }, { passive: true })
+        })
+      })
 
-      el.addEventListener('touchend', () => {
-        if (longPressTimer) {
-          clearTimeout(longPressTimer)
-          longPressTimer = null
+      marker.on('dragend', () => {
+        const newPos = marker.getLngLat()
+        const updatedLine = [...useStudioStore.getState().drawnLine!]
+        updatedLine[idx] = [newPos.lng, newPos.lat]
+        setDrawnLine(updatedLine)
+
+        // Commit updated snapped stop coordinates to Zustand store
+        const curStops = useStudioStore.getState().stops
+        if (curStops.length > 0 && updatedLine.length >= 2) {
+          curStops.forEach((stop) => {
+            const { nearest } = findNearestSegment(updatedLine, stop.coordinates[0], stop.coordinates[1], map)
+            updateStopCoordinates(stop.id, [nearest.x, nearest.y])
+          })
         }
+      })
+
+      // Double click on vertex marker to finish editing
+      el.addEventListener('dblclick', (ev) => {
+        ev.stopPropagation()
+        ev.preventDefault()
+        finishLineEditing()
+      })
+
+      // Right-click / context menu to remove single vertex
+      el.addEventListener('contextmenu', (ev) => {
+        ev.preventDefault()
+        const cur = useStudioStore.getState().drawnLine!
+        if (cur.length <= 2) {
+          addToast('يجب أن يحتوي المسار على نقطتين على الأقل', 'info')
+          return
+        }
+        const updatedLine = cur.filter((_, i) => i !== idx)
+        setDrawnLine(updatedLine)
+
+        // Re-snap stops to the updated line after vertex removal
+        const curStops = useStudioStore.getState().stops
+        if (curStops.length > 0 && updatedLine.length >= 2) {
+          curStops.forEach((stop) => {
+            const { nearest } = findNearestSegment(updatedLine, stop.coordinates[0], stop.coordinates[1], map)
+            updateStopCoordinates(stop.id, [nearest.x, nearest.y])
+          })
+        }
+        addToast('تمت إزالة النقطة وإعادة محاذاة المحطات على المسار', 'info')
       })
 
       vertexMarkersRef.current.push(marker)
     })
+  }, [mapReady, drawnLine, colorIndex, setDrawnLine, updateStopCoordinates, addToast, finishLineEditing])
 
-    // Dismiss tooltip when clicking on the map (not on a vertex)
-    const onMapMouseDown = () => { dismissTooltip() }
-    map.on('mousedown', onMapMouseDown)
-
-    return () => {
-      map.off('mousedown', onMapMouseDown)
-      dismissTooltip()
-      vertexMarkersRef.current.forEach(m => m.remove())
-      vertexMarkersRef.current = []
-    }
-  }, [mapReady, drawnLine, drawMode])
-
-  // ─── Draggable stop markers for EDIT MODE ─────────────────────────────────────
+  // Render bus stop dots with smooth continuous line snapping during drag
   useEffect(() => {
-    if (!mapReady || !mapRef.current || !isEditMode) return
+    if (!mapReady || !mapRef.current) return
     const map = mapRef.current
 
     stopMarkersRef.current.forEach(m => m.remove())
     stopMarkersRef.current = []
 
-    if (!stops.length) return
+    const activeColor = getRouteColor(colorIndex)
 
-    stops.forEach((stop) => {
+    stops.forEach((stop, idx) => {
       const el = document.createElement('div')
-      el.className = 'studio-stop-handle'
-      el.style.cssText = `
-        width:20px;height:20px;border-radius:50%;
-        background:#4a9eff;border:2px solid #fff;
-        box-shadow:0 2px 8px rgba(0,0,0,0.3);
-        cursor:grab;touch-action:none;
-        transition:transform 0.1s, box-shadow 0.1s;
-      `
-      el.dataset.stopId = String(stop.id)
+      el.className = 'studio-stop-marker flex items-center justify-center w-6.5 h-6.5 rounded-full border-2 border-white shadow-lg text-white text-[11px] font-black cursor-grab active:cursor-grabbing hover:scale-110 transition-transform select-none z-20'
+      el.style.backgroundColor = activeColor
+      el.innerHTML = `<span>${idx + 1}</span>`
+      el.title = stop.nameAr || `محطة ${idx + 1} — انقر للتعديل • اسحب لنقل المحطة على الخط`
 
-      const marker = new maplibregl.Marker({ element: el, draggable: true, offset: [0, -10] })
+      const marker = new maplibregl.Marker({ element: el, draggable: true })
         .setLngLat(stop.coordinates as maplibregl.LngLatLike)
         .addTo(map)
 
-      marker.on('dragstart', () => {
-        el.style.transform = 'scale(1.3)'
-        el.style.boxShadow = '0 4px 16px rgba(0,0,0,0.4)'
-        el.style.cursor = 'grabbing'
+      // Click dot: open sheet/sidebar, scroll to & focus option to edit station name
+      el.addEventListener('click', (ev) => {
+        ev.stopPropagation()
+        handleFocusStationInput(stop.id)
       })
 
+      // Smooth real-time snapping during drag (WITHOUT triggering React re-renders)
+      marker.on('drag', () => {
+        const newPos = marker.getLngLat()
+        const curLine = useStudioStore.getState().drawnLine
+        if (curLine && curLine.length >= 2) {
+          const { nearest } = findNearestSegment(curLine, newPos.lng, newPos.lat, map)
+          const snapped: [number, number] = [nearest.x, nearest.y]
+          marker.setLngLat(snapped)
+        }
+      })
+
+      // Commit final snapped coordinates to store ONLY when drag finishes
       marker.on('dragend', () => {
-        el.style.transform = 'scale(1)'
-        el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)'
-        el.style.cursor = 'grab'
-        const pos = marker.getLngLat()
-        const newCoord: [number, number] = [pos.lng, pos.lat]
-        updateStopCoordinates(stop.id, newCoord)
+        const finalPos = marker.getLngLat()
+        const curLine = useStudioStore.getState().drawnLine
+        if (curLine && curLine.length >= 2) {
+          const { nearest } = findNearestSegment(curLine, finalPos.lng, finalPos.lat, map)
+          const snapped: [number, number] = [nearest.x, nearest.y]
+          marker.setLngLat(snapped)
+          updateStopCoordinates(stop.id, snapped)
+        } else {
+          updateStopCoordinates(stop.id, [finalPos.lng, finalPos.lat])
+        }
       })
-
-      el.title = `اسحب لنقل "${stop.nameAr || 'محطة بدون اسم'}"`
 
       stopMarkersRef.current.push(marker)
     })
+  }, [mapReady, stops, colorIndex, updateStopCoordinates, handleFocusStationInput])
+
+  // Map Click Handler for drawing lines & adding stops snapped onto line
+  useEffect(() => {
+    if (!mapReady || !mapRef.current) return
+    const map = mapRef.current
+
+    const onClick = (e: maplibregl.MapMouseEvent) => {
+      const point: [number, number] = [e.lngLat.lng, e.lngLat.lat]
+
+      if (modeRef.current === 'line') {
+        const curDrawn = useStudioStore.getState().drawnLine
+        if (curDrawn && curDrawn.length >= 2 && activeLine.current.length === 0) {
+          const updated = [...curDrawn, point]
+          setDrawnLine(updated)
+          addToast(`تمت إضافة نقطة جديدة للمسار (${updated.length} نقطة)`, 'info')
+          return
+        }
+
+        activeLine.current.push(point)
+        const count = activeLine.current.length
+        setActiveVertexCount(count)
+        flushActive(activeLine.current)
+
+        if (count === 1) addToast('انقر لإضافة نقاط إضافية • انقر مرتين لإنهاء الرسم والتعديل', 'info')
+      } else if (modeRef.current === 'point') {
+        const curLine = useStudioStore.getState().drawnLine
+        if (curLine && curLine.length >= 2) {
+          const { nearest } = findNearestSegment(curLine, point[0], point[1], map)
+          const snappedPoint: [number, number] = [nearest.x, nearest.y]
+          addStop(snappedPoint)
+          const newStops = useStudioStore.getState().stops
+          const added = newStops[newStops.length - 1]
+          if (added) {
+            handleFocusStationInput(added.id)
+          }
+          addToast('تمت إضافة محطة ومحاذاتها لموقعها على الخط', 'success')
+          return
+        }
+        addStop(point)
+        const newStops = useStudioStore.getState().stops
+        const added = newStops[newStops.length - 1]
+        if (added) {
+          handleFocusStationInput(added.id)
+        }
+        addToast('تمت إضافة محطة', 'success')
+      }
+    }
+
+    const onDblClick = (e: maplibregl.MapMouseEvent) => {
+      e.originalEvent.preventDefault()
+      finishLineEditing()
+    }
+
+    const onTouchEnd = () => {
+      if (modeRef.current === 'line') {
+        const now = Date.now()
+        if (now - lastTouchTimeRef.current < 300) {
+          finishLineEditing()
+        }
+        lastTouchTimeRef.current = now
+      }
+    }
+
+    const onMouseMove = (e: maplibregl.MapMouseEvent) => {
+      if (modeRef.current === 'line' && activeLine.current.length > 0) {
+        flushActive(activeLine.current, [e.lngLat.lng, e.lngLat.lat])
+      }
+    }
+
+    map.on('click', onClick)
+    map.on('dblclick', onDblClick)
+    map.on('touchend', onTouchEnd)
+    map.on('mousemove', onMouseMove)
 
     return () => {
-      stopMarkersRef.current.forEach(m => m.remove())
-      stopMarkersRef.current = []
+      map.off('click', onClick)
+      map.off('dblclick', onDblClick)
+      map.off('touchend', onTouchEnd)
+      map.off('mousemove', onMouseMove)
     }
-  }, [mapReady, stops, isEditMode])
+  }, [mapReady, addStop, setDrawnLine, flushActive, addToast, finishLineEditing, handleFocusStationInput])
 
-  // ─── Sync stops → map ────────────────────────────────────────────────────────
+  // Key press shortcuts (Esc to cancel drawing)
   useEffect(() => {
-    if (!mapReady) return
-    const src = mapRef.current?.getSource(SRC_STOPS) as maplibregl.GeoJSONSource | undefined
-    src?.setData({
-      type: 'FeatureCollection',
-      features: stops.map(s => ({
-        type: 'Feature',
-        properties: { type: 'stop', id: s.id, nameAr: s.nameAr },
-        geometry: { type: 'Point', coordinates: s.coordinates },
-      })),
-    })
-  }, [mapReady, stops])
-
-  // ─── Sync reference layer → map ──────────────────────────────────────────────
-  useEffect(() => {
-    if (!mapReady) return
-    const empty: FeatureCollection = { type: 'FeatureCollection', features: [] }
-    ;(mapRef.current?.getSource(SRC_REF_ROUTES) as maplibregl.GeoJSONSource | undefined)
-      ?.setData((refData?.routes ?? empty) as any)
-    ;(mapRef.current?.getSource(SRC_REF_STOPS) as maplibregl.GeoJSONSource | undefined)
-      ?.setData((refData?.stops ?? empty) as any)
-  }, [mapReady, refData])
-
-  // ─── Conflict check ──────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!drawnLine || !refData) { setConflictWarning(false); return }
-    setConflictWarning(checkConflict(drawnLine, refData.routes.features))
-    setConflictDismissed(false)
-  }, [drawnLine, refData])
-
-  // ─── Stop popup position tracking ────────────────────────────────────────────
-  useEffect(() => {
-    if (!activeStopId || !mapReady || !mapRef.current) { setActiveStopPixel(null); return }
-    const stop = stops.find(s => s.id === activeStopId)
-    if (!stop) { setActiveStopPixel(null); return }
-
-    const update = () => {
-      const px = mapRef.current!.project(stop.coordinates as maplibregl.LngLatLike)
-      setActiveStopPixel({ x: px.x, y: px.y })
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && modeRef.current === 'line') {
+        finishLineEditing()
+      }
     }
-    update()
-    mapRef.current.on('move', update)
-    return () => { mapRef.current?.off('move', update) }
-  }, [activeStopId, stops, mapReady])
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [finishLineEditing])
 
-  // ─── Mobile detection ───────────────────────────────────────────────────────
-  useEffect(() => {
-    const mq = window.matchMedia('(max-width: 767px)')
-    isMobileRef.current = mq.matches
-    const handler = (e: MediaQueryListEvent) => { isMobileRef.current = e.matches }
-    mq.addEventListener('change', handler)
-    return () => mq.removeEventListener('change', handler)
-  }, [])
-
-  // Auto-expand panel when entering steps that don't involve drawing
-  useEffect(() => {
-    if (isMobileRef.current && (step === 1 || step === 4 || step === 5)) {
-      setPanelExpanded(true)
-    }
-  }, [step])
-
-  // ─── Handlers ────────────────────────────────────────────────────────────────
-  const handleCitySelect = useCallback((id: string) => {
-    if (id !== cityId) {
-      useStudioStore.getState().setDrawnLine(null)
-      useStudioStore.getState().reset()
-    }
-    setCity(id)
-    setStep(2)
-    const city = cities.find(c => c.id === id)
-    if (city?.bounds && mapRef.current && mapReady) {
-      mapRef.current.fitBounds(city.bounds as [[number, number], [number, number]], { padding: 60 })
-    }
-  }, [cityId, setCity, setStep, mapReady])
-
-  const handleFinishLine = useCallback(() => {
-    const coords = activeLine.current
-    if (coords.length >= 2) {
-      useStudioStore.getState().setDrawnLine(coords as [number, number][])
-    }
-    activeLine.current = []
-    setActiveVertexCount(0)
-    flushActive([])
-    setMode('idle')
-    if (isMobileRef.current) setPanelExpanded(true)
-  }, [flushActive, setMode])
-
-  const handleStartDraw = useCallback(() => {
-    if (drawMode === 'line') {
-      setMode('idle')
-    } else {
-      setMode('line')
-      if (isMobileRef.current) setPanelExpanded(false)
-    }
-  }, [drawMode, setMode])
-
-  const handleRedraw = useCallback(() => {
-    setDrawnLine(null)
-    clearActive()
+  // Drawing Actions
+  const handleStartDraw = () => {
+    setAccordionValue('line')
     setMode('line')
-  }, [setDrawnLine, clearActive, setMode])
+    addToast('انقر على الخريطة لبدء رسم المسار', 'info')
+  }
 
-  const handleUndo = useCallback(() => {
+  const handleRedraw = () => {
+    setDrawnLine(null)
+    setConflictWarning(false)
+    setAccordionValue('line')
+    setMode('line')
+    addToast('تمت إزالة الخط. انقر على الخريطة لرسم مسار جديد.', 'info')
+  }
+
+  const handleUndo = () => {
     if (activeLine.current.length > 0) {
-      activeLine.current = activeLine.current.slice(0, -1)
-      setActiveVertexCount(activeLine.current.length)
+      activeLine.current.pop()
+      const count = activeLine.current.length
+      setActiveVertexCount(count)
       flushActive(activeLine.current)
+    } else if (drawnLine && drawnLine.length > 2) {
+      const updated = drawnLine.slice(0, -1)
+      setDrawnLine(updated)
+      addToast('تمت إزالة النقطة الأخيرة من المسار', 'info')
     }
-  }, [flushActive])
+  }
 
-  const handleActivatePoint = useCallback(() => {
-    if (drawMode === 'point') { setMode('idle') } else {
-      setMode('point')
-      if (isMobileRef.current) setPanelExpanded(false)
-    }
-  }, [drawMode, setMode])
+  const handleActivatePoint = () => {
+    setAccordionValue('stops')
+    setMode('point')
+    addToast('انقر على الخريطة لوضع محطات الحافلات (تتحاذى وتتحرك على الخط)', 'info')
+  }
 
-  const handleStopConfirm = useCallback((name: string) => {
+  const handleConfirmStopName = (name: string) => {
     if (activeStopId !== null) {
       updateStopName(activeStopId, name)
+      setActiveStopId(null)
+      setActiveStopPixel(null)
     }
+  }
+
+  const handleDismissStopPopup = () => {
     setActiveStopId(null)
     setActiveStopPixel(null)
-  }, [activeStopId, updateStopName])
+  }
 
-  const handleStopDismiss = useCallback(() => {
-    setActiveStopId(null)
-    setActiveStopPixel(null)
-  }, [])
+  const handleReset = () => {
+    setMode('idle')
+    reset()
+    setAccordionValue('line')
+    addToast('تمت إعادة ضبط الاستوديو', 'info')
+  }
 
-  const handleSubmit = useCallback(async () => {
-    if (!drawnLine) { addToast('الرجاء رسم المسار أولاً', 'error'); return }
-    if (!nameAr.trim()) { addToast('اسم المسار بالعربية مطلوب', 'error'); return }
-
-    // Require auth: guests must login before submitting so the route is assigned to their account
-    if (!user) {
-      const storeState = useStudioStore.getState()
-      try {
-        localStorage.setItem('transit:studio:pending', JSON.stringify({
-          cityId: storeState.cityId,
-          drawnLine: storeState.drawnLine,
-          stops: storeState.stops,
-          nameAr: storeState.nameAr,
-          nameEn: storeState.nameEn,
-          price: storeState.price,
-          notes: storeState.notes,
-          editingRouteId: storeState.editingRouteId,
-        }))
-      } catch { /* ignore */ }
-      window.location.href = '/auth/google?redirect=/transit/studio'
+  // Submit Draft to Backend API (Supports Anonymous and Authenticated mode)
+  const handleSubmit = async (requireLogin: boolean = false) => {
+    if (!nameAr.trim()) {
+      addToast('اسم المسار بالعربية مطلوب', 'destructive')
+      setAccordionValue('details')
+      return
+    }
+    if (!drawnLine || drawnLine.length < 2) {
+      addToast('يجب رسم خط المسار أولاً', 'destructive')
+      setAccordionValue('line')
       return
     }
 
-    const storeState = useStudioStore.getState()
+    if (requireLogin && !user) {
+      const stateToSave = { cityId, drawnLine, stops, nameAr, nameEn, price, notes, editingRouteId }
+      localStorage.setItem('transit:studio:pending', JSON.stringify(stateToSave))
+      addToast('يرجى تسجيل الدخول بحساب Google لتُنسب المساهمة لك', 'info')
+      window.location.href = '/auth/google'
+      return
+    }
+
+    setSubmitting(true)
+
     const geojson: FeatureCollection = {
       type: 'FeatureCollection',
       features: [
         {
           type: 'Feature',
-          properties: { type: 'route', colorIndex: storeState.colorIndex, color_index: storeState.colorIndex },
+          properties: { colorIndex, color_index: colorIndex },
           geometry: { type: 'LineString', coordinates: drawnLine },
         },
-        ...storeState.stops.map(s => ({
-          type: 'Feature' as const,
-          properties: { type: 'stop', nameAr: s.nameAr },
+        ...stops.map((s) => ({
+          type: 'Feature',
+          properties: { nameAr: s.nameAr },
           geometry: { type: 'Point' as const, coordinates: s.coordinates },
         })),
       ],
     }
 
-    setSubmitting(true)
+    const payload = {
+      city_id: cityId,
+      name_ar: nameAr.trim(),
+      name_en: nameEn.trim() || null,
+      price: price ? parseFloat(price) : null,
+      notes: notes.trim() || null,
+      color_index: colorIndex,
+      geojson,
+      route_id: editingRouteId || null,
+    }
+
     try {
-      const baseUrl = '/api'
-      const payload: Record<string, any> = {
-        city_id:  storeState.cityId,
-        name_ar:  storeState.nameAr.trim(),
-        name_en:  storeState.nameEn.trim() || null,
-        price:    parseInt(storeState.price) || null,
-        notes:    storeState.notes.trim() || null,
-        color_index: storeState.colorIndex,
-        geojson,
-      }
+      const isUpdating = isEditMode && editingDraftId
+      const url = isUpdating ? `/api/v1/studio/routes/${editingDraftId}` : '/api/v1/studio/routes'
+      const method = isUpdating ? 'PUT' : 'POST'
 
-      let res: Response
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(payload),
+        credentials: 'include',
+      })
 
-      if (isEditMode && editingDraftId) {
-        // Updating an existing draft
-        res = await fetch(`${baseUrl}/v1/studio/routes/${editingDraftId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify(payload),
-        })
-      } else if (isEditMode && editingRouteId) {
-        // Creating a new draft linked to a published route
-        payload.route_id = editingRouteId
-        res = await fetch(`${baseUrl}/v1/studio/routes`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        })
-      } else {
-        // Creating a brand new draft
-        res = await fetch(`${baseUrl}/v1/studio/routes`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        })
-      }
+      const data = await res.json()
 
       if (res.ok) {
-        const data = await res.json().catch(() => ({}))
-        setSubmittedDraftId(data?.id ?? 0)
-        if (isEditMode) addToast('تم تحديث المسار', 'success')
+        setLastSubmittedIsAnon(!user)
+        setSubmittedDraftId(data.id ?? 1)
+        addToast(
+          !user
+            ? 'تم إرسال المسودة بنجاح كزائر (مجهول)'
+            : isUpdating
+            ? 'تم تحديث المسودة بنجاح'
+            : 'تم إرسال المسودة للمراجعة باسمك',
+          'success'
+        )
       } else {
-        const err = await res.json().catch(() => ({}))
-        addToast('حدث خطأ: ' + (err.message || `HTTP ${res.status}`), 'error')
+        const msg = data.message || (data.errors ? Object.values(data.errors).flat().join(' • ') : 'حدث خطأ أثناء الإرسال')
+        addToast(msg, 'destructive')
       }
     } catch {
-      addToast('تعذّر الاتصال بالخادم', 'error')
+      addToast('تعذّر الاتصال بالخادم. يرجى المحاولة لاحقاً.', 'destructive')
     } finally {
       setSubmitting(false)
     }
-  }, [drawnLine, nameAr, addToast, setSubmittedDraftId, user, isEditMode, editingDraftId, editingRouteId])
+  }
 
-  const handleReset = useCallback(() => {
-    reset()
-    setEditMode(null)
-    clearActive()
-    setMode('idle')
-    setConflictWarning(false)
-    setConflictDismissed(false)
-  }, [reset, setEditMode, clearActive, setMode])
+  const activeStop = stops.find((s) => s.id === activeStopId)
 
-  // Step progress can go back to completed steps
-  const canGoToStep = (num: WizardStep) => num < step
+  // Common inner sidebar content shared between desktop sidebar & mobile BottomSheet
+  const sidebarControlsContent = (
+    <div className="studio-sidebar-inner p-3.5 overflow-y-auto flex-1 space-y-3">
+      {/* Top Navigation & User Contributions in Sidebar */}
+      <div className="flex items-center justify-between pb-2 border-b border-border/40">
+        <Link
+          href="/transit"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+          title="العودة لخريطة المواصلات"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 rotate-180" />
+          <span>العودة لترانزيت</span>
+        </Link>
 
-  // ─── Render ──────────────────────────────────────────────────────────────────
-  return (
-    <div className="studio-shell" dir="rtl">
-
-      {/* Header */}
-      <header className="studio-header">
-        <div className="studio-header-inner">
-          <div className="studio-header-brand">
-            <Link href="/transit" className="studio-back-btn" aria-label="العودة">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M19 12H5M12 5l-7 7 7 7" />
-              </svg>
-            </Link>
-            <div className="studio-title-group">
-              <span className="studio-brand-label">SYRIAN.ZONE</span>
-              <span className="studio-brand-sep">/</span>
-              <h1 className="studio-title">استوديو ترانزيت</h1>
-            </div>
-          </div>
-          <div className="studio-header-status">
-            <span className={`studio-dot ${mapReady ? 'studio-dot--ready' : 'studio-dot--loading'}`} />
-            <span className="studio-status-text">{mapReady ? 'الخريطة جاهزة' : 'تحميل الخريطة…'}</span>
-            {user && (
-              <Link href="/dashboard" className="studio-my-contrib-btn" title="مساهماتي">
-                مساهماتي
-              </Link>
-            )}
-          </div>
-        </div>
-      </header>
-
-      {/* Step strip */}
-      <div className="studio-steps" role="navigation" aria-label="خطوات المساهمة">
-        {STEP_LABELS.map(({ label, num }) => {
-          const state = num < step ? 'done' : num === step ? 'active' : 'future'
-          return (
-            <button
-              key={num}
-              type="button"
-              className={`studio-step studio-step--${state}`}
-              onClick={() => canGoToStep(num) ? setStep(num) : undefined}
-              disabled={state === 'future'}
-              aria-current={state === 'active' ? 'step' : undefined}
-            >
-              {state === 'done' && <span className="studio-step-check">✓</span>}
-              {label}
-            </button>
-          )
-        })}
+        {user ? (
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline"
+            title="مساهماتي المسجلة"
+          >
+            <UserCheck className="w-3.5 h-3.5" />
+            مساهماتي
+          </Link>
+        ) : (
+          <Badge variant="outline" className="text-[10px] text-muted-foreground gap-1">
+            <UserX className="w-3 h-3" />
+            زائر
+          </Badge>
+        )}
       </div>
 
-      {/* Body */}
-      <div className="studio-body">
-        <aside className={`studio-sidebar${!panelExpanded ? ' studio-sidebar--collapsed' : ''}`}>
-          <button
-            type="button"
-            className="studio-panel-handle"
-            onClick={() => setPanelExpanded(v => !v)}
-            aria-label={panelExpanded ? 'طي اللوحة' : 'عرض اللوحة'}
-          >
-            <span className="studio-panel-pill" />
-            <span className="studio-panel-label">
-              {STEP_LABELS.find(s => s.num === step)?.label ?? ''}
-            </span>
-            <svg
-              className="studio-panel-chevron"
-              width="14" height="14" viewBox="0 0 24 24"
-              fill="none" stroke="currentColor" strokeWidth="2.5"
-              strokeLinecap="round" strokeLinejoin="round"
-            >
-              <path d="M18 15l-6-6-6 6" />
-            </svg>
-          </button>
-          <div className="studio-sidebar-inner">
-            {step === 1 && (
-              <Step1City onSelect={handleCitySelect} />
-            )}
-            {step === 2 && (
-              <Step2Draw
-                drawMode={drawMode}
-                activeVertexCount={activeVertexCount}
-                conflictWarning={conflictWarning}
-                conflictDismissed={conflictDismissed}
-                onStartDraw={handleStartDraw}
-                onUndo={handleUndo}
-                onRedraw={handleRedraw}
-                onDismissConflict={() => setConflictDismissed(true)}
-                onBack={() => { setMode('idle'); setStep(1) }}
-                onNext={() => { setMode('idle'); setStep(3) }}
-              />
-            )}
-            {step === 3 && (
-              <Step3Stops
-                drawMode={drawMode}
-                onActivatePoint={handleActivatePoint}
-                onBack={() => { setMode('idle'); setStep(2) }}
-                onNext={() => { setMode('idle'); setStep(4) }}
-                isEditMode={isEditMode}
-              />
-            )}
-            {step === 4 && (
-              <Step4Meta
-                onBack={() => setStep(3)}
-                onNext={() => setStep(5)}
-              />
-            )}
-            {step === 5 && (
-              submittedDraftId !== null ? (
-                <SuccessPanel
-                  draftId={submittedDraftId}
-                  isEditMode={isEditMode}
-                  onReset={handleReset}
-                  onEdit={() => { setSubmittedDraftId(null); setStep(5) }}
-                  onExit={() => router.push('/transit')}
-                />
-              ) : (
-                <Step5Review
-                  submitting={submitting}
-                  onSubmit={handleSubmit}
-                  onBack={() => setStep(4)}
-                />
-              )
-            )}
+      {submittedDraftId !== null ? (
+        <SuccessPanel
+          draftId={submittedDraftId}
+          isEditMode={isEditMode}
+          isAnonymous={lastSubmittedIsAnon}
+          onReset={handleReset}
+          onEdit={() => { setSubmittedDraftId(null); setAccordionValue('details') }}
+          onExit={() => router.push('/transit')}
+        />
+      ) : (
+        <>
+          {/* 1. FIRST: City Selection & Map Boundary Constraint */}
+          <div className="p-3 bg-muted/40 rounded-xl border border-border/60 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                <MapPin className="h-3.5 w-3.5 text-primary" />
+                1. اختر المدينة أولاً
+              </span>
+              <Badge variant="outline" className="text-[10px]">
+                {currentCity?.routeCount ?? 0} مسار منشور
+              </Badge>
+            </div>
+
+            <Select value={cityId} onValueChange={(id) => handleCitySelect(id)}>
+              <SelectTrigger className="w-full h-9 text-xs font-semibold bg-background border-input">
+                <SelectValue placeholder="اختر المدينة..." />
+              </SelectTrigger>
+              <SelectContent>
+                {activeCities.map((c) => (
+                  <SelectItem key={c.id} value={c.id} className="text-xs">
+                    {c.nameAr} ({c.routeCount} مسار)
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <p className="text-[10px] text-muted-foreground leading-tight">
+              يتم ضبط نطاق الخريطة والتقريب تلقائياً على حدود مدينة {currentCity?.nameAr}.
+            </p>
           </div>
+
+          {/* 2. THEN: RTL Shadcn Accordions with Data & Tools */}
+          <Accordion
+            type="single"
+            value={accordionValue}
+            onValueChange={(val) => setAccordionValue(val)}
+            className="w-full space-y-2.5"
+          >
+            {/* Accordion 1: Line Tool */}
+            <AccordionItem value="line">
+              <AccordionTrigger>
+                <div className="flex items-center gap-2 min-w-0">
+                  <Route className="h-4 w-4 text-primary shrink-0" />
+                  <span className="truncate">أداة رسم وتعديل المسار</span>
+                </div>
+                {drawnLine ? (
+                  <Badge variant="secondary" className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 shrink-0 me-1">
+                    ✓ مرسوم ({drawnLine.length} نقطة)
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-[10px] shrink-0 me-1">
+                    لم يكتمل
+                  </Badge>
+                )}
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-3">
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    ارسم أو عدّل خط المسار على الخريطة. انقر مرتين أو اضغط مرتين على الخريطة لإنهاء وضع التعديل ورسم الخط.
+                  </p>
+
+                  {conflictWarning && !conflictDismissed && (
+                    <div className="p-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-[11px] text-amber-700 dark:text-amber-300 flex items-start justify-between gap-2">
+                      <span>⚠ يوجد مسار قريب بالفعل. تأكد أن مسارك يختلف أو يكمل الخطوط الحالية.</span>
+                      <button type="button" onClick={() => setConflictDismissed(true)} className="text-amber-500 hover:text-amber-700">✕</button>
+                    </div>
+                  )}
+
+                  {!drawnLine ? (
+                    <Button
+                      type="button"
+                      className="w-full h-9 text-xs font-semibold gap-2"
+                      variant={drawMode === 'line' ? 'default' : 'outline'}
+                      onClick={handleStartDraw}
+                    >
+                      <Route className="h-4 w-4" />
+                      {drawMode === 'line' ? 'جاري الرسم... انقر أو اضغط مرتين لإنهاء الخط' : 'ابدأ رسم المسار'}
+                    </Button>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                        <span>✓ المسار جاهز ({drawnLine.length} نقطة)</span>
+                        <Button
+                          type="button"
+                          variant={drawMode === 'line' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setMode(drawMode === 'line' ? 'idle' : 'line')}
+                          className="h-7 text-xs gap-1"
+                        >
+                          <Plus className="h-3 w-3" />
+                          {drawMode === 'line' ? 'إيقاف إضافة نقاط' : 'تعديل وتمديد الخط'}
+                        </Button>
+                      </div>
+
+                      <p className="text-[11px] text-muted-foreground leading-snug">
+                        • **التعديل**: اسحب أي نقطة حمراء على الخريطة مباشرة (تتحرك المحطات تلقائياً متبعةً الخط).<br />
+                        • **إنهاء التعديل**: انقر مرتين أو اضغط مرتين (Double Tap) لإنهاء التعديل.<br />
+                        • **الحذف**: انقر يميناً على أي نقطة للحذف.
+                      </p>
+
+                      <Button type="button" variant="ghost" size="sm" onClick={handleRedraw} className="w-full h-7 text-xs text-muted-foreground hover:text-destructive">
+                        <RotateCcw className="h-3 w-3 ms-1" />
+                        إعادة رسم المسار من جديد
+                      </Button>
+                    </div>
+                  )}
+
+                  {drawMode === 'line' && (
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-[11px] text-muted-foreground">{drawnLine?.length ?? activeVertexCount} نقطة مضافة</span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={(drawnLine?.length ?? 0) === 0 && activeVertexCount === 0}
+                        onClick={handleUndo}
+                        className="h-7 text-xs gap-1"
+                      >
+                        <Undo2 className="h-3 w-3" />
+                        تراجع عن النقطة
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* Accordion 2: Bus Stops Tool */}
+            <AccordionItem value="stops">
+              <AccordionTrigger>
+                <div className="flex items-center gap-2 min-w-0">
+                  <MapPin className="h-4 w-4 text-primary shrink-0" />
+                  <span className="truncate">أداة مواقف الحافلات</span>
+                </div>
+                <Badge variant="outline" className="text-[10px] shrink-0 me-1">
+                  {stops.length} محطة
+                </Badge>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-3">
+                  <p className="text-xs text-muted-foreground">
+                    انقر على الخريطة لوضع محطات الحافلات. تتحاذى وتتحرك المحطات تلقائياً على خط المسار.
+                  </p>
+
+                  <Button
+                    type="button"
+                    className="w-full h-9 text-xs font-semibold gap-2"
+                    variant={drawMode === 'point' ? 'default' : 'outline'}
+                    onClick={handleActivatePoint}
+                  >
+                    <MapPin className="h-4 w-4" />
+                    {drawMode === 'point' ? 'جاري وضع المحطات... انقر على الخريطة' : 'إضافة محطات حافلات'}
+                  </Button>
+
+                  {stops.length > 0 ? (
+                    <div className="space-y-2 pt-1">
+                      <span className="text-xs font-semibold text-foreground">المحطات المضافة ({stops.length}):</span>
+                      <div className="max-h-48 overflow-y-auto space-y-1.5 pe-1">
+                        {stops.map((stop, i) => (
+                          <div
+                            key={stop.id}
+                            className={`flex items-center gap-2 p-1.5 rounded-lg border transition-colors ${
+                              activeStopId === stop.id
+                                ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
+                                : 'border-border bg-background'
+                            }`}
+                          >
+                            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-black text-primary-foreground shadow-xs">
+                              {i + 1}
+                            </span>
+                            <Input
+                              id={`stop-input-${stop.id}`}
+                              type="text"
+                              value={stop.nameAr}
+                              onFocus={() => setActiveStopId(stop.id)}
+                              onChange={(e) => updateStopName(stop.id, e.target.value)}
+                              placeholder="اسم المحطة..."
+                              className="h-7 text-xs flex-1"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeStop(stop.id)}
+                              className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive shrink-0"
+                              title="حذف المحطة"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-center text-muted-foreground py-2 border border-dashed rounded-lg">
+                      لم تضف أي محطات بعد.
+                    </p>
+                  )}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* Accordion 3: Color Selection */}
+            <AccordionItem value="color">
+              <AccordionTrigger>
+                <div className="flex items-center gap-2 min-w-0">
+                  <Palette className="h-4 w-4 text-primary shrink-0" />
+                  <span className="truncate">اختيار لون الخط</span>
+                </div>
+                <span
+                  className="h-4 w-4 rounded-full border border-border shadow-xs shrink-0 me-1"
+                  style={{ backgroundColor: getRouteColor(colorIndex) }}
+                />
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-3">
+                  <p className="text-xs text-muted-foreground">
+                    اختر اللون المميز لخط السرفيس أو الحافلة على الخريطة التفاعلية:
+                  </p>
+
+                  <div className="grid grid-cols-5 gap-2 pt-1">
+                    {ROUTE_PALETTE.map((colorHex, idx) => {
+                      const isSelected = colorIndex === idx;
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setColorIndex(idx)}
+                          className={`relative flex h-8 w-full items-center justify-center rounded-lg border-2 transition-all ${
+                            isSelected
+                              ? 'scale-105 border-primary ring-2 ring-primary/30 shadow-md'
+                              : 'border-transparent opacity-80 hover:opacity-100 hover:scale-105'
+                          }`}
+                          style={{ backgroundColor: colorHex }}
+                          title={`لون ${idx + 1}`}
+                        >
+                          {isSelected && <Check className="h-4 w-4 text-white drop-shadow-md" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* Accordion 4: Details */}
+            <AccordionItem value="details">
+              <AccordionTrigger>
+                <div className="flex items-center gap-2 min-w-0">
+                  <FileText className="h-4 w-4 text-primary shrink-0" />
+                  <span className="truncate font-semibold">بيانات وتفاصيل المسار</span>
+                </div>
+                {nameAr.trim() ? (
+                  <Badge variant="secondary" className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0 me-1">
+                    مكتمل
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-[10px] shrink-0 me-1">
+                    مطلوب
+                  </Badge>
+                )}
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-foreground flex items-center gap-1">
+                      اسم المسار بالعربية <span className="text-destructive">*</span>
+                    </label>
+                    <Input
+                      type="text"
+                      required
+                      value={nameAr}
+                      onChange={(e) => setMeta({ nameAr: e.target.value })}
+                      placeholder="مثال: باب توما — برامكة"
+                      className="h-8 text-xs"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      الاسم بالإنجليزية (اختياري)
+                    </label>
+                    <Input
+                      type="text"
+                      value={nameEn}
+                      onChange={(e) => setMeta({ nameEn: e.target.value })}
+                      placeholder="e.g. Bab Touma — Baramkeh"
+                      dir="ltr"
+                      className="h-8 text-xs"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      التعرفة / سعر التذكرة (ل.س - اختياري)
+                    </label>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={price}
+                      onChange={(e) => setMeta({ price: e.target.value })}
+                      placeholder="مثال: 1500"
+                      dir="ltr"
+                      className="h-8 text-xs"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      ملاحظات إضافية (اختياري)
+                    </label>
+                    <Textarea
+                      value={notes}
+                      onChange={(e) => setMeta({ notes: e.target.value })}
+                      placeholder="محطات بارزة، جداول التشغيل، تفاصيل إضافية..."
+                      rows={2}
+                      className="text-xs resize-none"
+                    />
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* Accordion 5: Submission & Credit Options */}
+            <AccordionItem value="submission">
+              <AccordionTrigger>
+                <div className="flex items-center gap-2 min-w-0">
+                  <Send className="h-4 w-4 text-primary shrink-0" />
+                  <span className="truncate font-semibold">إرسال المسودة والتسليم</span>
+                </div>
+                <Badge variant="outline" className="text-[10px] shrink-0 me-1">
+                  جاهز
+                </Badge>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-3">
+                  {/* Summary Details Card */}
+                  <div className="p-2.5 rounded-lg border border-border bg-muted/30 text-xs space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">المدينة:</span>
+                      <span className="font-semibold text-foreground">{currentCity?.nameAr}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">اسم المسار:</span>
+                      <span className="font-semibold text-foreground">{nameAr || 'غير محدد'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">نقاط الخط:</span>
+                      <span className="font-semibold text-foreground">{drawnLine?.length ?? 0} نقطة</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">عدد المحطات:</span>
+                      <span className="font-semibold text-foreground">{stops.length} محطة</span>
+                    </div>
+                  </div>
+
+                  {!user ? (
+                    <div className="space-y-2.5 pt-1">
+                      <div className="p-2.5 bg-accent/40 rounded-lg border border-border text-xs space-y-1.5">
+                        <p className="font-semibold text-foreground">خيارات الإرسال:</p>
+                        <p className="text-[11px] text-muted-foreground leading-relaxed">
+                          يمكنك إرسال المسودة فوراً كزائر (مجهول)، أو تسجيل الدخول بحساب Google لتُنسب المساهمة لك وتتمكن من متابعة وتعديل المسار لاحقاً.
+                        </p>
+                      </div>
+
+                      <Button
+                        type="button"
+                        onClick={() => handleSubmit(false)}
+                        disabled={submitting || !nameAr.trim() || !drawnLine}
+                        variant="outline"
+                        className="w-full h-9 text-xs font-semibold gap-2 border-primary/40 hover:bg-primary/5"
+                      >
+                        {submitting ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Send className="h-4 w-4 text-primary" />
+                        )}
+                        إرسال كزائر (مجهول)
+                      </Button>
+
+                      <Button
+                        type="button"
+                        onClick={() => handleSubmit(true)}
+                        disabled={submitting || !nameAr.trim() || !drawnLine}
+                        className="w-full h-9 text-xs font-bold gap-2"
+                      >
+                        <Sparkles className="h-4 w-4" />
+                        تسجيل الدخول وإرسال (حفظ المساهمة باسمي)
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2 pt-1">
+                      <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/10 border border-primary/20 text-xs">
+                        <UserCheck className="w-4 h-4 text-primary" />
+                        <span className="font-bold text-primary">مسجل باسم:</span>
+                        <span className="truncate font-semibold text-foreground">{user.name}</span>
+                      </div>
+
+                      <Button
+                        type="button"
+                        onClick={() => handleSubmit(false)}
+                        disabled={submitting || !nameAr.trim() || !drawnLine}
+                        className="w-full h-9 text-xs font-bold gap-2"
+                      >
+                        {submitting ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Send className="h-4 w-4" />
+                        )}
+                        {isEditMode ? 'تحديث المسودة باسمي' : 'إرسال المسودة باسمي'}
+                      </Button>
+                    </div>
+                  )}
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleReset}
+                    className="w-full h-8 text-xs text-muted-foreground hover:text-destructive"
+                  >
+                    إعادة ضبط المسودة
+                  </Button>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </>
+      )}
+    </div>
+  )
+
+  return (
+    <div dir="rtl" className="studio-root min-h-screen bg-background text-foreground font-sans">
+      <Head title="استوديو ترانزيت | رسم الخرائط" />
+
+      {/* Stacked Shadcn Sonner Toaster */}
+      <Toaster position="bottom-left" richColors />
+
+      {/* Full-screen Body Container (Clean layout without top header) */}
+      <div className="studio-body relative flex h-screen overflow-hidden">
+        {/* Desktop Sidebar (hidden on mobile, visible on md+) */}
+        <aside className="hidden md:flex studio-sidebar w-80 md:w-96 border-e border-border bg-card shrink-0 flex-col z-20">
+          {sidebarControlsContent}
         </aside>
 
-        {/* Map */}
-        <div className="studio-map-wrapper">
+        {/* Mobile Resizable Bottom Sheet Drawer (visible on mobile, hidden on md+) */}
+        <BottomSheet
+          storageKey="transit:studio:sheet-height"
+          initialHeight={340}
+          className="md:hidden border-t border-border shadow-2xl z-30"
+        >
+          {sidebarControlsContent}
+        </BottomSheet>
+
+        {/* Map Container */}
+        <div className="studio-map-wrapper flex-1 relative h-full">
           {!mapReady && (
-            <div className="studio-map-loader">
-              <div className="studio-loader-ring" />
-              <span>تحميل الخريطة…</span>
+            <div className="studio-map-loader absolute inset-0 z-30 flex flex-col items-center justify-center bg-background/80 backdrop-blur-xs gap-3">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              <span className="text-xs font-semibold text-muted-foreground">تحميل الخريطة التفاعلية...</span>
             </div>
           )}
-          <div ref={mapContainer} className="studio-map" />
+          <div ref={mapContainer} className="studio-map w-full h-full" />
 
           {drawMode !== 'idle' && (
-            <div className={`studio-mode-badge studio-mode-badge--${drawMode}`}>
-              {drawMode === 'line'  && '✏ رسم مسار'}
-              {drawMode === 'point' && '📍 إضافة محطة — انقر لوضع محطة'}
+            <div className="absolute top-4 start-4 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full bg-card/95 border border-border shadow-lg text-xs font-semibold text-foreground animate-in fade-in">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
+              {drawMode === 'line'  && '✏ وضع رسم وتمديد الخط — انقر مرتين أو اضغط مرتين لإنهاء التعديل'}
+              {drawMode === 'point' && '📍 وضع إضافة المحطات — انقر لوضع محطة (تتحاذى وتتحرك على الخط)'}
             </div>
           )}
 
           {drawMode === 'line' && activeVertexCount >= 2 && (
             <button
               type="button"
-              className="studio-finish-btn"
-              onClick={handleFinishLine}
+              className="absolute bottom-16 md:bottom-6 start-1/2 -translate-x-1/2 rtl:translate-x-1/2 z-20 flex items-center gap-2 px-4 py-2.5 rounded-full bg-primary text-primary-foreground font-bold text-xs shadow-2xl hover:scale-105 transition-all"
+              onClick={finishLineEditing}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-              إنهاء المسار
+              <Check className="w-4 h-4" />
+              إكمال وإنهاء رسم المسار ({activeVertexCount} نقطة)
             </button>
           )}
 
-          {activeStopId !== null && activeStopPixel && (() => {
-            const stop = stops.find(s => s.id === activeStopId)
-            return stop ? (
-              <StopNamePopup
-                stop={stop}
-                pixel={activeStopPixel}
-                onConfirm={handleStopConfirm}
-                onDismiss={handleStopDismiss}
-              />
-            ) : null
-          })()}
+          {activeStop && activeStopPixel && (
+            <StopNamePopup
+              stop={activeStop}
+              pixel={activeStopPixel}
+              onConfirm={handleConfirmStopName}
+              onDismiss={handleDismissStopPopup}
+            />
+          )}
         </div>
       </div>
-
-      {/* Toasts */}
-      <div className="studio-toasts" aria-live="polite">
-        {toasts.map(t => (
-          <div key={t.id} className={`studio-toast studio-toast--${t.type}`}>
-            <span>{t.type === 'success' ? '✓' : t.type === 'error' ? '✕' : 'ℹ'}</span>
-            <span>{t.msg}</span>
-          </div>
-        ))}
-      </div>
-
-      <style>{`
-        .studio-shell {
-          display: flex; flex-direction: column;
-          height: 100%; overflow: hidden;
-          background: var(--bg); color: var(--text);
-          font-family: var(--site-font, inherit);
-        }
-
-        /* Header */
-        .studio-header { flex-shrink: 0; border-bottom: 1px solid var(--border); background: var(--surface); }
-        .studio-header-inner {
-          display: flex; align-items: center; justify-content: space-between;
-          padding: 0 1.25rem; height: 52px;
-        }
-        .studio-header-brand { display: flex; align-items: center; gap: 0.75rem; }
-        .studio-back-btn {
-          display: inline-flex; align-items: center; justify-content: center;
-          width: 32px; height: 32px; border-radius: 8px;
-          border: 1px solid var(--border); background: var(--surface-2);
-          color: var(--gold); transition: background 0.15s; text-decoration: none;
-        }
-        .studio-back-btn:hover { background: var(--border); }
-        .studio-title-group { display: flex; align-items: center; gap: 0.35rem; }
-        .studio-brand-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; color: var(--gold); text-transform: uppercase; }
-        .studio-brand-sep   { color: var(--muted); font-size: 0.875rem; }
-        .studio-title       { font-size: 0.95rem; font-weight: 700; color: var(--text); margin: 0; }
-        .studio-header-status { display: flex; align-items: center; gap: 0.45rem; }
-        .studio-my-contrib-btn {
-          margin-inline-start: 0.5rem;
-          padding: 0.3rem 0.7rem;
-          border-radius: 9999px;
-          font-size: 0.75rem;
-          font-weight: 700;
-          color: var(--gold);
-          background: color-mix(in srgb, var(--gold) 12%, transparent);
-          border: 1px solid color-mix(in srgb, var(--gold) 35%, transparent);
-          transition: background 0.15s ease, color 0.15s ease;
-        }
-        .studio-my-contrib-btn:hover {
-          background: color-mix(in srgb, var(--gold) 22%, transparent);
-          color: var(--gold);
-        }
-        .studio-dot { width: 8px; height: 8px; border-radius: 50%; }
-        .studio-dot--ready   { background: #22c55e; box-shadow: 0 0 6px #22c55e88; }
-        .studio-dot--loading { background: var(--muted); animation: pulse 1.2s ease-in-out infinite; }
-        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-        .studio-status-text { font-size: 0.73rem; color: var(--muted); }
-
-        /* Step strip */
-        .studio-steps {
-          display: flex; align-items: stretch; flex-shrink: 0;
-          border-bottom: 1px solid var(--border); background: var(--surface);
-          overflow-x: auto; scrollbar-width: none;
-        }
-        .studio-steps::-webkit-scrollbar { display: none; }
-        .studio-step {
-          flex: 1; min-width: max-content; padding: 0.55rem 1rem;
-          display: flex; align-items: center; justify-content: center; gap: 0.3rem;
-          font-size: 0.78rem; font-weight: 500; font-family: inherit;
-          background: transparent; border: none; border-bottom: 2px solid transparent;
-          color: var(--muted); cursor: default; transition: all 0.15s;
-          white-space: nowrap;
-        }
-        .studio-step--active { color: var(--gold); border-bottom-color: var(--gold); font-weight: 700; }
-        .studio-step--done   { color: var(--text); cursor: pointer; }
-        .studio-step--done:hover { background: var(--surface-2); }
-        .studio-step--future { opacity: 0.45; pointer-events: none; }
-        .studio-step-check   { color: #22c55e; font-size: 0.7rem; }
-
-        /* Body */
-        .studio-body { display: flex; flex: 1; overflow: hidden; }
-
-        /* Sidebar */
-        .studio-sidebar {
-          width: 340px; flex-shrink: 0;
-          border-left: 1px solid var(--border);
-          background: var(--surface); overflow-y: auto;
-          scrollbar-width: thin; scrollbar-color: var(--border) transparent;
-        }
-        .studio-sidebar-inner { padding: 1.125rem; display: flex; flex-direction: column; }
-
-        /* Step panels */
-        .studio-step-panel { display: flex; flex-direction: column; gap: 1rem; }
-        .studio-step-intro { font-size: 0.8rem; color: var(--muted); line-height: 1.6; margin: 0; }
-
-        /* City grid */
-        .studio-city-grid { display: flex; flex-direction: column; gap: 0.5rem; }
-        .studio-city-card {
-          display: flex; align-items: center; justify-content: space-between;
-          padding: 0.75rem 1rem; border-radius: 10px;
-          border: 1px solid var(--border); background: var(--surface-2);
-          cursor: pointer; transition: all 0.15s; font-family: inherit;
-          text-align: right;
-        }
-        .studio-city-card:hover { border-color: var(--gold); background: var(--bg); }
-        .studio-city-card--active { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 10%, var(--bg)); }
-        .studio-city-card--soon { cursor: not-allowed; opacity: 0.5; }
-        .studio-city-name { font-size: 0.95rem; font-weight: 600; color: var(--text); }
-        .studio-city-meta { font-size: 0.75rem; color: var(--muted); }
-        .studio-city-badge {
-          font-size: 0.68rem; font-weight: 700; padding: 0.1rem 0.5rem;
-          border-radius: 20px; background: var(--border); color: var(--muted);
-        }
-
-        /* Warning */
-        .studio-warning {
-          display: flex; align-items: flex-start; gap: 0.5rem;
-          padding: 0.625rem 0.75rem; border-radius: 8px;
-          background: color-mix(in srgb, #f59e0b 12%, transparent);
-          border: 1px solid color-mix(in srgb, #f59e0b 30%, transparent);
-          font-size: 0.78rem; color: var(--text); line-height: 1.5;
-        }
-        .studio-warning > span { flex: 1; }
-        .studio-warning-dismiss {
-          background: none; border: none; cursor: pointer;
-          color: var(--muted); font-size: 0.8rem; padding: 0 0.2rem;
-          line-height: 1; flex-shrink: 0;
-        }
-        .studio-warning-dismiss:hover { color: var(--text); }
-
-        /* Action buttons */
-        .studio-action-btn {
-          display: flex; align-items: center; gap: 0.5rem;
-          padding: 0.65rem 1rem; border-radius: 9px;
-          border: 1px solid var(--border); background: var(--surface-2);
-          color: var(--text); font-family: inherit; font-size: 0.875rem; font-weight: 600;
-          cursor: pointer; transition: all 0.15s;
-        }
-        .studio-action-btn:hover { border-color: var(--gold); }
-        .studio-action-btn--active { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 12%, var(--bg)); color: var(--gold); }
-        .studio-tool-pill {
-          margin-right: auto; font-size: 0.65rem; font-weight: 700;
-          padding: 0.1rem 0.45rem; border-radius: 20px;
-          background: currentColor; color: var(--bg);
-        }
-
-        /* Done badge */
-        .studio-done-badge {
-          display: flex; align-items: center; justify-content: space-between;
-          padding: 0.625rem 0.875rem; border-radius: 9px;
-          background: color-mix(in srgb, #22c55e 10%, transparent);
-          border: 1px solid color-mix(in srgb, #22c55e 25%, transparent);
-          font-size: 0.82rem; color: var(--text);
-        }
-        .studio-link-btn {
-          background: none; border: none; cursor: pointer; font-family: inherit;
-          font-size: 0.78rem; color: var(--gold); text-decoration: underline; padding: 0;
-        }
-
-        /* Draw hints */
-        .studio-draw-hints { display: flex; flex-direction: column; gap: 0.4rem; }
-        .studio-hint { font-size: 0.775rem; color: var(--muted); margin: 0; line-height: 1.55; }
-        .studio-vertex-count { font-size: 0.75rem; color: var(--gold); font-weight: 600; margin: 0; }
-
-        /* Stops list */
-        .studio-stops-list { display: flex; flex-direction: column; gap: 0.5rem; }
-        .studio-stop-item { display: flex; align-items: center; gap: 0.4rem; }
-        .studio-stop-num {
-          width: 1.5rem; height: 1.5rem; border-radius: 50%; flex-shrink: 0;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 0.7rem; font-weight: 700; background: var(--surface-2); color: var(--muted);
-        }
-        .studio-stop-input { flex: 1; }
-        .studio-stop-remove {
-          width: 1.6rem; height: 1.6rem; border-radius: 6px; flex-shrink: 0;
-          display: flex; align-items: center; justify-content: center;
-          background: none; border: 1px solid var(--border); cursor: pointer;
-          font-size: 0.7rem; color: var(--muted); transition: all 0.12s;
-        }
-        .studio-stop-remove:hover { border-color: #ef4444; color: #ef4444; }
-        .studio-empty-hint { font-size: 0.78rem; color: var(--muted); margin: 0; }
-
-        /* Step nav */
-        .studio-step-nav { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
-        .studio-nav-back {
-          flex: 1; padding: 0.5rem; border-radius: 8px;
-          border: 1px solid var(--border); background: transparent;
-          color: var(--muted); font-family: inherit; font-size: 0.82rem; font-weight: 500;
-          cursor: pointer; transition: all 0.12s;
-        }
-        .studio-nav-back:hover { background: var(--surface-2); color: var(--text); }
-        .studio-nav-next {
-          flex: 2; padding: 0.5rem; border-radius: 8px;
-          border: none; background: var(--gold);
-          color: var(--bg); font-family: inherit; font-size: 0.82rem; font-weight: 700;
-          cursor: pointer; transition: opacity 0.12s;
-        }
-        .studio-nav-next:hover:not(:disabled) { opacity: 0.87; }
-        .studio-nav-next:disabled { opacity: 0.45; cursor: not-allowed; }
-
-        /* Form */
-        .studio-form { display: flex; flex-direction: column; gap: 0.75rem; }
-        .studio-field { display: flex; flex-direction: column; gap: 0.3rem; }
-        .studio-label { font-size: 0.8rem; font-weight: 500; color: var(--text); display: flex; align-items: center; gap: 0.3rem; }
-        .studio-req { color: #ef4444; }
-        .studio-opt { font-size: 0.7rem; color: var(--muted); font-weight: 400; }
-
-        .studio-input, .studio-textarea {
-          width: 100%; background: var(--bg); border: 1px solid var(--border);
-          border-radius: 8px; color: var(--text); font-family: inherit;
-          font-size: 0.85rem; padding: 0.5rem 0.7rem;
-          transition: border-color 0.15s, box-shadow 0.15s; outline: none;
-        }
-        .studio-input::placeholder, .studio-textarea::placeholder { color: var(--muted); opacity: 0.65; }
-        .studio-input:focus, .studio-textarea:focus {
-          border-color: var(--gold);
-          box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 15%, transparent);
-        }
-        .studio-textarea { resize: vertical; }
-
-        /* Review card */
-        .studio-review-card {
-          border: 1px solid var(--border); border-radius: 10px;
-          background: var(--surface-2); padding: 0.875rem;
-          display: flex; flex-direction: column; gap: 0.55rem;
-        }
-        .studio-review-row { display: flex; align-items: flex-start; gap: 0.5rem; }
-        .studio-review-label { font-size: 0.73rem; color: var(--muted); font-weight: 500; min-width: 90px; padding-top: 0.05rem; }
-        .studio-review-value { font-size: 0.83rem; color: var(--text); flex: 1; }
-        .studio-review-stops {
-          display: flex; flex-wrap: wrap; gap: 0.35rem;
-          padding-top: 0.25rem; border-top: 1px solid var(--border);
-        }
-        .studio-review-stop-chip {
-          font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 20px;
-          background: var(--bg); border: 1px solid var(--border); color: var(--muted);
-        }
-
-        .studio-review-step-badge {
-          flex: 1; padding: 0.35rem 0.5rem; border-radius: 7px;
-          border: 1px solid var(--border); background: var(--surface);
-          color: var(--muted); font-family: inherit; font-size: 0.72rem; font-weight: 600;
-          cursor: pointer; transition: all 0.15s; text-align: center;
-        }
-        .studio-review-step-badge:hover { background: var(--gold); color: var(--bg); border-color: var(--gold); }
-
-        /* Submit */
-        .studio-submit-btn {
-          display: flex; align-items: center; justify-content: center; gap: 0.45rem;
-          width: 100%; padding: 0.7rem; border-radius: 9px;
-          border: none; background: var(--gold); color: var(--bg);
-          font-family: inherit; font-size: 0.9rem; font-weight: 700;
-          cursor: pointer; transition: opacity 0.15s;
-        }
-        .studio-submit-btn:not(:disabled):hover { opacity: 0.87; }
-        .studio-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .studio-submit-btn--outline {
-          background: transparent; color: var(--gold); border: 1.5px solid var(--gold);
-        }
-        .studio-submit-btn--outline:hover { background: var(--gold); color: var(--bg); }
-        .studio-spinner {
-          width: 15px; height: 15px; border-radius: 50%;
-          border: 2px solid rgba(255,255,255,0.35); border-top-color: #fff;
-          animation: spin 0.7s linear infinite;
-        }
-
-        /* Success panel */
-        .studio-success {
-          display: flex; flex-direction: column; align-items: center;
-          gap: 0.75rem; padding: 2rem 1rem; text-align: center;
-        }
-        .studio-success-icon {
-          width: 52px; height: 52px; border-radius: 50%;
-          background: #22c55e; color: #fff;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 1.4rem; font-weight: 700;
-        }
-        .studio-success-title { font-size: 1.05rem; font-weight: 700; color: var(--text); margin: 0; }
-        .studio-success-sub   { font-size: 0.82rem; color: var(--muted); margin: 0; }
-        .studio-success-id    { font-size: 0.78rem; color: var(--muted); margin: 0; font-variant-numeric: tabular-nums; }
-        .studio-success-actions { display: flex; flex-direction: column; gap: 0.5rem; width: 100%; margin-top: 0.5rem; }
-
-        /* Section label */
-        .studio-section-label {
-          display: flex; align-items: center; gap: 0.35rem;
-          font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
-          letter-spacing: 0.06em; color: var(--muted);
-        }
-
-        /* Util button */
-        .studio-util-btn {
-          width: 100%; padding: 0.45rem 0.5rem; border-radius: 7px;
-          border: 1px solid var(--border); background: transparent;
-          color: var(--muted); font-family: inherit; font-size: 0.78rem; font-weight: 500;
-          cursor: pointer; transition: all 0.15s;
-        }
-        .studio-util-btn:not(:disabled):hover { background: var(--surface); color: var(--text); }
-        .studio-util-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-        /* Stop name popup */
-        .studio-stop-popup {
-          position: absolute; z-index: 20;
-          display: flex; gap: 0.35rem;
-          background: var(--surface); border: 1px solid var(--border);
-          border-radius: 8px; padding: 0.35rem 0.4rem;
-          box-shadow: 0 4px 16px rgba(0,0,0,0.25);
-          pointer-events: all;
-        }
-        .studio-stop-popup-input {
-          width: 140px; font-size: 0.82rem; padding: 0.35rem 0.5rem;
-        }
-        .studio-stop-popup-btn {
-          padding: 0.35rem 0.65rem; border-radius: 6px;
-          border: none; background: var(--gold); color: var(--bg);
-          font-family: inherit; font-size: 0.78rem; font-weight: 700;
-          cursor: pointer; white-space: nowrap;
-        }
-
-        /* Finish-line floating button */
-        .studio-finish-btn {
-          position: absolute; bottom: 5rem; left: 50%; transform: translateX(-50%); z-index: 10;
-          display: flex; align-items: center; gap: 0.45rem;
-          padding: 0.7rem 1.6rem; border-radius: 24px;
-          border: none; background: #16a34a; color: #fff;
-          font-family: inherit; font-size: 0.875rem; font-weight: 700;
-          cursor: pointer; white-space: nowrap;
-          box-shadow: 0 4px 20px rgba(22,163,74,0.45);
-          animation: badge-in 0.2s ease both;
-          touch-action: manipulation; -webkit-tap-highlight-color: transparent;
-        }
-        .studio-finish-btn:active { opacity: 0.82; }
-
-        /* Map */
-        .studio-map-wrapper { flex: 1; position: relative; background: #111; }
-        .studio-map { position: absolute; inset: 0; }
-        .studio-map-loader {
-          position: absolute; inset: 0; z-index: 10;
-          display: flex; flex-direction: column; align-items: center; justify-content: center;
-          gap: 1rem; background: var(--bg); color: var(--muted); font-size: 0.9rem;
-        }
-        .studio-loader-ring {
-          width: 36px; height: 36px; border-radius: 50%;
-          border: 3px solid var(--border); border-top-color: var(--gold);
-          animation: spin 0.8s linear infinite;
-        }
-
-        .studio-mode-badge {
-          position: absolute; top: 1rem; right: 1rem; z-index: 10;
-          padding: 0.425rem 0.875rem; border-radius: 20px;
-          font-size: 0.8rem; font-weight: 600; font-family: inherit;
-          pointer-events: none;
-          animation: badge-in 0.2s ease both;
-        }
-        @keyframes badge-in { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:none} }
-        @keyframes tooltip-pop { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
-        .studio-mode-badge--line  { background: rgba(56,142,60,0.92); color:#fff; }
-        .studio-mode-badge--point { background: rgba(25,118,210,0.92); color:#fff; }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* Toasts */
-        .studio-toasts {
-          position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
-          z-index: 100; display: flex; flex-direction: column; gap: 0.5rem; align-items: center;
-          pointer-events: none;
-        }
-        .studio-toast {
-          display: flex; align-items: center; gap: 0.5rem;
-          padding: 0.6rem 1.1rem; border-radius: 10px;
-          font-size: 0.875rem; font-weight: 500; font-family: inherit;
-          min-width: 220px; max-width: 400px;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-          animation: toast-in 0.25s cubic-bezier(.34,1.56,.64,1) both;
-        }
-        @keyframes toast-in { from{opacity:0;transform:translateY(12px) scale(0.95)} to{opacity:1;transform:none} }
-        .studio-toast--success { background: rgba(21,128,61,0.96); color:#dcfce7; }
-        .studio-toast--error   { background: rgba(153,27,27,0.96);  color:#fee2e2; }
-        .studio-toast--info    { background: rgba(30,58,138,0.96);  color:#dbeafe; }
-
-        /* Panel handle — hidden on desktop, shown on mobile */
-        .studio-panel-handle { display: none; }
-        .studio-panel-pill   { display: none; }
-        .studio-panel-label  { flex: 1; text-align: right; }
-        .studio-panel-chevron { flex-shrink: 0; }
-
-        /* MapLibre controls */
-        .maplibregl-ctrl-group {
-          background-color: var(--surface) !important;
-          border: 1px solid var(--border) !important;
-          border-radius: 8px !important; overflow: hidden;
-          box-shadow: 0 2px 12px rgba(0,0,0,0.25) !important;
-        }
-        .maplibregl-ctrl-group button {
-          width: 36px !important; height: 36px !important;
-          background-color: transparent !important; border: none !important;
-        }
-        .maplibregl-ctrl-group button:hover { background-color: var(--surface-2) !important; }
-        .maplibregl-ctrl-group button + button { border-top: 1px solid var(--border) !important; }
-
-        /* ── Mobile bottom-sheet layout ───────────────────────────────────── */
-        @media (max-width: 767px) {
-          /* Body becomes a positioning context so sheet overlays the map */
-          .studio-body { position: relative; }
-
-          /* Sidebar becomes a bottom sheet sliding over the map */
-          .studio-sidebar {
-            position: absolute; bottom: 0; left: 0; right: 0; z-index: 50;
-            width: auto; max-height: 72vh; overflow-y: auto;
-            border-left: none; border-top: 1px solid var(--border);
-            border-radius: 16px 16px 0 0;
-            transform: translateY(0);
-            transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-            background: var(--surface);
-          }
-          .studio-sidebar--collapsed { transform: translateY(calc(100% - 56px)); }
-
-          /* Panel handle */
-          .studio-panel-handle {
-            display: flex; align-items: center; justify-content: space-between;
-            position: relative;
-            width: 100%; padding: 1.5rem 1rem 0.65rem;
-            border: none; background: transparent; cursor: pointer;
-            font-family: inherit; font-size: 0.875rem; font-weight: 600; color: var(--text);
-            border-bottom: 1px solid var(--border);
-            touch-action: manipulation; -webkit-tap-highlight-color: transparent;
-          }
-          .studio-panel-pill {
-            display: block;
-            position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
-            width: 36px; height: 4px; border-radius: 2px; background: var(--border);
-          }
-          .studio-panel-chevron { transition: transform 0.25s; }
-          .studio-sidebar:not(.studio-sidebar--collapsed) .studio-panel-chevron {
-            transform: rotate(180deg);
-          }
-
-          /* Sidebar inner padding */
-          .studio-sidebar-inner { padding: 0.875rem; }
-
-          /* Toasts sit above the collapsed sheet handle */
-          .studio-toasts { bottom: 4.5rem; }
-
-          /* Mode badge nudge for smaller screens */
-          .studio-mode-badge { top: 0.65rem; right: 0.65rem; font-size: 0.75rem; }
-        }
-      `}</style>
     </div>
   )
 }
@@ -1949,10 +1528,6 @@ function TransitStudioPageContent() {
 export default function TransitStudioPage() {
   return (
     <TransitLayout>
-      <Head>
-        <title>استوديو ترانزيت | إضافة خط مواصلات</title>
-        <meta name="description" content="استوديو ترانزيت سوريا - أداة تفاعلية للمساهمة وإضافة خطوط سرافيس ومواقف مواصلات جديدة لخرائط النقل العام." />
-      </Head>
       <TransitStudioPageContent />
     </TransitLayout>
   )

@@ -796,17 +796,18 @@ export default function SyidClient() {
                                 href={`/syid-assets/icons/governorates/with-frame/${encodeURIComponent(icon.file)}`}
                                 download={icon.file}
                                 title={`أيقونة ${icon.name} - ${icon.landmark}`}
-                                className="w-full flex items-center justify-center p-2 rounded-xl hover:bg-muted/30 transition-all hover:scale-105"
+                                className="w-full aspect-square flex items-center justify-center p-3 rounded-xl bg-muted/30 dark:bg-[#edebe0] border border-border/50 hover:border-[#428177] transition-all hover:scale-105 shadow-2xs group"
                             >
                                 <img
                                     src={`/syid-assets/icons/governorates/with-frame/${encodeURIComponent(icon.file)}`}
                                     alt={`أيقونة ${icon.name} - ${icon.landmark}`}
                                     loading="lazy"
-                                    className="w-full h-auto max-h-36 object-contain"
+                                    className="w-full h-full object-contain transition-transform group-hover:scale-105"
                                 />
                             </a>
                         ))}
                     </div>
+
 
                 </section>
 

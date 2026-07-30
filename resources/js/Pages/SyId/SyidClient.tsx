@@ -74,29 +74,7 @@ const HAYYAKUM_WEIGHTS = [
     { nameAr: 'عريض (Bold)', file: 'HayyakumAllah-Bold', weightLabel: '700' },
 ];
 
-const LOGOTYPE_THEME_VARIANTS = [
-    {
-        id: 'darkgreen',
-        nameAr: 'أخضر داكن (Forest)',
-        description: 'مناسب للخلفيات الفاتحة والنمط الزيتي الرسمي',
-        file: 'Syrian_logotype_darkgreen.svg',
-        bgClass: 'bg-[#edebe0] dark:bg-[#054239]/40 border-border',
-    },
-    {
-        id: 'black',
-        nameAr: 'أسود (Charcoal / Light)',
-        description: 'مناسب للتطبيقات الفاتحة والطباعة الأحادية',
-        file: 'Syrian_logotype_black.svg',
-        bgClass: 'bg-white text-black border-border',
-    },
-    {
-        id: 'off-white',
-        nameAr: 'أوف وايت (Dark / Off-white)',
-        description: 'مناسب للخلفيات المظلمة والداكنة',
-        file: 'Syrian_logotype_off-white.svg',
-        bgClass: 'bg-[#161616] text-white border-border/40',
-    }
-];
+
 
 const GOVERNORATE_ICONS = [
     { name: 'دمشق', landmark: 'السيف الدمشقي', file: 'السيف الدمشقي.svg' },
@@ -570,22 +548,6 @@ export default function SyidClient() {
                                                 </p>
                                             </div>
 
-                                            {/* Official Logo Image */}
-                                            <div className="p-3 bg-background rounded-lg border border-border text-center">
-                                                <span className="text-[11px] text-muted-foreground block mb-1">الشعار الرسمي (صورة):</span>
-                                                <div className="flex justify-center items-center py-2">
-                                                    <img
-                                                        src="/syid-assets/materials/Syrian_logotype_darkgreen.svg"
-                                                        alt="الهوية البصرية السورية - الشعار الرسمي"
-                                                        className="h-11 sm:h-14 w-auto dark:hidden object-contain"
-                                                    />
-                                                    <img
-                                                        src="/syid-assets/materials/Syrian_logotype_off-white.svg"
-                                                        alt="الهوية البصرية السورية - الشعار الرسمي"
-                                                        className="h-11 sm:h-14 w-auto hidden dark:block object-contain"
-                                                    />
-                                                </div>
-                                            </div>
 
                                         </div>
                                     )}
@@ -777,47 +739,6 @@ export default function SyidClient() {
                         </Card>
                     </div>
 
-                    {/* Official Logotype SVG Theme Variants */}
-                    <div className="mt-8">
-                        <div className="mb-4">
-                            <h3 className="font-bold text-lg flex items-center gap-2">
-                                <Palette className="h-4 w-4 text-[#428177]" />
-                                <span>مخطوطة الشعار بألوان وثيمات الهوية</span>
-                            </h3>
-                            <p className="text-xs text-muted-foreground mt-1">
-                                الملفات الرسمية لمخطوطة &quot;الجمهورية العربية السورية&quot; بصيغة SVG مهيأة لمختلف الأنماط والـ Themes.
-                            </p>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                            {LOGOTYPE_THEME_VARIANTS.map((variant) => (
-                                <Card key={variant.id} className="border border-border/80 rounded-xl overflow-hidden p-4 flex flex-col justify-between space-y-4">
-                                    <div>
-                                        <span className="font-bold text-sm block mb-1">{variant.nameAr}</span>
-                                        <p className="text-[11px] text-muted-foreground leading-snug">{variant.description}</p>
-                                    </div>
-
-                                    <div className={`p-4 rounded-lg flex items-center justify-center min-h-[90px] ${variant.bgClass}`}>
-                                        <img
-                                            src={`/syid-assets/materials/${variant.file}`}
-                                            alt={variant.nameAr}
-                                            loading="lazy"
-                                            className="max-h-12 w-auto object-contain"
-                                        />
-                                    </div>
-
-                                    <a
-                                        href={`/syid-assets/materials/${variant.file}`}
-                                        download={variant.file}
-                                        className="inline-flex items-center justify-center gap-2 w-full bg-[#428177] hover:bg-[#054239] text-white text-xs font-medium h-9 rounded-lg transition-colors"
-                                    >
-                                        <FileDown className="h-3.5 w-3.5" />
-                                        <span>تحميل SVG</span>
-                                    </a>
-                                </Card>
-                            ))}
-                        </div>
-                    </div>
                 </section>
 
                 {/* 5. GOVERNORATE ICONS */}

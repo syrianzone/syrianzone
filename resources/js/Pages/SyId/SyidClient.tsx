@@ -789,37 +789,25 @@ export default function SyidClient() {
                         </a>
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 items-center justify-items-center">
                         {GOVERNORATE_ICONS.map((icon) => (
-                            <Card
+                            <a
                                 key={icon.name}
-                                className="border border-border/80 rounded-xl overflow-hidden p-3 flex flex-col items-center justify-between hover:border-[#428177]/50 transition-all hover:shadow-sm text-center group bg-card"
+                                href={`/syid-assets/icons/governorates/with-frame/${encodeURIComponent(icon.file)}`}
+                                download={icon.file}
+                                title={`أيقونة ${icon.name} - ${icon.landmark}`}
+                                className="w-full flex items-center justify-center p-2 rounded-xl hover:bg-muted/30 transition-all hover:scale-105"
                             >
-                                <div className="w-full aspect-square p-2 flex items-center justify-center bg-muted/20 rounded-lg border border-border/40 mb-2.5 group-hover:bg-muted/40 transition-colors">
-                                    <img
-                                        src={`/syid-assets/icons/governorates/with-frame/${encodeURIComponent(icon.file)}`}
-                                        alt={`أيقونة ${icon.name} - ${icon.landmark}`}
-                                        loading="lazy"
-                                        className="w-full h-full object-contain max-h-24 transition-transform group-hover:scale-105"
-                                    />
-                                </div>
-
-                                <div className="w-full space-y-0.5">
-                                    <span className="font-bold text-xs block text-foreground truncate">{icon.name}</span>
-                                    <span className="text-[10px] text-muted-foreground block truncate">{icon.landmark}</span>
-                                </div>
-
-                                <a
-                                    href={`/syid-assets/icons/governorates/with-frame/${encodeURIComponent(icon.file)}`}
-                                    download={icon.file}
-                                    className="mt-2.5 inline-flex items-center justify-center gap-1 text-[11px] font-medium text-[#428177] hover:text-[#054239] dark:hover:text-emerald-400 w-full py-1 rounded bg-[#428177]/10 hover:bg-[#428177]/20 transition-colors"
-                                >
-                                    <FileDown className="h-3 w-3" />
-                                    <span>SVG</span>
-                                </a>
-                            </Card>
+                                <img
+                                    src={`/syid-assets/icons/governorates/with-frame/${encodeURIComponent(icon.file)}`}
+                                    alt={`أيقونة ${icon.name} - ${icon.landmark}`}
+                                    loading="lazy"
+                                    className="w-full h-auto max-h-36 object-contain"
+                                />
+                            </a>
                         ))}
                     </div>
+
                 </section>
 
                 {/* 6. SYRIA MAP (LAZY LOADED ON CLICK) */}

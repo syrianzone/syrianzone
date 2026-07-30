@@ -303,6 +303,16 @@ export default function About() {
                                     </div>
 
                                     <div className="p-3 bg-muted/20 rounded-lg border border-border/40">
+                                        <span className="font-bold text-foreground block mb-0.5">Abdulrahman Haddad (@abd_hmh)</span>
+                                        <span className="text-muted-foreground">Supplied Syrian flag proportion specifications and guidelines manual.</span>
+                                    </div>
+
+                                    <div className="p-3 bg-muted/20 rounded-lg border border-border/40">
+                                        <span className="font-bold text-foreground block mb-0.5">Walaa (@walaa_akdesign)</span>
+                                        <span className="text-muted-foreground">Designed the Syrian governorates visual landmark icons package in SyId.</span>
+                                    </div>
+
+                                    <div className="p-3 bg-muted/20 rounded-lg border border-border/40">
                                         <span className="font-bold text-foreground block mb-0.5">haiueida (@haiueida)</span>
                                         <span className="text-muted-foreground">Provided Kurdish translations for SyOfficial.</span>
                                     </div>

@@ -851,36 +851,30 @@ export default function SyidClient() {
                     </div>
 
                     {/* Theme Switcher Toggle for SVG Posters */}
-                    <div className="mb-6 bg-muted/30 p-2.5 rounded-xl border border-border flex flex-wrap items-center gap-3">
-                        <span className="text-xs font-semibold px-1.5 text-muted-foreground flex items-center gap-1.5 shrink-0">
-                            <Palette className="h-4 w-4 text-[#428177]" />
-                            <span>Poster Themes:</span>
-                        </span>
-
-                        <div className="flex flex-wrap gap-2 flex-1">
-                            {POSTER_THEMES.map((theme) => {
-                                const isActive = activePosterTheme === theme.id;
-                                return (
-                                    <button
-                                        key={theme.id}
-                                        type="button"
-                                        onClick={() => setActivePosterTheme(theme.id)}
-                                        className={`inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
-                                            isActive
-                                                ? 'bg-background text-foreground shadow-xs border border-border font-bold ring-1 ring-[#428177]/40'
-                                                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 border border-transparent'
-                                        }`}
-                                    >
-                                        <span
-                                            className="w-3.5 h-3.5 rounded-full border border-black/20 shrink-0 shadow-2xs"
-                                            style={{ backgroundColor: theme.primary }}
-                                        />
-                                        <span>{theme.name}</span>
-                                    </button>
-                                );
-                            })}
-                        </div>
+                    <div className="mb-6 bg-muted/30 p-2 rounded-xl border border-border flex flex-wrap items-center justify-center gap-2">
+                        {POSTER_THEMES.map((theme) => {
+                            const isActive = activePosterTheme === theme.id;
+                            return (
+                                <button
+                                    key={theme.id}
+                                    type="button"
+                                    onClick={() => setActivePosterTheme(theme.id)}
+                                    className={`inline-flex items-center gap-2 text-xs px-3.5 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
+                                        isActive
+                                            ? 'bg-background text-foreground shadow-xs border border-border font-bold ring-1 ring-[#428177]/40'
+                                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 border border-transparent'
+                                    }`}
+                                >
+                                    <span
+                                        className="w-3.5 h-3.5 rounded-full border border-black/20 shrink-0 shadow-2xs"
+                                        style={{ backgroundColor: theme.primary }}
+                                    />
+                                    <span>{theme.name}</span>
+                                </button>
+                            );
+                        })}
                     </div>
+
 
                     {/* Pure SVG Posters Grid */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 items-center justify-items-center">

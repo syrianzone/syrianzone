@@ -548,6 +548,22 @@ export default function SyidClient() {
                                                 </p>
                                             </div>
 
+                                            {/* Official Logo Image */}
+                                            <div className="p-3 bg-background rounded-lg border border-border text-center">
+                                                <span className="text-[11px] text-muted-foreground block mb-1">الشعار الرسمي (صورة):</span>
+                                                <div className="flex justify-center items-center py-2">
+                                                    <img
+                                                        src="/syid-assets/materials/blackonwhite.png"
+                                                        alt="الهوية البصرية السورية - الشعار الرسمي"
+                                                        className="h-12 sm:h-16 w-auto dark:hidden object-contain"
+                                                    />
+                                                    <img
+                                                        src="/syid-assets/materials/whiteonblack.png"
+                                                        alt="الهوية البصرية السورية - الشعار الرسمي"
+                                                        className="h-12 sm:h-16 w-auto hidden dark:block object-contain"
+                                                    />
+                                                </div>
+                                            </div>
 
                                         </div>
                                     )}

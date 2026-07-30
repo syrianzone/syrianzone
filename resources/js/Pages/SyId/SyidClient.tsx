@@ -504,7 +504,7 @@ export default function SyidClient() {
                                             <div className="p-3 bg-background rounded-lg border border-border text-center">
                                                 <span className="text-[11px] text-muted-foreground block mb-1">بخط حيّاكم الله:</span>
                                                 <p className="text-xl sm:text-2xl tracking-wide py-2 font-normal" style={{ fontFamily: "'HayyakumAllah', sans-serif" }}>
-                                                    الجمهورية العربية السورية
+                                                    الهوية البصرية السورية
                                                 </p>
                                             </div>
 
@@ -514,16 +514,17 @@ export default function SyidClient() {
                                                 <div className="flex justify-center items-center py-2">
                                                     <img
                                                         src="/syid-assets/materials/Syrian_logotype_darkgreen.svg"
-                                                        alt="الجمهورية العربية السورية - الشعار الرسمي"
+                                                        alt="الهوية البصرية السورية - الشعار الرسمي"
                                                         className="h-11 sm:h-14 w-auto dark:hidden object-contain"
                                                     />
                                                     <img
                                                         src="/syid-assets/materials/Syrian_logotype_off-white.svg"
-                                                        alt="الجمهورية العربية السورية - الشعار الرسمي"
+                                                        alt="الهوية البصرية السورية - الشعار الرسمي"
                                                         className="h-11 sm:h-14 w-auto hidden dark:block object-contain"
                                                     />
                                                 </div>
                                             </div>
+
                                         </div>
                                     )}
 
@@ -770,7 +771,8 @@ export default function SyidClient() {
                                     rel="noopener noreferrer"
                                     className="font-medium text-foreground hover:text-[#428177] underline"
                                 >
-                                    ولاء أردكلي (@walaa_akdesign)
+                                    ولاء (@walaa_akdesign)
+
                                 </a>
                             </p>
                         </div>

@@ -541,12 +541,25 @@ export default function SyidClient() {
                                     ) : (
                                         <div className="space-y-3 bg-muted/30 p-3.5 rounded-xl border border-border animate-in fade-in-50 duration-300">
                                             {/* Rendered Font Text */}
-                                            <div className="p-3 bg-background rounded-lg border border-border text-center">
+                                            <div className="p-3 bg-background rounded-lg border border-border text-center overflow-hidden">
                                                 <span className="text-[11px] text-muted-foreground block mb-1">بخط حيّاكم الله:</span>
-                                                <p className="text-xl sm:text-2xl tracking-wide py-2 font-normal" style={{ fontFamily: "'HayyakumAllah', sans-serif" }}>
-                                                    الهوية البصرية السورية
-                                                </p>
+                                                <div className="w-full flex items-center justify-center py-1">
+                                                    <svg viewBox="0 0 320 48" className="w-full h-auto max-h-16 overflow-visible">
+                                                        <text
+                                                            x="50%"
+                                                            y="55%"
+                                                            textAnchor="middle"
+                                                            dominantBaseline="middle"
+                                                            fill="currentColor"
+                                                            style={{ fontFamily: "'HayyakumAllah', sans-serif" }}
+                                                            className="text-[36px] font-normal text-foreground"
+                                                        >
+                                                            الهوية البصرية السورية
+                                                        </text>
+                                                    </svg>
+                                                </div>
                                             </div>
+
 
                                             {/* Official Logo Image */}
                                             <div className="p-3 bg-background rounded-lg border border-border text-center">

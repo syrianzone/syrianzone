@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="180.57 208.87 234.64 234.64">
+  <rect x="180.57" y="208.87" width="234.64" height="234.64" fill="#ffffff"/>
+  
+  <g>
+    <rect x="230.91" y="222.81" fill="none" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+    <line x1="230.91" y1="246.81" x2="364.36" y2="246.81" fill="none" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+    <g>
+      <line x1="235.51" y1="226.89" x2="235.51" y2="264.85" fill="none" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+      <line x1="359.76" y1="226.89" x2="359.76" y2="264.51" fill="none" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+    </g>
+    <polygon points="341.39 265.02 297.63 252.09 249.19 265.02 224.62 265.02 224.62 269.11 250.7 269.11 351.52 269.11 370.66 269.11 370.66 265.02 341.39 265.02" fill="none" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+    <polygon points="262.75 265.02 297.63 255.49 328.88 265.02 262.75 265.02" fill="none" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+    <g>
+      <g>
+        <polyline points="229.97 270.04 233.8 287.41 246.83 287.41 250.66 270.3" fill="none" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+        <rect x="230.87" y="287.41" fill="none" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+        <rect x="233.08" y="290.26" fill="none" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+      </g>
+      <g>
+        <polyline points="344.61 270.04 348.44 287.41 361.46 287.41 365.29 270.3" fill="none" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+        <rect x="345.51" y="287.41" fill="none" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+        <rect x="347.72" y="290.26" fill="none" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+      </g>
+    </g>
+    <path d="M297.63,291.02h0c-24.82,0-44.94,20.12-44.94,44.94v69.81h12.76v-69.81c0-17.74,14.44-32.18,32.18-32.18s32.18,14.44,32.18,32.18v69.81h12.76v-69.81c0-24.82-20.12-44.94-44.94-44.94Z" fill="none" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+    <line x1="265.05" y1="393.36" x2="256.37" y2="393.36" fill="none" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+    <line x1="253.05" y1="368.6" x2="259.17" y2="368.6" fill="none" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+    <line x1="265.3" y1="346.38" x2="257.39" y2="346.38" fill="none" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+    <line x1="342.15" y1="393.36" x2="333.47" y2="393.36" fill="none" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+    <line x1="330.15" y1="368.6" x2="336.28" y2="368.6" fill="none" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+    <line x1="342.41" y1="346.38" x2="334.49" y2="346.38" fill="none" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+    <line x1="290.07" y1="304.77" x2="287.26" y2="297.36" fill="none" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+    <line x1="302.83" y1="304.26" x2="304.88" y2="297.62" fill="none" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+    <line x1="327.34" y1="302.47" x2="322.24" y2="308.09" fill="none" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+    <line x1="264.54" y1="305.79" x2="271.17" y2="310.38" fill="none" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+    <line x1="348.58" y1="330.97" x2="356.92" y2="330.97" fill="none" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+    <line x1="361.81" y1="381.06" x2="354.63" y2="381.06" fill="none" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+    <line x1="348.84" y1="400" x2="358.1" y2="400" fill="none" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+    <line x1="361.58" y1="307.58" x2="353.24" y2="307.58" fill="none" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+    <line x1="233.68" y1="329.44" x2="242.02" y2="329.44" fill="none" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+    <line x1="246.92" y1="379.53" x2="239.74" y2="379.53" fill="none" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+    <line x1="233.94" y1="398.47" x2="243.21" y2="398.47" fill="none" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+    <line x1="246.69" y1="306.04" x2="238.35" y2="306.04" fill="none" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+  <polyline points="414.41 405.77 323.8 405.77 271.99 405.77 181.37 405.77" fill="none" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+  <g>
+    <line x1="323.38" y1="405.77" x2="404.95" y2="425.3" fill="none" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+    <line x1="274.66" y1="405.77" x2="190.84" y2="425.5" fill="none" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+    <polyline points="245.06 425.35 292.03 405.77 303.76 405.77 350.72 425.15" fill="none" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+</svg>

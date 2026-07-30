@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="174.25 196.84 246.77 246.77">
+  
+  <defs>
+    <clipPath id="clippath">
+      <path d="M291.19,416.47v-26.68c0-3.78,3.07-6.85,6.85-6.85s6.85,3.07,6.85,6.85v26.68h-13.71Z" style="fill: none;" />
+    </clipPath>
+  </defs>
+  <g>
+    <line x1="414.16" y1="415.98" x2="323.55" y2="415.98" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+    <line x1="271.73" y1="415.98" x2="181.12" y2="415.98" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+  </g>
+  <g>
+    <line x1="323.13" y1="420.17" x2="404.69" y2="439.98" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+    <line x1="303.5" y1="420.26" x2="350.47" y2="439.83" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+    <line x1="272.87" y1="420.04" x2="190.58" y2="440.18" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+    <line x1="291.77" y1="420.45" x2="244.81" y2="440.03" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+  </g>
+  <path d="M311.06,201.38c-3.77-2.37-8.23-3.74-13.02-3.74s-9.24,1.38-13.02,3.74h-12.5v48.68h51.02v-48.68h-12.5Z" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+  <path d="M307.25,377.32c-2.67-1.68-5.83-2.65-9.21-2.65s-6.54.97-9.21,2.65h-8.84v42.89h36.11v-42.89h-8.84Z" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+  <rect x="272.53" y="367.79" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+  <path d="M298.04,204.11h0c10.4,0,18.85,8.45,18.85,18.85v27.11h-37.7v-27.11c0-10.4,8.45-18.85,18.85-18.85Z" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+  <path d="M298.04,378.89h0c5.89,0,10.66,4.78,10.66,10.66v30.65h-21.33v-30.65c0-5.89,4.78-10.66,10.66-10.66Z" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+  <path d="M291.19,416.47v-26.68c0-3.78,3.07-6.85,6.85-6.85s6.85,3.07,6.85,6.85v26.68h-13.71Z" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+  <g>
+    <circle cx="298.04" cy="223.68" r="13.79" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+    <polyline points="298.04 229.98 298.04 223.68 305.36 216.36" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+  </g>
+  <rect x="276.09" y="250.15" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+  <rect x="280.09" y="253.98" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+  <rect x="282.72" y="257.72" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+  <rect x="295.49" y="264.87" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+  <g>
+    <line x1="308.94" y1="257.72" x2="308.94" y2="367.79" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+    <line x1="287.15" y1="257.72" x2="287.15" y2="367.79" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+  </g>
+  <g style="clip-path: url(#clippath);">
+    <g>
+      <line x1="284.45" y1="355.49" x2="311.85" y2="382.89" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+      <line x1="284.45" y1="360.94" x2="311.85" y2="388.34" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+      <line x1="284.45" y1="366.38" x2="311.85" y2="393.79" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+      <line x1="284.45" y1="371.83" x2="311.85" y2="399.23" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+      <line x1="284.45" y1="377.28" x2="311.85" y2="404.68" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+      <line x1="284.45" y1="382.72" x2="311.85" y2="410.13" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+      <line x1="284.45" y1="388.17" x2="311.85" y2="415.57" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+      <line x1="284.45" y1="393.62" x2="311.85" y2="421.02" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+      <line x1="284.45" y1="399.06" x2="311.85" y2="426.47" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+      <line x1="284.45" y1="404.51" x2="311.85" y2="431.91" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+      <line x1="284.45" y1="409.96" x2="311.85" y2="437.36" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+      <line x1="284.45" y1="415.4" x2="311.85" y2="442.81" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+      <line x1="311.85" y1="355.49" x2="284.45" y2="382.89" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+      <line x1="311.85" y1="360.94" x2="284.45" y2="388.34" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+      <line x1="311.85" y1="366.38" x2="284.45" y2="393.79" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+      <line x1="311.85" y1="371.83" x2="284.45" y2="399.23" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+      <line x1="311.85" y1="377.28" x2="284.45" y2="404.68" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+      <line x1="311.85" y1="382.72" x2="284.45" y2="410.13" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+      <line x1="311.85" y1="388.17" x2="284.45" y2="415.57" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+      <line x1="311.85" y1="393.62" x2="284.45" y2="421.02" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+      <line x1="311.85" y1="399.06" x2="284.45" y2="426.47" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+      <line x1="311.85" y1="404.51" x2="284.45" y2="431.91" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+      <line x1="311.85" y1="409.96" x2="284.45" y2="437.36" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+      <line x1="311.85" y1="415.4" x2="284.45" y2="442.81" style="stroke: #04018c; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6px;" />
+    </g>
+  </g>
+</svg>

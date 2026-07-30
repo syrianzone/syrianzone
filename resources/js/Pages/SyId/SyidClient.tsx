@@ -98,6 +98,24 @@ const LOGOTYPE_THEME_VARIANTS = [
     }
 ];
 
+const GOVERNORATE_ICONS = [
+    { name: 'دمشق', landmark: 'السيف الدمشقي', file: 'السيف الدمشقي.svg' },
+    { name: 'ريف دمشق', landmark: 'غوطة ريف دمشق', file: 'غوطة ريف دمشق.svg' },
+    { name: 'حلب', landmark: 'قلعة حلب', file: 'قلعة حلب.svg' },
+    { name: 'حمص', landmark: 'ساعة حمص', file: 'ساعة حمص.svg' },
+    { name: 'حماة', landmark: 'نواعير حماة', file: 'نواعير حماة.svg' },
+    { name: 'اللاذقية', landmark: 'قوس النصر', file: 'قوس النصر اللاذقية.svg' },
+    { name: 'طرطوس', landmark: 'جزيرة أرواد', file: 'ارواد طرطوس.svg' },
+    { name: 'إدلب', landmark: 'رويحة إدلب', file: 'رويحة ادلب.svg' },
+    { name: 'دير الزور', landmark: 'الجسر المعلق', file: 'جسر دير الزور المعلق.svg' },
+    { name: 'الرقة', landmark: 'بوابة بغداد', file: 'بوابة بغداد الرقة.svg' },
+    { name: 'الحسكة', landmark: 'جسر عين ديوار', file: 'عين ديوار الحسكة.svg' },
+    { name: 'درعا', landmark: 'المسجد العمري', file: 'مسجد درعا العمري.svg' },
+    { name: 'السويداء', landmark: 'قنوات السويداء', file: 'قنوات السويداء.svg' },
+    { name: 'القنيطرة', landmark: 'بيت صيدا', file: 'بيت صيدا القنيطرة.svg' },
+];
+
+
 export default function SyidClient() {
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
     const [notification, setNotification] = useState<string | null>(null);
@@ -739,8 +757,72 @@ export default function SyidClient() {
                     </div>
                 </section>
 
-                {/* 5. SYRIA MAP (LAZY LOADED ON CLICK) */}
+                {/* 5. GOVERNORATE ICONS */}
                 <section>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                        <div>
+                            <h2 className="text-2xl font-bold">أيقونات المحافظات السورية</h2>
+                            <p className="text-xs text-muted-foreground mt-1">
+                                إعداد وتصميم:{" "}
+                                <a
+                                    href="https://x.com/walaa_akdesign"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="font-medium text-foreground hover:text-[#428177] underline"
+                                >
+                                    ولاء أردكلي (@walaa_akdesign)
+                                </a>
+                            </p>
+                        </div>
+
+                        <a
+                            href="https://drive.google.com/drive/folders/1rRpQ98QKB_hnTofuN7zTVdk0YpH73CLL"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center gap-2 bg-[#428177] hover:bg-[#054239] text-white font-medium text-xs h-10 px-5 rounded-lg transition-colors shadow-xs shrink-0"
+                        >
+                            <Download className="h-4 w-4" />
+                            <span>تحميل الحزمة الكاملة (Google Drive)</span>
+                            <ExternalLink className="h-3.5 w-3.5 opacity-80" />
+                        </a>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4">
+                        {GOVERNORATE_ICONS.map((icon) => (
+                            <Card
+                                key={icon.name}
+                                className="border border-border/80 rounded-xl overflow-hidden p-3 flex flex-col items-center justify-between hover:border-[#428177]/50 transition-all hover:shadow-sm text-center group bg-card"
+                            >
+                                <div className="w-full aspect-square p-2 flex items-center justify-center bg-muted/20 rounded-lg border border-border/40 mb-2.5 group-hover:bg-muted/40 transition-colors">
+                                    <img
+                                        src={`/syid-assets/icons/governorates/with-frame/${encodeURIComponent(icon.file)}`}
+                                        alt={`أيقونة ${icon.name} - ${icon.landmark}`}
+                                        loading="lazy"
+                                        className="w-full h-full object-contain max-h-24 transition-transform group-hover:scale-105"
+                                    />
+                                </div>
+
+                                <div className="w-full space-y-0.5">
+                                    <span className="font-bold text-xs block text-foreground truncate">{icon.name}</span>
+                                    <span className="text-[10px] text-muted-foreground block truncate">{icon.landmark}</span>
+                                </div>
+
+                                <a
+                                    href={`/syid-assets/icons/governorates/with-frame/${encodeURIComponent(icon.file)}`}
+                                    download={icon.file}
+                                    className="mt-2.5 inline-flex items-center justify-center gap-1 text-[11px] font-medium text-[#428177] hover:text-[#054239] dark:hover:text-emerald-400 w-full py-1 rounded bg-[#428177]/10 hover:bg-[#428177]/20 transition-colors"
+                                >
+                                    <FileDown className="h-3 w-3" />
+                                    <span>SVG</span>
+                                </a>
+                            </Card>
+                        ))}
+                    </div>
+                </section>
+
+                {/* 6. SYRIA MAP (LAZY LOADED ON CLICK) */}
+                <section>
+
                     <h2 className="text-2xl font-bold mb-6">خريطة سوريا الرقمية</h2>
 
                     <Card className="border border-border/80 rounded-xl overflow-hidden">

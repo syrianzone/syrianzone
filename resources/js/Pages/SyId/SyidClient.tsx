@@ -118,35 +118,36 @@ const GOVERNORATE_ICONS = [
 const POSTER_THEMES = [
     {
         id: 'default',
-        nameAr: 'الكلاسيكي (أزرق وأبيض)',
+        name: 'Classic',
         primary: '#04018c',
         bg: '#ffffff',
     },
     {
         id: 'forest',
-        nameAr: 'ثيم الغابة (Forest)',
+        name: 'Forest',
         primary: '#054239',
         bg: '#edebe0',
     },
     {
         id: 'wheat',
-        nameAr: 'قمحي ذهبي (Golden Wheat)',
+        name: 'Golden Wheat',
         primary: '#988561',
         bg: '#fdfbf7',
     },
     {
         id: 'umber',
-        nameAr: 'العنابي (Deep Umber)',
+        name: 'Deep Umber',
         primary: '#6b1f2a',
         bg: '#fdf8f8',
     },
     {
         id: 'charcoal',
-        nameAr: 'الفحم والأبيض (Charcoal)',
+        name: 'Charcoal',
         primary: '#161616',
         bg: '#ffffff',
     }
 ];
+
 
 const recolorSvg = (content: string, primaryColor: string, bgColor: string): string => {
     let res = content.replace(/#04018c/gi, primaryColor);
@@ -853,7 +854,7 @@ export default function SyidClient() {
                     <div className="mb-6 bg-muted/30 p-2.5 rounded-xl border border-border flex flex-wrap items-center gap-3">
                         <span className="text-xs font-semibold px-1.5 text-muted-foreground flex items-center gap-1.5 shrink-0">
                             <Palette className="h-4 w-4 text-[#428177]" />
-                            <span>ثيم بوسترات الأيقونات:</span>
+                            <span>Poster Themes:</span>
                         </span>
 
                         <div className="flex flex-wrap gap-2 flex-1">
@@ -874,14 +875,14 @@ export default function SyidClient() {
                                             className="w-3.5 h-3.5 rounded-full border border-black/20 shrink-0 shadow-2xs"
                                             style={{ backgroundColor: theme.primary }}
                                         />
-                                        <span>{theme.nameAr}</span>
+                                        <span>{theme.name}</span>
                                     </button>
                                 );
                             })}
                         </div>
                     </div>
 
-                    {/* Pure SVG Posters Grid (No HTML Cards) */}
+                    {/* Pure SVG Posters Grid */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 items-center justify-items-center">
                         {GOVERNORATE_ICONS.map((icon) => {
                             const rawSvg = svgContents[icon.file];
@@ -894,23 +895,23 @@ export default function SyidClient() {
                                 const url = URL.createObjectURL(blob);
                                 const link = document.createElement('a');
                                 link.href = url;
-                                link.download = `أيقونة_${icon.name}_${currentTheme.nameAr.split(' ')[0]}.svg`;
+                                link.download = `أيقونة_${icon.name}_${currentTheme.name}.svg`;
                                 document.body.appendChild(link);
                                 link.click();
                                 document.body.removeChild(link);
                                 URL.revokeObjectURL(url);
-                                setNotification(`تم تنزيل أيقونة ${icon.name} بـ (${currentTheme.nameAr.split(' ')[0]})`);
+                                setNotification(`تم تنزيل أيقونة ${icon.name} - ${currentTheme.name}`);
                                 setTimeout(() => setNotification(null), 3000);
                             };
-
 
                             return (
                                 <button
                                     key={icon.name}
                                     type="button"
                                     onClick={handleDownload}
-                                    title={`انقر لتنزيل أيقونة ${icon.name} (${icon.landmark}) - ثيم ${currentTheme.nameAr}`}
-                                    className="w-full aspect-[312/436] flex items-center justify-center transition-transform hover:scale-[1.06] focus:outline-none cursor-pointer group p-0"
+                                    title={`انقر لتنزيل أيقونة ${icon.name} (${icon.landmark}) - ${currentTheme.name} Theme`}
+                                    style={{ backgroundColor: currentTheme.bg }}
+                                    className="w-full aspect-[312/436] flex items-center justify-center transition-transform hover:scale-[1.06] focus:outline-none cursor-pointer group p-1.5 rounded-xl border border-border/40 overflow-hidden shadow-2xs"
                                 >
                                     {recoloredSvg ? (
                                         <div
@@ -928,6 +929,7 @@ export default function SyidClient() {
                             );
                         })}
                     </div>
+
                 </section>
 
 

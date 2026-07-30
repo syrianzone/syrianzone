@@ -2,10 +2,24 @@
 
 import React, { useState, useMemo, Suspense } from 'react';
 import {
-    Download, Copy, Check, ExternalLink, Map as MapIcon, FileDown, Search, Tag
+    Download, Copy, Check, ExternalLink, Map as MapIcon, FileDown, Search, Tag, Eye, Palette
 } from 'lucide-react';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/Components/ui/button";
+import { Card, CardContent } from "@/Components/ui/card";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/Components/ui/dialog";
+import {
+    Tabs,
+    TabsContent,
+    TabsList,
+    TabsTrigger,
+} from "@/Components/ui/tabs";
 import { featureToSVG, getGovernorateNameAr } from '@/lib/geo-utils';
 import {
     Select,
@@ -13,8 +27,8 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
+} from "@/Components/ui/select";
+import { Input } from "@/Components/ui/input";
 
 const SyriaMap = React.lazy(() => import('./SyriaMap'));
 
@@ -53,6 +67,37 @@ const COLOR_PALETTES = [
     },
 ];
 
+const HAYYAKUM_WEIGHTS = [
+    { nameAr: 'خفيف (Light)', file: 'HayyakumAllah-Light', weightLabel: '300' },
+    { nameAr: 'عادي (Regular)', file: 'HayyakumAllah-Regular', weightLabel: '400' },
+    { nameAr: 'متوسط (Medium)', file: 'HayyakumAllah-Medium', weightLabel: '500' },
+    { nameAr: 'عريض (Bold)', file: 'HayyakumAllah-Bold', weightLabel: '700' },
+];
+
+const LOGOTYPE_THEME_VARIANTS = [
+    {
+        id: 'darkgreen',
+        nameAr: 'أخضر داكن (Forest)',
+        description: 'مناسب للخلفيات الفاتحة والنمط الزيتي الرسمي',
+        file: 'Syrian_logotype_darkgreen.svg',
+        bgClass: 'bg-[#edebe0] dark:bg-[#054239]/40 border-border',
+    },
+    {
+        id: 'black',
+        nameAr: 'أسود (Charcoal / Light)',
+        description: 'مناسب للتطبيقات الفاتحة والطباعة الأحادية',
+        file: 'Syrian_logotype_black.svg',
+        bgClass: 'bg-white text-black border-border',
+    },
+    {
+        id: 'off-white',
+        nameAr: 'أوف وايت (Dark / Off-white)',
+        description: 'مناسب للخلفيات المظلمة والداكنة',
+        file: 'Syrian_logotype_off-white.svg',
+        bgClass: 'bg-[#161616] text-white border-border/40',
+    }
+];
+
 export default function SyidClient() {
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
     const [notification, setNotification] = useState<string | null>(null);
@@ -61,6 +106,9 @@ export default function SyidClient() {
     const [govSearch, setGovSearch] = useState("");
     const [mapLoaded, setMapLoaded] = useState(false);
     const [loadingMap, setLoadingMap] = useState(false);
+    const [loadFontPreview, setLoadFontPreview] = useState(false);
+
+
 
     const loadMapData = async () => {
         if (geoJsonData || loadingMap) {
@@ -276,22 +324,25 @@ export default function SyidClient() {
                 <section>
                     <h2 className="text-2xl font-bold mb-6">الخطوط</h2>
 
-                    <Card className="border border-border/80 rounded-xl overflow-hidden">
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-6 items-center">
-                            <div className="lg:col-span-7 flex justify-center">
-                                <img
-                                    src="/syid-assets/materials/qomra2.webp"
-                                    alt="خط قمرة"
-                                    loading="lazy"
-                                    className="max-h-64 w-auto rounded-lg border border-border object-contain"
-                                />
-                            </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Card 1: Qomra Font */}
+                        <Card className="border border-border/80 rounded-xl overflow-hidden flex flex-col justify-between p-6">
+                            <div className="space-y-4">
+                                <div className="flex justify-center bg-muted/20 p-4 rounded-lg border border-border">
+                                    <img
+                                        src="/syid-assets/materials/qomra2.webp"
+                                        alt="خط قمرة"
+                                        loading="lazy"
+                                        className="max-h-48 w-auto rounded-md object-contain"
+                                    />
+                                </div>
 
-                            <div className="lg:col-span-5 space-y-4">
-                                <h3 className="text-lg font-bold">خط قمرة (Qomra Font)</h3>
-                                <p className="text-sm text-muted-foreground leading-relaxed">
-                                    الخط المعتمد في نصوص الهوية البصرية السورية الجديدة المصمم من قبل وكالة iWantype.
-                                </p>
+                                <div>
+                                    <h3 className="text-lg font-bold">خط قمرة (Qomra Font)</h3>
+                                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                                        الخط المعتمد في نصوص الهوية البصرية السورية الجديدة المصمم من قبل وكالة iWantype.
+                                    </p>
+                                </div>
 
                                 <div className="flex items-center justify-between p-3 rounded-lg bg-muted/40 border border-border">
                                     <div className="flex items-center gap-2 text-xs">
@@ -308,19 +359,162 @@ export default function SyidClient() {
                                         {copiedKey === 'discount' ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
                                     </Button>
                                 </div>
-
-                                <a
-                                    href="https://iwantype.com/product/qomra/"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center justify-center gap-2 w-full bg-[#428177] hover:bg-[#054239] text-white font-medium text-sm h-10 rounded-lg transition-colors"
-                                >
-                                    <span>شراء الخطوط من iWantype</span>
-                                    <ExternalLink className="h-4 w-4" />
-                                </a>
                             </div>
-                        </div>
-                    </Card>
+
+                            <a
+                                href="https://iwantype.com/product/qomra/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center justify-center gap-2 w-full bg-[#428177] hover:bg-[#054239] text-white font-medium text-sm h-10 rounded-lg transition-colors mt-6"
+                            >
+                                <span>شراء الخطوط من iWantype</span>
+                                <ExternalLink className="h-4 w-4" />
+                            </a>
+                        </Card>
+
+                        {/* Card 2: Hayyakum Allah Font */}
+                        <Card className="border border-border/80 rounded-xl overflow-hidden flex flex-col justify-between p-6">
+                            <div className="space-y-4">
+                                <div>
+                                    <h3 className="text-lg font-bold">خط حيّاكم الله</h3>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        خط قريب من خط الهوية البصرية السورية
+                                    </p>
+                                </div>
+
+                                <p className="text-sm text-muted-foreground leading-relaxed">
+                                    نسخة رقمية قريبة من المخطوطة البصرية للهوية السورية الجديدة، وتأتي بأربعة أوزان مختلفة (Light, Regular, Medium, Bold) لتناسب مختلف أغراض التصميم.
+                                </p>
+
+                                {/* Download Modal */}
+                                <Dialog>
+                                    <DialogTrigger asChild>
+                                        <Button className="w-full bg-[#428177] hover:bg-[#054239] text-white font-medium text-sm h-10 rounded-lg flex items-center justify-center gap-2">
+                                            <Download className="h-4 w-4" />
+                                            <span>تحميل خط حيّاكم الله</span>
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent className="max-w-md dir-rtl text-right sm:rounded-xl">
+                                        <DialogHeader>
+                                            <DialogTitle className="text-lg font-bold text-right">تحميل خط حيّاكم الله</DialogTitle>
+                                            <DialogDescription className="text-xs text-muted-foreground text-right">
+                                                اختر الصيغة المناسبة لتنزيل الأوزان المتوفرة (Light, Regular, Medium, Bold).
+                                            </DialogDescription>
+                                        </DialogHeader>
+
+                                        <Tabs defaultValue="ttf" className="w-full mt-2" dir="rtl">
+                                            <TabsList className="grid grid-cols-3 w-full">
+                                                <TabsTrigger value="ttf">TTF</TabsTrigger>
+                                                <TabsTrigger value="woff">WOFF</TabsTrigger>
+                                                <TabsTrigger value="woff2">WOFF2</TabsTrigger>
+                                            </TabsList>
+                                            {/* TTF Tab */}
+                                            <TabsContent value="ttf" className="space-y-2 mt-4">
+                                                {HAYYAKUM_WEIGHTS.map((weight) => (
+                                                    <div key={`ttf-${weight.file}`} className="flex items-center justify-between p-2.5 rounded-lg border border-border bg-muted/20">
+                                                        <div>
+                                                            <span className="font-medium text-sm block">{weight.nameAr}</span>
+                                                            <span className="text-[11px] text-muted-foreground font-mono">{weight.file}.ttf</span>
+                                                        </div>
+                                                        <a
+                                                            href={`/syid-assets/fonts/HayyakumAllah/TTF/${weight.file}.ttf`}
+                                                            download
+                                                            className="inline-flex items-center gap-1.5 bg-[#428177] hover:bg-[#054239] text-white text-xs px-3 py-1.5 rounded-md transition-colors font-medium"
+                                                        >
+                                                            <Download className="h-3.5 w-3.5" />
+                                                            <span>تحميل</span>
+                                                        </a>
+                                                    </div>
+                                                ))}
+                                            </TabsContent>
+                                            {/* WOFF Tab */}
+                                            <TabsContent value="woff" className="space-y-2 mt-4">
+                                                {HAYYAKUM_WEIGHTS.map((weight) => (
+                                                    <div key={`woff-${weight.file}`} className="flex items-center justify-between p-2.5 rounded-lg border border-border bg-muted/20">
+                                                        <div>
+                                                            <span className="font-medium text-sm block">{weight.nameAr}</span>
+                                                            <span className="text-[11px] text-muted-foreground font-mono">{weight.file}.woff</span>
+                                                        </div>
+                                                        <a
+                                                            href={`/syid-assets/fonts/HayyakumAllah/WOFF/${weight.file}.woff`}
+                                                            download
+                                                            className="inline-flex items-center gap-1.5 bg-[#428177] hover:bg-[#054239] text-white text-xs px-3 py-1.5 rounded-md transition-colors font-medium"
+                                                        >
+                                                            <Download className="h-3.5 w-3.5" />
+                                                            <span>تحميل</span>
+                                                        </a>
+                                                    </div>
+                                                ))}
+                                            </TabsContent>
+                                            {/* WOFF2 Tab */}
+                                            <TabsContent value="woff2" className="space-y-2 mt-4">
+                                                {HAYYAKUM_WEIGHTS.map((weight) => (
+                                                    <div key={`woff2-${weight.file}`} className="flex items-center justify-between p-2.5 rounded-lg border border-border bg-muted/20">
+                                                        <div>
+                                                            <span className="font-medium text-sm block">{weight.nameAr}</span>
+                                                            <span className="text-[11px] text-muted-foreground font-mono">{weight.file}.woff2</span>
+                                                        </div>
+                                                        <a
+                                                            href={`/syid-assets/fonts/HayyakumAllah/WOFF2/${weight.file}.woff2`}
+                                                            download
+                                                            className="inline-flex items-center gap-1.5 bg-[#428177] hover:bg-[#054239] text-white text-xs px-3 py-1.5 rounded-md transition-colors font-medium"
+                                                        >
+                                                            <Download className="h-3.5 w-3.5" />
+                                                            <span>تحميل</span>
+                                                        </a>
+                                                    </div>
+                                                ))}
+                                            </TabsContent>
+                                        </Tabs>
+                                    </DialogContent>
+                                </Dialog>
+
+                                {/* Preview Section (Loaded only on user click) */}
+                                <div className="pt-3 border-t border-border/60">
+                                    {!loadFontPreview ? (
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => setLoadFontPreview(true)}
+                                            className="w-full text-xs font-medium h-9 border-dashed border-border hover:border-[#428177] flex items-center justify-center gap-2"
+                                        >
+                                            <Eye className="h-3.5 w-3.5 text-[#428177]" />
+                                            <span>تحميل المعاينة ومقارنة الخط</span>
+                                        </Button>
+                                    ) : (
+                                        <div className="space-y-3 bg-muted/30 p-3.5 rounded-xl border border-border animate-in fade-in-50 duration-300">
+                                            {/* Rendered Font Text */}
+                                            <div className="p-3 bg-background rounded-lg border border-border text-center">
+                                                <span className="text-[11px] text-muted-foreground block mb-1">بخط حيّاكم الله:</span>
+                                                <p className="text-xl sm:text-2xl tracking-wide py-2 font-normal" style={{ fontFamily: "'HayyakumAllah', sans-serif" }}>
+                                                    الجمهورية العربية السورية
+                                                </p>
+                                            </div>
+
+                                            {/* Official Logo Image */}
+                                            <div className="p-3 bg-background rounded-lg border border-border text-center">
+                                                <span className="text-[11px] text-muted-foreground block mb-1">الشعار الرسمي (صورة):</span>
+                                                <div className="flex justify-center items-center py-2">
+                                                    <img
+                                                        src="/syid-assets/materials/Syrian_logotype_darkgreen.svg"
+                                                        alt="الجمهورية العربية السورية - الشعار الرسمي"
+                                                        className="h-11 sm:h-14 w-auto dark:hidden object-contain"
+                                                    />
+                                                    <img
+                                                        src="/syid-assets/materials/Syrian_logotype_off-white.svg"
+                                                        alt="الجمهورية العربية السورية - الشعار الرسمي"
+                                                        className="h-11 sm:h-14 w-auto hidden dark:block object-contain"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+
+                                </div>
+
+                            </div>
+                        </Card>
+                    </div>
                 </section>
 
                 {/* 3. FLAG & PROPORTIONS */}
@@ -424,7 +618,7 @@ export default function SyidClient() {
                 <section>
                     <h2 className="text-2xl font-bold mb-6">المواد والدليل الإرشادي</h2>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                         {/* Guideline Manual */}
                         <Card className="border border-border/80 rounded-xl p-6 flex flex-col justify-between space-y-4">
                             <div>
@@ -500,6 +694,48 @@ export default function SyidClient() {
                                 </a>
                             </div>
                         </Card>
+                    </div>
+
+                    {/* Official Logotype SVG Theme Variants */}
+                    <div className="mt-8">
+                        <div className="mb-4">
+                            <h3 className="font-bold text-lg flex items-center gap-2">
+                                <Palette className="h-4 w-4 text-[#428177]" />
+                                <span>مخطوطة الشعار بألوان وثيمات الهوية</span>
+                            </h3>
+                            <p className="text-xs text-muted-foreground mt-1">
+                                الملفات الرسمية لمخطوطة &quot;الجمهورية العربية السورية&quot; بصيغة SVG مهيأة لمختلف الأنماط والـ Themes.
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            {LOGOTYPE_THEME_VARIANTS.map((variant) => (
+                                <Card key={variant.id} className="border border-border/80 rounded-xl overflow-hidden p-4 flex flex-col justify-between space-y-4">
+                                    <div>
+                                        <span className="font-bold text-sm block mb-1">{variant.nameAr}</span>
+                                        <p className="text-[11px] text-muted-foreground leading-snug">{variant.description}</p>
+                                    </div>
+
+                                    <div className={`p-4 rounded-lg flex items-center justify-center min-h-[90px] ${variant.bgClass}`}>
+                                        <img
+                                            src={`/syid-assets/materials/${variant.file}`}
+                                            alt={variant.nameAr}
+                                            loading="lazy"
+                                            className="max-h-12 w-auto object-contain"
+                                        />
+                                    </div>
+
+                                    <a
+                                        href={`/syid-assets/materials/${variant.file}`}
+                                        download={variant.file}
+                                        className="inline-flex items-center justify-center gap-2 w-full bg-[#428177] hover:bg-[#054239] text-white text-xs font-medium h-9 rounded-lg transition-colors"
+                                    >
+                                        <FileDown className="h-3.5 w-3.5" />
+                                        <span>تحميل SVG</span>
+                                    </a>
+                                </Card>
+                            ))}
+                        </div>
                     </div>
                 </section>
 

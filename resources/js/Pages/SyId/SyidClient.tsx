@@ -436,12 +436,12 @@ export default function SyidClient() {
                                 <div>
                                     <h3 className="text-lg font-bold">خط حيّاكم الله</h3>
                                     <p className="text-xs text-muted-foreground mt-1">
-                                        خط قريب من خط الهوية البصرية السورية
+                                        خط مجاني قريب من خط قمرة المدفوع المعتمد في الهوية البصرية السورية
                                     </p>
                                 </div>
 
                                 <p className="text-sm text-muted-foreground leading-relaxed">
-                                    نسخة رقمية قريبة من المخطوطة البصرية للهوية السورية الجديدة، وتأتي بأربعة أوزان مختلفة (Light, Regular, Medium, Bold) لتناسب مختلف أغراض التصميم.
+                                    تأتي بأربعة أوزان مختلفة (Light, Regular, Medium, Bold) لتناسب مختلف أغراض التصميم.
                                 </p>
 
                                 {/* Download Modal */}

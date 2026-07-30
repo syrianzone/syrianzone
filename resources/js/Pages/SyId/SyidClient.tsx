@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, Suspense } from 'react';
+import React, { useState, useMemo, Suspense, useEffect } from 'react';
 import {
     Download, Copy, Check, ExternalLink, Map as MapIcon, FileDown, Search, Tag, Eye, Palette
 } from 'lucide-react';
@@ -115,6 +115,45 @@ const GOVERNORATE_ICONS = [
     { name: 'القنيطرة', landmark: 'بيت صيدا', file: 'بيت صيدا القنيطرة.svg' },
 ];
 
+const POSTER_THEMES = [
+    {
+        id: 'default',
+        nameAr: 'الكلاسيكي (أزرق وأبيض)',
+        primary: '#04018c',
+        bg: '#ffffff',
+    },
+    {
+        id: 'forest',
+        nameAr: 'ثيم الغابة (Forest)',
+        primary: '#054239',
+        bg: '#edebe0',
+    },
+    {
+        id: 'wheat',
+        nameAr: 'قمحي ذهبي (Golden Wheat)',
+        primary: '#988561',
+        bg: '#fdfbf7',
+    },
+    {
+        id: 'umber',
+        nameAr: 'العنابي (Deep Umber)',
+        primary: '#6b1f2a',
+        bg: '#fdf8f8',
+    },
+    {
+        id: 'charcoal',
+        nameAr: 'الفحم والأبيض (Charcoal)',
+        primary: '#161616',
+        bg: '#ffffff',
+    }
+];
+
+const recolorSvg = (content: string, primaryColor: string, bgColor: string): string => {
+    let res = content.replace(/#04018c/gi, primaryColor);
+    res = res.replace(/fill:\s*#(?:fff|ffffff)/gi, `fill: ${bgColor}`);
+    res = res.replace(/fill="#(?:fff|ffffff)"/gi, `fill="${bgColor}"`);
+    return res;
+};
 
 export default function SyidClient() {
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -125,6 +164,28 @@ export default function SyidClient() {
     const [mapLoaded, setMapLoaded] = useState(false);
     const [loadingMap, setLoadingMap] = useState(false);
     const [loadFontPreview, setLoadFontPreview] = useState(false);
+    const [activePosterTheme, setActivePosterTheme] = useState<string>('default');
+    const [svgContents, setSvgContents] = useState<Record<string, string>>({});
+
+    useEffect(() => {
+        const loadSvgs = async () => {
+            const loaded: Record<string, string> = {};
+            await Promise.all(
+                GOVERNORATE_ICONS.map(async (icon) => {
+                    try {
+                        const res = await fetch(`/syid-assets/icons/governorates/with-frame/${encodeURIComponent(icon.file)}`);
+                        const text = await res.text();
+                        loaded[icon.file] = text;
+                    } catch (e) {
+                        console.error('Failed to load SVG', icon.file, e);
+                    }
+                })
+            );
+            setSvgContents(loaded);
+        };
+        loadSvgs();
+    }, []);
+
 
 
 
@@ -772,7 +833,6 @@ export default function SyidClient() {
                                     className="font-medium text-foreground hover:text-[#428177] underline"
                                 >
                                     ولاء (@walaa_akdesign)
-
                                 </a>
                             </p>
                         </div>
@@ -789,27 +849,87 @@ export default function SyidClient() {
                         </a>
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 items-center justify-items-center">
-                        {GOVERNORATE_ICONS.map((icon) => (
-                            <a
-                                key={icon.name}
-                                href={`/syid-assets/icons/governorates/with-frame/${encodeURIComponent(icon.file)}`}
-                                download={icon.file}
-                                title={`أيقونة ${icon.name} - ${icon.landmark}`}
-                                className="w-full aspect-square flex items-center justify-center p-3 rounded-xl bg-muted/30 dark:bg-[#edebe0] border border-border/50 hover:border-[#428177] transition-all hover:scale-105 shadow-2xs group"
-                            >
-                                <img
-                                    src={`/syid-assets/icons/governorates/with-frame/${encodeURIComponent(icon.file)}`}
-                                    alt={`أيقونة ${icon.name} - ${icon.landmark}`}
-                                    loading="lazy"
-                                    className="w-full h-full object-contain transition-transform group-hover:scale-105"
-                                />
-                            </a>
-                        ))}
+                    {/* Theme Switcher Toggle for SVG Posters */}
+                    <div className="mb-6 bg-muted/30 p-2.5 rounded-xl border border-border flex flex-wrap items-center gap-3">
+                        <span className="text-xs font-semibold px-1.5 text-muted-foreground flex items-center gap-1.5 shrink-0">
+                            <Palette className="h-4 w-4 text-[#428177]" />
+                            <span>ثيم بوسترات الأيقونات:</span>
+                        </span>
+
+                        <div className="flex flex-wrap gap-2 flex-1">
+                            {POSTER_THEMES.map((theme) => {
+                                const isActive = activePosterTheme === theme.id;
+                                return (
+                                    <button
+                                        key={theme.id}
+                                        type="button"
+                                        onClick={() => setActivePosterTheme(theme.id)}
+                                        className={`inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
+                                            isActive
+                                                ? 'bg-background text-foreground shadow-xs border border-border font-bold ring-1 ring-[#428177]/40'
+                                                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 border border-transparent'
+                                        }`}
+                                    >
+                                        <span
+                                            className="w-3.5 h-3.5 rounded-full border border-black/20 shrink-0 shadow-2xs"
+                                            style={{ backgroundColor: theme.primary }}
+                                        />
+                                        <span>{theme.nameAr}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
 
+                    {/* Pure SVG Posters Grid (No HTML Cards) */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 items-center justify-items-center">
+                        {GOVERNORATE_ICONS.map((icon) => {
+                            const rawSvg = svgContents[icon.file];
+                            const currentTheme = POSTER_THEMES.find(t => t.id === activePosterTheme) || POSTER_THEMES[0];
+                            const recoloredSvg = rawSvg ? recolorSvg(rawSvg, currentTheme.primary, currentTheme.bg) : null;
 
+                            const handleDownload = () => {
+                                if (!recoloredSvg) return;
+                                const blob = new Blob([recoloredSvg], { type: 'image/svg+xml' });
+                                const url = URL.createObjectURL(blob);
+                                const link = document.createElement('a');
+                                link.href = url;
+                                link.download = `أيقونة_${icon.name}_${currentTheme.nameAr.split(' ')[0]}.svg`;
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                                URL.revokeObjectURL(url);
+                                setNotification(`تم تنزيل أيقونة ${icon.name} بـ (${currentTheme.nameAr.split(' ')[0]})`);
+                                setTimeout(() => setNotification(null), 3000);
+                            };
+
+
+                            return (
+                                <button
+                                    key={icon.name}
+                                    type="button"
+                                    onClick={handleDownload}
+                                    title={`انقر لتنزيل أيقونة ${icon.name} (${icon.landmark}) - ثيم ${currentTheme.nameAr}`}
+                                    className="w-full aspect-[312/436] flex items-center justify-center transition-transform hover:scale-[1.06] focus:outline-none cursor-pointer group p-0"
+                                >
+                                    {recoloredSvg ? (
+                                        <div
+                                            className="w-full h-full [&>svg]:w-full [&>svg]:h-full [&>svg]:object-contain drop-shadow-xs"
+                                            dangerouslySetInnerHTML={{ __html: recoloredSvg }}
+                                        />
+                                    ) : (
+                                        <img
+                                            src={`/syid-assets/icons/governorates/with-frame/${encodeURIComponent(icon.file)}`}
+                                            alt={`أيقونة ${icon.name}`}
+                                            className="w-full h-full object-contain"
+                                        />
+                                    )}
+                                </button>
+                            );
+                        })}
+                    </div>
                 </section>
+
 
                 {/* 6. SYRIA MAP (LAZY LOADED ON CLICK) */}
                 <section>

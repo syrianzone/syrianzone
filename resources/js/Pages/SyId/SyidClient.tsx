@@ -539,10 +539,10 @@ export default function SyidClient() {
                                             <span>تحميل المعاينة ومقارنة الخط</span>
                                         </Button>
                                     ) : (
-                                        <div className="space-y-3 bg-muted/30 p-3.5 rounded-xl border border-border animate-in fade-in-50 duration-300">
-                                            {/* Rendered Font Text */}
-                                            <div className="p-3 bg-background rounded-lg border border-border text-center overflow-hidden">
-                                                <span className="text-[11px] text-muted-foreground block mb-1">بخط حيّاكم الله:</span>
+                                        <div className="space-y-4 pt-1 animate-in fade-in-50 duration-300">
+                                            {/* Item 1: Hayyakum Allah */}
+                                            <div>
+                                                <span className="text-[11px] font-semibold text-muted-foreground block mb-1">بخط حيّاكم الله:</span>
                                                 <div className="w-full flex items-center justify-center py-1">
                                                     <svg viewBox="0 0 320 48" className="w-full h-auto max-h-16 overflow-visible">
                                                         <text
@@ -560,11 +560,10 @@ export default function SyidClient() {
                                                 </div>
                                             </div>
 
-
-                                            {/* Qomra Font Image (Provided PNGs) */}
-                                            <div className="p-3 bg-background rounded-lg border border-border text-center">
-                                                <span className="text-[11px] text-muted-foreground block mb-1">بخط قمرة:</span>
-                                                <div className="flex justify-center items-center py-2">
+                                            {/* Item 2: Qomra */}
+                                            <div>
+                                                <span className="text-[11px] font-semibold text-muted-foreground block mb-1">بخط قمرة:</span>
+                                                <div className="flex justify-center items-center py-1">
                                                     <img
                                                         src="/syid-assets/materials/blackonwhite.png"
                                                         alt="الهوية البصرية السورية - بخط قمرة"
@@ -577,17 +576,12 @@ export default function SyidClient() {
                                                     />
                                                 </div>
                                             </div>
-
-
-
                                         </div>
                                     )}
-
-
                                 </div>
-
                             </div>
                         </Card>
+
                     </div>
                 </section>
 

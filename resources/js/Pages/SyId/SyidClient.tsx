@@ -773,14 +773,24 @@ export default function SyidClient() {
                             <h2 className="text-2xl font-bold">أيقونات المحافظات السورية</h2>
                             <p className="text-xs text-muted-foreground mt-1">
                                 إعداد وتصميم:{" "}
+                                <span className="font-medium text-foreground">ولاء</span>{" "}
+                                (<a
+                                    href="https://x.com/walaa_akdesign"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="font-medium text-foreground hover:text-[#428177] underline"
+                                >
+                                    X / Twitter
+                                </a>
+                                {" • "}
                                 <a
                                     href="https://www.instagram.com/walaa_akdesign/"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="font-medium text-foreground hover:text-[#428177] underline"
                                 >
-                                    ولاء (@walaa_akdesign)
-                                </a>
+                                    Instagram
+                                </a>)
                             </p>
                         </div>
 

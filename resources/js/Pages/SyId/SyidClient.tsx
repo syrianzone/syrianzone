@@ -774,7 +774,7 @@ export default function SyidClient() {
                             <p className="text-xs text-muted-foreground mt-1">
                                 إعداد وتصميم:{" "}
                                 <a
-                                    href="https://x.com/walaa_akdesign"
+                                    href="https://www.instagram.com/walaa_akdesign/"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="font-medium text-foreground hover:text-[#428177] underline"

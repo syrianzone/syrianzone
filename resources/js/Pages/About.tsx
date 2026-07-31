@@ -308,7 +308,11 @@ export default function About() {
                                     </div>
 
                                     <div className="p-3 bg-muted/20 rounded-lg border border-border/40">
-                                        <span className="font-bold text-foreground block mb-0.5">Walaa (@walaa_akdesign)</span>
+                                        <span className="font-bold text-foreground block mb-0.5">
+                                            <a href="https://www.instagram.com/walaa_akdesign/" target="_blank" rel="noreferrer" className="hover:text-primary underline">
+                                                Walaa (@walaa_akdesign)
+                                            </a>
+                                        </span>
                                         <span className="text-muted-foreground">Designed the Syrian governorates visual landmark icons package in SyId.</span>
                                     </div>
 
@@ -330,11 +334,6 @@ export default function About() {
                                     <div className="p-3 bg-muted/20 rounded-lg border border-border/40">
                                         <span className="font-bold text-foreground block mb-0.5">Waheed Shaar (@WaheedShaar)</span>
                                         <span className="text-muted-foreground">Provided DWG CAD engineering vector files for the flag.</span>
-                                    </div>
-
-                                    <div className="p-3 bg-muted/20 rounded-lg border border-border/40">
-                                        <span className="font-bold text-foreground block mb-0.5">Abdulrahman Haddad (@abd_hmh)</span>
-                                        <span className="text-muted-foreground">Supplied flag proportion specification guidelines.</span>
                                     </div>
 
                                     <div className="p-3 bg-muted/20 rounded-lg border border-border/40">

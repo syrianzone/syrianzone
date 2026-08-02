@@ -1,2 +1,15 @@
 User-agent: *
 Disallow:
+
+# Auth-gated or ephemeral URLs. They already redirect for anonymous crawlers,
+# so this is about not spending crawl budget discovering that.
+Disallow: /admin/
+Disallow: /dashboard
+Disallow: /auth/
+Disallow: /guesswho/room/
+
+# /api/ is deliberately NOT blocked: the pages are client-rendered and fetch
+# their content from it, so blocking it would leave crawlers rendering empty
+# pages.
+
+Sitemap: https://syrian.zone/sitemap.xml

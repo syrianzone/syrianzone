@@ -158,6 +158,17 @@ export default function About() {
                                     </div>
 
                                     <div className="p-3 bg-muted/20 rounded-lg border border-border/40">
+                                        <span className="font-bold text-foreground block mb-0.5">ولاء (@walaa_akdesign)</span>
+                                        <span className="text-muted-foreground">
+                                            قامت بتصميم حزمة أيقونات المعالم البصرية للمحافظات السورية (تابعها على{" "}
+                                            <a href="https://x.com/walaa_akdesign" target="_blank" rel="noreferrer" className="hover:text-primary underline">X / Twitter</a>
+                                            {" و "}
+                                            <a href="https://www.instagram.com/walaa_akdesign/" target="_blank" rel="noreferrer" className="hover:text-primary underline">Instagram</a>
+                                            ).
+                                        </span>
+                                    </div>
+
+                                    <div className="p-3 bg-muted/20 rounded-lg border border-border/40">
                                         <span className="font-bold text-foreground block mb-0.5">يوري دندشي (@yuri.dandashi)</span>
                                         <span className="text-muted-foreground">تصميم الشعار وأيقونة الموقع والهوية البصرية العامة.</span>
                                     </div>

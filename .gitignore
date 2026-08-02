@@ -30,6 +30,7 @@ server.log
 # Laravel specific
 /.phpunit.cache
 /public/build
+/bootstrap/ssr
 /public/hot
 /public/storage
 /storage/*.key

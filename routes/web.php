@@ -13,6 +13,11 @@ Route::get('/healthcheck', function () {
     return response('OK', 200)->header('Content-Type', 'text/plain');
 });
 
+// Generated rather than shipped as a static file: polls and transit cities come
+// from the database, so a checked-in sitemap.xml would drift the moment either
+// changes. Cached for an hour inside the controller.
+Route::get('/sitemap.xml', [\App\Http\Controllers\SitemapController::class, 'index']);
+
 use App\Http\Controllers\PollController;
 use App\Http\Controllers\SyOfficialController;
 

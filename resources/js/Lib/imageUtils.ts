@@ -14,20 +14,9 @@ export function getDisplayImageUrl(url?: string | null, width = 250): string {
         return url;
     }
 
-    // Cloudflare Image Resizing transformation prefix
-    // E.g. https://cdn.syrian.zone/tierlist/candidates/jolani75.png -> https://cdn.syrian.zone/cdn-cgi/image/width=250,fit=cover,format=auto/tierlist/candidates/jolani75.png
-    if (url.includes('cdn.syrian.zone') || url.includes('/tierlist/candidates/')) {
-        // Avoid double transformations
-        if (url.includes('/cdn-cgi/image/')) {
-            return url;
-        }
-
-        try {
-            const parsed = new URL(url, typeof window !== 'undefined' ? window.location.origin : 'https://syrian.zone');
-            return `${parsed.origin}/cdn-cgi/image/width=${width},fit=cover,format=auto${parsed.pathname}`;
-        } catch {
-            return url;
-        }
+    // If URL already includes Cloudflare transformation prefix, return as is
+    if (url.includes('/cdn-cgi/image/')) {
+        return url;
     }
 
     return url;

@@ -14,7 +14,6 @@ export function TierAvatar({ className, size = 36, alt = "", src, ...rest }: Pro
             height={size}
             src={displaySrc}
             alt={alt}
-            crossOrigin="anonymous"
             loading="eager"
             decoding="sync"
             draggable={false}

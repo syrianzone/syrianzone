@@ -4,8 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\RouteDraft;
 use App\Models\Route;
-use App\Models\RouteGeometry;
-use App\Models\Stop;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;

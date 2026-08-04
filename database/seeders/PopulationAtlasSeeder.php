@@ -5,9 +5,7 @@ namespace Database\Seeders;
 use App\Models\Population\PopulationDemographic;
 use App\Models\Population\PopulationRainfall;
 use App\Models\Population\PopulationEnvironmentalLog;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Storage;
 
 class PopulationAtlasSeeder extends Seeder
 {

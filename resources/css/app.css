@@ -1,9 +1,8 @@
 @import "tailwindcss";
 /* explicit sources: v4 auto-detection missed classes in some environments,
-   silently dropping utilities only these files use (e.g. the lightbox sm:hidden) */
+   silently dropping utilities that only one component uses */
 @source "../js";
 @source "../views";
-@import "./poll.css";
 
 @plugin "tailwindcss-animate";
 

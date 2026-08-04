@@ -2,7 +2,6 @@
 
 use App\Models\Poll;
 use App\Models\Route;
-use App\Models\RouteDraft;
 use App\Models\User;
 
 test('cannot delete best-ministers poll', function () {

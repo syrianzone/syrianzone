@@ -18,8 +18,3 @@ export const GOVERNORATES: Record<string, { lat: number; lon: number; label: str
 };
 
 export const GOVERNORATE_OPTIONS = Object.entries(GOVERNORATES).map(([value, g]) => ({ value, label: g.label }));
-
-export function coordsOf(governorate: string): { lat: number; lon: number } {
-  const g = GOVERNORATES[governorate] ?? GOVERNORATES['damascus'];
-  return { lat: g.lat, lon: g.lon };
-}

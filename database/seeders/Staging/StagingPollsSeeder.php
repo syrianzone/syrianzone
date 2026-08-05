@@ -38,10 +38,8 @@ use Illuminate\Support\Facades\DB;
  *
  *    Claiming it is safe because staging runs an isolated database and nothing
  *    else writes that slug there: docker/10-startup.sh skips the production
- *    GuessWhoSeeder whenever APP_ENV=staging, and LegacyPollSeeder is never
- *    invoked at boot (it is dead code anyway, the create_poll_tables migration
- *    DROPs the `questions` table its Question::firstOrCreate calls need and
- *    nothing recreates it). The two remaining polls keep their `staging-*`
+ *    GuessWhoSeeder whenever APP_ENV=staging, and no other seeder touches the
+ *    slug at boot. The two remaining polls keep their `staging-*`
  *    slugs, and every title here stays marked بيئة تجريبية so nobody mistakes a
  *    staging box for production on the strength of a familiar slug.
  *

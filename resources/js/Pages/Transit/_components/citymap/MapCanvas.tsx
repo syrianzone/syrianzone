@@ -14,10 +14,6 @@ export function useUserLocation() {
   return useContext(LocationContext)
 }
 
-export function useLocationStatus() {
-  return useContext(LocationStatusContext)
-}
-
 interface MapCanvasProps {
   bounds: [[number, number], [number, number]]
   children?: React.ReactNode

@@ -9,7 +9,6 @@ import { exportTierListFromData } from "@/lib/exportImage";
 import { getOriginalImageUrl } from "@/Lib/imageUtils";
 import axios from "@/lib/axios";
 import JSZip from "jszip";
-import "./poll.css";
 
 type Candidate = {
     id: string;
@@ -89,12 +88,7 @@ export default function TierBoard({
         D: [],
         F: [],
     });
-    // Single-select tier modal disabled — multi-select only
-    // const [selectedForTier, setSelectedForTier] = useState<string | null>(null);
-    // const [modalPosition, setModalPosition] = useState<{
-    //     top: number;
-    //     left: number;
-    // } | null>(null);
+    // Single-select tier modal disabled — clicks toggle multi-select instead
     // Deterministic seeded shuffle to avoid SSR/CSR hydration mismatch
     const shuffledInitial = useMemo(() => {
         function xmur3(str: string): number {
@@ -151,9 +145,6 @@ export default function TierBoard({
     function createEmptyTiers(): Record<TierKey, Candidate[]> {
         return { S: [], A: [], B: [], C: [], D: [], F: [] };
     }
-
-
-    // WebSocket for real-time updates - removed as it's not implemented in this stack
 
     useEffect(() => {
         const stored = localStorage.getItem(cooldownKey);
@@ -262,8 +253,6 @@ export default function TierBoard({
 
     function toggleSelected(id: string) {
         setSelectedIds((prev) => {
-            // const isInBank = bank.some((c) => c.id === id);
-            // if (!isInBank) return prev;
             const next = new Set(prev);
             if (next.has(id)) next.delete(id);
             else next.add(id);
@@ -289,28 +278,7 @@ export default function TierBoard({
         e.dataTransfer.dropEffect = "move";
     }
 
-    // Single-select tier modal click handler disabled — clicks now toggle multi-select
-    // function handleCandidateClick(e: React.MouseEvent, candidateId: string) {
-    //     e.stopPropagation();
-    //     if (e.shiftKey || e.ctrlKey || e.metaKey) {
-    //         toggleSelected(candidateId);
-    //         setSelectedForTier(null);
-    //         setModalPosition(null);
-    //         return;
-    //     }
-    //     if (selectedForTier === candidateId) {
-    //         setSelectedForTier(null);
-    //         setModalPosition(null);
-    //     } else {
-    //         const rect = e.currentTarget.getBoundingClientRect();
-    //         setModalPosition({
-    //             top: rect.top - 10,
-    //             left: rect.left + rect.width / 2,
-    //         });
-    //         setSelectedForTier(candidateId);
-    //         setSelectedIds(new Set());
-    //     }
-    // }
+    // Single-select tier modal disabled — clicks toggle multi-select instead
     async function submit() {
         const totalAssigned = tierKeys.reduce((acc, k) => acc + tiers[k].length, 0);
         if (totalAssigned < (minSelections || 3)) {

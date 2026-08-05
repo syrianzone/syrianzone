@@ -111,22 +111,6 @@ export function getCanonicalCityName(cityName: string): string {
     return cityName;
 }
 
-export function standardizeCityNames(cities: { [key: string]: number }): { [key: string]: number } {
-    const standardized: { [key: string]: number } = {};
-    
-    Object.entries(cities).forEach(([cityName, value]) => {
-        const canonical = getCanonicalCityName(cityName);
-        
-        if (standardized[canonical]) {
-            standardized[canonical] += value;
-        } else {
-            standardized[canonical] = value;
-        }
-    });
-    
-    return standardized;
-}
-
 export const GOVERNORATE_SORT_ORDER: { [key: string]: number } = {
     'دمشق': 1,
     'حلب': 2,

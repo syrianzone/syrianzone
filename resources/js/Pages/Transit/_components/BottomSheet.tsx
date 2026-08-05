@@ -147,5 +147,3 @@ export function BottomSheet({
     </div>
   )
 }
-
-export const BOTTOM_SHEET_MINIMAL = 250

@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\Ballot;
 use App\Models\BallotItem;
 use App\Models\Candidate;
-use App\Models\DailyScore;
 use App\Models\Poll;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;

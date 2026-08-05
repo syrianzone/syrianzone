@@ -77,20 +77,20 @@ const HAYYAKUM_WEIGHTS = [
 
 
 const GOVERNORATE_ICONS = [
-    { name: 'دمشق', landmark: 'السيف الدمشقي', file: 'السيف الدمشقي.svg' },
-    { name: 'ريف دمشق', landmark: 'غوطة ريف دمشق', file: 'غوطة ريف دمشق.svg' },
-    { name: 'حلب', landmark: 'قلعة حلب', file: 'قلعة حلب.svg' },
-    { name: 'حمص', landmark: 'ساعة حمص', file: 'ساعة حمص.svg' },
-    { name: 'حماة', landmark: 'نواعير حماة', file: 'نواعير حماة.svg' },
-    { name: 'اللاذقية', landmark: 'قوس النصر', file: 'قوس النصر اللاذقية.svg' },
-    { name: 'طرطوس', landmark: 'جزيرة أرواد', file: 'ارواد طرطوس.svg' },
-    { name: 'إدلب', landmark: 'رويحة إدلب', file: 'رويحة ادلب.svg' },
-    { name: 'دير الزور', landmark: 'الجسر المعلق', file: 'جسر دير الزور المعلق.svg' },
-    { name: 'الرقة', landmark: 'بوابة بغداد', file: 'بوابة بغداد الرقة.svg' },
-    { name: 'الحسكة', landmark: 'جسر عين ديوار', file: 'عين ديوار الحسكة.svg' },
-    { name: 'درعا', landmark: 'المسجد العمري', file: 'مسجد درعا العمري.svg' },
-    { name: 'السويداء', landmark: 'قنوات السويداء', file: 'قنوات السويداء.svg' },
-    { name: 'القنيطرة', landmark: 'بيت صيدا', file: 'بيت صيدا القنيطرة.svg' },
+    { name: 'دمشق', landmark: 'السيف الدمشقي', file: 'damascus-sword.svg' },
+    { name: 'ريف دمشق', landmark: 'غوطة ريف دمشق', file: 'rif-dimashq-ghouta.svg' },
+    { name: 'حلب', landmark: 'قلعة حلب', file: 'aleppo-citadel.svg' },
+    { name: 'حمص', landmark: 'ساعة حمص', file: 'homs-clock.svg' },
+    { name: 'حماة', landmark: 'نواعير حماة', file: 'hama-norias.svg' },
+    { name: 'اللاذقية', landmark: 'قوس النصر', file: 'latakia-triumph-arch.svg' },
+    { name: 'طرطوس', landmark: 'جزيرة أرواد', file: 'tartous-arwad.svg' },
+    { name: 'إدلب', landmark: 'رويحة إدلب', file: 'idlib-ruweiha.svg' },
+    { name: 'دير الزور', landmark: 'الجسر المعلق', file: 'deir-ez-zor-bridge.svg' },
+    { name: 'الرقة', landmark: 'بوابة بغداد', file: 'raqqa-baghdad-gate.svg' },
+    { name: 'الحسكة', landmark: 'جسر عين ديوار', file: 'hasakah-ain-diwar.svg' },
+    { name: 'درعا', landmark: 'المسجد العمري', file: 'daraa-omari-mosque.svg' },
+    { name: 'السويداء', landmark: 'قنوات السويداء', file: 'sweida-qanawat.svg' },
+    { name: 'القنيطرة', landmark: 'بيت صيدا', file: 'quneitra-beit-saida.svg' },
 ];
 
 const POSTER_THEMES = [
@@ -655,7 +655,7 @@ export default function SyidClient() {
 
                         <div className="p-4 bg-muted/20 border-t border-border/40 flex flex-wrap justify-center gap-3">
                             <a
-                                href="/syid-assets/materials/العلم السوري بالنسب الصحيحة.png"
+                                href="/syid-assets/materials/syrian-flag-proportions.png"
                                 download
                                 className="inline-flex items-center gap-2 bg-[#428177] hover:bg-[#054239] text-white text-xs font-medium h-9 px-4 rounded-lg transition-colors"
                             >
@@ -663,7 +663,7 @@ export default function SyidClient() {
                                 <span>PNG</span>
                             </a>
                             <a
-                                href="/syid-assets/materials/العلم السوري بالنسب الصحيحة.svg"
+                                href="/syid-assets/materials/syrian-flag-proportions.svg"
                                 download
                                 className="inline-flex items-center gap-2 bg-[#428177] hover:bg-[#054239] text-white text-xs font-medium h-9 px-4 rounded-lg transition-colors"
                             >
@@ -671,7 +671,7 @@ export default function SyidClient() {
                                 <span>SVG</span>
                             </a>
                             <a
-                                href="/syid-assets/materials/علم سوريا.dwg"
+                                href="/syid-assets/materials/syrian-flag.dwg"
                                 download
                                 className="inline-flex items-center gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border text-xs font-medium h-9 px-4 rounded-lg transition-colors"
                             >
@@ -706,7 +706,7 @@ export default function SyidClient() {
 
                             <div className="flex justify-center">
                                 <img
-                                    src="/syid-assets/materials/الدليل الإرشادي للعلم السوري.webp"
+                                    src="/syid-assets/materials/syrian-flag-guide.webp"
                                     alt="الدليل الإرشادي للعلم السوري"
                                     loading="lazy"
                                     className="max-h-44 w-auto rounded-md border border-border object-contain"

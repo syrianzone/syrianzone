@@ -16,15 +16,15 @@
         },
         {
             "title": "خلفية سطح المكتب",
-            "imageSrc": "/syid-assets/materials/الهوية السورية الجديدة - خلفية الكمبيوتر.png",
-            "downloadPng": "/syid-assets/materials/الهوية السورية الجديدة - خلفية الكمبيوتر.png",
-            "downloadSvg": "/syid-assets/materials/الهوية السورية الجديدة - خلفية الكمبيوتر.svg"
+            "imageSrc": "/syid-assets/materials/syrian-identity-wallpaper-desktop.png",
+            "downloadPng": "/syid-assets/materials/syrian-identity-wallpaper-desktop.png",
+            "downloadSvg": "/syid-assets/materials/syrian-identity-wallpaper-desktop.svg"
         },
         {
             "title": "خلفية هاتف",
-            "imageSrc": "/syid-assets/materials/الهوية السورية الجديدة - خلفية هاتف.png",
-            "downloadPng": "/syid-assets/materials/الهوية السورية الجديدة - خلفية هاتف.png",
-            "downloadSvg": "/syid-assets/materials/الهوية السورية الجديدة - خلفية هاتف.svg"
+            "imageSrc": "/syid-assets/materials/syrian-identity-wallpaper-mobile.png",
+            "downloadPng": "/syid-assets/materials/syrian-identity-wallpaper-mobile.png",
+            "downloadSvg": "/syid-assets/materials/syrian-identity-wallpaper-mobile.svg"
         },
         {
             "title": "خلفية من scrollexx",

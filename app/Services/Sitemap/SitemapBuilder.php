@@ -63,6 +63,7 @@ class SitemapBuilder
         ['/polls', 0.8, 'weekly'],
         ['/syrian-contributors', 0.8, 'weekly'],
         ['/board', 0.7, 'monthly'],
+        ['/currency', 0.7, 'daily'],
         ['/guesswho', 0.7, 'monthly'],
 
         // Sub-pages and utilities.

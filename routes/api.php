@@ -29,6 +29,9 @@ Route::get('/population/env-report', [PopulationAtlasController::class, 'getEnvi
 Route::get('/weather', [\App\Http\Controllers\WeatherController::class, 'show'])
     ->middleware('throttle:60,1');
 
+Route::get('/exchange-rates', [\App\Http\Controllers\CurrencyController::class, 'index'])
+    ->middleware('throttle:60,1');
+
 Route::get('/answers', [\App\Http\Controllers\AnswersController::class, 'index'])
     ->middleware('throttle:60,1');
 

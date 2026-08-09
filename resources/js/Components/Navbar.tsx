@@ -76,6 +76,7 @@ import {
   NewsIcon,
   AnswersIcon,
   CodexCommunityIcon,
+  CurrencyIcon,
 } from '@/Components/Icons/ProjectIcons';
 
 const navLinks = [
@@ -97,6 +98,7 @@ const navLinks = [
   { href: '/justice', text: 'العدالة الانتقالية', icon: JusticeIcon },
   { href: '/mishwar', text: 'مشوار', icon: MishwarIcon },
   { href: '/board', text: 'لوح', icon: BoardIcon },
+  { href: '/currency', text: 'محوّل العملات', icon: CurrencyIcon },
 ];
 
 const externalLinks = [

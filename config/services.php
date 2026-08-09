@@ -70,6 +70,10 @@ return [
         'url' => env('PRAYER_API_URL', 'https://api.aladhan.com/v1/timings'),
     ],
 
+    'frankfurter' => [
+        'url' => env('FRANKFURTER_API_URL', 'https://api.frankfurter.dev'),
+    ],
+
     // read at runtime, not baked into the bundle, so staging turns analytics off
     // by leaving GA_MEASUREMENT_ID empty in its .env. production keeps the id it
     // has always used.

@@ -314,3 +314,29 @@ export function CodexCommunityIcon({ className = "w-7 h-7" }: ProjectIconProps) 
     </svg>
   );
 }
+
+// 21. Currency converter (Syrian pound note with exchange arrows)
+export function CurrencyIcon({ className = "w-7 h-7" }: ProjectIconProps) {
+  return (
+    <svg viewBox="0 0 32 32" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect
+        x="4"
+        y="7"
+        width="24"
+        height="17"
+        rx="3"
+        className="fill-[#10B981]/15 stroke-[#059669] dark:fill-[#34D399]/20 dark:stroke-[#34D399]"
+        strokeWidth="2"
+      />
+      <circle
+        cx="16"
+        cy="15.5"
+        r="4"
+        className="fill-[#F59E0B]/20 stroke-[#D97706] dark:fill-[#FBBF24]/20 dark:stroke-[#FBBF24]"
+        strokeWidth="1.6"
+      />
+      <path d="M8 11h3M21 20h3" className="stroke-[#059669] dark:stroke-[#34D399]" strokeWidth="2" strokeLinecap="round" />
+      <path d="M8 27h11l-2.5-2.5M24 4H13l2.5 2.5" stroke="hsl(var(--primary))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}

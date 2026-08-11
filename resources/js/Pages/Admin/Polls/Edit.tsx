@@ -64,7 +64,7 @@ export default function Edit({ id, poll: initialPoll, candidates: initialCandida
 
     const handleRefresh = async () => {
         try {
-            const res = await axios.get(`/polls/${poll.slug}`, { params: { include_archived: 1 } });
+            const res = await axios.get(`/api/polls/${poll.slug}`, { params: { include_archived: 1 } });
             // The show endpoint returns { poll, candidates, groups }
             if (res.data.poll) setPoll(res.data.poll);
             if (res.data.candidates) setCandidates(res.data.candidates);

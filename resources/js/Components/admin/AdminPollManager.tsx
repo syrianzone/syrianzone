@@ -85,12 +85,12 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
         if (!newGroupName.trim()) return;
         setIsAddingGroup(true);
         try {
-            await axios.post("/candidate-groups", { poll_id: pollId, name: newGroupName });
+            await axios.post("/api/candidate-groups", { poll_id: pollId, name: newGroupName });
             setNewGroupName("");
             onRefresh();
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            setError("Failed to add group");
+            setError(err?.response?.data?.message || "Failed to add group");
         } finally {
             setIsAddingGroup(false);
         }
@@ -99,22 +99,22 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
     const handleDeleteGroup = async (id: string) => {
         if (!confirm("Delete this group and unassign its candidates?")) return;
         try {
-            await axios.delete(`/candidate-groups/${id}`);
+            await axios.delete(`/api/candidate-groups/${id}`);
             onRefresh();
             if (activeTab === id) setActiveTab("all");
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            setError("Failed to delete group");
+            setError(err?.response?.data?.message || "Failed to delete group");
         }
     };
 
     const handleSetDefault = async (id: string) => {
         try {
-            await axios.post(`/candidate-groups/${id}/default`);
+            await axios.post(`/api/candidate-groups/${id}/default`);
             onRefresh();
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            setError("فشل تعيين المجموعة الافتراضية");
+            setError(err?.response?.data?.message || "فشل تعيين المجموعة الافتراضية");
         }
     };
 
@@ -144,11 +144,11 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
         }));
 
         try {
-            await axios.post('/candidate-groups/reorder', { groups: orderPayload });
+            await axios.post('/api/candidate-groups/reorder', { groups: orderPayload });
             // onRefresh(); 
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            setError("فشل إعادة الترتيب");
+            setError(err?.response?.data?.message || "فشل إعادة الترتيب");
             onRefresh(); // Revert
         }
     };
@@ -246,26 +246,26 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
 
         try {
             if (editingCandidate) {
-                await axios.put(`/candidates/${editingCandidate.id}`, payload);
+                await axios.put(`/api/candidates/${editingCandidate.id}`, payload);
             } else {
-                await axios.post("/candidates", payload);
+                await axios.post("/api/candidates", payload);
             }
             setIsCandidateModalOpen(false);
             onRefresh();
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            setError("Failed to save candidate");
+            setError(err?.response?.data?.message || "Failed to save candidate");
         }
     };
 
     const handleDeleteCandidate = async (id: string) => {
         if (!confirm("Are you sure you want to delete this candidate?")) return;
         try {
-            await axios.delete(`/candidates/${id}`);
+            await axios.delete(`/api/candidates/${id}`);
             onRefresh();
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            setError("Failed to delete candidate");
+            setError(err?.response?.data?.message || "Failed to delete candidate");
         }
     };
 
@@ -286,7 +286,7 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
     const handleSubmitArchive = async () => {
         if (!archiveTarget) return;
         try {
-            await axios.patch(`/candidates/${archiveTarget.id}/archive`, {
+            await axios.patch(`/api/candidates/${archiveTarget.id}/archive`, {
                 term_ended_at: aTermEnd || null,
                 archive_reason: aReason || null,
                 successor_id: aSuccessorId === "none" ? null : aSuccessorId,
@@ -302,11 +302,11 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
     const handleRestore = async (c: Candidate) => {
         if (!confirm(`إعادة تفعيل ${c.name}؟`)) return;
         try {
-            await axios.patch(`/candidates/${c.id}/restore`);
+            await axios.patch(`/api/candidates/${c.id}/restore`);
             onRefresh();
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            setError("Failed to restore candidate");
+            setError(err?.response?.data?.message || "Failed to restore candidate");
         }
     };
 

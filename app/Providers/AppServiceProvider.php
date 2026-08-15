@@ -23,6 +23,12 @@ class AppServiceProvider extends ServiceProvider
             )
         );
 
+        RateLimiter::for('public-api', fn(Request $request) =>
+            Limit::perMinute(60)->by($request->ip())->response(fn() =>
+                response()->json(['error' => 'Too many requests. Please slow down.'], 429)
+            )
+        );
+
         \Illuminate\Support\Facades\Gate::before(function ($user, $ability) {
             if ($user->isSuperAdmin()) {
                 return true;

@@ -144,4 +144,14 @@ Route::prefix('v1')->group(function () {
         Route::get('/hotels', [\App\Http\Controllers\HotelController::class, 'index']);
         Route::get('/hotels/{id}', [\App\Http\Controllers\HotelController::class, 'show'])->whereNumber('id');
     });
+
+    // Public read-only voting data API (issue #53). Never exposes voter
+    // identifiers (voter_key, ip_hash, user_agent) or polls.user_id.
+    Route::middleware('throttle:public-api')->group(function () {
+        Route::get('/polls', [\App\Http\Controllers\Api\V1\VotingDataController::class, 'index']);
+        Route::get('/polls/{idOrSlug}', [\App\Http\Controllers\Api\V1\VotingDataController::class, 'show']);
+        Route::get('/polls/{idOrSlug}/candidates', [\App\Http\Controllers\Api\V1\VotingDataController::class, 'candidates']);
+        Route::get('/polls/{idOrSlug}/scores', [\App\Http\Controllers\Api\V1\VotingDataController::class, 'scores']);
+        Route::get('/polls/{idOrSlug}/ballots', [\App\Http\Controllers\Api\V1\VotingDataController::class, 'ballots']);
+    });
 });

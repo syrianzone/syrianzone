@@ -39,6 +39,7 @@
     "pusher-js": "^8.5.0",
     "react": "19.2.6",
     "react-dom": "19.2.6",
+    "react-is": "^19.2.8",
     "react-leaflet": "^5.0.0",
     "recharts": "^3.8.1",
     "sonner": "^2.0.7",
@@ -53,15 +54,15 @@
     "@types/node": "^25.9.1",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^4.3.4",
+    "@vitejs/plugin-react": "^6.0.5",
     "autoprefixer": "^10.4.20",
     "concurrently": "^9.0.1",
     "fontnik": "^0.7.7",
-    "laravel-vite-plugin": "^1.2.0",
+    "laravel-vite-plugin": "^3.2.0",
     "postcss": "^8.4.47",
     "tailwindcss": "^4.3.0",
     "typescript": "^6.0.3",
-    "vite": "^6.0.11"
+    "vite": "^8.2.1"
   },
   "trustedDependencies": [
     "@sentry/cli"

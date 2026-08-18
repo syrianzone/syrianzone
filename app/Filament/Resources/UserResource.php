@@ -4,56 +4,58 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\UserResource\Pages;
 use App\Models\User;
+use BackedEnum;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use UnitEnum;
 
 class UserResource extends Resource
 {
     protected static ?string $model = User::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-users';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-users';
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
-                Forms\Components\Card::make()
-                    ->schema([
-                        Forms\Components\TextInput::make('name')
-                            ->required()
-                            ->maxLength(255),
-                        Forms\Components\TextInput::make('email')
-                            ->email()
-                            ->required()
-                            ->unique(ignoreRecord: true)
-                            ->maxLength(255),
-                        Forms\Components\Select::make('role')
-                            ->options([
-                                'superadmin' => 'Superadmin (Full Unrestricted Access)',
-                                'admin' => 'Admin (Core)',
-                                'transit_admin' => 'Transit Admin',
-                                'syofficial_admin' => 'SyOfficial Admin',
-                                'govapps_admin' => 'GovApps Admin',
-                                'user' => 'Normal User',
-                            ])
-                            ->default('user')
-                            ->required(),
-                        Forms\Components\Toggle::make('is_banned')
-                            ->label('Banned')
-                            ->default(false),
-                        Forms\Components\TextInput::make('password')
-                            ->password()
-                            ->maxLength(255)
-                            ->dehydrateStateUsing(fn ($state) => \Illuminate\Support\Facades\Hash::make($state))
-                            ->dehydrated(fn ($state) => filled($state))
-                            ->required(fn (string $context): bool => $context === 'create'),
-                    ]),
-                Forms\Components\Section::make('Granular Permissions')
+                Section::make([
+                    Forms\Components\TextInput::make('name')
+                        ->required()
+                        ->maxLength(255),
+                    Forms\Components\TextInput::make('email')
+                        ->email()
+                        ->required()
+                        ->unique(ignoreRecord: true)
+                        ->maxLength(255),
+                    Forms\Components\Select::make('role')
+                        ->options([
+                            'superadmin' => 'Superadmin (Full Unrestricted Access)',
+                            'admin' => 'Admin (Core)',
+                            'transit_admin' => 'Transit Admin',
+                            'syofficial_admin' => 'SyOfficial Admin',
+                            'govapps_admin' => 'GovApps Admin',
+                            'user' => 'Normal User',
+                        ])
+                        ->default('user')
+                        ->required(),
+                    Forms\Components\Toggle::make('is_banned')
+                        ->label('Banned')
+                        ->default(false),
+                    Forms\Components\TextInput::make('password')
+                        ->password()
+                        ->maxLength(255)
+                        ->dehydrateStateUsing(fn ($state) => \Illuminate\Support\Facades\Hash::make($state))
+                        ->dehydrated(fn ($state) => filled($state))
+                        ->required(fn (string $context): bool => $context === 'create'),
+                ]),
+                Section::make('Granular Permissions')
                     ->description('Grant custom module capabilities for non-superadmin users')
                     ->schema([
                         Forms\Components\CheckboxList::make('permissions')

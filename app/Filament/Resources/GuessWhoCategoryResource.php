@@ -4,17 +4,20 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\GuessWhoCategoryResource\Pages;
 use App\Models\GuessWhoCategory;
+use BackedEnum;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use UnitEnum;
 
 class GuessWhoCategoryResource extends Resource
 {
     protected static ?string $model = GuessWhoCategory::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-folder-open';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-folder-open';
 
     protected static ?string $navigationLabel = 'Guess Who Categories';
 
@@ -22,30 +25,29 @@ class GuessWhoCategoryResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Guess Who Categories';
 
-    protected static ?string $navigationGroup = 'Guess Who Game';
+    protected static string | UnitEnum | null $navigationGroup = 'Guess Who Game';
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
-                Forms\Components\Card::make()
-                    ->schema([
-                        Forms\Components\TextInput::make('name_ar')
-                            ->required()
-                            ->label('Name (Arabic)')
-                            ->maxLength(255),
-                        Forms\Components\TextInput::make('name_en')
-                            ->required()
-                            ->label('Name (English)')
-                            ->maxLength(255),
-                        Forms\Components\TextInput::make('slug')
-                            ->required()
-                            ->unique(ignoreRecord: true)
-                            ->maxLength(255),
-                        Forms\Components\Toggle::make('is_active')
-                            ->default(true)
-                            ->label('Active'),
-                    ])
+                Section::make([
+                    Forms\Components\TextInput::make('name_ar')
+                        ->required()
+                        ->label('Name (Arabic)')
+                        ->maxLength(255),
+                    Forms\Components\TextInput::make('name_en')
+                        ->required()
+                        ->label('Name (English)')
+                        ->maxLength(255),
+                    Forms\Components\TextInput::make('slug')
+                        ->required()
+                        ->unique(ignoreRecord: true)
+                        ->maxLength(255),
+                    Forms\Components\Toggle::make('is_active')
+                        ->default(true)
+                        ->label('Active'),
+                ])
             ]);
     }
 

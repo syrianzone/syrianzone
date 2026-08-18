@@ -6,20 +6,20 @@
     "keywords": ["laravel", "framework"],
     "license": "MIT",
     "require": {
-        "php": "^8.2",
-        "filament/filament": "^3.2",
+        "php": "^8.3",
+        "filament/filament": "^5.0",
         "inertiajs/inertia-laravel": "^3.1",
-        "intervention/image": "^3.9",
-        "laravel/framework": "^11.31",
+        "intervention/image": "^3.9 || ^4.0",
+        "laravel/framework": "^13.0",
         "laravel/reverb": "^1.0",
         "laravel/sanctum": "^4.0",
         "laravel/scout": "^11.2",
         "laravel/socialite": "^5.24",
-        "laravel/tinker": "^2.9",
+        "laravel/tinker": "^2.9 || ^3.0",
         "league/flysystem-aws-s3-v3": "^3.0",
         "promphp/prometheus_client_php": "^2.14",
         "sentry/sentry-laravel": "^4.27",
-        "spatie/laravel-backup": "^9.3"
+        "spatie/laravel-backup": "^9.3 || ^10.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
@@ -28,9 +28,9 @@
         "laravel/sail": "^1.26",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.1",
-        "pestphp/pest": "^4.0",
-        "pestphp/pest-plugin-laravel": "^4.0",
-        "phpunit/phpunit": "^12.0"
+        "pestphp/pest": "^4.0 || ^5.0",
+        "pestphp/pest-plugin-laravel": "^4.0 || ^5.0",
+        "phpunit/phpunit": "^12.0 || ^13.0"
     },
     "autoload": {
         "psr-4": {

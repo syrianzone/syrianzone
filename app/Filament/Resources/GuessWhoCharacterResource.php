@@ -4,17 +4,20 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\GuessWhoCharacterResource\Pages;
 use App\Models\GuessWhoCharacter;
+use BackedEnum;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use UnitEnum;
 
 class GuessWhoCharacterResource extends Resource
 {
     protected static ?string $model = GuessWhoCharacter::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-user-group';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-user-group';
 
     protected static ?string $navigationLabel = 'Guess Who Characters';
 
@@ -22,42 +25,41 @@ class GuessWhoCharacterResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Guess Who Characters';
 
-    protected static ?string $navigationGroup = 'Guess Who Game';
+    protected static string | UnitEnum | null $navigationGroup = 'Guess Who Game';
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
-                Forms\Components\Card::make()
-                    ->schema([
-                        Forms\Components\Select::make('category_id')
-                            ->relationship('category', 'name_ar')
-                            ->required()
-                            ->label('Category'),
-                        Forms\Components\TextInput::make('name_ar')
-                            ->required()
-                            ->label('Name (Arabic)')
-                            ->maxLength(255),
-                        Forms\Components\TextInput::make('name_en')
-                            ->required()
-                            ->label('Name (English)')
-                            ->maxLength(255),
-                        Forms\Components\FileUpload::make('image_path')
-                            ->image()
-                            ->directory('guesswho/characters')
-                            ->visibility('public')
-                            ->required()
-                            ->label('Character Image'),
-                        Forms\Components\KeyValue::make('attributes')
-                            ->keyLabel('Attribute Name')
-                            ->valueLabel('Attribute Value')
-                            ->label('Attributes')
-                            ->helperText('Define flags like gender: male, glasses: true, etc.')
-                            ->nullable(),
-                        Forms\Components\Toggle::make('is_active')
-                            ->default(true)
-                            ->label('Active'),
-                    ])
+                Section::make([
+                    Forms\Components\Select::make('category_id')
+                        ->relationship('category', 'name_ar')
+                        ->required()
+                        ->label('Category'),
+                    Forms\Components\TextInput::make('name_ar')
+                        ->required()
+                        ->label('Name (Arabic)')
+                        ->maxLength(255),
+                    Forms\Components\TextInput::make('name_en')
+                        ->required()
+                        ->label('Name (English)')
+                        ->maxLength(255),
+                    Forms\Components\FileUpload::make('image_path')
+                        ->image()
+                        ->directory('guesswho/characters')
+                        ->visibility('public')
+                        ->required()
+                        ->label('Character Image'),
+                    Forms\Components\KeyValue::make('attributes')
+                        ->keyLabel('Attribute Name')
+                        ->valueLabel('Attribute Value')
+                        ->label('Attributes')
+                        ->helperText('Define flags like gender: male, glasses: true, etc.')
+                        ->nullable(),
+                    Forms\Components\Toggle::make('is_active')
+                        ->default(true)
+                        ->label('Active'),
+                ])
             ]);
     }
 

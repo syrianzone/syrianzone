@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Share2, RefreshCw, HelpCircle, ArrowRight, X, Check, Gamepad2 } from 'lucide-react';
-import { motion } from 'framer-motion';
+
 import { Button } from '@/Components/ui/button';
 import { Card } from '@/Components/ui/card';
 import { Badge } from '@/Components/ui/badge';
@@ -66,10 +66,9 @@ function CharacterCard({
 
   return (
     <div className="perspective-1000 w-full relative">
-      <motion.div
-        animate={{ rotateY: confirming ? 180 : 0 }}
-        transition={{ duration: 0.5, ease: 'easeInOut' }}
-        className="w-full relative preserve-3d"
+      <div
+        className="w-full relative transition-transform duration-500 ease-in-out"
+        style={{ transformStyle: 'preserve-3d', transform: confirming ? 'rotateY(180deg)' : 'rotateY(0deg)' }}
       >
         {/* CARD FRONT */}
         <Card
@@ -150,7 +149,7 @@ function CharacterCard({
             </Button>
           </div>
         </Card>
-      </motion.div>
+      </div>
     </div>
   );
 }

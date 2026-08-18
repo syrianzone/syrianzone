@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+
 import { SCALES, DEFAULT_QUESTIONS, Question, Scale } from './data';
 import { RotateCw, Share2, Globe, Download, Copy, X } from 'lucide-react';
 import { Twitter } from '@/Components/ui/icons';
@@ -291,13 +291,10 @@ export default function CompassApp() {
                                 </div>
                                 <div className="relative w-full h-10 bg-muted rounded-xl overflow-hidden shadow-inner border border-border/50">
                                     <div className={`absolute h-full w-full bg-gradient-to-l ${gradientClass} opacity-90`}></div>
-                                    <motion.div
-                                        className="absolute w-1.5 h-full bg-foreground border-x-2 border-background shadow-[0_0_10px_rgba(0,0,0,0.5)] z-10"
-                                        initial={{ left: "50%" }}
-                                        animate={{ left: `${percentage}%` }}
-                                        transition={{ duration: 1.5, ease: "easeOut", delay: index * 0.1 }}
-                                        style={{ transform: 'translateX(-50%)' }}
-                                    ></motion.div>
+                                    <div
+                                        className="absolute w-1.5 h-full bg-foreground border-x-2 border-background shadow-[0_0_10px_rgba(0,0,0,0.5)] z-10 transition-all duration-1000 ease-out -translate-x-1/2"
+                                        style={{ left: `${percentage}%`, transitionDelay: `${index * 100}ms` }}
+                                    />
                                 </div>
                             </div>
                         );

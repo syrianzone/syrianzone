@@ -57,3 +57,5 @@ android/*.aab
 
 # Temp source image folders
 syrianzonepp/
+# Bug/issue research workspace
+study/

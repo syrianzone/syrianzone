@@ -8,8 +8,8 @@ Thank you for your interest in contributing to **Syrian Zone**! We welcome contr
 
 Before submitting code changes or opening pull requests, please read our developer setup and asset storage documentation:
 
-1. **[Developer Setup & Quickstart Guide](docs/development-guide.md)**: Instructions on cloning the repo, running migrations, database seeders, and starting the local development server (`bun run dev` & `php artisan serve`).
-2. **[Cloudflare R2 Asset Storage Guide](docs/asset-storage.md)**: Details on how static assets, candidate avatars, GeoJSON maps, and brand kit downloads are hosted on Cloudflare R2 CDN and how to work with them in local development.
+1. **[Developer Setup & Quickstart Guide](docs/getting-started/development.md)**: Instructions on cloning the repo, running migrations, database seeders, and starting the local development server (`bun run dev` & `php artisan serve`).
+2. **[Cloudflare R2 Asset Storage Guide](docs/reference/asset-storage.md)**: Details on how static assets, candidate avatars, GeoJSON maps, and brand kit downloads are hosted on Cloudflare R2 CDN and how to work with them in local development.
 
 ---
 

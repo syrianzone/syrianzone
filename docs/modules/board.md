@@ -10,7 +10,7 @@ This document is the single contract for the feature as implemented. Every name,
 
 ## 2. HOUSE CONVENTIONS
 
-Follows `hidden-places-spec.md` §2 exactly. Additions specific to this feature:
+Follows [mishwar-places.md](mishwar-places.md) §2 exactly. Additions specific to this feature:
 
 - Widgets never call `axios` directly. They call a typed client in `_lib/`, or reuse an existing one (`Pages/Places/_lib/discovery.ts`, `Pages/Places/_lib/api.ts`).
 - Cross-origin, non-app APIs (the weather worker, `api.aladhan.com`) are the one exception and use plain `fetch`.

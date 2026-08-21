@@ -6,7 +6,7 @@ Welcome to the Syrian Zone development guide! This document outlines how to set 
 
 ## 1. Prerequisites
 
-- **PHP**: 8.2 or higher (with `pdo_sqlite` or `pdo_mysql`, `gd`, `zip`, `mbstring` extensions)
+- **PHP**: 8.3 or higher (with `pdo_sqlite` or `pdo_mysql`, `gd`, `zip`, `mbstring`, `intl`, `exif` extensions)
 - **Composer**: 2.x
 - **Node.js & Bun / NPM**: Node 18+ and `bun` (recommended) or `npm`
 - **Database**: SQLite (default for dev) or MySQL/PostgreSQL
@@ -66,7 +66,7 @@ Welcome to the Syrian Zone development guide! This document outlines how to set 
 All static media assets (candidate avatars, official entity logos, GeoJSON maps, BrandKit downloads) are hosted externally on **Cloudflare R2 CDN**. 
 
 - **No Local Media Download Needed**: When running the app locally, all image URLs resolve automatically to the public CDN.
-- **Detailed Asset Architecture**: See [docs/asset-storage.md](file:///run/media/hadi/SSD2/Coding/syrianzone/docs/asset-storage.md) for R2 bucket layout, superadmin asset manager, and environment configuration options.
+- **Detailed Asset Architecture**: See [Asset Storage Guide](../reference/asset-storage.md) for R2 bucket layout, superadmin asset manager, and environment configuration options.
 
 ---
 

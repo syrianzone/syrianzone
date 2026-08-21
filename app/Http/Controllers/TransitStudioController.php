@@ -38,8 +38,13 @@ class TransitStudioController extends Controller
         ]);
 
         // If this submission is an edit suggestion for an already-published route,
-        // unpublish that route immediately so the live map reflects the pending state.
+        // unpublish that route immediately so the live map reflects the pending
+        // state. Editing published routes requires authentication: anonymous
+        // submitters could otherwise take any route offline at will.
         if ($request->filled('route_id')) {
+            if (!Auth::check()) {
+                return response()->json(['message' => 'Authentication is required to suggest edits to published routes.'], 401);
+            }
             $this->unpublishLinkedRoute($request->input('route_id'), $draft->id);
         }
 

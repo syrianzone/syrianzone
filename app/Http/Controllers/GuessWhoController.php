@@ -6,6 +6,7 @@ use App\Models\GuessWhoCategory;
 use App\Models\GuessWhoCharacter;
 use App\Models\GuessWhoGame;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
@@ -117,16 +118,21 @@ class GuessWhoController extends Controller
             ?? $request->input('session_id')
             ?? 'guest-' . Str::uuid();
 
-        // Verify session ID matches one of the assigned players for this room channel
-        if (preg_match('/^(?:presence-)?guesswho\.(.+)$/', $channelName, $matches)) {
-            $roomCode = $matches[1];
-            $game = GuessWhoGame::where('room_code', $roomCode)->first();
-            if (!$game) {
-                return response()->json(['error' => 'الغرفة غير موجودة.'], 404);
-            }
-            if ($game->player_1_session !== $sessionId && $game->player_2_session !== $sessionId) {
-                return response()->json(['error' => 'غير مصرح لك بالانضمام لهذه الغرفة.'], 403);
-            }
+        // Only guesswho room channels may be authorized through this endpoint.
+        // Anything else must fall back to Laravel's standard broadcasting auth
+        // (which enforces channel definitions) — signing arbitrary private/user
+        // channels here would hand guests valid auth for channels they don't own.
+        if (!preg_match('/^(?:presence-)?guesswho\.(.+)$/', $channelName, $matches)) {
+            return response()->json(['error' => 'القناة غير مسموح بها.'], 403);
+        }
+
+        $roomCode = $matches[1];
+        $game = GuessWhoGame::where('room_code', $roomCode)->first();
+        if (!$game) {
+            return response()->json(['error' => 'الغرفة غير موجودة.'], 404);
+        }
+        if ($game->player_1_session !== $sessionId && $game->player_2_session !== $sessionId) {
+            return response()->json(['error' => 'غير مصرح لك بالانضمام لهذه الغرفة.'], 403);
         }
 
         // Retrieve authenticated user
@@ -166,33 +172,43 @@ class GuessWhoController extends Controller
              'player_session' => 'required|string'
          ]);
  
-         $game = GuessWhoGame::where('room_code', $roomCode)->firstOrFail();
-         $playerSession = $request->player_session;
- 
-         // Slot 1 Check / Assignment
-         if (empty($game->player_1_session)) {
-             $game->player_1_session = $playerSession;
-             $game->save();
-             return response()->json(['status' => 'joined', 'role' => 'player_1']);
-         }
- 
-         if ($game->player_1_session === $playerSession) {
-             return response()->json(['status' => 'joined', 'role' => 'player_1']);
-         }
- 
-         // Slot 2 Check / Assignment
-         if (empty($game->player_2_session)) {
-             $game->player_2_session = $playerSession;
-             $game->status = 'selecting';
-             $game->save();
-             return response()->json(['status' => 'joined', 'role' => 'player_2']);
-         }
- 
-         if ($game->player_2_session === $playerSession) {
-             return response()->json(['status' => 'joined', 'role' => 'player_2']);
-         }
- 
-         // Both slots filled by other sessions
-         return response()->json(['error' => 'الغرفة ممتلئة بالكامل ولا يمكنك الانضمام.'], 403);
-     }
+        $game = GuessWhoGame::where('room_code', $roomCode)->firstOrFail();
+        $playerSession = $request->player_session;
+
+        // Claim a slot inside a row lock: two concurrent joiners would both
+        // observe an empty slot and overwrite each other without it.
+        $role = DB::transaction(function () use ($game, $playerSession) {
+            $game = GuessWhoGame::where('room_code', $game->room_code)->lockForUpdate()->first();
+
+            if (empty($game->player_1_session)) {
+                $game->player_1_session = $playerSession;
+                $game->save();
+                return 'player_1';
+            }
+
+            if ($game->player_1_session === $playerSession) {
+                return 'player_1';
+            }
+
+            if (empty($game->player_2_session)) {
+                $game->player_2_session = $playerSession;
+                $game->status = 'selecting';
+                $game->save();
+                return 'player_2';
+            }
+
+            if ($game->player_2_session === $playerSession) {
+                return 'player_2';
+            }
+
+            // Both slots filled by other sessions
+            return null;
+        });
+
+        if ($role === null) {
+            return response()->json(['error' => 'الغرفة ممتلئة بالكامل ولا يمكنك الانضمام.'], 403);
+        }
+
+        return response()->json(['status' => 'joined', 'role' => $role]);
+    }
  }

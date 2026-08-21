@@ -45,8 +45,9 @@ class DashboardController extends Controller
         if ($user->role === 'admin' || $user->role === 'transit_admin' || $user->role === 'superadmin') {
             $data['allDrafts'] = RouteDraft::with(['user:id,name,email,is_banned', 'city:id,name_ar,name_en'])
                 ->orderBy('created_at', 'desc')
+                ->limit(500)
                 ->get();
-            $data['publishedRoutes'] = Route::with('city:id,name_ar,name_en')->get();
+            $data['publishedRoutes'] = Route::with('city:id,name_ar,name_en')->limit(1000)->get();
         }
 
         return Inertia::render('Dashboard/Index', $data);

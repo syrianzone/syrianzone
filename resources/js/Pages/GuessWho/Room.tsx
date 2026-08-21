@@ -330,6 +330,7 @@ export default function GameRoom({ game }: GameProps) {
       }
       peerConnection.current?.close();
       if (initiateCallTimer.current) clearTimeout(initiateCallTimer.current);
+      if (peerReconnectTimer.current) clearTimeout(peerReconnectTimer.current);
     };
   }, [game.room_code, sessionUuid, isJoined]);
 

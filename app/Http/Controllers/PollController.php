@@ -15,10 +15,19 @@ class PollController extends Controller
 {
     public function renderIndex(Request $request)
     {
-        $polls = Poll::all();
+        // Mirror the JSON index(): inactive polls are only visible to admins,
+        // never rendered to guests.
+        $polls = $this->canViewInactive($request) ? Poll::all() : Poll::where('is_active', true)->get();
         return Inertia::render('Polls/Index', [
             'polls' => $polls
         ]);
+    }
+
+    private function canViewInactive(Request $request): bool
+    {
+        $user = $request->user();
+
+        return $user && in_array($user->role, ['admin', 'superadmin'], true);
     }
 
     public function renderShow(Request $request, $slug)

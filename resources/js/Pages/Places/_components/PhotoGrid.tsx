@@ -6,7 +6,9 @@ import { discovery, type GridPhoto } from '../_lib/discovery';
 // media-query hook instead of md: utilities: the code-split css chunks each emit
 // their own tailwind layer, so responsive classes lose cascade order here (see Lightbox)
 function useMedia(query: string): boolean {
-  const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
+  const [matches, setMatches] = useState(() =>
+    typeof window === 'undefined' ? false : window.matchMedia(query).matches,
+  );
   useEffect(() => {
     const mq = window.matchMedia(query);
     const onChange = () => setMatches(mq.matches);

@@ -18,7 +18,18 @@ class SyncHalaSyriaHotels extends Command
     }
 
     $this->info('Fetching hotels from HalaSyria...');
-    $synced = $service->sync();
+
+    try {
+      $synced = $service->sync();
+    } catch (\Throwable $e) {
+      // Surface failures (incl. to Sentry) instead of logging a fake success —
+      // a failed fetch previously looked identical to "Synced 0 hotels".
+      report($e);
+      $this->error('HalaSyria sync failed: ' . $e->getMessage());
+
+      return self::FAILURE;
+    }
+
     $this->info("Synced {$synced} hotels.");
 
     return self::SUCCESS;

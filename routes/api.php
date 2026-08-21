@@ -44,7 +44,7 @@ Route::get('/feed', [\App\Http\Controllers\FeedController::class, 'show'])
 Route::get('/prayer-times', [\App\Http\Controllers\PrayerController::class, 'show'])
     ->middleware('throttle:60,1');
 
-Route::get('/metrics', [MetricsController::class, 'index']);
+Route::get('/metrics', [MetricsController::class, 'index'])->middleware('throttle:10,1');
 
 Route::get('/app-icon', function (Request $request) {
     $store = $request->query('store');

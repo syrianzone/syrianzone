@@ -62,6 +62,12 @@ class AuthController extends Controller
         }
         $user = User::updateOrCreate(['email' => $email], $attributes);
 
+        // Banned accounts must not be able to (re)login via Google; their
+        // existing sessions are handled by middleware, this gates new logins.
+        if ($user && $user->is_banned) {
+            return redirect('/?error=banned');
+        }
+
         Auth::login($user, true);
         return redirect()->intended('/dashboard');
     }

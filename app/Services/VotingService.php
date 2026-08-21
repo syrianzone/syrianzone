@@ -53,6 +53,19 @@ class VotingService
 
         if ($ids->isEmpty()) return;
 
+        // Candidates must exist AND belong to this poll: without the scoping
+        // check, ids from other polls would pass validation and their points
+        // would be written into this poll's daily scores.
+        $validCount = Candidate::where('poll_id', $poll->id)
+            ->whereIn('id', $ids)
+            ->count();
+
+        if ($validCount !== $ids->count()) {
+            throw ValidationException::withMessages([
+                'tiers' => 'Ballot contains candidates that do not belong to this poll.',
+            ]);
+        }
+
         $archived = Candidate::where('poll_id', $poll->id)
             ->whereIn('id', $ids)
             ->where('status', 'archived')
@@ -81,7 +94,12 @@ class VotingService
             if (!isset(self::TIER_MINIMUMS[$tierKey])) continue;
 
             foreach ($items as $index => $item) {
-                $candidateId = $item['candidateId'];
+                $candidateId = $item['candidateId'] ?? null;
+                if (!$candidateId || !is_string($candidateId)) {
+                    throw ValidationException::withMessages([
+                        'tiers' => 'Each tier item must reference a candidate.',
+                    ]);
+                }
 
                 BallotItem::create([
                     'ballot_id' => $ballot->id,

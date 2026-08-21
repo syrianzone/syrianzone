@@ -13,8 +13,10 @@ class TransitAdminController extends Controller
 {
     public function index()
     {
+        // Bounded: the drafts table grows without limit, so a bare ->get() would
+        // eventually take down the admin panel load.
         $drafts = RouteDraft::with(['user:id,name', 'city:id,name_ar,name_en', 'linkedRoute:id,name_ar,name_en'])
-            ->orderBy('created_at', 'desc')->get();
+            ->orderBy('created_at', 'desc')->limit(500)->get();
         return response()->json($drafts);
     }
 
@@ -219,7 +221,7 @@ class TransitAdminController extends Controller
 
     public function getLogs()
     {
-        $logs = \App\Models\TransitRouteLog::with(['user:id,name'])->orderBy('created_at', 'desc')->get();
+        $logs = \App\Models\TransitRouteLog::with(['user:id,name'])->orderBy('created_at', 'desc')->limit(200)->get();
         return response()->json($logs);
     }
 

@@ -82,4 +82,9 @@ return [
         'base_url' => 'https://cfooumftuesvlmphgyhb.supabase.co/rest/v1',
     ],
 
+    'metrics' => [
+        // Optional bearer token guarding /api/metrics; unset = public scrape.
+        'token' => env('METRICS_TOKEN'),
+    ],
+
 ];

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import type maplibregl from 'maplibre-gl'
-import { useMap } from '@/Components/map/MapContext'
+import { useMap, useStyleVersion } from '@/Components/map/MapContext'
 import { getRouteColor, buildColorMatch } from '../../_lib/mapColors'
 import type { FeatureCollection, RouteProperties } from '../../_types'
 import { useMapStore } from '../../_store/useMapStore'
@@ -20,6 +20,7 @@ interface ActiveRoute {
 
 export default function RouteLayer({ data }: RouteLayerProps) {
   const map = useMap()
+  const styleVersion = useStyleVersion()
   const { selectedRouteId, setSelectedRouteId } = useMapStore()
   const [activeRoute, setActiveRoute] = useState<ActiveRoute | null>(null)
   const selectedRouteIdRef = useRef(selectedRouteId)
@@ -92,7 +93,8 @@ export default function RouteLayer({ data }: RouteLayerProps) {
         if (map.getSource('routes-source')) map.removeSource('routes-source')
       } catch { /* map already removed */ }
     }
-  }, [map, data, setSelectedRouteId])
+    // styleVersion: re-add layers after a basemap style swap (setStyle wipes them)
+  }, [map, data, setSelectedRouteId, styleVersion])
 
   // Highlight / dim routes when selection changes
   useEffect(() => {

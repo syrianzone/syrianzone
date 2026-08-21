@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useContext, useRef } from 'react'
-import { MapContext } from '@/Components/map/MapContext'
+import { useMap } from '@/Components/map/MapContext'
 import { useMapStore } from '../../_store/useMapStore'
 import { Input } from '@/Components/ui/input'
 import { Card } from '@/Components/ui/card'
@@ -30,7 +30,7 @@ export default function GlobalSearchBox({ cityId, className }: GlobalSearchBoxPr
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
-  const map = useContext(MapContext)
+  const map = useMap()
   const { setSelectedRouteId, setHoveredStopId, showStops, setShowStops } = useMapStore()
   const inputRef = useRef<HTMLInputElement>(null)
 

@@ -8,7 +8,9 @@ import type { PlacePhoto } from '../_lib/types';
 // media-query hook instead of sm: utilities: the code-split css chunks each emit
 // their own tailwind layer, so responsive show/hide classes lose cascade order here
 function useIsNarrow(): boolean {
-  const [narrow, setNarrow] = useState(() => window.matchMedia('(max-width: 639px)').matches);
+  const [narrow, setNarrow] = useState(() =>
+    typeof window === 'undefined' ? false : window.matchMedia('(max-width: 639px)').matches,
+  );
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 639px)');
     const onChange = () => setNarrow(mq.matches);

@@ -37,11 +37,12 @@ export default function Index() {
   const geoReqRef = useRef(0);
   // the url is the source of truth on load so grid links share
   const [guide, setGuide] = useState<{ id: number; name: string } | null>(() => {
+    if (typeof window === 'undefined') return null;
     const raw = new URLSearchParams(window.location.search).get('guide');
     return raw && /^\d+$/.test(raw) ? { id: Number(raw), name: '' } : null;
   });
   const [view, setView] = useState<'map' | 'grid'>(() =>
-    new URLSearchParams(window.location.search).get('view') === 'grid' ? 'grid' : 'map',
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('view') === 'grid' ? 'grid' : 'map',
   );
 
   // stale-response guard for the debounced list fetch

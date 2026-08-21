@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useContext } from 'react'
-import { MapContext } from '@/Components/map/MapContext'
+import { useMap } from '@/Components/map/MapContext'
 import { LocationContext, LocationStatusContext } from './MapCanvas'
 import { useMapStore } from '../../_store/useMapStore'
 
@@ -19,7 +19,7 @@ export default function NearbyTransitDrawer() {
   const [fetchError, setFetchError] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
 
-  const map = useContext(MapContext)
+  const map = useMap()
   const userLocation = useContext(LocationContext)
   const locationStatus = useContext(LocationStatusContext)
   const { setSelectedRouteId } = useMapStore()

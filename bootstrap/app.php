@@ -36,9 +36,9 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->statefulApi();
         $middleware->validateCsrfTokens(except: [
+            // Guest submissions only. The authenticated PUT /api/v1/studio/routes/{id}
+            // must keep CSRF protection — do not widen this to studio/routes/*.
             'api/v1/studio/routes',
-            'api/v1/studio/routes/*',
-            'api/polls/*/vote',
             'api/submit',
             'guesswho/broadcasting/auth',
         ]);

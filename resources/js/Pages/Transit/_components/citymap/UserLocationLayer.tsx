@@ -2,11 +2,12 @@
 
 import { useEffect } from 'react'
 import maplibregl from 'maplibre-gl'
-import { useMap } from '@/Components/map/MapContext'
+import { useMap, useStyleVersion } from '@/Components/map/MapContext'
 import { useUserLocation } from './MapCanvas'
 
 export default function UserLocationLayer() {
   const map = useMap()
+  const styleVersion = useStyleVersion()
   const location = useUserLocation()
 
   useEffect(() => {
@@ -49,7 +50,8 @@ export default function UserLocationLayer() {
         if (map.getSource('user-location')) map.removeSource('user-location')
       } catch { /* map may have been removed already */ }
     }
-  }, [map])
+    // styleVersion: re-add layers after a basemap style swap (setStyle wipes them)
+  }, [map, styleVersion])
 
   useEffect(() => {
     if (!map || !location) return

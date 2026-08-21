@@ -32,6 +32,7 @@ export function MapCanvas({
   const mapRef = useRef<maplibregl.Map | null>(null);
   const observerRef = useRef<MutationObserver | null>(null);
   const [map, setMap] = useState<maplibregl.Map | null>(null);
+  const [styleVersion, setStyleVersion] = useState(0);
   const styleRef = useRef('');
 
   // Capture initial values in refs so they don't become effect deps.
@@ -88,6 +89,10 @@ export function MapCanvas({
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
     observerRef.current = observer;
 
+    // setStyle() drops every runtime source/layer; bump the version so layer
+    // components depending on it re-add themselves once new style is ready.
+    mapInstance.on('styledata', () => setStyleVersion(v => v + 1));
+
     mapRef.current = mapInstance;
 
     return () => {
@@ -102,7 +107,7 @@ export function MapCanvas({
   return (
     <div className={className}>
       <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
-      <MapContext.Provider value={map}>
+      <MapContext.Provider value={{ map, styleVersion }}>
         {map ? children : null}
       </MapContext.Provider>
     </div>

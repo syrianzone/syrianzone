@@ -34,7 +34,7 @@ test('sitemap is well-formed with a urlset root', function () {
 test('sitemap lists the public pages', function () {
     $locs = sitemapLocs($this->get('/sitemap.xml')->getContent());
 
-    foreach (['/', '/tierlist', '/mishwar', '/transit', '/syofficial', '/about'] as $path) {
+    foreach (['/', '/tierlist', '/mishwar', '/transit', '/syofficial', '/currency', '/about'] as $path) {
         expect($locs)->toContain('https://syrian.zone'.$path);
     }
 });

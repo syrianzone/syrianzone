@@ -41,6 +41,7 @@ import {
     NewsIcon,
     AnswersIcon,
     CodexCommunityIcon,
+    CurrencyIcon,
 } from '@/Components/Icons/ProjectIcons';
 
 
@@ -72,6 +73,7 @@ const PRESET_LINKS: PresetLink[] = [
     { href: '/justice', icon: JusticeIcon, text: 'العدالة الانتقالية', isInternal: true },
     { href: '/mishwar', icon: MishwarIcon, text: 'مشوار', isInternal: true },
     { href: '/board', icon: BoardIcon, text: 'لوح', isInternal: true },
+    { href: '/currency', icon: CurrencyIcon, text: 'محوّل العملات', isInternal: true },
     { href: 'https://food.syrian.zone', icon: RecipesIcon, text: 'وصفاتنا', external: true, isInternal: true },
     { href: 'https://answers.syrian.zone', icon: AnswersIcon, text: 'إجابات سوريا', external: true, isInternal: true },
     { href: 'https://chromewebstore.google.com/detail/syrian-flag-replacer/dngipobppehfhfggmbdiiiodgcibdeog', icon: null, text: 'مبدل العلم', image: '/flag-replacer/1f1f8-1f1fe.svg', external: true, isInternal: true },

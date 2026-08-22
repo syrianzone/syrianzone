@@ -40,6 +40,11 @@ Route::get('/priorities', function () {
 Route::get('/roznama', function () {
     return Inertia::render('Roznama/Index');
 });
+
+Route::get('/currency', function () {
+    return Inertia::render('Currency/Index');
+});
+
 Route::get('/phonebook', [\App\Http\Controllers\PhonebookController::class, 'index']);
 Route::get('/shawarma', function () {
     return Inertia::render('Shawarma/Index');
@@ -347,4 +352,3 @@ use App\Http\Controllers\DevController;
 Route::get('/dev/impersonate/{role}', [DevController::class, 'impersonate'])
     ->name('dev.impersonate')
     ->middleware(\App\Http\Middleware\AutoLoginDevUser::class);
-

@@ -68,6 +68,16 @@ Route::get('/alignment', [ExternalDataController::class, 'alignment']);
 Route::get('/govapps', [\App\Http\Controllers\GovAppController::class, 'index']);
 Route::get('/population', [PopulationAtlasController::class, 'renderIndex']);
 
+Route::get('/spotify', [\App\Http\Controllers\SpotifyController::class, 'index']);
+Route::get('/spotify/song/{slug}', [\App\Http\Controllers\SpotifyController::class, 'song']);
+Route::get('/spotify/playlist/{slug}', [\App\Http\Controllers\SpotifyController::class, 'playlist']);
+Route::get('/api/v1/spotify/songs/{slug}', [\App\Http\Controllers\SpotifyController::class, 'songJson']);
+// Playlist writes are public by design: possession of the edit_token is the auth.
+Route::post('/api/v1/spotify/playlists', [\App\Http\Controllers\SpotifyPlaylistController::class, 'store'])
+    ->middleware('throttle:20,1');
+Route::put('/api/v1/spotify/playlists/{slug}', [\App\Http\Controllers\SpotifyPlaylistController::class, 'update'])
+    ->middleware('throttle:60,1');
+
 Route::get('/guesswho', [GuessWhoController::class, 'index']);
 Route::post('/guesswho/rooms', [GuessWhoController::class, 'createRoom']);
 Route::get('/guesswho/room/{roomCode}', [GuessWhoController::class, 'showRoom']);
@@ -320,6 +330,21 @@ Route::middleware('auth')->group(function () {
 
             Route::post('/reorder/categories', [\App\Http\Controllers\PhonebookAdminController::class, 'reorderCategories']);
             Route::post('/reorder/entries', [\App\Http\Controllers\PhonebookAdminController::class, 'reorderEntries']);
+        });
+    });
+
+    // 7. Spotify Admin Panel (accessible to core admins and superadmins)
+    Route::middleware('admin')->group(function () {
+        Route::get('/admin/spotify', [\App\Http\Controllers\SpotifyAdminController::class, 'renderIndex']);
+
+        Route::prefix('api/v1/admin/spotify')->group(function () {
+            Route::get('/songs', [\App\Http\Controllers\SpotifyAdminController::class, 'index']);
+            Route::post('/songs', [\App\Http\Controllers\SpotifyAdminController::class, 'store']);
+            Route::put('/songs/{song}', [\App\Http\Controllers\SpotifyAdminController::class, 'update']);
+            Route::delete('/songs/{song}', [\App\Http\Controllers\SpotifyAdminController::class, 'destroy']);
+            Route::post('/songs/{song}/cover', [\App\Http\Controllers\SpotifyAdminController::class, 'uploadCover']);
+            Route::post('/songs/{song}/extract-lyrics', [\App\Http\Controllers\SpotifyAdminController::class, 'extractLyrics']);
+            Route::post('/songs/{song}/retry', [\App\Http\Controllers\SpotifyAdminController::class, 'retry']);
         });
     });
 });

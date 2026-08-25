@@ -87,4 +87,10 @@ return [
         'token' => env('METRICS_TOKEN'),
     ],
 
+    // Lyrics extraction for /spotify. No key = the feature is simply off.
+    'gemini' => [
+        'key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
+    ],
+
 ];

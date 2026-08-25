@@ -20,6 +20,7 @@ import {
   Smartphone,
   Phone,
   CloudUpload,
+  Music,
 } from 'lucide-react';
 import MainLayout from '@/Layouts/MainLayout';
 import { useAuth } from '@/Contexts/AuthContext';
@@ -450,6 +451,17 @@ export default function Dashboard({
                   >
                     <Smartphone className="h-5 w-5" />
                     إدارة التطبيقات الحكومية (GovApps)
+                  </Link>
+                )}
+
+                {/* Spotify Admin Tab (Admins and Superadmins) */}
+                {(role === 'admin' || role === 'superadmin') && (
+                  <Link
+                    href="/admin/spotify"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  >
+                    <Music className="h-5 w-5" />
+                    إدارة الموسيقى (Spotify)
                   </Link>
                 )}
 

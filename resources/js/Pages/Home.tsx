@@ -498,7 +498,7 @@ export default function Home() {
             </Head>
             <div className="min-h-screen text-foreground transition-colors" dir={currentLang === 'ar' ? 'rtl' : 'ltr'}>
                 {/* Top Controls */}
-                <div className="fixed top-4 left-4 right-4 flex justify-between items-center z-50">
+                <div className="fixed top-20 left-4 right-4 lg:top-4 flex justify-between items-center z-40">
                     <Button variant="ghost" size="sm" asChild>
                         <a href="/about" className="text-sm font-medium">
                             {currentLang === 'ar' ? 'حول المنصة' : 'About'}
@@ -524,7 +524,9 @@ export default function Home() {
                         <Button variant="ghost" size="icon" onClick={toggleLanguage}>
                             <img src={`/assets/${currentLang}.svg`} alt={currentLang} className="w-5 h-5" />
                         </Button>
-                        <ThemeToggle />
+                        <div className="hidden lg:flex">
+                            <ThemeToggle />
+                        </div>
                         <Button variant="ghost" size="icon" onClick={() => setSettingsOpen(true)}>
                             <Settings className="h-5 w-5" />
                         </Button>
@@ -532,7 +534,7 @@ export default function Home() {
                 </div>
 
                 {/* Main Content */}
-                <div className="container mx-auto px-4 pt-20 pb-12 max-w-6xl">
+                <div className="container mx-auto px-4 pt-32 lg:pt-20 pb-12 max-w-6xl">
                     {/* Weather & Clock & Prayer Times */}
                     {(showWeather || showClock || showPrayerTimes) && (
                         <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-6 mb-12 w-full">

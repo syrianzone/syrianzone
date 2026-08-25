@@ -132,11 +132,11 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
     return () => observer.disconnect();
   }, []);
 
-  // Hide Navbar on homepage (Startpage)
-  if (pathname === '/') return null;
+  // Navbar hidden on homepage (Startpage) on desktop; on mobile it stays fixed at the top
+  const isHomepage = pathname === '/';
 
   return (
-    <header className={`${sticky ? 'sticky top-0' : 'relative'} z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60`}>
+    <header className={`${sticky ? 'sticky top-0' : 'relative'} z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ${isHomepage ? 'lg:hidden' : ''}`}>
       <div className="container relative flex h-16 max-w-7xl mx-auto items-center px-4 md:px-8 justify-between lg:justify-normal" dir="rtl">
         {/* Mobile Menu */}
         <Sheet open={isOpen} onOpenChange={setIsOpen}>

@@ -254,6 +254,48 @@ it('processes an upload onto the media disk and marks the song ready', function 
   Storage::disk('local')->assertMissing('spotify-incoming/temp.mp3');
 });
 
+it('runs a real mp3 end to end: real getid3 metadata then synced lyrics', function () {
+  Storage::fake('public');
+  Storage::fake('local');
+  config(['services.gemini.key' => 'test-key']);
+  // only the gemini network call is stubbed; metadata uses the real getID3 path
+  Http::fake(['generativelanguage.googleapis.com/*' => Http::response([
+    'candidates' => [['content' => ['parts' => [[
+      'text' => "[00:00.50] السطر الأول\n[00:01.20] السطر الثاني\n[00:01.90] السطر الثالث",
+    ]]]]],
+  ])]);
+
+  $bytes = file_get_contents(base_path('tests/fixtures/sample.mp3'));
+  Storage::disk('local')->put('spotify-incoming/real.mp3', $bytes);
+
+  $song = Song::create([
+    'title' => 'من اسم الملف',
+    'slug' => Song::generateSlug(),
+    'status' => 'processing',
+    'temp_path' => 'spotify-incoming/real.mp3',
+  ]);
+
+  // real AudioMetadataService (real getID3), real GeminiLyricsService (faked http).
+  // the sync test queue runs the chained ExtractSongLyrics inline, so this one
+  // call exercises the whole production path: upload -> metadata -> transcribe
+  (new ProcessSongUpload($song->id, 'spotify-incoming/real.mp3'))
+    ->handle(app(AudioMetadataService::class), app(GeminiLyricsService::class));
+
+  $done = $song->fresh();
+  expect($done->status)->toBe('ready');
+  expect($done->duration_seconds)->toBe(2); // getID3 reads the real 2.085s stream
+  expect($done->artist)->toBe('مطرب تجريبي'); // real id3v2 artist tag
+  expect($done->audio_path)->toStartWith("spotify/songs/{$song->id}/");
+  Storage::disk('public')->assertExists($done->audio_path);
+
+  expect($done->lyrics_status)->toBe('ready');
+  expect($done->lyrics_lrc)->toBe("[00:00.50] السطر الأول\n[00:01.20] السطر الثاني\n[00:01.90] السطر الثالث");
+
+  // the stored lrc parses under the same grammar the frontend player enforces
+  $stamped = preg_match_all('/^\[(\d{1,3}):([0-5]\d)(?:[.:]\d{1,3})?\]\s*\S/m', $done->lyrics_lrc);
+  expect($stamped)->toBe(3);
+});
+
 it('marks the song failed when metadata analysis throws', function () {
   Storage::fake('public');
   Storage::fake('local');

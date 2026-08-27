@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import { ArrowRight, Copy, ImagePlus, Music, Pause, Play } from 'lucide-react';
 import MainLayout from '@/Layouts/MainLayout';
@@ -7,6 +7,7 @@ import { Toaster } from '@/Components/ui/sonner';
 import AudioEngine from './_components/AudioEngine';
 import LyricsView from './_components/LyricsView';
 import ShareLyricsDialog from './_components/ShareLyricsDialog';
+import { fetchSong } from './_lib/api';
 import { formatTime } from './_lib/lrc';
 import { copyText } from './_lib/clipboard';
 import { useCurrentSong, usePlayerStore } from './_lib/playerStore';
@@ -16,7 +17,40 @@ interface SpotifySongProps {
   song: SongFull;
 }
 
-export default function SpotifySong({ song }: SpotifySongProps) {
+export default function SpotifySong({ song: initialSong }: SpotifySongProps) {
+  // live copy: while transcription is pending we poll and swap in fresh lyrics
+  const [song, setSong] = useState(initialSong);
+  // note: fetchSong bypasses LyricsPanel's lyricsCache (that cache is only
+  // written by the panel itself), so polling cannot poison it with a pending result
+  useEffect(() => {
+    setSong(initialSong);
+  }, [initialSong]);
+
+  useEffect(() => {
+    if (song.lyrics_status !== 'pending') return;
+    // after 6 minutes the job has finished or died in any normal path; drop to a
+    // slow poll instead of stopping so an extraction stuck behind a busy queue
+    // still lands without a manual reload
+    const slowAfter = Date.now() + 6 * 60 * 1000;
+    let active = true;
+    let tick = 0;
+    const id = window.setInterval(() => {
+      tick += 1;
+      if (Date.now() > slowAfter && tick % 6 !== 0) return;
+      fetchSong(song.slug)
+        .then((fresh) => {
+          if (active) setSong(fresh);
+        })
+        .catch(() => {
+          // transient network error: keep polling
+        });
+    }, 5000);
+    return () => {
+      active = false;
+      window.clearInterval(id);
+    };
+  }, [song.lyrics_status, song.slug]);
+
   const current = useCurrentSong();
   const isCurrent = current?.id === song.id;
   const playing = usePlayerStore((s) => s.playing) && isCurrent;
@@ -130,6 +164,7 @@ export default function SpotifySong({ song }: SpotifySongProps) {
             <h2 className="border-b border-border px-4 py-3 text-sm font-bold">الكلمات</h2>
             <LyricsView
               lrc={song.lyrics_lrc}
+              lyricsStatus={song.lyrics_status}
               currentTime={currentTime}
               onSeek={handleSeek}
               className="max-h-96"

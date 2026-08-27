@@ -11,6 +11,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Sleep;
 
 // UserFactory defaults role to admin; regular users must be explicit.
 function spotifyAdmin(): User {
@@ -286,9 +287,10 @@ it('marks the song failed when metadata analysis throws', function () {
 it('saves gemini lrc output and strips code fences', function () {
   Storage::fake('public');
   config(['services.gemini.key' => 'test-key']);
+  // three lines because normalization now rejects transcriptions shorter than that
   Http::fake(['generativelanguage.googleapis.com/*' => Http::response([
     'candidates' => [['content' => ['parts' => [[
-      'text' => "```\n[00:01.00] يا شام\n[00:05.50] سطر ثانٍ\n```",
+      'text' => "```\n[00:01.00] يا شام\n[00:05.50] سطر ثانٍ\n[00:09.00] سطر ثالث\n```",
     ]]]]],
   ])]);
 
@@ -299,7 +301,197 @@ it('saves gemini lrc output and strips code fences', function () {
 
   $fresh = $song->fresh();
   expect($fresh->lyrics_status)->toBe('ready');
-  expect($fresh->lyrics_lrc)->toBe("[00:01.00] يا شام\n[00:05.50] سطر ثانٍ");
+  expect($fresh->lyrics_lrc)->toBe("[00:01.00] يا شام\n[00:05.50] سطر ثانٍ\n[00:09.00] سطر ثالث");
+});
+
+it('normalizes gemini output: sorts by timestamp and drops junk lines', function () {
+  Storage::fake('public');
+  config(['services.gemini.key' => 'test-key']);
+  Http::fake(['generativelanguage.googleapis.com/*' => Http::response([
+    'candidates' => [['content' => ['parts' => [[
+      'text' => "```lrc\n[ar:فنان]\n[00:10.50] سطر ثالث\nتعليق بلا توقيت\n[00:01.00] سطر أول\n\n[00:05.5] سطر ثانٍ\n```",
+    ]]]]],
+  ])]);
+
+  $song = readySong(['lyrics_status' => 'pending']);
+  Storage::disk('public')->put($song->audio_path, 'mp3-bytes');
+
+  (new ExtractSongLyrics($song->id))->handle(app(GeminiLyricsService::class));
+
+  $fresh = $song->fresh();
+  expect($fresh->lyrics_status)->toBe('ready');
+  expect($fresh->lyrics_lrc)->toBe("[00:01.00] سطر أول\n[00:05.5] سطر ثانٍ\n[00:10.50] سطر ثالث");
+});
+
+it('drops lrc lines whose seconds field is 60 or more', function () {
+  Storage::fake('public');
+  config(['services.gemini.key' => 'test-key']);
+  Http::fake(['generativelanguage.googleapis.com/*' => Http::response([
+    'candidates' => [['content' => ['parts' => [[
+      'text' => "[00:01.00] أول\n[00:61.00] توقيت فاسد\n[00:05.00] ثانٍ\n[00:09.00] ثالث",
+    ]]]]],
+  ])]);
+
+  $song = readySong(['lyrics_status' => 'pending']);
+  Storage::disk('public')->put($song->audio_path, 'mp3-bytes');
+
+  (new ExtractSongLyrics($song->id))->handle(app(GeminiLyricsService::class));
+
+  $fresh = $song->fresh();
+  expect($fresh->lyrics_status)->toBe('ready');
+  expect($fresh->lyrics_lrc)->toBe("[00:01.00] أول\n[00:05.00] ثانٍ\n[00:09.00] ثالث");
+});
+
+it('marks lyrics failed when fewer than three valid lines survive normalization', function () {
+  Storage::fake('public');
+  config(['services.gemini.key' => 'test-key']);
+  Http::fake(['generativelanguage.googleapis.com/*' => Http::response([
+    'candidates' => [['content' => ['parts' => [[
+      'text' => "[00:01.00] وحيد\n[00:02.00] اثنان",
+    ]]]]],
+  ])]);
+
+  $song = readySong(['lyrics_status' => 'pending']);
+  Storage::disk('public')->put($song->audio_path, 'mp3-bytes');
+
+  (new ExtractSongLyrics($song->id))->handle(app(GeminiLyricsService::class));
+
+  $fresh = $song->fresh();
+  expect($fresh->lyrics_status)->toBe('failed');
+  expect($fresh->lyrics_lrc)->toBeNull();
+});
+
+it('retries generateContent on a transient 503 and succeeds', function () {
+  Storage::fake('public');
+  config(['services.gemini.key' => 'test-key']);
+  Sleep::fake();
+  Http::fake(['generativelanguage.googleapis.com/*' => Http::sequence()
+    ->push(['error' => ['message' => 'unavailable']], 503)
+    ->push([
+      'candidates' => [['content' => ['parts' => [[
+        'text' => "[00:01.00] أول\n[00:05.00] ثانٍ\n[00:09.00] ثالث",
+      ]]]]],
+    ])]);
+
+  $song = readySong(['lyrics_status' => 'pending']);
+  Storage::disk('public')->put($song->audio_path, 'mp3-bytes');
+
+  (new ExtractSongLyrics($song->id))->handle(app(GeminiLyricsService::class));
+
+  $fresh = $song->fresh();
+  expect($fresh->lyrics_status)->toBe('ready');
+  expect($fresh->lyrics_lrc)->toBe("[00:01.00] أول\n[00:05.00] ثانٍ\n[00:09.00] ثالث");
+});
+
+it('transcribes audio above the inline cap through the gemini files api', function () {
+  Storage::fake('public');
+  config(['services.gemini.key' => 'test-key']);
+  Sleep::fake();
+  Http::preventStrayRequests();
+  Http::fake([
+    'generativelanguage.googleapis.com/upload/v1beta/files' => Http::response('', 200, [
+      'X-Goog-Upload-URL' => 'https://generativelanguage.googleapis.com/upload/v1beta/files?upload_id=sess1',
+    ]),
+    'generativelanguage.googleapis.com/upload/v1beta/files?upload_id=*' => Http::response([
+      'file' => [
+        'name' => 'files/abc123',
+        'uri' => 'https://generativelanguage.googleapis.com/v1beta/files/abc123',
+        'state' => 'ACTIVE',
+      ],
+    ]),
+    'generativelanguage.googleapis.com/v1beta/models/*' => Http::response([
+      'candidates' => [['content' => ['parts' => [[
+        'text' => "[00:01.00] أول\n[00:05.00] ثانٍ\n[00:09.00] ثالث",
+      ]]]]],
+    ]),
+    'generativelanguage.googleapis.com/v1beta/files/*' => Http::response(['state' => 'ACTIVE']),
+  ]);
+
+  $song = readySong(['lyrics_status' => 'pending']);
+  Storage::disk('public')->put($song->audio_path, str_repeat('a', 16 * 1024 * 1024));
+
+  (new ExtractSongLyrics($song->id))->handle(app(GeminiLyricsService::class));
+
+  $fresh = $song->fresh();
+  expect($fresh->lyrics_status)->toBe('ready');
+  expect($fresh->lyrics_lrc)->toBe("[00:01.00] أول\n[00:05.00] ثانٍ\n[00:09.00] ثالث");
+
+  Http::assertSent(fn ($request) => str_contains($request->url(), 'generateContent')
+    && isset($request['contents'][0]['parts'][1]['file_data'])
+    && !isset($request['contents'][0]['parts'][1]['inline_data']));
+});
+
+it('marks lyrics failed when the uploaded file never becomes active', function () {
+  Storage::fake('public');
+  config(['services.gemini.key' => 'test-key']);
+  Sleep::fake();
+  Http::preventStrayRequests();
+  Http::fake([
+    'generativelanguage.googleapis.com/upload/v1beta/files' => Http::response('', 200, [
+      'X-Goog-Upload-URL' => 'https://generativelanguage.googleapis.com/upload/v1beta/files?upload_id=sess1',
+    ]),
+    'generativelanguage.googleapis.com/upload/v1beta/files?upload_id=*' => Http::response([
+      'file' => [
+        'name' => 'files/abc123',
+        'uri' => 'https://generativelanguage.googleapis.com/v1beta/files/abc123',
+        'state' => 'PROCESSING',
+      ],
+    ]),
+    // faked so a regression that reaches generateContent is recorded (and caught
+    // by assertNotSent) instead of escaping as a stray request
+    'generativelanguage.googleapis.com/v1beta/models/*' => Http::response(['candidates' => []]),
+    'generativelanguage.googleapis.com/v1beta/files/*' => Http::response(['state' => 'PROCESSING']),
+  ]);
+
+  $song = readySong(['lyrics_status' => 'pending']);
+  Storage::disk('public')->put($song->audio_path, str_repeat('a', 16 * 1024 * 1024));
+
+  (new ExtractSongLyrics($song->id))->handle(app(GeminiLyricsService::class));
+
+  $fresh = $song->fresh();
+  expect($fresh->lyrics_status)->toBe('failed');
+  expect($fresh->lyrics_lrc)->toBeNull();
+  Http::assertNotSent(fn ($request) => str_contains($request->url(), 'generateContent'));
+});
+
+it('strips a closing fence glued to an arabic letter without corrupting it', function () {
+  Storage::fake('public');
+  config(['services.gemini.key' => 'test-key']);
+  // regression: \R without /u in the fence strip matched byte 0x85 inside م and
+  // produced invalid utf-8
+  Http::fake(['generativelanguage.googleapis.com/*' => Http::response([
+    'candidates' => [['content' => ['parts' => [[
+      'text' => "```\n[00:01.00] أول\n[00:05.00] ثانٍ\n[00:09.00] سلام```",
+    ]]]]],
+  ])]);
+
+  $song = readySong(['lyrics_status' => 'pending']);
+  Storage::disk('public')->put($song->audio_path, 'mp3-bytes');
+
+  (new ExtractSongLyrics($song->id))->handle(app(GeminiLyricsService::class));
+
+  $fresh = $song->fresh();
+  expect($fresh->lyrics_status)->toBe('ready');
+  expect($fresh->lyrics_lrc)->toBe("[00:01.00] أول\n[00:05.00] ثانٍ\n[00:09.00] سلام");
+});
+
+it('keeps lyric lines prefixed with a bom or nbsp', function () {
+  Storage::fake('public');
+  config(['services.gemini.key' => 'test-key']);
+  Http::fake(['generativelanguage.googleapis.com/*' => Http::response([
+    'candidates' => [['content' => ['parts' => [[
+      'text' => "\u{FEFF}[00:01.00] أول\n\u{A0}[00:05.00] ثانٍ\n[00:09.00] ثالث",
+    ]]]]],
+  ])]);
+
+  $song = readySong(['lyrics_status' => 'pending']);
+  Storage::disk('public')->put($song->audio_path, 'mp3-bytes');
+
+  (new ExtractSongLyrics($song->id))->handle(app(GeminiLyricsService::class));
+
+  $fresh = $song->fresh();
+  expect($fresh->lyrics_status)->toBe('ready');
+  expect($fresh->lyrics_lrc)->toBe("[00:01.00] أول\n[00:05.00] ثانٍ\n[00:09.00] ثالث");
 });
 
 it('marks lyrics failed when gemini returns nothing usable', function () {

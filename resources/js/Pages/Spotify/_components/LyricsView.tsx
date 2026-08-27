@@ -7,9 +7,10 @@ interface LyricsViewProps {
   currentTime: number;
   onSeek?: (t: number) => void;
   className?: string;
+  lyricsStatus?: string;
 }
 
-export default function LyricsView({ lrc, currentTime, onSeek, className }: LyricsViewProps) {
+export default function LyricsView({ lrc, currentTime, onSeek, className, lyricsStatus }: LyricsViewProps) {
   const lines = useMemo(() => (lrc ? parseLrc(lrc) : []), [lrc]);
   const active = activeLineIndex(lines, currentTime);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -32,6 +33,13 @@ export default function LyricsView({ lrc, currentTime, onSeek, className }: Lyri
   }, [active]);
 
   if (lines.length === 0) {
+    if (lyricsStatus === 'pending') {
+      return (
+        <div className={cn('flex animate-pulse items-center justify-center py-10 text-sm text-muted-foreground', className)}>
+          جارٍ استخراج كلمات الأغنية تلقائياً…
+        </div>
+      );
+    }
     return (
       <div className={cn('flex items-center justify-center py-10 text-sm text-muted-foreground', className)}>
         لا توجد كلمات لهذه الأغنية

@@ -13,7 +13,7 @@ class ExtractSongLyrics implements ShouldQueue
 {
   use Queueable;
 
-  public int $timeout = 240;
+  public int $timeout = 280;
 
   public int $tries = 1;
 

@@ -1,4 +1,5 @@
 import axios from '@/Lib/axios';
+import type { SongFull } from '../types';
 
 const base = '/api/v1/spotify';
 const STORAGE_KEY = 'sz-spotify-playlists';
@@ -49,6 +50,13 @@ export async function updatePlaylist(
 export async function fetchSongLyrics(slug: string): Promise<string | null> {
   const { data } = await axios.get<{ lyrics_lrc: string | null }>(`/api/v1/spotify/songs/${slug}`);
   return data.lyrics_lrc ?? null;
+}
+
+// the song page polls this while transcription is pending; it needs
+// lyrics_status too, not just the lrc text
+export async function fetchSong(slug: string): Promise<SongFull> {
+  const { data } = await axios.get<SongFull>(`${base}/songs/${slug}`);
+  return data;
 }
 
 const STATUS_MESSAGES: Record<number, string> = {

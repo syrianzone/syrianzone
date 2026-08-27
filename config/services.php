@@ -91,6 +91,8 @@ return [
     'gemini' => [
         'key' => env('GEMINI_API_KEY'),
         'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
+        // override only to point at a proxy/gateway or a test double; no trailing slash
+        'base_url' => rtrim(env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com'), '/'),
     ],
 
 ];

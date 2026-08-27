@@ -496,6 +496,24 @@ it('marks lyrics failed when the uploaded file never becomes active', function (
   Http::assertNotSent(fn ($request) => str_contains($request->url(), 'generateContent'));
 });
 
+it('routes generateContent through the configured base url', function () {
+  Storage::fake('public');
+  config(['services.gemini.key' => 'test-key', 'services.gemini.base_url' => 'https://gemini.example.test']);
+  Http::fake(['gemini.example.test/*' => Http::response([
+    'candidates' => [['content' => ['parts' => [[
+      'text' => "[00:01.00] أول\n[00:05.00] ثانٍ\n[00:09.00] ثالث",
+    ]]]]],
+  ])]);
+
+  $song = readySong(['lyrics_status' => 'pending']);
+  Storage::disk('public')->put($song->audio_path, 'mp3-bytes');
+
+  (new ExtractSongLyrics($song->id))->handle(app(GeminiLyricsService::class));
+
+  expect($song->fresh()->lyrics_status)->toBe('ready');
+  Http::assertSent(fn ($request) => str_starts_with($request->url(), 'https://gemini.example.test/v1beta/models/'));
+});
+
 it('strips a closing fence glued to an arabic letter without corrupting it', function () {
   Storage::fake('public');
   config(['services.gemini.key' => 'test-key']);

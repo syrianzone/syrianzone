@@ -64,8 +64,13 @@ class GeminiLyricsService
     } finally {
       // best effort: uploaded files auto-expire after 48h, a failed delete is non-fatal
       rescue(fn () => Http::withHeaders(['x-goog-api-key' => config('services.gemini.key')])
-        ->delete("https://generativelanguage.googleapis.com/v1beta/{$file['name']}"), report: false);
+        ->delete($this->base() . "/v1beta/{$file['name']}"), report: false);
     }
+  }
+
+  private function base(): string
+  {
+    return config('services.gemini.base_url');
   }
 
   private function generate(array $audioPart): ?string
@@ -84,7 +89,7 @@ class GeminiLyricsService
           && in_array($e->response->status(), [429, 500, 502, 503, 504], true);
       }, throw: false)
       ->post(
-        "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent",
+        $this->base() . "/v1beta/models/{$model}:generateContent",
         [
           'contents' => [[
             'parts' => [
@@ -130,7 +135,7 @@ class GeminiLyricsService
       'X-Goog-Upload-Command' => 'start',
       'X-Goog-Upload-Header-Content-Length' => (string) strlen($bytes),
       'X-Goog-Upload-Header-Content-Type' => 'audio/mpeg',
-    ])->post('https://generativelanguage.googleapis.com/upload/v1beta/files', [
+    ])->post($this->base() . '/upload/v1beta/files', [
       'file' => ['display_name' => 'song'],
     ]);
 
@@ -157,7 +162,7 @@ class GeminiLyricsService
     for ($i = 0; $state === 'PROCESSING' && $i < self::POLL_ATTEMPTS; $i++) {
       Sleep::for(self::POLL_SECONDS)->seconds();
       $state = Http::timeout(10)->withHeaders(['x-goog-api-key' => $key])
-        ->get("https://generativelanguage.googleapis.com/v1beta/{$name}")
+        ->get($this->base() . "/v1beta/{$name}")
         ->json('state');
     }
 

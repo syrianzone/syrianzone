@@ -76,15 +76,9 @@ export default function SpotifySong({ song: initialSong }: SpotifySongProps) {
 
   return (
     <MainLayout>
+      {/* share/og meta is server-rendered in app.blade.php: crawlers do not run js */}
       <Head>
         <title>{`${pageTitle} | Syrian Zone`}</title>
-        <meta name="description" content={`استمع إلى ${song.title} مع الكلمات المتزامنة على Syrian Zone.`} />
-        <meta property="og:type" content="music.song" />
-        <meta property="og:title" content={pageTitle} />
-        <meta property="og:description" content={`استمع إلى ${song.title} مع الكلمات المتزامنة على Syrian Zone.`} />
-        <meta property="og:image" content={song.cover_url ?? 'https://syrian.zone/assets/thumbnail.jpg'} />
-        {song.audio_url && <meta property="og:audio" content={song.audio_url} />}
-        <meta name="twitter:card" content="summary_large_image" />
       </Head>
       <div dir="rtl" className="min-h-screen bg-background text-foreground">
         <div className="mx-auto max-w-2xl px-4 py-8">

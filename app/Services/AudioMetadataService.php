@@ -60,6 +60,23 @@ class AudioMetadataService
     return ob_get_clean() ?: null;
   }
 
+  // og:image variant: whatsapp and several link-preview crawlers refuse webp
+  // thumbnails, so the share endpoint re-encodes the stored cover as jpeg.
+  // no resize: stored covers are already capped at 600px by coverWebp.
+  public function coverJpeg(string $binary): ?string
+  {
+    $im = @imagecreatefromstring($binary);
+    if ($im === false) {
+      return null;
+    }
+
+    ob_start();
+    imagejpeg($im, null, 85);
+    imagedestroy($im);
+
+    return ob_get_clean() ?: null;
+  }
+
   private function tag(array $tags, string $key): ?string
   {
     $value = isset($tags[$key][0]) ? trim((string) $tags[$key][0]) : '';

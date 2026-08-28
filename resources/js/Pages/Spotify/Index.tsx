@@ -53,13 +53,9 @@ export default function SpotifyIndex({ songs }: SpotifyIndexProps) {
 
   return (
     <MainLayout>
+      {/* share/og meta is server-rendered in app.blade.php: crawlers do not run js */}
       <Head>
         <title>أناشيد | Syrian Zone</title>
-        <meta name="description" content="استمع إلى أغانٍ سورية مع كلمات متزامنة، وأنشئ قوائم تشغيل وشاركها مع أصدقائك." />
-        <meta property="og:type" content="website" />
-        <meta property="og:title" content="أناشيد | Syrian Zone" />
-        <meta property="og:description" content="استمع إلى أغانٍ سورية مع كلمات متزامنة، وأنشئ قوائم تشغيل وشاركها مع أصدقائك." />
-        <meta property="og:image" content="https://syrian.zone/assets/thumbnail.jpg" />
       </Head>
       <div dir="rtl" className="min-h-screen bg-background text-foreground">
         <div className="mx-auto max-w-3xl px-4 py-8">

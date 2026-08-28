@@ -69,6 +69,60 @@ it('renders the song page by slug and 404s for unknown or processing songs', fun
   $this->get('/syriafy/song/' . processingSong()->slug)->assertNotFound();
 });
 
+it('renders server-side share meta with the jpeg cover on the song page', function () {
+  $song = readySong(['cover_path' => 'spotify/covers/1/cover.webp']);
+
+  // crawlers do not run js, so these must be in the raw html
+  $this->get("/syriafy/song/{$song->slug}")
+    ->assertOk()
+    ->assertSee('property="og:type" content="music.song"', false)
+    ->assertSee("/syriafy/song/{$song->slug}/cover.jpg", false);
+});
+
+it('falls back to the site thumbnail in share meta when a song has no cover', function () {
+  $song = readySong();
+
+  $this->get("/syriafy/song/{$song->slug}")
+    ->assertOk()
+    ->assertSee('property="og:image"', false)
+    ->assertSee('/assets/thumbnail.jpg', false);
+});
+
+it('serves the share cover re-encoded as jpeg', function () {
+  Storage::fake('public');
+  $song = readySong(['cover_path' => 'spotify/covers/9/x.webp']);
+
+  $im = imagecreatetruecolor(4, 4);
+  ob_start();
+  imagewebp($im);
+  Storage::disk('public')->put($song->cover_path, ob_get_clean());
+  imagedestroy($im);
+
+  $response = $this->get("/syriafy/song/{$song->slug}/cover.jpg");
+  $response->assertOk()->assertHeader('Content-Type', 'image/jpeg');
+  expect(substr($response->getContent(), 0, 2))->toBe("\xFF\xD8");
+});
+
+it('redirects the share cover to the default thumbnail when a song has no cover', function () {
+  $this->get('/syriafy/song/' . readySong()->slug . '/cover.jpg')
+    ->assertRedirect('/assets/thumbnail.jpg');
+});
+
+it('renders share meta on the playlist page using the first covered song', function () {
+  $covered = readySong(['cover_path' => 'spotify/covers/2/c.webp']);
+  $playlist = Playlist::create([
+    'name' => 'قائمة',
+    'slug' => Playlist::generateSlug(),
+    'edit_token' => str_repeat('a', 64),
+  ]);
+  $playlist->songs()->sync([$covered->id => ['position' => 0]]);
+
+  $this->get("/syriafy/playlist/{$playlist->slug}")
+    ->assertOk()
+    ->assertSee('property="og:type" content="music.playlist"', false)
+    ->assertSee("/syriafy/song/{$covered->slug}/cover.jpg", false);
+});
+
 it('redirects old spotify urls permanently', function () {
   $song = readySong();
   $playlist = Playlist::create([

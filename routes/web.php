@@ -70,6 +70,7 @@ Route::get('/population', [PopulationAtlasController::class, 'renderIndex']);
 
 Route::get('/syriafy', [\App\Http\Controllers\SpotifyController::class, 'index']);
 Route::get('/syriafy/song/{slug}', [\App\Http\Controllers\SpotifyController::class, 'song']);
+Route::get('/syriafy/song/{slug}/cover.jpg', [\App\Http\Controllers\SpotifyController::class, 'coverJpeg']);
 Route::get('/syriafy/playlist/{slug}', [\App\Http\Controllers\SpotifyController::class, 'playlist']);
 Route::get('/api/v1/syriafy/songs/{slug}', [\App\Http\Controllers\SpotifyController::class, 'songJson']);
 // legacy prefix: shared song/playlist links and the live sitemap still say /spotify

@@ -8,6 +8,24 @@
     {!! \Sentry\Laravel\Integration::sentryMeta() !!}
 
     <title inertia>{{ config('app.name', 'المساحة السورية | Syrian Zone') }}</title>
+
+    {{-- share/link-preview meta, server-rendered because crawlers do not run js;
+         pages opt in via Inertia's withViewData(['meta' => ...]) --}}
+    @isset($meta)
+    <meta name="description" content="{{ $meta['description'] }}">
+    <meta property="og:site_name" content="Syrian Zone">
+    <meta property="og:title" content="{{ $meta['title'] }}">
+    <meta property="og:description" content="{{ $meta['description'] }}">
+    <meta property="og:type" content="{{ $meta['type'] }}">
+    <meta property="og:url" content="{{ $meta['url'] }}">
+    <meta property="og:image" content="{{ $meta['image'] }}">
+    @isset($meta['audio'])
+    <meta property="og:audio" content="{{ $meta['audio'] }}">
+    @endisset
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="{{ $meta['title'] }}">
+    <meta name="twitter:image" content="{{ $meta['image'] }}">
+    @endisset
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

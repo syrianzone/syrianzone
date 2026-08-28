@@ -90,8 +90,13 @@ export function MapCanvas({
     observerRef.current = observer;
 
     // setStyle() drops every runtime source/layer; bump the version so layer
-    // components depending on it re-add themselves once new style is ready.
-    mapInstance.on('styledata', () => setStyleVersion(v => v + 1));
+    // components depending on it re-add themselves once the new style is
+    // ready. Must be style.load, NOT styledata: MapLibre fires styledata for
+    // every runtime mutation too (addSource/addLayer/removeLayer/setFilter/
+    // setPaintProperty all mark the style changed), so bumping there makes
+    // styleVersion-keyed layer effects remove+re-add their layers in an
+    // endless loop (routes/stops visibly clip in and out of view).
+    mapInstance.on('style.load', () => setStyleVersion(v => v + 1));
 
     mapRef.current = mapInstance;
 

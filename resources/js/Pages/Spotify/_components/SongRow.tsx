@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link } from '@inertiajs/react';
-import { Check, Copy, ExternalLink, MoreVertical, Music, Pause, Play } from 'lucide-react';
+import { Bookmark, BookmarkCheck, Check, Copy, ExternalLink, MoreVertical, Music, Pause, Play } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import {
   DropdownMenu,
@@ -11,6 +11,7 @@ import {
 import { cn } from '@/lib/utils';
 import { copyText } from '../_lib/clipboard';
 import { formatTime } from '../_lib/lrc';
+import { usePlayerStore } from '../_lib/playerStore';
 import type { SongSummary } from '../types';
 
 interface SongRowProps {
@@ -37,6 +38,10 @@ export default function SongRow({
   trailing,
   withMenu = true,
 }: SongRowProps) {
+  const saved = usePlayerStore((s) => s.savedIds.includes(song.id));
+  const toggleSaved = usePlayerStore((s) => s.toggleSaved);
+  const savedLabel = saved ? 'إزالة من المحفوظة' : 'حفظ الأغنية';
+
   const handleRowClick = () => {
     if (selectable) onToggleSelect?.();
     else onPlay();
@@ -81,6 +86,8 @@ export default function SongRow({
         </p>
         {song.artist && <p className="truncate text-xs text-muted-foreground">{song.artist}</p>}
       </div>
+      {/* subtle saved indicator, visible in every mode */}
+      {saved && <BookmarkCheck className="h-3.5 w-3.5 shrink-0 fill-primary text-primary" aria-hidden />}
       {song.duration_seconds !== null && (
         <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
           {formatTime(song.duration_seconds)}
@@ -100,6 +107,21 @@ export default function SongRow({
           {isCurrent && isPlaying ? <Pause className="fill-current" /> : <Play className="fill-current" />}
         </Button>
       )}
+      {/* no menu to host the save action (playlist owner rows): fall back to a button */}
+      {!withMenu && !selectable && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn('h-8 w-8 shrink-0', saved && 'text-primary hover:text-primary')}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleSaved(song.id);
+          }}
+          aria-label={savedLabel}
+        >
+          {saved ? <BookmarkCheck className="fill-current" /> : <Bookmark />}
+        </Button>
+      )}
       {trailing}
       {withMenu && !selectable && (
         <DropdownMenu>
@@ -115,16 +137,24 @@ export default function SongRow({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+            <DropdownMenuItem onClick={() => toggleSaved(song.id)}>
+              {saved ? (
+                <BookmarkCheck className="me-2 h-4 w-4 fill-primary text-primary" />
+              ) : (
+                <Bookmark className="me-2 h-4 w-4" />
+              )}
+              {savedLabel}
+            </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() =>
-                copyText(`${window.location.origin}/spotify/song/${song.slug}`, 'تم نسخ رابط الأغنية')
+                copyText(`${window.location.origin}/syriafy/song/${song.slug}`, 'تم نسخ رابط الأغنية')
               }
             >
               <Copy className="me-2 h-4 w-4" />
               نسخ رابط الأغنية
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link href={`/spotify/song/${song.slug}`}>
+              <Link href={`/syriafy/song/${song.slug}`}>
                 <ExternalLink className="me-2 h-4 w-4" />
                 فتح صفحة الأغنية
               </Link>

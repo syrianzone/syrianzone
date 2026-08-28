@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Head, usePage } from '@inertiajs/react';
-import { ListMusic, ListPlus, X } from 'lucide-react';
+import { Bookmark, ListMusic, ListPlus, X } from 'lucide-react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Button } from '@/Components/ui/button';
 import { Toaster } from '@/Components/ui/sonner';
@@ -28,6 +28,14 @@ export default function SpotifyIndex({ songs }: SpotifyIndexProps) {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
 
+  const savedIds = usePlayerStore((s) => s.savedIds);
+  const [savedOnly, setSavedOnly] = useState(false);
+  const hasSaved = songs.some((s) => savedIds.includes(s.id));
+  // unsaving the last track drops the filter instead of stranding an empty list;
+  // select mode always offers the full catalog
+  const showSavedOnly = savedOnly && hasSaved && !selectMode;
+  const visibleSongs = showSavedOnly ? songs.filter((s) => savedIds.includes(s.id)) : songs;
+
   const toggleSelect = (id: number) => {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
@@ -37,18 +45,19 @@ export default function SpotifyIndex({ songs }: SpotifyIndexProps) {
     setSelectedIds([]);
   };
 
+  // the visible (possibly filtered) list becomes the queue
   const handlePlay = (i: number) => {
-    if (current?.id === songs[i].id) toggle();
-    else play(songs, i);
+    if (current?.id === visibleSongs[i].id) toggle();
+    else play(visibleSongs, i);
   };
 
   return (
     <MainLayout>
       <Head>
-        <title>الموسيقى | Syrian Zone</title>
+        <title>أناشيد | Syrian Zone</title>
         <meta name="description" content="استمع إلى أغانٍ سورية مع كلمات متزامنة، وأنشئ قوائم تشغيل وشاركها مع أصدقائك." />
         <meta property="og:type" content="website" />
-        <meta property="og:title" content="الموسيقى | Syrian Zone" />
+        <meta property="og:title" content="أناشيد | Syrian Zone" />
         <meta property="og:description" content="استمع إلى أغانٍ سورية مع كلمات متزامنة، وأنشئ قوائم تشغيل وشاركها مع أصدقائك." />
         <meta property="og:image" content="https://syrian.zone/assets/thumbnail.jpg" />
       </Head>
@@ -58,7 +67,7 @@ export default function SpotifyIndex({ songs }: SpotifyIndexProps) {
             <div>
               <h1 className="flex items-center gap-2 text-2xl font-black">
                 <ListMusic className="h-7 w-7 text-primary" />
-                الموسيقى
+                أناشيد
               </h1>
               <p className="mt-1 text-sm text-muted-foreground">
                 استمع مباشرة، تابع الكلمات المتزامنة، وأنشئ قوائم تشغيل وشاركها
@@ -85,13 +94,28 @@ export default function SpotifyIndex({ songs }: SpotifyIndexProps) {
             </p>
           )}
 
+          {hasSaved && !selectMode && (
+            <div className="mb-3 flex flex-wrap gap-2">
+              <Button
+                variant={showSavedOnly ? 'default' : 'outline'}
+                size="sm"
+                className="rounded-full"
+                onClick={() => setSavedOnly((v) => !v)}
+                aria-pressed={showSavedOnly}
+              >
+                <Bookmark className={cn('me-1 h-4 w-4', showSavedOnly && 'fill-current')} />
+                المحفوظة
+              </Button>
+            </div>
+          )}
+
           {songs.length === 0 ? (
             <div className="rounded-xl border border-border bg-card py-16 text-center text-sm text-muted-foreground">
               لا توجد أغانٍ بعد، عد قريباً
             </div>
           ) : (
             <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
-              {songs.map((song, i) => (
+              {visibleSongs.map((song, i) => (
                 <SongRow
                   key={song.id}
                   song={song}

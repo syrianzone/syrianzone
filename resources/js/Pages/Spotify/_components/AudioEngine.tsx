@@ -7,8 +7,13 @@ export default function AudioEngine() {
   const song = useCurrentSong();
   const playing = usePlayerStore((s) => s.playing);
   const seekTo = usePlayerStore((s) => s.seekTo);
+  const volume = usePlayerStore((s) => s.volume);
+  const muted = usePlayerStore((s) => s.muted);
   const tick = usePlayerStore((s) => s.tick);
-  const next = usePlayerStore((s) => s.next);
+  const onEnded = usePlayerStore((s) => s.onEnded);
+
+  // persisted prefs (volume, saved tracks) load after mount, see hydratePrefs
+  useEffect(() => usePlayerStore.getState().hydratePrefs(), []);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -34,8 +39,18 @@ export default function AudioEngine() {
     if (audio && seekTo !== null) {
       audio.currentTime = seekTo;
       usePlayerStore.setState({ seekTo: null });
+      // repeat-one (and single-song wrap) rewinds after `ended` left the element
+      // paused while the store still says playing: resume here
+      if (usePlayerStore.getState().playing && audio.paused) audio.play().catch(() => {});
     }
   }, [seekTo]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    // song?.id in deps: the element only mounts once a song is set, so the
+    // stored volume must be re-applied then, not just when the slider moves
+    if (audio) audio.volume = muted ? 0 : volume;
+  }, [volume, muted, song?.id]);
 
   if (!song?.audio_url) return null;
 
@@ -45,7 +60,7 @@ export default function AudioEngine() {
       src={song.audio_url}
       preload="metadata"
       onTimeUpdate={(e) => tick(e.currentTarget.currentTime)}
-      onEnded={next}
+      onEnded={onEnded}
       onError={() => usePlayerStore.setState({ playing: false })}
     />
   );

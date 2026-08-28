@@ -61,6 +61,7 @@ class SitemapBuilder
         ['/compass', 0.8, 'monthly'],
         ['/alignment', 0.8, 'monthly'],
         ['/polls', 0.8, 'weekly'],
+        ['/spotify', 0.8, 'weekly'],
         ['/syrian-contributors', 0.8, 'weekly'],
         ['/board', 0.7, 'monthly'],
         ['/guesswho', 0.7, 'monthly'],

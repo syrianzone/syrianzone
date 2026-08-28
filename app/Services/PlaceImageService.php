@@ -6,6 +6,7 @@ use App\Models\PlacePhoto;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Intervention\Image\Encoders\WebpEncoder;
 use Intervention\Image\ImageManager;
 
 class PlaceImageService
@@ -48,10 +49,10 @@ class PlaceImageService
     if (!$disk->exists($photo->display_path)) {
       throw new \RuntimeException("display missing: {$photo->display_path}");
     }
-    $manager = ImageManager::withDriver(\Intervention\Image\Drivers\Gd\Driver::class);
-    $rotated = (string) $manager->read($disk->get($photo->display_path))->rotate(-90)->toWebp(quality: 80);
+    $manager = ImageManager::usingDriver(\Intervention\Image\Drivers\Gd\Driver::class);
+    $rotated = (string) $manager->decodeBinary($disk->get($photo->display_path))->rotate(-90)->encode(new WebpEncoder(quality: 80));
     $disk->put($photo->display_path, $rotated);
-    $disk->put($photo->thumb_path, (string) $manager->read($rotated)->cover(400, 400)->toWebp(quality: 75));
+    $disk->put($photo->thumb_path, (string) $manager->decodeBinary($rotated)->cover(400, 400)->encode(new WebpEncoder(quality: 75)));
     $photo->touch();
   }
 
@@ -109,12 +110,12 @@ class PlaceImageService
   /** @return array{string, string} display webp, thumb webp */
   private function variants(string $binary): array
   {
-    $manager = ImageManager::withDriver(\Intervention\Image\Drivers\Gd\Driver::class);
+    $manager = ImageManager::usingDriver(\Intervention\Image\Drivers\Gd\Driver::class);
     // decode the full-size original exactly once: a 12MP photo is ~100MB as a GD
     // bitmap, and decoding it a second time for the thumb blew the 256M limit in
     // production; the thumb crops the 1600px display copy instead (~20MB decode)
-    $display = (string) $manager->read($binary)->scaleDown(width: 1600, height: 1600)->toWebp(quality: 80);
-    $thumb = (string) $manager->read($display)->cover(400, 400)->toWebp(quality: 75);
+    $display = (string) $manager->decodeBinary($binary)->scaleDown(width: 1600, height: 1600)->encode(new WebpEncoder(quality: 80));
+    $thumb = (string) $manager->decodeBinary($display)->cover(400, 400)->encode(new WebpEncoder(quality: 75));
     return [$display, $thumb];
   }
 }

@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Intervention\Image\Encoders\WebpEncoder;
 use Intervention\Image\ImageManager;
 
 class AvatarService
@@ -15,10 +16,10 @@ class AvatarService
   {
     $disk = Storage::disk(config('filesystems.media_disk'));
 
-    $manager = ImageManager::withDriver(\Intervention\Image\Drivers\Gd\Driver::class);
-    $webp = (string) $manager->read(file_get_contents($file->getRealPath()))
+    $manager = ImageManager::usingDriver(\Intervention\Image\Drivers\Gd\Driver::class);
+    $webp = (string) $manager->decodeBinary(file_get_contents($file->getRealPath()))
       ->cover(256, 256)
-      ->toWebp(quality: 80);
+      ->encode(new WebpEncoder(quality: 80));
 
     // Fresh uuid every upload: the CDN caches paths immutably and ignores query
     // strings, so only a never-seen path reliably busts.

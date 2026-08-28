@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import { ListMusic, ListPlus, X } from 'lucide-react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Button } from '@/Components/ui/button';
@@ -16,6 +16,8 @@ interface SpotifyIndexProps {
 }
 
 export default function SpotifyIndex({ songs }: SpotifyIndexProps) {
+  // guests can listen and share links; creating playlists needs a signed-in user
+  const user = usePage<{ auth?: { user: { id: number } | null } }>().props.auth?.user ?? null;
   const current = useCurrentSong();
   const playing = usePlayerStore((s) => s.playing);
   const play = usePlayerStore((s) => s.play);
@@ -63,6 +65,7 @@ export default function SpotifyIndex({ songs }: SpotifyIndexProps) {
               </p>
             </div>
             {songs.length > 0 &&
+              user &&
               (selectMode ? (
                 <Button variant="outline" size="sm" onClick={exitSelectMode}>
                   <X className="me-1 h-4 w-4" />

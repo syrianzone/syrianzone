@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { ArrowDown, ArrowRight, ArrowUp, Copy, ListMusic, Play, Trash2 } from 'lucide-react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Button } from '@/Components/ui/button';
@@ -33,7 +33,10 @@ export default function SpotifyPlaylist({ playlist, songs }: SpotifyPlaylistProp
     setToken(savedEditToken(playlist.slug));
   }, [playlist.slug]);
 
-  const isOwner = token !== null;
+  // a stale token in a signed-out browser must not surface edit UI; the server
+  // rejects guest writes regardless, this just keeps the page honest
+  const user = usePage<{ auth?: { user: { id: number } | null } }>().props.auth?.user ?? null;
+  const isOwner = !!user && token !== null;
 
   const persistOrder = async (next: SongSummary[]) => {
     if (!token) return;

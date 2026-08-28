@@ -72,11 +72,14 @@ Route::get('/spotify', [\App\Http\Controllers\SpotifyController::class, 'index']
 Route::get('/spotify/song/{slug}', [\App\Http\Controllers\SpotifyController::class, 'song']);
 Route::get('/spotify/playlist/{slug}', [\App\Http\Controllers\SpotifyController::class, 'playlist']);
 Route::get('/api/v1/spotify/songs/{slug}', [\App\Http\Controllers\SpotifyController::class, 'songJson']);
-// Playlist writes are public by design: possession of the edit_token is the auth.
-Route::post('/api/v1/spotify/playlists', [\App\Http\Controllers\SpotifyPlaylistController::class, 'store'])
-    ->middleware('throttle:20,1');
-Route::put('/api/v1/spotify/playlists/{slug}', [\App\Http\Controllers\SpotifyPlaylistController::class, 'update'])
-    ->middleware('throttle:60,1');
+// Viewing/sharing a playlist stays public; creating or editing requires a
+// signed-in user. The edit_token still scopes which playlist that user may edit.
+Route::middleware('auth')->group(function () {
+    Route::post('/api/v1/spotify/playlists', [\App\Http\Controllers\SpotifyPlaylistController::class, 'store'])
+        ->middleware('throttle:20,1');
+    Route::put('/api/v1/spotify/playlists/{slug}', [\App\Http\Controllers\SpotifyPlaylistController::class, 'update'])
+        ->middleware('throttle:60,1');
+});
 
 Route::get('/guesswho', [GuessWhoController::class, 'index']);
 Route::post('/guesswho/rooms', [GuessWhoController::class, 'createRoom']);

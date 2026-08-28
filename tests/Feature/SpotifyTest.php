@@ -74,7 +74,8 @@ it('creates a playlist with slug and edit_token, attaching only ready songs in o
   $second = readySong();
   $pending = processingSong();
 
-  $response = $this->postJson('/api/v1/spotify/playlists', [
+  // any signed-in user, no admin role needed
+  $response = $this->actingAs(User::factory()->create(['role' => 'user']))->postJson('/api/v1/spotify/playlists', [
     'name' => 'قائمتي',
     'song_ids' => [$second->id, $pending->id, $first->id],
   ])
@@ -96,6 +97,32 @@ it('creates a playlist with slug and edit_token, attaching only ready songs in o
       ->where('songs.0.id', $second->id));
 });
 
+it('rejects playlist creation and edits from guests', function () {
+  $song = readySong();
+  $playlist = Playlist::create([
+    'name' => 'قائمة',
+    'slug' => Playlist::generateSlug(),
+    'edit_token' => str_repeat('a', 64),
+  ]);
+
+  $this->postJson('/api/v1/spotify/playlists', [
+    'name' => 'قائمة ضيف',
+    'song_ids' => [$song->id],
+  ])->assertUnauthorized();
+
+  // even the correct edit_token does not bypass the login requirement
+  $this->putJson("/api/v1/spotify/playlists/{$playlist->slug}", [
+    'edit_token' => str_repeat('a', 64),
+    'name' => 'اسم مخترق',
+  ])->assertUnauthorized();
+
+  expect(Playlist::count())->toBe(1);
+  expect($playlist->fresh()->name)->toBe('قائمة');
+
+  // viewing and sharing stay public
+  $this->get("/spotify/playlist/{$playlist->slug}")->assertOk();
+});
+
 it('rejects playlist updates with a wrong edit_token and applies them with the right one', function () {
   $first = readySong();
   $second = readySong();
@@ -105,6 +132,8 @@ it('rejects playlist updates with a wrong edit_token and applies them with the r
     'edit_token' => str_repeat('a', 64),
   ]);
   $playlist->songs()->sync([$first->id => ['position' => 0], $second->id => ['position' => 1]]);
+
+  $this->actingAs(User::factory()->create(['role' => 'user']));
 
   $this->putJson("/api/v1/spotify/playlists/{$playlist->slug}", [
     'edit_token' => 'wrong-token',

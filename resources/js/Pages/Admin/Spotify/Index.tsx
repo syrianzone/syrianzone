@@ -61,7 +61,7 @@ export default function SpotifyAdminIndex({ geminiEnabled }: AdminSpotifyProps) 
   const [pollDead, setPollDead] = useState(false);
   const fetchSongs = useCallback(async () => {
     try {
-      const res = await axios.get('/api/v1/admin/spotify/songs');
+      const res = await axios.get('/api/v1/admin/syriafy/songs');
       // tolerate both a bare array and a wrapped { songs: [...] } payload
       const list = Array.isArray(res.data) ? res.data : res.data.songs;
       setSongs(list ?? []);
@@ -99,7 +99,7 @@ export default function SpotifyAdminIndex({ geminiEnabled }: AdminSpotifyProps) 
   const handleDelete = async (song: AdminSong) => {
     if (!confirm(`هل أنت متأكد من حذف "${song.title}"؟ سيحذف الملف الصوتي والغلاف نهائياً.`)) return;
     try {
-      await axios.delete(`/api/v1/admin/spotify/songs/${song.id}`);
+      await axios.delete(`/api/v1/admin/syriafy/songs/${song.id}`);
       setSongs((prev) => prev.filter((s) => s.id !== song.id));
       toast.success('تم حذف الأغنية');
     } catch (e) {
@@ -109,7 +109,7 @@ export default function SpotifyAdminIndex({ geminiEnabled }: AdminSpotifyProps) 
 
   const handleExtractLyrics = async (song: AdminSong) => {
     try {
-      await axios.post(`/api/v1/admin/spotify/songs/${song.id}/extract-lyrics`);
+      await axios.post(`/api/v1/admin/syriafy/songs/${song.id}/extract-lyrics`);
       toast.success('بدأ استخراج الكلمات، قد يستغرق بضع دقائق');
       fetchSongs();
     } catch (e) {
@@ -119,7 +119,7 @@ export default function SpotifyAdminIndex({ geminiEnabled }: AdminSpotifyProps) 
 
   const handleRetry = async (song: AdminSong) => {
     try {
-      await axios.post(`/api/v1/admin/spotify/songs/${song.id}/retry`);
+      await axios.post(`/api/v1/admin/syriafy/songs/${song.id}/retry`);
       toast.success('أعيدت المعالجة');
       fetchSongs();
     } catch (e) {
@@ -145,7 +145,7 @@ export default function SpotifyAdminIndex({ geminiEnabled }: AdminSpotifyProps) 
     const form = new FormData();
     form.append('image', file);
     try {
-      await axios.post(`/api/v1/admin/spotify/songs/${songId}/cover`, form);
+      await axios.post(`/api/v1/admin/syriafy/songs/${songId}/cover`, form);
       toast.success('تم تحديث الغلاف');
       fetchSongs();
     } catch (err) {
@@ -164,7 +164,7 @@ export default function SpotifyAdminIndex({ geminiEnabled }: AdminSpotifyProps) 
 
   return (
     <MainLayout>
-      <Head title="إدارة الموسيقى" />
+      <Head title="إدارة الأناشيد" />
       <Toaster />
 
       <div className="container mx-auto px-4 py-8 max-w-7xl space-y-6" dir="rtl">
@@ -172,13 +172,13 @@ export default function SpotifyAdminIndex({ geminiEnabled }: AdminSpotifyProps) 
           <div>
             <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
               <Music4 className="w-7 h-7 text-primary" />
-              <span>إدارة الموسيقى</span>
+              <span>إدارة الأناشيد</span>
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
               رفع الأغاني وإدارة الكلمات والأغلفة. تخزن الملفات على R2 ضمن مجلد spotify/.
             </p>
           </div>
-          <a href="/spotify" target="_blank" rel="noreferrer">
+          <a href="/syriafy" target="_blank" rel="noreferrer">
             <Button variant="outline" className="gap-2">
               <ExternalLink className="w-4 h-4" />
               <span>الصفحة العامة</span>

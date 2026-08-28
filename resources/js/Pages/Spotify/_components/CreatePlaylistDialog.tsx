@@ -77,7 +77,7 @@ export default function CreatePlaylistDialog({ open, onOpenChange, songIds, onCr
             </div>
             <DialogFooter className="gap-2 sm:justify-start">
               <Button asChild>
-                <Link href={`/spotify/playlist/${created.slug}`}>
+                <Link href={`/syriafy/playlist/${created.slug}`}>
                   <ExternalLink className="me-1 h-4 w-4" />
                   فتح القائمة
                 </Link>

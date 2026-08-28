@@ -1,7 +1,7 @@
 import axios from '@/Lib/axios';
 import type { SongFull } from '../types';
 
-const base = '/api/v1/spotify';
+const base = '/api/v1/syriafy';
 const STORAGE_KEY = 'sz-spotify-playlists';
 
 function readTokens(): Record<string, string> {
@@ -48,7 +48,7 @@ export async function updatePlaylist(
 
 // the index only ships song summaries; the lyrics panel fetches them on demand
 export async function fetchSongLyrics(slug: string): Promise<string | null> {
-  const { data } = await axios.get<{ lyrics_lrc: string | null }>(`/api/v1/spotify/songs/${slug}`);
+  const { data } = await axios.get<{ lyrics_lrc: string | null }>(`/api/v1/syriafy/songs/${slug}`);
   return data.lyrics_lrc ?? null;
 }
 

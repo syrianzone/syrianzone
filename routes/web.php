@@ -68,16 +68,20 @@ Route::get('/alignment', [ExternalDataController::class, 'alignment']);
 Route::get('/govapps', [\App\Http\Controllers\GovAppController::class, 'index']);
 Route::get('/population', [PopulationAtlasController::class, 'renderIndex']);
 
-Route::get('/spotify', [\App\Http\Controllers\SpotifyController::class, 'index']);
-Route::get('/spotify/song/{slug}', [\App\Http\Controllers\SpotifyController::class, 'song']);
-Route::get('/spotify/playlist/{slug}', [\App\Http\Controllers\SpotifyController::class, 'playlist']);
-Route::get('/api/v1/spotify/songs/{slug}', [\App\Http\Controllers\SpotifyController::class, 'songJson']);
+Route::get('/syriafy', [\App\Http\Controllers\SpotifyController::class, 'index']);
+Route::get('/syriafy/song/{slug}', [\App\Http\Controllers\SpotifyController::class, 'song']);
+Route::get('/syriafy/playlist/{slug}', [\App\Http\Controllers\SpotifyController::class, 'playlist']);
+Route::get('/api/v1/syriafy/songs/{slug}', [\App\Http\Controllers\SpotifyController::class, 'songJson']);
+// legacy prefix: shared song/playlist links and the live sitemap still say /spotify
+Route::get('/spotify', fn () => redirect('/syriafy', 301));
+Route::get('/spotify/song/{slug}', fn (string $slug) => redirect("/syriafy/song/{$slug}", 301));
+Route::get('/spotify/playlist/{slug}', fn (string $slug) => redirect("/syriafy/playlist/{$slug}", 301));
 // Viewing/sharing a playlist stays public; creating or editing requires a
 // signed-in user. The edit_token still scopes which playlist that user may edit.
 Route::middleware('auth')->group(function () {
-    Route::post('/api/v1/spotify/playlists', [\App\Http\Controllers\SpotifyPlaylistController::class, 'store'])
+    Route::post('/api/v1/syriafy/playlists', [\App\Http\Controllers\SpotifyPlaylistController::class, 'store'])
         ->middleware('throttle:20,1');
-    Route::put('/api/v1/spotify/playlists/{slug}', [\App\Http\Controllers\SpotifyPlaylistController::class, 'update'])
+    Route::put('/api/v1/syriafy/playlists/{slug}', [\App\Http\Controllers\SpotifyPlaylistController::class, 'update'])
         ->middleware('throttle:60,1');
 });
 
@@ -338,9 +342,9 @@ Route::middleware('auth')->group(function () {
 
     // 7. Spotify Admin Panel (accessible to core admins and superadmins)
     Route::middleware('admin')->group(function () {
-        Route::get('/admin/spotify', [\App\Http\Controllers\SpotifyAdminController::class, 'renderIndex']);
+        Route::get('/admin/syriafy', [\App\Http\Controllers\SpotifyAdminController::class, 'renderIndex']);
 
-        Route::prefix('api/v1/admin/spotify')->group(function () {
+        Route::prefix('api/v1/admin/syriafy')->group(function () {
             Route::get('/songs', [\App\Http\Controllers\SpotifyAdminController::class, 'index']);
             Route::post('/songs', [\App\Http\Controllers\SpotifyAdminController::class, 'store']);
             Route::put('/songs/{song}', [\App\Http\Controllers\SpotifyAdminController::class, 'update']);

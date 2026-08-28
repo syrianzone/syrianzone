@@ -31,7 +31,7 @@ class SpotifyPlaylistController extends Controller
     return response()->json([
       'slug' => $playlist->slug,
       'edit_token' => $playlist->edit_token,
-      'url' => url("/spotify/playlist/{$playlist->slug}"),
+      'url' => url("/syriafy/playlist/{$playlist->slug}"),
     ], 201);
   }
 

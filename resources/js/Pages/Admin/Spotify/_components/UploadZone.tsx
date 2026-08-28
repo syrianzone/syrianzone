@@ -38,7 +38,7 @@ export default function UploadZone({ onUploaded }: UploadZoneProps) {
     const form = new FormData();
     form.append('file', file);
     axios
-      .post('/api/v1/admin/spotify/songs', form, {
+      .post('/api/v1/admin/syriafy/songs', form, {
         onUploadProgress: (e) => {
           patchItem(id, { progress: e.total ? Math.round((e.loaded / e.total) * 100) : 0 });
         },

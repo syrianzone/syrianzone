@@ -89,7 +89,7 @@ export default function SpotifySong({ song: initialSong }: SpotifySongProps) {
       <div dir="rtl" className="min-h-screen bg-background text-foreground">
         <div className="mx-auto max-w-2xl px-4 py-8">
           <Link
-            href="/spotify"
+            href="/syriafy"
             className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
             <ArrowRight className="h-4 w-4" />
@@ -145,7 +145,7 @@ export default function SpotifySong({ song: initialSong }: SpotifySongProps) {
                 variant="outline"
                 size="sm"
                 onClick={() =>
-                  copyText(`${window.location.origin}/spotify/song/${song.slug}`, 'تم نسخ رابط الأغنية')
+                  copyText(`${window.location.origin}/syriafy/song/${song.slug}`, 'تم نسخ رابط الأغنية')
                 }
               >
                 <Copy className="me-1 h-4 w-4" />

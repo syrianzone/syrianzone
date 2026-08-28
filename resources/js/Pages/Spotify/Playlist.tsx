@@ -88,17 +88,17 @@ export default function SpotifyPlaylist({ playlist, songs }: SpotifyPlaylistProp
   return (
     <MainLayout>
       <Head>
-        <title>{`${savedName} | الموسيقى | Syrian Zone`}</title>
+        <title>{`${savedName} | أناشيد | Syrian Zone`}</title>
         <meta name="description" content={`قائمة تشغيل ${savedName} على Syrian Zone.`} />
         <meta property="og:type" content="music.playlist" />
-        <meta property="og:title" content={`${savedName} | الموسيقى`} />
+        <meta property="og:title" content={`${savedName} | أناشيد`} />
         <meta property="og:description" content={`استمع إلى قائمة تشغيل ${savedName} على Syrian Zone.`} />
         <meta property="og:image" content="https://syrian.zone/assets/thumbnail.jpg" />
       </Head>
       <div dir="rtl" className="min-h-screen bg-background text-foreground">
         <div className="mx-auto max-w-3xl px-4 py-8">
           <Link
-            href="/spotify"
+            href="/syriafy"
             className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
             <ArrowRight className="h-4 w-4" />
@@ -138,7 +138,7 @@ export default function SpotifyPlaylist({ playlist, songs }: SpotifyPlaylistProp
                 variant="outline"
                 size="sm"
                 onClick={() =>
-                  copyText(`${window.location.origin}/spotify/playlist/${playlist.slug}`, 'تم نسخ رابط القائمة')
+                  copyText(`${window.location.origin}/syriafy/playlist/${playlist.slug}`, 'تم نسخ رابط القائمة')
                 }
               >
                 <Copy className="me-1 h-4 w-4" />

@@ -33,7 +33,7 @@ export default function SongEditDialog({ open, onOpenChange, song, onSaved }: So
     if (!song) return;
     setSaving(true);
     try {
-      await axios.put(`/api/v1/admin/spotify/songs/${song.id}`, {
+      await axios.put(`/api/v1/admin/syriafy/songs/${song.id}`, {
         title: title.trim(),
         artist: artist.trim() || null,
         lyrics_lrc: lyrics.trim() || null,
@@ -98,7 +98,7 @@ export default function SongEditDialog({ open, onOpenChange, song, onSaved }: So
           <div className="flex items-center justify-between pt-4 border-t">
             {song && song.status === 'ready' ? (
               <a
-                href={`/spotify/song/${song.slug}`}
+                href={`/syriafy/song/${song.slug}`}
                 target="_blank"
                 rel="noreferrer"
                 className="text-xs text-primary hover:underline inline-flex items-center gap-1"

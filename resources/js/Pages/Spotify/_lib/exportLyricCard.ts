@@ -1,6 +1,6 @@
 const CARD_SIZE = 1080;
 const FONT_FAMILY = '"IBM Plex Sans Arabic", sans-serif';
-const WATERMARK = 'syrian.zone/spotify';
+const WATERMARK = 'syrian.zone/syriafy';
 const LOGO_SRC = '/assets/logo-darkmode.svg';
 
 export type LyricCardOptions = {

@@ -45,7 +45,7 @@ it('lists only ready songs on the public index, newest first', function () {
   $new = readySong();
   processingSong();
 
-  $this->get('/spotify')
+  $this->get('/syriafy')
     ->assertOk()
     ->assertInertia(fn ($page) => $page
       ->has('songs', 2)
@@ -58,15 +58,28 @@ it('lists only ready songs on the public index, newest first', function () {
 it('renders the song page by slug and 404s for unknown or processing songs', function () {
   $song = readySong(['lyrics_lrc' => "[00:01.00] يا شام"]);
 
-  $this->get("/spotify/song/{$song->slug}")
+  $this->get("/syriafy/song/{$song->slug}")
     ->assertOk()
     ->assertInertia(fn ($page) => $page
       ->where('song.slug', $song->slug)
       ->where('song.lyrics_lrc', "[00:01.00] يا شام")
       ->where('song.has_lyrics', true));
 
-  $this->get('/spotify/song/nosuchslug1')->assertNotFound();
-  $this->get('/spotify/song/' . processingSong()->slug)->assertNotFound();
+  $this->get('/syriafy/song/nosuchslug1')->assertNotFound();
+  $this->get('/syriafy/song/' . processingSong()->slug)->assertNotFound();
+});
+
+it('redirects old spotify urls permanently', function () {
+  $song = readySong();
+  $playlist = Playlist::create([
+    'name' => 'قائمة',
+    'slug' => Playlist::generateSlug(),
+    'edit_token' => str_repeat('a', 64),
+  ]);
+
+  $this->get('/spotify')->assertStatus(301)->assertRedirect('/syriafy');
+  $this->get("/spotify/song/{$song->slug}")->assertStatus(301)->assertRedirect("/syriafy/song/{$song->slug}");
+  $this->get("/spotify/playlist/{$playlist->slug}")->assertStatus(301)->assertRedirect("/syriafy/playlist/{$playlist->slug}");
 });
 
 it('creates a playlist with slug and edit_token, attaching only ready songs in order', function () {
@@ -75,7 +88,7 @@ it('creates a playlist with slug and edit_token, attaching only ready songs in o
   $pending = processingSong();
 
   // any signed-in user, no admin role needed
-  $response = $this->actingAs(User::factory()->create(['role' => 'user']))->postJson('/api/v1/spotify/playlists', [
+  $response = $this->actingAs(User::factory()->create(['role' => 'user']))->postJson('/api/v1/syriafy/playlists', [
     'name' => 'قائمتي',
     'song_ids' => [$second->id, $pending->id, $first->id],
   ])
@@ -89,7 +102,7 @@ it('creates a playlist with slug and edit_token, attaching only ready songs in o
   $playlist = Playlist::where('slug', $response->json('slug'))->firstOrFail();
   expect($playlist->songs()->pluck('songs.id')->all())->toBe([$second->id, $first->id]);
 
-  $this->get("/spotify/playlist/{$playlist->slug}")
+  $this->get("/syriafy/playlist/{$playlist->slug}")
     ->assertOk()
     ->assertInertia(fn ($page) => $page
       ->where('playlist.name', 'قائمتي')
@@ -105,13 +118,13 @@ it('rejects playlist creation and edits from guests', function () {
     'edit_token' => str_repeat('a', 64),
   ]);
 
-  $this->postJson('/api/v1/spotify/playlists', [
+  $this->postJson('/api/v1/syriafy/playlists', [
     'name' => 'قائمة ضيف',
     'song_ids' => [$song->id],
   ])->assertUnauthorized();
 
   // even the correct edit_token does not bypass the login requirement
-  $this->putJson("/api/v1/spotify/playlists/{$playlist->slug}", [
+  $this->putJson("/api/v1/syriafy/playlists/{$playlist->slug}", [
     'edit_token' => str_repeat('a', 64),
     'name' => 'اسم مخترق',
   ])->assertUnauthorized();
@@ -120,7 +133,7 @@ it('rejects playlist creation and edits from guests', function () {
   expect($playlist->fresh()->name)->toBe('قائمة');
 
   // viewing and sharing stay public
-  $this->get("/spotify/playlist/{$playlist->slug}")->assertOk();
+  $this->get("/syriafy/playlist/{$playlist->slug}")->assertOk();
 });
 
 it('rejects playlist updates with a wrong edit_token and applies them with the right one', function () {
@@ -135,14 +148,14 @@ it('rejects playlist updates with a wrong edit_token and applies them with the r
 
   $this->actingAs(User::factory()->create(['role' => 'user']));
 
-  $this->putJson("/api/v1/spotify/playlists/{$playlist->slug}", [
+  $this->putJson("/api/v1/syriafy/playlists/{$playlist->slug}", [
     'edit_token' => 'wrong-token',
     'name' => 'اسم مخترق',
   ])->assertForbidden();
 
   expect($playlist->fresh()->name)->toBe('قائمة');
 
-  $this->putJson("/api/v1/spotify/playlists/{$playlist->slug}", [
+  $this->putJson("/api/v1/syriafy/playlists/{$playlist->slug}", [
     'edit_token' => str_repeat('a', 64),
     'name' => 'اسم جديد',
     'song_ids' => [$second->id, $first->id],
@@ -157,24 +170,24 @@ it('rejects playlist updates with a wrong edit_token and applies them with the r
 it('blocks guests and non-admins from the admin spotify routes', function () {
   $song = readySong();
 
-  $this->getJson('/api/v1/admin/spotify/songs')->assertUnauthorized();
+  $this->getJson('/api/v1/admin/syriafy/songs')->assertUnauthorized();
 
   $user = User::factory()->create(['role' => 'user']);
-  $this->actingAs($user)->get('/admin/spotify')->assertForbidden();
-  $this->actingAs($user)->getJson('/api/v1/admin/spotify/songs')->assertForbidden();
-  $this->actingAs($user)->postJson('/api/v1/admin/spotify/songs')->assertForbidden();
-  $this->actingAs($user)->putJson("/api/v1/admin/spotify/songs/{$song->id}")->assertForbidden();
-  $this->actingAs($user)->deleteJson("/api/v1/admin/spotify/songs/{$song->id}")->assertForbidden();
-  $this->actingAs($user)->postJson("/api/v1/admin/spotify/songs/{$song->id}/cover")->assertForbidden();
-  $this->actingAs($user)->postJson("/api/v1/admin/spotify/songs/{$song->id}/extract-lyrics")->assertForbidden();
-  $this->actingAs($user)->postJson("/api/v1/admin/spotify/songs/{$song->id}/retry")->assertForbidden();
+  $this->actingAs($user)->get('/admin/syriafy')->assertForbidden();
+  $this->actingAs($user)->getJson('/api/v1/admin/syriafy/songs')->assertForbidden();
+  $this->actingAs($user)->postJson('/api/v1/admin/syriafy/songs')->assertForbidden();
+  $this->actingAs($user)->putJson("/api/v1/admin/syriafy/songs/{$song->id}")->assertForbidden();
+  $this->actingAs($user)->deleteJson("/api/v1/admin/syriafy/songs/{$song->id}")->assertForbidden();
+  $this->actingAs($user)->postJson("/api/v1/admin/syriafy/songs/{$song->id}/cover")->assertForbidden();
+  $this->actingAs($user)->postJson("/api/v1/admin/syriafy/songs/{$song->id}/extract-lyrics")->assertForbidden();
+  $this->actingAs($user)->postJson("/api/v1/admin/syriafy/songs/{$song->id}/retry")->assertForbidden();
 });
 
 it('renders the admin index for admins with the gemini flag', function () {
   config(['services.gemini.key' => null]);
 
   $this->actingAs(spotifyAdmin())
-    ->get('/admin/spotify')
+    ->get('/admin/syriafy')
     ->assertOk()
     ->assertInertia(fn ($page) => $page->where('geminiEnabled', false));
 });
@@ -191,7 +204,7 @@ it('lists all songs newest first with the admin shape', function () {
   ]);
 
   $this->actingAs(spotifyAdmin())
-    ->getJson('/api/v1/admin/spotify/songs')
+    ->getJson('/api/v1/admin/syriafy/songs')
     ->assertOk()
     ->assertJsonCount(2)
     ->assertJsonPath('0.id', $failed->id)
@@ -205,7 +218,7 @@ it('accepts an admin upload, stores the temp file and dispatches processing', fu
   Storage::fake('local');
 
   $response = $this->actingAs(spotifyAdmin())
-    ->post('/api/v1/admin/spotify/songs', [
+    ->post('/api/v1/admin/syriafy/songs', [
       'file' => UploadedFile::fake()->create('نشيد الحرية.mp3', 1024, 'audio/mpeg'),
     ], ['Accept' => 'application/json'])
     ->assertCreated()
@@ -226,7 +239,7 @@ it('rejects an upload that is not an mp3', function () {
   Storage::fake('local');
 
   $this->actingAs(spotifyAdmin())
-    ->post('/api/v1/admin/spotify/songs', [
+    ->post('/api/v1/admin/syriafy/songs', [
       'file' => UploadedFile::fake()->create('doc.pdf', 100, 'application/pdf'),
     ], ['Accept' => 'application/json'])
     ->assertStatus(422);
@@ -608,7 +621,7 @@ it('reports gemini disabled without a key and refuses extraction requests', func
 
   $song = readySong();
   $this->actingAs(spotifyAdmin())
-    ->postJson("/api/v1/admin/spotify/songs/{$song->id}/extract-lyrics")
+    ->postJson("/api/v1/admin/syriafy/songs/{$song->id}/extract-lyrics")
     ->assertStatus(422);
 
   expect($song->fresh()->lyrics_status)->toBe('none');
@@ -624,7 +637,7 @@ it('deletes the stored objects and the row on destroy', function () {
   Storage::disk('public')->put($song->cover_path, 'c');
 
   $this->actingAs(spotifyAdmin())
-    ->deleteJson("/api/v1/admin/spotify/songs/{$song->id}")
+    ->deleteJson("/api/v1/admin/syriafy/songs/{$song->id}")
     ->assertNoContent();
 
   $this->assertDatabaseMissing('songs', ['id' => $song->id]);
@@ -652,7 +665,7 @@ it('refuses deleting a song that is still processing', function () {
   $song = readySong(['status' => 'processing']);
 
   $this->actingAs(spotifyAdmin())
-    ->deleteJson("/api/v1/admin/spotify/songs/{$song->id}")
+    ->deleteJson("/api/v1/admin/syriafy/songs/{$song->id}")
     ->assertStatus(422);
 
   $this->assertDatabaseHas('songs', ['id' => $song->id]);
@@ -664,7 +677,7 @@ it('refuses a second extraction while one is pending', function () {
   $song = readySong(['lyrics_status' => 'pending']);
 
   $this->actingAs(spotifyAdmin())
-    ->postJson("/api/v1/admin/spotify/songs/{$song->id}/extract-lyrics")
+    ->postJson("/api/v1/admin/syriafy/songs/{$song->id}/extract-lyrics")
     ->assertStatus(422);
 
   Queue::assertNothingPushed();

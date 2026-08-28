@@ -98,7 +98,7 @@ const navLinks = [
   { href: '/justice', text: 'العدالة الانتقالية', icon: JusticeIcon },
   { href: '/mishwar', text: 'مشوار', icon: MishwarIcon },
   { href: '/board', text: 'لوح', icon: BoardIcon },
-  { href: '/spotify', text: 'الموسيقى', icon: Music },
+  { href: '/syriafy', text: 'أناشيد', icon: Music },
 ];
 
 const externalLinks = [

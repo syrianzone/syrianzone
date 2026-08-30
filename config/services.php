@@ -87,4 +87,20 @@ return [
         'token' => env('METRICS_TOKEN'),
     ],
 
+    'x_tierlist' => [
+        'enabled' => env('X_TIERLIST_ENABLED', false),
+        'poll_slug' => env('X_TIERLIST_POLL_SLUG', 'best-ministers'),
+        'settle_minutes' => env('X_TIERLIST_SETTLE_MINUTES', 15),
+        'min_post_interval_minutes' => env('X_TIERLIST_MIN_POST_INTERVAL_MINUTES', 60),
+        'daily_post_limit' => env('X_TIERLIST_DAILY_POST_LIMIT', 4),
+        'base_url' => rtrim(env('X_API_BASE_URL', 'https://api.x.com'), '/'),
+        'connect_timeout' => 5,
+        'timeout' => 10,
+        'api_key' => env('X_API_KEY'),
+        'api_secret' => env('X_API_SECRET'),
+        'access_token' => env('X_ACCESS_TOKEN'),
+        'access_token_secret' => env('X_ACCESS_TOKEN_SECRET'),
+        'expected_user_id' => env('X_EXPECTED_USER_ID'),
+    ],
+
 ];

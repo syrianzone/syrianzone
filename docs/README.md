@@ -14,6 +14,11 @@ The docs folder mirrors the project structure: `getting-started/` for running th
 | [getting-started/staging.md](getting-started/staging.md) | staging.syrian.zone sibling stack and its traps |
 | **Architecture** | |
 | [architecture/system_map.md](architecture/system_map.md) | High-level architecture diagram, tech stack, directory map, module index, request flows |
+| [adr/0001-architecture-decision-records.md](adr/0001-architecture-decision-records.md) | Architecture decision record policy |
+| [adr/0002-durable-tierlist-social-outbox.md](adr/0002-durable-tierlist-social-outbox.md) | Tierlist X delivery architecture |
+| [specs/tierlist-x-automation.md](specs/tierlist-x-automation.md) | Requirements and acceptance criteria for tierlist announcements |
+| [threat-models/tierlist-x-automation.md](threat-models/tierlist-x-automation.md) | Security analysis for tierlist announcements |
+| [security/tierlist-x-automation-assessment.md](security/tierlist-x-automation-assessment.md) | Security assessment and verification evidence for tierlist announcements |
 | **Modules** (one doc per feature area) | |
 | [modules/board.md](modules/board.md) | "لوحتي" widget dashboard at `/board` — normative spec |
 | [modules/mishwar-places.md](modules/mishwar-places.md) | Hidden Places ("مشوار") at `/mishwar` — largest spec; §2 doubles as repo-wide code conventions |

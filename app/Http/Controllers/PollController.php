@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\DailyScore;
 use App\Models\Poll;
+use App\Services\TierlistLeaderboard;
 use App\Services\VotingService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -13,13 +14,16 @@ use Inertia\Inertia;
 
 class PollController extends Controller
 {
+    public function __construct(private readonly TierlistLeaderboard $tierlistLeaderboard) {}
+
     public function renderIndex(Request $request)
     {
         // Mirror the JSON index(): inactive polls are only visible to admins,
         // never rendered to guests.
         $polls = $this->canViewInactive($request) ? Poll::all() : Poll::where('is_active', true)->get();
+
         return Inertia::render('Polls/Index', [
-            'polls' => $polls
+            'polls' => $polls,
         ]);
     }
 
@@ -36,11 +40,11 @@ class PollController extends Controller
         $today = Carbon::now($poll->timezone ?: 'UTC')->startOfDay();
 
         $candidatesQuery = $poll->candidates()->orderBy('sort');
-        if (!$request->boolean('include_archived')) {
+        if (! $request->boolean('include_archived')) {
             $candidatesQuery->where('status', 'active');
         }
 
-        $candidates = $candidatesQuery->get()->map(fn($c) => [
+        $candidates = $candidatesQuery->get()->map(fn ($c) => [
             'id' => $c->id,
             'name' => $c->name,
             'title' => $c->title,
@@ -71,7 +75,7 @@ class PollController extends Controller
         $poll = Poll::where('slug', 'best-ministers')->firstOrFail();
         $today = Carbon::now($poll->timezone ?: 'UTC')->startOfDay();
 
-        $candidates = $poll->candidates()->where('status', 'active')->orderBy('sort')->get()->map(fn($c) => [
+        $candidates = $poll->candidates()->where('status', 'active')->orderBy('sort')->get()->map(fn ($c) => [
             'id' => $c->id,
             'name' => $c->name,
             'title' => $c->title,
@@ -105,11 +109,11 @@ class PollController extends Controller
     public function adminEdit(Request $request, $id)
     {
         $poll = Poll::findOrFail($id);
-        
+
         $candidates = $poll->candidates()
             ->orderBy('sort')
             ->get()
-            ->map(fn($c) => [
+            ->map(fn ($c) => [
                 'id' => $c->id,
                 'candidate_group_id' => $c->candidate_group_id,
                 'name' => $c->name,
@@ -124,7 +128,7 @@ class PollController extends Controller
             'id' => $poll->id,
             'poll' => $poll,
             'candidates' => $candidates,
-            'groups' => $poll->groups()->orderBy('sort_order')->get()
+            'groups' => $poll->groups()->orderBy('sort_order')->get(),
         ]);
     }
 
@@ -155,10 +159,11 @@ class PollController extends Controller
         $poll = Poll::findOrFail($id);
         $poll->update($request->validate([
             'title' => 'string|max:200',
-            'slug' => 'string|max:100|unique:polls,slug,' . $id,
+            'slug' => 'string|max:100|unique:polls,slug,'.$id,
             'timezone' => 'string|max:64',
             'is_active' => 'boolean',
         ]));
+
         return response()->json($poll);
     }
 
@@ -169,6 +174,7 @@ class PollController extends Controller
             return response()->json(['message' => 'Cannot delete the core Best Ministers poll.'], 403);
         }
         $poll->delete();
+
         return response()->json(null, 204);
     }
 
@@ -178,7 +184,7 @@ class PollController extends Controller
         $today = Carbon::now($poll->timezone ?: 'UTC')->startOfDay();
 
         $candidatesQuery = $poll->candidates()->orderBy('sort');
-        if (!$request->boolean('include_archived')) {
+        if (! $request->boolean('include_archived')) {
             $candidatesQuery->where('status', 'active');
         }
 
@@ -195,62 +201,16 @@ class PollController extends Controller
     {
         $poll = Poll::where('slug', $slug)->firstOrFail();
         $statusFilter = $request->query('status', 'active');
-        if (!in_array($statusFilter, ['active', 'former', 'all'], true)) {
-            $statusFilter = 'active';
-        }
-
-        $candidatesQuery = $poll->candidates()->orderBy('sort');
-        if ($statusFilter === 'active') {
-            $candidatesQuery->where('status', 'active');
-        } elseif ($statusFilter === 'former') {
-            $candidatesQuery->where('status', 'archived');
-        }
-        $candidates = $candidatesQuery->get()->keyBy('id');
-
-        if ($candidates->isEmpty()) {
-            $allTimeAgg = collect();
-        } else {
-            $allTimeAgg = DB::table('daily_scores')
-                ->select('candidate_id', DB::raw('SUM(votes) as votes'), DB::raw('SUM(score) as score'))
-                ->where('poll_id', $poll->id)
-                ->whereIn('candidate_id', $candidates->keys())
-                ->where(function ($q) use ($candidates) {
-                    foreach ($candidates as $candidate) {
-                        if ($candidate->status === 'archived' && $candidate->term_ended_at) {
-                            $q->orWhere(function ($inner) use ($candidate) {
-                                $inner->where('candidate_id', $candidate->id)
-                                    ->where('day', '<=', $candidate->term_ended_at);
-                            });
-                        } else {
-                            $q->orWhere('candidate_id', $candidate->id);
-                        }
-                    }
-                })
-                ->groupBy('candidate_id')
-                ->get()
-                ->map(fn($row) => $this->mapCandidateScore($row, $candidates))
-                ->sortByDesc('avg')
-                ->values();
-        }
+        $statusFilter = is_string($statusFilter) ? $statusFilter : 'active';
+        $leaderboard = $this->tierlistLeaderboard->build($poll, $statusFilter);
 
         $results = [
             'poll' => $poll,
-            'groups' => $poll->groups,
-            'status' => $statusFilter,
-            'ministers' => [],
-            'governors' => [],
-            'security' => [],
-            'jolani' => [],
-            'history' => $this->getHistory($poll->id, $candidates),
+            'groups' => $leaderboard['groups'],
+            'status' => $leaderboard['status'],
+            ...$leaderboard['rankings'],
+            'history' => $this->getHistory($poll->id, $leaderboard['candidates']),
         ];
-
-        foreach ($poll->groups as $group) {
-            $key = $this->normalizeGroupKey($group->key ?? $group->id);
-            $results[$key] = $allTimeAgg
-                ->filter(fn($item) => $item['groupId'] === $group->id)
-                ->values()
-                ->map(fn($item, $i) => [...$item, 'rank' => $i + 1]);
-        }
 
         return response()->json($results);
     }
@@ -280,38 +240,6 @@ class PollController extends Controller
         return response()->json(['ok' => true]);
     }
 
-    private function mapCandidateScore($row, $candidates): array
-    {
-        $c = $candidates->get($row->candidate_id);
-        return [
-            'candidateId' => $row->candidate_id,
-            'name' => $c?->name ?? '',
-            'title' => $c?->title,
-            'imageUrl' => $c?->image_url,
-            'originalUrl' => $c?->image_url,
-            'category' => $c?->category,
-            'groupId' => $c?->candidate_group_id,
-            'status' => $c?->status ?? 'active',
-            'termStartedAt' => $c?->term_started_at?->toDateString(),
-            'termEndedAt' => $c?->term_ended_at?->toDateString(),
-            'archiveReason' => $c?->archive_reason,
-            'successorId' => $c?->successor_id,
-            'votes' => (int) $row->votes,
-            'score' => (int) $row->score,
-            'avg' => $row->votes > 0 ? round($row->score / $row->votes, 2) : 0,
-        ];
-    }
-
-    private function normalizeGroupKey($key): string
-    {
-        return match ($key) {
-            'minister' => 'ministers',
-            'governor' => 'governors',
-            'secur', 'security' => 'security',
-            default => $key
-        };
-    }
-
     private function getHistory($pollId, $candidates = null): array
     {
         $query = DB::table('daily_scores')
@@ -320,7 +248,9 @@ class PollController extends Controller
             ->orderBy('day');
 
         if ($candidates !== null) {
-            if ($candidates->isEmpty()) return [];
+            if ($candidates->isEmpty()) {
+                return [];
+            }
             $query->whereIn('candidate_id', $candidates->keys());
         }
 
@@ -329,17 +259,20 @@ class PollController extends Controller
         if ($candidates !== null) {
             $rows = $rows->filter(function ($row) use ($candidates) {
                 $c = $candidates->get($row->candidate_id);
-                if (!$c) return false;
+                if (! $c) {
+                    return false;
+                }
                 if ($c->status === 'archived' && $c->term_ended_at) {
                     return $row->day <= $c->term_ended_at->toDateString();
                 }
+
                 return true;
             });
         }
 
         return $rows
             ->groupBy('candidate_id')
-            ->map(fn($items) => $items->values()->map(fn($i) => [
+            ->map(fn ($items) => $items->values()->map(fn ($i) => [
                 'date' => $i->day,
                 'votes' => (int) $i->votes,
                 'score' => (int) $i->score,

@@ -44,6 +44,46 @@ Manual dump: `docker exec syrianzone-app php artisan backup:run --only-db`.
 ## CI credentials
 
 Repo secrets: `VPS_HOST`, `VPS_SSH_KEY`, `VPS_HOST_FINGERPRINT` (ecdsa),
-`SENTRY_AUTH_TOKEN`. Repo variables: `VITE_SENTRY_DSN`,
+`SENTRY_AUTH_TOKEN`, `X_API_KEY`, `X_API_SECRET`, `X_ACCESS_TOKEN`, and
+`X_ACCESS_TOKEN_SECRET`. Repo variables: `VITE_SENTRY_DSN`,
 `VITE_SENTRY_TRACES_SAMPLE_RATE`, `SENTRY_ORG`, `SENTRY_PROJECT`.
-Ghcr push uses the workflow's `GITHUB_TOKEN`; no other build credentials.
+The X automation also uses the `X_TIERLIST_ENABLED` and `X_EXPECTED_USER_ID`
+repository variables. Ghcr push uses the workflow's `GITHUB_TOKEN`; no other
+build credentials.
+
+## Tierlist announcements on X
+
+Production samples the `best-ministers` ranking every five minutes. It records
+the first snapshot silently, then queues one Arabic post after a changed order
+stays stable for fifteen minutes. Posting remains off unless
+`X_TIERLIST_ENABLED=true`.
+
+Store `X_API_KEY`, `X_API_SECRET`, `X_ACCESS_TOKEN`, and
+`X_ACCESS_TOKEN_SECRET` as GitHub repository secrets. Store
+`X_EXPECTED_USER_ID` and `X_TIERLIST_ENABLED` as repository variables. The
+deployment workflow mirrors the managed values into `/opt/syrianzone/.env` before
+starting the new image. It replaces the managed X values atomically, forces the
+file to owner-only mode, and treats a missing enable variable as `false`.
+Removing a credential clears its production value and leaves the automation
+inert. Keep a recovery copy in the matching 1Password item.
+
+The access token must belong to `@SyrianZone`, and the developer app must have
+read and write permission. Before every post, the application asks X which user
+owns the token and compares that ID with `X_EXPECTED_USER_ID`. A delegate's
+personal token therefore fails closed instead of posting from the wrong account.
+The defaults allow no more than one new announcement activity per hour and four
+prepared or delivered announcements per day. Override them with
+`X_TIERLIST_MIN_POST_INTERVAL_MINUTES` and
+`X_TIERLIST_DAILY_POST_LIMIT` only after reviewing expected API spend.
+
+You can inspect the detector without sending a post:
+
+    docker exec syrianzone-app php artisan tierlist:detect-rank-changes
+
+The first enabled run should say that no settled rank change was detected and
+create only the baseline row. Delivery outcomes live in
+`tierlist_social_posts`. The scheduler relays any pending outbox row on every
+run, so a process stop between preparation and queueing does not lose it. A
+`needs_review` row means X may have accepted a request before the connection
+ended or returned an ambiguous response. Check the account before any manual
+retry.

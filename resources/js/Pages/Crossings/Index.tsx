@@ -39,6 +39,12 @@ function syriaNow(): Date {
     return new Date(now.getTime() + now.getTimezoneOffset() * 60000 + SYRIA_OFFSET_MINUTES * 60000);
 }
 
+/** Minutes since midnight, Syria time. */
+function syriaMinutes() {
+    const now = syriaNow();
+    return now.getHours() * 60 + now.getMinutes();
+}
+
 function timeToMinutes(t: string) {
     const [h, m] = t.split(':').map(Number);
     return h * 60 + m;
@@ -213,7 +219,7 @@ function CrossingCard({ crossing, nowMin, highlighted }: { crossing: Crossing; n
                                 الموقع
                             </a>
                         </Button>
-                        <Button variant="outline" onClick={() => shareCrossing(crossing, open ?? false)}>
+                        <Button variant="outline" onClick={() => shareCrossing(crossing, isOpenNow(crossing, syriaMinutes()))}>
                             <Share2 className="h-4 w-4" />
                             مشاركة
                         </Button>
@@ -261,10 +267,7 @@ export default function CrossingsPage() {
     // (keeps SSR and the first client render identical) and refreshed every
     // 30s afterwards.
     useEffect(() => {
-        const sync = () => {
-            const now = syriaNow();
-            setNowMin(now.getHours() * 60 + now.getMinutes());
-        };
+        const sync = () => setNowMin(syriaMinutes());
 
         sync();
         const timer = setInterval(sync, 30000);

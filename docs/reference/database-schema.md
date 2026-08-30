@@ -49,6 +49,8 @@ All UUID PKs.
 - **ballots** — poll_id, vote_day, voter_key (hashed identity), ip_hash, user_agent — never exposed by public API
 - **ballot_votes** — ballot_id, candidate_id, tier (S–F), position
 - daily aggregate table — composite PK (poll_id, candidate_id, day) with votes + score
+- **tierlist_social_states**: one observed and published ranking snapshot per poll
+- **tierlist_social_posts**: durable X outbox with transition hashes, prepared text, delivery state, safe error summaries, attempts, and remote post ID
 
 ## Population atlas
 

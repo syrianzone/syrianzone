@@ -13,9 +13,13 @@ use Illuminate\Support\Facades\Schedule;
 // against open-meteo hourly, and a second host doing that from the same egress
 // IP just risks rate-limiting the real one.
 if (app()->environment('production')) {
-  Schedule::command('backup:clean')->daily()->at('01:00');
-  Schedule::command('backup:run --only-db')->everySixHours();
-  Schedule::command('population:update-climate')->hourly();
+    Schedule::command('backup:clean')->daily()->at('01:00');
+    Schedule::command('backup:run --only-db')->everySixHours();
+    Schedule::command('population:update-climate')->hourly();
+    Schedule::command('tierlist:detect-rank-changes')
+        ->everyFiveMinutes()
+        ->withoutOverlapping(10)
+        ->onOneServer();
 }
 
 // Sync hotel data from HalaSyria every 2 days at 03:00

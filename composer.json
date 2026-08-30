@@ -17,6 +17,7 @@
         "laravel/socialite": "^5.24",
         "laravel/tinker": "^2.9 || ^3.0",
         "league/flysystem-aws-s3-v3": "^3.0",
+        "league/oauth1-client": "^1.11",
         "promphp/prometheus_client_php": "^2.14",
         "sentry/sentry-laravel": "^4.27",
         "spatie/laravel-backup": "^9.3 || ^10.0"

@@ -18,7 +18,7 @@ Generated from `routes/web.php` and `routes/api.php`. Grouped by feature area, m
 
 ### Directories & data pages
 - `GET /syofficial`, `/phonebook`, `/govapps`, `/population`
-- Inertia closures: `/compass`, `/priorities`, `/roznama`, `/shawarma`, `/justice`, `/about`, `/stats`, `/privacy`, `/terms`
+- Inertia closures: `/compass`, `/priorities`, `/roznama`, `/shawarma`, `/justice`, `/crossings`, `/about`, `/stats`, `/privacy`, `/terms`
 - ExternalDataController: `/syid`, `/syrian-contributors`, `/sites`, `/party`, `/house`, `/alignment`
 
 ### Guess Who

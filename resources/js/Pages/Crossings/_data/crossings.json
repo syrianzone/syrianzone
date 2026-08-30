@@ -1,0 +1,325 @@
+{
+  "meta": {
+    "source": "الهيئة العامة للمنافذ البرية والبحرية",
+    "sourceUrl": "https://www.gabc.gov.sy",
+    "mirrorUrl": "https://syria-border-crossings.vercel.app/",
+    "asOf": "2026-08-29"
+  },
+  "crossings": [
+    {
+      "n": 1,
+      "name": "منفذ باب الهوى الحدودي",
+      "intl": "963989860267",
+      "category": "crossing",
+      "opType": "مسافرين وتجاري",
+      "windows": [
+        {
+          "h24": true
+        }
+      ],
+      "mapsUrl": "https://maps.google.com/?q=36.2301042,36.69401527",
+      "openingSoon": false,
+      "override": null
+    },
+    {
+      "n": 2,
+      "name": "منفذ السلامة الحدودي",
+      "intl": "963989860268",
+      "category": "crossing",
+      "opType": "مسافرين وتجاري",
+      "windows": [
+        {
+          "label": "مسافرين",
+          "start": "09:00",
+          "end": "05:00"
+        },
+        {
+          "label": "تجاري",
+          "start": "09:00",
+          "end": "21:00"
+        }
+      ],
+      "mapsUrl": "https://maps.google.com/?q=36.63344432,37.08497987",
+      "openingSoon": false,
+      "override": null
+    },
+    {
+      "n": 3,
+      "name": "منفذ الراعي الحدودي",
+      "intl": "963989860269",
+      "category": "crossing",
+      "opType": "مسافرين وتجاري",
+      "windows": [
+        {
+          "start": "08:00",
+          "end": "20:00"
+        }
+      ],
+      "mapsUrl": "https://maps.google.com/?q=36.63248625,37.47029444",
+      "openingSoon": false,
+      "override": null
+    },
+    {
+      "n": 4,
+      "name": "منفذ جرابلس الحدودي",
+      "intl": "963989860270",
+      "category": "crossing",
+      "opType": "مسافرين وتجاري",
+      "windows": [
+        {
+          "start": "08:30",
+          "end": "20:00"
+        }
+      ],
+      "mapsUrl": "https://maps.google.com/?q=36.8299828,37.99965388",
+      "openingSoon": false,
+      "override": null
+    },
+    {
+      "n": 5,
+      "name": "منفذ كسب الحدودي",
+      "intl": "963989860271",
+      "category": "crossing",
+      "opType": "مسافرين، وشحن إغاثي إنساني فقط",
+      "windows": [
+        {
+          "start": "08:00",
+          "end": "17:00"
+        }
+      ],
+      "mapsUrl": "https://maps.google.com/?q=35.90455784,36.00947114",
+      "openingSoon": false,
+      "override": null
+    },
+    {
+      "n": 6,
+      "name": "منفذ تل أبيض الحدودي",
+      "intl": "963989860272",
+      "category": "crossing",
+      "opType": "مسافرين وتجاري",
+      "windows": [
+        {
+          "start": "08:30",
+          "end": "17:00"
+        }
+      ],
+      "mapsUrl": "https://maps.google.com/?q=36.70399512,38.95824492",
+      "openingSoon": false,
+      "override": null
+    },
+    {
+      "n": 7,
+      "name": "منفذ القامشلي الحدودي",
+      "intl": "963989860273",
+      "category": "crossing",
+      "opType": null,
+      "windows": [],
+      "mapsUrl": "https://maps.google.com/?q=37.06178471,41.21875143",
+      "openingSoon": true,
+      "override": null
+    },
+    {
+      "n": 8,
+      "name": "منفذ جديدة يابوس الحدودي",
+      "intl": "963989860274",
+      "category": "crossing",
+      "opType": "مسافرين وتجاري",
+      "windows": [
+        {
+          "h24": true
+        }
+      ],
+      "mapsUrl": "https://maps.google.com/?q=33.65850713,35.97769437",
+      "openingSoon": false,
+      "override": null
+    },
+    {
+      "n": 9,
+      "name": "منفذ الدبوسية الحدودي",
+      "intl": "963989860275",
+      "category": "crossing",
+      "opType": null,
+      "windows": [],
+      "mapsUrl": "https://maps.google.com/?q=34.64082113,36.11885228",
+      "openingSoon": true,
+      "override": null
+    },
+    {
+      "n": 10,
+      "name": "منفذ العريضة الحدودي",
+      "intl": "963989860276",
+      "category": "crossing",
+      "opType": "عودة السوريين من لبنان فقط",
+      "windows": [
+        {
+          "start": "06:00",
+          "end": "19:00"
+        }
+      ],
+      "mapsUrl": "https://maps.google.com/?q=34.63558479,35.97584249",
+      "openingSoon": false,
+      "override": null
+    },
+    {
+      "n": 11,
+      "name": "منفذ جوسية الحدودي",
+      "intl": "963989860277",
+      "category": "crossing",
+      "opType": "مسافرين فقط",
+      "windows": [
+        {
+          "start": "06:00",
+          "end": "00:00"
+        }
+      ],
+      "mapsUrl": "https://maps.google.com/?q=34.42298411,36.54408282",
+      "openingSoon": false,
+      "override": null
+    },
+    {
+      "n": 12,
+      "name": "منفذ جسر قمار الحدودي",
+      "intl": "963989860278",
+      "category": "crossing",
+      "opType": "مسافرين فقط",
+      "windows": [
+        {
+          "start": "06:00",
+          "end": "18:00"
+        }
+      ],
+      "mapsUrl": "https://maps.google.com/?q=34.6636142,36.34999908",
+      "openingSoon": false,
+      "override": null
+    },
+    {
+      "n": 13,
+      "name": "منفذ التنف الحدودي",
+      "intl": "963989860280",
+      "category": "crossing",
+      "opType": "تجاري",
+      "windows": [
+        {
+          "h24": true
+        }
+      ],
+      "mapsUrl": "https://maps.google.com/?q=33.4354312,38.8356493",
+      "openingSoon": false,
+      "override": null
+    },
+    {
+      "n": 14,
+      "name": "منفذ البوكمال الحدودي",
+      "intl": "963989860279",
+      "category": "crossing",
+      "opType": "مسافرين وتجاري",
+      "windows": [
+        {
+          "start": "08:00",
+          "end": "20:00"
+        }
+      ],
+      "mapsUrl": "https://maps.google.com/?q=34.39828257,40.97607651",
+      "openingSoon": false,
+      "override": null
+    },
+    {
+      "n": 15,
+      "name": "منفذ اليعربية الحدودي",
+      "intl": "963989860281",
+      "category": "crossing",
+      "opType": "مسافرين وتجاري",
+      "windows": [
+        {
+          "start": "08:30",
+          "end": "20:30"
+        }
+      ],
+      "mapsUrl": "https://maps.google.com/?q=36.80686585,42.07334095",
+      "openingSoon": false,
+      "override": null
+    },
+    {
+      "n": 16,
+      "name": "منفذ سيمالكا الحدودي",
+      "intl": "963989860282",
+      "category": "crossing",
+      "opType": "مسافرين وتجاري",
+      "windows": [
+        {
+          "label": "مسافرين",
+          "start": "08:30",
+          "end": "17:00"
+        },
+        {
+          "label": "تجاري",
+          "start": "08:30",
+          "end": "20:30"
+        }
+      ],
+      "mapsUrl": "https://maps.google.com/?q=37.08973504,42.34836715",
+      "openingSoon": false,
+      "override": null
+    },
+    {
+      "n": 17,
+      "name": "منفذ نصيب الحدودي",
+      "intl": "963989860283",
+      "category": "crossing",
+      "opType": "مسافرين وتجاري",
+      "windows": [
+        {
+          "h24": true
+        }
+      ],
+      "mapsUrl": "https://maps.google.com/?q=32.53975928,36.20253024",
+      "openingSoon": false,
+      "override": null
+    },
+    {
+      "n": 18,
+      "name": "مرفأ اللاذقية",
+      "intl": "963989860284",
+      "category": "port",
+      "opType": "مسافرين وتجاري",
+      "windows": [
+        {
+          "h24": true
+        }
+      ],
+      "mapsUrl": "https://maps.google.com/?q=35.53310674,35.77514796",
+      "openingSoon": false,
+      "override": null
+    },
+    {
+      "n": 19,
+      "name": "مرفأ طرطوس",
+      "intl": "963989860285",
+      "category": "port",
+      "opType": "مسافرين وتجاري",
+      "windows": [
+        {
+          "h24": true
+        }
+      ],
+      "mapsUrl": "https://maps.google.com/?q=34.90770703,35.87430023",
+      "openingSoon": false,
+      "override": null
+    },
+    {
+      "n": 20,
+      "name": "مرفأ بانياس",
+      "intl": "963989860286",
+      "category": "port",
+      "opType": "مسافرين وتجاري",
+      "windows": [
+        {
+          "h24": true
+        }
+      ],
+      "mapsUrl": "https://maps.google.com/?q=35.1842823,35.94312937",
+      "openingSoon": false,
+      "override": null
+    }
+  ]
+}

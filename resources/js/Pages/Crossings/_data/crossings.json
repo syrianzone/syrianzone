@@ -2,7 +2,6 @@
   "meta": {
     "source": "الهيئة العامة للمنافذ البرية والبحرية",
     "sourceUrl": "https://www.gabc.gov.sy",
-    "mirrorUrl": "https://syria-border-crossings.vercel.app/",
     "asOf": "2026-08-29"
   },
   "crossings": [
@@ -11,6 +10,10 @@
       "name": "منفذ باب الهوى الحدودي",
       "intl": "963989860267",
       "category": "crossing",
+      "country": "تركيا",
+      "direction": "north",
+      "lat": 36.2301042,
+      "lon": 36.69401527,
       "opType": "مسافرين وتجاري",
       "windows": [
         {
@@ -26,6 +29,10 @@
       "name": "منفذ السلامة الحدودي",
       "intl": "963989860268",
       "category": "crossing",
+      "country": "تركيا",
+      "direction": "north",
+      "lat": 36.63344432,
+      "lon": 37.08497987,
       "opType": "مسافرين وتجاري",
       "windows": [
         {
@@ -48,6 +55,10 @@
       "name": "منفذ الراعي الحدودي",
       "intl": "963989860269",
       "category": "crossing",
+      "country": "تركيا",
+      "direction": "north",
+      "lat": 36.63248625,
+      "lon": 37.47029444,
       "opType": "مسافرين وتجاري",
       "windows": [
         {
@@ -64,6 +75,10 @@
       "name": "منفذ جرابلس الحدودي",
       "intl": "963989860270",
       "category": "crossing",
+      "country": "تركيا",
+      "direction": "north",
+      "lat": 36.8299828,
+      "lon": 37.99965388,
       "opType": "مسافرين وتجاري",
       "windows": [
         {
@@ -80,6 +95,10 @@
       "name": "منفذ كسب الحدودي",
       "intl": "963989860271",
       "category": "crossing",
+      "country": "تركيا",
+      "direction": "north",
+      "lat": 35.90455784,
+      "lon": 36.00947114,
       "opType": "مسافرين، وشحن إغاثي إنساني فقط",
       "windows": [
         {
@@ -96,6 +115,10 @@
       "name": "منفذ تل أبيض الحدودي",
       "intl": "963989860272",
       "category": "crossing",
+      "country": "تركيا",
+      "direction": "north",
+      "lat": 36.70399512,
+      "lon": 38.95824492,
       "opType": "مسافرين وتجاري",
       "windows": [
         {
@@ -112,6 +135,10 @@
       "name": "منفذ القامشلي الحدودي",
       "intl": "963989860273",
       "category": "crossing",
+      "country": "تركيا",
+      "direction": "north",
+      "lat": 37.06178471,
+      "lon": 41.21875143,
       "opType": null,
       "windows": [],
       "mapsUrl": "https://maps.google.com/?q=37.06178471,41.21875143",
@@ -123,6 +150,10 @@
       "name": "منفذ جديدة يابوس الحدودي",
       "intl": "963989860274",
       "category": "crossing",
+      "country": "لبنان",
+      "direction": "west",
+      "lat": 33.65850713,
+      "lon": 35.97769437,
       "opType": "مسافرين وتجاري",
       "windows": [
         {
@@ -138,6 +169,10 @@
       "name": "منفذ الدبوسية الحدودي",
       "intl": "963989860275",
       "category": "crossing",
+      "country": "لبنان",
+      "direction": "west",
+      "lat": 34.64082113,
+      "lon": 36.11885228,
       "opType": null,
       "windows": [],
       "mapsUrl": "https://maps.google.com/?q=34.64082113,36.11885228",
@@ -149,6 +184,10 @@
       "name": "منفذ العريضة الحدودي",
       "intl": "963989860276",
       "category": "crossing",
+      "country": "لبنان",
+      "direction": "west",
+      "lat": 34.63558479,
+      "lon": 35.97584249,
       "opType": "عودة السوريين من لبنان فقط",
       "windows": [
         {
@@ -165,6 +204,10 @@
       "name": "منفذ جوسية الحدودي",
       "intl": "963989860277",
       "category": "crossing",
+      "country": "لبنان",
+      "direction": "west",
+      "lat": 34.42298411,
+      "lon": 36.54408282,
       "opType": "مسافرين فقط",
       "windows": [
         {
@@ -181,6 +224,10 @@
       "name": "منفذ جسر قمار الحدودي",
       "intl": "963989860278",
       "category": "crossing",
+      "country": "لبنان",
+      "direction": "west",
+      "lat": 34.6636142,
+      "lon": 36.34999908,
       "opType": "مسافرين فقط",
       "windows": [
         {
@@ -197,6 +244,10 @@
       "name": "منفذ التنف الحدودي",
       "intl": "963989860280",
       "category": "crossing",
+      "country": "العراق",
+      "direction": "east",
+      "lat": 33.4354312,
+      "lon": 38.8356493,
       "opType": "تجاري",
       "windows": [
         {
@@ -212,6 +263,10 @@
       "name": "منفذ البوكمال الحدودي",
       "intl": "963989860279",
       "category": "crossing",
+      "country": "العراق",
+      "direction": "east",
+      "lat": 34.39828257,
+      "lon": 40.97607651,
       "opType": "مسافرين وتجاري",
       "windows": [
         {
@@ -228,6 +283,10 @@
       "name": "منفذ اليعربية الحدودي",
       "intl": "963989860281",
       "category": "crossing",
+      "country": "العراق",
+      "direction": "east",
+      "lat": 36.80686585,
+      "lon": 42.07334095,
       "opType": "مسافرين وتجاري",
       "windows": [
         {
@@ -244,6 +303,10 @@
       "name": "منفذ سيمالكا الحدودي",
       "intl": "963989860282",
       "category": "crossing",
+      "country": "العراق",
+      "direction": "east",
+      "lat": 37.08973504,
+      "lon": 42.34836715,
       "opType": "مسافرين وتجاري",
       "windows": [
         {
@@ -266,6 +329,10 @@
       "name": "منفذ نصيب الحدودي",
       "intl": "963989860283",
       "category": "crossing",
+      "country": "الأردن",
+      "direction": "south",
+      "lat": 32.53975928,
+      "lon": 36.20253024,
       "opType": "مسافرين وتجاري",
       "windows": [
         {
@@ -281,6 +348,10 @@
       "name": "مرفأ اللاذقية",
       "intl": "963989860284",
       "category": "port",
+      "country": null,
+      "direction": "sea",
+      "lat": 35.53310674,
+      "lon": 35.77514796,
       "opType": "مسافرين وتجاري",
       "windows": [
         {
@@ -296,6 +367,10 @@
       "name": "مرفأ طرطوس",
       "intl": "963989860285",
       "category": "port",
+      "country": null,
+      "direction": "sea",
+      "lat": 34.90770703,
+      "lon": 35.87430023,
       "opType": "مسافرين وتجاري",
       "windows": [
         {
@@ -311,6 +386,10 @@
       "name": "مرفأ بانياس",
       "intl": "963989860286",
       "category": "port",
+      "country": null,
+      "direction": "sea",
+      "lat": 35.1842823,
+      "lon": 35.94312937,
       "opType": "مسافرين وتجاري",
       "windows": [
         {

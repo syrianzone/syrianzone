@@ -29,7 +29,6 @@ import {
   Shield,
   MapPin,
   LayoutGrid,
-  Music,
 } from 'lucide-react';
 
 import { useAuth } from '@/Contexts/AuthContext';
@@ -100,7 +99,6 @@ const navLinks = [
   { href: '/crossings', text: 'المنافذ الحدودية', icon: CrossingsIcon },
   { href: '/mishwar', text: 'مشوار', icon: MishwarIcon },
   { href: '/board', text: 'لوح', icon: BoardIcon },
-  { href: '/syriafy', text: 'أناشيد', icon: Music },
 ];
 
 const externalLinks = [

@@ -3,7 +3,7 @@ import { Head, usePage } from '@inertiajs/react';
 import {
     Settings, Sun, Link, Moon, Globe, Plus, Edit, X,
     Cloud, CloudRain, CloudLightning, Snowflake, Wind, Clock,
-    Sunrise, Sunset, SunDim, MoonStar, Search, Music
+    Sunrise, Sunset, SunDim, MoonStar, Search
 } from 'lucide-react';
 import { Button } from "@/Components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/Components/ui/select";
@@ -74,7 +74,6 @@ const PRESET_LINKS: PresetLink[] = [
     { href: '/crossings', icon: CrossingsIcon, text: 'المنافذ الحدودية', isInternal: true },
     { href: '/mishwar', icon: MishwarIcon, text: 'مشوار', isInternal: true },
     { href: '/board', icon: BoardIcon, text: 'لوح', isInternal: true },
-    { href: '/syriafy', icon: Music, text: 'أناشيد', isInternal: true },
     { href: 'https://food.syrian.zone', icon: RecipesIcon, text: 'وصفاتنا', external: true, isInternal: true },
     { href: 'https://answers.syrian.zone', icon: AnswersIcon, text: 'إجابات سوريا', external: true, isInternal: true },
     { href: 'https://chromewebstore.google.com/detail/syrian-flag-replacer/dngipobppehfhfggmbdiiiodgcibdeog', icon: null, text: 'مبدل العلم', image: '/flag-replacer/1f1f8-1f1fe.svg', external: true, isInternal: true },

@@ -60,25 +60,12 @@ jobs:
     steps:
       - name: run remote deploy script
         uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: root
           key: ${{ secrets.VPS_SSH_KEY }}
           fingerprint: ${{ secrets.VPS_HOST_FINGERPRINT }}
           command_timeout: 10m
-          envs: GEMINI_API_KEY
-          # upsert the gemini key into the runtime env (enables /spotify lyrics
-          # transcription) then run the convergent deploy. secret only, never in
-          # the repo; the new sha forces a container recreate so it takes effect.
           script: |
             set -e
-            envfile=/opt/syrianzone/.env
-            if [ -n "$GEMINI_API_KEY" ]; then
-              touch "$envfile"
-              grep -v '^GEMINI_API_KEY=' "$envfile" > "$envfile.tmp" 2>/dev/null || true
-              echo "GEMINI_API_KEY=$GEMINI_API_KEY" >> "$envfile.tmp"
-              mv "$envfile.tmp" "$envfile"
-            fi
             /opt/syrianzone/deploy.sh ${{ github.sha }}

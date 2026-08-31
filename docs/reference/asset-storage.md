@@ -24,8 +24,6 @@ The Cloudflare R2 bucket follows a clean, organized directory layout:
 | `syofficial/entities/` | Official entity logos, minister photos, and embassy flags | `syofficial/entities/gov-damascus.webp` |
 | `downloads/` | Large downloadable archives (BrandKit zip, master GeoJSON files) | `downloads/brandkit.zip` |
 | `uploads/` | General superadmin uploaded assets | `uploads/sample-asset.png` |
-| `spotify/songs/` | Music section MP3 audio, one directory per song | `spotify/songs/12/9f2c….mp3` |
-| `spotify/covers/` | Music section cover art (webp) | `spotify/covers/12/4a1b….webp` |
 
 ---
 

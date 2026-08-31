@@ -67,6 +67,12 @@ file to owner-only mode, and treats a missing enable variable as `false`.
 Removing a credential clears its production value and leaves the automation
 inert. Keep a recovery copy in the matching 1Password item.
 
+When all credentials are present, each production deployment runs
+`tierlist:x-status` inside the new container. The deployment stops if the token
+doesn't resolve to `X_EXPECTED_USER_ID`. An enabled deployment also runs the
+detector once, so a new installation records its silent baseline right away
+instead of waiting for the next five-minute scheduler tick.
+
 The access token must belong to `@SyrianZone`, and the developer app must have
 read and write permission. Before every post, the application asks X which user
 owns the token and compares that ID with `X_EXPECTED_USER_ID`. A delegate's

@@ -101,14 +101,13 @@ function captionLine(row, index, withTitle, withHandle) {
 
 function caption(top, bottom) {
   const label = periodLabel()
+  // The vote call and link live in the image footer, not the tweet text.
   const compose = (withTitle, withHandle) => [
     `الأعلى تقييماً ${label}`,
     ...top.map((row, index) => captionLine(row, index, withTitle, withHandle)),
+    '',
     `الأقل تقييماً ${label}`,
     ...bottom.map((row, index) => captionLine(row, index, withTitle, withHandle)),
-    '',
-    'صوّت الآن:',
-    'https://syrian.zone/tierlist',
   ].join('\n')
 
   // The posts go out unattended, so the caption must fit a standard account.

@@ -150,11 +150,15 @@ jobs:
             chmod 600 "$tmpfile"
             mv "$tmpfile" "$envfile"
             chmod 600 "$envfile"
-            /opt/syrianzone/deploy.sh ${{ github.sha }}
 
             if [ "$x_configuration_complete" = 'true' ]; then
-              docker exec syrianzone-app php artisan tierlist:x-status
+              # Override the entrypoint so preflight cannot run migrations or other startup tasks.
+              image=ghcr.io/syrianzone/syrianzone:${{ github.sha }}
+              docker pull "$image"
+              docker run --rm --entrypoint php --env-file "$envfile" "$image" artisan tierlist:x-status
             fi
+
+            /opt/syrianzone/deploy.sh ${{ github.sha }}
 
             if [ "$x_enabled" = 'true' ]; then
               docker exec syrianzone-app php artisan tierlist:detect-rank-changes

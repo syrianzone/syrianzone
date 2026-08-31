@@ -68,10 +68,11 @@ Removing a credential clears its production value and leaves the automation
 inert. Keep a recovery copy in the matching 1Password item.
 
 When all credentials are present, each production deployment runs
-`tierlist:x-status` inside the new container. The deployment stops if the token
-doesn't resolve to `X_EXPECTED_USER_ID`. An enabled deployment also runs the
-detector once, so a new installation records its silent baseline right away
-instead of waiting for the next five-minute scheduler tick.
+`tierlist:x-status` in the new image before it replaces the live container. The
+deployment stops and leaves the current release running if the token doesn't
+resolve to `X_EXPECTED_USER_ID`. An enabled deployment also runs the detector
+once after the swap, so a new installation records its silent baseline right
+away instead of waiting for the next five-minute scheduler tick.
 
 The access token must belong to `@SyrianZone`, and the developer app must have
 read and write permission. Before every post, the application asks X which user

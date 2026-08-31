@@ -1,7 +1,7 @@
 # Tierlist X automation specification
 
-**Version:** 0.2.0
-**Date:** 2026-08-30
+**Version:** 0.3.0
+**Date:** 2026-08-31
 **Status:** Implemented
 
 ## Purpose
@@ -97,16 +97,25 @@ change.
 ### FR-005: One announcement per transition
 
 The system SHALL create one Arabic announcement for each settled transition.
-The text SHALL identify up to two leading movements, invite readers to vote,
-and link to `https://syrian.zone/tierlist`. The exact text SHALL be stored before
-delivery and SHALL fit X's post length limit.
+The text SHALL name the top riser and the top faller with their title and X
+handle when known, invite readers to vote, and link to
+`https://syrian.zone/tierlist`. The snapshot SHALL exclude the satirical
+jolani group. A transition without a nameable movement (a candidate or group
+left the ranking) SHALL advance the published state silently instead of
+posting. The exact text SHALL be stored before delivery and SHALL fit X's
+post length limit, dropping the title and then the handle from a line when
+space runs out.
 
 **Acceptance criteria:**
 
 - Concurrent detector runs cannot create duplicate transition rows.
 - An unchanged snapshot never creates another announcement.
-- `test_detector_deduplicates_a_settled_transition()` and
-  `test_post_text_fits_x_limit()` cover the behavior.
+- A jolani-only order change never creates a transition.
+- `test_detector_deduplicates_a_settled_transition()`,
+  `test_post_text_fits_x_limit()`,
+  `test_snapshot_ignores_the_jolani_group()`, and
+  `test_detector_adopts_an_unnameable_order_change_without_posting()` cover
+  the behavior.
 
 ### FR-006: Durable delivery record
 
@@ -227,6 +236,27 @@ run SHALL prevent deployment.
 | `X_ACCESS_TOKEN` | empty | Target account access token |
 | `X_ACCESS_TOKEN_SECRET` | empty | Target account token secret |
 | `X_EXPECTED_USER_ID` | empty | Immutable X user ID required for the target token |
+
+## Weekly and monthly cards
+
+Besides change announcements, the account posts a top-3 and bottom-3 image
+card per group (ministers, governors, security) every Friday evening and on
+the last day of each month, Damascus time.
+
+- `scripts/tierlist-card/render.mjs` renders the cards from the public
+  leaderboard API with headless chromium: 1080x1350 at 2x, Al Jazeera font,
+  the Syrian Zone logo, candidate photos, plus a caption file per group.
+- The `tierlist card` workflow renders on schedule and uploads the previews
+  as an artifact. Its post job waits in the `x-posting` environment, so a
+  required reviewer approves the previews before anything reaches X.
+- After approval the workflow copies the files to the server and runs
+  `tierlist:post-card`, which uploads the image through `/2/media/upload`
+  and attaches it to the post. Candidate handles come from
+  `candidates.x_handle`; a candidate without a personal account carries the
+  official account of their ministry there.
+- Cards bypass the outbox on purpose: a human watches the workflow run end
+  to end, and the run log plus the X account record the outcome. The change
+  detector's budget does not apply to cards.
 
 ## Out of scope
 

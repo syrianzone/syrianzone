@@ -475,6 +475,75 @@ test('X client classifies retryable and permanent responses', function (int $sta
     'bad request' => [400, XPermanentException::class],
 ]);
 
+test('X client uploads media and attaches it to the post', function () {
+    Http::preventStrayRequests();
+    Http::fake(function ($request) {
+        return match ($request->url()) {
+            'https://api.x.test/2/users/me' => Http::response(['data' => ['id' => 'expected-account-id']], 200),
+            'https://api.x.test/2/media/upload' => Http::response(['data' => ['id' => 'media-77', 'media_key' => '3_77']], 201),
+            default => Http::response(['data' => ['id' => 'post-88']], 201),
+        };
+    });
+
+    $client = app(XApiClient::class);
+    $mediaId = $client->uploadMedia('png-bytes', 'card.png');
+    $postId = $client->createPost('اختبار', [$mediaId]);
+
+    expect($mediaId)->toBe('media-77')->and($postId)->toBe('post-88');
+
+    Http::assertSent(function ($request) {
+        return $request->url() === 'https://api.x.test/2/media/upload'
+            && str_starts_with($request->header('Authorization')[0] ?? '', 'OAuth ')
+            && str_contains($request->body(), 'png-bytes')
+            && str_contains($request->body(), 'tweet_image');
+    });
+    Http::assertSent(function ($request) {
+        return $request->url() === 'https://api.x.test/2/tweets'
+            && $request['media']['media_ids'] === ['media-77'];
+    });
+});
+
+test('X client classifies media upload failures', function (int $status, string $exception) {
+    Http::preventStrayRequests();
+    Http::fake(['api.x.test/2/media/upload' => Http::response([], $status)]);
+
+    expect(fn () => app(XApiClient::class)->uploadMedia('bytes'))->toThrow($exception);
+})->with([
+    'rate limit' => [429, XTransientException::class],
+    'server error' => [500, XTransientException::class],
+    'bad request' => [400, XPermanentException::class],
+]);
+
+test('post-card command uploads the image and posts the caption', function () {
+    Http::preventStrayRequests();
+    Http::fake(function ($request) {
+        return match ($request->url()) {
+            'https://api.x.test/2/users/me' => Http::response(['data' => ['id' => 'expected-account-id']], 200),
+            'https://api.x.test/2/media/upload' => Http::response(['data' => ['id' => 'media-77']], 201),
+            default => Http::response(['data' => ['id' => 'post-88']], 201),
+        };
+    });
+
+    $image = tempnam(sys_get_temp_dir(), 'card');
+    $caption = tempnam(sys_get_temp_dir(), 'caption');
+    file_put_contents($image, 'png-bytes');
+    file_put_contents($caption, "الأعلى تقييماً لهذا الأسبوع\n\nصوّت الآن:\nhttps://syrian.zone/tierlist");
+
+    $this->artisan('tierlist:post-card', ['image' => $image, 'caption' => $caption])
+        ->expectsOutput('Posted post-88 with media media-77.')
+        ->assertSuccessful();
+});
+
+test('post-card command fails closed when X automation is disabled', function () {
+    config(['services.x_tierlist.enabled' => false]);
+    Http::preventStrayRequests();
+
+    $this->artisan('tierlist:post-card', ['image' => '/nonexistent.png', 'caption' => '/nonexistent.txt'])
+        ->assertExitCode(1);
+
+    Http::assertNothingSent();
+});
+
 test('X client stays disabled until every credential is present', function () {
     $client = app(XApiClient::class);
 

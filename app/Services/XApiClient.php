@@ -14,7 +14,7 @@ use League\OAuth1\Client\Server\X;
 
 class XApiClient
 {
-    public function createPost(string $text): string
+    public function createPost(string $text, array $mediaIds = []): string
     {
         if (! $this->isConfigured()) {
             throw new XConfigurationException('X automation credentials are incomplete');
@@ -22,9 +22,14 @@ class XApiClient
 
         $this->verifyExpectedUser();
 
+        $body = ['text' => $text];
+        if ($mediaIds !== []) {
+            $body['media'] = ['media_ids' => array_values($mediaIds)];
+        }
+
         $url = rtrim(config('services.x_tierlist.base_url'), '/').'/2/tweets';
         try {
-            $response = $this->request('POST', $url)->post($url, ['text' => $text]);
+            $response = $this->request('POST', $url)->post($url, $body);
         } catch (ConnectionException) {
             throw new XAmbiguousException('X create-post request ended without a response');
         }
@@ -47,6 +52,43 @@ class XApiClient
         }
 
         throw new XPermanentException('X API rejected the post', $response->status());
+    }
+
+    // Uploads one image and returns its media ID for createPost. Retrying an
+    // upload is harmless (no post exists yet), so connection failures and
+    // server errors are transient rather than ambiguous.
+    public function uploadMedia(string $contents, string $filename = 'card.png'): string
+    {
+        if (! $this->isConfigured()) {
+            throw new XConfigurationException('X automation credentials are incomplete');
+        }
+
+        $url = rtrim(config('services.x_tierlist.base_url'), '/').'/2/media/upload';
+        try {
+            $response = Http::acceptJson()
+                ->connectTimeout(config('services.x_tierlist.connect_timeout'))
+                ->timeout(30)
+                ->withHeaders(['Authorization' => $this->authorizationHeader('POST', $url)])
+                ->attach('media', $contents, $filename)
+                ->post($url, ['media_category' => 'tweet_image']);
+        } catch (ConnectionException) {
+            throw new XTransientException('X media upload ended without a response');
+        }
+
+        if ($response->successful()) {
+            $mediaId = $response->json('data.id');
+            if (is_string($mediaId) && $mediaId !== '') {
+                return $mediaId;
+            }
+
+            throw new XAmbiguousException('X API accepted the upload without a media ID', $response->status());
+        }
+
+        if ($response->status() === 429 || $response->serverError()) {
+            throw new XTransientException('X media upload is temporarily unavailable', $response->status());
+        }
+
+        throw new XPermanentException('X API rejected the media upload', $response->status());
     }
 
     public function isConfigured(): bool

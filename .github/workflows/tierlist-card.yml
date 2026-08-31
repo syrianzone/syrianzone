@@ -1,0 +1,115 @@
+name: tierlist card
+
+# Renders the weekly/monthly top-3 and bottom-3 cards, then waits for a human
+# to approve the previews (the render artifact) before posting them to X.
+# The post job runs in the x-posting environment; its required reviewer is
+# the approval gate, and the artifact on the run page is the preview.
+
+on:
+  workflow_dispatch:
+    inputs:
+      period:
+        description: card period
+        type: choice
+        options: [weekly, monthly]
+        default: weekly
+  schedule:
+    - cron: '0 15 * * 5'     # weekly: friday 18:00 damascus
+    - cron: '0 16 28-31 * *' # monthly: fires near month end, guarded below
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tierlist-card
+  cancel-in-progress: false
+
+jobs:
+  render:
+    name: render card previews
+    runs-on: ubuntu-latest
+    outputs:
+      period: ${{ steps.resolve.outputs.period }}
+      proceed: ${{ steps.resolve.outputs.proceed }}
+    steps:
+      - name: resolve period and month-end guard
+        id: resolve
+        run: |
+          period='${{ inputs.period }}'
+          proceed=true
+          if [ -z "$period" ]; then
+            if [ '${{ github.event.schedule }}' = '0 15 * * 5' ]; then
+              period=weekly
+            else
+              period=monthly
+              # only the true last day of the month proceeds
+              if [ "$(TZ=Asia/Damascus date -d tomorrow +%d)" != "01" ]; then
+                proceed=false
+              fi
+            fi
+          fi
+          echo "period=$period" >> "$GITHUB_OUTPUT"
+          echo "proceed=$proceed" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        if: steps.resolve.outputs.proceed == 'true'
+
+      - name: render cards
+        if: steps.resolve.outputs.proceed == 'true'
+        run: node scripts/tierlist-card/render.mjs --period '${{ steps.resolve.outputs.period }}' --chrome google-chrome --out "$PWD/cards"
+
+      - name: upload previews
+        if: steps.resolve.outputs.proceed == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: tierlist-cards
+          path: cards/
+          if-no-files-found: error
+
+  post:
+    name: post to X after approval
+    needs: render
+    if: needs.render.outputs.proceed == 'true'
+    runs-on: ubuntu-latest
+    environment: x-posting # required reviewer approves the artifact preview
+    steps:
+      - uses: actions/download-artifact@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          name: tierlist-cards
+          path: cards
+
+      - name: copy cards to server
+        uses: appleboy/scp-action@ff85246acaad7bdce478db94a363cd2bf7c90345 # v1.0.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          fingerprint: ${{ secrets.VPS_HOST_FINGERPRINT }}
+          source: cards/*
+          target: /tmp/tierlist-cards/
+          strip_components: 1
+          overwrite: true
+
+      - name: post each card
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
+        env:
+          PERIOD: ${{ needs.render.outputs.period }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          fingerprint: ${{ secrets.VPS_HOST_FINGERPRINT }}
+          command_timeout: 10m
+          envs: PERIOD
+          script: |
+            set -e
+            for group in ministers governors security; do
+              png="/tmp/tierlist-cards/${group}-${PERIOD}.png"
+              txt="/tmp/tierlist-cards/${group}-${PERIOD}.txt"
+              [ -f "$png" ] && [ -f "$txt" ] || { echo "missing $group files" >&2; exit 1; }
+              docker cp "$png" syrianzone-app:/tmp/card.png
+              docker cp "$txt" syrianzone-app:/tmp/card.txt
+              docker exec syrianzone-app php artisan tierlist:post-card /tmp/card.png /tmp/card.txt
+              sleep 10
+            done
+            rm -rf /tmp/tierlist-cards

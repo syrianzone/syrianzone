@@ -132,6 +132,7 @@ function html(groupKey, top, bottom) {
   @font-face { font-family: AlJazeera; font-weight: 400; src: url(data:font/ttf;base64,${FONT('AlJazeeraArabic-Regular.ttf')}); }
   @font-face { font-family: AlJazeera; font-weight: 300; src: url(data:font/ttf;base64,${FONT('AlJazeeraArabic-Light.ttf')}); }
   * { margin: 0; box-sizing: border-box; }
+  body { line-height: 1.3; }
   body {
     width: 1080px; height: 1350px; overflow: hidden;
     font-family: AlJazeera, sans-serif; color: #f5f2e9;
@@ -150,7 +151,7 @@ function html(groupKey, top, bottom) {
   .section h2 .dot { width: 16px; height: 16px; border-radius: 50%; display: inline-block; }
   .top h2 { color: #a9e5b8; }   .top .dot { background: #4fd07f; }
   .bottom h2 { color: #f0b2a4; } .bottom .dot { background: #e0654a; }
-  .person { display: flex; align-items: center; gap: 22px; padding: 11px 6px; }
+  .person { display: flex; align-items: center; gap: 22px; padding: 9px 6px; }
   .person + .person { border-top: 1px solid rgba(255,255,255,0.08); }
   .rank { font-size: 38px; font-weight: 700; width: 40px; text-align: center; color: #e7d191; }
   .photo { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 4px solid; }

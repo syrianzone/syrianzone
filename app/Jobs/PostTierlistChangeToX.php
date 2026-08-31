@@ -127,6 +127,7 @@ class PostTierlistChangeToX implements ShouldBeUnique, ShouldQueue
 
             $state = TierlistSocialState::query()
                 ->where('poll_id', $lockedPost->poll_id)
+                ->where('group_key', $lockedPost->group_key)
                 ->lockForUpdate()
                 ->first();
 
@@ -163,8 +164,10 @@ class PostTierlistChangeToX implements ShouldBeUnique, ShouldQueue
                 return null;
             }
 
-            $state = TierlistSocialState::query()
+            // Rows without a group predate per-group detection and are stale.
+            $state = $post->group_key === null ? null : TierlistSocialState::query()
                 ->where('poll_id', $post->poll_id)
+                ->where('group_key', $post->group_key)
                 ->lockForUpdate()
                 ->first();
             if (! $state
@@ -174,6 +177,22 @@ class PostTierlistChangeToX implements ShouldBeUnique, ShouldQueue
                     'status' => 'superseded',
                     'last_error' => 'A newer ranking replaced this transition',
                 ]);
+
+                return null;
+            }
+
+            // The budget is checked at preparation, but a delayed retry or a
+            // drained queue could still deliver two groups back to back.
+            // Leave the row pending; the scheduler relay retries it later.
+            $minimumMinutes = max(0, (int) config('services.x_tierlist.min_post_interval_minutes', 60));
+            $recentlyPosted = TierlistSocialPost::query()
+                ->where('poll_id', $post->poll_id)
+                ->whereKeyNot($post->id)
+                ->whereNotNull('posted_at')
+                ->where('posted_at', '>', now()->subMinutes($minimumMinutes))
+                ->exists();
+            if ($recentlyPosted) {
+                $post->update(['status' => 'pending']);
 
                 return null;
             }

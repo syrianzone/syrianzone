@@ -11,6 +11,7 @@ class TierlistSocialState extends Model
 
     protected $fillable = [
         'poll_id',
+        'group_key',
         'observed_hash',
         'observed_snapshot',
         'observed_at',

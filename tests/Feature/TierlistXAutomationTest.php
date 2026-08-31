@@ -178,8 +178,8 @@ test('snapshot hash only changes when order changes', function () {
     tierlistSetScore($poll, $candidates[1], 15);
     $orderChange = $leaderboard->snapshot($poll);
 
-    expect($scoreOnlyChange['hash'])->toBe($before['hash'])
-        ->and($orderChange['hash'])->not->toBe($before['hash']);
+    expect($scoreOnlyChange['groups'][0]['hash'])->toBe($before['groups'][0]['hash'])
+        ->and($orderChange['groups'][0]['hash'])->not->toBe($before['groups'][0]['hash']);
 });
 
 test('detector records the first snapshot without posting', function () {
@@ -189,7 +189,7 @@ test('detector records the first snapshot without posting', function () {
     $result = app(TierlistChangeDetector::class)->detect($poll);
 
     $state = TierlistSocialState::query()->sole();
-    expect($result)->toBeNull()
+    expect($result)->toBe([])
         ->and($state->observed_hash)->toBe($state->published_hash)
         ->and(TierlistSocialPost::query()->count())->toBe(0);
     Queue::assertNothingPushed();
@@ -205,18 +205,19 @@ test('detector waits for a stable change', function () {
     $detector->detect($poll);
 
     $this->travel(14)->minutes();
-    expect($detector->detect($poll))->toBeNull();
+    expect($detector->detect($poll))->toBe([]);
 
     $this->travel(1)->minutes();
-    $post = $detector->detect($poll);
+    $posts = $detector->detect($poll);
 
-    expect($post)->toBeInstanceOf(TierlistSocialPost::class)
+    expect($posts)->toHaveCount(1)
+        ->and($posts[0]->group_key)->toBe('ministers')
         ->and(TierlistSocialPost::query()->count())->toBe(1);
     Queue::assertNothingPushed();
 
     expect(app(TierlistSocialOutbox::class)->relayPending($poll))->toBe(1);
-    Queue::assertPushed(PostTierlistChangeToX::class, function ($job) use ($poll, $post) {
-        return $job->postId === $post->id && $job->pollId === $poll->id;
+    Queue::assertPushed(PostTierlistChangeToX::class, function ($job) use ($poll, $posts) {
+        return $job->postId === $posts[0]->id && $job->pollId === $poll->id;
     });
 });
 
@@ -264,22 +265,14 @@ test('outbox relay recovers a pending announcement', function () {
 test('post text fits the X limit', function () {
     $longName = str_repeat('اسم طويل ', 40);
     $longTitle = str_repeat('منصب طويل ', 30);
-    $before = [[
-        'key' => 'ministers',
-        'name' => 'الوزراء',
-        'candidates' => [
-            ['id' => 'a', 'name' => $longName, 'title' => $longTitle, 'x_handle' => 'A_Very_Long_H15', 'rank' => 1],
-            ['id' => 'b', 'name' => $longName, 'title' => $longTitle, 'x_handle' => 'B_Very_Long_H15', 'rank' => 2],
-        ],
-    ]];
-    $after = [[
-        'key' => 'ministers',
-        'name' => 'الوزراء',
-        'candidates' => [
-            ['id' => 'b', 'name' => $longName, 'title' => $longTitle, 'x_handle' => 'B_Very_Long_H15', 'rank' => 1],
-            ['id' => 'a', 'name' => $longName, 'title' => $longTitle, 'x_handle' => 'A_Very_Long_H15', 'rank' => 2],
-        ],
-    ]];
+    $before = [
+        ['id' => 'a', 'name' => $longName, 'title' => $longTitle, 'x_handle' => 'A_Very_Long_H15', 'rank' => 1],
+        ['id' => 'b', 'name' => $longName, 'title' => $longTitle, 'x_handle' => 'B_Very_Long_H15', 'rank' => 2],
+    ];
+    $after = [
+        ['id' => 'b', 'name' => $longName, 'title' => $longTitle, 'x_handle' => 'B_Very_Long_H15', 'rank' => 1],
+        ['id' => 'a', 'name' => $longName, 'title' => $longTitle, 'x_handle' => 'A_Very_Long_H15', 'rank' => 2],
+    ];
 
     $text = app(TierlistPostText::class)->make($before, $after);
 
@@ -288,24 +281,16 @@ test('post text fits the X limit', function () {
 });
 
 test('post text announces the top riser and faller with handles', function () {
-    $before = [[
-        'key' => 'ministers',
-        'name' => 'الحكومة',
-        'candidates' => [
-            ['id' => 'a', 'name' => 'أحمد الشرع', 'title' => 'رئيس الجمهورية', 'x_handle' => 'AH_AlSharaa', 'rank' => 1],
-            ['id' => 'b', 'name' => 'أسعد حسن الشيباني', 'title' => 'وزير الخارجية', 'x_handle' => 'AsaadHShaibani', 'rank' => 2],
-            ['id' => 'c', 'name' => 'أنس خطاب', 'title' => 'وزير الداخلية', 'x_handle' => 'Anas_Khattab_sy', 'rank' => 3],
-        ],
-    ]];
-    $after = [[
-        'key' => 'ministers',
-        'name' => 'الحكومة',
-        'candidates' => [
-            ['id' => 'c', 'name' => 'أنس خطاب', 'title' => 'وزير الداخلية', 'x_handle' => 'Anas_Khattab_sy', 'rank' => 1],
-            ['id' => 'a', 'name' => 'أحمد الشرع', 'title' => 'رئيس الجمهورية', 'x_handle' => 'AH_AlSharaa', 'rank' => 2],
-            ['id' => 'b', 'name' => 'أسعد حسن الشيباني', 'title' => 'وزير الخارجية', 'x_handle' => 'AsaadHShaibani', 'rank' => 3],
-        ],
-    ]];
+    $before = [
+        ['id' => 'a', 'name' => 'أحمد الشرع', 'title' => 'رئيس الجمهورية', 'x_handle' => 'AH_AlSharaa', 'rank' => 1],
+        ['id' => 'b', 'name' => 'أسعد حسن الشيباني', 'title' => 'وزير الخارجية', 'x_handle' => 'AsaadHShaibani', 'rank' => 2],
+        ['id' => 'c', 'name' => 'أنس خطاب', 'title' => 'وزير الداخلية', 'x_handle' => 'Anas_Khattab_sy', 'rank' => 3],
+    ];
+    $after = [
+        ['id' => 'c', 'name' => 'أنس خطاب', 'title' => 'وزير الداخلية', 'x_handle' => 'Anas_Khattab_sy', 'rank' => 1],
+        ['id' => 'a', 'name' => 'أحمد الشرع', 'title' => 'رئيس الجمهورية', 'x_handle' => 'AH_AlSharaa', 'rank' => 2],
+        ['id' => 'b', 'name' => 'أسعد حسن الشيباني', 'title' => 'وزير الخارجية', 'x_handle' => 'AsaadHShaibani', 'rank' => 3],
+    ];
 
     $text = app(TierlistPostText::class)->make($before, $after);
 
@@ -318,22 +303,14 @@ test('post text announces the top riser and faller with handles', function () {
 });
 
 test('post text omits a missing title and handle', function () {
-    $before = [[
-        'key' => 'ministers',
-        'name' => 'الحكومة',
-        'candidates' => [
-            ['id' => 'a', 'name' => 'ألف', 'title' => null, 'x_handle' => null, 'rank' => 1],
-            ['id' => 'b', 'name' => 'باء', 'title' => null, 'x_handle' => null, 'rank' => 2],
-        ],
-    ]];
-    $after = [[
-        'key' => 'ministers',
-        'name' => 'الحكومة',
-        'candidates' => [
-            ['id' => 'b', 'name' => 'باء', 'title' => null, 'x_handle' => null, 'rank' => 1],
-            ['id' => 'a', 'name' => 'ألف', 'title' => null, 'x_handle' => null, 'rank' => 2],
-        ],
-    ]];
+    $before = [
+        ['id' => 'a', 'name' => 'ألف', 'title' => null, 'x_handle' => null, 'rank' => 1],
+        ['id' => 'b', 'name' => 'باء', 'title' => null, 'x_handle' => null, 'rank' => 2],
+    ];
+    $after = [
+        ['id' => 'b', 'name' => 'باء', 'title' => null, 'x_handle' => null, 'rank' => 1],
+        ['id' => 'a', 'name' => 'ألف', 'title' => null, 'x_handle' => null, 'rank' => 2],
+    ];
 
     $text = app(TierlistPostText::class)->make($before, $after);
 
@@ -343,23 +320,152 @@ test('post text omits a missing title and handle', function () {
 });
 
 test('post text returns null when no candidate moved', function () {
-    $before = [[
-        'key' => 'ministers',
-        'name' => 'الحكومة',
-        'candidates' => [
-            ['id' => 'a', 'name' => 'ألف', 'rank' => 1],
-            ['id' => 'b', 'name' => 'باء', 'rank' => 2],
-        ],
-    ]];
-    $after = [[
-        'key' => 'ministers',
-        'name' => 'الحكومة',
-        'candidates' => [
-            ['id' => 'a', 'name' => 'ألف', 'rank' => 1],
-        ],
-    ]];
+    $before = [
+        ['id' => 'a', 'name' => 'ألف', 'rank' => 1],
+        ['id' => 'b', 'name' => 'باء', 'rank' => 2],
+    ];
+    $after = [
+        ['id' => 'a', 'name' => 'ألف', 'rank' => 1],
+    ];
 
     expect(app(TierlistPostText::class)->make($before, $after))->toBeNull();
+});
+
+test('snapshot skips keyless and duplicate-key groups', function () {
+    Queue::fake();
+    ['poll' => $poll] = tierlistAutomationFixture();
+    $keyless = CandidateGroup::factory()->create([
+        'poll_id' => $poll->id,
+        'name' => 'مجموعة بلا مفتاح',
+        'key' => null,
+    ]);
+    $duplicate = CandidateGroup::factory()->create([
+        'poll_id' => $poll->id,
+        'name' => 'الوزراء أيضاً',
+        'key' => 'ministers',
+    ]);
+    foreach ([$keyless, $duplicate] as $group) {
+        $candidate = Candidate::factory()->create([
+            'poll_id' => $poll->id,
+            'candidate_group_id' => $group->id,
+        ]);
+        tierlistSetScore($poll, $candidate, 8);
+    }
+
+    $snapshot = app(TierlistLeaderboard::class)->snapshot($poll);
+
+    expect(collect($snapshot['groups'])->pluck('key')->all())->toBe(['ministers']);
+
+    app(TierlistChangeDetector::class)->detect($poll);
+    expect(TierlistSocialState::query()->count())->toBe(1);
+});
+
+test('detector announces each tierlist separately', function () {
+    Queue::fake();
+    config([
+        'services.x_tierlist.settle_minutes' => 0,
+        'services.x_tierlist.min_post_interval_minutes' => 0,
+    ]);
+    ['poll' => $poll, 'candidates' => $candidates] = tierlistAutomationFixture();
+    $governors = CandidateGroup::factory()->create([
+        'poll_id' => $poll->id,
+        'name' => 'المحافظون',
+        'key' => 'governor',
+    ]);
+    $governorCandidates = collect([
+        ['name' => 'هاء', 'sort' => 1, 'score' => 12],
+        ['name' => 'واو', 'sort' => 2, 'score' => 9],
+    ])->map(function (array $data) use ($poll, $governors) {
+        $candidate = Candidate::factory()->create([
+            'poll_id' => $poll->id,
+            'candidate_group_id' => $governors->id,
+            'name' => $data['name'],
+            'category' => 'governor',
+            'sort' => $data['sort'],
+        ]);
+        tierlistSetScore($poll, $candidate, $data['score']);
+
+        return $candidate;
+    });
+    $detector = app(TierlistChangeDetector::class);
+
+    $detector->detect($poll);
+    tierlistSetScore($poll, $candidates[1], 15);
+    tierlistSetScore($poll, $governorCandidates[1], 15);
+    $detector->detect($poll);
+    $posts = $detector->detect($poll);
+
+    expect($posts)->toHaveCount(2)
+        ->and(collect($posts)->pluck('group_key')->sort()->values()->all())->toBe(['governors', 'ministers']);
+
+    $ministersPost = collect($posts)->firstWhere('group_key', 'ministers');
+    $governorsPost = collect($posts)->firstWhere('group_key', 'governors');
+    expect($ministersPost->text)->toContain('باء')
+        ->and($ministersPost->text)->not->toContain('واو')
+        ->and($governorsPost->text)->toContain('واو')
+        ->and($governorsPost->text)->not->toContain('باء');
+});
+
+test('delivery enforces the minimum interval between posts', function () {
+    Queue::fake();
+    config([
+        'services.x_tierlist.settle_minutes' => 0,
+        'services.x_tierlist.min_post_interval_minutes' => 0,
+    ]);
+    ['poll' => $poll, 'candidates' => $candidates] = tierlistAutomationFixture();
+    $governors = CandidateGroup::factory()->create([
+        'poll_id' => $poll->id,
+        'name' => 'المحافظون',
+        'key' => 'governor',
+    ]);
+    $governorCandidates = collect([
+        ['name' => 'هاء', 'sort' => 1, 'score' => 12],
+        ['name' => 'واو', 'sort' => 2, 'score' => 9],
+    ])->map(function (array $data) use ($poll, $governors) {
+        $candidate = Candidate::factory()->create([
+            'poll_id' => $poll->id,
+            'candidate_group_id' => $governors->id,
+            'name' => $data['name'],
+            'category' => 'governor',
+            'sort' => $data['sort'],
+        ]);
+        tierlistSetScore($poll, $candidate, $data['score']);
+
+        return $candidate;
+    });
+    $detector = app(TierlistChangeDetector::class);
+    $detector->detect($poll);
+    tierlistSetScore($poll, $candidates[1], 15);
+    tierlistSetScore($poll, $governorCandidates[1], 15);
+    $detector->detect($poll);
+    $posts = $detector->detect($poll);
+    expect($posts)->toHaveCount(2);
+
+    config(['services.x_tierlist.min_post_interval_minutes' => 60]);
+    Http::preventStrayRequests();
+    $postCounter = 0;
+    Http::fake(function ($request) use (&$postCounter) {
+        if ($request->url() === 'https://api.x.test/2/users/me') {
+            return Http::response(['data' => ['id' => 'expected-account-id']], 200);
+        }
+
+        $postCounter++;
+
+        return Http::response(['data' => ['id' => "post-{$postCounter}"]], 201);
+    });
+
+    (new PostTierlistChangeToX($posts[0]->id, $poll->id))->handle(app(XApiClient::class));
+    (new PostTierlistChangeToX($posts[1]->id, $poll->id))->handle(app(XApiClient::class));
+
+    expect($posts[0]->fresh()->status)->toBe('posted')
+        ->and($posts[1]->fresh()->status)->toBe('pending');
+    Http::assertSentCount(2);
+
+    $this->travel(61)->minutes();
+    (new PostTierlistChangeToX($posts[1]->id, $poll->id))->handle(app(XApiClient::class));
+
+    expect($posts[1]->fresh()->status)->toBe('posted')
+        ->and($posts[1]->fresh()->x_post_id)->toBe('post-2');
 });
 
 test('snapshot ignores the jolani group', function () {
@@ -381,7 +487,8 @@ test('snapshot ignores the jolani group', function () {
 
     $after = $leaderboard->snapshot($poll);
 
-    expect($after['hash'])->toBe($before['hash'])
+    expect($after['groups'][0]['hash'])->toBe($before['groups'][0]['hash'])
+        ->and(count($after['groups']))->toBe(count($before['groups']))
         ->and(collect($after['groups'])->pluck('key')->all())->not->toContain('jolani');
 });
 
@@ -678,7 +785,7 @@ test('detector does not consume a transition with incomplete configuration', fun
     ['poll' => $poll] = tierlistAutomationFixture();
     config(['services.x_tierlist.expected_user_id' => null]);
 
-    expect(app(TierlistChangeDetector::class)->detect($poll))->toBeNull()
+    expect(app(TierlistChangeDetector::class)->detect($poll))->toBe([])
         ->and(TierlistSocialState::query()->count())->toBe(0)
         ->and(TierlistSocialPost::query()->count())->toBe(0);
     Queue::assertNothingPushed();
@@ -759,11 +866,11 @@ test('posting budget enforces the minimum interval', function () {
 
     tierlistSetScore($poll, $candidates[2], 18);
     $detector->detect($poll);
-    expect($detector->detect($poll))->toBeNull()
+    expect($detector->detect($poll))->toBe([])
         ->and(TierlistSocialPost::query()->count())->toBe(1);
 
     $this->travel(60)->minutes();
-    expect($detector->detect($poll))->toBeInstanceOf(TierlistSocialPost::class)
+    expect($detector->detect($poll))->toHaveCount(1)
         ->and(TierlistSocialPost::query()->count())->toBe(2);
 });
 
@@ -783,6 +890,6 @@ test('posting budget enforces the daily limit', function () {
     tierlistSetScore($poll, $candidates[2], 18);
     $detector->detect($poll);
 
-    expect($detector->detect($poll))->toBeNull()
+    expect($detector->detect($poll))->toBe([])
         ->and(TierlistSocialPost::query()->count())->toBe(1);
 });

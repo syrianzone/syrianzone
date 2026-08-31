@@ -11,6 +11,7 @@ class TierlistSocialPost extends Model
 
     protected $fillable = [
         'poll_id',
+        'group_key',
         'transition_hash',
         'before_hash',
         'after_hash',

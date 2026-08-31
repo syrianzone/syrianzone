@@ -9,6 +9,8 @@ class TierlistPostText
     // URL also measures 32 against X's flat 23, so the check stays conservative.
     private const LIMIT = 280;
 
+    // $before and $after are one group's ordered candidate lists
+    // ([{id, name, title, x_handle, rank}, ...]).
     public function make(array $before, array $after): ?string
     {
         $movements = $this->movements($before, $after);
@@ -47,30 +49,23 @@ class TierlistPostText
     private function movements(array $before, array $after): array
     {
         $movements = [];
-        $beforeByGroup = collect($before)->keyBy('key');
+        $oldRanks = collect($before)->keyBy('id');
 
-        foreach ($after as $groupIndex => $group) {
-            $oldRanks = collect($beforeByGroup->get($group['key'])['candidates'] ?? [])
-                ->keyBy('id');
-
-            foreach ($group['candidates'] as $candidate) {
-                $oldRank = $oldRanks->get($candidate['id'])['rank'] ?? null;
-                if ($oldRank === $candidate['rank']) {
-                    continue;
-                }
-
-                $movements[] = [
-                    'candidate' => $candidate,
-                    'group_index' => $groupIndex,
-                    'old_rank' => $oldRank,
-                    'distance' => $oldRank === null ? 999 : abs($oldRank - $candidate['rank']),
-                ];
+        foreach ($after as $candidate) {
+            $oldRank = $oldRanks->get($candidate['id'])['rank'] ?? null;
+            if ($oldRank === $candidate['rank']) {
+                continue;
             }
+
+            $movements[] = [
+                'candidate' => $candidate,
+                'old_rank' => $oldRank,
+                'distance' => $oldRank === null ? 999 : abs($oldRank - $candidate['rank']),
+            ];
         }
 
         usort($movements, function (array $left, array $right) {
             return ($right['distance'] <=> $left['distance'])
-                ?: ($left['group_index'] <=> $right['group_index'])
                 ?: ($left['candidate']['rank'] <=> $right['candidate']['rank']);
         });
 

@@ -16,109 +16,131 @@ class TierlistChangeDetector
         private readonly XApiClient $client,
     ) {}
 
-    public function detect(Poll $poll): ?TierlistSocialPost
+    // Every group is watched independently; returns the newly prepared posts.
+    public function detect(Poll $poll): array
     {
         if (! $this->client->isConfigured()) {
-            return null;
+            return [];
         }
 
         return Cache::lock("tierlist-social-poll:{$poll->id}", 45)
             ->block(10, fn () => $this->detectWithinLock($poll));
     }
 
-    private function detectWithinLock(Poll $poll): ?TierlistSocialPost
+    private function detectWithinLock(Poll $poll): array
     {
         return DB::transaction(function () use ($poll) {
             Poll::query()->whereKey($poll->id)->lockForUpdate()->firstOrFail();
             $snapshot = $this->leaderboard->snapshot($poll);
-            $state = TierlistSocialState::query()
+            $states = TierlistSocialState::query()
                 ->where('poll_id', $poll->id)
                 ->lockForUpdate()
-                ->first();
+                ->get()
+                ->keyBy('group_key');
 
-            if (! $state) {
-                TierlistSocialState::create([
-                    'poll_id' => $poll->id,
-                    'observed_hash' => $snapshot['hash'],
-                    'observed_snapshot' => $snapshot['groups'],
-                    'observed_at' => now(),
-                    'published_hash' => $snapshot['hash'],
-                    'published_snapshot' => $snapshot['groups'],
-                    'published_at' => now(),
-                ]);
-
-                return null;
-            }
-
-            if ($snapshot['hash'] === $state->published_hash) {
-                if ($state->observed_hash !== $snapshot['hash']) {
-                    $state->update([
-                        'observed_hash' => $snapshot['hash'],
-                        'observed_snapshot' => $snapshot['groups'],
-                        'observed_at' => now(),
-                    ]);
+            $created = [];
+            foreach ($snapshot['groups'] as $group) {
+                $post = $this->detectGroup($poll, $group, $states->get($group['key']));
+                if ($post !== null) {
+                    $created[] = $post;
                 }
-
-                return null;
             }
 
-            if ($snapshot['hash'] !== $state->observed_hash) {
-                $state->update([
-                    'observed_hash' => $snapshot['hash'],
-                    'observed_snapshot' => $snapshot['groups'],
-                    'observed_at' => now(),
-                ]);
+            return $created;
+        });
+    }
 
-                return null;
-            }
-
-            $settleMinutes = max(0, (int) config('services.x_tierlist.settle_minutes', 15));
-            if ($state->observed_at->gt(now()->subMinutes($settleMinutes))) {
-                return null;
-            }
-
-            $text = $this->postText->make(
-                $state->published_snapshot,
-                $state->observed_snapshot,
-            );
-
-            if ($text === null) {
-                // Order changed without a nameable movement (a candidate or
-                // group left the ranking). Adopt it silently; no budget spent.
-                $state->update([
-                    'published_hash' => $state->observed_hash,
-                    'published_snapshot' => $state->observed_snapshot,
-                    'published_at' => now(),
-                ]);
-
-                return null;
-            }
-
-            if (! $this->hasPostingBudget($poll)) {
-                return null;
-            }
-
-            $transitionHash = hash('sha256', implode('|', [
-                $poll->id,
-                $state->published_hash,
-                $state->observed_hash,
-                $state->observed_at->toIso8601String(),
-            ]));
-
-            $post = TierlistSocialPost::firstOrCreate([
-                'transition_hash' => $transitionHash,
-            ], [
+    private function detectGroup(Poll $poll, array $group, ?TierlistSocialState $state): ?TierlistSocialPost
+    {
+        if (! $state) {
+            TierlistSocialState::create([
                 'poll_id' => $poll->id,
-                'before_hash' => $state->published_hash,
-                'after_hash' => $state->observed_hash,
-                'before_snapshot' => $state->published_snapshot,
-                'after_snapshot' => $state->observed_snapshot,
-                'text' => $text,
-                'status' => 'pending',
+                'group_key' => $group['key'],
+                'observed_hash' => $group['hash'],
+                'observed_snapshot' => $group['candidates'],
+                'observed_at' => now(),
+                'published_hash' => $group['hash'],
+                'published_snapshot' => $group['candidates'],
+                'published_at' => now(),
             ]);
 
-            return $post->wasRecentlyCreated ? $post : null;
-        });
+            return null;
+        }
+
+        if ($group['hash'] === $state->published_hash) {
+            if ($state->observed_hash !== $group['hash']) {
+                $state->update([
+                    'observed_hash' => $group['hash'],
+                    'observed_snapshot' => $group['candidates'],
+                    'observed_at' => now(),
+                ]);
+            }
+
+            return null;
+        }
+
+        if ($group['hash'] !== $state->observed_hash) {
+            $state->update([
+                'observed_hash' => $group['hash'],
+                'observed_snapshot' => $group['candidates'],
+                'observed_at' => now(),
+            ]);
+
+            return null;
+        }
+
+        $settleMinutes = max(0, (int) config('services.x_tierlist.settle_minutes', 15));
+        if ($state->observed_at->gt(now()->subMinutes($settleMinutes))) {
+            return null;
+        }
+
+        $text = $this->postText->make($state->published_snapshot, $state->observed_snapshot);
+
+        if ($text === null) {
+            // Order changed without a nameable movement (a candidate left the
+            // ranking). Adopt it silently; no budget spent.
+            $state->update([
+                'published_hash' => $state->observed_hash,
+                'published_snapshot' => $state->observed_snapshot,
+                'published_at' => now(),
+            ]);
+
+            return null;
+        }
+
+        // The budget spans the poll, so simultaneous changes in several groups
+        // announce one group per interval window rather than bursting.
+        if (! $this->hasPostingBudget($poll)) {
+            return null;
+        }
+
+        // NOTE: observed_at stays in the hash on purpose: a repeated
+        // transition (A->B delivered, later A->B again) must mint a new row.
+        // The cost is that a settled wobble can mint a duplicate pending row,
+        // which the budget limits and the claim-time supersede check refuses
+        // to deliver twice.
+        $transitionHash = hash('sha256', implode('|', [
+            $poll->id,
+            $group['key'],
+            $state->published_hash,
+            $state->observed_hash,
+            $state->observed_at->toIso8601String(),
+        ]));
+
+        $post = TierlistSocialPost::firstOrCreate([
+            'transition_hash' => $transitionHash,
+        ], [
+            'poll_id' => $poll->id,
+            'group_key' => $group['key'],
+            'before_hash' => $state->published_hash,
+            'after_hash' => $state->observed_hash,
+            'before_snapshot' => $state->published_snapshot,
+            'after_snapshot' => $state->observed_snapshot,
+            'text' => $text,
+            'status' => 'pending',
+        ]);
+
+        return $post->wasRecentlyCreated ? $post : null;
     }
 
     private function hasPostingBudget(Poll $poll): bool

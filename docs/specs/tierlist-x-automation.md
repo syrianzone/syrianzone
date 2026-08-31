@@ -1,6 +1,6 @@
 # Tierlist X automation specification
 
-**Version:** 0.3.0
+**Version:** 0.4.0
 **Date:** 2026-08-31
 **Status:** Implemented
 
@@ -59,9 +59,11 @@ candidate ID ascending.
 
 ### FR-002: Canonical order snapshot
 
-The system SHALL build a versioned snapshot from normalized group keys and
-ordered active candidate IDs. It SHALL exclude names, scores, vote totals, and
-timestamps from the comparison hash.
+The system SHALL build one versioned snapshot per group from the normalized
+group key and ordered active candidate IDs. Each group carries its own hash,
+settle clock, and state row, so every tierlist is detected and announced
+independently. The hash SHALL exclude names, scores, vote totals, and
+timestamps.
 
 **Acceptance criteria:**
 
@@ -94,17 +96,18 @@ change.
 - `test_detector_waits_for_a_stable_change()` and
   `test_detector_discards_a_reverted_change()` cover both paths.
 
-### FR-005: One announcement per transition
+### FR-005: One announcement per group transition
 
-The system SHALL create one Arabic announcement for each settled transition.
-The text SHALL name the top riser and the top faller with their title and X
-handle when known, invite readers to vote, and link to
-`https://syrian.zone/tierlist`. The snapshot SHALL exclude the satirical
-jolani group. A transition without a nameable movement (a candidate or group
-left the ranking) SHALL advance the published state silently instead of
+The system SHALL create one Arabic announcement for each settled transition
+of each group. The text SHALL name that group's top riser and top faller
+with their title and X handle when known, invite readers to vote, and link
+to `https://syrian.zone/tierlist`. The snapshot SHALL exclude the satirical
+jolani group. A transition without a nameable movement (a candidate left the
+ranking) SHALL advance that group's published state silently instead of
 posting. The exact text SHALL be stored before delivery and SHALL fit X's
 post length limit, dropping the title and then the handle from a line when
-space runs out.
+space runs out. The posting budget (FR-010) spans the poll, so simultaneous
+changes in several groups announce one group per interval window.
 
 **Acceptance criteria:**
 
@@ -189,6 +192,8 @@ it can be reconsidered later.
 - The default minimum interval is sixty minutes.
 - The default daily limit is four prepared or delivered announcements.
 - Budget exhaustion does not create an outbox row.
+- A delivery attempt within the minimum interval of the newest successful
+  delivery returns the row to pending instead of posting.
 - `test_posting_budget_enforces_the_minimum_interval()` and
   `test_posting_budget_enforces_the_daily_limit()` cover both limits.
 

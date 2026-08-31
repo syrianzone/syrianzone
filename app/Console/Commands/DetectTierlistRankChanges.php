@@ -33,10 +33,10 @@ class DetectTierlistRankChanges extends Command
             return self::FAILURE;
         }
 
-        $post = $detector->detect($poll);
+        $posts = $detector->detect($poll);
         $relayed = $outbox->relayPending($poll);
-        if ($post) {
-            $this->line('Prepared one tierlist announcement.');
+        if ($posts !== []) {
+            $this->line('Prepared '.count($posts).' tierlist announcement(s).');
         } else {
             $this->line('No settled rank change detected.');
         }

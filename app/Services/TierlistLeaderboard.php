@@ -41,45 +41,46 @@ class TierlistLeaderboard
         return compact('groups', 'candidates', 'rankings', 'status');
     }
 
+    // Only these tierlists are announced. The satirical jolani group and any
+    // admin-created group without a key (its snapshot key would fall back to
+    // the 36-char group UUID and overflow the group_key column) stay out.
+    private const ANNOUNCED_GROUPS = ['ministers', 'governors', 'security'];
+
+    // One snapshot per group: each tierlist is watched, settled, and announced
+    // independently. The hash covers only the ordered candidate IDs (FR-002).
     public function snapshot(Poll $poll): array
     {
         $leaderboard = $this->build($poll);
         $groups = $leaderboard['groups']->map(function ($group) use ($leaderboard) {
             $key = $this->normalizeGroupKey($group->key ?? $group->id);
+            $candidates = collect($leaderboard['rankings'][$key] ?? [])
+                ->map(fn (array $candidate) => [
+                    'id' => $candidate['candidateId'],
+                    'name' => $candidate['name'],
+                    'title' => $candidate['title'] ?? null,
+                    'x_handle' => $candidate['xHandle'] ?? null,
+                    'rank' => $candidate['rank'],
+                ])->all();
 
             return [
                 'key' => $key,
                 'name' => $group->name,
-                'candidates' => collect($leaderboard['rankings'][$key] ?? [])
-                    ->map(fn (array $candidate) => [
-                        'id' => $candidate['candidateId'],
-                        'name' => $candidate['name'],
-                        'title' => $candidate['title'] ?? null,
-                        'x_handle' => $candidate['xHandle'] ?? null,
-                        'rank' => $candidate['rank'],
-                    ])->all(),
+                'hash' => hash('sha256', json_encode([
+                    'version' => 2,
+                    'key' => $key,
+                    'candidate_ids' => collect($candidates)->pluck('id')->all(),
+                ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)),
+                'candidates' => $candidates,
             ];
         })
-            // Announcements cover the government only; the jolani group is satire.
-            ->reject(fn (array $group) => $group['key'] === 'jolani')
+            ->filter(fn (array $group) => in_array($group['key'], self::ANNOUNCED_GROUPS, true))
+            // Legacy key variants can normalize onto one key; the first group
+            // (poll group order) wins so one state row exists per key.
+            ->unique('key')
             ->values()
             ->all();
 
-        $canonical = [
-            'version' => 1,
-            'groups' => collect($groups)->map(fn (array $group) => [
-                'key' => $group['key'],
-                'candidate_ids' => collect($group['candidates'])->pluck('id')->all(),
-            ])->all(),
-        ];
-
-        return [
-            'hash' => hash('sha256', json_encode(
-                $canonical,
-                JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR,
-            )),
-            'groups' => $groups,
-        ];
+        return ['groups' => $groups];
     }
 
     private function scores(Poll $poll, Collection $candidates): Collection

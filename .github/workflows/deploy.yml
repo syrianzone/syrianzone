@@ -3,6 +3,7 @@ name: deploy
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 # one deploy at a time; a newer push supersedes an in-flight run.
 # the server-side deploy.sh is convergent, so cancelling mid-run is safe.

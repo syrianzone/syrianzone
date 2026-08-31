@@ -69,7 +69,10 @@ jobs:
   post:
     name: post to X after approval
     needs: render
-    if: needs.render.outputs.proceed == 'true'
+    # TIERLIST_CARD_POST_ENABLED stays unset until the x-posting environment
+    # has its required reviewer; a referenced-but-unconfigured environment
+    # would otherwise wave the cards through without approval.
+    if: needs.render.outputs.proceed == 'true' && vars.TIERLIST_CARD_POST_ENABLED == 'true'
     runs-on: ubuntu-latest
     environment: x-posting # required reviewer approves the artifact preview
     steps:

@@ -25,22 +25,49 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Pages
+    |--------------------------------------------------------------------------
+    |
+    | These values define where Inertia page components live and which file
+    | extensions the view finder accepts.
+    |
+    */
+
+    'pages' => [
+
+        'ensure_pages_exist' => false,
+
+        'paths' => [
+
+            resource_path('js/Pages'),
+
+        ],
+
+        'extensions' => [
+
+            'js',
+            'jsx',
+            'svelte',
+            'ts',
+            'tsx',
+            'vue',
+
+        ],
+
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Testing
     |--------------------------------------------------------------------------
     |
-    | The values defined here will be used while running Inertia tests.
+    | Inertia assertions verify that rendered page components exist on disk.
     |
     */
 
     'testing' => [
 
         'ensure_pages_exist' => true,
-
-        'page_paths' => [
-
-            resource_path('js/Pages'),
-
-        ],
 
     ],
 

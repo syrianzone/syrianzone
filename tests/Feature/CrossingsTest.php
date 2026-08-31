@@ -12,6 +12,12 @@ test('the crossings page renders its inertia component', function () {
         ->assertInertia(fn (Assert $page) => $page->component('Crossings/Index'));
 });
 
+test('inertia resolves pages from the tracked case-sensitive directory', function () {
+    expect(config('inertia.pages.paths'))->toBe([
+        resource_path('js/Pages'),
+    ]);
+});
+
 test('the crossings page is listed in the sitemap', function () {
     $this->get('/sitemap.xml')
         ->assertOk()

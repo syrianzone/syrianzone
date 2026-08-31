@@ -94,7 +94,7 @@ function captionLine(row, index, withTitle, withHandle) {
   const parts = [
     row.name,
     withTitle ? row.title : null,
-    withHandle && handle ? `@${handle}` : null,
+    withHandle && handle ? `(@${handle})` : null,
   ].filter(Boolean)
   return `${index + 1}. ${parts.join(' ')}`
 }

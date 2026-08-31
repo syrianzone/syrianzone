@@ -84,7 +84,7 @@ class TierlistPostText
         $oldRank = $movement['old_rank'];
         $name = $this->limit($candidate['name'], 42);
         $title = ($candidate['title'] ?? '') !== '' ? $this->limit($candidate['title'], 48) : null;
-        $handle = ($candidate['x_handle'] ?? '') !== '' ? '@'.$candidate['x_handle'] : null;
+        $handle = ($candidate['x_handle'] ?? '') !== '' ? '(@'.$candidate['x_handle'].')' : null;
 
         // Longest identity first; drop the title, then the handle, until it fits.
         $identities = array_unique([

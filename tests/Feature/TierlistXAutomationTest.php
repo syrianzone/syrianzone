@@ -311,8 +311,8 @@ test('post text announces the top riser and faller with handles', function () {
 
     expect($text)->toBe(
         "تغيّر جديد في ترتيب تقييم الحكومة السورية 📊\n\n"
-        ."⬆️ صعود أنس خطاب وزير الداخلية @Anas_Khattab_sy من المركز 3 إلى المركز 1\n"
-        ."⬇️ تراجع أحمد الشرع رئيس الجمهورية @AH_AlSharaa من المركز 1 إلى المركز 2\n\n"
+        ."⬆️ صعود أنس خطاب وزير الداخلية (@Anas_Khattab_sy) من المركز 3 إلى المركز 1\n"
+        ."⬇️ تراجع أحمد الشرع رئيس الجمهورية (@AH_AlSharaa) من المركز 1 إلى المركز 2\n\n"
         ."صوّت الآن:\nhttps://syrian.zone/tierlist"
     );
 });

@@ -5,10 +5,51 @@ use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
-    // Personal accounts collected by the maintainer on 2026-08-31, keyed by the
-    // exact candidate name in production. Candidates without a personal account
-    // stay null here; a later backfill adds ministry accounts once verified.
+    // Accounts keyed by the exact candidate name in production, collected by
+    // the maintainer and verified against official sites, Wikidata, and press
+    // on 2026-08-31. A person without an account carries the official account
+    // of the ministry or governorate they work in; security commanders carry
+    // the interior ministry. Names with no verifiable account stay null.
     private const HANDLES = [
+        // ministers without a personal account: ministry accounts
+        'محمد يسر برنية' => 'SyrMOfF',
+        'نضال الشعار' => 'SyMOEAI',
+        'مازن الصالحاني' => 'MOTourismS',
+        'يعرب بدر' => 'SyrSMOT',
+        'محمد تركو' => 'SyrMOEgov',
+        // agriculture has no X account, so باسل السويدان stays null
+        'طلال الهلالي' => 'helalitalal',
+
+        // governors: personal where one exists, else the governorate
+        'عامر الشيخ' => 'AmerAlsheikh0',
+        'عبد الرحمن السهيان' => 'alsahyan992',
+        // his self-described personal account could not be independently
+        // verified, so the governorate account stands in
+        'ماهر مروان' => 'DamascusGov1',
+        'عزام غريب' => 'AleppoGov1',
+        'أحمد علي مصطفى' => 'LatakiaaGov1',
+        'محمد عبد الرحمن' => 'IdlibGov1',
+        'أنور الزعبي' => 'daraagov1',
+        'عبد الرحمن سلامة' => 'raqqaaGov1',
+        'زياد فواز العايش' => 'deirezzorGov1',
+        'أحمد الشامي' => 'tartusgov1',
+        'غسان السيد' => 'quneitragov1',
+        // حمص، السويداء، الحسكة have no working governorate X account
+
+        // security commanders: none has a personal account
+        'عبد العزيز الأحمد' => 'syrianmoi',
+        'أحمد الدالاتي' => 'syrianmoi',
+        'غسان محمد باكير' => 'syrianmoi',
+        'رامي أسعد الطه' => 'syrianmoi',
+        'عبد العال عبد العال' => 'syrianmoi',
+        'مروان العلي' => 'syrianmoi',
+        'أسامة عاتكة' => 'syrianmoi',
+        'محمد عبد الغني' => 'syrianmoi',
+        'حسام الطحان' => 'syrianmoi',
+        'ملهم الشنتوت' => 'syrianmoi',
+        'محمد الناصير' => 'syrianmoi',
+        'ضرار الشملان' => 'syrianmoi',
+
         'أحمد الشرع' => 'AH_AlSharaa',
         'أسعد حسن الشيباني' => 'AsaadHShaibani',
         'محمد عبدالله الفار' => 'alfarMoh81',

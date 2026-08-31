@@ -12,7 +12,7 @@
 //   still lacks x_handle), --base-url, --out, --chrome
 
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 

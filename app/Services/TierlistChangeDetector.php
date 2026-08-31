@@ -77,6 +77,23 @@ class TierlistChangeDetector
                 return null;
             }
 
+            $text = $this->postText->make(
+                $state->published_snapshot,
+                $state->observed_snapshot,
+            );
+
+            if ($text === null) {
+                // Order changed without a nameable movement (a candidate or
+                // group left the ranking). Adopt it silently; no budget spent.
+                $state->update([
+                    'published_hash' => $state->observed_hash,
+                    'published_snapshot' => $state->observed_snapshot,
+                    'published_at' => now(),
+                ]);
+
+                return null;
+            }
+
             if (! $this->hasPostingBudget($poll)) {
                 return null;
             }
@@ -96,10 +113,7 @@ class TierlistChangeDetector
                 'after_hash' => $state->observed_hash,
                 'before_snapshot' => $state->published_snapshot,
                 'after_snapshot' => $state->observed_snapshot,
-                'text' => $this->postText->make(
-                    $state->published_snapshot,
-                    $state->observed_snapshot,
-                ),
+                'text' => $text,
                 'status' => 'pending',
             ]);
 

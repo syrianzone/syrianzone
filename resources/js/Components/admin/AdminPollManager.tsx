@@ -34,6 +34,7 @@ interface Candidate {
     candidate_group_id?: string | null;
     name: string;
     title?: string | null;
+    x_handle?: string | null;
     image_url?: string | null;
     imageUrl?: string | null; // Frontend helper
     category?: string | null;
@@ -160,6 +161,7 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
     // Form State
     const [cName, setCName] = useState("");
     const [cTitle, setCTitle] = useState("");
+    const [cHandle, setCHandle] = useState("");
     const [cImage, setCImage] = useState("");
     // const [cCategory, setCCategory] = useState("minister"); // Removed static category
     const [cGroupId, setCGroupId] = useState<string | null>(null);
@@ -168,6 +170,7 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
         setEditingCandidate(null);
         setCName("");
         setCTitle("");
+        setCHandle("");
         setCImage("");
         // setCCategory("minister");
         if (groupId) {
@@ -182,6 +185,7 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
         setEditingCandidate(c);
         setCName(c.name);
         setCTitle(c.title || "");
+        setCHandle(c.x_handle || "");
         setCImage(c.image_url || c.imageUrl || "");
         // setCCategory(c.category || "minister");
         setCGroupId(c.candidate_group_id || null);
@@ -230,6 +234,7 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
         const payload: any = {
             name: cName,
             title: cTitle || null,
+            x_handle: cHandle.trim() || null,
             image_url: cImage || null,
             // category: cCategory || null,
             candidate_group_id: cGroupId || null,
@@ -523,6 +528,10 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="c-title" className="text-right">Title</Label>
                             <Input id="c-title" value={cTitle} onChange={e => setCTitle(e.target.value)} className="col-span-3" />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="c-handle" className="text-right">X Handle</Label>
+                            <Input id="c-handle" value={cHandle} onChange={e => setCHandle(e.target.value)} placeholder="@username" dir="ltr" className="col-span-3" />
                         </div>
                         <div className="grid grid-cols-4 items-start gap-4">
                             <Label className="text-right pt-2">Image</Label>

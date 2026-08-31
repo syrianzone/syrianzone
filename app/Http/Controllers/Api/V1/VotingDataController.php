@@ -16,14 +16,18 @@ use Illuminate\Http\Request;
 class VotingDataController extends Controller
 {
     private const MAX_PER_PAGE = 1000;
+
     private const DEFAULT_PER_PAGE = 100;
 
     private const POLL_COLUMNS = ['id', 'slug', 'title', 'timezone', 'is_active', 'created_at', 'updated_at'];
+
     private const GROUP_COLUMNS = ['id', 'poll_id', 'name', 'key', 'sort_order', 'is_default'];
+
     private const CANDIDATE_COLUMNS = [
-        'id', 'poll_id', 'candidate_group_id', 'name', 'title', 'image_url', 'category', 'sort',
+        'id', 'poll_id', 'candidate_group_id', 'name', 'title', 'x_handle', 'image_url', 'category', 'sort',
         'status', 'term_started_at', 'term_ended_at', 'archive_reason', 'successor_id',
     ];
+
     private const BALLOT_COLUMNS = ['id', 'poll_id', 'vote_day', 'created_at'];
 
     public function index()
@@ -49,7 +53,7 @@ class VotingDataController extends Controller
         $poll = $this->findPoll($idOrSlug);
 
         $status = $request->query('status', 'all');
-        if (!in_array($status, ['active', 'archived', 'all'], true)) {
+        if (! in_array($status, ['active', 'archived', 'all'], true)) {
             $status = 'all';
         }
 
@@ -75,13 +79,13 @@ class VotingDataController extends Controller
             ->orderBy('day')
             ->orderBy('candidate_id');
 
-        if (!empty($filters['from'])) {
+        if (! empty($filters['from'])) {
             $query->whereDate('day', '>=', $filters['from']);
         }
-        if (!empty($filters['to'])) {
+        if (! empty($filters['to'])) {
             $query->whereDate('day', '<=', $filters['to']);
         }
-        if (!empty($filters['candidate_id'])) {
+        if (! empty($filters['candidate_id'])) {
             $query->where('candidate_id', $filters['candidate_id']);
         }
 
@@ -102,10 +106,10 @@ class VotingDataController extends Controller
             ->orderBy('vote_day')
             ->orderBy('id');
 
-        if (!empty($filters['from'])) {
+        if (! empty($filters['from'])) {
             $query->whereDate('vote_day', '>=', $filters['from']);
         }
-        if (!empty($filters['to'])) {
+        if (! empty($filters['to'])) {
             $query->whereDate('vote_day', '<=', $filters['to']);
         }
 
@@ -122,6 +126,7 @@ class VotingDataController extends Controller
     private function perPage(Request $request): int
     {
         $perPage = (int) $request->query('per_page', (string) self::DEFAULT_PER_PAGE);
+
         return max(1, min($perPage, self::MAX_PER_PAGE));
     }
 }

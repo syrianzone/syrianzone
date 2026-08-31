@@ -15,6 +15,7 @@ class CandidateController extends Controller
             'candidate_group_id' => 'nullable|exists:candidate_groups,id',
             'name' => 'required|string|max:255',
             'title' => 'nullable|string|max:255',
+            'x_handle' => ['nullable', 'string', 'regex:/^@?[A-Za-z0-9_]{1,15}$/'],
             'image_url' => 'nullable|string',
             'category' => 'nullable|string',
         ]);
@@ -34,16 +35,19 @@ class CandidateController extends Controller
             'candidate_group_id' => 'nullable|exists:candidate_groups,id',
             'name' => 'string|max:255',
             'title' => 'nullable|string|max:255',
+            'x_handle' => ['nullable', 'string', 'regex:/^@?[A-Za-z0-9_]{1,15}$/'],
             'image_url' => 'nullable|string',
             'category' => 'nullable|string',
             'sort' => 'integer',
         ]));
+
         return response()->json($candidate);
     }
 
     public function destroy($id)
     {
         Candidate::findOrFail($id)->delete();
+
         return response()->json(null, 204);
     }
 
@@ -54,7 +58,7 @@ class CandidateController extends Controller
         $data = $request->validate([
             'term_ended_at' => 'nullable|date',
             'archive_reason' => 'nullable|string|max:200',
-            'successor_id' => 'nullable|exists:candidates,id|different:' . $id,
+            'successor_id' => 'nullable|exists:candidates,id|different:'.$id,
         ]);
 
         $termEnd = $data['term_ended_at'] ?? now()->toDateString();
@@ -66,9 +70,9 @@ class CandidateController extends Controller
             'successor_id' => $data['successor_id'] ?? null,
         ]);
 
-        if (!empty($data['successor_id'])) {
+        if (! empty($data['successor_id'])) {
             $successor = Candidate::find($data['successor_id']);
-            if ($successor && !$successor->term_started_at) {
+            if ($successor && ! $successor->term_started_at) {
                 $successor->update(['term_started_at' => $termEnd]);
             }
         }
@@ -85,6 +89,7 @@ class CandidateController extends Controller
             'archive_reason' => null,
             'successor_id' => null,
         ]);
+
         return response()->json($candidate->fresh());
     }
 }

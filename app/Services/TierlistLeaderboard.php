@@ -54,10 +54,16 @@ class TierlistLeaderboard
                     ->map(fn (array $candidate) => [
                         'id' => $candidate['candidateId'],
                         'name' => $candidate['name'],
+                        'title' => $candidate['title'] ?? null,
+                        'x_handle' => $candidate['xHandle'] ?? null,
                         'rank' => $candidate['rank'],
                     ])->all(),
             ];
-        })->all();
+        })
+            // Announcements cover the government only; the jolani group is satire.
+            ->reject(fn (array $group) => $group['key'] === 'jolani')
+            ->values()
+            ->all();
 
         $canonical = [
             'version' => 1,
@@ -107,6 +113,7 @@ class TierlistLeaderboard
                     'candidateId' => $row->candidate_id,
                     'name' => $candidate?->name ?? '',
                     'title' => $candidate?->title,
+                    'xHandle' => $candidate?->x_handle,
                     'imageUrl' => $candidate?->image_url,
                     'originalUrl' => $candidate?->image_url,
                     'category' => $candidate?->category,

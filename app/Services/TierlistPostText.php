@@ -4,7 +4,47 @@ namespace App\Services;
 
 class TierlistPostText
 {
-    public function make(array $before, array $after): string
+    // X counts most text as one unit per character and emoji as two; mb_strlen
+    // matches that here because each arrow emoji is two code points. The raw
+    // URL also measures 32 against X's flat 23, so the check stays conservative.
+    private const LIMIT = 280;
+
+    public function make(array $before, array $after): ?string
+    {
+        $movements = $this->movements($before, $after);
+        $risers = array_values(array_filter(
+            $movements,
+            fn (array $movement) => $movement['old_rank'] === null || $movement['candidate']['rank'] < $movement['old_rank'],
+        ));
+        $fallers = array_values(array_filter(
+            $movements,
+            fn (array $movement) => $movement['old_rank'] !== null && $movement['candidate']['rank'] > $movement['old_rank'],
+        ));
+
+        $header = 'تغيّر جديد في ترتيب تقييم الحكومة السورية 📊';
+        $footer = "صوّت الآن:\nhttps://syrian.zone/tierlist";
+        $lines = [];
+
+        foreach ([$risers[0] ?? null, $fallers[0] ?? null] as $movement) {
+            if ($movement === null) {
+                continue;
+            }
+
+            $line = $this->line($movement, function (string $line) use ($header, $lines, $footer) {
+                return mb_strlen($this->compose($header, [...$lines, $line], $footer)) <= self::LIMIT;
+            });
+
+            if ($line !== null) {
+                $lines[] = $line;
+            }
+        }
+
+        // No nameable movement (for example a candidate left the ranking).
+        // The caller publishes the new order silently instead of posting.
+        return $lines === [] ? null : $this->compose($header, $lines, $footer);
+    }
+
+    private function movements(array $before, array $after): array
     {
         $movements = [];
         $beforeByGroup = collect($before)->keyBy('key');
@@ -21,7 +61,6 @@ class TierlistPostText
 
                 $movements[] = [
                     'candidate' => $candidate,
-                    'group' => $group,
                     'group_index' => $groupIndex,
                     'old_rank' => $oldRank,
                     'distance' => $oldRank === null ? 999 : abs($oldRank - $candidate['rank']),
@@ -35,36 +74,40 @@ class TierlistPostText
                 ?: ($left['candidate']['rank'] <=> $right['candidate']['rank']);
         });
 
-        $header = 'تغيّر ترتيب التيرليست 👀';
-        $footer = "صوّت وشوف الترتيب الكامل:\nhttps://syrian.zone/tierlist";
-        $lines = [];
+        return $movements;
+    }
 
-        foreach (array_slice($movements, 0, 2) as $movement) {
-            $candidate = $this->limit($movement['candidate']['name'], 42);
-            $group = $this->limit($movement['group']['name'], 28);
-            $newRank = $movement['candidate']['rank'];
-            $oldRank = $movement['old_rank'];
+    private function line(array $movement, callable $fits): ?string
+    {
+        $candidate = $movement['candidate'];
+        $newRank = $candidate['rank'];
+        $oldRank = $movement['old_rank'];
+        $name = $this->limit($candidate['name'], 42);
+        $title = ($candidate['title'] ?? '') !== '' ? $this->limit($candidate['title'], 48) : null;
+        $handle = ($candidate['x_handle'] ?? '') !== '' ? '@'.$candidate['x_handle'] : null;
 
+        // Longest identity first; drop the title, then the handle, until it fits.
+        $identities = array_unique([
+            implode(' ', array_filter([$name, $title, $handle])),
+            implode(' ', array_filter([$name, $handle])),
+            $name,
+        ]);
+
+        foreach ($identities as $identity) {
             if ($oldRank === null) {
-                $line = "• {$candidate} دخل الترتيب بالمركز {$newRank} في {$group}";
+                $line = "⬆️ دخول {$identity} إلى الترتيب في المركز {$newRank}";
             } elseif ($newRank < $oldRank) {
-                $line = "• {$candidate} صعد من {$oldRank} إلى {$newRank} في {$group} ⬆️";
+                $line = "⬆️ صعود {$identity} من المركز {$oldRank} إلى المركز {$newRank}";
             } else {
-                $line = "• {$candidate} نزل من {$oldRank} إلى {$newRank} في {$group} ⬇️";
+                $line = "⬇️ تراجع {$identity} من المركز {$oldRank} إلى المركز {$newRank}";
             }
 
-            $candidateText = $this->compose($header, [...$lines, $line], $footer);
-            if (mb_strlen($candidateText) <= 280) {
-                $lines[] = $line;
+            if ($fits($line)) {
+                return $line;
             }
         }
 
-        if ($lines === []) {
-            $groupName = $this->limit($after[0]['name'] ?? 'التيرليست', 32);
-            $lines[] = "• استقر ترتيب جديد في {$groupName}";
-        }
-
-        return $this->compose($header, $lines, $footer);
+        return null;
     }
 
     private function compose(string $header, array $lines, string $footer): string

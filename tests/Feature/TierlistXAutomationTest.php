@@ -263,20 +263,21 @@ test('outbox relay recovers a pending announcement', function () {
 
 test('post text fits the X limit', function () {
     $longName = str_repeat('اسم طويل ', 40);
+    $longTitle = str_repeat('منصب طويل ', 30);
     $before = [[
         'key' => 'ministers',
         'name' => 'الوزراء',
         'candidates' => [
-            ['id' => 'a', 'name' => $longName, 'rank' => 1],
-            ['id' => 'b', 'name' => $longName, 'rank' => 2],
+            ['id' => 'a', 'name' => $longName, 'title' => $longTitle, 'x_handle' => 'A_Very_Long_H15', 'rank' => 1],
+            ['id' => 'b', 'name' => $longName, 'title' => $longTitle, 'x_handle' => 'B_Very_Long_H15', 'rank' => 2],
         ],
     ]];
     $after = [[
         'key' => 'ministers',
         'name' => 'الوزراء',
         'candidates' => [
-            ['id' => 'b', 'name' => $longName, 'rank' => 1],
-            ['id' => 'a', 'name' => $longName, 'rank' => 2],
+            ['id' => 'b', 'name' => $longName, 'title' => $longTitle, 'x_handle' => 'B_Very_Long_H15', 'rank' => 1],
+            ['id' => 'a', 'name' => $longName, 'title' => $longTitle, 'x_handle' => 'A_Very_Long_H15', 'rank' => 2],
         ],
     ]];
 
@@ -284,6 +285,121 @@ test('post text fits the X limit', function () {
 
     expect(mb_strlen($text))->toBeLessThanOrEqual(280)
         ->and($text)->toContain('https://syrian.zone/tierlist');
+});
+
+test('post text announces the top riser and faller with handles', function () {
+    $before = [[
+        'key' => 'ministers',
+        'name' => 'الحكومة',
+        'candidates' => [
+            ['id' => 'a', 'name' => 'أحمد الشرع', 'title' => 'رئيس الجمهورية', 'x_handle' => 'AH_AlSharaa', 'rank' => 1],
+            ['id' => 'b', 'name' => 'أسعد حسن الشيباني', 'title' => 'وزير الخارجية', 'x_handle' => 'AsaadHShaibani', 'rank' => 2],
+            ['id' => 'c', 'name' => 'أنس خطاب', 'title' => 'وزير الداخلية', 'x_handle' => 'Anas_Khattab_sy', 'rank' => 3],
+        ],
+    ]];
+    $after = [[
+        'key' => 'ministers',
+        'name' => 'الحكومة',
+        'candidates' => [
+            ['id' => 'c', 'name' => 'أنس خطاب', 'title' => 'وزير الداخلية', 'x_handle' => 'Anas_Khattab_sy', 'rank' => 1],
+            ['id' => 'a', 'name' => 'أحمد الشرع', 'title' => 'رئيس الجمهورية', 'x_handle' => 'AH_AlSharaa', 'rank' => 2],
+            ['id' => 'b', 'name' => 'أسعد حسن الشيباني', 'title' => 'وزير الخارجية', 'x_handle' => 'AsaadHShaibani', 'rank' => 3],
+        ],
+    ]];
+
+    $text = app(TierlistPostText::class)->make($before, $after);
+
+    expect($text)->toBe(
+        "تغيّر جديد في ترتيب تقييم الحكومة السورية 📊\n\n"
+        ."⬆️ صعود أنس خطاب وزير الداخلية @Anas_Khattab_sy من المركز 3 إلى المركز 1\n"
+        ."⬇️ تراجع أحمد الشرع رئيس الجمهورية @AH_AlSharaa من المركز 1 إلى المركز 2\n\n"
+        ."صوّت الآن:\nhttps://syrian.zone/tierlist"
+    );
+});
+
+test('post text omits a missing title and handle', function () {
+    $before = [[
+        'key' => 'ministers',
+        'name' => 'الحكومة',
+        'candidates' => [
+            ['id' => 'a', 'name' => 'ألف', 'title' => null, 'x_handle' => null, 'rank' => 1],
+            ['id' => 'b', 'name' => 'باء', 'title' => null, 'x_handle' => null, 'rank' => 2],
+        ],
+    ]];
+    $after = [[
+        'key' => 'ministers',
+        'name' => 'الحكومة',
+        'candidates' => [
+            ['id' => 'b', 'name' => 'باء', 'title' => null, 'x_handle' => null, 'rank' => 1],
+            ['id' => 'a', 'name' => 'ألف', 'title' => null, 'x_handle' => null, 'rank' => 2],
+        ],
+    ]];
+
+    $text = app(TierlistPostText::class)->make($before, $after);
+
+    expect($text)->toContain("⬆️ صعود باء من المركز 2 إلى المركز 1")
+        ->and($text)->toContain("⬇️ تراجع ألف من المركز 1 إلى المركز 2")
+        ->and($text)->not->toContain('@');
+});
+
+test('post text returns null when no candidate moved', function () {
+    $before = [[
+        'key' => 'ministers',
+        'name' => 'الحكومة',
+        'candidates' => [
+            ['id' => 'a', 'name' => 'ألف', 'rank' => 1],
+            ['id' => 'b', 'name' => 'باء', 'rank' => 2],
+        ],
+    ]];
+    $after = [[
+        'key' => 'ministers',
+        'name' => 'الحكومة',
+        'candidates' => [
+            ['id' => 'a', 'name' => 'ألف', 'rank' => 1],
+        ],
+    ]];
+
+    expect(app(TierlistPostText::class)->make($before, $after))->toBeNull();
+});
+
+test('snapshot ignores the jolani group', function () {
+    ['poll' => $poll] = tierlistAutomationFixture();
+    $leaderboard = app(TierlistLeaderboard::class);
+    $before = $leaderboard->snapshot($poll);
+
+    $jolani = CandidateGroup::factory()->create([
+        'poll_id' => $poll->id,
+        'name' => 'شخصيات الجولاني',
+        'key' => 'jolani',
+    ]);
+    $candidate = Candidate::factory()->create([
+        'poll_id' => $poll->id,
+        'candidate_group_id' => $jolani->id,
+        'category' => 'jolani',
+    ]);
+    tierlistSetScore($poll, $candidate, 21);
+
+    $after = $leaderboard->snapshot($poll);
+
+    expect($after['hash'])->toBe($before['hash'])
+        ->and(collect($after['groups'])->pluck('key')->all())->not->toContain('jolani');
+});
+
+test('detector adopts an unnameable order change without posting', function () {
+    Queue::fake();
+    config(['services.x_tierlist.settle_minutes' => 0]);
+    ['poll' => $poll, 'candidates' => $candidates] = tierlistAutomationFixture();
+    $detector = app(TierlistChangeDetector::class);
+
+    $detector->detect($poll);
+    $candidates[3]->update(['status' => 'archived', 'term_ended_at' => now()->toDateString()]);
+    $detector->detect($poll);
+    $detector->detect($poll);
+
+    $state = TierlistSocialState::query()->sole();
+    expect(TierlistSocialPost::query()->count())->toBe(0)
+        ->and($state->published_hash)->toBe($state->observed_hash);
+    Queue::assertNothingPushed();
 });
 
 test('X job persists the remote post id', function () {

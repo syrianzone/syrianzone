@@ -120,15 +120,15 @@ jobs:
             grep -Ev '^(X_TIERLIST_ENABLED|X_API_KEY|X_API_SECRET|X_ACCESS_TOKEN|X_ACCESS_TOKEN_SECRET|X_EXPECTED_USER_ID)=' "$envfile" > "$tmpfile" || true
 
             requested_x_enabled=${X_TIERLIST_ENABLED:-false}
+            x_configuration_complete=true
+            for value in "$X_API_KEY" "$X_API_SECRET" "$X_ACCESS_TOKEN" "$X_ACCESS_TOKEN_SECRET" "$X_EXPECTED_USER_ID"; do
+              if [ -z "$value" ]; then
+                x_configuration_complete=false
+              fi
+            done
+
             x_enabled=false
             if [ "$requested_x_enabled" = 'true' ]; then
-              x_configuration_complete=true
-              for value in "$X_API_KEY" "$X_API_SECRET" "$X_ACCESS_TOKEN" "$X_ACCESS_TOKEN_SECRET" "$X_EXPECTED_USER_ID"; do
-                if [ -z "$value" ]; then
-                  x_configuration_complete=false
-                fi
-              done
-
               if [ "$x_configuration_complete" = 'true' ]; then
                 x_enabled=true
               else
@@ -138,14 +138,24 @@ jobs:
               echo 'X automation was forced off because its enable value is invalid' >&2
             fi
 
-            printf '%s=%s\n' X_TIERLIST_ENABLED "$x_enabled" >> "$tmpfile"
-            printf '%s=%s\n' X_API_KEY "$X_API_KEY" >> "$tmpfile"
-            printf '%s=%s\n' X_API_SECRET "$X_API_SECRET" >> "$tmpfile"
-            printf '%s=%s\n' X_ACCESS_TOKEN "$X_ACCESS_TOKEN" >> "$tmpfile"
-            printf '%s=%s\n' X_ACCESS_TOKEN_SECRET "$X_ACCESS_TOKEN_SECRET" >> "$tmpfile"
-            printf '%s=%s\n' X_EXPECTED_USER_ID "$X_EXPECTED_USER_ID" >> "$tmpfile"
+            {
+              printf '%s=%s\n' X_TIERLIST_ENABLED "$x_enabled"
+              printf '%s=%s\n' X_API_KEY "$X_API_KEY"
+              printf '%s=%s\n' X_API_SECRET "$X_API_SECRET"
+              printf '%s=%s\n' X_ACCESS_TOKEN "$X_ACCESS_TOKEN"
+              printf '%s=%s\n' X_ACCESS_TOKEN_SECRET "$X_ACCESS_TOKEN_SECRET"
+              printf '%s=%s\n' X_EXPECTED_USER_ID "$X_EXPECTED_USER_ID"
+            } >> "$tmpfile"
             chown root:root "$tmpfile"
             chmod 600 "$tmpfile"
             mv "$tmpfile" "$envfile"
             chmod 600 "$envfile"
             /opt/syrianzone/deploy.sh ${{ github.sha }}
+
+            if [ "$x_configuration_complete" = 'true' ]; then
+              docker exec syrianzone-app php artisan tierlist:x-status
+            fi
+
+            if [ "$x_enabled" = 'true' ]; then
+              docker exec syrianzone-app php artisan tierlist:detect-rank-changes
+            fi

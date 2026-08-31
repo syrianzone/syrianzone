@@ -120,7 +120,7 @@ Controllers issue raw spatial SQL (`ST_AsGeoJSON`, `ST_Distance_Sphere`) against
 | Widgets APIs | `/weather`, `/answers`, `/recipe-of-the-day`, `/events/today`, `/feed`, `/prayer-times` | Weather/Answers/Recipe/Events/Feed/Prayer controllers | Board widgets consume these | [modules/board.md](../modules/board.md) |
 | External data | `/syid`, `/sites`, `/party`, `/house`, `/alignment`, `/syrian-contributors` | ExternalDataController, ContributorController | SyId/, Sites/, Party/, House/, Alignment/, SyrianContributors/ | — |
 | Quizzes | `/compass`, `/priorities` | (Inertia closures) | Compass/, Priorities/ | — |
-| Standalone pages | `/roznama`, `/shawarma`, `/justice`, `/about`, `/stats` | (Inertia closures) | Roznama/, Shawarma/, Justice/, About/, Stats/ | — |
+| Standalone pages | `/roznama`, `/shawarma`, `/justice`, `/crossings`, `/about`, `/stats` | (Inertia closures) | Roznama/, Shawarma/, Justice/, Crossings/, About/, Stats/ | — |
 | Dashboard/auth | `/dashboard`, `/auth/google*`, `/user` | AuthController, DashboardController, AdminUserController | Dashboard/ | — |
 | Assets admin | `/admin/assets`, `/api/v1/admin/assets/*` | AssetUploadController | Admin/AssetManager | [reference/asset-storage.md](../reference/asset-storage.md) |
 | Meta | `/sitemap.xml`, `/healthcheck`, `/api/metrics`, `/api/app-icon` | Sitemap/Metrics controllers | — | — |

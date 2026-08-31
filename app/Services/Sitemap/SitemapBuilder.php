@@ -56,6 +56,7 @@ class SitemapBuilder
         ['/party', 0.8, 'weekly'],
         ['/house', 0.8, 'weekly'],
         ['/justice', 0.8, 'monthly'],
+        ['/crossings', 0.8, 'monthly'],
         ['/roznama', 0.8, 'daily'],
         ['/priorities', 0.8, 'monthly'],
         ['/compass', 0.8, 'monthly'],

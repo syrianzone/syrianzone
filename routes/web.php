@@ -47,6 +47,11 @@ Route::get('/shawarma', function () {
 Route::get('/justice', function () {
     return Inertia::render('Justice/Index');
 });
+// Working hours ship with the page and the open/closed status is computed in the
+// browser against Syria time, so there is nothing to query server-side here.
+Route::get('/crossings', function () {
+    return Inertia::render('Crossings/Index');
+});
 Route::get('/about', function () {
     return Inertia::render('About');
 });

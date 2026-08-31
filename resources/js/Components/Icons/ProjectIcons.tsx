@@ -314,3 +314,18 @@ export function CodexCommunityIcon({ className = "w-7 h-7" }: ProjectIconProps) 
     </svg>
   );
 }
+
+// 21. Crossings (المنافذ الحدودية - Red & White Border Barrier)
+export function CrossingsIcon({ className = "w-7 h-7" }: ProjectIconProps) {
+  return (
+    <svg viewBox="0 0 32 32" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="4" y="10" width="6" height="18" rx="2" className="fill-[#94A3B8]/20 dark:fill-[#CBD5E1]/25 stroke-[#475569] dark:stroke-[#CBD5E1]" strokeWidth="2" />
+      {/* barrier arm: solid red bar, then dashes punched over it for the stripes */}
+      <path d="M11 14.5L28 11" className="stroke-[#DC2626] dark:stroke-[#F87171]" strokeWidth="4" strokeLinecap="round" />
+      <path d="M13 14.1L26 11.4" className="stroke-[#F8FAFC] dark:stroke-[#0F172A]" strokeWidth="4" strokeDasharray="3 4" />
+      <path d="M3 28h26" className="stroke-[#475569] dark:stroke-[#CBD5E1]" strokeWidth="2" strokeLinecap="round" />
+      {/* Theme Accent Touch */}
+      <circle cx="23" cy="21" r="3" fill="hsl(var(--primary))" />
+    </svg>
+  );
+}

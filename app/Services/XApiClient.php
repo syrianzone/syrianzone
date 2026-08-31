@@ -20,7 +20,7 @@ class XApiClient
             throw new XConfigurationException('X automation credentials are incomplete');
         }
 
-        $this->assertExpectedUser();
+        $this->verifyExpectedUser();
 
         $url = rtrim(config('services.x_tierlist.base_url'), '/').'/2/tweets';
         try {
@@ -51,10 +51,11 @@ class XApiClient
 
     public function isConfigured(): bool
     {
-        if (! config('services.x_tierlist.enabled')) {
-            return false;
-        }
+        return config('services.x_tierlist.enabled') && $this->hasCredentials();
+    }
 
+    public function hasCredentials(): bool
+    {
         foreach (['api_key', 'api_secret', 'access_token', 'access_token_secret', 'expected_user_id'] as $key) {
             $value = config("services.x_tierlist.{$key}");
             if (! is_string($value) || trim($value) === '') {
@@ -65,8 +66,12 @@ class XApiClient
         return true;
     }
 
-    private function assertExpectedUser(): void
+    public function verifyExpectedUser(): string
     {
+        if (! $this->hasCredentials()) {
+            throw new XConfigurationException('X credentials are incomplete');
+        }
+
         $url = rtrim(config('services.x_tierlist.base_url'), '/').'/2/users/me';
 
         try {
@@ -88,6 +93,8 @@ class XApiClient
         if (! is_string($actualUserId) || ! hash_equals($expectedUserId, $actualUserId)) {
             throw new XPermanentException('X credentials belong to an unexpected account', $response->status());
         }
+
+        return $actualUserId;
     }
 
     private function request(string $method, string $url): PendingRequest

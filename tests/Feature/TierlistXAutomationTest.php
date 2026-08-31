@@ -376,6 +376,35 @@ test('X client stays disabled until every credential is present', function () {
     expect($client->isConfigured())->toBeTrue();
 });
 
+test('X status verifies account credentials while announcements stay disabled', function () {
+    config(['services.x_tierlist.enabled' => false]);
+    Http::preventStrayRequests();
+    Http::fake([
+        'api.x.test/2/users/me' => Http::response(['data' => ['id' => 'expected-account-id']], 200),
+    ]);
+
+    $this->artisan('tierlist:x-status')
+        ->expectsOutput('X credentials verified for user expected-account-id.')
+        ->assertSuccessful();
+
+    expect(app(XApiClient::class)->isConfigured())->toBeFalse();
+    Http::assertSentCount(1);
+});
+
+test('X status fails without complete credentials', function () {
+    config([
+        'services.x_tierlist.enabled' => false,
+        'services.x_tierlist.access_token_secret' => null,
+    ]);
+    Http::preventStrayRequests();
+
+    $this->artisan('tierlist:x-status')
+        ->expectsOutput('X credentials are incomplete.')
+        ->assertExitCode(1);
+
+    Http::assertNothingSent();
+});
+
 test('X client refuses credentials for another account', function () {
     Http::preventStrayRequests();
     Http::fake([

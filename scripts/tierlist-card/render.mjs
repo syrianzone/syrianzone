@@ -84,23 +84,40 @@ function handleOf(row) {
 
 // ***** caption *****
 
-function captionLine(row, index) {
+// X weighs a URL as 23 characters regardless of length.
+function weightedLength(text) {
+  return [...text.replace(/https?:\/\/\S+/g, 'x'.repeat(23))].length
+}
+
+function captionLine(row, index, withTitle, withHandle) {
   const handle = handleOf(row)
-  const parts = [row.name, row.title, handle ? `@${handle}` : null].filter(Boolean)
+  const parts = [
+    row.name,
+    withTitle ? row.title : null,
+    withHandle && handle ? `@${handle}` : null,
+  ].filter(Boolean)
   return `${index + 1}. ${parts.join(' ')}`
 }
 
 function caption(top, bottom) {
   const label = periodLabel()
-  return [
+  const compose = (withTitle, withHandle) => [
     `الأعلى تقييماً ${label}`,
-    ...top.map(captionLine),
+    ...top.map((row, index) => captionLine(row, index, withTitle, withHandle)),
     `الأقل تقييماً ${label}`,
-    ...bottom.map(captionLine),
+    ...bottom.map((row, index) => captionLine(row, index, withTitle, withHandle)),
     '',
     'صوّت الآن:',
     'https://syrian.zone/tierlist',
   ].join('\n')
+
+  // The posts go out unattended, so the caption must fit a standard account.
+  // Titles go first (the image shows them), handles only as a last resort.
+  for (const [withTitle, withHandle] of [[true, true], [false, true], [false, false]]) {
+    const text = compose(withTitle, withHandle)
+    if (weightedLength(text) <= 280) return text
+  }
+  return compose(false, false)
 }
 
 // ***** template *****

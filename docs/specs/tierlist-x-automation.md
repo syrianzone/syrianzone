@@ -246,17 +246,20 @@ the last day of each month, Damascus time.
 - `scripts/tierlist-card/render.mjs` renders the cards from the public
   leaderboard API with headless chromium: 1080x1350 at 2x, Al Jazeera font,
   the Syrian Zone logo, candidate photos, plus a caption file per group.
-- The `tierlist card` workflow renders on schedule and uploads the previews
-  as an artifact. Its post job waits in the `x-posting` environment, so a
-  required reviewer approves the previews before anything reaches X.
-- After approval the workflow copies the files to the server and runs
-  `tierlist:post-card`, which uploads the image through `/2/media/upload`
-  and attaches it to the post. Candidate handles come from
-  `candidates.x_handle`; a candidate without a personal account carries the
-  official account of their ministry there.
-- Cards bypass the outbox on purpose: a human watches the workflow run end
-  to end, and the run log plus the X account record the outcome. The change
-  detector's budget does not apply to cards.
+- The `tierlist card` workflow renders on schedule, uploads the cards as an
+  artifact for the record, copies them to the server, and posts each one
+  through `tierlist:post-card`, which uploads the image via
+  `/2/media/upload` and attaches it to the post. No human approval step;
+  the maintainer chose automatic posting.
+- The caption follows the maintainer's format (rank, name, title, handle)
+  and self-trims to the 280 limit: titles drop first because the image
+  already shows them, handles only as a last resort.
+- Candidate handles come from `candidates.x_handle`; a candidate without a
+  personal account carries the official account of their ministry or
+  governorate, and security commanders carry the interior ministry.
+- Cards bypass the outbox on purpose: the workflow run log, its artifact,
+  and the X account record the outcome. The change detector's budget does
+  not apply to cards.
 
 ## Out of scope
 

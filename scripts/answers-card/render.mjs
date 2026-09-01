@@ -60,6 +60,27 @@ async function fetchApi(path) {
   return body.data
 }
 
+async function fetchDataUrl(url) {
+  const response = await fetch(url, { headers: { 'user-agent': 'syrianzone-card-renderer' } })
+  if (!response.ok) throw new Error(`image fetch failed ${response.status}: ${url}`)
+  const type = response.headers.get('content-type') || 'image/png'
+  const bytes = Buffer.from(await response.arrayBuffer())
+  return `data:${type};base64,${bytes.toString('base64')}`
+}
+
+// The site's own branding, inlined; the card should look like the site.
+// The square icon, not the logo: the logo is white-on-transparent for the
+// site's dark header and disappears on this light card.
+async function fetchSiteLogo() {
+  try {
+    const { branding } = await fetchApi('/answer/api/v1/siteinfo')
+    const url = branding?.square_icon || branding?.favicon
+    return url ? await fetchDataUrl(url) : null
+  } catch {
+    return null
+  }
+}
+
 async function fetchNewAnswers() {
   const cutoff = Date.now() - LOOKBACK_HOURS * 3600e3
   const found = []
@@ -146,8 +167,9 @@ function caption(title, url) {
 
 // ***** template *****
 
-const FONT = (name) => readFileSync(join(HERE, '..', 'tierlist-card', 'fonts', name)).toString('base64')
-const LOGO = readFileSync(join(HERE, '..', '..', 'public', 'assets', 'logo-darkmode.svg'), 'utf8')
+// The site renders in IBM Plex Sans Arabic; the card must match it, and
+// unlike the tierlist AlJazeera faces these also cover Latin and digits.
+const FONT = (name) => readFileSync(join(HERE, 'fonts', name)).toString('base64')
 
 // The card shows the markdown source as plain text; strip the syntax that
 // reads as noise on an image. The full formatting lives behind the link.
@@ -170,69 +192,76 @@ function escapeHtml(text) {
     .replaceAll("'", '&#39;')
 }
 
-function html(question, answer) {
+function html(question, answer, logo) {
   // The answer's own date, not the render date: a card can go out up to a
   // lookback window after the answer was written.
   const date = damascusDate(answer.create_time)
   const dateLabel = `${date.getDate()} ${MONTHS[date.getMonth()]} ${date.getFullYear()}`
   const description = (question.description || '').trim()
+  const tags = (question.tags || []).slice(0, 3)
+    .map((tag) => `<span class="tag">${escapeHtml(tag.display_name || tag.slug_name || '')}</span>`).join('')
+  // Palette lifted from the live site: white panels on warm off-white,
+  // near-black text, primary #556A4E, muted #6c757d, borders #dee2e6.
   // The upstream `html` field is deliberately unused: rendering server-made
   // markup from user content would reopen the injection door escapeHtml closes.
   // The markdown source shown as pre-wrap plain text is close enough visually.
   return `<!doctype html>
 <html dir="rtl" lang="ar"><head><meta charset="utf-8"><style>
-  @font-face { font-family: AlJazeera; font-weight: 700; src: url(data:font/ttf;base64,${FONT('AlJazeeraArabic-Bold.ttf')}); }
-  @font-face { font-family: AlJazeera; font-weight: 400; src: url(data:font/ttf;base64,${FONT('AlJazeeraArabic-Regular.ttf')}); }
-  @font-face { font-family: AlJazeera; font-weight: 300; src: url(data:font/ttf;base64,${FONT('AlJazeeraArabic-Light.ttf')}); }
+  @font-face { font-family: Plex; font-weight: 700; src: url(data:font/ttf;base64,${FONT('IBMPlexSansArabic-Bold.ttf')}); }
+  @font-face { font-family: Plex; font-weight: 400; src: url(data:font/ttf;base64,${FONT('IBMPlexSansArabic-Regular.ttf')}); }
+  @font-face { font-family: Plex; font-weight: 300; src: url(data:font/ttf;base64,${FONT('IBMPlexSansArabic-Light.ttf')}); }
   * { margin: 0; box-sizing: border-box; }
   body { line-height: 1.3; }
   body {
     width: 1080px; height: 1350px; overflow: hidden;
-    font-family: AlJazeera, sans-serif; color: #f5f2e9;
-    background: radial-gradient(140% 90% at 50% -10%, #14523f 0%, #0b3527 46%, #071f18 100%);
-    display: flex; flex-direction: column; padding: 38px 56px 0;
+    font-family: Plex, sans-serif; color: #212529; background: #f7f7f5;
+    display: flex; flex-direction: column; padding: 48px 56px 0;
   }
   .header { display: flex; align-items: center; justify-content: space-between; }
-  .header svg { width: 190px; height: auto; }
-  .head-text { text-align: right; }
-  .head-text .kicker { font-weight: 700; font-size: 34px; }
-  .head-text .date { font-size: 24px; color: #e7d191; margin-top: 6px; }
-  .question { margin-top: 26px; }
-  .question h1 { font-size: 44px; font-weight: 700; line-height: 1.4;
+  .header .brand { display: flex; align-items: center; gap: 20px; }
+  .header .logo { height: 76px; width: auto; }
+  .header .logo-text { font-size: 40px; font-weight: 700; color: #556A4E; }
+  .header .date { font-size: 24px; color: #6c757d; }
+  .question { margin-top: 34px; }
+  .question h1 { font-size: 46px; font-weight: 700; line-height: 1.4;
     display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
-  .question .description { font-size: 26px; font-weight: 300; color: #cfe3d3; margin-top: 12px;
+  .tags { display: flex; gap: 12px; margin-top: 18px; }
+  .tag { font-size: 22px; color: #495057; background: #fff; border: 1px solid #dee2e6;
+    border-radius: 10px; padding: 6px 18px; }
+  .question .description { font-size: 26px; color: #6c757d; margin-top: 18px; line-height: 1.6;
     display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
-  .answer { margin-top: 26px; border-radius: 26px; padding: 26px 32px;
-    background: rgba(79,208,127,0.08); border: 1px solid rgba(255,255,255,0.09); }
-  .answer .label-row { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
-  .answer .label { font-size: 28px; font-weight: 700; color: #a9e5b8; }
-  .answer .accepted { font-size: 22px; font-weight: 700; color: #e7d191;
-    background: rgba(231,209,145,0.12); border: 1px solid rgba(231,209,145,0.35);
-    border-radius: 14px; padding: 4px 16px; }
+  .answer { margin-top: 30px; border-radius: 14px; padding: 30px 34px;
+    background: #fff; border: 1px solid #e4e4e1; }
+  .answer .label-row { display: flex; align-items: center; gap: 16px; margin-bottom: 16px;
+    padding-bottom: 16px; border-bottom: 1px solid #eceae6; }
+  .answer .label { font-size: 28px; font-weight: 700; color: #556A4E; }
+  .answer .accepted { font-size: 21px; font-weight: 700; color: #fff;
+    background: #556A4E; border-radius: 999px; padding: 5px 20px; }
   .answer .text { font-size: 30px; line-height: 1.7; white-space: pre-wrap; word-break: break-word;
     display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 12; overflow: hidden; }
-  .answer .byline { font-size: 24px; font-weight: 300; color: #9fc4ad; margin-top: 18px; }
+  .answer .byline { font-size: 24px; color: #6c757d; margin-top: 20px; }
   .footer { margin-top: auto; display: flex; align-items: center; justify-content: space-between;
-    padding: 18px 4px 28px; font-size: 26px; }
-  .footer .more { color: #e7d191; font-weight: 700; }
-  .footer .site { direction: ltr; color: #cfe3d3; }
+    padding: 20px 4px 30px; font-size: 26px; border-top: 1px solid #e4e4e1; }
+  .footer .more { color: #556A4E; font-weight: 700; }
+  .footer .site { direction: ltr; color: #6c757d; }
 </style></head>
 <body>
   <div class="header">
-    <div class="head-text">
-      <div class="kicker">إجابات سوريا</div>
-      <div class="date">${dateLabel}</div>
+    <div class="brand">
+      ${logo ? `<img class="logo" src="${logo}" alt="">` : ''}
+      <div class="logo-text">إجابات سوريا</div>
     </div>
-    ${LOGO}
+    <div class="date">${dateLabel}</div>
   </div>
   <div class="question">
     <h1>${escapeHtml(question.title)}</h1>
+    ${tags ? `<div class="tags">${tags}</div>` : ''}
     ${description ? `<div class="description">${escapeHtml(description)}</div>` : ''}
   </div>
   <div class="answer">
     <div class="label-row">
       <div class="label">الإجابة</div>
-      ${answer.accepted === 2 ? '<div class="accepted">إجابة معتمدة</div>' : ''}
+      ${answer.accepted === 2 ? '<div class="accepted">معتمدة</div>' : ''}
     </div>
     <div class="text">${escapeHtml(stripMarkdown(answer.content))}</div>
     ${answer.user_info?.display_name ? `<div class="byline">${escapeHtml(answer.user_info.display_name)}</div>` : ''}
@@ -253,13 +282,14 @@ if (!selected.length) {
 }
 
 const chrome = chromeBinary()
+const logo = await fetchSiteLogo()
 mkdirSync(OUT_DIR, { recursive: true })
 
 for (const { question, answer } of selected) {
   const url = `${BASE_URL}/questions/${answer.question_id}/${answer.id}`
   const page = join(OUT_DIR, `answer-${answer.id}.html`)
   const png = join(OUT_DIR, `answer-${answer.id}.png`)
-  writeFileSync(page, html(question, answer))
+  writeFileSync(page, html(question, answer, logo))
   execFileSync(chrome, [
     '--headless=new', '--no-sandbox', '--disable-gpu', '--hide-scrollbars',
     '--force-device-scale-factor=2', '--window-size=1080,1350',

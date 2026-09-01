@@ -1,0 +1,99 @@
+name: answers card
+
+# Posts new community answers to X as rendered cards. Dedupe lives
+# server-side in the answer_social_posts table, so re-runs are safe.
+
+on:
+  workflow_dispatch:
+    inputs:
+      lookback_hours:
+        description: how far back to look for new answers
+        type: string
+        default: '48'
+  schedule:
+    - cron: '40 */6 * * *' # every 6 hours
+
+permissions:
+  contents: read
+
+concurrency:
+  group: answers-card
+  cancel-in-progress: false
+
+jobs:
+  render:
+    name: render answer cards
+    runs-on: ubuntu-latest
+    outputs:
+      count: ${{ steps.count.outputs.count }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: render cards
+        env:
+          # Through env, not inline, so a crafted dispatch input cannot
+          # break out of the shell line.
+          LOOKBACK_HOURS: ${{ inputs.lookback_hours || '48' }}
+        run: node scripts/answers-card/render.mjs --chrome google-chrome --out "$PWD/cards" --lookback-hours "$LOOKBACK_HOURS"
+
+      - name: count cards
+        id: count
+        run: echo "count=$(ls cards/*.png 2>/dev/null | wc -l)" >> "$GITHUB_OUTPUT"
+
+      - name: upload cards
+        if: steps.count.outputs.count != '0'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: answers-cards
+          path: cards/
+          if-no-files-found: error
+
+  post:
+    name: post to X
+    needs: render
+    if: needs.render.outputs.count != '0'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: answers-cards
+          path: cards
+
+      - name: copy cards to server
+        uses: appleboy/scp-action@ff85246acaad7bdce478db94a363cd2bf7c90345 # v1.0.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          fingerprint: ${{ secrets.VPS_HOST_FINGERPRINT }}
+          source: cards/*
+          target: /tmp/answers-cards/
+          strip_components: 1
+          overwrite: true
+
+      - name: post each card
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          fingerprint: ${{ secrets.VPS_HOST_FINGERPRINT }}
+          command_timeout: 10m
+          script: |
+            set -e
+            # Always clean up: leftovers from an aborted run would otherwise
+            # be re-posted by the next run's glob, even after upstream
+            # moderation deleted the answer.
+            trap 'rm -rf /tmp/answers-cards' EXIT
+            status=0
+            for png in /tmp/answers-cards/answer-*.png; do
+              meta="${png%.png}.json"
+              # One bad card must not block the rest of the batch.
+              if [ ! -f "$meta" ]; then echo "missing meta for $png" >&2; status=1; continue; fi
+              docker cp "$png" syrianzone-app:/tmp/answer-card.png \
+                && docker cp "$meta" syrianzone-app:/tmp/answer-card.json \
+                && docker exec syrianzone-app php artisan answers:post-card /tmp/answer-card.png /tmp/answer-card.json \
+                || status=1
+              sleep 10
+            done
+            exit $status

@@ -4,7 +4,7 @@ Projects in the syrian.zone ecosystem that live **outside this repository**, ser
 
 | Project | URL | Purpose |
 |---|---|---|
-| Answers | answers.syrian.zone | Community Q&A. This repo consumes it via the `/api/answers` widget endpoint on the Board. |
+| Answers | answers.syrian.zone | Community Q&A (Apache Answer). This repo consumes it via the `/api/answers` widget endpoint on the Board, and posts new answers to X as rendered cards (`scripts/answers-card/`, `answers:post-card`). |
 | Wasfatna (food) | food.syrian.zone | Syrian recipes site. Feeds the `/api/recipe-of-the-day` widget. |
 | Laqta | laqta.syrian.zone | Open photo archive of Syria. |
 | Codex | codex.syrian.zone | Tech articles/knowledge base. |

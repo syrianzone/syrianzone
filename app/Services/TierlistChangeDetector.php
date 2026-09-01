@@ -145,7 +145,7 @@ class TierlistChangeDetector
 
     private function hasPostingBudget(Poll $poll): bool
     {
-        $dailyLimit = max(0, (int) config('services.x_tierlist.daily_post_limit', 4));
+        $dailyLimit = max(0, (int) config('services.x_tierlist.daily_post_limit', 2));
         if ($dailyLimit === 0) {
             return false;
         }
@@ -158,7 +158,7 @@ class TierlistChangeDetector
             return false;
         }
 
-        $minimumMinutes = max(0, (int) config('services.x_tierlist.min_post_interval_minutes', 60));
+        $minimumMinutes = max(0, (int) config('services.x_tierlist.min_post_interval_minutes', 720));
         $latestPrepared = (clone $query)->latest('created_at')->first('created_at');
         $latestPosted = (clone $query)
             ->whereNotNull('posted_at')

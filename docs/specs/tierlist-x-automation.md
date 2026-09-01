@@ -233,8 +233,8 @@ run SHALL prevent deployment.
 | `X_TIERLIST_ENABLED` | `false` | Enables detection and delivery |
 | `X_TIERLIST_POLL_SLUG` | `best-ministers` | Poll watched by the detector |
 | `X_TIERLIST_SETTLE_MINUTES` | `15` | Stable period before publishing |
-| `X_TIERLIST_MIN_POST_INTERVAL_MINUTES` | `60` | Minimum time between prepared announcements |
-| `X_TIERLIST_DAILY_POST_LIMIT` | `4` | Maximum prepared or delivered announcements per poll and day |
+| `X_TIERLIST_MIN_POST_INTERVAL_MINUTES` | `720` | Minimum time between prepared announcements |
+| `X_TIERLIST_DAILY_POST_LIMIT` | `2` | Maximum prepared or delivered announcements per poll and day |
 | `X_API_BASE_URL` | `https://api.x.com` | X API host or test double |
 | `X_API_KEY` | empty | OAuth consumer key |
 | `X_API_SECRET` | empty | OAuth consumer secret |

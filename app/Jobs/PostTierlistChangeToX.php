@@ -184,7 +184,7 @@ class PostTierlistChangeToX implements ShouldBeUnique, ShouldQueue
             // The budget is checked at preparation, but a delayed retry or a
             // drained queue could still deliver two groups back to back.
             // Leave the row pending; the scheduler relay retries it later.
-            $minimumMinutes = max(0, (int) config('services.x_tierlist.min_post_interval_minutes', 60));
+            $minimumMinutes = max(0, (int) config('services.x_tierlist.min_post_interval_minutes', 720));
             $recentlyPosted = TierlistSocialPost::query()
                 ->where('poll_id', $post->poll_id)
                 ->whereKeyNot($post->id)

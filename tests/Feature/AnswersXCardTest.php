@@ -174,6 +174,59 @@ test('a transient upload failure releases the claim for the next run', function 
     expect(AnswerSocialPost::count())->toBe(0);
 });
 
+test('release deletes a failed row so the next run retries', function () {
+    AnswerSocialPost::create([
+        'answer_id' => '10020000000000155',
+        'question_id' => '10010000000000149',
+        'title' => 'عنوان',
+        'url' => 'https://answers.syrian.zone/questions/10010000000000149/10020000000000155',
+        'caption' => 'عنوان',
+        'status' => 'failed',
+        'last_error' => 'X API rejected the post (HTTP 403)',
+    ]);
+
+    $this->artisan('answers:release-card', ['answer_id' => '10020000000000155'])
+        ->assertSuccessful();
+
+    expect(AnswerSocialPost::count())->toBe(0);
+});
+
+test('release refuses posted and sending rows', function () {
+    foreach (['posted', 'sending'] as $status) {
+        AnswerSocialPost::create([
+            'answer_id' => "1002000000000015{$status}",
+            'question_id' => '10010000000000149',
+            'title' => 'عنوان',
+            'url' => 'https://answers.syrian.zone/questions/x',
+            'caption' => 'عنوان',
+            'status' => $status,
+        ]);
+
+        $this->artisan('answers:release-card', ['answer_id' => "1002000000000015{$status}"])
+            ->assertExitCode(1);
+    }
+
+    expect(AnswerSocialPost::count())->toBe(2);
+});
+
+test('card status lists recorded rows with their errors', function () {
+    AnswerSocialPost::create([
+        'answer_id' => '10020000000000155',
+        'question_id' => '10010000000000149',
+        'title' => 'عنوان',
+        'url' => 'https://answers.syrian.zone/questions/x',
+        'caption' => 'عنوان',
+        'status' => 'failed',
+        'last_error' => 'X API rejected the post (HTTP 403)',
+    ]);
+
+    // One assertion only: a single output line satisfies at most one
+    // expectsOutputToContain expectation.
+    $this->artisan('answers:card-status')
+        ->expectsOutputToContain('10020000000000155  failed')
+        ->assertSuccessful();
+});
+
 test('warns on an overweight caption but still posts', function () {
     fakeAnswerCardHappyPath();
     [$image, $meta] = answerCardFiles(['caption' => str_repeat('ط', 300)]);

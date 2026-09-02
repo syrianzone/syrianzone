@@ -1,0 +1,45 @@
+name: answers ops
+
+# Manual levers for the answers card pipeline: inspect the recorded posts,
+# or release a failed row so the next scheduled run retries it.
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: what to do
+        type: choice
+        options: [status, release]
+        default: status
+      answer_id:
+        description: answer id (release only)
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    name: ${{ inputs.action }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: run command on server
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
+        env:
+          ACTION: ${{ inputs.action }}
+          ANSWER_ID: ${{ inputs.answer_id }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          fingerprint: ${{ secrets.VPS_HOST_FINGERPRINT }}
+          command_timeout: 5m
+          envs: ACTION,ANSWER_ID
+          script: |
+            set -e
+            if [ "$ACTION" = "release" ]; then
+              docker exec syrianzone-app php artisan answers:release-card "$ANSWER_ID"
+            else
+              docker exec syrianzone-app php artisan answers:card-status
+            fi

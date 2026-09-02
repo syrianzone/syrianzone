@@ -308,10 +308,10 @@ Route::middleware('auth')->group(function () {
 
         Route::prefix('api/v1/admin/govapps')->group(function () {
             Route::post('/', [\App\Http\Controllers\GovAppsAdminController::class, 'store']);
+            Route::post('/reorder', [\App\Http\Controllers\GovAppsAdminController::class, 'reorder']);
             Route::post('/{id}', [\App\Http\Controllers\GovAppsAdminController::class, 'update']);
             Route::put('/{id}', [\App\Http\Controllers\GovAppsAdminController::class, 'update']);
             Route::delete('/{id}', [\App\Http\Controllers\GovAppsAdminController::class, 'destroy']);
-            Route::post('/reorder', [\App\Http\Controllers\GovAppsAdminController::class, 'reorder']);
         });
     });
 

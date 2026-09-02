@@ -174,6 +174,24 @@ test('a transient upload failure releases the claim for the next run', function 
     expect(AnswerSocialPost::count())->toBe(0);
 });
 
+test('an out-of-credits 402 releases the claim instead of freezing it', function () {
+    Http::preventStrayRequests();
+    Http::fake(function ($request) {
+        return match ($request->url()) {
+            'https://api.x.test/2/users/me' => Http::response(['data' => ['id' => 'expected-account-id']], 200),
+            'https://api.x.test/2/media/upload' => Http::response(['data' => ['id' => 'media-77']], 201),
+            default => Http::response([], 402),
+        };
+    });
+    [$image, $meta] = answerCardFiles();
+
+    $this->artisan('answers:post-card', ['image' => $image, 'meta' => $meta])
+        ->assertExitCode(1);
+
+    // The cap resets; the answer must stay eligible for the next run.
+    expect(AnswerSocialPost::count())->toBe(0);
+});
+
 test('release deletes a failed row so the next run retries', function () {
     AnswerSocialPost::create([
         'answer_id' => '10020000000000155',

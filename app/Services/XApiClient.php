@@ -47,6 +47,13 @@ class XApiClient
             throw new XTransientException('X API rate limited the post', 429);
         }
 
+        // 402 means the developer account is out of API credits or over its
+        // usage cap. No post was created, so retrying is safe, and it starts
+        // succeeding again the moment the allowance returns.
+        if ($response->status() === 402) {
+            throw new XTransientException('X API is out of posting credits', 402);
+        }
+
         if ($response->serverError()) {
             throw new XAmbiguousException('X API returned an ambiguous server response', $response->status());
         }
@@ -84,7 +91,7 @@ class XApiClient
             throw new XAmbiguousException('X API accepted the upload without a media ID', $response->status());
         }
 
-        if ($response->status() === 429 || $response->serverError()) {
+        if ($response->status() === 429 || $response->status() === 402 || $response->serverError()) {
             throw new XTransientException('X media upload is temporarily unavailable', $response->status());
         }
 

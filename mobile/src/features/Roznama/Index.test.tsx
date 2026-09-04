@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 
 import { useF3aliaEvents, type F3aliaEventsState } from '@/components/F3aliaEvents';
 import { LocaleProvider } from '@/contexts/LocaleContext';
@@ -55,7 +56,55 @@ const eventState: F3aliaEventsState = {
   retry: jest.fn(),
 };
 
-async function renderScreen() {
+const emptyEventState: F3aliaEventsState = {
+  ...eventState,
+  data: {
+    cached: false,
+    events: [],
+    isShowingFallbackEvents: false,
+    totalElements: 0,
+  },
+};
+
+type RenderedView = Awaited<ReturnType<typeof renderScreen>>;
+
+// toJSON keeps document order, which is what the section-order assertion needs;
+// the query helpers only report whether a node exists.
+function orderedText(view: RenderedView): string[] {
+  const lines: string[] = [];
+  const gather = (node: unknown, parts: string[]) => {
+    if (typeof node === 'string' || typeof node === 'number') {
+      parts.push(String(node));
+      return;
+    }
+    if (node && typeof node === 'object') {
+      const children = (node as { children?: unknown[] }).children;
+      children?.forEach((child) => gather(child, parts));
+    }
+  };
+  const visit = (node: unknown) => {
+    if (!node || typeof node !== 'object') {
+      return;
+    }
+    const element = node as { children?: unknown[]; type?: string };
+    if (element.type === 'Text') {
+      const parts: string[] = [];
+      gather(element, parts);
+      lines.push(parts.join(''));
+      return;
+    }
+    element.children?.forEach(visit);
+  };
+  visit(view.toJSON());
+  return lines;
+}
+
+function background(view: RenderedView, testID: string): unknown {
+  return StyleSheet.flatten(view.getByTestId(testID).props.style)
+    ?.backgroundColor;
+}
+
+async function renderScreen(now = new Date(2026, 6, 16, 20, 0, 0)) {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { gcTime: 0, networkMode: 'always', retry: false },
@@ -65,10 +114,7 @@ async function renderScreen() {
     <QueryClientProvider client={queryClient}>
       <LocaleProvider>
         <AppThemeProvider>
-          <RoznamaIndex
-            liveClock={false}
-            now={() => new Date(2026, 6, 16, 20, 0, 0)}
-          />
+          <RoznamaIndex liveClock={false} now={() => now} />
         </AppThemeProvider>
       </LocaleProvider>
     </QueryClientProvider>,
@@ -113,6 +159,88 @@ test('renders the clock, daily widgets, holidays, and event details in RTL', asy
   expect(view.getByText('أمسية دمشقية')).toBeTruthy();
   expect(view.getAllByText('الفعاليات القادمة في دمشق')).toHaveLength(1);
   expect(view.getByText('المصدر: المرسوم رقم 188 لعام 2025')).toBeTruthy();
+});
+
+test('lays the sections out in the same order as the web page', async () => {
+  const view = await renderScreen();
+  await waitFor(() => expect(view.getByText('29°C')).toBeTruthy());
+
+  const lines = orderedText(view);
+  const positions = [
+    'الروزنامة',
+    'المحافظة:',
+    '20:00:00',
+    'المناسبة القادمة',
+    'مواقيت الصلاة في دمشق',
+    'العطل الرسمية في سوريا (2026م)',
+    'الفعاليات القادمة في دمشق',
+    'ملاحظات حول تعديلات العطل الرسمية (المرسوم 188 لعام 2025):',
+  ].map((heading) => lines.findIndex((line) => line === heading));
+
+  expect(positions).not.toContain(-1);
+  expect(positions).toEqual([...positions].sort((left, right) => left - right));
+});
+
+test('inverts the now badge so it stays visible on the active prayer row', async () => {
+  const view = await renderScreen();
+  await waitFor(() => expect(view.getByText('29°C')).toBeTruthy());
+
+  const label = view.getByText('الآن');
+  const badge = StyleSheet.flatten(label.parent?.props.style);
+  const activeRow = background(view, 'roznama-prayer-Isha');
+  expect(badge?.backgroundColor).toBeTruthy();
+  expect(badge?.backgroundColor).not.toBe(activeRow);
+  expect(StyleSheet.flatten(label.props.style)?.color).toBe(activeRow);
+});
+
+test('keeps the Arabic copy right aligned when the app locale is English', async () => {
+  await AsyncStorage.setItem('sz-locale', 'en');
+  const view = await renderScreen();
+  await waitFor(() => expect(view.getByText('29°C')).toBeTruthy());
+
+  expect(view.getByText('المناسبة القادمة')).toHaveStyle({ textAlign: 'right' });
+  expect(view.getByText('مواقيت الصلاة في دمشق')).toHaveStyle({
+    textAlign: 'right',
+  });
+});
+
+test('falls back to the local Hijri calendar when the endpoint omits it', async () => {
+  jest.mocked(loadRoznamaPrayerSchedule).mockResolvedValue({
+    cached: false,
+    value: { hijriDate: '', timings: { Fajr: '05:00', Isha: '19:30' } },
+  });
+  const view = await renderScreen();
+
+  await waitFor(() => expect(view.getByText('29°C')).toBeTruthy());
+  expect(view.queryByText('1 محرم 1448')).toBeNull();
+  expect(view.getByText(/هـ$/)).toBeTruthy();
+});
+
+test('names the province on the next event line like the web page does', async () => {
+  const view = await renderScreen();
+  await waitFor(() => expect(view.getByText('29°C')).toBeTruthy());
+
+  const line = orderedText(view).find((text) => text.startsWith('دمشق  •  '));
+  expect(line).toContain('  •  18:30');
+});
+
+test('always credits F3alia, and offers the other provinces when empty', async () => {
+  jest.mocked(useF3aliaEvents).mockReturnValue(emptyEventState);
+  const view = await renderScreen();
+  await waitFor(() => expect(view.getByText('29°C')).toBeTruthy());
+
+  expect(
+    view.getByText('المصدر: منصة فعالية (F3alia) للأحداث والفعاليات'),
+  ).toBeTruthy();
+  expect(view.getByText('عرض المزيد في المصدر')).toBeTruthy();
+
+  await fireEvent.press(view.getByTestId('roznama-browse-all-events'));
+  await waitFor(() =>
+    expect(view.getByText('الفعاليات القادمة في باقي المحافظات')).toBeTruthy(),
+  );
+  expect(useF3aliaEvents).toHaveBeenLastCalledWith(
+    expect.objectContaining({ allProvinces: true }),
+  );
 });
 
 test('persists filters and shows safe cached or failed widget states', async () => {

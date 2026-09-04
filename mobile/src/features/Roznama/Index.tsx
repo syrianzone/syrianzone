@@ -19,7 +19,7 @@ import {
   Sunset,
   Wind,
 } from 'lucide-react-native';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ComponentProps } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -34,6 +34,7 @@ import {
 } from '@/components/F3aliaEvents';
 import {
   eventDetailUrl,
+  provinceLabel,
   todayDateString,
   type F3aliaEvent,
 } from '@/components/F3aliaEvents.model';
@@ -69,9 +70,17 @@ import {
 const GOVERNORATE_PREFERENCE = 'sz-roznama-governorate';
 const HIDE_PASSED_PREFERENCE = 'sz-hide-passed-holidays';
 const DECREE_URL = 'https://sana.sy/presidency/2299819/';
+const F3ALIA_URL = 'https://app.f3alia.com';
 
 function systemNow(): Date {
   return new Date();
+}
+
+// The web page pins this screen to dir="rtl" no matter the site language, and the
+// copy here is Arabic-only. AppText otherwise takes its alignment from the app
+// locale, which left-aligns every Arabic line once the app is switched to English.
+function RoznamaText({ style, ...props }: ComponentProps<typeof AppText>) {
+  return <AppText {...props} style={[styles.arabicText, style]} />;
 }
 
 export default function RoznamaIndex({
@@ -165,6 +174,12 @@ export default function RoznamaIndex({
   const nextEvent = eventsState.data?.events[0];
   const activeGovernorate =
     governorates.find((item) => item.id === governorate) ?? governorates[0];
+  // /api/prayer-times returns hijri: null when upstream omits it, so an empty
+  // string has to fall through to the local calendar the same way a missing
+  // response does.
+  const hijriDate =
+    prayerQuery.data?.value.hijriDate.trim() ||
+    formatHijriFallback(currentTime);
 
   const changeGovernorate = (value: string) => {
     setGovernorate(value);
@@ -204,7 +219,7 @@ export default function RoznamaIndex({
             <AppCard style={styles.governorateCard}>
               <View style={styles.sectionTitleRow}>
                 <MapPin color={theme.palette.primary} size={18} />
-                <AppText variant="label">المحافظة:</AppText>
+                <RoznamaText variant="label">المحافظة:</RoznamaText>
               </View>
               <View style={styles.chips}>
                 {governorates.map((item) => {
@@ -228,7 +243,7 @@ export default function RoznamaIndex({
                       ]}
                       testID={`roznama-governorate-${item.id}`}
                     >
-                      <AppText
+                      <RoznamaText
                         style={{
                           color: selected
                             ? theme.palette.primaryForeground
@@ -237,7 +252,7 @@ export default function RoznamaIndex({
                         variant="caption"
                       >
                         {item.ar}
-                      </AppText>
+                      </RoznamaText>
                     </Pressable>
                   );
                 })}
@@ -245,11 +260,11 @@ export default function RoznamaIndex({
             </AppCard>
 
             <AppCard style={styles.clockCard}>
-              <AppText style={styles.clock}>{formatClock(currentTime)}</AppText>
-              <AppText variant="label">{formatGregorianDate(currentTime)}</AppText>
-              <AppText color="primary" variant="caption">
-                {prayerQuery.data?.value.hijriDate ?? formatHijriFallback(currentTime)}
-              </AppText>
+              <RoznamaText style={styles.clock}>{formatClock(currentTime)}</RoznamaText>
+              <RoznamaText variant="label">{formatGregorianDate(currentTime)}</RoznamaText>
+              <RoznamaText color="primary" variant="caption">
+                {hijriDate}
+              </RoznamaText>
               <WeatherWidget
                 activeGovernorate={activeGovernorate?.ar ?? 'دمشق'}
                 query={weatherQuery}
@@ -271,9 +286,9 @@ export default function RoznamaIndex({
               <View style={styles.cardHeader}>
                 <View style={styles.sectionTitleRow}>
                   <Calendar color={theme.palette.primary} size={20} />
-                  <AppText variant="heading">
+                  <RoznamaText variant="heading">
                     العطل الرسمية في سوريا ({currentYear}م)
-                  </AppText>
+                  </RoznamaText>
                 </View>
                 <View style={styles.switchRow}>
                   <Switch
@@ -286,7 +301,7 @@ export default function RoznamaIndex({
                     }}
                     value={hidePassed}
                   />
-                  <AppText variant="caption">إخفاء العطل المنقضية</AppText>
+                  <RoznamaText variant="caption">إخفاء العطل المنقضية</RoznamaText>
                 </View>
               </View>
 
@@ -301,16 +316,16 @@ export default function RoznamaIndex({
               ) : (
                 <View style={styles.emptyState}>
                   <Calendar color={theme.palette.mutedForeground} size={32} />
-                  <AppText color="muted">
+                  <RoznamaText color="muted">
                     لا توجد عطلات رسمية متبقية لهذا العام.
-                  </AppText>
+                  </RoznamaText>
                 </View>
               )}
 
               <View style={styles.sourceRow}>
-                <AppText color="muted" variant="caption">
+                <RoznamaText color="muted" style={styles.shrink} variant="caption">
                   المصدر: المرسوم رقم 188 لعام 2025
-                </AppText>
+                </RoznamaText>
                 <SourceLink label="عرض المرسوم في المصدر" url={DECREE_URL} />
               </View>
             </AppCard>
@@ -319,11 +334,11 @@ export default function RoznamaIndex({
               <View style={styles.cardHeader}>
                 <View style={styles.sectionTitleRow}>
                   <Sparkles color={theme.palette.primary} size={20} />
-                  <AppText variant="heading">
+                  <RoznamaText variant="heading">
                     {showAllEvents
                       ? 'الفعاليات القادمة في باقي المحافظات'
                       : `الفعاليات القادمة في ${activeGovernorate?.ar ?? 'دمشق'}`}
-                  </AppText>
+                  </RoznamaText>
                 </View>
                 <View style={styles.switchRow}>
                   <Switch
@@ -336,7 +351,7 @@ export default function RoznamaIndex({
                     }}
                     value={showAllEvents}
                   />
-                  <AppText variant="caption">باقي المحافظات</AppText>
+                  <RoznamaText variant="caption">باقي المحافظات</RoznamaText>
                 </View>
               </View>
               <F3aliaEventsView
@@ -346,17 +361,36 @@ export default function RoznamaIndex({
                 state={eventsState}
                 variant="grid"
               />
+
+              {!showAllEvents &&
+              !eventsState.loading &&
+              eventsState.data?.events.length === 0 ? (
+                <AppButton
+                  onPress={() => setShowAllEvents(true)}
+                  testID="roznama-browse-all-events"
+                  variant="ghost"
+                >
+                  تصفح الفعاليات في باقي المحافظات
+                </AppButton>
+              ) : null}
+
+              <View style={styles.sourceRow}>
+                <RoznamaText color="muted" style={styles.shrink} variant="caption">
+                  المصدر: منصة فعالية (F3alia) للأحداث والفعاليات
+                </RoznamaText>
+                <SourceLink label="عرض المزيد في المصدر" url={F3ALIA_URL} />
+              </View>
             </AppCard>
 
             <AppCard style={styles.notesCard}>
               <Info color={theme.palette.primary} size={22} />
               <View style={styles.notesCopy}>
-                <AppText variant="label">
+                <RoznamaText variant="label">
                   ملاحظات حول تعديلات العطل الرسمية (المرسوم 188 لعام 2025):
-                </AppText>
-                <AppText color="muted" variant="caption">
+                </RoznamaText>
+                <RoznamaText color="muted" variant="caption">
                   أعاد المرسوم تنظيم التقويم الوطني بإدراج أعياد جديدة (عيد الثورة السورية 18 آذار، وعيد التحرير الوطني 8 كانون الأول تخليداً لسقوط الاستبداد في 8 ديسمبر 2024). وفي المقابل، أُلغيت رسمياً عطل النظام البائد السابقة (انقلاب 8 آذار، ذكرى حرب تشرين 6 تشرين الأول، عيد الشهداء 6 أيار، وعطلة عيد المعلم كعطلة عامة للدولة) لتأسيس روزنامة وطنية جامعة بعيدة عن رموز عهد الاستبداد.
-                </AppText>
+                </RoznamaText>
                 <SourceLink
                   label="تصفح نص المرسوم رقم 188 على الرئاسة العامة لوكالة سانا"
                   url={DECREE_URL}
@@ -388,7 +422,7 @@ function WeatherWidget({
     return (
       <View style={styles.widgetState}>
         <ActivityIndicator color={theme.palette.primary} size="small" />
-        <AppText color="muted" variant="caption">جاري تحميل الطقس...</AppText>
+        <RoznamaText color="muted" variant="caption">جاري تحميل الطقس...</RoznamaText>
       </View>
     );
   }
@@ -396,7 +430,7 @@ function WeatherWidget({
     return (
       <View style={styles.widgetState}>
         <AlertCircle color={theme.palette.danger} size={20} />
-        <AppText color="danger" variant="caption">تعذر تحميل الطقس.</AppText>
+        <RoznamaText color="danger" variant="caption">تعذر تحميل الطقس.</RoznamaText>
         <AppButton onPress={() => void query.refetch()} variant="ghost">
           إعادة المحاولة
         </AppButton>
@@ -412,10 +446,10 @@ function WeatherWidget({
       <View style={styles.weatherRow}>
         <WeatherIcon family={weather.icon} />
         <View style={styles.weatherCopy}>
-          <AppText variant="label">{query.data.value.temperature}°C</AppText>
-          <AppText color="muted" variant="caption">
+          <RoznamaText variant="label">{query.data.value.temperature}°C</RoznamaText>
+          <RoznamaText color="muted" variant="caption">
             {weather.descriptionAr}
-          </AppText>
+          </RoznamaText>
         </View>
         <View
           style={[
@@ -426,13 +460,13 @@ function WeatherWidget({
             },
           ]}
         >
-          <AppText variant="caption">الطقس في {activeGovernorate}</AppText>
+          <RoznamaText variant="caption">الطقس في {activeGovernorate}</RoznamaText>
         </View>
       </View>
       {query.data.cached || state.cached ? (
-        <AppText color="muted" variant="caption">
+        <RoznamaText color="muted" variant="caption">
           يتم عرض آخر بيانات الطقس المحفوظة.
-        </AppText>
+        </RoznamaText>
       ) : null}
     </View>
   );
@@ -467,23 +501,27 @@ function UpcomingHolidayCard({
   nextEvent: F3aliaEvent | undefined;
 }) {
   const { theme } = useAppTheme();
+  const onPrimary = {
+    color: theme.palette.primaryForeground,
+    textAlign: 'center' as const,
+  };
   return (
     <AppCard style={styles.upcomingCard}>
-      <AppText color="primary" variant="caption">المناسبة القادمة</AppText>
+      <RoznamaText color="primary" variant="caption">المناسبة القادمة</RoznamaText>
       <View style={styles.upcomingRow}>
         <View style={styles.upcomingCopy}>
           <View style={styles.sectionTitleRow}>
             {holiday.isNew ? <SmallBadge label="جديد" success /> : null}
-            <AppText variant="heading">{holiday.nameAr}</AppText>
+            <RoznamaText variant="heading">{holiday.nameAr}</RoznamaText>
           </View>
-          <AppText color="muted" variant="caption">
+          <RoznamaText color="muted" variant="caption">
             {holiday.description}
-          </AppText>
+          </RoznamaText>
           <View style={styles.sectionTitleRow}>
             <CalendarDays color={theme.palette.primary} size={16} />
-            <AppText color="primary" variant="caption">
+            <RoznamaText color="primary" variant="caption">
               {formatGregorianDate(holiday.date)}
-            </AppText>
+            </RoznamaText>
           </View>
         </View>
         <View
@@ -492,13 +530,13 @@ function UpcomingHolidayCard({
             { backgroundColor: theme.palette.primary },
           ]}
         >
-          <AppText style={styles.onPrimary} variant="caption">متبقٍ عليها</AppText>
-          <AppText style={styles.onPrimary} variant="title">
+          <RoznamaText style={onPrimary} variant="caption">متبقٍ عليها</RoznamaText>
+          <RoznamaText style={onPrimary} variant="title">
             {holiday.daysLeft}
-          </AppText>
-          <AppText style={styles.onPrimary} variant="caption">
+          </RoznamaText>
+          <RoznamaText style={onPrimary} variant="caption">
             {remainingDayLabel(holiday.daysLeft)}
-          </AppText>
+          </RoznamaText>
         </View>
       </View>
 
@@ -507,14 +545,16 @@ function UpcomingHolidayCard({
           <View style={styles.nextEventCopy}>
             <View style={styles.sectionTitleRow}>
               <Sparkles color={theme.palette.primary} size={16} />
-              <AppText color="primary" variant="label">
+              <RoznamaText color="primary" variant="label">
                 الفعالية القادمة: {nextEvent.name}
-              </AppText>
+              </RoznamaText>
             </View>
-            <AppText color="muted" variant="caption">
+            <RoznamaText color="muted" variant="caption">
+              {provinceLabel(nextEvent, 'ar')}
+              {'  •  '}
               {formatEventDate(nextEvent.eventDate)}
               {nextEvent.eventTime ? `  •  ${nextEvent.eventTime}` : ''}
-            </AppText>
+            </RoznamaText>
           </View>
           <AppButton
             icon={<ExternalLink color={theme.palette.primary} size={15} />}
@@ -551,7 +591,7 @@ function PrayerCard({
     <AppCard style={styles.sectionCard}>
       <View style={styles.sectionTitleRow}>
         <MoonStar color={theme.palette.primary} size={20} />
-        <AppText variant="heading">مواقيت الصلاة في {activeGovernorate}</AppText>
+        <RoznamaText variant="heading">مواقيت الصلاة في {activeGovernorate}</RoznamaText>
       </View>
       {activePrayer ? (
         <View
@@ -565,17 +605,17 @@ function PrayerCard({
         >
           <View style={styles.sectionTitleRow}>
             <PrayerIcon eventKey={activePrayer.next.key} size={22} />
-            <AppText color="primary" variant="heading">
+            <RoznamaText color="primary" variant="heading">
               {activePrayer.next.isPrayer
                 ? `صلاة ${activePrayer.next.label}`
                 : activePrayer.next.label}
-            </AppText>
+            </RoznamaText>
           </View>
           <View style={styles.countdownCopy}>
-            <AppText color="muted" variant="caption">المتبقي</AppText>
-            <AppText color="primary" style={styles.countdown} variant="heading">
+            <RoznamaText color="muted" variant="caption">المتبقي</RoznamaText>
+            <RoznamaText color="primary" style={styles.countdown} variant="heading">
               {formatDuration(activePrayer.remainingMs)}
-            </AppText>
+            </RoznamaText>
           </View>
         </View>
       ) : null}
@@ -587,7 +627,7 @@ function PrayerCard({
       ) : state.error || !query.data ? (
         <View style={styles.emptyState}>
           <AlertCircle color={theme.palette.danger} size={28} />
-          <AppText color="danger">تعذر تحميل مواقيت الصلاة.</AppText>
+          <RoznamaText color="danger">تعذر تحميل مواقيت الصلاة.</RoznamaText>
           <AppButton onPress={() => void query.refetch()} variant="secondary">
             إعادة المحاولة
           </AppButton>
@@ -625,6 +665,7 @@ function PrayerCard({
                       : theme.palette.border,
                   },
                 ]}
+                testID={`roznama-prayer-${key}`}
               >
                 <View style={styles.sectionTitleRow}>
                   <PrayerIcon
@@ -632,27 +673,27 @@ function PrayerCard({
                     eventKey={key}
                     size={18}
                   />
-                  <AppText style={{ color: foreground }} variant="label">
+                  <RoznamaText style={{ color: foreground }} variant="label">
                     {label}
-                  </AppText>
-                  {isActive ? <SmallBadge label="الآن" /> : null}
+                  </RoznamaText>
+                  {isActive ? <SmallBadge inverted label="الآن" /> : null}
                 </View>
-                <AppText style={[styles.prayerTime, { color: foreground }]}>
+                <RoznamaText style={[styles.prayerTime, { color: foreground }]}>
                   {query.data.value.timings[key] ?? '--:--'}
-                </AppText>
+                </RoznamaText>
               </View>
             );
           })}
         </View>
       )}
       {query.data && (query.data.cached || state.cached) ? (
-        <AppText color="muted" variant="caption">
+        <RoznamaText color="muted" variant="caption">
           يتم عرض آخر مواقيت صلاة محفوظة.
-        </AppText>
+        </RoznamaText>
       ) : null}
-      <AppText color="muted" style={styles.centerText} variant="caption">
+      <RoznamaText color="muted" style={styles.centerText} variant="caption">
         طريقة رابطة العالم الإسلامي (فجر 18° وعشاء 17°)، معتمد من وزارة الأوقاف.
-      </AppText>
+      </RoznamaText>
     </AppCard>
   );
 }
@@ -717,14 +758,14 @@ function HolidayRow({
       <View style={styles.holidayCopy}>
         <View style={styles.sectionTitleRow}>
           {holiday.isNew ? <SmallBadge label="جديد" success /> : null}
-          <AppText variant="label">{holiday.nameAr}</AppText>
+          <RoznamaText variant="label">{holiday.nameAr}</RoznamaText>
         </View>
-        <AppText color="muted" variant="caption">
+        <RoznamaText color="muted" variant="caption">
           {formatMonthDay(holiday.date)}  •  {holiday.description}
-        </AppText>
+        </RoznamaText>
       </View>
       {past ? (
-        <AppText color="muted" variant="caption">منقضية</AppText>
+        <RoznamaText color="muted" variant="caption">منقضية</RoznamaText>
       ) : days === 0 ? (
         <SmallBadge label="اليوم" />
       ) : (
@@ -735,17 +776,33 @@ function HolidayRow({
 }
 
 function SmallBadge({
+  inverted = false,
   label,
   success = false,
 }: {
+  inverted?: boolean;
   label: string;
   success?: boolean;
 }) {
   const { theme } = useAppTheme();
-  const background = success ? theme.palette.success : theme.palette.primary;
+  // The active prayer row is already painted `primary`, so its badge has to swap
+  // the pair the way the web page's bg-primary-foreground/text-primary does, or
+  // it disappears into the row it sits on.
+  const background = success
+    ? theme.palette.success
+    : inverted
+      ? theme.palette.primaryForeground
+      : theme.palette.primary;
+  const foreground = success
+    ? '#ffffff'
+    : inverted
+      ? theme.palette.primary
+      : theme.palette.primaryForeground;
   return (
     <View style={[styles.smallBadge, { backgroundColor: background }]}>
-      <AppText style={styles.onPrimary} variant="caption">{label}</AppText>
+      <RoznamaText style={[styles.centerText, { color: foreground }]} variant="caption">
+        {label}
+      </RoznamaText>
     </View>
   );
 }
@@ -765,7 +822,9 @@ function SourceLink({ label, url }: { label: string; url: string }) {
       ]}
     >
       <ExternalLink color={theme.palette.primary} size={14} />
-      <AppText color="primary" variant="caption">{label}</AppText>
+      <RoznamaText color="primary" style={styles.shrink} variant="caption">
+        {label}
+      </RoznamaText>
     </Pressable>
   );
 }
@@ -828,6 +887,10 @@ function openExternal(url: string): void {
 }
 
 const styles = StyleSheet.create({
+  arabicText: {
+    textAlign: 'right',
+    writingDirection: 'rtl',
+  },
   cardHeader: {
     alignItems: 'flex-start',
     gap: 12,
@@ -934,10 +997,6 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 8,
   },
-  onPrimary: {
-    color: '#ffffff',
-    textAlign: 'center',
-  },
   pill: {
     borderRadius: 999,
     borderWidth: 1,
@@ -971,6 +1030,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
     flexWrap: 'wrap',
     gap: 7,
+  },
+  // long Arabic source credits have to wrap on a 360dp phone, not run off the card
+  shrink: {
+    flexShrink: 1,
   },
   smallBadge: {
     borderRadius: 999,
@@ -1045,5 +1108,20 @@ PORT STATUS
   source:     resources/js/Pages/Roznama/Index.tsx (1057 lines)
   confidence: high
   todos:      0
-  notes:      Native RTL cards preserve clock, weather, prayer, holidays, filters, F3alia events, cache states, notes, and source links.
+  notes:      Native RTL cards preserve clock, weather, prayer, holidays, filters,
+              F3alia events, cache states, notes, and source links.
+              Fixed 2026-09: prayer times and weather now read syrian.zone's own
+              /api/prayer-times and /api/weather proxies first (Damascus day
+              boundary, timings trimmed of their "(EEST)" suffix) and keep Aladhan
+              and the Cloudflare worker only as fallbacks; an empty hijri date from
+              the proxy falls through to the local calendar instead of blanking the
+              line; the active prayer row's "الآن" badge inverts so it is no longer
+              primary-on-primary; text drawn on `primary` reads primaryForeground
+              instead of a hardcoded white; the Arabic copy stays right aligned when
+              the app locale is English; the next-event line names its province and
+              the events card carries the F3alia credit plus the "browse the other
+              provinces" action the web page has.
+  known gap:  countdowns still compare Damascus prayer times against the device
+              clock, exactly as the web page compares them against the browser
+              clock. A phone outside Asia/Damascus sees a shifted countdown.
 */

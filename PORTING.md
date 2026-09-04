@@ -58,6 +58,9 @@ Read this whole document before changing mobile code. A draft must preserve beha
 | `Lib/axios.ts` | `mobile/src/lib/api/client.ts` | One typed client with a configured origin, abort timeout, auth token, and error translation. Direct-fetch source files keep their feature target and delegate requests to this client. |
 | `Lib/uploadthing.ts` | `mobile/src/lib/api/uploads.ts` | Replace the browser-only UploadThing helper with the role-gated candidate upload contract in `mobile-api.tsv`. |
 | `localStorage` and `sessionStorage` | `mobile/src/lib/storage/` | Async storage for preferences, secure storage for tokens and device identity, memory for tab-only state. |
+| `Components/Icons/ProjectIcons.tsx` | `mobile/src/components/icons/ProjectIcons.tsx` | The same 20 SVGs drawn with react-native-svg; theme accent replaces `hsl(var(--primary))`, Tailwind light and dark colors resolve from the app theme. |
+| none (native only) | `mobile/src/features/Warnings/`, `app/Services/PublicContent/WarningsFeedService.php` | Emergency warnings from news.jard.chat (ministry CAP feed) as a section, a home banner, and a notification source. |
+| none (native only) | `mobile/src/lib/notifications/` | Local notifications: device-local settings, checker registry, 15 minute background task plus a throttled foreground check. No push server. |
 | `public/` | `mobile/assets` or server asset URLs | Follow `mobile-assets.tsv`. Bundle app identity, required fonts, transit fallback data, and the shared province boundary. Keep SyID, official-account, government-app, justice, and tier-list media on Laravel. |
 
 Fallback rule: a source file without a named special case keeps its complete source-relative path under the mapped target root. The only extension rewrite is the `.json` or `.md` to `.ts` data-module rule above. An aggregate target is an explicit reviewed exception and must carry one trailer block for every consolidated source.

@@ -264,8 +264,10 @@ const routeResult = spawnSync('php', ['artisan', 'route:list', '--json'], {
   maxBuffer: 10 * 1024 * 1024,
 });
 let routes = [];
-if (routeResult.status !== 0) {
-  fail(`php artisan route:list --json failed: ${routeResult.stderr.trim()}`);
+if (routeResult.error || routeResult.status !== 0) {
+  // No php on the host is the common case on this box; say so instead of crashing.
+  const detail = routeResult.error?.message ?? routeResult.stderr?.trim() ?? '';
+  fail(`php artisan route:list --json failed: ${detail}`);
 } else {
   try {
     routes = JSON.parse(routeResult.stdout);

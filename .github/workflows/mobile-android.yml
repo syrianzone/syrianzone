@@ -1,0 +1,66 @@
+name: mobile android
+
+# builds a preview apk for every push to the mobile branch and keeps it as a
+# workflow artifact for 30 days. the apk is signed with the debug keystore, so
+# it installs on any phone or on appetize.io but is not a store upload.
+
+on:
+  push:
+    branches: [mobile]
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/mobile-android.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: mobile-android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: mobile/.nvmrc
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+
+      - run: npm ci
+
+      - run: npm run typecheck
+
+      - run: npm run lint
+
+      - run: npx jest --ci --runInBand --silent
+
+      - name: prebuild android project
+        env:
+          CI: '1'
+          EXPO_NO_GIT_STATUS: '1'
+          EXPO_PUBLIC_API_URL: https://syrian.zone
+          EXPO_PUBLIC_AUTH_REDIRECT_URL: syrianzone://auth/callback
+        run: npx expo prebuild --platform android --no-install
+
+      - name: assemble release apk
+        working-directory: mobile/android
+        run: ./gradlew assembleRelease --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: syrianzone-android-${{ github.sha }}
+          path: mobile/android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 30
+          if-no-files-found: error

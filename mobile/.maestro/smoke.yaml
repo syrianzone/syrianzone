@@ -5,7 +5,7 @@ name: Syrian Zone complete feature smoke
     clearState: true
     clearKeychain: true
 - extendedWaitUntil:
-    visible: "أهلا بك"
+    visible: "روابط سريعة"
     timeout: 30000
 - extendedWaitUntil:
     visible: "صوتك بيعمل فرق!"
@@ -51,6 +51,11 @@ name: Syrian Zone complete feature smoke
 - extendedWaitUntil:
     visible: "دليل الهاتف والواتساب"
     timeout: 30000
+- openLink: "syrianzone://feature/warnings"
+- runFlow: accept-deep-link.yaml
+- extendedWaitUntil:
+    visible: "تنبيهات الطوارئ"
+    timeout: 30000
 - openLink: "syrianzone://feature/syid"
 - runFlow: accept-deep-link.yaml
 - extendedWaitUntil:
@@ -64,7 +69,7 @@ name: Syrian Zone complete feature smoke
 - openLink: "syrianzone://feature/tierlist"
 - runFlow: accept-deep-link.yaml
 - extendedWaitUntil:
-    visible: "الاستطلاع"
+    visible: "تير ليست الحكومة السورية الجديدة"
     timeout: 30000
 - openLink: "syrianzone://feature/house"
 - runFlow: accept-deep-link.yaml
@@ -157,5 +162,5 @@ name: Syrian Zone complete feature smoke
 - openLink: "syrianzone://"
 - runFlow: accept-deep-link.yaml
 - extendedWaitUntil:
-    visible: "أهلا بك"
+    visible: "روابط سريعة"
     timeout: 30000

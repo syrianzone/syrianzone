@@ -6,6 +6,9 @@ Status notes added after the audit, same day:
 - transit route detail now falls back to the live v1 map data (mobile/src/features/Transit/api.ts), so the "تعذر العثور على الخط" blocker is closed.
 - the CSRF exemption widening in bootstrap/app.php is reverted.
 - the emergency warnings TODO marker in section 5 is already resolved.
+- closed the same day, each with tests: the population atlas schemas, the SyId asset names, the compass gauge, legend and export, the board guest promotion, number fields, weather and events widgets, tier candidates returning to the bank, poll deep links, the transit map interactions and city guard, the admin search, filters and reordering, the user role parse failure, party pagination, first-party favicons, justice count and empty state, house picker and incremental rows, the root error boundary, syrian.zone app links, and the About page with its CC BY 4.0 attribution.
+- the government tier list and polls now fall back to the legacy /api/polls endpoints, so they work on production before the mobile backend deploys.
+- still open: everything that needs /api/mobile on production (sign-in, dashboard, poll admin, directory admins, guess who, places writes), the guess who cross-platform signaling and TURN, the places full-screen map, crash reporting, and the cross-cutting English/LTR polish.
 
 # Android launch gap report: Syrian Zone app vs https://syrian.zone
 

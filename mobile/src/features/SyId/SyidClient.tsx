@@ -24,6 +24,8 @@ import { openSafeExternalUrl } from '@/lib/linking';
 import { featureToSVG, getGovernorateNameAr } from '@/lib/ported/geo-utils';
 
 import {
+  SYID_MATERIALS,
+  SYID_MATERIALS_ZIP_URL,
   shareGeneratedFile,
   shareSyidAsset,
   syidAssetUrl,
@@ -36,6 +38,17 @@ import {
 } from './model';
 import SyriaMap from './SyriaMap';
 
+// The website draws these as dimension lines around a CSS flag diagram; native
+// carries the same numbers as a callout list next to the reference image.
+const flagMeasurements = [
+  { label: 'العرض الكلي', value: '36' },
+  { label: 'الارتفاع الكلي', value: '24' },
+  { label: 'تقسيم العرض', value: '9 + 9 + 9 + 9' },
+  { label: 'ارتفاع الأشرطة', value: '8 + 8 + 8' },
+  { label: 'توزيع النجوم أفقياً', value: '6 + 6 + 3 + 6 + 3 + 6 + 6' },
+  { label: 'هامش النجوم الرأسي', value: '6' },
+] as const;
+
 const externalLinks = {
   authorSite: 'http://hadealahmad.com/',
   authorX: 'https://x.com/hadealahmad',
@@ -45,6 +58,7 @@ const externalLinks = {
     'https://drive.google.com/uc?export=download&id=1-HbfWI2PC76TTR6rKpmGl7GDcUlcZFXl',
   guidelineAuthor: 'https://x.com/abd_hmh',
   identity: 'https://syrianidentity.sy',
+  materials: SYID_MATERIALS_ZIP_URL,
   physicalMap:
     'https://upload.wikimedia.org/wikipedia/commons/2/2d/Syria_physical_location_map.svg',
 } as const;
@@ -190,7 +204,7 @@ export default function SyidClient() {
           accessibilityLabel="خط قمرة"
           cachePolicy="disk"
           contentFit="contain"
-          source={{ uri: syidAssetUrl('qomra2.webp') }}
+          source={{ uri: syidAssetUrl(SYID_MATERIALS.qomra) }}
           style={styles.preview}
         />
         <AppButton
@@ -207,25 +221,34 @@ export default function SyidClient() {
       <AppCard style={styles.section}>
         <AppText variant="title">العلم السوري ونسبه</AppText>
         <AppText color="muted">
-          النسب الدقيقة لتصميم العلم السوري الرسمي: العرض 36 وحدة والارتفاع 24 وحدة، وكل شريط 8 وحدات.
+          النسب الدقيقة لتصميم العلم السوري الرسمي، بوحدات المخطط الرسمي.
         </AppText>
         <Image
           accessibilityLabel="العلم السوري بالنسب الصحيحة"
           cachePolicy="disk"
           contentFit="contain"
-          source={{ uri: syidAssetUrl('العلم السوري بالنسب الصحيحة.png') }}
+          source={{ uri: syidAssetUrl(SYID_MATERIALS.flagProportionsPng) }}
           style={styles.flag}
         />
+        <View style={styles.measurements} testID="syid-flag-measurements">
+          {flagMeasurements.map((item) => (
+            <View key={item.label} style={styles.measurement}>
+              <AppText color="muted" variant="caption">{item.label}</AppText>
+              <AppText variant="label">{item.value}</AppText>
+            </View>
+          ))}
+        </View>
         <View style={styles.actions}>
           <AppButton
             icon={<Download color={theme.palette.primaryForeground} size={18} />}
             onPress={() =>
               void downloadAsset(
-                'العلم السوري بالنسب الصحيحة.png',
+                SYID_MATERIALS.flagProportionsPng,
                 'العلم السوري بالنسب الصحيحة.png',
                 'image/png',
               )
             }
+            testID="syid-flag-png"
           >
             تحميل PNG
           </AppButton>
@@ -233,19 +256,25 @@ export default function SyidClient() {
             icon={<FileDown color={theme.palette.foreground} size={18} />}
             onPress={() =>
               void downloadAsset(
-                'العلم السوري بالنسب الصحيحة.svg',
+                SYID_MATERIALS.flagProportionsSvg,
                 'العلم السوري بالنسب الصحيحة.svg',
                 'image/svg+xml',
               )
             }
+            testID="syid-flag-svg"
             variant="secondary"
           >
             تحميل SVG
           </AppButton>
           <AppButton
             onPress={() =>
-              void downloadAsset('علم سوريا.dwg', 'علم سوريا.dwg', 'application/acad')
+              void downloadAsset(
+                SYID_MATERIALS.flagDwg,
+                'علم سوريا.dwg',
+                'application/acad',
+              )
             }
+            testID="syid-flag-dwg"
             variant="secondary"
           >
             تحميل DWG
@@ -267,7 +296,7 @@ export default function SyidClient() {
           accessibilityLabel="الدليل الإرشادي للعلم السوري"
           cachePolicy="disk"
           contentFit="contain"
-          source={{ uri: syidAssetUrl('الدليل الإرشادي للعلم السوري.webp') }}
+          source={{ uri: syidAssetUrl(SYID_MATERIALS.flagGuide) }}
           style={styles.preview}
         />
         <AppButton
@@ -287,18 +316,12 @@ export default function SyidClient() {
           accessibilityLabel="شعار الهوية البصرية السورية"
           cachePolicy="disk"
           contentFit="contain"
-          source={{ uri: syidAssetUrl('logo.ai.svg') }}
+          source={{ uri: syidAssetUrl(SYID_MATERIALS.logo) }}
           style={styles.logo}
         />
         <AppButton
           icon={<Download color={theme.palette.primaryForeground} size={18} />}
-          onPress={() =>
-            void downloadAsset(
-              '191b8f0d278fc2ab095fb4f344e3e9b4.zip',
-              'مواد الهوية البصرية السورية.zip',
-              'application/zip',
-            )
-          }
+          onPress={() => void openSafeExternalUrl(externalLinks.materials)}
         >
           تحميل المواد والموارد الرسمية
         </AppButton>
@@ -435,6 +458,8 @@ const styles = StyleSheet.create({
     height: 180,
     width: '100%',
   },
+  measurement: { flexGrow: 1, gap: 2, minWidth: 104 },
+  measurements: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   map: {
     borderRadius: 16,
     height: 480,
@@ -460,5 +485,7 @@ PORT STATUS
   source:     resources/js/Pages/SyId/SyidClient.tsx (561 lines)
   confidence: high
   todos:      0
-  notes:      Native clipboard, downloads, offline boundaries, filters, maps, source links, palettes, and credits preserve the identity guide.
+  notes:      Native clipboard, downloads, offline boundaries, filters, maps, source links, palettes,
+              and credits preserve the identity guide. Material URLs track the published filenames and
+              the flag card carries the website diagram's measurements as callout text.
 */

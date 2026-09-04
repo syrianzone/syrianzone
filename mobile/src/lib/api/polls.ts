@@ -3,6 +3,17 @@ import { z } from 'zod';
 import { getInstallationId } from '@/lib/storage/secure';
 
 import { apiClient } from './client';
+import { ApiError } from './errors';
+import {
+  legacyLeaderboardSchema,
+  legacyLeaderboardToMobile,
+  legacyPollDetailSchema,
+  legacyPollDetailToMobile,
+  legacyPollListSchema,
+  legacyPollToMobile,
+  legacyVoteError,
+  legacyVoteResponseSchema,
+} from './pollsLegacy';
 import { envelopeSchema } from './schemas';
 
 const nullableText = z.string().nullable();
@@ -129,6 +140,16 @@ function pollPath(identifier: string): string {
   return encodeURIComponent(identifier);
 }
 
+// Production syrian.zone has no /api/mobile routes yet, so a 404 (or a phone that
+// cannot reach the server at all) means the request must be replayed against the
+// poll API the website has always served. Any other failure is the server talking.
+function shouldFallBack(error: unknown): boolean {
+  return (
+    error instanceof ApiError
+    && (error.status === 404 || error.code === 'network')
+  );
+}
+
 export const pollQueryKeys = {
   admin: ['polls', 'admin'] as const,
   all: ['polls'] as const,
@@ -140,12 +161,26 @@ export const pollQueryKeys = {
 export async function fetchPolls({
   signal,
 }: RequestOptions = {}): Promise<PollSummary[]> {
-  const response = await apiClient.request('/api/mobile/polls', {
+  try {
+    const response = await apiClient.request('/api/mobile/polls', {
+      auth: false,
+      schema: pollsResponseSchema,
+      signal,
+    });
+    return response.data;
+  } catch (error) {
+    if (!shouldFallBack(error)) {
+      throw error;
+    }
+  }
+  // The legacy list is raw rows for the active polls, which today means only
+  // best-ministers: the government tier list is the single public poll on the site.
+  const polls = await apiClient.request('/api/polls', {
     auth: false,
-    schema: pollsResponseSchema,
+    schema: legacyPollListSchema,
     signal,
   });
-  return response.data;
+  return polls.map(legacyPollToMobile);
 }
 
 export async function fetchAdminPolls({
@@ -163,15 +198,27 @@ export async function fetchPoll(
   identifier: string,
   { signal }: RequestOptions = {},
 ): Promise<PollDetail> {
-  const response = await apiClient.request(
-    `/api/mobile/polls/${pollPath(identifier)}`,
-    {
-      auth: false,
-      schema: pollDetailResponseSchema,
-      signal,
-    },
-  );
-  return response.data;
+  try {
+    const response = await apiClient.request(
+      `/api/mobile/polls/${pollPath(identifier)}`,
+      {
+        auth: false,
+        schema: pollDetailResponseSchema,
+        signal,
+      },
+    );
+    return response.data;
+  } catch (error) {
+    if (!shouldFallBack(error)) {
+      throw error;
+    }
+  }
+  const legacy = await apiClient.request(`/api/polls/${pollPath(identifier)}`, {
+    auth: false,
+    schema: legacyPollDetailSchema,
+    signal,
+  });
+  return legacyPollDetailToMobile(legacy);
 }
 
 export async function fetchPollLeaderboard(
@@ -182,16 +229,34 @@ export async function fetchPollLeaderboard(
     status = 'active',
   }: LeaderboardOptions = {},
 ): Promise<PollLeaderboard> {
-  const response = await apiClient.request(
-    `/api/mobile/polls/${pollPath(identifier)}/leaderboard`,
+  try {
+    const response = await apiClient.request(
+      `/api/mobile/polls/${pollPath(identifier)}/leaderboard`,
+      {
+        auth: false,
+        query: { history_days: historyDays, status },
+        schema: pollLeaderboardResponseSchema,
+        signal,
+      },
+    );
+    return response.data;
+  } catch (error) {
+    if (!shouldFallBack(error)) {
+      throw error;
+    }
+  }
+  // The legacy leaderboard resolves the poll by slug only and always returns the
+  // whole history, so the requested window is applied while adapting.
+  const legacy = await apiClient.request(
+    `/api/polls/${pollPath(identifier)}/leaderboard`,
     {
       auth: false,
-      query: { history_days: historyDays, status },
-      schema: pollLeaderboardResponseSchema,
+      query: { status },
+      schema: legacyLeaderboardSchema,
       signal,
     },
   );
-  return response.data;
+  return legacyLeaderboardToMobile(legacy, { historyDays });
 }
 
 export async function submitPollVote(
@@ -199,18 +264,36 @@ export async function submitPollVote(
   tiers: PollTiers,
   { installationId, signal }: VoteOptions = {},
 ): Promise<{ accepted: true; voteDay: string }> {
-  const response = await apiClient.request(
-    `/api/mobile/polls/${pollPath(identifier)}/votes`,
-    {
-      auth: false,
-      body: {
-        installationId: installationId ?? (await getInstallationId()),
-        tiers,
+  const deviceId = installationId ?? (await getInstallationId());
+  try {
+    const response = await apiClient.request(
+      `/api/mobile/polls/${pollPath(identifier)}/votes`,
+      {
+        auth: false,
+        body: { installationId: deviceId, tiers },
+        method: 'POST',
+        schema: pollVoteResponseSchema,
+        signal,
       },
+    );
+    return response.data;
+  } catch (error) {
+    if (!shouldFallBack(error)) {
+      throw error;
+    }
+  }
+  // The legacy ballot takes the same tiers under a slug and the installation id as
+  // its device id, and answers {ok: true} with no vote day of its own.
+  try {
+    await apiClient.request('/api/submit', {
+      auth: false,
+      body: { deviceId, pollSlug: identifier, tiers },
       method: 'POST',
-      schema: pollVoteResponseSchema,
+      schema: legacyVoteResponseSchema,
       signal,
-    },
-  );
-  return response.data;
+    });
+  } catch (error) {
+    throw legacyVoteError(error);
+  }
+  return { accepted: true, voteDay: new Date().toISOString().slice(0, 10) };
 }

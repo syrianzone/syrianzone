@@ -53,6 +53,10 @@ polls	GET	/api/mobile/polls	app/Http/Controllers/Mobile/PollController.php	mobil
 poll	GET	/api/mobile/polls/{idOrSlug}	app/Http/Controllers/Mobile/PollController.php	mobile/src/lib/api/polls.ts	public	none	implemented
 poll_leaderboard	GET	/api/mobile/polls/{idOrSlug}/leaderboard	app/Http/Controllers/Mobile/PollController.php	mobile/src/lib/api/polls.ts	public	none	implemented
 poll_vote	POST	/api/mobile/polls/{idOrSlug}/votes	app/Http/Controllers/Mobile/PollController.php	mobile/src/lib/api/polls.ts	installation id	none	implemented
+poll_list_legacy	GET	/api/polls	app/Http/Controllers/PollController.php	mobile/src/lib/api/pollsLegacy.ts	public	none	fallback
+poll_legacy	GET	/api/polls/{slug}	app/Http/Controllers/PollController.php	mobile/src/lib/api/pollsLegacy.ts	public	none	fallback
+poll_leaderboard_legacy	GET	/api/polls/{slug}/leaderboard?status={status}	app/Http/Controllers/PollController.php	mobile/src/lib/api/pollsLegacy.ts	public	none	fallback
+poll_vote_legacy	POST	/api/submit	app/Http/Controllers/PollController.php	mobile/src/lib/api/pollsLegacy.ts	installation id	none	fallback
 contributors	GET	/api/mobile/contributors	app/Http/Controllers/Mobile/PublicContentController.php	mobile/src/features/SyrianContributors/api.ts	public	none	implemented
 contributor	GET	/api/mobile/contributors/{username}	app/Http/Controllers/Mobile/PublicContentController.php	-	public	none	server-only
 population	GET	/api/population/master	app/Http/Controllers/Api/PopulationAtlasController.php	mobile/src/features/Population/lib/data-fetcher.ts	public	none	implemented

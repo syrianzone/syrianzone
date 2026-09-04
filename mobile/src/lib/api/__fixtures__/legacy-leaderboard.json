@@ -1,0 +1,346 @@
+{
+  "poll": {
+    "id": "a09dd121-28bf-46ba-a431-418332e3c6c6",
+    "slug": "best-ministers",
+    "title": "Best Ministers",
+    "timezone": "Europe/Amsterdam",
+    "is_active": 1,
+    "created_at": "2025-12-17T15:39:49.000000Z",
+    "updated_at": "2025-12-17T15:39:49.000000Z",
+    "user_id": null
+  },
+  "groups": [
+    {
+      "id": "a09f1321-17d4-42a5-89d7-8891c2c4d6c8",
+      "poll_id": "a09dd121-28bf-46ba-a431-418332e3c6c6",
+      "name": "المحافظون",
+      "key": "governor",
+      "sort_order": 0,
+      "created_at": "2025-12-18T06:40:11.000000Z",
+      "updated_at": "2026-05-10T00:32:50.000000Z",
+      "is_default": false
+    },
+    {
+      "id": "a09f1321-1a4b-49c4-94f9-f49895e97579",
+      "poll_id": "a09dd121-28bf-46ba-a431-418332e3c6c6",
+      "name": "الحكومة",
+      "key": "minister",
+      "sort_order": 1,
+      "created_at": "2025-12-18T06:40:11.000000Z",
+      "updated_at": "2026-05-10T00:32:50.000000Z",
+      "is_default": true
+    },
+    {
+      "id": "a09f1321-1c8b-43d8-8165-4189ba7d9a18",
+      "poll_id": "a09dd121-28bf-46ba-a431-418332e3c6c6",
+      "name": "مسؤولو الأمن",
+      "key": "security",
+      "sort_order": 2,
+      "created_at": "2025-12-18T06:40:11.000000Z",
+      "updated_at": "2026-05-10T00:32:50.000000Z",
+      "is_default": false
+    },
+    {
+      "id": "a09f1321-11de-4681-a573-16e1238b0231",
+      "poll_id": "a09dd121-28bf-46ba-a431-418332e3c6c6",
+      "name": "شخصيات الجولاني",
+      "key": "jolani",
+      "sort_order": 3,
+      "created_at": "2025-12-18T06:40:11.000000Z",
+      "updated_at": "2026-05-10T00:32:50.000000Z",
+      "is_default": false
+    }
+  ],
+  "status": "all",
+  "ministers": [
+    {
+      "candidateId": "a09dd121-5eb5-4840-89c4-7fd0f5d02517",
+      "name": "أحمد الشرع",
+      "title": "رئيس الجمهورية العربية السورية",
+      "xHandle": "AH_AlSharaa",
+      "imageUrl": "https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/tierlist/candidates/item24.jpeg",
+      "originalUrl": "https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/tierlist/candidates/item24.jpeg",
+      "category": "minister",
+      "groupId": "a09f1321-1a4b-49c4-94f9-f49895e97579",
+      "status": "active",
+      "termStartedAt": null,
+      "termEndedAt": null,
+      "archiveReason": null,
+      "successorId": null,
+      "votes": 3073,
+      "score": 153678,
+      "avg": 50.01,
+      "rank": 1
+    },
+    {
+      "candidateId": "a09dd121-5ade-4c4a-bff8-3353face1ee9",
+      "name": "مصعب نزال العلي",
+      "title": "وزير الصحة",
+      "xHandle": "Musaab_Al_Ali",
+      "imageUrl": "https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/tierlist/candidates/item14.png",
+      "originalUrl": "https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/tierlist/candidates/item14.png",
+      "category": "minister",
+      "groupId": "a09f1321-1a4b-49c4-94f9-f49895e97579",
+      "status": "active",
+      "termStartedAt": null,
+      "termEndedAt": null,
+      "archiveReason": null,
+      "successorId": null,
+      "votes": 1933,
+      "score": 68883,
+      "avg": 35.64,
+      "rank": 8
+    },
+    {
+      "candidateId": "a09dd121-5efd-4dd7-81ca-b88dd84c1c17",
+      "name": "عبد القادر حصرية",
+      "title": "حاكم مصرف سوريا المركزي",
+      "xHandle": null,
+      "imageUrl": "https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/tierlist/candidates/item25.jpg",
+      "originalUrl": "https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/tierlist/candidates/item25.jpg",
+      "category": "minister",
+      "groupId": "a09f1321-1a4b-49c4-94f9-f49895e97579",
+      "status": "archived",
+      "termStartedAt": null,
+      "termEndedAt": "2026-05-15",
+      "archiveReason": null,
+      "successorId": "a09dd121-5f6e-4a74-b622-b7850e3cb7d5",
+      "votes": 1595,
+      "score": 48744,
+      "avg": 30.56,
+      "rank": 13
+    }
+  ],
+  "governors": [
+    {
+      "candidateId": "a09dd121-55ca-4ccb-b264-ba876de02eb3",
+      "name": "عزام غريب",
+      "title": "محافظ حلب",
+      "xHandle": "AleppoGov1",
+      "imageUrl": "https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/tierlist/candidates/gov02.jpg",
+      "originalUrl": "https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/tierlist/candidates/gov02.jpg",
+      "category": "governor",
+      "groupId": "a09f1321-17d4-42a5-89d7-8891c2c4d6c8",
+      "status": "active",
+      "termStartedAt": null,
+      "termEndedAt": null,
+      "archiveReason": null,
+      "successorId": null,
+      "votes": 230,
+      "score": 8864,
+      "avg": 38.54,
+      "rank": 1
+    }
+  ],
+  "security": [
+    {
+      "candidateId": "a09dd121-6f9e-47b5-bcc7-51cc72678f3d",
+      "name": "عبد العزيز الأحمد",
+      "title": "قائد الأمن الداخلي في محافظة اللاذقية",
+      "xHandle": "syrianmoi",
+      "imageUrl": "https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/tierlist/candidates/sec05.png",
+      "originalUrl": "https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/tierlist/candidates/sec05.png",
+      "category": "security",
+      "groupId": "a09f1321-1c8b-43d8-8165-4189ba7d9a18",
+      "status": "active",
+      "termStartedAt": null,
+      "termEndedAt": null,
+      "archiveReason": null,
+      "successorId": null,
+      "votes": 177,
+      "score": 9078,
+      "avg": 51.29,
+      "rank": 1
+    }
+  ],
+  "jolani": [
+    {
+      "candidateId": "a09dd121-313b-4047-9f0c-f9bc5eb3b3fb",
+      "name": "الجولاني الفاتح",
+      "title": "",
+      "xHandle": null,
+      "imageUrl": "https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/tierlist/candidates/jolani50.jpg",
+      "originalUrl": "https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/tierlist/candidates/jolani50.jpg",
+      "category": "jolani",
+      "groupId": "a09f1321-11de-4681-a573-16e1238b0231",
+      "status": "active",
+      "termStartedAt": null,
+      "termEndedAt": null,
+      "archiveReason": null,
+      "successorId": null,
+      "votes": 221,
+      "score": 10756,
+      "avg": 48.67,
+      "rank": 1
+    }
+  ],
+  "history": {
+    "a09dd121-5eb5-4840-89c4-7fd0f5d02517": [
+      {
+        "date": "2025-09-06 19:00:00",
+        "votes": 543,
+        "score": 26864
+      },
+      {
+        "date": "2025-09-07 19:00:00",
+        "votes": 59,
+        "score": 2891
+      },
+      {
+        "date": "2026-09-02 00:00:00",
+        "votes": 1,
+        "score": 55
+      },
+      {
+        "date": "2026-09-03 00:00:00",
+        "votes": 4,
+        "score": 216
+      },
+      {
+        "date": "2026-09-04 00:00:00",
+        "votes": 6,
+        "score": 315
+      }
+    ],
+    "a09dd121-5ade-4c4a-bff8-3353face1ee9": [
+      {
+        "date": "2025-09-06 19:00:00",
+        "votes": 316,
+        "score": 11513
+      },
+      {
+        "date": "2025-09-07 19:00:00",
+        "votes": 39,
+        "score": 1475
+      },
+      {
+        "date": "2025-12-17 21:00:00",
+        "votes": 1,
+        "score": 55
+      },
+      {
+        "date": "2025-12-17 23:00:00",
+        "votes": 2,
+        "score": 75
+      },
+      {
+        "date": "2026-09-03 00:00:00",
+        "votes": 3,
+        "score": 132
+      },
+      {
+        "date": "2026-09-04 00:00:00",
+        "votes": 6,
+        "score": 250
+      }
+    ],
+    "a09dd121-5efd-4dd7-81ca-b88dd84c1c17": [
+      {
+        "date": "2025-09-06 19:00:00",
+        "votes": 217,
+        "score": 6977
+      },
+      {
+        "date": "2025-09-07 19:00:00",
+        "votes": 40,
+        "score": 1372
+      },
+      {
+        "date": "2026-05-11 22:00:00",
+        "votes": 2,
+        "score": 90
+      },
+      {
+        "date": "2026-05-12 22:00:00",
+        "votes": 1,
+        "score": 33
+      },
+      {
+        "date": "2026-05-13 22:00:00",
+        "votes": 2,
+        "score": 72
+      }
+    ],
+    "a09dd121-55ca-4ccb-b264-ba876de02eb3": [
+      {
+        "date": "2025-09-07 19:00:00",
+        "votes": 10,
+        "score": 273
+      },
+      {
+        "date": "2025-09-08 19:00:00",
+        "votes": 22,
+        "score": 746
+      },
+      {
+        "date": "2026-09-01 00:00:00",
+        "votes": 2,
+        "score": 93
+      },
+      {
+        "date": "2026-09-02 00:00:00",
+        "votes": 2,
+        "score": 84
+      },
+      {
+        "date": "2026-09-04 00:00:00",
+        "votes": 3,
+        "score": 109
+      }
+    ],
+    "a09dd121-6f9e-47b5-bcc7-51cc72678f3d": [
+      {
+        "date": "2025-09-26 19:00:00",
+        "votes": 12,
+        "score": 635
+      },
+      {
+        "date": "2025-09-27 19:00:00",
+        "votes": 4,
+        "score": 218
+      },
+      {
+        "date": "2026-09-01 00:00:00",
+        "votes": 3,
+        "score": 88
+      },
+      {
+        "date": "2026-09-02 00:00:00",
+        "votes": 2,
+        "score": 87
+      },
+      {
+        "date": "2026-09-04 00:00:00",
+        "votes": 2,
+        "score": 110
+      }
+    ],
+    "a09dd121-313b-4047-9f0c-f9bc5eb3b3fb": [
+      {
+        "date": "2025-10-31 20:00:00",
+        "votes": 3,
+        "score": 50
+      },
+      {
+        "date": "2025-11-13 20:00:00",
+        "votes": 21,
+        "score": 998
+      },
+      {
+        "date": "2026-07-06 00:00:00",
+        "votes": 1,
+        "score": 53
+      },
+      {
+        "date": "2026-08-12 00:00:00",
+        "votes": 2,
+        "score": 103
+      },
+      {
+        "date": "2026-09-01 00:00:00",
+        "votes": 2,
+        "score": 100
+      }
+    ]
+  }
+}

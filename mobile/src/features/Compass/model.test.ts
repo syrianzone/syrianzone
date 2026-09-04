@@ -1,7 +1,9 @@
 import { DEFAULT_QUESTIONS, SCALES } from './data';
 import {
   calculateCompassResults,
+  compassPercentage,
   compassRating,
+  gaugeMarkerPercent,
   shuffleQuestions,
 } from './model';
 
@@ -21,5 +23,13 @@ describe('Syria compass scoring', () => {
     const shuffled = shuffleQuestions(original, () => 0);
     expect(shuffled.map((item) => item.id)).toEqual([2, 3, 1]);
     expect(original.map((item) => item.id)).toEqual([1, 2, 3]);
+  });
+
+  test('mirrors the gauge marker offset per writing direction', () => {
+    expect(compassPercentage(1)).toBe(100);
+    expect(compassPercentage(-4)).toBe(0);
+    expect(gaugeMarkerPercent(1, 'rtl')).toBe(100);
+    expect(gaugeMarkerPercent(1, 'ltr')).toBe(0);
+    expect(gaugeMarkerPercent(0, 'rtl')).toBe(gaugeMarkerPercent(0, 'ltr'));
   });
 });

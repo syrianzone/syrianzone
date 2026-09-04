@@ -1,10 +1,11 @@
-import { RotateCcw, Share2 } from 'lucide-react-native';
-import { useMemo, useState } from 'react';
+import { Download, RotateCcw, Share2 } from 'lucide-react-native';
+import { useMemo, useRef, useState } from 'react';
 import { Share, StyleSheet, View } from 'react-native';
 
 import { AppButton } from '@/components/ui/AppButton';
 import { AppCard } from '@/components/ui/AppCard';
 import { AppText } from '@/components/ui/AppText';
+import { useLocale } from '@/contexts/LocaleContext';
 import { useAppTheme } from '@/contexts/ThemeContext';
 
 import { DEFAULT_QUESTIONS, SCALES } from './data';
@@ -13,18 +14,35 @@ import {
   compassRating,
   shuffleQuestions,
 } from './model';
+import { ResultGauge } from './ResultGauge';
+import { shareCompassResultCard } from './sharing';
 
-const answerOptions = [-2, -1, 0, 1, 2] as const;
+// Same order and wording as the web legend above the answer buttons.
+const answerOptions = [
+  { label: 'أعارض بشدة', value: -2 },
+  { label: 'أعارض', value: -1 },
+  { label: 'محايد', value: 0 },
+  { label: 'أوافق', value: 1 },
+  { label: 'أوافق بشدة', value: 2 },
+] as const;
+
+function signed(value: number): string {
+  return value > 0 ? `+${value}` : `${value}`;
+}
 
 export default function CompassApp() {
+  const { direction } = useLocale();
   const { theme } = useAppTheme();
   const [started, setStarted] = useState(false);
   const [finished, setFinished] = useState(false);
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [exporting, setExporting] = useState(false);
+  const [exportMessage, setExportMessage] = useState<string | null>(null);
   const [questions, setQuestions] = useState(() =>
     shuffleQuestions(DEFAULT_QUESTIONS),
   );
+  const resultCard = useRef<View>(null);
   const results = useMemo(
     () => calculateCompassResults(questions, answers),
     [answers, questions],
@@ -35,7 +53,28 @@ export default function CompassApp() {
     setFinished(false);
     setIndex(0);
     setAnswers({});
+    setExportMessage(null);
     setQuestions(shuffleQuestions(DEFAULT_QUESTIONS));
+  };
+
+  const exportCard = async () => {
+    if (!resultCard.current) {
+      return;
+    }
+    setExporting(true);
+    setExportMessage(null);
+    try {
+      const shared = await shareCompassResultCard(resultCard.current);
+      setExportMessage(
+        shared
+          ? 'تم تجهيز صورة النتيجة وفتح خيارات المشاركة.'
+          : 'المشاركة غير متاحة على هذا الجهاز.',
+      );
+    } catch {
+      setExportMessage('تعذر إنشاء صورة النتيجة. حاول مرة أخرى.');
+    } finally {
+      setExporting(false);
+    }
   };
 
   if (!started) {
@@ -77,20 +116,37 @@ export default function CompassApp() {
           />
         </View>
         <AppText variant="heading">{question.text}</AppText>
-        <View style={styles.answerRow}>
-          {answerOptions.map((value) => {
-            const active = answers[index] === value;
+        <View
+          style={[
+            styles.answerRow,
+            { flexDirection: direction === 'rtl' ? 'row-reverse' : 'row' },
+          ]}
+          testID="compass-answers"
+        >
+          {answerOptions.map((option) => {
+            const active = answers[index] === option.value;
             return (
-              <AppButton
-                accessibilityLabel={`إجابة ${value}`}
-                key={value}
-                onPress={() =>
-                  setAnswers((current) => ({ ...current, [index]: value }))
-                }
-                variant={active ? 'primary' : 'secondary'}
-              >
-                {value > 0 ? `+${value}` : value}
-              </AppButton>
+              <View key={option.value} style={styles.answerOption}>
+                <AppButton
+                  accessibilityLabel={`${option.label} ${signed(option.value)}`}
+                  onPress={() =>
+                    setAnswers((current) => ({
+                      ...current,
+                      [index]: option.value,
+                    }))
+                  }
+                  variant={active ? 'primary' : 'secondary'}
+                >
+                  {signed(option.value)}
+                </AppButton>
+                <AppText
+                  color={active ? 'primary' : 'muted'}
+                  style={styles.answerLabel}
+                  variant="caption"
+                >
+                  {option.label}
+                </AppText>
+              </View>
             );
           })}
         </View>
@@ -124,38 +180,41 @@ export default function CompassApp() {
   ).join('\n');
 
   return (
-    <AppCard style={styles.section}>
-      <AppText variant="title">نتائج بوصلة سوريا</AppText>
-      {SCALES.map((scale) => {
-        const value = results[scale.id] ?? 0;
-        const percentage = ((value + 1) / 2) * 100;
-        return (
-          <View key={scale.id} style={styles.result}>
-            <AppText variant="label">{scale.name}</AppText>
-            <AppText color="primary">{compassRating(value, scale)}</AppText>
-            <View style={[styles.resultTrack, { backgroundColor: theme.palette.border }]}>
-              <View
-                style={[
-                  styles.marker,
-                  {
-                    backgroundColor: theme.palette.foreground,
-                    left: `${Math.max(0, Math.min(100, percentage))}%`,
-                  },
-                ]}
-              />
-            </View>
-            <View style={styles.ends}>
-              <AppText color="muted" variant="caption">{scale.left}</AppText>
-              <AppText color="muted" variant="caption">{scale.right}</AppText>
-            </View>
-          </View>
-        );
-      })}
+    <View style={styles.section}>
+      {/* Only the card is captured, so the action buttons stay out of the image. */}
+      <View collapsable={false} ref={resultCard}>
+        <AppCard style={styles.section}>
+          <AppText variant="title">نتائج بوصلة سوريا</AppText>
+          <AppText color="muted">
+            تحليل ميولك السياسية وموقفك من المحاور الوطنية
+          </AppText>
+          {SCALES.map((scale) => (
+            <ResultGauge
+              key={scale.id}
+              scale={scale}
+              value={results[scale.id] ?? 0}
+            />
+          ))}
+        </AppCard>
+      </View>
+      {exportMessage ? (
+        <AppText color="muted" variant="caption">
+          {exportMessage}
+        </AppText>
+      ) : null}
       <AppButton
-        icon={<Share2 color={theme.palette.primaryForeground} size={18} />}
-        onPress={() => void Share.share({ message: `نتائج بوصلة سوريا\n${summary}` })}
+        icon={<Download color={theme.palette.primaryForeground} size={18} />}
+        loading={exporting}
+        onPress={() => void exportCard()}
       >
-        مشاركة النتائج
+        مشاركة النتيجة
+      </AppButton>
+      <AppButton
+        icon={<Share2 color={theme.palette.foreground} size={18} />}
+        onPress={() => void Share.share({ message: `نتائج بوصلة سوريا\n${summary}` })}
+        variant="secondary"
+      >
+        مشاركة النتائج نصاً
       </AppButton>
       <AppButton
         icon={<RotateCcw color={theme.palette.foreground} size={18} />}
@@ -164,25 +223,21 @@ export default function CompassApp() {
       >
         إعادة الاختبار
       </AppButton>
-    </AppCard>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  answerLabel: {
+    textAlign: 'center',
+  },
+  answerOption: {
+    flex: 1,
+    gap: 4,
+  },
   answerRow: {
-    flexDirection: 'row',
     gap: 6,
     justifyContent: 'center',
-  },
-  ends: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  marker: {
-    height: 24,
-    position: 'absolute',
-    top: 0,
-    width: 3,
   },
   navigation: {
     flexDirection: 'row',
@@ -197,14 +252,6 @@ const styles = StyleSheet.create({
   progressValue: {
     height: '100%',
   },
-  result: {
-    gap: 6,
-  },
-  resultTrack: {
-    borderRadius: 6,
-    height: 24,
-    position: 'relative',
-  },
   scaleList: {
     gap: 5,
   },
@@ -218,5 +265,8 @@ PORT STATUS
   source:     resources/js/Pages/Compass/CompassApp.tsx (372 lines)
   confidence: high
   todos:      0
-  notes:      Native cards preserve shuffled questions, scoring, ratings, restart, and sharing.
+  notes:      Native cards preserve shuffled questions, scoring, ratings, and
+              restart. Answer buttons carry the web legend, result gauges show
+              the rating plus "نسبة X%", and the JPG download became a captured
+              share of the result card.
 */

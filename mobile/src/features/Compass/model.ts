@@ -33,6 +33,21 @@ export function calculateCompassResults(
   return results;
 }
 
+export function compassPercentage(value: number): number {
+  return Math.max(0, Math.min(100, ((value + 1) / 2) * 100));
+}
+
+// The gauge marker is placed with a physical `left` offset while the pole
+// labels flow with the writing direction, so an RTL row (left pole rendered on
+// the right) needs the mirrored offset to land under its own label.
+export function gaugeMarkerPercent(
+  value: number,
+  direction: 'ltr' | 'rtl',
+): number {
+  const percentage = compassPercentage(value);
+  return direction === 'rtl' ? percentage : 100 - percentage;
+}
+
 export function compassRating(value: number, scale: Scale): string {
   const percentage = ((value + 1) / 2) * 100;
   if (percentage <= 10) {

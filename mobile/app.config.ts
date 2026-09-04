@@ -2,6 +2,45 @@ import type { ConfigContext, ExpoConfig } from 'expo/config';
 
 import { withDataChannelWebRtc } from './plugins/withDataChannelWebRtc.js';
 
+// syrian.zone pages that have a native screen. Duplicated from
+// src/lib/linking.ts because the Expo config is evaluated in plain Node, where
+// importing app code would pull in native modules; app.config.test.ts fails if
+// the two lists drift. Exact paths only: a catch-all prefix would claim website
+// pages the app cannot render and drop the user on an unmatched route.
+export const websiteAppLinkPaths: readonly string[] = [
+  '/',
+  '/about',
+  '/alignment',
+  '/board',
+  '/compass',
+  '/dashboard',
+  '/govapps',
+  '/guesswho',
+  '/house',
+  '/justice',
+  '/mishwar',
+  '/party',
+  '/phonebook',
+  '/polls',
+  '/population',
+  '/priorities',
+  '/privacy',
+  '/roznama',
+  '/shawarma',
+  '/sites',
+  '/syid',
+  '/syofficial',
+  '/syrian-contributors',
+  '/terms',
+  '/tierlist',
+  '/transit',
+  '/transit/admin',
+  '/transit/studio',
+];
+
+// Transit city pages carry an id, so they need a prefix rather than a path.
+export const websiteAppLinkPathPrefixes: readonly string[] = ['/transit/city/'];
+
 export default ({ config }: ConfigContext): ExpoConfig => {
   const appConfig: ExpoConfig = {
     ...config,
@@ -13,6 +52,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     scheme: 'syrianzone',
     userInterfaceStyle: 'automatic',
     ios: {
+      // No associatedDomains yet: iOS universal links need
+      // https://syrian.zone/.well-known/apple-app-site-association carrying the
+      // Apple team id and the Associated Domains capability on the provisioning
+      // profile, both of which only the maintainer can issue. Until then
+      // syrian.zone links open in Safari on iOS.
       buildNumber: '1',
       bundleIdentifier: 'zone.syrian.app',
       supportsTablet: true,
@@ -31,6 +75,33 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         monochromeImage: './assets/images/icon-monochrome.png',
       },
       predictiveBackGestureEnabled: true,
+      intentFilters: [
+        {
+          action: 'VIEW',
+          // autoVerify stays false until the maintainer publishes the release
+          // signing certificate SHA-256 fingerprint in
+          // https://syrian.zone/.well-known/assetlinks.json. Android only
+          // verifies an app link against that file; with autoVerify true and no
+          // file, Android 12 and later sends every one of these links straight
+          // to the browser and never offers the app. With false the app still
+          // appears in the "open with" chooser, which is the honest behaviour
+          // until the fingerprint is published.
+          autoVerify: false,
+          category: ['BROWSABLE', 'DEFAULT'],
+          data: [
+            ...websiteAppLinkPaths.map((path) => ({
+              host: 'syrian.zone',
+              path,
+              scheme: 'https',
+            })),
+            ...websiteAppLinkPathPrefixes.map((pathPrefix) => ({
+              host: 'syrian.zone',
+              pathPrefix,
+              scheme: 'https',
+            })),
+          ],
+        },
+      ],
     },
     web: {
       output: 'static',

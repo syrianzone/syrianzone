@@ -37,6 +37,12 @@ function AppNavigator() {
   );
 }
 
+// expo-router looks for an `ErrorBoundary` export on every route file. Exporting
+// it from the root layout catches render crashes in the layout and in every
+// screen below it, which is what a release build otherwise shows as a blank
+// screen or an Android "keeps stopping" dialog.
+export { AppErrorBoundary as ErrorBoundary } from '@/components/shell/ErrorBoundary';
+
 export default function RootLayout() {
   return (
     <AppProviders>

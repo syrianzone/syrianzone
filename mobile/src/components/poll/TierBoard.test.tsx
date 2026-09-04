@@ -1,4 +1,4 @@
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { fireEvent, render, waitFor, within } from '@testing-library/react-native';
 
 import { LocaleProvider } from '@/contexts/LocaleContext';
 import { AppThemeProvider } from '@/contexts/ThemeContext';
@@ -91,4 +91,52 @@ test('blocks a ballot below the minimum selection count', async () => {
 
   expect(onVote).not.toHaveBeenCalled();
   expect(view.getByText('اختر 3 مرشحين على الأقل قبل التصويت.')).toBeTruthy();
+});
+
+test('returns a placed candidate to the bank without resetting the board', async () => {
+  const { view } = await renderBoard();
+
+  await fireEvent.press(view.getByLabelText('اختيار الأول'));
+  await fireEvent.press(view.getByLabelText('المستوى ممتاز'));
+  expect(
+    within(view.getByLabelText('المستوى ممتاز')).getByLabelText('اختيار الأول'),
+  ).toBeTruthy();
+
+  await fireEvent.press(view.getByLabelText('اختيار الأول'));
+  await fireEvent.press(view.getByText('إعادة إلى القائمة'));
+
+  expect(
+    within(view.getByLabelText('المستوى ممتاز')).queryByLabelText('اختيار الأول'),
+  ).toBeNull();
+  expect(view.getByLabelText('اختيار الأول')).toBeTruthy();
+});
+
+test('moves a placed candidate to another tier by tapping that tier row', async () => {
+  const { view } = await renderBoard();
+
+  await fireEvent.press(view.getByLabelText('اختيار الأول'));
+  await fireEvent.press(view.getByLabelText('المستوى ممتاز'));
+  await fireEvent.press(view.getByLabelText('اختيار الأول'));
+  await fireEvent.press(view.getByLabelText('المستوى جيد'));
+
+  expect(
+    within(view.getByLabelText('المستوى ممتاز')).queryByLabelText('اختيار الأول'),
+  ).toBeNull();
+  expect(
+    within(view.getByLabelText('المستوى جيد')).getByLabelText('اختيار الأول'),
+  ).toBeTruthy();
+});
+
+test('clears the selection after every move so the next tap starts fresh', async () => {
+  const { view } = await renderBoard();
+
+  await fireEvent.press(view.getByLabelText('اختيار الأول'));
+  expect(view.getByText('نقل 1 من المحددين إلى:')).toBeTruthy();
+  await fireEvent.press(view.getByLabelText('المستوى ممتاز'));
+  expect(view.queryByText('نقل 1 من المحددين إلى:')).toBeNull();
+
+  await fireEvent.press(view.getByLabelText('اختيار الأول'));
+  await fireEvent.press(view.getByText('إعادة إلى القائمة'));
+  expect(view.queryByText('نقل 1 من المحددين إلى:')).toBeNull();
+  expect(view.queryByText('إعادة إلى القائمة')).toBeNull();
 });

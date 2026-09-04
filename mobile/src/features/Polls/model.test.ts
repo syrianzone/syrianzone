@@ -9,6 +9,7 @@ import {
   deterministicCandidateOrder,
   formatCompactNumber,
   moveCandidatesToTier,
+  returnCandidatesToBank,
   serializeBoard,
   switchCandidateGroup,
   toggleBoardSelection,
@@ -100,6 +101,24 @@ test('moves a multi-selection into a tier and serializes stable positions', () =
   board = toggleBoardSelection(board, 'candidate-2');
   board = moveCandidatesToTier(board, 'A', candidates);
   expect(validateBoard(board, 3)).toBeNull();
+});
+
+test('returns selected placed candidates to the bank without touching the rest', () => {
+  let board = toggleBoardSelection(createEmptyBoard(), 'candidate-1');
+  board = toggleBoardSelection(board, 'candidate-3');
+  board = moveCandidatesToTier(board, 'S', candidates);
+
+  board = returnCandidatesToBank(toggleBoardSelection(board, 'candidate-1'));
+
+  expect(board.tiers.S).toEqual(['candidate-3']);
+  expect(board.selected).toEqual([]);
+});
+
+test('returning with an empty selection leaves the board untouched', () => {
+  let board = toggleBoardSelection(createEmptyBoard(), 'candidate-1');
+  board = moveCandidatesToTier(board, 'S', candidates);
+
+  expect(returnCandidatesToBank(board)).toBe(board);
 });
 
 test('switching groups clears the transient board state', () => {

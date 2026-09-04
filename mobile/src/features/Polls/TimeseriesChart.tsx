@@ -2,7 +2,7 @@ import { Share2 } from 'lucide-react-native';
 import { useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import MonthlyLineChart from '@/components/poll/MonthlyLineChart';
+import MonthlyLineChart, { captureColors } from '@/components/poll/MonthlyLineChart';
 import { AppButton } from '@/components/ui/AppButton';
 import { AppCard } from '@/components/ui/AppCard';
 import { AppText } from '@/components/ui/AppText';
@@ -93,9 +93,11 @@ export function TimeseriesChart({
   return (
     <AppCard style={styles.container}>
       <View ref={captureTarget} style={styles.capture}>
-        <AppText variant="heading">{title}</AppText>
-        <AppText color="muted" variant="caption">تقدم المرشحين عبر الزمن</AppText>
-        <MonthlyLineChart months={chart.labels} series={series} />
+        <AppText style={styles.captureTitle} variant="heading">{title}</AppText>
+        <AppText style={styles.captureSubtitle} variant="caption">
+          تقدم المرشحين عبر الزمن
+        </AppText>
+        <MonthlyLineChart forCapture months={chart.labels} series={series} />
       </View>
       <ControlRow
         onSelect={(value) => setView(value as ChartView)}
@@ -217,10 +219,17 @@ const styles = StyleSheet.create({
     gap: 7,
   },
   capture: {
-    backgroundColor: '#ffffff',
+    // The share sheet ships this surface as an image, so its colors ignore the theme.
+    backgroundColor: captureColors.surface,
     borderRadius: 14,
     gap: 4,
     padding: 8,
+  },
+  captureSubtitle: {
+    color: captureColors.mutedForeground,
+  },
+  captureTitle: {
+    color: captureColors.foreground,
   },
   chip: {
     borderRadius: 999,
@@ -243,5 +252,5 @@ PORT STATUS
   source:     resources/js/Pages/Polls/TimeseriesChart.tsx (343 lines)
   confidence: high
   todos:      0
-  notes:      Native SVG, touch filters, and the system share sheet replace Recharts and html2canvas.
+  notes:      Native SVG, touch filters, and the system share sheet replace Recharts and html2canvas; the capture surface keeps fixed light colors in every theme.
 */

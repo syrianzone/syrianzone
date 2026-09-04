@@ -110,6 +110,15 @@ export function toggleBoardSelection(
   return { ...board, selected };
 }
 
+function tiersWithout(
+  tiers: Readonly<Record<PollTierKey, string[]>>,
+  removed: ReadonlySet<string>,
+): Record<PollTierKey, string[]> {
+  return Object.fromEntries(
+    TIER_KEYS.map((key) => [key, tiers[key].filter((id) => !removed.has(id))]),
+  ) as Record<PollTierKey, string[]>;
+}
+
 export function moveCandidatesToTier(
   board: TierBoardState,
   targetTier: PollTierKey,
@@ -122,14 +131,18 @@ export function moveCandidatesToTier(
   const ordered = candidateOrder
     .map(({ id }) => id)
     .filter((id) => selected.has(id));
-  const tiers = Object.fromEntries(
-    TIER_KEYS.map((key) => [
-      key,
-      board.tiers[key].filter((id) => !selected.has(id)),
-    ]),
-  ) as Record<PollTierKey, string[]>;
+  const tiers = tiersWithout(board.tiers, selected);
   tiers[targetTier] = [...tiers[targetTier], ...ordered];
   return { selected: [], tiers };
+}
+
+// Without this a placed candidate can only leave a tier by resetting the whole board.
+export function returnCandidatesToBank(board: TierBoardState): TierBoardState {
+  const selected = new Set(board.selected);
+  if (selected.size === 0) {
+    return board;
+  }
+  return { selected: [], tiers: tiersWithout(board.tiers, selected) };
 }
 
 export function moveCandidateWithinTier(

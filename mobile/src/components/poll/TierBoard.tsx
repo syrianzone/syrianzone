@@ -1,4 +1,4 @@
-import { Download, RotateCcw, Share2, Vote } from 'lucide-react-native';
+import { Download, RotateCcw, Share2, Undo2, Vote } from 'lucide-react-native';
 import { useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -15,6 +15,7 @@ import {
   deterministicCandidateOrder,
   moveCandidatesToTier,
   moveCandidateWithinTier,
+  returnCandidatesToBank,
   serializeBoard,
   switchCandidateGroup,
   TIER_KEYS,
@@ -98,6 +99,7 @@ export function TierBoard({
   );
   const assigned = new Set(TIER_KEYS.flatMap((key) => board.tiers[key]));
   const bank = visibleCandidates.filter(({ id }) => !assigned.has(id));
+  const canReturnToBank = board.selected.some((id) => assigned.has(id));
 
   const selectGroup = (nextGroupId: string) => {
     setGroupId(nextGroupId);
@@ -230,6 +232,15 @@ export function TierBoard({
               </Pressable>
             ))}
           </View>
+          {canReturnToBank ? (
+            <AppButton
+              icon={<Undo2 color={theme.palette.foreground} size={18} />}
+              onPress={() => setBoard(returnCandidatesToBank)}
+              variant="secondary"
+            >
+              إعادة إلى القائمة
+            </AppButton>
+          ) : null}
         </AppCard>
       ) : null}
 
@@ -322,7 +333,8 @@ export function TierBoard({
       <AppCard style={styles.bank}>
         <AppText variant="heading">المرشحون</AppText>
         <AppText color="muted" variant="caption">
-          اختر مرشحًا أو أكثر ثم انقر على المستوى المناسب في القائمة.
+          اختر مرشحًا أو أكثر ثم انقر على المستوى المناسب في القائمة. انقر على مرشح
+          مُرتَّب لتحديده ثم أعده إلى هنا أو انقله إلى مستوى آخر.
         </AppText>
         <View style={styles.bankGrid}>
           {bank.map((candidate) => (
@@ -542,5 +554,5 @@ PORT STATUS
   source:     resources/js/Components/poll/TierBoard.tsx (888 lines)
   confidence: high
   todos:      0
-  notes:      Native multi-select, tappable tier rows, touch-sized order controls, secure daily voting, and bounded sharing preserve the board workflow.
+  notes:      Native multi-select, tappable tier rows, return-to-bank for placed candidates, touch-sized order controls, secure daily voting, and bounded sharing preserve the board workflow.
 */

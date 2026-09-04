@@ -24,10 +24,19 @@ export interface MonthlyChartSeries {
 }
 
 interface MonthlyLineChartProps {
+  // Shared images must read the same for everyone, so a capture host pins light surface colors.
+  forCapture?: boolean;
   height?: number;
   months: readonly string[];
   series: readonly MonthlyChartSeries[];
 }
+
+export const captureColors = {
+  border: '#cbd5e1',
+  foreground: '#18211a',
+  mutedForeground: '#475569',
+  surface: '#ffffff',
+} as const;
 
 function hashNumber(input: string): number {
   let hash = 0;
@@ -42,11 +51,14 @@ function hashToColor(input: string): string {
 }
 
 export default function MonthlyLineChart({
+  forCapture = false,
   height = 260,
   months,
   series,
 }: MonthlyLineChartProps) {
   const { theme } = useAppTheme();
+  const palette = forCapture ? captureColors : theme.palette;
+  const captureText = forCapture ? { color: captureColors.foreground } : null;
   const [width, setWidth] = useState(340);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const padding = { bottom: 38, left: 42, right: 14, top: 16 };
@@ -80,18 +92,27 @@ export default function MonthlyLineChart({
   const labelStep = Math.max(1, Math.ceil(months.length / 6));
 
   return (
-    <AppCard onLayout={onLayout} style={styles.card}>
-      <AppText variant="label">تطوّر النقاط الشهري</AppText>
+    <AppCard
+      onLayout={onLayout}
+      style={[
+        styles.card,
+        forCapture && {
+          backgroundColor: captureColors.surface,
+          borderColor: captureColors.border,
+        },
+      ]}
+    >
+      <AppText style={captureText} variant="label">تطوّر النقاط الشهري</AppText>
       <Svg accessibilityLabel="مخطط تطور النقاط" height={height} width={width}>
         <Line
-          stroke={theme.palette.border}
+          stroke={palette.border}
           x1={padding.left}
           x2={padding.left}
           y1={padding.top}
           y2={height - padding.bottom}
         />
         <Line
-          stroke={theme.palette.border}
+          stroke={palette.border}
           x1={padding.left}
           x2={width - padding.right}
           y1={height - padding.bottom}
@@ -102,7 +123,7 @@ export default function MonthlyLineChart({
           return (
             <G key={tick}>
               <Line
-                stroke={theme.palette.border}
+                stroke={palette.border}
                 strokeOpacity={0.45}
                 x1={padding.left}
                 x2={width - padding.right}
@@ -110,7 +131,7 @@ export default function MonthlyLineChart({
                 y2={y}
               />
               <SvgText
-                fill={theme.palette.mutedForeground}
+                fill={palette.mutedForeground}
                 fontSize={10}
                 textAnchor="end"
                 x={padding.left - 6}
@@ -123,7 +144,7 @@ export default function MonthlyLineChart({
         })}
         {months.map((month, index) => index % labelStep === 0 ? (
           <SvgText
-            fill={theme.palette.mutedForeground}
+            fill={palette.mutedForeground}
             fontSize={9}
             key={month}
             textAnchor="middle"
@@ -197,7 +218,7 @@ export default function MonthlyLineChart({
                   { backgroundColor: item.color ?? hashToColor(item.name) },
                 ]}
               />
-              <AppText variant="caption">{item.name}</AppText>
+              <AppText style={captureText} variant="caption">{item.name}</AppText>
             </Pressable>
           );
         })}
@@ -240,5 +261,5 @@ PORT STATUS
   source:     resources/js/Components/poll/MonthlyLineChart.tsx (198 lines)
   confidence: high
   todos:      0
-  notes:      Responsive native SVG preserves axes, selection, deterministic colors, and avatar points.
+  notes:      Responsive native SVG preserves axes, selection, deterministic colors, and avatar points; a capture host pins light colors so shared images match across themes.
 */

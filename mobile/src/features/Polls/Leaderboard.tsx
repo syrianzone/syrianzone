@@ -248,8 +248,9 @@ function RankingRow({
   row: PollRanking;
   successorName?: string;
 }) {
+  const { theme } = useAppTheme();
   return (
-    <View style={[styles.rankingRow, row.status === 'archived' && styles.former]}>
+    <View style={[styles.rankingRow, { borderBottomColor: theme.palette.border }, row.status === 'archived' && styles.former]}>
       <AppText variant="heading">#{row.rank}</AppText>
       <TierAvatar imageUrl={row.imageUrl} name={row.name} size={38} />
       <View style={styles.rankingCopy}>
@@ -322,7 +323,6 @@ const styles = StyleSheet.create({
   },
   rankingRow: {
     alignItems: 'center',
-    borderBottomColor: '#d8dfd6',
     borderBottomWidth: StyleSheet.hairlineWidth,
     flexDirection: 'row-reverse',
     gap: 9,

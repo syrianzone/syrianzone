@@ -44,9 +44,10 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->statefulApi();
         $middleware->validateCsrfTokens(except: [
+            // Guest submissions only. The authenticated PUT /api/v1/studio/routes/{id}
+            // must keep CSRF protection, so never widen this to studio/routes/*.
+            // Native clients send bearer tokens and are not stateful, so they are unaffected.
             'api/v1/studio/routes',
-            'api/v1/studio/routes/*',
-            'api/polls/*/vote',
             'api/submit',
             'guesswho/broadcasting/auth',
         ]);

@@ -47,7 +47,7 @@ mkdir -p "$OUT"
 if ! "$ADB" get-state >/dev/null 2>&1; then
   echo "booting $AVD"
   "$SDK/emulator/emulator" -avd "$AVD" -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect \
-    -no-snapshot -memory 3072 >/tmp/sz-emulator.log 2>&1 &
+    -no-snapshot -memory 3072 -cores 4 >/tmp/sz-emulator.log 2>&1 &
   EMULATOR_PID=$!
   trap 'kill $EMULATOR_PID 2>/dev/null || true' EXIT
   "$ADB" wait-for-device
@@ -69,6 +69,15 @@ for attempt in 1 2 3; do
   sleep 10
 done
 
+# the software-rendered system ui still trips "isn't responding" dialogs, which also eat taps;
+# press its "wait" row whenever the window manager shows one
+dismiss_anr() {
+  if "$ADB" shell dumpsys window windows 2>/dev/null | grep -q "Not Responding"; then
+    "$ADB" shell input tap 320 1363
+    sleep 2
+  fi
+}
+
 open_link() {
   "$ADB" shell am start -W -a android.intent.action.VIEW -d "$1" "$PKG" >/dev/null
 }
@@ -77,14 +86,17 @@ shoot() {
   local name=$1 link=$2
   open_link "$link"
   sleep "$SETTLE"
+  dismiss_anr
   "$ADB" exec-out screencap -p > "$OUT/$name.png"
   echo "wrote $OUT/$name.png"
 }
 
 # first launch: the unblock syria notice pops after 2s, dismiss it once so it does not cover every shot
+"$ADB" shell cmd uimode night no
 "$ADB" shell am force-stop "$PKG"
 open_link "syrianzone://"
 sleep 10
+dismiss_anr
 "$ADB" exec-out screencap -p > "$OUT/home-first-launch.png"
 # "لاحقا" (later) sits bottom center of the notice on a 1080x2400 screen
 "$ADB" shell input tap 528 2250 || true
@@ -97,13 +109,17 @@ done
 # the sidebar and theme sheet need a tap: hamburger and palette buttons in the header (1080x2400)
 open_link "syrianzone://feature/syofficial"
 sleep "$SETTLE"
+dismiss_anr
 "$ADB" shell input tap 1000 211
 sleep 3
+dismiss_anr
 "$ADB" exec-out screencap -p > "$OUT/sidebar.png"
 "$ADB" shell input keyevent KEYCODE_BACK
 sleep 2
+dismiss_anr
 "$ADB" shell input tap 192 211
 sleep 3
+dismiss_anr
 "$ADB" exec-out screencap -p > "$OUT/theme-picker.png"
 "$ADB" shell input keyevent KEYCODE_BACK
 sleep 1

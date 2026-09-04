@@ -52,13 +52,22 @@ if ! "$ADB" get-state >/dev/null 2>&1; then
   trap 'kill $EMULATOR_PID 2>/dev/null || true' EXIT
   "$ADB" wait-for-device
   until [ "$("$ADB" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; do sleep 3; done
-  sleep 5
 fi
 
+# boot_completed fires before the package service accepts installs; a 200 MB apk
+# streamed too early dies with "Broken pipe", so wait for pm and retry the install.
+until "$ADB" shell pm path android >/dev/null 2>&1; do sleep 3; done
+
+# the software-rendered emulator trips "System UI isn't responding" under load; hide error dialogs
+"$ADB" shell settings put global hide_error_dialogs 1
 "$ADB" shell settings put global window_animation_scale 0
 "$ADB" shell settings put global transition_animation_scale 0
 "$ADB" shell settings put global animator_duration_scale 0
-"$ADB" install -r "$APK"
+for attempt in 1 2 3; do
+  "$ADB" install -r "$APK" && break
+  echo "install attempt $attempt failed, retrying"
+  sleep 10
+done
 
 open_link() {
   "$ADB" shell am start -W -a android.intent.action.VIEW -d "$1" "$PKG" >/dev/null
@@ -77,11 +86,27 @@ shoot() {
 open_link "syrianzone://"
 sleep 10
 "$ADB" exec-out screencap -p > "$OUT/home-first-launch.png"
-"$ADB" shell input tap 540 2280 || true
+# "لاحقا" (later) sits bottom center of the notice on a 1080x2400 screen
+"$ADB" shell input tap 528 2250 || true
+sleep 2
 
 for entry in "${SCREENS[@]}"; do
   shoot ${entry}
 done
+
+# the sidebar and theme sheet need a tap: hamburger and palette buttons in the header (1080x2400)
+open_link "syrianzone://feature/syofficial"
+sleep "$SETTLE"
+"$ADB" shell input tap 1000 211
+sleep 3
+"$ADB" exec-out screencap -p > "$OUT/sidebar.png"
+"$ADB" shell input keyevent KEYCODE_BACK
+sleep 2
+"$ADB" shell input tap 192 211
+sleep 3
+"$ADB" exec-out screencap -p > "$OUT/theme-picker.png"
+"$ADB" shell input keyevent KEYCODE_BACK
+sleep 1
 
 # dark mode follows the system when the theme preference is "system"
 "$ADB" shell cmd uimode night yes

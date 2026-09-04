@@ -32,7 +32,7 @@ import {
 } from '@/lib/api/directories';
 
 import {
-  filterAndSortOfficialEntities,
+  filterOfficialEntities,
   getOfficialCategoryLabel,
   getOfficialDescription,
   getOfficialImageUrl,
@@ -62,10 +62,6 @@ interface OfficialTranslations {
   retry: string;
   socialTelegramList: string;
   socialTwitterList: string;
-  sortBy: string;
-  sortCategory: string;
-  sortNameAsc: string;
-  sortNameDesc: string;
   table: string;
   title: string;
   view: string;
@@ -89,10 +85,6 @@ const TRANSLATIONS: Record<OfficialLanguage, OfficialTranslations> = {
     retry: 'إعادة المحاولة',
     socialTelegramList: 'قائمة تلغرام',
     socialTwitterList: 'قائمة تويتر',
-    sortBy: 'ترتيب حسب',
-    sortCategory: 'الفئة',
-    sortNameAsc: 'الاسم (أ-ي)',
-    sortNameDesc: 'الاسم (ي-أ)',
     table: 'جدول',
     title: 'روابط الحسابات الرسمية السورية',
     view: 'عرض',
@@ -114,10 +106,6 @@ const TRANSLATIONS: Record<OfficialLanguage, OfficialTranslations> = {
     retry: 'Retry',
     socialTelegramList: 'Telegram List',
     socialTwitterList: 'Twitter List',
-    sortBy: 'Sort by',
-    sortCategory: 'Category',
-    sortNameAsc: 'Name (A-Z)',
-    sortNameDesc: 'Name (Z-A)',
     table: 'Table',
     title: 'Syrian Official Accounts Links',
     view: 'View',
@@ -139,10 +127,6 @@ const TRANSLATIONS: Record<OfficialLanguage, OfficialTranslations> = {
     retry: 'Tekrar dene',
     socialTelegramList: 'Telegram Listesi',
     socialTwitterList: 'Twitter Listesi',
-    sortBy: 'Sıralama',
-    sortCategory: 'Kategori',
-    sortNameAsc: 'İsim (A-Z)',
-    sortNameDesc: 'İsim (Z-A)',
     table: 'Tablo',
     title: 'Suriye Resmi Hesap Bağlantıları',
     view: 'Görünüm',
@@ -164,10 +148,6 @@ const TRANSLATIONS: Record<OfficialLanguage, OfficialTranslations> = {
     retry: 'Dîsa biceribîne',
     socialTelegramList: 'Lîsteya Telegram',
     socialTwitterList: 'Lîsteya Twitter',
-    sortBy: 'Rêzkirin',
-    sortCategory: 'Kategorî',
-    sortNameAsc: 'Nav (A-Z)',
-    sortNameDesc: 'Nav (Z-A)',
     table: 'Tablo',
     title: 'Girêdanên Hesabên Fermî yên Sûriyê',
     view: 'Dîtin',
@@ -248,13 +228,11 @@ export function OfficialDirectory({
   const t = TRANSLATIONS[language];
   const filteredEntities = useMemo(
     () =>
-      filterAndSortOfficialEntities(entities, {
+      filterOfficialEntities(entities, {
         category: currentCategory,
-        language,
         search: searchTerm,
-        sort: 'name-asc',
       }),
-    [currentCategory, entities, language, searchTerm],
+    [currentCategory, entities, searchTerm],
   );
   const groups = useMemo(
     () => groupOfficialEntities(filteredEntities, currentCategory, categories),

@@ -6,6 +6,7 @@ import { StyleSheet, View } from 'react-native';
 import { AppCard } from '@/components/ui/AppCard';
 import { AppInput } from '@/components/ui/AppInput';
 import { AppText } from '@/components/ui/AppText';
+import { QueryState } from '@/components/ui/QueryState';
 import { Screen } from '@/components/ui/Screen';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import { apiOrigin } from '@/lib/env';
@@ -110,11 +111,17 @@ export default function JusticeScreen() {
       </View>
 
       <AppText variant="heading">أبرز الموقوفين</AppText>
+      <AppText color="muted" variant="caption">
+        {people.length.toLocaleString('en-US')} من رموز النظام
+      </AppText>
       <AppInput
         onChangeText={setSearch}
         placeholder="ابحث بالاسم أو الوصف"
         value={search}
       />
+      {people.length === 0 ? (
+        <QueryState detail="جرب تغيير مصطلحات البحث" type="empty" />
+      ) : null}
       {people.map((person) => (
         <AppCard key={person.name} style={styles.person}>
           <PersonImage name={person.name} photo={person.photo} size={76} />
@@ -207,5 +214,5 @@ PORT STATUS
   source:     resources/js/Pages/Justice/Index.tsx (181 lines)
   confidence: high
   todos:      0
-  notes:      Native cards preserve hierarchy, detained markers, ranks, people, sources, and filtering.
+  notes:      Native cards preserve hierarchy, detained markers, ranks, the people count line, sources, and filtering, plus an empty state the search needs.
 */

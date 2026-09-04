@@ -3,6 +3,7 @@ import {
   FileText,
   Globe2,
   MapPin,
+  Plus,
   Send,
   Users,
 } from 'lucide-react-native';
@@ -27,11 +28,19 @@ import {
   getLanguageName,
   getPartyFilterOptions,
   PARTY_PAGE_SIZE,
+  type PartyFilters,
   type SocialPlatform,
 } from './data';
 import type { Organization } from './types';
 
 const ADD_ORGANIZATION_URL = 'https://forms.gle/vLAxoz5RNt6z6qyj9';
+const NO_FILTERS: PartyFilters = {
+  category: 'all',
+  city: 'all',
+  country: 'all',
+  language: 'all',
+  search: '',
+};
 
 interface PartyClientProps {
   initialOrganizations: readonly Organization[];
@@ -41,11 +50,7 @@ export default function PartyClient({
   initialOrganizations,
 }: PartyClientProps) {
   const { theme } = useAppTheme();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [countryFilter, setCountryFilter] = useState('all');
-  const [cityFilter, setCityFilter] = useState('all');
-  const [languageFilter, setLanguageFilter] = useState('all');
+  const [filters, setFilters] = useState<PartyFilters>({ ...NO_FILTERS });
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [displayCount, setDisplayCount] = useState(PARTY_PAGE_SIZE);
 
@@ -66,69 +71,67 @@ export default function PartyClient({
     [initialOrganizations],
   );
   const filteredOrganizations = useMemo(
-    () =>
-      filterOrganizations(initialOrganizations, {
-        category: categoryFilter,
-        city: cityFilter,
-        country: countryFilter,
-        language: languageFilter,
-        search: searchTerm,
-      }),
-    [
-      categoryFilter,
-      cityFilter,
-      countryFilter,
-      initialOrganizations,
-      languageFilter,
-      searchTerm,
-    ],
+    () => filterOrganizations(initialOrganizations, filters),
+    [filters, initialOrganizations],
   );
   const displayedOrganizations = filteredOrganizations.slice(0, displayCount);
   const filtersActive =
-    categoryFilter !== 'all' ||
-    countryFilter !== 'all' ||
-    cityFilter !== 'all' ||
-    languageFilter !== 'all' ||
-    Boolean(searchTerm);
+    filters.category !== 'all' ||
+    filters.country !== 'all' ||
+    filters.city !== 'all' ||
+    filters.language !== 'all' ||
+    Boolean(filters.search);
+
+  // The website snaps back to the first slice whenever a filter or the search
+  // changes, so a wide list never carries a stale count into new results.
+  const updateFilter = (key: keyof PartyFilters, value: string) => {
+    setFilters((current) => ({ ...current, [key]: value }));
+    setDisplayCount(PARTY_PAGE_SIZE);
+  };
 
   const clearFilters = () => {
-    setCategoryFilter('all');
-    setCountryFilter('all');
-    setCityFilter('all');
-    setLanguageFilter('all');
-    setSearchTerm('');
+    setFilters({ ...NO_FILTERS });
+    setDisplayCount(PARTY_PAGE_SIZE);
   };
 
   return (
     <View style={styles.screen}>
+      <View style={styles.addAction}>
+        <DirectoryLinkAction
+          icon={<Plus color={theme.palette.foreground} size={17} />}
+          label="إضافة منظمة جديدة"
+          url={ADD_ORGANIZATION_URL}
+        />
+      </View>
+
       <DirectorySearchField
         accessibilityLabel="البحث في المنظمات السياسية"
-        onChangeText={setSearchTerm}
+        onChangeText={(value) => updateFilter('search', value)}
         placeholder="ابحث بالاسم أو النوع أو المكان..."
-        value={searchTerm}
+        value={filters.search}
       />
 
       <DirectoryFilterChips
         label="نوع المنظمة"
-        onSelect={setCategoryFilter}
+        onSelect={(value) => updateFilter('category', value)}
         options={withAll('جميع الأنواع', categories)}
-        selected={categoryFilter}
+        selected={filters.category}
       />
       <DirectoryFilterChips
         label="البلد"
-        onSelect={setCountryFilter}
+        onSelect={(value) => updateFilter('country', value)}
         options={withAll('جميع البلدان', countries)}
-        selected={countryFilter}
+        selected={filters.country}
       />
       <DirectoryFilterChips
         label="المدينة"
-        onSelect={setCityFilter}
+        onSelect={(value) => updateFilter('city', value)}
         options={withAll('جميع المدن', cities)}
-        selected={cityFilter}
+        selected={filters.city}
       />
       <DirectoryFilterChips
         label="اللغة"
-        onSelect={setLanguageFilter}
+        onSelect={(value) => updateFilter('language', value)}
         options={[
           { label: 'جميع اللغات', value: 'all' },
           ...languages.map((language) => ({
@@ -136,7 +139,7 @@ export default function PartyClient({
             value: language,
           })),
         ]}
-        selected={languageFilter}
+        selected={filters.language}
       />
 
       {filtersActive ? (
@@ -333,6 +336,9 @@ const styles = StyleSheet.create({
     gap: 10,
     marginTop: 14,
   },
+  addAction: {
+    alignItems: 'center',
+  },
   controls: {
     alignItems: 'center',
     flexDirection: 'row-reverse',
@@ -367,5 +373,5 @@ PORT STATUS
   source:     resources/js/Pages/Party/PartyClient.tsx (440 lines)
   confidence: high
   todos:      0
-  notes:      Native controls preserve exact filters, source ordering, responsive cards, and retained pagination.
+  notes:      Native controls preserve exact filters, source ordering, responsive cards, the header add call to action, and the source pagination reset.
 */

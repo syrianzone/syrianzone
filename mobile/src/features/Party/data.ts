@@ -3,7 +3,6 @@ import { fetchOrganizations as fetchDirectoryOrganizations } from '@/lib/api/dir
 import type { Organization } from './types';
 
 export const PARTY_PAGE_SIZE = 15;
-export type PartySort = 'category' | 'city' | 'country' | 'name' | 'name-desc';
 export type SocialPlatform =
   | 'facebook'
   | 'instagram'
@@ -17,7 +16,6 @@ export interface PartyFilters {
   country: string;
   language: string;
   search: string;
-  sort?: PartySort;
 }
 
 export async function fetchOrganizations(
@@ -71,36 +69,28 @@ export function getPartyFilterOptions(
   ].sort();
 }
 
+// The source applies no client sort: organizations stay in server order.
 export function filterOrganizations(
   organizations: readonly Organization[],
   filters: PartyFilters,
 ): Organization[] {
   const term = filters.search.toLowerCase();
   return organizations.filter((organization) => {
-      const searchMatches =
-        !term ||
-        organization.name.toLowerCase().includes(term) ||
-        organization.description?.toLowerCase().includes(term) ||
-        organization.formattedLocation?.toLowerCase().includes(term) ||
-        organization.type?.toLowerCase().includes(term);
-      return (
-        searchMatches &&
-        (filters.category === 'all' ||
-          organization.type === filters.category) &&
-        (filters.country === 'all' ||
-          organization.country === filters.country) &&
-        (filters.city === 'all' || organization.city === filters.city) &&
-        (filters.language === 'all' ||
-          organization.lang === filters.language)
-      );
-    });
-}
-
-export function filterAndSortOrganizations(
-  organizations: readonly Organization[],
-  filters: PartyFilters,
-): Organization[] {
-  return filterOrganizations(organizations, filters);
+    const searchMatches =
+      !term ||
+      organization.name.toLowerCase().includes(term) ||
+      organization.description?.toLowerCase().includes(term) ||
+      organization.formattedLocation?.toLowerCase().includes(term) ||
+      organization.type?.toLowerCase().includes(term);
+    return (
+      searchMatches &&
+      (filters.category === 'all' || organization.type === filters.category) &&
+      (filters.country === 'all' ||
+        organization.country === filters.country) &&
+      (filters.city === 'all' || organization.city === filters.city) &&
+      (filters.language === 'all' || organization.lang === filters.language)
+    );
+  });
 }
 
 /*
@@ -108,5 +98,5 @@ PORT STATUS
   source:     resources/js/Pages/Party/data.ts (127 lines)
   confidence: high
   todos:      0
-  notes:      CSV parsing moved server-side and visible directory logic remains native.
+  notes:      CSV parsing moved server-side, the source applies no client sort, and visible directory logic remains native.
 */

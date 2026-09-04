@@ -1,4 +1,8 @@
-import { filterWebsites, SITES_PAGE_SIZE } from './data';
+import {
+  filterWebsites,
+  getWebsiteFaviconUrl,
+  SITES_PAGE_SIZE,
+} from './data';
 import type { Website } from './types';
 
 const sites: readonly Website[] = [
@@ -25,4 +29,12 @@ test('keeps the final source order while filtering sites', () => {
     filterWebsites(sites, { search: 'ألف', type: '' }).map(({ id }) => id),
   ).toEqual(['first']);
   expect(SITES_PAGE_SIZE).toBe(24);
+});
+
+test('asks each site for its own favicon instead of a third-party service', () => {
+  expect(getWebsiteFaviconUrl('https://second.example.com/page')).toBe(
+    'https://second.example.com/favicon.ico',
+  );
+  expect(getWebsiteFaviconUrl('javascript:alert(1)')).toBeNull();
+  expect(getWebsiteFaviconUrl('not-a-url')).toBeNull();
 });

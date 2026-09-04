@@ -4,7 +4,7 @@ import {
   getGovAppIconUrl,
 } from '@/features/GovApps/data';
 import {
-  filterAndSortOrganizations,
+  filterOrganizations,
   formatSocialUrl,
   getLanguageName,
   getPartyFilterOptions,
@@ -16,12 +16,12 @@ import {
   getWhatsAppUrl,
 } from '@/features/Phonebook/logic';
 import {
-  filterAndSortWebsites,
+  filterWebsites,
   getWebsiteCategories,
   getWebsiteTypeDisplayName,
 } from '@/features/Sites/data';
 import {
-  filterAndSortOfficialEntities,
+  filterOfficialEntities,
   getOfficialDescription,
   getOfficialCategoryLabel,
   getOfficialImageUrl,
@@ -41,11 +41,9 @@ import {
 describe('official account source behavior', () => {
   it('searches both languages and does not mutate source ordering', () => {
     const sourceOrder = officialDirectoryFixture.map((item) => item.id);
-    const result = filterAndSortOfficialEntities(officialDirectoryFixture, {
+    const result = filterOfficialEntities(officialDirectoryFixture, {
       category: 'all',
-      language: 'ar',
       search: 'health',
-      sort: 'name-desc',
     });
 
     expect(result.map((item) => item.id)).toEqual(['health-ministry']);
@@ -90,23 +88,19 @@ describe('official account source behavior', () => {
     );
   });
 
-  it('filters exact categories and covers category and reverse sorting', () => {
+  it('filters exact categories and keeps the unfiltered server order', () => {
     expect(
-      filterAndSortOfficialEntities(officialDirectoryFixture, {
+      filterOfficialEntities(officialDirectoryFixture, {
         category: 'ministries',
-        language: 'en',
         search: '',
-        sort: 'category',
       }).map((item) => item.id),
     ).toEqual(['health-ministry']);
     expect(
-      filterAndSortOfficialEntities(officialDirectoryFixture, {
+      filterOfficialEntities(officialDirectoryFixture, {
         category: 'all',
-        language: 'en',
         search: '',
-        sort: 'name-desc',
-      }),
-    ).toHaveLength(3);
+      }).map((item) => item.id),
+    ).toEqual(['health-ministry', 'damascus', 'new-body']);
   });
 });
 
@@ -143,9 +137,8 @@ describe('phonebook source behavior', () => {
 
 describe('sites source behavior', () => {
   it('filters by exact raw type while mapping display labels', () => {
-    const result = filterAndSortWebsites(websiteFixture, {
+    const result = filterWebsites(websiteFixture, {
       search: '',
-      sort: 'name',
       type: 'مبادرة خدمية',
     });
     expect(result.map((site) => site.id)).toEqual(['site-services']);
@@ -161,21 +154,22 @@ describe('sites source behavior', () => {
   });
 
   it('derives sorted categories and searches URLs', () => {
-    expect(getWebsiteCategories(websiteFixture)).toHaveLength(3);
+    expect(getWebsiteCategories(websiteFixture)).toEqual([
+      'مبادرة خدمية',
+      'مجلة إخبارية',
+      'مدونة شخصية',
+    ]);
     expect(
-      filterAndSortWebsites(websiteFixture, {
+      filterWebsites(websiteFixture, {
         search: 'news.example',
-        sort: 'type',
         type: '',
       }).map((site) => site.id),
     ).toEqual(['site-news']);
     expect(
-      filterAndSortWebsites(websiteFixture, {
-        search: '',
-        sort: 'name-desc',
-        type: '',
-      }),
-    ).toHaveLength(3);
+      filterWebsites(websiteFixture, { search: '', type: '' }).map(
+        (site) => site.id,
+      ),
+    ).toEqual(['site-services', 'site-news', 'site-blog']);
     expect(getWebsiteTypeDisplayName('دليل')).toBe('دليل');
   });
 });
@@ -187,18 +181,17 @@ describe('party source behavior', () => {
     country: 'all',
     language: 'all',
     search: '',
-    sort: 'name' as const,
   };
 
   it('applies exact filters and searches formatted locations', () => {
     expect(
-      filterAndSortOrganizations(organizationFixture, {
+      filterOrganizations(organizationFixture, {
         ...allFilters,
         country: 'ألمانيا',
       }).map((organization) => organization.id),
     ).toEqual(['diaspora-initiative']);
     expect(
-      filterAndSortOrganizations(organizationFixture, {
+      filterOrganizations(organizationFixture, {
         ...allFilters,
         search: 'القامشلي',
       }).map((organization) => organization.id),
@@ -221,17 +214,13 @@ describe('party source behavior', () => {
     expect(formatSocialUrl('x', '')).toBe('');
   });
 
-  it.each(['name-desc', 'category', 'country', 'city'] as const)(
-    'sorts organizations with the %s option',
-    (sort) => {
-      expect(
-        filterAndSortOrganizations(organizationFixture, {
-          ...allFilters,
-          sort,
-        }),
-      ).toHaveLength(3);
-    },
-  );
+  it('leaves organizations in server order, matching the source', () => {
+    expect(
+      filterOrganizations(organizationFixture, allFilters).map(
+        (organization) => organization.id,
+      ),
+    ).toEqual(['civic-party', 'diaspora-initiative', 'local-movement']);
+  });
 });
 
 describe('government app source behavior', () => {

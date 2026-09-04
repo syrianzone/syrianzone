@@ -28,14 +28,6 @@ export interface HouseStats {
   total: number;
 }
 
-export interface HousePage {
-  end: number;
-  items: HouseRow[];
-  page: number;
-  start: number;
-  totalPages: number;
-}
-
 export const DEFAULT_HOUSE_FILTERS: HouseFilters = {
   age: '',
   appeal: '',
@@ -260,33 +252,10 @@ export function extractNewNames(
   );
 }
 
-export function paginateHouseRows(
-  rows: readonly HouseRow[],
-  requestedPage: number,
-  requestedPageSize: number,
-): HousePage {
-  const pageSize = Math.max(1, Math.floor(requestedPageSize));
-  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
-  const page = Math.min(
-    totalPages - 1,
-    Math.max(0, Math.floor(requestedPage)),
-  );
-  const start = page * pageSize;
-  const end = Math.min(rows.length, start + pageSize);
-
-  return {
-    end,
-    items: rows.slice(start, end),
-    page,
-    start,
-    totalPages,
-  };
-}
-
 /*
 PORT STATUS
   source:     resources/js/Pages/House/HouseClient.tsx (533 lines)
   confidence: high
   todos:      0
-  notes:      Pure source filtering, sorting, statistics, and new-name derivation support native rendering.
+  notes:      Pure source filtering, sorting, statistics, and new-name derivation support native rendering; the records list loads incrementally in the client.
 */

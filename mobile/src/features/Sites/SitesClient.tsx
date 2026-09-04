@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { ExternalLink, FilterX, Globe2, Plus } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -5,7 +6,6 @@ import { StyleSheet, View } from 'react-native';
 import {
   DirectoryCard,
   DirectoryFilterChips,
-  DirectoryImage,
   DirectoryLinkAction,
   DirectorySearchField,
   DirectoryViewToggle,
@@ -156,20 +156,7 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
                 badges={site.type ? [getWebsiteTypeDisplayName(site.type)] : []}
                 compact={viewMode === 'table'}
                 media={
-                  viewMode === 'grid' ? (
-                    <View
-                      style={[
-                        styles.sitePlaceholder,
-                        { backgroundColor: theme.palette.surfaceRaised },
-                      ]}
-                    >
-                      <DirectoryImage
-                        accessibilityLabel={`أيقونة ${site.name}`}
-                        style={styles.siteIcon}
-                        uri={getWebsiteFaviconUrl(site.url)}
-                      />
-                    </View>
-                  ) : undefined
+                  <SiteFavicon compact={viewMode === 'table'} site={site} />
                 }
                 onPress={
                   viewMode === 'grid' && safe
@@ -215,6 +202,42 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
   );
 }
 
+// The list mode shows the same mark as the grid so a row is identifiable at a
+// glance; a site without a favicon keeps the bundled globe instead of a gap.
+function SiteFavicon({ compact, site }: { compact: boolean; site: Website }) {
+  const { theme } = useAppTheme();
+  const [failed, setFailed] = useState(false);
+  const favicon = getWebsiteFaviconUrl(site.url);
+
+  return (
+    <View
+      accessibilityLabel={`أيقونة ${site.name}`}
+      style={[
+        compact ? styles.siteFrameCompact : styles.siteFrame,
+        { backgroundColor: theme.palette.surfaceRaised },
+      ]}
+      testID={`site-favicon-${site.id}`}
+    >
+      {favicon && !failed ? (
+        <Image
+          cachePolicy="memory-disk"
+          contentFit="contain"
+          onError={() => setFailed(true)}
+          source={{ uri: favicon }}
+          style={compact ? styles.siteIconCompact : styles.siteIcon}
+          testID={`site-favicon-image-${site.id}`}
+          transition={150}
+        />
+      ) : (
+        <Globe2
+          color={theme.palette.mutedForeground}
+          size={compact ? 20 : 30}
+        />
+      )}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   about: {
     gap: 8,
@@ -251,16 +274,29 @@ const styles = StyleSheet.create({
   screen: {
     gap: 16,
   },
-  sitePlaceholder: {
+  siteFrame: {
     alignItems: 'center',
     borderRadius: 14,
     height: 88,
     justifyContent: 'center',
   },
+  siteFrameCompact: {
+    alignItems: 'center',
+    alignSelf: 'flex-end',
+    borderRadius: 10,
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
+  },
   siteIcon: {
     borderRadius: 8,
     height: 38,
     width: 38,
+  },
+  siteIconCompact: {
+    borderRadius: 6,
+    height: 22,
+    width: 22,
   },
 });
 
@@ -269,5 +305,5 @@ PORT STATUS
   source:     resources/js/Pages/Sites/SitesClient.tsx (319 lines)
   confidence: high
   todos:      0
-  notes:      Native favicon cards, exact filter chips, table mode, and pagination preserve final source behavior.
+  notes:      First-party favicons in both view modes, exact filter chips, table mode, and pagination preserve final source behavior.
 */

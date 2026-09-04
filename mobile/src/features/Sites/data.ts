@@ -3,7 +3,6 @@ import { fetchWebsites as fetchDirectoryWebsites } from '@/lib/api/directories';
 import type { Website } from './types';
 
 export const SITES_PAGE_SIZE = 24;
-export type SiteSort = 'name' | 'name-desc' | 'type';
 
 export async function fetchWebsites(signal?: AbortSignal): Promise<Website[]> {
   return fetchDirectoryWebsites({ signal });
@@ -29,7 +28,7 @@ export function getWebsiteCategories(
     .sort();
 }
 
-interface WebsiteFilterOptions {
+export interface WebsiteFilterOptions {
   search: string;
   type: string;
 }
@@ -51,20 +50,16 @@ export function filterWebsites(
     });
 }
 
-export function filterAndSortWebsites(
-  websites: readonly Website[],
-  options: WebsiteFilterOptions & { sort?: SiteSort },
-): Website[] {
-  return filterWebsites(websites, options);
-}
-
+// PORTING.md: the website asks Google's favicon service, which would hand a
+// third party every domain the reader browses; the app asks the site itself and
+// falls back to a bundled globe when the site serves no favicon.
 export function getWebsiteFaviconUrl(url: string): string | null {
   try {
     const parsed = new URL(url);
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
       return null;
     }
-    return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(parsed.hostname)}&sz=64`;
+    return `${parsed.origin}/favicon.ico`;
   } catch {
     return null;
   }
@@ -75,5 +70,5 @@ PORT STATUS
   source:     resources/js/Pages/Sites/data.ts (81 lines)
   confidence: high
   todos:      0
-  notes:      CSV parsing moved server-side and visible directory logic remains native.
+  notes:      CSV parsing moved server-side, the source applies no client sort, and favicons stay first-party.
 */

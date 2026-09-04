@@ -3,7 +3,6 @@ import { resolveDirectoryImageUrl } from '@/lib/api/directories';
 import type { OfficialCategory, OfficialEntity } from './types';
 
 export type OfficialLanguage = 'ar' | 'en' | 'ku' | 'tr';
-export type OfficialSort = 'category' | 'name-asc' | 'name-desc';
 
 export const OFFICIAL_CATEGORIES = [
   { key: 'all', label: { ar: 'الكل', en: 'All' } },
@@ -80,12 +79,12 @@ export function getOfficialCategoryLabel(
 
 interface OfficialFilterOptions {
   category: string;
-  language: OfficialLanguage;
   search: string;
-  sort: OfficialSort;
 }
 
-export function filterAndSortOfficialEntities(
+// The source applies no client sort: entities stay in the order the server
+// sends so the directory matches the website row for row.
+export function filterOfficialEntities(
   items: readonly OfficialEntity[],
   { category, search }: OfficialFilterOptions,
 ): OfficialEntity[] {

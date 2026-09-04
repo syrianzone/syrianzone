@@ -169,7 +169,7 @@ test('sites clear action restores all raw types', async () => {
   expect(view.getByText('مجلة الشام')).toBeTruthy();
 });
 
-test('party filters exact country values and preserves expanded pagination', async () => {
+test('party filters exact country values and snaps pagination back like the source', async () => {
   const view = await render(
     <PartyClient initialOrganizations={makeOrganizationFixture(16)} />,
     { wrapper: FeatureProviders },
@@ -180,8 +180,9 @@ test('party filters exact country values and preserves expanded pagination', asy
   await fireEvent.press(view.getByText('تحميل المزيد'));
   expect(view.getByText('منظمة 16')).toBeTruthy();
   await fireEvent.press(view.getByLabelText('دمشق'));
+  expect(view.getByText('منظمة 15')).toBeTruthy();
   await fireEvent.press(view.getByText('مسح الفلاتر'));
-  expect(view.getByText('منظمة 16')).toBeTruthy();
+  expect(view.queryByText('منظمة 16')).toBeNull();
 });
 
 test('party cards expose source website and social formatting', async () => {

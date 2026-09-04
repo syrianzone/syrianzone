@@ -8,7 +8,6 @@ import {
   filterHouseRows,
   housePercentage,
   nextHouseSort,
-  paginateHouseRows,
   sortHouseRows,
 } from './model';
 
@@ -149,23 +148,5 @@ describe('House source characterization', () => {
       'ليث',
     ]);
     expect(extractNewNames(headers, rows, 'winners')).toEqual([]);
-  });
-
-  test('keeps the mounted record window bounded and clamps invalid pages', () => {
-    const manyRows = Array.from({ length: 83 }, (_, index) => ({
-      ...rows[index % rows.length]!,
-      Name: `عضو ${index + 1}`,
-      __nameNorm: `عضو ${index + 1}`,
-    }));
-
-    expect(paginateHouseRows(manyRows, 2, 40)).toMatchObject({
-      end: 83,
-      items: expect.any(Array),
-      page: 2,
-      start: 80,
-      totalPages: 3,
-    });
-    expect(paginateHouseRows(manyRows, 2, 40).items).toHaveLength(3);
-    expect(paginateHouseRows(manyRows, 99, 40).page).toBe(2);
   });
 });

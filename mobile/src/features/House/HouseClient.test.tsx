@@ -137,3 +137,82 @@ test('shows a safe retry state when no cached response exists', async () => {
   );
   expect(view.queryByText('private upstream response')).toBeNull();
 });
+
+function makeRows(count: number) {
+  return Array.from({ length: count }, (_, index) => {
+    const name = `عضو ${String(index + 1).padStart(2, '0')}`;
+    return {
+      Age: '42',
+      Name: name,
+      __ageGroup: '40s',
+      __appealStatus: '',
+      __nameNorm: name,
+      __placeNorm: 'دمشق',
+      __sexNorm: 'ذكر',
+    };
+  });
+}
+
+test('records load the next window instead of paging back and forth', async () => {
+  jest.mocked(fetchHouseData).mockResolvedValue({
+    headers: ['Name', 'Age'],
+    rows: makeRows(42),
+  });
+  const view = await renderScreen();
+
+  await waitFor(() => expect(view.getByText('عضو 01')).toBeTruthy());
+  expect(view.getByText('عرض 40 من أصل 42 سجل')).toBeTruthy();
+  expect(view.queryByText('عضو 41')).toBeNull();
+
+  await fireEvent.press(view.getByTestId('house-load-more'));
+  expect(view.getByText('عضو 41')).toBeTruthy();
+  expect(view.getByText('عرض 42 من أصل 42 سجل')).toBeTruthy();
+  expect(view.queryByTestId('house-load-more')).toBeNull();
+});
+
+test('the winners district picker searches instead of scrolling every district', async () => {
+  const districtKey = 'Electoral District (الدائرة الانتخابية)';
+  jest.mocked(fetchHouseData).mockResolvedValue({
+    headers: ['Name', districtKey, 'Sex', 'Age'],
+    rows: [
+      {
+        Age: '42',
+        Name: 'فائز دمشق',
+        [districtKey]: 'دمشق',
+        Sex: 'ذكر',
+        __ageGroup: '40s',
+        __appealStatus: '',
+        __nameNorm: 'فائز دمشق',
+        __placeNorm: 'دمشق',
+        __sexNorm: 'ذكر',
+      },
+      {
+        Age: '51',
+        Name: 'فائز حلب',
+        [districtKey]: 'حلب',
+        Sex: 'أنثى',
+        __ageGroup: '50s',
+        __appealStatus: '',
+        __nameNorm: 'فائز حلب',
+        __placeNorm: 'حلب',
+        __sexNorm: 'أنثى',
+      },
+    ],
+  });
+  const view = await renderScreen();
+
+  await fireEvent.press(view.getByTestId('house-mode-winners'));
+  await waitFor(() => expect(view.getByText('فائز حلب')).toBeTruthy());
+
+  await fireEvent.press(view.getByTestId('house-district-picker'));
+  await fireEvent.changeText(
+    view.getByTestId('house-district-search'),
+    'حلب',
+  );
+  expect(view.queryByTestId('house-district-option-دمشق')).toBeNull();
+  await fireEvent.press(view.getByTestId('house-district-option-حلب'));
+
+  expect(view.getByText('فائز حلب')).toBeTruthy();
+  expect(view.queryByText('فائز دمشق')).toBeNull();
+  expect(view.getByLabelText('الدائرة الانتخابية: حلب')).toBeTruthy();
+});

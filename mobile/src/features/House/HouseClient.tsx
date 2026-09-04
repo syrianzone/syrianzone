@@ -20,6 +20,7 @@ import { useLocale } from '@/contexts/LocaleContext';
 import { useAppTheme } from '@/contexts/ThemeContext';
 
 import { fetchHouseData, houseQueryKeys } from './data';
+import { DistrictPicker } from './DistrictPicker';
 import { HouseCharts } from './HouseCharts';
 import {
   DEFAULT_HOUSE_FILTERS,
@@ -32,7 +33,6 @@ import {
   housePercentage,
   isHouseWinner,
   nextHouseSort,
-  paginateHouseRows,
   sortHouseRows,
   type AgeFilter,
   type AppealFilter,
@@ -50,7 +50,9 @@ import {
 
 const EMPTY_HEADERS: string[] = [];
 const EMPTY_ROWS: HouseRow[] = [];
-const PAGE_SIZE = 40;
+// Records load in windows instead of pages: the reader keeps one scrolling list
+// like the source table, and only the rows already reached stay mounted.
+const RECORDS_STEP = 40;
 const SOURCE_URL = 'https://hcepa.gov.sy';
 
 const MODE_DESCRIPTIONS: Record<Mode, string> = {
@@ -192,7 +194,7 @@ export default function HouseClient() {
     ...DEFAULT_HOUSE_FILTERS,
   });
   const [sort, setSort] = useState(DEFAULT_HOUSE_SORT);
-  const [page, setPage] = useState(0);
+  const [visibleCount, setVisibleCount] = useState(RECORDS_STEP);
 
   const query = useQuery({
     placeholderData: keepPreviousData,
@@ -224,19 +226,29 @@ export default function HouseClient() {
     () => extractNewNames(headers, filteredRows, mode),
     [filteredRows, headers, mode],
   );
-  const pageData = paginateHouseRows(sortedRows, page, PAGE_SIZE);
+  const visibleRows = useMemo(
+    () => sortedRows.slice(0, visibleCount),
+    [sortedRows, visibleCount],
+  );
+  const hasMoreRows = visibleRows.length < sortedRows.length;
+
+  const loadMoreRows = () => {
+    if (hasMoreRows) {
+      setVisibleCount((current) => current + RECORDS_STEP);
+    }
+  };
 
   const updateFilter = <Key extends keyof HouseFilters>(
     key: Key,
     value: HouseFilters[Key],
   ) => {
     setFilters((current) => ({ ...current, [key]: value }));
-    setPage(0);
+    setVisibleCount(RECORDS_STEP);
   };
 
   const changeMode = (nextMode: string) => {
     setMode(nextMode as Mode);
-    setPage(0);
+    setVisibleCount(RECORDS_STEP);
   };
 
   const resetFilters = () => {
@@ -244,7 +256,7 @@ export default function HouseClient() {
     if (mode === 'voters') {
       setProvince('damascus');
     }
-    setPage(0);
+    setVisibleCount(RECORDS_STEP);
   };
 
   const showStats =
@@ -256,6 +268,7 @@ export default function HouseClient() {
   return (
     <Screen
       contentStyle={{ direction }}
+      onEndReached={loadMoreRows}
       onRefresh={() => void query.refetch()}
       refreshing={query.isFetching}
       subtitle={MODE_DESCRIPTIONS[mode]}
@@ -297,7 +310,7 @@ export default function HouseClient() {
             label="المحافظة"
             onChange={(value) => {
               setProvince(value as ProvinceKey);
-              setPage(0);
+              setVisibleCount(RECORDS_STEP);
             }}
             options={PROVINCES.map((item) => ({
               id: item.key,
@@ -308,16 +321,10 @@ export default function HouseClient() {
         ) : null}
 
         {mode === 'winners' ? (
-          <ChoiceGroup
+          <DistrictPicker
+            districts={districts}
             label="الدائرة الانتخابية"
-            onChange={(value) => updateFilter('district', value)}
-            options={[
-              { id: 'all', label: 'الكل' },
-              ...districts.map((district) => ({
-                id: district,
-                label: district,
-              })),
-            ]}
+            onChange={(district) => updateFilter('district', district)}
             value={filters.district}
           />
         ) : null}
@@ -484,8 +491,7 @@ export default function HouseClient() {
             <View style={styles.recordsCopy}>
               <AppText variant="heading">القائمة الرئيسية</AppText>
               <AppText color="muted" variant="caption">
-                السجلات {pageData.start + 1} إلى {pageData.end} من{' '}
-                {sortedRows.length}
+                {`عرض ${visibleRows.length} من أصل ${sortedRows.length} سجل`}
               </AppText>
             </View>
             {query.isFetching && !query.isPlaceholderData ? (
@@ -497,7 +503,7 @@ export default function HouseClient() {
             label="الترتيب"
             onChange={(column) => {
               setSort((current) => nextHouseSort(current, column));
-              setPage(0);
+              setVisibleCount(RECORDS_STEP);
             }}
             options={columns.map((column) => ({
               id: column,
@@ -510,10 +516,9 @@ export default function HouseClient() {
             value={sort.column}
           />
 
-          {pageData.items.map((row, index) => {
+          {visibleRows.map((row, recordIndex) => {
             const appealed = row.__appealStatus === 'مطعون';
             const winner = isHouseWinner(row);
-            const recordIndex = pageData.start + index;
             return (
               <AppCard
                 key={`${row.__nameNorm}-${row.__placeNorm}-${recordIndex}`}
@@ -559,26 +564,10 @@ export default function HouseClient() {
             );
           })}
 
-          {pageData.totalPages > 1 ? (
-            <View style={styles.pagination}>
-              <AppButton
-                disabled={pageData.page === 0}
-                onPress={() => setPage(pageData.page - 1)}
-                variant="secondary"
-              >
-                السابق
-              </AppButton>
-              <AppText color="muted" variant="caption">
-                الصفحة {pageData.page + 1} من {pageData.totalPages}
-              </AppText>
-              <AppButton
-                disabled={pageData.page === pageData.totalPages - 1}
-                onPress={() => setPage(pageData.page + 1)}
-                variant="secondary"
-              >
-                التالي
-              </AppButton>
-            </View>
+          {hasMoreRows ? (
+            <AppButton onPress={loadMoreRows} testID="house-load-more">
+              عرض المزيد
+            </AppButton>
           ) : null}
         </View>
       ) : null}
@@ -649,12 +638,6 @@ const styles = StyleSheet.create({
   newNamesCard: {
     gap: 10,
   },
-  pagination: {
-    alignItems: 'center',
-    flexDirection: 'row-reverse',
-    gap: 12,
-    justifyContent: 'center',
-  },
   recordCard: {
     gap: 10,
   },
@@ -705,5 +688,5 @@ PORT STATUS
   source:     resources/js/Pages/House/HouseClient.tsx (533 lines)
   confidence: high
   todos:      0
-  notes:      Native controls, charts, dynamic records, loading states, and bounded paging preserve the source screen.
+  notes:      Native controls, a searchable district picker, charts, dynamic records, loading states, and incremental record loading preserve the source screen.
 */

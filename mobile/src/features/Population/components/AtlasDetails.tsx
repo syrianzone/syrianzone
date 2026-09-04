@@ -143,7 +143,7 @@ export function EnvironmentDetails({
       <AppCard>
         <AppText variant="heading">{name}</AppText>
         <AppText color="muted" variant="caption">
-          {city.coordinates.latitude.toFixed(2)}°N، {city.coordinates.longitude.toFixed(2)}°E
+          {formatNumber(city.coordinates.latitude, 2)}°N، {formatNumber(city.coordinates.longitude, 2)}°E
         </AppText>
         <AppText variant="title">
           {formatNumber(conditions.temperature_celsius, 1)}°C
@@ -154,7 +154,7 @@ export function EnvironmentDetails({
         {conditions.weather_description ? (
           <AppText>{conditions.weather_description}</AppText>
         ) : null}
-        {city.population !== null ? (
+        {typeof city.population === 'number' ? (
           <Metric label="السكان" value={formatNumber(city.population)} />
         ) : null}
       </AppCard>

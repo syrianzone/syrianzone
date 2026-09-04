@@ -1,0 +1,116 @@
+{
+  "groups": {
+    "population": [
+      {
+        "source_id": 1,
+        "note": "Population within 15km radius",
+        "date": "2020-01-01",
+        "source_url": "https://data.humdata.org/dataset/worldpop-population-counts-for-syrian-arab-republic",
+        "cities": {
+          "Damascus": 4066006,
+          "Aleppo": 3086786
+        }
+      },
+      {
+        "source_id": 2,
+        "note": "City proper population",
+        "date": null,
+        "source_url": "https://simplemaps.com/data/sy-cities",
+        "cities": {
+          "Damascus": 2584771,
+          "Aleppo": 2003671
+        }
+      }
+    ],
+    "idp": [
+      {
+        "source_id": 8,
+        "note": "OCHA UNHCR",
+        "date": "2024-09-30",
+        "source_url": "https://data.humdata.org/dataset/syria-idp-movements-and-spontaneous-return-movements",
+        "cities": {
+          "Damascus": 588781,
+          "Aleppo": 2044468
+        }
+      }
+    ],
+    "idp_returnees": [
+      {
+        "source_id": 9,
+        "note": "UNHCR",
+        "date": "2025-10-02",
+        "source_url": "https://data.unhcr.org/en/situations/syria",
+        "cities": {
+          "Damascus": 188417,
+          "Aleppo": 170042
+        }
+      }
+    ],
+    "environmental": [
+      {
+        "source_id": 1,
+        "cities": {
+          "Damascus": 1,
+          "Aleppo": 1,
+          "Latakia": 1
+        }
+      }
+    ]
+  },
+  "rainfall_data": {
+    "SY01": [
+      {
+        "year": 2021,
+        "rainfall": 242,
+        "rainfall_avg": 6.98
+      },
+      {
+        "year": 2022,
+        "rainfall": 205.6,
+        "rainfall_avg": 6.98
+      },
+      {
+        "year": 2023,
+        "rainfall": 372.4,
+        "rainfall_avg": 6.98
+      },
+      {
+        "year": 2024,
+        "rainfall": 189.2,
+        "rainfall_avg": 6.98
+      },
+      {
+        "year": 2025,
+        "rainfall": 156,
+        "rainfall_avg": 6.78
+      }
+    ],
+    "SY02": [
+      {
+        "year": 2021,
+        "rainfall": 240.78,
+        "rainfall_avg": 7.75
+      },
+      {
+        "year": 2022,
+        "rainfall": 241.01,
+        "rainfall_avg": 7.75
+      },
+      {
+        "year": 2023,
+        "rainfall": 235.44,
+        "rainfall_avg": 7.75
+      },
+      {
+        "year": 2024,
+        "rainfall": 252.6,
+        "rainfall_avg": 7.75
+      },
+      {
+        "year": 2025,
+        "rainfall": 159.89,
+        "rainfall_avg": 7.55
+      }
+    ]
+  }
+}

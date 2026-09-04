@@ -1,0 +1,220 @@
+{
+  "metadata": {
+    "country": "Syria",
+    "report_date": "2026-09-04T20:03:41+00:00",
+    "data_sources": [
+      "Open-Meteo",
+      "NASA POWER",
+      "World Bank Climate API"
+    ],
+    "cities_analyzed": 3
+  },
+  "cities": {
+    "Damascus": {
+      "coordinates": {
+        "latitude": 33.51,
+        "longitude": 36.29
+      },
+      "population": 2103000,
+      "current_conditions": {
+        "wind_speed_kmh": 4,
+        "humidity_percent": 54,
+        "precipitation_mm": 0,
+        "pressure_msl_hpa": 1009.7,
+        "feels_like_celsius": 24.2,
+        "cloud_cover_percent": 0,
+        "temperature_celsius": 23.5,
+        "weather_description": "Clear sky",
+        "pressure_surface_hpa": 931.8,
+        "wind_direction_degrees": 265
+      },
+      "daily_forecast_summary": {
+        "tomorrow_max_temp_c": 34.9,
+        "tomorrow_min_temp_c": 17.3,
+        "tomorrow_precipitation_mm": 0
+      },
+      "climate_trends": [],
+      "air_quality": {
+        "method": "Weather-based estimation",
+        "factors": {
+          "wind_speed_m_s": 4,
+          "humidity_percent": 54,
+          "pressure_msl_hpa": 1009.7,
+          "cloud_cover_percent": 0
+        },
+        "category": "Poor (Low dispersion)",
+        "estimated": true,
+        "estimated_aqi": 100,
+        "health_recommendation": "Poor air quality. Everyone should limit prolonged outdoor exertion."
+      },
+      "drought_risk": {
+        "drought_risk": "Very High",
+        "classification": "Arid/Semi-arid",
+        "dry_season_months": [
+          9
+        ],
+        "wet_season_months": [],
+        "annual_precipitation_mm": 0
+      },
+      "historical_summary": {
+        "period_end": "2021-09-02",
+        "period_start": "2021-09-02",
+        "avg_max_temp_c": 39.2,
+        "avg_min_temp_c": 18.6,
+        "max_wind_speed_kmh": 19.5,
+        "total_precipitation_mm": 0,
+        "avg_surface_pressure_hpa": 930
+      }
+    },
+    "Aleppo": {
+      "coordinates": {
+        "latitude": 36.2,
+        "longitude": 37.16
+      },
+      "population": 4118000,
+      "current_conditions": {
+        "wind_speed_kmh": 14.2,
+        "humidity_percent": 64,
+        "precipitation_mm": 0,
+        "pressure_msl_hpa": 1008.4,
+        "feels_like_celsius": 27.8,
+        "cloud_cover_percent": 16,
+        "temperature_celsius": 26.4,
+        "weather_description": "Clear sky",
+        "pressure_surface_hpa": 963.7,
+        "wind_direction_degrees": 297
+      },
+      "daily_forecast_summary": {
+        "tomorrow_max_temp_c": 36.9,
+        "tomorrow_min_temp_c": 23.4,
+        "tomorrow_precipitation_mm": 0
+      },
+      "climate_trends": [],
+      "air_quality": {
+        "method": "Weather-based estimation",
+        "factors": {
+          "wind_speed_m_s": 14.2,
+          "humidity_percent": 64,
+          "pressure_msl_hpa": 1008.4,
+          "cloud_cover_percent": 16
+        },
+        "category": "Good (Good dispersion)",
+        "estimated": true,
+        "estimated_aqi": 40,
+        "health_recommendation": "Air quality is good. Outdoor activities are safe."
+      },
+      "drought_risk": {
+        "drought_risk": "Very High",
+        "classification": "Arid/Semi-arid",
+        "dry_season_months": [
+          9
+        ],
+        "wet_season_months": [],
+        "annual_precipitation_mm": 0
+      },
+      "historical_summary": {
+        "period_end": "2021-09-02",
+        "period_start": "2021-09-02",
+        "avg_max_temp_c": 34,
+        "avg_min_temp_c": 21.6,
+        "max_wind_speed_kmh": 26.5,
+        "total_precipitation_mm": 0,
+        "avg_surface_pressure_hpa": 961.9
+      }
+    },
+    "Latakia": {
+      "coordinates": {
+        "latitude": 35.53,
+        "longitude": 35.79
+      },
+      "population": 1346000,
+      "current_conditions": {
+        "wind_speed_kmh": 7.6,
+        "humidity_percent": 70,
+        "precipitation_mm": 0,
+        "pressure_msl_hpa": 1009.2,
+        "feels_like_celsius": 31.9,
+        "cloud_cover_percent": 55,
+        "temperature_celsius": 28.1,
+        "weather_description": "Partly cloudy",
+        "pressure_surface_hpa": 1006.5,
+        "wind_direction_degrees": 199
+      },
+      "daily_forecast_summary": {
+        "tomorrow_max_temp_c": 30.5,
+        "tomorrow_min_temp_c": 25.7,
+        "tomorrow_precipitation_mm": 0
+      },
+      "climate_trends": [],
+      "air_quality": {
+        "method": "Weather-based estimation",
+        "factors": {
+          "wind_speed_m_s": 7.6,
+          "humidity_percent": 70,
+          "pressure_msl_hpa": 1009.2,
+          "cloud_cover_percent": 55
+        },
+        "category": "Moderate",
+        "estimated": true,
+        "estimated_aqi": 70,
+        "health_recommendation": "Moderate air quality. Sensitive individuals should limit prolonged outdoor exertion."
+      },
+      "drought_risk": {
+        "drought_risk": "Very High",
+        "classification": "Arid/Semi-arid",
+        "dry_season_months": [
+          9
+        ],
+        "wet_season_months": [],
+        "annual_precipitation_mm": 15.22
+      },
+      "historical_summary": {
+        "period_end": "2021-09-02",
+        "period_start": "2021-09-02",
+        "avg_max_temp_c": 30.5,
+        "avg_min_temp_c": 24.6,
+        "max_wind_speed_kmh": 17.6,
+        "total_precipitation_mm": 0.5,
+        "avg_surface_pressure_hpa": 1004.8
+      }
+    }
+  },
+  "country_level": {
+    "world_bank_climate_data": {
+      "status": "Data available via SyriaClimateService"
+    },
+    "climate_context": {
+      "classification": "Mostly semi-arid to arid",
+      "main_climate_challenges": [
+        "Water scarcity and declining groundwater levels",
+        "Increasing drought frequency and severity",
+        "Rising temperatures and heat waves",
+        "Rainfall pattern changes affecting agriculture",
+        "Air quality concerns in urban areas"
+      ],
+      "key_water_basins": [
+        "Euphrates River Basin",
+        "Orontes River Basin",
+        "Yarmouk River Basin",
+        "Barada and Awaj Basin",
+        "Coastal Basin"
+      ]
+    }
+  },
+  "summary": {
+    "total_cities_analyzed": 3,
+    "data_collection_date": "2026-09-04T20:03:41+00:00",
+    "key_findings": [
+      "14/14 cities at high/very high drought risk",
+      "5/14 cities with poor air quality conditions",
+      "Generated by Laravel Climate Service at 2026-09-04 20:03:41"
+    ],
+    "recommendations": [
+      "Implement water conservation and efficient irrigation systems",
+      "Develop drought-resistant agricultural practices",
+      "Monitor air quality in major urban centers",
+      "Enhance early warning systems for extreme weather events",
+      "Invest in renewable energy to reduce pollution"
+    ]
+  }
+}

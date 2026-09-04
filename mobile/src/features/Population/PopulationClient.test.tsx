@@ -5,7 +5,10 @@ import { LocaleProvider } from '@/contexts/LocaleContext';
 import { AppThemeProvider } from '@/contexts/ThemeContext';
 import { loadBundledProvinceData } from '@/lib/geojson/bundled';
 
-import { fetchEnvironmentalReport, fetchPopulationMaster } from './lib/data-fetcher';
+import {
+  fetchOptionalEnvironmentalReport,
+  fetchPopulationMaster,
+} from './lib/data-fetcher';
 import PopulationClient from './PopulationClient';
 import type {
   EnvironmentalReport,
@@ -18,7 +21,7 @@ jest.mock('@/lib/geojson/bundled', () => ({
 }));
 
 jest.mock('./lib/data-fetcher', () => ({
-  fetchEnvironmentalReport: jest.fn(),
+  fetchOptionalEnvironmentalReport: jest.fn(),
   fetchPopulationMaster: jest.fn(),
 }));
 
@@ -221,7 +224,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   jest.mocked(loadBundledProvinceData).mockResolvedValue(boundaries);
   jest.mocked(fetchPopulationMaster).mockResolvedValue(master);
-  jest.mocked(fetchEnvironmentalReport).mockResolvedValue(environment);
+  jest.mocked(fetchOptionalEnvironmentalReport).mockResolvedValue(environment);
 });
 
 test('switches demographic sources and compares two governorates', async () => {
@@ -287,4 +290,17 @@ test('renders national climate context and selected province measurements', asyn
   expect(details).toHaveTextContent(/Very High/);
   expect(details).toHaveTextContent(/اتجاهات المناخ/);
   expect(details).toHaveTextContent(/-109\.2 ملم/);
+});
+
+test('a missing env report empties only the climate tab', async () => {
+  jest.mocked(fetchOptionalEnvironmentalReport).mockResolvedValue(null);
+  const view = await renderScreen();
+
+  await waitFor(() => expect(view.getByTestId('population-map')).toBeTruthy());
+  expect(view.getAllByText('Population source A').length).toBeGreaterThan(0);
+
+  await fireEvent.press(view.getByTestId('population-tab-environmental'));
+  expect(view.getByText('لا تتوفر بيانات بيئية حالياً.')).toBeTruthy();
+  expect(view.queryByTestId('population-environment-country')).toBeNull();
+  expect(view.getByTestId('population-map')).toBeTruthy();
 });

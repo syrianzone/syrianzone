@@ -1,3 +1,5 @@
+import environmentReportFixture from './__fixtures__/env-report.json';
+import populationMasterFixture from './__fixtures__/population-master.json';
 import {
   environmentalReportSchema,
   populationMasterSchema,
@@ -148,4 +150,39 @@ test('rejects malformed population values and coordinates', () => {
       },
     }).success,
   ).toBe(false);
+});
+
+test('master payload from production parses', () => {
+  const parsed = populationMasterSchema.parse(populationMasterFixture);
+
+  // Production omits date, note, and source_url on the synthesized
+  // `environmental` group and drops the empty `rainfall` group entirely.
+  expect(parsed.groups.environmental[0]?.source_id).toBe(1);
+  expect(parsed.groups.environmental[0]?.source_url).toBeUndefined();
+  expect(parsed.groups.rainfall).toEqual([]);
+  expect(parsed.groups.population[0]?.cities.Damascus).toBe(4_066_006);
+  expect(parsed.rainfall_data.SY01?.[0]?.year).toBe(2021);
+});
+
+test('env report from production parses', () => {
+  const parsed = environmentalReportSchema.parse(environmentReportFixture);
+
+  // Production serializes an empty climate_trends block as `[]`, not `{}`.
+  expect(environmentReportFixture.cities.Damascus.climate_trends).toEqual([]);
+  expect(parsed.cities.Damascus?.climate_trends).toEqual({});
+  expect(parsed.cities.Damascus?.current_conditions.temperature_celsius).toBe(
+    23.5,
+  );
+  expect(parsed.cities.Damascus?.air_quality.estimated_aqi).toBe(100);
+  expect(parsed.metadata.data_sources).toContain('Open-Meteo');
+  expect(parsed.summary.total_cities_analyzed).toBe(3);
+});
+
+test('keeps unknown server fields instead of failing the whole atlas', () => {
+  const parsed = populationMasterSchema.parse({
+    ...populationMasterFixture,
+    generated_at: '2026-09-04T20:03:41+00:00',
+  });
+
+  expect(parsed.groups.population).toHaveLength(2);
 });

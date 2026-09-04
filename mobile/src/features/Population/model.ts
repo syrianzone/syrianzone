@@ -50,7 +50,7 @@ export interface GovernorateComparison {
 interface AtlasCollectionInput {
   boundaries: PopulationCollection;
   dataType: DataType;
-  environment: EnvironmentalReport;
+  environment: EnvironmentalReport | null;
   master: PopulationMasterData;
   source: DataSource | null;
 }
@@ -91,7 +91,7 @@ export function atlasValue(
   dataType: DataType,
   source: DataSource | null,
   master: PopulationMasterData,
-  environment: EnvironmentalReport,
+  environment: EnvironmentalReport | null,
 ): number | null {
   if (dataType === 'rainfall') {
     const years = findRainData(feature, master.rainfall_data);

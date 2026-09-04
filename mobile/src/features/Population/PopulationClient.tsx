@@ -22,7 +22,10 @@ import {
   DATA_TYPE_ORDER,
   type DataType,
 } from './constants/data-config';
-import { fetchEnvironmentalReport, fetchPopulationMaster } from './lib/data-fetcher';
+import {
+  fetchOptionalEnvironmentalReport,
+  fetchPopulationMaster,
+} from './lib/data-fetcher';
 import {
   buildAtlasCollection,
   buildGovernorateComparison,
@@ -53,7 +56,7 @@ export default function PopulationClient() {
       const [boundaries, master, environment] = await Promise.all([
         loadBundledProvinceData(),
         fetchPopulationMaster(signal),
-        fetchEnvironmentalReport(signal),
+        fetchOptionalEnvironmentalReport(signal),
       ]);
       return { boundaries, environment, master };
     },
@@ -180,7 +183,9 @@ export default function PopulationClient() {
       ) : null}
 
       {query.data && dataType === 'environmental' ? (
-        selected ? (
+        !query.data.environment ? (
+          <QueryState detail="لا تتوفر بيانات بيئية حالياً." type="empty" />
+        ) : selected ? (
           selectedName && selectedEnvironment ? (
             <EnvironmentDetails
               city={selectedEnvironment}
@@ -247,5 +252,6 @@ PORT STATUS
   source:     resources/js/Pages/Population/PopulationClient.tsx (996 lines)
   confidence: high
   todos:      0
-  notes:      Native atlas renders every data layer, source, province detail, climate report, and comparison flow.
+  notes:      Native atlas renders every data layer, source, province detail, climate report, and
+              comparison flow, and empties only the climate tab when the env report is unavailable.
 */

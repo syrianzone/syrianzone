@@ -5,6 +5,7 @@ import {
   comparisonGovernorates,
   rainfallYearForMap,
 } from './model';
+import { environmentalReportSchema } from './lib/schemas';
 import { findRainData } from './utils/data-finder';
 
 const boundaries = {
@@ -69,7 +70,7 @@ const master = {
   },
 } satisfies PopulationMasterData;
 
-const environment = {
+const environment = environmentalReportSchema.parse({
   cities: {
     Damascus: {
       air_quality: {},
@@ -102,7 +103,7 @@ const environment = {
     recommendations: [],
     total_cities_analyzed: 1,
   },
-};
+});
 
 test('uses 2024 rainfall for the map and the latest year as fallback', () => {
   expect(rainfallYearForMap(master.rainfall_data.SY01 ?? [])?.rainfall).toBe(

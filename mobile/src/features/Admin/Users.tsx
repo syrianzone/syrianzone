@@ -20,7 +20,8 @@ import {
 } from './usersApi';
 import {
   assignableUserRoles,
-  canMutateManagedUser,
+  canBanManagedUser,
+  canDeleteManagedUser,
   filterManagedUsers,
   managedUserBanConfirmation,
   managedUserRoleLabel,
@@ -152,6 +153,10 @@ export default function AdminUsersScreen() {
         <AppButton loading={createUser.isPending} onPress={submit}>
           إنشاء الحساب
         </AppButton>
+        <AppText color="muted" variant="caption">
+          واجهة التطبيق تنشئ هذه الأدوار فقط؛ تغيير الدور أو كلمة المرور أو
+          الصلاحيات يتم من لوحة الويب.
+        </AppText>
         {createUser.isError ? (
           <AppText color="danger">تعذر إنشاء الحساب. تحقق من البريد والدور.</AppText>
         ) : null}
@@ -171,7 +176,8 @@ export default function AdminUsersScreen() {
         <QueryState type="empty" />
       ) : (
         filtered.map((target) => {
-          const mutable = canMutateManagedUser(user.id, target);
+          const deletable = canDeleteManagedUser(user.id, target);
+          const bannable = canBanManagedUser(user, target);
           return (
             <AppCard key={target.id} style={styles.userCard}>
               <View style={styles.userHeading}>
@@ -186,22 +192,26 @@ export default function AdminUsersScreen() {
               {target.is_banned ? (
                 <AppText color="danger" variant="caption">الحساب محظور</AppText>
               ) : null}
-              {mutable ? (
+              {bannable || deletable ? (
                 <View style={styles.actions}>
-                  <AppButton
-                    loading={toggleBan.isPending && toggleBan.variables?.id === target.id}
-                    onPress={() => confirmBanToggle(target)}
-                    variant="secondary"
-                  >
-                    {target.is_banned ? 'إلغاء الحظر' : 'حظر الحساب'}
-                  </AppButton>
-                  <AppButton
-                    loading={deleteUser.isPending && deleteUser.variables === target.id}
-                    onPress={() => confirmDelete(target.id, target.name)}
-                    variant="danger"
-                  >
-                    حذف
-                  </AppButton>
+                  {bannable ? (
+                    <AppButton
+                      loading={toggleBan.isPending && toggleBan.variables?.id === target.id}
+                      onPress={() => confirmBanToggle(target)}
+                      variant="secondary"
+                    >
+                      {target.is_banned ? 'إلغاء الحظر' : 'حظر الحساب'}
+                    </AppButton>
+                  ) : null}
+                  {deletable ? (
+                    <AppButton
+                      loading={deleteUser.isPending && deleteUser.variables === target.id}
+                      onPress={() => confirmDelete(target.id, target.name)}
+                      variant="danger"
+                    >
+                      حذف
+                    </AppButton>
+                  ) : null}
                 </View>
               ) : (
                 <AppText color="muted" variant="caption">

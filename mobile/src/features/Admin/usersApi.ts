@@ -4,11 +4,16 @@ import { apiClient } from '@/lib/api/client';
 import { authUserSchema } from '@/lib/auth/types';
 import { envelopeSchema } from '@/lib/api/schemas';
 
-export const managedUserRoleSchema = z.enum([
+// users.role is a free string column, and Filament can already assign six admin
+// roles, so a single unrecognized value must not fail the whole list payload.
+export const managedUserRoleSchema = z.string().min(1);
+
+// The mobile create route validates Rule::in(['user', 'admin', 'transit_admin']),
+// so those are the only roles this app is allowed to send.
+export const assignableUserRoleSchema = z.enum([
   'user',
-  'admin',
   'transit_admin',
-  'superadmin',
+  'admin',
 ]);
 
 export const managedUserSchema = authUserSchema.extend({
@@ -33,7 +38,7 @@ const deletedResponseSchema = envelopeSchema(
 export type ManagedUser = z.infer<typeof managedUserSchema>;
 export type ManagedUserBanState = z.infer<typeof managedUserBanStateSchema>;
 export type ManagedUserRole = z.infer<typeof managedUserRoleSchema>;
-export type AssignableUserRole = Exclude<ManagedUserRole, 'superadmin'>;
+export type AssignableUserRole = z.infer<typeof assignableUserRoleSchema>;
 
 export interface CreateManagedUserInput {
   email: string;

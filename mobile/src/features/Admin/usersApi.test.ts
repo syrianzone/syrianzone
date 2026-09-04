@@ -77,4 +77,31 @@ describe('mobile user administration API', () => {
       { method: 'DELETE', path: '/api/mobile/admin/users/42' },
     ]);
   });
+
+  test('keeps every row when the payload mixes directory admin and unknown roles', async () => {
+    const roles = [
+      'superadmin',
+      'admin',
+      'transit_admin',
+      'syofficial_admin',
+      'govapps_admin',
+      'phonebook_admin',
+      'user',
+      'future_admin',
+    ];
+    jest.spyOn(apiClient, 'request').mockImplementation(
+      async <T>(_path: string, options: ApiRequestOptions<T>): Promise<T> =>
+        options.schema.parse({
+          data: roles.map((role, index) => ({
+            ...user,
+            id: index + 1,
+            role,
+          })),
+        }),
+    );
+
+    await expect(
+      fetchManagedUsers().then((list) => list.map((item) => item.role)),
+    ).resolves.toEqual(roles);
+  });
 });

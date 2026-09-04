@@ -6,7 +6,9 @@ import {
   cleanOptionalText,
   cleanRequiredText,
   type DirectoryAdminAccess,
+  DirectoryFilterChips,
   DirectoryOrderActions,
+  DirectorySearchField,
   DirectoryVisibilityField,
   getDirectoryAdminAccess,
   hasDirectoryAdminAccess,
@@ -39,6 +41,13 @@ import {
   updatePhonebookCategory,
   updatePhonebookEntry,
 } from '@/lib/api/directories/admin';
+
+import {
+  ALL_PHONEBOOK_CATEGORIES,
+  filterAdminPhonebookEntries,
+  phonebookCategoryOptions,
+  phonebookEntryOrders,
+} from './model';
 
 export function getPhonebookAdminAccess(
   user: Pick<AuthUser, 'permissions' | 'role'> | null | undefined,
@@ -337,6 +346,10 @@ function PhonebookCategoryManager({
         </AppCard>
       ) : null}
 
+      <AppText color="muted" variant="caption">
+        {`${categories.length} فئة`}
+      </AppText>
+
       {categories.map((category, index) => (
         <AppCard key={category.id} style={styles.item}>
           <View style={styles.heading}>
@@ -430,6 +443,10 @@ export function PhonebookEntryManager({
   const [sourceUrl, setSourceUrl] = useState('');
   const [isWhatsapp, setIsWhatsapp] = useState(false);
   const [isActive, setIsActive] = useState(true);
+  const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<string>(
+    ALL_PHONEBOOK_CATEGORIES,
+  );
   const activeCategory = categoryId || categories[0]?.id || '';
 
   const reset = () => {
@@ -482,6 +499,20 @@ export function PhonebookEntryManager({
       new Map(categories.map((category) => [category.id, category.label_ar])),
     [categories],
   );
+  const categoryOptions = useMemo(
+    () => phonebookCategoryOptions(categories, entries),
+    [categories, entries],
+  );
+  const visible = useMemo(
+    () =>
+      filterAdminPhonebookEntries(entries, { categoryId: categoryFilter, search }),
+    [categoryFilter, entries, search],
+  );
+  // Orders come from the unfiltered list so an arrow press keeps moving an
+  // entry through its whole category, not just the rows currently on screen.
+  const orders = useMemo(() => phonebookEntryOrders(entries), [entries]);
+  // A text search hides siblings, so the arrows would look like they skip rows.
+  const canReorder = access.canReorder && !search.trim();
 
   return (
     <View style={styles.section}>
@@ -561,77 +592,88 @@ export function PhonebookEntryManager({
         </AppCard>
       ) : null}
 
-      {entries.map((entry, index) => (
-        <AppCard key={entry.id} style={styles.item}>
-          <View style={styles.heading}>
-            <View style={styles.grow}>
-              <AppText variant="heading">{entry.name_ar}</AppText>
-              <AppText color="muted" variant="caption">
-                {categoryNames.get(entry.category_id) ?? entry.category_id}
-              </AppText>
-              <AppText>{entry.number}</AppText>
+      <DirectorySearchField
+        accessibilityLabel="البحث في دليل الهاتف"
+        onChangeText={setSearch}
+        placeholder="ابحث بالجهة أو الرقم"
+        value={search}
+      />
+      <DirectoryFilterChips
+        label="الفئة"
+        onSelect={setCategoryFilter}
+        options={categoryOptions}
+        selected={categoryFilter}
+      />
+      <AppText color="muted" variant="caption">
+        {`عرض ${visible.length} من ${entries.length} رقم`}
+      </AppText>
+
+      {visible.length === 0 ? (
+        <AppText color="muted">لا توجد نتائج مطابقة للبحث.</AppText>
+      ) : null}
+
+      {visible.map((entry) => {
+        const order = orders.get(entry.id);
+        return (
+          <AppCard key={entry.id} style={styles.item}>
+            <View style={styles.heading}>
+              <View style={styles.grow}>
+                <AppText variant="heading">{entry.name_ar}</AppText>
+                <AppText color="muted" variant="caption">
+                  {categoryNames.get(entry.category_id) ?? entry.category_id}
+                </AppText>
+                <AppText>{entry.number}</AppText>
+              </View>
+              {entry.is_whatsapp ? (
+                <AppText color="success" variant="caption">
+                  واتساب
+                </AppText>
+              ) : null}
             </View>
-            {entry.is_whatsapp ? (
-              <AppText color="success" variant="caption">
-                واتساب
-              </AppText>
+            {access.canToggle ? (
+              <DirectoryVisibilityField
+                onChange={(value) => onVisibility(entry, value)}
+                testID={`toggle-${entry.id}`}
+                value={entry.is_active}
+              />
             ) : null}
-          </View>
-          {access.canToggle ? (
-            <DirectoryVisibilityField
-              onChange={(value) => onVisibility(entry, value)}
-              testID={`toggle-${entry.id}`}
-              value={entry.is_active}
-            />
-          ) : null}
-          {access.canReorder ? (
-            <DirectoryOrderActions
-              busy={busy === 'reorder-entries'}
-              first={index === 0}
-              last={index === entries.length - 1}
-              onDown={() =>
-                onReorder(
-                  moveDirectoryId(
-                    entries.map(({ id: value }) => value),
-                    index,
-                    1,
-                  ),
-                )
-              }
-              onUp={() =>
-                onReorder(
-                  moveDirectoryId(
-                    entries.map(({ id: value }) => value),
-                    index,
-                    -1,
-                  ),
-                )
-              }
-            />
-          ) : null}
-          {access.canEdit || access.canDelete ? (
-            <View style={styles.actions}>
-              {access.canEdit ? (
-                <AppButton
-                  onPress={() => edit(entry)}
-                  variant="secondary"
-                >
-                  تعديل
-                </AppButton>
-              ) : null}
-              {access.canDelete ? (
-                <AppButton
-                  loading={busy === `delete-entry-${entry.id}`}
-                  onPress={() => onDelete(entry)}
-                  variant="danger"
-                >
-                  حذف
-                </AppButton>
-              ) : null}
-            </View>
-          ) : null}
-        </AppCard>
-      ))}
+            {canReorder && order ? (
+              <DirectoryOrderActions
+                busy={busy === 'reorder-entries'}
+                first={order.index === 0}
+                last={order.index === order.siblings.length - 1}
+                onDown={() =>
+                  onReorder(moveDirectoryId(order.siblings, order.index, 1))
+                }
+                onUp={() =>
+                  onReorder(moveDirectoryId(order.siblings, order.index, -1))
+                }
+              />
+            ) : null}
+            {access.canEdit || access.canDelete ? (
+              <View style={styles.actions}>
+                {access.canEdit ? (
+                  <AppButton
+                    onPress={() => edit(entry)}
+                    variant="secondary"
+                  >
+                    تعديل
+                  </AppButton>
+                ) : null}
+                {access.canDelete ? (
+                  <AppButton
+                    loading={busy === `delete-entry-${entry.id}`}
+                    onPress={() => onDelete(entry)}
+                    variant="danger"
+                  >
+                    حذف
+                  </AppButton>
+                ) : null}
+              </View>
+            ) : null}
+          </AppCard>
+        );
+      })}
     </View>
   );
 }
@@ -675,5 +717,5 @@ PORT STATUS
   source:     resources/js/Pages/Admin/Phonebook/Index.tsx (518 lines)
   confidence: high
   todos:      0
-  notes:      Bearer administration covers categories, entries, WhatsApp metadata, sources, visibility, and ordering.
+  notes:      Bearer administration covers categories, entries, WhatsApp metadata, sources, visibility, ordering, plus the web search box, category filter, and entry counts; moves stay inside the entry category because order_column is numbered per category.
 */

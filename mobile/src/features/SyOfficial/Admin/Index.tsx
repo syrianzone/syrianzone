@@ -6,9 +6,11 @@ import {
   cleanOptionalText,
   cleanRequiredText,
   type DirectoryAdminAccess,
+  DirectoryFilterChips,
   DirectoryImage,
   DirectoryImagePickerButton,
   DirectoryOrderActions,
+  DirectorySearchField,
   DirectoryVisibilityField,
   getDirectoryAdminAccess,
   hasDirectoryAdminAccess,
@@ -42,6 +44,13 @@ import {
   updateOfficialCategory,
   updateOfficialEntity,
 } from '@/lib/api/directories/admin';
+
+import {
+  ALL_OFFICIAL_CATEGORIES,
+  filterAdminOfficialEntities,
+  officialCategoryOptions,
+  officialEntityOrders,
+} from './model';
 
 const SOCIAL_FIELDS = [
   'website',
@@ -362,6 +371,10 @@ function OfficialCategoryManager({
         </AppCard>
       ) : null}
 
+      <AppText color="muted" variant="caption">
+        {`${categories.length} فئة`}
+      </AppText>
+
       {categories.map((category, index) => (
         <AppCard key={category.id} style={styles.item}>
           <View style={styles.headingRow}>
@@ -460,6 +473,10 @@ export function OfficialEntityManager({
   const [image, setImage] = useState<PickedDirectoryImage | null>(null);
   const [isActive, setIsActive] = useState(true);
   const [socials, setSocials] = useState<Record<string, string>>({});
+  const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<string>(
+    ALL_OFFICIAL_CATEGORIES,
+  );
   const activeCategory = categoryId || categories[0]?.id || '';
 
   const reset = () => {
@@ -522,6 +539,23 @@ export function OfficialEntityManager({
       new Map(categories.map((category) => [category.id, category.label_ar])),
     [categories],
   );
+  const categoryOptions = useMemo(
+    () => officialCategoryOptions(categories, entities),
+    [categories, entities],
+  );
+  const visible = useMemo(
+    () =>
+      filterAdminOfficialEntities(entities, {
+        categoryId: categoryFilter,
+        search,
+      }),
+    [categoryFilter, entities, search],
+  );
+  // Orders come from the unfiltered list so an arrow press keeps moving an
+  // entity through its whole category, not just the rows currently on screen.
+  const orders = useMemo(() => officialEntityOrders(entities), [entities]);
+  // A text search hides siblings, so the arrows would look like they skip rows.
+  const canReorder = access.canReorder && !search.trim();
 
   return (
     <View style={styles.section}>
@@ -609,76 +643,87 @@ export function OfficialEntityManager({
         </AppCard>
       ) : null}
 
-      {entities.map((entity, index) => (
-        <AppCard key={entity.id} style={styles.item}>
-          <View style={styles.entityRow}>
-            <DirectoryImage
-              accessibilityLabel={`صورة ${entity.name_ar}`}
-              style={styles.thumbnail}
-              uri={entity.image}
-            />
-            <View style={styles.grow}>
-              <AppText variant="heading">{entity.name_ar}</AppText>
-              <AppText color="muted" variant="caption">
-                {categoryName.get(entity.category_id) ?? entity.category_id}
-              </AppText>
+      <DirectorySearchField
+        accessibilityLabel="البحث في الجهات الرسمية"
+        onChangeText={setSearch}
+        placeholder="ابحث بالاسم أو المعرف"
+        value={search}
+      />
+      <DirectoryFilterChips
+        label="الفئة"
+        onSelect={setCategoryFilter}
+        options={categoryOptions}
+        selected={categoryFilter}
+      />
+      <AppText color="muted" variant="caption">
+        {`عرض ${visible.length} من ${entities.length} جهة`}
+      </AppText>
+
+      {visible.length === 0 ? (
+        <AppText color="muted">لا توجد نتائج مطابقة للبحث.</AppText>
+      ) : null}
+
+      {visible.map((entity) => {
+        const order = orders.get(entity.id);
+        return (
+          <AppCard key={entity.id} style={styles.item}>
+            <View style={styles.entityRow}>
+              <DirectoryImage
+                accessibilityLabel={`صورة ${entity.name_ar}`}
+                style={styles.thumbnail}
+                uri={entity.image}
+              />
+              <View style={styles.grow}>
+                <AppText variant="heading">{entity.name_ar}</AppText>
+                <AppText color="muted" variant="caption">
+                  {categoryName.get(entity.category_id) ?? entity.category_id}
+                </AppText>
+              </View>
             </View>
-          </View>
-          {access.canToggle ? (
-            <DirectoryVisibilityField
-              onChange={(value) => onVisibility(entity, value)}
-              testID={`toggle-${entity.id}`}
-              value={entity.is_active}
-            />
-          ) : null}
-          {access.canReorder ? (
-            <DirectoryOrderActions
-              busy={busy === 'reorder-entities'}
-              first={index === 0}
-              last={index === entities.length - 1}
-              onDown={() =>
-                onReorder(
-                  moveDirectoryId(
-                    entities.map(({ id: value }) => value),
-                    index,
-                    1,
-                  ),
-                )
-              }
-              onUp={() =>
-                onReorder(
-                  moveDirectoryId(
-                    entities.map(({ id: value }) => value),
-                    index,
-                    -1,
-                  ),
-                )
-              }
-            />
-          ) : null}
-          {access.canEdit || access.canDelete ? (
-            <View style={styles.actions}>
-              {access.canEdit ? (
-                <AppButton
-                  onPress={() => edit(entity)}
-                  variant="secondary"
-                >
-                  تعديل
-                </AppButton>
-              ) : null}
-              {access.canDelete ? (
-                <AppButton
-                  loading={busy === `delete-entity-${entity.id}`}
-                  onPress={() => onDelete(entity)}
-                  variant="danger"
-                >
-                  حذف
-                </AppButton>
-              ) : null}
-            </View>
-          ) : null}
-        </AppCard>
-      ))}
+            {access.canToggle ? (
+              <DirectoryVisibilityField
+                onChange={(value) => onVisibility(entity, value)}
+                testID={`toggle-${entity.id}`}
+                value={entity.is_active}
+              />
+            ) : null}
+            {canReorder && order ? (
+              <DirectoryOrderActions
+                busy={busy === 'reorder-entities'}
+                first={order.index === 0}
+                last={order.index === order.siblings.length - 1}
+                onDown={() =>
+                  onReorder(moveDirectoryId(order.siblings, order.index, 1))
+                }
+                onUp={() =>
+                  onReorder(moveDirectoryId(order.siblings, order.index, -1))
+                }
+              />
+            ) : null}
+            {access.canEdit || access.canDelete ? (
+              <View style={styles.actions}>
+                {access.canEdit ? (
+                  <AppButton
+                    onPress={() => edit(entity)}
+                    variant="secondary"
+                  >
+                    تعديل
+                  </AppButton>
+                ) : null}
+                {access.canDelete ? (
+                  <AppButton
+                    loading={busy === `delete-entity-${entity.id}`}
+                    onPress={() => onDelete(entity)}
+                    variant="danger"
+                  >
+                    حذف
+                  </AppButton>
+                ) : null}
+              </View>
+            ) : null}
+          </AppCard>
+        );
+      })}
     </View>
   );
 }
@@ -731,7 +776,7 @@ PORT STATUS
   source:     resources/js/Pages/Admin/SyOfficial/Index.tsx (399 lines)
   confidence: high
   todos:      0
-  notes:      Bearer administration covers categories, entities, R2 images, secondary social links, visibility, and ordering.
+  notes:      Bearer administration covers categories, entities, R2 images, secondary social links, visibility, ordering, plus the web search box, category filter, and entity counts.
 */
 
 /*
@@ -755,5 +800,5 @@ PORT STATUS
   source:     resources/js/Pages/Admin/SyOfficial/_components/SortableList.tsx (105 lines)
   confidence: high
   todos:      0
-  notes:      Native official-account rows preserve ordered rendering, visibility, edit, delete, and move controls.
+  notes:      Native official-account rows preserve ordered rendering, visibility, edit, delete, and move controls; moves stay inside the entity category like the web sorting tab, and hide while a text search narrows the list.
 */

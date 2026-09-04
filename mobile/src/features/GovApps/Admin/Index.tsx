@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
 
 import {
@@ -9,6 +9,7 @@ import {
   DirectoryImage,
   DirectoryImagePickerButton,
   DirectoryOrderActions,
+  DirectorySearchField,
   DirectoryVisibilityField,
   getDirectoryAdminAccess,
   hasDirectoryAdminAccess,
@@ -36,6 +37,8 @@ import {
   setGovernmentAppVisibility,
   updateGovernmentApp,
 } from '@/lib/api/directories/admin';
+
+import { filterGovernmentApps } from './model';
 
 export function getGovernmentAppsAdminAccess(
   user: Pick<AuthUser, 'permissions' | 'role'> | null | undefined,
@@ -214,6 +217,14 @@ export function GovernmentAppManager({
   const [apple, setApple] = useState('');
   const [icon, setIcon] = useState<PickedDirectoryImage | null>(null);
   const [isActive, setIsActive] = useState(true);
+  const [search, setSearch] = useState('');
+  const visible = useMemo(
+    () => filterGovernmentApps(apps, search),
+    [apps, search],
+  );
+  // A text search hides neighbours, so the arrows would look like they skip
+  // rows; ordering stays tied to the full list the API returns.
+  const canReorder = access.canReorder && !search.trim();
 
   const reset = () => {
     setEditing(null);
@@ -351,73 +362,90 @@ export function GovernmentAppManager({
         </AppCard>
       ) : null}
 
-      {apps.map((app, index) => (
-        <AppCard key={app.id} style={styles.item}>
-          <View style={styles.heading}>
-            <DirectoryImage
-              accessibilityLabel={`أيقونة ${app.name_ar}`}
-              style={styles.icon}
-              uri={app.icon}
-            />
-            <View style={styles.grow}>
-              <AppText variant="heading">{app.name_ar}</AppText>
-              <AppText color="muted" variant="caption">
-                {app.name} · {app.id}
-              </AppText>
+      <DirectorySearchField
+        accessibilityLabel="البحث في التطبيقات الحكومية"
+        onChangeText={setSearch}
+        placeholder="ابحث بالاسم أو المعرف"
+        value={search}
+      />
+      <AppText color="muted" variant="caption">
+        {`عرض ${visible.length} من ${apps.length} تطبيق`}
+      </AppText>
+
+      {visible.length === 0 ? (
+        <AppText color="muted">لا توجد نتائج مطابقة للبحث.</AppText>
+      ) : null}
+
+      {visible.map((app) => {
+        const index = apps.indexOf(app);
+        return (
+          <AppCard key={app.id} style={styles.item}>
+            <View style={styles.heading}>
+              <DirectoryImage
+                accessibilityLabel={`أيقونة ${app.name_ar}`}
+                style={styles.icon}
+                uri={app.icon}
+              />
+              <View style={styles.grow}>
+                <AppText variant="heading">{app.name_ar}</AppText>
+                <AppText color="muted" variant="caption">
+                  {app.name} · {app.id}
+                </AppText>
+              </View>
             </View>
-          </View>
-          {access.canToggle ? (
-            <DirectoryVisibilityField
-              onChange={(value) => onVisibility(app, value)}
-              testID={`toggle-${app.id}`}
-              value={app.is_active}
-            />
-          ) : null}
-          {access.canReorder ? (
-            <DirectoryOrderActions
-              busy={busy === 'reorder'}
-              first={index === 0}
-              last={index === apps.length - 1}
-              onDown={() =>
-                onReorder(
-                  moveDirectoryId(
-                    apps.map(({ id: value }) => value),
-                    index,
-                    1,
-                  ),
-                )
-              }
-              onUp={() =>
-                onReorder(
-                  moveDirectoryId(
-                    apps.map(({ id: value }) => value),
-                    index,
-                    -1,
-                  ),
-                )
-              }
-            />
-          ) : null}
-          {access.canEdit || access.canDelete ? (
-            <View style={styles.actions}>
-              {access.canEdit ? (
-                <AppButton onPress={() => edit(app)} variant="secondary">
-                  تعديل
-                </AppButton>
-              ) : null}
-              {access.canDelete ? (
-                <AppButton
-                  loading={busy === `delete-${app.id}`}
-                  onPress={() => onDelete(app)}
-                  variant="danger"
-                >
-                  حذف
-                </AppButton>
-              ) : null}
-            </View>
-          ) : null}
-        </AppCard>
-      ))}
+            {access.canToggle ? (
+              <DirectoryVisibilityField
+                onChange={(value) => onVisibility(app, value)}
+                testID={`toggle-${app.id}`}
+                value={app.is_active}
+              />
+            ) : null}
+            {canReorder ? (
+              <DirectoryOrderActions
+                busy={busy === 'reorder'}
+                first={index === 0}
+                last={index === apps.length - 1}
+                onDown={() =>
+                  onReorder(
+                    moveDirectoryId(
+                      apps.map(({ id: value }) => value),
+                      index,
+                      1,
+                    ),
+                  )
+                }
+                onUp={() =>
+                  onReorder(
+                    moveDirectoryId(
+                      apps.map(({ id: value }) => value),
+                      index,
+                      -1,
+                    ),
+                  )
+                }
+              />
+            ) : null}
+            {access.canEdit || access.canDelete ? (
+              <View style={styles.actions}>
+                {access.canEdit ? (
+                  <AppButton onPress={() => edit(app)} variant="secondary">
+                    تعديل
+                  </AppButton>
+                ) : null}
+                {access.canDelete ? (
+                  <AppButton
+                    loading={busy === `delete-${app.id}`}
+                    onPress={() => onDelete(app)}
+                    variant="danger"
+                  >
+                    حذف
+                  </AppButton>
+                ) : null}
+              </View>
+            ) : null}
+          </AppCard>
+        );
+      })}
     </View>
   );
 }
@@ -456,7 +484,7 @@ PORT STATUS
   source:     resources/js/Pages/Admin/GovApps/Index.tsx (210 lines)
   confidence: high
   todos:      0
-  notes:      Bearer administration covers application CRUD, R2 icons, links, visibility, and ordering.
+  notes:      Bearer administration covers application CRUD, R2 icons, links, visibility, and ordering, plus the web search box and application counts; the web page has no category filter here.
 */
 
 /*

@@ -24,11 +24,13 @@ import { useAppTheme } from '@/contexts/ThemeContext';
 import { placesApi } from '@/features/Places/_lib/api';
 import { getCities } from '@/features/Transit/api';
 import { openSafeExternalUrl } from '@/lib/linking';
+import { weatherTranslations } from '@/lib/ported/home';
 
 import { findWidget, GOVERNORATE_OPTIONS } from './registry';
 import {
   boardSources,
   type BoardPrayerTimes,
+  type BoardTodayEvents,
 } from './sources';
 import type {
   WidgetDefinition,
@@ -206,6 +208,62 @@ function ClockWidget({ definition, instance }: BodyProps) {
   );
 }
 
+// WMO codes from the forecast upstream, worded next to the day names so all the
+// forecast vocabulary sits in one place: the server passes the code through raw
+// and never has to know how it is read.
+const WMO_LABELS: Record<number, { ar: string; en: string }> = {
+  0: { ar: 'صافية', en: 'Clear' },
+  1: { ar: 'صافية غالبا', en: 'Mainly clear' },
+  2: { ar: 'غيوم متفرقة', en: 'Partly cloudy' },
+  3: { ar: 'غائم', en: 'Overcast' },
+  45: { ar: 'ضباب', en: 'Fog' },
+  48: { ar: 'ضباب', en: 'Fog' },
+  51: { ar: 'رذاذ', en: 'Drizzle' },
+  53: { ar: 'رذاذ', en: 'Drizzle' },
+  55: { ar: 'رذاذ كثيف', en: 'Heavy drizzle' },
+  61: { ar: 'مطر خفيف', en: 'Light rain' },
+  63: { ar: 'مطر', en: 'Rain' },
+  65: { ar: 'مطر غزير', en: 'Heavy rain' },
+  71: { ar: 'ثلج خفيف', en: 'Light snow' },
+  73: { ar: 'ثلج', en: 'Snow' },
+  75: { ar: 'ثلج كثيف', en: 'Heavy snow' },
+  80: { ar: 'زخات', en: 'Showers' },
+  81: { ar: 'زخات', en: 'Showers' },
+  82: { ar: 'زخات غزيرة', en: 'Heavy showers' },
+  95: { ar: 'عاصفة رعدية', en: 'Thunderstorm' },
+  96: { ar: 'عاصفة رعدية', en: 'Thunderstorm' },
+  99: { ar: 'عاصفة رعدية', en: 'Thunderstorm' },
+};
+
+const WEEKDAYS_AR = [
+  'الأحد',
+  'الاثنين',
+  'الثلاثاء',
+  'الأربعاء',
+  'الخميس',
+  'الجمعة',
+  'السبت',
+];
+const WEEKDAYS_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+// The upstream sends a bare YYYY-MM-DD, which new Date() reads as UTC and can
+// land on the previous day locally, so the parts are split by hand.
+function forecastDayLabel(
+  date: string,
+  index: number,
+  locale: 'ar' | 'en',
+): string {
+  if (index === 0) {
+    return locale === 'ar' ? 'اليوم' : 'Today';
+  }
+  const [year, month, day] = date.split('-').map(Number);
+  if (!year || !month || !day) {
+    return '';
+  }
+  const weekday = new Date(year, month - 1, day).getDay();
+  return (locale === 'ar' ? WEEKDAYS_AR : WEEKDAYS_EN)[weekday] ?? '';
+}
+
 function WeatherWidget({ definition, instance }: BodyProps) {
   const { locale } = useLocale();
   const governorate = stringConfig(instance.c.governorate, 'damascus');
@@ -213,6 +271,23 @@ function WeatherWidget({ definition, instance }: BodyProps) {
     boardSources.weather(governorate),
   );
   const location = governorateLabel(governorate, locale);
+  const raw = query.data?.description ?? '';
+  const description =
+    locale === 'ar' ? (weatherTranslations[raw] ?? raw) : raw;
+  // the website carries each day's condition in a title tooltip, which has no
+  // native equivalent, so the wording joins the row
+  const forecast = (query.data?.forecast ?? [])
+    .slice(0, 4)
+    .map((day, index) => ({
+      date: day.date,
+      text: [
+        forecastDayLabel(day.date, index, locale),
+        `${day.max}° / ${day.min}°`,
+        WMO_LABELS[day.code]?.[locale] ?? '',
+      ]
+        .filter((part) => part.length > 0)
+        .join(' · '),
+    }));
   return (
     <WidgetShell title={locale === 'ar' ? definition.nameAr : definition.nameEn}>
       <QueryBody
@@ -225,11 +300,11 @@ function WeatherWidget({ definition, instance }: BodyProps) {
           {query.data?.temp}°
         </AppText>
         <AppText color="muted" variant="caption">
-          {location} · {query.data?.description}
+          {location} · {description}
         </AppText>
-        {(query.data?.forecast ?? []).slice(0, 4).map((day) => (
+        {forecast.map((day) => (
           <AppText key={day.date} color="muted" variant="caption">
-            {day.date}: {day.max}° / {day.min}°
+            {day.text}
           </AppText>
         ))}
       </QueryBody>
@@ -471,15 +546,81 @@ function EventsWidget({ definition, instance }: BodyProps) {
           </AppText>
         ) : null}
         {query.data?.events.map((event) => (
-          <DataRow
-            key={event.id}
-            label={event.name}
-            onPress={() => void openSafeExternalUrl(event.url)}
-            value={event.event_time?.slice(0, 5) ?? ''}
-          />
+          <EventRow event={event} key={event.id} />
         ))}
       </QueryBody>
     </WidgetShell>
+  );
+}
+
+type BoardTodayEvent = BoardTodayEvents['events'][number];
+
+// Upstream sends "HH:MM:SS"; the seconds are always noise here.
+function shortEventTime(time: string | null): string | null {
+  if (!time) {
+    return null;
+  }
+  const parts = time.split(':');
+  return parts.length < 2 ? null : `${parts[0]}:${parts[1]}`;
+}
+
+function eventPriceLabel(
+  event: BoardTodayEvent,
+  locale: 'ar' | 'en',
+): string {
+  if (event.is_free) {
+    return locale === 'ar' ? 'مجاني' : 'Free';
+  }
+  if (event.ticket_price === null) {
+    return '';
+  }
+  const amount = event.ticket_price.toLocaleString('en-US');
+  return locale === 'ar' ? `${amount} ل.س` : `${amount} SYP`;
+}
+
+function EventRow({ event }: { event: BoardTodayEvent }) {
+  const { locale } = useLocale();
+  // a multi day event often has no start time for today, so it reads as running
+  // all day rather than as a missing value
+  const time =
+    shortEventTime(event.event_time) ??
+    (locale === 'ar' ? 'طوال اليوم' : 'All day');
+  const venue = event.is_online
+    ? locale === 'ar'
+      ? 'عبر الإنترنت'
+      : 'Online'
+    : event.address ||
+      (locale === 'ar' ? 'مكان غير محدد' : 'Venue not set');
+  const price = eventPriceLabel(event, locale);
+  // the website tints only the price and leaves the category muted; one line
+  // keeps the free tint without a nested text node
+  const meta = [price, event.category ?? '']
+    .filter((part) => part.length > 0)
+    .join(' · ');
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={() => void openSafeExternalUrl(event.url)}
+      style={styles.eventRow}
+    >
+      <AppText color="muted" style={styles.eventTime} variant="caption">
+        {time}
+      </AppText>
+      <View style={styles.eventBody}>
+        <AppText numberOfLines={2}>{event.name}</AppText>
+        <AppText color="muted" numberOfLines={1} variant="caption">
+          {venue}
+        </AppText>
+        {meta ? (
+          <AppText
+            color={event.is_free ? 'primary' : 'muted'}
+            variant="caption"
+          >
+            {meta}
+          </AppText>
+        ) : null}
+      </View>
+    </Pressable>
   );
 }
 
@@ -983,6 +1124,22 @@ const styles = StyleSheet.create({
     minHeight: 42,
     paddingVertical: 5,
   },
+  eventBody: {
+    flex: 1,
+    gap: 2,
+  },
+  eventRow: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: 10,
+    minHeight: 42,
+    paddingVertical: 5,
+  },
+  eventTime: {
+    minWidth: 46,
+    paddingTop: 2,
+    textAlign: 'center',
+  },
   iconButton: {
     alignItems: 'center',
     height: 48,
@@ -1107,7 +1264,8 @@ PORT STATUS
   source:     resources/js/Pages/Board/_widgets/events-today/View.tsx (98 lines)
   confidence: high
   todos:      0
-  notes:      The native events widget preserves today filtering, event details, empty state, and source navigation.
+  notes:      The native events widget preserves today filtering, venue, price, category, the all-day
+              fallback, the fallback governorate notice, empty state, and source navigation.
 */
 
 /*
@@ -1187,5 +1345,6 @@ PORT STATUS
   source:     resources/js/Pages/Board/_widgets/weather/View.tsx (112 lines)
   confidence: high
   todos:      0
-  notes:      The native weather widget preserves governorate configuration, conditions, temperatures, and refresh states.
+  notes:      The native weather widget preserves governorate configuration, the Arabic condition and
+              weekday wording, temperatures, and refresh states.
 */

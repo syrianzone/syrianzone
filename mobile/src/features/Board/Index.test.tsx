@@ -217,3 +217,98 @@ test('switches Board layout and notes to the next account scope before syncing',
   );
   expect(putBoard).not.toHaveBeenCalledWith(accountA, expect.anything());
 });
+
+test('promotes the guest board to the account on the first sign-in', async () => {
+  mockUser = { id: 11 };
+  const view = await renderScreen();
+
+  await waitFor(() => expect(view.getByText('الرئيسية')).toBeTruthy());
+  expect(view.getByText('future-widget')).toBeTruthy();
+  await waitFor(() =>
+    expect(putBoard).toHaveBeenCalledWith(storedDocument, expect.anything()),
+  );
+  await waitFor(async () => {
+    const value = await AsyncStorage.getItem(boardDocumentKey(11));
+    expect(JSON.parse(value ?? 'null')).toEqual(storedDocument);
+  });
+});
+
+test('lets an existing server document win over the promoted guest board', async () => {
+  const serverDocument: BoardDocument = {
+    activeId: 'server',
+    dashboards: [{ id: 'server', name: 'لوحة الخادم', widgets: [] }],
+    updatedAt: '2026-07-24T11:00:00.000Z',
+    v: 1,
+  };
+  jest.mocked(getBoard).mockResolvedValue({
+    document: serverDocument,
+    updated_at: serverDocument.updatedAt,
+  });
+  mockUser = { id: 12 };
+  const view = await renderScreen();
+
+  await waitFor(() => expect(view.getByText('لوحة الخادم')).toBeTruthy());
+  expect(view.queryByText('الرئيسية')).toBeNull();
+  // the guest board is superseded, not dropped
+  expect(view.getByText('استعادة النسخة السابقة')).toBeTruthy();
+});
+
+test('does not promote the guest board again once the account has its own', async () => {
+  const accountDocument: BoardDocument = {
+    activeId: 'account',
+    dashboards: [{ id: 'account', name: 'لوحة الحساب', widgets: [] }],
+    updatedAt: '2026-07-24T09:00:00.000Z',
+    v: 1,
+  };
+  await AsyncStorage.setItem(
+    boardDocumentKey(13),
+    JSON.stringify(accountDocument),
+  );
+  mockUser = { id: 13 };
+  const view = await renderScreen();
+
+  await waitFor(() => expect(view.getByText('لوحة الحساب')).toBeTruthy());
+  expect(view.queryByText('الرئيسية')).toBeNull();
+  await waitFor(() =>
+    expect(putBoard).toHaveBeenCalledWith(accountDocument, expect.anything()),
+  );
+  expect(putBoard).not.toHaveBeenCalledWith(storedDocument, expect.anything());
+});
+
+test('keeps a number config draft while typing and clamps it on blur', async () => {
+  await AsyncStorage.setItem(
+    BOARD_DOCUMENT_KEY,
+    JSON.stringify({
+      ...storedDocument,
+      dashboards: [
+        {
+          id: 'd_main',
+          name: 'الرئيسية',
+          widgets: [
+            { c: { limit: 8 }, d: 'answers', h: 3, i: 'w_answers', w: 6 },
+          ],
+        },
+      ],
+    }),
+  );
+  const view = await renderScreen();
+
+  await waitFor(() => expect(view.getByText('answers')).toBeTruthy());
+  await fireEvent.press(view.getByText('تخصيص'));
+  await fireEvent.press(view.getByLabelText('إعدادات إجابات سوريا'));
+  expect(view.getByTestId('board-config-limit').props.value).toBe('8');
+
+  // 1 is below the minimum of 3 but is the first keystroke of 15
+  await fireEvent.changeText(view.getByTestId('board-config-limit'), '1');
+  expect(view.getByTestId('board-config-limit').props.value).toBe('1');
+  await fireEvent.changeText(view.getByTestId('board-config-limit'), '15');
+  expect(view.getByTestId('board-config-limit').props.value).toBe('15');
+
+  await fireEvent.changeText(view.getByTestId('board-config-limit'), '99');
+  await fireEvent(view.getByTestId('board-config-limit'), 'blur');
+  expect(view.getByTestId('board-config-limit').props.value).toBe('20');
+  await waitFor(async () => {
+    const value = await AsyncStorage.getItem(BOARD_DOCUMENT_KEY);
+    expect(JSON.parse(value ?? '{}').dashboards[0].widgets[0].c.limit).toBe(20);
+  });
+});

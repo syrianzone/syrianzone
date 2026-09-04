@@ -35,6 +35,29 @@ export const governorates = [
   { id: 'raqqa', ar: 'الرقة', en: 'Raqqa', lat: 35.952, lon: 39.0081 },
 ] as const;
 
+// The upstream weather condition arrives in English. Home and the Board weather
+// widget word it the same way, so the table lives here rather than in either
+// screen.
+export const weatherTranslations: Readonly<Record<string, string>> = {
+  'broken clouds': 'غيوم جزئية',
+  'clear sky': 'سماء صافية',
+  dust: 'غبار',
+  'few clouds': 'غيوم قليلة',
+  fog: 'ضباب كثيف',
+  haze: 'ضباب خفيف',
+  'heavy intensity rain': 'مطر غزير',
+  'light rain': 'مطر خفيف',
+  mist: 'ضباب',
+  'moderate rain': 'مطر متوسط',
+  'overcast clouds': 'غيوم ملبدة',
+  rain: 'ممطر',
+  sand: 'عواصف رملية',
+  'scattered clouds': 'غيوم متفرقة',
+  'shower rain': 'مطر غزير',
+  snow: 'مثلج',
+  thunderstorm: 'عاصفة رعدية',
+};
+
 export const searchEngines = [
   'duckduckgo',
   'searx',

@@ -47,7 +47,7 @@ import {
 } from './model';
 import { WIDGETS, findWidget } from './registry';
 import {
-  readBoardDocument,
+  readBoardDocumentForAccount,
   writeBoardDocument,
 } from './storage';
 import { useBoardSync } from './sync';
@@ -89,9 +89,12 @@ function ScopedBoardScreen({
   const [sizeTarget, setSizeTarget] = useState<string | null>(null);
   const [configTarget, setConfigTarget] = useState<string | null>(null);
 
+  // hadLocal decides whether sync uploads this document or adopts the server
+  // one, so a promoted guest board has to count as local: that is the web path
+  // where signing in with no server document keeps the guest board.
   useEffect(() => {
     let active = true;
-    void readBoardDocument(accountId).then((stored) => {
+    void readBoardDocumentForAccount(accountId).then((stored) => {
       if (!active) {
         return;
       }
@@ -795,28 +798,80 @@ function ConfigField({
       </View>
     );
   }
+  if (field.type === 'number') {
+    return (
+      <NumberField
+        field={field}
+        label={label}
+        onChange={onChange}
+        value={value}
+      />
+    );
+  }
   return (
     <View style={styles.field}>
       <AppText variant="label">{label}</AppText>
       <AppInput
-        keyboardType={field.type === 'number' ? 'number-pad' : 'default'}
-        maxLength={field.type === 'text' ? field.maxLength : undefined}
-        onChangeText={(raw) => {
-          if (field.type === 'number') {
-            const parsed = Number(raw);
-            if (Number.isFinite(parsed)) {
-              onChange(
-                Math.min(
-                  field.max ?? parsed,
-                  Math.max(field.min ?? parsed, parsed),
-                ),
-              );
-            }
-          } else {
-            onChange(raw);
+        maxLength={field.maxLength}
+        onChangeText={onChange}
+        testID={`board-config-${field.key}`}
+        value={String(value)}
+      />
+    </View>
+  );
+}
+
+// The website clamps a number only where the widget reads it, never while the
+// user types. Clamping every keystroke makes 15 untypable in a 3 to 20 range
+// and rewrites a cleared field, so the draft stays text until it is in range
+// or the field is left.
+function NumberField({
+  field,
+  label,
+  onChange,
+  value,
+}: {
+  field: Extract<WidgetConfigField, { type: 'number' }>;
+  label: string;
+  onChange: (value: number) => void;
+  value: unknown;
+}) {
+  const committed = typeof value === 'number' ? value : field.default;
+  const [draft, setDraft] = useState(() => String(committed));
+  const min = field.min ?? Number.NEGATIVE_INFINITY;
+  const max = field.max ?? Number.POSITIVE_INFINITY;
+
+  return (
+    <View style={styles.field}>
+      <AppText variant="label">{label}</AppText>
+      <AppInput
+        keyboardType="number-pad"
+        onBlur={() => {
+          const parsed = Number(draft);
+          if (draft.trim() === '' || !Number.isFinite(parsed)) {
+            setDraft(String(committed));
+            return;
+          }
+          const clamped = Math.min(max, Math.max(min, Math.round(parsed)));
+          setDraft(String(clamped));
+          if (clamped !== committed) {
+            onChange(clamped);
           }
         }}
-        value={String(value)}
+        onChangeText={(raw) => {
+          setDraft(raw);
+          const parsed = Number(raw);
+          if (
+            raw.trim() !== '' &&
+            Number.isInteger(parsed) &&
+            parsed >= min &&
+            parsed <= max
+          ) {
+            onChange(parsed);
+          }
+        }}
+        testID={`board-config-${field.key}`}
+        value={draft}
       />
     </View>
   );
@@ -1022,6 +1077,7 @@ PORT STATUS
   confidence: high
   todos:      0
   notes:      The native Board screen preserves dashboard selection, editing, gallery access, and synchronized state.
+              Storage is account scoped, so the first sign-in promotes the guest board the way the shared web slot does.
 */
 
 /*
@@ -1078,6 +1134,7 @@ PORT STATUS
   confidence: high
   todos:      0
   notes:      The native configuration modal renders typed fields and persists widget configuration patches.
+              Number fields keep a text draft and clamp on blur, since a phone keyboard has no spinner.
 */
 
 /*

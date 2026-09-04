@@ -4,6 +4,7 @@ import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { LocaleProvider } from '@/contexts/LocaleContext';
 import { AppThemeProvider } from '@/contexts/ThemeContext';
 
+import { boardSources } from './sources';
 import { WidgetRenderer } from './WidgetRenderer';
 import { WIDGETS } from './registry';
 import type { WidgetInstance } from './types';
@@ -153,4 +154,70 @@ test('starts, pauses, and resets the local pomodoro without writing timer state'
   expect(view.getByTestId('board-pomodoro-time').props.children).toBe('25:00');
   expect(change).not.toHaveBeenCalled();
   jest.useRealTimers();
+});
+
+test('renders the weather condition in Arabic with weekday forecast labels', async () => {
+  jest.mocked(boardSources.weather).mockResolvedValueOnce({
+    description: 'clear sky',
+    forecast: [
+      { code: 0, date: '2026-07-24', max: 34, min: 21 },
+      { code: 61, date: '2026-07-25', max: 33, min: 20 },
+    ],
+    governorate: 'damascus',
+    icon: '01d',
+    temp: 28,
+  });
+  const { view } = await renderWidget('weather', { governorate: 'damascus' });
+
+  await waitFor(() =>
+    expect(view.getByText('دمشق · سماء صافية')).toBeTruthy(),
+  );
+  expect(view.getByText('اليوم · 34° / 21° · صافية')).toBeTruthy();
+  expect(view.getByText('السبت · 33° / 20° · مطر خفيف')).toBeTruthy();
+});
+
+test('shows venue, price, category, and the all-day fallback for today events', async () => {
+  jest.mocked(boardSources.eventsToday).mockResolvedValueOnce({
+    events: [
+      {
+        address: 'دار الأوبرا',
+        category: 'موسيقى',
+        event_date: '2026-07-24',
+        event_time: '19:30:00',
+        id: '1',
+        is_free: false,
+        is_online: false,
+        name: 'حفل موسيقي',
+        organizer: null,
+        ticket_price: 5_000,
+        url: 'https://f3alia.com/events/1',
+      },
+      {
+        address: '',
+        category: null,
+        event_date: '2026-07-24',
+        event_time: null,
+        id: '2',
+        is_free: true,
+        is_online: true,
+        name: 'ورشة تصميم',
+        organizer: null,
+        ticket_price: null,
+        url: 'https://f3alia.com/events/2',
+      },
+    ],
+    governorate: 'damascus',
+    is_fallback: false,
+  });
+  const { view } = await renderWidget('events-today', {
+    governorate: 'damascus',
+  });
+
+  await waitFor(() => expect(view.getByText('حفل موسيقي')).toBeTruthy());
+  expect(view.getByText('19:30')).toBeTruthy();
+  expect(view.getByText('دار الأوبرا')).toBeTruthy();
+  expect(view.getByText('5,000 ل.س · موسيقى')).toBeTruthy();
+  expect(view.getByText('طوال اليوم')).toBeTruthy();
+  expect(view.getByText('عبر الإنترنت')).toBeTruthy();
+  expect(view.getByText('مجاني')).toBeTruthy();
 });

@@ -44,6 +44,7 @@ import {
   getNextPrayer,
   governorates,
   resolveHomeCoordinates,
+  weatherTranslations,
   type CustomLink,
 } from '@/lib/ported/home';
 
@@ -51,21 +52,6 @@ import {
   fetchHomeContent,
   type HomeQuickLink,
 } from './Home/api';
-
-const weatherTranslations: Readonly<Record<string, string>> = {
-  'broken clouds': 'غيوم جزئية',
-  'clear sky': 'سماء صافية',
-  'few clouds': 'غيوم قليلة',
-  'light rain': 'مطر خفيف',
-  mist: 'ضباب',
-  'moderate rain': 'مطر متوسط',
-  'overcast clouds': 'غيوم ملبدة',
-  rain: 'ممطر',
-  'scattered clouds': 'غيوم متفرقة',
-  'shower rain': 'مطر غزير',
-  snow: 'مثلج',
-  thunderstorm: 'عاصفة رعدية',
-};
 
 const sourceFeatureSlugs = [
   'syofficial',

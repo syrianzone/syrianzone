@@ -48,6 +48,20 @@ export function writeBoardDocument(
   return writeJson(boardDocumentKey(accountId), document);
 }
 
+// The website keeps one storage slot for guest and account, so signing in
+// carries the guest board over. Native slots are account scoped, so the account
+// slot falls back to the guest board exactly once: after the first write the
+// account has its own document and a later sign-in reads that instead.
+export async function readBoardDocumentForAccount(
+  accountId: number | null,
+): Promise<unknown> {
+  const own = await readBoardDocument(accountId);
+  if (own !== null || accountId === null) {
+    return own;
+  }
+  return readBoardDocument(null);
+}
+
 export function readPreviousDocument(
   accountId: number | null = null,
 ): Promise<unknown> {
@@ -76,5 +90,6 @@ PORT STATUS
   source:     resources/js/Pages/Board/_lib/storage.ts (74 lines)
   confidence: high
   todos:      0
-  notes:      AsyncStorage preserves the current and recoverable Board documents with validated reads.
+  notes:      AsyncStorage preserves the current and recoverable Board documents with validated reads,
+              plus a one-time guest-to-account fallback the shared web storage slot gets for free.
 */

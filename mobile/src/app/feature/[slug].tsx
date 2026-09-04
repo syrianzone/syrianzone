@@ -23,6 +23,7 @@ import SyOfficialScreen from '@/features/SyOfficial/Index';
 import SyrianContributorsScreen from '@/features/SyrianContributors/Index';
 import TermsScreen from '@/features/Terms';
 import TierListScreen from '@/features/TierList/Index';
+import WarningsScreen from '@/features/Warnings/Index';
 
 export default function FeatureRoute() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
@@ -74,6 +75,8 @@ export default function FeatureRoute() {
       return <TierListScreen />;
     case 'transit':
       return <Redirect href="/transit" />;
+    case 'warnings':
+      return <WarningsScreen />;
     default:
       return (
         <QueryState

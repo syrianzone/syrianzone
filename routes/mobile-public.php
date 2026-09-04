@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Mobile\PublicContentController;
+use App\Http\Controllers\Mobile\WarningsController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('mobile')->name('mobile.public.')->group(function () {
@@ -14,4 +15,5 @@ Route::prefix('mobile')->name('mobile.public.')->group(function () {
     Route::get('/contributors', [PublicContentController::class, 'contributors'])->name('contributors');
     Route::get('/contributors/{username}', [PublicContentController::class, 'contributor'])->name('contributor');
     Route::get('/transit/cities/{cityId}/routes/{routeId}', [PublicContentController::class, 'transitRoute'])->name('transit-route');
+    Route::get('/warnings', [WarningsController::class, 'index'])->middleware('throttle:60,1')->name('warnings');
 });

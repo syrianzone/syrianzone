@@ -5,9 +5,9 @@ board_sync_put	PUT	/api/v1/board	app/Http/Controllers/BoardController.php	mobile
 board_answers	GET	/api/answers?limit={limit}	app/Http/Controllers/AnswersController.php	mobile/src/features/Board/sources.ts	public	none	implemented
 board_events	GET	/api/events/today?governorate={governorate}	app/Http/Controllers/EventsController.php	mobile/src/features/Board/sources.ts	public	none	implemented
 board_feed	GET	/api/feed?source={source}	app/Http/Controllers/FeedController.php	mobile/src/features/Board/sources.ts	public	none	implemented
-board_prayer_times	GET	/api/prayer-times?governorate={governorate}	app/Http/Controllers/PrayerController.php	mobile/src/features/Board/sources.ts	public	none	implemented
+board_prayer_times	GET	/api/prayer-times?governorate={governorate}	app/Http/Controllers/PrayerController.php	mobile/src/features/Board/sources.ts|mobile/src/features/Roznama/data.ts	public	none	implemented
 board_recipe	GET	/api/recipe-of-the-day	app/Http/Controllers/RecipeController.php	mobile/src/features/Board/sources.ts	public	none	implemented
-board_weather	GET	/api/weather?governorate={governorate}	app/Http/Controllers/WeatherController.php	mobile/src/features/Board/sources.ts	public	none	implemented
+board_weather	GET	/api/weather?governorate={governorate}	app/Http/Controllers/WeatherController.php	mobile/src/features/Board/sources.ts|mobile/src/features/Roznama/data.ts	public	none	implemented
 weather	GET	https://syrianzone.hade-alahmad1.workers.dev	-	mobile/src/lib/home/widgets.ts	public	none	direct-external
 prayer_times	GET	https://api.aladhan.com/v1/timings/{date}	-	mobile/src/lib/home/widgets.ts|mobile/src/features/Roznama/data.ts	public	none	direct-external
 events	POST	https://event-backend-production-18c4.up.railway.app/graphql	-	mobile/src/components/F3aliaEvents.model.ts	public	none	direct-external
@@ -162,3 +162,5 @@ admin_users_create	POST	/api/mobile/admin/users	app/Http/Controllers/Mobile/Admi
 admin_users_delete	DELETE	/api/mobile/admin/users/{user}	app/Http/Controllers/Mobile/AdminUserController.php	mobile/src/features/Admin/usersApi.ts	bearer	superadmin	implemented
 admin_users_ban	POST	/api/mobile/admin/users/{user}/toggle-ban	app/Http/Controllers/Mobile/AdminUserController.php	mobile/src/features/Admin/usersApi.ts|mobile/src/features/Transit/api.ts	bearer	admin|transit_admin|superadmin	implemented
 candidate_upload	POST	/api/mobile/admin/uploads	app/Http/Controllers/Mobile/AdminUploadController.php	mobile/src/components/admin/api.ts|mobile/src/lib/api/uploads.ts	bearer	admin|superadmin	implemented
+warnings	GET	/api/mobile/warnings	app/Http/Controllers/Mobile/WarningsController.php	mobile/src/features/Warnings/api.ts	public	none	implemented
+warnings_upstream	GET	https://news.jard.chat/?category=warnings&tab=all	app/Services/PublicContent/WarningsFeedService.php	mobile/src/features/Warnings/api.ts	public	none	direct-external

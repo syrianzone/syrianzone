@@ -48,6 +48,7 @@ interface TierBoardProps {
   minimumSelections?: number;
   onVote?: (tiers: PollTiers) => Promise<void>;
   poll: PollSummary;
+  title?: string;
   voteDay: string;
 }
 
@@ -70,6 +71,7 @@ export function TierBoard({
   minimumSelections = 3,
   onVote,
   poll,
+  title,
   voteDay,
 }: TierBoardProps) {
   const { direction } = useLocale();
@@ -233,12 +235,25 @@ export function TierBoard({
 
       <View ref={captureTarget} style={styles.captureBoard}>
         <AppText style={styles.captureTitle} variant="heading">
-          {poll.title}
+          {title ?? poll.title}
         </AppText>
         {TIER_KEYS.map((tier) => (
-          <View
+          <Pressable
+            accessibilityHint="ينقل المرشحين المحددين إلى هذا المستوى"
+            accessibilityLabel={`المستوى ${TIER_LABELS[tier]}`}
+            accessibilityRole="button"
+            disabled={board.selected.length === 0}
             key={tier}
-            style={[styles.tierRow, { borderColor: theme.palette.border }]}
+            onPress={() => setBoard((current) =>
+              moveCandidatesToTier(current, tier, visibleCandidates))}
+            style={[
+              styles.tierRow,
+              {
+                borderColor: board.selected.length > 0
+                  ? tierColors[tier]
+                  : theme.palette.border,
+              },
+            ]}
           >
             <View style={[styles.tierLabel, { backgroundColor: tierColors[tier] }] }>
               <AppText style={styles.tierLetter} variant="heading">{tier}</AppText>
@@ -248,7 +263,7 @@ export function TierBoard({
             </View>
             <View style={styles.tierCandidates}>
               {board.tiers[tier].length === 0 ? (
-                <AppText color="muted" variant="caption">اسحب أو انقل المرشحين إلى هنا</AppText>
+                <AppText color="muted" variant="caption">انقر على مرشح ثم انقر هنا لنقله</AppText>
               ) : board.tiers[tier].map((candidateId, index) => {
                 const candidate = candidateById.get(candidateId);
                 if (!candidate) {
@@ -267,16 +282,20 @@ export function TierBoard({
                       <Pressable
                         accessibilityLabel={`رفع ${candidate.name}`}
                         disabled={index === 0}
+                        hitSlop={8}
                         onPress={() => setBoard((current) =>
                           moveCandidateWithinTier(current, tier, candidateId, -1))}
+                        style={styles.orderButton}
                       >
                         <AppText color={index === 0 ? 'muted' : 'default'}>↑</AppText>
                       </Pressable>
                       <Pressable
                         accessibilityLabel={`خفض ${candidate.name}`}
                         disabled={index === board.tiers[tier].length - 1}
+                        hitSlop={8}
                         onPress={() => setBoard((current) =>
                           moveCandidateWithinTier(current, tier, candidateId, 1))}
+                        style={styles.orderButton}
                       >
                         <AppText
                           color={
@@ -293,7 +312,7 @@ export function TierBoard({
                 );
               })}
             </View>
-          </View>
+          </Pressable>
         ))}
         <AppText color="muted" style={styles.watermark} variant="caption">
           syrian.zone/tierlist
@@ -303,7 +322,7 @@ export function TierBoard({
       <AppCard style={styles.bank}>
         <AppText variant="heading">المرشحون</AppText>
         <AppText color="muted" variant="caption">
-          اختر مرشحًا واحدًا أو عدة مرشحين ثم انقلهم إلى المستوى المناسب.
+          اختر مرشحًا أو أكثر ثم انقر على المستوى المناسب في القائمة.
         </AppText>
         <View style={styles.bankGrid}>
           {bank.map((candidate) => (
@@ -456,6 +475,12 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
   },
+  orderButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 28,
+    minWidth: 28,
+  },
   orderButtons: {
     alignItems: 'center',
     gap: 4,
@@ -517,5 +542,5 @@ PORT STATUS
   source:     resources/js/Components/poll/TierBoard.tsx (888 lines)
   confidence: high
   todos:      0
-  notes:      Native multi-select, ordered tier controls, secure daily voting, and bounded sharing preserve the board workflow.
+  notes:      Native multi-select, tappable tier rows, touch-sized order controls, secure daily voting, and bounded sharing preserve the board workflow.
 */

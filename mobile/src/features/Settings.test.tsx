@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import * as Location from 'expo-location';
 
@@ -16,14 +17,20 @@ jest.mock('expo-location', () => ({
 }));
 
 async function renderScreen() {
+  // The notifications card reads its device-local settings through react-query.
+  const client = new QueryClient({
+    defaultOptions: { queries: { gcTime: 0, retry: false } },
+  });
   return render(
-    <LocaleProvider>
-      <AppThemeProvider>
-        <HomeSettingsProvider>
-          <SettingsScreen />
-        </HomeSettingsProvider>
-      </AppThemeProvider>
-    </LocaleProvider>,
+    <QueryClientProvider client={client}>
+      <LocaleProvider>
+        <AppThemeProvider>
+          <HomeSettingsProvider>
+            <SettingsScreen />
+          </HomeSettingsProvider>
+        </AppThemeProvider>
+      </LocaleProvider>
+    </QueryClientProvider>,
   );
 }
 

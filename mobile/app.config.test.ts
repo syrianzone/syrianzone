@@ -31,3 +31,18 @@ test('blocks the unused Android system overlay permission', () => {
     'android.permission.SYSTEM_ALERT_WINDOW',
   );
 });
+
+test('configures local notification icon, tint, and default channel', () => {
+  expect(appConfig().plugins).toContainEqual([
+    'expo-notifications',
+    {
+      color: '#5a714a',
+      defaultChannel: 'updates',
+      icon: './assets/images/icon-monochrome.png',
+    },
+  ]);
+});
+
+test('enables iOS background processing for notification checks', () => {
+  expect(appConfig().plugins).toContain('expo-background-task');
+});

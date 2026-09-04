@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, BarChart3, Pencil } from 'lucide-react-native';
+import type { ReactNode } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { TierBoard } from '@/components/poll/TierBoard';
@@ -14,16 +15,22 @@ import { fetchPoll, pollQueryKeys } from '@/lib/api/polls';
 
 interface PollShowProps {
   identifier: string;
+  intro?: ReactNode;
+  leaderboardLabel?: string;
   onBack?: () => void;
   onEdit?: (pollId: string) => void;
   onLeaderboard?: () => void;
+  title?: string;
 }
 
 export default function PollShow({
   identifier,
+  intro,
+  leaderboardLabel = 'النتائج والإحصائيات',
   onBack,
   onEdit,
   onLeaderboard,
+  title,
 }: PollShowProps) {
   const { isAdmin } = useAuth();
   const { theme } = useAppTheme();
@@ -36,7 +43,7 @@ export default function PollShow({
     <Screen
       onRefresh={() => void query.refetch()}
       refreshing={query.isFetching && !query.isPending}
-      title={query.data?.poll.title ?? 'الاستطلاع'}
+      title={title ?? query.data?.poll.title ?? 'الاستطلاع'}
       trailing={onBack ? (
         <AppButton
           accessibilityLabel="العودة إلى الاستطلاعات"
@@ -74,7 +81,7 @@ export default function PollShow({
                 onPress={onLeaderboard}
                 variant="secondary"
               >
-                النتائج والإحصائيات
+                {leaderboardLabel}
               </AppButton>
             ) : null}
             {isAdmin && onEdit ? (
@@ -87,10 +94,12 @@ export default function PollShow({
               </AppButton>
             ) : null}
           </View>
+          {intro}
           <TierBoard
             candidates={query.data.candidates}
             groups={query.data.groups}
             poll={query.data.poll}
+            title={title}
             voteDay={query.data.voteDay}
           />
         </>
@@ -115,5 +124,5 @@ PORT STATUS
   source:     resources/js/Pages/Polls/Show.tsx (79 lines)
   confidence: high
   todos:      0
-  notes:      React Query, native role gates, and TierBoard replace Inertia props and browser navigation.
+  notes:      React Query, native role gates, and TierBoard replace Inertia props and browser navigation; wrappers may inject a title, intro, and results label.
 */

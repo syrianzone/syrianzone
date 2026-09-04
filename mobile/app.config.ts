@@ -38,6 +38,15 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     plugins: [
       'expo-router',
+      'expo-background-task',
+      [
+        'expo-notifications',
+        {
+          color: '#5a714a',
+          defaultChannel: 'updates',
+          icon: './assets/images/icon-monochrome.png',
+        },
+      ],
       '@maplibre/maplibre-react-native',
       [
         'expo-secure-store',

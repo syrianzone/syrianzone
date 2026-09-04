@@ -12,6 +12,11 @@ import { ThemeToggle } from '@/components/shell/ThemeToggle';
 import { useHomeSettings } from '@/contexts/HomeSettingsContext';
 import { useLocale } from '@/contexts/LocaleContext';
 import { useAppTheme } from '@/contexts/ThemeContext';
+import { ensureNotificationPermission } from '@/lib/notifications/permissions';
+import {
+  type NotificationSettings,
+  useNotificationSettings,
+} from '@/lib/notifications/settings';
 import {
   governorates,
   normalizeSearchTemplate,
@@ -27,10 +32,21 @@ const widgetSettings = [
   { key: 'showSearch', ar: 'البحث', en: 'Search' },
 ] as const;
 
+const notificationSwitches = [
+  {
+    key: 'rankChanges',
+    ar: 'تغيّر مراكز تير ليست الحكومة',
+    en: 'Government tier list rank changes',
+  },
+  { key: 'emergencyWarnings', ar: 'تنبيهات الطوارئ', en: 'Emergency alerts' },
+] as const;
+
 export default function SettingsScreen() {
   const { settings, updateSettings } = useHomeSettings();
   const { direction, locale, setLocale } = useLocale();
   const { theme } = useAppTheme();
+  const notifications = useNotificationSettings();
+  const [permissionDenied, setPermissionDenied] = useState(false);
   const [latitudeDraft, setLatitudeDraft] = useState<string | null>(null);
   const [longitudeDraft, setLongitudeDraft] = useState<string | null>(null);
   const [coordinateError, setCoordinateError] = useState<string | null>(null);
@@ -116,6 +132,19 @@ export default function SettingsScreen() {
     await updateSettings({ customSearchUrl: template, searchEngine: 'custom' });
   };
 
+  // The switch stays off when the system denies permission; the caption explains why.
+  const toggleNotification = async (
+    key: keyof NotificationSettings,
+    value: boolean,
+  ) => {
+    if (value && !(await ensureNotificationPermission())) {
+      setPermissionDenied(true);
+      return;
+    }
+    setPermissionDenied(false);
+    await notifications.update({ [key]: value });
+  };
+
   return (
     <Screen title={locale === 'ar' ? 'الإعدادات' : 'Settings'}>
       <AppCard style={styles.section}>
@@ -135,6 +164,33 @@ export default function SettingsScreen() {
             />
           ))}
         </View>
+      </AppCard>
+
+      <AppCard style={styles.section}>
+        <AppText variant="heading">
+          {locale === 'ar' ? 'الإشعارات' : 'Notifications'}
+        </AppText>
+        {notificationSwitches.map((item) => (
+          <SwitchRow
+            key={item.key}
+            label={locale === 'ar' ? item.ar : item.en}
+            onValueChange={(value) => void toggleNotification(item.key, value)}
+            testID={`notifications-${item.key}`}
+            value={notifications.settings[item.key]}
+          />
+        ))}
+        {permissionDenied ? (
+          <AppText color="danger" variant="caption">
+            {locale === 'ar'
+              ? 'الإشعارات متوقفة لهذا التطبيق في إعدادات النظام. فعّلها من إعدادات الجهاز ثم أعد المحاولة.'
+              : 'Notifications are turned off for this app in system settings. Enable them in device settings and try again.'}
+          </AppText>
+        ) : null}
+        <AppText color="muted" variant="caption">
+          {locale === 'ar'
+            ? 'يفحص التطبيق التحديثات في الخلفية كل 15 دقيقة تقريباً حسب سماح النظام.'
+            : 'The app checks for updates in the background about every 15 minutes, as the system allows.'}
+        </AppText>
       </AppCard>
 
       <AppCard style={styles.section}>
@@ -219,27 +275,12 @@ export default function SettingsScreen() {
           {locale === 'ar' ? 'بطاقات الصفحة الرئيسية' : 'Home widgets'}
         </AppText>
         {widgetSettings.map((item) => (
-          <View
+          <SwitchRow
             key={item.key}
-            style={[
-              styles.switchRow,
-              { flexDirection: direction === 'rtl' ? 'row-reverse' : 'row' },
-            ]}
-          >
-            <AppText style={styles.switchLabel}>
-              {locale === 'ar' ? item.ar : item.en}
-            </AppText>
-            <Switch
-              accessibilityLabel={locale === 'ar' ? item.ar : item.en}
-              ios_backgroundColor={theme.palette.border}
-              onValueChange={(value) =>
-                void updateSettings({ [item.key]: value })
-              }
-              thumbColor={theme.palette.surface}
-              trackColor={{ false: theme.palette.border, true: theme.palette.primary }}
-              value={settings[item.key]}
-            />
-          </View>
+            label={locale === 'ar' ? item.ar : item.en}
+            onValueChange={(value) => void updateSettings({ [item.key]: value })}
+            value={settings[item.key]}
+          />
         ))}
       </AppCard>
 
@@ -335,6 +376,40 @@ export default function SettingsScreen() {
         ) : null}
       </AppCard>
     </Screen>
+  );
+}
+
+function SwitchRow({
+  label,
+  onValueChange,
+  testID,
+  value,
+}: {
+  label: string;
+  onValueChange: (value: boolean) => void;
+  testID?: string;
+  value: boolean;
+}) {
+  const { direction } = useLocale();
+  const { theme } = useAppTheme();
+  return (
+    <View
+      style={[
+        styles.switchRow,
+        { flexDirection: direction === 'rtl' ? 'row-reverse' : 'row' },
+      ]}
+    >
+      <AppText style={styles.switchLabel}>{label}</AppText>
+      <Switch
+        accessibilityLabel={label}
+        ios_backgroundColor={theme.palette.border}
+        onValueChange={onValueChange}
+        testID={testID}
+        thumbColor={theme.palette.surface}
+        trackColor={{ false: theme.palette.border, true: theme.palette.primary }}
+        value={value}
+      />
+    </View>
   );
 }
 

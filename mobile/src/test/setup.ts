@@ -51,3 +51,35 @@ jest.mock('expo-secure-store', () => ({
 beforeEach(() => {
   mockSecureValues.clear();
 });
+
+const grantedPermission = {
+  canAskAgain: true,
+  expires: 'never',
+  granted: true,
+  status: 'granted',
+};
+
+jest.mock('expo-notifications', () => ({
+  AndroidImportance: { DEFAULT: 5, MAX: 7 },
+  addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
+  getLastNotificationResponseAsync: jest.fn(async () => null),
+  getPermissionsAsync: jest.fn(async () => grantedPermission),
+  requestPermissionsAsync: jest.fn(async () => grantedPermission),
+  scheduleNotificationAsync: jest.fn(async () => 'notification-id'),
+  setNotificationChannelAsync: jest.fn(async () => null),
+  setNotificationHandler: jest.fn(),
+}));
+
+jest.mock('expo-task-manager', () => ({
+  defineTask: jest.fn(),
+  isTaskDefined: jest.fn(() => false),
+  isTaskRegisteredAsync: jest.fn(async () => false),
+}));
+
+jest.mock('expo-background-task', () => ({
+  BackgroundTaskResult: { Failed: 2, Success: 1 },
+  BackgroundTaskStatus: { Available: 2, Restricted: 1 },
+  getStatusAsync: jest.fn(async () => 2),
+  registerTaskAsync: jest.fn(async () => undefined),
+  unregisterTaskAsync: jest.fn(async () => undefined),
+}));

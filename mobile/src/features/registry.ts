@@ -1,33 +1,37 @@
-import type { LucideIcon } from 'lucide-react-native';
 import {
   BarChart3,
-  Bus,
-  CalendarDays,
-  CheckCircle2,
   CircleHelp,
   Code2,
-  Compass,
-  ContactRound,
   FileText,
-  Globe2,
-  Landmark,
-  Link,
-  LayoutDashboard,
-  ListOrdered,
-  MapPinned,
-  Palette,
-  Scale,
+  Sandwich,
   ShieldCheck,
-  SlidersHorizontal,
-  Smartphone,
-  Soup,
-  Users2,
 } from 'lucide-react-native';
+
+import {
+  BoardIcon,
+  CompassIcon,
+  type FeatureIcon,
+  GovAppsIcon,
+  HouseIcon,
+  JusticeIcon,
+  MishwarIcon,
+  PartyIcon,
+  PhonebookIcon,
+  PopulationIcon,
+  PrioritiesIcon,
+  RoznamaIcon,
+  SitesIcon,
+  SyIdIcon,
+  SyOfficialIcon,
+  TierlistIcon,
+  TransitIcon,
+  WarningsIcon,
+} from '@/components/icons/ProjectIcons';
 
 export interface FeatureDefinition {
   descriptionAr: string;
   descriptionEn: string;
-  icon: LucideIcon;
+  icon: FeatureIcon;
   labelAr: string;
   labelEn: string;
   protected?: boolean;
@@ -41,7 +45,7 @@ export const featureRegistry: readonly FeatureDefinition[] = [
     labelEn: 'Board',
     descriptionAr: 'لوحات شخصية تجمع أدواتك اليومية',
     descriptionEn: 'Personal boards for your everyday tools',
-    icon: LayoutDashboard,
+    icon: BoardIcon,
   },
   {
     slug: 'syofficial',
@@ -49,7 +53,7 @@ export const featureRegistry: readonly FeatureDefinition[] = [
     labelEn: 'Official accounts',
     descriptionAr: 'حسابات المؤسسات السورية الموثقة',
     descriptionEn: 'Verified Syrian institution accounts',
-    icon: CheckCircle2,
+    icon: SyOfficialIcon,
   },
   {
     slug: 'roznama',
@@ -57,7 +61,7 @@ export const featureRegistry: readonly FeatureDefinition[] = [
     labelEn: 'Calendar',
     descriptionAr: 'أحداث ومناسبات وذاكرة سورية',
     descriptionEn: 'Events, observances, and Syrian memory',
-    icon: CalendarDays,
+    icon: RoznamaIcon,
   },
   {
     slug: 'phonebook',
@@ -65,7 +69,15 @@ export const featureRegistry: readonly FeatureDefinition[] = [
     labelEn: 'Phonebook',
     descriptionAr: 'أرقام الطوارئ والخدمات العامة',
     descriptionEn: 'Emergency and public service numbers',
-    icon: ContactRound,
+    icon: PhonebookIcon,
+  },
+  {
+    slug: 'warnings',
+    labelAr: 'تنبيهات الطوارئ',
+    labelEn: 'Emergency alerts',
+    descriptionAr: 'تحذيرات وزارة الطوارئ وإدارة الكوارث',
+    descriptionEn: 'Alerts from the Ministry of Emergency and Disaster Management',
+    icon: WarningsIcon,
   },
   {
     slug: 'syid',
@@ -73,7 +85,7 @@ export const featureRegistry: readonly FeatureDefinition[] = [
     labelEn: 'Visual identity',
     descriptionAr: 'دليل الهوية السورية وملفاتها',
     descriptionEn: 'Syrian identity guide and assets',
-    icon: Palette,
+    icon: SyIdIcon,
   },
   {
     slug: 'party',
@@ -81,7 +93,7 @@ export const featureRegistry: readonly FeatureDefinition[] = [
     labelEn: 'Organizations',
     descriptionAr: 'الأحزاب والمبادرات السياسية',
     descriptionEn: 'Political parties and initiatives',
-    icon: Users2,
+    icon: PartyIcon,
   },
   {
     slug: 'tierlist',
@@ -89,7 +101,7 @@ export const featureRegistry: readonly FeatureDefinition[] = [
     labelEn: 'Government ranking',
     descriptionAr: 'قيّم الأداء وتابع النتائج',
     descriptionEn: 'Rank performance and follow results',
-    icon: ListOrdered,
+    icon: TierlistIcon,
   },
   {
     slug: 'house',
@@ -97,7 +109,7 @@ export const featureRegistry: readonly FeatureDefinition[] = [
     labelEn: 'Legislative council',
     descriptionAr: 'بيانات المرشحين والفائزين',
     descriptionEn: 'Candidate and winner data',
-    icon: Landmark,
+    icon: HouseIcon,
   },
   {
     slug: 'compass',
@@ -105,7 +117,7 @@ export const featureRegistry: readonly FeatureDefinition[] = [
     labelEn: 'Political compass',
     descriptionAr: 'اختبار توجهات مبني على قضايا سورية',
     descriptionEn: 'Issue-based political orientation test',
-    icon: Compass,
+    icon: CompassIcon,
   },
   {
     slug: 'priorities',
@@ -113,7 +125,7 @@ export const featureRegistry: readonly FeatureDefinition[] = [
     labelEn: 'Syria priorities',
     descriptionAr: 'رتب الأولويات وشارك رؤيتك',
     descriptionEn: 'Rank priorities and share your view',
-    icon: SlidersHorizontal,
+    icon: PrioritiesIcon,
   },
   {
     slug: 'alignment',
@@ -129,7 +141,7 @@ export const featureRegistry: readonly FeatureDefinition[] = [
     labelEn: 'Web directory',
     descriptionAr: 'مواقع سورية مفيدة ومصنفة',
     descriptionEn: 'Useful categorized Syrian websites',
-    icon: Link,
+    icon: SitesIcon,
   },
   {
     slug: 'population',
@@ -137,7 +149,7 @@ export const featureRegistry: readonly FeatureDefinition[] = [
     labelEn: 'Syria atlas',
     descriptionAr: 'السكان والمناخ والأمطار على الخريطة',
     descriptionEn: 'Population, climate, and rainfall maps',
-    icon: Globe2,
+    icon: PopulationIcon,
   },
   {
     slug: 'govapps',
@@ -145,7 +157,7 @@ export const featureRegistry: readonly FeatureDefinition[] = [
     labelEn: 'Government apps',
     descriptionAr: 'التطبيقات الرسمية وروابط تنزيلها',
     descriptionEn: 'Official apps and download links',
-    icon: Smartphone,
+    icon: GovAppsIcon,
   },
   {
     slug: 'transit',
@@ -153,7 +165,7 @@ export const featureRegistry: readonly FeatureDefinition[] = [
     labelEn: 'Transit',
     descriptionAr: 'خطوط النقل والمحطات القريبة',
     descriptionEn: 'Transit routes and nearby stops',
-    icon: Bus,
+    icon: TransitIcon,
   },
   {
     slug: 'places',
@@ -161,7 +173,7 @@ export const featureRegistry: readonly FeatureDefinition[] = [
     labelEn: 'Mishwar',
     descriptionAr: 'خريطة تفاعلية لأماكن تستحق المشوار في سوريا',
     descriptionEn: 'An interactive map of Syrian places worth the trip',
-    icon: MapPinned,
+    icon: MishwarIcon,
   },
   {
     slug: 'justice',
@@ -169,7 +181,7 @@ export const featureRegistry: readonly FeatureDefinition[] = [
     labelEn: 'Transitional justice',
     descriptionAr: 'سجل المعتقلين ومسارات العدالة',
     descriptionEn: 'Detainee records and justice paths',
-    icon: Scale,
+    icon: JusticeIcon,
   },
   {
     slug: 'polls',
@@ -210,7 +222,7 @@ export const featureRegistry: readonly FeatureDefinition[] = [
     labelEn: 'Shawarma tier list',
     descriptionAr: 'الدليل المصيري لأفضل شاورما',
     descriptionEn: 'The decisive guide to the best shawarma',
-    icon: Soup,
+    icon: Sandwich,
   },
   {
     slug: 'privacy',
@@ -232,8 +244,8 @@ export const featureRegistry: readonly FeatureDefinition[] = [
 
 /*
 PORT STATUS
-  source:     resources/js/Components/Icons/ProjectIcons.tsx (316 lines)
+  source:     resources/js/Components/Navbar.tsx (navLinks icon table) and resources/js/Components/Icons/ProjectIcons.tsx (316 lines)
   confidence: high
   todos:      0
-  notes:      The native feature registry assigns semantic Lucide icons to the corresponding project modules.
+  notes:      Every module the website draws with a ProjectIcons component uses the same native port here; contributors and shawarma keep the website's Lucide picks, and native-only modules keep semantic Lucide icons. The warnings entry precedes its screen, which another agent owns.
 */

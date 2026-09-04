@@ -1,21 +1,22 @@
 import { Image } from 'expo-image';
-import { router, usePathname } from 'expo-router';
-import { ArrowLeft, ArrowRight, Home, UserRound } from 'lucide-react-native';
+import { router } from 'expo-router';
+import { ArrowLeft, ArrowRight, Menu, UserRound } from 'lucide-react-native';
+import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AppText } from '@/components/ui/AppText';
 import { useLocale } from '@/contexts/LocaleContext';
 import { useAppTheme } from '@/contexts/ThemeContext';
 
+import { Sidebar } from './Sidebar';
 import { ThemeToggle } from './ThemeToggle';
 
 export function Navbar() {
-  const pathname = usePathname();
   const { direction, locale } = useLocale();
   const { theme } = useAppTheme();
-  const atHome = pathname === '/';
+  const [menuOpen, setMenuOpen] = useState(false);
   const BackIcon = direction === 'rtl' ? ArrowRight : ArrowLeft;
+  const rowDirection = direction === 'rtl' ? 'row-reverse' : 'row';
 
   return (
     <SafeAreaView
@@ -27,32 +28,17 @@ export function Navbar() {
           styles.bar,
           {
             borderBottomColor: theme.palette.border,
-            flexDirection: direction === 'rtl' ? 'row-reverse' : 'row',
+            flexDirection: rowDirection,
           },
         ]}
       >
-        <View
-          style={[
-            styles.leading,
-            { flexDirection: direction === 'rtl' ? 'row-reverse' : 'row' },
-          ]}
-        >
-          {!atHome ? (
-            <Pressable
-              accessibilityLabel={locale === 'ar' ? 'رجوع' : 'Back'}
-              accessibilityRole="button"
-              hitSlop={10}
-              onPress={() => router.back()}
-              style={styles.iconButton}
-            >
-              <BackIcon color={theme.palette.foreground} size={22} />
-            </Pressable>
-          ) : null}
+        {/* The logo sits in its own absolute layer so it stays centered no
+            matter how many buttons each side carries. */}
+        <View pointerEvents="box-none" style={styles.center}>
           <Pressable
             accessibilityLabel={locale === 'ar' ? 'الرئيسية' : 'Home'}
             accessibilityRole="button"
             onPress={() => router.replace('/')}
-            style={styles.brand}
           >
             <Image
               contentFit="contain"
@@ -62,24 +48,37 @@ export function Navbar() {
                   : require('../../../assets/images/logo-lightmode.svg')
               }
               style={styles.logo}
+              testID="navbar-logo"
             />
-            <AppText numberOfLines={1} variant="label">
-              {locale === 'ar' ? 'المساحة السورية' : 'Syrian Zone'}
-            </AppText>
           </Pressable>
         </View>
-        <View style={styles.actions}>
-          {!atHome ? (
+
+        <View style={[styles.side, { flexDirection: rowDirection }]}>
+          <Pressable
+            accessibilityLabel={locale === 'ar' ? 'القائمة' : 'Menu'}
+            accessibilityRole="button"
+            hitSlop={10}
+            onPress={() => setMenuOpen(true)}
+            style={styles.iconButton}
+            testID="navbar-menu"
+          >
+            <Menu color={theme.palette.foreground} size={24} />
+          </Pressable>
+          {router.canGoBack() ? (
             <Pressable
-              accessibilityLabel={locale === 'ar' ? 'الرئيسية' : 'Home'}
+              accessibilityLabel={locale === 'ar' ? 'رجوع' : 'Back'}
               accessibilityRole="button"
               hitSlop={10}
-              onPress={() => router.replace('/')}
+              onPress={() => router.back()}
               style={styles.iconButton}
+              testID="navbar-back"
             >
-              <Home color={theme.palette.foreground} size={21} />
+              <BackIcon color={theme.palette.foreground} size={22} />
             </Pressable>
           ) : null}
+        </View>
+
+        <View style={[styles.side, styles.end, { flexDirection: rowDirection }]}>
           <ThemeToggle />
           <Pressable
             accessibilityLabel={locale === 'ar' ? 'الحساب' : 'Account'}
@@ -87,45 +86,49 @@ export function Navbar() {
             hitSlop={10}
             onPress={() => router.push('/account')}
             style={styles.iconButton}
+            testID="navbar-account"
           >
             <UserRound color={theme.palette.foreground} size={21} />
           </Pressable>
         </View>
       </View>
+      <Sidebar onClose={() => setMenuOpen(false)} visible={menuOpen} />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  actions: {
-    alignItems: 'center',
-    flexDirection: 'row',
-  },
   bar: {
     alignItems: 'center',
     borderBottomWidth: StyleSheet.hairlineWidth,
-    height: 58,
+    height: 64,
     justifyContent: 'space-between',
     paddingHorizontal: 8,
   },
-  brand: {
+  center: {
     alignItems: 'center',
-    flexDirection: 'row',
-    gap: 8,
+    bottom: 0,
+    justifyContent: 'center',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+  },
+  end: {
+    justifyContent: 'flex-end',
   },
   iconButton: {
     alignItems: 'center',
-    height: 42,
+    height: 44,
     justifyContent: 'center',
-    width: 42,
-  },
-  leading: {
-    alignItems: 'center',
-    flex: 1,
+    width: 44,
   },
   logo: {
-    height: 34,
-    width: 34,
+    height: 36,
+    width: 69,
+  },
+  side: {
+    alignItems: 'center',
   },
 });
 
@@ -134,5 +137,7 @@ PORT STATUS
   source:     resources/js/Components/Navbar.tsx (555 lines)
   confidence: high
   todos:      0
-  notes:      Expo Router navigation replaces browser links and responsive menus.
+  notes:      The phone layout of the website header: hamburger sheet at the
+              start, image-only logo centered, theme and account at the end.
+              The back button is native-only and appears once the stack can pop.
 */

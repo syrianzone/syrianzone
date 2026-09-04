@@ -46,6 +46,18 @@ test('hides the navbar on the start page', async () => {
   expect(view.getByText('unblock notice')).toBeTruthy();
 });
 
+test('carries the header, and with it the sidebar, on every other route', async () => {
+  mockPathname = '/feature/roznama';
+  const view = await render(
+    <ConditionalLayout>
+      <Text>feature page</Text>
+    </ConditionalLayout>,
+  );
+
+  expect(view.getByText('native navbar')).toBeTruthy();
+  expect(view.getByText('unblock notice')).toBeTruthy();
+});
+
 test('hides the unblock notice throughout Transit', async () => {
   mockPathname = '/transit/city/damascus';
   const view = await render(

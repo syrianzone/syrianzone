@@ -1,28 +1,38 @@
 import { useQuery } from '@tanstack/react-query';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import {
   CalendarDays,
   CloudSun,
-  Clock3,
   ExternalLink,
+  Globe,
+  Pencil,
   Plus,
   Search,
   Settings,
-  Trash2,
+  UserRound,
+  X,
 } from 'lucide-react-native';
-import { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import F3aliaEvents from '@/components/F3aliaEvents';
+import { quickLinkIcon } from '@/components/icons/ProjectIcons';
+import { openFeature } from '@/components/shell/Sidebar';
+import { ThemeToggle } from '@/components/shell/ThemeToggle';
 import { AppButton } from '@/components/ui/AppButton';
 import { AppCard } from '@/components/ui/AppCard';
 import { AppInput } from '@/components/ui/AppInput';
 import { AppText } from '@/components/ui/AppText';
 import { Screen } from '@/components/ui/Screen';
+import UserNav from '@/components/UserNav';
+import { useOptionalAuth } from '@/contexts/AuthContext';
 import { useHomeSettings } from '@/contexts/HomeSettingsContext';
 import { useLocale } from '@/contexts/LocaleContext';
 import { useAppTheme } from '@/contexts/ThemeContext';
 import { featureRegistry } from '@/features/registry';
+import { LatestWarningBanner } from '@/features/Warnings/Banner';
 import { fetchPrayerTimes, fetchWeather } from '@/lib/home/widgets';
 import { openSafeExternalUrl } from '@/lib/linking';
 import {
@@ -34,6 +44,7 @@ import {
   getNextPrayer,
   governorates,
   resolveHomeCoordinates,
+  type CustomLink,
 } from '@/lib/ported/home';
 
 import {
@@ -72,6 +83,9 @@ const sourceFeatureSlugs = [
   'transit',
   'justice',
 ] as const;
+
+// Reachable from the footer or the account screen, so the tools grid skips them.
+const skipFromTools = new Set(['dashboard', 'privacy', 'terms']);
 
 const fallbackExternalLinks: readonly HomeQuickLink[] = [
   {
@@ -144,6 +158,35 @@ function fallbackQuickLinks(): HomeQuickLink[] {
   return [...internal, ...fallbackExternalLinks];
 }
 
+// The website asks Google's favicon service; the app asks the saved site itself
+// (PORTING.md: never send browsing domains to a third party) and falls back to a
+// globe when the site has no favicon.
+function faviconUrl(url: string): string | null {
+  try {
+    return `${new URL(url).origin}/favicon.ico`;
+  } catch {
+    return null;
+  }
+}
+
+function SiteFavicon({ url }: { url: string }) {
+  const { theme } = useAppTheme();
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return <Globe color={theme.palette.primary} size={28} />;
+  }
+  return (
+    <View style={[styles.favicon, { borderColor: theme.palette.border }]}>
+      <Image
+        contentFit="contain"
+        onError={() => setFailed(true)}
+        source={{ uri: url }}
+        style={styles.faviconImage}
+      />
+    </View>
+  );
+}
+
 const defaultNow = () => new Date();
 
 export interface HomeProps {
@@ -152,11 +195,15 @@ export interface HomeProps {
 }
 
 export default function Home({ liveClock = true, now = defaultNow }: HomeProps) {
+  const auth = useOptionalAuth();
   const { hydrated, settings, updateSettings } = useHomeSettings();
   const { direction, locale } = useLocale();
   const { theme } = useAppTheme();
   const [currentTime, setCurrentTime] = useState(now);
   const [search, setSearch] = useState('');
+  const [editLinks, setEditLinks] = useState(false);
+  const [linkSheetOpen, setLinkSheetOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [customName, setCustomName] = useState('');
   const [customUrl, setCustomUrl] = useState('');
   const [customIcon, setCustomIcon] = useState('🔗');
@@ -165,6 +212,9 @@ export default function Home({ liveClock = true, now = defaultNow }: HomeProps) 
   const governorate =
     governorates.find((item) => item.id === settings.governorate) ??
     governorates[0];
+  const rowDirection = direction === 'rtl' ? 'row-reverse' : 'row';
+  // Stacked card content hugs the reading edge, so RTL cards start on the right.
+  const columnAlign = direction === 'rtl' ? 'flex-end' : 'flex-start';
 
   useEffect(() => {
     if (!liveClock) {
@@ -220,7 +270,8 @@ export default function Home({ liveClock = true, now = defaultNow }: HomeProps) 
       .map((link) => link.target),
   );
   const additionalFeatures = featureRegistry.filter(
-    (feature) => !quickFeatureTargets.has(feature.slug),
+    (feature) =>
+      !quickFeatureTargets.has(feature.slug) && !skipFromTools.has(feature.slug),
   );
   const hijriDate = formatHijriDate(currentTime, locale);
 
@@ -246,8 +297,17 @@ export default function Home({ liveClock = true, now = defaultNow }: HomeProps) 
     openFeature(link.target);
   };
 
-  const addCustomLink = async () => {
-    if (settings.customLinks.length >= 24) {
+  const openLinkSheet = (link: CustomLink | null) => {
+    setEditingId(link?.id ?? null);
+    setCustomIcon(link?.icon ?? '🔗');
+    setCustomName(link?.name ?? '');
+    setCustomUrl(link?.url ?? '');
+    setCustomLinkError(null);
+    setLinkSheetOpen(true);
+  };
+
+  const saveCustomLink = async () => {
+    if (editingId === null && settings.customLinks.length >= 24) {
       setCustomLinkError(
         locale === 'ar'
           ? 'وصلت إلى الحد الأقصى: 24 رابطاً.'
@@ -257,7 +317,9 @@ export default function Home({ liveClock = true, now = defaultNow }: HomeProps) 
     }
     const parsed = customLinkSchema.safeParse({
       icon: customIcon.trim() || '🔗',
-      id: `link-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+      id:
+        editingId ??
+        `link-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
       name: customName,
       url: customUrl,
     });
@@ -269,13 +331,16 @@ export default function Home({ liveClock = true, now = defaultNow }: HomeProps) 
       );
       return;
     }
-    setCustomLinkError(null);
     await updateSettings({
-      customLinks: [...settings.customLinks, parsed.data],
+      customLinks:
+        editingId === null
+          ? [...settings.customLinks, parsed.data]
+          : settings.customLinks.map((link) =>
+              link.id === editingId ? parsed.data : link,
+            ),
     });
-    setCustomName('');
-    setCustomUrl('');
-    setCustomIcon('🔗');
+    setLinkSheetOpen(false);
+    setCustomLinkError(null);
   };
 
   const removeCustomLink = async (id: string) => {
@@ -285,102 +350,142 @@ export default function Home({ liveClock = true, now = defaultNow }: HomeProps) 
   };
 
   return (
-    <Screen
-      subtitle={
-        locale === 'ar'
-          ? 'أدوات ومراجع مفتوحة لكل السوريين'
-          : 'Open tools and references for every Syrian'
-      }
-      title={locale === 'ar' ? 'أهلا بك' : 'Welcome'}
-      trailing={
+    <Screen>
+      <View style={[styles.topRow, { flexDirection: rowDirection }]}>
         <Pressable
           accessibilityLabel={locale === 'ar' ? 'الإعدادات' : 'Settings'}
           accessibilityRole="button"
+          hitSlop={10}
           onPress={() => router.push('/settings')}
-          style={styles.settingsButton}
+          style={styles.iconButton}
+          testID="home-settings"
         >
-          <Settings color={theme.palette.foreground} size={24} />
+          <Settings color={theme.palette.foreground} size={22} />
         </Pressable>
-      }
-    >
-      <View style={styles.widgets}>
-        {settings.showWeather ? (
-          <AppCard style={styles.widgetCard}>
-            <CloudSun color={theme.palette.primary} size={25} />
-            <AppText variant="heading">
-              {weather.data
-                ? `${weather.data.temperature}°C`
-                : weather.isError
-                  ? locale === 'ar'
-                    ? 'غير متاح'
-                    : 'Unavailable'
-                  : '...'}
-            </AppText>
-            <AppText color="muted" variant="caption">
-              {weather.data
-                ? locale === 'ar'
-                  ? weatherTranslations[weather.data.description] ??
-                    weather.data.description
-                  : weather.data.description
-                : locale === 'ar'
-                  ? governorate.ar
-                  : governorate.en}
-            </AppText>
-          </AppCard>
-        ) : null}
-
-        {settings.showClock ? (
-          <AppCard style={styles.clockCard}>
-            <Clock3 color={theme.palette.primary} size={25} />
-            <AppText variant="title">
-              {currentTime.toLocaleTimeString(
-                locale === 'ar' ? 'ar-SY' : 'en-GB',
-                {
-                  hour: '2-digit',
-                  hour12: settings.clockFormat === '12',
-                  minute: '2-digit',
-                  second: '2-digit',
-                },
-              )}
-            </AppText>
-            <AppText color="muted" variant="caption">
-              {currentTime.toLocaleDateString(
-                locale === 'ar' ? 'ar-SY' : 'en-GB',
-                { day: 'numeric', month: 'long', weekday: 'long', year: 'numeric' },
-              )}
-            </AppText>
-            {hijriDate ? (
-              <AppText color="primary" testID="home-hijri-date" variant="caption">
-                {hijriDate}
-              </AppText>
-            ) : null}
-          </AppCard>
-        ) : null}
-
-        {settings.showPrayerTimes ? (
-          <AppCard style={styles.widgetCard}>
-            <CalendarDays color={theme.palette.primary} size={25} />
-            <AppText variant="heading">
-              {nextPrayer
-                ? locale === 'ar'
-                  ? nextPrayer.labelAr
-                  : nextPrayer.labelEn
-                : prayers.isError
-                  ? locale === 'ar'
-                    ? 'غير متاح'
-                    : 'Unavailable'
-                  : '...'}
-            </AppText>
-            <AppText color="muted" variant="caption">
-              {nextPrayer
-                ? `${nextPrayer.time}  ${formatDuration(nextPrayer.remainingMs)}`
-                : locale === 'ar'
-                  ? 'موعد الصلاة القادمة'
-                  : 'Next prayer'}
-            </AppText>
-          </AppCard>
-        ) : null}
+        <View style={[styles.topActions, { flexDirection: rowDirection }]}>
+          <ThemeToggle />
+          {auth?.user ? (
+            <UserNav
+              onOpenDashboard={() => openFeature('dashboard')}
+              onOpenPolls={() => openFeature('polls')}
+              onOpenProfile={() => router.push('/account')}
+            />
+          ) : (
+            <Pressable
+              accessibilityLabel={locale === 'ar' ? 'الحساب' : 'Account'}
+              accessibilityRole="button"
+              hitSlop={10}
+              onPress={() => router.push('/account')}
+              style={styles.iconButton}
+              testID="home-account"
+            >
+              <UserRound color={theme.palette.foreground} size={22} />
+            </Pressable>
+          )}
+        </View>
       </View>
+
+      <View style={styles.logoRow}>
+        <Image
+          contentFit="contain"
+          source={
+            theme.isDark
+              ? require('../../assets/images/logo-darkmode.svg')
+              : require('../../assets/images/logo-lightmode.svg')
+          }
+          style={styles.logo}
+          testID="home-logo"
+        />
+      </View>
+
+      {settings.showClock ? (
+        <AppCard style={styles.clockCard}>
+          <AppText style={styles.clockTime} variant="title">
+            {currentTime.toLocaleTimeString(
+              locale === 'ar' ? 'ar-SY' : 'en-GB',
+              {
+                hour: '2-digit',
+                hour12: settings.clockFormat === '12',
+                minute: '2-digit',
+                second: '2-digit',
+              },
+            )}
+          </AppText>
+          <AppText color="muted" style={styles.centered} variant="caption">
+            {currentTime.toLocaleDateString(locale === 'ar' ? 'ar-SY' : 'en-GB', {
+              day: 'numeric',
+              month: 'long',
+              weekday: 'long',
+              year: 'numeric',
+            })}
+          </AppText>
+          {hijriDate ? (
+            <AppText
+              color="primary"
+              style={styles.centered}
+              testID="home-hijri-date"
+              variant="caption"
+            >
+              {hijriDate}
+            </AppText>
+          ) : null}
+        </AppCard>
+      ) : null}
+
+      {settings.showWeather || settings.showPrayerTimes ? (
+        <View style={[styles.widgets, { flexDirection: rowDirection }]}>
+          {settings.showWeather ? (
+            <AppCard style={[styles.widgetCard, { alignItems: columnAlign }]}>
+              <CloudSun color={theme.palette.primary} size={25} />
+              <AppText variant="heading">
+                {weather.data
+                  ? `${weather.data.temperature}°C`
+                  : weather.isError
+                    ? locale === 'ar'
+                      ? 'غير متاح'
+                      : 'Unavailable'
+                    : '...'}
+              </AppText>
+              <AppText color="muted" variant="caption">
+                {weather.data
+                  ? locale === 'ar'
+                    ? weatherTranslations[weather.data.description] ??
+                      weather.data.description
+                    : weather.data.description
+                  : locale === 'ar'
+                    ? governorate.ar
+                    : governorate.en}
+              </AppText>
+            </AppCard>
+          ) : null}
+
+          {settings.showPrayerTimes ? (
+            <AppCard style={[styles.widgetCard, { alignItems: columnAlign }]}>
+              <CalendarDays color={theme.palette.primary} size={25} />
+              <AppText variant="heading">
+                {nextPrayer
+                  ? locale === 'ar'
+                    ? nextPrayer.labelAr
+                    : nextPrayer.labelEn
+                  : prayers.isError
+                    ? locale === 'ar'
+                      ? 'غير متاح'
+                      : 'Unavailable'
+                    : '...'}
+              </AppText>
+              <AppText color="muted" variant="caption">
+                {nextPrayer
+                  ? `${nextPrayer.time}  ${formatDuration(nextPrayer.remainingMs)}`
+                  : locale === 'ar'
+                    ? 'موعد الصلاة القادمة'
+                    : 'Next prayer'}
+              </AppText>
+            </AppCard>
+          ) : null}
+        </View>
+      ) : null}
+
+      <LatestWarningBanner />
 
       {settings.useCustomCoordinates && settings.customCoordinates ? (
         <AppText color="muted" variant="caption">
@@ -392,7 +497,7 @@ export default function Home({ liveClock = true, now = defaultNow }: HomeProps) 
 
       {settings.showSearch ? (
         <AppCard style={styles.searchCard}>
-          <View style={styles.searchRow}>
+          <View style={[styles.searchRow, { flexDirection: rowDirection }]}>
             <AppInput
               accessibilityLabel={locale === 'ar' ? 'بحث في الويب' : 'Search the web'}
               onChangeText={setSearch}
@@ -409,7 +514,7 @@ export default function Home({ liveClock = true, now = defaultNow }: HomeProps) 
               {locale === 'ar' ? 'بحث' : 'Search'}
             </AppButton>
           </View>
-          <View style={styles.providerRow}>
+          <View style={[styles.providerRow, { flexDirection: rowDirection }]}>
             {(homeContent.data?.search_providers ?? []).map((provider) => (
               <ProviderChoice
                 active={settings.searchEngine === provider.id}
@@ -446,147 +551,343 @@ export default function Home({ liveClock = true, now = defaultNow }: HomeProps) 
             : 'Quick links could not refresh. The built-in list is shown.'}
         </AppText>
       ) : null}
-      <View style={[styles.linkGrid, { flexDirection: direction === 'rtl' ? 'row-reverse' : 'row' }]}>
+      <View style={[styles.grid, { flexDirection: rowDirection }]}>
         {quickLinks.map((link) => {
           const feature =
             link.type === 'feature'
               ? featureRegistry.find((item) => item.slug === link.target)
               : null;
-          const Icon = feature?.icon ?? ExternalLink;
+          const Icon =
+            feature?.icon ?? quickLinkIcon(link.id) ?? ExternalLink;
           return (
-            <Pressable
-              accessibilityRole="button"
+            <GridCard
+              icon={<Icon color={theme.palette.primary} size={28} />}
               key={link.id}
+              label={locale === 'ar' ? link.label_ar : link.label_en}
               onPress={() => void openQuickLink(link)}
-              style={({ pressed }) => [styles.linkPressable, { opacity: pressed ? 0.65 : 1 }]}
-            >
-              <AppCard style={styles.linkCard}>
-                <Icon color={theme.palette.primary} size={25} />
-                <AppText numberOfLines={2} variant="label">
-                  {locale === 'ar' ? link.label_ar : link.label_en}
-                </AppText>
-              </AppCard>
-            </Pressable>
+            />
           );
         })}
       </View>
-
-      <AppCard style={styles.customLinksSection}>
-        <AppText variant="heading">
-          {locale === 'ar' ? 'روابطك المخصصة' : 'Your links'}
-        </AppText>
-        {settings.customLinks.map((link) => (
-          <View key={link.id} style={styles.savedLinkRow}>
-            <Pressable
-              accessibilityRole="link"
-              onPress={() => void openSafeExternalUrl(link.url)}
-              style={styles.savedLink}
-            >
-              <AppText style={styles.linkIcon}>{link.icon}</AppText>
-              <AppText style={styles.savedLinkName} variant="label">
-                {link.name}
-              </AppText>
-            </Pressable>
-            <Pressable
-              accessibilityLabel={
-                locale === 'ar' ? `حذف ${link.name}` : `Remove ${link.name}`
-              }
-              accessibilityRole="button"
-              onPress={() => void removeCustomLink(link.id)}
-              style={styles.removeButton}
-              testID={`home-remove-custom-link-${link.id}`}
-            >
-              <Trash2 color={theme.palette.danger} size={20} />
-            </Pressable>
-          </View>
-        ))}
-        <View style={styles.customLinkInputs}>
-          <AppInput
-            accessibilityLabel={locale === 'ar' ? 'رمز الرابط' : 'Link icon'}
-            maxLength={12}
-            onChangeText={setCustomIcon}
-            style={styles.iconInput}
-            testID="home-custom-link-icon"
-            value={customIcon}
-          />
-          <AppInput
-            accessibilityLabel={locale === 'ar' ? 'اسم الرابط' : 'Link name'}
-            maxLength={80}
-            onChangeText={setCustomName}
-            placeholder={locale === 'ar' ? 'الاسم' : 'Name'}
-            style={styles.customNameInput}
-            testID="home-custom-link-name"
-            value={customName}
-          />
-        </View>
-        <AppInput
-          accessibilityLabel={locale === 'ar' ? 'عنوان الرابط' : 'Link URL'}
-          autoCapitalize="none"
-          autoCorrect={false}
-          maxLength={2048}
-          onChangeText={setCustomUrl}
-          placeholder="https://example.com"
-          testID="home-custom-link-url"
-          value={customUrl}
-        />
-        {customLinkError ? (
-          <AppText color="danger" variant="caption">
-            {customLinkError}
-          </AppText>
-        ) : null}
-        <AppButton
-          icon={<Plus color={theme.palette.primaryForeground} size={18} />}
-          onPress={() => void addCustomLink()}
-          testID="home-add-custom-link"
-        >
-          {locale === 'ar' ? 'إضافة رابط' : 'Add link'}
-        </AppButton>
-      </AppCard>
 
       {additionalFeatures.length > 0 ? (
         <>
           <AppText variant="heading">
             {locale === 'ar' ? 'أدوات إضافية' : 'More tools'}
           </AppText>
-          <View style={[styles.linkGrid, { flexDirection: direction === 'rtl' ? 'row-reverse' : 'row' }]}>
+          <View style={[styles.grid, { flexDirection: rowDirection }]}>
             {additionalFeatures.map((feature) => {
               const Icon = feature.icon;
               return (
-                <Pressable
-                  accessibilityRole="button"
+                <GridCard
+                  icon={<Icon color={theme.palette.primary} size={28} />}
                   key={feature.slug}
+                  label={locale === 'ar' ? feature.labelAr : feature.labelEn}
                   onPress={() => openFeature(feature.slug)}
-                  style={({ pressed }) => [styles.linkPressable, { opacity: pressed ? 0.65 : 1 }]}
-                >
-                  <AppCard style={styles.linkCard}>
-                    <Icon color={theme.palette.primary} size={25} />
-                    <AppText numberOfLines={2} variant="label">
-                      {locale === 'ar' ? feature.labelAr : feature.labelEn}
-                    </AppText>
-                  </AppCard>
-                </Pressable>
+                />
               );
             })}
           </View>
         </>
       ) : null}
 
-      <AppButton onPress={() => router.push('/about')} variant="ghost">
-        {locale === 'ar' ? 'عن المساحة السورية' : 'About Syrian Zone'}
-      </AppButton>
+      <View style={[styles.sectionHeader, { flexDirection: rowDirection }]}>
+        <AppText variant="heading">
+          {locale === 'ar' ? 'روابط مخصصة' : 'Custom links'}
+        </AppText>
+        <View style={[styles.sectionActions, { flexDirection: rowDirection }]}>
+          <SmallButton
+            active={editLinks}
+            icon={
+              <Pencil
+                color={
+                  editLinks
+                    ? theme.palette.primaryForeground
+                    : theme.palette.foreground
+                }
+                size={15}
+              />
+            }
+            label={
+              locale === 'ar'
+                ? editLinks
+                  ? 'تم'
+                  : 'تعديل'
+                : editLinks
+                  ? 'Done'
+                  : 'Edit'
+            }
+            onPress={() => setEditLinks((value) => !value)}
+            testID="home-toggle-edit-links"
+          />
+          <SmallButton
+            icon={<Plus color={theme.palette.foreground} size={15} />}
+            label={locale === 'ar' ? 'إضافة' : 'Add'}
+            onPress={() => openLinkSheet(null)}
+            testID="home-open-add-link"
+          />
+        </View>
+      </View>
+
+      {settings.customLinks.length > 0 ? (
+        <View style={[styles.grid, { flexDirection: rowDirection }]}>
+          {settings.customLinks.map((link) => {
+            const favicon = link.icon === '🔗' ? faviconUrl(link.url) : null;
+            return (
+              <GridCard
+                badge={
+                  editLinks ? (
+                    <Pressable
+                      accessibilityLabel={
+                        locale === 'ar' ? `حذف ${link.name}` : `Remove ${link.name}`
+                      }
+                      accessibilityRole="button"
+                      hitSlop={8}
+                      onPress={() => void removeCustomLink(link.id)}
+                      style={[
+                        styles.removeBadge,
+                        direction === 'rtl' ? styles.badgeStart : styles.badgeEnd,
+                        { backgroundColor: theme.palette.danger },
+                      ]}
+                      testID={`home-remove-custom-link-${link.id}`}
+                    >
+                      <X color={theme.palette.primaryForeground} size={14} />
+                    </Pressable>
+                  ) : null
+                }
+                icon={
+                  favicon ? (
+                    <SiteFavicon url={favicon} />
+                  ) : link.icon === '🔗' ? (
+                    <Globe color={theme.palette.primary} size={28} />
+                  ) : (
+                    <AppText style={styles.emoji}>{link.icon}</AppText>
+                  )
+                }
+                key={link.id}
+                label={link.name}
+                onPress={() =>
+                  editLinks
+                    ? openLinkSheet(link)
+                    : void openSafeExternalUrl(link.url)
+                }
+              />
+            );
+          })}
+        </View>
+      ) : (
+        <AppCard
+          style={[styles.emptyLinks, { borderColor: theme.palette.border }]}
+        >
+          <AppText color="muted" variant="caption">
+            {locale === 'ar' ? 'لا توجد روابط مخصصة' : 'No custom links yet'}
+          </AppText>
+          <AppButton
+            icon={<Plus color={theme.palette.foreground} size={18} />}
+            onPress={() => openLinkSheet(null)}
+            testID="home-add-first-link"
+            variant="secondary"
+          >
+            {locale === 'ar' ? 'إضافة رابط' : 'Add link'}
+          </AppButton>
+        </AppCard>
+      )}
+
+      <View style={[styles.footer, { flexDirection: rowDirection }]}>
+        <FooterLink
+          label={locale === 'ar' ? 'عن المنصة' : 'About'}
+          onPress={() => router.push('/about')}
+        />
+        <FooterLink
+          label={locale === 'ar' ? 'سياسة الخصوصية' : 'Privacy policy'}
+          onPress={() => openFeature('privacy')}
+        />
+        <FooterLink
+          label={locale === 'ar' ? 'الشروط والأحكام' : 'Terms'}
+          onPress={() => openFeature('terms')}
+        />
+      </View>
+
+      <Modal
+        animationType="slide"
+        onRequestClose={() => setLinkSheetOpen(false)}
+        transparent
+        visible={linkSheetOpen}
+      >
+        <View style={[styles.overlay, { backgroundColor: theme.palette.overlay }]}>
+          <SafeAreaView
+            edges={['bottom', 'left', 'right']}
+            style={[
+              styles.sheet,
+              {
+                backgroundColor: theme.palette.background,
+                borderColor: theme.palette.border,
+              },
+            ]}
+            testID="home-custom-link-sheet"
+          >
+            <View style={[styles.sheetHeader, { flexDirection: rowDirection }]}>
+              <AppText variant="heading">
+                {editingId === null
+                  ? locale === 'ar'
+                    ? 'إضافة رابط'
+                    : 'Add link'
+                  : locale === 'ar'
+                    ? 'تعديل الرابط'
+                    : 'Edit link'}
+              </AppText>
+              <Pressable
+                accessibilityLabel={locale === 'ar' ? 'إغلاق' : 'Close'}
+                accessibilityRole="button"
+                hitSlop={10}
+                onPress={() => setLinkSheetOpen(false)}
+                testID="home-close-link-sheet"
+              >
+                <X color={theme.palette.foreground} size={22} />
+              </Pressable>
+            </View>
+            <View style={[styles.sheetRow, { flexDirection: rowDirection }]}>
+              <AppInput
+                accessibilityLabel={locale === 'ar' ? 'رمز الرابط' : 'Link icon'}
+                maxLength={12}
+                onChangeText={setCustomIcon}
+                style={styles.iconInput}
+                testID="home-custom-link-icon"
+                value={customIcon}
+              />
+              <AppInput
+                accessibilityLabel={locale === 'ar' ? 'اسم الرابط' : 'Link name'}
+                maxLength={80}
+                onChangeText={setCustomName}
+                placeholder={locale === 'ar' ? 'الاسم' : 'Name'}
+                style={styles.nameInput}
+                testID="home-custom-link-name"
+                value={customName}
+              />
+            </View>
+            <AppInput
+              accessibilityLabel={locale === 'ar' ? 'عنوان الرابط' : 'Link URL'}
+              autoCapitalize="none"
+              autoCorrect={false}
+              maxLength={2048}
+              onChangeText={setCustomUrl}
+              placeholder="https://example.com"
+              testID="home-custom-link-url"
+              value={customUrl}
+            />
+            {customLinkError ? (
+              <AppText color="danger" variant="caption">
+                {customLinkError}
+              </AppText>
+            ) : null}
+            <AppButton
+              icon={<Plus color={theme.palette.primaryForeground} size={18} />}
+              onPress={() => void saveCustomLink()}
+              testID="home-add-custom-link"
+            >
+              {editingId === null
+                ? locale === 'ar'
+                  ? 'إضافة رابط'
+                  : 'Add link'
+                : locale === 'ar'
+                  ? 'حفظ'
+                  : 'Save'}
+            </AppButton>
+          </SafeAreaView>
+        </View>
+      </Modal>
     </Screen>
   );
 }
 
-function openFeature(slug: string): void {
-  if (slug === 'board') {
-    router.push('/board');
-    return;
-  }
-  router.push({
-    pathname: '/feature/[slug]',
-    params: { slug },
-  });
+function GridCard({
+  badge,
+  icon,
+  label,
+  onPress,
+}: {
+  badge?: ReactNode;
+  icon: ReactNode;
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.gridItem, { opacity: pressed ? 0.65 : 1 }]}
+    >
+      <AppCard style={styles.gridCard}>
+        {icon}
+        <AppText numberOfLines={2} style={styles.gridLabel} variant="caption">
+          {label}
+        </AppText>
+      </AppCard>
+      {badge}
+    </Pressable>
+  );
+}
+
+function SmallButton({
+  active = false,
+  icon,
+  label,
+  onPress,
+  testID,
+}: {
+  active?: boolean;
+  icon: ReactNode;
+  label: string;
+  onPress: () => void;
+  testID: string;
+}) {
+  const { direction } = useLocale();
+  const { theme } = useAppTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.smallButton,
+        {
+          backgroundColor: active
+            ? theme.palette.primary
+            : theme.palette.surfaceRaised,
+          borderColor: theme.palette.border,
+          flexDirection: direction === 'rtl' ? 'row-reverse' : 'row',
+          opacity: pressed ? 0.7 : 1,
+        },
+      ]}
+      testID={testID}
+    >
+      {icon}
+      <AppText
+        style={
+          active ? { color: theme.palette.primaryForeground } : undefined
+        }
+        variant="caption"
+      >
+        {label}
+      </AppText>
+    </Pressable>
+  );
+}
+
+function FooterLink({
+  label,
+  onPress,
+}: {
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable accessibilityRole="button" hitSlop={6} onPress={onPress}>
+      <AppText color="muted" variant="caption">
+        {label}
+      </AppText>
+    </Pressable>
+  );
 }
 
 function ProviderChoice({
@@ -619,43 +920,97 @@ function ProviderChoice({
 }
 
 const styles = StyleSheet.create({
+  badgeEnd: {
+    right: 4,
+  },
+  badgeStart: {
+    left: 4,
+  },
+  centered: {
+    textAlign: 'center',
+  },
   clockCard: {
     alignItems: 'center',
-    flex: 2,
     gap: 2,
-    minWidth: 210,
+    paddingVertical: 20,
   },
-  customLinkInputs: {
-    flexDirection: 'row',
-    gap: 8,
+  clockTime: {
+    fontSize: 40,
+    lineHeight: 56,
   },
-  customLinksSection: {
+  emoji: {
+    fontSize: 26,
+    lineHeight: 30,
+  },
+  emptyLinks: {
+    alignItems: 'center',
+    borderStyle: 'dashed',
+    gap: 12,
+    paddingVertical: 28,
+  },
+  favicon: {
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    borderWidth: 1,
+    height: 30,
+    justifyContent: 'center',
+    width: 30,
+  },
+  faviconImage: {
+    height: 22,
+    width: 22,
+  },
+  footer: {
+    columnGap: 16,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    rowGap: 6,
+  },
+  grid: {
+    flexWrap: 'wrap',
     gap: 10,
   },
-  customNameInput: {
+  gridCard: {
+    alignItems: 'center',
     flex: 1,
+    gap: 8,
+    justifyContent: 'center',
+    minHeight: 96,
+    padding: 10,
+  },
+  gridItem: {
+    flexBasis: '31%',
+    flexGrow: 0,
+  },
+  gridLabel: {
+    textAlign: 'center',
+  },
+  iconButton: {
+    alignItems: 'center',
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
   },
   iconInput: {
     textAlign: 'center',
     width: 64,
   },
-  linkCard: {
+  logo: {
+    height: 48,
+    width: 92,
+  },
+  logoRow: {
     alignItems: 'center',
+    paddingVertical: 4,
+  },
+  nameInput: {
     flex: 1,
-    gap: 8,
-    justifyContent: 'center',
-    minHeight: 104,
   },
-  linkGrid: {
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  linkIcon: {
-    fontSize: 22,
-  },
-  linkPressable: {
-    minWidth: 142,
-    width: '47%',
+  overlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
   },
   providerChoice: {
     borderRadius: 999,
@@ -665,30 +1020,17 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   providerRow: {
-    flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 6,
   },
-  removeButton: {
+  removeBadge: {
     alignItems: 'center',
-    height: 44,
+    borderRadius: 12,
+    height: 24,
     justifyContent: 'center',
-    width: 44,
-  },
-  savedLink: {
-    alignItems: 'center',
-    flex: 1,
-    flexDirection: 'row',
-    gap: 10,
-    minHeight: 48,
-  },
-  savedLinkName: {
-    flex: 1,
-  },
-  savedLinkRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 8,
+    position: 'absolute',
+    top: 4,
+    width: 24,
   },
   searchCard: {
     gap: 10,
@@ -697,24 +1039,51 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   searchRow: {
-    flexDirection: 'row',
     gap: 8,
   },
-  settingsButton: {
+  sectionActions: {
+    gap: 8,
+  },
+  sectionHeader: {
     alignItems: 'center',
-    height: 44,
-    justifyContent: 'center',
-    width: 44,
+    justifyContent: 'space-between',
+  },
+  sheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    gap: 10,
+    padding: 16,
+  },
+  sheetHeader: {
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  sheetRow: {
+    gap: 8,
+  },
+  smallButton: {
+    alignItems: 'center',
+    borderRadius: 999,
+    borderWidth: 1,
+    gap: 6,
+    minHeight: 36,
+    paddingHorizontal: 12,
+  },
+  topActions: {
+    alignItems: 'flex-start',
+    gap: 4,
+  },
+  topRow: {
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
   },
   widgetCard: {
     flex: 1,
     gap: 4,
-    minWidth: 145,
   },
   widgets: {
     alignItems: 'stretch',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 10,
   },
 });
@@ -724,5 +1093,9 @@ PORT STATUS
   source:     resources/js/Pages/Home.tsx (1722 lines)
   confidence: high
   todos:      0
-  notes:      Native Home keeps configurable widgets, F3alia, search, source quick links, personal links, and location settings.
+  notes:      Follows the website start page order: controls, logo, clock and
+              widgets, search, events, link grids, personal links, footer. The
+              emergency banner and the extra tools grid are native-only; the
+              grid replaces the website's two separate preset sections because
+              the API returns one merged quick-link list.
 */

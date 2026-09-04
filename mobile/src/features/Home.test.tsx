@@ -16,6 +16,7 @@ import { fetchHomeContent } from './Home/api';
 
 jest.mock('expo-router', () => ({
   router: { push: jest.fn() },
+  usePathname: () => '/',
 }));
 
 jest.mock('@/lib/linking', () => ({
@@ -30,6 +31,18 @@ jest.mock('@/lib/home/widgets', () => ({
 jest.mock('./Home/api', () => ({
   fetchHomeContent: jest.fn(),
 }));
+
+// The banner owns its own warnings query; Home only decides where it sits.
+jest.mock('@/features/Warnings/Banner', () => {
+  const React = jest.requireActual<typeof import('react')>('react');
+  const { Text } = jest.requireActual<typeof import('react-native')>(
+    'react-native',
+  );
+  return {
+    LatestWarningBanner: () =>
+      React.createElement(Text, { testID: 'home-warning-banner' }, 'warning'),
+  };
+});
 
 jest.mock('@/components/F3aliaEvents', () => {
   const React = jest.requireActual<typeof import('react')>('react');
@@ -102,6 +115,17 @@ async function renderScreen() {
   );
 }
 
+async function addLink(
+  view: Awaited<ReturnType<typeof renderScreen>>,
+  name: string,
+  url: string,
+) {
+  await fireEvent.press(view.getByTestId('home-open-add-link'));
+  await fireEvent.changeText(view.getByTestId('home-custom-link-name'), name);
+  await fireEvent.changeText(view.getByTestId('home-custom-link-url'), url);
+  await fireEvent.press(view.getByTestId('home-add-custom-link'));
+}
+
 beforeEach(async () => {
   jest.clearAllMocks();
   await AsyncStorage.clear();
@@ -164,28 +188,74 @@ test('renders custom local widgets, Hijri date, F3alia, and server quick links',
   expect(openSafeExternalUrl).toHaveBeenCalledWith('https://joory.chat');
 });
 
+test('stacks the controls, the logo, the clock and the warning banner like the website', async () => {
+  const view = await renderScreen();
+  await waitFor(() => expect(view.getByText('29°C')).toBeTruthy());
+
+  expect(view.getByTestId('home-logo')).toBeTruthy();
+  expect(view.getByTestId('home-warning-banner')).toBeTruthy();
+  expect(view.queryByText('أهلا بك')).toBeNull();
+
+  await fireEvent.press(view.getByTestId('home-settings'));
+  expect(router.push).toHaveBeenCalledWith('/settings');
+
+  await fireEvent.press(view.getByText('سياسة الخصوصية'));
+  expect(router.push).toHaveBeenCalledWith({
+    params: { slug: 'privacy' },
+    pathname: '/feature/[slug]',
+  });
+});
+
 test('adds, opens, and removes a safe personal link', async () => {
   const view = await renderScreen();
   await waitFor(() => expect(view.getByText('الروزنامة')).toBeTruthy());
-  expect(view.getByTestId('home-custom-link-name')).toBeTruthy();
+  expect(view.getByText('لا توجد روابط مخصصة')).toBeTruthy();
+  expect(view.queryByTestId('home-custom-link-name')).toBeNull();
 
-  await fireEvent.changeText(view.getByTestId('home-custom-link-name'), 'My guide');
-  await fireEvent.changeText(
-    view.getByTestId('home-custom-link-url'),
-    'https://guide.example/syria',
-  );
-  await fireEvent.press(view.getByTestId('home-add-custom-link'));
+  await addLink(view, 'My guide', 'https://guide.example/syria');
 
   await waitFor(() => expect(view.getByText('My guide')).toBeTruthy());
+  expect(view.queryByTestId('home-custom-link-sheet')).toBeNull();
   await fireEvent.press(view.getByText('My guide'));
   expect(openSafeExternalUrl).toHaveBeenCalledWith(
     'https://guide.example/syria',
   );
 
+  await fireEvent.press(view.getByTestId('home-toggle-edit-links'));
   await fireEvent.press(view.getByTestId(/home-remove-custom-link-/));
   await waitFor(() => expect(view.queryByText('My guide')).toBeNull());
   const stored = await AsyncStorage.getItem('startpage-settings');
   expect(JSON.parse(stored ?? '{}').customLinks).toEqual([]);
+});
+
+test('rejects a personal link that is not a web address', async () => {
+  const view = await renderScreen();
+  await waitFor(() => expect(view.getByText('الروزنامة')).toBeTruthy());
+
+  await addLink(view, 'Bad', 'javascript:alert(1)');
+
+  expect(
+    view.getByText('أدخل اسماً ورابطاً صحيحاً يبدأ بـ https:// أو http://.'),
+  ).toBeTruthy();
+});
+
+test('edits a personal link from the edit mode sheet', async () => {
+  const view = await renderScreen();
+  await waitFor(() => expect(view.getByText('الروزنامة')).toBeTruthy());
+  await addLink(view, 'My guide', 'https://guide.example/syria');
+  await waitFor(() => expect(view.getByText('My guide')).toBeTruthy());
+
+  await fireEvent.press(view.getByTestId('home-toggle-edit-links'));
+  await fireEvent.press(view.getByText('My guide'));
+  await fireEvent.changeText(
+    view.getByTestId('home-custom-link-name'),
+    'Syria guide',
+  );
+  await fireEvent.press(view.getByTestId('home-add-custom-link'));
+
+  await waitFor(() => expect(view.getByText('Syria guide')).toBeTruthy());
+  const stored = await AsyncStorage.getItem('startpage-settings');
+  expect(JSON.parse(stored ?? '{}').customLinks).toHaveLength(1);
 });
 
 test('keeps every source external link available when Home content is offline', async () => {

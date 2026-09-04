@@ -32,5 +32,5 @@ PORT STATUS
   source:     resources/js/Pages/Transit/layout.tsx (43 lines)
   confidence: high
   todos:      0
-  notes:      Native providers and the Transit heritage header wrap every routed Transit screen.
+  notes:      Native providers wrap every routed Transit screen, and the header slot stays empty like the website.
 */

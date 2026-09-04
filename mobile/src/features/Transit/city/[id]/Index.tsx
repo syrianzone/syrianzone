@@ -16,13 +16,21 @@ export default function TransitCityScreen() {
   const city = cities.find((item) => item.id === id);
   const routes = useRoutes(id);
   const { theme } = useAppTheme();
+  // A city without bounds has no map or route data, same guard as the website.
+  if (!city?.bounds) {
+    return (
+      <Screen>
+        <QueryState detail="المدينة غير موجودة" type="error" />
+      </Screen>
+    );
+  }
   if (routes.isPending) {
     return <CityLoading />;
   }
   return (
     <Screen
-      subtitle={city?.nameEn ?? id}
-      title={city?.nameAr ?? 'خطوط المدينة'}
+      subtitle={`${city.routeCount.toLocaleString('ar-SY')} خط سيرفيس`}
+      title={city.nameAr}
       trailing={
         <AppButton
           icon={<Map color={theme.palette.primaryForeground} size={18} />}
@@ -57,5 +65,5 @@ PORT STATUS
   source:     resources/js/Pages/Transit/city/[id]/Index.tsx (85 lines)
   confidence: high
   todos:      0
-  notes:      Route parameters, pending state, and refresh behavior use Expo Router and React Query.
+  notes:      Route parameters, the unknown city guard, the route count subtitle, pending state, and refresh use Expo Router and React Query.
 */

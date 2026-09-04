@@ -1,12 +1,20 @@
-import { fireEvent, render } from '@testing-library/react-native';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
 
 import { MapCanvas } from './MapCanvas';
+
+const mockCamera = { flyTo: jest.fn() };
 
 jest.mock('@maplibre/maplibre-react-native', () => {
   const React = jest.requireActual<typeof import('react')>('react');
   const { Pressable, View } = jest.requireActual<typeof import('react-native')>('react-native');
   return {
-    Camera: () => null,
+    Camera: React.forwardRef(function MockCamera(
+      _props: object,
+      ref: React.ForwardedRef<object>,
+    ) {
+      React.useImperativeHandle(ref, () => mockCamera);
+      return null;
+    }),
     Map: ({ children }: { children: React.ReactNode }) => React.createElement(View, null, children),
     ViewAnnotation: ({
       children,
@@ -54,6 +62,8 @@ const data = {
   stops: { features: [], type: 'FeatureCollection' as const },
 };
 
+beforeEach(() => jest.clearAllMocks());
+
 test('renders draggable route vertices and reports native drag coordinates', async () => {
   const onVertexChange = jest.fn();
   const onVertexPress = jest.fn();
@@ -84,4 +94,20 @@ test('does not add annotation views to normal transit maps', async () => {
   const view = await render(<MapCanvas city={city} data={data} />);
 
   expect(view.queryByTestId('transit-edit-vertex-0')).toBeNull();
+});
+
+test('flies the camera to a focused search result', async () => {
+  const view = await render(<MapCanvas city={city} data={data} />);
+
+  await view.rerender(
+    <MapCanvas city={city} data={data} focus={{ center: [36.3, 33.5], zoom: 15 }} />,
+  );
+
+  await waitFor(() =>
+    expect(mockCamera.flyTo).toHaveBeenCalledWith({
+      center: [36.3, 33.5],
+      duration: 800,
+      zoom: 15,
+    }),
+  );
 });

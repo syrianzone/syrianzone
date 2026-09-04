@@ -22,7 +22,7 @@ export default function TransitCityMapScreen() {
   const rawData = query.data ?? transitFallback(id);
   const data = rawData ? focusTransitMapData(rawData, route) : null;
   if (!city) {
-    return <QueryState detail="المدينة غير معروفة." type="error" />;
+    return <QueryState detail="المدينة غير موجودة" type="error" />;
   }
   if (!data && query.loading) {
     return <MapLoading />;
@@ -40,6 +40,7 @@ export default function TransitCityMapScreen() {
             city={city}
             data={data}
             fitToData={Boolean(route)}
+            interactive
           />
         </View>
       ) : query.error ? (
@@ -69,5 +70,5 @@ PORT STATUS
   source:     resources/js/Pages/Transit/city/[id]/map/Index.tsx (139 lines)
   confidence: high
   todos:      0
-  notes:      Native MapLibre preserves pending state, live or offline geometry, focused route links, search, nearby stops, and refresh.
+  notes:      Native MapLibre preserves pending state, live or offline geometry, focused route links, search, nearby stops, refresh, and tappable routes and stops.
 */

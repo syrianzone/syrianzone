@@ -1,7 +1,9 @@
 import { z } from 'zod';
 
 import { apiClient } from '@/lib/api/client';
+import { ApiError } from '@/lib/api/errors';
 
+import cities from './_data/cities';
 import type {
   City,
   MapDataResponse,
@@ -228,15 +230,64 @@ const routeDetailSchema = z.object({
 
 export type RouteDetail = z.infer<typeof routeDetailSchema>['data'];
 
+function shouldFallBack(error: unknown): boolean {
+  return error instanceof ApiError && (error.status === 404 || error.code === 'network');
+}
+
+// The public map data already carries every route and its stops, so a route page
+// can be assembled from it. Stops keep the map-data order, which follows the line.
+export function routeDetailFromMapData(
+  city: City,
+  mapData: MapDataResponse,
+  routeId: string,
+): RouteDetail | null {
+  const feature = mapData.routes.features.find((item) => item.properties.id === routeId);
+  if (!feature) {
+    return null;
+  }
+  return {
+    city,
+    id: routeId,
+    route: feature.properties,
+    stops: mapData.stops.features
+      .filter((stop) => stop.properties.routeIds.includes(routeId))
+      .map((stop) => ({
+        coordinates: stop.geometry.coordinates as [number, number],
+        properties: {
+          id: stop.properties.id,
+          nameAr: stop.properties.nameAr,
+          nameEn: stop.properties.nameEn,
+        },
+      })),
+  };
+}
+
+// Production does not serve /api/mobile yet, so a 404 (or no network) falls back
+// to the live v1 map data plus the bundled city record.
 export async function getRouteDetail(
   cityId: string,
   routeId: string,
 ): Promise<RouteDetail> {
-  const response = await apiClient.request(
-    `/api/mobile/transit/cities/${encodeURIComponent(cityId)}/routes/${encodeURIComponent(routeId)}`,
-    { auth: false, schema: routeDetailSchema },
-  );
-  return response.data;
+  try {
+    const response = await apiClient.request(
+      `/api/mobile/transit/cities/${encodeURIComponent(cityId)}/routes/${encodeURIComponent(routeId)}`,
+      { auth: false, schema: routeDetailSchema },
+    );
+    return response.data;
+  } catch (error) {
+    if (!shouldFallBack(error)) {
+      throw error;
+    }
+  }
+  // The bundled list is frozen tuples; City is the API shape, which reads the same.
+  const city = cities.find((item) => item.id === cityId) as City | undefined;
+  const detail = city
+    ? routeDetailFromMapData(city, await getMapData(cityId), routeId)
+    : null;
+  if (!detail) {
+    throw new ApiError(404, 'not_found', 'الخط غير موجود.');
+  }
+  return detail;
 }
 
 export interface SaveRouteDraftInput {

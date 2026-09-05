@@ -82,6 +82,7 @@ export function normalizeForMatching(name: string): string {
         .trim()
         .toLowerCase()
         .replace(/['`]/g, '')
+        .replace(/[-‐‑‒–—―]/g, ' ')
         .replace(/ḥ/g, 'h')
         .replace(/ẖ/g, 'h')
         .replace(/ḫ/g, 'h')
@@ -130,8 +131,8 @@ export const GOVERNORATE_SORT_ORDER: { [key: string]: number } = {
 
 export function sortCitiesByOrder(cities: [string, number][]): [string, number][] {
     return cities.sort((a, b) => {
-        const orderA = GOVERNORATE_SORT_ORDER[a[0]] || 999;
-        const orderB = GOVERNORATE_SORT_ORDER[b[0]] || 999;
+        const orderA = GOVERNORATE_SORT_ORDER[getCanonicalCityName(a[0])] || 999;
+        const orderB = GOVERNORATE_SORT_ORDER[getCanonicalCityName(b[0])] || 999;
         return orderA - orderB;
     });
 }

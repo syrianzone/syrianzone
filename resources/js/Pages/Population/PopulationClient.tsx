@@ -247,9 +247,9 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                     </div>
                     <div className="p-6">
                         <div className="grid grid-cols-3 gap-4 mb-8">
-                            <div className="text-center font-bold text-lg text-primary truncate">{comparisonData.p1.name}</div>
+                            <div className="text-center font-bold text-lg text-primary truncate">{getCanonicalCityName(comparisonData.p1.name)}</div>
                             <div className="text-center text-muted-foreground text-sm self-center">مقابل</div>
-                            <div className="text-center font-bold text-lg text-primary truncate">{comparisonData.p2.name}</div>
+                            <div className="text-center font-bold text-lg text-primary truncate">{getCanonicalCityName(comparisonData.p2.name)}</div>
                         </div>
 
                         <div className="space-y-8">
@@ -969,7 +969,7 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                                                                             }
                                                                         </div>
                                                                     </td>
-                                                                    <td className="py-1.5 px-2 font-medium">{city}</td>
+                                                                    <td className="py-1.5 px-2 font-medium">{getCanonicalCityName(city)}</td>
                                                                     <td className="py-1.5 px-2 text-left font-mono text-muted-foreground">
                                                                         {pop.toLocaleString('en-US')}
                                                                     </td>

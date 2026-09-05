@@ -336,8 +336,19 @@ export default function Home({ liveClock = true, now = defaultNow }: HomeProps) 
   };
 
   return (
-    <Screen>
-      <View style={[styles.topRow, { flexDirection: rowDirection }]}>
+    <View style={[styles.page, { backgroundColor: theme.palette.background }]}>
+      {/* Same bar geometry as the navbar (64px, 44px buttons, 8px inset) so the
+          icons sit where they do on every other screen; the start page has no
+          navbar, so it owns the top safe area itself. */}
+      <SafeAreaView
+        edges={['top', 'left', 'right']}
+        style={{ backgroundColor: theme.palette.background }}
+        testID="home-top-bar"
+      >
+      <View
+        style={[styles.topRow, { flexDirection: rowDirection }]}
+        testID="home-controls"
+      >
         <Pressable
           accessibilityLabel={locale === 'ar' ? 'الإعدادات' : 'Settings'}
           accessibilityRole="button"
@@ -370,7 +381,8 @@ export default function Home({ liveClock = true, now = defaultNow }: HomeProps) 
           )}
         </View>
       </View>
-
+      </SafeAreaView>
+    <Screen>
       <View style={styles.logoRow}>
         <Image
           contentFit="contain"
@@ -783,6 +795,7 @@ export default function Home({ liveClock = true, now = defaultNow }: HomeProps) 
         </View>
       </Modal>
     </Screen>
+    </View>
   );
 }
 
@@ -975,9 +988,9 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     alignItems: 'center',
-    height: 40,
+    height: 44,
     justifyContent: 'center',
-    width: 40,
+    width: 44,
   },
   iconInput: {
     textAlign: 'center',
@@ -1008,6 +1021,9 @@ const styles = StyleSheet.create({
   providerRow: {
     flexWrap: 'wrap',
     gap: 6,
+  },
+  page: {
+    flex: 1,
   },
   removeBadge: {
     alignItems: 'center',
@@ -1057,12 +1073,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   topActions: {
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: 4,
   },
   topRow: {
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    height: 64,
     justifyContent: 'space-between',
+    paddingHorizontal: 8,
   },
   widgetCard: {
     flex: 1,

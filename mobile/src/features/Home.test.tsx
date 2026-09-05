@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import type { ComponentType } from 'react';
+import { StyleSheet } from 'react-native';
 
 import F3aliaEvents from '@/components/F3aliaEvents';
 import { HomeSettingsProvider } from '@/contexts/HomeSettingsContext';
@@ -284,4 +285,22 @@ test('opens Board from the Home tools', async () => {
   await fireEvent.press(view.getByText('لوح'));
 
   expect(router.push).toHaveBeenCalledWith('/board');
+});
+
+test('keeps the controls in a navbar-sized bar below the status bar', async () => {
+  const view = await renderScreen();
+  await waitFor(() => expect(view.getByText('29°C')).toBeTruthy());
+
+  // The start page has no navbar, so the bar owns the top inset itself and
+  // matches the navbar geometry: 64px tall, 44px buttons.
+  // The native view normalizes edges into a mode per side.
+  expect(view.getByTestId('home-top-bar').props.edges).toMatchObject({ bottom: 'off', top: 'additive' });
+  expect(StyleSheet.flatten(view.getByTestId('home-controls').props.style)).toMatchObject({
+    alignItems: 'center',
+    height: 64,
+  });
+  expect(StyleSheet.flatten(view.getByTestId('home-settings').props.style)).toMatchObject({
+    height: 44,
+    width: 44,
+  });
 });

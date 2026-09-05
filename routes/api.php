@@ -18,8 +18,8 @@ Route::middleware('throttle:voting')->group(function () {
 
 
 
-Route::get('/contributors', [ContributorController::class, 'index']);
-Route::get('/contributors/{contributor}', [ContributorController::class, 'show']);
+Route::get('/contributors', [ContributorController::class, 'index'])->middleware('throttle:60,1');
+Route::get('/contributors/{contributor}', [ContributorController::class, 'show'])->middleware('throttle:60,1');
 
 Route::get('/population/master', [PopulationAtlasController::class, 'getData']);
 Route::get('/population/env-report', [PopulationAtlasController::class, 'getEnvironmentalDetails']);
@@ -107,14 +107,16 @@ Route::get('/app-icon', function (Request $request) {
     }
 
     return response()->json(['icon' => null], 400);
-});
+})->middleware('throttle:60,1');
 
 Route::prefix('v1')->group(function () {
-    Route::get('/cities', [\App\Http\Controllers\Api\V1\TransitController::class, 'getCities']);
-    Route::get('/cities/{id}/routes', [\App\Http\Controllers\Api\V1\TransitController::class, 'getRoutes']);
-    Route::get('/cities/{id}/map-data', [\App\Http\Controllers\Api\V1\TransitController::class, 'getMapData']);
-    Route::get('/stops/nearby', [\App\Http\Controllers\Api\V1\TransitController::class, 'getNearbyStops']);
-    Route::get('/search', [\App\Http\Controllers\Api\V1\TransitController::class, 'search']);
+    Route::middleware('throttle:60,1')->group(function () {
+        Route::get('/cities', [\App\Http\Controllers\Api\V1\TransitController::class, 'getCities']);
+        Route::get('/cities/{id}/routes', [\App\Http\Controllers\Api\V1\TransitController::class, 'getRoutes']);
+        Route::get('/cities/{id}/map-data', [\App\Http\Controllers\Api\V1\TransitController::class, 'getMapData']);
+        Route::get('/stops/nearby', [\App\Http\Controllers\Api\V1\TransitController::class, 'getNearbyStops']);
+        Route::get('/search', [\App\Http\Controllers\Api\V1\TransitController::class, 'search']);
+    });
 
     // Transit Studio: open for community contributions
     Route::post('/studio/routes', [\App\Http\Controllers\TransitStudioController::class, 'store'])

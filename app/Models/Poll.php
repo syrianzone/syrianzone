@@ -12,6 +12,10 @@ class Poll extends Model
 
     protected $fillable = ['slug', 'title', 'timezone', 'is_active', 'user_id'];
 
+    // Owner id is an internal delegation key (see DashboardController account
+    // deletion). It must never leak on public poll reads.
+    protected $hidden = ['user_id'];
+
     public function user() { return $this->belongsTo(User::class); }
     public function candidates() { return $this->hasMany(Candidate::class); }
     public function ballots() { return $this->hasMany(Ballot::class); }

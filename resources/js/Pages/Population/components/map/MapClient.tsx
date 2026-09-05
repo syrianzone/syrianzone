@@ -317,6 +317,8 @@ path.leaflet-interactive:hover {
             <MapContainer
                 center={[35.0, 38.5]}
                 zoom={7}
+                minZoom={6}
+                maxZoom={11}
                 style={{ height: '100%', width: '100%', background: 'transparent' }}
                 zoomControl={false}
                 scrollWheelZoom={true}

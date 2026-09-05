@@ -11,6 +11,18 @@ export default defineConfig({
     define: {
         'process.env': {},
     },
+    server: {
+        // Listen on all interfaces (IPv4 + IPv6) so `localhost` resolving to
+        // ::1 and 127.0.0.1 both reach the dev server, and pin the HMR
+        // websocket to the same host the browser used to load the page.
+        host: true,
+        port: 5173,
+        strictPort: true,
+        hmr: {
+            host: 'localhost',
+            protocol: 'ws',
+        },
+    },
     build: {
         // hidden: maps are written for the upload but not referenced from the bundles
         sourcemap: sentryUpload ? 'hidden' : false,

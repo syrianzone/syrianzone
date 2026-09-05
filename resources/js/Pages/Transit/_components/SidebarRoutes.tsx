@@ -33,7 +33,15 @@ export function SidebarRoutes({ city, routes }: SidebarRoutesProps) {
   const damascusRoutes = isDamascusRegion ? routes.filter(r => (r.cityId ?? 'damascus') === 'damascus') : []
   const rifRoutes = isDamascusRegion ? routes.filter(r => r.cityId === 'rif-dimashq') : []
 
-  const renderRouteCard = (route: any) => (
+  const renderRouteCard = (route: any) => {
+    // API fields (stopsCount, priceNew) can be null or numeric strings —
+    // guard with Number() so a null value never crashes toLocaleString.
+    const stopsCount = route.stopsCount == null ? null : Number(route.stopsCount)
+    const priceNew = route.priceNew == null ? null : Number(route.priceNew)
+    const hasStopsCount = stopsCount != null && Number.isFinite(stopsCount)
+    const hasPrice = priceNew != null && Number.isFinite(priceNew) && priceNew > 0
+
+    return (
     <button
       key={route.id}
       onClick={() => handleRouteClick(route.id)}
@@ -52,24 +60,25 @@ export function SidebarRoutes({ city, routes }: SidebarRoutesProps) {
           {route.nameAr}
         </h3>
         <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground">
-          {route.stopsCount !== undefined && (
+          {hasStopsCount && (
             <span className="flex items-center gap-1">
               <MapPin className="h-3.5 w-3.5 opacity-65" />
-              <span>{route.stopsCount.toLocaleString('ar-SY')} موقف</span>
+              <span>{(stopsCount as number).toLocaleString('ar-SY')} موقف</span>
             </span>
           )}
-          {route.stopsCount !== undefined && route.priceNew > 0 && (
+          {hasStopsCount && hasPrice && (
             <span className="opacity-40">•</span>
           )}
-          {route.priceNew > 0 && (
+          {hasPrice && (
             <span className="flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 font-bold text-primary">
-              <span>{route.priceNew.toLocaleString('ar-SY')} ل.س</span>
+              <span>{(priceNew as number).toLocaleString('ar-SY')} ل.س</span>
             </span>
           )}
         </div>
       </div>
     </button>
-  )
+    )
+  }
 
   return (
     <div className="flex h-full min-h-0 flex-col">

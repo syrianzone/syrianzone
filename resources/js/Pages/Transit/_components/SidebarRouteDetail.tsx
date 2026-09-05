@@ -16,6 +16,12 @@ interface SidebarRouteDetailProps {
   stops: any[]
 }
 
+function formatPriceAr(value: unknown): string {
+  if (value == null) return '—'
+  const n = Number(value)
+  return Number.isFinite(n) ? n.toLocaleString('ar-SY') : '—'
+}
+
 export function SidebarRouteDetail({ route, city, stops }: SidebarRouteDetailProps) {
   const { setSelectedRouteId } = useMapStore()
   const { user } = useAuth()
@@ -61,7 +67,7 @@ export function SidebarRouteDetail({ route, city, stops }: SidebarRouteDetailPro
           <Card className="p-2">
             <CardContent className="p-0">
               <p className="text-muted-foreground">سعر الركوب</p>
-              <p className="font-bold text-primary">{route.priceNew?.toLocaleString('ar-SY') ?? '—'} ل.س</p>
+              <p className="font-bold text-primary">{formatPriceAr(route.priceNew)} ل.س</p>
             </CardContent>
           </Card>
           <Card className="p-2">

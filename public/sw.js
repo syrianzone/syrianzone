@@ -1,4 +1,4 @@
-const CACHE_NAME = 'syrian-zone-cache-v1';
+const CACHE_NAME = 'syrian-zone-cache-v2';
 const ASSETS_TO_CACHE = [
     '/',
     '/assets/logo-darkmode.svg',
@@ -32,18 +32,26 @@ self.addEventListener('activate', (event) => {
     self.clients.claim();
 });
 
-// Fetch Event - Network-first strategy with cache fallback
+// Fetch Event - Network-first for top-level document navigations only.
+// Inertia XHR visits, API calls, and asset/subresource fetches are left alone:
+// caching an Inertia JSON payload under a page URL would poison the cache and
+// serve raw JSON on the next visit, and Response.error() fallbacks surface as
+// "network error response" console errors for navigations like /transit/city/*.
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
 
-    // Only intercept local GET requests, excluding API and admin routes
+    // Only handle same-origin GET document navigations (not XHR/fetch/assets)
     if (
         event.request.method !== 'GET' ||
+        event.request.mode !== 'navigate' ||
         url.origin !== self.location.origin ||
         url.pathname.startsWith('/api/') ||
         url.pathname.startsWith('/transit/api/') ||
         url.pathname.startsWith('/admin') ||
-        url.pathname.startsWith('/transit/admin')
+        url.pathname.startsWith('/transit/admin') ||
+        url.pathname.startsWith('/build/') ||
+        event.request.headers.get('X-Inertia') ||
+        event.request.headers.get('X-Requested-With')
     ) {
         return;
     }
@@ -61,9 +69,10 @@ self.addEventListener('fetch', (event) => {
                 return response;
             })
             .catch(async () => {
-                // Fallback to cache if network fails, or return error response
-                const cachedResponse = await caches.match(event.request);
-                return cachedResponse || Response.error();
+                // Offline: serve the cached page, falling back to the app shell.
+                // Never return Response.error() — it surfaces as a FetchEvent
+                // "network error response" for the navigation.
+                return (await caches.match(event.request)) || (await caches.match('/')) || undefined;
             })
     );
 });

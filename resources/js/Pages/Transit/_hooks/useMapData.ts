@@ -43,6 +43,7 @@ export function useRoutes(cityId: string) {
   return useQuery({
     queryKey: ['routes', cityId],
     queryFn: () => fetchRoutes(cityId),
+    enabled: !!cityId,
     staleTime: 5 * 60 * 1000,
   })
 }

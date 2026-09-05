@@ -21,6 +21,7 @@ import {
   Megaphone,
   Phone,
   CloudUpload,
+  HelpCircle,
 } from 'lucide-react';
 import MainLayout from '@/Layouts/MainLayout';
 import { useAuth } from '@/Contexts/AuthContext';
@@ -440,6 +441,17 @@ export default function Dashboard({
                   >
                     <Smartphone className="h-5 w-5" />
                     التطبيقات الحكومية
+                  </Link>
+                )}
+
+                {/* GuessWho Admin Tab (Admins, Superadmins) */}
+                {(role === 'admin' || role === 'superadmin') && (
+                  <Link
+                    href="/admin/guesswho"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  >
+                    <HelpCircle className="h-5 w-5" />
+                    من هو
                   </Link>
                 )}
 

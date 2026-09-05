@@ -249,6 +249,21 @@ Route::middleware('auth')->group(function () {
         // Hidden Places moderation
         Route::get('/admin/places', [\App\Http\Controllers\PlaceAdminController::class, 'renderIndex']);
 
+        // Guess Who content management (migrated from Filament)
+        Route::get('/admin/guesswho', [\App\Http\Controllers\GuessWhoAdminController::class, 'renderIndex']);
+
+        Route::prefix('api/v1/admin/guesswho')->group(function () {
+            Route::post('/categories', [\App\Http\Controllers\GuessWhoAdminController::class, 'storeCategory']);
+            Route::post('/categories/{id}', [\App\Http\Controllers\GuessWhoAdminController::class, 'updateCategory'])->whereNumber('id');
+            Route::put('/categories/{id}', [\App\Http\Controllers\GuessWhoAdminController::class, 'updateCategory'])->whereNumber('id');
+            Route::delete('/categories/{id}', [\App\Http\Controllers\GuessWhoAdminController::class, 'destroyCategory'])->whereNumber('id');
+
+            Route::post('/characters', [\App\Http\Controllers\GuessWhoAdminController::class, 'storeCharacter']);
+            Route::post('/characters/{id}', [\App\Http\Controllers\GuessWhoAdminController::class, 'updateCharacter'])->whereNumber('id');
+            Route::put('/characters/{id}', [\App\Http\Controllers\GuessWhoAdminController::class, 'updateCharacter'])->whereNumber('id');
+            Route::delete('/characters/{id}', [\App\Http\Controllers\GuessWhoAdminController::class, 'destroyCharacter'])->whereNumber('id');
+        });
+
         Route::prefix('api/v1')->middleware('throttle:60,1')->group(function () {
             Route::get('/admin/places', [\App\Http\Controllers\PlaceAdminController::class, 'index']);
             Route::post('/admin/places/{id}/approve', [\App\Http\Controllers\PlaceAdminController::class, 'approve'])->whereNumber('id');

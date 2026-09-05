@@ -8,6 +8,7 @@ use App\Services\TierlistLeaderboard;
 use App\Services\VotingService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -37,7 +38,7 @@ class PollController extends Controller
     public function renderShow(Request $request, $slug)
     {
         $poll = Poll::where('slug', $slug)->orWhere('id', $slug)->firstOrFail();
-        $today = Carbon::now($poll->timezone ?: 'UTC')->startOfDay();
+        $today = Carbon::now($poll->safeTimezone())->startOfDay();
 
         $candidatesQuery = $poll->candidates()->orderBy('sort');
         if (! $request->boolean('include_archived')) {
@@ -64,16 +65,19 @@ class PollController extends Controller
 
     public function renderLeaderboard(Request $request, $slug)
     {
-        $response = $this->leaderboard($request, $slug);
-        $data = json_decode($response->getContent(), true);
+        $validated = $request->validate([
+            'status' => 'sometimes|string|in:active,archived,former,all',
+        ]);
+        $poll = Poll::where('id', $slug)->orWhere('slug', $slug)->firstOrFail();
+        $status = TierlistLeaderboard::normalizeStatus($validated['status'] ?? 'active');
 
-        return Inertia::render('Polls/Leaderboard', $data);
+        return Inertia::render('Polls/Leaderboard', $this->leaderboardPayload($poll, $status));
     }
 
     public function renderTierList(Request $request)
     {
-        $poll = Poll::where('slug', 'best-ministers')->firstOrFail();
-        $today = Carbon::now($poll->timezone ?: 'UTC')->startOfDay();
+        $poll = Poll::where('slug', Poll::CORE_POLL_SLUG)->firstOrFail();
+        $today = Carbon::now($poll->safeTimezone())->startOfDay();
 
         $candidates = $poll->candidates()->where('status', 'active')->orderBy('sort')->get()->map(fn ($c) => [
             'id' => $c->id,
@@ -95,10 +99,13 @@ class PollController extends Controller
 
     public function renderTierListLeaderboard(Request $request)
     {
-        $response = $this->leaderboard($request, 'best-ministers');
-        $data = json_decode($response->getContent(), true);
+        $validated = $request->validate([
+            'status' => 'sometimes|string|in:active,archived,former,all',
+        ]);
+        $poll = Poll::where('slug', Poll::CORE_POLL_SLUG)->firstOrFail();
+        $status = TierlistLeaderboard::normalizeStatus($validated['status'] ?? 'active');
 
-        return Inertia::render('TierList/Leaderboard', $data);
+        return Inertia::render('TierList/Leaderboard', $this->leaderboardPayload($poll, $status));
     }
 
     public function index(Request $request)
@@ -110,8 +117,8 @@ class PollController extends Controller
     {
         $data = $request->validate([
             'title' => 'required|string|max:200',
-            'slug' => 'required|string|max:100|unique:polls',
-            'timezone' => 'string|max:64',
+            'slug' => 'required|string|max:100|alpha_dash|unique:polls,slug',
+            'timezone' => 'nullable|string|max:64|timezone',
             'is_active' => 'boolean',
         ]);
 
@@ -126,12 +133,22 @@ class PollController extends Controller
     public function update(Request $request, $id)
     {
         $poll = Poll::findOrFail($id);
-        $poll->update($request->validate([
-            'title' => 'string|max:200',
-            'slug' => 'string|max:100|unique:polls,slug,'.$id,
-            'timezone' => 'string|max:64',
+        $validated = $request->validate([
+            'title' => 'sometimes|string|max:200',
+            'slug' => 'sometimes|string|max:100|alpha_dash|unique:polls,slug,'.$id,
+            'timezone' => 'nullable|string|max:64|timezone',
             'is_active' => 'boolean',
-        ]));
+        ]);
+
+        // Renaming the core poll away breaks /tierlist (renderTierList looks
+        // it up by slug), the same way deleting it would.
+        if ($poll->slug === Poll::CORE_POLL_SLUG
+            && isset($validated['slug'])
+            && $validated['slug'] !== Poll::CORE_POLL_SLUG) {
+            return response()->json(['message' => 'Cannot rename the core Best Ministers poll.'], 403);
+        }
+
+        $poll->update($validated);
 
         return response()->json($poll);
     }
@@ -139,7 +156,7 @@ class PollController extends Controller
     public function destroy($id)
     {
         $poll = Poll::findOrFail($id);
-        if ($poll->slug === 'best-ministers') {
+        if ($poll->slug === Poll::CORE_POLL_SLUG) {
             return response()->json(['message' => 'Cannot delete the core Best Ministers poll.'], 403);
         }
         $poll->delete();
@@ -150,7 +167,7 @@ class PollController extends Controller
     public function show(Request $request, $idOrSlug)
     {
         $poll = Poll::where('id', $idOrSlug)->orWhere('slug', $idOrSlug)->firstOrFail();
-        $today = Carbon::now($poll->timezone ?: 'UTC')->startOfDay();
+        $today = Carbon::now($poll->safeTimezone())->startOfDay();
 
         $candidatesQuery = $poll->candidates()->orderBy('sort');
         if (! $request->boolean('include_archived')) {
@@ -168,20 +185,53 @@ class PollController extends Controller
 
     public function leaderboard(Request $request, $slug)
     {
-        $poll = Poll::where('slug', $slug)->firstOrFail();
-        $statusFilter = $request->query('status', 'active');
-        $statusFilter = is_string($statusFilter) ? $statusFilter : 'active';
-        $leaderboard = $this->tierlistLeaderboard->build($poll, $statusFilter);
+        // Resolve by UUID or slug (matches show()); canonical vocabulary is
+        // active | former | all, with 'archived' accepted as an alias of
+        // 'former'. Anything else is a 422, not a silent fallback to 'active'.
+        $validated = $request->validate([
+            'status' => 'sometimes|string|in:active,archived,former,all',
+        ]);
+        $poll = Poll::where('id', $slug)->orWhere('slug', $slug)->firstOrFail();
+        $status = TierlistLeaderboard::normalizeStatus($validated['status'] ?? 'active');
+        $results = $this->leaderboardPayload($poll, $status);
 
-        $results = [
-            'poll' => $poll,
-            'groups' => $leaderboard['groups'],
-            'status' => $leaderboard['status'],
-            ...$leaderboard['rankings'],
-            'history' => $this->getHistory($poll->id, $leaderboard['candidates']),
-        ];
+        $response = response()->json($results);
+        // generated_at is part of the cached payload, so the ETag is stable
+        // for the cache TTL and a second viewer within 60s gets a 304.
+        $response->setEtag(sha1($response->getContent() ?: ''));
+        $response->setPublic();
+        $response->setMaxAge(60);
+        $response->setSharedMaxAge(60);
+        if ($response->isNotModified($request)) {
+            return $response;
+        }
 
-        return response()->json($results);
+        return $response;
+    }
+
+    /**
+     * Full leaderboard payload, cached 60s per poll + status. History and
+     * generated_at are inside the cached entry so every viewer in the same
+     * minute sees identical bytes (and the same ETag).
+     */
+    private function leaderboardPayload(Poll $poll, string $status): array
+    {
+        return Cache::remember(
+            "leaderboard:v1:{$poll->id}:{$status}",
+            60,
+            function () use ($poll, $status) {
+                $leaderboard = $this->tierlistLeaderboard->build($poll, $status);
+
+                return [
+                    'poll' => $poll,
+                    'groups' => $leaderboard['groups'],
+                    'status' => $leaderboard['status'],
+                    'generated_at' => now()->toIso8601String(),
+                    ...$leaderboard['rankings'],
+                    'history' => $this->getHistory($poll->id, $leaderboard['candidates']),
+                ];
+            }
+        );
     }
 
     public function submit(Request $request, VotingService $votingService)
@@ -241,11 +291,27 @@ class PollController extends Controller
 
         return $rows
             ->groupBy('candidate_id')
-            ->map(fn ($items) => $items->values()->map(fn ($i) => [
-                'date' => $i->day,
-                'votes' => (int) $i->votes,
-                'score' => (int) $i->score,
-            ]))
+            ->map(function ($items) {
+                $series = $items->sortBy('day')->values()->map(fn ($i) => [
+                    'date' => $i->day,
+                    'votes' => (int) $i->votes,
+                    'score' => (int) $i->score,
+                ])->all();
+
+                // Downsample long histories to weekly buckets (last point per
+                // ISO week wins; the series is date-ordered). Charts cannot
+                // render thousands of daily points, and the payload stays
+                // bounded as the poll ages.
+                if (count($series) > 180) {
+                    $bucketed = [];
+                    foreach ($series as $point) {
+                        $bucketed[date('o-W', strtotime($point['date']))] = $point;
+                    }
+                    $series = array_values($bucketed);
+                }
+
+                return $series;
+            })
             ->toArray();
     }
 }

@@ -13,6 +13,36 @@ import MainLayout from '@/Layouts/MainLayout';
 
 type StatusFilter = "active" | "former" | "all";
 
+// Canonical vocabulary: active | former | all. 'archived' (the DB value) is
+// accepted by the API as an alias and normalized here for shareable URLs.
+function normalizeStatus(v: unknown): StatusFilter {
+    if (v === "former" || v === "archived") return "former";
+    if (v === "all") return "all";
+    return "active";
+}
+
+function initialStatus(props: LeaderboardData): StatusFilter {
+    if (typeof window !== "undefined") {
+        const q = new URLSearchParams(window.location.search).get("status");
+        if (q) return normalizeStatus(q);
+    }
+    return normalizeStatus(props.status);
+}
+
+function timeAgo(iso?: string | null): string | null {
+    if (!iso) return null;
+    const t = new Date(iso).getTime();
+    if (Number.isNaN(t)) return null;
+    const s = Math.max(0, Math.floor((Date.now() - t) / 1000));
+    if (s < 60) return "قبل لحظات";
+    const m = Math.floor(s / 60);
+    if (m < 60) return `قبل ${m} د`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `قبل ${h} س`;
+    const d = Math.floor(h / 24);
+    return `قبل ${d} يوم`;
+}
+
 interface LeaderboardEntry {
     candidateId: string;
     name: string;
@@ -30,8 +60,9 @@ interface LeaderboardEntry {
 }
 
 interface LeaderboardData {
-    poll: { id: string; title: string };
-    status?: StatusFilter;
+    poll: { id: string; title: string; slug?: string };
+    status?: string;
+    generated_at?: string | null;
     [key: string]: any;
 }
 
@@ -193,9 +224,26 @@ function StatusToggle({ value, onChange }: { value: StatusFilter; onChange: (v: 
 export default function Leaderboard(initialProps: LeaderboardProps) {
     const [data, setData] = useState<LeaderboardData>(initialProps);
     const [loading, setLoading] = useState(false);
-    const [status, setStatus] = useState<StatusFilter>("active");
+    const [status, setStatus] = useState<StatusFilter>(() => initialStatus(initialProps));
+    const initialStatusRef = React.useRef<StatusFilter>(initialStatus(initialProps));
+    const firstFetchRef = React.useRef(true);
+
+    const handleStatusChange = (v: StatusFilter) => {
+        setStatus(v);
+        // Shareable view: keep ?status= in the URL so filtered views link correctly.
+        if (typeof window !== "undefined") {
+            const url = new URL(window.location.href);
+            url.searchParams.set("status", v);
+            window.history.replaceState(null, "", url.toString());
+        }
+    };
 
     useEffect(() => {
+        // SSR already rendered this status — don't refetch on mount.
+        if (firstFetchRef.current) {
+            firstFetchRef.current = false;
+            if (status === initialStatusRef.current) return;
+        }
         setLoading(true);
         axios
             .get(`/api/polls/${initialProps.poll.slug}/leaderboard`, { params: { status } })
@@ -250,7 +298,16 @@ export default function Leaderboard(initialProps: LeaderboardProps) {
                     </Alert>
                 </div>
 
-                <h1 className="text-2xl font-bold mb-4 text-center">الإحصائيات</h1>
+                <h1 className="text-2xl font-bold mb-1 text-center">الإحصائيات</h1>
+                {(() => {
+                    const ago = timeAgo(data.generated_at);
+                    if (!ago) return <div className="mb-4" />;
+                    return (
+                        <p className="text-xs text-gray-500 text-center mb-4" title={data.generated_at ?? undefined}>
+                            {ago} · حدّث الصفحة لأحدث النتائج
+                        </p>
+                    );
+                })()}
 
                 {data.history && (
                     <Tabs defaultValue="ministers" dir="rtl" className="w-full">
@@ -261,7 +318,7 @@ export default function Leaderboard(initialProps: LeaderboardProps) {
                                 <TabsTrigger value="security">الأمن</TabsTrigger>
                                 <TabsTrigger value="jolani">الجولاني</TabsTrigger>
                             </TabsList>
-                            <StatusToggle value={status} onChange={setStatus} />
+                            <StatusToggle value={status} onChange={handleStatusChange} />
                         </div>
 
                         <TabsContent value="ministers">

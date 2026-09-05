@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Poll;
+use App\Services\TierlistLeaderboard;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 /**
@@ -30,6 +32,13 @@ class VotingDataController extends Controller
 
     private const BALLOT_COLUMNS = ['id', 'poll_id', 'vote_day', 'created_at'];
 
+    /**
+     * Maximum inclusive date span for scores/ballots scans. The (poll_id,
+     * vote_day) index bounds each page, but an unbounded range is still a
+     * full-table walk — reject it with a 422 instead of serving it slowly.
+     */
+    private const MAX_DATE_SPAN_DAYS = 31;
+
     public function index()
     {
         return response()->json(
@@ -52,14 +61,19 @@ class VotingDataController extends Controller
     {
         $poll = $this->findPoll($idOrSlug);
 
-        $status = $request->query('status', 'all');
-        if (! in_array($status, ['active', 'archived', 'all'], true)) {
-            $status = 'all';
-        }
+        // Same vocabulary as the legacy leaderboard (see
+        // TierlistLeaderboard::STATUSES): active | former | all, with
+        // 'archived' accepted as an alias of 'former'. Invalid values are
+        // a 422, not a silent default.
+        $validated = $request->validate([
+            'status' => 'sometimes|string|in:active,former,all,archived',
+        ]);
+        $status = TierlistLeaderboard::normalizeStatus($validated['status'] ?? 'all');
 
         $query = $poll->candidates()->orderBy('sort');
         if ($status !== 'all') {
-            $query->where('status', $status);
+            // 'former' is the public name for the 'archived' DB value.
+            $query->where('status', $status === 'former' ? 'archived' : $status);
         }
 
         return response()->json($query->get(self::CANDIDATE_COLUMNS));
@@ -73,6 +87,7 @@ class VotingDataController extends Controller
             'to' => 'nullable|date',
             'candidate_id' => 'nullable|uuid',
         ]);
+        $this->assertDateSpan($filters['from'] ?? null, $filters['to'] ?? null);
 
         $query = $poll->dailyScores()
             ->select(['candidate_id', 'day', 'votes', 'score'])
@@ -99,6 +114,7 @@ class VotingDataController extends Controller
             'from' => 'nullable|date',
             'to' => 'nullable|date',
         ]);
+        $this->assertDateSpan($filters['from'] ?? null, $filters['to'] ?? null);
 
         $query = $poll->ballots()
             ->select(self::BALLOT_COLUMNS)
@@ -121,6 +137,22 @@ class VotingDataController extends Controller
         return Poll::where('id', $idOrSlug)
             ->orWhere('slug', $idOrSlug)
             ->firstOrFail(self::POLL_COLUMNS);
+    }
+
+    private function assertDateSpan(?string $from, ?string $to): void
+    {
+        if ($from === null || $to === null) {
+            return;
+        }
+
+        $span = Carbon::parse($from)->startOfDay()
+            ->diffInDays(Carbon::parse($to)->startOfDay(), true);
+
+        if ($span > self::MAX_DATE_SPAN_DAYS) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'to' => 'Date range must not exceed ' . self::MAX_DATE_SPAN_DAYS . ' days.',
+            ]);
+        }
     }
 
     private function perPage(Request $request): int

@@ -24,7 +24,7 @@ class VotingService
 
     public function submit(Poll $poll, array $tiers, string $voterKey, string $ipHash, ?string $userAgent): void
     {
-        $voteDay = Carbon::now($poll->timezone ?: 'UTC')->startOfDay();
+        $voteDay = Carbon::now($poll->safeTimezone())->startOfDay();
 
         $this->rejectArchivedCandidates($poll, $tiers);
 

@@ -8,9 +8,30 @@ use Illuminate\Support\Facades\DB;
 
 class TierlistLeaderboard
 {
+    /**
+     * Canonical status vocabulary, shared by the legacy leaderboard
+     * (/api/polls/{slug}/leaderboard) and the public API
+     * (/api/v1/polls/{id}/candidates): active | former | all.
+     * 'archived' (the candidates.status DB value) is accepted as an alias
+     * of 'former' and normalized to it.
+     */
+    public const STATUSES = ['active', 'former', 'all'];
+
+    public const DB_ALIAS = 'archived';
+
+    public static function normalizeStatus(string $status): string
+    {
+        return $status === self::DB_ALIAS ? 'former' : $status;
+    }
+
     public function build(Poll $poll, string $status = 'active'): array
     {
-        $status = in_array($status, ['active', 'former', 'all'], true) ? $status : 'active';
+        $status = self::normalizeStatus($status);
+        if (! in_array($status, self::STATUSES, true)) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'status' => 'Invalid status. Expected one of: active, former, all (archived is accepted as an alias of former).',
+            ]);
+        }
         $groups = $poll->groups()->get();
         $candidatesQuery = $poll->candidates()->orderBy('sort');
 
@@ -89,24 +110,44 @@ class TierlistLeaderboard
             return collect();
         }
 
-        return DB::table('daily_scores')
+        // Split candidates so the common case is a single indexed
+        // whereIn(poll_id, candidate_id) aggregation with no per-row
+        // predicates. Only archived candidates with a term cutoff need an
+        // extra day bound, and those are the only orWhere branches issued
+        // (usually a handful, not one per candidate).
+        $plainIds = [];
+        $cutoffs = [];
+        foreach ($candidates as $id => $candidate) {
+            if (($candidate->status ?? null) === 'archived' && $candidate->term_ended_at) {
+                $cutoffs[$id] = $candidate->term_ended_at;
+            } else {
+                $plainIds[] = $id;
+            }
+        }
+
+        $base = fn () => DB::table('daily_scores')
             ->select('candidate_id', DB::raw('SUM(votes) as votes'), DB::raw('SUM(score) as score'))
-            ->where('poll_id', $poll->id)
-            ->whereIn('candidate_id', $candidates->keys())
-            ->where(function ($query) use ($candidates) {
-                foreach ($candidates as $candidate) {
-                    if ($candidate->status === 'archived' && $candidate->term_ended_at) {
-                        $query->orWhere(function ($candidateQuery) use ($candidate) {
-                            $candidateQuery->where('candidate_id', $candidate->id)
-                                ->where('day', '<=', $candidate->term_ended_at);
+            ->where('poll_id', $poll->id);
+
+        $rows = collect();
+        if ($plainIds !== []) {
+            $rows = $rows->concat(
+                $base()->whereIn('candidate_id', $plainIds)->groupBy('candidate_id')->get()
+            );
+        }
+        if ($cutoffs !== []) {
+            $rows = $rows->concat(
+                $base()->where(function ($query) use ($cutoffs) {
+                    foreach ($cutoffs as $id => $termEnd) {
+                        $query->orWhere(function ($candidateQuery) use ($id, $termEnd) {
+                            $candidateQuery->where('candidate_id', $id)
+                                ->where('day', '<=', $termEnd instanceof \DateTimeInterface ? $termEnd->format('Y-m-d') : $termEnd);
                         });
-                    } else {
-                        $query->orWhere('candidate_id', $candidate->id);
                     }
-                }
-            })
-            ->groupBy('candidate_id')
-            ->get()
+                })->groupBy('candidate_id')->get()
+            );
+        }
+        return $rows
             ->map(function ($row) use ($candidates) {
                 $candidate = $candidates->get($row->candidate_id);
 

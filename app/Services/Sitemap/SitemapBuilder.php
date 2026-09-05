@@ -46,7 +46,7 @@ class SitemapBuilder
         ['/mishwar', 0.9, 'daily'],
         ['/transit', 0.9, 'weekly'],
         ['/syofficial', 0.9, 'weekly'],
-        ['/population', 0.9, 'monthly'],
+        ['/atlas', 0.9, 'monthly'],
         ['/phonebook', 0.9, 'weekly'],
         ['/govapps', 0.9, 'weekly'],
         ['/sites', 0.9, 'weekly'],

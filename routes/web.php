@@ -71,7 +71,8 @@ Route::get('/party', [ExternalDataController::class, 'party']);
 Route::get('/house', [ExternalDataController::class, 'house']);
 Route::get('/alignment', [ExternalDataController::class, 'alignment']);
 Route::get('/govapps', [\App\Http\Controllers\GovAppController::class, 'index']);
-Route::get('/population', [PopulationAtlasController::class, 'renderIndex']);
+Route::get('/atlas', [PopulationAtlasController::class, 'renderIndex']);
+Route::redirect('/population', '/atlas', 301);
 
 // The music section (/syriafy, legacy /spotify) was removed. Soft-land any
 // externally shared links on the homepage instead of returning a hard 404.

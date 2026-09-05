@@ -67,7 +67,7 @@ const PRESET_LINKS: PresetLink[] = [
     { href: '/compass', icon: CompassIcon, text: 'البوصلة السياسية', isInternal: true },
     { href: '/priorities', icon: PrioritiesIcon, text: 'أولويات سوريا', isInternal: true },
     { href: '/sites', icon: SitesIcon, text: 'دليل المواقع', isInternal: true },
-    { href: '/population', icon: PopulationIcon, text: 'أطلس', isInternal: true },
+    { href: '/atlas', icon: PopulationIcon, text: 'أطلس', isInternal: true },
     { href: '/govapps', icon: GovAppsIcon, text: 'تطبيقات الحكومة', isInternal: true },
     { href: '/transit', icon: TransitIcon, text: 'ترانزيت', isInternal: true },
     { href: '/justice', icon: JusticeIcon, text: 'العدالة الانتقالية', isInternal: true },

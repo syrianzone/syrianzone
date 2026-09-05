@@ -65,13 +65,13 @@ export const DATA_TYPE_CONFIG = {
     [DATA_TYPES.ENVIRONMENTAL]: {
         label: 'البيئة والمناخ',
         labelAr: 'الحرارة والمناخ',
-        // Temperature Gradient
+        // Temperature bands — must match getTemperatureColor() in map-styles.ts
         colors: { none: '#1e293b', low: '#3b82f6', medium: '#22c55e', high: '#ef4444' },
         thresholds: [10, 20, 30], 
         legend: [
             { label: 'بارد (< 10°)', color: '#3b82f6' },
-            { label: 'معتدل (10°-25°)', color: '#22c55e' },
-            { label: 'دافئ (25°-30°)', color: '#eab308' },
+            { label: 'معتدل (10°-20°)', color: '#22c55e' },
+            { label: 'دافئ (20°-30°)', color: '#eab308' },
             { label: 'حار (> 30°)', color: '#ef4444' },
             { label: 'لا توجد بيانات', color: '#1e293b' }
         ]

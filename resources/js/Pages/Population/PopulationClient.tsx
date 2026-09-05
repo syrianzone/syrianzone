@@ -9,6 +9,7 @@ import {
     History, Users, Heart, MapPin, Clock, Compass, Thermometer, Leaf
 } from 'lucide-react';
 import { sortCitiesByOrder, getCanonicalCityName } from '@/Lib/city-name-standardizer';
+import { buildLegend } from './utils/color-calculator';
 
 type DataType = typeof DATA_TYPES[keyof typeof DATA_TYPES];
 
@@ -386,7 +387,10 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                         {config.labelAr}
                     </h4>
                     <div className="space-y-1.5">
-                        {config.legend.map((item: { label: string; color: string }, idx: number) => (
+                        {(currentDataType === DATA_TYPES.ENVIRONMENTAL
+                            ? config.legend
+                            : buildLegend(currentDataType, dynamicThresholds)
+                        ).map((item: { label: string; color: string }, idx: number) => (
                             <div key={idx} className="flex items-center gap-2">
                                 <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></span>
                                 <span className="text-muted-foreground text-xs">{item.label}</span>

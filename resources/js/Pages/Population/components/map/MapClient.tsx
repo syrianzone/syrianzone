@@ -193,7 +193,11 @@ path.leaflet-interactive:hover {
                     z-index: 1000 !important;
                 }
 
-                /* Shared Glassmorphism Base */
+                /* Shared Glassmorphism Base — NOTE: no transform animation here.
+                   Leaflet positions the tooltip element itself via inline
+                   transform, so animating transform on this wrapper would
+                   override it and detach the popup from the cursor. The
+                   gentle float lives on the inner .tooltip-content instead. */
                 .glass-tooltip {
                     backdrop-filter: blur(16px);
                     -webkit-backdrop-filter: blur(16px);
@@ -205,6 +209,8 @@ path.leaflet-interactive:hover {
                         inset 0 0 0 1px rgba(255, 255, 255, 0.1),
                         inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
                     color: #f8fafc;
+                }
+                .glass-tooltip .tooltip-content {
                     animation: float 4s ease-in-out infinite;
                 }
 

@@ -14,13 +14,11 @@ const ARABIC_TO_ENGLISH_CITY_MAP: { [key: string]: string } = {
 };
 
 function getTemperatureColor(temp: number): string {
-    if (temp <= 5) return '#60a5fa';      // Blue-400
-    if (temp <= 10) return '#22d3ee';     // Cyan-400
-    if (temp <= 15) return '#2dd4bf';     // Teal-400
-    if (temp <= 20) return '#4ade80';     // Green-400
-    if (temp <= 25) return '#facc15';     // Yellow-400
-    if (temp <= 30) return '#fb923c';     // Orange-400
-    return '#f87171';                     // Red-400
+    // Must match the ENVIRONMENTAL legend in data-config.ts
+    if (temp < 10) return '#3b82f6';      // بارد
+    if (temp <= 20) return '#22c55e';     // معتدل
+    if (temp <= 30) return '#eab308';     // دافئ
+    return '#ef4444';                     // حار
 }
 
 export function getFeatureStyle(

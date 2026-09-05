@@ -87,7 +87,7 @@ const navLinks = [
   { href: '/tierlist', text: 'تقييم الحكومة', icon: TierlistIcon },
   { href: '/syrian-contributors', text: 'المساهمون', icon: Code2 },
   { href: '/sites', text: 'دليل المواقع', icon: SitesIcon },
-  { href: '/population', text: 'أطلس', icon: PopulationIcon },
+  { href: '/atlas', text: 'أطلس', icon: PopulationIcon },
   { href: '/party', text: 'دليل الأحزاب', icon: PartyIcon },
   { href: '/house', text: 'المجلس التشريعي', icon: HouseIcon },
   { href: '/compass', text: 'البوصلة السياسية', icon: CompassIcon },

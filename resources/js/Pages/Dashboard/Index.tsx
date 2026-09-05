@@ -395,7 +395,7 @@ export default function Dashboard({
                 {(role === 'admin' || role === 'superadmin') && (
                   <button onClick={() => setActiveTab('polls')} className={navItemClass(activeTab === 'polls')}>
                     <ListOrdered className="h-5 w-5" />
-                    الاستبيانات
+                    تير ليست
                   </button>
                 )}
 
@@ -406,7 +406,7 @@ export default function Dashboard({
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   >
                     <Bus className="h-5 w-5" />
-                    الخطوط
+                    ترانزيت
                   </Link>
                 )}
 

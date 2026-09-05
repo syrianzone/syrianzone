@@ -1,12 +1,12 @@
 "use client";
 
-import React from 'react';
-import { MapContainer, GeoJSON, ZoomControl } from 'react-leaflet';
+import React, { useRef } from 'react';
+import { MapContainer, GeoJSON, ZoomControl, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { DATA_TYPES, CityData, RainfallData } from '../../types';
 import { getFeatureStyle } from './map-styles';
-import { setupFeatureInteractions } from './map-interactions';
+import { setupFeatureInteractions, hideCursorTooltip } from './map-interactions';
 import MapUpdater from './MapUpdater';
 
 type DataType = typeof DATA_TYPES[keyof typeof DATA_TYPES];
@@ -31,6 +31,20 @@ interface MapClientProps {
     onFeatureClick?: (feature: any) => void;
 }
 
+// Hides the cursor tooltip while the map is being dragged / zoomed so a
+// stale box never lingers at the wrong place.
+function DismissTooltipOnMapMove({ getTip }: { getTip: () => HTMLDivElement | null }) {
+    const map = useMap();
+    React.useEffect(() => {
+        const hide = () => hideCursorTooltip({ getTip });
+        map.on('movestart zoomstart', hide);
+        return () => {
+            map.off('movestart zoomstart', hide);
+        };
+    }, [map, getTip]);
+    return null;
+}
+
 export default function MapClient({ 
     geoJsonData, 
     populationData, 
@@ -41,6 +55,11 @@ export default function MapClient({
     customThresholds, 
     onFeatureClick 
 }: MapClientProps) {
+
+    const wrapRef = useRef<HTMLDivElement>(null);
+    const tipRef = useRef<HTMLDivElement>(null);
+    const getTip = React.useCallback(() => tipRef.current, []);
+    const getWrap = React.useCallback(() => wrapRef.current, []);
 
     const style = (feature: any) => {
         return getFeatureStyle(feature, currentDataType, populationData, rainfallData, environmentalData, customThresholds);
@@ -55,7 +74,7 @@ export default function MapClient({
             rainfallData,
             environmentalData,
             customThresholds,
-            onFeatureClick
+            { getTip, getWrap, onFeatureClick }
         );
     };
 
@@ -70,9 +89,13 @@ export default function MapClient({
     if (!geoJsonData) return null;
 
     return (
-        <div className={`w-full h-full relative overflow-hidden transition-colors duration-1000 ${getBackgroundClass()}`}>
+        <div ref={wrapRef} className={`w-full h-full relative overflow-hidden transition-colors duration-1000 ${getBackgroundClass()}`}>
             <div className="absolute inset-0 pointer-events-none z-0 bg-noise opacity-[0.03]"></div>
             <div className="absolute inset-0 pointer-events-none z-0 bg-vignette"></div>
+            {/* Cursor-following tooltip. Positioned via left/top in JS on every
+                mousemove — no transform or animation on this element itself, so
+                nothing can detach it from the cursor. */}
+            <div ref={tipRef} className="atlas-cursor-tooltip" style={{ display: 'none' }} />
 
             <style jsx global>{`
                 /* --- ANIMATIONS --- */
@@ -181,7 +204,14 @@ path.leaflet-interactive:hover {
                     outline: none;
                 }
 
-                /* --- TOOLTIPS --- */
+                /* --- TOOLTIPS (custom cursor-following overlay) --- */
+                .atlas-cursor-tooltip {
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    z-index: 1000;
+                    pointer-events: none;
+                }
                 .leaflet-tooltip {
                     background: transparent !important;
                     border: none !important;
@@ -295,6 +325,7 @@ path.leaflet-interactive:hover {
             >
                 <ZoomControl position="bottomleft" />
                 <MapUpdater geoJsonData={geoJsonData} />
+                <DismissTooltipOnMapMove getTip={getTip} />
                 <GeoJSON
                     key={`${currentDataType}-${currentSourceId}`}
                     data={geoJsonData}

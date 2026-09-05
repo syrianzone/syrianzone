@@ -14,6 +14,70 @@ const ARABIC_TO_ENGLISH_CITY_MAP: { [key: string]: string } = {
     'السويداء': 'As-Suwayda', 'القنيطرة': 'Quneitra'
 };
 
+export interface CursorTooltipControls {
+    /** Returns the absolutely-positioned tooltip div owned by MapClient (or null). */
+    getTip: () => HTMLDivElement | null;
+    /** Returns the relatively-positioned map wrapper div (or null). */
+    getWrap: () => HTMLDivElement | null;
+    onFeatureClick?: (feature: any) => void;
+}
+
+function buildTooltipHtml(
+    feature: any,
+    currentDataType: DataType,
+    populationData: CityData | null,
+    rainfallData: RainfallData | undefined,
+    environmentalData: any | undefined,
+): { wrapperClass: string; content: string } | null {
+    const name = feature.properties.province_name || feature.properties.ADM2_AR || feature.properties.ADM1_AR || feature.properties.Name;
+    const nameAr = getCanonicalCityName(name);
+
+    if (currentDataType === DATA_TYPES.RAINFALL) {
+        const rData = findRainData(feature, rainfallData);
+        const content = rData
+            ? generateRainChartHtml(nameAr, rData)
+            : `<div class="p-2 text-slate-300 text-xs text-right font-sans">لا توجد بيانات مطرية<br/><span class="font-bold text-white">${nameAr}</span></div>`;
+        return { wrapperClass: 'glass-tooltip custom-tooltip-rain', content };
+    }
+
+    if (currentDataType === DATA_TYPES.ENVIRONMENTAL) {
+        if (!environmentalData) return null;
+        const englishName = ARABIC_TO_ENGLISH_CITY_MAP[nameAr] || nameAr;
+        const envData = environmentalData.cities?.[nameAr] || environmentalData.cities?.[englishName] || environmentalData.cities?.[name];
+        const content = envData
+            ? generateEnvironmentalTooltipHtml(nameAr, envData)
+            : `<div class="p-2 text-slate-300 text-xs text-right font-sans">لا توجد بيانات بيئية<br/><span class="font-bold text-white">${nameAr}</span></div>`;
+        return { wrapperClass: 'glass-tooltip custom-tooltip-env', content };
+    }
+
+    const pop = findPopulation(name, populationData);
+    const config = DATA_TYPE_CONFIG[currentDataType];
+    return {
+        wrapperClass: 'glass-tooltip custom-tooltip',
+        content: generatePopulationTooltipHtml(nameAr, pop, config.labelAr),
+    };
+}
+
+function positionTip(tip: HTMLDivElement, wrap: HTMLDivElement, clientX: number, clientY: number) {
+    const rect = wrap.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    const w = tip.offsetWidth;
+    const h = tip.offsetHeight;
+    // Center horizontally on the cursor, clamp inside the map; sit above the
+    // cursor and flip below it when there is no room on top.
+    const tx = Math.min(Math.max(x - w / 2, 8), Math.max(rect.width - w - 8, 8));
+    let ty = y - h - 14;
+    if (ty < 8) ty = y + 18;
+    tip.style.left = `${tx}px`;
+    tip.style.top = `${ty}px`;
+}
+
+export function hideCursorTooltip(controls: Pick<CursorTooltipControls, 'getTip'>) {
+    const tip = controls.getTip();
+    if (tip) tip.style.display = 'none';
+}
+
 export function setupFeatureInteractions(
     feature: any,
     layer: L.Layer,
@@ -22,68 +86,42 @@ export function setupFeatureInteractions(
     rainfallData: RainfallData | undefined,
     environmentalData: any | undefined,
     customThresholds: number[],
-    onFeatureClick?: (feature: any) => void
+    controls: CursorTooltipControls,
 ) {
-    const name = feature.properties.province_name || feature.properties.ADM2_AR || feature.properties.ADM1_AR || feature.properties.Name;
-    const nameAr = getCanonicalCityName(name);
-
-    // Bind tooltip with new wrapper structure
-    layer.bindTooltip(() => {
-        let content = '';
-        let wrapperClass = 'glass-tooltip'; // Base glass class
-
-        if (currentDataType === DATA_TYPES.RAINFALL) {
-            wrapperClass += ' custom-tooltip-rain';
-            const rData = findRainData(feature, rainfallData);
-            if (rData) {
-                content = generateRainChartHtml(nameAr, rData);
-            } else {
-                content = `<div class="p-2 text-slate-300 text-xs text-right font-sans">لا توجد بيانات مطرية<br/><span class="font-bold text-white">${nameAr}</span></div>`;
-            }
-        } else if (currentDataType === DATA_TYPES.ENVIRONMENTAL) {
-            wrapperClass += ' custom-tooltip-env';
-            if (!environmentalData) return '';
-            const englishName = ARABIC_TO_ENGLISH_CITY_MAP[nameAr] || nameAr;
-            const envData = environmentalData.cities?.[nameAr] || environmentalData.cities?.[englishName] || environmentalData.cities?.[name];
-            
-            if (envData) {
-                content = generateEnvironmentalTooltipHtml(nameAr, envData);
-            } else {
-                content = `<div class="p-2 text-slate-300 text-xs text-right font-sans">لا توجد بيانات بيئية<br/><span class="font-bold text-white">${nameAr}</span></div>`;
-            }
-        } else {
-            wrapperClass += ' custom-tooltip';
-            const pop = findPopulation(name, populationData);
-            const config = DATA_TYPE_CONFIG[currentDataType];
-            content = generatePopulationTooltipHtml(nameAr, pop, config.labelAr);
-        }
-
-        // Wrap content in the specific inner div for styling
-        return `<div class="${wrapperClass}"><div class="tooltip-content rounded-xl p-3">${content}</div></div>`;
-
-    }, {
-        direction: 'top',
-        sticky: true,
-        className: 'leaflet-custom-tooltip-container', // Minimal styles, layout handled by inner HTML
-        opacity: 1,
-        offset: [0, -15]
-    });
+    const { getTip, getWrap, onFeatureClick } = controls;
 
     // Mouse events
     const l = layer as L.Path; // Cast to access setStyle/bringToFront
 
     l.on({
-        mouseover: (e) => {
+        mouseover: (e: any) => {
             const highlightStyle = getHighlightStyle(currentDataType);
             l.setStyle(highlightStyle);
 
             if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
                 l.bringToFront();
             }
+
+            const built = buildTooltipHtml(feature, currentDataType, populationData, rainfallData, environmentalData);
+            const tip = getTip();
+            const wrap = getWrap();
+            if (!built || !tip || !wrap) return;
+            tip.innerHTML = `<div class="${built.wrapperClass}"><div class="tooltip-content rounded-xl p-3">${built.content}</div></div>`;
+            tip.style.display = 'block';
+            const evt = e.originalEvent as MouseEvent | undefined;
+            if (evt) positionTip(tip, wrap, evt.clientX, evt.clientY);
         },
-        mouseout: (e) => {
+        mousemove: (e: any) => {
+            const tip = getTip();
+            const wrap = getWrap();
+            const evt = e.originalEvent as MouseEvent | undefined;
+            if (!tip || !wrap || !evt || tip.style.display === 'none') return;
+            positionTip(tip, wrap, evt.clientX, evt.clientY);
+        },
+        mouseout: () => {
             const style = getFeatureStyle(feature, currentDataType, populationData, rainfallData, environmentalData, customThresholds);
             l.setStyle(style);
+            hideCursorTooltip({ getTip });
         },
         click: () => {
             if (onFeatureClick) {

@@ -12,11 +12,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { LogOut, User as UserIcon, LayoutDashboard, ListOrdered } from "lucide-react";
+import { LogOut, User as UserIcon, LayoutDashboard } from "lucide-react";
 import { useAuth } from '@/Contexts/AuthContext';
 
 export default function UserNav() {
-    const { user, isAdmin } = useAuth();
+    const { user } = useAuth();
 
     const logout = () => {
         axios.post('/logout').then(() => {
@@ -50,12 +50,6 @@ export default function UserNav() {
                     <Link href="/dashboard" className="cursor-pointer">
                         <LayoutDashboard className="ml-2 h-4 w-4" />
                         <span>لوحة التحكم</span>
-                    </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                    <Link href="/admin/polls" className="cursor-pointer">
-                        <ListOrdered className="ml-2 h-4 w-4" />
-                        <span>إدارة التصويت</span>
                     </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>

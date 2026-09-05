@@ -1,10 +1,8 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import axios from 'axios';
 import {
   User as UserIcon,
-  ListOrdered,
-  Bus,
   Settings,
   Shield,
   Trash2,
@@ -14,15 +12,23 @@ import {
   Ban,
   Edit,
   Plus,
-  MapPin,
   Loader2,
-  Globe,
-  Smartphone,
   Megaphone,
-  Phone,
   CloudUpload,
-  HelpCircle,
+  Gamepad2,
+  Eye,
+  BarChart3,
+  X,
+  Save,
 } from 'lucide-react';
+import {
+  TierlistIcon,
+  TransitIcon,
+  MishwarIcon,
+  SyOfficialIcon,
+  GovAppsIcon,
+  PhonebookIcon,
+} from '@/Components/Icons/ProjectIcons';
 import MainLayout from '@/Layouts/MainLayout';
 import { useAuth } from '@/Contexts/AuthContext';
 import { Button } from '@/Components/ui/button';
@@ -31,6 +37,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import { Textarea } from '@/Components/ui/textarea';
+import { Switch } from '@/Components/ui/switch';
 import {
   Dialog,
   DialogContent,
@@ -39,6 +46,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/Components/ui/dialog';
+import AdminPollManager from '@/Components/admin/AdminPollManager';
 import { cn } from '@/lib/utils';
 
 interface City {
@@ -68,9 +76,37 @@ interface Poll {
   id: string;
   title: string;
   slug: string;
+  timezone?: string;
   is_active: boolean;
   candidates_count: number;
 }
+
+interface PollCandidate {
+  id: string;
+  candidate_group_id?: string | null;
+  name: string;
+  title?: string | null;
+  image_url?: string | null;
+  imageUrl?: string | null;
+  category?: string | null;
+  status?: 'active' | 'archived';
+  [key: string]: any;
+}
+
+interface PollGroup {
+  id: string;
+  poll_id: string;
+  name: string;
+  sort_order: number;
+  is_default?: boolean;
+  [key: string]: any;
+}
+
+const pollPublicUrl = (slug: string) =>
+  slug === 'best-ministers' ? '/tierlist' : `/polls/${slug}`;
+
+const pollLeaderboardUrl = (slug: string) =>
+  slug === 'best-ministers' ? '/tierlist/leaderboard' : `/polls/${slug}/leaderboard`;
 
 interface Route {
   id: string;
@@ -233,6 +269,98 @@ export default function Dashboard({
 
   const [apiLoading, setApiLoading] = useState<number | null>(null); // maps draft ID to loading state
 
+  // Inline poll create states (replaces /admin/polls/create page)
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createTitle, setCreateTitle] = useState('');
+  const [createSlug, setCreateSlug] = useState('');
+  const [createActive, setCreateActive] = useState(true);
+  const [creating, setCreating] = useState(false);
+
+  // Inline poll edit states (replaces /admin/polls/{id}/edit page)
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingPoll, setEditingPoll] = useState<Poll | null>(null);
+  const [editingCandidates, setEditingCandidates] = useState<PollCandidate[]>([]);
+  const [editingGroups, setEditingGroups] = useState<PollGroup[]>([]);
+  const [editingLoading, setEditingLoading] = useState(false);
+  const [editingSaving, setEditingSaving] = useState(false);
+
+  const canManagePolls = role === 'admin' || role === 'superadmin';
+
+  const fetchPollDetails = async (id: string) => {
+    setEditingLoading(true);
+    try {
+      const res = await axios.get(`/api/polls/${id}`, { params: { include_archived: 1 } });
+      const data = res.data ?? {};
+      if (data.poll) {
+        setEditingPoll(data.poll);
+        setLocalPolls(prev => prev.map(p => p.id === data.poll.id ? { ...p, ...data.poll, candidates_count: data.candidates?.length ?? p.candidates_count } : p));
+      }
+      if (data.candidates) setEditingCandidates(data.candidates);
+      if (data.groups) setEditingGroups(data.groups);
+    } catch (err: any) {
+      alert('تعذر تحميل بيانات الاستبيان: ' + (err.response?.data?.message ?? err.message));
+      setEditingId(null);
+      setEditingPoll(null);
+    } finally {
+      setEditingLoading(false);
+    }
+  };
+
+  const openPollEditor = (poll: Poll) => {
+    setEditingId(poll.id);
+    setEditingPoll(poll);
+    setEditingCandidates([]);
+    setEditingGroups([]);
+    fetchPollDetails(poll.id);
+    // keep URL shareable without leaving the dashboard
+    const url = new URL(window.location.href);
+    url.searchParams.set('edit-poll', poll.id);
+    url.searchParams.delete('create-poll');
+    window.history.replaceState({}, '', url.toString());
+  };
+
+  const closePollEditor = () => {
+    setEditingId(null);
+    setEditingPoll(null);
+    setEditingCandidates([]);
+    setEditingGroups([]);
+    const url = new URL(window.location.href);
+    url.searchParams.delete('edit-poll');
+    url.searchParams.delete('edit');
+    window.history.replaceState({}, '', url.pathname + (url.searchParams.toString() ? `?${url.searchParams.toString()}` : ''));
+  };
+
+  const handleRefreshEditor = async () => {
+    if (!editingId) return;
+    await fetchPollDetails(editingId);
+  };
+
+  // Deep links: legacy /admin/polls/* redirects (?edit-poll=, ?create-poll=1)
+  // and poll pages (?edit=) land here so the dashboard is the single editor.
+  useEffect(() => {
+    if (!canManagePolls) return;
+    const params = new URLSearchParams(window.location.search);
+    const editParam = params.get('edit-poll') ?? params.get('edit');
+    const createParam = params.get('create-poll') ?? params.get('create');
+    if (editParam) {
+      const target = localPolls.find(p => p.id === editParam || p.slug === editParam);
+      if (target) {
+        setActiveTab('polls');
+        openPollEditor(target);
+      } else {
+        // ID not in the summary list (e.g. stale link) — still try to load it.
+        setActiveTab('polls');
+        setEditingId(editParam);
+        setEditingPoll(null);
+        fetchPollDetails(editParam);
+      }
+    } else if (createParam !== null && (createParam === '1' || createParam === '')) {
+      setActiveTab('polls');
+      setCreateOpen(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Update Account details
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -336,9 +464,58 @@ export default function Dashboard({
     try {
       await axios.delete(`/api/polls/${id}`);
       setLocalPolls(prev => prev.filter(p => p.id !== id));
+      if (editingId === id) closePollEditor();
       alert('تم حذف الاستبيان بنجاح.');
     } catch (err: any) {
       alert('خطأ: ' + (err.response?.data?.message ?? 'تعذر الحذف.'));
+    }
+  };
+
+  const handleCreatePoll = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!createTitle.trim() || !createSlug.trim()) return;
+    setCreating(true);
+    try {
+      const res = await axios.post('/api/polls', {
+        title: createTitle.trim(),
+        slug: createSlug.trim(),
+        timezone: 'Europe/Amsterdam',
+        is_active: createActive,
+      });
+      const created: Poll = res.data;
+      setLocalPolls(prev => [...prev, { ...created, candidates_count: 0 }]);
+      setCreateOpen(false);
+      setCreateTitle('');
+      setCreateSlug('');
+      setCreateActive(true);
+      const url = new URL(window.location.href);
+      url.searchParams.delete('create-poll');
+      url.searchParams.delete('create');
+      window.history.replaceState({}, '', url.pathname + (url.searchParams.toString() ? `?${url.searchParams.toString()}` : ''));
+      openPollEditor({ ...created, candidates_count: 0 });
+    } catch (err: any) {
+      alert('تعذر إنشاء الاستبيان: ' + (err.response?.data?.message ?? err.message));
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleSavePollMetadata = async () => {
+    if (!editingId || !editingPoll) return;
+    setEditingSaving(true);
+    try {
+      const res = await axios.put(`/api/polls/${editingId}`, {
+        title: editingPoll.title,
+        slug: editingPoll.slug,
+        is_active: editingPoll.is_active,
+      });
+      const updated: Poll = res.data;
+      setEditingPoll(prev => prev ? { ...prev, ...updated } : prev);
+      setLocalPolls(prev => prev.map(p => p.id === editingId ? { ...p, ...updated } : p));
+    } catch (err: any) {
+      alert('حدث خطأ أثناء حفظ الإعدادات: ' + (err.response?.data?.message ?? err.message));
+    } finally {
+      setEditingSaving(false);
     }
   };
 
@@ -387,7 +564,7 @@ export default function Dashboard({
                 {/* Conditional Submissions Tab (Normal Users) */}
                 {role === 'user' && (
                   <button onClick={() => setActiveTab('submissions')} className={navItemClass(activeTab === 'submissions')}>
-                    <Bus className="h-5 w-5" />
+                    <TransitIcon className="h-5 w-5" />
                     اقتراحاتي للخطوط
                   </button>
                 )}
@@ -395,7 +572,7 @@ export default function Dashboard({
                 {/* Polls Tab (Admins and Superadmins) */}
                 {(role === 'admin' || role === 'superadmin') && (
                   <button onClick={() => setActiveTab('polls')} className={navItemClass(activeTab === 'polls')}>
-                    <ListOrdered className="h-5 w-5" />
+                    <TierlistIcon className="h-5 w-5" />
                     تير ليست
                   </button>
                 )}
@@ -406,7 +583,7 @@ export default function Dashboard({
                     href="/transit/admin"
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   >
-                    <Bus className="h-5 w-5" />
+                    <TransitIcon className="h-5 w-5" />
                     ترانزيت
                   </Link>
                 )}
@@ -417,7 +594,7 @@ export default function Dashboard({
                     href="/admin/places"
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   >
-                    <MapPin className="h-5 w-5" />
+                    <MishwarIcon className="h-5 w-5" />
                     مشوار
                   </Link>
                 )}
@@ -428,7 +605,7 @@ export default function Dashboard({
                     href="/admin/syofficial"
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   >
-                    <Globe className="h-5 w-5" />
+                    <SyOfficialIcon className="h-5 w-5" />
                     الحسابات الرسمية
                   </Link>
                 )}
@@ -439,29 +616,29 @@ export default function Dashboard({
                     href="/admin/govapps"
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   >
-                    <Smartphone className="h-5 w-5" />
+                    <GovAppsIcon className="h-5 w-5" />
                     التطبيقات الحكومية
                   </Link>
                 )}
 
-                {/* GuessWho Admin Tab (Admins, Superadmins) */}
+                {/* GuessWho Admin Tab (Admins, Superadmins) — no ProjectIcon exists, use Gamepad2 from the same lucide set as the navbar fallbacks */}
                 {(role === 'admin' || role === 'superadmin') && (
                   <Link
                     href="/admin/guesswho"
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   >
-                    <HelpCircle className="h-5 w-5" />
+                    <Gamepad2 className="h-5 w-5" />
                     من هو
                   </Link>
                 )}
 
                 {/* Phonebook Admin Tab */}
-                {(role === 'admin' || role === 'superadmin' || user?.permissions?.includes('phonebook.edit') || user?.permissions?.includes('phonebook.create')) && (
+                {(role === 'admin' || role === 'superadmin' || (auth.user as any)?.permissions?.includes('phonebook.edit') || (auth.user as any)?.permissions?.includes('phonebook.create')) && (
                   <Link
                     href="/admin/phonebook"
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   >
-                    <Phone className="h-5 w-5" />
+                    <PhonebookIcon className="h-5 w-5" />
                     دليل الهاتف
                   </Link>
                 )}
@@ -502,13 +679,13 @@ export default function Dashboard({
               {activeTab === 'submissions' && role === 'user' && (
                 <div>
                   <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
-                    <Bus className="text-primary h-6 w-6" />
+                    <TransitIcon className="h-6 w-6" />
                     سجل اقتراحات المسارات الخاصة بك
                   </h2>
 
                   {localMyDrafts.length === 0 ? (
                     <div className="text-center py-12 text-muted-foreground">
-                      <Bus className="h-16 w-16 mx-auto mb-4 opacity-25" />
+                      <TransitIcon className="h-16 w-16 mx-auto mb-4 opacity-25" />
                       <p className="text-lg">لم تقم بتقديم أي اقتراحات مسارات للخطوط بعد.</p>
                       <p className="text-sm mt-1">اذهب إلى استوديو التنقل لاقتراح خط حافلة جديد للمجتمع.</p>
                     </div>
@@ -565,21 +742,21 @@ export default function Dashboard({
                 </div>
               )}
 
-              {/* POLLS TAB */}
+              {/* POLLS TAB — single place for tierlist/poll management (replaces /admin/polls*) */}
               {activeTab === 'polls' && (role === 'admin' || role === 'superadmin') && (
                 <div>
                   <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
                     <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-                      <ListOrdered className="text-primary h-6 w-6" />
+                      <TierlistIcon className="h-6 w-6" />
                       إدارة استبيانات التقييم
                     </h2>
-                    <Link
-                      href="/admin/polls/create"
-                      className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm rounded-lg flex items-center gap-2 transition-colors shadow-sm w-fit"
+                    <Button
+                      onClick={() => setCreateOpen(true)}
+                      className="w-fit"
                     >
                       <Plus className="h-4 w-4" />
                       إنشاء استبيان جديد
-                    </Link>
+                    </Button>
                   </div>
 
                   {localPolls.length === 0 ? (
@@ -600,8 +777,10 @@ export default function Dashboard({
                           </tr>
                         </thead>
                         <tbody>
-                          {localPolls.map(poll => (
-                            <tr key={poll.id} className="border-b border-border/60 hover:bg-muted/40 text-sm">
+                          {localPolls.map(poll => {
+                            const isEditing = editingId === poll.id;
+                            return (
+                            <tr key={poll.id} className={cn("border-b border-border/60 hover:bg-muted/40 text-sm", isEditing && "bg-primary/5")}>
                               <td className="py-4 text-foreground font-bold">{poll.title}</td>
                               <td className="py-4 font-mono text-muted-foreground text-xs">{poll.slug}</td>
                               <td className="py-4 text-center">{poll.candidates_count} مرشحين</td>
@@ -612,13 +791,36 @@ export default function Dashboard({
                               </td>
                               <td className="py-4 text-left">
                                 <div className="flex justify-end gap-2">
-                                  <Link
-                                    href={`/admin/polls/${poll.id}/edit`}
+                                  <a
+                                    href={pollPublicUrl(poll.slug)}
+                                    target="_blank"
+                                    rel="noreferrer"
                                     className="p-1.5 bg-muted hover:bg-accent text-muted-foreground hover:text-accent-foreground rounded border border-border transition-colors"
-                                    title="تعديل"
+                                    title="عرض صفحة التصويت"
                                   >
-                                    <Edit className="h-4 w-4" />
-                                  </Link>
+                                    <Eye className="h-4 w-4" />
+                                  </a>
+                                  <a
+                                    href={pollLeaderboardUrl(poll.slug)}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="p-1.5 bg-muted hover:bg-accent text-muted-foreground hover:text-accent-foreground rounded border border-border transition-colors"
+                                    title="عرض النتائج"
+                                  >
+                                    <BarChart3 className="h-4 w-4" />
+                                  </a>
+                                  <button
+                                    onClick={() => (isEditing ? closePollEditor() : openPollEditor(poll))}
+                                    className={cn(
+                                      "p-1.5 rounded border border-border transition-colors",
+                                      isEditing
+                                        ? "bg-primary text-primary-foreground border-primary"
+                                        : "bg-muted hover:bg-accent text-muted-foreground hover:text-accent-foreground"
+                                    )}
+                                    title={isEditing ? 'إغلاق المحرر' : 'تعديل'}
+                                  >
+                                    {isEditing ? <X className="h-4 w-4" /> : <Edit className="h-4 w-4" />}
+                                  </button>
                                   {poll.slug !== 'best-ministers' ? (
                                     <button
                                       onClick={() => handleDeletePoll(poll.id, poll.slug)}
@@ -635,11 +837,157 @@ export default function Dashboard({
                                 </div>
                               </td>
                             </tr>
-                          ))}
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
                   )}
+
+                  {/* Inline editor (replaces /admin/polls/{id}/edit page) */}
+                  {editingId && (
+                    <Card className="mt-6 border-primary/30">
+                      <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
+                        <CardTitle className="flex items-center gap-2 text-base">
+                          <Edit className="h-5 w-5 text-primary" />
+                          {editingLoading ? 'جارٍ تحميل الاستبيان…' : `تحرير: ${editingPoll?.title ?? ''}`}
+                        </CardTitle>
+                        <div className="flex items-center gap-2">
+                          {editingPoll && (
+                            <>
+                              <a href={pollPublicUrl(editingPoll.slug)} target="_blank" rel="noreferrer">
+                                <Button variant="outline" size="sm">
+                                  <Eye className="h-4 w-4 ml-1" />
+                                  عرض
+                                </Button>
+                              </a>
+                              <a href={pollLeaderboardUrl(editingPoll.slug)} target="_blank" rel="noreferrer">
+                                <Button variant="outline" size="sm">
+                                  <BarChart3 className="h-4 w-4 ml-1" />
+                                  النتائج
+                                </Button>
+                              </a>
+                            </>
+                          )}
+                          <Button variant="ghost" size="icon" onClick={closePollEditor} title="إغلاق">
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        {editingLoading || !editingPoll ? (
+                          <div className="flex items-center justify-center gap-2 py-10 text-muted-foreground">
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                            جارٍ تحميل بيانات الاستبيان…
+                          </div>
+                        ) : (
+                          <>
+                            <div className="grid gap-4 md:grid-cols-2">
+                              <div className="grid gap-2">
+                                <Label htmlFor="edit-poll-title">العنوان</Label>
+                                <Input
+                                  id="edit-poll-title"
+                                  value={editingPoll.title}
+                                  onChange={e => setEditingPoll({ ...editingPoll, title: e.target.value })}
+                                />
+                              </div>
+                              <div className="grid gap-2">
+                                <Label htmlFor="edit-poll-slug">المعرف (Slug)</Label>
+                                <Input
+                                  id="edit-poll-slug"
+                                  value={editingPoll.slug}
+                                  onChange={e => setEditingPoll({ ...editingPoll, slug: e.target.value })}
+                                  className="text-left font-mono"
+                                  dir="ltr"
+                                />
+                              </div>
+                            </div>
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                              <div className="flex items-center gap-2">
+                                <Switch
+                                  id="edit-poll-active"
+                                  checked={editingPoll.is_active}
+                                  onCheckedChange={checked => setEditingPoll({ ...editingPoll, is_active: checked })}
+                                />
+                                <Label htmlFor="edit-poll-active">التصويت نشط</Label>
+                              </div>
+                              <Button onClick={handleSavePollMetadata} disabled={editingSaving}>
+                                <Save className="h-4 w-4 ml-2" />
+                                {editingSaving ? 'جاري الحفظ…' : 'حفظ الإعدادات'}
+                              </Button>
+                            </div>
+                            <div className="border-t border-border pt-6">
+                              <h3 className="font-bold mb-4">إدارة المجموعات والمرشحين</h3>
+                              <AdminPollManager
+                                pollId={editingId}
+                                initialData={{ id: editingId, candidates: editingCandidates as any, groups: editingGroups as any }}
+                                onRefresh={handleRefreshEditor}
+                              />
+                            </div>
+                          </>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Inline create dialog (replaces /admin/polls/create page) */}
+                  <Dialog open={createOpen} onOpenChange={(open) => {
+                    setCreateOpen(open);
+                    if (!open) {
+                      const url = new URL(window.location.href);
+                      url.searchParams.delete('create-poll');
+                      url.searchParams.delete('create');
+                      window.history.replaceState({}, '', url.pathname + (url.searchParams.toString() ? `?${url.searchParams.toString()}` : ''));
+                    }
+                  }}>
+                    <DialogContent dir="rtl" className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>إنشاء استبيان جديد</DialogTitle>
+                        <DialogDescription>
+                          أنشئ الاستبيان هنا، ثم أضف المجموعات والمرشحين من نفس اللوحة.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <form onSubmit={handleCreatePoll} className="space-y-4">
+                        <div className="grid gap-2">
+                          <Label htmlFor="create-poll-title">العنوان</Label>
+                          <Input
+                            id="create-poll-title"
+                            placeholder="مثال: تقييم الأداء الحكومي"
+                            value={createTitle}
+                            onChange={e => setCreateTitle(e.target.value)}
+                            required
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="create-poll-slug">المعرف (Slug)</Label>
+                          <Input
+                            id="create-poll-slug"
+                            placeholder="مثال: govt-2025"
+                            value={createSlug}
+                            onChange={e => setCreateSlug(e.target.value)}
+                            className="text-left font-mono"
+                            dir="ltr"
+                            required
+                          />
+                          <p className="text-[11px] text-muted-foreground">أحرف لاتينية صغيرة وأرقام وشرطات فقط. يُستخدم في رابط صفحة التصويت.</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            id="create-poll-active"
+                            checked={createActive}
+                            onCheckedChange={setCreateActive}
+                          />
+                          <Label htmlFor="create-poll-active">تفعيل الاستبيان فور الإنشاء</Label>
+                        </div>
+                        <DialogFooter className="flex-row-reverse gap-2">
+                          <Button type="button" variant="outline" size="sm" onClick={() => setCreateOpen(false)}>إلغاء</Button>
+                          <Button type="submit" size="sm" disabled={creating || !createTitle.trim() || !createSlug.trim()}>
+                            {creating ? 'جاري الإنشاء…' : 'إنشاء ومتابعة التحرير'}
+                          </Button>
+                        </DialogFooter>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               )}
 

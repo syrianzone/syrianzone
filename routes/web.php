@@ -82,9 +82,9 @@ Route::get('/syriafy/{any}', fn () => redirect('/', 301))->where('any', '.*');
 Route::get('/spotify/{any}', fn () => redirect('/', 301))->where('any', '.*');
 
 Route::get('/guesswho', [GuessWhoController::class, 'index']);
-Route::post('/guesswho/rooms', [GuessWhoController::class, 'createRoom']);
+Route::post('/guesswho/rooms', [GuessWhoController::class, 'createRoom'])->middleware('throttle:10,1');
 Route::get('/guesswho/room/{roomCode}', [GuessWhoController::class, 'showRoom']);
-Route::post('/guesswho/room/{roomCode}/join', [GuessWhoController::class, 'joinRoom']);
+Route::post('/guesswho/room/{roomCode}/join', [GuessWhoController::class, 'joinRoom'])->middleware('throttle:30,1');
 Route::post('/guesswho/room/{roomCode}/signal', [SignalingController::class, 'signal']);
 Route::post('/guesswho/broadcasting/auth', [GuessWhoController::class, 'authenticateBroadcasting']);
 
@@ -227,11 +227,13 @@ Route::middleware('auth')->group(function () {
     });
 
     // 2. Polls & General Admin Panel (accessible to core admins and superadmins)
-    Route::middleware('admin')->group(function () {
-        Route::get('/admin/polls', [PollController::class, 'renderIndex']);
-        Route::get('/admin/polls/create', [PollController::class, 'adminCreate']);
-        Route::get('/admin/polls/{id}/edit', [PollController::class, 'adminEdit']);
-
+    // Poll management lives in the unified user dashboard (/dashboard polls tab).
+    // The legacy /admin/polls/* pages were removed to avoid a duplicate editor;
+    // keep redirects so old bookmarks/links land on the dashboard editor.
+    Route::redirect('/admin/polls', '/dashboard', 301);
+    Route::redirect('/admin/polls/create', '/dashboard?create-poll=1', 301);
+    Route::redirect('/admin/polls/{id}/edit', '/dashboard?edit-poll={id}', 301);
+    Route::middleware('polls_admin')->group(function () {
         Route::prefix('api')->group(function () {
             Route::post('/polls', [PollController::class, 'store']);
             Route::put('/polls/{id}', [PollController::class, 'update']);
@@ -245,10 +247,9 @@ Route::middleware('auth')->group(function () {
             Route::patch('/candidates/{id}/archive', [\App\Http\Controllers\CandidateController::class, 'archive']);
             Route::patch('/candidates/{id}/restore', [\App\Http\Controllers\CandidateController::class, 'restore']);
         });
+    });
 
-        // Hidden Places moderation
-        Route::get('/admin/places', [\App\Http\Controllers\PlaceAdminController::class, 'renderIndex']);
-
+    Route::middleware('admin')->group(function () {
         // Guess Who content management (migrated from Filament)
         Route::get('/admin/guesswho', [\App\Http\Controllers\GuessWhoAdminController::class, 'renderIndex']);
 
@@ -263,6 +264,11 @@ Route::middleware('auth')->group(function () {
             Route::put('/characters/{id}', [\App\Http\Controllers\GuessWhoAdminController::class, 'updateCharacter'])->whereNumber('id');
             Route::delete('/characters/{id}', [\App\Http\Controllers\GuessWhoAdminController::class, 'destroyCharacter'])->whereNumber('id');
         });
+    });
+
+    // 2b. Hidden Places moderation (core admins, superadmins, places.* holders)
+    Route::middleware('places_admin')->group(function () {
+        Route::get('/admin/places', [\App\Http\Controllers\PlaceAdminController::class, 'renderIndex']);
 
         Route::prefix('api/v1')->middleware('throttle:60,1')->group(function () {
             Route::get('/admin/places', [\App\Http\Controllers\PlaceAdminController::class, 'index']);
@@ -277,7 +283,8 @@ Route::middleware('auth')->group(function () {
         });
     });
 
-    // 3. Transit Admin Panel (accessible to core admins, transit admins, and superadmins)
+    // 3. Transit Admin Panel. The page shell needs any review capability;
+    // mutating endpoints require the matching granular transit.* permission.
     Route::middleware('transit_admin')->group(function () {
         Route::get('/transit/admin', function () {
             return Inertia::render('Transit/admin/Index');
@@ -286,19 +293,31 @@ Route::middleware('auth')->group(function () {
         Route::post('/api/admin/users/{id}/toggle-ban', [DashboardController::class, 'toggleBan']);
 
         Route::prefix('api/v1')->group(function () {
-            Route::get('/admin/route-drafts', [\App\Http\Controllers\TransitAdminController::class, 'index']);
-            Route::post('/admin/route-drafts/{id}/approve', [\App\Http\Controllers\TransitAdminController::class, 'approve']);
-            Route::post('/admin/route-drafts/{id}/reject', [\App\Http\Controllers\TransitAdminController::class, 'reject']);
+            Route::get('/admin/route-drafts', [\App\Http\Controllers\TransitAdminController::class, 'index'])
+                ->middleware('transit_admin:transit.review_drafts');
+            Route::post('/admin/route-drafts/{id}/approve', [\App\Http\Controllers\TransitAdminController::class, 'approve'])
+                ->middleware('transit_admin:transit.approve');
+            Route::post('/admin/route-drafts/{id}/reject', [\App\Http\Controllers\TransitAdminController::class, 'reject'])
+                ->middleware('transit_admin:transit.reject');
 
-            Route::get('/admin/routes', [\App\Http\Controllers\TransitAdminController::class, 'getPublishedRoutes']);
-            Route::get('/admin/routes/logs', [\App\Http\Controllers\TransitAdminController::class, 'getLogs']);
-            Route::get('/admin/routes/{id}/geojson', [\App\Http\Controllers\TransitAdminController::class, 'getRouteGeoJson']);
-            Route::post('/admin/routes/{id}/status', [\App\Http\Controllers\TransitAdminController::class, 'updateRouteStatus']);
-            Route::put('/admin/routes/{id}', [\App\Http\Controllers\TransitAdminController::class, 'updateRoute']);
-            Route::post('/admin/routes/{id}/move', [\App\Http\Controllers\TransitAdminController::class, 'moveRoute']);
-            Route::post('/admin/routes/combine', [\App\Http\Controllers\TransitAdminController::class, 'combineRoutes']);
-            Route::post('/admin/routes/split', [\App\Http\Controllers\TransitAdminController::class, 'splitRoute']);
-            Route::get('/admin/routes/{id}/stops', [\App\Http\Controllers\TransitAdminController::class, 'getRouteStops']);
+            Route::get('/admin/routes', [\App\Http\Controllers\TransitAdminController::class, 'getPublishedRoutes'])
+                ->middleware('transit_admin:transit.review_drafts');
+            Route::get('/admin/routes/logs', [\App\Http\Controllers\TransitAdminController::class, 'getLogs'])
+                ->middleware('transit_admin:transit.review_drafts');
+            Route::get('/admin/routes/{id}/geojson', [\App\Http\Controllers\TransitAdminController::class, 'getRouteGeoJson'])
+                ->middleware('transit_admin:transit.review_drafts');
+            Route::post('/admin/routes/{id}/status', [\App\Http\Controllers\TransitAdminController::class, 'updateRouteStatus'])
+                ->middleware('transit_admin:transit.edit_routes');
+            Route::put('/admin/routes/{id}', [\App\Http\Controllers\TransitAdminController::class, 'updateRoute'])
+                ->middleware('transit_admin:transit.edit_routes');
+            Route::post('/admin/routes/{id}/move', [\App\Http\Controllers\TransitAdminController::class, 'moveRoute'])
+                ->middleware('transit_admin:transit.edit_routes');
+            Route::post('/admin/routes/combine', [\App\Http\Controllers\TransitAdminController::class, 'combineRoutes'])
+                ->middleware('transit_admin:transit.edit_routes');
+            Route::post('/admin/routes/split', [\App\Http\Controllers\TransitAdminController::class, 'splitRoute'])
+                ->middleware('transit_admin:transit.edit_routes');
+            Route::get('/admin/routes/{id}/stops', [\App\Http\Controllers\TransitAdminController::class, 'getRouteStops'])
+                ->middleware('transit_admin:transit.review_drafts');
         });
     });
 

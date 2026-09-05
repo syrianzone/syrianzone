@@ -53,7 +53,7 @@ Generated from `routes/web.php` and `routes/api.php`. Grouped by feature area, m
 
 | Area | Pages | API |
 |---|---|---|
-| Polls | `/admin/polls(/create|/{id}/edit)` | `POST|PUT|DELETE /api/polls*`; candidate-groups apiResource (+reorder, setDefault); candidates apiResource (+archive/restore) |
+| Polls | `/dashboard` polls tab (inline create + edit; legacy `/admin/polls*` 301-redirects to dashboard) | `POST|PUT|DELETE /api/polls*`; candidate-groups apiResource (+reorder, setDefault); candidates apiResource (+archive/restore) |
 | Places | `/admin/places` | approve/reject/update/delete + photo add/rotate/replace/delete under `/api/v1/admin/place(s|-photos)` |
 | Transit | `/transit/admin` | draft approve/reject; published-route CRUD incl. geojson, stops, logs, move, combine, split, status; `POST /api/admin/users/{id}/toggle-ban` |
 | SyOfficial | Admin page | categories/entities CRUD + reorder under `/api/v1/admin/syofficial/*` |

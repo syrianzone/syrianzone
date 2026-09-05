@@ -35,7 +35,8 @@ interface PollShowProps {
 
 export default function Show({ poll, candidates, groups, voteDay }: PollShowProps) {
     const { auth } = usePage().props as any;
-    const isAdmin = !!auth?.user;
+    const role = auth?.user?.role as string | undefined;
+    const isAdmin = role === 'admin' || role === 'superadmin';
 
     return (
         <MainLayout>
@@ -51,7 +52,7 @@ export default function Show({ poll, candidates, groups, voteDay }: PollShowProp
                     <div className="max-w-screen-lg mx-auto mb-4 flex justify-between items-center">
                         {isAdmin && (
                             <Button asChild variant="outline" size="sm">
-                                <Link href={`/admin/polls/${poll.id}/edit`}>
+                                <Link href={`/dashboard?edit-poll=${poll.id}`}>
                                     <Edit className="mr-2 h-4 w-4" />
                                     Edit Poll
                                 </Link>

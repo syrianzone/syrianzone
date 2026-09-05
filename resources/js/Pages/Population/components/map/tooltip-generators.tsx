@@ -1,7 +1,16 @@
 import { getCanonicalCityName } from '@/Lib/city-name-standardizer';
 
+export function escapeHtml(v: unknown): string {
+    return String(v ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 export function generateRainChartHtml(name: string, data: any[]) {
-    const displayName = getCanonicalCityName(name);
+    const displayName = escapeHtml(getCanonicalCityName(name));
     const sorted = [...data].sort((a, b) => a.year - b.year);
     const maxVal = Math.max(...sorted.map(d => d.rainfall));
 
@@ -42,26 +51,27 @@ export function generateRainChartHtml(name: string, data: any[]) {
 }
 
 export function generatePopulationTooltipHtml(name: string, value: number, label: string) {
-    const displayName = getCanonicalCityName(name);
+    const displayName = escapeHtml(getCanonicalCityName(name));
     const valueStr = value ? value.toLocaleString('en-US') : 'لا توجد بيانات';
+    const safeLabel = escapeHtml(label);
 
     return `
         <div class="text-right" style="font-family: var(--site-font, inherit);">
             <div class="font-bold text-base mb-1">${displayName}</div>
-            <div class="text-sm">${label}: ${valueStr}</div>
+            <div class="text-sm">${safeLabel}: ${valueStr}</div>
         </div>
     `;
 }
 
 export function generateEnvironmentalTooltipHtml(name: string, data: any) {
-    const displayName = getCanonicalCityName(name);
+    const displayName = escapeHtml(getCanonicalCityName(name));
     const temp = data.current_conditions?.temperature_celsius || 0;
     const feelsLike = data.current_conditions?.feels_like_celsius || temp;
     const humidity = data.current_conditions?.humidity_percent || 0;
     const windSpeed = data.current_conditions?.wind_speed_kmh || 0;
-    const weatherDesc = data.current_conditions?.weather_description || '';
+    const weatherDesc = escapeHtml(data.current_conditions?.weather_description || '');
     const aqi = data.air_quality?.estimated_aqi || 0;
-    const droughtRisk = data.drought_risk?.drought_risk || 'N/A';
+    const droughtRisk = escapeHtml(data.drought_risk?.drought_risk || 'N/A');
 
     // Weather icon based on description
     let weatherIcon = '☀️';
@@ -73,14 +83,12 @@ export function generateEnvironmentalTooltipHtml(name: string, data: any) {
     else if (desc.includes('fog') || desc.includes('mist')) weatherIcon = '🌫️';
     else if (desc.includes('thunder') || desc.includes('storm')) weatherIcon = '⚡';
 
-    // Temperature color
+    // Temperature color — same 4 bands as getTemperatureColor() in map-styles.ts
+    // so the tooltip number matches the polygon fill.
     let tempColor = '#22d3ee'; // cyan
-    if (temp <= 5) tempColor = '#3b82f6';
-    else if (temp <= 10) tempColor = '#06b6d4';
-    else if (temp <= 15) tempColor = '#14b8a6';
+    if (temp < 10) tempColor = '#3b82f6';
     else if (temp <= 20) tempColor = '#22c55e';
-    else if (temp <= 25) tempColor = '#eab308';
-    else if (temp <= 30) tempColor = '#f97316';
+    else if (temp <= 30) tempColor = '#eab308';
     else tempColor = '#ef4444';
 
     // AQI color

@@ -9,6 +9,7 @@ import { Button } from "@/Components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/Components/ui/select";
 import { Card, CardContent } from "@/Components/ui/card";
 import MainLayout from '@/Layouts/MainLayout';
+import axios from '@/Lib/axios';
 import { applyTheme as persistTheme, getThemePreference, resolveTheme, SYSTEM_THEME, isDarkTheme } from '@/lib/theme';
 import { applyFont, getFontPreference, FontPreference } from '@/Lib/font';
 import { ThemeToggle } from '@/Components/ThemeToggle';
@@ -173,14 +174,42 @@ export default function Home() {
     // Theme & Font state
     const [fontFamily, setFontFamily] = useState<FontPreference>('ibm-plex');
 
-    const saveAccountSettings = async (partialSettings: Record<string, any>) => {
+    // Debounced account-settings saver: per-keystroke POSTs (lat/lon, toggles)
+    // previously hit /api/user/settings unthrottled. Coalesce partials over
+    // 500ms so rapid toggles collapse into one request.
+    const pendingSettings = React.useRef<Record<string, any>>({});
+    const saveTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const flushAccountSettings = async () => {
         if (!user) return;
+        const payload = pendingSettings.current;
+        pendingSettings.current = {};
+        if (Object.keys(payload).length === 0) return;
         try {
-            await axios.post('/api/user/settings', { settings: partialSettings });
+            await axios.post('/api/user/settings', { settings: payload });
         } catch (e) {
             console.error('Failed to save settings to account', e);
         }
     };
+
+    const saveAccountSettings = (partialSettings: Record<string, any>) => {
+        if (!user) return;
+        pendingSettings.current = { ...pendingSettings.current, ...partialSettings };
+        if (saveTimer.current) clearTimeout(saveTimer.current);
+        saveTimer.current = setTimeout(() => { void flushAccountSettings(); }, 500);
+    };
+
+    useEffect(() => {
+        const flush = () => { void flushAccountSettings(); };
+        window.addEventListener('visibilitychange', flush);
+        window.addEventListener('beforeunload', flush);
+        return () => {
+            window.removeEventListener('visibilitychange', flush);
+            window.removeEventListener('beforeunload', flush);
+            if (saveTimer.current) clearTimeout(saveTimer.current);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.id]);
 
     // Load settings from localStorage
     useEffect(() => {
@@ -437,10 +466,15 @@ export default function Home() {
 
         let url = searchUrls[searchEngine] || searchUrls.duckduckgo;
         if (searchEngine === 'custom' && customSearchUrl) {
-            if (customSearchUrl.includes('%s')) {
-                url = customSearchUrl.replace('%s', encodeURIComponent(searchQuery));
-            } else {
-                url = `${customSearchUrl}${encodeURIComponent(searchQuery)}`;
+            const trimmed = customSearchUrl.trim();
+            // Only honor http(s) custom engines; a stored javascript: URL must
+            // never reach window.open (persisted XSS via settings).
+            if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+                if (trimmed.includes('%s')) {
+                    url = trimmed.replace('%s', encodeURIComponent(searchQuery));
+                } else {
+                    url = `${trimmed}${encodeURIComponent(searchQuery)}`;
+                }
             }
         }
 
@@ -728,6 +762,7 @@ export default function Home() {
                                 {customLinks.map((link) => {
                                     const useFavicon = !link.icon || link.icon === '🔗';
                                     const faviconUrl = getFaviconUrl(link.url);
+                                    const safeUrl = typeof link.url === 'string' && (link.url.startsWith('http://') || link.url.startsWith('https://')) ? link.url : null;
 
                                     return (
                                         <div key={link.id} className="relative group">
@@ -760,9 +795,9 @@ export default function Home() {
                                                         </CardContent>
                                                     </Card>
                                                 </div>
-                                            ) : (
+                                            ) : safeUrl ? (
                                                 <a
-                                                    href={link.url}
+                                                    href={safeUrl}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="block h-full group"
@@ -791,6 +826,16 @@ export default function Home() {
                                                         </CardContent>
                                                     </Card>
                                                 </a>
+                                            ) : (
+                                                <div className="block h-full group opacity-60">
+                                                    <Card className="h-full border-border bg-card">
+                                                        <CardContent className="p-4 flex flex-col items-center text-center gap-3">
+                                                            <span className="text-sm font-medium text-foreground line-clamp-2">
+                                                                {link.name}
+                                                            </span>
+                                                        </CardContent>
+                                                    </Card>
+                                                </div>
                                             )}
 
                                             {editMode && (

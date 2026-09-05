@@ -221,16 +221,21 @@ const ContributorsList = ({
 export default function SyrianContributorsPage() {
   const [contributors, setContributors] = useState<Contributor[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [isEagleLogo, setIsEagleLogo] = useState(false)
 
   useEffect(() => {
     const fetchContributors = async () => {
       try {
         const response = await fetch(`/contributors.json`)
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json()
+        if (!Array.isArray(data)) throw new Error('Invalid payload');
         setContributors(data)
+        setLoadError(null)
       } catch (error) {
         console.error("Error fetching contributors:", error)
+        setLoadError('تعذر تحميل بيانات المساهمين. تحقق من الاتصال وحاول مجدداً.')
       } finally {
         setLoading(false)
       }
@@ -254,6 +259,23 @@ export default function SyrianContributorsPage() {
           <p className="text-xl text-muted-foreground">جاري تحميل البيانات...</p>
         </div>
       </div>
+    )
+  }
+
+  if (loadError || contributors.length === 0) {
+    return (
+      <MainLayout>
+        <Head>
+          <title>أفضل المساهمين السوريين في GitHub</title>
+        </Head>
+        <div className="min-h-screen flex items-center justify-center bg-background p-6">
+          <div className="text-center max-w-md">
+            <p className="text-xl text-foreground mb-2">لا توجد بيانات لعرضها حالياً</p>
+            <p className="text-muted-foreground mb-4">{loadError ?? 'ملف المساهمين فارغ. حاول مجدداً لاحقاً.'}</p>
+            <Button onClick={() => window.location.reload()}>إعادة المحاولة</Button>
+          </div>
+        </div>
+      </MainLayout>
     )
   }
 

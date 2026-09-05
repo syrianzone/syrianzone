@@ -25,6 +25,10 @@ class AssetUploadController extends Controller
     {
         $cfg = config('filesystems.disks.r2');
 
+        if (empty($cfg['endpoint']) || empty($cfg['key']) || empty($cfg['secret']) || empty($cfg['bucket'])) {
+            abort(503, 'R2 storage is not configured.');
+        }
+
         return new S3Client([
             'version'                 => 'latest',
             'region'                  => $cfg['region'] ?? 'auto',
@@ -48,9 +52,14 @@ class AssetUploadController extends Controller
      */
     public function list(Request $request)
     {
-        $cursor  = $request->input('cursor');          // null = first page
-        $perPage = min((int) $request->input('per_page', 50), 200);
-        $refresh = $request->boolean('refresh');
+        $validated = $request->validate([
+            'cursor' => 'nullable|string|max:2048',
+            'per_page' => 'nullable|integer|min:1|max:200',
+            'refresh' => 'nullable|boolean',
+        ]);
+        $cursor  = $validated['cursor'] ?? null;
+        $perPage = min((int) ($validated['per_page'] ?? 50), 200);
+        $refresh = (bool) ($validated['refresh'] ?? false);
 
         // Only cache the first page (no cursor); deep pages are cheap anyway.
         $isFirstPage = empty($cursor);
@@ -109,9 +118,16 @@ class AssetUploadController extends Controller
         };
 
         // Cache only the first page for 5 minutes.
-        $result = $isFirstPage
-            ? Cache::remember($cacheKey, 300, $fetch)
-            : $fetch();
+        try {
+            $result = $isFirstPage
+                ? Cache::remember($cacheKey, 300, $fetch)
+                : $fetch();
+        } catch (\Throwable $e) {
+            // A tampered cursor (ContinuationToken) throws inside the SDK —
+            // surface a 422, not a 500.
+            report($e);
+            return response()->json(['success' => false, 'message' => 'Invalid cursor.'], 422);
+        }
 
         return response()->json([
             'success'     => true,
@@ -170,19 +186,75 @@ class AssetUploadController extends Controller
     public function destroy(Request $request)
     {
         $request->validate([
-            'path' => 'required|string',
+            'path' => 'required|string|max:1024',
         ]);
 
-        $path = $request->input('path');
+        $path = trim($request->input('path'), '/');
+
+        // Allowlist: keys must live under a known top-level folder and must
+        // not traverse. Without this any superadmin session (or CSRF'd browser)
+        // could delete avatars, entity icons, or the brandkit zip.
+        $allowed = ['uploads', 'downloads', 'tierlist', 'syofficial', 'govapps', 'avatars', 'guesswho', 'places'];
+        $top = explode('/', $path)[0] ?? '';
+        if (str_contains($path, '..') || !in_array($top, $allowed, true)) {
+            return response()->json(['success' => false, 'message' => 'This path cannot be deleted.'], 422);
+        }
+
         $disk = Storage::disk('r2');
 
         if ($disk->exists($path)) {
             $disk->delete($path);
             Cache::forget(self::FIRST_PAGE_CACHE_KEY);
+            \Illuminate\Support\Facades\Log::info('R2 asset deleted', [
+                'path' => $path,
+                'by' => $request->user()?->id,
+            ]);
             return response()->json(['success' => true, 'message' => 'تم حذف الملف بنجاح']);
         }
 
         return response()->json(['success' => false, 'message' => 'الملف غير موجود'], 404);
+    }
+
+    /**
+     * Server-side manifest of all R2 keys (paginated through S3, no browser
+     * N-fetch). The Asset Manager "Download all" currently fetches every file
+     * body in the tab and zips with JSZip — OOM on large buckets. Clients
+     * should use this manifest to cap the selection (e.g. first 200) or drive
+     * a future server-side streaming zip.
+     */
+    public function manifest(Request $request)
+    {
+        $validated = $request->validate([
+            'prefix' => 'nullable|string|max:100',
+            'max_keys' => 'nullable|integer|min:1|max:2000',
+        ]);
+        $prefix = preg_replace('/[^a-zA-Z0-9_\-\/]/', '', $validated['prefix'] ?? '') ?: null;
+        $maxKeys = $validated['max_keys'] ?? 1000;
+
+        try {
+            $cfg = config('filesystems.disks.r2');
+            $client = $this->r2Client();
+            $disk = Storage::disk('r2');
+
+            $keys = [];
+            $token = null;
+            do {
+                $params = ['Bucket' => $cfg['bucket'], 'MaxKeys' => 1000];
+                if ($prefix) $params['Prefix'] = $prefix;
+                if ($token) $params['ContinuationToken'] = $token;
+                $res = $client->listObjectsV2($params);
+                foreach ($res['Contents'] ?? [] as $o) {
+                    $keys[] = ['path' => $o['Key'], 'size' => (int) ($o['Size'] ?? 0), 'url' => $disk->url($o['Key'])];
+                    if (count($keys) >= $maxKeys) break 2;
+                }
+                $token = ($res['IsTruncated'] ?? false) ? ($res['NextContinuationToken'] ?? null) : null;
+            } while ($token);
+
+            return response()->json(['success' => true, 'count' => count($keys), 'files' => $keys]);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['success' => false, 'message' => 'Failed to build manifest.'], 503);
+        }
     }
 }
 

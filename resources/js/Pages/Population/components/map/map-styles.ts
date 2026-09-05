@@ -50,7 +50,17 @@ export function getFeatureStyle(
         const envData = environmentalData.cities?.[nameAr] || environmentalData.cities?.[englishName] || environmentalData.cities?.[name];
 
         if (envData) {
-            const temp = envData.current_conditions?.temperature_celsius || 15;
+            const temp = envData.current_conditions?.temperature_celsius;
+            if (temp === null || temp === undefined || Number.isNaN(Number(temp))) {
+                return {
+                    fillColor: '#1e293b',
+                    weight: 1,
+                    opacity: 0.5,
+                    color: '#334155',
+                    fillOpacity: 0.3,
+                    className: ''
+                };
+            }
             return {
                 fillColor: getTemperatureColor(temp),
                 weight: 1.5,
@@ -75,7 +85,8 @@ export function getFeatureStyle(
     if (currentDataType === DATA_TYPES.RAINFALL) {
         const rData = findRainData(feature, rainfallData);
         if (rData && rData.length > 0) {
-            const target = rData.find((x: any) => x.year === 2024) || rData[rData.length - 1];
+            // Use the latest available year, not a pinned calendar year.
+            const target = [...rData].sort((a: any, b: any) => a.year - b.year)[rData.length - 1];
             value = target.rainfall;
         }
         
@@ -91,8 +102,12 @@ export function getFeatureStyle(
         };
     }
 
-    // Population/IDP Data Style
-    value = findPopulation(feature.properties.province_name, populationData);
+    // Population/IDP Data Style — reuse the multi-key lookup so features
+    // lacking exactly `province_name` still resolve.
+    value = findPopulation(
+        feature.properties.province_name || feature.properties.ADM2_AR || feature.properties.ADM1_AR || feature.properties.Name,
+        populationData
+    );
     const fillColor = getColor(value, currentDataType, customThresholds);
 
     return {

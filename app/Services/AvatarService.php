@@ -31,7 +31,14 @@ class AvatarService
 
     $old = $user->avatar_url;
     $newUrl = $this->publicUrl($disk, $path);
-    $user->update(['avatar_url' => $newUrl]);
+    try {
+      $user->update(['avatar_url' => $newUrl]);
+    } catch (\Throwable $e) {
+      // The file is already on disk but the row did not update: remove the
+      // orphan so a failed upload does not leak R2 objects.
+      $disk->delete($path);
+      throw $e;
+    }
 
     // Only delete files we host; anything else (Google lh3 urls, null) is left
     // alone. Ownership is structural (/avatars/{id}/ in the url path) rather
@@ -46,6 +53,25 @@ class AvatarService
     }
 
     return $newUrl;
+  }
+
+  /**
+   * Delete all hosted avatar files for a user. Called on account deletion so
+   * avatars/{id}/* does not orphan on R2 (the privacy policy promises full
+   * profile erasure; Google lh3 URLs are remote and need no cleanup).
+   */
+  public function deleteForUser(User $user): void
+  {
+    $disk = Storage::disk(config('filesystems.media_disk'));
+    $prefix = "avatars/{$user->id}/";
+    try {
+      $files = $disk->files($prefix);
+      if (!empty($files)) {
+        $disk->delete($files);
+      }
+    } catch (\Throwable $e) {
+      report($e);
+    }
   }
 
   /**

@@ -25,6 +25,7 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
     const [data, setData] = useState<HouseRow[]>(initialData);
     const [headers, setHeaders] = useState<string[]>(initialHeaders);
     const [loading, setLoading] = useState(false);
+    const [loadError, setLoadError] = useState<string | null>(null);
 
     // Filters
     const [searchInput, setSearchInput] = useState('');
@@ -47,14 +48,19 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
         let active = true;
         const fetchData = async () => {
             setLoading(true);
+            setLoadError(null);
             try {
                 const res = await fetchHouseData(mode, province);
                 if (active) {
                     setData(res.rows);
                     setHeaders(res.headers);
+                    if (res.rows.length === 0) {
+                        setLoadError('تعذر تحميل البيانات (المصدر فارغ أو غير متاح). حاول مجدداً لاحقاً.');
+                    }
                 }
             } catch (err) {
                 console.error(err);
+                if (active) setLoadError('تعذر تحميل البيانات. تحقق من الاتصال وحاول مجدداً.');
             } finally {
                 if (active) setLoading(false);
             }
@@ -390,18 +396,18 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                     <div className="bg-card p-4 rounded-lg shadow-sm border border-border text-center">
                         <div className="text-xs text-muted-foreground mb-1">ذكور</div>
                         <div className="text-2xl font-bold text-foreground">{stats.male}</div>
-                        <div className="text-xs text-muted-foreground/60">{((stats.male / stats.total) * 100).toFixed(1)}%</div>
+                        <div className="text-xs text-muted-foreground/60">{stats.total > 0 ? ((stats.male / stats.total) * 100).toFixed(1) : '0.0'}%</div>
                     </div>
                     <div className="bg-card p-4 rounded-lg shadow-sm border border-border text-center">
                         <div className="text-xs text-muted-foreground mb-1">إناث</div>
                         <div className="text-2xl font-bold text-foreground">{stats.female}</div>
-                        <div className="text-xs text-muted-foreground/60">{((stats.female / stats.total) * 100).toFixed(1)}%</div>
+                        <div className="text-xs text-muted-foreground/60">{stats.total > 0 ? ((stats.female / stats.total) * 100).toFixed(1) : '0.0'}%</div>
                     </div>
                     {mode === 'voters' && (
                         <div className="bg-card p-4 rounded-lg shadow-sm border border-border text-center">
                             <div className="text-xs text-muted-foreground mb-1">مطعونين</div>
                             <div className="text-2xl font-bold text-destructive">{stats.appealed}</div>
-                            <div className="text-xs text-muted-foreground/60">{((stats.appealed / stats.total) * 100).toFixed(1)}%</div>
+                            <div className="text-xs text-muted-foreground/60">{stats.total > 0 ? ((stats.appealed / stats.total) * 100).toFixed(1) : '0.0'}%</div>
                         </div>
                     )}
                 </div>
@@ -490,6 +496,13 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                     </div>
                     {loading && <div className="text-sm text-primary font-medium animate-pulse">جاري التحميل...</div>}
                 </div>
+
+                {loadError && sortedData.length === 0 && !loading && (
+                    <div className="px-6 py-4 bg-destructive/10 border-b border-destructive/30 text-destructive text-sm flex items-center justify-between gap-3">
+                        <span>{loadError}</span>
+                        <button onClick={() => window.location.reload()} className="underline font-bold">إعادة المحاولة</button>
+                    </div>
+                )}
 
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-border">

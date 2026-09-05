@@ -24,12 +24,14 @@ export default function EditLinkDialog({
     const [name, setName] = useState('');
     const [url, setUrl] = useState('');
     const [icon, setIcon] = useState('');
+    const [urlError, setUrlError] = useState('');
 
     useEffect(() => {
         if (link) {
             setName(link.name || '');
             setUrl(link.url || '');
             setIcon(link.icon === '🔗' ? '' : (link.icon || ''));
+            setUrlError('');
         }
     }, [link]);
 
@@ -37,12 +39,19 @@ export default function EditLinkDialog({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!name || !url) return;
+        const trimmedName = name.trim();
+        const trimmedUrl = url.trim();
+        if (!trimmedName || !trimmedUrl) return;
+        if (!(trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://'))) {
+            setUrlError(language === 'ar' ? 'الرابط يجب أن يبدأ بـ http:// أو https://' : 'URL must start with http:// or https://');
+            return;
+        }
+        setUrlError('');
 
         onSave({
             ...link,
-            name,
-            url,
+            name: trimmedName,
+            url: trimmedUrl,
             icon: icon.trim()
         });
 
@@ -75,10 +84,11 @@ export default function EditLinkDialog({
                         <Input
                             type="url"
                             value={url}
-                            onChange={(e) => setUrl(e.target.value)}
+                            onChange={(e) => { setUrl(e.target.value); if (urlError) setUrlError(''); }}
                             placeholder="https://example.com"
                             required
                         />
+                        {urlError && <p className="text-xs text-destructive">{urlError}</p>}
                     </div>
                     <div className="space-y-2">
                         <Label>{language === 'ar' ? 'أيقونة أو Emoji (اختياري - اتركها فارغة لجلب أيقونة الموقع تلقائياً)' : 'Icon or Emoji (optional - leave empty for website favicon)'}</Label>

@@ -154,7 +154,20 @@ class SitemapBuilder
             '/polls' => $this->latestOf([Poll::where('is_active', true)->max('updated_at')]),
             '/tierlist' => $tierListPoll ? $this->pollLastmod($tierListPoll) : null,
             '/tierlist/leaderboard' => $tierListPoll ? $this->leaderboardLastmod($tierListPoll->id) : null,
+            // Sheet-backed pages: last successful fetch time, not a deploy stamp.
+            '/party' => $this->cacheTime('external_party_data_fetched_at'),
+            '/sites' => $this->cacheTime('external_sites_data_fetched_at'),
         ]);
+    }
+
+    private function cacheTime(string $key): ?Carbon
+    {
+        try {
+            $v = \Illuminate\Support\Facades\Cache::get($key);
+            return $v ? Carbon::parse($v) : null;
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**

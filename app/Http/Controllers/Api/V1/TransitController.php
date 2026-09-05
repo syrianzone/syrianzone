@@ -52,19 +52,23 @@ class TransitController extends Controller
     public function getRoutes($id)
     {
         $cityIds = ($id === 'damascus' || $id === 'rif-dimashq') ? ['damascus', 'rif-dimashq'] : [$id];
-        $routes = Route::whereIn('city_id', $cityIds)->where('status', 'published')->withCount('stops')->get();
-        return response()->json($routes->map(function ($r) {
-            return [
-                'id' => $r->id,
-                'cityId' => $r->city_id,
-                'nameAr' => $r->name_ar,
-                'nameEn' => $r->name_en,
-                'colorIndex' => $r->color_index,
-                'priceOld' => $r->price_old,
-                'priceNew' => $r->price_new,
-                'stopsCount' => $r->stops_count,
-            ];
-        }));
+        $cacheKey = 'transit:routes:' . implode('+', $cityIds);
+        $mapped = Cache::remember($cacheKey, 600, function () use ($cityIds) {
+            $routes = Route::whereIn('city_id', $cityIds)->where('status', 'published')->withCount('stops')->select('id', 'city_id', 'name_ar', 'name_en', 'color_index', 'price_old', 'price_new')->get();
+            return $routes->map(function ($r) {
+                return [
+                    'id' => $r->id,
+                    'cityId' => $r->city_id,
+                    'nameAr' => $r->name_ar,
+                    'nameEn' => $r->name_en,
+                    'colorIndex' => $r->color_index,
+                    'priceOld' => $r->price_old,
+                    'priceNew' => $r->price_new,
+                    'stopsCount' => $r->stops_count,
+                ];
+            })->all();
+        });
+        return response()->json($mapped);
     }
 
     public function getMapData($id)
@@ -155,8 +159,20 @@ class TransitController extends Controller
         // causing ST_Distance_Sphere to error out on every request.
         $pointJson = json_encode(['type' => 'Point', 'coordinates' => [(float) $lng, (float) $lat]]);
 
+        // Bounding-box prefilter so the spatial full-scan only runs on nearby
+        // rows: 1° lat ≈ 111km, lng scaled by cos(lat). The exact radius check
+        // below remains authoritative; this only narrows candidates.
+        $latDelta = $radius / 111000;
+        $lngDelta = $radius / max(111000 * cos(deg2rad((float) $lat)), 20000);
+        $minLat = (float) $lat - $latDelta;
+        $maxLat = (float) $lat + $latDelta;
+        $minLng = (float) $lng - $lngDelta;
+        $maxLng = (float) $lng + $lngDelta;
+
         $stops = DB::table('stops')
             ->select('id', 'name_ar', 'city_id', DB::raw('ST_AsGeoJSON(geometry) as geojson'))
+            ->whereBetween(DB::raw('ST_Y(geometry)'), [$minLat, $maxLat])
+            ->whereBetween(DB::raw('ST_X(geometry)'), [$minLng, $maxLng])
             ->whereRaw("ST_Distance_Sphere(geometry, ST_GeomFromGeoJSON(?)) <= ?", [$pointJson, $radius])
             ->get();
 

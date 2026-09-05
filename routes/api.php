@@ -21,8 +21,8 @@ Route::middleware('throttle:voting')->group(function () {
 Route::get('/contributors', [ContributorController::class, 'index'])->middleware('throttle:60,1');
 Route::get('/contributors/{contributor}', [ContributorController::class, 'show'])->middleware('throttle:60,1');
 
-Route::get('/population/master', [PopulationAtlasController::class, 'getData']);
-Route::get('/population/env-report', [PopulationAtlasController::class, 'getEnvironmentalDetails']);
+Route::get('/population/master', [PopulationAtlasController::class, 'getData'])->middleware('throttle:60,1');
+Route::get('/population/env-report', [PopulationAtlasController::class, 'getEnvironmentalDetails'])->middleware('throttle:60,1');
 
 
 
@@ -126,6 +126,8 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth')->group(function () {
         Route::get('/studio/routes/{id}', [\App\Http\Controllers\TransitStudioController::class, 'show']);
         Route::put('/studio/routes/{id}', [\App\Http\Controllers\TransitStudioController::class, 'update'])
+            ->middleware('throttle:10,1');
+        Route::delete('/studio/routes/{id}', [\App\Http\Controllers\TransitStudioController::class, 'destroy'])
             ->middleware('throttle:10,1');
         Route::get('/studio/routes/{id}/from-route', [\App\Http\Controllers\TransitStudioController::class, 'showForEdit']);
     });

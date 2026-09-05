@@ -140,6 +140,8 @@ class HalaSyriaService
     // touched this run (its last_synced_at predates it), so remove it.
     Hotel::where('last_synced_at', '<', $now)->delete();
 
+    \Illuminate\Support\Facades\Cache::forget('hotels:map');
+
     return $synced;
   }
 }

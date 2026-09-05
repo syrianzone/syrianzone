@@ -27,15 +27,28 @@ export default function AddLinkDialog({
     const [name, setName] = useState('');
     const [url, setUrl] = useState('');
     const [icon, setIcon] = useState('');
+    const [urlError, setUrlError] = useState('');
+
+    const isHttpUrl = (v: string) => {
+        const t = v.trim();
+        return t.startsWith('http://') || t.startsWith('https://');
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!name || !url) return;
+        const trimmedName = name.trim();
+        const trimmedUrl = url.trim();
+        if (!trimmedName || !trimmedUrl) return;
+        if (!isHttpUrl(trimmedUrl)) {
+            setUrlError(language === 'ar' ? 'الرابط يجب أن يبدأ بـ http:// أو https://' : 'URL must start with http:// or https://');
+            return;
+        }
+        setUrlError('');
 
         onAdd({
-            id: Date.now().toString(),
-            name,
-            url,
+            id: typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : Date.now().toString(),
+            name: trimmedName,
+            url: trimmedUrl,
             icon: icon.trim()
         });
 
@@ -66,10 +79,11 @@ export default function AddLinkDialog({
                         <Input
                             type="url"
                             value={url}
-                            onChange={(e) => setUrl(e.target.value)}
+                            onChange={(e) => { setUrl(e.target.value); if (urlError) setUrlError(''); }}
                             placeholder="https://example.com"
                             required
                         />
+                        {urlError && <p className="text-xs text-destructive">{urlError}</p>}
                     </div>
                     <div className="space-y-2">
                         <Label>{language === 'ar' ? 'أيقونة أو Emoji (اختياري - اتركها فارغة لجلب أيقونة الموقع تلقائياً)' : 'Icon or Emoji (optional - leave empty for website favicon)'}</Label>

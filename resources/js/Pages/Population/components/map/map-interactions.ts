@@ -2,7 +2,7 @@ import L from 'leaflet';
 import { DATA_TYPES, DATA_TYPE_CONFIG, CityData, RainfallData } from '../../types';
 import { getCanonicalCityName } from '@/Lib/city-name-standardizer';
 import { findPopulation, findRainData } from '../../utils/data-finder';
-import { generateRainChartHtml, generatePopulationTooltipHtml, generateEnvironmentalTooltipHtml } from './tooltip-generators';
+import { generateRainChartHtml, generatePopulationTooltipHtml, generateEnvironmentalTooltipHtml, escapeHtml } from './tooltip-generators';
 import { getHighlightStyle, getFeatureStyle } from './map-styles';
 
 type DataType = typeof DATA_TYPES[keyof typeof DATA_TYPES];
@@ -34,9 +34,10 @@ function buildTooltipHtml(
 
     if (currentDataType === DATA_TYPES.RAINFALL) {
         const rData = findRainData(feature, rainfallData);
+        const safeName = escapeHtml(nameAr);
         const content = rData
             ? generateRainChartHtml(nameAr, rData)
-            : `<div class="p-2 text-slate-300 text-xs text-right font-sans">لا توجد بيانات مطرية<br/><span class="font-bold text-white">${nameAr}</span></div>`;
+            : `<div class="p-2 text-slate-300 text-xs text-right font-sans">لا توجد بيانات مطرية<br/><span class="font-bold text-white">${safeName}</span></div>`;
         return { wrapperClass: 'glass-tooltip custom-tooltip-rain', content };
     }
 
@@ -44,9 +45,10 @@ function buildTooltipHtml(
         if (!environmentalData) return null;
         const englishName = ARABIC_TO_ENGLISH_CITY_MAP[nameAr] || nameAr;
         const envData = environmentalData.cities?.[nameAr] || environmentalData.cities?.[englishName] || environmentalData.cities?.[name];
+        const safeName = escapeHtml(nameAr);
         const content = envData
             ? generateEnvironmentalTooltipHtml(nameAr, envData)
-            : `<div class="p-2 text-slate-300 text-xs text-right font-sans">لا توجد بيانات بيئية<br/><span class="font-bold text-white">${nameAr}</span></div>`;
+            : `<div class="p-2 text-slate-300 text-xs text-right font-sans">لا توجد بيانات بيئية<br/><span class="font-bold text-white">${safeName}</span></div>`;
         return { wrapperClass: 'glass-tooltip custom-tooltip-env', content };
     }
 

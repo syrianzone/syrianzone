@@ -326,9 +326,8 @@ export default function CompassApp() {
             </Card>
 
             {/* Share Modal */}
-            <AnimatePresence>
-                {shareModalOpen && (
-                    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            {shareModalOpen && (
+                <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                         <Card className="max-w-md w-full shadow-2xl relative overflow-hidden">
                             <CardHeader>
                                 <div className="flex justify-between items-center">
@@ -363,7 +362,6 @@ export default function CompassApp() {
                         </Card>
                     </div>
                 )}
-            </AnimatePresence>
         </div>
     );
 }

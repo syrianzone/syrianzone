@@ -23,6 +23,10 @@ export function formatCompact(n: number): string {
 export function buildLegend(dataType: DataType, thresholds: number[]): { label: string; color: string }[] {
     const config = DATA_TYPE_CONFIG[dataType as keyof typeof DATA_TYPE_CONFIG];
     if (!config) return [];
+    // Environmental uses 4 temperature bands (cold/mild/warm/hot) via
+    // getTemperatureColor(), which does not fit the generic 3-bucket
+    // getColor() model — return the static legend so map + legend agree.
+    if (dataType === DATA_TYPES.ENVIRONMENTAL) return config.legend;
     const [t1, t2] = [thresholds[1], thresholds[2]];
     const unit = dataType === DATA_TYPES.RAINFALL ? ' مم' : '';
     return [

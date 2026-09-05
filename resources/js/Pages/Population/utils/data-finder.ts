@@ -2,6 +2,13 @@ import { CityData, RainfallData } from '../types';
 import { getCanonicalCityName, normalizeForMatching } from '@/Lib/city-name-standardizer';
 import { PROVINCE_TO_PCODE } from '../constants/province-mappings';
 
+// PROVINCE_TO_PCODE keys are hand-written (some with hyphens, e.g.
+// 'deir ez-zor') while normalizeForMatching() maps hyphens to spaces, so a
+// direct lookup misses. Normalize both sides once.
+const NORMALIZED_PCODE: Record<string, string> = Object.fromEntries(
+    Object.entries(PROVINCE_TO_PCODE).map(([k, v]) => [normalizeForMatching(k), v])
+);
+
 export function findPopulation(provinceName: string, populationData: CityData | null): number {
     if (!populationData) return 0;
 
@@ -41,7 +48,7 @@ export function findRainData(feature: any, rainData: RainfallData | undefined) {
                 const rawName = props[key];
                 const normalized = normalizeForMatching(rawName);
 
-                const mappedCode = PROVINCE_TO_PCODE[normalized];
+                const mappedCode = NORMALIZED_PCODE[normalized];
                 if (mappedCode && rainData[mappedCode]) {
                     return rainData[mappedCode];
                 }

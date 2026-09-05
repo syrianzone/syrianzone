@@ -6,7 +6,7 @@ import { Share2, RefreshCw, HelpCircle, ArrowRight, X, Check, Gamepad2 } from 'l
 import { Button } from '@/Components/ui/button';
 import { Card } from '@/Components/ui/card';
 import { Badge } from '@/Components/ui/badge';
-import axios from 'axios';
+import axios from '@/Lib/axios';
 import { getGuessWhoSessionId } from '@/Lib/guessWhoSession';
 import { initEcho } from '@/echo';
 
@@ -457,34 +457,62 @@ export default function GameRoom({ game }: GameProps) {
 
     const pc = peerConnection.current || createPeerConnection(e.senderSession);
 
-    // Decode base64-encoded SDP (encoded by sender to protect \r\n in transit)
-    const decodeSdp = (data: any): RTCSessionDescriptionInit => ({
-      type: data.type,
-      sdp: atob(data.sdp),
-    });
+    // SDP is sent as raw JSON (JSON safely carries \r\n). Older clients sent
+    // base64 via btoa(); accept both so a deploy doesn't break live rooms.
+    const decodeSdp = (data: any): RTCSessionDescriptionInit => {
+      const raw = data?.sdp;
+      if (typeof raw !== 'string') return data as RTCSessionDescriptionInit;
+      if (raw.includes('\n') || raw.includes('\r')) return { type: data.type, sdp: raw };
+      try {
+        return { type: data.type, sdp: atob(raw) };
+      } catch {
+        return { type: data.type, sdp: raw };
+      }
+    };
 
     if (e.type === 'offer') {
-      await pc.setRemoteDescription(new RTCSessionDescription(decodeSdp(e.data)));
+      try {
+        await pc.setRemoteDescription(new RTCSessionDescription(decodeSdp(e.data)));
+      } catch (err) {
+        console.error('[GuessWho] Invalid offer SDP, ignoring:', err);
+        return;
+      }
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
       sendSignal(e.senderSession, 'answer', answer);
       // Drain any candidates that arrived before the remote description was set
-      for (const candidate of iceCandidateQueue.current) {
-        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      for (const candidate of iceCandidateQueue.current.splice(0)) {
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (err) {
+          console.error('[GuessWho] Stale ICE candidate, ignoring:', err);
+        }
       }
-      iceCandidateQueue.current = [];
     } else if (e.type === 'answer') {
-      await pc.setRemoteDescription(new RTCSessionDescription(decodeSdp(e.data)));
-      // Drain any candidates that arrived before the remote description was set
-      for (const candidate of iceCandidateQueue.current) {
-        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      try {
+        await pc.setRemoteDescription(new RTCSessionDescription(decodeSdp(e.data)));
+      } catch (err) {
+        console.error('[GuessWho] Invalid answer SDP, ignoring:', err);
+        return;
       }
-      iceCandidateQueue.current = [];
+      // Drain any candidates that arrived before the remote description was set
+      for (const candidate of iceCandidateQueue.current.splice(0)) {
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (err) {
+          console.error('[GuessWho] Stale ICE candidate, ignoring:', err);
+        }
+      }
     } else if (e.type === 'candidate') {
       if (pc.remoteDescription) {
-        await pc.addIceCandidate(new RTCIceCandidate(e.data));
-      } else {
-        // Queue candidate until remote description is ready
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(e.data));
+        } catch (err) {
+          console.error('[GuessWho] Stale ICE candidate, ignoring:', err);
+        }
+      } else if (iceCandidateQueue.current.length < 50) {
+        // Queue candidate until remote description is ready (bounded: drop
+        // beyond 50 to avoid unbounded growth on a dead peer)
         iceCandidateQueue.current.push(e.data);
       }
     }
@@ -492,17 +520,12 @@ export default function GameRoom({ game }: GameProps) {
 
   const sendSignal = async (targetSession: string, type: string, data: any) => {
     try {
-      // Base64-encode the SDP string to protect \r\n line endings from
-      // being mangled by PHP/JSON/WebSocket transit
-      let payload = data;
-      if ((type === 'offer' || type === 'answer') && data?.sdp) {
-        payload = { ...data, sdp: btoa(data.sdp) };
-      }
+      // Send SDP raw — JSON transports \r\n losslessly, base64 would add 33%.
       await axios.post(`/guesswho/room/${game.room_code}/signal`, {
         target_session: targetSession,
         sender_session: sessionUuid,
         type,
-        data: payload
+        data
       });
     } catch (err) {
       console.error('Failed to send signal:', err);

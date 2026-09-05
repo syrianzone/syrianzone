@@ -34,6 +34,7 @@ class GovAppsAdminController extends Controller
             'description_ar' => 'nullable|string',
             'icon_file' => 'nullable|image|max:5120',
             'links' => 'nullable|array',
+            'links.*' => 'nullable|string|max:2048|starts_with:http://,https://',
             'is_active' => 'boolean',
         ]);
 
@@ -43,7 +44,7 @@ class GovAppsAdminController extends Controller
         }
 
         $maxOrder = GovApp::max('order_column') ?? 0;
-        $links = array_filter($validated['links'] ?? [], fn($url) => !empty($url) && is_string($url) && !empty(trim($url)));
+        $links = array_filter($validated['links'] ?? [], fn($url) => is_string($url) && (str_starts_with(trim($url), 'http://') || str_starts_with(trim($url), 'https://')));
 
         GovApp::create([
             'id' => $validated['id'],
@@ -77,6 +78,7 @@ class GovAppsAdminController extends Controller
             'description_ar' => 'nullable|string',
             'icon_file' => 'nullable|image|max:5120',
             'links' => 'nullable|array',
+            'links.*' => 'nullable|string|max:2048|starts_with:http://,https://',
             'is_active' => 'boolean',
         ]);
 
@@ -85,7 +87,7 @@ class GovAppsAdminController extends Controller
             $iconPath = $this->uploadIcon($request->file('icon_file'), $id);
         }
 
-        $links = array_filter($validated['links'] ?? [], fn($url) => !empty($url) && is_string($url) && !empty(trim($url)));
+        $links = array_filter($validated['links'] ?? [], fn($url) => is_string($url) && (str_starts_with(trim($url), 'http://') || str_starts_with(trim($url), 'https://')));
 
         $app->update([
             'name' => $validated['name'],

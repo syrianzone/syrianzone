@@ -24,3 +24,7 @@ if (app()->environment('production')) {
 
 // Sync hotel data from HalaSyria every 2 days at 03:00
 Schedule::command('hotels:sync')->cron('0 3 */2 * *');
+
+// Prune stale Guess Who rooms daily so guess_who_games stays bounded.
+// Runs on all envs (cheap delete); safe on staging (own DB).
+Schedule::command('guesswho:prune')->daily();

@@ -14,7 +14,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        $middleware->trustProxies(at: '*');
+        // Trust private-network proxies (Docker gateway, Nginx sidecar,
+        // localhost) so $request->ip() reflects X-Forwarded-For from our own
+        // edge. Trusting '*' would let any client spoof X-Forwarded-For and
+        // bypass IP-keyed throttles (voting, public-api) and ip_hash fraud
+        // signals, so public ranges are deliberately not trusted.
+        $middleware->trustProxies(at: ['127.0.0.1', '10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16']);
         
         $middleware->web(append: [
             \App\Http\Middleware\AutoLoginDevUser::class,
@@ -40,6 +45,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: [
             // Guest submissions only. The authenticated PUT /api/v1/studio/routes/{id}
             // must keep CSRF protection — do not widen this to studio/routes/*.
+            // Note: /api/* routes are stateless (no session CSRF) — these entries
+            // cover same-path web-group hits. Guest vote fraud is mitigated by
+            // throttle:voting (10/min/IP) + the ballots (poll_id, vote_day,
+            // voter_key) unique index, not by CSRF. Do not add CAPTCHA here
+            // without a UX review — it would block legitimate guest voting.
             'api/v1/studio/routes',
             'api/submit',
             'guesswho/broadcasting/auth',

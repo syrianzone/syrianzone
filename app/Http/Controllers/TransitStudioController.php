@@ -14,17 +14,36 @@ class TransitStudioController extends Controller
             return response()->json(['message' => 'Your account has been banned from submitting route drafts.'], 403);
         }
 
+        // Linked-edit auth must run BEFORE creating the draft: otherwise an
+        // anonymous POST with route_id leaves an orphan pending draft and no
+        // unpublish, and could take routes offline at will.
+        if ($request->filled('route_id') && !Auth::check()) {
+            return response()->json(['message' => 'Authentication is required to suggest edits to published routes.'], 401);
+        }
+
         $validated = $request->validate([
             'city_id' => 'required|exists:cities,id',
             'name_ar' => 'required|string|max:255',
             'name_en' => 'nullable|string|max:255',
             'price' => 'nullable|integer',
+            'color_index' => 'nullable|integer|min:0|max:20',
             'notes' => 'nullable|string',
             'geojson' => 'required|array',
-            'geojson.features' => 'required|array|min:1',
-            'geojson.features.*.geometry.type' => 'required|string',
+            'geojson.features' => 'required|array|min:1|max:500',
+            'geojson.features.*.geometry' => 'required|array',
+            'geojson.features.*.geometry.type' => 'required|string|in:LineString,MultiLineString,Point',
+            'geojson.features.*.geometry.coordinates' => 'required|array|min:1',
             'route_id' => 'nullable|exists:routes,id',
         ]);
+
+        // A linked edit must target a route in the same city, otherwise the
+        // draft would unpublish an unrelated live route on approve.
+        if (!empty($validated['route_id'])) {
+            $linked = \App\Models\Route::find($validated['route_id']);
+            if (!$linked || $linked->city_id !== $validated['city_id']) {
+                return response()->json(['message' => 'Linked route must belong to the same city.'], 422);
+            }
+        }
 
         $draft = RouteDraft::create([
             'user_id' => Auth::id(),
@@ -32,20 +51,18 @@ class TransitStudioController extends Controller
             'name_ar' => $validated['name_ar'],
             'name_en' => $validated['name_en'],
             'price' => $validated['price'],
+            'color_index' => $validated['color_index'] ?? null,
             'notes' => $validated['notes'],
             'geojson' => $request->input('geojson'),
+            'route_id' => $validated['route_id'] ?? null,
             'status' => 'pending',
         ]);
 
         // If this submission is an edit suggestion for an already-published route,
         // unpublish that route immediately so the live map reflects the pending
-        // state. Editing published routes requires authentication: anonymous
-        // submitters could otherwise take any route offline at will.
-        if ($request->filled('route_id')) {
-            if (!Auth::check()) {
-                return response()->json(['message' => 'Authentication is required to suggest edits to published routes.'], 401);
-            }
-            $this->unpublishLinkedRoute($request->input('route_id'), $draft->id);
+        // state.
+        if ($draft->route_id) {
+            $this->unpublishLinkedRoute($draft->route_id, $draft->id);
         }
 
         return response()->json($draft, 201);
@@ -134,10 +151,13 @@ class TransitStudioController extends Controller
             'name_ar' => 'sometimes|string|max:255',
             'name_en' => 'nullable|string|max:255',
             'price' => 'nullable|integer',
+            'color_index' => 'nullable|integer|min:0|max:20',
             'notes' => 'nullable|string',
             'geojson' => 'sometimes|array',
-            'geojson.features' => 'required_with:geojson|array|min:1',
-            'geojson.features.*.geometry.type' => 'required_with:geojson|string',
+            'geojson.features' => 'required_with:geojson|array|min:1|max:500',
+            'geojson.features.*.geometry' => 'required_with:geojson|array',
+            'geojson.features.*.geometry.type' => 'required_with:geojson|string|in:LineString,MultiLineString,Point',
+            'geojson.features.*.geometry.coordinates' => 'required_with:geojson|array|min:1',
         ]);
 
         $updateData = [];
@@ -152,6 +172,9 @@ class TransitStudioController extends Controller
         }
         if ($request->has('price')) {
             $updateData['price'] = $validated['price'];
+        }
+        if ($request->has('color_index')) {
+            $updateData['color_index'] = $validated['color_index'];
         }
         if ($request->has('notes')) {
             $updateData['notes'] = $validated['notes'];
@@ -197,6 +220,27 @@ class TransitStudioController extends Controller
     }
 
     /**
+     * Withdraw (delete) an own pending draft. Admins may withdraw any draft.
+     * Only pending drafts can be withdrawn — approved/rejected rows are history.
+     */
+    public function destroy(Request $request, $id)
+    {
+        $draft = RouteDraft::findOrFail($id);
+
+        if (! $this->canEditDraft($request, $draft)) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        if ($draft->status !== 'pending') {
+            return response()->json(['message' => 'Only pending drafts can be withdrawn.'], 422);
+        }
+
+        $draft->delete();
+
+        return response()->json(['ok' => true]);
+    }
+
+    /**
      * Unpublish a route that is being edited via a draft submission.
      *
      * The live (published) route is taken offline immediately so the public map
@@ -225,7 +269,20 @@ class TransitStudioController extends Controller
             'user_id' => auth()->id(),
         ]);
 
-        \Illuminate\Support\Facades\Cache::forget("transit:map-data:{$route->city_id}");
+        $this->clearCityMapCache($route->city_id);
+    }
+
+    private function clearCityMapCache(string $cityId): void
+    {
+        \Illuminate\Support\Facades\Cache::forget("transit:map-data:{$cityId}");
+        \Illuminate\Support\Facades\Cache::forget("transit:routes:{$cityId}");
+        if ($cityId === 'damascus' || $cityId === 'rif-dimashq') {
+            \Illuminate\Support\Facades\Cache::forget('transit:map-data:damascus');
+            \Illuminate\Support\Facades\Cache::forget('transit:map-data:rif-dimashq');
+            \Illuminate\Support\Facades\Cache::forget('transit:routes:damascus');
+            \Illuminate\Support\Facades\Cache::forget('transit:routes:rif-dimashq');
+            \Illuminate\Support\Facades\Cache::forget('transit:routes:damascus+rif-dimashq');
+        }
         \Illuminate\Support\Facades\Cache::forget('transit:cities');
     }
 }

@@ -11,9 +11,18 @@ use Illuminate\Support\Facades\Cache;
 
 class PopulationAtlasController extends Controller
 {
+    public const MASTER_CACHE_KEY = 'population_master';
+    public const ENV_CACHE_KEY = 'population_env_report';
+
+    public static function flushCache(): void
+    {
+        Cache::forget(self::MASTER_CACHE_KEY);
+        Cache::forget(self::ENV_CACHE_KEY);
+    }
+
     public function getData(): JsonResponse
     {
-        $data = Cache::remember('population_master', 3600, function () {
+        $data = Cache::remember(self::MASTER_CACHE_KEY, 3600, function () {
             return $this->buildMasterData();
         });
 
@@ -22,7 +31,7 @@ class PopulationAtlasController extends Controller
 
     public function getEnvironmentalDetails(): JsonResponse
     {
-        $data = Cache::remember('population_env_report', 3600, function () {
+        $data = Cache::remember(self::ENV_CACHE_KEY, 3600, function () {
             return $this->buildEnvironmentalReport();
         });
 
@@ -31,23 +40,16 @@ class PopulationAtlasController extends Controller
 
     public function renderIndex()
     {
-        $masterData = Cache::remember('population_master', 3600, function () {
-            return $this->buildMasterData();
-        });
-
-        $envData = Cache::remember('population_env_report', 3600, function () {
-            return $this->buildEnvironmentalReport();
-        });
-
-        return \Inertia\Inertia::render('Population/Index', [
-            'masterData' => $masterData,
-            'envData' => $envData,
-        ]);
+        // Shell only: the full atlas (demographics + all rainfall years +
+        // city JSON snapshots) is multi-hundred-KB. Shipping it in Inertia
+        // props blocks first paint on mobile; the client fetches via /api
+        // with loading + retry states instead.
+        return \Inertia\Inertia::render('Population/Index');
     }
 
     private function buildMasterData(): array
     {
-        $demographics = PopulationDemographic::all();
+        $demographics = PopulationDemographic::select('data_type', 'source_id', 'note', 'date', 'source_url', 'city_name', 'value')->get();
         $grouped = [];
 
         foreach ($demographics as $item) {
@@ -92,7 +94,7 @@ class PopulationAtlasController extends Controller
             }
         }
 
-        $rainfall = PopulationRainfall::all();
+        $rainfall = PopulationRainfall::select('pcode', 'year', 'rainfall', 'rainfall_avg')->orderBy('year')->get();
         $rainfallData = [];
 
         foreach ($rainfall as $item) {
@@ -115,7 +117,7 @@ class PopulationAtlasController extends Controller
 
     private function buildEnvironmentalReport(): array
     {
-        $envLogs = PopulationEnvironmentalLog::all();
+        $envLogs = PopulationEnvironmentalLog::select('city_name', 'lat', 'lon', 'population_ref', 'current_conditions', 'forecast_summary', 'climate_trends', 'air_quality', 'drought_risk', 'historical_summary')->get();
         $citiesData = [];
 
         foreach ($envLogs as $log) {

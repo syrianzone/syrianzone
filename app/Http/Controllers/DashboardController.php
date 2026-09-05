@@ -101,7 +101,7 @@ class DashboardController extends Controller
     /**
      * Soft delete user account and delegate owned polls/routes to superadmin.
      */
-    public function deleteAccount(Request $request)
+    public function deleteAccount(Request $request, AvatarService $avatars)
     {
         $user = $request->user();
 
@@ -116,6 +116,9 @@ class DashboardController extends Controller
             // Delegate routes
             Route::where('user_id', $user->id)->update(['user_id' => $superadmin->id]);
         }
+
+        // Remove hosted avatars so R2 does not keep avatars/{id}/* forever.
+        $avatars->deleteForUser($user);
 
         Auth::logout();
         $request->session()->invalidate();

@@ -24,6 +24,7 @@ class UpdateSyriaClimate extends Command
             $service->setOutput($this->output)->updateAllCities();
 
             Cache::forget('population_env_report');
+            Cache::forget('population_master');
 
             $duration = $startTime->diffInSeconds(now());
             $this->info("✓ Climate data updated successfully ({$duration}s)");

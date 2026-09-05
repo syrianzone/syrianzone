@@ -17,6 +17,7 @@ class RouteDraft extends Model
         'name_ar',
         'name_en',
         'price',
+        'color_index',
         'notes',
         'geojson',
         'status',

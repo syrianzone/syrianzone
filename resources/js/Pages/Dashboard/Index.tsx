@@ -523,9 +523,12 @@ export default function Dashboard({
   const handleCancelMySubmission = async (id: number) => {
     if (!confirm('هل تريد إلغاء وسحب هذا الاقتراح؟')) return;
     try {
-      alert('تم سحب الاقتراح.');
+      await axios.delete(`/api/v1/studio/routes/${id}`);
       setLocalMyDrafts(prev => prev.filter(d => d.id !== id));
-    } catch (err) {}
+      setLocalDrafts(prev => prev.filter(d => d.id !== id));
+    } catch (err: any) {
+      alert('تعذر سحب الاقتراح: ' + (err.response?.data?.message ?? err.message));
+    }
   };
 
   const navItemClass = (active: boolean) =>

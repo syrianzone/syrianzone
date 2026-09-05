@@ -11,7 +11,7 @@ class HotelController extends Controller
   public function mapData()
   {
     $geojson = Cache::remember('hotels:map', 300, function () {
-      $hotels = Hotel::all();
+      $hotels = Hotel::select('id', 'lat', 'lng', 'name', 'name_ar', 'city', 'city_ar', 'star_rating', 'now_show_rate', 'thumb_url', 'slug')->whereNotNull('lat')->whereNotNull('lng')->get();
       return [
         'type' => 'FeatureCollection',
         'features' => $hotels->map(fn ($h) => [

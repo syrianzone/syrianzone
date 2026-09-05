@@ -365,7 +365,15 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
         credentials: 'include',
         body: JSON.stringify({ reason: rejectReason.trim() || null }),
       })
-      if (res.ok) { showToast('تم رفض المسار'); setSelectedDraft(null); setRejectOpen(false); setRejectReason('') }
+      if (res.ok) {
+        showToast('تم رفض المسار');
+        setSelectedDraft(null);
+        setRejectOpen(false);
+        setRejectReason('');
+        queryClient.invalidateQueries({ queryKey: ['admin-drafts'] });
+        queryClient.invalidateQueries({ queryKey: ['mapData'] });
+        queryClient.invalidateQueries({ queryKey: ['routes'] });
+      }
       else { const e = await res.json().catch(() => ({})); showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false) }
     } catch { showToast('تعذّر الاتصال بالخادم', false) } finally { setActionLoading(false) }
   }, [selectedDraft, rejectReason, showToast])

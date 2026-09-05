@@ -237,105 +237,90 @@ export default function Index() {
         fetchWeather();
     }, [governorate, mounted]);
 
-    // Fetch Prayer Times
+    // Fetch Prayer Times via server proxy (no direct Aladhan call: CORS +
+    // caching + fixed governorate list live in PrayerController).
     useEffect(() => {
         if (!mounted) return;
+
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 10000);
 
         const fetchPrayerTimes = async () => {
             setLoading(true);
             setError(null);
             try {
-                const coords = GOVERNORATES[governorate] || GOVERNORATES['damascus'];
-                const day = String(currentTime.getDate()).padStart(2, '0');
-                const month = String(currentTime.getMonth() + 1).padStart(2, '0');
-                const year = currentTime.getFullYear();
-                const dateStr = `${day}-${month}-${year}`;
-
-                const url = `https://api.aladhan.com/v1/timings/${dateStr}?latitude=${coords.lat}&longitude=${coords.lon}&method=3`;
-                const response = await fetch(url);
+                const response = await fetch(`/api/prayer-times?governorate=${encodeURIComponent(governorate)}`, { signal: ctrl.signal });
                 if (!response.ok) throw new Error('فشل جلب مواقيت الصلاة');
                 const result = await response.json();
 
-                if (result.code === 200 && result.data) {
-                    setPrayerTimes(result.data.timings);
-                    
-                    const hijri = result.data.date.hijri;
-                    const formattedHijri = `${hijri.day} ${hijri.month.ar} ${hijri.year}`;
-                    setHijriDateFromApi(formattedHijri);
-                } else {
+                const timings = result.timings;
+                if (!timings || typeof timings !== 'object') {
                     throw new Error('بيانات مواقيت غير صالحة');
                 }
+                setPrayerTimes(timings);
+
+                const hijri = result.hijri;
+                if (hijri?.day && hijri?.month && hijri?.year) {
+                    setHijriDateFromApi(`${hijri.day} ${hijri.month} ${hijri.year}`);
+                }
             } catch (err: any) {
-                console.error(err);
-                setError(err.message || 'حدث خطأ أثناء الاتصال بالخادم');
+                if (err?.name === 'AbortError') {
+                    setError('انتهت مهلة جلب المواقيت. حاول مجدداً.');
+                } else {
+                    console.error(err);
+                    setError(err.message || 'حدث خطأ أثناء الاتصال بالخادم');
+                }
             } finally {
+                clearTimeout(timer);
                 setLoading(false);
             }
         };
 
         fetchPrayerTimes();
+        return () => { clearTimeout(timer); ctrl.abort(); };
     }, [governorate, mounted]);
 
-    // Fetch upcoming events from F3alia public API
+    // Fetch upcoming events via server proxy (/api/events/today).
     useEffect(() => {
         if (!mounted) return;
+
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 10000);
 
         const fetchF3aliaEvents = async () => {
             setLoadingEvents(true);
             setEventsError(null);
             try {
-                const query = `
-                    query GetEvents($province: Province, $fromDate: Date, $size: Int!) {
-                        getAllEventsForVisitor(page: 0, size: $size, province: $province, fromDate: $fromDate) {
-                            content {
-                                id
-                                name
-                                description
-                                address
-                                isOnline
-                                eventLink
-                                province
-                                provinceName
-                                isFree
-                                ticketPrice
-                                eventDate
-                                eventTime
-                                category {
-                                    nameAr
-                                    nameEn
-                                }
-                            }
-                        }
-                    }
-                `;
+                const params = new URLSearchParams({ governorate });
+                if (showOtherGovEvents) params.set('governorate', 'all');
+                const response = await fetch(`/api/events/today?${params.toString()}`, { signal: ctrl.signal });
 
-                const provinceEnum = showOtherGovEvents ? null : (GOVERNORATE_TO_F3ALIA_PROVINCE[governorate] || null);
-                
+                if (!response.ok) throw new Error('فشل جلب الفعاليات');
+                const resData = await response.json();
+                const fetchedEvents = ((resData.events || []) as any[]).map((e: any) => ({
+                    id: e.id,
+                    name: e.name,
+                    description: e.description ?? '',
+                    address: e.address ?? '',
+                    isOnline: e.is_online ?? false,
+                    eventLink: e.url ?? '',
+                    province: e.province ?? '',
+                    provinceName: e.provinceName ?? '',
+                    isFree: e.is_free ?? false,
+                    ticketPrice: e.ticket_price ?? null,
+                    eventDate: e.event_date ?? '',
+                    eventTime: e.event_time ?? '',
+                    endDate: e.endDate ?? undefined,
+                    category: e.category ? { nameAr: e.category, nameEn: '' } : undefined,
+                })) as F3aliaEvent[];
                 const d = new Date();
                 const year = d.getFullYear();
                 const month = String(d.getMonth() + 1).padStart(2, '0');
                 const day = String(d.getDate()).padStart(2, '0');
                 const todayStr = `${year}-${month}-${day}`;
-
-                const response = await fetch('https://event-backend-production-18c4.up.railway.app/graphql', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        query,
-                        variables: {
-                            province: provinceEnum,
-                            fromDate: todayStr,
-                            size: 15
-                        }
-                    })
-                });
-
-                if (!response.ok) throw new Error();
-                const resData = await response.json();
-                if (resData.errors && resData.errors.length > 0) throw new Error(resData.errors[0].message);
-
-                const fetchedEvents = (resData.data?.getAllEventsForVisitor?.content || []) as F3aliaEvent[];
-                const upcoming = fetchedEvents.filter(e => e.eventDate >= todayStr);
+                const upcoming = fetchedEvents
+                    .filter(e => e.eventDate >= todayStr)
+                    .sort((a, b) => a.eventDate.localeCompare(b.eventDate));
                 setEvents(upcoming);
             } catch (err) {
                 console.error(err);
@@ -346,6 +331,7 @@ export default function Index() {
         };
 
         fetchF3aliaEvents();
+        return () => { clearTimeout(timer); ctrl.abort(); };
     }, [governorate, showOtherGovEvents, mounted]);
 
     // Handle governorate change (saves to Roznama-specific key)

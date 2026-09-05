@@ -25,13 +25,15 @@ class TransitAdminController extends Controller
         $validated = $request->validate([
             'color_index' => 'nullable|integer|min:0',
         ]);
-        $colorIndex = $validated['color_index'] ?? null;
 
         $draft = RouteDraft::with('linkedRoute')->findOrFail($id);
 
         if ($draft->status !== 'pending') {
             return response()->json(['message' => 'Draft is already ' . $draft->status], 400);
         }
+
+        // Contributor's color survives when the admin does not re-pick one.
+        $colorIndex = $validated['color_index'] ?? $draft->color_index ?? null;
 
         // Linked draft = edit suggestion for existing published route
         if ($draft->route_id) {
@@ -73,6 +75,7 @@ class TransitAdminController extends Controller
                 }
 
                 // Replace stops
+                $oldStopIds = DB::table('route_stop')->where('route_id', $route->id)->pluck('stop_id')->all();
                 DB::table('route_stop')->where('route_id', $route->id)->delete();
                 $order = 1;
                 foreach ($stops as $stopFeature) {
@@ -92,6 +95,14 @@ class TransitAdminController extends Controller
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
+                }
+                // Delete orphaned old stops (not referenced by any route anymore).
+                if (!empty($oldStopIds)) {
+                    $stillUsed = DB::table('route_stop')->whereIn('stop_id', $oldStopIds)->pluck('stop_id')->all();
+                    $orphans = array_diff($oldStopIds, $stillUsed);
+                    if (!empty($orphans)) {
+                        DB::table('stops')->whereIn('id', $orphans)->delete();
+                    }
                 }
 
                 // Log the update
@@ -207,6 +218,23 @@ class TransitAdminController extends Controller
         $draft->status = 'rejected';
         $draft->rejection_reason = $validated['reason'] ?? null;
         $draft->save();
+
+        // A rejected linked-edit must not leave the live route hidden forever:
+        // the unpublish-on-submit took it offline, so restore it on reject.
+        if ($draft->route_id) {
+            $route = Route::find($draft->route_id);
+            if ($route && $route->status === 'disapproved') {
+                $route->status = 'published';
+                $route->save();
+                \App\Models\TransitRouteLog::create([
+                    'route_id' => $route->id,
+                    'action' => 'restored_after_reject',
+                    'description' => "إعادة نشر الخط '{$route->name_ar}' بعد رفض التعديلات (مساهمة #{$draft->id})",
+                    'user_id' => auth()->id(),
+                ]);
+                $this->clearCityMapCache($route->city_id);
+            }
+        }
 
         return response()->json(['message' => 'Draft rejected']);
     }
@@ -723,9 +751,13 @@ class TransitAdminController extends Controller
     private function clearCityMapCache($cityId)
     {
         Cache::forget("transit:map-data:{$cityId}");
+        Cache::forget("transit:routes:{$cityId}");
         if ($cityId === 'damascus' || $cityId === 'rif-dimashq') {
             Cache::forget('transit:map-data:damascus');
             Cache::forget('transit:map-data:rif-dimashq');
+            Cache::forget('transit:routes:damascus');
+            Cache::forget('transit:routes:rif-dimashq');
+            Cache::forget('transit:routes:damascus+rif-dimashq');
         }
         Cache::forget('transit:cities');
     }

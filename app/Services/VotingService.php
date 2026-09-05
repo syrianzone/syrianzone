@@ -28,18 +28,48 @@ class VotingService
 
         $this->rejectArchivedCandidates($poll, $tiers);
 
-        DB::transaction(function () use ($poll, $voteDay, $voterKey, $ipHash, $userAgent, $tiers) {
-            $ballot = Ballot::create([
-                'poll_id' => $poll->id,
-                'vote_day' => $voteDay,
-                'voter_key' => $voterKey,
-                'ip_hash' => $ipHash,
-                'user_agent' => $userAgent,
+        // One ballot per device per poll per day. The DB unique index
+        // (poll_id, vote_day, voter_key) is the source of truth; this
+        // pre-check turns the common double-submit into a friendly 422
+        // instead of a 500, while the unique index wins races.
+        if (Ballot::where('poll_id', $poll->id)->where('vote_day', $voteDay)->where('voter_key', $voterKey)->exists()) {
+            throw ValidationException::withMessages([
+                'tiers' => 'You have already voted today.',
             ]);
+        }
 
-            $scoreDelta = $this->calculateScores($ballot, $tiers);
-            $this->updateDailyScores($poll, $voteDay, $scoreDelta);
-        });
+        try {
+            DB::transaction(function () use ($poll, $voteDay, $voterKey, $ipHash, $userAgent, $tiers) {
+                $ballot = Ballot::create([
+                    'poll_id' => $poll->id,
+                    'vote_day' => $voteDay,
+                    'voter_key' => $voterKey,
+                    'ip_hash' => $ipHash,
+                    'user_agent' => $userAgent,
+                ]);
+
+                $scoreDelta = $this->calculateScores($ballot, $tiers);
+
+                // Unknown-tier-only payloads would otherwise create an empty
+                // ballot that counts as "voted" but scores nothing.
+                if (empty($scoreDelta)) {
+                    throw ValidationException::withMessages([
+                        'tiers' => 'Ballot contains no valid candidates.',
+                    ]);
+                }
+
+                $this->updateDailyScores($poll, $voteDay, $scoreDelta);
+            });
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Race: two concurrent submits passed the pre-check; the unique
+            // index rejected the second. Report as already-voted, not 500.
+            if (str_contains($e->getMessage(), 'ballots_poll_day_voter_unique') || ($e->errorInfo[1] ?? null) === 1062) {
+                throw ValidationException::withMessages([
+                    'tiers' => 'You have already voted today.',
+                ]);
+            }
+            throw $e;
+        }
     }
 
     private function rejectArchivedCandidates(Poll $poll, array $tiers): void

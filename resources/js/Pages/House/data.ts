@@ -142,7 +142,14 @@ export async function fetchHouseData(mode: Mode, provinceKey: string = 'damascus
             url = csvUrlFor(province);
         }
 
-        const res = await fetch(url, { next: { revalidate: 3600 } });
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 10000);
+        let res: Response;
+        try {
+            res = await fetch(url, { signal: ctrl.signal });
+        } finally {
+            clearTimeout(timer);
+        }
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const text = await res.text();
@@ -153,9 +160,16 @@ export async function fetchHouseData(mode: Mode, provinceKey: string = 'damascus
         }
 
         const rows = parseCSVToObjects(text);
+        // Header check: a renamed sheet (BOM/extra column) must not silently
+        // produce wrong filters/charts — require at least a name-like column.
         const headers = rows.length > 0
             ? Object.keys(rows[0]).filter(k => !k.startsWith('__'))
             : [];
+        const hasName = headers.some(h => ['Name', 'الاسم', 'name'].includes(h.trim()));
+        if (rows.length > 0 && !hasName) {
+            console.error('House CSV missing name header:', headers);
+            return { rows: [], headers: [] };
+        }
 
         return { rows, headers };
     } catch (error) {

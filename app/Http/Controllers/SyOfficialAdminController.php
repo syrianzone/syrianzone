@@ -95,6 +95,7 @@ class SyOfficialAdminController extends Controller
             'description_ar' => 'nullable|string',
             'image_file' => 'nullable|image|max:5120', // Max 5MB
             'socials' => 'nullable|array',
+            'socials.*' => 'nullable|string|max:2048|starts_with:http://,https://',
             'is_active' => 'boolean',
         ]);
 
@@ -104,7 +105,7 @@ class SyOfficialAdminController extends Controller
         }
 
         $maxOrder = OfficialEntity::where('category_id', $validated['category_id'])->max('order_column') ?? 0;
-        $socials = array_filter($validated['socials'] ?? [], fn($url) => !empty($url) && is_string($url) && !empty(trim($url)));
+        $socials = array_filter($validated['socials'] ?? [], fn($url) => is_string($url) && (str_starts_with(trim($url), 'http://') || str_starts_with(trim($url), 'https://')));
 
         OfficialEntity::create([
             'id' => $validated['id'],
@@ -139,6 +140,7 @@ class SyOfficialAdminController extends Controller
             'description_ar' => 'nullable|string',
             'image_file' => 'nullable|image|max:5120',
             'socials' => 'nullable|array',
+            'socials.*' => 'nullable|string|max:2048|starts_with:http://,https://',
             'is_active' => 'boolean',
         ]);
 
@@ -146,7 +148,7 @@ class SyOfficialAdminController extends Controller
             $validated['image'] = $this->uploadImage($request->file('image_file'), $id);
         }
 
-        $socials = array_filter($validated['socials'] ?? [], fn($url) => !empty($url) && is_string($url) && !empty(trim($url)));
+        $socials = array_filter($validated['socials'] ?? [], fn($url) => is_string($url) && (str_starts_with(trim($url), 'http://') || str_starts_with(trim($url), 'https://')));
 
         $entity->update([
             'category_id' => $validated['category_id'],

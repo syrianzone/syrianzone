@@ -146,10 +146,11 @@ class PlaceAdminController extends Controller
   {
     $place = Place::with('photos')->findOrFail($id);
 
-    foreach ($place->photos as $photo) {
+    $photos = $place->photos->all();
+    $place->delete();
+    foreach ($photos as $photo) {
       $images->deleteFiles($photo);
     }
-    $place->delete();
     Cache::forget('places:map');
 
     return response()->json(null, 204);

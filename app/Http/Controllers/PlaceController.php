@@ -190,7 +190,7 @@ class PlaceController extends Controller
     $user = $request->user();
 
     if ($place->status !== 'approved') {
-      $canSee = $user && ($user->id === $place->user_id || in_array($user->role, ['admin', 'superadmin']));
+      $canSee = $user && ($user->id === $place->user_id || $user->isSuperAdmin() || $user->role === 'admin' || $user->hasAnyPermission(['places.review', 'places.edit', 'places.delete']));
       if (!$canSee) {
         return response()->json(['message' => 'Not found'], 404);
       }
@@ -454,11 +454,14 @@ class PlaceController extends Controller
   {
     $place = Place::where('user_id', $request->user()->id)->with('photos')->findOrFail($id);
 
-    // owner deletion is immediate, no moderation round-trip
-    foreach ($place->photos as $photo) {
+    // Delete the row first, then the files: if the DB delete throws, the
+    // files are still intact and the photo URLs keep working (same pattern
+    // as deletePhoto()).
+    $photos = $place->photos->all();
+    $place->delete();
+    foreach ($photos as $photo) {
       $images->deleteFiles($photo);
     }
-    $place->delete();
     Cache::forget('places:map');
 
     return response()->json(null, 204);

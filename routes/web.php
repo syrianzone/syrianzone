@@ -85,8 +85,8 @@ Route::get('/guesswho', [GuessWhoController::class, 'index']);
 Route::post('/guesswho/rooms', [GuessWhoController::class, 'createRoom'])->middleware('throttle:10,1');
 Route::get('/guesswho/room/{roomCode}', [GuessWhoController::class, 'showRoom']);
 Route::post('/guesswho/room/{roomCode}/join', [GuessWhoController::class, 'joinRoom'])->middleware('throttle:30,1');
-Route::post('/guesswho/room/{roomCode}/signal', [SignalingController::class, 'signal']);
-Route::post('/guesswho/broadcasting/auth', [GuessWhoController::class, 'authenticateBroadcasting']);
+Route::post('/guesswho/room/{roomCode}/signal', [SignalingController::class, 'signal'])->middleware('throttle:60,1');
+Route::post('/guesswho/broadcasting/auth', [GuessWhoController::class, 'authenticateBroadcasting'])->middleware('throttle:30,1');
 
 Route::get('/transit', function () {
     $cities = \Illuminate\Support\Facades\Cache::remember('transit:cities', 3600, function () {
@@ -184,6 +184,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware(['auth', 'superadmin'])->group(function () {
         Route::get('/admin/assets', [\App\Http\Controllers\AssetUploadController::class, 'index']);
         Route::get('/api/v1/admin/assets/list', [\App\Http\Controllers\AssetUploadController::class, 'list']);
+        Route::get('/api/v1/admin/assets/manifest', [\App\Http\Controllers\AssetUploadController::class, 'manifest']);
         Route::post('/api/v1/admin/assets/upload', [\App\Http\Controllers\AssetUploadController::class, 'store']);
         Route::delete('/api/v1/admin/assets/delete', [\App\Http\Controllers\AssetUploadController::class, 'destroy']);
         Route::get('/admin/site-popup', [\App\Http\Controllers\SitePopupAdminController::class, 'renderIndex']);
@@ -374,22 +375,56 @@ Route::middleware('auth')->group(function () {
     });
 });
 
-// User settings API endpoint
+// User settings API endpoint (throttled + whitelisted: previously accepted
+// arbitrary keys of unbounded size on every keystroke).
 Route::post('/api/user/settings', function (\Illuminate\Http\Request $request) {
     $user = $request->user();
     if (!$user) {
         return response()->json(['error' => 'Unauthenticated'], 401);
     }
 
-    $newSettings = $request->input('settings', []);
+    $validated = $request->validate([
+        'settings' => 'required|array|max:30',
+        'settings.theme' => 'nullable|string|max:64',
+        'settings.fontFamily' => 'nullable|string|in:ibm-plex,system',
+        'settings.language' => 'nullable|string|in:ar,en',
+        'settings.governorate' => 'nullable|string|max:64',
+        'settings.clockFormat' => 'nullable|string|in:12,24',
+        'settings.searchEngine' => 'nullable|string|in:duckduckgo,google,bing,searx,custom',
+        'settings.showClock' => 'nullable|boolean',
+        'settings.showWeather' => 'nullable|boolean',
+        'settings.showPrayerTimes' => 'nullable|boolean',
+        'settings.showEvents' => 'nullable|boolean',
+        'settings.showSearch' => 'nullable|boolean',
+        'settings.useCustomCoords' => 'nullable|boolean',
+        'settings.customLat' => 'nullable|numeric|between:-90,90',
+        'settings.customLon' => 'nullable|numeric|between:-180,180',
+        'settings.customSearchUrl' => 'nullable|string|max:2048|starts_with:http://,https://',
+        'settings.customLinks' => 'nullable|array|max:50',
+        'settings.customLinks.*.id' => 'required|string|max:64',
+        'settings.customLinks.*.label' => 'nullable|string|max:100',
+        'settings.customLinks.*.name' => 'nullable|string|max:100',
+        'settings.customLinks.*.title' => 'nullable|string|max:100',
+        'settings.customLinks.*.url' => 'required|string|max:2048|starts_with:http://,https://',
+    ]);
+
+    $newSettings = $validated['settings'] ?? [];
+    // customLinks replaces wholesale; cap JSON size so one client cannot bloat the row.
+    if (isset($newSettings['customLinks']) && strlen(json_encode($newSettings['customLinks'])) > 20000) {
+        return response()->json(['error' => 'Too many links.'], 422);
+    }
+
     $currentSettings = $user->settings ?? [];
 
     $mergedSettings = array_merge($currentSettings, $newSettings);
+    if (strlen(json_encode($mergedSettings)) > 40000) {
+        return response()->json(['error' => 'Settings too large.'], 422);
+    }
     $user->settings = $mergedSettings;
     $user->save();
 
     return response()->json(['status' => 'ok', 'settings' => $user->settings]);
-});
+})->middleware('throttle:60,1');
 
 // Dev-only: impersonate a user role for local development (never registered in production).
 use App\Http\Controllers\DevController;

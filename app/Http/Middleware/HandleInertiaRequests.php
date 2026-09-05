@@ -57,6 +57,7 @@ class HandleInertiaRequests extends Middleware
                     ? $request->user()->role
                     : null,
             ],
+            'sitePopup' => \App\Models\SiteSetting::getPopup(),
         ];
     }
 

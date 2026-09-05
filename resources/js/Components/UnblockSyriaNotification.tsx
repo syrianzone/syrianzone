@@ -1,27 +1,45 @@
 import React, { useState, useEffect } from 'react';
 import { X, ExternalLink } from 'lucide-react';
+import { usePage } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 
-/**
- * EDITABLE TEXT SECTION
- * You can easily change the message and link here.
- */
-const NOTIFICATION_CONTENT = {
+export interface SitePopup {
+    enabled: boolean;
+    title: string;
+    description: string;
+    buttonText: string;
+    dismissText: string;
+    link: string;
+    version: number;
+}
+
+const FALLBACK_POPUP: SitePopup = {
+    enabled: true,
     title: "صوتك بيعمل فرق!",
     description: "ساهم في فك الحظر عن الخدمات التقنية في سوريا. صوّت للخدمات الأكثر أهمية بالنسبة لك لتكون من أولويات العمل.",
     buttonText: "صوّت الآن",
     dismissText: "لاحقاً",
     link: "https://unblocksyria.com",
+    version: 1,
 };
 
 const UnblockSyriaNotification = () => {
+    const { props } = usePage<{ sitePopup?: SitePopup }>();
+    const popup: SitePopup = { ...FALLBACK_POPUP, ...(props.sitePopup ?? {}) };
+
     const [isVisible, setIsVisible] = useState(false);
     const [isDismissing, setIsDismissing] = useState(false);
     const [hasMounted, setHasMounted] = useState(false);
 
+    const dismissKey = `site_popup_dismissed_v${popup.version}`;
+    // Back-compat: users who dismissed the old hardcoded popup should see
+    // the new manageable copy at least once.
+    const legacyKey = 'unblock_syria_notif_dismissed';
+
     useEffect(() => {
         setHasMounted(true);
-        const isDismissed = localStorage.getItem('unblock_syria_notif_dismissed');
+        if (!popup.enabled) return;
+        const isDismissed = localStorage.getItem(dismissKey);
 
         // Show after a short delay for better UX
         if (!isDismissed) {
@@ -30,17 +48,18 @@ const UnblockSyriaNotification = () => {
             }, 2000);
             return () => clearTimeout(timer);
         }
-    }, []);
+    }, [dismissKey, popup.enabled]);
 
     const handleDismiss = () => {
         setIsDismissing(true);
         setTimeout(() => {
             setIsVisible(false);
-            localStorage.setItem('unblock_syria_notif_dismissed', 'true');
+            localStorage.setItem(dismissKey, 'true');
+            localStorage.setItem(legacyKey, 'true');
         }, 250);
     };
 
-    if (!hasMounted || !isVisible) return null;
+    if (!hasMounted || !isVisible || !popup.enabled) return null;
 
     return (
         <div
@@ -66,23 +85,23 @@ const UnblockSyriaNotification = () => {
                     <div className="flex items-center gap-2.5">
                         <span className="text-2xl" role="img" aria-label="Syria Flag">🇸🇾</span>
                         <h3 className="font-bold text-lg text-foreground tracking-tight">
-                            {NOTIFICATION_CONTENT.title}
+                            {popup.title}
                         </h3>
                     </div>
 
                     <p className="text-sm text-muted-foreground leading-relaxed font-medium">
-                        {NOTIFICATION_CONTENT.description}
+                        {popup.description}
                     </p>
 
                     <div className="flex items-center gap-2 mt-2">
                         <Button asChild size="sm" className="flex-1 font-bold shadow-sm">
                             <a
-                                href={NOTIFICATION_CONTENT.link}
+                                href={popup.link}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="flex items-center justify-center gap-2"
                             >
-                                {NOTIFICATION_CONTENT.buttonText}
+                                {popup.buttonText}
                                 <ExternalLink size={14} />
                             </a>
                         </Button>
@@ -92,7 +111,7 @@ const UnblockSyriaNotification = () => {
                             onClick={handleDismiss}
                             className="font-medium"
                         >
-                            {NOTIFICATION_CONTENT.dismissText}
+                            {popup.dismissText}
                         </Button>
                     </div>
                 </div>

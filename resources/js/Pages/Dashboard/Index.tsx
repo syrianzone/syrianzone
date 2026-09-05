@@ -18,6 +18,7 @@ import {
   Loader2,
   Globe,
   Smartphone,
+  Megaphone,
   Phone,
   CloudUpload,
 } from 'lucide-react';
@@ -394,7 +395,7 @@ export default function Dashboard({
                 {(role === 'admin' || role === 'superadmin') && (
                   <button onClick={() => setActiveTab('polls')} className={navItemClass(activeTab === 'polls')}>
                     <ListOrdered className="h-5 w-5" />
-                    إدارة الاستبيانات
+                    الاستبيانات
                   </button>
                 )}
 
@@ -405,7 +406,7 @@ export default function Dashboard({
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   >
                     <Bus className="h-5 w-5" />
-                    مراجعة وإدارة الخطوط المقترحة (الخارطة)
+                    الخطوط
                   </Link>
                 )}
 
@@ -416,18 +417,7 @@ export default function Dashboard({
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   >
                     <MapPin className="h-5 w-5" />
-                    مراجعة أماكن مشوار المقترحة
-                  </Link>
-                )}
-
-                {/* Cloudflare R2 Asset Browser (Superadmins) */}
-                {role === 'superadmin' && (
-                  <Link
-                    href="/admin/assets"
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  >
-                    <CloudUpload className="h-5 w-5" />
-                    إدارة ومستكشف أصول R2 CDN
+                    مشوار
                   </Link>
                 )}
 
@@ -438,7 +428,7 @@ export default function Dashboard({
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   >
                     <Globe className="h-5 w-5" />
-                    إدارة الحسابات الرسمية (SyOfficial)
+                    الحسابات الرسمية
                   </Link>
                 )}
 
@@ -449,7 +439,7 @@ export default function Dashboard({
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   >
                     <Smartphone className="h-5 w-5" />
-                    إدارة التطبيقات الحكومية (GovApps)
+                    التطبيقات الحكومية
                   </Link>
                 )}
 
@@ -460,7 +450,7 @@ export default function Dashboard({
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   >
                     <Phone className="h-5 w-5" />
-                    إدارة دليل الهاتف (Phonebook)
+                    دليل الهاتف
                   </Link>
                 )}
 
@@ -471,14 +461,25 @@ export default function Dashboard({
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   >
                     <CloudUpload className="h-5 w-5" />
-                    مستودع الملفات (Cloudflare R2)
+                    الملفات
+                  </Link>
+                )}
+
+                {/* Site Popup Tab (Superadmin only) */}
+                {role === 'superadmin' && (
+                  <Link
+                    href="/admin/site-popup"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  >
+                    <Megaphone className="h-5 w-5" />
+                    النافذة المنبثقة
                   </Link>
                 )}
 
                 {/* Profile/Settings Tab (All users) */}
                 <button onClick={() => setActiveTab('profile')} className={navItemClass(activeTab === 'profile')}>
                   <Settings className="h-5 w-5" />
-                  إعدادات الحساب
+                  الحساب
                 </button>
               </nav>
             </aside>

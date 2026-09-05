@@ -185,6 +185,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/api/v1/admin/assets/list', [\App\Http\Controllers\AssetUploadController::class, 'list']);
         Route::post('/api/v1/admin/assets/upload', [\App\Http\Controllers\AssetUploadController::class, 'store']);
         Route::delete('/api/v1/admin/assets/delete', [\App\Http\Controllers\AssetUploadController::class, 'destroy']);
+        Route::get('/admin/site-popup', [\App\Http\Controllers\SitePopupAdminController::class, 'renderIndex']);
+        Route::get('/api/v1/admin/site-popup', [\App\Http\Controllers\SitePopupAdminController::class, 'show']);
+        Route::put('/api/v1/admin/site-popup', [\App\Http\Controllers\SitePopupAdminController::class, 'update']);
     });
 
     // Hidden Places: authenticated writes (session + CSRF via the web group)

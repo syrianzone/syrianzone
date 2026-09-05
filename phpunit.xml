@@ -32,5 +32,9 @@
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
+        <!-- Dev auto-login must never leak into tests: with APP_ENV=testing
+             (non-production) a true value from .env would override actingAs()
+             identities via AutoLoginDevUser on every request. -->
+        <env name="AUTO_LOGIN_DEV" value="false" force="true"/>
     </php>
 </phpunit>

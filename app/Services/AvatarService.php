@@ -11,7 +11,7 @@ use Intervention\Image\ImageManager;
 
 class AvatarService
 {
-  // Processes, stores, updates the user row, deletes the old file; returns the new absolute url.
+  // Processes, stores, updates the user row, deletes the old file; returns the new public url.
   public function update(User $user, UploadedFile $file): string
   {
     $disk = Storage::disk(config('filesystems.media_disk'));
@@ -30,7 +30,7 @@ class AvatarService
     }
 
     $old = $user->avatar_url;
-    $newUrl = $disk->url($path);
+    $newUrl = $this->publicUrl($disk, $path);
     $user->update(['avatar_url' => $newUrl]);
 
     // Only delete files we host; anything else (Google lh3 urls, null) is left
@@ -46,5 +46,22 @@ class AvatarService
     }
 
     return $newUrl;
+  }
+
+  /**
+   * Public URL for a stored avatar. Local disks resolve to a root-relative
+   * /storage/... path instead of Storage::url(), which prefixes APP_URL —
+   * a misconfigured APP_URL (path suffix, trailing slash) would otherwise
+   * produce broken absolute URLs like /api//storage/.... CDN (s3/r2)
+   * disks still need their absolute URL.
+   */
+  private function publicUrl($disk, string $path): string
+  {
+    $diskName = config('filesystems.media_disk');
+    if (config("filesystems.disks.{$diskName}.driver") === 'local') {
+      return '/storage/' . ltrim($path, '/');
+    }
+
+    return $disk->url($path);
   }
 }

@@ -47,7 +47,8 @@ test('user can upload an avatar', function () {
   expect($path)->toEndWith('.webp');
 
   $url = $response->json('avatar_url');
-  expect($url)->toBe(Storage::disk('public')->url($path));
+  // Local disks resolve to a root-relative path (immune to APP_URL config)
+  expect($url)->toBe('/storage/' . $path);
   expect($user->fresh()->avatar_url)->toBe($url);
 
   // server-side square crop to 256

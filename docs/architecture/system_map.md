@@ -35,7 +35,7 @@ graph TD
 | Layer | Technology |
 |---|---|
 | Backend | Laravel 13, PHP 8.3+ (runtime image PHP 8.4), Eloquent ORM |
-| Admin panels | Filament v5 (`/admin` superadmin panel) + custom Inertia admin pages per module |
+| Admin panels | Filament v5 (`/superadmin`, Users only) + custom Inertia admin pages per module (`/admin/*`, `/dashboard` polls tab, `/transit/admin`) |
 | Frontend bridge | Inertia.js v3 (Laravel ↔ React page props), SSR enabled (`ssr.tsx`) |
 | View layer | React 19.2, TypeScript (strict), Tailwind CSS v4, shadcn-style components (Radix + CVA), Lucide icons |
 | State/data | Zustand for map/studio stores; TanStack react-query (staleTime 5 min) for API data; custom axios client in `resources/js/Lib` |
@@ -58,7 +58,7 @@ syrianzone/
 ├── app/
 │   ├── Console/                 # Scheduled jobs & artisan commands (R2 migrations, HalaSyria sync…)
 │   ├── Events/                  # Broadcast events (Guess Who signaling)
-│   ├── Filament/Resources/      # Filament v5 resources: Users, GuessWho categories/characters
+│   ├── Filament/Resources/      # Filament v5 resources: Users only (Guess Who moved to Inertia Admin/GuessWho)
 │   ├── Http/Controllers/        # One controller (or group) per feature module
 │   │   └── Api/                 # JSON API controllers (V1/ TransitController, VotingDataController, …)
 │   ├── Models/                  # Eloquent models incl. spatial definitions
@@ -95,7 +95,7 @@ syrianzone/
 Browser → Nginx → Laravel controller → returns `Inertia::render('Page/Name', props)` → React 19 page component hydrates. Subsequent navigation is XHR-based SPA navigation.
 
 ### API data flow
-React pages fetch JSON from `/api/*` using the shared axios client (`Lib/axios.ts`) wrapped in react-query (offlineFirst). Rate limits defined in `AppServiceProvider`: `voting` 10/min, `public-api` 60/min per IP.
+React pages fetch JSON from `/api/*` using the shared axios client (`Lib/axios.ts`) wrapped in react-query (offlineFirst). Rate limits defined in `AppServiceProvider` + route middleware: `voting` 10/min, `public-api` 60/min per IP; contributors + `app-icon` + transit v1 reads + places reads throttle 60/min; Guess Who room create 10/min, join 30/min.
 
 ### Spatial query flow (transit/places)
 Controllers issue raw spatial SQL (`ST_AsGeoJSON`, `ST_Distance_Sphere`) against MySQL/MariaDB geometry columns; results cached (e.g. city geojson 1h) and large static datasets served from R2 CDN.
@@ -111,18 +111,19 @@ Controllers issue raw spatial SQL (`ST_AsGeoJSON`, `ST_Distance_Sphere`) against
 | Transit | `/transit*`, `/api/v1/cities…`, `/studio/routes` | TransitAdminController, TransitStudioController, Api\V1\TransitController | Transit/ | [modules/transit.md](../modules/transit.md) |
 | Mishwar (hidden places) | `/mishwar`, `/api/v1/places…`, `/my/places…` | Place*, PlaceDiscovery, PlaceEngagement controllers | Places/ | [modules/mishwar-places.md](../modules/mishwar-places.md) |
 | Board ("لوحتي") | `/board`, `/api/v1/board` | BoardController | Board/ (14 widgets) | [modules/board.md](../modules/board.md) |
-| Guess Who | `/guesswho*`, signaling + broadcasting auth | GuessWhoController, SignalingController | GuessWho/ | [modules/guess-who.md](../modules/guess-who.md) |
+| Guess Who | `/guesswho*`, signaling + broadcasting auth; admin at `/admin/guesswho` + `/api/v1/admin/guesswho/*` | GuessWhoController, SignalingController, GuessWhoAdminController | GuessWho/, Admin/GuessWho/ | [modules/guess-who.md](../modules/guess-who.md) |
 | Officials directory | `/syofficial`, `/api/v1/admin/syofficial/*` | SyOfficial*, SyOfficialAdminController | SyOfficial/ | [modules/directories.md](../modules/directories.md) |
 | Phonebook | `/phonebook`, `/api/v1/admin/phonebook/*` | Phonebook*, PhonebookAdminController | Phonebook/ | [modules/directories.md](../modules/directories.md) |
 | Gov apps | `/govapps`, `/api/v1/admin/govapps` | GovAppController, GovAppsAdminController | GovApps/ | [modules/directories.md](../modules/directories.md) |
 | Hotels (HalaSyria) | `/api/v1/hotels*` | HotelController, HalaSyriaService | Places/ hotel layer | [modules/directories.md](../modules/directories.md) |
-| Population atlas | `/population`, `/population/master`, `/env-report` | Api\PopulationAtlasController | Population/ | [modules/population-atlas.md](../modules/population-atlas.md) |
+| Population atlas | `/atlas` (canonical; `/population` 301-redirects), `/population/master`, `/env-report` | Api\PopulationAtlasController | Population/ | [modules/population-atlas.md](../modules/population-atlas.md) |
 | Widgets APIs | `/weather`, `/answers`, `/recipe-of-the-day`, `/events/today`, `/feed`, `/prayer-times` | Weather/Answers/Recipe/Events/Feed/Prayer controllers | Board widgets consume these | [modules/board.md](../modules/board.md) |
 | External data | `/syid`, `/sites`, `/party`, `/house`, `/alignment`, `/syrian-contributors` | ExternalDataController, ContributorController | SyId/, Sites/, Party/, House/, Alignment/, SyrianContributors/ | — |
 | Quizzes | `/compass`, `/priorities` | (Inertia closures) | Compass/, Priorities/ | — |
 | Standalone pages | `/roznama`, `/shawarma`, `/justice`, `/crossings`, `/about`, `/stats` | (Inertia closures) | Roznama/, Shawarma/, Justice/, Crossings/, About/, Stats/ | — |
-| Dashboard/auth | `/dashboard`, `/auth/google*`, `/user` | AuthController, DashboardController, AdminUserController | Dashboard/ | — |
+| Dashboard/auth | `/dashboard` (incl. polls-tab admin), `/auth/google*`, `/user` | AuthController, DashboardController, AdminUserController | Dashboard/ | — |
 | Assets admin | `/admin/assets`, `/api/v1/admin/assets/*` | AssetUploadController | Admin/AssetManager | [reference/asset-storage.md](../reference/asset-storage.md) |
+| Site popup | `/admin/site-popup`, `/api/v1/admin/site-popup` (superadmin; shared as `sitePopup` prop, versioned dismiss) | SitePopupAdminController | Admin/SitePopup | — |
 | Meta | `/sitemap.xml`, `/healthcheck`, `/api/metrics`, `/api/app-icon` | Sitemap/Metrics controllers | — | — |
 
 Full route details: [reference/routes-api-map.md](../reference/routes-api-map.md).
@@ -131,7 +132,7 @@ Full route details: [reference/routes-api-map.md](../reference/routes-api-map.md
 
 ## 5. Roles & Access Control
 
-Middleware aliases registered in `bootstrap/app.php`: `admin`, `transit_admin`, `syofficial_admin`, `phonebook_admin`, `superadmin`. Users carry a `role` enum, optional JSON `permissions`, soft-delete/ban fields. `Gate::before` gives superadmins everything. Dev-only role impersonation at `/dev/impersonate/{role}` (DevRoleSwitcher component).
+Middleware aliases registered in `bootstrap/app.php`: `admin`, `transit_admin` (accepts per-action params e.g. `transit_admin:transit.approve`), `syofficial_admin`, `phonebook_admin`, `places_admin`, `polls_admin`, `superadmin` (plus `GovAppsAdmin` class middleware). Users carry a `role` enum, optional JSON `permissions`, soft-delete/ban fields. `Gate::before` gives superadmins everything. `places_admin`/`polls_admin` accept superadmin/admin/any-of-module-perms. Dev-only role impersonation at `/dev/impersonate/{role}` (DevRoleSwitcher component).
 
 ---
 

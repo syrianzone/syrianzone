@@ -20,8 +20,8 @@ Route: `/guesswho`. Realtime "Guess Who?" style game where two players pick char
 
 - Signaling runs through **Laravel Reverb** broadcast events (`app/Events`) + private channels registered in `routes/channels.php`; WebRTC handles the actual media/data exchange peer-to-peer.
 - Session identity via `Lib/guessWhoSession.ts` client helper.
-- Character/category content managed in **Filament**: `GuessWhoCategoryResource`, `GuessWhoCharacterResource` (superadmin panel).
-- No role-gated admin page needed outside Filament; categories toggle with `is_active`.
+- Character/category content managed in the **Inertia admin page** `Admin/GuessWho/Index` (RTL tabs + search + dialogs) via `GuessWhoAdminController`, under the `admin` middleware group: page at `GET /admin/guesswho` (linked from the dashboard as "من هو"), APIs under `/api/v1/admin/guesswho/*` (categories + characters CRUD). Attributes edit as `key: value` lines (Filament KeyValue equivalent). Uploads go to the `public` disk under `guesswho/characters` and render via `/storage/...`. The Filament `GuessWhoCategory/CharacterResource` pages were removed; `/superadmin` (Filament) now serves Users only.
+- Categories toggle with `is_active`.
 
 ## Tests / conventions
 

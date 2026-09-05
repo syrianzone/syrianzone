@@ -31,7 +31,11 @@ erDiagram
 
 ## Users & auth
 
-**users** — name, email, google_id (OAuth), avatar, role enum, permissions JSON, settings JSON (2026_07_23), soft deletes + banned_at. Access tokens via Sanctum (`personal_access_tokens`).
+**users** — name, email, google_id (OAuth), avatar_url, role enum, permissions JSON, settings JSON (2026_07_23), soft deletes + banned_at. Access tokens via Sanctum (`personal_access_tokens`). User avatars stored as `avatars/{id}/{uuid}.webp` (256×256 WebP via `AvatarService`); see [asset-storage.md](asset-storage.md) for URL contract.
+
+## Site settings (homepage popup)
+
+- **site_settings** — key unique (`homepage_popup`), value JSON (enabled, title, description, buttonText, dismissText, link, version), updated_by FK → users nullable nullOnDelete. Served cached (`site_popup` 5min) via `SiteSetting::getPopup()`, shared on all Inertia responses as `sitePopup`; every update bumps `version` so clients can key the dismiss flag (`site_popup_dismissed_v{version}`).
 
 ## Contributors
 
@@ -43,7 +47,7 @@ erDiagram
 
 All UUID PKs.
 
-- **polls** — slug, title, timezone (default Europe/Amsterdam), is_active, user_id (nullable owner)
+- **polls** — slug, title, timezone (default Europe/Amsterdam), is_active, user_id (nullable owner; `$hidden` so it never leaks on public poll reads)
 - **candidate_groups** — poll_id, name, key (`minister`, `governor`, …), sort_order, is_default
 - **candidates** — poll-scoped via group; name, title, image_url, category default `minister`, sort, candidate_group_id, legacy_id, archive fields (archived_at), user_id
 - **ballots** — poll_id, vote_day, voter_key (hashed identity), ip_hash, user_agent — never exposed by public API

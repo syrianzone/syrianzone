@@ -1,6 +1,6 @@
 # Cloudflare R2 Asset Storage & CDN Guide
 
-This document explains how static assets (Candidate avatars, GeoJSON map datasets, brand kits, and uploaded files) are stored, served, and managed in the Syrian Zone platform.
+This document explains how static assets (Candidate avatars, user avatars, Guess Who character images, GeoJSON map datasets, brand kits, and uploaded files) are stored, served, and managed in the Syrian Zone platform.
 
 ---
 
@@ -22,6 +22,8 @@ The Cloudflare R2 bucket follows a clean, organized directory layout:
 | :--- | :--- | :--- |
 | `tierlist/candidates/` | Candidate profile pictures for tierlist evaluation polls | `tierlist/candidates/gov01.jpg` |
 | `syofficial/entities/` | Official entity logos, minister photos, and embassy flags | `syofficial/entities/gov-damascus.webp` |
+| `avatars/{userId}/` | User avatars via `AvatarService` (256×256 WebP, fresh UUID per upload for CDN busting) | `avatars/42/9f3c….webp` |
+| `guesswho/characters/` | Guess Who character images (public disk, rendered via `/storage/…`) | `guesswho/characters/abc.webp` |
 | `downloads/` | Large downloadable archives (BrandKit zip, master GeoJSON files) | `downloads/brandkit.zip` |
 | `uploads/` | General superadmin uploaded assets | `uploads/sample-asset.png` |
 
@@ -61,3 +63,11 @@ SuperAdmin users can inspect, upload, and download R2 assets directly from the w
   - **URL Copy & Preview**: Copy direct R2 CDN URLs to clipboard or preview image thumbnails.
   - **Upload New Asset**: Upload files up to 50MB directly to R2 bucket folders.
   - **Download All (ZIP)**: Download a single `.zip` archive containing all stored R2 assets for backups or offline inspection.
+
+---
+
+## 5. User Avatars (`AvatarService`)
+
+- Upload endpoint `POST /api/account/avatar` (throttle 10/min) → `AvatarService::update()` → 256×256 WebP at `avatars/{userId}/{uuid}.webp`, stored on `filesystems.media_disk`, `users.avatar_url` updated.
+- **URL contract**: local disks return a root-relative `/storage/…` path (not `Storage::url()`, which prefixes `APP_URL` and breaks when `APP_URL` carries a path suffix/trailing slash); S3/R2 disks return their absolute URL.
+- Old files are deleted only when the old URL path contains `/avatars/{userId}/`, so Google `lh3` URLs and pre-`MEDIA_DISK`-switch files are handled safely (disk uses `throw=false`, failed deletes never bubble).

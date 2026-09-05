@@ -17,12 +17,12 @@ Generated from `routes/web.php` and `routes/api.php`. Grouped by feature area, m
 - `GET /tierlist`, `GET /tierlist/leaderboard`
 
 ### Directories & data pages
-- `GET /syofficial`, `/phonebook`, `/govapps`, `/population`
+- `GET /syofficial`, `/phonebook`, `/govapps`, `/atlas` (canonical; `/population` 301-redirects to `/atlas`)
 - Inertia closures: `/compass`, `/priorities`, `/roznama`, `/shawarma`, `/justice`, `/crossings`, `/about`, `/stats`, `/privacy`, `/terms`
 - ExternalDataController: `/syid`, `/syrian-contributors`, `/sites`, `/party`, `/house`, `/alignment`
 
 ### Guess Who
-- `GET /guesswho` · `POST /guesswho/rooms` · `GET /guesswho/room/{roomCode}` · `POST .../join` · `POST .../signal` · `POST /guesswho/broadcasting/auth`
+- `GET /guesswho` · `POST /guesswho/rooms` (throttle 10/min) · `GET /guesswho/room/{roomCode}` · `POST .../join` (throttle 30/min) · `POST .../signal` · `POST /guesswho/broadcasting/auth`
 
 ### Transit
 - `GET /transit` (closure; cached cities with `ST_AsGeoJSON`)
@@ -42,7 +42,7 @@ Generated from `routes/web.php` and `routes/api.php`. Grouped by feature area, m
 
 - Dashboard: `GET /dashboard`; `POST /api/account/update|avatar|delete` (avatar throttled 10/min)
 - Board sync: `GET|PUT /api/v1/board` (throttle 60/min)
-- Superadmin: users CRUD `/api/admins[/{id}]`; asset explorer `/admin/assets` + `/api/v1/admin/assets/(list|upload|delete)` (50MB cap)
+- Superadmin: users CRUD `/api/admins[/{id}]`; asset explorer `/admin/assets` + `/api/v1/admin/assets/(list|upload|delete)` (50MB cap); homepage popup `/admin/site-popup` + `GET|PUT /api/v1/admin/site-popup` (superadmin only, version-bump on update, shared as `sitePopup` prop)
 
 ### Mishwar owner endpoints (`auth`)
 - `POST /places` (submit), `GET /my/places`, `PATCH /my/places/{id}`, `PATCH .../location`, `POST .../photos`, `POST .../resubmit`, `DELETE /my/places/{id}`
@@ -53,9 +53,11 @@ Generated from `routes/web.php` and `routes/api.php`. Grouped by feature area, m
 
 | Area | Pages | API |
 |---|---|---|
-| Polls | `/dashboard` polls tab (inline create + edit; legacy `/admin/polls*` 301-redirects to dashboard) | `POST|PUT|DELETE /api/polls*`; candidate-groups apiResource (+reorder, setDefault); candidates apiResource (+archive/restore) |
-| Places | `/admin/places` | approve/reject/update/delete + photo add/rotate/replace/delete under `/api/v1/admin/place(s|-photos)` |
-| Transit | `/transit/admin` | draft approve/reject; published-route CRUD incl. geojson, stops, logs, move, combine, split, status; `POST /api/admin/users/{id}/toggle-ban` |
+| Polls | `/dashboard` polls tab (inline create + edit; legacy `/admin/polls*` 301-redirects to dashboard) | `POST|PUT|DELETE /api/polls*` under `polls_admin`; candidate-groups apiResource (+reorder, setDefault); candidates apiResource (+archive/restore) |
+| Places | `/admin/places` (`places_admin`) | approve/reject/update/delete + photo add/rotate/replace/delete under `/api/v1/admin/place(s|-photos)` |
+| Transit | `/transit/admin` (`transit_admin`, per-action `transit.review_drafts|approve|reject|edit_routes` on mutating endpoints) | draft approve/reject; published-route CRUD incl. geojson, stops, logs, move, combine, split, status; `POST /api/admin/users/{id}/toggle-ban` |
+| Guess Who | `/admin/guesswho` (`admin`; dashboard "من هو" link) | categories/characters CRUD under `/api/v1/admin/guesswho/*` |
+| Site popup | `/admin/site-popup` (`superadmin`) | `GET|PUT /api/v1/admin/site-popup` |
 | SyOfficial | Admin page | categories/entities CRUD + reorder under `/api/v1/admin/syofficial/*` |
 | Gov apps | Admin page | CRUD + reorder under `/api/v1/admin/govapps` |
 | Phonebook | Admin page | categories/entries CRUD, toggle active, reorder under `/api/v1/admin/phonebook` |
@@ -67,18 +69,18 @@ Generated from `routes/web.php` and `routes/api.php`. Grouped by feature area, m
 - `POST /submit` (throttle `voting` = 10/min)
 
 ### Contributors & atlas
-- `GET /contributors`, `/contributors/{contributor}`
-- `GET /population/master`, `/population/env-report`
+- `GET /contributors`, `/contributors/{contributor}` (throttle 60/min)
+- `GET /population/master`, `/population/env-report` (page itself lives at `/atlas`)
 
 ### Widget APIs (throttle 60/min)
 `/weather` · `/answers` · `/recipe-of-the-day` · `/events/today` · `/feed` · `/prayer-times` · `/metrics`
 
 ### Utilities
-- `GET /app-icon` — proxies Apple iTunes Lookup & Google Play scraping (24h cache)
+- `GET /app-icon` — proxies Apple iTunes Lookup & Google Play scraping (24h cache, throttle 60/min)
 
 ### `v1/` group
 
-**Transit** (`Api\V1\TransitController`):
+**Transit** (`Api\V1\TransitController`, reads throttle 60/min):
 - `GET /cities`, `/cities/{id}/routes`, `/cities/{id}/map-data`
 - `GET /stops/nearby`, `GET /search`
 - Transit Studio: `POST /studio/routes` (5/min); auth'd `GET|PUT /studio/routes/{id}`, `GET .../from-route`

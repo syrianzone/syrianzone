@@ -13,6 +13,7 @@ Voter-identifying data is never returned:
 - `ballots.voter_key`, `ballots.ip_hash`, `ballots.user_agent` are never
   selected at the query level.
 - `polls.user_id` (poll owner) is never selected.
+- Defense in depth: `Poll::$hidden = ['user_id']`, so even legacy public poll reads (`GET /api/polls*`) cannot leak the owner id.
 - Ballots come back anonymized: ballot UUID, vote day, creation timestamp, and
   tier assignments only.
 

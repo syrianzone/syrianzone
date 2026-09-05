@@ -76,3 +76,10 @@ All static media assets (candidate avatars, official entity logos, GeoJSON maps,
 - `php artisan db:seed --class=StagingSeeder` — Re-seed dev database with fresh test data.
 - `php artisan geojson:upload-to-r2` — Upload master GeoJSON files to R2 bucket.
 - `php artisan tierlist:migrate-to-r2` — Migrate tierlist candidate images to R2 storage.
+
+---
+
+## 5. Testing
+
+- `vendor/bin/pest` · **Lint**: `vendor/bin/pint`
+- `phpunit.xml` forces `AUTO_LOGIN_DEV=false` (with `force="true"`), so a stray `AUTO_LOGIN_DEV=true` in `.env` cannot leak through `AutoLoginDevUser` and override `actingAs()` identities during tests.

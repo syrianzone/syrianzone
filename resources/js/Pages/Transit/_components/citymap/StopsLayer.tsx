@@ -72,11 +72,13 @@ export default function StopsLayer({ data }: StopsLayerProps) {
         ? routeIds.map(id =>
             `<span class="inline-block px-2 py-1 text-xs font-semibold bg-[var(--pomegranate)] text-white rounded">مسار ${escapeHtml(id)}</span>`
           ).join('')
-        : '<span class="text-xs text-gray-400">لا توجد مسارات</span>'
+        : '<span class="text-xs" style="opacity: 0.65;">لا توجد مسارات</span>'
 
+      // Text inherits the themed popup color (transit.css); never hardcode a
+      // light/dark color here or it becomes unreadable in the other theme.
       const html = `
         <div class="p-2" dir="rtl">
-          <h3 class="font-bold text-lg mb-2 text-[#2c3e50]">${escapeHtml(props.nameAr)}</h3>
+          <h3 class="font-bold text-lg mb-2">${escapeHtml(props.nameAr)}</h3>
           <div class="flex flex-wrap gap-1">
             ${badgesHtml}
           </div>

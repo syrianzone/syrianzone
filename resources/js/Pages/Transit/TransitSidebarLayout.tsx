@@ -21,7 +21,9 @@ export default function TransitSidebarLayout({ children }: { children: React.Rea
   const sidebarContent = <TransitSidebar pathname={path} search={new URLSearchParams(url.split('?')[1] || '')} />
 
   return (
-    <div className="transit-shell flex h-full bg-background">
+    // transit-root activates transit.css (map popup/control theming derives
+    // site theme vars here; without it those rules never match anything).
+    <div className="transit-shell transit-root flex h-full bg-background">
       {!hideSidebar && (
         <>
           <aside className="transit-sidebar hidden sm:block w-96 shrink-0 bg-card border-s border-border relative z-auto overflow-y-auto">

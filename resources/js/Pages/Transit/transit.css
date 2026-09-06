@@ -88,8 +88,19 @@
   border-radius: 8px;
   font-family: var(--font-ar);
 }
-.transit-root .maplibregl-popup-tip {
+/* The tip triangle takes its color from a different border side per anchor
+   direction — cover all four so it always matches the popup body. */
+.transit-root .maplibregl-popup-anchor-top .maplibregl-popup-tip {
+  border-bottom-color: var(--surface);
+}
+.transit-root .maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
   border-top-color: var(--surface);
+}
+.transit-root .maplibregl-popup-anchor-left .maplibregl-popup-tip {
+  border-right-color: var(--surface);
+}
+.transit-root .maplibregl-popup-anchor-right .maplibregl-popup-tip {
+  border-left-color: var(--surface);
 }
 .transit-root .maplibregl-ctrl-group {
   background: var(--surface-2);

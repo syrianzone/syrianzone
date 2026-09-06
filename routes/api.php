@@ -116,6 +116,9 @@ Route::prefix('v1')->group(function () {
         Route::get('/cities/{id}/map-data', [\App\Http\Controllers\Api\V1\TransitController::class, 'getMapData']);
         Route::get('/stops/nearby', [\App\Http\Controllers\Api\V1\TransitController::class, 'getNearbyStops']);
         Route::get('/search', [\App\Http\Controllers\Api\V1\TransitController::class, 'search']);
+        // POI search (mosques, cafes…) for the transit map: Photon first,
+        // Google Places fallback on thin results. Static path, no conflicts.
+        Route::get('/geo/poi', [\App\Http\Controllers\Api\V1\PoiSearchController::class, 'search']);
     });
 
     // Transit Studio: open for community contributions

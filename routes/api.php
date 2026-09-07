@@ -128,8 +128,12 @@ Route::prefix('v1')->group(function () {
     // Transit Studio: edit existing drafts (requires auth)
     Route::middleware('auth')->group(function () {
         Route::get('/studio/routes/{id}', [\App\Http\Controllers\TransitStudioController::class, 'show']);
+        // Authenticated iterative editing (admin geometry fixes, owner
+        // resubmits): 10/min blocks legitimate rapid saving, so allow the
+        // same coarse rate as the other authed read/write endpoints. The
+        // anonymous create above stays at 5/min as the spam backstop.
         Route::put('/studio/routes/{id}', [\App\Http\Controllers\TransitStudioController::class, 'update'])
-            ->middleware('throttle:10,1');
+            ->middleware('throttle:60,1');
         Route::delete('/studio/routes/{id}', [\App\Http\Controllers\TransitStudioController::class, 'destroy'])
             ->middleware('throttle:10,1');
         Route::get('/studio/routes/{id}/from-route', [\App\Http\Controllers\TransitStudioController::class, 'showForEdit']);

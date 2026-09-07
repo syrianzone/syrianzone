@@ -54,7 +54,10 @@ class TransitController extends Controller
         $cityIds = ($id === 'damascus' || $id === 'rif-dimashq') ? ['damascus', 'rif-dimashq'] : [$id];
         $cacheKey = 'transit:routes:' . implode('+', $cityIds);
         $mapped = Cache::remember($cacheKey, 600, function () use ($cityIds) {
-            $routes = Route::whereIn('city_id', $cityIds)->where('status', 'published')->withCount('stops')->select('id', 'city_id', 'name_ar', 'name_en', 'color_index', 'price_old', 'price_new')->get();
+            // NOTE: select() must come before withCount() — a later select()
+            // replaces the column list and would drop the count subselect,
+            // leaving stops_count null in the public payload.
+            $routes = Route::whereIn('city_id', $cityIds)->where('status', 'published')->select('id', 'city_id', 'name_ar', 'name_en', 'color_index', 'price_old', 'price_new')->withCount('stops')->get();
             return $routes->map(function ($r) {
                 return [
                     'id' => $r->id,

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>خريطة خطوط حمص</name>
+    <description>خطان للاختبار</description>
+    <Placemark>
+      <name>خط الوعر</name>
+      <LineString><coordinates>36.66,34.73,0 36.67,34.735,0 36.68,34.74,0</coordinates></LineString>
+    </Placemark>
+    <Placemark>
+      <name>خط الإنشاءات</name>
+      <LineString><coordinates>36.75,34.70,0 36.76,34.705,0 36.77,34.71,0</coordinates></LineString>
+    </Placemark>
+    <Placemark>
+      <name>موقف الوعر</name>
+      <Point><coordinates>36.665,34.732,0</coordinates></Point>
+    </Placemark>
+    <Placemark>
+      <name>موقف الإنشاءات</name>
+      <Point><coordinates>36.755,34.702,0</coordinates></Point>
+    </Placemark>
+  </Document>
+</kml>

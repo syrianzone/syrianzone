@@ -319,6 +319,10 @@ Route::middleware('auth')->group(function () {
                 ->middleware('transit_admin:transit.edit_routes');
             Route::get('/admin/routes/{id}/stops', [\App\Http\Controllers\TransitAdminController::class, 'getRouteStops'])
                 ->middleware('transit_admin:transit.review_drafts');
+            Route::post('/admin/routes/import-preview', [\App\Http\Controllers\TransitImportController::class, 'preview'])
+                ->middleware(['transit_admin:transit.review_drafts', 'throttle:10,1']);
+            Route::post('/admin/routes/import-publish', [\App\Http\Controllers\TransitImportController::class, 'publish'])
+                ->middleware(['transit_admin:transit.edit_routes', 'throttle:30,1']);
         });
     });
 

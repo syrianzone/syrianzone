@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>خط وعر قصر عدلي (المحكمة) - غوطة - السوق</name>
+    <description>التعرفة ٣٠ ليرة</description>
+    <Folder>
+      <name>طبقة بلا عنوان</name>
+      <Placemark>
+        <name>بداية خط وعر</name>
+        <Point><coordinates>36.6667548,34.7381367,0</coordinates></Point>
+      </Placemark>
+      <Placemark>
+        <name>دوار الكاردينيا (غوطة)</name>
+        <Point><coordinates>36.7000745,34.7353233,0</coordinates></Point>
+      </Placemark>
+      <Placemark>
+        <name>نهاية خط وعر قصر عدلي</name>
+        <Point><coordinates>36.7110265,34.7324489,0</coordinates></Point>
+      </Placemark>
+    </Folder>
+    <Folder>
+      <name>الاتجاهات من بداية خط وعر إلى نهاية خط وعر قصر عدلي</name>
+      <Placemark>
+        <name>الاتجاهات من بداية خط وعر إلى نهاية خط وعر قصر عدلي</name>
+        <LineString><coordinates>36.66674,34.73815,0 36.66813,34.73895,0 36.70007,34.73532,0 36.71102,34.73245,0</coordinates></LineString>
+      </Placemark>
+      <Placemark>
+        <name>بداية خط وعر</name>
+        <Point><coordinates>36.6667438,34.7381488,0</coordinates></Point>
+      </Placemark>
+      <Placemark>
+        <name>دوار الكاردينيا (غوطة)</name>
+        <Point><coordinates>36.700065,34.7353094,0</coordinates></Point>
+      </Placemark>
+      <Placemark>
+        <name>نهاية خط وعر قصر عدلي</name>
+        <Point><coordinates>36.7110262,34.7324518,0</coordinates></Point>
+      </Placemark>
+    </Folder>
+  </Document>
+</kml>

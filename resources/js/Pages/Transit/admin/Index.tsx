@@ -33,8 +33,9 @@ import {
 import {
   ArrowRight, MapPin, CheckCircle2, XCircle, Eye, EyeOff,
   GitMerge, GitBranch, MoveRight, LogOut, Map, Loader2,
-  Route, Users, History, Pencil
+  Route, Users, History, Pencil, Upload
 } from 'lucide-react'
+import ImportTab from './ImportTab'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type DraftStatus = 'pending' | 'approved' | 'rejected'
@@ -172,10 +173,15 @@ function TransitAdminPageContent() {
   const [editRouteColorIndex, setEditRouteColorIndex] = useState<number>(0)
   const [approveColorIndex, setApproveColorIndex] = useState<number>(0)
 
+  // Google My Maps import preview (rendered on the shared map via draft-source)
+  const [importPreviewGeoJson, setImportPreviewGeoJson] = useState<any>(null)
+  const [importColorIndex, setImportColorIndex] = useState<number>(0)
+  const [importCityId, setImportCityId] = useState<string | undefined>(undefined)
+
   const queryClient = useQueryClient()
   const { data: drafts = [], isLoading, error: draftsError } = useAdminDrafts()
 
-  const activeCityId = adminTab === 'drafts' ? selectedDraft?.city_id : selectedRoute?.city_id
+  const activeCityId = adminTab === 'drafts' ? selectedDraft?.city_id : adminTab === 'import' ? importCityId : selectedRoute?.city_id
   const { data: refData, refetch: refetchRefData } = useMapData(activeCityId)
 
   const showToast = useCallback((msg: string, ok = true) => {
@@ -285,6 +291,8 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
       if (typeof geojsonData === 'string') { try { geojsonData = JSON.parse(geojsonData) } catch { geojsonData = empty } }
     } else if (adminTab === 'routes') {
       geojsonData = selectedRouteGeoJson ?? empty
+    } else if (adminTab === 'import') {
+      geojsonData = importPreviewGeoJson ?? empty
     }
     src?.setData(geojsonData)
 
@@ -292,7 +300,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
     if (bounds) {
       mapRef.current.fitBounds(bounds, { padding: 80, maxZoom: 15, duration: 800 })
     }
-  }, [mapReady, selectedDraft, selectedRouteGeoJson, adminTab])
+  }, [mapReady, selectedDraft, selectedRouteGeoJson, importPreviewGeoJson, adminTab])
 
   // Update line color, casing, points, and background dimming dynamically
   useEffect(() => {
@@ -304,6 +312,8 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
       color = getRouteColor(approveColorIndex)
     } else if (adminTab === 'routes' && selectedRoute) {
       color = getRouteColor(selectedRoute.color_index ?? 0)
+    } else if (adminTab === 'import' && importPreviewGeoJson) {
+      color = getRouteColor(importColorIndex)
     }
 
     if (map.getLayer('draft-line')) {
@@ -316,11 +326,11 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
     }
 
     if (map.getLayer('ref-layer-routes')) {
-      const isSelected = (adminTab === 'drafts' && !!selectedDraft) || (adminTab === 'routes' && !!selectedRoute)
+      const isSelected = (adminTab === 'drafts' && !!selectedDraft) || (adminTab === 'routes' && !!selectedRoute) || (adminTab === 'import' && !!importPreviewGeoJson)
       map.setPaintProperty('ref-layer-routes', 'line-opacity', isSelected ? 0.15 : 0.45)
       map.setPaintProperty('ref-layer-routes', 'line-width', 3)
     }
-  }, [mapReady, adminTab, approveColorIndex, selectedRoute, selectedDraft])
+  }, [mapReady, adminTab, approveColorIndex, selectedRoute, selectedDraft, importPreviewGeoJson, importColorIndex])
 
   useEffect(() => {
     if (!mapReady || !mapRef.current) return
@@ -608,11 +618,12 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
           </Button>
         </header>
 
-        <Tabs value={adminTab} onValueChange={(v) => {
+          <Tabs value={adminTab} onValueChange={(v) => {
           setAdminTab(v)
           if (v === 'drafts') { setSelectedRoute(null); setSelectedRouteGeoJson(null) }
           if (v === 'routes') { setSelectedDraft(null); fetchRoutes() }
           if (v === 'logs') { setSelectedDraft(null); setSelectedRoute(null); setSelectedRouteGeoJson(null); fetchLogs() }
+          if (v === 'import') { setSelectedDraft(null); setSelectedRoute(null); setSelectedRouteGeoJson(null) }
         }} className="flex flex-col flex-1 overflow-hidden">
           <TabsList className="mx-4 mt-3" dir="rtl">
             <TabsTrigger value="drafts" className="flex-1 text-xs gap-1.5">
@@ -620,6 +631,9 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
             </TabsTrigger>
             <TabsTrigger value="routes" className="flex-1 text-xs gap-1.5">
               <Route className="h-3.5 w-3.5" /> الخطوط
+            </TabsTrigger>
+            <TabsTrigger value="import" className="flex-1 text-xs gap-1.5">
+              <Upload className="h-3.5 w-3.5" /> استيراد
             </TabsTrigger>
             <TabsTrigger value="logs" className="flex-1 text-xs gap-1.5">
               <History className="h-3.5 w-3.5" /> السجل
@@ -770,6 +784,23 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
                 ))}
               </div>
             </ScrollArea>
+          </TabsContent>
+
+          {/* ── IMPORT TAB (Google My Maps) ────────────────────────────── */}
+          <TabsContent value="import" className="flex-1 flex flex-col overflow-hidden mt-0 pt-3">
+            <ImportTab
+              cities={cities}
+              showToast={showToast}
+              onPreview={(geojson, colorIdx, city) => {
+                setImportPreviewGeoJson(geojson)
+                setImportColorIndex(colorIdx)
+                if (city !== undefined) setImportCityId(city)
+              }}
+              onDraftCreated={() => {
+                queryClient.invalidateQueries({ queryKey: ['admin-drafts'] })
+                setAdminTab('drafts')
+              }}
+            />
           </TabsContent>
 
           {/* ── LOGS TAB ───────────────────────────────────────────────── */}
@@ -974,6 +1005,11 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
         {!selectedRoute && adminTab === 'routes' && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="bg-card/80 backdrop-blur-sm border border-border rounded-xl px-5 py-3 text-sm text-muted-foreground">اختر خطاً للمعاينة والتحكم</div>
+          </div>
+        )}
+        {adminTab === 'import' && !importPreviewGeoJson && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="bg-card/80 backdrop-blur-sm border border-border rounded-xl px-5 py-3 text-sm text-muted-foreground">الصق رابط My Maps ثم اجلب المعاينة لعرضها هنا</div>
           </div>
         )}
         {adminTab === 'logs' && (

@@ -227,3 +227,58 @@ Cache::forget("transit:map-data:{$draft->city_id}");
 Cache::forget('transit:cities');
 ```
 This forces the subsequent client calls to read the freshly populated geometries directly from the PostGIS database.
+
+---
+
+## 5. Google My Maps Import (Transit Admin → استيراد tab)
+
+Admins can import routes from Google My Maps shares (`google.com/maps/d/...?mid={mid}`) instead of hand-drawing them.
+
+### Flow
+```
+paste My Maps link (or upload KML/KMZ/GeoJSON)
+  → POST /api/v1/admin/routes/import-preview   (read-only, no DB writes)
+  → preview on the admin map (bright line = import, faint = published)
+  → edit name / price / city / color / stop names, delete stray stops
+  → POST /api/v1/admin/routes/import-publish { mode: 'draft' }  (recommended)
+  → pending RouteDraft → existing Approve flow publishes it
+```
+
+`mode: 'direct'` skips the draft queue and publishes immediately (same
+spatial transaction as approve's new-route branch, `TransitRouteLog`
+action `imported`). Draft mode is the default and should stay so.
+
+### Backend
+* `app/Services/TransitKmlImportService.php` — pure KML/GeoJSON parsing:
+  `mid` extraction/validation, `fetchKmlByMid()` (allow-listed Google KML
+  host only, 15s timeout, 5MB cap, 1h `transit:import:{mid}` cache),
+  `parseKml()` / `parseUploadedFile()` / `parseGeoJsonDocument()` → 1..N
+  candidates of `{ name_ar, price (Arabic-Indic digits parsed), notes,
+  geojson (LineString + Point[nameAr]), vertex/stop counts, bounds,
+  warnings }`. Duplicate stops (<15m, My Maps repeats stops across folders)
+  are merged; multi-LineString maps split into one candidate per line with
+  stops assigned to the nearest line.
+* `app/Http/Controllers/TransitImportController.php` — `preview`
+  (`transit.review_drafts`, throttle 10/min), `publish`
+  (`transit.edit_routes`, throttle 30/min). Publish re-validates the full
+  studio GeoJSON contract plus deep `[lng, lat]` range checks, then either
+  creates a pending `RouteDraft` (with `mid` provenance appended to notes)
+  or runs the direct-publish transaction + `clearCityMapCache()`.
+* City is auto-suggested by testing the candidate centroid against city
+  bounds; the admin can always override.
+
+### Frontend
+* `resources/js/Pages/Transit/admin/ImportTab.tsx` — fetch form (URL +
+  city override + KML/KMZ/GeoJSON upload for private maps), multi-route
+  selector, edit form, draft/direct publish buttons. Emits live preview via
+  `onPreview(geojson, colorIndex, cityId)`.
+* `resources/js/Pages/Transit/admin/Index.tsx` — hosts the `استيراد` tab
+  and renders the preview through the existing `draft-source` layer +
+  `getGeoJsonBounds()` fit, so no new map sources were added.
+
+### Tests
+`tests/Feature/TransitImportTest.php` + `tests/Fixtures/transit-{single,multi}.kml`
+cover mid extraction, KML→candidate mapping, Arabic-digit prices,
+multi-line stop assignment, endpoint auth (guest 401 / user 403 /
+transit_admin 200), faked-Google preview incl. private-map 422, file
+upload, draft creation, and degenerate-geometry rejection.

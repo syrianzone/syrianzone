@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             \Database\Seeders\PopulationAtlasSeeder::class,
             \Database\Seeders\GuessWhoSeeder::class,
+            \Database\Seeders\HouseMembers2026Seeder::class,
         ]);
     }
 }

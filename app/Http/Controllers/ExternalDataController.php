@@ -39,7 +39,20 @@ class ExternalDataController extends Controller
      */
     public function house()
     {
-        return Inertia::render('House/Index');
+        $members = [];
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('house_members_2026')) {
+                $members = \App\Models\HouseMember2026::query()
+                    ->orderBy('governorate_ar')->orderBy('name_ar')
+                    ->get()->toArray();
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('house_members_2026 read failed', ['error' => $e->getMessage()]);
+        }
+
+        return Inertia::render('House/Index', [
+            'members2026' => $members,
+        ]);
     }
 
     /**

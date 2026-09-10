@@ -153,6 +153,7 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
   const setMuslimPrayerSettingsOpen = useMuslimNav((s) => s.setMuslimPrayerSettingsOpen);
   const setHomeSettingsOpen = useMuslimNav((s) => s.setHomeSettingsOpen);
   const showQuranBookmarks = pathname === '/muslim' && muslimView === 'quran';
+  const quranFocus = useMuslimNav((s) => s.quranFocus);
   const showRoznamaSettings = pathname === '/roznama';
   const showMuslimPrayerSettings = pathname === '/muslim' && muslimView === 'prayer';
 
@@ -165,6 +166,7 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
   };
 
   return (
+    quranFocus && pathname === '/muslim' ? null :
     <header className={`${sticky ? 'sticky top-0' : 'relative'} z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ${isHomepage ? 'lg:hidden' : ''}`}>
       <div className="container relative flex h-16 max-w-7xl mx-auto items-center px-4 md:px-8 justify-between lg:justify-normal" dir="rtl">
         {/* Mobile Menu (settings gear instead of hamburger on homepage) */}

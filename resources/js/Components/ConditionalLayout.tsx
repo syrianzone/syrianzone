@@ -1,11 +1,15 @@
+import { useEffect } from 'react'
 import { usePage } from '@inertiajs/react'
 import Navbar from './Navbar'
 import UnblockSyriaNotification from './UnblockSyriaNotification'
 import { DevRoleSwitcher } from './DevRoleSwitcher'
+import { recordVisit } from '@/Lib/visit'
 
 export default function ConditionalLayout({ children }: { children: React.ReactNode }) {
   const { url } = usePage()
   const path = url.split('?')[0]
+  // Last-visited tracking for the homepage badge (home itself never overwrites).
+  useEffect(() => { recordVisit(path); }, [path])
   const isTransit = path.startsWith('/transit')
   // Full-height pages: studio, admin, and city map — no body scrollbar, navbar non-sticky
   const isFullHeight =

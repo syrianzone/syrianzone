@@ -14,6 +14,9 @@ A hyper-optimized complete Quran reading and listening client.
 - **Main-Thread Yielding**: The JSON is dehydrated to CPU memory sequentially using `yieldToMain()` chunking, bypassing `requestIdleCallback` to guarantee immediate UI rendering while strictly avoiding main-thread freezes.
 - **Audio Auto-Play / Auto-Flip**: Audio natively pre-fetches up to 10 incoming Ayahs via opaque network caching bounds, allowing gapless seamless playback while tracking the physical page numbers and auto-flipping the view instantly when it reaches page boundaries.
 - **Uthmanic Display**: Native browser typography rendering via `quran-hafs.woff2`.
+- **Fixed 25px Font**: The Mushaf page is always rendered at 25px — the size that keeps the Madina layout proportions (line width, stretch factors) correct. No user font-size control.
+- **Fill-Viewport Scaling**: `MushafPage` uniformly scales each page (up or down) until either the slot width or the viewport height limit is hit, on both mobile single-page and desktop double-page spreads. Fitting is done purely by the `scale()` transform (never by squeezing the fixed-width layout), and the page stays centered via a flex wrapper with `items-start` so height measurement is never corrupted.
+- **Focus Mode**: `quranFocus` in the Muslim nav store (`_lib/nav.ts`) hides the navbar (`Navbar` returns `null` on `/muslim`) and all reader chrome, giving the reclaimed space to the viewport so the text enlarges. `Index.tsx` drops the navbar-height offset to `0` in focus mode.
 
 ### 1.2 Roznama (`/muslim?tab=roznama`)
 A consolidated daily dashboard combining timing and locale.

@@ -45,15 +45,14 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterId, setR
   // Desktop spread (RTL: right = page, left = page+1); mobile single page.
   const visiblePages = isDesktop ? [page, page + 1].filter((p) => p <= TOTAL_PAGES) : [page];
 
-  const [isFocused, setIsFocused] = useState(false);
+  const isFocused = useMuslimNav((s) => s.quranFocus);
+  const setIsFocused = useMuslimNav((s) => s.setQuranFocus);
   const [pages, setPages] = useState<QuranPage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [jump, setJump] = useState('');
-  const [fontSize, setFontSize] = useState(() => {
-    const v = Number(window.localStorage.getItem('sz-muslim-quran-font') ?? 22);
-    return Number.isFinite(v) ? Math.min(30, Math.max(14, v)) : 22;
-  });
+  // Fixed at 25px — the size that keeps the Madina layout proportions correct.
+  const fontSize = 25;
   // Bookmarked "surah:ayah" keys: server list when logged in, guest
   // device list otherwise (union covers partially-pushed leftovers).
   const [savedKeys, setSavedKeys] = useState<Set<string>>(() => guestBookmarkKeys());
@@ -185,10 +184,6 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterId, setR
     }
   };
 
-  useEffect(() => {
-    window.localStorage.setItem('sz-muslim-quran-font', String(fontSize));
-  }, [fontSize]);
-
   // The viewport takes whatever the header/footer leave; each Mushaf page
   // scales into it (ResizeObserver = self-correcting on any shift).
   useEffect(() => {
@@ -199,7 +194,7 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterId, setR
     const ro = new ResizeObserver(apply);
     ro.observe(vp);
     return () => ro.disconnect();
-  }, [isDesktop, page, pagesKey, fontSize]);
+  }, [isDesktop, page, pagesKey, fontSize, isFocused]);
 
   // Keyboard: h/l page (RTL), [ ] Juz jump (~20 pages).
   useEffect(() => {
@@ -315,10 +310,6 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterId, setR
           <div className="flex shrink-0 items-center gap-2">
             {juzs && <span className="text-xs text-muted-foreground">الجزء {juzs}</span>}
             <span className="flex items-center gap-1">
-              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs"
-                disabled={fontSize >= 30} onClick={() => setFontSize((f) => Math.min(30, f + 1))}>أ+</Button>
-              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs"
-                disabled={fontSize <= 14} onClick={() => setFontSize((f) => Math.max(14, f - 1))}>أ−</Button>
               <Button variant="ghost" size="icon" className="h-7 w-7 ms-1 text-xs"
                 title="وضع التركيز" onClick={() => setIsFocused(true)}>
                 <Maximize className="h-4 w-4" />

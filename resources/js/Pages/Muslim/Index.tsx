@@ -51,6 +51,7 @@ export default function Index() {
   const view = useMuslimNav((s) => s.view);
   const setView = useMuslimNav((s) => s.setView);
   const setTargetAyah = useMuslimNav((s) => s.setTargetAyah);
+  const quranFocus = useMuslimNav((s) => s.quranFocus);
   // Sticky navbar height (h-16 + border) for the mobile 100dvh lock.
   const [navH, setNavH] = useState(65);
 
@@ -66,6 +67,10 @@ export default function Index() {
   }, []);
 
   useEffect(() => {
+    if (quranFocus) {
+      setNavH(0);
+      return;
+    }
     const measure = () => {
       const h = document.querySelector('header')?.getBoundingClientRect().height;
       if (h) setNavH(Math.round(h));
@@ -73,7 +78,7 @@ export default function Index() {
     measure();
     window.addEventListener('resize', measure);
     return () => window.removeEventListener('resize', measure);
-  }, []);
+  }, [quranFocus]);
 
   useEffect(() => {
     if (view !== 'index') return;
@@ -252,7 +257,7 @@ export default function Index() {
             className="h-[calc(100dvh-var(--muslim-nav,65px))] overflow-hidden"
             style={{ '--muslim-nav': `${navH}px` } as React.CSSProperties}
           >
-            <div className="container mx-auto h-full max-w-6xl px-4 py-3">
+            <div className={`container mx-auto h-full max-w-6xl px-4 ${quranFocus ? 'py-1' : 'py-3'}`}>
               <QuranReader
                 page={prefs.quranPage}
                 setPage={(p) => setPrefs({ quranPage: p })}

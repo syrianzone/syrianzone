@@ -15,7 +15,7 @@ interface Props {
   savedKeys?: Set<string>;
   onToggleBookmark?: () => void;
   bookmarkBusy?: boolean;
-  /** Force the page to scale UP if the screen is larger than the natural size. */
+  /** Kept for compat — the page always scales to fill the viewport now. */
   forceFit?: boolean;
 }
 
@@ -103,17 +103,16 @@ export default function MushafPage({ data, currentAyahKey, onSelectAyah, maxHeig
 
     const fit = () => {
       if (cancelled || !root) return;
-      const parent = root.parentElement;
-      const availW = parent ? parent.clientWidth : frameWidth;
-      let wFit = availW < frameWidth ? availW / frameWidth : 1;
+      // NOTE: root.parentElement is the w-fit wrapper (shrinks to content),
+      // so measure the slot column (grandparent) for real available width.
+      const slot = root.parentElement?.parentElement ?? root.parentElement;
+      const availW = slot ? slot.clientWidth : frameWidth;
+      // Always fill the viewport: scale up or down until either the
+      // width or the height limit is hit (font is fixed at 25px).
+      const wFit = availW / frameWidth;
       const naturalH = root.offsetHeight;
-      let hFit = maxHeight && naturalH > 0 && maxHeight < naturalH ? maxHeight / naturalH : 1;
-      
-      if (forceFit) {
-        wFit = availW / frameWidth;
-        hFit = (maxHeight && naturalH > 0) ? maxHeight / naturalH : wFit;
-      }
-      
+      const hFit = (maxHeight && naturalH > 0) ? maxHeight / naturalH : wFit;
+
       setFitScale(Math.min(wFit, hFit));
       setPageHeight(naturalH);
     };
@@ -129,26 +128,34 @@ export default function MushafPage({ data, currentAyahKey, onSelectAyah, maxHeig
       run();
     }
     window.addEventListener('resize', fit);
+    const slot = root.parentElement?.parentElement;
+    const ro = slot ? new ResizeObserver(fit) : null;
+    if (slot) ro!.observe(slot);
     return () => {
       cancelled = true;
       window.removeEventListener('resize', fit);
+      ro?.disconnect();
     };
   }, [data, frameWidth, markerW, maxHeight]);
 
+  const scaled = fitScale !== 1 && pageHeight;
   return (
     <div
-      style={fitScale !== 1 && pageHeight ? { height: pageHeight * fitScale } : undefined}
-      className="mx-auto w-fit max-w-full"
+      style={
+        scaled
+          ? { width: frameWidth * fitScale, height: pageHeight * fitScale }
+          : { width: 'fit-content', maxWidth: '100%' }
+      }
+      className="mx-auto flex flex-none items-start justify-center"
     >
       <div
         ref={pageRef}
-        className="mushaf-page"
+        className="mushaf-page flex-none"
         dir="rtl"
         style={
           {
             width: frameWidth,
-            maxWidth: '100%',
-            transform: fitScale !== 1 ? `scale(${fitScale})` : undefined,
+            transform: scaled ? `scale(${fitScale})` : undefined,
             transformOrigin: 'top center',
             '--quran-font-size': `${data.fontSize}px`,
             '--target-line-width': `${data.lineWidth}px`,

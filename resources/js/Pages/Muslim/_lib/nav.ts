@@ -23,6 +23,9 @@ interface MuslimNavState {
   /** "sura:aya" to land on after jumping from a bookmark. */
   targetAyah: string | null;
   setTargetAyah: (key: string | null) => void;
+  /** Quran reader focus mode — hides navbar + chrome to enlarge text. */
+  quranFocus: boolean;
+  setQuranFocus: (focus: boolean) => void;
 }
 
 export const useMuslimNav = create<MuslimNavState>((set) => ({
@@ -38,6 +41,8 @@ export const useMuslimNav = create<MuslimNavState>((set) => ({
   setHomeSettingsOpen: (homeSettingsOpen) => set({ homeSettingsOpen }),
   targetAyah: null,
   setTargetAyah: (targetAyah) => set({ targetAyah }),
+  quranFocus: false,
+  setQuranFocus: (quranFocus) => set({ quranFocus }),
 }));
 
 /** Mobile breakpoint mirror (matches Tailwind's max-sm) for picking

@@ -30,10 +30,16 @@ import {
   MapPin,
   LayoutGrid,
   Bookmark,
+  Settings,
+  Info,
+  BarChart3,
+  FileText,
 } from 'lucide-react';
 
 import { useAuth } from '@/Contexts/AuthContext';
 import { useMuslimNav } from '@/Pages/Muslim/_lib/nav';
+import { isDarkTheme, applyTheme, THEME_REGISTRY } from '@/lib/theme';
+import axios from 'axios';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -55,8 +61,6 @@ import {
 import { Separator } from '@/components/ui/separator';
 
 import UserNav from './UserNav';
-import { ThemeToggle } from './ThemeToggle';
-import { isDarkTheme } from '@/lib/theme';
 import {
   SyOfficialIcon,
   RoznamaIcon,
@@ -145,12 +149,37 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
   // The reader's own top row carries back + bookmarks on PC.
   const muslimView = useMuslimNav((s) => s.view);
   const setBookmarksOpen = useMuslimNav((s) => s.setBookmarksOpen);
+  const setRoznamaSettingsOpen = useMuslimNav((s) => s.setRoznamaSettingsOpen);
+  const setMuslimPrayerSettingsOpen = useMuslimNav((s) => s.setMuslimPrayerSettingsOpen);
+  const setHomeSettingsOpen = useMuslimNav((s) => s.setHomeSettingsOpen);
   const showQuranBookmarks = pathname === '/muslim' && muslimView === 'quran';
+  const showRoznamaSettings = pathname === '/roznama';
+  const showMuslimPrayerSettings = pathname === '/muslim' && muslimView === 'prayer';
+
+  const applyThemeAndSave = (id: string) => {
+    applyTheme(id);
+    setTheme(document.documentElement.getAttribute('data-theme') || id);
+    if (user) {
+      axios.post('/api/user/settings', { settings: { theme: id } }).catch(() => {});
+    }
+  };
 
   return (
     <header className={`${sticky ? 'sticky top-0' : 'relative'} z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ${isHomepage ? 'lg:hidden' : ''}`}>
       <div className="container relative flex h-16 max-w-7xl mx-auto items-center px-4 md:px-8 justify-between lg:justify-normal" dir="rtl">
-        {/* Mobile Menu */}
+        {/* Mobile Menu (settings gear instead of hamburger on homepage) */}
+        {isHomepage ? (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden h-10 w-10"
+            onClick={() => setHomeSettingsOpen(true)}
+            title="الإعدادات"
+          >
+            <Settings className="h-6 w-6" />
+            <span className="sr-only">Settings</span>
+          </Button>
+        ) : (
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>
             <Button
@@ -162,7 +191,7 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
               <span className="sr-only">Toggle Menu</span>
             </Button>
           </SheetTrigger>
-          <SheetContent side="right" className="pr-0 bg-background" dir="rtl">
+          <SheetContent side="right" className="pr-0 bg-background overflow-y-auto" dir="rtl">
             <SheetHeader className="px-7 text-right">
               <SheetTitle>
                 <Link href="/" className="flex items-center" onClick={() => setIsOpen(false)}>
@@ -174,8 +203,30 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
                 </Link>
               </SheetTitle>
             </SheetHeader>
+            {/* Theme palette (moved here from the navbar button) */}
+            <div className="px-7 pt-4">
+              <p className="text-xs font-semibold text-muted-foreground mb-2">المظهر</p>
+              <div className="flex flex-wrap gap-2">
+                {THEME_REGISTRY.map((t) => {
+                  const isActive = theme === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      title={t.nameAr}
+                      aria-label={t.nameAr}
+                      onClick={() => applyThemeAndSave(t.id)}
+                      className={`h-8 w-8 rounded-full overflow-hidden transition-transform hover:scale-110 ${isActive ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
+                      style={{ background: t.bg, border: `2px solid ${t.primary}` }}
+                    >
+                      <span className="block w-full" style={{ background: t.primary, height: '50%', marginTop: '50%' }} />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             <Separator className="my-4" />
-            <div className="flex flex-col gap-4 px-10 overflow-y-auto max-h-[calc(100vh-8rem)]">
+            <div className="flex flex-col gap-4 px-10 pb-6">
               {isTransitPage ? (
                 <>
                   <Link
@@ -260,59 +311,34 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
                 <Link
                   href="/about"
                   onClick={() => setIsOpen(false)}
-                  className="hover:text-primary transition-colors"
+                  className="flex items-center gap-1 hover:text-primary transition-colors"
                 >
+                  <Info className="h-3.5 w-3.5" />
                   عن المنصة
                 </Link>
                 <span>•</span>
                 <Link
                   href="/privacy"
                   onClick={() => setIsOpen(false)}
-                  className="hover:text-primary transition-colors"
+                  className="flex items-center gap-1 hover:text-primary transition-colors"
                 >
+                  <Shield className="h-3.5 w-3.5" />
                   سياسة الخصوصية
                 </Link>
                 <span>•</span>
                 <Link
                   href="/terms"
                   onClick={() => setIsOpen(false)}
-                  className="hover:text-primary transition-colors"
+                  className="flex items-center gap-1 hover:text-primary transition-colors"
                 >
+                  <FileText className="h-3.5 w-3.5" />
                   الشروط والأحكام
                 </Link>
               </div>
             </div>
-            <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-background flex items-center justify-center">
-              {user ? (
-                <UserNav />
-              ) : (
-                <Button asChild variant="outline" className="w-full gap-2 justify-center">
-                  <a href="/auth/google" className="flex items-center gap-2">
-                    <svg className="h-4 w-4" viewBox="0 0 24 24">
-                      <path
-                        fill="currentColor"
-                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                      />
-                      <path
-                        fill="currentColor"
-                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                      />
-                      <path
-                        fill="currentColor"
-                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                      />
-                      <path
-                        fill="currentColor"
-                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                      />
-                    </svg>
-                    <span>تسجيل الدخول بواسطة جوجل</span>
-                  </a>
-                </Button>
-              )}
-            </div>
           </SheetContent>
         </Sheet>
+        )}
 
         {/* Logo */}
         <div className="absolute left-1/2 -translate-x-1/2 lg:static lg:translate-x-0 flex shrink-0 lg:ml-12">
@@ -412,15 +438,17 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
                       <li className="col-span-2 flex justify-center gap-6 text-xs text-muted-foreground py-1">
                         <Link
                           href="/privacy"
-                          className="hover:text-primary transition-colors"
+                          className="flex items-center gap-1 hover:text-primary transition-colors"
                         >
+                          <Shield className="h-3.5 w-3.5" />
                           سياسة الخصوصية
                         </Link>
                         <span>•</span>
                         <Link
                           href="/terms"
-                          className="hover:text-primary transition-colors"
+                          className="flex items-center gap-1 hover:text-primary transition-colors"
                         >
+                          <FileText className="h-3.5 w-3.5" />
                           الشروط والأحكام
                         </Link>
                       </li>
@@ -498,29 +526,33 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
                       <li className="col-span-2 flex flex-wrap justify-center gap-4 text-xs text-muted-foreground py-1">
                         <Link
                           href="/about"
-                          className="hover:text-primary transition-colors"
+                          className="flex items-center gap-1 hover:text-primary transition-colors"
                         >
+                          <Info className="h-3.5 w-3.5" />
                           عن المنصة
                         </Link>
                         <span>•</span>
                         <Link
                           href="/stats"
-                          className="hover:text-primary transition-colors"
+                          className="flex items-center gap-1 hover:text-primary transition-colors"
                         >
+                          <BarChart3 className="h-3.5 w-3.5" />
                           الإحصائيات
                         </Link>
                         <span>•</span>
                         <Link
                           href="/privacy"
-                          className="hover:text-primary transition-colors"
+                          className="flex items-center gap-1 hover:text-primary transition-colors"
                         >
+                          <Shield className="h-3.5 w-3.5" />
                           سياسة الخصوصية
                         </Link>
                         <span>•</span>
                         <Link
                           href="/terms"
-                          className="hover:text-primary transition-colors"
+                          className="flex items-center gap-1 hover:text-primary transition-colors"
                         >
+                          <FileText className="h-3.5 w-3.5" />
                           الشروط والأحكام
                         </Link>
                       </li>
@@ -545,40 +577,57 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
               <span className="sr-only">Saved ayahs</span>
             </Button>
           )}
-          <ThemeToggle />
-          <div className="hidden md:flex items-center gap-2">
-            {user ? (
-              <>
-                <div className="h-6 w-[1px] bg-border/50 mx-2" />
-                <UserNav />
-              </>
-            ) : (
-              <Button asChild variant="outline" className="gap-2">
-                <a href="/auth/google" className="flex items-center gap-2">
-                  <svg className="h-4 w-4" viewBox="0 0 24 24">
-                    <path
-                      fill="currentColor"
-                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                    />
-                    <path
-                      fill="currentColor"
-                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                    />
-                    <path
-                      fill="currentColor"
-                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                    />
-                    <path
-                      fill="currentColor"
-                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                    />
-                  </svg>
-                  <span>تسجيل الدخول</span>
-                </a>
-              </Button>
-            )}
-          </div>
-          {/* Mobile UserNav if not using sidebar, but here it's in the sidebar bottom bar */}
+          {showRoznamaSettings && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10"
+              onClick={() => setRoznamaSettingsOpen(true)}
+              title="إعدادات الروزنامة"
+            >
+              <Settings className="h-5 w-5" />
+              <span className="sr-only">Roznama settings</span>
+            </Button>
+          )}
+          {showMuslimPrayerSettings && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10"
+              onClick={() => setMuslimPrayerSettingsOpen(true)}
+              title="إعدادات المواقيت"
+            >
+              <Settings className="h-5 w-5" />
+              <span className="sr-only">Prayer settings</span>
+            </Button>
+          )}
+          {user ? (
+            <UserNav />
+          ) : (
+            <Button asChild variant="outline" className="gap-2">
+              <a href="/auth/google" className="flex items-center gap-2">
+                <svg className="h-4 w-4" viewBox="0 0 24 24">
+                  <path
+                    fill="currentColor"
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                  />
+                  <path
+                    fill="currentColor"
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  />
+                  <path
+                    fill="currentColor"
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                  />
+                  <path
+                    fill="currentColor"
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                  />
+                </svg>
+                <span className="hidden sm:inline">تسجيل الدخول</span>
+              </a>
+            </Button>
+          )}
         </div>
       </div>
     </header>

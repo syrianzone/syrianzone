@@ -8,18 +8,20 @@ import { Card, CardContent } from '@/Components/ui/card';
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/Components/ui/dialog';
+import {
+  Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger,
+} from '@/Components/ui/sheet';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
-import { Switch } from '@/Components/ui/switch';
 import { MUSLIM_GOVERNORATES } from '../_lib/governorates';
 import { PRAYER_KEYS, PRAYER_LABELS, PRAYER_METHODS, type PrayerKey } from '../_lib/methods';
 import { TRACKED_PRAYERS, todayKey, type MuslimPrefs } from '../_lib/prefs';
 import {
-  effectivePrayerParams, type LocMode,
+  effectivePrayerParams,
 } from '../_lib/location';
-import LocateButtons from './LocateButtons';
-import { syncMuslimUrl, useMuslimNav } from '../_lib/nav';
+import LocationModeSelector from './LocationModeSelector';
+import { syncMuslimUrl, useIsMobile, useMuslimNav } from '../_lib/nav';
 
 function prayerIcon(key: string, className?: string) {
   switch (key) {
@@ -46,6 +48,77 @@ interface Props {
   prefs: MuslimPrefs;
   setPrefs: (p: Partial<MuslimPrefs>) => void;
   isLoggedIn: boolean;
+}
+
+// Settings body shared by the desktop Dialog and the mobile bottom Sheet.
+function PrayerSettingsBody({ prefs, setPrefs }: {
+  prefs: MuslimPrefs;
+  setPrefs: (p: Partial<MuslimPrefs>) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <LocationModeSelector
+        mode={prefs.locMode}
+        onChange={(m) => setPrefs({ locMode: m, useCustomCoords: m === 'custom' })}
+      />
+
+      {prefs.locMode !== 'city' && prefs.locMode !== 'custom' && prefs.geo && (
+        <div className="rounded-lg border border-border/50 bg-card/10 p-3">
+          <p className="text-[11px] leading-relaxed text-muted-foreground">
+            الموقع الحالي: <span className="font-semibold text-foreground">{prefs.geo.label}</span>
+            <span dir="ltr" className="tabular-nums"> ({prefs.geo.lat}، {prefs.geo.lon})</span>
+          </p>
+        </div>
+      )}
+
+      {prefs.locMode === 'city' && (
+        <div className="space-y-2">
+          <Label className="flex items-center gap-2 text-sm font-semibold">
+            <MapPin className="h-4 w-4 text-primary" /> المدينة
+          </Label>
+          <Select value={prefs.city} onValueChange={(v) => setPrefs({ city: v })}>
+            <SelectTrigger dir="rtl"><SelectValue /></SelectTrigger>
+            <SelectContent dir="rtl">
+              {Object.entries(MUSLIM_GOVERNORATES).map(([v, g]) => (
+                <SelectItem key={v} value={v}>{g.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      {prefs.locMode === 'custom' && (
+        <div className="grid grid-cols-2 gap-3 rounded-lg border border-border/50 bg-card/10 p-3">
+          <div className="space-y-1">
+            <Label className="text-xs">خط العرض (Lat)</Label>
+            <Input dir="ltr" inputMode="decimal" placeholder="33.51" value={prefs.customLat}
+              onChange={(e) => setPrefs({ customLat: e.target.value })} />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">خط الطول (Lon)</Label>
+            <Input dir="ltr" inputMode="decimal" placeholder="36.27" value={prefs.customLon}
+              onChange={(e) => setPrefs({ customLon: e.target.value })} />
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-2">
+        <Label className="text-sm font-semibold">طريقة الحساب</Label>
+        <Select value={String(prefs.method)} onValueChange={(v) => setPrefs({ method: Number(v) })}>
+          <SelectTrigger dir="rtl"><SelectValue /></SelectTrigger>
+          <SelectContent dir="rtl">
+            {PRAYER_METHODS.map((m) => (
+              <SelectItem key={m.id} value={String(m.id)}>{m.nameAr}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-[11px] leading-relaxed text-muted-foreground">
+          {PRAYER_METHODS.find((m) => m.id === prefs.method)?.detail}
+          {' — '}الطريقة رأي فقهي: قارن مع مسجدك، وبدّلها إن خالفته.
+        </p>
+      </div>
+    </div>
+  );
 }
 
 export default function PrayerTab({ prefs, setPrefs, isLoggedIn }: Props) {
@@ -145,11 +218,14 @@ export default function PrayerTab({ prefs, setPrefs, isLoggedIn }: Props) {
   const usingGeo = (prefs.locMode === 'gps' || prefs.locMode === 'ip') && !!prefs.geo;
   const cityLabel = usingGeo && prefs.geo
     ? prefs.geo.label
-    : prefs.useCustomCoords
+    : prefs.locMode === 'custom'
       ? 'إحداثيات مخصصة'
       : (MUSLIM_GOVERNORATES[prefs.city]?.label ?? prefs.city);
 
   const setView = useMuslimNav((s) => s.setView);
+  const prayerSettingsOpen = useMuslimNav((s) => s.muslimPrayerSettingsOpen);
+  const setPrayerSettingsOpen = useMuslimNav((s) => s.setMuslimPrayerSettingsOpen);
+  const isMobile = useIsMobile();
   const backToIndex = () => {
     setView('index');
     syncMuslimUrl('index');
@@ -170,126 +246,45 @@ export default function PrayerTab({ prefs, setPrefs, isLoggedIn }: Props) {
             <div className="flex shrink-0 items-center gap-1.5">
               {hijri && <Badge variant="outline" className="hidden text-[10px] sm:inline-flex">{hijri} هـ</Badge>}
               <Badge variant="secondary" dir="ltr" className="text-[10px] tabular-nums lg:hidden">{doneCount}/5</Badge>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-8 gap-1.5 px-2 text-xs" title="إعدادات المواقيت">
-                    <Settings className="h-4 w-4" />
-                    <span>الإعدادات</span>
-                  </Button>
-                </DialogTrigger>
-                <DialogContent dir="rtl" className="sm:max-w-md">
-                  <DialogHeader className="text-right">
-                    <DialogTitle>إعدادات المواقيت</DialogTitle>
-                    <DialogDescription>
-                      المدينة والإحداثيات وطريقة الحساب — تُستخدم أيضاً في الروزنامة ولوح والرئيسية.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-semibold">مصدر الموقع</Label>
-                      {([
-                        { id: 'gps', title: 'موقع الجهاز (GPS)', desc: 'الأدق — يطلب إذن المتصفح لمرة واحدة' },
-                        { id: 'ip', title: 'التعرف عبر الإنترنت', desc: 'تقريبي لمدينتك عبر عنوان IP — بلا أذونات' },
-                        { id: 'city', title: 'مدينة يدوية', desc: 'اختر من قائمة المحافظات' },
-                      ] as Array<{ id: LocMode; title: string; desc: string }>).map((o) => {
-                        const activeOpt = prefs.locMode === o.id;
-                        return (
-                          <button
-                            key={o.id}
-                            onClick={() => setPrefs({ locMode: o.id })}
-                            aria-pressed={activeOpt}
-                            className={`flex w-full items-center gap-3 rounded-lg border p-3 text-right transition-colors ${
-                              activeOpt ? 'border-primary/60 bg-primary/5 ring-1 ring-primary/20' : 'border-border/50 bg-card/20 hover:bg-muted/20'
-                            }`}
-                          >
-                            <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${activeOpt ? 'border-primary' : 'border-muted-foreground/40'}`}>
-                              {activeOpt && <span className="h-2 w-2 rounded-full bg-primary" />}
-                            </span>
-                            <span>
-                              <span className="block text-xs font-bold">{o.title}</span>
-                              <span className="block text-[11px] text-muted-foreground">{o.desc}</span>
-                            </span>
-                          </button>
-                        );
-                      })}
+              {isMobile ? (
+                <Sheet open={prayerSettingsOpen} onOpenChange={setPrayerSettingsOpen}>
+                  <SheetTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 gap-1.5 px-2 text-xs" title="إعدادات المواقيت">
+                      <Settings className="h-4 w-4" />
+                      <span>الإعدادات</span>
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="bottom" dir="rtl" className="rounded-t-3xl border-b-0 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+                    <SheetHeader className="text-right">
+                      <SheetTitle>إعدادات المواقيت</SheetTitle>
+                      <SheetDescription>
+                        المدينة والإحداثيات وطريقة الحساب — تُستخدم أيضاً في الروزنامة ولوح والرئيسية.
+                      </SheetDescription>
+                    </SheetHeader>
+                    <div className="max-h-[70dvh] overflow-y-auto sz-scroll">
+                      <PrayerSettingsBody prefs={prefs} setPrefs={setPrefs} />
                     </div>
-
-                    {prefs.locMode !== 'city' && (
-                      <div className="space-y-2 rounded-lg border border-border/50 bg-card/10 p-3">
-                        {prefs.geo ? (
-                          <p className="text-[11px] leading-relaxed text-muted-foreground">
-                            الموقع الحالي: <span className="font-semibold text-foreground">{prefs.geo.label}</span>
-                            <span dir="ltr" className="tabular-nums"> ({prefs.geo.lat}، {prefs.geo.lon})</span>
-                          </p>
-                        ) : (
-                          <p className="text-[11px] leading-relaxed text-muted-foreground">
-                            لم يُحدد الموقع بعد — استخدم أحد الزرين:
-                          </p>
-                        )}
-                        <LocateButtons />
-                      </div>
-                    )}
-
-                    {prefs.locMode === 'city' && (
-                      <div className="space-y-2">
-                        <Label className="flex items-center gap-2 text-sm font-semibold">
-                          <MapPin className="h-4 w-4 text-primary" /> المدينة
-                        </Label>
-                        <Select value={prefs.city} onValueChange={(v) => setPrefs({ city: v })}>
-                          <SelectTrigger dir="rtl"><SelectValue /></SelectTrigger>
-                          <SelectContent dir="rtl">
-                            {Object.entries(MUSLIM_GOVERNORATES).map(([v, g]) => (
-                              <SelectItem key={v} value={v}>{g.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-
-                    <details className="rounded-lg border border-border/50 bg-card/10 px-3 py-2">
-                      <summary className="cursor-pointer text-xs font-semibold text-muted-foreground">
-                        إحداثيات يدوية (ملاذ أخير)
-                      </summary>
-                      <div className="space-y-3 pt-3">
-                        <div className="flex items-center justify-between rounded-lg border border-border/50 bg-card/20 p-3">
-                          <span className="text-xs font-medium">تفعيل الإحداثيات المخصصة</span>
-                          <Switch checked={prefs.useCustomCoords} onCheckedChange={(c) => setPrefs({ useCustomCoords: c })} />
-                        </div>
-                        {prefs.useCustomCoords && (
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1">
-                              <Label className="text-xs">خط العرض (Lat)</Label>
-                              <Input dir="ltr" inputMode="decimal" placeholder="33.51" value={prefs.customLat}
-                                onChange={(e) => setPrefs({ customLat: e.target.value })} />
-                            </div>
-                            <div className="space-y-1">
-                              <Label className="text-xs">خط الطول (Lon)</Label>
-                              <Input dir="ltr" inputMode="decimal" placeholder="36.27" value={prefs.customLon}
-                                onChange={(e) => setPrefs({ customLon: e.target.value })} />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </details>
-
-                    <div className="space-y-2">
-                      <Label className="text-sm font-semibold">طريقة الحساب</Label>
-                      <Select value={String(prefs.method)} onValueChange={(v) => setPrefs({ method: Number(v) })}>
-                        <SelectTrigger dir="rtl"><SelectValue /></SelectTrigger>
-                        <SelectContent dir="rtl">
-                          {PRAYER_METHODS.map((m) => (
-                            <SelectItem key={m.id} value={String(m.id)}>{m.nameAr}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <p className="text-[11px] leading-relaxed text-muted-foreground">
-                        {PRAYER_METHODS.find((m) => m.id === prefs.method)?.detail}
-                        {' — '}الطريقة رأي فقهي: قارن مع مسجدك، وبدّلها إن خالفته.
-                      </p>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
+                  </SheetContent>
+                </Sheet>
+              ) : (
+                <Dialog open={prayerSettingsOpen} onOpenChange={setPrayerSettingsOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 gap-1.5 px-2 text-xs" title="إعدادات المواقيت">
+                      <Settings className="h-4 w-4" />
+                      <span>الإعدادات</span>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent dir="rtl" className="sm:max-w-md">
+                    <DialogHeader className="text-right">
+                      <DialogTitle>إعدادات المواقيت</DialogTitle>
+                      <DialogDescription>
+                        المدينة والإحداثيات وطريقة الحساب — تُستخدم أيضاً في الروزنامة ولوح والرئيسية.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <PrayerSettingsBody prefs={prefs} setPrefs={setPrefs} />
+                  </DialogContent>
+                </Dialog>
+              )}
             </div>
           </div>
 

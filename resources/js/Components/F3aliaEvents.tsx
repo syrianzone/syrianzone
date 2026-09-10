@@ -3,6 +3,7 @@ import { Calendar, Clock, MapPin, ExternalLink, Sparkles, AlertCircle, RefreshCw
 import { Card, CardContent } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
 import { Badge } from "@/Components/ui/badge";
+import { formatGregorianSyrianShort } from "@/Lib/syrian-date";
 
 interface F3aliaEventsProps {
     governorate: string; // local governorate key, e.g., 'damascus'
@@ -251,18 +252,21 @@ export default function F3aliaEvents({ governorate, language = 'ar', variant = '
         loadEventsData();
     }, [governorate, variant]);
 
-    // Format Gregorian date nicely
+    // Format Gregorian date with explicit Syrian month names.
     const formatEventDate = (dateStr: string) => {
-        try {
-            const date = new Date(dateStr);
-            return date.toLocaleDateString(language === 'ar' ? 'ar-SY' : 'en-US', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric'
-            });
-        } catch (e) {
-            return dateStr;
+        if (language !== 'ar') {
+            try {
+                const date = new Date(dateStr);
+                return date.toLocaleDateString('en-US', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                });
+            } catch (e) {
+                return dateStr;
+            }
         }
+        return formatGregorianSyrianShort(dateStr);
     };
 
     // Get event cover image from attachments list
@@ -298,7 +302,7 @@ export default function F3aliaEvents({ governorate, language = 'ar', variant = '
     const displayedEvents = variant === 'single' ? upcomingEvents.slice(0, 1) : upcomingEvents;
 
     return (
-        <div className="w-full mt-10 mb-8" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+        <div className="w-full" dir={language === 'ar' ? 'rtl' : 'ltr'}>
             {/* Section Header */}
             {variant !== 'single' && (
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-border/60 pb-3">
@@ -366,25 +370,9 @@ export default function F3aliaEvents({ governorate, language = 'ar', variant = '
             {loading ? (
                 /* Skeleton loader */
                 variant === 'single' ? (
-                    <div className="max-w-2xl mx-auto px-4 animate-pulse">
-                        <Card className="border-border bg-card/35 backdrop-blur-sm shadow-sm">
-                            <CardContent className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                <div className="space-y-2 flex-1">
-                                    <div className="flex items-center gap-1.5">
-                                        <div className="h-3.5 bg-muted rounded w-28" />
-                                        <div className="h-3.5 bg-muted rounded w-36" />
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="h-3 bg-muted rounded w-16" />
-                                        <div className="h-3 bg-muted rounded w-3" />
-                                        <div className="h-3 bg-muted rounded w-24" />
-                                        <div className="h-3 bg-muted rounded w-3" />
-                                        <div className="h-3 bg-muted rounded w-12" />
-                                    </div>
-                                </div>
-                                <div className="h-7 bg-muted rounded w-16 shrink-0" />
-                            </CardContent>
-                        </Card>
+                    <div className="w-full animate-pulse">
+                        <div className="h-4 bg-muted rounded w-2/3 mb-2" />
+                        <div className="h-3 bg-muted rounded w-1/2" />
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -426,45 +414,46 @@ export default function F3aliaEvents({ governorate, language = 'ar', variant = '
                     </CardContent>
                 </Card>
             ) : variant === 'single' ? (
-                /* Single Event Layout (Homepage Spotlight) - Compact & Simple */
+                /* Single Event Layout (Homepage Spotlight) - plain row, no card */
                 (() => {
                     const event = displayedEvents[0];
                     return (
-                        <div className="max-w-2xl mx-auto px-4" dir="rtl">
-                            <Card className="border-border bg-card/35 backdrop-blur-sm shadow-sm hover:bg-card/50 transition-colors">
-                                <CardContent className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
-                                    <div className="flex flex-col gap-1 text-foreground">
-                                        <div className="flex items-center gap-1.5 text-primary font-bold">
-                                            <Sparkles className="h-3.5 w-3.5 animate-pulse" />
-                                            <span>{language === 'ar' ? 'الفعالية القادمة:' : 'Next Event:'} {event.name}</span>
-                                        </div>
-                                        <div className="text-[11px] text-muted-foreground flex items-center gap-2 flex-wrap">
-                                            <span className="font-semibold text-foreground/80">
-                                                {language === 'ar' 
-                                                    ? (F3ALIA_PROVINCE_TO_ARABIC[event.province] || event.provinceName)
-                                                    : (F3ALIA_PROVINCE_TO_ENGLISH[event.province] || event.province)}
-                                            </span>
-                                            <span>•</span>
-                                            <span>{formatEventDate(event.eventDate)}</span>
-                                            {event.eventTime && (
-                                                <>
-                                                    <span>•</span>
-                                                    <span className="font-mono">{event.eventTime}</span>
-                                                </>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <a 
-                                        href={event.eventLink || `https://app.f3alia.com/?event_id=${event.id}`} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="text-[11px] font-bold text-primary hover:underline inline-flex items-center gap-0.5 bg-primary/10 px-2.5 py-1 rounded border border-primary/20 hover:bg-primary/15 transition-colors shrink-0"
-                                    >
-                                        <span>{language === 'ar' ? 'التفاصيل' : 'Details'}</span>
-                                        <ExternalLink className="h-3 w-3" />
-                                    </a>
-                                </CardContent>
-                            </Card>
+                        <div className="w-full text-center" dir="rtl">
+                            <div className="flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1.5">
+                                <span className="text-sm font-bold text-primary">
+                                    {language === 'ar'
+                                        ? (F3ALIA_PROVINCE_TO_ARABIC[event.province] || event.provinceName)
+                                        : (F3ALIA_PROVINCE_TO_ENGLISH[event.province] || event.province)}
+                                </span>
+                                <span className="text-base font-bold text-foreground">{event.name}</span>
+                            </div>
+                            <div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                                <span>{formatEventDate(event.eventDate)}</span>
+                                {event.eventTime && (
+                                    <>
+                                        <span>•</span>
+                                        <span className="font-mono">{event.eventTime}</span>
+                                    </>
+                                )}
+                                <span>•</span>
+                                <a
+                                    href={event.eventLink || `https://app.f3alia.com/?event_id=${event.id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="font-bold text-primary hover:underline inline-flex items-center gap-1"
+                                >
+                                    <span>التفاصيل</span>
+                                    <ExternalLink className="h-3 w-3" />
+                                </a>
+                            </div>
+                            <a
+                                href="https://app.f3alia.com"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="mt-2 inline-block text-[11px] font-semibold text-muted-foreground hover:text-primary hover:underline transition-colors"
+                            >
+                                عرض كل الفعاليات
+                            </a>
                         </div>
                     );
                 })()

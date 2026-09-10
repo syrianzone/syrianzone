@@ -407,6 +407,7 @@ Route::post('/api/user/settings', function (\Illuminate\Http\Request $request) {
         'settings.fontFamily' => 'nullable|string|in:ibm-plex,system',
         'settings.language' => 'nullable|string|in:ar,en',
         'settings.governorate' => 'nullable|string|max:64',
+        'settings.eventsGovernorate' => 'nullable|string|max:64',
         'settings.clockFormat' => 'nullable|string|in:12,24',
         'settings.searchEngine' => 'nullable|string|in:duckduckgo,google,bing,searx,custom',
         'settings.showClock' => 'nullable|boolean',

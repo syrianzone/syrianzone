@@ -11,6 +11,7 @@ test('user settings accept the sync keys', function () {
 
   $this->actingAs($user)->postJson('/api/user/settings', ['settings' => [
     'governorate' => 'aleppo',
+    'eventsGovernorate' => 'homs',
     'muslimCity' => 'homs',
     'muslimMethod' => 5,
     'muslimUseCustomCoords' => false,

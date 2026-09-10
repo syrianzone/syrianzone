@@ -185,6 +185,34 @@
     fill: var(--ink-base);
 }
 
+/* shadcn-style thin scrollbar for native overflow areas (dialogs, dropdowns). */
+.sz-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+}
+
+.sz-scroll::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.sz-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sz-scroll::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+
+.sz-scroll::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.4);
+    background-clip: content-box;
+    border: 2px solid transparent;
+}
+
 /* shadcn-style range input (volume): native element, themed track + thumb. */
 .sz-range {
     -webkit-appearance: none;
@@ -591,30 +619,6 @@
 
 html {
     direction: rtl;
-}
-
-/* Utilities */
-@layer utilities {
-    .mx-auto {
-        margin-left: auto;
-        margin-right: auto;
-    }
-
-    .text-center {
-        text-align: center;
-    }
-
-    .items-center {
-        align-items: center;
-    }
-
-    .justify-center {
-        justify-content: center;
-    }
-
-    .flex {
-        display: flex;
-    }
 }
 
 html[data-font="system"],

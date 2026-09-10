@@ -1,21 +1,23 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Head, usePage } from '@inertiajs/react';
 import {
-    Settings, Sun, Link, Moon, Globe, Plus, Edit, X,
-    Cloud, CloudRain, CloudLightning, Snowflake, Wind, Clock,
-    Sunrise, Sunset, SunDim, MoonStar
+    Settings, Sun, Link, Globe, Plus, Edit, X,
+    Cloud, CloudRain, CloudLightning, Snowflake, Wind,
+    Info, BarChart3, Shield, FileText,
+    Check
 } from 'lucide-react';
 import { Button } from "@/Components/ui/button";
 import { Card, CardContent } from "@/Components/ui/card";
 import MainLayout from '@/Layouts/MainLayout';
 import axios from '@/Lib/axios';
-import { applyTheme as persistTheme, getThemePreference, resolveTheme, SYSTEM_THEME, isDarkTheme } from '@/lib/theme';
-import { applyFont, getFontPreference, FontPreference } from '@/Lib/font';
-import { ThemeToggle } from '@/Components/ThemeToggle';
+import { applyTheme as persistTheme, getThemePreference, resolveTheme, SYSTEM_THEME, isDarkTheme, THEME_REGISTRY } from '@/lib/theme';
+import { applyFont, getFontPreference } from '@/Lib/font';
 import UserNav from '@/Components/UserNav';
 import F3aliaEvents from '@/Components/F3aliaEvents';
 import type { CustomLink } from '@/Pages/Home/_components/AddLinkDialog';
 import { getGeo, getLocMode, useLocSignal } from '@/Pages/Muslim/_lib/location';
+import { useMuslimNav } from '@/Pages/Muslim/_lib/nav';
+import { formatGregorianSyrian } from '@/Lib/syrian-date';
 
 const HomeSettingsDialog = React.lazy(() => import('@/Pages/Home/_components/HomeSettingsDialog'));
 const AddLinkDialog = React.lazy(() => import('@/Pages/Home/_components/AddLinkDialog'));
@@ -142,10 +144,8 @@ export default function Home() {
     const [systemDark, setSystemDark] = useState(false);
         const [customLinks, setCustomLinks] = useState<CustomLink[]>([]);
     const [editingLink, setEditingLink] = useState<CustomLink | null>(null);
-    const [settingsOpen, setSettingsOpen] = useState(false);
+    const [settingsOpen, setSettingsOpen] = [useMuslimNav((s) => s.homeSettingsOpen), useMuslimNav((s) => s.setHomeSettingsOpen)] as const;
     const [addLinkOpen, setAddLinkOpen] = useState(false);
-    const [govDropdownOpen, setGovDropdownOpen] = useState(false);
-    const [govSearch, setGovSearch] = useState('');
     const [editMode, setEditMode] = useState(false);
     // Shared device location (GPS/IP resolved in /muslim or settings):
     // overrides the manual city while active.
@@ -160,14 +160,13 @@ export default function Home() {
     };
     const [mounted, setMounted] = useState(false);
 
-    // Weather & Clock state
+    // Weather state
     const [weather, setWeather] = useState<any>(null);
     const [governorate, setGovernorate] = useState('damascus');
-    const [clockFormat, setClockFormat] = useState<'12' | '24'>('24');
+    const [eventsGovernorate, setEventsGovernorate] = useState('all');
     const [prayerTimes, setPrayerTimes] = useState<Record<string, string> | null>(null);
 
     // Widget visibility states
-    const [showClock, setShowClock] = useState(true);
     const [showWeather, setShowWeather] = useState(true);
     const [showPrayerTimes, setShowPrayerTimes] = useState(true);
     const [showEvents, setShowEvents] = useState(true);
@@ -176,9 +175,6 @@ export default function Home() {
     const [useCustomCoords, setUseCustomCoords] = useState(false);
     const [customLat, setCustomLat] = useState('');
     const [customLon, setCustomLon] = useState('');
-
-    // Theme & Font state
-    const [fontFamily, setFontFamily] = useState<FontPreference>('ibm-plex');
 
     // Debounced account-settings saver: per-keystroke POSTs (lat/lon, toggles)
     // previously hit /api/user/settings unthrottled. Coalesce partials over
@@ -222,11 +218,9 @@ export default function Home() {
         const accSettings = user?.settings || {};
 
         const savedTheme = accSettings.theme ?? getThemePreference();
-        const savedFont = (accSettings.fontFamily ?? getFontPreference()) as FontPreference;
+        const savedFont = accSettings.fontFamily ?? getFontPreference();
         const savedGovernorate = accSettings.governorate ?? (localStorage.getItem('governorate') || 'damascus');
-        const savedClockFormat = (accSettings.clockFormat ?? (localStorage.getItem('clockFormat') || '24')) as '12' | '24';
-
-        const savedShowClock = accSettings.showClock ?? (localStorage.getItem('sz-showClock') !== 'false');
+        const savedEventsGovernorate = accSettings.eventsGovernorate ?? (localStorage.getItem('eventsGovernorate') || 'all');
         const savedShowWeather = accSettings.showWeather ?? (localStorage.getItem('sz-showWeather') !== 'false');
         const savedShowPrayerTimes = accSettings.showPrayerTimes ?? (localStorage.getItem('sz-showPrayerTimes') !== 'false');
         const savedShowEvents = accSettings.showEvents ?? (localStorage.getItem('sz-showEvents') !== 'false');
@@ -253,8 +247,9 @@ export default function Home() {
         if (localStorage.getItem('governorate') === null) {
             localStorage.setItem('governorate', savedGovernorate);
         }
-        localStorage.setItem('clockFormat', savedClockFormat);
-        localStorage.setItem('sz-showClock', String(savedShowClock));
+        if (localStorage.getItem('eventsGovernorate') === null) {
+            localStorage.setItem('eventsGovernorate', savedEventsGovernorate);
+        }
         localStorage.setItem('sz-showWeather', String(savedShowWeather));
         localStorage.setItem('sz-showPrayerTimes', String(savedShowPrayerTimes));
         localStorage.setItem('sz-showEvents', String(savedShowEvents));
@@ -265,8 +260,7 @@ export default function Home() {
 
         setTheme(savedTheme);
         setGovernorate(savedGovernorate);
-        setClockFormat(savedClockFormat);
-        setShowClock(savedShowClock);
+        setEventsGovernorate(savedEventsGovernorate);
         setShowWeather(savedShowWeather);
         setShowPrayerTimes(savedShowPrayerTimes);
         setShowEvents(savedShowEvents);
@@ -280,8 +274,6 @@ export default function Home() {
             saveAccountSettings({
                 theme: savedTheme,
                 governorate: savedGovernorate,
-                clockFormat: savedClockFormat,
-                showClock: savedShowClock,
                 showWeather: savedShowWeather,
                 showPrayerTimes: savedShowPrayerTimes,
                 showEvents: savedShowEvents,
@@ -303,6 +295,14 @@ export default function Home() {
         const onChange = (e: MediaQueryListEvent) => setSystemDark(e.matches);
         query.addEventListener('change', onChange);
         return () => query.removeEventListener('change', onChange);
+    }, []);
+
+    // Stay in sync when the theme changes elsewhere (user menu, other menus).
+    useEffect(() => {
+        const sync = () => setTheme(getThemePreference());
+        const observer = new MutationObserver(sync);
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        return () => observer.disconnect();
     }, []);
 
 
@@ -442,8 +442,6 @@ export default function Home() {
         saveAccountSettings({ theme: newTheme });
     };
 
-
-
     const addCustomLink = (link: CustomLink) => {
         const updated = [...customLinks, link];
         setCustomLinks(updated);
@@ -472,6 +470,10 @@ export default function Home() {
     const activeTheme = theme || SYSTEM_THEME;
     const isDark = isDarkTheme(activeTheme, systemDark);
 
+    // Navbar info strip (static per render): next prayer + weather + date.
+    const prayerMini = showPrayerTimes ? getNextPrayerInfo(prayerTimes, new Date()) : null;
+    const weatherMini = showWeather && weather ? weather : null;
+
     return (
         <MainLayout>
             <Head>
@@ -479,91 +481,120 @@ export default function Home() {
                 <meta name="description" content="المساحة السورية - منصة تفاعلية تجمع وتوفر الموارد والخدمات والمعلومات المفتوحة المتعلقة بالشأن السوري من استطلاعات رأي، وأدلة رسمية، وأطلس، وترانزيت، وهويات بصرية." />
             </Head>
             <div className="min-h-screen text-foreground transition-colors" dir="rtl">
-                {/* Top Controls */}
-                <div className="fixed top-20 left-4 right-4 lg:top-4 flex justify-between items-center z-40">
-                    <Button variant="ghost" size="sm" asChild>
-                        <a href="/about" className="text-sm font-medium">
-                            حول المنصة
+                {/* Home Navbar (desktop): logo + dates + minis + controls */}
+                <header className="hidden lg:block border-b border-border bg-card/60 backdrop-blur-sm">
+                    <div className="mx-auto max-w-6xl px-3 pt-1.5 pb-3 flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-5">
+                        <a href="/" className="flex items-center shrink-0">
+                            <img
+                                src={isDark ? '/assets/logo-darkmode.svg' : '/assets/logo-lightmode.svg'}
+                                alt="المساحة السورية"
+                                className="h-10 w-auto"
+                            />
                         </a>
-                    </Button>
-
-                    <div className="flex gap-2 items-center">
-                        {user ? (
-                            <UserNav />
-                        ) : (
-                            <Button variant="ghost" size="sm" asChild className="gap-2">
-                                <a href="/auth/google" className="flex items-center gap-2">
-                                    <svg className="h-4 w-4" viewBox="0 0 24 24">
-                                        <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                                        <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                                        <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                                        <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                                    </svg>
-                                    <span>تسجيل الدخول</span>
-                                </a>
-                            </Button>
-                        )}
-                        <div className="hidden lg:flex">
-                            <ThemeToggle />
+                        {/* Info strip (left of logo): prayer • weather • date, single line each */}
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            {prayerMini && (
+                                <span className="flex items-center gap-1.5 whitespace-nowrap">
+                                    <span className="font-semibold text-foreground">{prayerMini.label}</span>
+                                    <span dir="ltr" className="tabular-nums">{prayerMini.timeStr}</span>
+                                </span>
+                            )}
+                            {prayerMini && weatherMini && (
+                                <div className="w-px h-6 bg-border shrink-0" />
+                            )}
+                            {weatherMini && (
+                                <span className="flex items-center gap-1.5 whitespace-nowrap">
+                                    <span className="[&>svg]:w-4 [&>svg]:h-4">{weatherMini.icon}</span>
+                                    <span className="font-semibold text-foreground">{weatherMini.temp}°C</span>
+                                    <span>{weatherMini.description}</span>
+                                </span>
+                            )}
+                            {(prayerMini || weatherMini) && (
+                                <div className="w-px h-6 bg-border shrink-0" />
+                            )}
+                            <span className="whitespace-nowrap font-medium text-foreground">
+                                {formatGregorianSyrian(new Date())} • {formatHijriArabic(new Date())}
+                            </span>
                         </div>
-                        <Button variant="ghost" size="icon" onClick={() => setSettingsOpen(true)}>
-                            <Settings className="h-5 w-5" />
-                        </Button>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <Button variant="ghost" size="icon" onClick={() => setSettingsOpen(true)} title="الإعدادات">
+                                <Settings className="h-5 w-5" />
+                            </Button>
+                            <div className="w-px h-6 bg-border shrink-0" />
+                            {user ? (
+                                <UserNav />
+                            ) : (
+                                <Button variant="ghost" size="sm" asChild className="gap-2">
+                                    <a href="/auth/google" className="flex items-center gap-2">
+                                        <svg className="h-4 w-4" viewBox="0 0 24 24">
+                                            <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                                            <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                                            <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                                            <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                                        </svg>
+                                        <span>تسجيل الدخول</span>
+                                    </a>
+                                </Button>
+                            )}
+                        </div>
                     </div>
-                </div>
+                </header>
 
                 {/* Main Content */}
-                <div className="container mx-auto px-4 pt-32 lg:pt-20 pb-12 max-w-6xl">
-                    {/* Weather & Clock & Prayer Times */}
-                    {(showWeather || showClock || showPrayerTimes) && (
-                        <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-6 mb-12 w-full">
-                            {/* Weather Widget */}
-                            {showWeather ? (
-                                <Card className="w-full md:w-auto justify-self-stretch md:justify-self-start bg-card/50 backdrop-blur-sm border-border">
-                                    <CardContent className="p-4">
-                                        <div className="text-sm text-muted-foreground">
-                                            {weather ? (
-                                                <div className="flex items-center gap-3">
-                                                    <span className="text-2xl">{weather.icon}</span>
-                                                    <div>
-                                                        <div className="font-semibold text-foreground">{weather.temp}°C</div>
-                                                        <div className="text-xs">{weather.description}</div>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="animate-pulse">Loading weather...</div>
-                                            )}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ) : <div />}
-
-                            {/* Clock */}
-                            {showClock ? (
-                                <ClockWidget clockFormat={clockFormat} />
-                            ) : <div />}
-
-                            {/* Next Prayer Widget */}
-                            {showPrayerTimes ? (
-                                <NextPrayerWidget prayerTimes={prayerTimes} />
-                            ) : <div />}
+                <div className="container mx-auto px-4 pt-6 pb-12 max-w-6xl">
+                    {/* Theme swatches (shown until a theme is picked) */}
+                    {!theme && (
+                        <div className="flex flex-wrap justify-center gap-2 mb-8">
+                            {THEME_REGISTRY.filter((t) => t.id !== SYSTEM_THEME).map((t) => (
+                                <button
+                                    key={t.id}
+                                    type="button"
+                                    title={t.nameAr}
+                                    onClick={() => applyTheme(t.id)}
+                                    className="w-8 h-8 rounded-full border-2 border-border hover:border-primary transition-colors relative overflow-hidden"
+                                    style={{ background: t.bg }}
+                                >
+                                    {activeTheme === t.id && (
+                                        <Check className="absolute inset-0 m-auto h-4 w-4 text-white drop-shadow" />
+                                    )}
+                                </button>
+                            ))}
                         </div>
                     )}
 
-                    {/* Logo */}
-                    <div className="flex justify-center mb-12">
-                        {mounted && (
-                            <img
-                                src={isDark ? '/assets/logo-darkmode.svg' : '/assets/logo-lightmode.svg'}
-                                alt="Syrian Zone"
-                                className="h-16 md:h-24"
-                            />
-                        )}
+                    {/* Dates (mobile only; PC shows them in the navbar) */}
+                    <div className="flex flex-col items-center gap-1 mb-6 lg:hidden">
+                        <span className="text-base font-bold text-foreground">{formatGregorianSyrian(new Date())}</span>
+                        <span className="text-sm text-primary/80 font-medium">{formatHijriArabic(new Date())}</span>
                     </div>
 
-                    {/* F3alia Events integration */}
+                    {/* Quick row: weather + next prayer (mobile only; PC shows them in the navbar) */}
+                    <div className="flex items-center justify-center gap-4 mb-6 text-sm lg:hidden">
+                        {showWeather && weather && (
+                            <span className="flex items-center gap-1.5 text-muted-foreground">
+                                <span className="[&>svg]:w-5 [&>svg]:h-5">{weather.icon}</span>
+                                <span className="font-semibold text-foreground">{weather.temp}°C</span>
+                                <span className="text-xs">{weather.description}</span>
+                            </span>
+                        )}
+                        {showPrayerTimes && (() => {
+                            const mini = getNextPrayerInfo(prayerTimes, new Date());
+                            return mini ? (
+                                <span className="flex items-center gap-1.5 text-muted-foreground">
+                                    <span className="font-semibold text-foreground">{mini.label}</span>
+                                    <span dir="ltr" className="tabular-nums text-xs">{mini.timeStr}</span>
+                                </span>
+                            ) : null;
+                        })()}
+                    </div>
+
+                    {/* Events */}
                     {showEvents && (
-                        <F3aliaEvents governorate={governorate} language="ar" variant="single" />
+                        <div className="mb-12">
+                            <F3aliaEvents governorate={eventsGovernorate} language="ar" variant="single" />
+                        </div>
                     )}
 
                     {/* Internal Syrian Zone Tools */}
@@ -571,7 +602,7 @@ export default function Home() {
                         <h3 className="text-xl font-bold text-foreground mb-6 text-start">
                             أدوات المساحة السورية
                         </h3>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3.5 sm:gap-4">
+                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-9 gap-x-2 gap-y-5">
                             {PRESET_LINKS.filter(l => l.isInternal).map((link, idx) => {
                                 const Icon = link.icon;
                                 return (
@@ -580,18 +611,14 @@ export default function Home() {
                                         href={link.href}
                                         target={link.external ? '_blank' : undefined}
                                         rel={link.external ? 'noopener noreferrer' : undefined}
-                                        className="group"
+                                        className="group flex h-full flex-col items-center justify-between gap-2 py-1 text-center"
                                     >
-                                        <Card className="h-full hover:shadow-lg transition-all border-border bg-card">
-                                            <CardContent className="p-4 flex flex-col items-center text-center gap-3">
-                                                {Icon && <Icon className="w-7 h-7 group-hover:scale-110 transition-transform" />}
-                                                {link.image && <img src={link.image} alt={link.text} loading="lazy" decoding="async" className="w-7 h-7 group-hover:scale-110 transition-transform" />}
-                                                {link.className && <div className={link.className} style={{ width: '1.8rem', height: '1.8rem' }}></div>}
-                                                <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
-                                                    {link.text}
-                                                </span>
-                                            </CardContent>
-                                        </Card>
+                                        {Icon && <Icon className="w-8 h-8 shrink-0 text-foreground/80 transition-all group-hover:scale-110 group-hover:text-primary" />}
+                                        {link.image && <img src={link.image} alt={link.text} loading="lazy" decoding="async" className="w-8 h-8 shrink-0 object-contain transition-transform group-hover:scale-110" />}
+                                        {link.className && <div className={link.className} style={{ width: '2rem', height: '2rem' }}></div>}
+                                        <span className="text-xs font-medium text-muted-foreground transition-colors group-hover:text-primary line-clamp-2">
+                                            {link.text}
+                                        </span>
                                     </a>
                                 );
                             })}
@@ -603,7 +630,7 @@ export default function Home() {
                         <h3 className="text-xl font-bold text-foreground mb-6 text-start">
                             روابط خارجية وشقيقة
                         </h3>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3.5 sm:gap-4">
+                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-9 gap-x-2 gap-y-5">
                             {PRESET_LINKS.filter(l => !l.isInternal).map((link, idx) => {
                                 const Icon = link.icon;
                                 return (
@@ -612,18 +639,14 @@ export default function Home() {
                                         href={link.href}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="group"
+                                        className="group flex h-full flex-col items-center justify-between gap-2 py-1 text-center"
                                     >
-                                        <Card className="h-full hover:shadow-lg transition-all border-border bg-card">
-                                            <CardContent className="p-4 flex flex-col items-center text-center gap-3">
-                                                {Icon && <Icon className="w-7 h-7 group-hover:scale-110 transition-transform" />}
-                                                {link.image && <img src={link.image} alt={link.text} loading="lazy" decoding="async" className="w-7 h-7 group-hover:scale-110 transition-transform" />}
-                                                {link.className && <div className={link.className} style={{ width: '1.8rem', height: '1.8rem' }}></div>}
-                                                <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
-                                                    {link.text}
-                                                </span>
-                                            </CardContent>
-                                        </Card>
+                                        {Icon && <Icon className="w-8 h-8 shrink-0 text-foreground/80 transition-all group-hover:scale-110 group-hover:text-primary" />}
+                                        {link.image && <img src={link.image} alt={link.text} loading="lazy" decoding="async" className="w-8 h-8 shrink-0 object-contain transition-transform group-hover:scale-110" />}
+                                        {link.className && <div className={link.className} style={{ width: '2rem', height: '2rem' }}></div>}
+                                        <span className="text-xs font-medium text-muted-foreground transition-colors group-hover:text-primary line-clamp-2">
+                                            {link.text}
+                                        </span>
                                     </a>
                                 );
                             })}
@@ -659,7 +682,7 @@ export default function Home() {
                         </div>
 
                         {customLinks.length > 0 ? (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3.5 sm:gap-4">
+                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-9 gap-x-2 gap-y-5">
                                 {customLinks.map((link) => {
                                     const useFavicon = !link.icon || link.icon === '🔗';
                                     const faviconUrl = getFaviconUrl(link.url);
@@ -672,29 +695,28 @@ export default function Home() {
                                                     onClick={() => setEditingLink(link)}
                                                     className="block h-full cursor-pointer"
                                                 >
-                                                    <Card className="h-full border-border bg-card ring-2 ring-primary/40 transition-all hover:shadow-lg">
-                                                        <CardContent className="p-4 flex flex-col items-center text-center gap-3">
-                                                            {useFavicon ? (
-                                                                <div className="w-8 h-8 rounded-lg bg-white dark:bg-slate-100 p-1 flex items-center justify-center border border-border/80 overflow-hidden shrink-0">
-                                                                    <img
-                                                                        src={faviconUrl}
-                                                                        alt={link.name}
-                                                                        className="w-6 h-6 object-contain"
-                                                                        onError={(e) => {
-                                                                            e.currentTarget.style.display = 'none';
-                                                                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                                                                        }}
-                                                                    />
-                                                                    <Globe className="w-5 h-5 text-zinc-700 hidden" />
-                                                                </div>
-                                                            ) : (
-                                                                <span className="text-2xl">{link.icon}</span>
-                                                            )}
-                                                            <span className="text-sm font-medium text-foreground line-clamp-2">
-                                                                {link.name}
-                                                            </span>
-                                                        </CardContent>
-                                                    </Card>
+                                                    <div className="flex h-full flex-col items-center justify-between gap-2 rounded-lg px-1 py-1 text-center ring-2 ring-primary/40">
+                                                        {useFavicon ? (
+                                                            <>
+                                                                <img
+                                                                    src={faviconUrl}
+                                                                    alt={link.name}
+                                                                    loading="lazy"
+                                                                    className="w-8 h-8 shrink-0 object-contain"
+                                                                    onError={(e) => {
+                                                                        e.currentTarget.style.display = 'none';
+                                                                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                                                    }}
+                                                                />
+                                                                <Globe className="w-8 h-8 text-muted-foreground hidden" />
+                                                            </>
+                                                        ) : (
+                                                            <span className="text-[32px] leading-none">{link.icon}</span>
+                                                        )}
+                                                        <span className="text-xs font-medium text-muted-foreground line-clamp-2">
+                                                            {link.name}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             ) : safeUrl ? (
                                                 <a
@@ -703,39 +725,36 @@ export default function Home() {
                                                     rel="noopener noreferrer"
                                                     className="block h-full group"
                                                 >
-                                                    <Card className="h-full hover:shadow-lg transition-all border-border bg-card">
-                                                        <CardContent className="p-4 flex flex-col items-center text-center gap-3">
-                                                            {useFavicon ? (
-                                                                <div className="w-8 h-8 rounded-lg bg-white dark:bg-slate-100 p-1 flex items-center justify-center border border-border/80 overflow-hidden shrink-0">
-                                                                    <img
-                                                                        src={faviconUrl}
-                                                                        alt={link.name}
-                                                                        className="w-6 h-6 object-contain group-hover:scale-110 transition-transform"
-                                                                        onError={(e) => {
-                                                                            e.currentTarget.style.display = 'none';
-                                                                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                                                                        }}
-                                                                    />
-                                                                    <Globe className="w-5 h-5 text-zinc-700 hidden group-hover:scale-110 transition-transform" />
-                                                                </div>
-                                                            ) : (
-                                                                <span className="text-2xl">{link.icon}</span>
-                                                            )}
-                                                            <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors line-clamp-2">
-                                                                {link.name}
-                                                            </span>
-                                                        </CardContent>
-                                                    </Card>
+                                                    <div className="flex h-full flex-col items-center justify-between gap-2 py-1 text-center">
+                                                        {useFavicon ? (
+                                                            <>
+                                                                <img
+                                                                    src={faviconUrl}
+                                                                    alt={link.name}
+                                                                    loading="lazy"
+                                                                    className="w-8 h-8 shrink-0 object-contain transition-transform group-hover:scale-110"
+                                                                    onError={(e) => {
+                                                                        e.currentTarget.style.display = 'none';
+                                                                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                                                    }}
+                                                                />
+                                                                <Globe className="w-8 h-8 text-muted-foreground hidden transition-transform group-hover:scale-110" />
+                                                            </>
+                                                        ) : (
+                                                            <span className="text-[32px] leading-none transition-transform group-hover:scale-110">{link.icon}</span>
+                                                        )}
+                                                        <span className="text-xs font-medium text-muted-foreground transition-colors group-hover:text-primary line-clamp-2">
+                                                            {link.name}
+                                                        </span>
+                                                    </div>
                                                 </a>
                                             ) : (
                                                 <div className="block h-full group opacity-60">
-                                                    <Card className="h-full border-border bg-card">
-                                                        <CardContent className="p-4 flex flex-col items-center text-center gap-3">
-                                                            <span className="text-sm font-medium text-foreground line-clamp-2">
-                                                                {link.name}
-                                                            </span>
-                                                        </CardContent>
-                                                    </Card>
+                                                    <div className="flex h-full flex-col items-center justify-between gap-2 py-1 text-center">
+                                                        <span className="text-xs font-medium text-muted-foreground line-clamp-2">
+                                                            {link.name}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             )}
 
@@ -791,6 +810,30 @@ export default function Home() {
                             </Card>
                         )}
                     </div>
+                    {/* Footer */}
+                    <footer className="mt-4 border-t border-border pt-6 flex flex-col items-center gap-3">
+                        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+                            <a href="/about" className="flex items-center gap-1.5 hover:text-primary transition-colors">
+                                <Info className="h-4 w-4" />
+                                <span>عن المنصة</span>
+                            </a>
+                            <span>•</span>
+                            <a href="/stats" className="flex items-center gap-1.5 hover:text-primary transition-colors">
+                                <BarChart3 className="h-4 w-4" />
+                                <span>الإحصائيات</span>
+                            </a>
+                            <span>•</span>
+                            <a href="/privacy" className="flex items-center gap-1.5 hover:text-primary transition-colors">
+                                <Shield className="h-4 w-4" />
+                                <span>سياسة الخصوصية</span>
+                            </a>
+                            <span>•</span>
+                            <a href="/terms" className="flex items-center gap-1.5 hover:text-primary transition-colors">
+                                <FileText className="h-4 w-4" />
+                                <span>الشروط والأحكام</span>
+                            </a>
+                        </div>
+                    </footer>
                 </div>
 
                 {/* Lazy-loaded Dialogs */}
@@ -799,16 +842,10 @@ export default function Home() {
                         <HomeSettingsDialog
                             open={settingsOpen}
                             onOpenChange={setSettingsOpen}
-                            clockFormat={clockFormat}
-                            setClockFormat={setClockFormat}
-                            fontFamily={fontFamily}
-                            setFontFamily={setFontFamily}
                             governorate={governorate}
                             setGovernorate={setGovernorate}
-                            activeTheme={activeTheme}
-                            applyTheme={applyTheme}
-                            showClock={showClock}
-                            setShowClock={setShowClock}
+                            eventsGovernorate={eventsGovernorate}
+                            setEventsGovernorate={setEventsGovernorate}
                             showWeather={showWeather}
                             setShowWeather={setShowWeather}
                             showPrayerTimes={showPrayerTimes}
@@ -854,193 +891,88 @@ export default function Home() {
 }
 
 
-// Isolated Clock Widget (Updates time every second without re-rendering parent page) — Arabic only
-const ClockWidget = React.memo(function ClockWidget({
-    clockFormat
-}: {
-    clockFormat: '12' | '24';
-}) {
-    const [currentTime, setCurrentTime] = useState<Date | null>(null);
-
-    useEffect(() => {
-        setCurrentTime(new Date());
-        const timer = setInterval(() => {
-            setCurrentTime(new Date());
-        }, 1000);
-        return () => clearInterval(timer);
-    }, []);
-
-    const formatTime = (date: Date | null) => {
-        if (!date) return "--:--:--";
-        if (clockFormat === '12') {
-            return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-        }
-        return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-    };
-
-    const formatDate = (date: Date | null) => {
-        if (!date) return "";
-        return date.toLocaleDateString('ar-SY', {
-            weekday: 'long',
-            year: 'numeric',
+// Hijri date (module-level so the navbar and the hero share one implementation).
+export function formatHijriArabic(date: Date | null): string {
+    if (!date) return "";
+    try {
+        const formatter = new Intl.DateTimeFormat('ar-SY-u-ca-islamic-umalqura', {
+            day: 'numeric',
             month: 'long',
-            day: 'numeric'
+            year: 'numeric'
         });
-    };
-
-    const formatHijriDate = (date: Date | null) => {
-        if (!date) return "";
+        const formatted = formatter.format(date);
+        return formatted.includes('هـ') ? formatted : `${formatted} هـ`;
+    } catch (e) {
         try {
-            const formatter = new Intl.DateTimeFormat('ar-SY-u-ca-islamic-umalqura', {
+            const formatter = new Intl.DateTimeFormat('ar-SY-u-ca-islamic', {
                 day: 'numeric',
                 month: 'long',
                 year: 'numeric'
             });
             const formatted = formatter.format(date);
             return formatted.includes('هـ') ? formatted : `${formatted} هـ`;
-        } catch (e) {
-            try {
-                const formatter = new Intl.DateTimeFormat('ar-SY-u-ca-islamic', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric'
-                });
-                const formatted = formatter.format(date);
-                return formatted.includes('هـ') ? formatted : `${formatted} هـ`;
-            } catch (err) {
-                return "";
-            }
+        } catch (err) {
+            return "";
         }
-    };
+    }
+}
 
-    return (
-        <div className="text-center justify-self-center">
-            <div className="text-4xl md:text-6xl font-bold text-foreground mb-2">
-                {formatTime(currentTime)}
-            </div>
-            <div className="text-sm text-muted-foreground flex flex-col items-center gap-1">
-                <span>{formatDate(currentTime)}</span>
-                {currentTime && (
-                    <span className="text-xs text-primary/80 font-medium">
-                        {formatHijriDate(currentTime)}
-                    </span>
-                )}
-            </div>
-        </div>
-    );
-});
+export interface NextPrayerInfo {
+    key: string;
+    label: string;
+    timeStr: string;
+    timeDiffMs: number;
+}
 
-// Isolated Next Prayer Widget (Updates countdown every second without re-rendering parent page) — Arabic only
-const NextPrayerWidget = React.memo(function NextPrayerWidget({
-    prayerTimes
-}: {
-    prayerTimes: Record<string, string> | null;
-}) {
-    const [currentTime, setCurrentTime] = useState<Date | null>(null);
+// Next-prayer computation shared by the widget (ticking) and navbar minis (static).
+export function getNextPrayerInfo(
+    prayerTimes: Record<string, string> | null,
+    now: Date | null
+): NextPrayerInfo | null {
+    if (!prayerTimes || !now) return null;
 
-    useEffect(() => {
-        setCurrentTime(new Date());
-        const timer = setInterval(() => {
-            setCurrentTime(new Date());
-        }, 1000);
-        return () => clearInterval(timer);
-    }, []);
+    const events = [
+        { key: 'Fajr', label: 'الفجر' },
+        { key: 'Sunrise', label: 'الشروق' },
+        { key: 'Dhuhr', label: 'الظهر' },
+        { key: 'Asr', label: 'العصر' },
+        { key: 'Maghrib', label: 'المغرب' },
+        { key: 'Isha', label: 'العشاء' }
+    ];
 
-    const nextPrayerInfo = useMemo(() => {
-        if (!prayerTimes || !currentTime) return null;
+    const parsedEvents = events.map(ev => {
+        const timeStr = prayerTimes[ev.key];
+        if (!timeStr) return null;
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        const eventTime = new Date(now);
+        eventTime.setHours(hours, minutes, 0, 0);
+        return { ...ev, time: eventTime };
+    }).filter(Boolean) as Array<{ key: string; label: string; time: Date }>;
 
-        const events = [
-            { key: 'Fajr', label: 'الفجر' },
-            { key: 'Sunrise', label: 'الشروق' },
-            { key: 'Dhuhr', label: 'الظهر' },
-            { key: 'Asr', label: 'العصر' },
-            { key: 'Maghrib', label: 'المغرب' },
-            { key: 'Isha', label: 'العشاء' }
-        ];
+    if (parsedEvents.length === 0) return null;
 
-        const parsedEvents = events.map(ev => {
-            const timeStr = prayerTimes[ev.key];
-            if (!timeStr) return null;
-            const [hours, minutes] = timeStr.split(':').map(Number);
-            const eventTime = new Date(currentTime);
-            eventTime.setHours(hours, minutes, 0, 0);
-            return { ...ev, time: eventTime };
-        }).filter(Boolean) as Array<{ key: string; label: string; time: Date }>;
+    parsedEvents.sort((a, b) => a.time.getTime() - b.time.getTime());
 
-        if (parsedEvents.length === 0) return null;
+    const nextEventIndex = parsedEvents.findIndex(ev => ev.time > now);
 
-        parsedEvents.sort((a, b) => a.time.getTime() - b.time.getTime());
+    if (nextEventIndex === -1) {
+        const firstEvent = parsedEvents[0];
+        const tomorrowFajr = new Date(firstEvent.time);
+        tomorrowFajr.setDate(tomorrowFajr.getDate() + 1);
 
-        const nextEventIndex = parsedEvents.findIndex(ev => ev.time > currentTime);
-
-        if (nextEventIndex === -1) {
-            const firstEvent = parsedEvents[0];
-            const tomorrowFajr = new Date(firstEvent.time);
-            tomorrowFajr.setDate(tomorrowFajr.getDate() + 1);
-
-            return {
-                key: firstEvent.key,
-                label: firstEvent.label,
-                timeStr: prayerTimes[firstEvent.key],
-                timeDiffMs: tomorrowFajr.getTime() - currentTime.getTime()
-            };
-        } else {
-            const nextEvent = parsedEvents[nextEventIndex];
-            return {
-                key: nextEvent.key,
-                label: nextEvent.label,
-                timeStr: prayerTimes[nextEvent.key],
-                timeDiffMs: nextEvent.time.getTime() - currentTime.getTime()
-            };
-        }
-    }, [prayerTimes, currentTime]);
-
-    const getPrayerIcon = (key: string, className?: string) => {
-        switch (key) {
-            case 'Fajr': return <MoonStar className={className} />;
-            case 'Sunrise': return <Sunrise className={className} />;
-            case 'Dhuhr': return <Sun className={className} />;
-            case 'Asr': return <SunDim className={className} />;
-            case 'Maghrib': return <Sunset className={className} />;
-            case 'Isha': return <Moon className={className} />;
-            default: return <Clock className={className} />;
-        }
-    };
-
-    const formatDuration = (ms: number) => {
-        const totalSecs = Math.floor(ms / 1000);
-        if (totalSecs < 0) return '00:00:00';
-        const hours = Math.floor(totalSecs / 3600);
-        const minutes = Math.floor((totalSecs % 3600) / 60);
-        const seconds = totalSecs % 60;
-        const pad = (num: number) => String(num).padStart(2, '0');
-        return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
-    };
-
-    return (
-        <Card className="w-full md:w-auto justify-self-stretch md:justify-self-end bg-card/40 backdrop-blur-sm border-border" dir="rtl">
-            <CardContent className="p-3.5 flex items-center gap-3">
-                {nextPrayerInfo ? (
-                    <>
-                        <div className="p-2 bg-primary/10 rounded-xl text-primary">
-                            {getPrayerIcon(nextPrayerInfo.key, "w-5 h-5")}
-                        </div>
-                        <div className="flex flex-col">
-                            <span dir="ltr" className="font-mono text-xs font-bold tabular-nums tracking-wider text-primary">
-                                {formatDuration(nextPrayerInfo.timeDiffMs)}
-                            </span>
-                            <div className="flex items-baseline gap-1.5 mt-1 leading-none">
-                                <span className="font-bold text-sm text-foreground">{nextPrayerInfo.label}</span>
-                                <span className="text-[10px] text-muted-foreground font-semibold">({nextPrayerInfo.timeStr})</span>
-                            </div>
-                        </div>
-                    </>
-                ) : (
-                    <div className="text-xs text-muted-foreground animate-pulse py-1 px-4">
-                        جاري تحميل المواقيت...
-                    </div>
-                )}
-            </CardContent>
-        </Card>
-    );
-});
+        return {
+            key: firstEvent.key,
+            label: firstEvent.label,
+            timeStr: prayerTimes[firstEvent.key],
+            timeDiffMs: tomorrowFajr.getTime() - now.getTime()
+        };
+    } else {
+        const nextEvent = parsedEvents[nextEventIndex];
+        return {
+            key: nextEvent.key,
+            label: nextEvent.label,
+            timeStr: prayerTimes[nextEvent.key],
+            timeDiffMs: nextEvent.time.getTime() - now.getTime()
+        };
+    }
+}

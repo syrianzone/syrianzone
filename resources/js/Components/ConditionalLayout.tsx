@@ -17,7 +17,7 @@ export default function ConditionalLayout({ children }: { children: React.ReactN
 
   return (
     <div className={isFullHeight ? 'flex flex-col h-screen overflow-hidden' : ''}>
-      <Navbar sticky={!isFullHeight && !path.startsWith('/muslim')} />
+      <Navbar sticky={!isFullHeight && !path.startsWith('/muslim') && path !== '/'} />
       <div className={isFullHeight ? 'flex-1 min-h-0 overflow-hidden' : ''}>
         {children}
       </div>

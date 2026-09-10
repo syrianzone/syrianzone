@@ -3,7 +3,7 @@ import { Head, usePage } from '@inertiajs/react';
 import {
     Calendar, Clock, MapPin, Sparkles, AlertCircle, Info,
     Sun, Sunset, Timer, Check, ShieldAlert, Heart, CalendarDays,
-    ExternalLink, MoonStar, Sunrise, SunDim, Moon,
+    ExternalLink, MoonStar, Sunrise, SunDim, Moon, Settings,
     Cloud, CloudRain, CloudLightning, Snowflake, Wind
 } from 'lucide-react';
 import { Card, CardContent } from "@/Components/ui/card";
@@ -65,10 +65,19 @@ const F3ALIA_PROVINCE_TO_ARABIC: Record<string, string> = {
     'RAQQA': 'الرقة'
 };
 import { Label } from "@/Components/ui/label";
+import { Input } from "@/Components/ui/input";
 import MainLayout from '@/Layouts/MainLayout';
 import axios from '@/Lib/axios';
-import LocateButtons from '@/Pages/Muslim/_components/LocateButtons';
-import { effectivePrayerParams, getGeo, getLocMode, useLocSignal } from '@/Pages/Muslim/_lib/location';
+import {
+    Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
+} from '@/Components/ui/dialog';
+import {
+    Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle,
+} from '@/Components/ui/sheet';
+import LocationModeSelector from '@/Pages/Muslim/_components/LocationModeSelector';
+import { LOC_CHANGED_EVENT, effectivePrayerParams, getGeo, getLocMode, setLocMode, useLocSignal, type GeoPoint, type LocMode } from '@/Pages/Muslim/_lib/location';
+import { PRAYER_METHODS } from '@/Pages/Muslim/_lib/methods';
+import { useIsMobile, useMuslimNav } from '@/Pages/Muslim/_lib/nav';
 
 const GOVERNORATES: Record<string, { nameAr: string; nameEn: string; lat: number; lon: number }> = {
     'damascus': { nameAr: 'دمشق', nameEn: 'Damascus', lat: 33.5138, lon: 36.2765 },
@@ -161,13 +170,129 @@ const getWeatherIcon = (iconCode: string) => {
     return <Sun className="w-6 h-6 text-yellow-500" />;
 };
 
+// Settings body shared by the desktop Dialog and the mobile bottom Sheet.
+function RoznamaSettingsBody({
+    governorate,
+    onGovChange,
+    method,
+    onMethodChange,
+    customLat,
+    customLon,
+    onCustom,
+    locMode,
+    onLocMode,
+    geo,
+}: {
+    governorate: string;
+    onGovChange: (v: string) => void;
+    method: number;
+    onMethodChange: (v: string) => void;
+    customLat: string;
+    customLon: string;
+    onCustom: (patch: { on?: boolean; lat?: string; lon?: string }) => void;
+    locMode: LocMode;
+    onLocMode: (m: LocMode) => void;
+    geo: GeoPoint | null;
+}) {
+    const geoActive = (locMode === 'gps' || locMode === 'ip') && !!geo;
+    return (
+        <div className="space-y-4">
+            <LocationModeSelector mode={locMode} onChange={onLocMode} />
+
+            {geoActive && geo && (
+                <p className="text-[11px] leading-relaxed text-muted-foreground">
+                    الموقع الحالي: <span className="font-semibold text-foreground">{geo.label}</span>
+                    <span dir="ltr" className="tabular-nums"> ({geo.lat}، {geo.lon})</span>
+                </p>
+            )}
+
+            {locMode === 'city' && (
+                <div className="space-y-2">
+                    <Label className="flex items-center gap-2 text-sm font-semibold">
+                        <MapPin className="h-4 w-4 text-primary" /> المدينة (للمواقيت والطقس والفعاليات)
+                    </Label>
+                    <Select value={governorate} onValueChange={onGovChange}>
+                        <SelectTrigger dir="rtl"><SelectValue /></SelectTrigger>
+                        <SelectContent dir="rtl">
+                            {Object.entries(GOVERNORATES).map(([key, value]) => (
+                                <SelectItem key={key} value={key}>
+                                    {value.nameAr}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+            )}
+
+            {locMode === 'custom' && (
+                <div className="grid grid-cols-2 gap-3 rounded-lg border border-border/50 bg-card/10 p-3">
+                    <div className="space-y-1">
+                        <Label className="text-xs">خط العرض (Lat)</Label>
+                        <Input
+                            dir="ltr" inputMode="decimal" placeholder="33.51"
+                            value={customLat}
+                            onChange={(e) => onCustom({ lat: e.target.value })}
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <Label className="text-xs">خط الطول (Lon)</Label>
+                        <Input
+                            dir="ltr" inputMode="decimal" placeholder="36.27"
+                            value={customLon}
+                            onChange={(e) => onCustom({ lon: e.target.value })}
+                        />
+                    </div>
+                </div>
+            )}
+
+            <div className="space-y-2">
+                <Label className="text-sm font-semibold">طريقة الحساب</Label>
+                <Select value={String(method)} onValueChange={onMethodChange}>
+                    <SelectTrigger dir="rtl"><SelectValue /></SelectTrigger>
+                    <SelectContent dir="rtl">
+                        {PRAYER_METHODS.map((m) => (
+                            <SelectItem key={m.id} value={String(m.id)}>{m.nameAr}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                <p className="text-[11px] leading-relaxed text-muted-foreground">
+                    {PRAYER_METHODS.find((m) => m.id === method)?.detail}
+                </p>
+            </div>
+        </div>
+    );
+}
+
 export default function Index() {
     const { props } = usePage<{ auth?: { user?: { id: number; settings?: Record<string, unknown> | null } | null } }>();
+    const isMobile = useIsMobile();
     const serverGovernorate = (props.auth?.user?.settings as Record<string, string> | undefined)?.governorate;
     const isLoggedIn = Boolean(props.auth?.user?.id);
     const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const [governorate, setGovernorate] = useState('damascus');
+    // Manual custom coords (last resort): shared Home keys, one custom
+    // location site-wide. Initialized server-first like the governorate.
+    const [useCustomCoords, setUseCustomCoords] = useState(false);
+    const [customLat, setCustomLat] = useState('');
+    const [customLon, setCustomLon] = useState('');
+    const [method, setMethod] = useState(() => {
+        if (typeof window === 'undefined') return 3;
+        return Number(window.localStorage.getItem('sz-muslim-method') || '3') || 3;
+    });
+    const roznamaSettingsOpen = useMuslimNav((s) => s.roznamaSettingsOpen);
+    const setRoznamaSettingsOpen = useMuslimNav((s) => s.setRoznamaSettingsOpen);
+
+    const handleMethodChange = (v: string) => {
+        const m = Number(v) || 3;
+        setMethod(m);
+        try {
+            window.localStorage.setItem('sz-muslim-method', String(m));
+        } catch {
+            // private mode
+        }
+        window.dispatchEvent(new Event(LOC_CHANGED_EVENT));
+    };
     const [currentTime, setCurrentTime] = useState<Date>(new Date());
     const [prayerTimes, setPrayerTimes] = useState<Record<string, string> | null>(null);
     const [hijriDateFromApi, setHijriDateFromApi] = useState<string | null>(null);
@@ -202,14 +327,24 @@ export default function Index() {
         localStorage.setItem('sz-hide-passed-holidays', String(hidePassed));
     }, [hidePassed]);
 
-    // Load governorate: account value wins when present, else the saved
-    // device value. Written back set-if-absent only, so a logged-out change
-    // is never clobbered before the login sync can compare both sides.
+    // Load governorate + manual coords: account values win when present,
+    // else the saved device values. Written back set-if-absent only, so a
+    // logged-out change is never clobbered before the login sync compares.
     useEffect(() => {
+        const settings = (props.auth?.user?.settings ?? {}) as Record<string, unknown>;
         const lsRoznama = localStorage.getItem('sz-roznama-governorate');
         const lsHome = localStorage.getItem('governorate');
         const savedGov = serverGovernorate || lsRoznama || lsHome || 'damascus';
         setGovernorate(savedGov);
+        const savedCustomOn = (settings.useCustomCoords as boolean | undefined)
+            ?? (localStorage.getItem('useCustomCoords') === 'true');
+        const savedCustomLat = (settings.customLat as string | undefined)
+            ?? (localStorage.getItem('customLat') || '');
+        const savedCustomLon = (settings.customLon as string | undefined)
+            ?? (localStorage.getItem('customLon') || '');
+        setUseCustomCoords(savedCustomOn);
+        setCustomLat(savedCustomLat);
+        setCustomLon(savedCustomLon);
         try {
             if (localStorage.getItem('sz-roznama-governorate') === null) {
                 localStorage.setItem('sz-roznama-governorate', savedGov);
@@ -244,7 +379,10 @@ export default function Index() {
                     const geo = getGeo();
                     return (mode === 'gps' || mode === 'ip') && geo ? geo : null;
                 })();
-                const coords = shared ?? (GOVERNORATES[governorate] || GOVERNORATES['damascus']);
+                const custom = useCustomCoords && customLat && customLon
+                    && Number.isFinite(Number(customLat)) && Number.isFinite(Number(customLon))
+                    ? { lat: Number(customLat), lon: Number(customLon) } : null;
+                const coords = shared ?? custom ?? (GOVERNORATES[governorate] || GOVERNORATES['damascus']);
                 const response = await fetch(`/api/weather?lat=${coords.lat}&lon=${coords.lon}`);
                 if (!response.ok) throw new Error('Weather fetch failed');
                 const data = await response.json();
@@ -266,7 +404,7 @@ export default function Index() {
         };
 
         fetchWeather();
-    }, [governorate, mounted, locSig]);
+    }, [governorate, useCustomCoords, customLat, customLon, mounted, locSig]);
 
     // Fetch Prayer Times via server proxy (no direct Aladhan call: CORS +
     // caching + fixed governorate list live in PrayerController).
@@ -290,6 +428,9 @@ export default function Index() {
                     geo: getGeo(),
                     manualCity: governorate,
                     method,
+                    useCustomCoords,
+                    customLat,
+                    customLon,
                 }))) params.set(k, String(v));
                 const response = await fetch(`/api/prayer-times?${params.toString()}`, { signal: ctrl.signal });
                 if (!response.ok) throw new Error('فشل جلب مواقيت الصلاة');
@@ -320,7 +461,7 @@ export default function Index() {
 
         fetchPrayerTimes();
         return () => { clearTimeout(timer); ctrl.abort(); };
-    }, [governorate, mounted, locSig]);
+    }, [governorate, useCustomCoords, customLat, customLon, mounted, locSig]);
 
     // Fetch upcoming events via server proxy (/api/events/today).
     useEffect(() => {
@@ -377,6 +518,15 @@ export default function Index() {
     }, [governorate, showOtherGovEvents, mounted]);
 
     // Handle governorate change: device keys immediately, account debounced.
+    // Manual custom coords share Home's keys (one custom location site-wide).
+    const savePrefs = (patch: Record<string, unknown>) => {
+        if (!isLoggedIn) return;
+        if (saveTimer.current) clearTimeout(saveTimer.current);
+        saveTimer.current = setTimeout(() => {
+            axios.post('/api/user/settings', { settings: patch }).catch(() => {});
+        }, 600);
+    };
+
     const handleGovChange = (val: string) => {
         setGovernorate(val);
         try {
@@ -385,11 +535,24 @@ export default function Index() {
         } catch {
             // private mode
         }
-        if (!isLoggedIn) return;
-        if (saveTimer.current) clearTimeout(saveTimer.current);
-        saveTimer.current = setTimeout(() => {
-            axios.post('/api/user/settings', { settings: { governorate: val } }).catch(() => {});
-        }, 600);
+        savePrefs({ governorate: val });
+    };
+
+    const setCustom = (patch: { on?: boolean; lat?: string; lon?: string }) => {
+        const nextOn = patch.on ?? useCustomCoords;
+        const nextLat = patch.lat ?? customLat;
+        const nextLon = patch.lon ?? customLon;
+        if (patch.on !== undefined) setUseCustomCoords(patch.on);
+        if (patch.lat !== undefined) setCustomLat(patch.lat);
+        if (patch.lon !== undefined) setCustomLon(patch.lon);
+        try {
+            localStorage.setItem('useCustomCoords', String(nextOn));
+            localStorage.setItem('customLat', nextLat);
+            localStorage.setItem('customLon', nextLon);
+        } catch {
+            // private mode
+        }
+        savePrefs({ useCustomCoords: nextOn, customLat: nextLat, customLon: nextLon });
     };
 
     useEffect(() => () => {
@@ -562,7 +725,8 @@ export default function Index() {
         const geo = getGeo();
         return (mode === 'gps' || mode === 'ip') && geo ? geo : null;
     })();
-    const placeLabel = geoActive ? geoActive.label : activeGov.nameAr;
+    const placeLabel = geoActive ? geoActive.label
+        : (useCustomCoords && customLat && customLon ? 'إحداثيات مخصصة' : activeGov.nameAr);
 
     return (
         <MainLayout>
@@ -613,28 +777,11 @@ export default function Index() {
                                     <div className="flex justify-between items-center mb-6">
                                         <div className="flex items-center gap-2 text-muted-foreground text-sm font-medium">
                                             <MapPin className="h-4 w-4 text-primary" />
-                                            <span>المحافظة:</span>
+                                            <span>{placeLabel}</span>
                                             {geoActive && (
                                                 <Badge variant="secondary" className="text-[10px]">موقع تلقائي</Badge>
                                             )}
                                         </div>
-                                        <Select value={governorate} onValueChange={handleGovChange}>
-                                            <SelectTrigger className="w-[140px] bg-card border-border" dir="rtl">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent dir="rtl">
-                                                {Object.entries(GOVERNORATES).map(([key, value]) => (
-                                                    <SelectItem key={key} value={key}>
-                                                        {value.nameAr}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-
-                                    {/* GPS/IP auto-location (manual city stays as fallback) */}
-                                    <div className="mb-4">
-                                        <LocateButtons compact />
                                     </div>
 
                                     {/* Clock Display */}
@@ -755,10 +902,24 @@ export default function Index() {
                                 <CardContent className="p-6 flex-1 flex flex-col justify-between">
                                     <div>
                                         <div className="flex items-center justify-between mb-4 border-b border-border/60 pb-3">
-                                            <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
-                                                <Clock className="h-5 w-5 text-primary" />
-                                                <span>مواقيت الصلاة في {placeLabel}</span>
+                                            <h3 className="font-bold text-lg text-foreground flex items-center gap-2 min-w-0">
+                                                <Clock className="h-5 w-5 shrink-0 text-primary" />
+                                                <span className="truncate">مواقيت الصلاة في {placeLabel}</span>
                                             </h3>
+                                            <div className="flex shrink-0 items-center gap-1.5">
+                                                {hijriDateFromApi && (
+                                                    <Badge variant="outline" className="hidden text-[10px] sm:inline-flex">
+                                                        {hijriDateFromApi} هـ
+                                                    </Badge>
+                                                )}
+                                                <Button
+                                                    variant="ghost" size="icon" className="h-8 w-8"
+                                                    title="إعدادات الروزنامة"
+                                                    onClick={() => setRoznamaSettingsOpen(true)}
+                                                >
+                                                    <Settings className="h-4 w-4" />
+                                                </Button>
+                                            </div>
                                         </div>
 
                                         {/* Next Prayer Countdown (Simple block with dynamic icon, next prayer label, and countdown) */}
@@ -1110,6 +1271,63 @@ export default function Index() {
                     </div>
 
                 </div>
+
+                {/* Roznama settings: bottom Sheet on mobile, Dialog on desktop */}
+                {isMobile ? (
+                    <Sheet open={roznamaSettingsOpen} onOpenChange={setRoznamaSettingsOpen}>
+                        <SheetContent side="bottom" dir="rtl" className="rounded-t-3xl border-b-0 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+                            <SheetHeader className="text-right">
+                                <SheetTitle>إعدادات الروزنامة</SheetTitle>
+                                <SheetDescription>
+                                    الموقع المستخدم لمواقيت الصلاة والطقس — GPS أو الإنترنت أو مدينة يدوية.
+                                </SheetDescription>
+                            </SheetHeader>
+                            <div className="max-h-[70dvh] overflow-y-auto sz-scroll">
+                                <RoznamaSettingsBody
+                                    governorate={governorate}
+                                    onGovChange={handleGovChange}
+                                    method={method}
+                                    onMethodChange={handleMethodChange}
+                                    customLat={customLat}
+                                    customLon={customLon}
+                                    onCustom={setCustom}
+                                    locMode={getLocMode()}
+                                    onLocMode={(m) => {
+                                        setLocMode(m);
+                                        setCustom({ on: m === 'custom' });
+                                    }}
+                                    geo={getGeo()}
+                                />
+                            </div>
+                        </SheetContent>
+                    </Sheet>
+                ) : (
+                    <Dialog open={roznamaSettingsOpen} onOpenChange={setRoznamaSettingsOpen}>
+                        <DialogContent dir="rtl" className="sm:max-w-md">
+                            <DialogHeader className="text-right">
+                                <DialogTitle>إعدادات الروزنامة</DialogTitle>
+                                <DialogDescription>
+                                    الموقع المستخدم لمواقيت الصلاة والطقس — GPS أو الإنترنت أو مدينة يدوية.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <RoznamaSettingsBody
+                                governorate={governorate}
+                                onGovChange={handleGovChange}
+                                method={method}
+                                onMethodChange={handleMethodChange}
+                                customLat={customLat}
+                                customLon={customLon}
+                                onCustom={setCustom}
+                                locMode={getLocMode()}
+                                onLocMode={(m) => {
+                                    setLocMode(m);
+                                    setCustom({ on: m === 'custom' });
+                                }}
+                                geo={getGeo()}
+                            />
+                        </DialogContent>
+                    </Dialog>
+                )}
             </MainLayout>
     );
 }

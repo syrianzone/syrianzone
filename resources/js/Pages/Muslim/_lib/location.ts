@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 // last resort everywhere. Geo state is device-local (localStorage only, never
 // synced to the account — a phone and a laptop are rarely in one place).
 
-export type LocMode = 'city' | 'gps' | 'ip';
+export type LocMode = 'city' | 'gps' | 'ip' | 'custom';
 
 export interface GeoPoint {
   lat: number;
@@ -43,7 +43,7 @@ export function useLocSignal(): number {
 export function getLocMode(): LocMode {
   if (typeof window === 'undefined') return 'city';
   const v = window.localStorage.getItem(LS_MODE);
-  return v === 'gps' || v === 'ip' ? v : 'city';
+  return v === 'gps' || v === 'ip' || v === 'custom' ? v : 'city';
 }
 
 export function setLocMode(mode: LocMode): void {
@@ -102,23 +102,53 @@ export function resolveGps(): Promise<GeoPoint> {
       reject(new Error('المتصفح لا يدعم تحديد الموقع'));
       return;
     }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        resolve({
-          lat: round2(pos.coords.latitude),
-          lon: round2(pos.coords.longitude),
-          label: 'موقع الجهاز (GPS)',
-          source: 'gps',
-          at: Date.now(),
-        });
-      },
-      (err) => {
-        if (err.code === err.PERMISSION_DENIED) reject(new Error('تم رفض إذن الموقع — فعّله من المتصفح أو استخدم التعرف عبر IP'));
-        else if (err.code === err.TIMEOUT) reject(new Error('انتهت مهلة تحديد الموقع — حاول مجدداً'));
-        else reject(new Error('تعذر تحديد الموقع — حاول مجدداً'));
-      },
-      { enableHighAccuracy: false, timeout: 12000, maximumAge: 600000 },
-    );
+    // Geolocation API only exists in secure contexts (HTTPS or localhost).
+    if (typeof window !== 'undefined' && window.isSecureContext === false) {
+      reject(new Error('تحديد الموقع يحتاج اتصالاً آمناً (HTTPS) — جرّب عبر الإنترنت (IP)'));
+      return;
+    }
+
+    const attempt = (
+      options: PositionOptions,
+      onFail: (err: GeolocationPositionError) => void,
+    ) => {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          resolve({
+            lat: round2(pos.coords.latitude),
+            lon: round2(pos.coords.longitude),
+            label: 'موقع الجهاز (GPS)',
+            source: 'gps',
+            at: Date.now(),
+          });
+        },
+        onFail,
+        options,
+      );
+    };
+
+    // Attempt 1: fast low-power fix. Attempt 2 (on timeout/unavailable):
+    // high-accuracy fix with a longer window — this rescues most indoor
+    // and first-fix failures instead of dead-ending at "try again".
+    attempt({ enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 }, (err) => {
+      if (err.code === err.PERMISSION_DENIED) {
+        reject(new Error('تم رفض إذن الموقع — فعّله من المتصفح أو استخدم التعرف عبر IP'));
+        return;
+      }
+      if (err.code !== err.TIMEOUT && err.code !== err.POSITION_UNAVAILABLE) {
+        reject(new Error('تعذر تحديد الموقع — حاول مجدداً'));
+        return;
+      }
+      attempt({ enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }, (err2) => {
+        if (err2.code === err2.PERMISSION_DENIED) {
+          reject(new Error('تم رفض إذن الموقع — فعّله من المتصفح أو استخدم التعرف عبر IP'));
+        } else if (err2.code === err2.TIMEOUT) {
+          reject(new Error('تعذر التقاط إشارة كافية — جرّب قرب نافذة أو فعّل الـ WiFi ثم أعد المحاولة'));
+        } else {
+          reject(new Error('تعذر تحديد الموقع على هذا الجهاز — تأكد من تفعيل خدمات الموقع في النظام أو استخدم التعرف عبر IP'));
+        }
+      });
+    });
   });
 }
 
@@ -184,7 +214,10 @@ export function effectivePrayerParams(input: EffectiveInput): Record<string, str
   if ((mode === 'gps' || mode === 'ip') && geo && Number.isFinite(geo.lat) && Number.isFinite(geo.lon)) {
     return { latitude: geo.lat, longitude: geo.lon, method };
   }
-  if (input.useCustomCoords && input.customLat && input.customLon) {
+  // Manual coordinates are a first-class mode now; the legacy flag path
+  // stays for states stored before the radio existed.
+  const customOn = input.useCustomCoords === true || mode === 'custom';
+  if (customOn && input.customLat && input.customLon) {
     const lat = Number(input.customLat);
     const lon = Number(input.customLon);
     if (Number.isFinite(lat) && Number.isFinite(lon)) {

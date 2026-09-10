@@ -51,26 +51,22 @@ export default function AudioPlayer({
   };
 
   // Auto-advance to the next Ayah when one ends.
-  useEffect(() => {
+  const handleEnded = () => {
+    const s = live.current;
+    const i = s.ayat.findIndex((a) => a.key === s.currentKey);
     const el = audioRef.current;
     if (!el) return;
-    const onEnded = () => {
-      const s = live.current;
-      const i = s.ayat.findIndex((a) => a.key === s.currentKey);
-      if (i >= 0 && i + 1 < s.ayat.length) {
-        const next = s.ayat[i + 1];
-        s.onSelectAyah(next.key);
-        el.src = ayahAudioUrl(s.reciter, next.surah, next.ayah);
-        el.play().catch(() => setPlaying(false));
-      } else if (s.onEndOfList) {
-        s.onEndOfList();
-      } else {
-        setPlaying(false);
-      }
-    };
-    el.addEventListener('ended', onEnded);
-    return () => el.removeEventListener('ended', onEnded);
-  }, []);
+    if (i >= 0 && i + 1 < s.ayat.length) {
+      const next = s.ayat[i + 1];
+      s.onSelectAyah(next.key);
+      el.src = ayahAudioUrl(s.reciter, next.surah, next.ayah);
+      el.play().catch(() => setPlaying(false));
+    } else if (s.onEndOfList) {
+      s.onEndOfList();
+    } else {
+      setPlaying(false);
+    }
+  };
 
   // Tap on Ayah text in the Mushaf starts playback from that Ayah.
   const lastSignal = useRef(0);
@@ -154,7 +150,7 @@ export default function AudioPlayer({
     // the centered container; the overflow-hidden page wrapper clips the
     // scrollbar-width excess). Controls stay at the current narrow width.
     <div className="sticky bottom-0 z-40 ml-[calc(50%-50vw)] mr-[calc(50%-50vw)] border-t border-border bg-card/95 px-4 py-2 backdrop-blur">
-      <audio ref={audioRef} preload="none" onPlaying={() => setPlaying(true)} onPause={() => setPlaying(false)} />
+      <audio ref={audioRef} preload="none" onPlaying={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={handleEnded} />
       <div className="mx-auto flex max-w-3xl items-center gap-2">
         {/* Right: volume (outline to match the reciter button). */}
         <div ref={volumeWrapRef} className="relative flex flex-1 items-center justify-start gap-1">

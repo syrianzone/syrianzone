@@ -254,7 +254,8 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterId, setR
     <div className="flex h-full flex-col">
       {/* Top row: back to index; bookmarks button here on PC
           (on mobile it lives in the navbar). */}
-      <div className="mb-2 flex shrink-0 items-center justify-between gap-2 px-1">
+      {!isFocused && (
+        <div className="mb-2 flex shrink-0 items-center justify-between gap-2 px-1">
         <Button variant="ghost" size="sm" onClick={backToIndex} className="gap-1 px-2 text-xs text-muted-foreground">
           <ArrowRight className="h-4 w-4" /> رجوع
         </Button>
@@ -265,36 +266,39 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterId, setR
           <Bookmark className="h-4 w-4" /> العلامات
         </Button>
       </div>
-      {/* Single plain-text header: bookmark right of the Surah name. */}
-      <div className="mb-2 flex shrink-0 items-baseline justify-between gap-3 px-1">
-        <div className="flex min-w-0 items-center gap-1">
-          <Button
-            variant="ghost" size="icon" className="h-6 w-6 shrink-0"
-            title={
-              !currentAyah ? 'اختر آية من الصفحة'
-              : ayahSaved ? 'إزالة علامة الآية' : 'حفظ علامة على الآية المحددة'
-            }
-            disabled={!currentAyah || bookmarkBusy}
-            onClick={() => void toggleBookmark()}
-          >
-            {ayahSaved
-              ? <BookmarkCheck className="h-3.5 w-3.5 text-primary" />
-              : <Bookmark className="h-3.5 w-3.5" />}
-          </Button>
-          <span className="truncate text-sm font-bold text-primary">{surahs}</span>
-        </div>
-        <div className="flex shrink-0 items-center gap-3">
-          {juzs && <span className="text-xs text-muted-foreground">الجزء {juzs}</span>}
-          {isDesktop && (
+      )}
+      {!isFocused && (
+        <div className="mb-2 flex shrink-0 items-baseline justify-between gap-3 px-1">
+          <div className="flex min-w-0 items-center gap-1">
+            <select 
+              value={currentAyah ? currentAyah.surah : 1}
+              onChange={(e) => {
+                const surah = Number(e.target.value);
+                void resolveJump(`${surah}:1`).then(res => res && go(res.page));
+              }}
+              className="truncate text-sm font-bold text-primary bg-transparent outline-none cursor-pointer appearance-none px-1 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            >
+              {SURA_NAMES_AR.map((name, i) => {
+                if (i === 0) return null;
+                return <option key={i} value={i}>{name}</option>;
+              })}
+            </select>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            {juzs && <span className="text-xs text-muted-foreground">الجزء {juzs}</span>}
             <span className="flex items-center gap-1">
               <Button variant="ghost" size="sm" className="h-7 px-2 text-xs"
                 disabled={fontSize >= 30} onClick={() => setFontSize((f) => Math.min(30, f + 1))}>أ+</Button>
               <Button variant="ghost" size="sm" className="h-7 px-2 text-xs"
                 disabled={fontSize <= 14} onClick={() => setFontSize((f) => Math.max(14, f - 1))}>أ−</Button>
+              <Button variant="ghost" size="icon" className="h-7 w-7 ms-1 text-xs"
+                title="وضع التركيز" onClick={() => setIsFocused(true)}>
+                <Maximize className="h-4 w-4" />
+              </Button>
             </span>
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       {loading ? (
         <div className="flex flex-col items-center gap-2 py-16 text-muted-foreground">

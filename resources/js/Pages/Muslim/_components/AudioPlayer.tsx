@@ -87,6 +87,23 @@ export default function AudioPlayer({
     }
   });
 
+  // Prefetch up to 10 Ayahs ahead silently to eliminate audio gaps
+  const prefetched = useRef(new Set<string>());
+  useEffect(() => {
+    if (!playing) return;
+    const end = Math.min(idx + 11, ayat.length);
+    for (let i = idx + 1; i < end; i++) {
+      const a = ayat[i];
+      const url = ayahAudioUrl(reciter, a.surah, a.ayah);
+      if (!prefetched.current.has(url)) {
+        prefetched.current.add(url);
+        // Opaque no-cors fetch correctly warms the browser's HTTP disk cache
+        // for the native <audio> element to consume instantly.
+        window.fetch(url, { mode: 'no-cors' }).catch(() => undefined);
+      }
+    }
+  }, [playing, idx, ayat, reciter]);
+
   // Reciter switch keeps the position and reloads the same Ayah.
   const prevReciter = useRef(reciterId);
   useEffect(() => {

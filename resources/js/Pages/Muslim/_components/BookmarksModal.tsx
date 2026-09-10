@@ -72,7 +72,7 @@ export default function BookmarksModal({ isLoggedIn, onJump }: Props) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent dir="rtl" className="max-h-[80dvh] overflow-hidden sm:max-w-md">
-        <DialogHeader className="text-right">
+        <DialogHeader className="text-right sm:text-right">
           <DialogTitle className="flex items-center gap-2">
             <Bookmark className="h-4 w-4 text-primary" /> علامات الآيات
           </DialogTitle>

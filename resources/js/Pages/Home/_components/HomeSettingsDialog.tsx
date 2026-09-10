@@ -4,9 +4,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/Components/ui/tabs";
 import { ScrollArea } from "@/Components/ui/scroll-area";
 import { Label } from "@/Components/ui/label";
 import { Input } from "@/Components/ui/input";
-import { Button } from "@/Components/ui/button";
 import { Switch } from "@/Components/ui/switch";
-import { Search, Compass, Info, BarChart3, Shield, FileText } from 'lucide-react';
+import { Search, Info, BarChart3, Shield, FileText, MapPin } from 'lucide-react';
+import LocateButtons from '@/Pages/Muslim/_components/LocateButtons';
+import { getGeo, getLocMode, useLocSignal } from '@/Pages/Muslim/_lib/location';
 import { THEME_REGISTRY } from '@/lib/theme';
 import { applyFont, FontPreference } from '@/Lib/font';
 
@@ -30,8 +31,6 @@ export const GOVERNORATE_LIST = [
 export interface HomeSettingsDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    currentLang: 'ar' | 'en';
-    setLanguage: (lang: 'ar' | 'en') => void;
     clockFormat: '12' | '24';
     setClockFormat: (fmt: '12' | '24') => void;
     fontFamily: FontPreference;
@@ -48,25 +47,18 @@ export interface HomeSettingsDialogProps {
     setShowPrayerTimes: (show: boolean) => void;
     showEvents: boolean;
     setShowEvents: (show: boolean) => void;
-    showSearch: boolean;
-    setShowSearch: (show: boolean) => void;
     useCustomCoords: boolean;
     setUseCustomCoords: (use: boolean) => void;
     customLat: string;
     setCustomLat: (lat: string) => void;
     customLon: string;
     setCustomLon: (lon: string) => void;
-    getDeviceLocation: () => void;
-    customSearchUrl: string;
-    setCustomSearchUrl: (url: string) => void;
     saveAccountSettings: (settings: Record<string, any>) => void;
 }
 
 export default function HomeSettingsDialog({
     open,
     onOpenChange,
-    currentLang,
-    setLanguage,
     clockFormat,
     setClockFormat,
     fontFamily,
@@ -83,91 +75,57 @@ export default function HomeSettingsDialog({
     setShowPrayerTimes,
     showEvents,
     setShowEvents,
-    showSearch,
-    setShowSearch,
     useCustomCoords,
     setUseCustomCoords,
     customLat,
     setCustomLat,
     customLon,
     setCustomLon,
-    getDeviceLocation,
-    customSearchUrl,
-    setCustomSearchUrl,
     saveAccountSettings,
 }: HomeSettingsDialogProps) {
     const [govDropdownOpen, setGovDropdownOpen] = useState(false);
     const [govSearch, setGovSearch] = useState('');
+    // Saved location display (GPS/IP point or manual governorate).
+    const locSig = useLocSignal();
+    const locMode = getLocMode();
+    const geo = getGeo();
+    const geoActive = (locMode === 'gps' || locMode === 'ip') && !!geo;
+    const activeGovName = GOVERNORATE_LIST.find(g => g.value === governorate)?.nameAr ?? governorate;
+    void locSig;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl md:max-w-3xl max-h-[85vh] flex flex-col p-0" dir={currentLang === 'ar' ? 'rtl' : 'ltr'}>
+            <DialogContent className="max-w-2xl md:max-w-3xl max-h-[85vh] flex flex-col p-0" dir="rtl">
                 <DialogHeader className="px-6 pt-6 pb-2 text-start sm:text-start">
-                    <DialogTitle>{currentLang === 'ar' ? 'الإعدادات' : 'Settings'}</DialogTitle>
+                    <DialogTitle>الإعدادات</DialogTitle>
                 </DialogHeader>
 
-                <Tabs defaultValue="simple" dir={currentLang === 'ar' ? 'rtl' : 'ltr'} className="w-full flex-1 flex flex-col min-h-0">
+                <Tabs defaultValue="simple" dir="rtl" className="w-full flex-1 flex flex-col min-h-0">
                     <div className="px-6 border-b">
-                        <TabsList className="w-full justify-start rounded-none border-b-0 bg-transparent p-0 h-10 gap-6" dir={currentLang === 'ar' ? 'rtl' : 'ltr'}>
+                        <TabsList className="w-full justify-start rounded-none border-b-0 bg-transparent p-0 h-10 gap-6" dir="rtl">
                             <TabsTrigger
                                 value="simple"
                                 className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 pb-3 pt-2 text-sm font-semibold cursor-pointer"
                             >
-                                {currentLang === 'ar' ? 'عام' : 'General'}
+                                عام
                             </TabsTrigger>
                             <TabsTrigger
                                 value="advanced"
                                 className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-1 pb-3 pt-2 text-sm font-semibold cursor-pointer"
                             >
-                                {currentLang === 'ar' ? 'خيارات متقدمة' : 'Advanced'}
+                                خيارات متقدمة
                             </TabsTrigger>
                         </TabsList>
                     </div>
 
                     <div className="flex-1 min-h-0">
                         <TabsContent value="simple" className="h-full m-0">
-                            <ScrollArea className="h-[450px] max-h-[50vh] px-6 pb-6" dir={currentLang === 'ar' ? 'rtl' : 'ltr'}>
+                            <ScrollArea className="h-[450px] max-h-[50vh] px-6 pb-6" dir="rtl">
                                 <div className="space-y-6 py-4 text-start">
-                                    {/* Row with Language, Clock & Font segmented controls */}
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                        {/* Language Selection */}
+                                    {/* Row with Clock & Font segmented controls */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{currentLang === 'ar' ? 'اللغة' : 'Language'}</Label>
-                                            <div className="grid grid-cols-2 gap-1 p-1 bg-muted rounded-lg border border-border/50">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setLanguage('ar');
-                                                        localStorage.setItem('sz-language', 'ar');
-                                                        saveAccountSettings({ language: 'ar' });
-                                                    }}
-                                                    className={`py-1.5 text-xs font-medium rounded-md transition-all ${currentLang === 'ar'
-                                                            ? 'bg-background text-foreground shadow-sm'
-                                                            : 'text-muted-foreground hover:text-foreground'
-                                                        }`}
-                                                >
-                                                    العربية
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setLanguage('en');
-                                                        localStorage.setItem('sz-language', 'en');
-                                                        saveAccountSettings({ language: 'en' });
-                                                    }}
-                                                    className={`py-1.5 text-xs font-medium rounded-md transition-all ${currentLang === 'en'
-                                                            ? 'bg-background text-foreground shadow-sm'
-                                                            : 'text-muted-foreground hover:text-foreground'
-                                                        }`}
-                                                >
-                                                    English
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        {/* Time Format Selection */}
-                                        <div className="space-y-2">
-                                            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{currentLang === 'ar' ? 'تنسيق الوقت' : 'Time Format'}</Label>
+                                            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">تنسيق الوقت</Label>
                                             <div className="grid grid-cols-2 gap-1 p-1 bg-muted rounded-lg border border-border/50">
                                                 <button
                                                     type="button"
@@ -181,7 +139,7 @@ export default function HomeSettingsDialog({
                                                             : 'text-muted-foreground hover:text-foreground'
                                                         }`}
                                                 >
-                                                    {currentLang === 'ar' ? '12 ساعة' : '12-Hour'}
+                                                    12 ساعة
                                                 </button>
                                                 <button
                                                     type="button"
@@ -195,14 +153,14 @@ export default function HomeSettingsDialog({
                                                             : 'text-muted-foreground hover:text-foreground'
                                                         }`}
                                                 >
-                                                    {currentLang === 'ar' ? '24 ساعة' : '24-Hour'}
+                                                    24 ساعة
                                                 </button>
                                             </div>
                                         </div>
 
                                         {/* Font Family Selection */}
                                         <div className="space-y-2">
-                                            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{currentLang === 'ar' ? 'خط الموقع' : 'Site Font'}</Label>
+                                            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">خط الموقع</Label>
                                             <div className="grid grid-cols-2 gap-1 p-1 bg-muted rounded-lg border border-border/50">
                                                 <button
                                                     type="button"
@@ -216,7 +174,7 @@ export default function HomeSettingsDialog({
                                                             : 'text-muted-foreground hover:text-foreground'
                                                         }`}
                                                 >
-                                                    {currentLang === 'ar' ? 'خطّ الموقع' : 'Site Font'}
+                                                    خطّ الموقع
                                                 </button>
                                                 <button
                                                     type="button"
@@ -230,7 +188,7 @@ export default function HomeSettingsDialog({
                                                             : 'text-muted-foreground hover:text-foreground'
                                                         }`}
                                                 >
-                                                    {currentLang === 'ar' ? 'خط النظام' : 'System Font'}
+                                                    خط النظام
                                                 </button>
                                             </div>
                                         </div>
@@ -238,7 +196,7 @@ export default function HomeSettingsDialog({
 
                                     {/* Governorate dropdown with search */}
                                     <div className="space-y-2 relative">
-                                        <Label className="text-sm font-semibold">{currentLang === 'ar' ? 'المحافظة الافتراضية' : 'Default Governorate'}</Label>
+                                        <Label className="text-sm font-semibold">المحافظة الافتراضية</Label>
                                         <button
                                             type="button"
                                             onClick={() => setGovDropdownOpen(!govDropdownOpen)}
@@ -247,7 +205,7 @@ export default function HomeSettingsDialog({
                                             <span>
                                                 {(() => {
                                                     const activeGov = GOVERNORATE_LIST.find(g => g.value === governorate);
-                                                    return activeGov ? (currentLang === 'ar' ? `${activeGov.nameAr} / ${activeGov.nameEn}` : `${activeGov.nameEn} / ${activeGov.nameAr}`) : (currentLang === 'ar' ? 'اختر محافظة...' : 'Select governorate...');
+                                                    return activeGov ? activeGov.nameAr : 'اختر محافظة...';
                                                 })()}
                                             </span>
                                             <span className="text-muted-foreground text-xs">▼</span>
@@ -263,7 +221,7 @@ export default function HomeSettingsDialog({
                                                             type="text"
                                                             value={govSearch}
                                                             onChange={(e) => setGovSearch(e.target.value)}
-                                                            placeholder={currentLang === 'ar' ? 'ابحث عن محافظة...' : 'Search governorate...'}
+                                                            placeholder="ابحث عن محافظة..."
                                                             className="flex h-9 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
                                                         />
                                                     </div>
@@ -275,7 +233,7 @@ export default function HomeSettingsDialog({
                                                             );
 
                                                             if (filtered.length === 0) {
-                                                                return <div className="py-6 text-center text-sm text-muted-foreground">{currentLang === 'ar' ? 'لم يتم العثور على نتائج' : 'No results found.'}</div>;
+                                                                return <div className="py-6 text-center text-sm text-muted-foreground">لم يتم العثور على نتائج</div>;
                                                             }
 
                                                             return filtered.map((g) => {
@@ -293,7 +251,7 @@ export default function HomeSettingsDialog({
                                                                         }}
                                                                         className={`flex w-full items-center justify-between rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground cursor-pointer text-start ${isSelected ? 'bg-accent/50 font-semibold' : ''}`}
                                                                     >
-                                                                        <span>{currentLang === 'ar' ? `${g.nameAr} / ${g.nameEn}` : `${g.nameEn} / ${g.nameAr}`}</span>
+                                                                        <span>{g.nameAr}</span>
                                                                         {isSelected && <span className="text-primary text-xs">✓</span>}
                                                                     </button>
                                                                 );
@@ -308,13 +266,13 @@ export default function HomeSettingsDialog({
                                     {/* Theme Settings */}
                                     <div className="space-y-4 pt-2">
                                         <h4 className="font-semibold text-foreground text-sm">
-                                            {currentLang === 'ar' ? 'إعدادات المظهر' : 'Theme Settings'}
+                                            إعدادات المظهر
                                         </h4>
 
                                         <div className="space-y-2">
                                             {/* Standard themes list */}
                                             <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground pt-1">
-                                                {currentLang === 'ar' ? 'المظاهر الأساسية' : 'Standard'}
+                                                المظاهر الأساسية
                                             </p>
                                             <div className="grid grid-cols-2 gap-2">
                                                 {THEME_REGISTRY.filter(t => t.group === 'standard' || t.group === 'system').map((t) => {
@@ -337,7 +295,7 @@ export default function HomeSettingsDialog({
                                                                 <div style={{ background: t.primary, height: '50%', marginTop: '50%' }} />
                                                             </div>
                                                             <span className="text-xs font-medium truncate" style={{ color: isActive ? t.primary : 'hsl(var(--foreground))' }}>
-                                                                {t.emoji} {currentLang === 'ar' ? t.nameAr : t.nameEn}
+                                                                {t.emoji} {t.nameAr}
                                                             </span>
                                                             {isActive && (
                                                                 <span className="ms-auto text-xs" style={{ color: t.primary }}>✓</span>
@@ -349,7 +307,7 @@ export default function HomeSettingsDialog({
 
                                             {/* Syrian Heritage themes list */}
                                             <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground pt-3">
-                                                {currentLang === 'ar' ? 'التراث السوري' : 'Syrian Heritage'}
+                                                التراث السوري
                                             </p>
                                             <div className="grid grid-cols-2 gap-2">
                                                 {THEME_REGISTRY.filter(t => t.group === 'heritage').map((t) => {
@@ -372,7 +330,7 @@ export default function HomeSettingsDialog({
                                                                 <div style={{ background: t.primary, height: '50%', marginTop: '50%' }} />
                                                             </div>
                                                             <span className="text-xs font-medium truncate" style={{ color: isActive ? t.primary : 'hsl(var(--foreground))' }}>
-                                                                {t.emoji} {currentLang === 'ar' ? t.nameAr : t.nameEn}
+                                                                {t.emoji} {t.nameAr}
                                                             </span>
                                                             {isActive && (
                                                                 <span className="ms-auto text-xs" style={{ color: t.primary }}>✓</span>
@@ -388,17 +346,17 @@ export default function HomeSettingsDialog({
                         </TabsContent>
 
                         <TabsContent value="advanced" className="h-full m-0">
-                            <ScrollArea className="h-[450px] max-h-[50vh] px-6 pb-6" dir={currentLang === 'ar' ? 'rtl' : 'ltr'}>
+                            <ScrollArea className="h-[450px] max-h-[50vh] px-6 pb-6" dir="rtl">
                                 <div className="space-y-6 py-4 text-start">
                                     {/* Widget visibility toggles */}
                                     <div className="space-y-4">
                                         <h4 className="font-semibold text-foreground text-sm">
-                                            {currentLang === 'ar' ? 'عرض وإخفاء الودجات' : 'Widget Visibility'}
+                                            عرض وإخفاء الودجات
                                         </h4>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             {/* Toggle Clock */}
                                             <div className="flex items-center justify-between rounded-lg border border-border/50 p-3 bg-card/20">
-                                                <span className="text-xs font-medium text-foreground">{currentLang === 'ar' ? 'الساعة' : 'Clock'}</span>
+                                                <span className="text-xs font-medium text-foreground">الساعة</span>
                                                 <Switch
                                                     checked={showClock}
                                                     onCheckedChange={(checked) => {
@@ -410,7 +368,7 @@ export default function HomeSettingsDialog({
                                             </div>
                                             {/* Toggle Weather */}
                                             <div className="flex items-center justify-between rounded-lg border border-border/50 p-3 bg-card/20">
-                                                <span className="text-xs font-medium text-foreground">{currentLang === 'ar' ? 'الطقس' : 'Weather'}</span>
+                                                <span className="text-xs font-medium text-foreground">الطقس</span>
                                                 <Switch
                                                     checked={showWeather}
                                                     onCheckedChange={(checked) => {
@@ -422,7 +380,7 @@ export default function HomeSettingsDialog({
                                             </div>
                                             {/* Toggle Prayer Times */}
                                             <div className="flex items-center justify-between rounded-lg border border-border/50 p-3 bg-card/20">
-                                                <span className="text-xs font-medium text-foreground">{currentLang === 'ar' ? 'مواقيت الصلاة' : 'Prayer Times'}</span>
+                                                <span className="text-xs font-medium text-foreground">مواقيت الصلاة</span>
                                                 <Switch
                                                     checked={showPrayerTimes}
                                                     onCheckedChange={(checked) => {
@@ -434,25 +392,13 @@ export default function HomeSettingsDialog({
                                             </div>
                                             {/* Toggle Events */}
                                             <div className="flex items-center justify-between rounded-lg border border-border/50 p-3 bg-card/20">
-                                                <span className="text-xs font-medium text-foreground">{currentLang === 'ar' ? 'الفعاليات والأحداث' : 'Events Widget'}</span>
+                                                <span className="text-xs font-medium text-foreground">الفعاليات والأحداث</span>
                                                 <Switch
                                                     checked={showEvents}
                                                     onCheckedChange={(checked) => {
                                                         setShowEvents(checked);
                                                         localStorage.setItem('sz-showEvents', String(checked));
                                                         saveAccountSettings({ showEvents: checked });
-                                                    }}
-                                                />
-                                            </div>
-                                            {/* Toggle Search */}
-                                            <div className="flex items-center justify-between rounded-lg border border-border/50 p-3 bg-card/20 flex-1 col-span-1 sm:col-span-2">
-                                                <span className="text-xs font-medium text-foreground">{currentLang === 'ar' ? 'شريط البحث' : 'Search Bar'}</span>
-                                                <Switch
-                                                    checked={showSearch}
-                                                    onCheckedChange={(checked) => {
-                                                        setShowSearch(checked);
-                                                        localStorage.setItem('sz-showSearch', String(checked));
-                                                        saveAccountSettings({ showSearch: checked });
                                                     }}
                                                 />
                                             </div>
@@ -464,16 +410,40 @@ export default function HomeSettingsDialog({
                                     {/* Custom Coordinates Section */}
                                     <div className="space-y-4 pt-2">
                                         <h4 className="font-semibold text-foreground text-sm">
-                                            {currentLang === 'ar' ? 'إحداثيات جغرافية مخصصة' : 'Custom Location Coordinates'}
+                                            موقعك
+                                        </h4>
+                                        {/* Saved location (like the prayer section in the muslim route) */}
+                                        <div className="flex items-center gap-2.5 rounded-lg border border-border/50 bg-card/20 p-3">
+                                            <span className="rounded-lg bg-primary/10 p-2 text-primary">
+                                                <MapPin className="h-4 w-4" />
+                                            </span>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="truncate text-xs font-bold text-foreground">
+                                                    {geoActive ? geo.label : activeGovName}
+                                                </div>
+                                                <div className="text-[11px] text-muted-foreground">
+                                                    {geoActive
+                                                        ? (locMode === 'gps' ? 'موقع الجهاز (GPS)' : 'التعرف عبر الإنترنت')
+                                                        : useCustomCoords && customLat && customLon
+                                                            ? `إحداثيات مخصصة (${customLat}، ${customLon})`
+                                                            : 'المحافظة الافتراضية'}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <LocateButtons compact />
+
+                                        <div className="h-[1px] bg-border w-full" />
+
+                                        <h4 className="font-semibold text-foreground text-sm">
+                                            إحداثيات جغرافية مخصصة
                                         </h4>
                                         <p className="text-xs text-muted-foreground leading-normal">
-                                            {currentLang === 'ar'
-                                                ? 'استخدم إحداثيات مخصصة بدلاً من موقع المحافظة الافتراضي لجلب الطقس ومواقيت الصلاة بشكل دقيق للغاية.'
-                                                : 'Set custom GPS coordinates to fetch local weather and prayer times with high precision.'}
+                                            استخدم إحداثيات مخصصة بدلاً من موقع المحافظة الافتراضي لجلب الطقس ومواقيت الصلاة بشكل دقيق للغاية.
                                         </p>
 
                                         <div className="flex items-center justify-between rounded-lg border border-border/50 p-3 bg-card/20">
-                                            <span className="text-xs font-medium text-foreground">{currentLang === 'ar' ? 'تفعيل الإحداثيات المخصصة' : 'Use Custom Coordinates'}</span>
+                                            <span className="text-xs font-medium text-foreground">تفعيل الإحداثيات المخصصة</span>
                                             <Switch
                                                 checked={useCustomCoords}
                                                 onCheckedChange={(checked) => {
@@ -488,7 +458,7 @@ export default function HomeSettingsDialog({
                                             <div className="space-y-3 p-3 rounded-lg border border-border bg-card/10">
                                                 <div className="grid grid-cols-2 gap-3">
                                                     <div className="space-y-1 text-start">
-                                                        <Label className="text-xs">{currentLang === 'ar' ? 'خط العرض (Lat)' : 'Latitude'}</Label>
+                                                        <Label className="text-xs">خط العرض (Lat)</Label>
                                                         <Input
                                                             type="text"
                                                             value={customLat}
@@ -501,7 +471,7 @@ export default function HomeSettingsDialog({
                                                         />
                                                     </div>
                                                     <div className="space-y-1 text-start">
-                                                        <Label className="text-xs">{currentLang === 'ar' ? 'خط الطول (Lon)' : 'Longitude'}</Label>
+                                                        <Label className="text-xs">خط الطول (Lon)</Label>
                                                         <Input
                                                             type="text"
                                                             value={customLon}
@@ -515,45 +485,15 @@ export default function HomeSettingsDialog({
                                                     </div>
                                                 </div>
 
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="w-full text-xs cursor-pointer flex items-center justify-center gap-1.5"
-                                                    onClick={getDeviceLocation}
-                                                >
-                                                    <Compass className="w-3.5 h-3.5" />
-                                                    {currentLang === 'ar' ? 'الحصول على إحداثيات موقعي الحالي' : 'Get coordinates from device'}
-                                                </Button>
+                                                {useCustomCoords && customLat === '' && customLon === '' && (
+                                                    <p className="text-[11px] text-muted-foreground">
+                                                        أدخل الإحداثيات يدوياً، أو حدد موقعك تلقائياً من الأعلى.
+                                                    </p>
+                                                )}
                                             </div>
                                         )}
                                     </div>
 
-                                    <div className="h-[1px] bg-border w-full" />
-
-                                    {/* Custom Search Engine Section */}
-                                    <div className="space-y-4 pt-2">
-                                        <h4 className="font-semibold text-foreground text-sm">
-                                            {currentLang === 'ar' ? 'محرك بحث مخصص' : 'Custom Search Engine'}
-                                        </h4>
-                                        <p className="text-xs text-muted-foreground leading-normal">
-                                            {currentLang === 'ar'
-                                                ? 'إذا اخترت محرك البحث "مخصص" من الصفحة الرئيسية، سيتم استخدام هذا الرابط. ضع %s في مكان كلمة البحث (مثال: https://search.yahoo.com/search?q=%s).'
-                                                : 'If "Custom" is selected as the search provider on the homepage, queries will be sent to this URL. Use %s to specify where the query should be injected (e.g. https://search.yahoo.com/search?q=%s).'}
-                                        </p>
-                                        <div className="space-y-1 text-start">
-                                            <Label className="text-xs">{currentLang === 'ar' ? 'رابط محرك البحث المخصص' : 'Custom Search Query URL'}</Label>
-                                            <Input
-                                                type="text"
-                                                value={customSearchUrl}
-                                                onChange={(e) => {
-                                                    setCustomSearchUrl(e.target.value);
-                                                    localStorage.setItem('customSearchUrl', e.target.value);
-                                                }}
-                                                placeholder="https://search.yahoo.com/search?q=%s"
-                                            />
-                                        </div>
-                                    </div>
                                 </div>
                             </ScrollArea>
                         </TabsContent>
@@ -564,22 +504,22 @@ export default function HomeSettingsDialog({
                     <div className="flex flex-wrap justify-center gap-3 sm:gap-4 text-xs text-muted-foreground">
                         <a href="/about" className="hover:text-primary transition-colors flex items-center gap-1.5">
                             <Info className="w-3.5 h-3.5 text-muted-foreground hover:text-primary" />
-                            {currentLang === 'ar' ? 'عن المنصة' : 'About'}
+                            عن المنصة
                         </a>
                         <span>•</span>
                         <a href="/stats" className="hover:text-primary transition-colors flex items-center gap-1.5">
                             <BarChart3 className="w-3.5 h-3.5 text-muted-foreground hover:text-primary" />
-                            {currentLang === 'ar' ? 'الإحصائيات' : 'Statistics'}
+                            الإحصائيات
                         </a>
                         <span>•</span>
                         <a href="/privacy" className="hover:text-primary transition-colors flex items-center gap-1.5">
                             <Shield className="w-3.5 h-3.5 text-muted-foreground hover:text-primary" />
-                            {currentLang === 'ar' ? 'سياسة الخصوصية' : 'Privacy Policy'}
+                            سياسة الخصوصية
                         </a>
                         <span>•</span>
                         <a href="/terms" className="hover:text-primary transition-colors flex items-center gap-1.5">
                             <FileText className="w-3.5 h-3.5 text-muted-foreground hover:text-primary" />
-                            {currentLang === 'ar' ? 'الشروط والأحكام' : 'Terms & Conditions'}
+                            الشروط والأحكام
                         </a>
                     </div>
                 </div>

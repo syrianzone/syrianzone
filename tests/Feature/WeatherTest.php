@@ -60,6 +60,27 @@ test('rejects missing or invalid governorate and coordinates', function () {
   Http::assertNothingSent();
 });
 
+test('accepts worldwide coordinates for diaspora GPS/IP locations', function () {
+  Http::fake(['*' => Http::response(weatherPayload(), 200)]);
+
+  // Berlin (outside the old Syria bbox) must work: prayer + weather follow GPS/IP.
+  $this->getJson('/api/weather?lat=52.52&lon=13.41')
+    ->assertOk()
+    ->assertJsonPath('temp', 22);
+
+  Http::assertSent(fn ($request) => str_contains($request->url(), 'lat=52.52')
+    && str_contains($request->url(), 'lon=13.41'));
+});
+
+test('rejects out-of-range coordinates', function () {
+  Http::fake();
+
+  $this->getJson('/api/weather?lat=91&lon=0')->assertStatus(422);
+  $this->getJson('/api/weather?lat=0&lon=181')->assertStatus(422);
+
+  Http::assertNothingSent();
+});
+
 test('caches a successful response instead of refetching', function () {
   Http::fake(['*' => Http::response(weatherPayload(), 200)]);
 

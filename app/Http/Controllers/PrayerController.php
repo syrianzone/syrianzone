@@ -35,7 +35,16 @@ class PrayerController extends Controller
     'raqqa' => [35.9520, 39.0081],
   ];
 
-  // Only the six the widget renders. Aladhan also returns Imsak, Midnight and
+  // AlAdhan calculation methods (verified against GET /v1/methods).
+  // 3 (Muslim World League, Fajr 18° / Isha 17°) is the Syrian standard and
+  // the default everywhere. The method is a fiqh choice, never a coder
+  // default: the /muslim route exposes this list to the user instead of
+  // hardcoding a silent HighLatitudeRule (see Itqan #720).
+  public const METHODS = [0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+
+  public const DEFAULT_METHOD = 3;
+
+  // Only the six the widgets render. Aladhan also returns Imsak, Midnight and
   // the night thirds, which nothing on the board uses.
   private const PRAYERS = ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
@@ -46,31 +55,48 @@ class PrayerController extends Controller
   public function show(Request $request)
   {
     $validated = $request->validate([
-      'governorate' => 'required|string|in:'.implode(',', array_keys(self::COORDS)),
+      'governorate' => 'nullable|string|in:'.implode(',', array_keys(self::COORDS)),
+      'latitude' => 'nullable|numeric|between:-90,90',
+      'longitude' => 'nullable|numeric|between:-180,180',
+      'method' => 'nullable|integer|in:'.implode(',', self::METHODS),
     ], [
-      'governorate.required' => 'المحافظة مطلوبة',
       'governorate.in' => 'محافظة غير معروفة',
+      'method.in' => 'طريقة حساب غير معروفة',
     ]);
 
-    $governorate = $validated['governorate'];
+    $method = (int) ($validated['method'] ?? self::DEFAULT_METHOD);
     $today = now()->timezone(self::TZ);
 
-    // the date is part of the key, so the entry rolls over at Damascus midnight
-    // on its own instead of relying on a ttl landing on the boundary
-    $key = "prayer:{$governorate}:{$today->format('Y-m-d')}";
+    // Custom coordinates (diaspora / custom city): unlike weather, prayer is
+    // deliberately NOT clamped to the Syria bbox — the user may be anywhere.
+    // Rounded to 2 decimals before keying so nearby points share one cache
+    // entry and the key space stays bounded (no open-proxy cache blowup).
+    if (isset($validated['latitude'], $validated['longitude'])) {
+      $lat = round((float) $validated['latitude'], 2);
+      $lon = round((float) $validated['longitude'], 2);
+      $governorate = 'custom';
+      $key = "prayer:custom:{$lat}:{$lon}:{$method}:{$today->format('Y-m-d')}";
+    } else {
+      if (empty($validated['governorate'])) {
+        return response()->json(['message' => 'المحافظة مطلوبة أو إحداثيات صالحة'], 422);
+      }
+      $governorate = $validated['governorate'];
+      // the date is part of the key, so the entry rolls over at Damascus midnight
+      // on its own instead of relying on a ttl landing on the boundary
+      $key = "prayer:{$governorate}:{$method}:{$today->format('Y-m-d')}";
+      [$lat, $lon] = self::COORDS[$governorate];
+    }
+
     $cached = Cache::get($key);
     if ($cached !== null) {
       return response()->json($cached)->header('Cache-Control', 'public, max-age=300');
     }
 
-    [$lat, $lon] = self::COORDS[$governorate];
-
     try {
       $response = Http::timeout(5)->get(rtrim(config('services.prayer.url'), '/').'/'.$today->format('d-m-Y'), [
         'latitude' => $lat,
         'longitude' => $lon,
-        // method 3 is the Muslim World League calculation, the Syrian standard
-        'method' => 3,
+        'method' => $method,
       ]);
     } catch (\Throwable $e) {
       return response()->json(['message' => 'تعذر تحميل المواقيت'], 502);
@@ -100,6 +126,9 @@ class PrayerController extends Controller
 
     $payload = [
       'governorate' => $governorate,
+      'latitude' => $lat,
+      'longitude' => $lon,
+      'method' => $method,
       'timings' => $normalized,
       'hijri' => $this->hijri($response->json('data.date.hijri')),
     ];

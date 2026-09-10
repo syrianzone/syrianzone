@@ -12,6 +12,216 @@
     font-display: swap;
 }
 
+/* Quran Hafs (KFGQPC Uthmanic, vendored in public/fonts for offline use).
+   Single Quran font for the whole Muslim section. Family name matches the
+   skill's registered OpenType name (skill §8.2) to avoid silent fallback. */
+@font-face {
+    font-family: 'KFGQPC HAFS Uthmanic Script';
+    src: url('/fonts/quran-hafs.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+.quran-uthmani {
+    font-family: 'KFGQPC HAFS Uthmanic Script', 'KFGQPC Uthmanic Script HAFS', 'Amiri Quran', serif;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: 'liga' 1;
+}
+
+/* Madina Mushaf page — port of the quran-madina-layout skill web-reader
+   styles, mapped onto site theme vars so the reader follows site themes. */
+.mushaf-page {
+    --mushaf-page-bg: transparent;
+    --mushaf-text-color: hsl(var(--foreground));
+    --mushaf-gold: hsl(var(--primary));
+    --mushaf-sura-bg: hsl(var(--primary) / 0.08);
+    --mushaf-sura-border: hsl(var(--primary) / 0.35);
+    --quran-font-family: 'KFGQPC HAFS Uthmanic Script', 'KFGQPC Uthmanic Script HAFS', serif;
+    --line-height-factor: 2.1;
+    position: relative;
+    background-color: var(--mushaf-page-bg);
+    padding: 4px 2px;
+    display: flex;
+    flex-direction: column;
+    user-select: text;
+    direction: rtl;
+}
+
+.mushaf-lines-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    gap: 0;
+}
+
+.quran-line {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    height: calc(var(--quran-font-size) * var(--line-height-factor));
+    direction: rtl;
+    overflow: visible;
+}
+
+.line-content {
+    display: block;
+    direction: rtl;
+    width: var(--target-line-width, 270px);
+    min-width: var(--target-line-width, 270px);
+    height: 100%;
+    text-align: right;
+    white-space: pre;
+    transform-origin: 100% 0%;
+    will-change: transform;
+}
+
+.line-content.centered {
+    text-align: center;
+    transform: none !important;
+}
+
+.sura-title-frame {
+    position: absolute;
+    top: 2px;
+    left: 0;
+    right: 0;
+    bottom: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--mushaf-sura-bg);
+    border: 1.5px solid var(--mushaf-sura-border);
+    border-radius: 6px;
+    z-index: 2;
+}
+
+.sura-title-frame::before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    right: 2px;
+    bottom: 2px;
+    border: 0.8px solid var(--mushaf-gold);
+    border-radius: 4px;
+    opacity: 0.6;
+}
+
+.sura-title-text {
+    font-family: var(--quran-font-family);
+    font-size: calc(var(--quran-font-size) * 1.15);
+    color: var(--mushaf-text-color);
+}
+
+.basmala-ligature {
+    font-family: var(--quran-font-family);
+    font-size: calc(var(--quran-font-size) * 1.2);
+    color: var(--mushaf-gold);
+    opacity: 0.95;
+    text-align: center;
+    width: 100%;
+    display: block;
+}
+
+.quran-part {
+    display: inline;
+    font-family: var(--quran-font-family);
+    font-size: var(--quran-font-size);
+    color: var(--mushaf-text-color);
+    line-height: var(--line-height-factor, 2.1);
+    white-space: pre;
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 1px 0;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.quran-part:hover,
+.quran-part.is-hovered {
+    background-color: hsl(var(--primary) / 0.15);
+}
+
+.quran-part.is-active {
+    background-color: hsl(var(--primary) / 0.22);
+    color: hsl(var(--primary));
+}
+
+.quran-part.is-saved {
+    text-decoration: underline dotted hsl(var(--primary) / 0.55);
+    text-underline-offset: 5px;
+}
+
+/* Continuous text chunks inside a part (split only around ayah markers,
+   spaces preserved — skill §10). */
+.quran-chunk {
+    display: inline;
+    white-space: pre;
+}
+
+/* quranpedia ayah-marker rosette (015-regular) with the specified theme.
+   Fixed print-like palette (matches the Mushaf ornament in all site themes). */
+.ayah-marker-svg {
+    --fill-base: #fff8e7;
+    --fill-1: #f4e9bc;
+    --ink-base: #083a3a;
+    position: relative;
+    z-index: 1;
+}
+
+.ayah-marker-svg svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.ayah-marker-num {
+    font-family: var(--quran-font-family);
+    fill: var(--ink-base);
+}
+
+/* shadcn-style range input (volume): native element, themed track + thumb. */
+.sz-range {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    border-radius: 9999px;
+    background: hsl(var(--primary) / 0.2);
+    outline-offset: 4px;
+    cursor: pointer;
+}
+
+.sz-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 14px;
+    width: 14px;
+    border-radius: 9999px;
+    background: hsl(var(--background));
+    border: 1px solid hsl(var(--primary) / 0.5);
+    box-shadow: 0 1px 2px hsl(var(--foreground) / 0.2);
+}
+
+.sz-range::-moz-range-thumb {
+    height: 14px;
+    width: 14px;
+    border-radius: 9999px;
+    background: hsl(var(--background));
+    border: 1px solid hsl(var(--primary) / 0.5);
+    box-shadow: 0 1px 2px hsl(var(--foreground) / 0.2);
+}
+
+.sz-range::-moz-range-track {
+    height: 6px;
+    border-radius: 9999px;
+    background: hsl(var(--primary) / 0.2);
+}
+
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, [data-theme="dark-blue"], [data-theme="dark-blue"] *, [data-theme="dark-purple"], [data-theme="dark-purple"] *, [data-theme="dark-green"], [data-theme="dark-green"] *, [data-theme="high-contrast"], [data-theme="high-contrast"] *, [data-theme="damascus-rose"], [data-theme="damascus-rose"] *, .dark, .dark *));
 
 @theme {

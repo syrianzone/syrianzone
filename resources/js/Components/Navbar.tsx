@@ -29,9 +29,11 @@ import {
   Shield,
   MapPin,
   LayoutGrid,
+  Bookmark,
 } from 'lucide-react';
 
 import { useAuth } from '@/Contexts/AuthContext';
+import { useMuslimNav } from '@/Pages/Muslim/_lib/nav';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -73,6 +75,7 @@ import {
   CrossingsIcon,
   MishwarIcon,
   BoardIcon,
+  MuslimIcon,
   RecipesIcon,
   NewsIcon,
   AnswersIcon,
@@ -99,6 +102,7 @@ const navLinks = [
   { href: '/crossings', text: 'المنافذ الحدودية', icon: CrossingsIcon },
   { href: '/mishwar', text: 'مشوار', icon: MishwarIcon },
   { href: '/board', text: 'لوح', icon: BoardIcon },
+  { href: '/muslim', text: 'الركن الإسلامي', icon: MuslimIcon },
 ];
 
 const externalLinks = [
@@ -136,6 +140,12 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
 
   // Navbar hidden on homepage (Startpage) on desktop; on mobile it stays fixed at the top
   const isHomepage = pathname === '/';
+
+  // Quran reader (mobile): bookmarks shortcut opens the saved-ayahs modal.
+  // The reader's own top row carries back + bookmarks on PC.
+  const muslimView = useMuslimNav((s) => s.view);
+  const setBookmarksOpen = useMuslimNav((s) => s.setBookmarksOpen);
+  const showQuranBookmarks = pathname === '/muslim' && muslimView === 'quran';
 
   return (
     <header className={`${sticky ? 'sticky top-0' : 'relative'} z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ${isHomepage ? 'lg:hidden' : ''}`}>
@@ -523,6 +533,18 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
         </NavigationMenu>
 
         <div className="flex flex-1 items-center justify-end gap-2">
+          {showQuranBookmarks && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden h-10 w-10"
+              onClick={() => setBookmarksOpen(true)}
+              title="علامات الآيات"
+            >
+              <Bookmark className="h-5 w-5" />
+              <span className="sr-only">Saved ayahs</span>
+            </Button>
+          )}
           <ThemeToggle />
           <div className="hidden md:flex items-center gap-2">
             {user ? (

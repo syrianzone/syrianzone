@@ -8,6 +8,7 @@ interface User {
     email: string;
     avatar_url: string;
     role: string;
+    settings?: Record<string, unknown> | null;
 }
 
 interface AuthContextType {

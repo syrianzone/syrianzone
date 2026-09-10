@@ -3,10 +3,9 @@ import { Head, usePage } from '@inertiajs/react';
 import {
     Settings, Sun, Link, Moon, Globe, Plus, Edit, X,
     Cloud, CloudRain, CloudLightning, Snowflake, Wind, Clock,
-    Sunrise, Sunset, SunDim, MoonStar, Search
+    Sunrise, Sunset, SunDim, MoonStar
 } from 'lucide-react';
 import { Button } from "@/Components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/Components/ui/select";
 import { Card, CardContent } from "@/Components/ui/card";
 import MainLayout from '@/Layouts/MainLayout';
 import axios from '@/Lib/axios';
@@ -16,6 +15,7 @@ import { ThemeToggle } from '@/Components/ThemeToggle';
 import UserNav from '@/Components/UserNav';
 import F3aliaEvents from '@/Components/F3aliaEvents';
 import type { CustomLink } from '@/Pages/Home/_components/AddLinkDialog';
+import { getGeo, getLocMode, useLocSignal } from '@/Pages/Muslim/_lib/location';
 
 const HomeSettingsDialog = React.lazy(() => import('@/Pages/Home/_components/HomeSettingsDialog'));
 const AddLinkDialog = React.lazy(() => import('@/Pages/Home/_components/AddLinkDialog'));
@@ -39,6 +39,7 @@ import {
     CrossingsIcon,
     MishwarIcon,
     BoardIcon,
+    MuslimIcon,
     RecipesIcon,
     NewsIcon,
     AnswersIcon,
@@ -75,6 +76,7 @@ const PRESET_LINKS: PresetLink[] = [
     { href: '/crossings', icon: CrossingsIcon, text: 'المنافذ الحدودية', isInternal: true },
     { href: '/mishwar', icon: MishwarIcon, text: 'مشوار', isInternal: true },
     { href: '/board', icon: BoardIcon, text: 'لوح', isInternal: true },
+    { href: '/muslim', icon: MuslimIcon, text: 'الركن الإسلامي', isInternal: true },
     { href: 'https://food.syrian.zone', icon: RecipesIcon, text: 'وصفاتنا', external: true, isInternal: true },
     { href: 'https://answers.syrian.zone', icon: AnswersIcon, text: 'إجابات سوريا', external: true, isInternal: true },
     { href: 'https://chromewebstore.google.com/detail/syrian-flag-replacer/dngipobppehfhfggmbdiiiodgcibdeog', icon: null, text: 'مبدل العلم', image: '/flag-replacer/1f1f8-1f1fe.svg', external: true, isInternal: true },
@@ -138,9 +140,6 @@ export default function Home() {
 
     const [theme, setTheme] = useState<string | null>(null);
     const [systemDark, setSystemDark] = useState(false);
-    const [language, setLanguage] = useState<'ar' | 'en' | null>(null);
-    const [searchEngine, setSearchEngine] = useState('duckduckgo');
-    const [searchQuery, setSearchQuery] = useState('');
         const [customLinks, setCustomLinks] = useState<CustomLink[]>([]);
     const [editingLink, setEditingLink] = useState<CustomLink | null>(null);
     const [settingsOpen, setSettingsOpen] = useState(false);
@@ -148,6 +147,17 @@ export default function Home() {
     const [govDropdownOpen, setGovDropdownOpen] = useState(false);
     const [govSearch, setGovSearch] = useState('');
     const [editMode, setEditMode] = useState(false);
+    // Shared device location (GPS/IP resolved in /muslim or settings):
+    // overrides the manual city while active.
+    const locSig = useLocSignal();
+    const sharedCoords = () => {
+        const mode = getLocMode();
+        const geo = getGeo();
+        if ((mode === 'gps' || mode === 'ip') && geo) {
+            return { lat: geo.lat, lon: geo.lon };
+        }
+        return null;
+    };
     const [mounted, setMounted] = useState(false);
 
     // Weather & Clock state
@@ -161,15 +171,11 @@ export default function Home() {
     const [showWeather, setShowWeather] = useState(true);
     const [showPrayerTimes, setShowPrayerTimes] = useState(true);
     const [showEvents, setShowEvents] = useState(true);
-    const [showSearch, setShowSearch] = useState(true);
 
     // Custom coordinates states
     const [useCustomCoords, setUseCustomCoords] = useState(false);
     const [customLat, setCustomLat] = useState('');
     const [customLon, setCustomLon] = useState('');
-
-    // Custom search engine URL state
-    const [customSearchUrl, setCustomSearchUrl] = useState('');
 
     // Theme & Font state
     const [fontFamily, setFontFamily] = useState<FontPreference>('ibm-plex');
@@ -217,21 +223,17 @@ export default function Home() {
 
         const savedTheme = accSettings.theme ?? getThemePreference();
         const savedFont = (accSettings.fontFamily ?? getFontPreference()) as FontPreference;
-        const savedLang = (accSettings.language ?? (localStorage.getItem('sz-language') || 'ar')) as 'ar' | 'en';
         const savedGovernorate = accSettings.governorate ?? (localStorage.getItem('governorate') || 'damascus');
         const savedClockFormat = (accSettings.clockFormat ?? (localStorage.getItem('clockFormat') || '24')) as '12' | '24';
-        const savedSearchEngine = accSettings.searchEngine ?? (localStorage.getItem('sz-searchEngine') || 'duckduckgo');
 
         const savedShowClock = accSettings.showClock ?? (localStorage.getItem('sz-showClock') !== 'false');
         const savedShowWeather = accSettings.showWeather ?? (localStorage.getItem('sz-showWeather') !== 'false');
         const savedShowPrayerTimes = accSettings.showPrayerTimes ?? (localStorage.getItem('sz-showPrayerTimes') !== 'false');
         const savedShowEvents = accSettings.showEvents ?? (localStorage.getItem('sz-showEvents') !== 'false');
-        const savedShowSearch = accSettings.showSearch ?? (localStorage.getItem('sz-showSearch') !== 'false');
 
         const savedUseCustomCoords = accSettings.useCustomCoords ?? (localStorage.getItem('useCustomCoords') === 'true');
         const savedCustomLat = accSettings.customLat ?? (localStorage.getItem('customLat') || '');
         const savedCustomLon = accSettings.customLon ?? (localStorage.getItem('customLon') || '');
-        const savedCustomSearchUrl = accSettings.customSearchUrl ?? (localStorage.getItem('customSearchUrl') || '');
 
         let parsedLinks: CustomLink[] = [];
         if (accSettings.customLinks) {
@@ -243,57 +245,49 @@ export default function Home() {
             }
         }
 
-        // Sync to localStorage
+        // Sync to localStorage (governorate set-if-absent only: it is a
+        // conflict-tracked key, so a logged-out change must survive until the
+        // login sync compares both sides; everything else keeps server-wins).
         if (savedTheme) persistTheme(savedTheme);
         if (savedFont) applyFont(savedFont);
-        localStorage.setItem('sz-language', savedLang);
-        localStorage.setItem('governorate', savedGovernorate);
+        if (localStorage.getItem('governorate') === null) {
+            localStorage.setItem('governorate', savedGovernorate);
+        }
         localStorage.setItem('clockFormat', savedClockFormat);
-        localStorage.setItem('sz-searchEngine', savedSearchEngine);
         localStorage.setItem('sz-showClock', String(savedShowClock));
         localStorage.setItem('sz-showWeather', String(savedShowWeather));
         localStorage.setItem('sz-showPrayerTimes', String(savedShowPrayerTimes));
         localStorage.setItem('sz-showEvents', String(savedShowEvents));
-        localStorage.setItem('sz-showSearch', String(savedShowSearch));
         localStorage.setItem('useCustomCoords', String(savedUseCustomCoords));
         localStorage.setItem('customLat', savedCustomLat);
         localStorage.setItem('customLon', savedCustomLon);
-        localStorage.setItem('customSearchUrl', savedCustomSearchUrl);
         localStorage.setItem('customLinks', JSON.stringify(parsedLinks));
 
         setTheme(savedTheme);
-        setLanguage(savedLang);
         setGovernorate(savedGovernorate);
         setClockFormat(savedClockFormat);
-        setSearchEngine(savedSearchEngine);
         setShowClock(savedShowClock);
         setShowWeather(savedShowWeather);
         setShowPrayerTimes(savedShowPrayerTimes);
         setShowEvents(savedShowEvents);
-        setShowSearch(savedShowSearch);
         setUseCustomCoords(savedUseCustomCoords);
         setCustomLat(savedCustomLat);
         setCustomLon(savedCustomLon);
-        setCustomSearchUrl(savedCustomSearchUrl);
         setCustomLinks(parsedLinks);
 
         // If user logged in and has missing account settings, sync initial state to DB
         if (user && Object.keys(accSettings).length === 0) {
             saveAccountSettings({
                 theme: savedTheme,
-                language: savedLang,
                 governorate: savedGovernorate,
                 clockFormat: savedClockFormat,
-                searchEngine: savedSearchEngine,
                 showClock: savedShowClock,
                 showWeather: savedShowWeather,
                 showPrayerTimes: savedShowPrayerTimes,
                 showEvents: savedShowEvents,
-                showSearch: savedShowSearch,
                 useCustomCoords: savedUseCustomCoords,
                 customLat: savedCustomLat,
                 customLon: savedCustomLon,
-                customSearchUrl: savedCustomSearchUrl,
                 customLinks: parsedLinks,
             });
         }
@@ -329,9 +323,9 @@ export default function Home() {
         const fetchWeather = async () => {
             try {
                 const hasCustom = useCustomCoords && customLat && customLon;
-                const coords = hasCustom
+                const coords = sharedCoords() ?? (hasCustom
                     ? { lat: parseFloat(customLat), lon: parseFloat(customLon) }
-                    : (GOVERNORATES[governorate] || GOVERNORATES['damascus']);
+                    : (GOVERNORATES[governorate] || GOVERNORATES['damascus']));
 
                 if (isNaN(coords.lat) || isNaN(coords.lon)) return;
 
@@ -342,7 +336,7 @@ export default function Home() {
                         const { data, timestamp } = JSON.parse(cached);
                         if (Date.now() - timestamp < 15 * 60 * 1000) {
                             let description = data.weather[0].description;
-                            if (language === 'ar' && WEATHER_TRANSLATIONS[description]) {
+                            if (WEATHER_TRANSLATIONS[description]) {
                                 description = WEATHER_TRANSLATIONS[description];
                             }
                             setWeather({
@@ -362,7 +356,7 @@ export default function Home() {
                 sessionStorage.setItem(cacheKey, JSON.stringify({ data, timestamp: Date.now() }));
 
                 let description = data.weather[0].description;
-                if (language === 'ar' && WEATHER_TRANSLATIONS[description]) {
+                if (WEATHER_TRANSLATIONS[description]) {
                     description = WEATHER_TRANSLATIONS[description];
                 }
 
@@ -380,16 +374,26 @@ export default function Home() {
         if (mounted && showWeather) {
             fetchWeather();
         }
-    }, [governorate, useCustomCoords, customLat, customLon, language, mounted, showWeather]);
+    }, [governorate, useCustomCoords, customLat, customLon, mounted, showWeather, locSig]);
 
-    // Fetch prayer times for the upcoming prayer widget
+    // Fetch prayer times for the upcoming prayer widget.
+    // Unified with /muslim: calculation method + custom coords saved there
+    // drive this widget (server proxy, cached per day like Roznama/Board).
     useEffect(() => {
         const fetchPrayers = async () => {
             try {
-                const hasCustom = useCustomCoords && customLat && customLon;
-                const coords = hasCustom
-                    ? { lat: parseFloat(customLat), lon: parseFloat(customLon) }
-                    : (GOVERNORATES[governorate] || GOVERNORATES['damascus']);
+                const muslimMethod = Number(localStorage.getItem('sz-muslim-method') || '3') || 3;
+                const muslimCustom = localStorage.getItem('sz-muslim-use-custom') === 'true';
+                const muslimLat = localStorage.getItem('sz-muslim-lat') || '';
+                const muslimLon = localStorage.getItem('sz-muslim-lon') || '';
+                const hasCustom = (useCustomCoords && customLat && customLon)
+                    || (muslimCustom && muslimLat && muslimLon);
+                const coords = sharedCoords() ?? (hasCustom
+                    ? {
+                        lat: parseFloat(useCustomCoords && customLat ? customLat : muslimLat),
+                        lon: parseFloat(useCustomCoords && customLon ? customLon : muslimLon),
+                    }
+                    : (GOVERNORATES[governorate] || GOVERNORATES['damascus']));
 
                 if (isNaN(coords.lat) || isNaN(coords.lon)) return;
 
@@ -399,7 +403,7 @@ export default function Home() {
                 const year = now.getFullYear();
                 const dateStr = `${day}-${month}-${year}`;
 
-                const cacheKey = `sz_prayers_${coords.lat}_${coords.lon}_${dateStr}`;
+                const cacheKey = `sz_prayers_${coords.lat}_${coords.lon}_${muslimMethod}_${dateStr}`;
                 const cached = sessionStorage.getItem(cacheKey);
                 if (cached) {
                     try {
@@ -408,13 +412,17 @@ export default function Home() {
                     } catch (err) {}
                 }
 
-                // Method 3: Muslim World League (Syrian standard)
-                const response = await fetch(`https://api.aladhan.com/v1/timings/${dateStr}?latitude=${coords.lat}&longitude=${coords.lon}&method=3`);
+                const params = new URLSearchParams({
+                    latitude: String(coords.lat),
+                    longitude: String(coords.lon),
+                    method: String(muslimMethod),
+                });
+                const response = await fetch(`/api/prayer-times?${params.toString()}`);
                 if (!response.ok) throw new Error('Prayer times fetch failed');
                 const data = await response.json();
-                if (data.code === 200 && data.data) {
-                    sessionStorage.setItem(cacheKey, JSON.stringify(data.data.timings));
-                    setPrayerTimes(data.data.timings);
+                if (data.timings) {
+                    sessionStorage.setItem(cacheKey, JSON.stringify(data.timings));
+                    setPrayerTimes(data.timings);
                 }
             } catch (e) {
                 console.error(e);
@@ -424,63 +432,9 @@ export default function Home() {
         if (mounted && showPrayerTimes) {
             fetchPrayers();
         }
-    }, [governorate, useCustomCoords, customLat, customLon, mounted, showPrayerTimes]);
+    }, [governorate, useCustomCoords, customLat, customLon, mounted, showPrayerTimes, locSig]);
 
 
-
-    const getDeviceLocation = () => {
-        const currentLang = language || 'ar';
-        if (!navigator.geolocation) {
-            alert(currentLang === 'ar' ? 'متصفحك لا يدعم تحديد الموقع الجغرافي' : 'Geolocation is not supported by your browser');
-            return;
-        }
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const lat = position.coords.latitude.toFixed(4);
-                const lon = position.coords.longitude.toFixed(4);
-                setCustomLat(lat);
-                setCustomLon(lon);
-                setUseCustomCoords(true);
-                localStorage.setItem('customLat', lat);
-                localStorage.setItem('customLon', lon);
-                localStorage.setItem('useCustomCoords', 'true');
-                saveAccountSettings({ customLat: lat, customLon: lon, useCustomCoords: true });
-            },
-            (error) => {
-                console.error(error);
-                alert(currentLang === 'ar' ? 'فشل الحصول على الموقع الجغرافي. تأكد من تفعيل الـ GPS وإعطاء الصلاحية.' : 'Failed to retrieve location. Please check your GPS settings and permissions.');
-            }
-        );
-    };
-
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!searchQuery.trim()) return;
-
-        const searchUrls: Record<string, string> = {
-            duckduckgo: `https://duckduckgo.com/?q=${encodeURIComponent(searchQuery)}`,
-            google: `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`,
-            bing: `https://www.bing.com/search?q=${encodeURIComponent(searchQuery)}`,
-            searx: `https://searx.be/search?q=${encodeURIComponent(searchQuery)}`,
-        };
-
-        let url = searchUrls[searchEngine] || searchUrls.duckduckgo;
-        if (searchEngine === 'custom' && customSearchUrl) {
-            const trimmed = customSearchUrl.trim();
-            // Only honor http(s) custom engines; a stored javascript: URL must
-            // never reach window.open (persisted XSS via settings).
-            if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-                if (trimmed.includes('%s')) {
-                    url = trimmed.replace('%s', encodeURIComponent(searchQuery));
-                } else {
-                    url = `${trimmed}${encodeURIComponent(searchQuery)}`;
-                }
-            }
-        }
-
-        window.open(url, '_blank');
-        setSearchQuery('');
-    };
 
     const applyTheme = (newTheme: string) => {
         setTheme(newTheme);
@@ -489,13 +443,6 @@ export default function Home() {
     };
 
 
-
-    const toggleLanguage = () => {
-        const newLang = language === 'ar' ? 'en' : 'ar';
-        setLanguage(newLang);
-        localStorage.setItem('sz-language', newLang);
-        saveAccountSettings({ language: newLang });
-    };
 
     const addCustomLink = (link: CustomLink) => {
         const updated = [...customLinks, link];
@@ -522,7 +469,6 @@ export default function Home() {
 
     if (!mounted) return null;
 
-    const currentLang = language || 'ar';
     const activeTheme = theme || SYSTEM_THEME;
     const isDark = isDarkTheme(activeTheme, systemDark);
 
@@ -532,12 +478,12 @@ export default function Home() {
                 <title>الرئيسية</title>
                 <meta name="description" content="المساحة السورية - منصة تفاعلية تجمع وتوفر الموارد والخدمات والمعلومات المفتوحة المتعلقة بالشأن السوري من استطلاعات رأي، وأدلة رسمية، وأطلس، وترانزيت، وهويات بصرية." />
             </Head>
-            <div className="min-h-screen text-foreground transition-colors" dir={currentLang === 'ar' ? 'rtl' : 'ltr'}>
+            <div className="min-h-screen text-foreground transition-colors" dir="rtl">
                 {/* Top Controls */}
                 <div className="fixed top-20 left-4 right-4 lg:top-4 flex justify-between items-center z-40">
                     <Button variant="ghost" size="sm" asChild>
                         <a href="/about" className="text-sm font-medium">
-                            {currentLang === 'ar' ? 'حول المنصة' : 'About'}
+                            حول المنصة
                         </a>
                     </Button>
 
@@ -557,9 +503,6 @@ export default function Home() {
                                 </a>
                             </Button>
                         )}
-                        <Button variant="ghost" size="icon" onClick={toggleLanguage}>
-                            <img src={`/assets/${currentLang}.svg`} alt={currentLang} className="w-5 h-5" />
-                        </Button>
                         <div className="hidden lg:flex">
                             <ThemeToggle />
                         </div>
@@ -597,12 +540,12 @@ export default function Home() {
 
                             {/* Clock */}
                             {showClock ? (
-                                <ClockWidget clockFormat={clockFormat} language={currentLang} />
+                                <ClockWidget clockFormat={clockFormat} />
                             ) : <div />}
 
                             {/* Next Prayer Widget */}
                             {showPrayerTimes ? (
-                                <NextPrayerWidget prayerTimes={prayerTimes} language={currentLang} />
+                                <NextPrayerWidget prayerTimes={prayerTimes} />
                             ) : <div />}
                         </div>
                     )}
@@ -618,57 +561,15 @@ export default function Home() {
                         )}
                     </div>
 
-                    {/* Search */}
-                    {showSearch && (
-                        <div className="max-w-2xl mx-auto mb-16 px-4">
-                            <form onSubmit={handleSearch} className="w-full">
-                                <div className="relative flex items-center w-full h-12 rounded-full border border-input bg-card/45 backdrop-blur-sm px-4 py-1.5 shadow-sm focus-within:ring-1 focus-within:ring-ring transition-all">
-                                    {/* Search Icon */}
-                                    <Search className="h-5 w-5 text-muted-foreground shrink-0 ms-1" />
-
-                                    {/* Text Input */}
-                                    <input
-                                        type="text"
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        placeholder={currentLang === 'ar' ? 'ابحث في الويب...' : 'Search the web...'}
-                                        className="flex-1 bg-transparent px-3 py-2 text-sm outline-none placeholder:text-muted-foreground w-full min-w-0"
-                                    />
-
-                                    {/* Divider */}
-                                    <div className="h-6 w-[1px] bg-border mx-2 shrink-0" />
-
-                                    {/* Dropdown Selection */}
-                                    <Select value={searchEngine} onValueChange={(val) => {
-                                        setSearchEngine(val);
-                                        localStorage.setItem('sz-searchEngine', val);
-                                        saveAccountSettings({ searchEngine: val });
-                                    }}>
-                                        <SelectTrigger className="w-[110px] border-0 bg-transparent shadow-none focus:ring-0 focus:ring-offset-0 px-2 h-auto text-xs font-bold text-muted-foreground hover:text-foreground shrink-0 gap-1.5 cursor-pointer">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent align="end" className="w-[140px]" dir={currentLang === 'ar' ? 'rtl' : 'ltr'}>
-                                            <SelectItem value="duckduckgo">DuckDuckGo</SelectItem>
-                                            <SelectItem value="searx">SearX</SelectItem>
-                                            <SelectItem value="google">Google</SelectItem>
-                                            <SelectItem value="bing">Bing</SelectItem>
-                                            <SelectItem value="custom">{currentLang === 'ar' ? 'مخصص' : 'Custom'}</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </form>
-                        </div>
-                    )}
-
                     {/* F3alia Events integration */}
                     {showEvents && (
-                        <F3aliaEvents governorate={governorate} language={currentLang} variant="single" />
+                        <F3aliaEvents governorate={governorate} language="ar" variant="single" />
                     )}
 
                     {/* Internal Syrian Zone Tools */}
                     <div className="mb-12">
                         <h3 className="text-xl font-bold text-foreground mb-6 text-start">
-                            {language === 'ar' ? 'أدوات المساحة السورية' : 'Syrian Zone Tools'}
+                            أدوات المساحة السورية
                         </h3>
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3.5 sm:gap-4">
                             {PRESET_LINKS.filter(l => l.isInternal).map((link, idx) => {
@@ -700,7 +601,7 @@ export default function Home() {
                     {/* External & Sister Links */}
                     <div className="mb-12">
                         <h3 className="text-xl font-bold text-foreground mb-6 text-start">
-                            {language === 'ar' ? 'روابط خارجية وشقيقة' : 'External & Sister Links'}
+                            روابط خارجية وشقيقة
                         </h3>
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3.5 sm:gap-4">
                             {PRESET_LINKS.filter(l => !l.isInternal).map((link, idx) => {
@@ -733,7 +634,7 @@ export default function Home() {
                     <div>
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-xl font-bold text-foreground">
-                                {language === 'ar' ? 'روابط مخصصة' : 'Custom Links'}
+                                روابط مخصصة
                             </h3>
                             <div className="flex gap-2">
                                 <Button
@@ -743,7 +644,7 @@ export default function Home() {
                                     className={editMode ? "" : "bg-muted text-foreground border-border hover:bg-accent"}
                                 >
                                     <Edit className="w-4 h-4 me-2" />
-                                    {language === 'ar' ? (editMode ? 'تم' : 'تعديل') : (editMode ? 'Done' : 'Edit')}
+                                    {editMode ? 'تم' : 'تعديل'}
                                 </Button>
                                 <Button
                                     variant="outline"
@@ -752,7 +653,7 @@ export default function Home() {
                                     className="bg-muted text-foreground border-border hover:bg-accent"
                                 >
                                     <Plus className="w-4 h-4 me-2" />
-                                    {language === 'ar' ? 'إضافة' : 'Add'}
+                                    إضافة
                                 </Button>
                             </div>
                         </div>
@@ -849,7 +750,7 @@ export default function Home() {
                                                             e.stopPropagation();
                                                             setEditingLink(link);
                                                         }}
-                                                        title={currentLang === 'ar' ? 'تعديل الرابط' : 'Edit link'}
+                                                        title="تعديل الرابط"
                                                     >
                                                         <Edit className="h-3.5 w-3.5" />
                                                     </Button>
@@ -862,7 +763,7 @@ export default function Home() {
                                                             e.stopPropagation();
                                                             removeCustomLink(link.id);
                                                         }}
-                                                        title={currentLang === 'ar' ? 'حذف الرابط' : 'Remove link'}
+                                                        title="حذف الرابط"
                                                     >
                                                         <X className="h-3.5 w-3.5" />
                                                     </Button>
@@ -876,7 +777,7 @@ export default function Home() {
                             <Card className="border-dashed border-2 border-border bg-transparent">
                                 <CardContent className="p-12 text-center">
                                     <p className="text-muted-foreground mb-4">
-                                        {language === 'ar' ? 'لا توجد روابط مخصصة' : 'No custom links yet'}
+                                        لا توجد روابط مخصصة
                                     </p>
                                     <Button
                                         variant="outline"
@@ -884,7 +785,7 @@ export default function Home() {
                                         className="bg-muted text-foreground border-border hover:bg-accent"
                                     >
                                         <Plus className="w-4 h-4 me-2" />
-                                        {language === 'ar' ? 'إضافة رابط' : 'Add Link'}
+                                        إضافة رابط
                                     </Button>
                                 </CardContent>
                             </Card>
@@ -898,8 +799,6 @@ export default function Home() {
                         <HomeSettingsDialog
                             open={settingsOpen}
                             onOpenChange={setSettingsOpen}
-                            currentLang={currentLang}
-                            setLanguage={setLanguage}
                             clockFormat={clockFormat}
                             setClockFormat={setClockFormat}
                             fontFamily={fontFamily}
@@ -916,17 +815,12 @@ export default function Home() {
                             setShowPrayerTimes={setShowPrayerTimes}
                             showEvents={showEvents}
                             setShowEvents={setShowEvents}
-                            showSearch={showSearch}
-                            setShowSearch={setShowSearch}
                             useCustomCoords={useCustomCoords}
                             setUseCustomCoords={setUseCustomCoords}
                             customLat={customLat}
                             setCustomLat={setCustomLat}
                             customLon={customLon}
                             setCustomLon={setCustomLon}
-                            getDeviceLocation={getDeviceLocation}
-                            customSearchUrl={customSearchUrl}
-                            setCustomSearchUrl={setCustomSearchUrl}
                             saveAccountSettings={saveAccountSettings}
                         />
                     </React.Suspense>
@@ -938,7 +832,7 @@ export default function Home() {
                             open={addLinkOpen}
                             onOpenChange={setAddLinkOpen}
                             onAdd={addCustomLink}
-                            language={currentLang}
+                            language="ar"
                         />
                     </React.Suspense>
                 )}
@@ -950,7 +844,7 @@ export default function Home() {
                             onOpenChange={(open) => { if (!open) setEditingLink(null); }}
                             onSave={updateCustomLink}
                             onDelete={removeCustomLink}
-                            language={currentLang}
+                            language="ar"
                         />
                     </React.Suspense>
                 )}
@@ -960,13 +854,11 @@ export default function Home() {
 }
 
 
-// Isolated Clock Widget (Updates time every second without re-rendering parent page)
+// Isolated Clock Widget (Updates time every second without re-rendering parent page) — Arabic only
 const ClockWidget = React.memo(function ClockWidget({
-    clockFormat,
-    language
+    clockFormat
 }: {
     clockFormat: '12' | '24';
-    language: 'ar' | 'en';
 }) {
     const [currentTime, setCurrentTime] = useState<Date | null>(null);
 
@@ -988,7 +880,7 @@ const ClockWidget = React.memo(function ClockWidget({
 
     const formatDate = (date: Date | null) => {
         if (!date) return "";
-        return date.toLocaleDateString(language === 'ar' ? 'ar-SY' : 'en-US', {
+        return date.toLocaleDateString('ar-SY', {
             weekday: 'long',
             year: 'numeric',
             month: 'long',
@@ -999,30 +891,22 @@ const ClockWidget = React.memo(function ClockWidget({
     const formatHijriDate = (date: Date | null) => {
         if (!date) return "";
         try {
-            const formatter = new Intl.DateTimeFormat(language === 'ar' ? 'ar-SY-u-ca-islamic-umalqura' : 'en-US-u-ca-islamic-umalqura', {
+            const formatter = new Intl.DateTimeFormat('ar-SY-u-ca-islamic-umalqura', {
                 day: 'numeric',
                 month: 'long',
                 year: 'numeric'
             });
             const formatted = formatter.format(date);
-            if (language === 'ar') {
-                return formatted.includes('هـ') ? formatted : `${formatted} هـ`;
-            } else {
-                return formatted.includes('AH') ? formatted : `${formatted} AH`;
-            }
+            return formatted.includes('هـ') ? formatted : `${formatted} هـ`;
         } catch (e) {
             try {
-                const formatter = new Intl.DateTimeFormat(language === 'ar' ? 'ar-SY-u-ca-islamic' : 'en-US-u-ca-islamic', {
+                const formatter = new Intl.DateTimeFormat('ar-SY-u-ca-islamic', {
                     day: 'numeric',
                     month: 'long',
                     year: 'numeric'
                 });
                 const formatted = formatter.format(date);
-                if (language === 'ar') {
-                    return formatted.includes('هـ') ? formatted : `${formatted} هـ`;
-                } else {
-                    return formatted.includes('AH') ? formatted : `${formatted} AH`;
-                }
+                return formatted.includes('هـ') ? formatted : `${formatted} هـ`;
             } catch (err) {
                 return "";
             }
@@ -1046,13 +930,11 @@ const ClockWidget = React.memo(function ClockWidget({
     );
 });
 
-// Isolated Next Prayer Widget (Updates countdown every second without re-rendering parent page)
+// Isolated Next Prayer Widget (Updates countdown every second without re-rendering parent page) — Arabic only
 const NextPrayerWidget = React.memo(function NextPrayerWidget({
-    prayerTimes,
-    language
+    prayerTimes
 }: {
     prayerTimes: Record<string, string> | null;
-    language: 'ar' | 'en';
 }) {
     const [currentTime, setCurrentTime] = useState<Date | null>(null);
 
@@ -1068,12 +950,12 @@ const NextPrayerWidget = React.memo(function NextPrayerWidget({
         if (!prayerTimes || !currentTime) return null;
 
         const events = [
-            { key: 'Fajr', labelAr: 'الفجر', labelEn: 'Fajr' },
-            { key: 'Sunrise', labelAr: 'الشروق', labelEn: 'Sunrise' },
-            { key: 'Dhuhr', labelAr: 'الظهر', labelEn: 'Dhuhr' },
-            { key: 'Asr', labelAr: 'العصر', labelEn: 'Asr' },
-            { key: 'Maghrib', labelAr: 'المغرب', labelEn: 'Maghrib' },
-            { key: 'Isha', labelAr: 'العشاء', labelEn: 'Isha' }
+            { key: 'Fajr', label: 'الفجر' },
+            { key: 'Sunrise', label: 'الشروق' },
+            { key: 'Dhuhr', label: 'الظهر' },
+            { key: 'Asr', label: 'العصر' },
+            { key: 'Maghrib', label: 'المغرب' },
+            { key: 'Isha', label: 'العشاء' }
         ];
 
         const parsedEvents = events.map(ev => {
@@ -1083,7 +965,7 @@ const NextPrayerWidget = React.memo(function NextPrayerWidget({
             const eventTime = new Date(currentTime);
             eventTime.setHours(hours, minutes, 0, 0);
             return { ...ev, time: eventTime };
-        }).filter(Boolean) as Array<{ key: string; labelAr: string; labelEn: string; time: Date }>;
+        }).filter(Boolean) as Array<{ key: string; label: string; time: Date }>;
 
         if (parsedEvents.length === 0) return null;
 
@@ -1098,7 +980,7 @@ const NextPrayerWidget = React.memo(function NextPrayerWidget({
 
             return {
                 key: firstEvent.key,
-                label: language === 'ar' ? firstEvent.labelAr : firstEvent.labelEn,
+                label: firstEvent.label,
                 timeStr: prayerTimes[firstEvent.key],
                 timeDiffMs: tomorrowFajr.getTime() - currentTime.getTime()
             };
@@ -1106,12 +988,12 @@ const NextPrayerWidget = React.memo(function NextPrayerWidget({
             const nextEvent = parsedEvents[nextEventIndex];
             return {
                 key: nextEvent.key,
-                label: language === 'ar' ? nextEvent.labelAr : nextEvent.labelEn,
+                label: nextEvent.label,
                 timeStr: prayerTimes[nextEvent.key],
                 timeDiffMs: nextEvent.time.getTime() - currentTime.getTime()
             };
         }
-    }, [prayerTimes, currentTime, language]);
+    }, [prayerTimes, currentTime]);
 
     const getPrayerIcon = (key: string, className?: string) => {
         switch (key) {
@@ -1136,7 +1018,7 @@ const NextPrayerWidget = React.memo(function NextPrayerWidget({
     };
 
     return (
-        <Card className="w-full md:w-auto justify-self-stretch md:justify-self-end bg-card/40 backdrop-blur-sm border-border" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+        <Card className="w-full md:w-auto justify-self-stretch md:justify-self-end bg-card/40 backdrop-blur-sm border-border" dir="rtl">
             <CardContent className="p-3.5 flex items-center gap-3">
                 {nextPrayerInfo ? (
                     <>
@@ -1144,21 +1026,18 @@ const NextPrayerWidget = React.memo(function NextPrayerWidget({
                             {getPrayerIcon(nextPrayerInfo.key, "w-5 h-5")}
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-[10px] text-muted-foreground font-medium leading-none">
-                                {language === 'ar' ? 'الصلاة القادمة' : 'Next Prayer'}
+                            <span dir="ltr" className="font-mono text-xs font-bold tabular-nums tracking-wider text-primary">
+                                {formatDuration(nextPrayerInfo.timeDiffMs)}
                             </span>
                             <div className="flex items-baseline gap-1.5 mt-1 leading-none">
                                 <span className="font-bold text-sm text-foreground">{nextPrayerInfo.label}</span>
                                 <span className="text-[10px] text-muted-foreground font-semibold">({nextPrayerInfo.timeStr})</span>
                             </div>
                         </div>
-                        <div className="ms-auto ps-2 border-s border-border/80 font-mono text-xs text-primary font-bold tracking-wider">
-                            {formatDuration(nextPrayerInfo.timeDiffMs)}
-                        </div>
                     </>
                 ) : (
                     <div className="text-xs text-muted-foreground animate-pulse py-1 px-4">
-                        {language === 'ar' ? 'جاري تحميل المواقيت...' : 'Loading times...'}
+                        جاري تحميل المواقيت...
                     </div>
                 )}
             </CardContent>

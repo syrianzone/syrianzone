@@ -137,8 +137,8 @@ export const sources = {
     return data;
   },
 
-  async prayerTimes(governorate: string): Promise<PrayerTimes> {
-    const { data } = await axios.get('/api/prayer-times', { params: { governorate } });
+  async prayerTimes(params: Record<string, string | number>): Promise<PrayerTimes> {
+    const { data } = await axios.get('/api/prayer-times', { params });
     return data;
   },
 };

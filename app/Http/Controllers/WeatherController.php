@@ -14,11 +14,11 @@ class WeatherController extends Controller
   // get a CORS error. Fetching server-side has no CORS at all, and gives us the
   // caching the direct browser call never had.
   //
-  // Coordinates are not accepted freely from the client: custom lat/lon is
-  // clamped to Syria's bounding box and rounded, which bounds both the cache
-  // key space and upstream API spend — without this the endpoint would be an
-  // open weather proxy keyed on arbitrary attacker-chosen coordinates.
-  private const BBOX = ['lat_min' => 32.0, 'lat_max' => 37.3, 'lon_min' => 35.6, 'lon_max' => 42.4];
+  // Coordinates are accepted worldwide (diaspora users resolve GPS/IP far
+  // outside Syria) but rounded to 2 decimals before keying, which collapses
+  // nearby points onto one cache entry; entries expire after a short TTL and
+  // the route is throttled, so the key space and upstream spend stay bounded
+  // without a geographic allowlist.
 
   private const COORDS = [
     'damascus' => [33.5138, 36.2765],
@@ -59,16 +59,12 @@ class WeatherController extends Controller
       $lat = (float) $lat;
       $lon = (float) $lon;
 
-      // Round before validation so nearby points collapse onto one cache key;
-      // then reject anything outside the bounding box entirely.
+      // Round before keying so nearby points collapse onto one cache entry.
       $lat = round($lat, 2);
       $lon = round($lon, 2);
 
-      if (
-        $lat < self::BBOX['lat_min'] || $lat > self::BBOX['lat_max']
-        || $lon < self::BBOX['lon_min'] || $lon > self::BBOX['lon_max']
-      ) {
-        return response()->json(['message' => 'الإحداثيات خارج نطاق سوريا'], 422);
+      if ($lat < -90 || $lat > 90 || $lon < -180 || $lon > 180) {
+        return response()->json(['message' => 'إحداثيات غير صالحة'], 422);
       }
 
       $governorate = $governorate ?: 'custom';

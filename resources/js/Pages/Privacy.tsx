@@ -160,6 +160,7 @@ export default function Privacy() {
                                     <li><strong>تخزين Cloudflare R2:</strong> لتخزين الصور والوسائط الخاصة بالأماكن والهوية البصرية بأمان وسرعة عالية.</li>
                                     <li><strong>بوابة F3alia:</strong> لجلب الفعاليات والأنشطة المحلية.</li>
                                     <li><strong>مواقيت الصلاة (AlAdhan API):</strong> لحساب أوقات الصلاة بدقة بناءً على الموقع الجغرافي المرسل، دون تخزين الإحداثيات على خوادمنا.</li>
+                                    <li><strong>تحديد الموقع (GPS / عنوان IP عبر ipwho.is):</strong> عند اختيار التحديد التلقائي للموقع، تُستخدم إحداثيات جهازك أو مدينتك التقريبية من عنوان IP لحساب المواقيت فقط — تبقى على جهازك ولا تُرسل لخوادمنا.</li>
                                     <li><strong>خدمة الطقس (OpenWeather / Cloudflare Workers):</strong> لجلب وعرض حالة الطقس المحلية بناءً على محافظتك أو إحداثياتك التقريبية.</li>
                                     <li><strong>محركات البحث (Google, DuckDuckGo, Bing, SearX):</strong> عند استخدام شريط البحث، يتم توجيه الاستعلام مباشرة إلى المحرك المختار دون تخزينه أو تسجيله من طرفنا.</li>
                                 </ul>
@@ -293,6 +294,7 @@ export default function Privacy() {
                                     <li><strong>Cloudflare R2:</strong> For storing place media assets and brand files securely with fast global distribution.</li>
                                     <li><strong>F3alia API:</strong> To populate local events dynamically.</li>
                                     <li><strong>Prayer Times (AlAdhan API):</strong> To calculate accurate prayer times based on approximate location coordinates. No coordinates are stored on our servers.</li>
+                                    <li><strong>Location detection (GPS / IP address via ipwho.is):</strong> When you choose automatic location, your device coordinates or approximate IP-based city are used for prayer times only — they stay on your device and are never sent to our servers.</li>
                                     <li><strong>Weather Integration (OpenWeather / Cloudflare Workers):</strong> To retrieve and present real-time local weather reports based on your location/governorate selection.</li>
                                     <li><strong>Search Engines (Google, DuckDuckGo, Bing, SearX):</strong> When utilizing the homepage search tool, your query is forwarded directly to your chosen provider and is never stored by Syrian Zone.</li>
                                 </ul>

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Head } from '@inertiajs/react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { Head, usePage } from '@inertiajs/react';
 import {
     Calendar, Clock, MapPin, Sparkles, AlertCircle, Info,
     Sun, Sunset, Timer, Check, ShieldAlert, Heart, CalendarDays,
@@ -66,6 +66,9 @@ const F3ALIA_PROVINCE_TO_ARABIC: Record<string, string> = {
 };
 import { Label } from "@/Components/ui/label";
 import MainLayout from '@/Layouts/MainLayout';
+import axios from '@/Lib/axios';
+import LocateButtons from '@/Pages/Muslim/_components/LocateButtons';
+import { effectivePrayerParams, getGeo, getLocMode, useLocSignal } from '@/Pages/Muslim/_lib/location';
 
 const GOVERNORATES: Record<string, { nameAr: string; nameEn: string; lat: number; lon: number }> = {
     'damascus': { nameAr: 'دمشق', nameEn: 'Damascus', lat: 33.5138, lon: 36.2765 },
@@ -159,6 +162,11 @@ const getWeatherIcon = (iconCode: string) => {
 };
 
 export default function Index() {
+    const { props } = usePage<{ auth?: { user?: { id: number; settings?: Record<string, unknown> | null } | null } }>();
+    const serverGovernorate = (props.auth?.user?.settings as Record<string, string> | undefined)?.governorate;
+    const isLoggedIn = Boolean(props.auth?.user?.id);
+    const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
     const [governorate, setGovernorate] = useState('damascus');
     const [currentTime, setCurrentTime] = useState<Date>(new Date());
     const [prayerTimes, setPrayerTimes] = useState<Record<string, string> | null>(null);
@@ -185,18 +193,36 @@ export default function Index() {
         }
         return false;
     });
+    // Shared device location (GPS/IP resolved in /muslim): overrides the
+    // manual governorate while active.
+    const locSig = useLocSignal();
 
     // Save Switch preference
     useEffect(() => {
         localStorage.setItem('sz-hide-passed-holidays', String(hidePassed));
     }, [hidePassed]);
 
-    // Load governorate preference from localStorage (Roznama-specific key)
+    // Load governorate: account value wins when present, else the saved
+    // device value. Written back set-if-absent only, so a logged-out change
+    // is never clobbered before the login sync can compare both sides.
     useEffect(() => {
-        const savedGov = localStorage.getItem('sz-roznama-governorate') || 'damascus';
+        const lsRoznama = localStorage.getItem('sz-roznama-governorate');
+        const lsHome = localStorage.getItem('governorate');
+        const savedGov = serverGovernorate || lsRoznama || lsHome || 'damascus';
         setGovernorate(savedGov);
+        try {
+            if (localStorage.getItem('sz-roznama-governorate') === null) {
+                localStorage.setItem('sz-roznama-governorate', savedGov);
+            }
+            if (localStorage.getItem('governorate') === null) {
+                localStorage.setItem('governorate', savedGov);
+            }
+        } catch {
+            // private mode
+        }
         setMounted(true);
         setCurrentTime(new Date());
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Keep the clock ticking
@@ -213,7 +239,12 @@ export default function Index() {
 
         const fetchWeather = async () => {
             try {
-                const coords = GOVERNORATES[governorate] || GOVERNORATES['damascus'];
+                const shared = (() => {
+                    const mode = getLocMode();
+                    const geo = getGeo();
+                    return (mode === 'gps' || mode === 'ip') && geo ? geo : null;
+                })();
+                const coords = shared ?? (GOVERNORATES[governorate] || GOVERNORATES['damascus']);
                 const response = await fetch(`/api/weather?lat=${coords.lat}&lon=${coords.lon}`);
                 if (!response.ok) throw new Error('Weather fetch failed');
                 const data = await response.json();
@@ -235,7 +266,7 @@ export default function Index() {
         };
 
         fetchWeather();
-    }, [governorate, mounted]);
+    }, [governorate, mounted, locSig]);
 
     // Fetch Prayer Times via server proxy (no direct Aladhan call: CORS +
     // caching + fixed governorate list live in PrayerController).
@@ -249,7 +280,18 @@ export default function Index() {
             setLoading(true);
             setError(null);
             try {
-                const response = await fetch(`/api/prayer-times?governorate=${encodeURIComponent(governorate)}`, { signal: ctrl.signal });
+                // Unified with /muslim: the calculation method saved there
+                // drives this card (default 3 = Muslim World League), and a
+                // resolved GPS/IP location overrides the manual governorate.
+                const method = Number(localStorage.getItem('sz-muslim-method') || '3') || 3;
+                const params = new URLSearchParams();
+                for (const [k, v] of Object.entries(effectivePrayerParams({
+                    mode: getLocMode(),
+                    geo: getGeo(),
+                    manualCity: governorate,
+                    method,
+                }))) params.set(k, String(v));
+                const response = await fetch(`/api/prayer-times?${params.toString()}`, { signal: ctrl.signal });
                 if (!response.ok) throw new Error('فشل جلب مواقيت الصلاة');
                 const result = await response.json();
 
@@ -278,7 +320,7 @@ export default function Index() {
 
         fetchPrayerTimes();
         return () => { clearTimeout(timer); ctrl.abort(); };
-    }, [governorate, mounted]);
+    }, [governorate, mounted, locSig]);
 
     // Fetch upcoming events via server proxy (/api/events/today).
     useEffect(() => {
@@ -334,11 +376,25 @@ export default function Index() {
         return () => { clearTimeout(timer); ctrl.abort(); };
     }, [governorate, showOtherGovEvents, mounted]);
 
-    // Handle governorate change (saves to Roznama-specific key)
+    // Handle governorate change: device keys immediately, account debounced.
     const handleGovChange = (val: string) => {
         setGovernorate(val);
-        localStorage.setItem('sz-roznama-governorate', val);
+        try {
+            localStorage.setItem('sz-roznama-governorate', val);
+            localStorage.setItem('governorate', val);
+        } catch {
+            // private mode
+        }
+        if (!isLoggedIn) return;
+        if (saveTimer.current) clearTimeout(saveTimer.current);
+        saveTimer.current = setTimeout(() => {
+            axios.post('/api/user/settings', { settings: { governorate: val } }).catch(() => {});
+        }, 600);
     };
+
+    useEffect(() => () => {
+        if (saveTimer.current) clearTimeout(saveTimer.current);
+    }, []);
 
     // Formatter helpers
     const formatTime = (date: Date) => {
@@ -499,6 +555,14 @@ export default function Index() {
     if (!mounted) return null;
 
     const activeGov = GOVERNORATES[governorate] || GOVERNORATES['damascus'];
+    // Labels follow the effective location: a resolved GPS/IP point wins
+    // over the manual governorate while active.
+    const geoActive = (() => {
+        const mode = getLocMode();
+        const geo = getGeo();
+        return (mode === 'gps' || mode === 'ip') && geo ? geo : null;
+    })();
+    const placeLabel = geoActive ? geoActive.label : activeGov.nameAr;
 
     return (
         <MainLayout>
@@ -550,6 +614,9 @@ export default function Index() {
                                         <div className="flex items-center gap-2 text-muted-foreground text-sm font-medium">
                                             <MapPin className="h-4 w-4 text-primary" />
                                             <span>المحافظة:</span>
+                                            {geoActive && (
+                                                <Badge variant="secondary" className="text-[10px]">موقع تلقائي</Badge>
+                                            )}
                                         </div>
                                         <Select value={governorate} onValueChange={handleGovChange}>
                                             <SelectTrigger className="w-[140px] bg-card border-border" dir="rtl">
@@ -563,6 +630,11 @@ export default function Index() {
                                                 ))}
                                             </SelectContent>
                                         </Select>
+                                    </div>
+
+                                    {/* GPS/IP auto-location (manual city stays as fallback) */}
+                                    <div className="mb-4">
+                                        <LocateButtons compact />
                                     </div>
 
                                     {/* Clock Display */}
@@ -594,7 +666,7 @@ export default function Index() {
                                             )}
                                         </div>
                                         <Badge variant="outline" className="text-[10px] h-5 bg-card border-border/60">
-                                            الطقس في {activeGov.nameAr}
+                                            الطقس في {placeLabel}
                                         </Badge>
                                     </div>
                                 </CardContent>
@@ -685,7 +757,7 @@ export default function Index() {
                                         <div className="flex items-center justify-between mb-4 border-b border-border/60 pb-3">
                                             <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
                                                 <Clock className="h-5 w-5 text-primary" />
-                                                <span>مواقيت الصلاة في {activeGov.nameAr}</span>
+                                                <span>مواقيت الصلاة في {placeLabel}</span>
                                             </h3>
                                         </div>
 

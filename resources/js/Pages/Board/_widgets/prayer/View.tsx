@@ -6,6 +6,7 @@ import { sources, type PrayerTimes } from '../../_lib/sources';
 import { GOVERNORATES } from '../../_lib/governorates';
 import type { WidgetProps } from '../../_lib/types';
 import { prayerWidget, type PrayerConfig } from './index';
+import { effectivePrayerParams, getGeo, getLocMode, useLocSignal } from '@/Pages/Muslim/_lib/location';
 
 const PRAYERS: { key: string; label: string }[] = [
   { key: 'Fajr', label: 'الفجر' },
@@ -39,8 +40,20 @@ function countdown(to: Date, now: Date): string {
 }
 
 export default function PrayerView({ config }: WidgetProps<PrayerConfig>) {
-  const governorate = config.governorate ?? 'damascus';
-  const query = useWidgetQuery(prayerWidget, governorate, () => sources.prayerTimes(governorate));
+  // Per-widget manual city/method win by default; a resolved GPS/IP site
+  // location (set in /muslim, Home, or Roznama) overrides the city.
+  const locSig = useLocSignal();
+  const governorate = config.governorate
+    ?? (typeof window !== 'undefined' ? window.localStorage.getItem('sz-muslim-city') : null)
+    ?? 'damascus';
+  const method = Number(
+    config.method
+      ?? (typeof window !== 'undefined' ? window.localStorage.getItem('sz-muslim-method') : null)
+      ?? 3,
+  ) || 3;
+  const params = effectivePrayerParams({ mode: getLocMode(), geo: getGeo(), manualCity: governorate, method });
+  const queryKey = `${governorate}:${method}:${locSig}:${params.latitude ?? ''}:${params.longitude ?? ''}`;
+  const query = useWidgetQuery(prayerWidget, queryKey, () => sources.prayerTimes(params));
   const [now, setNow] = useState(() => new Date());
 
   // the countdown ticks locally; refetching once a day is enough for the timings

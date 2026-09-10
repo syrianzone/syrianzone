@@ -40,6 +40,9 @@ Route::get('/priorities', function () {
 Route::get('/roznama', function () {
     return Inertia::render('Roznama/Index');
 });
+Route::get('/muslim', function () {
+    return Inertia::render('Muslim/Index');
+});
 Route::get('/phonebook', [\App\Http\Controllers\PhonebookController::class, 'index']);
 Route::get('/shawarma', function () {
     return Inertia::render('Shawarma/Index');
@@ -168,6 +171,14 @@ Route::middleware('auth')->group(function () {
         ->middleware('throttle:60,1');
     Route::put('/api/v1/board', [\App\Http\Controllers\BoardController::class, 'update'])
         ->middleware('throttle:60,1');
+
+    // Quran Ayah bookmarks (logged-in only). Session + CSRF like board sync.
+    Route::get('/api/v1/quran-bookmarks', [\App\Http\Controllers\QuranBookmarkController::class, 'index'])
+        ->middleware('throttle:60,1');
+    Route::post('/api/v1/quran-bookmarks', [\App\Http\Controllers\QuranBookmarkController::class, 'store'])
+        ->middleware('throttle:60,1');
+    Route::delete('/api/v1/quran-bookmarks/{surah}/{ayah}', [\App\Http\Controllers\QuranBookmarkController::class, 'destroy'])
+        ->whereNumber('surah')->whereNumber('ayah')->middleware('throttle:60,1');
 
     Route::prefix('api')->group(function () {
         Route::get('/user', function (\Illuminate\Http\Request $request) {
@@ -401,6 +412,18 @@ Route::post('/api/user/settings', function (\Illuminate\Http\Request $request) {
         'settings.showClock' => 'nullable|boolean',
         'settings.showWeather' => 'nullable|boolean',
         'settings.showPrayerTimes' => 'nullable|boolean',
+        'settings.muslimCity' => 'nullable|string|max:64',
+        'settings.muslimMethod' => 'nullable|integer|in:0,1,2,3,4,5,7,8,9,10,11,12,13,14,15,16',
+        'settings.muslimUseCustomCoords' => 'nullable|boolean',
+        'settings.muslimLat' => 'nullable|numeric|between:-90,90',
+        'settings.muslimLon' => 'nullable|numeric|between:-180,180',
+        'settings.prayerLog' => 'nullable|array|max:31',
+        'settings.prayerLog.*' => 'nullable|array|max:5',
+        'settings.prayerLog.*.*' => 'boolean',
+        'settings.quranLastPage' => 'nullable|integer|min:1|max:604',
+        'settings.quranLastJuz' => 'nullable|integer|min:1|max:30',
+        'settings.quranPageAt' => 'nullable|integer|min:0',
+        'settings.quranReciterId' => 'nullable|string|max:64',
         'settings.showEvents' => 'nullable|boolean',
         'settings.showSearch' => 'nullable|boolean',
         'settings.useCustomCoords' => 'nullable|boolean',

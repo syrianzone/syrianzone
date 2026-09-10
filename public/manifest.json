@@ -3,9 +3,20 @@
   "short_name": "Syrian Zone",
   "description": "دليل خدمات وتفاعلات المساحة السورية",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#09090b",
   "theme_color": "#09090b",
+  "shortcuts": [
+    {
+      "name": "مواقيت الصلاة",
+      "url": "/muslim?tab=prayer"
+    },
+    {
+      "name": "قارئ القرآن",
+      "url": "/muslim?tab=quran"
+    }
+  ],
   "icons": [
     {
       "src": "/assets/favicon.png",

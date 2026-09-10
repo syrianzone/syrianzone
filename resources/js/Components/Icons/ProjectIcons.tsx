@@ -46,6 +46,53 @@ export function RoznamaIcon({ className = "w-7 h-7" }: ProjectIconProps) {
   );
 }
 
+// 2b. Muslim (Muslim Corner - Crescent & Mushaf, Emerald & Gold)
+export function MuslimIcon({ className = "w-7 h-7" }: ProjectIconProps) {
+  return (
+    <svg viewBox="0 0 32 32" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M20 4a9 9 0 1 0 8 12A10.5 10.5 0 0 1 20 4z"
+        className="fill-[#10B981]/15 dark:fill-[#34D399]/20 stroke-[#059669] dark:stroke-[#34D399]"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M8 22c2.7-1.4 5.3-1.4 8 0 2.7-1.4 5.3-1.4 8 0v-9c-2.7-1.4-5.3-1.4-8 0-2.7-1.4-5.3-1.4-8 0v9z"
+        className="fill-[#F59E0B]/15 dark:fill-[#FBBF24]/20 stroke-[#D97706] dark:stroke-[#FBBF24]"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {/* Theme Accent Touch */}
+      <circle cx="22.5" cy="8.5" r="1.6" fill="hsl(var(--primary))" />
+    </svg>
+  );
+}
+
+// 2c. Quran (Open Mushaf - Emerald & Gold, matches MuslimIcon family)
+export function QuranIcon({ className = "w-7 h-7" }: ProjectIconProps) {
+  return (
+    <svg viewBox="0 0 32 32" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M16 8c-2.5-2-5.5-2.8-9-2.5v17c3.5-.3 6.5.5 9 2.5 2.5-2 5.5-2.8 9-2.5v-17c-3.5-.3-6.5.5-9 2.5z"
+        className="fill-[#10B981]/15 dark:fill-[#34D399]/20 stroke-[#059669] dark:stroke-[#34D399]"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M16 8v17"
+        className="stroke-[#D97706] dark:stroke-[#FBBF24]"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      {/* Theme Accent Touch */}
+      <circle cx="16" cy="6" r="1.6" fill="hsl(var(--primary))" />
+    </svg>
+  );
+}
+
 // 3. Phonebook (Directory - Amber & Emerald Directory Book)
 export function PhonebookIcon({ className = "w-7 h-7" }: ProjectIconProps) {
   return (

@@ -88,8 +88,35 @@ test('rejects an unknown or missing governorate', function () {
   $this->getJson('/api/prayer-times?governorate=mecca')->assertStatus(422);
   $this->getJson('/api/prayer-times')->assertStatus(422);
 
-  // no coordinates are accepted from the client, so this stays an unknown key
-  $this->getJson('/api/prayer-times?governorate=&latitude=21.4&longitude=39.8')->assertStatus(422);
+  Http::assertNothingSent();
+});
+
+test('accepts custom coordinates for diaspora users', function () {
+  Http::fake(['*' => Http::response(prayerPayload(), 200)]);
+
+  $this->getJson('/api/prayer-times?latitude=21.42&longitude=39.82')
+    ->assertOk()
+    ->assertJsonPath('governorate', 'custom');
+
+  Http::assertSent(fn ($request) => str_contains($request->url(), 'latitude=21.42')
+    && str_contains($request->url(), 'longitude=39.82')
+    && str_contains($request->url(), 'method=3'));
+});
+
+test('accepts a calculation method and caches per method', function () {
+  Http::fake(['*' => Http::response(prayerPayload(), 200)]);
+
+  $this->getJson('/api/prayer-times?governorate=damascus&method=5')->assertOk();
+  $this->getJson('/api/prayer-times?governorate=damascus&method=4')->assertOk();
+
+  Http::assertSentCount(2);
+  Http::assertSent(fn ($request) => str_contains($request->url(), 'method=5'));
+});
+
+test('rejects an unknown calculation method', function () {
+  Http::fake();
+
+  $this->getJson('/api/prayer-times?governorate=damascus&method=6')->assertStatus(422);
 
   Http::assertNothingSent();
 });

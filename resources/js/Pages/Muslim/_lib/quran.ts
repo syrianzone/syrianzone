@@ -95,6 +95,25 @@ export function ensureRtlBidi(token: string): string {
 
 // --- Manifest + shard loading (lazy, hash-invalidated) ---
 
+export interface UnifiedPart {
+  l: number;
+  t: string;
+  s16: number;
+  s24: number;
+}
+export type UnifiedData = any[];
+
+interface HydratedUnifiedAya {
+  p: number;
+  r: UnifiedPart[];
+}
+
+interface UnifiedState {
+  suras: Array<{ name: string; ayas: Array<HydratedUnifiedAya | null> }>;
+  allPromise: Promise<UnifiedData> | null;
+}
+const unifiedState: UnifiedState = { suras: [], allPromise: null };
+
 interface HydratedAya {
   p: number;
   r: Part[];
@@ -103,9 +122,8 @@ interface HydratedAya {
 interface AnchorState {
   manifest: MushafManifest | null;
   manifestPromise: Promise<MushafManifest> | null;
-  /** Sparse per-Sura trees, null until the Juz shard hydrates them. */
-  suras: Array<{ name: string; ayas: Array<HydratedAya | null> }>;
-  shards: Map<number, Promise<JuzShard>>;
+  // Legacy typed manifest state
+  // Unified state handles the actual ayas.
 }
 
 const HASH_KEY = 'sz-mushaf-hash-';
@@ -113,7 +131,7 @@ const HASH_KEY = 'sz-mushaf-hash-';
 function anchorState(dir: string): AnchorState {
   let st = states.get(dir);
   if (!st) {
-    st = { manifest: null, manifestPromise: null, suras: [], shards: new Map() };
+    st = { manifest: null, manifestPromise: null };
     states.set(dir, st);
   }
   return st;
@@ -132,10 +150,12 @@ export async function loadManifest(anchor: AnchorDef): Promise<MushafManifest> {
       })
       .then((m) => {
         st.manifest = m;
-        st.suras = m.suras.map(([name, total]) => ({
-          name,
-          ayas: new Array<HydratedAya | null>(total).fill(null),
-        }));
+        if (unifiedState.suras.length === 0) {
+          unifiedState.suras = m.suras.map(([name, total]) => ({
+            name,
+            ayas: new Array<HydratedUnifiedAya | null>(total).fill(null),
+          }));
+        }
         // Skill §3: content_hash invalidates stale cached shards.
         try {
           if (typeof window !== 'undefined') {
@@ -163,36 +183,41 @@ export async function loadManifest(anchor: AnchorDef): Promise<MushafManifest> {
   return st.manifestPromise;
 }
 
-function hydrateShard(anchor: AnchorDef, shard: JuzShard): void {
-  const st = anchorState(anchor.dir);
-  for (const [sIdx, aIdx, page, parts] of shard.d) {
-    const sura = st.suras[sIdx];
-    if (sura && aIdx < sura.ayas.length) {
-      sura.ayas[aIdx] = { p: page, r: parts.map((pt) => ({ l: pt.l, t: pt.t, s: pt.s })) };
-    }
-  }
-}
+const yieldToMain = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-export function loadJuzShard(anchor: AnchorDef, juzIdx0: number): Promise<JuzShard> {
-  const st = anchorState(anchor.dir);
-  const hit = st.shards.get(juzIdx0);
-  if (hit) return hit;
-  const pad = String(juzIdx0 + 1).padStart(2, '0');
-  const req = fetch(`/quran-data/${anchor.dir}/juz-${pad}.json`)
-    .then((r) => {
-      if (!r.ok) throw new Error(`Mushaf shard juz-${pad} failed`);
-      return r.json() as Promise<JuzShard>;
-    })
-    .then((data) => {
-      hydrateShard(anchor, data);
+export function loadAll(): Promise<UnifiedData> {
+  if (unifiedState.allPromise) return unifiedState.allPromise;
+  
+  unifiedState.allPromise = (async () => {
+    try {
+      const res = await fetch('/quran-data/mushaf-unified.json');
+      if (!res.ok) throw new Error('Mushaf unified failed');
+      const data = await res.json() as any[];
+      
+      let iterations = 0;
+      for (const juzArray of data) {
+        for (const [sIdx, aIdx, page, partsTuple] of juzArray) {
+          const sura = unifiedState.suras[sIdx];
+          if (sura && aIdx < sura.ayas.length) {
+            const r: UnifiedPart[] = partsTuple.map((pt: any) => ({
+              l: pt[0],
+              t: pt[1],
+              s16: pt[2],
+              s24: pt[3]
+            }));
+            sura.ayas[aIdx] = { p: page, r };
+          }
+          if (++iterations % 300 === 0) await yieldToMain();
+        }
+      }
       return data;
-    })
-    .catch((e) => {
-      st.shards.delete(juzIdx0);
+    } catch (e) {
+      unifiedState.allPromise = null;
       throw e;
-    });
-  st.shards.set(juzIdx0, req);
-  return req;
+    }
+  })();
+  
+  return unifiedState.allPromise;
 }
 
 /** 0-based Juz index containing internal (sura, aya) — port of suraAyaToJuz. */
@@ -243,21 +268,8 @@ export function suraNameForPage(manifest: MushafManifest, page: number): string 
 }
 
 /** Ensure the Juz shard(s) covering a Page are loaded (both when spanning). */
-async function ensurePageJuz(anchor: AnchorDef, manifest: MushafManifest, page: number): Promise<void> {
-  const bounds = manifest.pages[page - 1];
-  if (!bounds) return;
-  const [sFrom, aFrom, sTo, aTo] = bounds;
-  const j1 = suraAyaToJuz(manifest, sFrom, aFrom);
-  const j2 = suraAyaToJuz(manifest, sTo, aTo);
-  const jobs = [loadJuzShard(anchor, j1)];
-  if (j2 !== j1) jobs.push(loadJuzShard(anchor, j2));
-  await Promise.all(jobs);
-  // Background preload of the next Juz (skill reference behavior).
-  if (j2 < 29 && typeof window !== 'undefined') {
-    window.setTimeout(() => {
-      loadJuzShard(anchor, j2 + 1).catch(() => undefined);
-    }, 200);
-  }
+async function ensureUnified(): Promise<void> {
+  await loadAll();
 }
 
 // --- Page render model (port of renderPageData) ---
@@ -325,10 +337,10 @@ export async function renderMushafPage(page: number, fontSize: number, signal?: 
   const fitted = fittedLineWidth(fontSize, lw16, lw24);
   const scale = stretchScaleFor(fontSize, lw16, lw24);
 
-  await ensurePageJuz(anchor, manifest, page);
+  await ensureUnified();
   if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
 
-  const st = anchorState(anchor.dir);
+  
   const bounds = manifest.pages[page - 1];
   const [sFrom, aFrom, sTo, aTo] = bounds;
 
@@ -339,15 +351,18 @@ export async function renderMushafPage(page: number, fontSize: number, signal?: 
 
   for (let s = sFrom; s <= sTo; s++) {
     const startA = s === sFrom ? aFrom : 0;
-    const total = st.suras[s]?.ayas.length ?? 0;
+    const total = unifiedState.suras[s]?.ayas.length ?? 0;
     const endA = s === sTo ? aTo : total - 1;
     for (let a = startA; a <= endA; a++) {
-      const aya = st.suras[s]?.ayas[a];
+      const aya = unifiedState.suras[s]?.ayas[a];
       if (!aya || aya.p !== page) continue;
       for (const part of aya.r) {
         const lineObj = lines[part.l - 1];
         if (!lineObj) continue;
-        if (part.s >= 0 && lineObj.stretch < 0) lineObj.stretch = part.s;
+
+        const partStretch = anchor.size === 16 ? part.s16 : part.s24;
+
+        if (partStretch >= 0 && lineObj.stretch < 0) lineObj.stretch = partStretch;
 
         // Sura Title Frame (slot 0 for s > 0, slot 1 for s == 0 — Fatiha).
         const isTitleSlot = (s === 0 && a === 1) || (s > 0 && a === 0);
@@ -374,7 +389,7 @@ export async function renderMushafPage(page: number, fontSize: number, signal?: 
             sura: s,
             aya: a,
             realAya,
-            partStretch: part.s,
+            partStretch: partStretch,
           });
         }
       }

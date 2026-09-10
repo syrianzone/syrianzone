@@ -26,6 +26,7 @@ The docs folder mirrors the project structure: `getting-started/` for running th
 | [modules/polls-public-api.md](modules/polls-public-api.md) | Public read-only voting data API (`/api/v1/polls`) |
 | [modules/guess-who.md](modules/guess-who.md) | Multiplayer WebRTC Guess Who game |
 | [modules/directories.md](modules/directories.md) | SyOfficial, Phonebook, Gov Apps, Hotels directories |
+| [modules/muslim-corner.md](modules/muslim-corner.md) | Muslim Corner (Roznama & Quran Reader) |
 | [modules/population-atlas.md](modules/population-atlas.md) | Population & climate atlas at `/atlas` (legacy `/population` redirects) |
 | **Reference** | |
 | [reference/database-schema.md](reference/database-schema.md) | ER-style schema chart of every table (from migrations) |

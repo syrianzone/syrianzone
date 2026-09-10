@@ -28,3 +28,12 @@ All functionality is heavily front-end and statically bundled; minimal dynamic b
 ## 3. Storage Assets
 - **Quran Payload**: `/public/quran-data/mushaf-unified.json`
 - **Uthmanic Font**: `/public/fonts/quran/`
+
+## 4. Data Sources & Credits
+- **Quran text & Madina layout**: King Fahd Glorious Quran Printing Complex (KFGQPC), vendored under `public/quran-data/`.
+- **Uthmanic font**: KFGQPC HAFS Uthmanic Script, vendored as `public/fonts/quran-hafs.woff2` for offline use.
+- **Ayah marker ornament**: `quranpedia/ayah-markers` (`015-regular`, DigitalKhatt family) — see `AyahMarker` ATTRIBUTION.md for the upstream license caveat.
+- **Recitation audio**: EveryAyah (`https://everyayah.com/data/{folder}/{SSSAAA}.mp3`), streamed per ayah (excluded from the offline cache).
+- **Prayer times**: Aladhan timings API via the server proxy (`GET /api/prayer-times`), cached per day.
+- **Weather**: Open-Meteo + OpenWeatherMap via the server proxy (`GET /api/weather`), cached 15 min.
+- **Approximate geolocation**: `ipwho.is` (see `_lib/location.ts` for the GPS → IP → manual fallback order).

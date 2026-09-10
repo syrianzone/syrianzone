@@ -49,4 +49,10 @@
 ## الإسنادات والترخيص للموارد (Attributions & Licenses)
 
 * **أيقونات المشاريع (Project Icons)**: الأيقونات الملونة المستوحاة والمستخدمة لمشاريع وأدوات الموقع مأخوذة من مجموعات [Streamline Icons](https://www.streamlinehq.com/) عبر [Icones](https://icones.js.org/) ومتاحة بموجب رخصة [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/).
+* **نص المصحف وخطه (Quran text & font)**: نص مصحف المدينة بخط حفص وخط النسخ العثماني مأخوذ من [مجمع الملك فهد لطباعة المصحف الشريف](https://qurancomplex.gov.sa/) (King Fahd Glorious Quran Printing Complex).
+* **علامة نهاية الآية (Ayah marker)**: زخرفة علامة نهاية الآية مأخوذة من مشروع [quranpedia/ayah-markers](https://github.com/quranpedia/ayah-markers) (الملف `015-regular`، عائلة DigitalKhatt عبر [fonts.quran.ws](https://fonts.quran.ws/)).
+* **التلاوات الصوتية (Recitations)**: ملفات الصوت لكل آية مقدمة من [EveryAyah](https://everyayah.com/).
+* **مواقيت الصلاة (Prayer times)**: الحسابات مقدمة عبر [Aladhan API](https://aladhan.com/prayer-times-api).
+* **الطقس (Weather)**: البيانات مقدمة من [Open-Meteo](https://open-meteo.com/) و[OpenWeatherMap](https://openweathermap.org/).
+* **تحديد الموقع التقريبي (Geolocation)**: خدمة [ipwho.is](https://ipwho.is/).
 

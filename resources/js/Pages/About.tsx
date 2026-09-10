@@ -216,6 +216,8 @@ export default function About() {
                             <CardContent className="text-xs leading-relaxed text-muted-foreground space-y-2">
                                 <p>الأيقونات المستعملة في أدوات ومشاريع المنصة مأخوذة من مجموعات Streamline Icons ومتاحة بموجب رخصة Creative Commons Attribution 4.0 International (CC BY 4.0).</p>
                                 <p>بيانات الخرائط التفاعلية في الترانزيت ومشوار مستندة إلى OpenStreetMap وMapLibre GL JS بموجب رخصة ODbL / Open Data Commons.</p>
+                                <p>نص مصحف المدينة بخط حفص والخط العثماني في الركن الإسلامي من مجمع الملك فهد لطباعة المصحف الشريف، وعلامة نهاية الآية من مشروع quranpedia/ayah-markers.</p>
+                                <p>التلاوات الصوتية مقدمة من EveryAyah، ومواقيت الصلاة عبر Aladhan API، وبيانات الطقس من Open-Meteo وOpenWeatherMap، وتحديد الموقع التقريبي عبر ipwho.is.</p>
                             </CardContent>
                         </Card>
                     </TabsContent>
@@ -397,6 +399,8 @@ export default function About() {
                             <CardContent className="text-xs leading-relaxed text-muted-foreground space-y-2">
                                 <p>Tool and project icons are derived from Streamline Icons via Icones under Creative Commons Attribution 4.0 International (CC BY 4.0).</p>
                                 <p>Interactive transit and place map data is powered by OpenStreetMap contributors and MapLibre GL JS under Open Data Commons (ODbL).</p>
+                                <p>The Madina mushaf text and Uthmanic font in the Muslim Corner come from the King Fahd Glorious Quran Printing Complex; the end-of-ayah ornament is from the quranpedia/ayah-markers project.</p>
+                                <p>Recitation audio is served by EveryAyah, prayer times by the Aladhan API, weather data by Open-Meteo and OpenWeatherMap, and approximate geolocation by ipwho.is.</p>
                             </CardContent>
                         </Card>
                     </TabsContent>

@@ -4,7 +4,7 @@ import {
     Settings, Sun, Link, Globe, Plus, Edit, X,
     Cloud, CloudRain, CloudLightning, Snowflake, Wind,
     Info, BarChart3, Shield, FileText,
-    Check
+    Check, History
 } from 'lucide-react';
 import { Button } from "@/Components/ui/button";
 import { Card, CardContent } from "@/Components/ui/card";
@@ -16,6 +16,7 @@ import UserNav from '@/Components/UserNav';
 import F3aliaEvents from '@/Components/F3aliaEvents';
 import type { CustomLink } from '@/Pages/Home/_components/AddLinkDialog';
 import { getGeo, getLocMode, useLocSignal } from '@/Pages/Muslim/_lib/location';
+import { getLastPage } from '@/Lib/visit';
 import { useMuslimNav } from '@/Pages/Muslim/_lib/nav';
 import { formatGregorianSyrian } from '@/Lib/syrian-date';
 
@@ -61,31 +62,31 @@ interface PresetLink {
 }
 
 const PRESET_LINKS: PresetLink[] = [
-    { href: '/syofficial', icon: SyOfficialIcon, text: 'الحسابات الرسمية', isInternal: true },
     { href: '/roznama', icon: RoznamaIcon, text: 'الروزنامة', isInternal: true },
-    { href: '/phonebook', icon: PhonebookIcon, text: 'دليل الهاتف', isInternal: true },
-    { href: '/syid', icon: SyIdIcon, text: 'الهوية البصرية', isInternal: true },
-    { href: '/party', icon: PartyIcon, text: 'دليل الأحزاب', isInternal: true },
-    { href: '/tierlist', icon: TierlistIcon, text: 'تقييم الحكومة', isInternal: true },
-    { href: '/house', icon: HouseIcon, text: 'المجلس التشريعي', isInternal: true },
-    { href: '/compass', icon: CompassIcon, text: 'البوصلة السياسية', isInternal: true },
-    { href: '/priorities', icon: PrioritiesIcon, text: 'أولويات سوريا', isInternal: true },
-    { href: '/sites', icon: SitesIcon, text: 'دليل المواقع', isInternal: true },
-    { href: '/atlas', icon: PopulationIcon, text: 'أطلس', isInternal: true },
-    { href: '/govapps', icon: GovAppsIcon, text: 'تطبيقات الحكومة', isInternal: true },
+    { href: '/muslim', icon: MuslimIcon, text: 'الركن الإسلامي', isInternal: true },
     { href: '/transit', icon: TransitIcon, text: 'ترانزيت', isInternal: true },
-    { href: '/justice', icon: JusticeIcon, text: 'العدالة الانتقالية', isInternal: true },
-    { href: '/crossings', icon: CrossingsIcon, text: 'المنافذ الحدودية', isInternal: true },
     { href: '/mishwar', icon: MishwarIcon, text: 'مشوار', isInternal: true },
     { href: '/board', icon: BoardIcon, text: 'لوح', isInternal: true },
-    { href: '/muslim', icon: MuslimIcon, text: 'الركن الإسلامي', isInternal: true },
+    { href: '/compass', icon: CompassIcon, text: 'البوصلة السياسية', isInternal: true },
+    { href: '/tierlist', icon: TierlistIcon, text: 'تقييم الحكومة', isInternal: true },
+    { href: '/priorities', icon: PrioritiesIcon, text: 'أولويات سوريا', isInternal: true },
+    { href: '/crossings', icon: CrossingsIcon, text: 'المنافذ الحدودية', isInternal: true },
     { href: 'https://food.syrian.zone', icon: RecipesIcon, text: 'وصفاتنا', external: true, isInternal: true },
     { href: 'https://answers.syrian.zone', icon: AnswersIcon, text: 'إجابات سوريا', external: true, isInternal: true },
+    { href: '/syofficial', icon: SyOfficialIcon, text: 'الحسابات الرسمية', isInternal: true },
+    { href: '/phonebook', icon: PhonebookIcon, text: 'دليل الهاتف', isInternal: true },
+    { href: '/sites', icon: SitesIcon, text: 'دليل المواقع', isInternal: true },
+    { href: '/govapps', icon: GovAppsIcon, text: 'تطبيقات الحكومة', isInternal: true },
+    { href: '/party', icon: PartyIcon, text: 'دليل الأحزاب', isInternal: true },
+    { href: '/house', icon: HouseIcon, text: 'المجلس التشريعي', isInternal: true },
+    { href: '/justice', icon: JusticeIcon, text: 'العدالة الانتقالية', isInternal: true },
+    { href: '/syid', icon: SyIdIcon, text: 'الهوية البصرية', isInternal: true },
+    { href: '/atlas', icon: PopulationIcon, text: 'أطلس', isInternal: true },
+    { href: 'https://discord.gg/NqE8849VzA', icon: CodexCommunityIcon, text: 'مجتمع كوديكس', external: true, isInternal: true },
     { href: 'https://chromewebstore.google.com/detail/syrian-flag-replacer/dngipobppehfhfggmbdiiiodgcibdeog', icon: null, text: 'مبدل العلم', image: '/flag-replacer/1f1f8-1f1fe.svg', external: true, isInternal: true },
     { href: 'https://joory.chat', icon: null, image: 'https://joory.chat/favicon.svg', text: 'جوري AI', external: true },
     { href: 'https://jard.chat', icon: null, image: 'https://jard.chat/images/logo-light.svg', text: 'جرد', external: true },
     { href: 'https://news.jard.chat', icon: NewsIcon, text: 'أخبار سوريا', external: true },
-    { href: 'https://discord.gg/NqE8849VzA', icon: CodexCommunityIcon, text: 'مجتمع كوديكس', external: true },
 ];
 
 const GOVERNORATES: Record<string, { lat: number; lon: number }> = {
@@ -147,6 +148,8 @@ export default function Home() {
     const [settingsOpen, setSettingsOpen] = [useMuslimNav((s) => s.homeSettingsOpen), useMuslimNav((s) => s.setHomeSettingsOpen)] as const;
     const [addLinkOpen, setAddLinkOpen] = useState(false);
     const [editMode, setEditMode] = useState(false);
+    // Last-visited page badge (always-show-one; read once per mount).
+    const [lastPage] = useState<string | null>(() => getLastPage());
     // Shared device location (GPS/IP resolved in /muslim or settings):
     // overrides the manual city while active.
     const locSig = useLocSignal();
@@ -599,21 +602,23 @@ export default function Home() {
 
                     {/* Internal Syrian Zone Tools */}
                     <div className="mb-12">
-                        <h3 className="text-xl font-bold text-foreground mb-6 text-start">
-                            أدوات المساحة السورية
-                        </h3>
                         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-9 gap-x-2 gap-y-5">
-                            {PRESET_LINKS.filter(l => l.isInternal).map((link, idx) => {
+                            {PRESET_LINKS.filter(l => l.isInternal).map((link) => {
                                 const Icon = link.icon;
                                 return (
                                     <a
-                                        key={idx}
+                                        key={link.href}
                                         href={link.href}
                                         target={link.external ? '_blank' : undefined}
                                         rel={link.external ? 'noopener noreferrer' : undefined}
-                                        className="group flex h-full flex-col items-center justify-between gap-2 py-1 text-center"
+                                        className="group relative flex h-full flex-col items-center justify-between gap-2 py-1 text-center"
                                     >
                                         {Icon && <Icon className="w-8 h-8 shrink-0 text-foreground/80 transition-all group-hover:scale-110 group-hover:text-primary" />}
+                                        {lastPage === link.href && (
+                                            <span title="آخر صفحة تمت زيارتها" className="absolute -top-1.5 -end-1.5 rounded-full border border-border bg-background p-0.5 text-primary shadow-sm">
+                                                <History className="w-3.5 h-3.5" />
+                                            </span>
+                                        )}
                                         {link.image && <img src={link.image} alt={link.text} loading="lazy" decoding="async" className="w-8 h-8 shrink-0 object-contain transition-transform group-hover:scale-110" />}
                                         {link.className && <div className={link.className} style={{ width: '2rem', height: '2rem' }}></div>}
                                         <span className="text-xs font-medium text-muted-foreground transition-colors group-hover:text-primary line-clamp-2">
@@ -627,10 +632,10 @@ export default function Home() {
 
                     {/* External & Sister Links */}
                     <div className="mb-12">
-                        <h3 className="text-xl font-bold text-foreground mb-6 text-start">
+                        <h3 className="text-xl font-bold text-foreground mb-6 text-center">
                             روابط خارجية وشقيقة
                         </h3>
-                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-9 gap-x-2 gap-y-5">
+                        <div className="flex flex-wrap justify-center gap-x-8 gap-y-5">
                             {PRESET_LINKS.filter(l => !l.isInternal).map((link, idx) => {
                                 const Icon = link.icon;
                                 return (
@@ -639,7 +644,7 @@ export default function Home() {
                                         href={link.href}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="group flex h-full flex-col items-center justify-between gap-2 py-1 text-center"
+                                        className="group flex w-24 shrink-0 flex-col items-center justify-between gap-2 py-1 text-center"
                                     >
                                         {Icon && <Icon className="w-8 h-8 shrink-0 text-foreground/80 transition-all group-hover:scale-110 group-hover:text-primary" />}
                                         {link.image && <img src={link.image} alt={link.text} loading="lazy" decoding="async" className="w-8 h-8 shrink-0 object-contain transition-transform group-hover:scale-110" />}

@@ -310,27 +310,15 @@ export default function F3aliaEvents({ governorate, language = 'ar', variant = '
                         <h3 className="font-bold text-xl text-foreground flex items-center gap-2">
                             <Sparkles className="h-5 w-5 text-primary animate-pulse" />
                             <span>
-                                {variant === 'single' ? (
-                                    language === 'ar'
-                                        ? `الفعالية القادمة في ${currentGovName || ''}`
-                                        : `Next Event in ${currentGovName || ''}`
-                                ) : (
-                                    language === 'ar'
-                                        ? `الفعاليات القادمة في ${currentGovName || ''}`
-                                        : `Upcoming Events in ${currentGovName || ''}`
-                                )}
+                                {language === 'ar'
+                                    ? `الفعاليات القادمة في ${currentGovName || ''}`
+                                    : `Upcoming Events in ${currentGovName || ''}`}
                             </span>
                         </h3>
                         <p className="text-xs text-muted-foreground mt-1">
-                            {variant === 'single' ? (
-                                language === 'ar'
-                                    ? 'الفعالية القادمة الأقرب تاريخاً في محافظتك.'
-                                    : 'The closest upcoming event in your governorate.'
-                            ) : (
-                                language === 'ar'
-                                    ? 'اكتشف الفعاليات، المعارض، الأنشطة الثقافية والتعليمية القريبة منك.'
-                                    : 'Explore events, exhibitions, cultural & educational activities near you.'
-                            )}
+                            {language === 'ar'
+                                ? 'اكتشف الفعاليات، المعارض، الأنشطة الثقافية والتعليمية القريبة منك.'
+                                : 'Explore events, exhibitions, cultural & educational activities near you.'}
                         </p>
                     </div>
                     
@@ -370,9 +358,19 @@ export default function F3aliaEvents({ governorate, language = 'ar', variant = '
             {loading ? (
                 /* Skeleton loader */
                 variant === 'single' ? (
-                    <div className="w-full animate-pulse">
-                        <div className="h-4 bg-muted rounded w-2/3 mb-2" />
-                        <div className="h-3 bg-muted rounded w-1/2" />
+                    <div className="w-full animate-pulse" dir="rtl" aria-hidden="true">
+                        <div className="flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1.5">
+                            <div className="h-5 bg-muted rounded w-16" />
+                            <div className="h-6 bg-muted rounded w-64 max-w-full" />
+                        </div>
+                        <div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+                            <div className="h-4 bg-muted rounded w-24" />
+                            <div className="h-4 bg-muted rounded w-14" />
+                            <div className="h-4 bg-muted rounded w-12" />
+                        </div>
+                        <div className="mt-2 flex justify-center">
+                            <div className="h-4 bg-muted rounded w-24" />
+                        </div>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

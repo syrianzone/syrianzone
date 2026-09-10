@@ -1,4 +1,6 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
+import { Bookmark, BookmarkCheck } from 'lucide-react';
+import { Button } from '@/Components/ui/button';
 import AyahMarker, { splitMarkerTokens } from './ayah-marker/AyahMarker';
 import { BASMALA_LIGATURE, ensureRtlBidi, type QuranPage } from '../_lib/quran';
 
@@ -11,6 +13,8 @@ interface Props {
   maxHeight?: number | null;
   /** "sura:aya" keys with a bookmark (subtle in-text marking). */
   savedKeys?: Set<string>;
+  onToggleBookmark?: () => void;
+  bookmarkBusy?: boolean;
 }
 
 /** Widths of the original inline marker tokens per digit-count, measured in
@@ -54,7 +58,7 @@ function useMarkerWidths(fontSize: number): {
  * inline ﴿﴾ tokens are swapped for quranpedia SVG rosettes sized to the
  * original advance so justification is preserved.
  */
-export default function MushafPage({ data, currentAyahKey, onSelectAyah, maxHeight, savedKeys }: Props) {
+export default function MushafPage({ data, currentAyahKey, onSelectAyah, maxHeight, savedKeys, onToggleBookmark, bookmarkBusy }: Props) {
   const pageRef = useRef<HTMLDivElement | null>(null);
   const [fitScale, setFitScale] = useState(1);
   const [pageHeight, setPageHeight] = useState<number | null>(null);
@@ -197,11 +201,32 @@ export default function MushafPage({ data, currentAyahKey, onSelectAyah, maxHeig
                               {seg.value}
                             </span>
                           ) : (
-                            <AyahMarker
-                              key={j}
-                              digits={seg.digits}
-                              width={markerW[seg.digits.length] ?? data.fontSize * 2.4}
-                            />
+                            <span key={j} className="relative inline-block leading-none">
+                              <AyahMarker
+                                digits={seg.digits}
+                                width={markerW[seg.digits.length] ?? data.fontSize * 2.4}
+                              />
+                              {active && onToggleBookmark && (
+                                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-[calc(100%+6px)] z-50">
+                                  <div className="relative">
+                                    <Button
+                                      variant="secondary"
+                                      size="icon"
+                                      className="h-10 w-10 rounded-full shadow-lg border border-border bg-card/95 backdrop-blur hover:bg-muted"
+                                      title={saved ? 'إزالة العلامة' : 'إضافة علامة'}
+                                      disabled={bookmarkBusy}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onToggleBookmark();
+                                      }}
+                                    >
+                                      {saved ? <BookmarkCheck className="h-5 w-5 text-primary" /> : <Bookmark className="h-5 w-5" />}
+                                    </Button>
+                                    <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 border-x-[6px] border-x-transparent border-t-[6px] border-t-card drop-shadow-sm" />
+                                  </div>
+                                </div>
+                              )}
+                            </span>
                           ),
                         )}
                       </span>

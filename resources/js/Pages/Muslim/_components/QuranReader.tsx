@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { AlertCircle, ArrowRight, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { AlertCircle, ArrowRight, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight, Loader2, Maximize, Minimize } from 'lucide-react';
 import axios from '@/Lib/axios';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
@@ -41,6 +41,7 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterId, setR
   // Desktop spread (RTL: right = page, left = page+1); mobile single page.
   const visiblePages = isDesktop ? [page, page + 1].filter((p) => p <= TOTAL_PAGES) : [page];
 
+  const [isFocused, setIsFocused] = useState(false);
   const [pages, setPages] = useState<QuranPage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -306,7 +307,12 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterId, setR
           <Button variant="outline" size="sm" onClick={() => go(page)}>إعادة المحاولة</Button>
         </div>
       ) : (
-        <div ref={viewportRef} className="min-h-0 flex-1 overflow-hidden">
+        <div ref={viewportRef} className="min-h-0 flex-1 overflow-hidden relative">
+          {isFocused && (
+            <Button variant="secondary" size="icon" className="absolute top-4 right-4 z-50 h-10 w-10 rounded-full shadow-lg opacity-50 hover:opacity-100 transition-opacity" title="إلغاء وضع التركيز" onClick={() => setIsFocused(false)}>
+              <Minimize className="h-5 w-5" />
+            </Button>
+          )}
           {isDesktop ? (
             <div className="flex flex-row items-start justify-center gap-8" dir="rtl">
               {pages.map((d) => (
@@ -317,6 +323,8 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterId, setR
                     onSelectAyah={requestPlay}
                     maxHeight={maxHeight}
                     savedKeys={savedKeys}
+                    onToggleBookmark={toggleBookmark}
+                    bookmarkBusy={bookmarkBusy}
                   />
                 </div>
               ))}
@@ -335,6 +343,8 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterId, setR
                   onSelectAyah={requestPlay}
                   maxHeight={maxHeight}
                   savedKeys={savedKeys}
+                  onToggleBookmark={toggleBookmark}
+                  bookmarkBusy={bookmarkBusy}
                 />
               </div>
             ))
@@ -343,7 +353,7 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterId, setR
       )}
 
       {/* Pager under the page(s), with the page numbers. */}
-      <div className="mt-3 flex shrink-0 items-center justify-between gap-2">
+      <div className={`mt-3 flex shrink-0 items-center justify-between gap-2 ${isFocused ? 'hidden' : ''}`}>
         <Button variant="outline" size="sm" onClick={() => go(page - step)} disabled={page <= 1}>
           <ChevronRight className="h-4 w-4" /> السابق
         </Button>
@@ -377,13 +387,13 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterId, setR
           التالي <ChevronLeft className="h-4 w-4" />
         </Button>
       </div>
-      {!isLoggedIn && (
+      {!isLoggedIn && !isFocused && (
         <p className="mt-3 shrink-0 text-center text-[11px] text-muted-foreground">
           <a href="/auth/google" className="font-semibold text-primary hover:underline">سجّل الدخول</a> لمزامنة علاماتك على حسابك (تُحفظ على هذا الجهاز حالياً).
         </p>
       )}
 
-      <div className="mt-3 shrink-0">
+      <div className={`mt-3 shrink-0 ${isFocused ? 'hidden' : ''}`}>
         <AudioPlayer
           ayat={ayat}
           reciterId={reciterId}

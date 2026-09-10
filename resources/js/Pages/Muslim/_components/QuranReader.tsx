@@ -55,6 +55,7 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterId, setR
   const [bookmarkBusy, setBookmarkBusy] = useState(false);
   const [currentAyahKey, setCurrentAyahKey] = useState<string | null>(null);
   const [playSignal, setPlaySignal] = useState(0);
+  const [autoPlayPending, setAutoPlayPending] = useState(false);
   const setView = useMuslimNav((s) => s.setView);
   const setBookmarksOpen = useMuslimNav((s) => s.setBookmarksOpen);
   const targetAyah = useMuslimNav((s) => s.targetAyah);
@@ -82,6 +83,11 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterId, setR
         setPages(list);
         const ayat = list.flatMap((d) => d.ayat);
         setCurrentAyahKey((k) => (ayat.some((x) => x.key === k) ? k : (ayat[0]?.key ?? null)));
+        
+        setAutoPlayPending((pending) => {
+          if (pending) setTimeout(() => setPlaySignal((s) => s + 1), 50);
+          return false;
+        });
       })
       .catch((e) => {
         if (e?.name !== 'AbortError') setError('تعذر تحميل الصفحة — تحقق من الاتصال ثم أعد المحاولة');
@@ -385,6 +391,12 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterId, setR
           currentKey={currentAyahKey}
           onSelectAyah={setCurrentAyahKey}
           playSignal={playSignal}
+          onEndOfList={() => {
+            if (page + step <= TOTAL_PAGES) {
+              go(page + step);
+              setAutoPlayPending(true);
+            }
+          }}
         />
       </div>
     </div>

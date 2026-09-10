@@ -12,6 +12,7 @@ interface Props {
   onSelectAyah: (key: string) => void;
   /** Incremented when the user taps an Ayah in the text: start playing it. */
   playSignal: number;
+  onEndOfList?: () => void;
 }
 
 // Slim bottom player: volume (right), centered transport + bookmark,
@@ -19,6 +20,7 @@ interface Props {
 // text is never hidden under it.
 export default function AudioPlayer({
   ayat, reciterId, setReciterId, currentKey, onSelectAyah, playSignal,
+  onEndOfList,
 }: Props) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -35,8 +37,8 @@ export default function AudioPlayer({
   const current: Ayah | undefined = ayat[idx];
 
   // Stable player core (refs avoid stale closures in listeners).
-  const live = useRef({ ayat, currentKey, reciter, onSelectAyah });
-  live.current = { ayat, currentKey, reciter, onSelectAyah };
+  const live = useRef({ ayat, currentKey, reciter, onSelectAyah, onEndOfList });
+  live.current = { ayat, currentKey, reciter, onSelectAyah, onEndOfList };
 
   const playAt = (i: number) => {
     const s = live.current;
@@ -60,6 +62,8 @@ export default function AudioPlayer({
         s.onSelectAyah(next.key);
         el.src = ayahAudioUrl(s.reciter, next.surah, next.ayah);
         el.play().catch(() => setPlaying(false));
+      } else if (s.onEndOfList) {
+        s.onEndOfList();
       } else {
         setPlaying(false);
       }

@@ -5,6 +5,10 @@ import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import AudioPlayer from './AudioPlayer';
 import MushafPage from './MushafPage';
+import { Popover, PopoverContent, PopoverTrigger } from '@/Components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/Components/ui/command';
+import { ChevronDown, Check } from 'lucide-react';
+
 import { guestBookmarkKeys, toggleGuestBookmark } from '../_lib/guestBookmarks';
 import { syncMuslimUrl, useMuslimNav } from '../_lib/nav';
 import {
@@ -222,6 +226,7 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterId, setR
 
   // Jump box accepts a Page ("100") or a verse ("2:255", "2 255", "البقرة 255").
   const [jumpHint, setJumpHint] = useState<string | null>(null);
+  const [surahSelectOpen, setSurahSelectOpen] = useState(false);
 
   const resolveJump = async (raw: string): Promise<{ page: number; ayahKey: string | null } | null> => {
     const input = raw.trim();
@@ -270,19 +275,42 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterId, setR
       {!isFocused && (
         <div className="mb-2 flex shrink-0 items-baseline justify-between gap-3 px-1">
           <div className="flex min-w-0 items-center gap-1">
-            <select 
-              value={currentAyah ? currentAyah.surah : 1}
-              onChange={(e) => {
-                const surah = Number(e.target.value);
-                void resolveJump(`${surah}:1`).then(res => res && go(res.page));
-              }}
-              className="truncate text-sm font-bold text-primary bg-transparent outline-none cursor-pointer appearance-none px-1 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800"
-            >
-              {SURA_NAMES_AR.map((name, i) => {
-                if (i === 0) return null;
-                return <option key={i} value={i}>{name}</option>;
-              })}
-            </select>
+            <Popover open={surahSelectOpen} onOpenChange={setSurahSelectOpen}>
+              <PopoverTrigger asChild>
+                <button 
+                  className="flex items-center gap-1 truncate text-sm font-bold text-primary bg-transparent outline-none cursor-pointer appearance-none px-1.5 py-0.5 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                >
+                  <span className="truncate">{currentAyah ? SURA_NAMES_AR[currentAyah.surah] : surahs}</span>
+                  <ChevronDown className="h-3.5 w-3.5 opacity-50 shrink-0" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[180px] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="ابحث عن سورة..." />
+                  <CommandList>
+                    <CommandEmpty>لا يوجد تطابق.</CommandEmpty>
+                    <CommandGroup>
+                      {SURA_NAMES_AR.map((name, i) => {
+                        if (i === 0) return null;
+                        return (
+                          <CommandItem
+                            key={i}
+                            value={name}
+                            onSelect={() => {
+                              setSurahSelectOpen(false);
+                              void resolveJump(`${i}:1`).then(res => res && go(res.page));
+                            }}
+                          >
+                            <Check className={`mr-2 h-4 w-4 ${currentAyah?.surah === i ? 'opacity-100' : 'opacity-0'}`} />
+                            {name}
+                          </CommandItem>
+                        );
+                      })}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             {juzs && <span className="text-xs text-muted-foreground">الجزء {juzs}</span>}

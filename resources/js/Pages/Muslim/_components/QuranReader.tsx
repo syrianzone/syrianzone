@@ -348,13 +348,14 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterId, setR
           {isDesktop ? (
             <div className="flex flex-row items-start justify-center gap-8" dir="rtl">
               {pages.map((d) => (
-                <div key={d.page} className="min-w-0">
+                <div key={d.page} className="min-w-0 flex-1 flex justify-center">
                   <MushafPage
                     data={d}
                     currentAyahKey={currentAyahKey}
                     onSelectAyah={requestPlay}
                     maxHeight={maxHeight}
                     savedKeys={savedKeys}
+                    forceFit={isFocused}
                     onToggleBookmark={toggleBookmark}
                     bookmarkBusy={bookmarkBusy}
                   />
@@ -368,13 +369,14 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterId, setR
             </div>
           ) : (
             pages.slice(0, 1).map((d) => (
-              <div key={d.page} className="flex h-full items-center justify-center">
+              <div key={d.page} className="flex h-full items-center justify-center min-w-0 flex-1">
                 <MushafPage
                   data={d}
                   currentAyahKey={currentAyahKey}
                   onSelectAyah={requestPlay}
                   maxHeight={maxHeight}
                   savedKeys={savedKeys}
+                    forceFit={isFocused}
                   onToggleBookmark={toggleBookmark}
                   bookmarkBusy={bookmarkBusy}
                 />

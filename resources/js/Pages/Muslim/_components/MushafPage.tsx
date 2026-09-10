@@ -15,6 +15,8 @@ interface Props {
   savedKeys?: Set<string>;
   onToggleBookmark?: () => void;
   bookmarkBusy?: boolean;
+  /** Force the page to scale UP if the screen is larger than the natural size. */
+  forceFit?: boolean;
 }
 
 /** Widths of the original inline marker tokens per digit-count, measured in
@@ -58,7 +60,7 @@ function useMarkerWidths(fontSize: number): {
  * inline ﴿﴾ tokens are swapped for quranpedia SVG rosettes sized to the
  * original advance so justification is preserved.
  */
-export default function MushafPage({ data, currentAyahKey, onSelectAyah, maxHeight, savedKeys, onToggleBookmark, bookmarkBusy }: Props) {
+export default function MushafPage({ data, currentAyahKey, onSelectAyah, maxHeight, savedKeys, onToggleBookmark, bookmarkBusy, forceFit }: Props) {
   const pageRef = useRef<HTMLDivElement | null>(null);
   const [fitScale, setFitScale] = useState(1);
   const [pageHeight, setPageHeight] = useState<number | null>(null);
@@ -103,9 +105,15 @@ export default function MushafPage({ data, currentAyahKey, onSelectAyah, maxHeig
       if (cancelled || !root) return;
       const parent = root.parentElement;
       const availW = parent ? parent.clientWidth : frameWidth;
-      const wFit = availW < frameWidth ? availW / frameWidth : 1;
+      let wFit = availW < frameWidth ? availW / frameWidth : 1;
       const naturalH = root.offsetHeight;
-      const hFit = maxHeight && naturalH > 0 && maxHeight < naturalH ? maxHeight / naturalH : 1;
+      let hFit = maxHeight && naturalH > 0 && maxHeight < naturalH ? maxHeight / naturalH : 1;
+      
+      if (forceFit) {
+        wFit = availW / frameWidth;
+        hFit = (maxHeight && naturalH > 0) ? maxHeight / naturalH : wFit;
+      }
+      
       setFitScale(Math.min(wFit, hFit));
       setPageHeight(naturalH);
     };
@@ -129,7 +137,7 @@ export default function MushafPage({ data, currentAyahKey, onSelectAyah, maxHeig
 
   return (
     <div
-      style={fitScale < 1 && pageHeight ? { height: pageHeight * fitScale } : undefined}
+      style={fitScale !== 1 && pageHeight ? { height: pageHeight * fitScale } : undefined}
       className="mx-auto w-fit max-w-full"
     >
       <div
@@ -140,7 +148,7 @@ export default function MushafPage({ data, currentAyahKey, onSelectAyah, maxHeig
           {
             width: frameWidth,
             maxWidth: '100%',
-            transform: fitScale < 1 ? `scale(${fitScale})` : undefined,
+            transform: fitScale !== 1 ? `scale(${fitScale})` : undefined,
             transformOrigin: 'top center',
             '--quran-font-size': `${data.fontSize}px`,
             '--target-line-width': `${data.lineWidth}px`,

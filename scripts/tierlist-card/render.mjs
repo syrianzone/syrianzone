@@ -107,7 +107,8 @@ function caption(top, bottom) {
     ...top.map((row, index) => captionLine(row, index, withTitle, withHandle)),
     '',
     `الأقل تقييماً ${label}`,
-    ...bottom.map((row, index) => captionLine(row, index, withTitle, withHandle)),
+    // Names only for the bottom three: tagging someone on a bad ranking is not our style.
+    ...bottom.map((row, index) => captionLine(row, index, withTitle, false)),
   ].join('\n')
 
   // The posts go out unattended, so the caption must fit a standard account.

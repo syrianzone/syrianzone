@@ -47,6 +47,7 @@ class HandleInertiaRequests extends Middleware
                     'role' => $request->user()->role,
                     'avatar_url' => $request->user()->avatar_url,
                     'permissions' => $request->user()->permissions ?? [],
+                    'permission_scopes' => $request->user()->permission_scopes ?? [],
                     'settings' => $request->user()->settings ?? null,
                 ] : null,
             ],

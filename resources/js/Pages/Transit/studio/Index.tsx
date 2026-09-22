@@ -218,7 +218,7 @@ function TransitStudioPageContent() {
     reset, loadDraft
   } = useStudioStore()
   const { theme } = useTransitTheme()
-  const { user } = useAuth()
+  const { user, can, allowedTransitCities } = useAuth()
 
   const [mapReady,           setMapReady]           = useState(false)
   const [drawMode,           setDrawMode]           = useState<DrawMode>('idle')
@@ -234,6 +234,15 @@ function TransitStudioPageContent() {
   const { data: refData } = useMapData(cityId || undefined)
   const activeCities = cities.filter(c => c.status === 'active')
   const currentCity = cities.find(c => c.id === cityId) || activeCities[0]
+
+  // ─── Governorate scope for transit staff ────────────────────────────────────
+  const allowedCities = allowedTransitCities()
+  const isScopedStaff = allowedCities !== null && [
+    'transit.review_drafts', 'transit.approve', 'transit.reject',
+    'transit.edit_routes', 'transit.delete_routes',
+  ].some(c => can(c))
+  const cityInScope = (id?: string | null) => !isScopedStaff || (!!id && allowedCities!.includes(id))
+  const studioCities = isScopedStaff ? activeCities.filter(c => allowedCities!.includes(c.id)) : activeCities
 
   // ─── Shadcn Sonner Toast Notification Handler ───────────────────────────────
   const addToast = useCallback((msg: string, type: 'success' | 'destructive' | 'info' | 'warning' = 'info') => {
@@ -413,6 +422,10 @@ function TransitStudioPageContent() {
       })
       .then(result => {
         if (result) {
+          if (!cityInScope(result.draft?.city_id)) {
+            addToast('هذا المسار يقع خارج نطاق المحافظات المسموح لك', 'destructive')
+            return
+          }
           loadDraft(result.draft)
           addToast(result.isRoute ? 'تم تحميل الخط المنشور للتعديل' : 'تم تحميل المسار للتعديل', 'success')
         }
@@ -438,12 +451,16 @@ function TransitStudioPageContent() {
     }
   }, [setCity])
 
-  // Set default city if empty
+  // Set default city if empty (scoped staff are confined to their governorates)
   useEffect(() => {
-    if (!cityId && activeCities.length > 0) {
-      handleCitySelect(activeCities[0].id)
+    if (isScopedStaff && cityId && !cityInScope(cityId)) {
+      if (studioCities.length > 0) handleCitySelect(studioCities[0].id)
+      return
     }
-  }, [cityId, activeCities, handleCitySelect])
+    if (!cityId && studioCities.length > 0) {
+      handleCitySelect(studioCities[0].id)
+    }
+  }, [cityId, studioCities, handleCitySelect, isScopedStaff]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Zoom to fit route when editing
   useEffect(() => {
@@ -1045,13 +1062,19 @@ function TransitStudioPageContent() {
                 <SelectValue placeholder="اختر المدينة..." />
               </SelectTrigger>
               <SelectContent>
-                {activeCities.map((c) => (
+                {studioCities.map((c) => (
                   <SelectItem key={c.id} value={c.id} className="text-xs">
                     {c.nameAr} ({c.routeCount} مسار)
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+
+            {isScopedStaff && (
+              <p className="text-[10px] text-amber-700 dark:text-amber-300 leading-tight">
+                نطاقك محدد بالمحافظات: {allowedCities!.map(id => cities.find(c => c.id === id)?.nameAr ?? id).join('، ')}
+              </p>
+            )}
 
             <p className="text-[10px] text-muted-foreground leading-tight">
               يتم ضبط نطاق الخريطة والتقريب تلقائياً على حدود مدينة {currentCity?.nameAr}.

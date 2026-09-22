@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ChecksTransitScope;
 use App\Models\Route;
 use App\Models\RouteDraft;
 use App\Models\TransitRouteLog;
@@ -13,6 +14,8 @@ use Illuminate\Support\Str;
 
 class TransitImportController extends Controller
 {
+    use ChecksTransitScope;
+
     /**
      * Preview a Google My Maps share (or uploaded KML/KMZ/GeoJSON) without
      * writing anything. Returns 1..N route candidates for the admin to
@@ -58,14 +61,35 @@ class TransitImportController extends Controller
         }
 
         $override = $validated['city_id'] ?? null;
+
+        if ($override !== null) {
+            $this->ensureTransitCityAccess($request, $override, ['transit.review_drafts']);
+        }
+
         foreach ($candidates as &$c) {
             $c['suggested_city_id'] = $override ?? $this->suggestCityForBounds($c['bounds']);
         }
         unset($c);
 
+        // Scoped staff only see candidates that land in their governorates;
+        // candidates without a suggestion stay visible so they can be
+        // reviewed manually within scope.
+        $allowed = $this->allowedTransitCities($request);
+        $scopeFiltered = 0;
+        if ($allowed !== null) {
+            $before = count($candidates);
+            $candidates = array_values(array_filter(
+                $candidates,
+                fn ($c) => $c['suggested_city_id'] === null
+                    || in_array($c['suggested_city_id'], $allowed, true)
+            ));
+            $scopeFiltered = $before - count($candidates);
+        }
+
         return response()->json([
             'mid' => $mid ?? null,
             'routes' => $candidates,
+            'scope_filtered' => $scopeFiltered,
         ]);
     }
 
@@ -91,6 +115,11 @@ class TransitImportController extends Controller
             'geojson.features.*.geometry.coordinates' => 'required|array|min:1',
             'mode' => 'nullable|string|in:draft,direct',
             'source_mid' => 'nullable|string|max:128',
+        ]);
+
+        $this->ensureTransitCityAccess($request, $validated['city_id'], [
+            'transit.review_drafts',
+            'transit.edit_routes',
         ]);
 
         $geojson = $request->input('geojson');

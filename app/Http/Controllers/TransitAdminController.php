@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ChecksTransitScope;
 use App\Models\RouteDraft;
 use App\Models\Route;
+use App\Models\TransitRouteLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -11,11 +13,16 @@ use Illuminate\Support\Str;
 
 class TransitAdminController extends Controller
 {
-    public function index()
+    use ChecksTransitScope;
+
+    public function index(Request $request)
     {
+        $allowed = $this->allowedTransitCities($request);
+
         // Bounded: the drafts table grows without limit, so a bare ->get() would
         // eventually take down the admin panel load.
         $drafts = RouteDraft::with(['user:id,name', 'city:id,name_ar,name_en', 'linkedRoute:id,name_ar,name_en'])
+            ->when($allowed !== null, fn ($q) => $q->whereIn('city_id', $allowed))
             ->orderBy('created_at', 'desc')->limit(500)->get();
         return response()->json($drafts);
     }
@@ -27,6 +34,13 @@ class TransitAdminController extends Controller
         ]);
 
         $draft = RouteDraft::with('linkedRoute')->findOrFail($id);
+
+        $this->ensureTransitCityAccess($request, $draft->city_id, ['transit.approve']);
+
+        if ($draft->route_id) {
+            $linkedCityId = Route::whereKey($draft->route_id)->value('city_id');
+            $this->ensureTransitCityAccess($request, $linkedCityId, ['transit.approve']);
+        }
 
         if ($draft->status !== 'pending') {
             return response()->json(['message' => 'Draft is already ' . $draft->status], 400);
@@ -211,6 +225,13 @@ class TransitAdminController extends Controller
 
         $draft = RouteDraft::findOrFail($id);
 
+        $this->ensureTransitCityAccess($request, $draft->city_id, ['transit.reject']);
+
+        if ($draft->route_id) {
+            $linkedCityId = Route::whereKey($draft->route_id)->value('city_id');
+            $this->ensureTransitCityAccess($request, $linkedCityId, ['transit.reject']);
+        }
+
         if ($draft->status !== 'pending') {
             return response()->json(['message' => 'Draft is already ' . $draft->status], 400);
         }
@@ -239,17 +260,27 @@ class TransitAdminController extends Controller
         return response()->json(['message' => 'Draft rejected']);
     }
 
-    public function getPublishedRoutes()
+    public function getPublishedRoutes(Request $request)
     {
+        $allowed = $this->allowedTransitCities($request);
+
         $routes = Route::with(['city:id,name_ar,name_en'])
             ->withCount('stops')
+            ->when($allowed !== null, fn ($q) => $q->whereIn('city_id', $allowed))
             ->get();
         return response()->json($routes);
     }
 
-    public function getLogs()
+    public function getLogs(Request $request)
     {
-        $logs = \App\Models\TransitRouteLog::with(['user:id,name'])->orderBy('created_at', 'desc')->limit(200)->get();
+        $allowed = $this->allowedTransitCities($request);
+
+        $logs = TransitRouteLog::with(['user:id,name'])
+            ->when($allowed !== null, fn ($q) => $q->whereHas(
+                'route',
+                fn ($r) => $r->whereIn('city_id', $allowed)
+            ))
+            ->orderBy('created_at', 'desc')->limit(200)->get();
         return response()->json($logs);
     }
 
@@ -260,6 +291,9 @@ class TransitAdminController extends Controller
         ]);
 
         $route = Route::findOrFail($id);
+
+        $this->ensureTransitCityAccess($request, $route->city_id, ['transit.edit_routes']);
+
         $oldStatus = $route->status;
 
         if ($oldStatus === $validated['status']) {
@@ -311,6 +345,8 @@ class TransitAdminController extends Controller
         $route = Route::findOrFail($id);
         $oldCityId = $route->city_id;
         $targetCityId = $validated['city_id'];
+
+        $this->ensureTransitCitiesAccess($request, [$oldCityId, $targetCityId], ['transit.edit_routes']);
 
         if ($oldCityId === $targetCityId) {
             return response()->json(['message' => 'Route is already in this city'], 400);
@@ -390,6 +426,8 @@ class TransitAdminController extends Controller
 
         $routeA = Route::findOrFail($validated['route_a_id']);
         $routeB = Route::findOrFail($validated['route_b_id']);
+
+        $this->ensureTransitCitiesAccess($request, [$routeA->city_id, $routeB->city_id], ['transit.edit_routes']);
 
         if ($routeA->city_id !== $routeB->city_id) {
             return response()->json(['message' => 'Routes must belong to the same city'], 400);
@@ -512,6 +550,8 @@ class TransitAdminController extends Controller
         $route = Route::findOrFail($validated['route_id']);
         $cityId = $route->city_id;
         $cityName = DB::table('cities')->where('id', $cityId)->value('name_en') ?? 'transit';
+
+        $this->ensureTransitCityAccess($request, $cityId, ['transit.edit_routes']);
 
         DB::beginTransaction();
         try {
@@ -641,9 +681,12 @@ class TransitAdminController extends Controller
         }
     }
 
-    public function getRouteStops($id)
+    public function getRouteStops(Request $request, $id)
     {
         $route = Route::findOrFail($id);
+
+        $this->ensureTransitCityAccess($request, $route->city_id, ['transit.review_drafts']);
+
         $stops = $route->stops()->orderBy('pivot_order')->get();
         $formatted = $stops->map(function ($s) {
             $geomJson = DB::table('stops')->selectRaw('ST_AsGeoJSON(geometry) as geojson')->where('id', $s->id)->value('geojson');
@@ -657,9 +700,12 @@ class TransitAdminController extends Controller
         return response()->json($formatted);
     }
 
-    public function getRouteGeoJson($id)
+    public function getRouteGeoJson(Request $request, $id)
     {
         $route = Route::findOrFail($id);
+
+        $this->ensureTransitCityAccess($request, $route->city_id, ['transit.review_drafts']);
+
         $geomJson = DB::table('route_geometries')->selectRaw('ST_AsGeoJSON(geometry) as geojson')->where('route_id', $route->id)->value('geojson');
 
         $features = [];
@@ -704,6 +750,8 @@ class TransitAdminController extends Controller
     {
         $route = Route::findOrFail($id);
 
+        $this->ensureTransitCityAccess($request, $route->city_id, ['transit.edit_routes']);
+
         $validated = $request->validate([
             'name_ar' => 'sometimes|string|max:255',
             'name_en' => 'nullable|string|max:255',
@@ -746,6 +794,53 @@ class TransitAdminController extends Controller
         $this->clearCityMapCache($route->city_id);
 
         return response()->json(['message' => 'Route updated', 'route' => $route->fresh()]);
+    }
+
+    /**
+     * Delete a route and its geometry/pivot rows, dropping stops that no
+     * longer belong to any route. Governorate-scoped via transit.delete_routes.
+     */
+    public function destroy(Request $request, $id)
+    {
+        $route = Route::findOrFail($id);
+
+        $this->ensureTransitCityAccess($request, $route->city_id, ['transit.delete_routes']);
+
+        $cityId = $route->city_id;
+        $nameAr = $route->name_ar;
+        $stopIds = DB::table('route_stop')->where('route_id', $route->id)->pluck('stop_id')->all();
+
+        DB::beginTransaction();
+        try {
+            DB::table('route_stop')->where('route_id', $route->id)->delete();
+            DB::table('route_geometries')->where('route_id', $route->id)->delete();
+            $route->delete();
+
+            // Delete stops that are not referenced by any route anymore.
+            if (! empty($stopIds)) {
+                $stillUsed = DB::table('route_stop')->whereIn('stop_id', $stopIds)->pluck('stop_id')->all();
+                $orphans = array_diff($stopIds, $stillUsed);
+                if (! empty($orphans)) {
+                    DB::table('stops')->whereIn('id', $orphans)->delete();
+                }
+            }
+
+            TransitRouteLog::create([
+                'route_id' => $id,
+                'action' => 'deleted',
+                'description' => "حذف الخط '{$nameAr}'",
+                'user_id' => auth()->id(),
+            ]);
+
+            DB::commit();
+
+            $this->clearCityMapCache($cityId);
+
+            return response()->json(['message' => 'Route deleted']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Failed to delete route', 'error' => $e->getMessage()], 500);
+        }
     }
 
     private function clearCityMapCache($cityId)

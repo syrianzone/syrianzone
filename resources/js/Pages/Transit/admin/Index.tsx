@@ -33,9 +33,10 @@ import {
 import {
   ArrowRight, MapPin, CheckCircle2, XCircle, Eye, EyeOff,
   GitMerge, GitBranch, MoveRight, LogOut, Map, Loader2,
-  Route, Users, History, Pencil, Upload
+  Route, Users, History, Pencil, Upload, Trash2
 } from 'lucide-react'
 import ImportTab from './ImportTab'
+import { useAuth } from '@/Contexts/AuthContext'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type DraftStatus = 'pending' | 'approved' | 'rejected'
@@ -146,6 +147,17 @@ function TransitAdminPageContent() {
   const [logs, setLogs] = useState<ActivityLog[]>([])
   const [loadingLogs, setLoadingLogs] = useState(false)
   const [cities, setCities] = useState<any[]>([])
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+
+  // ─── Capabilities + governorate scope ─────────────────────────────────────
+  const { user, can, canInCity, allowedTransitCities } = useAuth()
+  const allowedCities = allowedTransitCities()
+  const scopeRestricted = allowedCities !== null
+  const visibleCities = scopeRestricted ? cities.filter(c => allowedCities!.includes(c.id)) : cities
+  const cityLabel = (id?: string | null) => cities.find(c => c.id === id)?.nameAr ?? id ?? ''
+  const cityInScope = (cityId?: string | null) => allowedCities === null || (!!cityId && allowedCities.includes(cityId))
+  const isAdminRole = user?.role === 'admin' || user?.role === 'superadmin' || user?.role === 'transit_admin'
+  const canStudioEdit = (cityId?: string | null) => cityInScope(cityId) && (isAdminRole || canInCity('transit.edit_routes', cityId))
 
   const [isCombineModalOpen, setIsCombineModalOpen] = useState(false)
   const [combineCityId, setCombineCityId] = useState('')
@@ -350,7 +362,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
     try {
       const res = await fetch(`/api/v1/admin/route-drafts/${id}/approve`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
         credentials: 'include',
         body: JSON.stringify({ color_index: selectedColor }),
       })
@@ -371,7 +383,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
     try {
       const res = await fetch(`/api/v1/admin/route-drafts/${selectedDraft.id}/reject`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
         credentials: 'include',
         body: JSON.stringify({ reason: rejectReason.trim() || null }),
       })
@@ -422,7 +434,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
     try {
       const res = await fetch(`/api/v1/admin/routes/${routeId}/status`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
         credentials: 'include',
         body: JSON.stringify({ status: newStatus }),
       })
@@ -437,7 +449,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
     try {
       const res = await fetch(`/api/v1/admin/routes/${selectedRoute.id}/move`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
         credentials: 'include',
         body: JSON.stringify({ city_id: targetCityId }),
       })
@@ -451,7 +463,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
     try {
       const res = await fetch('/api/v1/admin/routes/combine', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
         credentials: 'include',
         body: JSON.stringify({ route_a_id: combineRouteAId, route_b_id: combineRouteBId, name_ar: combineNameAr.trim(), name_en: combineNameEn.trim() || null, price: combinePrice ? parseInt(combinePrice) : null }),
       })
@@ -466,7 +478,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
     try {
       const res = await fetch('/api/v1/admin/routes/split', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
         credentials: 'include',
         body: JSON.stringify({ route_id: selectedRoute.id, split_stop_id: splitAtStopId, name_a_ar: splitNameAAr.trim(), name_a_en: splitNameAEn.trim() || null, name_b_ar: splitNameBAr.trim(), name_b_en: splitNameBEn.trim() || null }),
       })
@@ -482,7 +494,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
     try {
       const res = await fetch(`/api/v1/admin/routes/${selectedRoute.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
         credentials: 'include',
         body: JSON.stringify({
           name_ar: editRouteNameAr.trim() || undefined,
@@ -535,7 +547,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
     try {
       const res = await fetch(`/api/v1/admin/routes/${selectedRoute.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
         credentials: 'include',
         body: JSON.stringify({ color_index: newColorIndex }),
       })
@@ -583,13 +595,41 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
     }
   }, [selectedRoute, fetchRoutes, showToast, queryClient, refetchRefData])
 
+  const handleDeleteRoute = useCallback(async () => {
+    if (!selectedRoute) return
+    setActionLoading(true)
+    try {
+      const res = await fetch(`/api/v1/admin/routes/${selectedRoute.id}`, {
+        method: 'DELETE',
+        headers: { 'Accept': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
+        credentials: 'include',
+      })
+      if (res.ok) {
+        showToast('تم حذف الخط')
+        setDeleteConfirmOpen(false)
+        setSelectedRoute(null)
+        setSelectedRouteGeoJson(null)
+        fetchRoutes()
+        queryClient.invalidateQueries({ queryKey: ['mapData'] })
+        queryClient.invalidateQueries({ queryKey: ['routes'] })
+      } else {
+        const e = await res.json().catch(() => ({}))
+        showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false)
+      }
+    } catch {
+      showToast('تعذّر الاتصال بالخادم', false)
+    } finally {
+      setActionLoading(false)
+    }
+  }, [selectedRoute, fetchRoutes, showToast, queryClient])
+
   // ─── Derived ──────────────────────────────────────────────────────────────
   const stats = {
     pending: drafts.filter((d: Draft) => d.status === 'pending').length,
     approved: drafts.filter((d: Draft) => d.status === 'approved').length,
     rejected: drafts.filter((d: Draft) => d.status === 'rejected').length,
   }
-  const uniqueCities = [...new Set(drafts.map((d: Draft) => d.city_id))]
+  const uniqueCities: string[] = [...new Set<string>(drafts.map((d: Draft) => d.city_id as string))]
   const filteredDrafts = drafts
     .filter((d: Draft) => statusFilter === 'all' || d.status === statusFilter)
     .filter((d: Draft) => cityFilter === 'all' || d.city_id === cityFilter)
@@ -602,6 +642,9 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
       if (!q) return true
       return r.name_ar.toLowerCase().includes(q) || (r.name_en?.toLowerCase() || '').includes(q)
     })
+
+  const canEditSelectedRoute = selectedRoute ? canInCity('transit.edit_routes', selectedRoute.city_id) : false
+  const canDeleteSelectedRoute = selectedRoute ? canInCity('transit.delete_routes', selectedRoute.city_id) : false
 
   return (
     <>
@@ -617,6 +660,12 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
             <LogOut className="h-4 w-4" />
           </Button>
         </header>
+
+        {scopeRestricted && (
+          <div className="mx-4 mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-700 dark:text-amber-300">
+            نطاقك محدد بالمحافظات: {allowedCities.map(cityLabel).join('، ')}
+          </div>
+        )}
 
           <Tabs value={adminTab} onValueChange={(v) => {
           setAdminTab(v)
@@ -663,7 +712,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
                   <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="جميع المدن" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">جميع المدن</SelectItem>
-                    {uniqueCities.map(id => <SelectItem key={id} value={id}>{id}</SelectItem>)}
+                    {uniqueCities.map(id => <SelectItem key={id} value={id}>{cityLabel(id)}</SelectItem>)}
                   </SelectContent>
                 </Select>
               )}
@@ -696,14 +745,16 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
                         <Badge variant={draft.status === 'pending' ? 'secondary' : draft.status === 'approved' ? 'default' : 'destructive'} className="text-[10px]">
                           {STATUS_LABELS[draft.status]}
                         </Badge>
-                        <button
-                          type="button"
-                          className="p-1 rounded-md hover:bg-muted transition-colors"
-                          title="تعديل في الاستوديو"
-                          onClick={(e) => { e.stopPropagation(); router.get(`/transit/studio?edit=${draft.id}`) }}
-                        >
-                          <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
-                        </button>
+                        {canStudioEdit(draft.city_id) && (
+                          <button
+                            type="button"
+                            className="p-1 rounded-md hover:bg-muted transition-colors"
+                            title="تعديل في الاستوديو"
+                            onClick={(e) => { e.stopPropagation(); router.get(`/transit/studio?edit=${draft.id}`) }}
+                          >
+                            <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                          </button>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-muted-foreground flex-wrap">
@@ -727,11 +778,13 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
           {/* ── ROUTES TAB ─────────────────────────────────────────────── */}
           <TabsContent value="routes" className="flex-1 flex flex-col overflow-hidden mt-0">
             {/* Quick Actions */}
-            <div className="px-4 pt-3">
-              <Button variant="default" size="sm" className="w-full text-xs gap-1.5" onClick={() => { setCombineCityId(''); setCombineRouteAId(''); setCombineRouteBId(''); setCombineNameAr(''); setCombineNameEn(''); setCombinePrice(''); setIsCombineModalOpen(true) }}>
-                <GitMerge className="h-3.5 w-3.5" /> دمج خطين
-              </Button>
-            </div>
+            {can('transit.edit_routes') && (
+              <div className="px-4 pt-3">
+                <Button variant="default" size="sm" className="w-full text-xs gap-1.5" onClick={() => { setCombineCityId(''); setCombineRouteAId(''); setCombineRouteBId(''); setCombineNameAr(''); setCombineNameEn(''); setCombinePrice(''); setIsCombineModalOpen(true) }}>
+                  <GitMerge className="h-3.5 w-3.5" /> دمج خطين
+                </Button>
+              </div>
+            )}
 
             {/* Filters */}
             <div className="px-4 pt-3 space-y-2">
@@ -747,7 +800,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
                 <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="جميع المدن" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">جميع المدن</SelectItem>
-                  {cities.map(c => <SelectItem key={c.id} value={c.id}>{c.nameAr}</SelectItem>)}
+                  {visibleCities.map(c => <SelectItem key={c.id} value={c.id}>{c.nameAr}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -789,7 +842,9 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
           {/* ── IMPORT TAB (Google My Maps) ────────────────────────────── */}
           <TabsContent value="import" className="flex-1 flex flex-col overflow-hidden mt-0 pt-3">
             <ImportTab
-              cities={cities}
+              cities={visibleCities}
+              canReview={can('transit.review_drafts')}
+              canEdit={can('transit.edit_routes')}
               showToast={showToast}
               onPreview={(geojson, colorIdx, city) => {
                 setImportPreviewGeoJson(geojson)
@@ -866,40 +921,52 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
 
               {selectedDraft.status === 'pending' && (
                 <div className="space-y-2 pt-1 border-t border-border/50">
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-semibold text-muted-foreground block">اختيار لون الخط على الخريطة:</label>
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      {ROUTE_PALETTE.map((colorHex, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => setApproveColorIndex(idx)}
-                          className={`w-6 h-6 rounded-full border-2 transition-all ${approveColorIndex === idx ? 'scale-110 border-foreground shadow-md ring-2 ring-primary/40' : 'border-transparent opacity-75 hover:opacity-100'}`}
-                          style={{ backgroundColor: colorHex }}
-                          title={`لون ${idx + 1}`}
-                        />
-                      ))}
+                  {canInCity('transit.approve', selectedDraft.city_id) && (
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-semibold text-muted-foreground block">اختيار لون الخط على الخريطة:</label>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {ROUTE_PALETTE.map((colorHex, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => setApproveColorIndex(idx)}
+                            className={`w-6 h-6 rounded-full border-2 transition-all ${approveColorIndex === idx ? 'scale-110 border-foreground shadow-md ring-2 ring-primary/40' : 'border-transparent opacity-75 hover:opacity-100'}`}
+                            style={{ backgroundColor: colorHex }}
+                            title={`لون ${idx + 1}`}
+                          />
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex gap-2 pt-1">
-                    <Button className="flex-1" size="sm" disabled={actionLoading} onClick={() => handleApprove(selectedDraft.id, approveColorIndex)}>
-                      {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                      {selectedDraft.route_id ? 'تطبيق التعديلات' : 'موافقة ونشر'}
-                    </Button>
-                    <Button variant="destructive" size="sm" className="flex-1" disabled={actionLoading} onClick={() => { setRejectReason(''); setRejectOpen(true) }}>
-                      <XCircle className="h-4 w-4" /> رفض
-                    </Button>
-                  </div>
+                  )}
+                  {(canInCity('transit.approve', selectedDraft.city_id) || canInCity('transit.reject', selectedDraft.city_id)) ? (
+                    <div className="flex gap-2 pt-1">
+                      {canInCity('transit.approve', selectedDraft.city_id) && (
+                        <Button className="flex-1" size="sm" disabled={actionLoading} onClick={() => handleApprove(selectedDraft.id, approveColorIndex)}>
+                          {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                          {selectedDraft.route_id ? 'تطبيق التعديلات' : 'موافقة ونشر'}
+                        </Button>
+                      )}
+                      {canInCity('transit.reject', selectedDraft.city_id) && (
+                        <Button variant="destructive" size="sm" className="flex-1" disabled={actionLoading} onClick={() => { setRejectReason(''); setRejectOpen(true) }}>
+                          <XCircle className="h-4 w-4" /> رفض
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground text-center py-2">لا تملك صلاحية مراجعة مسودات هذه المحافظة.</p>
+                  )}
                 </div>
               )}
 
               {selectedDraft.status !== 'pending' && (
                 <>
-                  <div className="flex gap-2 pt-1">
-                    <Button variant="outline" size="sm" className="flex-1" onClick={() => router.get(`/transit/studio?edit=${selectedDraft.id}`)}>
-                      <Pencil className="h-3.5 w-3.5" /> تعديل في الاستوديو
-                    </Button>
-                  </div>
+                  {canStudioEdit(selectedDraft.city_id) && (
+                    <div className="flex gap-2 pt-1">
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => router.get(`/transit/studio?edit=${selectedDraft.id}`)}>
+                        <Pencil className="h-3.5 w-3.5" /> تعديل في الاستوديو
+                      </Button>
+                    </div>
+                  )}
                   <div className={`text-center py-2 rounded-lg text-xs font-semibold ${selectedDraft.status === 'approved' ? 'bg-green-500/10 text-green-600 dark:text-green-400' : 'bg-red-500/10 text-red-600 dark:text-red-400'}`}>
                     {selectedDraft.status === 'approved' ? '✓ تم نشر هذا المسار' : '✕ تم رفض هذا المسار'}
                   </div>
@@ -933,64 +1000,79 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
               </div>
               <p className="text-[10px] text-muted-foreground text-center">الخط اللامع = المسار المحدد. الخطوط الباهتة = باقي خطوط المدينة.</p>
 
-              <div className="space-y-1 pt-1 border-t border-border/50">
-                <label className="text-[11px] font-semibold text-muted-foreground block">تغيير لون المسار سريعاً:</label>
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  {ROUTE_PALETTE.map((colorHex, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      disabled={actionLoading}
-                      onClick={() => handleQuickUpdateColor(idx)}
-                      className={`w-6 h-6 rounded-full border-2 transition-all ${selectedRoute.color_index === idx ? 'scale-110 border-foreground shadow-md ring-2 ring-primary/40' : 'border-transparent opacity-75 hover:opacity-100'}`}
-                      style={{ backgroundColor: colorHex }}
-                      title={`تغيير للون ${idx + 1}`}
-                    />
-                  ))}
+              {canEditSelectedRoute && (
+                <div className="space-y-1 pt-1 border-t border-border/50">
+                  <label className="text-[11px] font-semibold text-muted-foreground block">تغيير لون المسار سريعاً:</label>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {ROUTE_PALETTE.map((colorHex, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        disabled={actionLoading}
+                        onClick={() => handleQuickUpdateColor(idx)}
+                        className={`w-6 h-6 rounded-full border-2 transition-all ${selectedRoute.color_index === idx ? 'scale-110 border-foreground shadow-md ring-2 ring-primary/40' : 'border-transparent opacity-75 hover:opacity-100'}`}
+                        style={{ backgroundColor: colorHex }}
+                        title={`تغيير للون ${idx + 1}`}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="grid grid-cols-2 gap-2">
-                <Button variant="outline" size="sm" className="text-xs" onClick={() => { setEditRouteNameAr(selectedRoute.name_ar); setEditRouteNameEn(selectedRoute.name_en ?? ''); setEditRoutePrice(selectedRoute.price_new != null ? String(selectedRoute.price_new) : ''); setEditRouteColorIndex(selectedRoute.color_index ?? 0); setIsEditRouteModalOpen(true) }}>
-                  <Pencil className="h-3.5 w-3.5" /> تعديل الاسم واللون
-                </Button>
-                <Button variant="outline" size="sm" className="text-xs" onClick={() => router.get(`/transit/studio?edit=${selectedRoute.id}`)}>
-                  <Pencil className="h-3.5 w-3.5" /> تعديل في الاستوديو
-                </Button>
-                {selectedRoute.status === 'published' ? (
+                {canEditSelectedRoute && (
+                  <Button variant="outline" size="sm" className="text-xs" onClick={() => { setEditRouteNameAr(selectedRoute.name_ar); setEditRouteNameEn(selectedRoute.name_en ?? ''); setEditRoutePrice(selectedRoute.price_new != null ? String(selectedRoute.price_new) : ''); setEditRouteColorIndex(selectedRoute.color_index ?? 0); setIsEditRouteModalOpen(true) }}>
+                    <Pencil className="h-3.5 w-3.5" /> تعديل الاسم واللون
+                  </Button>
+                )}
+                {canStudioEdit(selectedRoute.city_id) && (
+                  <Button variant="outline" size="sm" className="text-xs" onClick={() => router.get(`/transit/studio?edit=${selectedRoute.id}`)}>
+                    <Pencil className="h-3.5 w-3.5" /> تعديل في الاستوديو
+                  </Button>
+                )}
+                {canEditSelectedRoute && selectedRoute.status === 'published' ? (
                   <Button variant="destructive" size="sm" className="text-xs" disabled={actionLoading} onClick={() => handleUpdateStatus(selectedRoute.id, 'disapproved')}>
                     <XCircle className="h-3.5 w-3.5" /> تعطيل
                   </Button>
-                ) : (
+                ) : canEditSelectedRoute ? (
                   <Button size="sm" className="text-xs" disabled={actionLoading} onClick={() => handleUpdateStatus(selectedRoute.id, 'published')}>
                     <CheckCircle2 className="h-3.5 w-3.5" /> تفعيل
                   </Button>
-                )}
-                {selectedRoute.status !== 'hidden' && (
+                ) : null}
+                {canEditSelectedRoute && selectedRoute.status !== 'hidden' && (
                   <Button variant="secondary" size="sm" className="text-xs" disabled={actionLoading} onClick={() => handleUpdateStatus(selectedRoute.id, 'hidden')}>
                     <EyeOff className="h-3.5 w-3.5" /> إخفاء
                   </Button>
                 )}
-                <Button variant="outline" size="sm" className="text-xs" disabled={actionLoading} onClick={() => { setTargetCityId(selectedRoute.city_id); setIsMoveModalOpen(true) }}>
-                  <MoveRight className="h-3.5 w-3.5" /> نقل لمدينة
-                </Button>
-                <Button variant="outline" size="sm" className="text-xs" disabled={actionLoading} onClick={async () => {
-                  setActionLoading(true)
-                  try {
-                    const res = await fetch(`/api/v1/admin/routes/${selectedRoute.id}/stops`)
-                    if (res.ok) {
-                      const sd = await res.json(); setRouteStops(sd)
-                      setSplitAtStopId(sd[1]?.id || '')
-                      setSplitNameAAr(`${selectedRoute.name_ar} (القسم الأول)`)
-                      setSplitNameBAr(`${selectedRoute.name_ar} (القسم الثاني)`)
-                      setSplitNameAEn(selectedRoute.name_en ? `${selectedRoute.name_en} (Part 1)` : '')
-                      setSplitNameBEn(selectedRoute.name_en ? `${selectedRoute.name_en} (Part 2)` : '')
-                      setIsSplitModalOpen(true)
-                    }
-                  } catch { showToast('خطأ في الاتصال', false) } finally { setActionLoading(false) }
-                }}>
-                  <GitBranch className="h-3.5 w-3.5" /> تقسيم الخط
-                </Button>
+                {canEditSelectedRoute && (
+                  <Button variant="outline" size="sm" className="text-xs" disabled={actionLoading} onClick={() => { setTargetCityId(selectedRoute.city_id); setIsMoveModalOpen(true) }}>
+                    <MoveRight className="h-3.5 w-3.5" /> نقل لمدينة
+                  </Button>
+                )}
+                {canEditSelectedRoute && (
+                  <Button variant="outline" size="sm" className="text-xs" disabled={actionLoading} onClick={async () => {
+                    setActionLoading(true)
+                    try {
+                      const res = await fetch(`/api/v1/admin/routes/${selectedRoute.id}/stops`, { headers: { 'Accept': 'application/json' }, credentials: 'include' })
+                      if (res.ok) {
+                        const sd = await res.json(); setRouteStops(sd)
+                        setSplitAtStopId(sd[1]?.id || '')
+                        setSplitNameAAr(`${selectedRoute.name_ar} (القسم الأول)`)
+                        setSplitNameBAr(`${selectedRoute.name_ar} (القسم الثاني)`)
+                        setSplitNameAEn(selectedRoute.name_en ? `${selectedRoute.name_en} (Part 1)` : '')
+                        setSplitNameBEn(selectedRoute.name_en ? `${selectedRoute.name_en} (Part 2)` : '')
+                        setIsSplitModalOpen(true)
+                      }
+                    } catch { showToast('خطأ في الاتصال', false) } finally { setActionLoading(false) }
+                  }}>
+                    <GitBranch className="h-3.5 w-3.5" /> تقسيم الخط
+                  </Button>
+                )}
+                {canDeleteSelectedRoute && (
+                  <Button variant="destructive" size="sm" className="text-xs" disabled={actionLoading} onClick={() => setDeleteConfirmOpen(true)}>
+                    <Trash2 className="h-3.5 w-3.5" /> حذف الخط
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -1048,7 +1130,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
               <label className="text-xs font-medium">المدينة</label>
               <Select value={combineCityId} onValueChange={v => { setCombineCityId(v); setCombineRouteAId(''); setCombineRouteBId('') }}>
                 <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="اختر المدينة…" /></SelectTrigger>
-                <SelectContent>{cities.map(c => <SelectItem key={c.id} value={c.id}>{c.nameAr}</SelectItem>)}</SelectContent>
+                <SelectContent>{visibleCities.map(c => <SelectItem key={c.id} value={c.id}>{c.nameAr}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
@@ -1136,7 +1218,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
             <label className="text-xs font-medium">المدينة المستهدفة</label>
             <Select value={targetCityId} onValueChange={setTargetCityId}>
               <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="اختر مدينة…" /></SelectTrigger>
-              <SelectContent>{cities.map(c => <SelectItem key={c.id} value={c.id}>{c.nameAr}</SelectItem>)}</SelectContent>
+              <SelectContent>{visibleCities.map(c => <SelectItem key={c.id} value={c.id}>{c.nameAr}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <DialogFooter className="flex-row-reverse gap-2">
@@ -1188,6 +1270,24 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
             <Button variant="outline" size="sm" onClick={() => setIsEditRouteModalOpen(false)}>إلغاء</Button>
             <Button size="sm" disabled={actionLoading || !editRouteNameAr.trim()} onClick={handleUpdateRoute}>
               {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pencil className="h-4 w-4" />} حفظ التعديلات
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Delete Route Dialog ────────────────────────────────────────── */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent dir="rtl" className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>حذف الخط</DialogTitle>
+            <DialogDescription>
+              سيتم حذف <strong>{selectedRoute?.name_ar}</strong> ومساره ومواقفه غير المشتركة نهائياً. لا يمكن التراجع عن هذا الإجراء.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-row-reverse gap-2">
+            <Button variant="outline" size="sm" onClick={() => setDeleteConfirmOpen(false)}>إلغاء</Button>
+            <Button variant="destructive" size="sm" disabled={actionLoading} onClick={handleDeleteRoute}>
+              {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />} تأكيد الحذف
             </Button>
           </DialogFooter>
         </DialogContent>

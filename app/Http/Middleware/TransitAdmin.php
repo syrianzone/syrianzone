@@ -18,7 +18,7 @@ class TransitAdmin
 
         $required = $perms !== []
             ? $perms
-            : ['transit.review_drafts', 'transit.approve', 'transit.reject', 'transit.edit_routes'];
+            : ['transit.review_drafts', 'transit.approve', 'transit.reject', 'transit.edit_routes', 'transit.delete_routes'];
 
         if (!$user || !$user->hasAnyPermission($required)) {
             if ($request->expectsJson()) {

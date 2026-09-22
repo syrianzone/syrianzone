@@ -37,6 +37,10 @@ interface EditableStop {
 
 interface ImportTabProps {
   cities: { id: string; nameAr: string; nameEn?: string }[]
+  /** transit.review_drafts: preview + save-as-draft. */
+  canReview?: boolean
+  /** transit.edit_routes: direct publish without review. */
+  canEdit?: boolean
   showToast: (msg: string, ok?: boolean) => void
   onPreview: (geojson: any | null, colorIndex: number, cityId?: string) => void
   onDraftCreated: () => void
@@ -70,7 +74,7 @@ function lineFromGeojson(geojson: any): any | null {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function ImportTab({ cities, showToast, onPreview, onDraftCreated }: ImportTabProps) {
+export default function ImportTab({ cities, canReview = true, canEdit = true, showToast, onPreview, onDraftCreated }: ImportTabProps) {
   const [url, setUrl] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [cityOverride, setCityOverride] = useState('auto')
@@ -158,14 +162,14 @@ export default function ImportTab({ cities, showToast, onPreview, onDraftCreated
         if (cityOverride !== 'auto') form.append('city_id', cityOverride)
         res = await fetch('/api/v1/admin/routes/import-preview', {
           method: 'POST',
-          headers: { 'X-XSRF-TOKEN': getCsrfToken() },
+          headers: { 'Accept': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
           credentials: 'include',
           body: form,
         })
       } else {
         res = await fetch('/api/v1/admin/routes/import-preview', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
+          headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
           credentials: 'include',
           body: JSON.stringify({
             url: url.trim(),
@@ -208,7 +212,7 @@ export default function ImportTab({ cities, showToast, onPreview, onDraftCreated
     try {
       const res = await fetch('/api/v1/admin/routes/import-publish', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
         credentials: 'include',
         body: JSON.stringify({
           city_id: cityId,
@@ -288,7 +292,7 @@ export default function ImportTab({ cities, showToast, onPreview, onDraftCreated
               ))}
             </SelectContent>
           </Select>
-          <Button size="sm" className="h-9 text-xs gap-1.5 shrink-0" disabled={loading} onClick={handleFetch}>
+          <Button size="sm" className="h-9 text-xs gap-1.5 shrink-0" disabled={loading || !canReview} onClick={handleFetch}>
             {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
             جلب المعاينة
           </Button>
@@ -441,26 +445,34 @@ export default function ImportTab({ cities, showToast, onPreview, onDraftCreated
               </div>
             ) : (
               <>
-                <Button
-                  className="w-full h-9 text-xs font-bold gap-2"
-                  disabled={publishing !== null}
-                  onClick={() => handlePublish('draft')}
-                >
-                  {publishing === 'draft' ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                  حفظ كمسودة للمراجعة (موصى به)
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full h-9 text-xs font-semibold gap-2"
-                  disabled={publishing !== null}
-                  onClick={() => handlePublish('direct')}
-                >
-                  {publishing === 'direct' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                  نشر مباشر بدون مراجعة
-                </Button>
-                <p className="text-[10px] text-muted-foreground leading-relaxed text-center">
-                  المسودة تمر عبر الموافقة المعتادة (سجل تدقيق + نشر آمن). النشر المباشر للعمل الموثوق فقط.
-                </p>
+                {canReview && (
+                  <Button
+                    className="w-full h-9 text-xs font-bold gap-2"
+                    disabled={publishing !== null}
+                    onClick={() => handlePublish('draft')}
+                  >
+                    {publishing === 'draft' ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                    حفظ كمسودة للمراجعة (موصى به)
+                  </Button>
+                )}
+                {canEdit && (
+                  <Button
+                    variant="outline"
+                    className="w-full h-9 text-xs font-semibold gap-2"
+                    disabled={publishing !== null}
+                    onClick={() => handlePublish('direct')}
+                  >
+                    {publishing === 'direct' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                    نشر مباشر بدون مراجعة
+                  </Button>
+                )}
+                {!canReview && !canEdit ? (
+                  <p className="text-[11px] text-muted-foreground text-center py-1">لا تملك صلاحية استيراد الخطوط.</p>
+                ) : (
+                  <p className="text-[10px] text-muted-foreground leading-relaxed text-center">
+                    المسودة تمر عبر الموافقة المعتادة (سجل تدقيق + نشر آمن). النشر المباشر للعمل الموثوق فقط.
+                  </p>
+                )}
               </>
             )}
             {createdDraftId && (

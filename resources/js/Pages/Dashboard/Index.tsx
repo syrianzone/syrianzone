@@ -246,6 +246,13 @@ export default function Dashboard({
     return role === 'user' ? 'submissions' : (role === 'transit_admin' ? 'profile' : 'polls');
   });
 
+  // Explicit transit.* grants unlock the review panel even when role is 'user'
+  const transitPermissions: string[] = Array.isArray((auth.user as any)?.permissions)
+    ? (auth.user as any).permissions
+    : [];
+  const canTransitReview = role === 'admin' || role === 'transit_admin' || role === 'superadmin'
+    || transitPermissions.some((p: unknown) => typeof p === 'string' && p.startsWith('transit.'));
+
   // Profile Form States
   const [profileName, setProfileName] = useState(auth.user.name);
   const [profileEmail, setProfileEmail] = useState(auth.user.email);
@@ -580,8 +587,8 @@ export default function Dashboard({
                   </button>
                 )}
 
-                {/* Transit review Tab (Admins, Transit Admins, Superadmins) */}
-                {(role === 'admin' || role === 'transit_admin' || role === 'superadmin') && (
+                {/* Transit review Tab (role admins or any explicit transit.* grant) */}
+                {canTransitReview && (
                   <Link
                     href="/transit/admin"
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"

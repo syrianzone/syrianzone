@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use Filament\Facades\Filament;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -20,6 +21,17 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class SuperadminPanelProvider extends PanelProvider
 {
+    public function boot(): void
+    {
+        // The panel follows the app locale, which is 'en' on some
+        // environments (.env). Force Arabic here so the admin panel is
+        // always Arabic; ServingFilament is dispatched by a persistent
+        // middleware, so this also covers Livewire update requests.
+        Filament::serving(function (): void {
+            app()->setLocale('ar');
+        });
+    }
+
     public function panel(Panel $panel): Panel
     {
         return $panel

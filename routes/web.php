@@ -322,6 +322,8 @@ Route::middleware('auth')->group(function () {
                 ->middleware('transit_admin:transit.edit_routes');
             Route::put('/admin/routes/{id}', [\App\Http\Controllers\TransitAdminController::class, 'updateRoute'])
                 ->middleware('transit_admin:transit.edit_routes');
+            Route::delete('/admin/routes/{id}', [\App\Http\Controllers\TransitAdminController::class, 'destroy'])
+                ->middleware('transit_admin:transit.delete_routes');
             Route::post('/admin/routes/{id}/move', [\App\Http\Controllers\TransitAdminController::class, 'moveRoute'])
                 ->middleware('transit_admin:transit.edit_routes');
             Route::post('/admin/routes/combine', [\App\Http\Controllers\TransitAdminController::class, 'combineRoutes'])

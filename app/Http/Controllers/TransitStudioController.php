@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ChecksTransitScope;
 use App\Models\RouteDraft;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class TransitStudioController extends Controller
 {
+    use ChecksTransitScope;
+
     public function store(Request $request)
     {
         if ($request->user() && $request->user()->is_banned) {
@@ -36,6 +39,8 @@ class TransitStudioController extends Controller
             'route_id' => 'nullable|exists:routes,id',
         ]);
 
+        $this->ensureStudioTransitCityAccess($request, $validated['city_id']);
+
         // A linked edit must target a route in the same city, otherwise the
         // draft would unpublish an unrelated live route on approve.
         if (!empty($validated['route_id'])) {
@@ -49,10 +54,10 @@ class TransitStudioController extends Controller
             'user_id' => Auth::id(),
             'city_id' => $validated['city_id'],
             'name_ar' => $validated['name_ar'],
-            'name_en' => $validated['name_en'],
-            'price' => $validated['price'],
+            'name_en' => $validated['name_en'] ?? null,
+            'price' => $validated['price'] ?? null,
             'color_index' => $validated['color_index'] ?? null,
-            'notes' => $validated['notes'],
+            'notes' => $validated['notes'] ?? null,
             'geojson' => $request->input('geojson'),
             'route_id' => $validated['route_id'] ?? null,
             'status' => 'pending',
@@ -86,6 +91,8 @@ class TransitStudioController extends Controller
         }
 
         $route = \App\Models\Route::with(['city:id,name_ar,name_en'])->findOrFail($routeId);
+
+        $this->ensureStudioTransitCityAccess($request, $route->city_id);
 
         // Get geometry
         $geomJson = \Illuminate\Support\Facades\DB::table('route_geometries')
@@ -162,6 +169,7 @@ class TransitStudioController extends Controller
 
         $updateData = [];
         if ($request->has('city_id')) {
+            $this->ensureStudioTransitCityAccess($request, $validated['city_id']);
             $updateData['city_id'] = $validated['city_id'];
         }
         if ($request->has('name_ar')) {
@@ -210,13 +218,27 @@ class TransitStudioController extends Controller
             return false;
         }
 
-        // Admin can edit any draft
+        // Governorate scope only kicks in for scoped transit staff; everyone
+        // else keeps the existing behavior.
+        $scopeAllowsCity = true;
+        if ($this->isScopedTransitStaff($user)) {
+            $allowed = $user->allowedTransitCities();
+            $scopeAllowsCity = $allowed !== null
+                && $draft->city_id !== null
+                && in_array($draft->city_id, $allowed, true);
+        }
+
+        // Admin can edit any draft (within their governorate scope, if scoped)
         if (in_array($user->role, ['admin', 'superadmin', 'transit_admin'])) {
-            return true;
+            return $user->isSuperAdmin() || $scopeAllowsCity;
         }
 
         // Owner can edit their own draft
-        return $draft->user_id === $user->id;
+        if ($draft->user_id !== null && $draft->user_id === $user->id) {
+            return $scopeAllowsCity;
+        }
+
+        return false;
     }
 
     /**

@@ -14,7 +14,7 @@ class User extends Authenticatable implements FilamentUser
 {
     use HasFactory, Notifiable, SoftDeletes;
 
-    protected $fillable = ['name', 'email', 'password', 'google_id', 'avatar_url', 'role', 'permissions', 'settings', 'is_banned'];
+    protected $fillable = ['name', 'email', 'password', 'google_id', 'avatar_url', 'role', 'permissions', 'permission_scopes', 'settings', 'is_banned'];
     protected $hidden = ['password', 'remember_token'];
 
     protected function casts(): array
@@ -24,6 +24,7 @@ class User extends Authenticatable implements FilamentUser
             'password' => 'hashed',
             'is_banned' => 'boolean',
             'permissions' => 'array',
+            'permission_scopes' => 'array',
             'settings' => 'array',
         ];
     }
@@ -60,6 +61,86 @@ class User extends Authenticatable implements FilamentUser
                 return true;
             }
         }
+        return false;
+    }
+
+    /**
+     * Governorate (transit city) scope for this user's transit capabilities.
+     *
+     * Returns null when the user is unrestricted (superadmin, no scope stored,
+     * or an empty scope list). A non-null array limits every transit.* action
+     * to those city ids. Scopes are stored per module so other modules can
+     * adopt the same pattern later:
+     *   {"transit": ["damascus", "aleppo"]}
+     *
+     * @return array<int, string>|null
+     */
+    public function allowedTransitCities(): ?array
+    {
+        if ($this->isSuperAdmin()) {
+            return null;
+        }
+
+        $scopes = $this->permission_scopes['transit'] ?? null;
+
+        if (! is_array($scopes) || $scopes === []) {
+            return null;
+        }
+
+        $cities = array_values(array_unique(array_filter(
+            array_map(fn ($city) => is_string($city) ? trim($city) : '', $scopes),
+            fn (string $city) => $city !== '',
+        )));
+
+        return $cities === [] ? null : $cities;
+    }
+
+    public function isTransitScopeRestricted(): bool
+    {
+        return $this->allowedTransitCities() !== null;
+    }
+
+    /**
+     * Capability check with governorate scoping for transit.* permissions.
+     *
+     * Non-transit capabilities ignore the scope. When the user is scoped and
+     * the city is unknown, the check fails closed so a missing/renamed city
+     * never widens access.
+     */
+    public function hasPermissionInCity(string $permission, ?string $cityId): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        if (! $this->hasPermission($permission)) {
+            return false;
+        }
+
+        if (! str_starts_with($permission, 'transit.')) {
+            return true;
+        }
+
+        $allowed = $this->allowedTransitCities();
+
+        if ($allowed === null) {
+            return true;
+        }
+
+        return $cityId !== null && in_array($cityId, $allowed, true);
+    }
+
+    /**
+     * @param array<int, string> $permissions
+     */
+    public function hasAnyPermissionInCity(array $permissions, ?string $cityId): bool
+    {
+        foreach ($permissions as $permission) {
+            if ($this->hasPermissionInCity($permission, $cityId)) {
+                return true;
+            }
+        }
+
         return false;
     }
 

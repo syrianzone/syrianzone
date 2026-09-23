@@ -30,7 +30,6 @@ export function SidebarRouteDetail({ route, city, stops }: SidebarRouteDetailPro
 
   const handleBack = () => {
     setSelectedRouteId(null)
-    window.history.replaceState({}, '', `/transit/city/${city.id}`)
   }
 
   return (
@@ -80,7 +79,7 @@ export function SidebarRouteDetail({ route, city, stops }: SidebarRouteDetailPro
 
         {user && (
           <Button asChild className="mt-3 w-full" size="sm">
-            <Link href="/transit/studio">
+            <Link href={`/transit/studio?city=${city.id}`}>
               <Plus className="h-4 w-4" />
               إضافة مسار
             </Link>

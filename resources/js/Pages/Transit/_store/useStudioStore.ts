@@ -101,7 +101,7 @@ export const useStudioStore = create<StudioState>((set) => ({
     }
     const isPublishedRoute = !!draft.is_published_route
     set({
-      cityId: draft.city_id,
+      cityId: draft.city_id ?? '',
       drawnLine,
       stops,
       nameAr: draft.name_ar ?? '',

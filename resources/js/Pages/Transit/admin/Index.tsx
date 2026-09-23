@@ -89,6 +89,18 @@ const STATUS_LABELS: Record<DraftStatus, string> = {
   rejected: 'مرفوض',
 }
 
+function pickNextPendingDraft(drafts: Draft[], statusFilter: string, cityFilter: string, actedId: number): Draft | null {
+  const queue = drafts
+    .filter((d) => statusFilter === 'all' || d.status === statusFilter)
+    .filter((d) => cityFilter === 'all' || d.city_id === cityFilter)
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+  return (
+    queue.slice(queue.findIndex((d) => d.id === actedId) + 1).find((d) => d.status === 'pending') ??
+    queue.find((d) => d.status === 'pending' && d.id !== actedId) ??
+    null
+  )
+}
+
 const ROUTE_STATUS_LABELS: Record<RouteStatus, string> = {
   published: 'منشور',
   disapproved: 'معطل',
@@ -133,7 +145,7 @@ function TransitAdminPageContent() {
   const [rejectOpen, setRejectOpen] = useState(false)
   const [rejectReason, setRejectReason] = useState('')
   const [actionLoading, setActionLoading] = useState(false)
-  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
+  const [toast, setToast] = useState<{ msg: string; ok: boolean; href?: string; linkLabel?: string } | null>(null)
   const [mobileView, setMobileView] = useState<'list' | 'map'>('list')
   const [adminTab, setAdminTab] = useState<string>('drafts')
 
@@ -196,21 +208,26 @@ function TransitAdminPageContent() {
   const activeCityId = adminTab === 'drafts' ? selectedDraft?.city_id : adminTab === 'import' ? importCityId : selectedRoute?.city_id
   const { data: refData, refetch: refetchRefData } = useMapData(activeCityId)
 
-  const showToast = useCallback((msg: string, ok = true) => {
-    setToast({ msg, ok })
-    setTimeout(() => setToast(null), 4000)
+  const showToast = useCallback((msg: string, ok = true, href?: string, linkLabel?: string) => {
+    setToast({ msg, ok, href, linkLabel })
+    setTimeout(() => setToast(null), href ? 8000 : 4000)
   }, [])
 
   useEffect(() => {
     fetch('/api/v1/cities').then(r => r.json()).then(setCities).catch(() => {})
   }, [])
 
-  const fetchRoutes = useCallback(async () => {
+  const fetchRoutes = useCallback(async (): Promise<PublishedRoute[]> => {
     setLoadingRoutes(true)
     try {
       const res = await fetch('/api/v1/admin/routes')
-      if (res.ok) setPublishedRoutes(await res.json())
+      if (res.ok) {
+        const rows = await res.json()
+        setPublishedRoutes(rows)
+        return rows
+      }
     } catch { /* */ } finally { setLoadingRoutes(false) }
+    return []
   }, [])
 
   const fetchLogs = useCallback(async () => {
@@ -367,15 +384,22 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
         body: JSON.stringify({ color_index: selectedColor }),
       })
       if (res.ok) {
-        showToast('تمت الموافقة على المسار ونشره')
-        setSelectedDraft(null)
+        const data = await res.json().catch(() => ({}))
+        const route = data?.route
+        showToast(
+          'تمت الموافقة على المسار ونشره',
+          true,
+          route?.id && route?.city_id ? `/transit/city/${route.city_id}?route=${route.id}` : undefined,
+          'عرض الخط',
+        )
+        setSelectedDraft(pickNextPendingDraft(drafts, statusFilter, cityFilter, id))
         queryClient.invalidateQueries({ queryKey: ['admin-drafts'] })
         queryClient.invalidateQueries({ queryKey: ['mapData'] })
         queryClient.invalidateQueries({ queryKey: ['routes'] })
       }
       else { const e = await res.json().catch(() => ({})); showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false) }
     } catch { showToast('تعذّر الاتصال بالخادم', false) } finally { setActionLoading(false) }
-  }, [approveColorIndex, showToast, queryClient])
+  }, [approveColorIndex, showToast, queryClient, drafts, statusFilter, cityFilter])
 
   const handleRejectConfirm = useCallback(async () => {
     if (!selectedDraft) return
@@ -389,7 +413,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
       })
       if (res.ok) {
         showToast('تم رفض المسار');
-        setSelectedDraft(null);
+        setSelectedDraft(pickNextPendingDraft(drafts, statusFilter, cityFilter, selectedDraft.id));
         setRejectOpen(false);
         setRejectReason('');
         queryClient.invalidateQueries({ queryKey: ['admin-drafts'] });
@@ -398,7 +422,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
       }
       else { const e = await res.json().catch(() => ({})); showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false) }
     } catch { showToast('تعذّر الاتصال بالخادم', false) } finally { setActionLoading(false) }
-  }, [selectedDraft, rejectReason, showToast])
+  }, [selectedDraft, rejectReason, showToast, queryClient, drafts, statusFilter, cityFilter])
 
   const handleSelectRoute = useCallback(async (route: PublishedRoute) => {
     setSelectedRoute(route)
@@ -855,6 +879,13 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
                 queryClient.invalidateQueries({ queryKey: ['admin-drafts'] })
                 setAdminTab('drafts')
               }}
+              onRoutePublished={async (route) => {
+                setSelectedDraft(null)
+                setAdminTab('routes')
+                const rows = await fetchRoutes()
+                const created = route && rows.find((r: PublishedRoute) => r.id === route.id)
+                if (created) handleSelectRoute(created)
+              }}
             />
           </TabsContent>
 
@@ -1297,6 +1328,9 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
       {toast && (
         <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-lg text-sm font-medium shadow-lg animate-in fade-in slide-in-from-bottom-4 ${toast.ok ? 'bg-green-600 text-white' : 'bg-destructive text-destructive-foreground'}`}>
           {toast.msg}
+          {toast.href && (
+            <a href={toast.href} className="underline font-bold ms-2">{toast.linkLabel ?? 'عرض'}</a>
+          )}
         </div>
       )}
     </div>

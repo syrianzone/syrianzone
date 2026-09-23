@@ -49,9 +49,26 @@ class TransitController extends Controller
         return response()->json($formatted);
     }
 
+    /**
+     * City ids a public endpoint serves for the given city: the Damascus metro
+     * pair is one network (routes cross the boundary), everything else is
+     * itself. Unknown ids 404 — a cached empty 200 would hide typos and
+     * renamed cities.
+     *
+     * @return array<int, string>
+     */
+    private function cityIdsFor(string $id): array
+    {
+        if (! City::whereKey($id)->exists()) {
+            abort(404, 'City not found.');
+        }
+
+        return ($id === 'damascus' || $id === 'rif-dimashq') ? ['damascus', 'rif-dimashq'] : [$id];
+    }
+
     public function getRoutes($id)
     {
-        $cityIds = ($id === 'damascus' || $id === 'rif-dimashq') ? ['damascus', 'rif-dimashq'] : [$id];
+        $cityIds = $this->cityIdsFor($id);
         $cacheKey = 'transit:routes:' . implode('+', $cityIds);
         $mapped = Cache::remember($cacheKey, 600, function () use ($cityIds) {
             // NOTE: select() must come before withCount() — a later select()
@@ -76,8 +93,8 @@ class TransitController extends Controller
 
     public function getMapData($id)
     {
-        $data = Cache::remember("transit:map-data:{$id}", 600, function () use ($id) {
-            $cityIds = ($id === 'damascus' || $id === 'rif-dimashq') ? ['damascus', 'rif-dimashq'] : [$id];
+        $cityIds = $this->cityIdsFor($id);
+        $data = Cache::remember("transit:map-data:{$id}", 600, function () use ($cityIds) {
             $routeGeometries = DB::table('route_geometries')
                 ->join('routes', 'route_geometries.route_id', '=', 'routes.id')
                 ->whereIn('routes.city_id', $cityIds)

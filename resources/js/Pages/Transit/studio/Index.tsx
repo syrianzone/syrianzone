@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
-import { router, Link, Head } from '@inertiajs/react'
+import { router, Link, Head, usePage } from '@inertiajs/react'
 import type { FeatureCollection, Position } from 'geojson'
 import {
   Route,
@@ -122,9 +122,10 @@ function findNearestSegment(coords: [number, number][], px: number, py: number, 
   return { insertIdx, distance: minDist, nearest: bestNearest }
 }
 
-function SuccessPanel({ draftId, isEditMode, isAnonymous, onReset, onEdit, onExit }: {
+function SuccessPanel({ draftId, isEditMode, isPublishedRouteEdit, isAnonymous, onReset, onEdit, onExit }: {
   draftId: number
   isEditMode: boolean
+  isPublishedRouteEdit?: boolean
   isAnonymous?: boolean
   onReset: () => void
   onEdit: () => void
@@ -143,8 +144,10 @@ function SuccessPanel({ draftId, isEditMode, isAnonymous, onReset, onEdit, onExi
           {isAnonymous
             ? `تم إرسال المسودة كزائر (رقم المسودة #${draftId}). سيقوم مشرفو النظام بمراجعتها ونشرها قريباً.`
             : isEditMode
-            ? 'تم حفظ التعديلات بنجاح وستظهر فوراً على الخريطة التفاعلية.'
-            : `رقم المسودة #${draftId}. تمت مراجعة المساهمة وسيقوم المشرفون بالتحقق منها قريباً.`}
+            ? isPublishedRouteEdit
+              ? 'تم إرسال التعديلات للمراجعة. أُخفي الخط من الخريطة إلى حين اعتماد التعديلات.'
+              : 'تم حفظ التعديلات وإرسالها للمراجعة. ستظهر على الخريطة بعد اعتمادها.'
+            : `رقم المسودة #${draftId}. سيراجعها المشرفون قريباً، وتُنشر بعد اعتمادها.`}
         </p>
       </div>
 
@@ -209,6 +212,7 @@ function TransitStudioPageContent() {
   const vertexMarkersRef = useRef<maplibregl.Marker[]>([])
   const stopMarkersRef = useRef<maplibregl.Marker[]>([])
   const lastTouchTimeRef = useRef<number>(0)
+  const restoredEditIdRef = useRef<string | null>(null)
 
   const {
     cityId, drawnLine, stops, nameAr, nameEn, price, notes, submittedDraftId,
@@ -219,6 +223,11 @@ function TransitStudioPageContent() {
   } = useStudioStore()
   const { theme } = useTransitTheme()
   const { user, can, allowedTransitCities } = useAuth()
+
+  const { url: pageUrl } = usePage()
+  const pageSearch = new URLSearchParams(pageUrl.split('?')[1] ?? '')
+  const editParam = pageSearch.get('edit')
+  const cityParam = pageSearch.get('city')
 
   const [mapReady,           setMapReady]           = useState(false)
   const [drawMode,           setDrawMode]           = useState<DrawMode>('idle')
@@ -394,14 +403,23 @@ function TransitStudioPageContent() {
       try {
         const s = JSON.parse(pending)
         const patch: any = {}
-        if (s.cityId) patch.cityId = s.cityId
+        if (s.cityId && cities.some(c => c.id === s.cityId)) patch.cityId = s.cityId
         if (s.drawnLine) patch.drawnLine = s.drawnLine
         if (s.stops) patch.stops = s.stops
         if (s.nameAr !== undefined) patch.nameAr = s.nameAr
         if (s.nameEn !== undefined) patch.nameEn = s.nameEn
         if (s.price !== undefined) patch.price = s.price
         if (s.notes !== undefined) patch.notes = s.notes
-        if (s.editingRouteId) { patch.editingRouteId = s.editingRouteId; patch.isEditMode = true }
+        if (s.editingDraftId) {
+          patch.editingDraftId = s.editingDraftId
+          patch.isEditMode = true
+          restoredEditIdRef.current = String(s.editingDraftId)
+        }
+        if (s.editingRouteId) {
+          patch.editingRouteId = s.editingRouteId
+          patch.isEditMode = true
+          restoredEditIdRef.current = s.editingRouteId
+        }
         useStudioStore.setState(patch)
         addToast('تمت استعادة مسارك لتقديمه تحت حسابك المسجل', 'success')
       } catch { /* */ }
@@ -409,15 +427,18 @@ function TransitStudioPageContent() {
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Load draft for editing
+  // Load draft for editing (?edit= is a route_drafts id or a published route id)
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const editId = params.get('edit')
-    if (!editId || isEditMode) return
-    fetch(`/api/v1/studio/routes/${editId}`, { credentials: 'include' })
+    if (!editParam) return
+    // Stashed pending work for this entity is fresher than the server copy
+    if (restoredEditIdRef.current === editParam) return
+    // Already showing this entity — the store survives SPA navigations, so a bare
+    // isEditMode check would skip loading a different ?edit= target (wrong draft/city)
+    if ((editingDraftId != null && String(editingDraftId) === editParam) || editingRouteId === editParam) return
+    fetch(`/api/v1/studio/routes/${editParam}`, { credentials: 'include' })
       .then(r => {
         if (r.ok) return r.json().then(draft => ({ draft, isRoute: false }))
-        return fetch(`/api/v1/studio/routes/${editId}/from-route`, { credentials: 'include' })
+        return fetch(`/api/v1/studio/routes/${editParam}/from-route`, { credentials: 'include' })
           .then(r2 => r2.ok ? r2.json().then(d => ({ draft: d, isRoute: true })) : null)
       })
       .then(result => {
@@ -426,22 +447,34 @@ function TransitStudioPageContent() {
             addToast('هذا المسار يقع خارج نطاق المحافظات المسموح لك', 'destructive')
             return
           }
-          loadDraft(result.draft)
+          const draftCity = result.draft?.city_id
+          const knownCity = !!draftCity && cities.some(c => c.id === draftCity)
+          if (knownCity) {
+            loadDraft(result.draft)
+          } else {
+            // Never bind to a city the UI cannot represent: the header would show
+            // one city while the submit sends another (or null).
+            addToast('تعذّر تحديد مدينة هذا المسار — تم اختيار مدينة افتراضية، تحقق من المدينة قبل الحفظ', 'warning')
+            loadDraft({ ...result.draft, city_id: useStudioStore.getState().cityId || studioCities[0]?.id || '' })
+          }
           addToast(result.isRoute ? 'تم تحميل الخط المنشور للتعديل' : 'تم تحميل المسار للتعديل', 'success')
+        } else {
+          addToast('تعذّر تحميل المسار للتعديل', 'destructive')
         }
       })
       .catch(() => addToast('تعذّر تحميل المسار للتعديل', 'destructive'))
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [editParam]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Center & Fit bounds on city select, bounding user to city boundaries
-  const handleCitySelect = useCallback((cId: string) => {
-    setCity(cId)
+  // Constrain (and optionally zoom) the map to a city's boundaries
+  const applyCityBounds = useCallback((cId: string, opts: { fit?: boolean } = {}) => {
     const c = cities.find(x => x.id === cId)
     if (c && mapRef.current) {
       const sw = c.bounds[0] as [number, number]
       const ne = c.bounds[1] as [number, number]
 
-      mapRef.current.fitBounds([sw, ne], { padding: 50, duration: 1200 })
+      if (opts.fit !== false) {
+        mapRef.current.fitBounds([sw, ne], { padding: 50, duration: 1200 })
+      }
 
       const paddedBounds: maplibregl.LngLatBoundsLike = [
         [sw[0] - 0.08, sw[1] - 0.08],
@@ -449,10 +482,28 @@ function TransitStudioPageContent() {
       ]
       mapRef.current.setMaxBounds(paddedBounds)
     }
-  }, [setCity])
+  }, [])
 
-  // Set default city if empty (scoped staff are confined to their governorates)
+  // Center & Fit bounds on city select, bounding user to city boundaries
+  const handleCitySelect = useCallback((cId: string) => {
+    setCity(cId)
+    applyCityBounds(cId, { fit: true })
+  }, [setCity, applyCityBounds])
+
+  // Keep the map constrained to the selected city (covers async ?edit= draft loads
+  // whose city is only known after the map has initialized)
   useEffect(() => {
+    if (!mapReady || !cityId) return
+    applyCityBounds(cityId, { fit: false })
+  }, [mapReady, cityId, applyCityBounds])
+
+  // Resolve the studio city: ?edit= is authoritative (the draft carries its city),
+  // then ?city= (wins over stale store state), then the default first city.
+  useEffect(() => {
+    if (!editParam && cityParam && cities.some(x => x.id === cityParam) && cityInScope(cityParam)) {
+      if (cityParam !== cityId) handleCitySelect(cityParam)
+      return
+    }
     if (isScopedStaff && cityId && !cityInScope(cityId)) {
       if (studioCities.length > 0) handleCitySelect(studioCities[0].id)
       return
@@ -917,6 +968,10 @@ function TransitStudioPageContent() {
 
   // Submit Draft to Backend API (Supports Anonymous and Authenticated mode)
   const handleSubmit = async (requireLogin: boolean = false) => {
+    if (!cityId) {
+      addToast('اختر المدينة أولاً', 'destructive')
+      return
+    }
     if (!nameAr.trim()) {
       addToast('اسم المسار بالعربية مطلوب', 'destructive')
       setAccordionValue('details')
@@ -929,10 +984,10 @@ function TransitStudioPageContent() {
     }
 
     if (requireLogin && !user) {
-      const stateToSave = { cityId, drawnLine, stops, nameAr, nameEn, price, notes, editingRouteId }
+      const stateToSave = { cityId, drawnLine, stops, nameAr, nameEn, price, notes, editingRouteId, editingDraftId }
       localStorage.setItem('transit:studio:pending', JSON.stringify(stateToSave))
       addToast('يرجى تسجيل الدخول بحساب Google لتُنسب المساهمة لك', 'info')
-      window.location.href = '/auth/google'
+      window.location.href = '/auth/google?redirect=' + encodeURIComponent(window.location.pathname + window.location.search)
       return
     }
 
@@ -986,7 +1041,9 @@ function TransitStudioPageContent() {
           !user
             ? 'تم إرسال المسودة بنجاح كزائر (مجهول)'
             : isUpdating
-            ? 'تم تحديث المسودة بنجاح'
+            ? editingRouteId
+              ? 'تم إرسال التعديلات للمراجعة'
+              : 'تم تحديث المسودة بنجاح'
             : 'تم إرسال المسودة للمراجعة باسمك',
           'success'
         )
@@ -1009,7 +1066,7 @@ function TransitStudioPageContent() {
       {/* Top Navigation & User Contributions in Sidebar */}
       <div className="flex items-center justify-between pb-2 border-b border-border/40">
         <Link
-          href="/transit"
+          href={cityId ? `/transit/city/${cityId}` : '/transit'}
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
           title="العودة لخريطة المواصلات"
         >
@@ -1038,10 +1095,11 @@ function TransitStudioPageContent() {
         <SuccessPanel
           draftId={submittedDraftId}
           isEditMode={isEditMode}
+          isPublishedRouteEdit={!!editingRouteId}
           isAnonymous={lastSubmittedIsAnon}
           onReset={handleReset}
           onEdit={() => { setSubmittedDraftId(null); setAccordionValue('details') }}
-          onExit={() => router.push('/transit')}
+          onExit={() => router.push(cityId ? `/transit/city/${cityId}` : '/transit')}
         />
       ) : (
         <>

@@ -738,7 +738,7 @@ export default function Dashboard({
                               <Button variant="outline" size="sm">تعديل</Button>
                             </a>
                             {draft.status === 'approved' && draft.route_id && (
-                              <a href={`/transit/city/${draft.city_id}/route/${draft.route_id}`}>
+                              <a href={`/transit/city/${draft.city_id}?route=${draft.route_id}`}>
                                 <Button variant="outline" size="sm" className="text-emerald-600 dark:text-emerald-400 border-emerald-500/40 hover:text-emerald-600">
                                   عرض الخط المنشور
                                 </Button>

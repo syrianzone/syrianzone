@@ -70,3 +70,8 @@ test('city routes list reports integer stop counts, never null', function () {
         ->assertOk()
         ->assertJsonPath('0.stopsCount', 1);
 });
+
+test('unknown city responds 404 instead of a cached empty payload', function () {
+    $this->getJson('/api/v1/cities/no-such-city/routes')->assertNotFound();
+    $this->getJson('/api/v1/cities/no-such-city/map-data')->assertNotFound();
+});

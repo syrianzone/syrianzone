@@ -132,7 +132,7 @@ Route::get('/transit/city/{id}', function ($id) {
 })->where('id', '[a-z0-9\-]+');
 
 Route::get('/transit/city/{id}/map', function ($id) {
-    return redirect("/transit/city/{$id}", 301);
+    return redirect("/transit/city/{$id}".(request()->getQueryString() ? '?'.request()->getQueryString() : ''), 301);
 })->where('id', '[a-z0-9\-]+');
 
 Route::get('/transit/city/{id}/route/{routeId}', function ($id, $routeId) {

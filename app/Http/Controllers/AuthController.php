@@ -94,6 +94,9 @@ class AuthController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+        if ($request->header('X-Inertia')) {
+            return redirect('/');
+        }
         return response()->json(['message' => 'Logged out']);
     }
 }

@@ -21,10 +21,10 @@ class TransitAdmin
             : ['transit.review_drafts', 'transit.approve', 'transit.reject', 'transit.edit_routes', 'transit.delete_routes'];
 
         if (!$user || !$user->hasAnyPermission($required)) {
-            if ($request->expectsJson()) {
+            if ($request->expectsJson() || $request->is('api/*')) {
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
-            abort(403, 'Unauthorized.');
+            return redirect('/dashboard');
         }
 
         return $next($request);

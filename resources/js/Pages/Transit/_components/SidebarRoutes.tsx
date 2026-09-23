@@ -21,17 +21,16 @@ export function SidebarRoutes({ city, routes }: SidebarRoutesProps) {
 
   const handleRouteClick = (routeId: string) => {
     setSelectedRouteId(routeId)
-    window.history.replaceState({}, '', `/transit/city/${city.id}/route/${routeId}`)
   }
 
   const handleBack = () => {
     setSelectedRouteId(null)
-    window.history.replaceState({}, '', `/transit/city/${city.id}`)
   }
 
   const isDamascusRegion = city.id === 'damascus' || city.id === 'rif-dimashq'
-  const damascusRoutes = isDamascusRegion ? routes.filter(r => (r.cityId ?? 'damascus') === 'damascus') : []
+  const damascusRoutes = isDamascusRegion ? routes.filter(r => r.cityId === 'damascus') : []
   const rifRoutes = isDamascusRegion ? routes.filter(r => r.cityId === 'rif-dimashq') : []
+  const otherRoutes = isDamascusRegion ? routes.filter(r => r.cityId !== 'damascus' && r.cityId !== 'rif-dimashq') : []
 
   const renderRouteCard = (route: any) => {
     // API fields (stopsCount, priceNew) can be null or numeric strings —
@@ -97,7 +96,7 @@ export function SidebarRoutes({ city, routes }: SidebarRoutesProps) {
 
         {user && (
           <Button asChild className="mt-3 w-full" size="sm">
-            <Link href="/transit/studio">
+            <Link href={`/transit/studio?city=${city.id}`}>
               <Plus className="h-4 w-4" />
               إضافة مسار
             </Link>
@@ -135,7 +134,19 @@ export function SidebarRoutes({ city, routes }: SidebarRoutesProps) {
                 </div>
               )}
 
-              {damascusRoutes.length === 0 && rifRoutes.length === 0 && (
+              {otherRoutes.length > 0 && (
+                <div className="space-y-3 mt-4">
+                  <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                    <span>مسارات أخرى</span>
+                    <span className="text-xs font-normal text-muted-foreground">({otherRoutes.length})</span>
+                  </h3>
+                  <div className="space-y-3">
+                    {otherRoutes.map(renderRouteCard)}
+                  </div>
+                </div>
+              )}
+
+              {damascusRoutes.length === 0 && rifRoutes.length === 0 && otherRoutes.length === 0 && (
                 <div className="flex items-center justify-center text-muted-foreground py-8">
                   لا توجد خطوط متاحة
                 </div>

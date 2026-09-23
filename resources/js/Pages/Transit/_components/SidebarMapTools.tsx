@@ -31,11 +31,6 @@ export function SidebarMapTools({ city, routes, selectedRouteId, allStops }: Sid
   const handleRouteChange = (routeId: string) => {
     const value = routeId === '__all__' ? null : routeId
     setSelectedRouteId(value)
-    if (value) {
-      window.history.replaceState({}, '', `/transit/city/${city?.id}/map?route=${value}`)
-    } else {
-      window.history.replaceState({}, '', `/transit/city/${city?.id}/map`)
-    }
   }
 
   const filteredStopsCount = selectedRouteId
@@ -59,7 +54,7 @@ export function SidebarMapTools({ city, routes, selectedRouteId, allStops }: Sid
 
         {user && (
           <Button asChild className="mt-3 w-full" size="sm">
-            <Link href="/transit/studio">
+            <Link href={city?.id ? `/transit/studio?city=${city.id}` : '/transit/studio'}>
               <Plus className="h-4 w-4" />
               إضافة مسار
             </Link>
@@ -111,7 +106,7 @@ export function SidebarMapTools({ city, routes, selectedRouteId, allStops }: Sid
 
           {selectedRouteId && (
             <Button variant="secondary" asChild className="w-full">
-              <Link href={`/transit/city/${city?.id}/route/${selectedRouteId}`}>
+              <Link href={`/transit/city/${city?.id}?route=${selectedRouteId}`}>
                 عرض تفاصيل المسار
               </Link>
             </Button>

@@ -123,6 +123,8 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
   const { url } = usePage();
   const pathname = url.split('?')[0];
   const isTransitPage = pathname.startsWith('/transit');
+  const transitCityId = pathname.match(/^\/transit\/city\/([^/]+)/)?.[1] ?? null;
+  const studioHref = transitCityId ? `/transit/studio?city=${transitCityId}` : '/transit/studio';
   const [isOpen, setIsOpen] = React.useState(false);
   const [theme, setTheme] = React.useState('dark');
   const { user } = useAuth();
@@ -243,7 +245,7 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
                     الرئيسية
                   </Link>
                   <Link
-                    href="/transit/studio"
+                    href={studioHref}
                     onClick={() => setIsOpen(false)}
                     className={cn(
                       "flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary",
@@ -377,7 +379,7 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
                 <NavigationMenuItem>
                   <NavigationMenuLink asChild>
                     <Link
-                      href="/transit/studio"
+                      href={studioHref}
                       className={cn(
                         navigationMenuTriggerStyle(),
                         "bg-transparent hover:bg-accent/50",

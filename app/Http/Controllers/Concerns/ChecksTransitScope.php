@@ -20,7 +20,7 @@ trait ChecksTransitScope
         $user = $request->user();
 
         if (! $user instanceof User || ! $user->hasAnyPermissionInCity($permissions, $cityId)) {
-            abort(403, 'Unauthorized for this governorate.');
+            abort(403, 'لا تملك صلاحية العمل على هذه المحافظة.');
         }
     }
 

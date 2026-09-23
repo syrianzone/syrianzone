@@ -44,6 +44,7 @@ interface ImportTabProps {
   showToast: (msg: string, ok?: boolean) => void
   onPreview: (geojson: any | null, colorIndex: number, cityId?: string) => void
   onDraftCreated: () => void
+  onRoutePublished: (route: { id: string; city_id: string } | null) => void
 }
 
 function getCsrfToken(): string {
@@ -74,7 +75,7 @@ function lineFromGeojson(geojson: any): any | null {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function ImportTab({ cities, canReview = true, canEdit = true, showToast, onPreview, onDraftCreated }: ImportTabProps) {
+export default function ImportTab({ cities, canReview = true, canEdit = true, showToast, onPreview, onDraftCreated, onRoutePublished }: ImportTabProps) {
   const [url, setUrl] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [cityOverride, setCityOverride] = useState('auto')
@@ -239,7 +240,7 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
         setCandidates([])
         setSelectedIdx(0)
         onPreview(null, colorIndex)
-        onDraftCreated()
+        onRoutePublished(data?.route ?? null)
       }
     } catch {
       showToast('تعذّر الاتصال بالخادم', false)

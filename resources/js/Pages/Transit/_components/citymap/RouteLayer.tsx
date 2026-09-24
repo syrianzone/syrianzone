@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import type maplibregl from 'maplibre-gl'
 import { useMap, useStyleVersion } from '@/Components/map/MapContext'
 import { getRouteColor, buildColorMatch } from '../../_lib/mapColors'
@@ -17,6 +17,13 @@ interface ActiveRoute {
   y: number
 }
 
+// Insert transit geometry under the basemap's first symbol layer so street
+// names, place labels, POIs and housenumbers stay readable on top of it.
+export function firstSymbolLayerId(map: maplibregl.Map): string | undefined {
+  const layers = map.getStyle()?.layers
+  if (!Array.isArray(layers)) return undefined
+  return layers.find((l: any) => l.type === 'symbol')?.id
+}
 
 export default function RouteLayer({ data }: RouteLayerProps) {
   const map = useMap()
@@ -25,6 +32,21 @@ export default function RouteLayer({ data }: RouteLayerProps) {
   const [activeRoute, setActiveRoute] = useState<ActiveRoute | null>(null)
   const selectedRouteIdRef = useRef(selectedRouteId)
   selectedRouteIdRef.current = selectedRouteId
+
+  const applySelection = useCallback((target: maplibregl.Map, id: string | null) => {
+    if (!target.getLayer('routes-line')) return
+    if (id) {
+      target.setPaintProperty('routes-line', 'line-opacity', [
+        'case', ['==', ['get', 'id'], id], 1.0, 0.15,
+      ])
+      target.setPaintProperty('routes-line', 'line-width', [
+        'case', ['==', ['get', 'id'], id], 6, 3,
+      ])
+    } else {
+      target.setPaintProperty('routes-line', 'line-opacity', 0.85)
+      target.setPaintProperty('routes-line', 'line-width', 4)
+    }
+  }, [])
 
   // Build source + line layer; wire click/hover events
   useEffect(() => {
@@ -50,7 +72,12 @@ export default function RouteLayer({ data }: RouteLayerProps) {
         'line-cap': 'round',
         'line-join': 'round',
       },
-    })
+    }, firstSymbolLayerId(map))
+
+    // setStyle / a data identity change re-adds this layer with the default
+    // paint, so the live selection must be re-applied on every re-add — the
+    // selection effect below only runs when the selected id actually changes.
+    applySelection(map, selectedRouteIdRef.current)
 
     const onMouseMove = (e: maplibregl.MapMouseEvent) => {
       if (selectedRouteIdRef.current) return
@@ -94,27 +121,17 @@ export default function RouteLayer({ data }: RouteLayerProps) {
       } catch { /* map already removed */ }
     }
     // styleVersion: re-add layers after a basemap style swap (setStyle wipes them)
-  }, [map, data, setSelectedRouteId, styleVersion])
+  }, [map, data, setSelectedRouteId, styleVersion, applySelection])
 
   // Highlight / dim routes when selection changes
   useEffect(() => {
-    if (!map || !map.getLayer('routes-line')) return
+    if (!map) return
 
-    if (selectedRouteId) {
-      map.setPaintProperty('routes-line', 'line-opacity', [
-        'case', ['==', ['get', 'id'], selectedRouteId], 1.0, 0.15,
-      ])
-      map.setPaintProperty('routes-line', 'line-width', [
-        'case', ['==', ['get', 'id'], selectedRouteId], 6, 3,
-      ])
-    } else {
-      map.setPaintProperty('routes-line', 'line-opacity', 0.85)
-      map.setPaintProperty('routes-line', 'line-width', 4)
-    }
+    applySelection(map, selectedRouteId)
 
     // Close the map popup when selection changes from sidebar
     setActiveRoute(null)
-  }, [map, selectedRouteId])
+  }, [map, selectedRouteId, applySelection])
 
   if (!activeRoute) return null
 

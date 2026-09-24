@@ -277,6 +277,13 @@ function TransitStudioPageContent() {
   const ensureMapLayers = useCallback((map: maplibregl.Map, currentColorIndex: number) => {
     const empty: FeatureCollection = { type: 'FeatureCollection', features: [] }
     const activeColor = getRouteColor(currentColorIndex)
+    // Keep transit geometry beneath the basemap's symbol layers so street and
+    // place labels stay readable; call order still controls relative stacking.
+    const beforeId = (() => {
+      const layers = map.getStyle()?.layers
+      if (!Array.isArray(layers)) return undefined
+      return layers.find((l: any) => l.type === 'symbol')?.id
+    })()
 
     if (!map.getSource(SRC_REF_ROUTES)) {
       map.addSource(SRC_REF_ROUTES, { type: 'geojson', data: empty })
@@ -286,7 +293,7 @@ function TransitStudioPageContent() {
         source: SRC_REF_ROUTES,
         paint: { 'line-color': buildColorMatch() as any, 'line-width': 3, 'line-opacity': 0.4 },
         layout: { 'line-cap': 'round', 'line-join': 'round' },
-      })
+      }, beforeId)
     }
 
     if (!map.getSource(SRC_REF_STOPS)) {
@@ -296,7 +303,7 @@ function TransitStudioPageContent() {
         type: 'circle',
         source: SRC_REF_STOPS,
         paint: { 'circle-radius': 4, 'circle-color': '#d4956a', 'circle-opacity': 0.4 },
-      })
+      }, beforeId)
     }
 
     if (!map.getSource(SRC_LINES)) {
@@ -307,7 +314,7 @@ function TransitStudioPageContent() {
         source: SRC_LINES,
         paint: { 'line-color': activeColor, 'line-width': 6, 'line-opacity': 0.95 },
         layout: { 'line-cap': 'round', 'line-join': 'round' },
-      })
+      }, beforeId)
     }
 
     if (!map.getSource(SRC_ACTIVE)) {
@@ -319,16 +326,51 @@ function TransitStudioPageContent() {
         filter: ['==', '$type', 'LineString'],
         paint: { 'line-color': activeColor, 'line-width': 5, 'line-dasharray': [2, 2], 'line-opacity': 0.9 },
         layout: { 'line-cap': 'round', 'line-join': 'round' },
-      })
+      }, beforeId)
       map.addLayer({
         id: 'studio-layer-vertices',
         type: 'circle',
         source: SRC_ACTIVE,
         filter: ['==', '$type', 'Point'],
         paint: { 'circle-radius': 6, 'circle-color': activeColor, 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2 },
-      })
+      }, beforeId)
     }
   }, [])
+
+  // Push the other published routes back while a line is being drawn/edited.
+  const applyRefDim = useCallback((map: maplibregl.Map, focused: boolean) => {
+    if (!map.getLayer('ref-layer-routes')) return
+    map.setPaintProperty('ref-layer-routes', 'line-opacity', focused ? 0.15 : 0.4)
+  }, [])
+
+  // Push reference data + the "step back" opacity in one pass. Called after
+  // every layer (re)creation, including a basemap style swap, so neither the
+  // references nor the dimming can be silently reset.
+  const syncRefLayers = useCallback((map: maplibregl.Map) => {
+    const rSrc = map.getSource(SRC_REF_ROUTES) as maplibregl.GeoJSONSource | undefined
+    const sSrc = map.getSource(SRC_REF_STOPS) as maplibregl.GeoJSONSource | undefined
+    const empty: FeatureCollection = { type: 'FeatureCollection', features: [] }
+    const store = useStudioStore.getState()
+    const editingId = store.editingRouteId
+
+    if (refData) {
+      // Drop the route under edit: it is already drawn by studio-layer-lines,
+      // so keeping it here would double-draw the same geometry.
+      const routes = editingId
+        ? { ...refData.routes, features: refData.routes.features.filter(f => f.properties?.id !== editingId) }
+        : refData.routes
+      const stops = editingId
+        ? { ...refData.stops, features: refData.stops.features.filter(f => !(f.properties as any)?.routeIds?.includes(editingId)) }
+        : refData.stops
+      rSrc?.setData(routes as any)
+      sSrc?.setData(stops as any)
+    } else {
+      rSrc?.setData(empty)
+      sSrc?.setData(empty)
+    }
+
+    applyRefDim(map, !!editingId || (store.drawnLine?.length ?? 0) >= 2)
+  }, [refData, applyRefDim])
 
   // Active-line source helpers
   const flushActive = useCallback((coords: Position[], cursor?: Position) => {
@@ -602,14 +644,29 @@ function TransitStudioPageContent() {
       if (currentStyleRef.current !== targetStyle) {
         currentStyleRef.current = targetStyle
         map.setStyle(targetStyle)
-        map.once('styledata', () => {
+        // style.load, NOT styledata: MapLibre fires styledata for every runtime
+        // mutation too, so re-adding layers there loops forever.
+        map.once('style.load', () => {
           ensureMapLayers(map, colorIndex)
-          if (useStudioStore.getState().drawnLine) {
+          syncRefLayers(map)
+
+          const store = useStudioStore.getState()
+          if (store.drawnLine?.length) {
             const lSrc = map.getSource(SRC_LINES) as maplibregl.GeoJSONSource
             lSrc?.setData({
               type: 'FeatureCollection',
-              features: [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: useStudioStore.getState().drawnLine } }]
+              features: [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: store.drawnLine } }]
             })
+          }
+
+          const pts = activeLine.current
+          if (pts.length >= 2) {
+            const aSrc = map.getSource(SRC_ACTIVE) as maplibregl.GeoJSONSource
+            const features: any[] = [
+              { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: pts } },
+            ]
+            pts.forEach((c) => features.push({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: c } }))
+            aSrc?.setData({ type: 'FeatureCollection', features })
           }
         })
       }
@@ -620,25 +677,23 @@ function TransitStudioPageContent() {
     const observer = new MutationObserver(applyStyleIfNeeded)
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme'] })
     return () => observer.disconnect()
-  }, [mapReady, theme, isDarkMode, colorIndex, ensureMapLayers])
+  }, [mapReady, theme, isDarkMode, colorIndex, ensureMapLayers, syncRefLayers])
 
   // Sync reference routes/stops for current city
   useEffect(() => {
     if (!mapReady || !mapRef.current) return
     const map = mapRef.current
     ensureMapLayers(map, colorIndex)
-    const rSrc = map.getSource(SRC_REF_ROUTES) as maplibregl.GeoJSONSource | undefined
-    const sSrc = map.getSource(SRC_REF_STOPS) as maplibregl.GeoJSONSource | undefined
+    syncRefLayers(map)
+  }, [mapReady, colorIndex, editingRouteId, ensureMapLayers, syncRefLayers])
 
-    if (refData) {
-      rSrc?.setData(refData.routes)
-      sSrc?.setData(refData.stops)
-    } else {
-      const empty: FeatureCollection = { type: 'FeatureCollection', features: [] }
-      rSrc?.setData(empty)
-      sSrc?.setData(empty)
-    }
-  }, [mapReady, refData, colorIndex, ensureMapLayers])
+  // Live dimming as a line is drawn or a published route is loaded for editing
+  useEffect(() => {
+    if (!mapReady || !mapRef.current) return
+    const map = mapRef.current
+    ensureMapLayers(map, colorIndex)
+    applyRefDim(map, !!editingRouteId || (drawnLine?.length ?? 0) >= 2)
+  }, [mapReady, editingRouteId, drawnLine, colorIndex, ensureMapLayers, applyRefDim])
 
   // Sync line color on vector map
   useEffect(() => {

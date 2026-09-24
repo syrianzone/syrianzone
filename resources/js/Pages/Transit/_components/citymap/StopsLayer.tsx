@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef, useCallback } from 'react'
 import maplibregl from 'maplibre-gl'
 import { useMap, useStyleVersion } from '@/Components/map/MapContext'
 import { useMapStore } from '../../_store/useMapStore'
+import { firstSymbolLayerId } from './RouteLayer'
 import type { FeatureCollection, StopProperties } from '../../_types'
 
 interface StopsLayerProps {
@@ -26,6 +27,19 @@ export default function StopsLayer({ data }: StopsLayerProps) {
   const showStops = useMapStore(s => s.showStops)
   const selectedRouteId = useMapStore(s => s.selectedRouteId)
 
+  const showStopsRef = useRef(showStops)
+  showStopsRef.current = showStops
+  const selectedRouteIdRef = useRef(selectedRouteId)
+  selectedRouteIdRef.current = selectedRouteId
+
+  // A re-add (style swap / new data identity) restores a visible, unfiltered
+  // layer, so both pieces of state must be re-applied at creation time.
+  const applyStopsState = useCallback((target: maplibregl.Map, visible: boolean, routeId: string | null) => {
+    if (!target.getLayer('stops-circle')) return
+    target.setLayoutProperty('stops-circle', 'visibility', visible ? 'visible' : 'none')
+    target.setFilter('stops-circle', routeId ? ['in', routeId, ['get', 'routeIds']] : null)
+  }, [])
+
   useEffect(() => {
     if (!map) return
 
@@ -44,7 +58,9 @@ export default function StopsLayer({ data }: StopsLayerProps) {
         'circle-stroke-width': 1.5,
         'circle-stroke-color': '#ffffff',
       },
-    })
+    }, firstSymbolLayerId(map))
+
+    applyStopsState(map, showStopsRef.current, selectedRouteIdRef.current)
 
     // Hover effect
     map.on('mouseenter', 'stops-circle', () => {
@@ -98,25 +114,13 @@ export default function StopsLayer({ data }: StopsLayerProps) {
       } catch { /* map may have been removed already */ }
     };
     // styleVersion: re-add layers after a basemap style swap (setStyle wipes them)
-  }, [map, data, styleVersion])
+  }, [map, data, styleVersion, applyStopsState])
 
-  // React to showStops changes
+  // Keep visibility + selected-route filtering in sync with the store
   useEffect(() => {
     if (!map) return
-    if (map.getLayer('stops-circle')) {
-      map.setLayoutProperty('stops-circle', 'visibility', showStops ? 'visible' : 'none')
-    }
-  }, [map, showStops])
-
-  // Hide stops not belonging to the selected route
-  useEffect(() => {
-    if (!map || !map.getLayer('stops-circle')) return
-    if (selectedRouteId) {
-      map.setFilter('stops-circle', ['in', selectedRouteId, ['get', 'routeIds']])
-    } else {
-      map.setFilter('stops-circle', null)
-    }
-  }, [map, selectedRouteId])
+    applyStopsState(map, showStops, selectedRouteId)
+  }, [map, showStops, selectedRouteId, applyStopsState])
 
   return null
 }

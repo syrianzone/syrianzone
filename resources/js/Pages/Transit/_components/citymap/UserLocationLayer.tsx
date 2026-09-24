@@ -72,7 +72,9 @@ export default function UserLocationLayer() {
         ],
       })
     }
-  }, [map, location])
+    // styleVersion: the setup effect above recreates an EMPTY source after a
+    // basemap style swap, so the current position has to be pushed again.
+  }, [map, location, styleVersion])
 
   return null
 }

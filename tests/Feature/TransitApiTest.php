@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Route;
+use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 
 function seedRoutesCity(string $id = 'homs'): void
@@ -74,4 +75,23 @@ test('city routes list reports integer stop counts, never null', function () {
 test('unknown city responds 404 instead of a cached empty payload', function () {
     $this->getJson('/api/v1/cities/no-such-city/routes')->assertNotFound();
     $this->getJson('/api/v1/cities/no-such-city/map-data')->assertNotFound();
+});
+
+test('guest studio submissions are throttled with an arabic message', function () {
+    for ($i = 0; $i < 5; $i++) {
+        $this->postJson('/api/v1/studio/routes', [])->assertStatus(422);
+    }
+
+    $this->postJson('/api/v1/studio/routes', [])
+        ->assertStatus(429)
+        ->assertJsonPath('message', 'تم تجاوز حد المحاولات المسموح، يرجى الانتظار قليلاً قبل إعادة المحاولة.')
+        ->assertHeader('Retry-After');
+});
+
+test('signed-in studio submitters are not held to the guest rate', function () {
+    $user = User::factory()->create();
+
+    for ($i = 0; $i < 6; $i++) {
+        $this->actingAs($user)->postJson('/api/v1/studio/routes', [])->assertStatus(422);
+    }
 });

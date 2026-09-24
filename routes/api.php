@@ -123,7 +123,7 @@ Route::prefix('v1')->group(function () {
 
     // Transit Studio: open for community contributions
     Route::post('/studio/routes', [\App\Http\Controllers\TransitStudioController::class, 'store'])
-        ->middleware('throttle:5,1');
+        ->middleware('throttle:studio-submit');
 
     // Transit Studio: edit existing drafts (requires auth)
     Route::middleware('auth')->group(function () {

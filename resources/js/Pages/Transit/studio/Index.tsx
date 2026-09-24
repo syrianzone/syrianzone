@@ -122,6 +122,13 @@ function findNearestSegment(coords: [number, number][], px: number, py: number, 
   return { insertIdx, distance: minDist, nearest: bestNearest }
 }
 
+function formatWait(seconds: number) {
+  if (seconds <= 1) return 'ثانية واحدة'
+  if (seconds === 2) return 'ثانيتان'
+  if (seconds <= 10) return `${seconds} ثوانٍ`
+  return `${seconds} ثانية`
+}
+
 function SuccessPanel({ draftId, isEditMode, isPublishedRouteEdit, isAnonymous, onReset, onEdit, onExit }: {
   draftId: number
   isEditMode: boolean
@@ -1047,6 +1054,9 @@ function TransitStudioPageContent() {
             : 'تم إرسال المسودة للمراجعة باسمك',
           'success'
         )
+      } else if (res.status === 429) {
+        const retryAfter = Number(res.headers.get('Retry-After')) || 60
+        addToast(`تم تجاوز حد المحاولات المسموح. يرجى الانتظار ${formatWait(retryAfter)} ثم إعادة المحاولة.`, 'destructive')
       } else {
         const msg = data.message || (data.errors ? Object.values(data.errors).flat().join(' • ') : 'حدث خطأ أثناء الإرسال')
         addToast(msg, 'destructive')

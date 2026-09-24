@@ -29,6 +29,18 @@ class AppServiceProvider extends ServiceProvider
             )
         );
 
+        RateLimiter::for('studio-submit', function (Request $request) {
+            $message = ['message' => 'تم تجاوز حد المحاولات المسموح، يرجى الانتظار قليلاً قبل إعادة المحاولة.'];
+
+            if ($request->user()) {
+                return Limit::perMinute(30)->by('user:' . $request->user()->id)
+                    ->response(fn($request, $headers) => response()->json($message, 429, $headers));
+            }
+
+            return Limit::perMinute(5)->by('ip:' . $request->ip())
+                ->response(fn($request, $headers) => response()->json($message, 429, $headers));
+        });
+
         \Illuminate\Support\Facades\Gate::before(function ($user, $ability) {
             if ($user->isSuperAdmin()) {
                 return true;

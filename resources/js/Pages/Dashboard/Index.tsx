@@ -32,6 +32,7 @@ import {
 } from '@/Components/Icons/ProjectIcons';
 import MainLayout from '@/Layouts/MainLayout';
 import { useAuth } from '@/Contexts/AuthContext';
+import { canModule } from '@/Lib/permissions';
 import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
@@ -256,6 +257,16 @@ export default function Dashboard({
   // without this file re-deriving which role implies what.
   const canTransitReview = (auth.user.effective_permissions ?? []).includes('transit.review_drafts');
 
+  // Module access is decided by capability, not by role string: a <module>_admin
+  // role holds its whole module implicitly (empty permissions array), and a
+  // plain user can hold explicit grants. Both were previously hidden from the
+  // panels they could actually reach.
+  const perms = auth.user.effective_permissions;
+  const canManagePolls = canModule(perms, 'polls');
+  const canManagePlaces = canModule(perms, 'places');
+  const canManageSyOfficial = canModule(perms, 'syofficial');
+  const canManageGovApps = canModule(perms, 'govapps');
+
   // Profile Form States
   const [profileName, setProfileName] = useState(auth.user.name);
   const [profileEmail, setProfileEmail] = useState(auth.user.email);
@@ -294,7 +305,6 @@ export default function Dashboard({
   const [editingLoading, setEditingLoading] = useState(false);
   const [editingSaving, setEditingSaving] = useState(false);
 
-  const canManagePolls = role === 'admin' || role === 'superadmin';
 
   const fetchPollDetails = async (id: string) => {
     setEditingLoading(true);
@@ -582,8 +592,8 @@ export default function Dashboard({
                   </button>
                 )}
 
-                {/* Polls Tab (Admins and Superadmins) */}
-                {(role === 'admin' || role === 'superadmin') && (
+                {/* Polls Tab */}
+                {canManagePolls && (
                   <button onClick={() => setActiveTab('polls')} className={navItemClass(activeTab === 'polls')}>
                     <TierlistIcon className="h-5 w-5" />
                     تير ليست
@@ -601,8 +611,8 @@ export default function Dashboard({
                   </Link>
                 )}
 
-                {/* Places moderation Tab (Admins, Superadmins) */}
-                {(role === 'admin' || role === 'superadmin') && (
+                {/* Places moderation Tab */}
+                {canManagePlaces && (
                   <Link
                     href="/admin/places"
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
@@ -612,8 +622,8 @@ export default function Dashboard({
                   </Link>
                 )}
 
-                {/* SyOfficial Admin Tab (Admins, SyOfficial Admins, Superadmins) */}
-                {(role === 'admin' || role === 'syofficial_admin' || role === 'superadmin') && (
+                {/* SyOfficial Admin Tab */}
+                {canManageSyOfficial && (
                   <Link
                     href="/admin/syofficial"
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
@@ -623,8 +633,8 @@ export default function Dashboard({
                   </Link>
                 )}
 
-                {/* GovApps Admin Tab (Admins, GovApps Admins, Superadmins) */}
-                {(role === 'admin' || role === 'govapps_admin' || role === 'superadmin') && (
+                {/* GovApps Admin Tab */}
+                {canManageGovApps && (
                   <Link
                     href="/admin/govapps"
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
@@ -634,7 +644,8 @@ export default function Dashboard({
                   </Link>
                 )}
 
-                {/* GuessWho Admin Tab (Admins, Superadmins) — no ProjectIcon exists, use Gamepad2 from the same lucide set as the navbar fallbacks */}
+                {/* GuessWho Admin Tab. Deliberately role-based: the module has no
+                    capability strings and is gated on the plain `admin` middleware. */}
                 {(role === 'admin' || role === 'superadmin') && (
                   <Link
                     href="/admin/guesswho"
@@ -645,12 +656,8 @@ export default function Dashboard({
                   </Link>
                 )}
 
-                {/* Phonebook Admin Tab. Reads the server-resolved list rather
-                    than the raw array, so a phonebook_admin role (which holds
-                    phonebook.* implicitly, with an empty permissions array)
-                    still sees the link. */}
-                {((auth.user.effective_permissions ?? []).includes('phonebook.edit')
-                  || (auth.user.effective_permissions ?? []).includes('phonebook.create')) && (
+                {/* Phonebook Admin Tab */}
+                {canModule(perms, 'phonebook') && (
                   <Link
                     href="/admin/phonebook"
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
@@ -773,7 +780,7 @@ export default function Dashboard({
               )}
 
               {/* POLLS TAB — single place for tierlist/poll management (replaces /admin/polls*) */}
-              {activeTab === 'polls' && (role === 'admin' || role === 'superadmin') && (
+              {activeTab === 'polls' && canManagePolls && (
                 <div>
                   <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
                     <h2 className="text-xl font-bold text-foreground flex items-center gap-2">

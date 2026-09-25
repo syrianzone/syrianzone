@@ -3,6 +3,7 @@ import { Link, Head, usePage } from '@inertiajs/react';
 import { Button } from '@/Components/ui/button';
 import { Settings2 } from 'lucide-react';
 import MainLayout from '@/Layouts/MainLayout';
+import { canModule } from '@/Lib/permissions';
 
 interface Poll {
     id: string;
@@ -17,8 +18,10 @@ interface PollsPageProps {
 
 export default function Index({ polls = [] }: PollsPageProps) {
     const { auth } = usePage().props as any;
-    const role = auth?.user?.role as string | undefined;
-    const canManage = role === 'admin' || role === 'superadmin';
+    // Capability-based, not role-based: the polls_admin middleware accepts any
+    // of polls.*, so a user holding them can manage polls but would not see
+    // the controls under a role-string check.
+    const canManage = canModule(auth?.user?.effective_permissions, 'polls');
 
     return (
         <MainLayout>

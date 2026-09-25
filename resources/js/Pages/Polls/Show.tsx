@@ -4,6 +4,7 @@ import { Button } from '@/Components/ui/button';
 import { Edit, BarChart3Icon } from 'lucide-react';
 import TierBoard from "@/Components/poll/TierBoard";
 import MainLayout from '@/Layouts/MainLayout';
+import { canModule } from '@/Lib/permissions';
 
 interface Candidate {
     id: string;
@@ -35,8 +36,10 @@ interface PollShowProps {
 
 export default function Show({ poll, candidates, groups, voteDay }: PollShowProps) {
     const { auth } = usePage().props as any;
-    const role = auth?.user?.role as string | undefined;
-    const isAdmin = role === 'admin' || role === 'superadmin';
+    // Capability-based: polls.edit is what the polls_admin middleware actually
+    // checks, so gating the Edit link on a role string hides it from a user
+    // who can in fact edit.
+    const isAdmin = canModule(auth?.user?.effective_permissions, 'polls');
 
     return (
         <MainLayout>

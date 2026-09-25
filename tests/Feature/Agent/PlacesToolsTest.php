@@ -261,7 +261,7 @@ test('a denied call is audited as denied, not silently dropped', function () {
         ->and($call->error)->toContain('Permission denied');
 });
 
-test('a domain refusal is audited as an error, not a denial', function () {
+test('a domain refusal is audited as an error, with the reason recorded', function () {
     $user = agentUser(['permissions' => ['places.approve']]);
     agentToken($user, ['places.approve']);
 
@@ -269,7 +269,12 @@ test('a domain refusal is audited as an error, not a denial', function () {
 
     callTool(ApprovePlaceTool::class, ['place_id' => $place->id]);
 
-    expect(McpToolCall::query()->latest('id')->first()->outcome)->toBe('error');
+    $call = McpToolCall::query()->latest('id')->first();
+
+    expect($call->outcome)->toBe('error')
+        // Found by driving a real agent session: the outcome was recorded but
+        // the reason was not, so the trail said "error" with nothing to go on.
+        ->and($call->error)->toContain('Place is already approved');
 });
 
 test('audit arguments are redacted so a pasted secret is never persisted', function () {

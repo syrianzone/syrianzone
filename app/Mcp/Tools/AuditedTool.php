@@ -60,7 +60,15 @@ abstract class AuditedTool extends Tool
 
             $response = $this->run($request, $context);
 
-            $this->audit($context, $http, $request, $started, $this->outcomeFor($response));
+            // A tool that refuses in-domain (e.g. approving an already-approved
+            // place) returns Response::error() rather than throwing, so the
+            // audit row has to take the reason from the response. Without this
+            // the trail records outcome=error with a null message: you learn
+            // something failed but not what, which is the one case the log
+            // exists for.
+            [$outcome, $reason] = $this->classify($response);
+
+            $this->audit($context, $http, $request, $started, $outcome, $reason);
 
             return $response;
         } catch (AuthorizationException $e) {
@@ -147,16 +155,27 @@ abstract class AuditedTool extends Tool
      * Response::structured() hands back a factory rather than a Response, so
      * both shapes have to be inspected; a factory counts as an error if any of
      * the responses it wraps is one.
+     *
+     * @return array{0: string, 1: string|null} [outcome, reason]
      */
-    protected function outcomeFor(Response|ResponseFactory $response): string
+    protected function classify(Response|ResponseFactory $response): array
     {
-        if ($response instanceof Response) {
-            return $response->isError() ? AgentAudit::OUTCOME_ERROR : AgentAudit::OUTCOME_OK;
+        $responses = $response instanceof Response
+            ? [$response]
+            : $response->responses()->all();
+
+        $errored = collect($responses)->contains(fn (Response $item) => $item->isError());
+
+        if (! $errored) {
+            return [AgentAudit::OUTCOME_OK, null];
         }
 
-        $errored = $response->responses()->contains(fn (Response $item) => $item->isError());
+        $reason = collect($responses)
+            ->filter(fn (Response $item) => $item->isError())
+            ->map(fn (Response $item) => (string) $item->content())
+            ->implode(' ');
 
-        return $errored ? AgentAudit::OUTCOME_ERROR : AgentAudit::OUTCOME_OK;
+        return [AgentAudit::OUTCOME_ERROR, $reason === '' ? null : $reason];
     }
 
     private function audit(

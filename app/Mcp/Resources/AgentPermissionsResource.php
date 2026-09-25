@@ -10,6 +10,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Attributes\Title;
+use Laravel\Mcp\Server\Attributes\Uri;
 use Laravel\Mcp\Server\Resource;
 
 /**
@@ -21,6 +22,10 @@ use Laravel\Mcp\Server\Resource;
  * retrying, and lets an operator see at a glance why a token is limited.
  */
 #[Name('agent-permissions')]
+// Without an explicit Uri the package derives one from the class name, giving
+// file://resources/agent-permissions-resource — which shares no prefix with the
+// #[Name] an agent reads in resources/list. Pin both so the pair is coherent.
+#[Uri('syrianzone://agent/permissions')]
 #[Title('Agent Permissions')]
 #[Description(
     'The capabilities this token can exercise right now, and the capabilities it was granted but cannot use. '

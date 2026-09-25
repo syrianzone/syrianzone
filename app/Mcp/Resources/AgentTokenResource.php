@@ -9,6 +9,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Attributes\Title;
+use Laravel\Mcp\Server\Attributes\Uri;
 use Laravel\Mcp\Server\Resource;
 
 /**
@@ -20,6 +21,7 @@ use Laravel\Mcp\Server\Resource;
  * not a window onto other tokens or other users.
  */
 #[Name('agent-token-audit')]
+#[Uri('syrianzone://agent/audit-trail')]
 #[Title('Agent Token Audit Trail')]
 #[Description(
     'Recent tool calls made with this token: tool name, outcome, when, and how long it took. '

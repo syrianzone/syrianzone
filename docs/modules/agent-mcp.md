@@ -161,6 +161,12 @@ written by `AuditedTool::handle()` so a tool cannot forget:
 Audit-write failures are logged, never thrown: losing a row must not turn a
 successful moderation action into a 500.
 
+Every outcome carries its reason, including a tool that refuses in-domain
+(approving an already-approved place): the message is taken off the response,
+not just the outcome. Without that the trail recorded `outcome=error` with a
+null `error` column — you learn something failed but not what, which is the one
+case the log exists for.
+
 The `agent-token-audit` resource exposes **this token's** trail only, so an agent
 can confirm its own actions or resume an interrupted sweep without becoming a
 window onto other credentials.
@@ -221,16 +227,29 @@ curl -s -X POST http://localhost:8000/mcp/admin \
 Without a token you get `401`. With a valid one you get the tool list scoped to
 that token's capabilities.
 
-Two gotchas that cost time:
+Three protocol details that cost time, all found by driving a real session:
 
 - **`Accept: application/json, text/event-stream` is required.** The MCP HTTP
   transport negotiates SSE; without it the client is refused.
+- **`execute_tools` answers as SSE even when it does not stream.** Its response
+  is `Content-Type: text/event-stream` with `data: {json}` frames, while a
+  direct `tools/call` for an advertised tool is plain `application/json`. A
+  client that only does `json.loads(body)` will fail on the catalogue path —
+  strip the `data: ` prefix, or branch on the content type.
 - **A browser session beats the bearer token.** `config('sanctum.guard')` lists
   `web` first, so if a logged-in cookie is also sent, Sanctum resolves *that*
   user and `RequireApiToken` rejects the resulting `TransientToken` with 403.
   This is intended — a session is not a revocable agent credential — but it
   means you cannot test the agent endpoint from a logged-in browser tab with
   `fetch`. Use curl, or send no cookie.
+
+Resource URIs are pinned with `#[Uri]` rather than left to the class-name
+default, so the `uri` an agent reads in `resources/list` matches the `name`:
+
+| Resource | URI |
+|---|---|
+| `agent-permissions` | `syrianzone://agent/permissions` |
+| `agent-token-audit` | `syrianzone://agent/audit-trail` |
 
 If a code change appears not to take effect, note that the dev server keeps
 `opcache` with `revalidate_freq=180`: a long-running `php artisan serve` can

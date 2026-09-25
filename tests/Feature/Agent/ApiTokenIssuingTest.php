@@ -1,6 +1,5 @@
 <?php
 
-use App\Filament\Resources\ApiTokenResource;
 use App\Support\Agents\ApiTokenIssuer;
 use App\Support\Agents\InvalidTokenAbilities;
 use App\Support\Agents\TokenIssuer;
@@ -118,7 +117,7 @@ test('the eligible-owner list excludes users holding no capability', function ()
     $granted = agentUser(['role' => 'user', 'permissions' => ['places.review']]);
     $staff = agentUser(['role' => 'transit_admin']);
 
-    $ids = ApiTokenResource::eligibleOwners()->pluck('id');
+    $ids = app(ApiTokenIssuer::class)->eligibleOwners()->pluck('id');
 
     expect($ids)->toContain($staff->id)
         ->and($ids)->toContain($granted->id)
@@ -127,9 +126,12 @@ test('the eligible-owner list excludes users holding no capability', function ()
 });
 
 test('the token ttl options are the ones the issuer understands', function () {
-    expect(array_keys(ApiTokenResource::ttlOptions()))
-        ->toBe(array_keys(TokenIssuer::TTL_OPTIONS))
-        ->and(ApiTokenResource::ttlOptions())->toHaveCount(4);
+    $options = collect(TokenIssuer::TTL_OPTIONS)
+        ->map(fn (int $days) => ['value' => $days.'d', 'label' => $days.' يوم'])
+        ->values();
+
+    expect($options->pluck('value')->all())->toBe(array_keys(TokenIssuer::TTL_OPTIONS))
+        ->and($options)->toHaveCount(4);
 });
 
 test('every catalogue capability can be granted to a superadmin token', function () {

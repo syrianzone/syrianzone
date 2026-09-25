@@ -66,7 +66,7 @@ Generated from `routes/web.php` and `routes/api.php`. Grouped by feature area, m
 
 | Route | Auth | Notes |
 |---|---|---|
-| `POST|GET|DELETE /mcp/admin` | `auth:sanctum` + `RequireApiToken` + `throttle:mcp` | Only registered when `MCP_ENABLED=true`; session cookies are refused. Effective permission = user's live permission AND token abilities. Tools: places moderation (read + approve/reject/edit/photos/delete). Tokens minted at `/superadmin/api-tokens`. See [modules/agent-mcp.md](../modules/agent-mcp.md) |
+| `POST|GET|DELETE /mcp/admin` | `auth:sanctum` + `RequireApiToken` + `throttle:mcp` | Only registered when `MCP_ENABLED=true`; session cookies are refused. Effective permission = user's live permission AND token abilities. Tools: places moderation (read + approve/reject/edit/photos/delete). Tokens minted at `/admin/api-tokens` (dashboard sidebar, superadmin). See [modules/agent-mcp.md](../modules/agent-mcp.md) |
 
 ## JSON API (`api.php`)
 

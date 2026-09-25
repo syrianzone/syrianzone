@@ -14,6 +14,7 @@ import {
   Plus,
   Loader2,
   Megaphone,
+  KeyRound,
   CloudUpload,
   Gamepad2,
   Eye,
@@ -124,6 +125,8 @@ interface DashboardProps {
       email: string;
       role: string;
       avatar_url: string | null;
+      /** Resolved server-side by User::effectivePermissions(); see AuthContext. */
+      effective_permissions?: string[];
     };
   };
   role: string;
@@ -240,19 +243,18 @@ export default function Dashboard({
   allDrafts = [],
   publishedRoutes = []
 }: DashboardProps) {
-  // MainLayout mounts AuthProvider, so useAuth() is available in the page body.
-  const { can } = useAuth();
-
   const [activeTab, setActiveTab] = useState<'profile' | 'submissions' | 'polls'>(() => {
     // ?tab=profile deep link from the navbar dropdown; profile is the only tab every role has
     if (new URLSearchParams(window.location.search).get('tab') === 'profile') return 'profile';
     return role === 'user' ? 'submissions' : (role === 'transit_admin' ? 'profile' : 'polls');
   });
 
-  // can() reads the server-resolved capability list, so a transit_admin role
-  // and an explicit transit.* grant both unlock the panel without this file
-  // re-deriving which role implies what.
-  const canTransitReview = can('transit.review_drafts');
+  // Read from the Inertia prop, NOT useAuth(): this component renders
+  // <MainLayout> (and therefore AuthProvider) itself, so its body runs above
+  // the provider. The list is already role-resolved server-side, so a
+  // transit_admin role and an explicit transit.* grant both unlock the panel
+  // without this file re-deriving which role implies what.
+  const canTransitReview = (auth.user.effective_permissions ?? []).includes('transit.review_drafts');
 
   // Profile Form States
   const [profileName, setProfileName] = useState(auth.user.name);
@@ -673,6 +675,19 @@ export default function Dashboard({
                   >
                     <Megaphone className="h-5 w-5" />
                     النافذة المنبثقة
+                  </Link>
+                )}
+
+                {/* Agent API tokens (Superadmin only) — minting a token grants
+                    capability to an automated client, so it is not delegated to
+                    module admins the way the moderation panels are. */}
+                {role === 'superadmin' && (
+                  <Link
+                    href="/admin/api-tokens"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  >
+                    <KeyRound className="h-5 w-5" />
+                    رموز الوكلاء
                   </Link>
                 )}
 

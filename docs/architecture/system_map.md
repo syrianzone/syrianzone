@@ -58,7 +58,7 @@ syrianzone/
 ├── app/
 │   ├── Console/                 # Scheduled jobs & artisan commands (R2 migrations, HalaSyria sync…)
 │   ├── Events/                  # Broadcast events (Guess Who signaling)
-│   ├── Filament/Resources/      # Filament v5 resources: Users + agent API tokens (Guess Who moved to Inertia Admin/GuessWho)
+│   ├── Filament/Resources/      # Filament v5 resources: Users only (Guess Who moved to Inertia Admin/GuessWho; agent tokens to Admin/ApiTokens)
 │   ├── Mcp/                     # Agent (MCP) server, tools and resources — see modules/agent-mcp.md
 │   ├── Http/Controllers/        # One controller (or group) per feature module
 │   │   └── Api/                 # JSON API controllers (V1/ TransitController, VotingDataController, …)
@@ -127,7 +127,7 @@ Controllers issue raw spatial SQL (`ST_AsGeoJSON`, `ST_Distance_Sphere`) against
 | Standalone pages | `/roznama`, `/shawarma`, `/justice`, `/crossings`, `/about`, `/stats` | (Inertia closures) | Roznama/, Shawarma/, Justice/, Crossings/, About/, Stats/ | — |
 | Dashboard/auth | `/dashboard` (incl. polls-tab admin), `/auth/google*`, `/user` | AuthController, DashboardController, AdminUserController | Dashboard/ | — |
 | Assets admin | `/admin/assets`, `/api/v1/admin/assets/*` | AssetUploadController | Admin/AssetManager | [reference/asset-storage.md](../reference/asset-storage.md) |
-| Agent / MCP | `/mcp/admin` (bearer token; `MCP_ENABLED` flag), `/superadmin/api-tokens` | MCP tools in `app/Mcp/`, `RequireApiToken` | — | [modules/agent-mcp.md](../modules/agent-mcp.md) |
+| Agent / MCP | `/mcp/admin` (bearer token; `MCP_ENABLED` flag), `/admin/api-tokens` | MCP tools in `app/Mcp/`, `ApiTokenAdminController`, `RequireApiToken` | Admin/ApiTokens/ | [modules/agent-mcp.md](../modules/agent-mcp.md) |
 | Site popup | `/admin/site-popup`, `/api/v1/admin/site-popup` (superadmin; shared as `sitePopup` prop, versioned dismiss) | SitePopupAdminController | Admin/SitePopup | — |
 | Meta | `/sitemap.xml`, `/healthcheck`, `/api/metrics`, `/api/app-icon` | Sitemap/Metrics controllers | — | — |
 
@@ -149,7 +149,7 @@ The 28 capability ids live in `app/Support/Permissions/PermissionCatalogue.php` 
 
 ### Agent (MCP) access
 
-`/mcp/admin` exposes the admin capabilities to AI agents via [`laravel/mcp`](https://laravel.com/docs/mcp) + Sanctum bearer tokens, behind the `MCP_ENABLED` flag. Registered by the package provider from `routes/ai.php` (not by `withRouting()`), outside the `web`/`api` groups, so no session or CSRF. Authorisation is the **intersection** of the user's live permission and the token's abilities, so a token can only narrow. Tokens are minted at `/superadmin/api-tokens`; every call is audited to `mcp_tool_calls`. Full spec: [modules/agent-mcp.md](../modules/agent-mcp.md).
+`/mcp/admin` exposes the admin capabilities to AI agents via [`laravel/mcp`](https://laravel.com/docs/mcp) + Sanctum bearer tokens, behind the `MCP_ENABLED` flag. Registered by the package provider from `routes/ai.php` (not by `withRouting()`), outside the `web`/`api` groups, so no session or CSRF. Authorisation is the **intersection** of the user's live permission and the token's abilities, so a token can only narrow. Tokens are minted at `/admin/api-tokens` (dashboard sidebar, superadmin-only, via `ApiTokenAdminController`); every call is audited to `mcp_tool_calls`. Full spec: [modules/agent-mcp.md](../modules/agent-mcp.md).
 
 ---
 

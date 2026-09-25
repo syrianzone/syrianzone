@@ -203,6 +203,14 @@ Route::middleware('auth')->group(function () {
         Route::get('/admin/site-popup', [\App\Http\Controllers\SitePopupAdminController::class, 'renderIndex']);
         Route::get('/api/v1/admin/site-popup', [\App\Http\Controllers\SitePopupAdminController::class, 'show']);
         Route::put('/api/v1/admin/site-popup', [\App\Http\Controllers\SitePopupAdminController::class, 'update']);
+
+        // Agent API tokens (see docs/modules/agent-mcp.md). Superadmin-only:
+        // minting a token grants capability to an automated client, so it is
+        // not delegated to module admins the way the moderation panels are.
+        Route::get('/admin/api-tokens', [\App\Http\Controllers\ApiTokenAdminController::class, 'renderIndex']);
+        Route::post('/api/v1/admin/api-tokens', [\App\Http\Controllers\ApiTokenAdminController::class, 'store']);
+        Route::delete('/api/v1/admin/api-tokens/{id}', [\App\Http\Controllers\ApiTokenAdminController::class, 'destroy'])->whereNumber('id');
+        Route::post('/api/v1/admin/api-tokens/revoke-all/{userId}', [\App\Http\Controllers\ApiTokenAdminController::class, 'revokeAllForUser'])->whereNumber('userId');
     });
 
     // Hidden Places: authenticated writes (session + CSRF via the web group)

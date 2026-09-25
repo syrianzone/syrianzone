@@ -50,7 +50,7 @@ Implementation:
 | `app/Support/Agents/AgentAuthorizer.php` | Answers "may this agent do X". All methods fail closed |
 | `app/Support/Agents/TokenIssuer.php` | Mints tokens: clamps abilities to the owner's live grants, refuses `*`, drops unknown ids, sets an expiry |
 | `app/Support/Agents/AgentContext.php` | The per-request identity every tool authorises through |
-| `app/Support/Agents/ApiTokenIssuer.php` | Translates the Filament form shape into a `TokenIssuer` call |
+| `app/Support/Agents/ApiTokenIssuer.php` | Translates the admin form shape into a `TokenIssuer` call, and answers "who may hold a token" |
 
 ---
 
@@ -169,8 +169,17 @@ window onto other credentials.
 
 ## 7. Minting tokens
 
-`/superadmin/api-tokens` (superadmin-only, via `canAccessPanel`). Pick a user, a
-name, a TTL (7/30/90/180 days, default 30) and the capabilities.
+`/admin/api-tokens`, linked from the dashboard sidebar as **رموز الوكلاء**. It
+lives with the other `/admin/*` sections rather than in Filament — one UI per
+job; the Filament resource that first owned this was removed. Access is
+superadmin-only (`superadmin` middleware), matching what the Filament panel
+previously enforced via `canAccessPanel()`. Minting a token grants capability to
+an automated client, so unlike the moderation panels it is not delegated to
+module admins.
+
+Pick a user, a name, a TTL (7/30/90/180 days, default 30) and the capabilities.
+The page also shows the ready-to-paste `curl` and points at
+`php artisan mcp:inspector mcp/admin`.
 
 - The **plaintext is shown once**, in the confirmation notification. Only its
   hash is stored, so a lost token cannot be recovered — mint a replacement.
@@ -188,7 +197,46 @@ cannot exhaust another's budget on a shared egress IP.
 
 ---
 
-## 8. Tests
+## 8. Trying it locally
+
+```bash
+# 1. the surface is off unless you opt in
+echo 'MCP_ENABLED=true' >> .env && php artisan config:clear
+
+# 2. mint a token (or use /admin/api-tokens in the UI)
+php artisan tinker --execute='
+  $u = App\Models\User::where("role","superadmin")->first();
+  echo app(App\Support\Agents\TokenIssuer::class)
+        ->issue($u, "local-test", ["places.review","places.approve"])
+        ["token"]->plainTextToken;'
+
+# 3. call it
+curl -s -X POST http://localhost:8000/mcp/admin \
+  -H "Authorization: Bearer <token>" \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json, text/event-stream' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+```
+
+Without a token you get `401`. With a valid one you get the tool list scoped to
+that token's capabilities.
+
+Two gotchas that cost time:
+
+- **`Accept: application/json, text/event-stream` is required.** The MCP HTTP
+  transport negotiates SSE; without it the client is refused.
+- **A browser session beats the bearer token.** `config('sanctum.guard')` lists
+  `web` first, so if a logged-in cookie is also sent, Sanctum resolves *that*
+  user and `RequireApiToken` rejects the resulting `TransientToken` with 403.
+  This is intended — a session is not a revocable agent credential — but it
+  means you cannot test the agent endpoint from a logged-in browser tab with
+  `fetch`. Use curl, or send no cookie.
+
+If a code change appears not to take effect, note that the dev server keeps
+`opcache` with `revalidate_freq=180`: a long-running `php artisan serve` can
+serve a stale compile for up to three minutes. Restart it if in doubt.
+
+## 9. Tests
 
 `tests/Feature/Agent/` — 54 tests:
 
@@ -210,7 +258,7 @@ Two notes for anyone extending this:
 
 ---
 
-## 9. Adding a module
+## 10. Adding a module
 
 1. Extract the module's admin logic into a transport-free service under
    `app/Services/<Module>/`, and point the existing controller at it.

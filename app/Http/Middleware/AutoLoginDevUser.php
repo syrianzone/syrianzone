@@ -9,11 +9,20 @@ use Illuminate\Support\Facades\Auth;
 
 class AutoLoginDevUser
 {
-    public const DEV_ROLES = ['user', 'transit_admin', 'admin', 'superadmin'];
+    // Every role the Filament user form can assign, so dev impersonation
+    // covers the same set. Keep in sync with UserResource's role select.
+    public const DEV_ROLES = [
+        'user', 'transit_admin', 'syofficial_admin', 'govapps_admin',
+        'phonebook_admin', 'places_admin', 'admin', 'superadmin',
+    ];
 
     public const DEV_USERS = [
         'user' => ['name' => 'Dev User',          'email' => 'dev-user@syrian.zone'],
         'transit_admin' => ['name' => 'Dev Transit Admin', 'email' => 'dev-transit@syrian.zone'],
+        'syofficial_admin' => ['name' => 'Dev SyOfficial Admin', 'email' => 'dev-syofficial@syrian.zone'],
+        'govapps_admin' => ['name' => 'Dev Gov Apps Admin', 'email' => 'dev-govapps@syrian.zone'],
+        'phonebook_admin' => ['name' => 'Dev Phonebook Admin', 'email' => 'dev-phonebook@syrian.zone'],
+        'places_admin' => ['name' => 'Dev Places Admin', 'email' => 'dev-places@syrian.zone'],
         'admin' => ['name' => 'Dev Admin',         'email' => 'dev-admin@syrian.zone'],
         'superadmin' => ['name' => 'Dev Superadmin',    'email' => 'dev-superadmin@syrian.zone'],
     ];

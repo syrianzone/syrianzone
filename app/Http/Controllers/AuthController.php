@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -9,12 +10,11 @@ use Laravel\Socialite\Facades\Socialite;
 
 class AuthController extends Controller
 {
-
     public function redirectToProvider(Request $request)
     {
         $redirect = $request->query('redirect');
         if ($redirect && filter_var($redirect, FILTER_VALIDATE_URL) === false) {
-            $request->session()->put('url.intended', '/' . ltrim($redirect, '/'));
+            $request->session()->put('url.intended', '/'.ltrim($redirect, '/'));
         }
         // Socialite throws on absent credentials, which turns a misconfigured
         // env into a bare 500 on the login button. Staging runs without a google
@@ -22,6 +22,7 @@ class AuthController extends Controller
         if (! config('services.google.client_id')) {
             return redirect('/?error=auth_unavailable');
         }
+
         return Socialite::driver('google')->redirect();
     }
 
@@ -52,12 +53,12 @@ class AuthController extends Controller
         ];
         // Google only seeds the display name at signup. Overwriting it on every login
         // undid any name set in the dashboard and put real names on public pages.
-        if (!$user) {
+        if (! $user) {
             $attributes['name'] = $googleUser->getName();
         }
         // Refresh the Google avatar only when the user has not uploaded a custom
         // one; a custom avatar lives under our media disk's avatars/ prefix.
-        if (!$this->hasCustomAvatar($user)) {
+        if (! $this->hasCustomAvatar($user)) {
             $attributes['avatar_url'] = $googleUser->getAvatar();
         }
         $user = User::updateOrCreate(['email' => $email], $attributes);
@@ -69,24 +70,28 @@ class AuthController extends Controller
         }
 
         Auth::login($user, true);
+
         return redirect()->intended('/dashboard');
     }
 
     private function hasCustomAvatar(?User $user): bool
     {
-        if (!$user || $user->avatar_url === null) {
+        if (! $user || $user->avatar_url === null) {
             return false;
         }
         // Structural match on the url path (/avatars/{id}/ under any base): a
         // MEDIA_DISK switch changes the base url, and a prefix check against the
         // current disk would let the Google avatar clobber pre-switch uploads.
         $path = parse_url($user->avatar_url, PHP_URL_PATH) ?? '';
+
         return is_string($path) && str_contains($path, "/avatars/{$user->id}/");
     }
 
     public function user(Request $request)
     {
-        return $request->user();
+        // Shares one definition with the Inertia payload so /user and the
+        // initial page load can never disagree about the user's capabilities.
+        return HandleInertiaRequests::userPayload($request->user());
     }
 
     public function logout(Request $request)
@@ -97,6 +102,7 @@ class AuthController extends Controller
         if ($request->header('X-Inertia')) {
             return redirect('/');
         }
+
         return response()->json(['message' => 'Logged out']);
     }
 }

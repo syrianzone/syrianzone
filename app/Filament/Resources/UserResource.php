@@ -5,26 +5,27 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\UserResource\Pages;
 use App\Models\City;
 use App\Models\User;
+use App\Support\Permissions\PermissionCatalogue;
 use BackedEnum;
+use Filament\Actions;
 use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
-use Filament\Actions;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\HtmlString;
-use UnitEnum;
 
 class UserResource extends Resource
 {
     protected static ?string $model = User::class;
 
-    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-users';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-users';
 
     protected static ?string $navigationLabel = 'المستخدمون';
 
@@ -33,56 +34,43 @@ class UserResource extends Resource
     protected static ?string $pluralModelLabel = 'المستخدمون';
 
     /**
+     * Assignable roles and their Arabic labels.
+     *
+     * Kept as a method rather than an inline array so a test can assert it
+     * covers every role User knows about. A role that exists in
+     * User::ROLE_MODULE_PREFIXES but is missing here can never be assigned to
+     * anyone, which is exactly how phonebook_admin became unassignable.
+     *
+     * @return array<string, string>
+     */
+    public static function roleOptions(): array
+    {
+        return [
+            'superadmin' => 'مدير عام (وصول كامل غير مقيد)',
+            'admin' => 'مشرف (أساسي) — كل الصلاحيات',
+            'transit_admin' => 'مشرف نقل',
+            'syofficial_admin' => 'مشرف الحسابات الرسمية',
+            'govapps_admin' => 'مشرف التطبيقات الحكومية',
+            'phonebook_admin' => 'مشرف دليل الهاتف',
+            'places_admin' => 'مشرف مشوار',
+            'user' => 'مستخدم عادي',
+        ];
+    }
+
+    /**
      * Permission capabilities grouped by module. Keys are the capability ids
      * stored in users.permissions; labels are shown inside each project group
      * (the module name is the group heading, so it is not repeated here).
+     *
+     * The list itself lives in PermissionCatalogue, which the agent token
+     * issuer and the MCP authorizer also read. Keeping it here as a thin
+     * delegate preserves the existing call sites.
      *
      * @return array<string, array<string, string>>
      */
     public static function permissionGroups(): array
     {
-        return [
-            'syofficial' => [
-                'syofficial.create' => 'إنشاء الجهات والتصنيفات',
-                'syofficial.edit' => 'تعديل بيانات الجهات وروابط التواصل',
-                'syofficial.toggle' => 'إظهار الجهات والتصنيفات وإخفاؤها',
-                'syofficial.delete' => 'حذف الجهات والتصنيفات',
-                'syofficial.reorder' => 'السحب والإفلات للترتيب',
-            ],
-            'govapps' => [
-                'govapps.create' => 'إضافة التطبيقات الحكومية',
-                'govapps.edit' => 'تعديل تفاصيل التطبيقات وروابطها',
-                'govapps.toggle' => 'إظهار التطبيقات وإخفاؤها',
-                'govapps.delete' => 'حذف التطبيقات',
-                'govapps.reorder' => 'السحب والإفلات للترتيب',
-            ],
-            'transit' => [
-                'transit.review_drafts' => 'مراجعة المسارات المقترحة',
-                'transit.approve' => 'الموافقة على المسارات ونشرها',
-                'transit.reject' => 'رفض مسودات المسارات',
-                'transit.edit_routes' => 'تعديل المسارات المنشورة والمواقف',
-                'transit.delete_routes' => 'حذف المسارات',
-            ],
-            'places' => [
-                'places.review' => 'مراجعة الأماكن قيد الانتظار',
-                'places.approve' => 'الموافقة على الأماكن ونشرها',
-                'places.edit' => 'تعديل تفاصيل الأماكن',
-                'places.moderate_photos' => 'تدوير الصور وحذفها',
-                'places.delete' => 'حذف الأماكن',
-            ],
-            'phonebook' => [
-                'phonebook.create' => 'إنشاء الإدخالات والتصنيفات',
-                'phonebook.edit' => 'تعديل الأرقام والأسماء والتفاصيل',
-                'phonebook.toggle' => 'إظهار الإدخالات وإخفاؤها',
-                'phonebook.delete' => 'حذف الإدخالات والتصنيفات',
-                'phonebook.reorder' => 'السحب والإفلات للترتيب',
-            ],
-            'polls' => [
-                'polls.create' => 'إنشاء الاستبيانات',
-                'polls.edit' => 'تعديل الاستبيانات والمرشحين',
-                'polls.delete' => 'حذف الاستبيانات',
-            ],
-        ];
+        return PermissionCatalogue::groups();
     }
 
     /**
@@ -94,14 +82,7 @@ class UserResource extends Resource
      */
     public static function permissionGroupMeta(): array
     {
-        return [
-            'syofficial' => ['label' => 'الحسابات الرسمية', 'icon' => 'syofficial'],
-            'govapps' => ['label' => 'التطبيقات الحكومية', 'icon' => 'govapps'],
-            'transit' => ['label' => 'ترانزيت', 'icon' => 'transit'],
-            'places' => ['label' => 'مشوار', 'icon' => 'places'],
-            'phonebook' => ['label' => 'دليل الهاتف', 'icon' => 'phonebook'],
-            'polls' => ['label' => 'الاستبيانات', 'icon' => 'polls'],
-        ];
+        return PermissionCatalogue::groupMeta();
     }
 
     /**
@@ -109,7 +90,7 @@ class UserResource extends Resource
      * the grouped checkboxes. Unknown capability ids are preserved by
      * mergePermissionFormData(), not here.
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     public static function splitPermissionFormData(array $data): array
@@ -131,8 +112,8 @@ class UserResource extends Resource
      * users.permission_scopes. Capability ids that are not part of any known
      * group (e.g. the '*' wildcard or future modules) are preserved.
      *
-     * @param array<string, mixed> $data
-     * @param array<string, array<int, string>> $existingScopes
+     * @param  array<string, mixed>  $data
+     * @param  array<string, array<int, string>>  $existingScopes
      * @return array<string, mixed>
      */
     public static function mergePermissionFormData(array $data, array $existingScopes = []): array
@@ -197,14 +178,7 @@ class UserResource extends Resource
                         ->maxLength(255),
                     Forms\Components\Select::make('role')
                         ->label('الدور')
-                        ->options([
-                            'superadmin' => 'مدير عام (وصول كامل غير مقيد)',
-                            'admin' => 'مشرف (أساسي)',
-                            'transit_admin' => 'مشرف نقل',
-                            'syofficial_admin' => 'مشرف الحسابات الرسمية',
-                            'govapps_admin' => 'مشرف التطبيقات الحكومية',
-                            'user' => 'مستخدم عادي',
-                        ])
+                        ->options(static::roleOptions())
                         ->default('user')
                         ->required()
                         ->live(),
@@ -215,7 +189,7 @@ class UserResource extends Resource
                         ->label('كلمة المرور')
                         ->password()
                         ->maxLength(255)
-                        ->dehydrateStateUsing(fn ($state) => \Illuminate\Support\Facades\Hash::make($state))
+                        ->dehydrateStateUsing(fn ($state) => Hash::make($state))
                         ->dehydrated(fn ($state) => filled($state))
                         ->required(fn (string $context): bool => $context === 'create'),
                 ]),
@@ -273,6 +247,10 @@ class UserResource extends Resource
                         'superadmin' => 'danger',
                         'admin' => 'warning',
                         'transit_admin' => 'success',
+                        'syofficial_admin' => 'success',
+                        'govapps_admin' => 'success',
+                        'phonebook_admin' => 'success',
+                        'places_admin' => 'success',
                         'user' => 'info',
                         default => 'gray',
                     })

@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\SiteSetting;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -27,6 +29,37 @@ class HandleInertiaRequests extends Middleware
     }
 
     /**
+     * The auth payload shared with every Inertia response.
+     *
+     * `effective_permissions` is the resolved list — role implications already
+     * applied by User::effectivePermissions(). The frontend uses it as the
+     * single source of truth for capability checks instead of re-deriving which
+     * modules a role implies, which is how the TS mirror drifted out of sync
+     * with the PHP rules. `permissions` is still sent for the admin UI, which
+     * needs the raw stored values to render its checkboxes.
+     *
+     * @return array<string, mixed>
+     */
+    public static function userPayload(?User $user): ?array
+    {
+        if ($user === null) {
+            return null;
+        }
+
+        return [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => $user->role,
+            'avatar_url' => $user->avatar_url,
+            'permissions' => $user->permissions ?? [],
+            'effective_permissions' => $user->effectivePermissions(),
+            'permission_scopes' => $user->permission_scopes ?? [],
+            'settings' => $user->settings ?? null,
+        ];
+    }
+
+    /**
      * Define the props that are shared by default.
      *
      * @see https://inertiajs.com/shared-data
@@ -35,30 +68,21 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
-        $devMode = \App\Http\Middleware\AutoLoginDevUser::isDevMode();
+        $devMode = AutoLoginDevUser::isDevMode();
 
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user() ? [
-                    'id' => $request->user()->id,
-                    'name' => $request->user()->name,
-                    'email' => $request->user()->email,
-                    'role' => $request->user()->role,
-                    'avatar_url' => $request->user()->avatar_url,
-                    'permissions' => $request->user()->permissions ?? [],
-                    'permission_scopes' => $request->user()->permission_scopes ?? [],
-                    'settings' => $request->user()->settings ?? null,
-                ] : null,
+                'user' => self::userPayload($request->user()),
             ],
             'dev' => [
                 'enabled' => $devMode,
-                'roles' => $devMode ? \App\Http\Middleware\AutoLoginDevUser::DEV_ROLES : [],
+                'roles' => $devMode ? AutoLoginDevUser::DEV_ROLES : [],
                 'currentRole' => $devMode && $request->user()
                     ? $request->user()->role
                     : null,
             ],
-            'sitePopup' => \App\Models\SiteSetting::getPopup(),
+            'sitePopup' => SiteSetting::getPopup(),
         ];
     }
 

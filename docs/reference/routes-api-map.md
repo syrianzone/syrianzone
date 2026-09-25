@@ -62,6 +62,12 @@ Generated from `routes/web.php` and `routes/api.php`. Grouped by feature area, m
 | Gov apps | Admin page | CRUD + reorder under `/api/v1/admin/govapps` |
 | Phonebook | Admin page | categories/entries CRUD, toggle active, reorder under `/api/v1/admin/phonebook` |
 
+### Agent / MCP surface (`routes/ai.php`, bearer token — no session, no CSRF)
+
+| Route | Auth | Notes |
+|---|---|---|
+| `POST|GET|DELETE /mcp/admin` | `auth:sanctum` + `RequireApiToken` + `throttle:mcp` | Only registered when `MCP_ENABLED=true`; session cookies are refused. Effective permission = user's live permission AND token abilities. Tools: places moderation (read + approve/reject/edit/photos/delete). Tokens minted at `/superadmin/api-tokens`. See [modules/agent-mcp.md](../modules/agent-mcp.md) |
+
 ## JSON API (`api.php`)
 
 ### Legacy polls

@@ -228,9 +228,9 @@ There are no like, comment, or report endpoints. `POST/DELETE /api/v1/places/{id
 
 **`GET /api/v1/admin/places?status=pending|approved|rejected|all`** -> `PlaceAdminController@index`. Validate `'status' => 'sometimes|in:pending,approved,rejected,all'`, default `pending`. Newest first, `->paginate(20)`, `data` items are `ADMIN_PLACE`.
 
-**`POST /api/v1/admin/places/{id}/approve`** -> `PlaceAdminController@approve`. Guard: `if ($place->status !== 'pending') return response()->json(['message' => "Place is already {$place->status}"], 400);`. Sets `status => 'approved'`, `approved_at => now()`, `Cache::forget('places:map')`. 200: `{ "id": 12, "status": "approved" }`.
+**`POST /api/v1/admin/places/{id}/approve`** -> `PlaceAdminController@approve` -> `PlaceModerationService::approve`. Guard: only `pending` may be moderated, else `PlaceActionException::notPending` -> 400 `"Place is already {$place->status}"`. Sets `status => 'approved'`, `approved_at => now()`, `Cache::forget('places:map')`. 200: `{ "id": 12, "status": "approved" }`. The same service backs the agent tool `approve-place` — see [agent-mcp.md](agent-mcp.md).
 
-**`POST /api/v1/admin/places/{id}/reject`** -> `PlaceAdminController@reject`. Same pending-only guard. Validation `'reason' => 'nullable|string|max:1000'`. Sets `status => 'rejected'`, `rejection_reason`. 200: `{ "id": 12, "status": "rejected" }`.
+**`POST /api/v1/admin/places/{id}/reject`** -> `PlaceAdminController@reject` -> `PlaceModerationService::reject`. Same pending-only guard. Validation `'reason' => 'nullable|string|max:1000'`. Sets `status => 'rejected'`, `rejection_reason`. 200: `{ "id": 12, "status": "rejected" }`.
 
 **`DELETE /api/v1/admin/places/{id}`** -> `PlaceAdminController@destroy`. Takedown of any place: deletes photo files via `PlaceImageService::deleteFiles`, deletes row (cascades), `Cache::forget('places:map')`. 204.
 
@@ -555,7 +555,7 @@ Backend:
 - `app/Services/PlaceImageService.php`
 - `app/Http/Controllers/PlaceController.php` (renderIndex, mapData, index, nearby, show, store, mine)
 - `app/Http/Controllers/PlaceEngagementController.php` (save, unsave, mySaves)
-- `app/Http/Controllers/PlaceAdminController.php` (renderIndex, index, approve, reject, destroy)
+- `app/Http/Controllers/PlaceAdminController.php` (renderIndex, index, approve, reject, destroy) — thin HTTP adapter; domain rules live in `app/Services/Places/PlaceModerationService.php`, shared with the agent MCP tools
 - Routes: the places block in `routes/api.php` (public reads) and `routes/web.php` (page routes, authed writes, admin moderation)
 
 Frontend:
@@ -574,7 +574,7 @@ Tests:
 - Public URL: `/mishwar` (legacy `/places` redirects). Share/deep-link URL: `/mishwar?place={id}`. Admin URL: `/admin/places`. API namespace: `/api/v1/places`, `/api/v1/my/*`, `/api/v1/admin/places`.
 - Arabic section title: أماكن خفية. Page `<title>`: أماكن خفية (template appends "- Syrian Zone").
 - Page dirs: `resources/js/Pages/Places/`, `resources/js/Pages/Admin/Places/`.
-- Controllers: `PlaceController`, `PlaceEngagementController`, `PlaceAdminController`. Models: `Place`, `PlacePhoto`, `PlaceSave`. Service: `PlaceImageService`.
+- Controllers: `PlaceController`, `PlaceEngagementController`, `PlaceAdminController`. Models: `Place`, `PlacePhoto`, `PlaceSave`. Services: `PlaceImageService`, `Places/PlaceModerationService`, `Places/PlacePresenter`.
 - Cache key: `places:map`. Storage dir: `places/{place_id}/`.
 
 ## 10. NON-GOALS (do not build these)

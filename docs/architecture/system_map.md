@@ -44,7 +44,7 @@ graph TD
 | Database | MySQL/MariaDB with spatial geometry columns (production); sqlite in tests (no spatial) |
 | Search | Laravel Scout, `collection` driver by default (`SCOUT_DRIVER`) |
 | Storage | Cloudflare R2 via Flysystem S3 driver (media, transit geojson, tierlist assets, spatie backups) |
-| Auth | Google OAuth via Socialite; Sanctum tokens; role middleware aliases |
+| Auth | Google OAuth via Socialite; Sanctum bearer tokens (agent/MCP surface); role middleware aliases |
 | Monitoring | Sentry (Laravel + @sentry/react, CI sourcemap upload), Prometheus `/api/metrics` |
 | Backups | spatie/laravel-backup every 6h → local + R2 |
 | Bundler | Vite 8 (`laravel-vite-plugin`, SSR build, Bun in Docker stage 1) |
@@ -58,12 +58,16 @@ syrianzone/
 ├── app/
 │   ├── Console/                 # Scheduled jobs & artisan commands (R2 migrations, HalaSyria sync…)
 │   ├── Events/                  # Broadcast events (Guess Who signaling)
-│   ├── Filament/Resources/      # Filament v5 resources: Users only (Guess Who moved to Inertia Admin/GuessWho)
+│   ├── Filament/Resources/      # Filament v5 resources: Users + agent API tokens (Guess Who moved to Inertia Admin/GuessWho)
+│   ├── Mcp/                     # Agent (MCP) server, tools and resources — see modules/agent-mcp.md
 │   ├── Http/Controllers/        # One controller (or group) per feature module
 │   │   └── Api/                 # JSON API controllers (V1/ TransitController, VotingDataController, …)
 │   ├── Models/                  # Eloquent models incl. spatial definitions
 │   ├── Providers/               # AppServiceProvider (rate limiters, gates), Filament panel provider
-│   └── Services/                # Isolated business logic (PlaceImageService, HalaSyriaService, WeatherService…)
+│   ├── Services/                # Isolated business logic (PlaceImageService, HalaSyriaService, WeatherService…)
+│   │   └── Places/               # Places moderation domain, shared by the dashboard and MCP tools
+│   ├── Support/                  # PermissionCatalogue + agent auth (ceiling authorizer, token issuer, audit)
+│   └── Exceptions/               # Domain refusals (Places/PlaceActionException)
 ├── bootstrap/app.php            # Middleware config, role aliases, CSRF exceptions, AutoLoginDevUser
 ├── config/                      # Standard Laravel config + reverb/scout/sentry/backup/inertia
 ├── database/migrations/         # Schema per module (see reference/database-schema.md)
@@ -80,7 +84,7 @@ syrianzone/
 │   │   ├── Pages/               # One folder per route/module (Inertia pages)
 │   │   └── app.tsx / ssr.tsx    # Client + SSR entry points
 │   └── views/app.blade.php      # Inertia root view
-├── routes/                      # web.php, api.php, channels.php, console.php
+├── routes/                      # web.php, api.php, channels.php, console.php, ai.php (MCP servers)
 ├── scripts/                     # build-map-glyphs.mjs (fontnik), optimize_geojson_floats.py…
 ├── tests/                       # Pest (~21 Feature + Unit suites)
 ├── Dockerfile                   # Multi-stage: bun build → serversideup php:8.4-fpm-nginx + s6
@@ -95,7 +99,7 @@ syrianzone/
 Browser → Nginx → Laravel controller → returns `Inertia::render('Page/Name', props)` → React 19 page component hydrates. Subsequent navigation is XHR-based SPA navigation.
 
 ### API data flow
-React pages fetch JSON from `/api/*` using the shared axios client (`Lib/axios.ts`) wrapped in react-query (offlineFirst). Rate limits defined in `AppServiceProvider` + route middleware: `voting` 10/min, `public-api` 60/min per IP; contributors + `app-icon` + transit v1 reads + places reads throttle 60/min; Guess Who room create 10/min, join 30/min.
+React pages fetch JSON from `/api/*` using the shared axios client (`Lib/axios.ts`) wrapped in react-query (offlineFirst). Rate limits defined in `AppServiceProvider` + route middleware: `voting` 10/min, `public-api` 60/min per IP, `mcp` 120/min per API token (agent surface); contributors + `app-icon` + transit v1 reads + places reads throttle 60/min; Guess Who room create 10/min, join 30/min.
 
 ### Spatial query flow (transit/places)
 Controllers issue raw spatial SQL (`ST_AsGeoJSON`, `ST_Distance_Sphere`) against MySQL/MariaDB geometry columns; results cached (e.g. city geojson 1h) and large static datasets served from R2 CDN.
@@ -123,6 +127,7 @@ Controllers issue raw spatial SQL (`ST_AsGeoJSON`, `ST_Distance_Sphere`) against
 | Standalone pages | `/roznama`, `/shawarma`, `/justice`, `/crossings`, `/about`, `/stats` | (Inertia closures) | Roznama/, Shawarma/, Justice/, Crossings/, About/, Stats/ | — |
 | Dashboard/auth | `/dashboard` (incl. polls-tab admin), `/auth/google*`, `/user` | AuthController, DashboardController, AdminUserController | Dashboard/ | — |
 | Assets admin | `/admin/assets`, `/api/v1/admin/assets/*` | AssetUploadController | Admin/AssetManager | [reference/asset-storage.md](../reference/asset-storage.md) |
+| Agent / MCP | `/mcp/admin` (bearer token; `MCP_ENABLED` flag), `/superadmin/api-tokens` | MCP tools in `app/Mcp/`, `RequireApiToken` | — | [modules/agent-mcp.md](../modules/agent-mcp.md) |
 | Site popup | `/admin/site-popup`, `/api/v1/admin/site-popup` (superadmin; shared as `sitePopup` prop, versioned dismiss) | SitePopupAdminController | Admin/SitePopup | — |
 | Meta | `/sitemap.xml`, `/healthcheck`, `/api/metrics`, `/api/app-icon` | Sitemap/Metrics controllers | — | — |
 
@@ -132,7 +137,19 @@ Full route details: [reference/routes-api-map.md](../reference/routes-api-map.md
 
 ## 5. Roles & Access Control
 
-Middleware aliases registered in `bootstrap/app.php`: `admin`, `transit_admin` (accepts per-action params e.g. `transit_admin:transit.approve`), `syofficial_admin`, `phonebook_admin`, `places_admin`, `polls_admin`, `superadmin` (plus `GovAppsAdmin` class middleware). Users carry a `role` enum, optional JSON `permissions`, soft-delete/ban fields. `Gate::before` gives superadmins everything. `places_admin`/`polls_admin` accept superadmin/admin/any-of-module-perms. Dev-only role impersonation at `/dev/impersonate/{role}` (DevRoleSwitcher component).
+Middleware aliases registered in `bootstrap/app.php`: `admin`, `transit_admin` (accepts per-action params e.g. `transit_admin:transit.approve`), `syofficial_admin`, `govapps_admin` (class middleware, no alias), `phonebook_admin`, `places_admin`, `polls_admin`, `superadmin`. Users carry a `role` enum, optional JSON `permissions`, soft-delete/ban fields. `Gate::before` gives superadmins everything.
+
+Roles resolve capabilities through one table, `User::ROLE_MODULE_PREFIXES` (role → module prefix), exposed as `User::moduleImplyingRoles()`. `superadmin` and `admin` hold every capability — `admin` is the catch-all staff role, matching the `2026_07_21` backfill. Each `<module>_admin` role implies its whole module; everything else comes from `users.permissions` (which may contain `*`). `User::effectivePermissions()` returns the resolved list, and `hasPermission()` is that same rule applied to a single id — they cannot disagree, and a test asserts so for every role × capability.
+
+`UserResource::roleOptions()` is the assignable-role list and must cover `moduleImplyingRoles()` plus `admin`/`superadmin`/`user`; a test enforces it, because a role present in PHP but missing from that list is unassignable (that is how `phonebook_admin` went missing). Dev-only role impersonation at `/dev/impersonate/{role}` (DevRoleSwitcher component) covers the same set, via `AutoLoginDevUser::DEV_ROLES`.
+
+Capability checks in React call `useAuth().can()`, which reads the server-resolved `effective_permissions` shared by `HandleInertiaRequests::userPayload()`. The frontend deliberately does **not** re-derive role implications — that duplication is what previously let the TS mirror fall behind the PHP rules.
+
+The 28 capability ids live in `app/Support/Permissions/PermissionCatalogue.php` and are the single source of truth for both the Filament user form and agent API tokens. Per-module JSON `permission_scopes` (e.g. `transit` governorates) narrow capabilities and are read live, so a change applies immediately.
+
+### Agent (MCP) access
+
+`/mcp/admin` exposes the admin capabilities to AI agents via [`laravel/mcp`](https://laravel.com/docs/mcp) + Sanctum bearer tokens, behind the `MCP_ENABLED` flag. Registered by the package provider from `routes/ai.php` (not by `withRouting()`), outside the `web`/`api` groups, so no session or CSRF. Authorisation is the **intersection** of the user's live permission and the token's abilities, so a token can only narrow. Tokens are minted at `/superadmin/api-tokens`; every call is audited to `mcp_tool_calls`. Full spec: [modules/agent-mcp.md](../modules/agent-mcp.md).
 
 ---
 

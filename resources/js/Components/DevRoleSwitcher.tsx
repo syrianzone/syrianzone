@@ -5,11 +5,16 @@ import { usePage, router } from '@inertiajs/react';
 import { Shield, User, Bus, Settings2, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+// Mirrors AutoLoginDevUser::DEV_ROLES; dev-only.
 const ROLE_META: Record<string, { label: string; icon: React.ComponentType<{ className?: string }> }> = {
-    user:          { label: 'مستخدم (User)',          icon: User },
-    transit_admin: { label: 'مشرف تنقل (Transit)',     icon: Bus },
-    admin:         { label: 'مدير (Admin)',            icon: Settings2 },
-    superadmin:    { label: 'مدير عام (Superadmin)',   icon: Shield },
+    user:              { label: 'مستخدم (User)',                    icon: User },
+    transit_admin:     { label: 'مشرف تنقل (Transit)',               icon: Bus },
+    syofficial_admin:  { label: 'مشرف الحسابات الرسمية',            icon: Settings2 },
+    govapps_admin:     { label: 'مشرف التطبيقات الحكومية',          icon: Settings2 },
+    phonebook_admin:   { label: 'مشرف دليل الهاتف',                 icon: Settings2 },
+    places_admin:      { label: 'مشرف مشوار',                       icon: Settings2 },
+    admin:             { label: 'مدير (Admin)',                     icon: Settings2 },
+    superadmin:        { label: 'مدير عام (Superadmin)',            icon: Shield },
 };
 
 export function DevRoleSwitcher() {

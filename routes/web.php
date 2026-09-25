@@ -181,8 +181,10 @@ Route::middleware('auth')->group(function () {
         ->whereNumber('surah')->whereNumber('ayah')->middleware('throttle:60,1');
 
     Route::prefix('api')->group(function () {
+        // Shares one definition with the Inertia payload so /user and the
+        // initial page load can never disagree about the user's capabilities.
         Route::get('/user', function (\Illuminate\Http\Request $request) {
-            return $request->user();
+            return \App\Http\Middleware\HandleInertiaRequests::userPayload($request->user());
         });
 
         Route::middleware('superadmin')->group(function () {

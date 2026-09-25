@@ -240,18 +240,19 @@ export default function Dashboard({
   allDrafts = [],
   publishedRoutes = []
 }: DashboardProps) {
+  // MainLayout mounts AuthProvider, so useAuth() is available in the page body.
+  const { can } = useAuth();
+
   const [activeTab, setActiveTab] = useState<'profile' | 'submissions' | 'polls'>(() => {
     // ?tab=profile deep link from the navbar dropdown; profile is the only tab every role has
     if (new URLSearchParams(window.location.search).get('tab') === 'profile') return 'profile';
     return role === 'user' ? 'submissions' : (role === 'transit_admin' ? 'profile' : 'polls');
   });
 
-  // Explicit transit.* grants unlock the review panel even when role is 'user'
-  const transitPermissions: string[] = Array.isArray((auth.user as any)?.permissions)
-    ? (auth.user as any).permissions
-    : [];
-  const canTransitReview = role === 'admin' || role === 'transit_admin' || role === 'superadmin'
-    || transitPermissions.some((p: unknown) => typeof p === 'string' && p.startsWith('transit.'));
+  // can() reads the server-resolved capability list, so a transit_admin role
+  // and an explicit transit.* grant both unlock the panel without this file
+  // re-deriving which role implies what.
+  const canTransitReview = can('transit.review_drafts');
 
   // Profile Form States
   const [profileName, setProfileName] = useState(auth.user.name);

@@ -22,9 +22,14 @@ Repo-wide styling and coding conventions. The most detailed normative reference 
 ## Backend conventions
 
 - One controller per feature area under `app/Http/Controllers`, JSON APIs under `Api/` (versioned `V1`).
-- Business logic isolated in `app/Services` (e.g. `PlaceImageService`, `HalaSyriaService`).
-- Rate limiters named in `AppServiceProvider`: `voting` (10/min), `public-api` (60/min per IP); widget endpoints 60/min.
-- Role middleware aliases: `admin`, `transit_admin`, `syofficial_admin`, `phonebook_admin`, `superadmin`; superadmin bypasses gates via `Gate::before`.
+- Business logic isolated in `app/Services` (e.g. `PlaceImageService`, `HalaSyriaService`). When more than one transport needs a rule (dashboard + agent), extract it to a transport-free service and let both call it.
+- Rate limiters named in `AppServiceProvider`: `voting` (10/min), `public-api` (60/min per IP), `mcp` (120/min, keyed by API token id so one agent cannot starve another behind the same IP), `studio-submit`; widget endpoints 60/min.
+- Role middleware aliases: `admin`, `transit_admin` (variadic, takes capability params), `syofficial_admin`, `phonebook_admin`, `places_admin`, `polls_admin`, `superadmin`; `GovAppsAdmin` is applied by FQCN and has no alias. Superadmin bypasses gates via `Gate::before`.
+- Capability ids live **only** in `app/Support/Permissions/PermissionCatalogue.php` — the Filament user form and agent API tokens both read it. Never introduce a second permission vocabulary.
+- `admin` is the catch-all staff role and holds every capability; `superadmin` additionally bypasses `Gate`. A `role=admin` user with an empty `permissions` array still passes capability checks.
+- Role → module implications live **only** in `User::ROLE_MODULE_PREFIXES`. `UserResource::roleOptions()` and `AutoLoginDevUser::DEV_ROLES` must both cover it; tests enforce both, since a role missing from the form is unassignable and one missing from dev impersonation is untestable.
+- Capability checks in React go through `useAuth().can()` against the server-resolved `effective_permissions`. Never re-derive role implications in TypeScript — use `User::effectivePermissions()` server-side and share the result via `HandleInertiaRequests::userPayload()`.
+- Agent (MCP) tools live in `app/Mcp/`, extend `AuditedTool`, and share domain services with the dashboard controllers rather than re-implementing rules. Authorisation is an AND: user permission AND token ability. See [modules/agent-mcp.md](../modules/agent-mcp.md).
 - CSRF exceptions are explicit in `bootstrap/app.php` (studio routes, poll votes, submit, guesswho broadcasting auth).
 - Public voting data must never select `voter_key` / `ip_hash` / `user_agent` / poll owner columns — keep column selection explicit.
 - Migrations follow the create-then-alter history; avoid resurrecting dropped tables (place likes/comments/reports were removed deliberately).
@@ -34,6 +39,7 @@ Repo-wide styling and coding conventions. The most detailed normative reference 
 
 - **Pest** (`vendor/bin/pest`), RefreshDatabase auto-applied; sqlite :memory:, array cache/session drivers.
 - Lint/format with **Pint** (`vendor/bin/pint`).
+- **Never run Pint on `routes/web.php`.** Its `fully_qualified_strict_types` fixer strips the leading `\` from FQCNs, assuming a `use` import exists. That file has no namespace declaration, keeps `use` statements mid-file, and references several controllers that are never imported — so Pint rewrites `\App\Http\Controllers\PlaceAdminController` to `PlaceAdminController`, which PHP then resolves against the global namespace and fails to find. It surfaces as ~122 `ReflectionException: Class "...Controller" does not exist` test failures. Pint the app code and leave the route files alone.
 - Feature suites cover Polls, Places, Voting API, Weather, Sitemap, Prayer, middleware, models, VotingService.
 
 ## Commits

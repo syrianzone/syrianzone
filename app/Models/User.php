@@ -2,19 +2,21 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
-
-use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Support\Permissions\PermissionCatalogue;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable implements FilamentUser
 {
-    use HasFactory, Notifiable, SoftDeletes;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
     protected $fillable = ['name', 'email', 'password', 'google_id', 'avatar_url', 'role', 'permissions', 'permission_scopes', 'settings', 'is_banned'];
+
     protected $hidden = ['password', 'remember_token'];
 
     protected function casts(): array
@@ -29,7 +31,38 @@ class User extends Authenticatable implements FilamentUser
         ];
     }
 
-    public function isSuperAdmin(): bool { return $this->role === 'superadmin'; }
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === 'superadmin';
+    }
+
+    /**
+     * Roles that imply a whole module's capabilities, as role => module prefix.
+     *
+     * Table-driven so hasPermission() and effectivePermissions() cannot drift:
+     * they are the same rule applied to one id and to the whole catalogue. The
+     * prefix must match a module key in PermissionCatalogue.
+     *
+     * @var array<string, string>
+     */
+    protected const ROLE_MODULE_PREFIXES = [
+        'syofficial_admin' => 'syofficial.',
+        'transit_admin' => 'transit.',
+        'govapps_admin' => 'govapps.',
+        'phonebook_admin' => 'phonebook.',
+        'places_admin' => 'places.',
+    ];
+
+    /**
+     * The role => module-prefix table, for callers that need to enumerate it
+     * (the Filament role select, dev impersonation, tests).
+     *
+     * @return array<string, string>
+     */
+    public static function moduleImplyingRoles(): array
+    {
+        return self::ROLE_MODULE_PREFIXES;
+    }
 
     public function hasPermission(string $permission): bool
     {
@@ -37,21 +70,44 @@ class User extends Authenticatable implements FilamentUser
             return true;
         }
 
-        if ($this->role === 'syofficial_admin' && str_starts_with($permission, 'syofficial.')) {
-            return true;
-        }
-        if ($this->role === 'transit_admin' && str_starts_with($permission, 'transit.')) {
-            return true;
-        }
-        if ($this->role === 'govapps_admin' && str_starts_with($permission, 'govapps.')) {
-            return true;
-        }
-        if ($this->role === 'phonebook_admin' && str_starts_with($permission, 'phonebook.')) {
+        $prefix = self::ROLE_MODULE_PREFIXES[$this->role] ?? null;
+
+        if ($prefix !== null && str_starts_with($permission, $prefix)) {
             return true;
         }
 
         $userPerms = $this->permissions ?? [];
+
         return in_array($permission, $userPerms) || in_array('*', $userPerms);
+    }
+
+    /**
+     * Every capability this user can exercise, role implications resolved.
+     *
+     * Shared with the frontend so the browser never has to re-derive which
+     * capabilities a role implies — that duplication is what let the TS mirror
+     * fall behind the PHP rules. A user with the `*` wildcard is reported as
+     * holding the whole catalogue, which is what the wildcard means.
+     *
+     * @return array<int, string>
+     */
+    public function effectivePermissions(): array
+    {
+        $catalogue = PermissionCatalogue::all();
+
+        if ($this->isSuperAdmin() || in_array('*', $this->permissions ?? [], true)) {
+            return $catalogue;
+        }
+
+        $prefix = self::ROLE_MODULE_PREFIXES[$this->role] ?? null;
+
+        $granted = $this->permissions ?? [];
+
+        return array_values(array_filter(
+            $catalogue,
+            fn (string $permission) => ($prefix !== null && str_starts_with($permission, $prefix))
+                || in_array($permission, $granted, true),
+        ));
     }
 
     public function hasAnyPermission(array $permissions): bool
@@ -61,6 +117,7 @@ class User extends Authenticatable implements FilamentUser
                 return true;
             }
         }
+
         return false;
     }
 
@@ -131,7 +188,7 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
-     * @param array<int, string> $permissions
+     * @param  array<int, string>  $permissions
      */
     public function hasAnyPermissionInCity(array $permissions, ?string $cityId): bool
     {
@@ -146,7 +203,7 @@ class User extends Authenticatable implements FilamentUser
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->isSuperAdmin() && !$this->is_banned;
+        return $this->isSuperAdmin() && ! $this->is_banned;
     }
 
     public function polls()

@@ -8,7 +8,14 @@ interface User {
     email: string;
     avatar_url: string;
     role: string;
+    /** Raw stored grants. Used by the admin UI to render its checkboxes. */
     permissions?: string[];
+    /**
+     * Resolved capabilities, role implications already applied server-side by
+     * User::effectivePermissions(). This — not `permissions` — is what
+     * capability checks must read.
+     */
+    effective_permissions?: string[];
     permission_scopes?: Record<string, string[]> | null;
     settings?: Record<string, unknown> | null;
 }
@@ -18,7 +25,7 @@ interface AuthContextType {
     loading: boolean;
     isAdmin: boolean;
     isSuperAdmin: boolean;
-    /** Mirrors User::hasPermission() role implications. */
+    /** Reads the server-resolved capability list. */
     can: (permission: string) => boolean;
     /** Capability + governorate scope (transit.* only), mirrors hasPermissionInCity(). */
     canInCity: (permission: string, cityId?: string | null) => boolean;
@@ -55,16 +62,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
     const isSuperAdmin = user?.role === 'superadmin';
 
+    // Role implications (admin, transit_admin, places_admin, ...) are resolved
+    // on the server and arrive as effective_permissions. Re-deriving them here
+    // is what previously let this file fall behind User::hasPermission(), so
+    // there is deliberately no role table in this module.
     const can = (permission: string): boolean => {
         if (!user) return false;
         if (user.role === 'superadmin') return true;
-        if (user.role === 'syofficial_admin' && permission.startsWith('syofficial.')) return true;
-        if (user.role === 'transit_admin' && permission.startsWith('transit.')) return true;
-        if (user.role === 'govapps_admin' && permission.startsWith('govapps.')) return true;
-        if (user.role === 'phonebook_admin' && permission.startsWith('phonebook.')) return true;
-
-        const permissions = user.permissions ?? [];
-        return permissions.includes(permission) || permissions.includes('*');
+        return (user.effective_permissions ?? []).includes(permission);
     };
 
     const allowedTransitCities = (): string[] | null => {

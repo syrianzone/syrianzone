@@ -22,6 +22,7 @@ The docs folder mirrors the project structure: `getting-started/` for running th
 | **Modules** (one doc per feature area) | |
 | [modules/board.md](modules/board.md) | "لوحتي" widget dashboard at `/board` — normative spec |
 | [modules/mishwar-places.md](modules/mishwar-places.md) | Hidden Places ("مشوار") at `/mishwar` — largest spec; §2 doubles as repo-wide code conventions |
+| [modules/agent-mcp.md](modules/agent-mcp.md) | Agent/MCP surface at `/mcp/admin` — tokens, the permission ceiling, audit trail |
 | [modules/transit.md](modules/transit.md) | Transit maps + community Transit Studio + moderation workflow |
 | [modules/polls-public-api.md](modules/polls-public-api.md) | Public read-only voting data API (`/api/v1/polls`) |
 | [modules/guess-who.md](modules/guess-who.md) | Multiplayer WebRTC Guess Who game |

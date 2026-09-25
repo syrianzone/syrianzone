@@ -36,5 +36,9 @@
              (non-production) a true value from .env would override actingAs()
              identities via AutoLoginDevUser on every request. -->
         <env name="AUTO_LOGIN_DEV" value="false" force="true"/>
+        <!-- The /mcp/* routes are registered at boot based on this flag, so the
+             suite needs them present to exercise the agent surface. Production
+             and local default to false; see .env.example. -->
+        <env name="MCP_ENABLED" value="true" force="true"/>
     </php>
 </phpunit>

@@ -37,7 +37,14 @@ interface PhonebookProps {
 export default function Index({ initialData }: PhonebookProps) {
     const { auth } = usePage().props as any;
     const user = auth?.user;
-    const canManage = user?.role === 'superadmin' || user?.role === 'admin' || user?.permissions?.includes('phonebook.edit') || user?.permissions?.includes('phonebook.create');
+    // Server-resolved capabilities (role implications already applied), not the
+    // raw permissions array: a phonebook_admin holds phonebook.* implicitly
+    // with an empty array, and the old check hid the admin UI from them even
+    // though the phonebook_admin middleware lets them through.
+    const effective: string[] = Array.isArray(user?.effective_permissions)
+        ? user.effective_permissions
+        : [];
+    const canManage = effective.includes('phonebook.edit') || effective.includes('phonebook.create');
 
     const [searchTerm, setSearchTerm] = useState('');
     const [currentCategory, setCurrentCategory] = useState('all');

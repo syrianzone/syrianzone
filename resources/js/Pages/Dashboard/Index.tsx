@@ -645,8 +645,12 @@ export default function Dashboard({
                   </Link>
                 )}
 
-                {/* Phonebook Admin Tab */}
-                {(role === 'admin' || role === 'superadmin' || (auth.user as any)?.permissions?.includes('phonebook.edit') || (auth.user as any)?.permissions?.includes('phonebook.create')) && (
+                {/* Phonebook Admin Tab. Reads the server-resolved list rather
+                    than the raw array, so a phonebook_admin role (which holds
+                    phonebook.* implicitly, with an empty permissions array)
+                    still sees the link. */}
+                {((auth.user.effective_permissions ?? []).includes('phonebook.edit')
+                  || (auth.user.effective_permissions ?? []).includes('phonebook.create')) && (
                   <Link
                     href="/admin/phonebook"
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"

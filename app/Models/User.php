@@ -64,9 +64,25 @@ class User extends Authenticatable implements FilamentUser
         return self::ROLE_MODULE_PREFIXES;
     }
 
+    /**
+     * The broad administrator: every capability.
+     *
+     * `admin` is the catch-all staff role that AdminUserController mints and
+     * that the 2026_07_21 permissions backfill migration granted the full
+     * capability set to. PollsAdmin/PlacesAdmin/PhonebookAdmin and the plain
+     * `admin` middleware all treat it as a blanket override, so hasPermission()
+     * must agree — otherwise a freshly created admin is silently denied by
+     * syofficial_admin, GovAppsAdmin and transit_admin, which have no
+     * role === 'admin' shortcut of their own.
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
     public function hasPermission(string $permission): bool
     {
-        if ($this->isSuperAdmin()) {
+        if ($this->isSuperAdmin() || $this->isAdmin()) {
             return true;
         }
 
@@ -95,7 +111,7 @@ class User extends Authenticatable implements FilamentUser
     {
         $catalogue = PermissionCatalogue::all();
 
-        if ($this->isSuperAdmin() || in_array('*', $this->permissions ?? [], true)) {
+        if ($this->isSuperAdmin() || $this->isAdmin() || in_array('*', $this->permissions ?? [], true)) {
             return $catalogue;
         }
 

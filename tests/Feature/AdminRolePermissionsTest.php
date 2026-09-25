@@ -118,6 +118,21 @@ test('dev impersonation covers every assignable role', function () {
         ->and($offered)->toContain('places_admin', 'phonebook_admin');
 });
 
+test('the admin role still holds every capability', function () {
+    $user = User::factory()->create(['role' => 'admin', 'permissions' => []]);
+
+    foreach (PermissionCatalogue::all() as $permission) {
+        expect($user->hasPermission($permission))->toBeTrue();
+    }
+});
+
+test('the shared auth payload resolves the admin role to everything', function () {
+    $user = User::factory()->create(['role' => 'admin', 'permissions' => []]);
+
+    expect(HandleInertiaRequests::userPayload($user)['effective_permissions'])
+        ->toHaveCount(count(PermissionCatalogue::all()));
+});
+
 test('a places_admin passes the places_admin middleware', function () {
     $user = User::factory()->create(['role' => 'places_admin', 'permissions' => []]);
     $place = Place::factory()->create();

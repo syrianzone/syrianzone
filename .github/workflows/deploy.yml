@@ -155,11 +155,23 @@ jobs:
               # Override the entrypoint so preflight cannot run migrations or other startup tasks.
               image=ghcr.io/syrianzone/syrianzone:${{ github.sha }}
               docker pull "$image"
-              docker run --rm --entrypoint php --env-file "$envfile" "$image" artisan tierlist:x-status
+              # Advisory only. A third-party API outage or rejected credentials
+              # must not block a release — this used to abort the job under
+              # `set -e` before deploy.sh ever ran, so one broken integration
+              # froze every deploy. The breakage stays visible two ways: a
+              # warning annotation here, and the failing scheduled card job.
+              if ! docker run --rm --entrypoint php --env-file "$envfile" "$image" artisan tierlist:x-status; then
+                echo "::warning::X account preflight failed (credentials rejected or API unavailable). Continuing with the deploy; tierlist X automation will not post until the credentials are fixed."
+              fi
             fi
 
             /opt/syrianzone/deploy.sh ${{ github.sha }}
 
             if [ "$x_enabled" = 'true' ]; then
-              docker exec syrianzone-app php artisan tierlist:detect-rank-changes
+              # Advisory for the same reason, and it matters more here: the
+              # release is already live by this point, so a failed post must not
+              # report a successful deploy as a failed job.
+              if ! docker exec syrianzone-app php artisan tierlist:detect-rank-changes; then
+                echo "::warning::tierlist:detect-rank-changes failed. The release is deployed; only the X announcement was skipped."
+              fi
             fi

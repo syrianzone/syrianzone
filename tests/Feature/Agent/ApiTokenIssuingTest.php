@@ -115,7 +115,7 @@ test('the eligible-owner list excludes users holding no capability', function ()
     // An empty (not null) permissions array must not qualify anyone.
     $emptyJson = agentUser(['role' => 'user', 'permissions' => []]);
     $granted = agentUser(['role' => 'user', 'permissions' => ['places.review']]);
-    $staff = agentUser(['role' => 'transit_admin']);
+    $staff = agentUser(['role' => 'user', 'permissions' => \App\Support\Permissions\PermissionCatalogue::forModule('transit')]);
 
     $ids = app(ApiTokenIssuer::class)->eligibleOwners()->pluck('id');
 

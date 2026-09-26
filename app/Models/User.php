@@ -37,44 +37,13 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
-     * Roles that imply a whole module's capabilities, as role => module prefix.
-     *
-     * Table-driven so hasPermission() and effectivePermissions() cannot drift:
-     * they are the same rule applied to one id and to the whole catalogue. The
-     * prefix must match a module key in PermissionCatalogue.
-     *
-     * @var array<string, string>
-     */
-    protected const ROLE_MODULE_PREFIXES = [
-        'syofficial_admin' => 'syofficial.',
-        'transit_admin' => 'transit.',
-        'govapps_admin' => 'govapps.',
-        'phonebook_admin' => 'phonebook.',
-        'places_admin' => 'places.',
-        'users_admin' => 'users.',
-    ];
-
-    /**
-     * The role => module-prefix table, for callers that need to enumerate it
-     * (the Filament role select, dev impersonation, tests).
-     *
-     * @return array<string, string>
-     */
-    public static function moduleImplyingRoles(): array
-    {
-        return self::ROLE_MODULE_PREFIXES;
-    }
-
-    /**
      * The broad administrator: every capability.
      *
-     * `admin` is the catch-all staff role that AdminUserController mints and
-     * that the 2026_07_21 permissions backfill migration granted the full
-     * capability set to. PollsAdmin/PlacesAdmin/PhonebookAdmin and the plain
-     * `admin` middleware all treat it as a blanket override, so hasPermission()
-     * must agree — otherwise a freshly created admin is silently denied by
-     * syofficial_admin, GovAppsAdmin and transit_admin, which have no
-     * role === 'admin' shortcut of their own.
+     * DEPRECATED. A deprecated alias rather than a role with meaning: it still
+     * resolves the whole catalogue so that accounts carrying it keep working, and
+     * it is the one remaining non-superadmin role that grants anything by name.
+     * New staff accounts are minted as `user` with an explicit capability list —
+     * see AdminUserController. This alias is removed once nothing assigns it.
      */
     public function isAdmin(): bool
     {
@@ -87,26 +56,25 @@ class User extends Authenticatable implements FilamentUser
             return true;
         }
 
-        // Cast, because a null role would index the array with null, which is
-        // deprecated in PHP 8.1+ and is not suppressed by `?? null`.
-        $prefix = self::ROLE_MODULE_PREFIXES[(string) $this->role] ?? null;
-
-        if ($prefix !== null && str_starts_with($permission, $prefix)) {
-            return true;
-        }
-
         $userPerms = $this->permissions ?? [];
 
         return in_array($permission, $userPerms) || in_array('*', $userPerms);
     }
 
     /**
-     * Every capability this user can exercise, role implications resolved.
+     * Every capability this user can exercise.
      *
-     * Shared with the frontend so the browser never has to re-derive which
-     * capabilities a role implies — that duplication is what let the TS mirror
-     * fall behind the PHP rules. A user with the `*` wildcard is reported as
-     * holding the whole catalogue, which is what the wildcard means.
+     * Shared with the frontend so the browser never has to re-derive the rules —
+     * that duplication is what let the TS mirror fall behind the PHP rules. A user
+     * with the `*` wildcard is reported as holding the whole catalogue, which is
+     * what the wildcard means.
+     *
+     * The only roles that still add anything are `superadmin` and the deprecated
+     * `admin` alias, both of which resolve the entire catalogue. Every other
+     * account's access is exactly its stored `permissions` array: the six module
+     * roles stopped conferring capabilities in Phase D, once Phase A had
+     * materialised what they granted and this migration had repaired anyone
+     * created in the window where they were still assignable.
      *
      * @return array<int, string>
      */
@@ -118,16 +86,11 @@ class User extends Authenticatable implements FilamentUser
             return $catalogue;
         }
 
-        // Cast, because a null role would index the array with null, which is
-        // deprecated in PHP 8.1+ and is not suppressed by `?? null`.
-        $prefix = self::ROLE_MODULE_PREFIXES[(string) $this->role] ?? null;
-
         $granted = $this->permissions ?? [];
 
         return array_values(array_filter(
             $catalogue,
-            fn (string $permission) => ($prefix !== null && str_starts_with($permission, $prefix))
-                || in_array($permission, $granted, true),
+            fn (string $permission) => in_array($permission, $granted, true),
         ));
     }
 

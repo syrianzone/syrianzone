@@ -28,7 +28,7 @@ test('the tokens page is superadmin-only', function () {
     $this->actingAs(User::factory()->create(['role' => 'admin']))
         ->get('/admin/api-tokens')->assertForbidden();
 
-    $this->actingAs(User::factory()->create(['role' => 'places_admin']))
+    $this->actingAs(moduleStaff('places'))
         ->get('/admin/api-tokens')->assertForbidden();
 
     $this->actingAs(User::factory()->create(['role' => 'user']))
@@ -36,7 +36,7 @@ test('the tokens page is superadmin-only', function () {
 });
 
 test('a superadmin gets the page with the data it needs', function () {
-    $owner = User::factory()->create(['role' => 'transit_admin']);
+    $owner = moduleStaff('transit');
     app(TokenIssuer::class)->issue($owner, 'existing', ['transit.approve']);
 
     $this->actingAs(superadmin())
@@ -65,7 +65,7 @@ test('the owner list only offers users who hold a capability', function () {
 });
 
 test('a superadmin can mint a token and gets the plaintext once', function () {
-    $owner = User::factory()->create(['role' => 'places_admin', 'permissions' => []]);
+    $owner = moduleStaff('places');
 
     $this->actingAs(superadmin())
         ->postJson('/api/v1/admin/api-tokens', [
@@ -82,7 +82,7 @@ test('a superadmin can mint a token and gets the plaintext once', function () {
 });
 
 test('a request for capabilities the owner lacks is clamped, not granted', function () {
-    $owner = User::factory()->create(['role' => 'places_admin', 'permissions' => []]);
+    $owner = moduleStaff('places');
 
     $response = $this->actingAs(superadmin())
         ->postJson('/api/v1/admin/api-tokens', [
@@ -186,7 +186,7 @@ test('non-superadmins cannot mint', function () {
 });
 
 test('a token can be revoked', function () {
-    $owner = User::factory()->create(['role' => 'places_admin']);
+    $owner = moduleStaff('places');
     $token = app(TokenIssuer::class)->issue($owner, 'doomed', ['places.review'])['token']->accessToken;
 
     $this->actingAs(superadmin())
@@ -198,7 +198,7 @@ test('a token can be revoked', function () {
 });
 
 test('every token for a user can be revoked at once', function () {
-    $owner = User::factory()->create(['role' => 'places_admin']);
+    $owner = moduleStaff('places');
 
     app(TokenIssuer::class)->issue($owner, 'a', ['places.review']);
     app(TokenIssuer::class)->issue($owner, 'b', ['places.review']);
@@ -213,10 +213,10 @@ test('every token for a user can be revoked at once', function () {
 });
 
 test('the list marks expired and banned-owner tokens', function () {
-    $banned = User::factory()->create(['role' => 'places_admin', 'is_banned' => true]);
+    $banned = moduleStaff('places', ['is_banned' => true]);
     app(TokenIssuer::class)->issue($banned, 'banned-owner', ['places.review']);
 
-    $stale = User::factory()->create(['role' => 'places_admin']);
+    $stale = moduleStaff('places');
     app(TokenIssuer::class)->issue($stale, 'stale', ['places.review']);
     $stale->tokens()->update(['expires_at' => Date::now()->subDay()]);
 
@@ -232,7 +232,7 @@ test('the list marks expired and banned-owner tokens', function () {
 
 test('a minted token immediately works against the agent endpoint', function () {
     // Closes the loop: the thing the dashboard mints is the thing /mcp/admin accepts.
-    $owner = User::factory()->create(['role' => 'places_admin', 'permissions' => []]);
+    $owner = moduleStaff('places');
 
     $plain = $this->actingAs(superadmin())
         ->postJson('/api/v1/admin/api-tokens', [
@@ -263,7 +263,7 @@ test('a browser session cannot impersonate an agent even with a bearer token', f
     // logged-in admin's cookie is not an agent credential.
     $sessionUser = User::factory()->create(['role' => 'superadmin']);
     $plain = app(TokenIssuer::class)->issue(
-        User::factory()->create(['role' => 'places_admin']),
+        moduleStaff('places'),
         'agent',
         ['places.review'],
     )['token']->plainTextToken;

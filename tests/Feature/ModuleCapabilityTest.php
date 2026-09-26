@@ -242,7 +242,7 @@ it('keeps the per-module admin role working across the whole module', function (
     // phonebook_admin implies every phonebook.* capability via
     // User::ROLE_MODULE_PREFIXES, so a role holder must not be affected by the
     // new per-route tags.
-    $staff = User::factory()->create(['role' => 'phonebook_admin', 'permissions' => []]);
+    $staff = moduleStaff('phonebook');
 
     $category = pbCategory();
     $entry = pbEntry($category->id);

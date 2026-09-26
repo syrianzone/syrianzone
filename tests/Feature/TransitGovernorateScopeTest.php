@@ -105,11 +105,11 @@ test('hasPermissionInCity gates transit capabilities by governorate', function (
         ->and($user->hasPermissionInCity('transit.reject', 'homs'))->toBeFalse();
 });
 
-test('transit_admin role capabilities are still restricted by governorate scope', function () {
-    $user = User::factory()->create([
-        'role' => 'transit_admin',
-        'permission_scopes' => ['transit' => ['homs']],
-    ]);
+test('transit capabilities are still restricted by governorate scope', function () {
+    // Was 'transit_admin role capabilities are ...', relying on the role prefix
+    // to supply transit.*. Now the capabilities are stored, and the scope is
+    // still what narrows them.
+    $user = moduleStaff('transit', ['permission_scopes' => ['transit' => ['homs']]]);
 
     expect($user->hasPermissionInCity('transit.approve', 'homs'))->toBeTrue()
         ->and($user->hasPermissionInCity('transit.approve', 'aleppo'))->toBeFalse();
@@ -136,7 +136,7 @@ test('unscoped transit admin sees every governorate', function () {
     scopeDraft('homs');
     scopeDraft('aleppo');
 
-    $this->actingAs(User::factory()->create(['role' => 'transit_admin']))
+    $this->actingAs(moduleStaff('transit'))
         ->getJson('/api/v1/admin/route-drafts')
         ->assertOk()
         ->assertJsonCount(2);

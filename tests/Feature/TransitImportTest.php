@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Http;
 
 function transitAdmin(): User
 {
-    return User::factory()->create(['role' => 'transit_admin']);
+    return moduleStaff('transit');
 }
 
 function seedTransitCity(string $id = 'homs'): void

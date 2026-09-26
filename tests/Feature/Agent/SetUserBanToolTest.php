@@ -145,7 +145,9 @@ it('reports a missing user without guessing at ids', function () {
 it('does not leak the target\'s authorisation configuration', function () {
     agentToken(banActor(), ['users.ban']);
     $target = User::factory()->create([
-        'role' => 'transit_admin',
+        'role' => 'user',
+        // Deliberately a hand-picked subset plus a scope, not the whole module:
+        // this test asserts the response leaks neither the list nor the scope.
         'permissions' => ['transit.approve'],
         'permission_scopes' => ['transit' => ['homs']],
     ]);

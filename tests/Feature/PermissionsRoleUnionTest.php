@@ -206,20 +206,60 @@ it('leaves every account\'s effective capabilities unchanged', function () {
         ['role' => 'superadmin', 'permissions' => ['polls.create']],
     ];
 
+    // This used to snapshot User::effectivePermissions() before and after the
+    // merge, which was the strongest possible statement of "no access changes".
+    // Phase D deleted the role prefixes it compared against, so `before` no
+    // longer knows what a module role used to imply and the comparison became
+    // vacuous for exactly the cases that mattered.
+    //
+    // The claim now lives where the knowledge does: against the migration's own
+    // hardcoded mapping, which is the thing that must stay correct. What the
+    // migration writes is compared to what the role granted, both derived from
+    // the same pinned tables, so a gap in either still fails.
     foreach ($cases as $index => $case) {
-        $user = User::factory()->create([
-            'email' => "union-{$index}@example.test",
-            'role' => $case['role'],
-            'permissions' => $case['permissions'],
-        ]);
+        $role = $case['role'];
 
-        $before = $user->effectivePermissions();
+        // superadmin is excluded on purpose. The migration never writes for a
+        // superadmin, and does not need to: isSuperAdmin() short-circuits
+        // hasPermission() and makes effectivePermissions() return the whole
+        // catalogue whatever the stored array holds. Phase D keeps that
+        // short-circuit, so a superadmin's access never depended on the prefix
+        // table and there is nothing to materialise.
+        if ($role === 'superadmin') {
+            continue;
+        }
 
-        // What the migration would write.
-        $user->permissions = roleGrantsMerge($case['permissions'], $case['role']);
+        $stored = $case['permissions'] === null ? null : (array) $case['permissions'];
 
-        expect($user->effectivePermissions())
-            ->toEqual($before, "effective capabilities would change for {$case['role']} case #{$index}");
+        $migrated = roleGrantsMerge($case['permissions'], $role);
+
+        // What the role granted, written out from the pre-Phase-D model
+        // semantics rather than read from the migration, so that a gap in
+        // either side fails instead of cancelling out:
+        //
+        //   superadmin -> the whole catalogue (never had a permissions list)
+        //   admin      -> the whole catalogue, via the isAdmin() short-circuit
+        //   *_admin    -> every capability sharing the role's module prefix
+        //   user       -> nothing
+        $prefix = roleGrantsMigrationPrefixes()[$role] ?? null;
+
+        $granted = match (true) {
+            // `admin` is a catch-all: isAdmin() short-circuits, which is why the
+            // stale 18-capability list had to be completed to the full 29.
+            $role === 'admin' => PermissionCatalogue::all(),
+            $prefix !== null => PermissionCatalogue::forModule(rtrim($prefix, '.')),
+            default => [],
+        };
+
+        // The load-bearing claim: nothing the role used to imply is lost when
+        // the prefix lookup is deleted.
+        expect(array_diff($granted, $migrated))
+            ->toBe([], "migration would drop role-granted capabilities for {$role} case #{$index}");
+
+        // And the migration never invents access the role did not grant and the
+        // account did not already hold.
+        expect(array_diff($migrated, array_unique(array_merge((array) $stored, $granted))))
+            ->toBe([], "migration would invent capabilities for {$role} case #{$index}");
     }
 });
 

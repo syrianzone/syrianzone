@@ -43,7 +43,7 @@ it('refuses a transit capability holder from banning a user', function () {
 it('refuses the transit_admin role from banning a user', function () {
     // The role used to be on the allow list. It is not a user-moderation role,
     // so the capability has to be granted explicitly now.
-    $staff = User::factory()->create(['role' => 'transit_admin', 'permissions' => []]);
+    $staff = moduleStaff('transit');
 
     $target = banTarget();
 
@@ -74,7 +74,7 @@ it('lets a users.ban holder ban and unban', function () {
 });
 
 it('keeps the users_admin role working', function () {
-    $staff = User::factory()->create(['role' => 'users_admin', 'permissions' => []]);
+    $staff = moduleStaff('users');
     $target = banTarget();
 
     $this->actingAs($staff)

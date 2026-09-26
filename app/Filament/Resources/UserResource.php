@@ -36,10 +36,12 @@ class UserResource extends Resource
     /**
      * Assignable roles and their Arabic labels.
      *
-     * Kept as a method rather than an inline array so a test can assert it
-     * covers every role User knows about. A role that exists in
-     * User::ROLE_MODULE_PREFIXES but is missing here can never be assigned to
-     * anyone, which is exactly how phonebook_admin became unassignable.
+     * Kept as a method rather than an inline array so a test can assert it holds
+     * exactly the roles User still gives meaning to. It once had to stay in step
+     * with User::ROLE_MODULE_PREFIXES, and a role that existed on the model but
+     * was missing here became unassignable — which is how phonebook_admin went
+     * missing from the form. Phase D deleted that table, so the coupling is gone
+     * and this list is now the whole vocabulary.
      *
      * @return array<string, string>
      */
@@ -48,7 +50,7 @@ class UserResource extends Resource
         // Phase B: the six per-module roles are gone from the form. They used to
         // imply a whole module through User::ROLE_MODULE_PREFIXES, which made a
         // role inseparable from a fixed bundle of capabilities — the opposite of
-        // what per-user grants are for. Access is now expressed by ticking
+        // what per-user grants are for. That table is gone as of Phase D. Access is now expressed by ticking
         // capabilities below; the role only distinguishes staff from community.
         //
         // `admin` is retained deliberately as a deprecated alias: it still

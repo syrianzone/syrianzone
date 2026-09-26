@@ -28,7 +28,7 @@ use App\Support\Permissions\PermissionCatalogue;
 */
 
 test('the places_admin role grants exactly the places module', function () {
-    $user = User::factory()->create(['role' => 'places_admin', 'permissions' => []]);
+    $user = moduleStaff('places');
 
     foreach (PermissionCatalogue::forModule('places') as $permission) {
         expect($user->hasPermission($permission))->toBeTrue();
@@ -44,7 +44,7 @@ test('the places_admin role grants exactly the places module', function () {
 });
 
 test('the phonebook_admin role grants exactly the phonebook module', function () {
-    $user = User::factory()->create(['role' => 'phonebook_admin', 'permissions' => []]);
+    $user = moduleStaff('phonebook');
 
     foreach (PermissionCatalogue::forModule('phonebook') as $permission) {
         expect($user->hasPermission($permission))->toBeTrue();
@@ -86,14 +86,23 @@ test('hasPermission and effectivePermissions agree for every role and capability
     }
 });
 
-test('a module role plus an explicit grant elsewhere unions both', function () {
+test('capabilities from two modules combine without implying a third', function () {
+    // Was 'a module role plus an explicit grant elsewhere unions both'. The union
+    // it asserted was real and still is — it was just two sources of access rather
+    // than one. Phase D deleted the role-derived source, so both are now explicit
+    // and the "unions" part is a property of the stored array.
     $user = User::factory()->create([
-        'role' => 'places_admin',
-        'permissions' => ['polls.create'],
+        'role' => 'user',
+        'permissions' => array_merge(
+            \App\Support\Permissions\PermissionCatalogue::forModule('places'),
+            ['polls.create'],
+        ),
     ]);
 
     expect($user->hasPermission('places.approve'))->toBeTrue()
         ->and($user->hasPermission('polls.create'))->toBeTrue()
+        // polls.delete is in neither source, so holding polls.create must not
+        // imply the rest of its module.
         ->and($user->hasPermission('polls.delete'))->toBeFalse();
 });
 
@@ -122,7 +131,11 @@ test('no role outside superadmin, admin and user is assignable', function () {
     // fails here rather than shipping an account that depends on a role prefix.
     $assignable = array_keys(UserResource::roleOptions());
 
-    foreach (User::moduleImplyingRoles() as $moduleRole => $prefix) {
+    // The six names are spelled out rather than read from the model, because
+    // Phase D deleted User::moduleImplyingRoles() along with the prefixes. They
+    // are history now, and history is worth pinning by value: a future edit that
+    // re-adds any of them to the select must fail here.
+    foreach (['syofficial_admin', 'transit_admin', 'govapps_admin', 'phonebook_admin', 'places_admin', 'users_admin'] as $moduleRole) {
         expect($assignable)->not->toContain($moduleRole);
     }
 });
@@ -150,7 +163,7 @@ test('the shared auth payload resolves the admin role to everything', function (
 });
 
 test('a places_admin passes the places_admin middleware', function () {
-    $user = User::factory()->create(['role' => 'places_admin', 'permissions' => []]);
+    $user = moduleStaff('places');
     $place = Place::factory()->create();
 
     $this->actingAs($user)
@@ -161,7 +174,7 @@ test('a places_admin passes the places_admin middleware', function () {
 });
 
 test('a places_admin is refused the other modules', function () {
-    $user = User::factory()->create(['role' => 'places_admin', 'permissions' => []]);
+    $user = moduleStaff('places');
 
     // POST-only routes: a GET would 405 before the middleware ran, so use a
     // real verb to prove the capability check is what refuses.
@@ -174,7 +187,7 @@ test('a places_admin is refused the other modules', function () {
 });
 
 test('a phonebook_admin passes the phonebook_admin middleware', function () {
-    $user = User::factory()->create(['role' => 'phonebook_admin', 'permissions' => []]);
+    $user = moduleStaff('phonebook');
 
     $this->actingAs($user)
         ->postJson('/api/v1/admin/phonebook/categories', [
@@ -188,21 +201,25 @@ test('a phonebook_admin passes the phonebook_admin middleware', function () {
 });
 
 test('a phonebook_admin is refused places and transit', function () {
-    $user = User::factory()->create(['role' => 'phonebook_admin', 'permissions' => []]);
+    $user = moduleStaff('phonebook');
 
     $this->actingAs($user)->getJson('/api/v1/admin/places')->assertForbidden();
     $this->actingAs($user)->getJson('/api/v1/admin/route-drafts')->assertForbidden();
 });
 
 test('the shared auth payload carries resolved capabilities', function () {
-    $user = User::factory()->create(['role' => 'places_admin', 'permissions' => []]);
+    $user = moduleStaff('places');
 
     $payload = HandleInertiaRequests::userPayload($user);
 
-    expect($payload['role'])->toBe('places_admin')
+    // effective_permissions used to be derived from a `places_admin` role while
+    // `permissions` was empty. Both are now the stored array, so the payload no
+    // longer tells the client anything the client could not already read — which
+    // is the point of the migration.
+    expect($payload['role'])->toBe('user')
         ->and($payload['effective_permissions'])->toBe(PermissionCatalogue::forModule('places'))
         // the raw stored array is still sent for the admin UI's checkboxes
-        ->and($payload['permissions'])->toBe([]);
+        ->and($payload['permissions'])->toBe(PermissionCatalogue::forModule('places'));
 });
 
 test('the auth payload is null for a guest', function () {
@@ -210,11 +227,11 @@ test('the auth payload is null for a guest', function () {
 });
 
 test('the /user endpoint returns the same payload shape as the page props', function () {
-    $user = User::factory()->create(['role' => 'transit_admin', 'permissions' => []]);
+    $user = moduleStaff('transit');
 
     $this->actingAs($user)
         ->getJson('/user')
         ->assertOk()
-        ->assertJsonPath('role', 'transit_admin')
+        ->assertJsonPath('role', 'user')
         ->assertJsonPath('effective_permissions', PermissionCatalogue::forModule('transit'));
 });

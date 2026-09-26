@@ -41,6 +41,7 @@ use App\Mcp\Tools\Transit\MoveTransitRouteTool;
 use App\Mcp\Tools\Transit\RejectTransitDraftTool;
 use App\Mcp\Tools\Transit\SetTransitRouteStatusTool;
 use App\Mcp\Tools\Transit\UpdateTransitRouteTool;
+use App\Mcp\Tools\Users\SetUserBanTool;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
 use Laravel\Mcp\Server\Attributes\Name;
@@ -147,6 +148,9 @@ class AdminServer extends Server
             UpdateTransitRouteTool::class,
             MoveTransitRouteTool::class,
             DeleteTransitRouteTool::class,
+
+            // User moderation
+            SetUserBanTool::class,
         ],
     ];
 

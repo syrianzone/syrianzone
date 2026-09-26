@@ -64,6 +64,19 @@ capability per route**:
 - Role bypasses are resolved in `User::hasPermission()` (superadmin, the general
   `admin` role, the per-module `*_admin` roles, and the `*` wildcard). The
   middleware must not re-implement them.
+- A new action that is **application-wide rather than module-specific** (banning
+  a user, for example) gets its own capability and its own group — do not file it
+  inside a content module's group just because the UI that calls it lives on that
+  module's page. A capability is also the only way to grant an action to one
+  person without granting it to everyone who shares a role, so prefer it over an
+  inline role list in a controller.
+- Adding a capability also means: `PermissionCatalogue::groups()` **and**
+  `groupMeta()`, a `ROLE_MODULE_PREFIXES` entry if it should have a role, the
+  Filament role select and badge map, and an entry in
+  `resources/views/components/project-icon.blade.php` — the component renders
+  nothing for an unknown name rather than failing, so a missing icon is silent.
+  `TransitGovernorateScopeTest` asserts each group has meta and a matching
+  `{group}.` prefix.
 
 ## Commits
 

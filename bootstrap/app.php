@@ -42,6 +42,9 @@ return Application::configure(basePath: dirname(__DIR__))
             // Previously the Gov Apps admin group referenced the class directly,
             // which left it with no alias to pass a per-route capability through.
             'govapps_admin'   => \App\Http\Middleware\GovAppsAdmin::class,
+            // General user moderation (banning). Not a content module: this is
+            // application-wide, so it is authorised by its own capability.
+            'users_admin'     => \App\Http\Middleware\UsersAdmin::class,
             'superadmin'      => \App\Http\Middleware\SuperAdmin::class,
         ]);
         $middleware->statefulApi();

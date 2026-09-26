@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\Users\UserModerationException;
 use App\Models\Poll;
 use App\Models\Route;
 use App\Models\RouteDraft;
 use App\Models\User;
 use App\Services\AvatarService;
+use App\Services\Users\UserModerationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -130,22 +132,27 @@ class DashboardController extends Controller
     }
 
     /**
-     * Ban or unban a user submitter (Admins/Transit Admins only).
+     * Ban or unban a user submitter. Requires the `users.ban` capability,
+     * enforced by the users_admin middleware on the route.
      */
-    public function toggleBan(Request $request, $id)
+    public function toggleBan(Request $request, $id, UserModerationService $moderation)
     {
-        $user = $request->user();
-        if ($user->role !== 'admin' && $user->role !== 'transit_admin' && $user->role !== 'superadmin') {
-            abort(403, 'Unauthorized.');
-        }
-
+        // Authorisation is the `users.ban` capability, enforced by the
+        // users_admin middleware on the route. The role list that used to be
+        // checked here is gone: a role cannot be granted to one person without
+        // granting it to everyone who shares it, and it listed transit_admin,
+        // which had no business reaching user moderation.
+        //
+        // The refusals themselves live in the service, shared with the agent
+        // tool, so the dashboard and the MCP surface cannot diverge on who is
+        // bannable.
         $userToBan = User::findOrFail($id);
 
-        if ($userToBan->isSuperAdmin()) {
-            return response()->json(['message' => 'Cannot ban a superadmin'], 403);
+        try {
+            $userToBan = $moderation->toggleBanned($userToBan, $request->user());
+        } catch (UserModerationException $e) {
+            return response()->json(['message' => $e->getMessage()], $e->httpStatus());
         }
-
-        $userToBan->update(['is_banned' => !$userToBan->is_banned]);
 
         return response()->json([
             'ok' => true,

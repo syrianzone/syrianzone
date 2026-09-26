@@ -51,6 +51,7 @@ class User extends Authenticatable implements FilamentUser
         'govapps_admin' => 'govapps.',
         'phonebook_admin' => 'phonebook.',
         'places_admin' => 'places.',
+        'users_admin' => 'users.',
     ];
 
     /**

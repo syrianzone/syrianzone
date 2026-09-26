@@ -18,7 +18,7 @@ human clicking through the dashboard.
 - It is **off by default**. `MCP_ENABLED=false` registers no route at all, so
   the endpoint 404s.
 
-Currently covers four modules:
+Currently covers five modules:
 
 | Module | Read tools | Write tools | Scoped |
 |---|---:|---:|---|
@@ -26,11 +26,17 @@ Currently covers four modules:
 | SyOfficial directory | 2 | 10 | no |
 | Government apps | 1 | 6 | no |
 | Transit | 4 | 6 | **yes**, by governorate |
+| Users | 0 | 1 | no |
 
 Other modules are added by dropping tools into
 `app/Mcp/Servers/AdminServer.php`; nothing outside that file is reachable by an
 agent. One pair of transit operations is intentionally dashboard-only — see
 §5, "What is deliberately *not* exposed to agents".
+
+`Users` has no read tool: there is no `list-users`, so an agent cannot browse
+accounts. Ids have to come from the operator. That is a deliberate gap — user
+enumeration is a privacy question, and a moderation capability should not double
+as a directory of everybody's email addresses.
 
 ---
 
@@ -221,6 +227,7 @@ The same pattern, same three-part shape, now covers three more modules:
 | SyOfficial | `Services/SyOfficial/SyOfficialDirectoryService` | `SyOfficialPresenter` | `Exceptions/Directories/DirectoryActionException` |
 | Gov Apps | `Services/GovApps/GovAppService` | `GovAppPresenter` | `Exceptions/Directories/DirectoryActionException` |
 | Transit | `Services/Transit/TransitAdminService` | `TransitPresenter` | `Exceptions/Transit/TransitActionException` |
+| Users | `Services/Users/UserModerationService` | inline in `Mcp/Tools/Users/UsersTool` | `Exceptions/Users/UserModerationException` |
 
 Invariants preserved in the shared layer: only `pending` places can be
 moderated; at most 10 photos and at least 1; both photo-count guards run under
@@ -411,6 +418,7 @@ serve a stale compile for up to three minutes. Restart it if in doubt.
 | `DirectoryToolsTest.php` | SyOfficial / Gov Apps: capability isolation, any-of read gates, soft vs hard delete, omitted-vs-null |
 | `TransitToolsTest.php` | Governorate scoping, including the two indirect routes (linked edit, move) and cross-module capability isolation |
 | `DirectoryDiscoveryTest.php` | The real JSON-RPC surface: `tools/list` gating, `search_tools`, and an `execute_tools` SSE round trip |
+| `SetUserBanToolTest.php` | The highest-consequence tool: capability gating, self-ban and superadmin refusals, idempotence, and not leaking the target's permissions |
 
 `tests/Feature/`, alongside the module's own:
 

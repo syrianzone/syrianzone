@@ -46,6 +46,12 @@
             <path d="M8 8h6M8 16h10M8 24h14" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
             <circle cx="25" cy="8" r="1.5" fill="rgb(var(--primary-500, 37 99 235))"/>
         SVG,
+        'users' => <<<'SVG'
+            <circle cx="13" cy="11" r="5" fill="#3B82F6" fill-opacity="0.15" stroke="#2563EB" stroke-width="2"/>
+            <path d="M4 27c0-5 4-9 9-9s9 4 9 9" fill="#3B82F6" fill-opacity="0.15" stroke="#2563EB" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="24" cy="23" r="7" fill="#FFFFFF" fill-opacity="0.85" stroke="#DC2626" stroke-width="2.5"/>
+            <path d="M19.5 27.5l9-9" stroke="#DC2626" stroke-width="2.5" stroke-linecap="round"/>
+        SVG,
     ];
 @endphp
 

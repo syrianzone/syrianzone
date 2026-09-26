@@ -53,6 +53,7 @@ class UserResource extends Resource
             'govapps_admin' => 'مشرف التطبيقات الحكومية',
             'phonebook_admin' => 'مشرف دليل الهاتف',
             'places_admin' => 'مشرف مشوار',
+            'users_admin' => 'مشرف المستخدمين',
             'user' => 'مستخدم عادي',
         ];
     }
@@ -251,6 +252,7 @@ class UserResource extends Resource
                         'govapps_admin' => 'success',
                         'phonebook_admin' => 'success',
                         'places_admin' => 'success',
+                        'users_admin' => 'success',
                         'user' => 'info',
                         default => 'gray',
                     })

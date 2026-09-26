@@ -416,13 +416,16 @@ Route::middleware('auth')->group(function () {
     // `any` tag that ModuleCapabilityRoutesTest rightly rejects on a mutating
     // route.
     //
-    // There is no "ban users" capability in PermissionCatalogue, so the gate is
-    // DashboardController::toggleBan's own role check (admin / transit_admin /
-    // superadmin). Adding a real capability for it is a separate decision.
+    // It is authorised by the `users.ban` capability rather than the role list
+    // the controller used to carry inline, so it can be granted to one person
+    // without granting it to everyone who shares a role.
     //
     // No throttle added: this route had none before, and picking a limit is an
     // operator decision rather than a side effect of moving it.
-    Route::post('/api/admin/users/{id}/toggle-ban', [DashboardController::class, 'toggleBan']);
+    Route::middleware('users_admin')->group(function () {
+        Route::post('/api/v1/admin/users/{id}/toggle-ban', [DashboardController::class, 'toggleBan'])
+            ->middleware('users_admin:users.ban');
+    });
 
     // 4. SyOfficial Admin Panel (accessible to core admins, syofficial_admin, and superadmins)
     Route::middleware('syofficial_admin')->group(function () {

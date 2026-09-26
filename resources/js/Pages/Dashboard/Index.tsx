@@ -60,7 +60,7 @@ interface City {
 interface Draft {
   id: number;
   user_id: number | null;
-  user: { id: number; name: string; email: string; is_banned: boolean } | null;
+  user: { id: number; name: string; email: string } | null;
   city_id: string;
   city: City | null;
   name_ar: string;
@@ -450,26 +450,6 @@ export default function Dashboard({
     } finally {
       setRejectLoading(false);
       setRejectDraftId(null);
-    }
-  };
-
-  // Toggle Submitter Ban
-  const handleToggleBan = async (userId: number, currentBanned: boolean) => {
-    if (!confirm(currentBanned ? 'هل أنت متأكد من إلغاء حظر هذا المساهم؟' : 'هل أنت متأكد من حظر هذا المساهم من تقديم مسارات جديدة؟')) return;
-    try {
-      const res = await axios.post(`/api/admin/users/${userId}/toggle-ban`);
-      const isBanned = res.data.is_banned;
-      alert(res.data.message);
-
-      // Update local draft user states
-      setLocalDrafts(prev => prev.map(d => {
-        if (d.user && d.user.id === userId) {
-          return { ...d, user: { ...d.user, is_banned: isBanned } };
-        }
-        return d;
-      }));
-    } catch (err: any) {
-      alert('خطأ أثناء تعديل حالة الحظر: ' + (err.response?.data?.message ?? err.message));
     }
   };
 

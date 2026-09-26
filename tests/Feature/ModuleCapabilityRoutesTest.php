@@ -7,6 +7,7 @@ use App\Http\Middleware\PlacesAdmin;
 use App\Http\Middleware\PollsAdmin;
 use App\Http\Middleware\SyOfficialAdmin;
 use App\Http\Middleware\TransitAdmin;
+use App\Http\Middleware\UsersAdmin;
 use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Support\Facades\Route;
 
@@ -40,6 +41,7 @@ $guarded = [
     'govapps_admin' => 'govapps',
     'phonebook_admin' => 'phonebook',
     'transit_admin' => 'transit',
+    'users_admin' => 'users',
 ];
 
 it('leaves no route inside a guarded admin group without a capability', function () use ($guarded) {
@@ -154,6 +156,7 @@ it('declares only real capabilities in each middleware', function () {
         GovAppsAdmin::class,
         PhonebookAdmin::class,
         TransitAdmin::class,
+        UsersAdmin::class,
     ];
 
     foreach ($middlewares as $class) {
@@ -178,6 +181,7 @@ it('registers every guard under the alias it declares', function () {
         GovAppsAdmin::class,
         PhonebookAdmin::class,
         TransitAdmin::class,
+        UsersAdmin::class,
     ];
 
     foreach ($middlewares as $class) {

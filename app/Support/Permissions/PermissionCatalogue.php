@@ -72,6 +72,9 @@ final class PermissionCatalogue
                 'polls.edit' => 'تعديل الاستبيانات والمرشحين',
                 'polls.delete' => 'حذف الاستبيانات',
             ],
+            'users' => [
+                'users.ban' => 'حظر المستخدمين ومنعهم من تقديم مسارات',
+            ],
         ];
     }
 
@@ -89,6 +92,7 @@ final class PermissionCatalogue
             'places' => ['label' => 'مشوار', 'icon' => 'places'],
             'phonebook' => ['label' => 'دليل الهاتف', 'icon' => 'phonebook'],
             'polls' => ['label' => 'الاستبيانات', 'icon' => 'polls'],
+            'users' => ['label' => 'المستخدمون', 'icon' => 'users'],
         ];
     }
 

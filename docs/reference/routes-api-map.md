@@ -76,13 +76,13 @@ Superadmin, the general `admin` role, and the per-module admin roles
 | SyOfficial | `/admin/syofficial` (`syofficial_admin:any`) | categories/entities create (create), update (edit), delete (delete), reorder (reorder) under `/api/v1/admin/syofficial/*`. Deleting a category cascades to its entities |
 | Gov apps | `/admin/govapps` (`govapps_admin:any`) | create (create), update (edit), destroy (delete, soft), reorder (reorder) under `/api/v1/admin/govapps` |
 | Phonebook | `/admin/phonebook` (`phonebook_admin:any`) | categories/entries create (create), update (edit), toggle active (toggle), destroy (delete, hard), reorder (reorder) under `/api/v1/admin/phonebook` |
-| User ban | dashboard user list | `POST /api/admin/users/{id}/toggle-ban` — authorised by a role check inside `DashboardController::toggleBan`, not by a capability. It was previously misfiled inside the `transit_admin` group |
+| User ban | dashboard user list | `POST /api/v1/admin/users/{id}/toggle-ban` — gated by the `users.ban` capability in its own `users_admin` group. Not a content module: it is application-wide. Banning a superadmin is refused in the controller as a domain rule |
 
 ### Agent / MCP surface (`routes/ai.php`, bearer token — no session, no CSRF)
 
 | Route | Auth | Notes |
 |---|---|---|
-| `POST|GET|DELETE /mcp/admin` | `auth:sanctum` + `RequireApiToken` + `throttle:mcp` | Only registered when `MCP_ENABLED=true`; session cookies are refused. Effective permission = user's live permission AND token abilities. Tools: places moderation, the SyOfficial directory, government apps, and transit governance (37 tools; combine/split stay dashboard-only). Tokens minted at `/admin/api-tokens` (dashboard sidebar, superadmin). See [modules/agent-mcp.md](../modules/agent-mcp.md) |
+| `POST|GET|DELETE /mcp/admin` | `auth:sanctum` + `RequireApiToken` + `throttle:mcp` | Only registered when `MCP_ENABLED=true`; session cookies are refused. Effective permission = user's live permission AND token abilities. Tools: places moderation, the SyOfficial directory, government apps, transit governance, and user banning (38 tools; transit combine/split stay dashboard-only). Tokens minted at `/admin/api-tokens` (dashboard sidebar, superadmin). See [modules/agent-mcp.md](../modules/agent-mcp.md) |
 
 ## JSON API (`api.php`)
 

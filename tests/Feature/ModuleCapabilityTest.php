@@ -239,10 +239,10 @@ it('still refuses the page shell to a user with no capability in the module', fu
     $this->actingAs(capUser('phonebook.create'))->get('/admin/phonebook')->assertOk();
 });
 
-it('keeps the per-module admin role working across the whole module', function () {
-    // phonebook_admin implies every phonebook.* capability via
-    // User::ROLE_MODULE_PREFIXES, so a role holder must not be affected by the
-    // new per-route tags.
+it('lets a module-scoped account work across its whole module', function () {
+    // An account holding every phonebook.* capability must reach every phonebook
+    // route. This was written when `phonebook_admin` implied that bundle through
+    // a prefix table; the bundle is now stored, so the account says so.
     $staff = moduleStaff('phonebook');
 
     $category = pbCategory();

@@ -38,10 +38,9 @@ class UserResource extends Resource
      *
      * Kept as a method rather than an inline array so a test can assert it holds
      * exactly the roles User still gives meaning to. It once had to stay in step
-     * with User::ROLE_MODULE_PREFIXES, and a role that existed on the model but
-     * was missing here became unassignable — which is how phonebook_admin went
-     * missing from the form. Phase D deleted that table, so the coupling is gone
-     * and this list is now the whole vocabulary.
+     * with a role-prefix table on the model, and a role that existed there but was
+     * missing here became unassignable — which is how phonebook_admin went missing
+     * from the form. That table is gone and this list is now the whole vocabulary.
      *
      * @return array<string, string>
      */

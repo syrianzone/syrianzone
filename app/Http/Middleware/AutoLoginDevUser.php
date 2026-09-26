@@ -12,10 +12,10 @@ use Illuminate\Support\Facades\Auth;
  * Dev-only identity switching.
  *
  * A "dev role" here is a PRESET, not a `users.role` value. The presets used to
- * double as real roles, which meant dev impersonation only worked while the
- * module roles still resolved capabilities through User::ROLE_MODULE_PREFIXES.
- * Phase D removed that table, so decoupling them here is what keeps the dev
- * switcher working at all.
+ * double as real roles, and the ones named after a module were only privileged
+ * because of a role-prefix table that no longer exists. Each preset is now a
+ * plain `user` holding that module's capabilities outright, which is what keeps
+ * the dev switcher working.
  *
  * So each preset is now a plain `user` account carrying an explicit capability
  * list, named after the module it previews. The switcher UI is unchanged: it

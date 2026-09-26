@@ -1,6 +1,5 @@
 <?php
 
-use App\Filament\Resources\UserResource;
 use App\Http\Middleware\AutoLoginDevUser;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\PhonebookCategory;
@@ -27,7 +26,7 @@ use App\Support\Permissions\PermissionCatalogue;
 |
 */
 
-test('the places_admin role grants exactly the places module', function () {
+test('a places-scoped account holds exactly the places module', function () {
     $user = moduleStaff('places');
 
     foreach (PermissionCatalogue::forModule('places') as $permission) {
@@ -43,7 +42,7 @@ test('the places_admin role grants exactly the places module', function () {
     }
 });
 
-test('the phonebook_admin role grants exactly the phonebook module', function () {
+test('a phonebook-scoped account holds exactly the phonebook module', function () {
     $user = moduleStaff('phonebook');
 
     foreach (PermissionCatalogue::forModule('phonebook') as $permission) {
@@ -106,42 +105,8 @@ test('capabilities from two modules combine without implying a third', function 
         ->and($user->hasPermission('polls.delete'))->toBeFalse();
 });
 
-test('the Filament role select offers exactly the roles that still mean something', function () {
-    // This used to assert the select and User::moduleImplyingRoles() agreed,
-    // which guarded a real bug: phonebook_admin existed on the model but had no
-    // entry in the select, so it was unassignable.
-    //
-    // The coupling is gone. Phase B dropped the six module roles, phase D
-    // deleted the table they were resolved through, and phase G dropped the
-    // `admin` alias. Two values remain and this list is the whole vocabulary.
-    $offered = array_keys(UserResource::roleOptions());
-
-    expect($offered)->toEqualCanonicalizing(['superadmin', 'user'])
-        ->and($offered)->not->toContain(
-            'admin',
-            'places_admin',
-            'phonebook_admin',
-            'transit_admin',
-            'syofficial_admin',
-            'govapps_admin',
-            'users_admin',
-        );
-});
-
-test('no role outside superadmin, admin and user is assignable', function () {
-    // The inverse, so a future edit that re-adds a module role to the select
-    // fails here rather than shipping an account that depends on a role prefix.
-    $assignable = array_keys(UserResource::roleOptions());
-
-    // The retired names are spelled out rather than read from the model, because
-    // phase D deleted User::moduleImplyingRoles() along with the prefixes. They
-    // are history now, and history is worth pinning by value: a future edit that
-    // re-adds any of them to the select must fail here. `admin` joined them in
-    // phase G.
-    foreach (['syofficial_admin', 'transit_admin', 'govapps_admin', 'phonebook_admin', 'places_admin', 'users_admin'] as $moduleRole) {
-        expect($assignable)->not->toContain($moduleRole);
-    }
-});
+// The role select is asserted once, in CapabilitiesTest. It was restated here twice
+// while the migration was in flight, which is three places to change for one rule.
 
 test('dev impersonation covers every assignable role', function () {
     $offered = array_keys(AutoLoginDevUser::DEV_USERS);
@@ -161,16 +126,16 @@ test('superadmin still holds every capability', function () {
     }
 });
 
-test('the shared auth payload resolves a full catalogue to everything', function () {
-    // The shape a formerly-`admin` account is migrated to: a `user` whose stored
-    // list is the whole catalogue.
+// The full-catalogue shape is covered in CapabilitiesTest; what is worth
+// asserting here is that it survives the trip through the shared payload.
+test('the shared auth payload carries the capabilities it was given', function () {
     $user = User::factory()->withPermissions(PermissionCatalogue::all())->create();
 
     expect(HandleInertiaRequests::userPayload($user)['effective_permissions'])
         ->toHaveCount(count(PermissionCatalogue::all()));
 });
 
-test('a places_admin passes the places_admin middleware', function () {
+test('a places-scoped account passes the places admin middleware', function () {
     $user = moduleStaff('places');
     $place = Place::factory()->create();
 
@@ -181,7 +146,7 @@ test('a places_admin passes the places_admin middleware', function () {
     expect($place->fresh()->status)->toBe('approved');
 });
 
-test('a places_admin is refused the other modules', function () {
+test('a places-scoped account is refused the other modules', function () {
     $user = moduleStaff('places');
 
     // POST-only routes: a GET would 405 before the middleware ran, so use a
@@ -194,7 +159,7 @@ test('a places_admin is refused the other modules', function () {
     $this->actingAs($user)->getJson('/api/admins')->assertForbidden();
 });
 
-test('a phonebook_admin passes the phonebook_admin middleware', function () {
+test('a phonebook-scoped account passes the phonebook admin middleware', function () {
     $user = moduleStaff('phonebook');
 
     $this->actingAs($user)
@@ -208,7 +173,7 @@ test('a phonebook_admin passes the phonebook_admin middleware', function () {
     expect(PhonebookCategory::where('id', 'test-cat')->exists())->toBeTrue();
 });
 
-test('a phonebook_admin is refused places and transit', function () {
+test('a phonebook-scoped account is refused places and transit', function () {
     $user = moduleStaff('phonebook');
 
     $this->actingAs($user)->getJson('/api/v1/admin/places')->assertForbidden();

@@ -40,9 +40,9 @@ it('refuses a transit capability holder from banning a user', function () {
     expect($target->fresh()->is_banned)->toBeFalse();
 });
 
-it('refuses the transit_admin role from banning a user', function () {
-    // The role used to be on the allow list. It is not a user-moderation role,
-    // so the capability has to be granted explicitly now.
+it('refuses a transit-scoped account from banning a user', function () {
+    // Holding a whole module must not imply user moderation: transit capabilities
+    // say nothing about users.ban, which has to be granted in its own right.
     $staff = moduleStaff('transit');
 
     $target = banTarget();
@@ -73,7 +73,7 @@ it('lets a users.ban holder ban and unban', function () {
     expect($target->fresh()->is_banned)->toBeFalse();
 });
 
-it('keeps the users_admin role working', function () {
+it('lets a users-scoped account ban and unban', function () {
     $staff = moduleStaff('users');
     $target = banTarget();
 

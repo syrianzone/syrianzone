@@ -4,8 +4,8 @@ Machine access to the admin dashboard for AI agents, built on the official
 [`laravel/mcp`](https://laravel.com/docs/mcp) package and Laravel Sanctum.
 
 An agent that holds a scoped token can read and moderate community submissions
-through MCP tools, without a browser, a session cookie, or a human clicking
-through the dashboard.
+and administer the content directories, without a browser, a session cookie, or a
+human clicking through the dashboard.
 
 ---
 
@@ -18,9 +18,19 @@ through the dashboard.
 - It is **off by default**. `MCP_ENABLED=false` registers no route at all, so
   the endpoint 404s.
 
-Currently covers **places moderation** (mishwar) only. Other modules are added
-by dropping tools into `app/Mcp/Servers/AdminServer.php`; nothing outside that
-file is reachable by an agent.
+Currently covers four modules:
+
+| Module | Read tools | Write tools | Scoped |
+|---|---:|---:|---|
+| Places (mishwar) | 2 | 6 | no |
+| SyOfficial directory | 2 | 10 | no |
+| Government apps | 1 | 6 | no |
+| Transit | 4 | 6 | **yes**, by governorate |
+
+Other modules are added by dropping tools into
+`app/Mcp/Servers/AdminServer.php`; nothing outside that file is reachable by an
+agent. One pair of transit operations is intentionally dashboard-only — see
+§5, "What is deliberately *not* exposed to agents".
 
 ---
 
@@ -104,9 +114,72 @@ that blanket grant:
 | `rotate-place-photo`, `delete-place-photo` | `places.moderate_photos` |
 | `delete-place` | `places.delete` |
 
+Three things the agent surface adds on top of the dashboard:
+
+- **A token ceiling.** The dashboard trusts `users.permissions`; an agent
+  additionally has its token's abilities, and the effective permission is the
+  intersection. So a superadmin can hand out a narrow token without touching the
+  user's row.
+- **One capability per call, always.** The dashboard can group capabilities per
+  route, and a route that mutates several things may need more than one; a tool
+  declares exactly what it needs.
+- **Every call is audited** in `mcp_tool_calls`, including the arguments and the
+  outcome.
+
 A tool is also **hidden from `tools/list`** when the caller could not invoke it
 (`AuditedTool::shouldRegister`). Advertising a tool that 403s wastes context and
 invites the agent to burn turns discovering the denial.
+
+### Any-of gates
+
+`AuditedTool` supports two declarations, and the difference matters:
+
+- `protected array $permissions` — **all** of these are required.
+- `protected array $anyPermissions` — **any one** of these is enough.
+
+The SyOfficial and Gov Apps catalogues are `create` / `edit` / `toggle` /
+`delete` / `reorder`, with no read-only entry. Their read tools therefore use
+`$anyPermissions`: requiring a *write* grant in order to *look* would be wrong,
+and adding a sixth `*.review` capability would silently change what every
+existing role and token resolves to. Any-of is the honest reading of the
+catalogue as it stands. If a module later gets a real read capability, swap the
+declaration to `$permissions`.
+
+`restore-gov-app` is the one tool gated on **both** `govapps.delete` **and**
+`govapps.edit`. There is no `restore` capability, and restoring is the only
+operation that puts content back into public view — so it needs both the right
+to have removed something and the right to decide what is visible. See the
+comment on `RestoreGovAppTool` if that trade-off should change.
+
+### Governorate scoping (transit only)
+
+Transit capabilities can be restricted to specific governorates via
+`permission_scopes.transit`. Two things follow, and both are enforced in
+`TransitTool`:
+
+1. **Listings are narrowed, never widened.** The tools pass
+   `AgentContext::allowedTransitCities()` straight into a `whereIn`. An explicit
+   `city_id` argument intersects with that scope rather than replacing it, and is
+   refused outright if it falls outside. Every transit listing returns a `scope`
+   field so an agent can tell a narrow result from an empty queue.
+
+2. **Writes guard the resolved target, not the arguments.** Approving draft 91
+   acts on whichever governorate that draft lives in, which is a database fact
+   and not an input. These tools resolve the draft or route first, then call
+   `guardCity()` with the city it actually turned out to be in. Checking earlier
+   would mean trusting the caller's claim about where the data is.
+
+Two cases that are easy to get wrong and are covered by tests:
+
+- A **linked edit** touches two governorates — the draft's own, and the live
+  route it targets. Both are checked, so an agent scoped to Homs cannot rewrite an
+  Aleppo route through a Homs draft.
+- A **move** has two ends, and both are checked, so a scoped agent cannot
+  relocate a route out of its own governorate.
+
+`AgentContext::allowedTransitCities()` returns `[]` rather than `null` when there
+is no authenticated user, so an anonymous context sees no governorates instead of
+all of them.
 
 ### Tool catalogue
 
@@ -115,6 +188,11 @@ a `ToolSearch` catalogue, so `tools/list` stays short no matter how many modules
 are added — agents pick far more reliably from a short list plus a search than
 from a flat wall of forty mutations. Catalogue tools are reached via
 `search_tools` → `execute_tools`.
+
+Note that `execute_tools` answers as an SSE stream
+(`text/event-stream`, one `data:` line per message) while a direct `tools/call`
+answers as JSON. `search_tools` returns its catalogue as a JSON string inside a
+single text block, not as `structuredContent`.
 
 Annotations are set deliberately: `#[IsReadOnly]`, `#[IsDestructive]`,
 `#[IsIdempotent]`, so a host knows which calls to auto-confirm.
@@ -136,10 +214,75 @@ the tools call:
   the controller maps to a status code and the tool maps to an agent-readable
   sentence without either knowing about the other
 
+The same pattern, same three-part shape, now covers three more modules:
+
+| Module | Service | Presenter | Exception |
+|---|---|---|---|
+| SyOfficial | `Services/SyOfficial/SyOfficialDirectoryService` | `SyOfficialPresenter` | `Exceptions/Directories/DirectoryActionException` |
+| Gov Apps | `Services/GovApps/GovAppService` | `GovAppPresenter` | `Exceptions/Directories/DirectoryActionException` |
+| Transit | `Services/Transit/TransitAdminService` | `TransitPresenter` | `Exceptions/Transit/TransitActionException` |
+
 Invariants preserved in the shared layer: only `pending` places can be
 moderated; at most 10 photos and at least 1; both photo-count guards run under
 a row lock on the place; every change that can alter the map payload forgets the
 `places:map` cache.
+
+Each of the three admin controllers is now a thin HTTP adapter that keeps only
+its scope checks, its per-route validation, and the exact status codes the
+dashboard already depends on. `TransitAdminController::updateRouteStatus`, for
+example, answers **200** for "already that status" while every other refusal in
+the module answers 4xx — preserved deliberately rather than normalised, because
+the admin form treats it as a successful no-op.
+
+### Directory specifics worth knowing
+
+The two directory modules are structurally the same but not identical, and the
+differences are load-bearing:
+
+- **Deletes differ.** SyOfficial entities and categories are a **hard** delete.
+  Deleting a category cascades to every entity in it, so
+  `delete-syofficial-category` reports `entities_deleted` in its response. Gov Apps
+  **soft** delete, so a deleted app keeps its id — `create-gov-app` refuses to
+  reuse it and points at `restore-gov-app` instead of failing on a driver-level
+  unique-key error.
+- **Omitted vs explicit null.** `update-syofficial-entity` and `update-gov-app`
+  treat an *absent* `socials`/`links` as "leave it alone" and an explicit empty
+  array as "clear it". The old controller code conflated the two and wiped the
+  column when the field was omitted; the dashboard always submits it, so the
+  admin's behaviour is unchanged.
+- **`socials` / `links` stay lists.** Both controllers used a bare
+  `array_filter()` without reindexing, so dropping an entry left gaps in the key
+  sequence. That column is cast to `array`, and a JSON object like
+  `{"1":"https://…"}` decodes to non-sequential keys, which breaks a plain
+  `.map()` in the Inertia components. The shared service reindexes.
+- **Image handling** is one class, `Services/Directories/SquareWebpImageService`.
+  The two controllers had near-identical ~50-line GD blocks differing only in
+  their path prefix; both now call it, centre-cropping to 200×200 WebP on a
+  transparent canvas and falling back to storing the original when GD is missing.
+
+### What is deliberately *not* exposed to agents
+
+`combineRoutes` and `splitRoute` — combining two routes into one, and splitting
+one at a stop — are **dashboard-only**. They live in
+`Services/Transit/TransitRouteComposer` and are deliberately not registered as
+tools:
+
+- they do coordinate-level surgery on route geometry (reading it back out,
+  merging or splitting coordinate arrays, and rewriting stop pivots),
+- they rewrite several live routes in a single transaction,
+- and they have **no test coverage**, because the spatial SQL they need
+  (`ST_AsGeoJSON` / `ST_GeomFromGeoJSON`) does not exist on the SQLite test
+  database, so a regression would not be caught in CI.
+
+Everything else in the transit module is exposed. For the same reason, no tool
+reads coordinates back out of the *spatial* `geometry` columns on `routes` and
+`stops`. `get-transit-draft-geometry` does return coordinates, but from
+`route_drafts.geojson`, which is a plain JSON column — so a reviewer can see
+exactly what was submitted without the MySQL dependency.
+
+That spatial gap is why the test database uses geometry-less fixtures: a draft
+with `features: []` and a route with no stops exercise every code path except the
+`INSERT ... ST_GeomFromGeoJSON(...)` call itself.
 
 `PlaceAdminController` is now a thin HTTP adapter over these. Its 24 existing
 tests pass unchanged.
@@ -257,7 +400,7 @@ serve a stale compile for up to three minutes. Restart it if in doubt.
 
 ## 9. Tests
 
-`tests/Feature/Agent/` — 54 tests:
+`tests/Feature/Agent/`:
 
 | File | Covers |
 |---|---|
@@ -265,6 +408,17 @@ serve a stale compile for up to three minutes. Restart it if in doubt.
 | `AgentHttpTest.php` | The edge: feature flag, guest, session-cookie refusal, ban, expiry, revocation, real bearer round trip |
 | `PlacesToolsTest.php` | Tool behaviour, domain refusals, `shouldRegister` gating, audit outcomes, redaction |
 | `ApiTokenIssuingTest.php` | Form → token: clamping, banned owners, unknown ids, TTL fallback |
+| `DirectoryToolsTest.php` | SyOfficial / Gov Apps: capability isolation, any-of read gates, soft vs hard delete, omitted-vs-null |
+| `TransitToolsTest.php` | Governorate scoping, including the two indirect routes (linked edit, move) and cross-module capability isolation |
+| `DirectoryDiscoveryTest.php` | The real JSON-RPC surface: `tools/list` gating, `search_tools`, and an `execute_tools` SSE round trip |
+
+`tests/Feature/`, alongside the module's own:
+
+| File | Covers |
+|---|---|
+| `SyOfficialDirectoryTest.php`, `SyOfficialAdminTest.php` | Service rules, then the HTTP contract after the controller was reduced to an adapter |
+| `GovAppsServiceTest.php`, `GovAppsAdminTest.php` | Same split, plus the soft-delete id-reuse rule |
+| `TransitAdminServiceTest.php` | Approve/reject/status/update/move/delete, cache invalidation, and the two regression tests below |
 
 Two notes for anyone extending this:
 
@@ -275,6 +429,33 @@ Two notes for anyone extending this:
 - `Response::structured()` returns a `ResponseFactory`, not a `Response`. Tool
   `run()` signatures are `Response|ResponseFactory` for that reason.
 
+### Drive the real surface at least once
+
+`callTool()` skips the transport, which also skips schema serialisation. A
+catalogue tool with a bogus JSON-schema call (`->maxLength()` instead of
+`->max()`, for instance) passes every direct test and then fails for any real
+agent, because the schema is only built when `ToolSearch` renders it. So each
+module's discovery test goes over HTTP and exercises `tools/list`,
+`search_tools`, and an `execute_tools` round trip.
+
+### Two regression tests worth not deleting
+
+Both came out of extracting the transit service, and both are defects that were
+live in production:
+
+- `it republishes a linked route when its edit is approved` — submitting an edit
+  against a live route unpublishes it, so the map does not show stale data while
+  the edit is reviewed. The *reject* path put it back; the *approve* path did
+  not, so accepting an edit left the route permanently `disapproved` and
+  invisible to every public user. `rejectDraft()` and `approveDraft()` now both
+  restore, and the service docblock says why they must stay symmetric.
+- `it refuses an end-stop split without leaving a transaction open` — `splitRoute`
+  opened a transaction and then returned its 400 from inside the `try`, without
+  committing or rolling back, leaking an open transaction onto the connection for
+  the rest of the request. The guard now runs before the transaction opens. The
+  assertion compares `DB::transactionLevel()` against the level captured before
+  the call, because `RefreshDatabase` already holds one.
+
 ---
 
 ## 10. Adding a module
@@ -282,12 +463,25 @@ Two notes for anyone extending this:
 1. Extract the module's admin logic into a transport-free service under
    `app/Services/<Module>/`, and point the existing controller at it.
 2. Add tools in `app/Mcp/Tools/<Module>/` extending `AuditedTool`, declaring
-   `$permissions`.
+   `$permissions` (all required) or `$anyPermissions` (any one sufficient — see
+   §4).
 3. Register them in `app/Mcp/Servers/AdminServer.php` — read tools directly,
    writes inside the `ToolSearch` array.
-4. Add tests. If the module is governorate-scoped, override
-   `isCityScoped()`/`cityIdFor()` so the scope is enforced.
+4. Add tests, including one over the real JSON-RPC surface.
+
+For a governorate-scoped module, extend a tool base that wraps
+`AgentContext::allowedTransitCities()` and a `guardCity()` helper rather than
+reaching for the user directly, and remember that the city is usually only
+knowable **after** resolving the target row.
 
 **Do not** add a parallel permission vocabulary. If a module needs a capability
 that does not exist, add it to `PermissionCatalogue` — it is the same list the
-Filament user form renders.
+Filament user form renders. The one exception is deliberate: a read tool in a
+module with no read capability should use `$anyPermissions` rather than
+minting a capability that changes what every existing token resolves to.
+
+**Do not** expose an operation you cannot test. If a module's hardest operations
+depend on something the test database cannot provide — transit's spatial
+functions are the current example — leave them behind the dashboard and say so
+in the service docblock and here, rather than shipping them to an autonomous
+caller on the strength of "it is the same code path".

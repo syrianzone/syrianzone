@@ -2,29 +2,36 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\GovApp;
+use App\Exceptions\Directories\DirectoryActionException;
+use App\Services\GovApps\GovAppPresenter;
+use App\Services\GovApps\GovAppService;
+use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * HTTP adapter for the government apps admin.
+ *
+ * Every write delegates to GovAppService, which is also what the agent MCP
+ * tools call. This class is left with request validation, the response shape,
+ * and the domain-exception to status-code mapping — nothing else.
+ */
 class GovAppsAdminController extends Controller
 {
-    /**
-     * Render the admin management dashboard for GovApps.
-     */
+    public function __construct(
+        private readonly GovAppService $apps,
+        private readonly GovAppPresenter $presenter,
+    ) {}
+
     public function renderIndex()
     {
-        $apps = GovApp::orderBy('order_column')->get();
-
         return inertia('Admin/GovApps/Index', [
-            'apps' => $apps,
+            'apps' => $this->apps->apps(),
         ]);
     }
 
-    /**
-     * Store a new GovApp.
-     */
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'id' => 'required|string|max:128|unique:gov_apps,id|alpha_dash',
@@ -38,39 +45,18 @@ class GovAppsAdminController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        $iconPath = null;
-        if ($request->hasFile('icon_file')) {
-            $iconPath = $this->uploadIcon($request->file('icon_file'), $validated['id']);
-        }
-
-        $maxOrder = GovApp::max('order_column') ?? 0;
-        $links = array_filter($validated['links'] ?? [], fn($url) => is_string($url) && (str_starts_with(trim($url), 'http://') || str_starts_with(trim($url), 'https://')));
-
-        GovApp::create([
-            'id' => $validated['id'],
-            'name' => $validated['name'],
-            'name_ar' => $validated['name_ar'],
-            'description' => $validated['description'] ?? null,
-            'description_ar' => $validated['description_ar'] ?? null,
-            'icon' => $iconPath,
-            'images' => [],
-            'links' => $links,
-            'order_column' => $maxOrder + 1,
-            'is_active' => $validated['is_active'] ?? true,
-        ]);
-
-        $this->flushCache();
-
-        return redirect()->back()->with('success', 'تم إضافة التطبيق الحكومي بنجاح');
+        return $this->write(
+            fn () => $this->apps->create(
+                $validated,
+                $validated['links'] ?? [],
+                $request->file('icon_file'),
+            ),
+            'تم إضافة التطبيق الحكومي بنجاح',
+        );
     }
 
-    /**
-     * Update an existing GovApp.
-     */
-    public function update(Request $request, string $id)
+    public function update(Request $request, string $id): RedirectResponse
     {
-        $app = GovApp::findOrFail($id);
-
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'name_ar' => 'required|string|max:255',
@@ -82,44 +68,29 @@ class GovAppsAdminController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        $iconPath = $app->icon;
-        if ($request->hasFile('icon_file')) {
-            $iconPath = $this->uploadIcon($request->file('icon_file'), $id);
-        }
-
-        $links = array_filter($validated['links'] ?? [], fn($url) => is_string($url) && (str_starts_with(trim($url), 'http://') || str_starts_with(trim($url), 'https://')));
-
-        $app->update([
-            'name' => $validated['name'],
-            'name_ar' => $validated['name_ar'],
-            'description' => $validated['description'] ?? null,
-            'description_ar' => $validated['description_ar'] ?? null,
-            'icon' => $iconPath,
-            'links' => $links,
-            'is_active' => $validated['is_active'] ?? $app->is_active,
-        ]);
-
-        $this->flushCache();
-
-        return redirect()->back()->with('success', 'تم تحديث بيانات التطبيق بنجاح');
+        return $this->write(
+            fn () => $this->apps->update(
+                $id,
+                $validated,
+                // null means "leave the existing links alone". The dashboard
+                // form always submits this field; a caller that omits links
+                // entirely previously wiped the column.
+                $validated['links'] ?? null,
+                $request->file('icon_file'),
+            ),
+            'تم تحديث بيانات التطبيق بنجاح',
+        );
     }
 
-    /**
-     * Delete a GovApp.
-     */
-    public function destroy(string $id)
+    public function destroy(string $id): RedirectResponse
     {
-        $app = GovApp::findOrFail($id);
-        $app->delete();
-        $this->flushCache();
-
-        return redirect()->back()->with('success', 'تم حذف التطبيق بنجاح');
+        return $this->write(
+            fn () => $this->apps->delete($id),
+            'تم حذف التطبيق بنجاح',
+        );
     }
 
-    /**
-     * Reorder Apps (Drag-and-Drop)
-     */
-    public function reorder(Request $request)
+    public function reorder(Request $request): Response
     {
         $validated = $request->validate([
             'orders' => 'required|array',
@@ -127,73 +98,36 @@ class GovAppsAdminController extends Controller
             'orders.*.order_column' => 'required|integer',
         ]);
 
-        foreach ($validated['orders'] as $item) {
-            GovApp::where('id', $item['id'])->update(['order_column' => $item['order_column']]);
+        return $this->writeJson(fn () => $this->apps->reorder($validated['orders']));
+    }
+
+    private function write(Closure $action, string $success): RedirectResponse
+    {
+        try {
+            $action();
+        } catch (DirectoryActionException $e) {
+            if ($e->kind === DirectoryActionException::NOT_FOUND) {
+                abort(404, $e->getMessage());
+            }
+
+            return response()->json(['message' => $e->getMessage()], $e->httpStatus());
         }
 
-        $this->flushCache();
+        return redirect()->back()->with('success', $success);
+    }
+
+    private function writeJson(Closure $action): Response
+    {
+        try {
+            $action();
+        } catch (DirectoryActionException $e) {
+            if ($e->kind === DirectoryActionException::NOT_FOUND) {
+                abort(404, $e->getMessage());
+            }
+
+            return response()->json(['message' => $e->getMessage()], $e->httpStatus());
+        }
 
         return response()->json(['message' => 'تم إعادة الترتيب بنجاح']);
-    }
-
-    /**
-     * Helper to upload icon to R2 or public disk
-     */
-    private function uploadIcon($file, string $appId): string
-    {
-        $disk = config('filesystems.media_disk', 'r2');
-        if (!config("filesystems.disks.{$disk}")) {
-            $disk = 'public';
-        }
-
-        $fileName = "govapps/{$appId}_" . time() . ".webp";
-
-        if (function_exists('imagecreatefromstring')) {
-            $imageStr = file_get_contents($file->getRealPath());
-            $im = @imagecreatefromstring($imageStr);
-            if ($im !== false) {
-                $origW = imagesx($im);
-                $origH = imagesy($im);
-                $targetW = 200;
-                $targetH = 200;
-
-                if ($origW > $origH) {
-                    $srcW = $origH;
-                    $srcH = $origH;
-                    $srcX = (int) (($origW - $origH) / 2);
-                    $srcY = 0;
-                } else {
-                    $srcW = $origW;
-                    $srcH = $origW;
-                    $srcX = 0;
-                    $srcY = (int) (($origH - $origW) / 2);
-                }
-
-                $canvas = imagecreatetruecolor($targetW, $targetH);
-                imagealphablending($canvas, false);
-                imagesavealpha($canvas, true);
-                $transparent = imagecolorallocatealpha($canvas, 255, 255, 255, 127);
-                imagefilledrectangle($canvas, 0, 0, $targetW, $targetH, $transparent);
-
-                imagecopyresampled($canvas, $im, 0, 0, $srcX, $srcY, $targetW, $targetH, $srcW, $srcH);
-
-                ob_start();
-                imagewebp($canvas, null, 85);
-                imagedestroy($canvas);
-                imagedestroy($im);
-                $webpContent = ob_get_clean();
-
-                Storage::disk($disk)->put($fileName, $webpContent, 'public');
-                return Storage::disk($disk)->url($fileName);
-            }
-        }
-
-        $path = $file->storeAs('govapps', "{$appId}_" . time() . "." . $file->getClientOriginalExtension(), $disk);
-        return Storage::disk($disk)->url($path);
-    }
-
-    private function flushCache(): void
-    {
-        Cache::forget('govapps:db_apps_v1');
     }
 }

@@ -2,34 +2,38 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\OfficialCategory;
-use App\Models\OfficialEntity;
+use App\Exceptions\Directories\DirectoryActionException;
+use App\Services\SyOfficial\SyOfficialDirectoryService;
+use App\Services\SyOfficial\SyOfficialPresenter;
+use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * Admin dashboard for the SyOfficial directory.
+ *
+ * This class is now only a transport adapter: validation, then a delegation to
+ * SyOfficialDirectoryService. The same service backs the agent MCP tools, so a
+ * rule enforced here is enforced there too. Do not re-inline domain logic in
+ * this file.
+ */
 class SyOfficialAdminController extends Controller
 {
-    /**
-     * Render the admin management dashboard for SyOfficial.
-     */
+    public function __construct(
+        private readonly SyOfficialDirectoryService $directory,
+        private readonly SyOfficialPresenter $presenter,
+    ) {}
+
     public function renderIndex()
     {
-        $categories = OfficialCategory::orderBy('order_column')->get();
-        $entities = OfficialEntity::with('category')
-            ->orderBy('order_column')
-            ->get();
-
         return inertia('Admin/SyOfficial/Index', [
-            'categories' => $categories,
-            'entities' => $entities,
+            'categories' => $this->directory->categories(),
+            'entities' => $this->directory->entities(),
         ]);
     }
 
-    /**
-     * Category CRUD: Store
-     */
-    public function storeCategory(Request $request)
+    public function storeCategory(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'id' => 'required|string|max:64|unique:official_categories,id|alpha_dash',
@@ -39,23 +43,16 @@ class SyOfficialAdminController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        $maxOrder = OfficialCategory::max('order_column') ?? 0;
-        $validated['order_column'] = $maxOrder + 1;
-        $validated['is_active'] = $validated['is_active'] ?? true;
-
-        $category = OfficialCategory::create($validated);
-        $this->flushCache();
-
-        return redirect()->back()->with('success', 'تم إضافة الفئة بنجاح');
+        return $this->write(
+            fn () => $this->directory->createCategory($validated),
+            'تم إضافة الفئة بنجاح',
+        );
     }
 
-    /**
-     * Category CRUD: Update
-     */
-    public function updateCategory(Request $request, string $id)
+    public function updateCategory(Request $request, string $id): RedirectResponse
     {
-        $category = OfficialCategory::findOrFail($id);
-
+        // Validate before the lookup, matching the previous behaviour where the
+        // form's required fields were checked first.
         $validated = $request->validate([
             'label_ar' => 'required|string|max:255',
             'label_en' => 'required|string|max:255',
@@ -63,28 +60,21 @@ class SyOfficialAdminController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        $category->update($validated);
-        $this->flushCache();
-
-        return redirect()->back()->with('success', 'تم تحديث الفئة بنجاح');
+        return $this->write(
+            fn () => $this->directory->updateCategory($id, $validated),
+            'تم تحديث الفئة بنجاح',
+        );
     }
 
-    /**
-     * Category CRUD: Delete
-     */
-    public function destroyCategory(string $id)
+    public function destroyCategory(string $id): RedirectResponse
     {
-        $category = OfficialCategory::findOrFail($id);
-        $category->delete();
-        $this->flushCache();
-
-        return redirect()->back()->with('success', 'تم حذف الفئة بنجاح');
+        return $this->write(
+            fn () => $this->directory->deleteCategory($id),
+            'تم حذف الفئة بنجاح',
+        );
     }
 
-    /**
-     * Entity CRUD: Store
-     */
-    public function storeEntity(Request $request)
+    public function storeEntity(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'id' => 'required|string|max:128|unique:official_entities,id|alpha_dash',
@@ -99,39 +89,22 @@ class SyOfficialAdminController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        $imagePath = null;
-        if ($request->hasFile('image_file')) {
-            $imagePath = $this->uploadImage($request->file('image_file'), $validated['id']);
-        }
-
-        $maxOrder = OfficialEntity::where('category_id', $validated['category_id'])->max('order_column') ?? 0;
-        $socials = array_filter($validated['socials'] ?? [], fn($url) => is_string($url) && (str_starts_with(trim($url), 'http://') || str_starts_with(trim($url), 'https://')));
-
-        OfficialEntity::create([
-            'id' => $validated['id'],
-            'category_id' => $validated['category_id'],
-            'name' => $validated['name'],
-            'name_ar' => $validated['name_ar'],
-            'description' => $validated['description'] ?? null,
-            'description_ar' => $validated['description_ar'] ?? null,
-            'image' => $imagePath ?? 'images/governorates/placeholder.webp',
-            'socials' => $socials,
-            'order_column' => $maxOrder + 1,
-            'is_active' => $validated['is_active'] ?? true,
-        ]);
-
-        $this->flushCache();
-
-        return redirect()->back()->with('success', 'تم إضافة الجهة الرسمية بنجاح');
+        return $this->write(
+            fn () => $this->directory->createEntity(
+                $validated,
+                $validated['socials'] ?? [],
+                $request->file('image_file'),
+            ),
+            'تم إضافة الجهة الرسمية بنجاح',
+        );
     }
 
     /**
-     * Entity CRUD: Update
+     * Registered for both POST and PUT. The Inertia form posts, the agent-facing
+     * convention uses PUT; same handler either way.
      */
-    public function updateEntity(Request $request, string $id)
+    public function updateEntity(Request $request, string $id): RedirectResponse
     {
-        $entity = OfficialEntity::findOrFail($id);
-
         $validated = $request->validate([
             'category_id' => 'required|exists:official_categories,id',
             'name' => 'required|string|max:255',
@@ -144,44 +117,30 @@ class SyOfficialAdminController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        if ($request->hasFile('image_file')) {
-            $validated['image'] = $this->uploadImage($request->file('image_file'), $id);
-        }
-
-        $socials = array_filter($validated['socials'] ?? [], fn($url) => is_string($url) && (str_starts_with(trim($url), 'http://') || str_starts_with(trim($url), 'https://')));
-
-        $entity->update([
-            'category_id' => $validated['category_id'],
-            'name' => $validated['name'],
-            'name_ar' => $validated['name_ar'],
-            'description' => $validated['description'] ?? null,
-            'description_ar' => $validated['description_ar'] ?? null,
-            'image' => $validated['image'] ?? $entity->image,
-            'socials' => $socials,
-            'is_active' => $validated['is_active'] ?? $entity->is_active,
-        ]);
-
-        $this->flushCache();
-
-        return redirect()->back()->with('success', 'تم تحديث البيانات بنجاح');
+        return $this->write(
+            fn () => $this->directory->updateEntity(
+                $id,
+                $validated,
+                // null means "leave the existing list alone". The dashboard form
+                // always submits this field, so its behaviour is unchanged; the
+                // difference only shows for a caller that omits socials entirely,
+                // which previously wiped the column.
+                $validated['socials'] ?? null,
+                $request->file('image_file'),
+            ),
+            'تم تحديث البيانات بنجاح',
+        );
     }
 
-    /**
-     * Entity CRUD: Delete
-     */
-    public function destroyEntity(string $id)
+    public function destroyEntity(string $id): RedirectResponse
     {
-        $entity = OfficialEntity::findOrFail($id);
-        $entity->delete();
-        $this->flushCache();
-
-        return redirect()->back()->with('success', 'تم حذف الجهة الرسمية بنجاح');
+        return $this->write(
+            fn () => $this->directory->deleteEntity($id),
+            'تم حذف الجهة الرسمية بنجاح',
+        );
     }
 
-    /**
-     * Reorder Categories (Drag-and-Drop)
-     */
-    public function reorderCategories(Request $request)
+    public function reorderCategories(Request $request): Response
     {
         $validated = $request->validate([
             'orders' => 'required|array',
@@ -189,19 +148,12 @@ class SyOfficialAdminController extends Controller
             'orders.*.order_column' => 'required|integer',
         ]);
 
-        foreach ($validated['orders'] as $item) {
-            OfficialCategory::where('id', $item['id'])->update(['order_column' => $item['order_column']]);
-        }
-
-        $this->flushCache();
-
-        return response()->json(['message' => 'تم إعادة الترتيب بنجاح']);
+        return $this->writeJson(
+            fn () => $this->directory->reorderCategories($validated['orders']),
+        );
     }
 
-    /**
-     * Reorder Entities (Drag-and-Drop)
-     */
-    public function reorderEntities(Request $request)
+    public function reorderEntities(Request $request): Response
     {
         $validated = $request->validate([
             'orders' => 'required|array',
@@ -209,76 +161,46 @@ class SyOfficialAdminController extends Controller
             'orders.*.order_column' => 'required|integer',
         ]);
 
-        foreach ($validated['orders'] as $item) {
-            OfficialEntity::where('id', $item['id'])->update(['order_column' => $item['order_column']]);
-        }
-
-        $this->flushCache();
-
-        return response()->json(['message' => 'تم إعادة الترتيب بنجاح']);
+        return $this->writeJson(
+            fn () => $this->directory->reorderEntities($validated['orders']),
+        );
     }
 
     /**
-     * Helper to upload image to R2 or public disk
+     * Run a domain action and redirect back with the admin's success toast.
+     *
+     * The service refuses with DirectoryActionException instead of calling
+     * abort() or findOrFail(), so that the MCP tools can report the same
+     * refusals in agent language. This is where that becomes an HTTP status
+     * again: a missing id is a 404, anything else is a 422 with the message.
      */
-    private function uploadImage($file, string $entityId): string
+    private function write(Closure $action, string $success): RedirectResponse
     {
-        $disk = config('filesystems.media_disk', 'r2');
-        if (!config("filesystems.disks.{$disk}")) {
-            $disk = 'public';
-        }
-
-        $fileName = "syofficial/entities/{$entityId}_" . time() . ".webp";
-
-        // Read image file, resize to 200x200 max resolution, and convert to optimized webp
-        if (function_exists('imagecreatefromstring')) {
-            $imageStr = file_get_contents($file->getRealPath());
-            $im = @imagecreatefromstring($imageStr);
-            if ($im !== false) {
-                $origW = imagesx($im);
-                $origH = imagesy($im);
-                $targetW = 200;
-                $targetH = 200;
-
-                if ($origW > $origH) {
-                    $srcW = $origH;
-                    $srcH = $origH;
-                    $srcX = (int) (($origW - $origH) / 2);
-                    $srcY = 0;
-                } else {
-                    $srcW = $origW;
-                    $srcH = $origW;
-                    $srcX = 0;
-                    $srcY = (int) (($origH - $origW) / 2);
-                }
-
-                $canvas = imagecreatetruecolor($targetW, $targetH);
-                imagealphablending($canvas, false);
-                imagesavealpha($canvas, true);
-                $transparent = imagecolorallocatealpha($canvas, 255, 255, 255, 127);
-                imagefilledrectangle($canvas, 0, 0, $targetW, $targetH, $transparent);
-
-                imagecopyresampled($canvas, $im, 0, 0, $srcX, $srcY, $targetW, $targetH, $srcW, $srcH);
-
-                ob_start();
-                imagewebp($canvas, null, 85);
-                imagedestroy($canvas);
-                imagedestroy($im);
-                $webpContent = ob_get_clean();
-
-                Storage::disk($disk)->put($fileName, $webpContent, 'public');
-                return Storage::disk($disk)->url($fileName);
+        try {
+            $action();
+        } catch (DirectoryActionException $e) {
+            if (in_array($e->kind, [DirectoryActionException::NOT_FOUND, DirectoryActionException::CATEGORY_NOT_FOUND], true)) {
+                abort(404, $e->getMessage());
             }
+
+            return response()->json(['message' => $e->getMessage()], $e->httpStatus());
         }
 
-        // Fallback standard file store
-        $path = $file->storeAs('syofficial/entities', "{$entityId}_" . time() . "." . $file->getClientOriginalExtension(), $disk);
-        return Storage::disk($disk)->url($path);
+        return redirect()->back()->with('success', $success);
     }
 
-    private function flushCache(): void
+    private function writeJson(Closure $action): Response
     {
-        Cache::forget('syofficial:db_categories_v2');
-        Cache::forget('syofficial:db_entities_v2');
+        try {
+            $action();
+        } catch (DirectoryActionException $e) {
+            if (in_array($e->kind, [DirectoryActionException::NOT_FOUND, DirectoryActionException::CATEGORY_NOT_FOUND], true)) {
+                abort(404, $e->getMessage());
+            }
+
+            return response()->json(['message' => $e->getMessage()], $e->httpStatus());
+        }
+
+        return response()->json(['message' => 'تم إعادة الترتيب بنجاح']);
     }
 }

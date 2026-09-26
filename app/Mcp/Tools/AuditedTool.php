@@ -36,9 +36,30 @@ abstract class AuditedTool extends Tool
      * Capability ids this tool requires. Empty means the tool is public-safe
      * and always registered.
      *
+     * All of these are required. For a read tool that should be satisfied by
+     * any one capability in its module, use $anyPermissions instead.
+     *
      * @var array<int, string>
      */
     protected array $permissions = [];
+
+    /**
+     * Alternative to $permissions: the tool is registered and permitted when
+     * the agent holds ANY ONE of these.
+     *
+     * This exists because neither SyOfficial nor Gov Apps has a read-only
+     * capability — both catalogues are create/edit/toggle/delete/reorder. A
+     * listing that demanded one of those write grants in order to be *read*
+     * would be wrong, and inventing a sixth capability would silently change
+     * what every existing role and token resolves to. Any-of is the honest
+     * reading of the current catalogue: "you may work in this module, so you
+     * may look at it".
+     *
+     * Ignored when $permissions is non-empty.
+     *
+     * @var array<int, string>
+     */
+    protected array $anyPermissions = [];
 
     /**
      * Optional secondary gate for governorate-scoped tools. Return the city id
@@ -105,11 +126,17 @@ abstract class AuditedTool extends Tool
      */
     public function shouldRegister(?AgentContext $context = null): bool
     {
+        if ($this->anyPermissions !== []) {
+            $context ??= $this->resolveContext();
+
+            return $context === null || $context->canAny($this->anyPermissions);
+        }
+
         if ($this->permissions === []) {
             return true;
         }
 
-        $context ??= app()->bound(AgentContext::class) ? app(AgentContext::class) : null;
+        $context ??= $this->resolveContext();
 
         if ($context === null) {
             return true;
@@ -120,17 +147,24 @@ abstract class AuditedTool extends Tool
 
     protected function authorize(AgentContext $context, Request $request): void
     {
-        if ($this->permissions === []) {
-            return;
+        if ($this->anyPermissions !== []) {
+            if (! $context->canAny($this->anyPermissions)) {
+                $context->authorizeAny($this->anyPermissions);
+            }
+        } elseif ($this->permissions !== []) {
+            $context->authorize(...$this->permissions);
         }
-
-        $context->authorize(...$this->permissions);
 
         $cityId = $this->cityIdFor($request);
 
         if ($cityId !== null || $this->isCityScoped()) {
             $this->authorizeCity($context, $cityId);
         }
+    }
+
+    private function resolveContext(): ?AgentContext
+    {
+        return app()->bound(AgentContext::class) ? app(AgentContext::class) : null;
     }
 
     /**

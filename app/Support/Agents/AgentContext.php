@@ -85,6 +85,29 @@ final class AgentContext
     }
 
     /**
+     * Governorates this agent's user may act on, or null when unrestricted.
+     *
+     * A thin delegation on purpose: the scope lives on the user row, and the
+     * token ceiling has already been applied by the permission check that got a
+     * tool this far. Tools use this to *narrow* a listing, never to widen it —
+     * pass the result straight to a whereIn, and treat null as "no restriction"
+     * rather than "no cities".
+     *
+     * With no authenticated user this returns [] rather than null, so an
+     * anonymous context sees no governorates instead of all of them.
+     *
+     * @return array<int, string>|null
+     */
+    public function allowedTransitCities(): ?array
+    {
+        if ($this->user === null) {
+            return [];
+        }
+
+        return $this->user->allowedTransitCities();
+    }
+
+    /**
      * @return array<int, string>
      */
     public function abilities(): array
@@ -124,6 +147,35 @@ final class AgentContext
         if ($missing !== []) {
             throw new AuthorizationException($this->describeDenial($missing));
         }
+    }
+
+    /**
+     * Guard for a tool satisfied by any one of several capabilities, e.g. a
+     * read-only listing in a module whose catalogue has no read entry.
+     *
+     * The denial names every capability that would have worked, so the agent
+     * can tell its operator exactly what to grant.
+     *
+     * @param  array<int, string>  $permissions
+     *
+     * @throws AuthorizationException
+     */
+    public function authorizeAny(array $permissions): void
+    {
+        if ($this->canAny($permissions)) {
+            return;
+        }
+
+        throw new AuthorizationException(sprintf(
+            'Permission denied: this agent needs at least one of the %s capabilities to use this tool.%s',
+            implode(', ', array_map(
+                static fn (string $permission) => PermissionCatalogue::label($permission),
+                $permissions,
+            )),
+            $this->token?->name !== null
+                ? sprintf(' Token "%s" also needs this grant.', $this->token->name)
+                : ''
+        ));
     }
 
     /**

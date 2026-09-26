@@ -2,32 +2,46 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\Transit\TransitActionException;
 use App\Http\Controllers\Concerns\ChecksTransitScope;
-use App\Models\RouteDraft;
 use App\Models\Route;
-use App\Models\TransitRouteLog;
+use App\Models\RouteDraft;
+use App\Services\Transit\TransitAdminService;
+use App\Services\Transit\TransitRouteComposer;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
+/**
+ * HTTP adapter for transit moderation.
+ *
+ * Writes delegate to TransitAdminService, which is also what the agent MCP
+ * tools call. This class keeps the scope checks (they need a Request), the
+ * per-route validation, and the exact status codes the dashboard already
+ * depends on.
+ *
+ * combineRoutes() and splitRoute() are still inline. They are the only two
+ * operations not shared with the agent surface, and deliberately so: both do
+ * coordinate-level surgery on route geometry, neither has any test coverage
+ * (the spatial SQL needs MySQL, not the SQLite test database), and both rewrite
+ * multiple live routes in one transaction. They should move behind
+ * TransitAdminService only once they are covered.
+ */
 class TransitAdminController extends Controller
 {
     use ChecksTransitScope;
 
-    public function index(Request $request)
-    {
-        $allowed = $this->allowedTransitCities($request);
+    public function __construct(
+        private readonly TransitAdminService $transit,
+        private readonly TransitRouteComposer $composer,
+    ) {}
 
-        // Bounded: the drafts table grows without limit, so a bare ->get() would
-        // eventually take down the admin panel load.
-        $drafts = RouteDraft::with(['user:id,name', 'city:id,name_ar,name_en', 'linkedRoute:id,name_ar,name_en'])
-            ->when($allowed !== null, fn ($q) => $q->whereIn('city_id', $allowed))
-            ->orderBy('created_at', 'desc')->limit(500)->get();
-        return response()->json($drafts);
+    public function index(Request $request): SymfonyResponse
+    {
+        return response()->json($this->transit->drafts($this->allowedTransitCities($request)));
     }
 
-    public function approve(Request $request, $id)
+    public function approve(Request $request, $id): SymfonyResponse
     {
         $validated = $request->validate([
             'color_index' => 'nullable|integer|min:0',
@@ -42,184 +56,27 @@ class TransitAdminController extends Controller
             $this->ensureTransitCityAccess($request, $linkedCityId, ['transit.approve']);
         }
 
-        if ($draft->status !== 'pending') {
-            return response()->json(['message' => 'Draft is already ' . $draft->status], 400);
-        }
-
-        // Contributor's color survives when the admin does not re-pick one.
-        $colorIndex = $validated['color_index'] ?? $draft->color_index ?? null;
-
-        // Linked draft = edit suggestion for existing published route
-        if ($draft->route_id) {
-            DB::beginTransaction();
-            try {
-                $route = Route::findOrFail($draft->route_id);
-
-                // Update route metadata
-                $route->name_ar = $draft->name_ar;
-                $route->name_en = $draft->name_en;
-                $route->price_new = $draft->price;
-                if ($colorIndex !== null) {
-                    $route->color_index = (int) $colorIndex;
-                }
-                $route->save();
-
-                // Update geometry
-                $geojson = $draft->geojson;
-                $features = $geojson['features'] ?? [];
-                $routeLine = null;
-                $stops = [];
-
-                foreach ($features as $feature) {
-                    $type = $feature['geometry']['type'] ?? null;
-                    if ($type === 'LineString' || $type === 'MultiLineString') {
-                        $routeLine = $feature['geometry'];
-                    } elseif ($type === 'Point') {
-                        $stops[] = $feature;
-                    }
-                }
-
-                // Replace geometry
-                DB::table('route_geometries')->where('route_id', $route->id)->delete();
-                if ($routeLine) {
-                    DB::statement(
-                        'INSERT INTO route_geometries (route_id, geometry, created_at, updated_at) VALUES (?, ST_GeomFromGeoJSON(?), ?, ?)',
-                        [$route->id, json_encode($routeLine), now(), now()]
-                    );
-                }
-
-                // Replace stops
-                $oldStopIds = DB::table('route_stop')->where('route_id', $route->id)->pluck('stop_id')->all();
-                DB::table('route_stop')->where('route_id', $route->id)->delete();
-                $order = 1;
-                foreach ($stops as $stopFeature) {
-                    $stopPoint = $stopFeature['geometry'];
-                    $nameAr = trim($stopFeature['properties']['nameAr'] ?? '') ?: ('محطة ' . $order);
-                    $stopId = 'stop-' . Str::slug($draft->city->name_en ?? $draft->city->name_ar) . '-' . Str::uuid();
-
-                    DB::statement(
-                        'INSERT INTO stops (id, city_id, name_ar, geometry, created_at, updated_at) VALUES (?, ?, ?, ST_GeomFromGeoJSON(?), ?, ?)',
-                        [$stopId, $draft->city_id, $nameAr, json_encode($stopPoint), now(), now()]
-                    );
-
-                    DB::table('route_stop')->insert([
-                        'route_id' => $route->id,
-                        'stop_id' => $stopId,
-                        'order' => $order++,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-                }
-                // Delete orphaned old stops (not referenced by any route anymore).
-                if (!empty($oldStopIds)) {
-                    $stillUsed = DB::table('route_stop')->whereIn('stop_id', $oldStopIds)->pluck('stop_id')->all();
-                    $orphans = array_diff($oldStopIds, $stillUsed);
-                    if (!empty($orphans)) {
-                        DB::table('stops')->whereIn('id', $orphans)->delete();
-                    }
-                }
-
-                // Log the update
-                \App\Models\TransitRouteLog::create([
-                    'route_id' => $route->id,
-                    'action' => 'updated_via_draft',
-                    'description' => "تحديث الخط '{$route->name_ar}' بناءً على مساهمة #{$draft->id} من " . ($draft->user->name ?? 'مجهول'),
-                    'user_id' => auth()->id(),
-                ]);
-
-                // Mark draft as approved
-                $draft->status = 'approved';
-                $draft->save();
-
-                DB::commit();
-
-                $this->clearCityMapCache($draft->city_id);
-
-                return response()->json(['message' => 'Draft approved and route updated', 'route' => $route]);
-            } catch (\Exception $e) {
-                DB::rollBack();
-                return response()->json(['message' => 'Failed to approve draft', 'error' => $e->getMessage()], 500);
-            }
-        }
-
-        // Original flow: new route from scratch
-        DB::beginTransaction();
-
         try {
-            // Generate unique IDs
-            $routeId = 'route-' . Str::slug($draft->city->name_en ?? $draft->city->name_ar) . '-' . Str::uuid();
-
-            // Create the Route
-            $route = Route::create([
-                'id' => $routeId,
-                'city_id' => $draft->city_id,
-                'name_ar' => $draft->name_ar,
-                'name_en' => $draft->name_en,
-                'color_index' => $colorIndex ?? 0,
-                'price_old' => null,
-                'price_new' => $draft->price,
-                'status' => 'published',
-            ]);
-
-            $geojson = $draft->geojson;
-            $features = $geojson['features'] ?? [];
-
-            $stops = [];
-            $routeLine = null;
-
-            foreach ($features as $feature) {
-                $type = $feature['geometry']['type'] ?? null;
-                if ($type === 'LineString' || $type === 'MultiLineString') {
-                    $routeLine = $feature['geometry'];
-                } elseif ($type === 'Point') {
-                    $stops[] = $feature; // store full feature to access nameAr from properties
-                }
-            }
-
-            if ($routeLine) {
-                DB::statement(
-                    'INSERT INTO route_geometries (route_id, geometry, created_at, updated_at) VALUES (?, ST_GeomFromGeoJSON(?), ?, ?)',
-                    [$routeId, json_encode($routeLine), now(), now()]
-                );
-            }
-
-            // Insert Stops and route_stop mapping
-            $order = 1;
-            foreach ($stops as $stopFeature) {
-                $stopPoint = $stopFeature['geometry'];
-                $nameAr = trim($stopFeature['properties']['nameAr'] ?? '') ?: ('محطة ' . $order);
-                $stopId = 'stop-' . Str::slug($draft->city->name_en ?? $draft->city->name_ar) . '-' . Str::uuid();
-
-                DB::statement(
-                    'INSERT INTO stops (id, city_id, name_ar, geometry, created_at, updated_at) VALUES (?, ?, ?, ST_GeomFromGeoJSON(?), ?, ?)',
-                    [$stopId, $draft->city_id, $nameAr, json_encode($stopPoint), now(), now()]
-                );
-
-                DB::table('route_stop')->insert([
-                    'route_id' => $routeId,
-                    'stop_id' => $stopId,
-                    'order' => $order++,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
-
-            // Mark draft as approved
-            $draft->status = 'approved';
-            $draft->save();
-
-            DB::commit();
-
-            $this->clearCityMapCache($draft->city_id);
-
-            return response()->json(['message' => 'Draft approved', 'route' => $route]);
+            $route = $this->transit->approveDraft(
+                $draft,
+                $validated['color_index'] ?? null,
+                $request->user()?->getAuthIdentifier(),
+            );
+        } catch (TransitActionException $e) {
+            return response()->json(['message' => $e->getMessage()], $e->httpStatus());
         } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['message' => 'Failed to approve draft', 'error' => $e->getMessage()], 500);
+            return response()->json([
+                'message' => 'Failed to approve draft',
+                'error' => $e->getMessage(),
+            ], 500);
         }
+
+        $message = $draft->route_id ? 'Draft approved and route updated' : 'Draft approved';
+
+        return response()->json(['message' => $message, 'route' => $route]);
     }
 
-    public function reject(Request $request, $id)
+    public function reject(Request $request, $id): SymfonyResponse
     {
         $validated = $request->validate(['reason' => 'nullable|string|max:1000']);
 
@@ -232,59 +89,30 @@ class TransitAdminController extends Controller
             $this->ensureTransitCityAccess($request, $linkedCityId, ['transit.reject']);
         }
 
-        if ($draft->status !== 'pending') {
-            return response()->json(['message' => 'Draft is already ' . $draft->status], 400);
-        }
-
-        $draft->status = 'rejected';
-        $draft->rejection_reason = $validated['reason'] ?? null;
-        $draft->save();
-
-        // A rejected linked-edit must not leave the live route hidden forever:
-        // the unpublish-on-submit took it offline, so restore it on reject.
-        if ($draft->route_id) {
-            $route = Route::find($draft->route_id);
-            if ($route && $route->status === 'disapproved') {
-                $route->status = 'published';
-                $route->save();
-                \App\Models\TransitRouteLog::create([
-                    'route_id' => $route->id,
-                    'action' => 'restored_after_reject',
-                    'description' => "إعادة نشر الخط '{$route->name_ar}' بعد رفض التعديلات (مساهمة #{$draft->id})",
-                    'user_id' => auth()->id(),
-                ]);
-                $this->clearCityMapCache($route->city_id);
-            }
+        try {
+            $this->transit->rejectDraft(
+                $draft,
+                $validated['reason'] ?? null,
+                $request->user()?->getAuthIdentifier(),
+            );
+        } catch (TransitActionException $e) {
+            return response()->json(['message' => $e->getMessage()], $e->httpStatus());
         }
 
         return response()->json(['message' => 'Draft rejected']);
     }
 
-    public function getPublishedRoutes(Request $request)
+    public function getPublishedRoutes(Request $request): SymfonyResponse
     {
-        $allowed = $this->allowedTransitCities($request);
-
-        $routes = Route::with(['city:id,name_ar,name_en'])
-            ->withCount('stops')
-            ->when($allowed !== null, fn ($q) => $q->whereIn('city_id', $allowed))
-            ->get();
-        return response()->json($routes);
+        return response()->json($this->transit->routes($this->allowedTransitCities($request)));
     }
 
-    public function getLogs(Request $request)
+    public function getLogs(Request $request): SymfonyResponse
     {
-        $allowed = $this->allowedTransitCities($request);
-
-        $logs = TransitRouteLog::with(['user:id,name'])
-            ->when($allowed !== null, fn ($q) => $q->whereHas(
-                'route',
-                fn ($r) => $r->whereIn('city_id', $allowed)
-            ))
-            ->orderBy('created_at', 'desc')->limit(200)->get();
-        return response()->json($logs);
+        return response()->json($this->transit->logs($this->allowedTransitCities($request)));
     }
 
-    public function updateRouteStatus(Request $request, $id)
+    public function updateRouteStatus(Request $request, $id): SymfonyResponse
     {
         $validated = $request->validate([
             'status' => 'required|string|in:published,disapproved,hidden',
@@ -294,127 +122,135 @@ class TransitAdminController extends Controller
 
         $this->ensureTransitCityAccess($request, $route->city_id, ['transit.edit_routes']);
 
-        $oldStatus = $route->status;
-
-        if ($oldStatus === $validated['status']) {
-            return response()->json(['message' => 'Status is already ' . $validated['status']]);
-        }
-
-        DB::beginTransaction();
         try {
-            $route->status = $validated['status'];
-            $route->save();
+            $updated = $this->transit->setRouteStatus(
+                $route,
+                $validated['status'],
+                $request->user()?->getAuthIdentifier(),
+            );
+        } catch (TransitActionException $e) {
+            // "Already <status>" has always answered 200 here, unlike the other
+            // refusals. The admin form treats it as a no-op success, so it is
+            // preserved rather than normalised.
+            if ($e->kind === TransitActionException::STATUS_UNCHANGED) {
+                return response()->json(['message' => $e->getMessage()]);
+            }
 
-            $actionMap = [
-                'published' => 'restored',
-                'disapproved' => 'disapproved',
-                'hidden' => 'hidden',
-            ];
-            $action = $actionMap[$validated['status']] ?? 'updated_status';
-
-            $statusLabels = [
-                'published' => 'منشور',
-                'disapproved' => 'ملغى (مرفوض)',
-                'hidden' => 'مخفي',
-            ];
-
-            \App\Models\TransitRouteLog::create([
-                'route_id' => $route->id,
-                'action' => $action,
-                'description' => "تغيير حالة الخط '{$route->name_ar}' من '" . ($statusLabels[$oldStatus] ?? $oldStatus) . "' إلى '" . $statusLabels[$validated['status']] . "'",
-                'user_id' => auth()->id(),
-            ]);
-
-            DB::commit();
-
-            $this->clearCityMapCache($route->city_id);
-
-            return response()->json(['message' => 'Route status updated successfully', 'route' => $route]);
+            return response()->json(['message' => $e->getMessage()], $e->httpStatus());
         } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['message' => 'Failed to update route status', 'error' => $e->getMessage()], 500);
+            return response()->json([
+                'message' => 'Failed to update route status',
+                'error' => $e->getMessage(),
+            ], 500);
         }
+
+        return response()->json(['message' => 'Route status updated successfully', 'route' => $updated]);
     }
 
-    public function moveRoute(Request $request, $id)
+    public function moveRoute(Request $request, $id): SymfonyResponse
     {
         $validated = $request->validate([
             'city_id' => 'required|string|exists:cities,id',
         ]);
 
         $route = Route::findOrFail($id);
-        $oldCityId = $route->city_id;
-        $targetCityId = $validated['city_id'];
 
-        $this->ensureTransitCitiesAccess($request, [$oldCityId, $targetCityId], ['transit.edit_routes']);
+        $this->ensureTransitCitiesAccess(
+            $request,
+            [$route->city_id, $validated['city_id']],
+            ['transit.edit_routes'],
+        );
 
-        if ($oldCityId === $targetCityId) {
-            return response()->json(['message' => 'Route is already in this city'], 400);
-        }
-
-        $oldCityName = DB::table('cities')->where('id', $oldCityId)->value('name_ar') ?? $oldCityId;
-        $newCityName = DB::table('cities')->where('id', $targetCityId)->value('name_ar') ?? $targetCityId;
-
-        DB::beginTransaction();
         try {
-            $stops = $route->stops()->orderBy('pivot_order')->get();
-
-            foreach ($stops as $stop) {
-                $otherRoutesCount = DB::table('route_stop')
-                    ->join('routes', 'route_stop.route_id', '=', 'routes.id')
-                    ->where('route_stop.stop_id', $stop->id)
-                    ->where('route_stop.route_id', '!=', $route->id)
-                    ->where('routes.city_id', $oldCityId)
-                    ->count();
-
-                if ($otherRoutesCount === 0) {
-                    $stop->city_id = $targetCityId;
-                    $stop->save();
-                } else {
-                    $newStopId = 'stop-' . Str::slug($targetCityId) . '-' . Str::uuid();
-                    $geomGeojson = DB::table('stops')
-                        ->selectRaw('ST_AsGeoJSON(geometry) as geojson')
-                        ->where('id', $stop->id)
-                        ->value('geojson');
-
-                    DB::statement(
-                        'INSERT INTO stops (id, city_id, name_ar, geometry, created_at, updated_at) VALUES (?, ?, ?, ST_GeomFromGeoJSON(?), ?, ?)',
-                        [$newStopId, $targetCityId, $stop->name_ar, $geomGeojson, now(), now()]
-                    );
-
-                    DB::table('route_stop')
-                        ->where('route_id', $route->id)
-                        ->where('stop_id', $stop->id)
-                        ->update([
-                            'stop_id' => $newStopId,
-                            'updated_at' => now(),
-                        ]);
-                }
-            }
-
-            $route->city_id = $targetCityId;
-            $route->save();
-
-            \App\Models\TransitRouteLog::create([
-                'route_id' => $route->id,
-                'action' => 'moved',
-                'description' => "نقل الخط '{$route->name_ar}' من مدينة '{$oldCityName}' إلى مدينة '{$newCityName}'",
-                'user_id' => auth()->id(),
-            ]);
-
-            DB::commit();
-
-            $this->clearCityMapCache($oldCityId);
-            $this->clearCityMapCache($targetCityId);
-
-            return response()->json(['message' => 'Route moved successfully', 'route' => $route]);
+            $moved = $this->transit->moveRoute(
+                $route,
+                $validated['city_id'],
+                $request->user()?->getAuthIdentifier(),
+            );
+        } catch (TransitActionException $e) {
+            return response()->json(['message' => $e->getMessage()], $e->httpStatus());
         } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['message' => 'Failed to move route', 'error' => $e->getMessage()], 500);
+            return response()->json([
+                'message' => 'Failed to move route',
+                'error' => $e->getMessage(),
+            ], 500);
         }
+
+        return response()->json(['message' => 'Route moved successfully', 'route' => $moved]);
     }
 
-    public function combineRoutes(Request $request)
+    /**
+     * Delete a route and its geometry/pivot rows, dropping stops that no
+     * longer belong to any route. Governorate-scoped via transit.delete_routes.
+     */
+    public function destroy(Request $request, $id): SymfonyResponse
+    {
+        $route = Route::findOrFail($id);
+
+        $this->ensureTransitCityAccess($request, $route->city_id, ['transit.delete_routes']);
+
+        try {
+            $this->transit->destroyRoute($route, $request->user()?->getAuthIdentifier());
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to delete route',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+
+        return response()->json(['message' => 'Route deleted']);
+    }
+
+    public function updateRoute(Request $request, $id): SymfonyResponse
+    {
+        $route = Route::findOrFail($id);
+
+        // Guard before validation here, as the original did: an out-of-scope
+        // caller learns nothing about the payload.
+        $this->ensureTransitCityAccess($request, $route->city_id, ['transit.edit_routes']);
+
+        $validated = $request->validate([
+            'name_ar' => 'sometimes|string|max:255',
+            'name_en' => 'nullable|string|max:255',
+            'color_index' => 'nullable|integer|min:0',
+            'price_new' => 'nullable|integer',
+            'price_old' => 'nullable|integer',
+        ]);
+
+        $updateData = array_intersect_key($validated, array_flip([
+            'name_ar', 'name_en', 'color_index', 'price_new', 'price_old',
+        ]));
+
+        // $request->has() semantics: an explicit null is a real instruction to
+        // clear the column, so only wholly-absent keys are dropped.
+        foreach (['name_ar', 'name_en', 'color_index', 'price_new', 'price_old'] as $field) {
+            if (! $request->has($field)) {
+                unset($updateData[$field]);
+            }
+        }
+
+        if ($updateData === []) {
+            return response()->json(['message' => 'No fields to update'], 400);
+        }
+
+        if (isset($updateData['color_index'])) {
+            $updateData['color_index'] = (int) $updateData['color_index'];
+        }
+
+        $updated = $this->transit->updateRoute(
+            $route,
+            $updateData,
+            $request->user()?->getAuthIdentifier(),
+        );
+
+        return response()->json(['message' => 'Route updated', 'route' => $updated->fresh()]);
+    }
+
+    /**
+     * Combine two routes into a new one. Still dashboard-only; see the class
+     * docblock.
+     */
+    public function combineRoutes(Request $request): SymfonyResponse
     {
         $validated = $request->validate([
             'route_a_id' => 'required|string|exists:routes,id',
@@ -429,114 +265,30 @@ class TransitAdminController extends Controller
 
         $this->ensureTransitCitiesAccess($request, [$routeA->city_id, $routeB->city_id], ['transit.edit_routes']);
 
-        if ($routeA->city_id !== $routeB->city_id) {
-            return response()->json(['message' => 'Routes must belong to the same city'], 400);
-        }
-
-        $cityId = $routeA->city_id;
-        $cityName = DB::table('cities')->where('id', $cityId)->value('name_en') ?? 'transit';
-
-        DB::beginTransaction();
         try {
-            $newRouteId = 'route-' . Str::slug($cityName) . '-' . Str::uuid();
-            $newRoute = Route::create([
-                'id' => $newRouteId,
-                'city_id' => $cityId,
-                'name_ar' => $validated['name_ar'],
-                'name_en' => $validated['name_en'] ?? null,
-                'price_old' => null,
-                'price_new' => $validated['price'] ?? max($routeA->price_new ?? 0, $routeB->price_new ?? 0),
-                'status' => 'published',
-            ]);
-
-            $geomAJson = DB::table('route_geometries')->selectRaw('ST_AsGeoJSON(geometry) as geojson')->where('route_id', $routeA->id)->value('geojson');
-            $geomBJson = DB::table('route_geometries')->selectRaw('ST_AsGeoJSON(geometry) as geojson')->where('route_id', $routeB->id)->value('geojson');
-
-            $coordsA = [];
-            $coordsB = [];
-
-            if ($geomAJson) {
-                $geomA = json_decode($geomAJson, true);
-                $coordsA = $geomA['coordinates'] ?? [];
-                if (($geomA['type'] ?? '') === 'MultiLineString') {
-                    $coordsA = array_merge(...$coordsA);
-                }
-            }
-            if ($geomBJson) {
-                $geomB = json_decode($geomBJson, true);
-                $coordsB = $geomB['coordinates'] ?? [];
-                if (($geomB['type'] ?? '') === 'MultiLineString') {
-                    $coordsB = array_merge(...$coordsB);
-                }
-            }
-
-            $mergedCoords = array_merge($coordsA, $coordsB);
-
-            if (count($mergedCoords) > 0) {
-                $newLineString = [
-                    'type' => 'LineString',
-                    'coordinates' => $mergedCoords,
-                ];
-                DB::statement(
-                    'INSERT INTO route_geometries (route_id, geometry, created_at, updated_at) VALUES (?, ST_GeomFromGeoJSON(?), ?, ?)',
-                    [$newRouteId, json_encode($newLineString), now(), now()]
-                );
-            }
-
-            $stopsA = $routeA->stops()->orderBy('pivot_order')->get();
-            $stopsB = $routeB->stops()->orderBy('pivot_order')->get();
-
-            $order = 1;
-            foreach ($stopsA as $stop) {
-                DB::table('route_stop')->insert([
-                    'route_id' => $newRouteId,
-                    'stop_id' => $stop->id,
-                    'order' => $order++,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
-            foreach ($stopsB as $stop) {
-                $isDuplicate = DB::table('route_stop')
-                    ->where('route_id', $newRouteId)
-                    ->where('stop_id', $stop->id)
-                    ->exists();
-
-                if (!$isDuplicate) {
-                    DB::table('route_stop')->insert([
-                        'route_id' => $newRouteId,
-                        'stop_id' => $stop->id,
-                        'order' => $order++,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-                }
-            }
-
-            $routeA->status = 'disapproved';
-            $routeA->save();
-            $routeB->status = 'disapproved';
-            $routeB->save();
-
-            \App\Models\TransitRouteLog::create([
-                'route_id' => $newRoute->id,
-                'action' => 'combined',
-                'description' => "دمج الخطين '{$routeA->name_ar}' و '{$routeB->name_ar}' في خط جديد باسم '{$newRoute->name_ar}'",
-                'user_id' => auth()->id(),
-            ]);
-
-            DB::commit();
-
-            $this->clearCityMapCache($cityId);
-
-            return response()->json(['message' => 'Routes combined successfully', 'route' => $newRoute]);
+            $result = $this->composer->combine(
+                $routeA,
+                $routeB,
+                $validated,
+                $request->user()?->getAuthIdentifier(),
+            );
+        } catch (TransitActionException $e) {
+            return response()->json(['message' => $e->getMessage()], $e->httpStatus());
         } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['message' => 'Failed to combine routes', 'error' => $e->getMessage()], 500);
+            return response()->json([
+                'message' => 'Failed to combine routes',
+                'error' => $e->getMessage(),
+            ], 500);
         }
+
+        return response()->json(['message' => 'Routes combined successfully', 'route' => $result->route]);
     }
 
-    public function splitRoute(Request $request)
+    /**
+     * Split a route at one of its stops. Still dashboard-only; see the class
+     * docblock.
+     */
+    public function splitRoute(Request $request): SymfonyResponse
     {
         $validated = $request->validate([
             'route_id' => 'required|string|exists:routes,id',
@@ -548,140 +300,33 @@ class TransitAdminController extends Controller
         ]);
 
         $route = Route::findOrFail($validated['route_id']);
-        $cityId = $route->city_id;
-        $cityName = DB::table('cities')->where('id', $cityId)->value('name_en') ?? 'transit';
 
-        $this->ensureTransitCityAccess($request, $cityId, ['transit.edit_routes']);
+        $this->ensureTransitCityAccess($request, $route->city_id, ['transit.edit_routes']);
 
-        DB::beginTransaction();
         try {
-            $stops = $route->stops()->orderBy('pivot_order')->get();
-
-            $splitIndex = -1;
-            foreach ($stops as $idx => $stop) {
-                if ($stop->id === $validated['split_stop_id']) {
-                    $splitIndex = $idx;
-                    break;
-                }
-            }
-
-            if ($splitIndex === -1 || $splitIndex === 0 || $splitIndex === count($stops) - 1) {
-                return response()->json(['message' => 'Invalid split stop: cannot split at start or end stop'], 400);
-            }
-
-            $geomJson = DB::table('route_geometries')->selectRaw('ST_AsGeoJSON(geometry) as geojson')->where('route_id', $route->id)->value('geojson');
-            $coords = [];
-
-            if ($geomJson) {
-                $geom = json_decode($geomJson, true);
-                $coords = $geom['coordinates'] ?? [];
-                if (($geom['type'] ?? '') === 'MultiLineString') {
-                    $coords = array_merge(...$coords);
-                }
-            }
-
-            $splitStopGeomJson = DB::table('stops')->selectRaw('ST_AsGeoJSON(geometry) as geojson')->where('id', $validated['split_stop_id'])->value('geojson');
-            $splitStopCoords = [0, 0];
-            if ($splitStopGeomJson) {
-                $splitStopGeom = json_decode($splitStopGeomJson, true);
-                $splitStopCoords = $splitStopGeom['coordinates'] ?? [0, 0];
-            }
-
-            $closestIndex = 0;
-            $minDist = 99999999;
-            foreach ($coords as $cIdx => $coord) {
-                $dist = pow($coord[0] - $splitStopCoords[0], 2) + pow($coord[1] - $splitStopCoords[1], 2);
-                if ($dist < $minDist) {
-                    $minDist = $dist;
-                    $closestIndex = $cIdx;
-                }
-            }
-
-            $coordsA = array_slice($coords, 0, $closestIndex + 1);
-            $coordsB = array_slice($coords, $closestIndex);
-
-            $routeAId = 'route-' . Str::slug($cityName) . '-' . Str::uuid();
-            $routeA = Route::create([
-                'id' => $routeAId,
-                'city_id' => $cityId,
-                'name_ar' => $validated['name_a_ar'],
-                'name_en' => $validated['name_a_en'] ?? null,
-                'price_old' => null,
-                'price_new' => $route->price_new,
-                'status' => 'published',
-            ]);
-
-            if (count($coordsA) > 1) {
-                $lineA = ['type' => 'LineString', 'coordinates' => $coordsA];
-                DB::statement(
-                    'INSERT INTO route_geometries (route_id, geometry, created_at, updated_at) VALUES (?, ST_GeomFromGeoJSON(?), ?, ?)',
-                    [$routeAId, json_encode($lineA), now(), now()]
-                );
-            }
-
-            $routeBId = 'route-' . Str::slug($cityName) . '-' . Str::uuid();
-            $routeB = Route::create([
-                'id' => $routeBId,
-                'city_id' => $cityId,
-                'name_ar' => $validated['name_b_ar'],
-                'name_en' => $validated['name_b_en'] ?? null,
-                'price_old' => null,
-                'price_new' => $route->price_new,
-                'status' => 'published',
-            ]);
-
-            if (count($coordsB) > 1) {
-                $lineB = ['type' => 'LineString', 'coordinates' => $coordsB];
-                DB::statement(
-                    'INSERT INTO route_geometries (route_id, geometry, created_at, updated_at) VALUES (?, ST_GeomFromGeoJSON(?), ?, ?)',
-                    [$routeBId, json_encode($lineB), now(), now()]
-                );
-            }
-
-            $orderA = 1;
-            for ($i = 0; $i <= $splitIndex; $i++) {
-                DB::table('route_stop')->insert([
-                    'route_id' => $routeAId,
-                    'stop_id' => $stops[$i]->id,
-                    'order' => $orderA++,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
-
-            $orderB = 1;
-            for ($i = $splitIndex; $i < count($stops); $i++) {
-                DB::table('route_stop')->insert([
-                    'route_id' => $routeBId,
-                    'stop_id' => $stops[$i]->id,
-                    'order' => $orderB++,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
-
-            $route->status = 'disapproved';
-            $route->save();
-
-            \App\Models\TransitRouteLog::create([
-                'route_id' => $route->id,
-                'action' => 'split',
-                'description' => "تقسيم الخط '{$route->name_ar}' إلى خطين: '{$routeA->name_ar}' و '{$routeB->name_ar}' عند موقف '{$stops[$splitIndex]->name_ar}'",
-                'user_id' => auth()->id(),
-            ]);
-
-            DB::commit();
-
-            $this->clearCityMapCache($cityId);
-
-            return response()->json(['message' => 'Route split successfully', 'route_a' => $routeA, 'route_b' => $routeB]);
+            $result = $this->composer->split(
+                $route,
+                $validated['split_stop_id'],
+                $validated,
+                $request->user()?->getAuthIdentifier(),
+            );
+        } catch (TransitActionException $e) {
+            return response()->json(['message' => $e->getMessage()], $e->httpStatus());
         } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['message' => 'Failed to split route', 'error' => $e->getMessage()], 500);
+            return response()->json([
+                'message' => 'Failed to split route',
+                'error' => $e->getMessage(),
+            ], 500);
         }
+
+        return response()->json([
+            'message' => 'Route split successfully',
+            'route_a' => $result->routeA,
+            'route_b' => $result->routeB,
+        ]);
     }
 
-    public function getRouteStops(Request $request, $id)
+    public function getRouteStops(Request $request, $id): SymfonyResponse
     {
         $route = Route::findOrFail($id);
 
@@ -691,16 +336,18 @@ class TransitAdminController extends Controller
         $formatted = $stops->map(function ($s) {
             $geomJson = DB::table('stops')->selectRaw('ST_AsGeoJSON(geometry) as geojson')->where('id', $s->id)->value('geojson');
             $coords = json_decode($geomJson, true)['coordinates'] ?? [0, 0];
+
             return [
                 'id' => $s->id,
                 'name_ar' => $s->name_ar,
                 'coordinates' => $coords,
             ];
         });
+
         return response()->json($formatted);
     }
 
-    public function getRouteGeoJson(Request $request, $id)
+    public function getRouteGeoJson(Request $request, $id): SymfonyResponse
     {
         $route = Route::findOrFail($id);
 
@@ -721,7 +368,7 @@ class TransitAdminController extends Controller
                     'color_index' => (int) ($route->color_index ?? 0),
                     'priceOld' => $route->price_old,
                     'priceNew' => $route->price_new,
-                ]
+                ],
             ];
         }
 
@@ -735,125 +382,14 @@ class TransitAdminController extends Controller
                     'properties' => [
                         'id' => $s->id,
                         'nameAr' => $s->name_ar,
-                    ]
+                    ],
                 ];
             }
         }
 
         return response()->json([
             'type' => 'FeatureCollection',
-            'features' => $features
+            'features' => $features,
         ]);
-    }
-
-    public function updateRoute(Request $request, $id)
-    {
-        $route = Route::findOrFail($id);
-
-        $this->ensureTransitCityAccess($request, $route->city_id, ['transit.edit_routes']);
-
-        $validated = $request->validate([
-            'name_ar' => 'sometimes|string|max:255',
-            'name_en' => 'nullable|string|max:255',
-            'color_index' => 'nullable|integer|min:0',
-            'price_new' => 'nullable|integer',
-            'price_old' => 'nullable|integer',
-        ]);
-
-        $updateData = [];
-        if ($request->has('name_ar')) $updateData['name_ar'] = $validated['name_ar'];
-        if ($request->has('name_en')) $updateData['name_en'] = $validated['name_en'];
-        if ($request->has('color_index')) $updateData['color_index'] = (int) $validated['color_index'];
-        if ($request->has('price_new')) $updateData['price_new'] = $validated['price_new'];
-        if ($request->has('price_old')) $updateData['price_old'] = $validated['price_old'];
-
-        if (empty($updateData)) {
-            return response()->json(['message' => 'No fields to update'], 400);
-        }
-
-        $oldNameAr = $route->name_ar;
-        $route->update($updateData);
-
-        $changes = [];
-        if (isset($updateData['name_ar'])) $changes[] = "الاسم من '{$oldNameAr}' إلى '{$updateData['name_ar']}'";
-        if (isset($updateData['name_en'])) $changes[] = "الاسم الإنجليزي";
-        if (isset($updateData['color_index'])) $changes[] = "لون المسار";
-        if (isset($updateData['price_new'])) $changes[] = "التعرفة إلى '{$updateData['price_new']}'";
-
-        try {
-            \App\Models\TransitRouteLog::create([
-                'route_id' => (string) $route->id,
-                'action' => 'admin_updated',
-                'description' => "تعديل مباشر للخط '{$route->name_ar}': " . (empty($changes) ? 'تحديث البيانات' : implode(', ', $changes)),
-                'user_id' => auth()->id(),
-            ]);
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::warning("Failed to create TransitRouteLog: " . $e->getMessage());
-        }
-
-        $this->clearCityMapCache($route->city_id);
-
-        return response()->json(['message' => 'Route updated', 'route' => $route->fresh()]);
-    }
-
-    /**
-     * Delete a route and its geometry/pivot rows, dropping stops that no
-     * longer belong to any route. Governorate-scoped via transit.delete_routes.
-     */
-    public function destroy(Request $request, $id)
-    {
-        $route = Route::findOrFail($id);
-
-        $this->ensureTransitCityAccess($request, $route->city_id, ['transit.delete_routes']);
-
-        $cityId = $route->city_id;
-        $nameAr = $route->name_ar;
-        $stopIds = DB::table('route_stop')->where('route_id', $route->id)->pluck('stop_id')->all();
-
-        DB::beginTransaction();
-        try {
-            DB::table('route_stop')->where('route_id', $route->id)->delete();
-            DB::table('route_geometries')->where('route_id', $route->id)->delete();
-            $route->delete();
-
-            // Delete stops that are not referenced by any route anymore.
-            if (! empty($stopIds)) {
-                $stillUsed = DB::table('route_stop')->whereIn('stop_id', $stopIds)->pluck('stop_id')->all();
-                $orphans = array_diff($stopIds, $stillUsed);
-                if (! empty($orphans)) {
-                    DB::table('stops')->whereIn('id', $orphans)->delete();
-                }
-            }
-
-            TransitRouteLog::create([
-                'route_id' => $id,
-                'action' => 'deleted',
-                'description' => "حذف الخط '{$nameAr}'",
-                'user_id' => auth()->id(),
-            ]);
-
-            DB::commit();
-
-            $this->clearCityMapCache($cityId);
-
-            return response()->json(['message' => 'Route deleted']);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['message' => 'Failed to delete route', 'error' => $e->getMessage()], 500);
-        }
-    }
-
-    private function clearCityMapCache($cityId)
-    {
-        Cache::forget("transit:map-data:{$cityId}");
-        Cache::forget("transit:routes:{$cityId}");
-        if ($cityId === 'damascus' || $cityId === 'rif-dimashq') {
-            Cache::forget('transit:map-data:damascus');
-            Cache::forget('transit:map-data:rif-dimashq');
-            Cache::forget('transit:routes:damascus');
-            Cache::forget('transit:routes:rif-dimashq');
-            Cache::forget('transit:routes:damascus+rif-dimashq');
-        }
-        Cache::forget('transit:cities');
     }
 }

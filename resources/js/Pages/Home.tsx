@@ -13,6 +13,7 @@ import axios from '@/Lib/axios';
 import { applyTheme as persistTheme, getThemePreference, resolveTheme, SYSTEM_THEME, isDarkTheme, THEME_REGISTRY } from '@/lib/theme';
 import { applyFont, getFontPreference } from '@/Lib/font';
 import UserNav from '@/Components/UserNav';
+import AppearanceMenu from '@/Components/AppearanceMenu';
 import F3aliaEvents from '@/Components/F3aliaEvents';
 import type { CustomLink } from '@/Pages/Home/_components/AddLinkDialog';
 import { getGeo, getLocMode, useLocSignal } from '@/Pages/Muslim/_lib/location';
@@ -522,6 +523,7 @@ export default function Home() {
                         </div>
                         </div>
                         <div className="flex items-center gap-1.5">
+                            <AppearanceMenu />
                             <Button variant="ghost" size="icon" onClick={() => setSettingsOpen(true)} title="الإعدادات">
                                 <Settings className="h-5 w-5" />
                             </Button>

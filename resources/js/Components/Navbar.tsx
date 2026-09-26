@@ -61,6 +61,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 
 import UserNav from './UserNav';
+import AppearanceMenu from './AppearanceMenu';
 import {
   SyOfficialIcon,
   RoznamaIcon,
@@ -170,7 +171,7 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
   return (
     quranFocus && pathname === '/muslim' ? null :
     <header className={`${sticky ? 'sticky top-0' : 'relative'} z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ${isHomepage ? 'lg:hidden' : ''}`}>
-      <div className="container relative flex h-16 max-w-7xl mx-auto items-center px-4 md:px-8 justify-between lg:justify-normal" dir="rtl">
+      <div className="container relative flex h-16 max-w-7xl mx-auto items-center px-4 md:px-8 lg:px-6 xl:px-8 justify-between lg:justify-normal" dir="rtl">
         {/* Mobile Menu (settings gear instead of hamburger on homepage) */}
         {isHomepage ? (
           <Button
@@ -345,11 +346,11 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
         )}
 
         {/* Logo */}
-        <div className="absolute left-1/2 -translate-x-1/2 lg:static lg:translate-x-0 flex shrink-0 lg:ml-12">
+        <div className="absolute left-1/2 -translate-x-1/2 lg:static lg:translate-x-0 flex shrink-0 lg:ml-3 xl:ml-12">
           <Link href="/" className="flex items-center gap-2">
             <img
               src={isDark ? '/assets/logo-darkmode.svg' : '/assets/logo-lightmode.svg'}
-              className="h-10"
+              className="h-8 sm:h-10"
               alt="Syrian Zone"
             />
           </Link>
@@ -568,12 +569,16 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
           </NavigationMenuList>
         </NavigationMenu>
 
-        <div className="flex flex-1 items-center justify-end gap-2">
+        {/* Controls: appearance first, then page-scoped settings, then the
+            separator, then the account/login button (matches Home header).
+            Compact on mobile so the three buttons clear the centred logo. */}
+        <div className="flex flex-1 items-center justify-end gap-1.5 sm:gap-2">
+          <AppearanceMenu />
           {showQuranBookmarks && (
             <Button
               variant="ghost"
               size="icon"
-              className="lg:hidden h-10 w-10"
+              className="lg:hidden h-9 w-9 sm:h-10 sm:w-10"
               onClick={() => setBookmarksOpen(true)}
               title="علامات الآيات"
             >
@@ -585,7 +590,7 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
             <Button
               variant="ghost"
               size="icon"
-              className="h-10 w-10"
+              className="h-9 w-9 sm:h-10 sm:w-10"
               onClick={() => setRoznamaSettingsOpen(true)}
               title="إعدادات الروزنامة"
             >
@@ -597,7 +602,7 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
             <Button
               variant="ghost"
               size="icon"
-              className="h-10 w-10"
+              className="h-9 w-9 sm:h-10 sm:w-10"
               onClick={() => setMuslimPrayerSettingsOpen(true)}
               title="إعدادات المواقيت"
             >
@@ -605,10 +610,17 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
               <span className="sr-only">Prayer settings</span>
             </Button>
           )}
+          <div className="w-px h-6 bg-border shrink-0" />
           {user ? (
             <UserNav />
           ) : (
-            <Button asChild variant="outline" className="gap-2">
+            // Icon-only until xl: the nav row is already tight at the lg
+            // breakpoint, and the label is redundant next to the Google mark.
+            <Button
+              asChild
+              variant="outline"
+              className="h-9 w-9 gap-2 px-0 sm:h-10 sm:w-10 xl:w-auto xl:px-4"
+            >
               <a href="/auth/google" className="flex items-center gap-2">
                 <svg className="h-4 w-4" viewBox="0 0 24 24">
                   <path
@@ -628,7 +640,7 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
                     d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
                   />
                 </svg>
-                <span className="hidden sm:inline">تسجيل الدخول</span>
+                <span className="hidden xl:inline">تسجيل الدخول</span>
               </a>
             </Button>
           )}

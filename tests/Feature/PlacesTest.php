@@ -209,14 +209,18 @@ test('show returns detail for approved place', function () {
     ->assertJsonStructure(['user' => ['id', 'name', 'avatar_url'], 'photos', 'created_at']);
 });
 
-test('show hides pending place from guests and strangers but not owner or admin', function () {
+test('show hides pending place from guests and strangers but not owner or places staff', function () {
   $owner = placesUser();
   $place = Place::factory()->create(['user_id' => $owner->id]);
 
   $this->getJson("/api/v1/places/{$place->id}")->assertNotFound();
   $this->actingAs(placesUser())->getJson("/api/v1/places/{$place->id}")->assertNotFound();
   $this->actingAs($owner)->getJson("/api/v1/places/{$place->id}")->assertOk()->assertJsonPath('status', 'pending');
-  $this->actingAs(User::factory()->create(['role' => 'admin']))
+  // Was role 'admin'. Phase C dropped the `role === 'admin'` branch from
+  // PlaceController::show() on the strength of hasPermission() short-circuiting
+  // on isAdmin(); phase G retired that alias, so the account that still sees an
+  // unapproved place is one holding a places capability.
+  $this->actingAs(User::factory()->module('places')->create())
     ->getJson("/api/v1/places/{$place->id}")->assertOk();
 });
 

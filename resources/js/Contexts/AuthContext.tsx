@@ -23,7 +23,6 @@ interface User {
 interface AuthContextType {
     user: User | null;
     loading: boolean;
-    isAdmin: boolean;
     isSuperAdmin: boolean;
     /** Reads the server-resolved capability list. */
     can: (permission: string) => boolean;
@@ -59,7 +58,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
-    const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
     const isSuperAdmin = user?.role === 'superadmin';
 
     // Role implications (admin, transit_admin, places_admin, ...) are resolved
@@ -93,7 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, isAdmin, isSuperAdmin, can, canInCity, allowedTransitCities, refreshUser }}>
+        <AuthContext.Provider value={{ user, loading, isSuperAdmin, can, canInCity, allowedTransitCities, refreshUser }}>
             {children}
         </AuthContext.Provider>
     );

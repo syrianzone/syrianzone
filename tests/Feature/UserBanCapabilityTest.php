@@ -84,10 +84,14 @@ it('keeps the users_admin role working', function () {
     expect($target->fresh()->is_banned)->toBeTrue();
 });
 
-it('keeps admin and superadmin working', function () {
+it('keeps superadmin and a full-catalogue account working', function () {
+    // Was 'keeps admin and superadmin working', covering the two broad shapes:
+    // the retired `admin` alias and superadmin. The alias is gone in phase G, so
+    // the second broad shape is a `user` holding the whole catalogue — which is
+    // what a formerly-`admin` account is migrated to.
     $target = banTarget();
 
-    $this->actingAs(User::factory()->create(['role' => 'admin']))
+    $this->actingAs(User::factory()->withPermissions(PermissionCatalogue::all())->create())
         ->postJson("/api/v1/admin/users/{$target->id}/toggle-ban")
         ->assertOk();
 
@@ -129,7 +133,7 @@ it('registers users.ban as a real, grantable capability', function () {
 
     // And a token can be minted carrying it, so an agent could hold it too if a
     // tool ever uses it.
-    $owner = User::factory()->create(['role' => 'admin']);
+    $owner = User::factory()->withPermissions(PermissionCatalogue::all())->create();
     $issued = app(TokenIssuer::class)->issue($owner, 'mod', ['users.ban']);
 
     expect($issued['token']->accessToken->abilities)->toBe(['users.ban']);

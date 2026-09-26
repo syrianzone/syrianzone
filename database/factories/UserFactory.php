@@ -59,16 +59,6 @@ class UserFactory extends Factory
     }
 
     /**
-     * The deprecated catch-all alias. Only for tests that are specifically about
-     * the alias still working; everything else should name the capabilities it
-     * needs.
-     */
-    public function admin(): static
-    {
-        return $this->state(fn () => ['role' => 'admin']);
-    }
-
-    /**
      * A staff account holding exactly one module's capabilities.
      */
     public function module(string $module): static

@@ -10,6 +10,7 @@ use App\Models\Place;
 use App\Models\PlacePhoto;
 use App\Models\Poll;
 use App\Models\User;
+use App\Support\Permissions\PermissionCatalogue;
 
 /*
 |--------------------------------------------------------------------------
@@ -256,10 +257,12 @@ it('keeps the per-module admin role working across the whole module', function (
         ->assertRedirect();
 });
 
-it('keeps the general admin role and superadmin unaffected', function () {
+it('keeps a full-catalogue account and superadmin unaffected', function () {
+    // Was 'the general admin role', i.e. the retired `admin` alias. A `user`
+    // holding the whole catalogue is what that alias became.
     $category = OfficialCategory::factory()->create();
 
-    $this->actingAs(User::factory()->create(['role' => 'admin']))
+    $this->actingAs(User::factory()->withPermissions(PermissionCatalogue::all())->create())
         ->deleteJson("/api/v1/admin/syofficial/categories/{$category->id}")
         ->assertRedirect();
 

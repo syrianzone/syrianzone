@@ -36,23 +36,9 @@ class User extends Authenticatable implements FilamentUser
         return $this->role === 'superadmin';
     }
 
-    /**
-     * The broad administrator: every capability.
-     *
-     * DEPRECATED. A deprecated alias rather than a role with meaning: it still
-     * resolves the whole catalogue so that accounts carrying it keep working, and
-     * it is the one remaining non-superadmin role that grants anything by name.
-     * New staff accounts are minted as `user` with an explicit capability list —
-     * see AdminUserController. This alias is removed once nothing assigns it.
-     */
-    public function isAdmin(): bool
-    {
-        return $this->role === 'admin';
-    }
-
     public function hasPermission(string $permission): bool
     {
-        if ($this->isSuperAdmin() || $this->isAdmin()) {
+        if ($this->isSuperAdmin()) {
             return true;
         }
 
@@ -69,12 +55,11 @@ class User extends Authenticatable implements FilamentUser
      * with the `*` wildcard is reported as holding the whole catalogue, which is
      * what the wildcard means.
      *
-     * The only roles that still add anything are `superadmin` and the deprecated
-     * `admin` alias, both of which resolve the entire catalogue. Every other
-     * account's access is exactly its stored `permissions` array: the six module
-     * roles stopped conferring capabilities in Phase D, once Phase A had
-     * materialised what they granted and this migration had repaired anyone
-     * created in the window where they were still assignable.
+     * `superadmin` is the only role that still adds anything, and it resolves
+     * the entire catalogue. Every other account's access is exactly its stored
+     * `permissions` array. The six module roles stopped conferring capabilities
+     * in Phase D and the `admin` alias in Phase G, once Phase A had materialised
+     * what each of them granted.
      *
      * @return array<int, string>
      */
@@ -82,7 +67,7 @@ class User extends Authenticatable implements FilamentUser
     {
         $catalogue = PermissionCatalogue::all();
 
-        if ($this->isSuperAdmin() || $this->isAdmin() || in_array('*', $this->permissions ?? [], true)) {
+        if ($this->isSuperAdmin() || in_array('*', $this->permissions ?? [], true)) {
             return $catalogue;
         }
 

@@ -1,6 +1,7 @@
 <?php
 
 use App\Filament\Resources\UserResource;
+use App\Filament\Resources\UserResource\Pages\EditUser;
 use App\Models\Route;
 use App\Models\RouteDraft;
 use App\Models\TransitRouteLog;
@@ -8,6 +9,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Inertia\Testing\AssertableInertia as Assert;
+use Livewire\Livewire;
 
 // ─── Fixtures ──────────────────────────────────────────────────────────────
 
@@ -487,8 +489,8 @@ test('filament user form renders grouped permissions with project icons', functi
         'permission_scopes' => ['transit' => ['homs']],
     ]);
 
-    \Livewire\Livewire::actingAs($superadmin)
-        ->test(\App\Filament\Resources\UserResource\Pages\EditUser::class, ['record' => $target->getRouteKey()])
+    Livewire::actingAs($superadmin)
+        ->test(EditUser::class, ['record' => $target->getRouteKey()])
         ->assertOk()
         ->assertSee('الحسابات الرسمية')
         ->assertSee('ترانزيت')
@@ -521,8 +523,8 @@ test('filament user form saves grouped permissions and governorate scope', funct
     $superadmin = User::factory()->create(['role' => 'superadmin']);
     $target = User::factory()->create(['role' => 'user']);
 
-    \Livewire\Livewire::actingAs($superadmin)
-        ->test(\App\Filament\Resources\UserResource\Pages\EditUser::class, ['record' => $target->getRouteKey()])
+    Livewire::actingAs($superadmin)
+        ->test(EditUser::class, ['record' => $target->getRouteKey()])
         ->fillForm([
             'perm_transit' => ['transit.approve', 'transit.edit_routes'],
             'perm_phonebook' => ['phonebook.create'],
@@ -549,8 +551,8 @@ test('clearing the governorate scope in the form makes the user unrestricted', f
         'permission_scopes' => ['transit' => ['homs']],
     ]);
 
-    \Livewire\Livewire::actingAs($superadmin)
-        ->test(\App\Filament\Resources\UserResource\Pages\EditUser::class, ['record' => $target->getRouteKey()])
+    Livewire::actingAs($superadmin)
+        ->test(EditUser::class, ['record' => $target->getRouteKey()])
         ->fillForm(['transit_scope' => []])
         ->call('save')
         ->assertHasNoFormErrors();

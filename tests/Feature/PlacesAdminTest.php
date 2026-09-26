@@ -4,9 +4,10 @@ use App\Models\Place;
 use App\Models\PlacePhoto;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
+use App\Support\Permissions\PermissionCatalogue;
 
 function placesAdmin(): User {
-  return User::factory()->create(['role' => 'admin']);
+  return User::factory()->create(['permissions' => PermissionCatalogue::forModule('places')]);
 }
 
 test('admin endpoints reject guests and non-admins', function () {

@@ -40,7 +40,7 @@ it('defaults an omitted role to user, which holds nothing', function () {
     expect($fresh->role)->toBe('user')
         ->and($fresh->effectivePermissions())->toBe([])
         // Explicitly not the `admin` wildcard.
-        ->and($fresh->isAdmin())->toBeFalse();
+        ->and($fresh->isSuperAdmin())->toBeFalse();
 
     $user->forceDelete();
 });
@@ -75,29 +75,12 @@ it('creates a staff account as a user with the full catalogue', function () {
         ->and($created->effectivePermissions())->toEqual(PermissionCatalogue::all());
 });
 
-it('gives a minted account the same access the old admin role did', function () {
-    // Parity check, stated directly: every capability the deprecated role
-    // resolved must be one the new account also resolves.
-    $viaRole = User::factory()->create(['role' => 'admin', 'permissions' => []]);
-
-    $this->actingAs(User::factory()->create(['role' => 'superadmin']))
-        ->postJson('/api/admins', ['name' => 'Parity', 'email' => 'parity@example.test']);
-
-    $minted = User::where('email', 'parity@example.test')->firstOrFail();
-
-    expect($minted->effectivePermissions())->toEqual($viaRole->effectivePermissions());
-});
-
-it('no longer offers the six module roles in the user form', function () {
+it('offers exactly the two roles that still mean something', function () {
+    // The six module roles went in phase B, the `admin` alias in phase G, so
+    // this is no longer "the roles we have retired" but the whole vocabulary.
     $offered = array_keys(UserResource::roleOptions());
 
-    expect($offered)->toEqualCanonicalizing(['superadmin', 'admin', 'user']);
-});
-
-it('still offers the deprecated admin alias', function () {
-    // Deliberate: it still resolves the whole catalogue through
-    // User::isAdmin(), and Phase G removes it once nothing depends on it.
-    expect(array_keys(UserResource::roleOptions()))->toContain('admin');
+    expect($offered)->toEqualCanonicalizing(['superadmin', 'user']);
 });
 
 it('backs every dev preset with explicit capabilities, not a role', function () {

@@ -3,10 +3,12 @@
 use App\Models\Poll;
 use App\Models\Route;
 use App\Models\User;
+use App\Support\Permissions\PermissionCatalogue;
+use Illuminate\Support\Facades\DB;
 
 test('cannot delete best-ministers poll', function () {
     $poll = Poll::factory()->create(['slug' => 'best-ministers']);
-    $admin = User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->withPermissions(PermissionCatalogue::all())->create();
 
     $this->actingAs($admin)
         ->deleteJson("/api/polls/{$poll->id}")
@@ -25,8 +27,8 @@ test('banned user cannot submit route drafts', function () {
             'name_ar' => 'خط المهاجرين',
             'geojson' => [
                 'type' => 'FeatureCollection',
-                'features' => []
-            ]
+                'features' => [],
+            ],
         ])
         ->assertStatus(403)
         ->assertJsonPath('message', 'Your account has been banned from submitting route drafts.');
@@ -34,7 +36,7 @@ test('banned user cannot submit route drafts', function () {
 
 test('deleting user account soft deletes user and delegates polls and routes to superadmin', function () {
     $superadmin = User::factory()->create(['role' => 'superadmin']);
-    $admin = User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->withPermissions(PermissionCatalogue::all())->create();
 
     // Create a poll owned by the deleting admin
     $poll = Poll::factory()->create(['user_id' => $admin->id]);
@@ -43,16 +45,16 @@ test('deleting user account soft deletes user and delegates polls and routes to 
     // toggled inside the test transaction, so insert a real city instead.
     $geometry = function (array $shape) {
         $json = json_encode($shape, JSON_THROW_ON_ERROR);
-        if (\Illuminate\Support\Facades\DB::connection()->getDriverName() === 'sqlite') {
+        if (DB::connection()->getDriverName() === 'sqlite') {
             return $json;
         }
 
-        $quoted = \Illuminate\Support\Facades\DB::connection()->getPdo()->quote($json);
+        $quoted = DB::connection()->getPdo()->quote($json);
 
-        return \Illuminate\Support\Facades\DB::raw("ST_GeomFromGeoJSON({$quoted})");
+        return DB::raw("ST_GeomFromGeoJSON({$quoted})");
     };
 
-    \Illuminate\Support\Facades\DB::table('cities')->insert([
+    DB::table('cities')->insert([
         'id' => 'damascus',
         'name_ar' => 'دمشق',
         'name_en' => 'Damascus',

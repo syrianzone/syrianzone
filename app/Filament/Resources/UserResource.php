@@ -47,19 +47,16 @@ class UserResource extends Resource
      */
     public static function roleOptions(): array
     {
-        // Phase B: the six per-module roles are gone from the form. They used to
-        // imply a whole module through User::ROLE_MODULE_PREFIXES, which made a
-        // role inseparable from a fixed bundle of capabilities — the opposite of
-        // what per-user grants are for. That table is gone as of Phase D. Access is now expressed by ticking
-        // capabilities below; the role only distinguishes staff from community.
+        // The whole vocabulary, and it is two values.
         //
-        // `admin` is retained deliberately as a deprecated alias: it still
-        // resolves the whole catalogue via User::isAdmin(), and Phase G removes
-        // it once no account depends on it. New accounts are created as `user`
-        // with explicit capabilities (AdminUserController), not as `admin`.
+        // Phase B dropped the six per-module roles, which implied a fixed bundle
+        // of capabilities and made a role inseparable from that bundle. Phase D
+        // deleted the table they were resolved through. Phase G dropped `admin`,
+        // the catch-all that short-circuited every permission check. What is left
+        // distinguishes unbounded authority from a community member; everything
+        // in between is a capability ticked below.
         return [
             'superadmin' => 'مدير عام (وصول كامل غير مقيد)',
-            'admin' => 'مشرف (قديم) — كل الصلاحيات، يُستبدل بمنح الصلاحيات مباشرة',
             'user' => 'مستخدم عادي',
         ];
     }

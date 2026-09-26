@@ -137,10 +137,12 @@ it('keeps a plain user on their own drafts only', function () {
         );
 });
 
-it('still gives the deprecated admin role the full dashboard', function () {
-    // Regression guard: `admin` resolves the catalogue through
-    // User::hasPermission(), so the role-based path is preserved.
-    $admin = User::factory()->create(['role' => 'admin', 'permissions' => []]);
+it('still gives a full-catalogue account the full dashboard', function () {
+    // Was 'still gives the deprecated admin role the full dashboard', guarding
+    // the isAdmin() short-circuit. That alias is retired in phase G; the shape it
+    // becomes is a `user` holding the whole catalogue, which is what the phase G
+    // migration writes. The dashboard gate is unchanged either way.
+    $admin = User::factory()->withPermissions(PermissionCatalogue::all())->create();
 
     $this->actingAs($admin)
         ->get('/dashboard')
@@ -209,8 +211,8 @@ it('withholds deactivated polls from someone who can only create them', function
         );
 });
 
-it('still lets the deprecated admin role see a deactivated poll', function () {
-    $admin = User::factory()->create(['role' => 'admin', 'permissions' => []]);
+it('still lets a full-catalogue account see a deactivated poll', function () {
+    $admin = User::factory()->withPermissions(PermissionCatalogue::all())->create();
 
     Poll::factory()->create(['slug' => 'retired-poll', 'is_active' => false]);
 
@@ -251,8 +253,9 @@ it('hides an unapproved place from someone with an unrelated capability', functi
 it('still lets the deprecated admin role see an unapproved place', function () {
     // The edit dropped `$user->role === 'admin'` on the strength of
     // User::hasPermission() short-circuiting on isAdmin(). Pin that, because the
-    // redundancy looked removable and was not.
-    $admin = User::factory()->create(['role' => 'admin', 'permissions' => []]);
+    // redundancy looked removable and was not. The short-circuit is retired in
+    // phase G, but the capability list alone still admits this account.
+    $admin = User::factory()->withPermissions(PermissionCatalogue::all())->create();
 
     $place = Place::factory()->create(['status' => 'pending']);
 
@@ -365,12 +368,10 @@ it('still lets the owner edit their own draft without a capability', function ()
 it('keeps GuessWho admin superadmin-only', function () {
     // Deliberate narrowing, decided over minting a guesswho.* capability for a
     // novelty game with a single operator. Pinned so it is never widened by
-    // accident, and so the migration note stays honest: an `admin` who ran
-    // GuessWho must be promoted to superadmin.
-    $admin = User::factory()->create([
-        'role' => 'admin',
-        'permissions' => PermissionCatalogue::all(),
-    ]);
+    // accident. Holding every capability is not enough: GuessWho is gated on
+    // superadmin, and an account that ran it as `admin` before phase G must be
+    // promoted.
+    $admin = User::factory()->withPermissions(PermissionCatalogue::all())->create();
 
     $this->actingAs($admin)
         ->get('/admin/guesswho')

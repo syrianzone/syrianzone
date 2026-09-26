@@ -94,7 +94,7 @@ test('capabilities from two modules combine without implying a third', function 
     $user = User::factory()->create([
         'role' => 'user',
         'permissions' => array_merge(
-            \App\Support\Permissions\PermissionCatalogue::forModule('places'),
+            PermissionCatalogue::forModule('places'),
             ['polls.create'],
         ),
     ]);
@@ -111,19 +111,21 @@ test('the Filament role select offers exactly the roles that still mean somethin
     // which guarded a real bug: phonebook_admin existed on the model but had no
     // entry in the select, so it was unassignable.
     //
-    // Phase B inverts the relationship. The six module roles are no longer
-    // offered, because they no longer confer access — User::ROLE_MODULE_PREFIXES
-    // is what gave them meaning, and Phase D removes it. Keeping them
-    // selectable would produce accounts whose capabilities silently depend on a
-    // table that is on its way out. Access is now expressed by ticking
-    // capabilities in the same form.
-    //
-    // `admin` stays as a deprecated alias (Phase G removes it), and `user` is the
-    // only other value, so this is the complete set.
+    // The coupling is gone. Phase B dropped the six module roles, phase D
+    // deleted the table they were resolved through, and phase G dropped the
+    // `admin` alias. Two values remain and this list is the whole vocabulary.
     $offered = array_keys(UserResource::roleOptions());
 
-    expect($offered)->toEqualCanonicalizing(['superadmin', 'admin', 'user'])
-        ->and($offered)->not->toContain('places_admin', 'phonebook_admin', 'transit_admin');
+    expect($offered)->toEqualCanonicalizing(['superadmin', 'user'])
+        ->and($offered)->not->toContain(
+            'admin',
+            'places_admin',
+            'phonebook_admin',
+            'transit_admin',
+            'syofficial_admin',
+            'govapps_admin',
+            'users_admin',
+        );
 });
 
 test('no role outside superadmin, admin and user is assignable', function () {
@@ -131,10 +133,11 @@ test('no role outside superadmin, admin and user is assignable', function () {
     // fails here rather than shipping an account that depends on a role prefix.
     $assignable = array_keys(UserResource::roleOptions());
 
-    // The six names are spelled out rather than read from the model, because
-    // Phase D deleted User::moduleImplyingRoles() along with the prefixes. They
+    // The retired names are spelled out rather than read from the model, because
+    // phase D deleted User::moduleImplyingRoles() along with the prefixes. They
     // are history now, and history is worth pinning by value: a future edit that
-    // re-adds any of them to the select must fail here.
+    // re-adds any of them to the select must fail here. `admin` joined them in
+    // phase G.
     foreach (['syofficial_admin', 'transit_admin', 'govapps_admin', 'phonebook_admin', 'places_admin', 'users_admin'] as $moduleRole) {
         expect($assignable)->not->toContain($moduleRole);
     }
@@ -147,16 +150,21 @@ test('dev impersonation covers every assignable role', function () {
         ->and($offered)->toContain('places_admin', 'phonebook_admin');
 });
 
-test('the admin role still holds every capability', function () {
-    $user = User::factory()->create(['role' => 'admin', 'permissions' => []]);
+test('superadmin still holds every capability', function () {
+    // The only remaining role that confers anything by name. The `admin` alias
+    // that used to sit beside it was retired in phase G, so this is now the
+    // whole of role-derived access.
+    $user = User::factory()->create(['role' => 'superadmin', 'permissions' => []]);
 
     foreach (PermissionCatalogue::all() as $permission) {
         expect($user->hasPermission($permission))->toBeTrue();
     }
 });
 
-test('the shared auth payload resolves the admin role to everything', function () {
-    $user = User::factory()->create(['role' => 'admin', 'permissions' => []]);
+test('the shared auth payload resolves a full catalogue to everything', function () {
+    // The shape a formerly-`admin` account is migrated to: a `user` whose stored
+    // list is the whole catalogue.
+    $user = User::factory()->withPermissions(PermissionCatalogue::all())->create();
 
     expect(HandleInertiaRequests::userPayload($user)['effective_permissions'])
         ->toHaveCount(count(PermissionCatalogue::all()));

@@ -50,7 +50,6 @@ it('grants a module role nothing at all', function (string $role) {
 
     expect($user->effectivePermissions())->toBe([])
         // Not even the module it is named after.
-        ->and($user->isAdmin())->toBeFalse()
         ->and($user->isSuperAdmin())->toBeFalse();
 
     foreach (PermissionCatalogue::all() as $capability) {
@@ -96,15 +95,6 @@ it('resolves access for a plain user purely from the stored array', function () 
         ->and($user->effectivePermissions())->toBe(['polls.create']);
 });
 
-it('still resolves the deprecated admin alias to the whole catalogue', function () {
-    // Phase G removes this. Until then it must keep working, or every account
-    // still carrying it loses access in one step.
-    $user = User::factory()->create(['role' => 'admin', 'permissions' => []]);
-
-    expect($user->effectivePermissions())->toEqual(PermissionCatalogue::all())
-        ->and($user->hasPermission('transit.approve'))->toBeTrue();
-});
-
 it('still resolves superadmin to the whole catalogue', function () {
     $user = User::factory()->create(['role' => 'superadmin', 'permissions' => []]);
 
@@ -132,7 +122,6 @@ it('does not let an unset role grant anything', function () {
         ->and($unsaved->hasPermission('polls.create'))->toBeTrue()
         ->and($unsaved->hasPermission('polls.delete'))->toBeFalse()
         ->and($unsaved->effectivePermissions())->toBe(['polls.create'])
-        ->and($unsaved->isAdmin())->toBeFalse()
         ->and($unsaved->isSuperAdmin())->toBeFalse();
 });
 
@@ -171,7 +160,6 @@ it('does not mint a staff account from the bare factory', function () {
     expect($user->role)->toBe('user')
         ->and($user->permissions)->toBe([])
         ->and($user->effectivePermissions())->toBe([])
-        ->and($user->isAdmin())->toBeFalse()
         ->and($user->isSuperAdmin())->toBeFalse();
 });
 
@@ -179,7 +167,6 @@ it('still offers explicit states for the accounts tests actually need', function
     // The fix is not "the factory cannot make staff" — it is "staff is named at
     // the call site". These are the states that replaced the old default.
     expect(User::factory()->superadmin()->create()->isSuperAdmin())->toBeTrue()
-        ->and(User::factory()->admin()->create()->isAdmin())->toBeTrue()
         ->and(User::factory()->module('transit')->create()->effectivePermissions())
         ->toBe(PermissionCatalogue::forModule('transit'))
         ->and(User::factory()->withPermissions(['polls.edit'])->create()->hasPermission('polls.edit'))

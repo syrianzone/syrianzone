@@ -4,6 +4,7 @@ use App\Models\OfficialCategory;
 use App\Models\OfficialEntity;
 use App\Models\User;
 use App\Services\SyOfficial\SyOfficialDirectoryService;
+use App\Support\Permissions\PermissionCatalogue;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,7 +20,7 @@ use App\Services\SyOfficial\SyOfficialDirectoryService;
 */
 
 beforeEach(function () {
-    $this->admin = User::factory()->create(['role' => 'admin']);
+    $this->admin = User::factory()->create(['permissions' => PermissionCatalogue::forModule('syofficial')]);
 
     $this->routes = [
         'categories' => '/api/v1/admin/syofficial/categories',

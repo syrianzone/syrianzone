@@ -2,6 +2,7 @@
 
 use App\Models\GovApp;
 use App\Models\User;
+use App\Support\Permissions\PermissionCatalogue;
 
 /*
 |--------------------------------------------------------------------------
@@ -15,7 +16,7 @@ use App\Models\User;
 */
 
 beforeEach(function () {
-    $this->admin = User::factory()->create(['role' => 'admin']);
+    $this->admin = User::factory()->create(['permissions' => PermissionCatalogue::forModule('govapps')]);
     $this->base = '/api/v1/admin/govapps';
 });
 

@@ -313,8 +313,15 @@ Route::middleware('auth')->group(function () {
         });
     });
 
-    Route::middleware('admin')->group(function () {
-        // Guess Who content management (migrated from Filament)
+    // Guess Who content management (migrated from Filament).
+    //
+    // Superadmin only. This was `middleware('admin')`, and with the `admin` role
+    // on its way out the choice was between minting a `guesswho.*` capability for
+    // a novelty game with one operator, and narrowing to superadmin. Narrowing
+    // was the decision, so this is the one place Phase C removes access rather
+    // than re-expresses it: anyone who was operating Guess Who as `admin` needs
+    // promoting to superadmin.
+    Route::middleware('superadmin')->group(function () {
         Route::get('/admin/guesswho', [\App\Http\Controllers\GuessWhoAdminController::class, 'renderIndex']);
 
         Route::prefix('api/v1/admin/guesswho')->group(function () {

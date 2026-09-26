@@ -228,8 +228,11 @@ class TransitStudioController extends Controller
                 && in_array($draft->city_id, $allowed, true);
         }
 
-        // Admin can edit any draft (within their governorate scope, if scoped)
-        if (in_array($user->role, ['admin', 'superadmin', 'transit_admin'])) {
+        // Transit editors can edit anyone's draft, within their governorate
+        // scope when they have one. This was a role list, so a user granted
+        // transit.edit_routes without also holding the transit_admin role could
+        // not edit a draft they were responsible for.
+        if ($user->hasPermission('transit.edit_routes')) {
             return $user->isSuperAdmin() || $scopeAllowsCity;
         }
 

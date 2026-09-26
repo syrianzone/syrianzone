@@ -16,6 +16,24 @@ use Inertia\Inertia;
 class DashboardController extends Controller
 {
     /**
+     * Whether the user holds any capability in a module.
+     *
+     * Resolved from the permissions list rather than the role, so a grant made
+     * per user is honoured. There is no polls_admin role, so role-gating this
+     * is what made the polls capabilities unusable outside `admin`.
+     */
+    private function canModule(User $user, string $module): bool
+    {
+        foreach ($user->effectivePermissions() as $capability) {
+            if (str_starts_with($capability, $module.'.')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Render the unified user dashboard index page.
      */
     public function index(Request $request)
@@ -38,13 +56,27 @@ class DashboardController extends Controller
                 ->get();
         }
 
-        // 3. Admins see Polls management data
-        if ($user->role === 'admin' || $user->role === 'superadmin') {
+        // 3. Anyone holding a polls capability sees Polls management data.
+        //
+        // This was `role === 'admin' || role === 'superadmin'`, while the
+        // dashboard's own tab is gated on capabilities
+        // (canModule(perms, 'polls')). A user granted polls.create therefore
+        // saw the tab, could create a poll, and was handed an empty list — the
+        // capability was half-wired, because there is no polls_admin role and an
+        // explicit grant to a `user` account is the only way to hold one.
+        if ($this->canModule($user, 'polls')) {
             $data['polls'] = Poll::withCount('candidates')->get();
         }
 
-        // 4. Admins and Transit Admins see all route drafts and published routes
-        if ($user->role === 'admin' || $user->role === 'transit_admin' || $user->role === 'superadmin') {
+        // 4. Transit reviewers see all route drafts and published routes.
+        //
+        // Same role-vs-capability split as above: the sidebar link is gated on
+        // effective_permissions, so a user holding transit.review_drafts was
+        // sent here and then given no data. The full drafts/route payloads are
+        // only consumed by the transit admin page, which fetches its own
+        // scoped data; sharing them here duplicated it without the governorate
+        // scoping, so the condition is kept narrow to match.
+        if ($user->hasPermission('transit.review_drafts')) {
             $data['allDrafts'] = RouteDraft::with(['user:id,name,email,is_banned', 'city:id,name_ar,name_en'])
                 ->orderBy('created_at', 'desc')
                 ->limit(500)
@@ -64,7 +96,7 @@ class DashboardController extends Controller
 
         $data = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:users,email,' . $user->id,
+            'email' => 'required|email|max:255|unique:users,email,'.$user->id,
         ]);
 
         $user->update($data);
@@ -94,6 +126,7 @@ class DashboardController extends Controller
             $url = $avatars->update($request->user(), $request->file('avatar'));
         } catch (\Throwable $e) {
             report($e);
+
             return response()->json(['message' => 'تعذر معالجة الصورة'], 422);
         }
 
@@ -157,7 +190,7 @@ class DashboardController extends Controller
         return response()->json([
             'ok' => true,
             'is_banned' => $userToBan->is_banned,
-            'message' => $userToBan->is_banned ? 'تم حظر المستخدم بنجاح' : 'تم إلغاء حظر المستخدم'
+            'message' => $userToBan->is_banned ? 'تم حظر المستخدم بنجاح' : 'تم إلغاء حظر المستخدم',
         ]);
     }
 }

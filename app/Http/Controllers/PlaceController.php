@@ -190,7 +190,12 @@ class PlaceController extends Controller
     $user = $request->user();
 
     if ($place->status !== 'approved') {
-      $canSee = $user && ($user->id === $place->user_id || $user->isSuperAdmin() || $user->role === 'admin' || $user->hasAnyPermission(['places.review', 'places.edit', 'places.delete']));
+      // Owner, or staff with a places capability. The role checks this replaced
+      // were redundant with User::hasPermission(), which already resolves
+      // superadmin and the `admin` alias, and they hid the capability path from
+      // anyone holding one without also holding those roles.
+      $canSee = $user && ($user->id === $place->user_id
+          || $user->hasAnyPermission(['places.review', 'places.edit', 'places.delete']));
       if (!$canSee) {
         return response()->json(['message' => 'Not found'], 404);
       }

@@ -28,11 +28,23 @@ class PollController extends Controller
         ]);
     }
 
+    /**
+     * Whether the caller may see polls that are not currently running.
+     *
+     * Used by renderIndex() to decide between Poll::all() and the active-only
+     * set. Seeing a deactivated poll is a moderation view, so it is gated on
+     * polls.edit rather than on a role — which meant a capability-only staff
+     * account was shown a polls tab and then an active-only list.
+     *
+     * Note this governs the *poll*, not the *candidate*. `show()` filters
+     * archived candidates on its own `include_archived` flag and does not call
+     * this; see the note there.
+     */
     private function canViewInactive(Request $request): bool
     {
         $user = $request->user();
 
-        return $user && in_array($user->role, ['admin', 'superadmin'], true);
+        return $user !== null && $user->hasPermission('polls.edit');
     }
 
     public function renderShow(Request $request, $slug)

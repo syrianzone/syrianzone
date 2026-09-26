@@ -630,9 +630,11 @@ export default function Dashboard({
                   </Link>
                 )}
 
-                {/* GuessWho Admin Tab. Deliberately role-based: the module has no
-                    capability strings and is gated on the plain `admin` middleware. */}
-                {(role === 'admin' || role === 'superadmin') && (
+                {/* GuessWho Admin Tab. Superadmin only: the module has no capability
+                    vocabulary of its own, and the route group is gated on the
+                    `superadmin` middleware rather than a capability. Narrowed from
+                    `admin || superadmin` — see routes/web.php. */}
+                {role === 'superadmin' && (
                   <Link
                     href="/admin/guesswho"
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"

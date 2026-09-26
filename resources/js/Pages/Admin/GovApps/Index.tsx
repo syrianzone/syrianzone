@@ -10,12 +10,21 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Com
 import { Plus, Search, Edit3, Trash2, Smartphone, ArrowUpDown, Globe } from 'lucide-react';
 import AppDialog, { GovAppData } from './_components/AppDialog';
 import SortableList from './_components/SortableList';
+import { useAuth } from '@/Contexts/AuthContext';
 
 interface AdminGovAppsProps {
     apps: GovAppData[];
 }
 
 export default function GovAppsAdminIndex({ apps }: AdminGovAppsProps) {
+
+    // Gated per capability, matching the route tags. The panel used to render
+    // every control for any govapps.* holder.
+    const { can } = useAuth();
+    const canCreate = can('govapps.create');
+    const canEdit = can('govapps.edit');
+    const canDelete = can('govapps.delete');
+    const canReorder = can('govapps.reorder');
     const [searchTerm, setSearchTerm] = useState('');
 
     const [appDialogOpen, setAppDialogOpen] = useState(false);
@@ -68,16 +77,18 @@ export default function GovAppsAdminIndex({ apps }: AdminGovAppsProps) {
                     </div>
 
                     <div className="flex items-center gap-3">
-                        <Button
-                            onClick={() => {
-                                setSelectedApp(null);
-                                setAppDialogOpen(true);
-                            }}
-                            className="gap-2 font-bold shadow-md"
-                        >
-                            <Plus className="w-4 h-4" />
-                            <span>إضافة تطبيق جديد</span>
-                        </Button>
+                        {canCreate && (
+                            <Button
+                                onClick={() => {
+                                    setSelectedApp(null);
+                                    setAppDialogOpen(true);
+                                }}
+                                className="gap-2 font-bold shadow-md"
+                            >
+                                <Plus className="w-4 h-4" />
+                                <span>إضافة تطبيق جديد</span>
+                            </Button>
+                        )}
                     </div>
                 </div>
 
@@ -165,25 +176,29 @@ export default function GovAppsAdminIndex({ apps }: AdminGovAppsProps) {
                                                 </TableCell>
                                                 <TableCell className="text-end">
                                                     <div className="flex items-center justify-end gap-1.5">
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            onClick={() => {
-                                                                setSelectedApp(item);
-                                                                setAppDialogOpen(true);
-                                                            }}
-                                                            title="تعديل البيانات"
-                                                        >
-                                                            <Edit3 className="w-4 h-4 text-muted-foreground hover:text-primary" />
-                                                        </Button>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            onClick={() => handleDeleteApp(item.id)}
-                                                            title="حذف"
-                                                        >
-                                                            <Trash2 className="w-4 h-4 text-destructive" />
-                                                        </Button>
+                                                        {canEdit && (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => {
+                                                                    setSelectedApp(item);
+                                                                    setAppDialogOpen(true);
+                                                                }}
+                                                                title="تعديل البيانات"
+                                                            >
+                                                                <Edit3 className="w-4 h-4 text-muted-foreground hover:text-primary" />
+                                                            </Button>
+                                                        )}
+                                                        {canDelete && (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => handleDeleteApp(item.id)}
+                                                                title="حذف"
+                                                            >
+                                                                <Trash2 className="w-4 h-4 text-destructive" />
+                                                            </Button>
+                                                        )}
                                                     </div>
                                                 </TableCell>
                                             </TableRow>
@@ -195,7 +210,7 @@ export default function GovAppsAdminIndex({ apps }: AdminGovAppsProps) {
                     </TabsContent>
 
                     <TabsContent value="reorder" className="mt-6">
-                        <SortableList items={apps} />
+                        <SortableList items={apps} canReorder={canReorder} />
                     </TabsContent>
                 </Tabs>
 

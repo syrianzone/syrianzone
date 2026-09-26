@@ -12,6 +12,7 @@ import { Label } from "@/Components/ui/label";
 import { Switch } from "@/Components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/Components/ui/table";
 import MainLayout from '@/Layouts/MainLayout';
+import { useAuth } from '@/Contexts/AuthContext';
 
 interface PhonebookCategory {
     id: string;
@@ -42,6 +43,15 @@ interface AdminPhonebookProps {
 
 export default function PhonebookAdminIndex({ categories, entries }: AdminPhonebookProps) {
     const [searchTerm, setSearchTerm] = useState('');
+
+    // Gated per capability, matching the route tags. The panel used to render
+    // every control for any phonebook.* holder, so a phonebook.reorder-only
+    // account was offered delete and toggle buttons it cannot use.
+    const { can } = useAuth();
+    const canCreate = can('phonebook.create');
+    const canEdit = can('phonebook.edit');
+    const canToggle = can('phonebook.toggle');
+    const canDelete = can('phonebook.delete');
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
     // Dialog States
@@ -190,14 +200,18 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
                         </div>
 
                         <div className="flex gap-2 flex-wrap">
-                            <Button onClick={openCreateCategory} variant="outline" className="gap-2 rounded-xl">
-                                <Plus className="h-4 w-4" />
-                                <span>إضافة فئة جديدة</span>
-                            </Button>
-                            <Button onClick={openCreateEntry} className="gap-2 rounded-xl">
-                                <Plus className="h-4 w-4" />
-                                <span>إضافة رقم جديد</span>
-                            </Button>
+                            {canCreate && (
+                                <>
+                                    <Button onClick={openCreateCategory} variant="outline" className="gap-2 rounded-xl">
+                                        <Plus className="h-4 w-4" />
+                                        <span>إضافة فئة جديدة</span>
+                                    </Button>
+                                    <Button onClick={openCreateEntry} className="gap-2 rounded-xl">
+                                        <Plus className="h-4 w-4" />
+                                        <span>إضافة رقم جديد</span>
+                                    </Button>
+                                </>
+                            )}
                         </div>
                     </div>
 
@@ -224,15 +238,17 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
                                             {count}
                                         </Badge>
                                     </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => openEditCategory(cat)}
-                                        className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                                        title="تعديل الفئة"
-                                    >
-                                        <Edit className="h-3.5 w-3.5" />
-                                    </Button>
+                                    {canEdit && (
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => openEditCategory(cat)}
+                                            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                                            title="تعديل الفئة"
+                                        >
+                                            <Edit className="h-3.5 w-3.5" />
+                                        </Button>
+                                    )}
                                 </div>
                             );
                         })}
@@ -276,7 +292,14 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
                                                 size="sm"
                                                 onClick={() => handleToggleActive(item.id)}
                                                 className="gap-1.5 text-xs h-8 px-2"
-                                                title={item.is_active ? 'انقر لإخفاء الرقم من الواجهة' : 'انقر لإظهار الرقم في الواجهة'}
+                                                disabled={!canToggle}
+                                                title={
+                                                    !canToggle
+                                                        ? 'يحتاج صلاحية phonebook.toggle'
+                                                        : item.is_active
+                                                          ? 'انقر لإخفاء الرقم من الواجهة'
+                                                          : 'انقر لإظهار الرقم في الواجهة'
+                                                }
                                             >
                                                 {item.is_active ? (
                                                     <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 gap-1 font-semibold">
@@ -323,24 +346,28 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
                                         </TableCell>
                                         <TableCell className="text-end">
                                             <div className="flex items-center justify-end gap-1">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={() => openEditEntry(item)}
-                                                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                                                    title="تعديل"
-                                                >
-                                                    <Edit className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={() => handleDeleteEntry(item.id)}
-                                                    className="h-8 w-8 text-destructive hover:text-destructive/80"
-                                                    title="حذف"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
+                                                {canEdit && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => openEditEntry(item)}
+                                                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                                        title="تعديل"
+                                                    >
+                                                        <Edit className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                                {canDelete && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => handleDeleteEntry(item.id)}
+                                                        className="h-8 w-8 text-destructive hover:text-destructive/80"
+                                                        title="حذف"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                )}
                                             </div>
                                         </TableCell>
                                     </TableRow>
@@ -490,7 +517,7 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
                                 </div>
 
                                 <DialogFooter className="gap-2 pt-4">
-                                    {editingCategory && (
+                                    {editingCategory && canDelete && (
                                         <Button
                                             type="button"
                                             variant="destructive"

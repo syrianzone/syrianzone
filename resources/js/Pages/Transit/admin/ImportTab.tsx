@@ -446,7 +446,12 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
               </div>
             ) : (
               <>
-                {canReview && (
+                {/* Both publish modes go through /import-publish, which is tagged
+                    transit_admin:transit.edit_routes. The controller then accepts
+                    EITHER review_drafts or edit_routes in-city, so edit_routes is
+                    the binding constraint: gating this button on canReview offered
+                    it to reviewers who hold only review_drafts and 403'd. */}
+                {canEdit && (
                   <Button
                     className="w-full h-9 text-xs font-bold gap-2"
                     disabled={publishing !== null}
@@ -467,7 +472,7 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
                     نشر مباشر بدون مراجعة
                   </Button>
                 )}
-                {!canReview && !canEdit ? (
+                {!canEdit ? (
                   <p className="text-[11px] text-muted-foreground text-center py-1">لا تملك صلاحية استيراد الخطوط.</p>
                 ) : (
                   <p className="text-[10px] text-muted-foreground leading-relaxed text-center">

@@ -11,6 +11,7 @@ import { Plus, Search, Edit3, Trash2, Layers, FolderPlus, ArrowUpDown, Globe, Ey
 import CategoryDialog, { CategoryData } from './_components/CategoryDialog';
 import EntityDialog, { EntityData } from './_components/EntityDialog';
 import SortableList from './_components/SortableList';
+import { useAuth } from '@/Contexts/AuthContext';
 import { formatEntityImage } from '@/Pages/SyOfficial/Index';
 
 interface AdminSyOfficialProps {
@@ -19,6 +20,15 @@ interface AdminSyOfficialProps {
 }
 
 export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOfficialProps) {
+
+    // Each control is gated on the capability its route requires (routes/web.php).
+    // The whole panel used to render for any syofficial.* holder, so a
+    // syofficial.reorder-only account was offered create and delete buttons.
+    const { can } = useAuth();
+    const canCreate = can('syofficial.create');
+    const canEdit = can('syofficial.edit');
+    const canDelete = can('syofficial.delete');
+    const canReorder = can('syofficial.reorder');
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all');
 
@@ -83,30 +93,41 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
                             <p className="text-muted-foreground mt-1">إضافة، تعديل، وترتيب الجهات الرسمية والفئات واستضافة الصور عبر Cloudflare R2</p>
                         </div>
 
-                        <div className="flex items-center gap-3">
-                            <Button
-                                variant="outline"
-                                onClick={() => {
-                                    setSelectedCategory(null);
-                                    setCategoryDialogOpen(true);
-                                }}
-                                className="gap-2"
-                            >
-                                <FolderPlus className="w-4 h-4" />
-                                <span>إضافة فئة جديدة</span>
-                            </Button>
+                        {(canCreate || canReorder) && (
+                            <div className="flex items-center gap-3">
+                                {canCreate && (
+                                    <>
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => {
+                                                setSelectedCategory(null);
+                                                setCategoryDialogOpen(true);
+                                            }}
+                                            className="gap-2"
+                                        >
+                                            <FolderPlus className="w-4 h-4" />
+                                            <span>إضافة فئة جديدة</span>
+                                        </Button>
 
-                            <Button
-                                onClick={() => {
-                                    setSelectedEntity(null);
-                                    setEntityDialogOpen(true);
-                                }}
-                                className="gap-2"
-                            >
-                                <Plus className="w-4 h-4" />
-                                <span>إضافة جهة جديدة</span>
-                            </Button>
-                        </div>
+                                        <Button
+                                            onClick={() => {
+                                                setSelectedEntity(null);
+                                                setEntityDialogOpen(true);
+                                            }}
+                                            className="gap-2"
+                                        >
+                                            <Plus className="w-4 h-4" />
+                                            <span>إضافة جهة جديدة</span>
+                                        </Button>
+                                    </>
+                                )}
+                                {canReorder && (
+                                    <span className="text-xs text-muted-foreground">
+                                        اسحب الصفوف لإعادة الترتيب
+                                    </span>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {/* Main Tabs */}
@@ -233,23 +254,29 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
 
                                                             <TableCell className="text-end">
                                                                 <div className="flex items-center justify-end gap-1">
-                                                                    <Button
-                                                                        size="icon"
-                                                                        variant="ghost"
-                                                                        onClick={() => {
-                                                                            setSelectedEntity(ent);
-                                                                            setEntityDialogOpen(true);
-                                                                        }}
-                                                                    >
-                                                                        <Edit3 className="w-4 h-4 text-muted-foreground" />
-                                                                    </Button>
-                                                                    <Button
-                                                                        size="icon"
-                                                                        variant="ghost"
-                                                                        onClick={() => handleDeleteEntity(ent.id)}
-                                                                    >
-                                                                        <Trash2 className="w-4 h-4 text-destructive" />
-                                                                    </Button>
+                                                                    {canEdit && (
+                                                                        <Button
+                                                                            size="icon"
+                                                                            variant="ghost"
+                                                                            title="تعديل"
+                                                                            onClick={() => {
+                                                                                setSelectedEntity(ent);
+                                                                                setEntityDialogOpen(true);
+                                                                            }}
+                                                                        >
+                                                                            <Edit3 className="w-4 h-4 text-muted-foreground" />
+                                                                        </Button>
+                                                                    )}
+                                                                    {canDelete && (
+                                                                        <Button
+                                                                            size="icon"
+                                                                            variant="ghost"
+                                                                            title="حذف"
+                                                                            onClick={() => handleDeleteEntity(ent.id)}
+                                                                        >
+                                                                            <Trash2 className="w-4 h-4 text-destructive" />
+                                                                        </Button>
+                                                                    )}
                                                                 </div>
                                                             </TableCell>
                                                         </TableRow>
@@ -302,23 +329,29 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
                                                             </TableCell>
                                                             <TableCell className="text-end">
                                                                 <div className="flex items-center justify-end gap-1">
-                                                                    <Button
-                                                                        size="icon"
-                                                                        variant="ghost"
-                                                                        onClick={() => {
-                                                                            setSelectedCategory(cat);
-                                                                            setCategoryDialogOpen(true);
-                                                                        }}
-                                                                    >
-                                                                        <Edit3 className="w-4 h-4 text-muted-foreground" />
-                                                                    </Button>
-                                                                    <Button
-                                                                        size="icon"
-                                                                        variant="ghost"
-                                                                        onClick={() => handleDeleteCategory(cat.id)}
-                                                                    >
-                                                                        <Trash2 className="w-4 h-4 text-destructive" />
-                                                                    </Button>
+                                                                    {canEdit && (
+                                                                        <Button
+                                                                            size="icon"
+                                                                            variant="ghost"
+                                                                            title="تعديل"
+                                                                            onClick={() => {
+                                                                                setSelectedCategory(cat);
+                                                                                setCategoryDialogOpen(true);
+                                                                            }}
+                                                                        >
+                                                                            <Edit3 className="w-4 h-4 text-muted-foreground" />
+                                                                        </Button>
+                                                                    )}
+                                                                    {canDelete && (
+                                                                        <Button
+                                                                            size="icon"
+                                                                            variant="ghost"
+                                                                            title="حذف"
+                                                                            onClick={() => handleDeleteCategory(cat.id)}
+                                                                        >
+                                                                            <Trash2 className="w-4 h-4 text-destructive" />
+                                                                        </Button>
+                                                                    )}
                                                                 </div>
                                                             </TableCell>
                                                         </TableRow>
@@ -343,6 +376,7 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
                                         <SortableList
                                             items={categories.map((c) => ({ id: c.id, label: c.label_ar, subtitle: c.label_en }))}
                                             endpoint="/api/v1/admin/syofficial/reorder/categories"
+                                            canReorder={canReorder}
                                             onSaveSuccess={() => router.reload()}
                                         />
                                     </CardContent>
@@ -372,6 +406,7 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
                                                 .filter((e) => selectedCategoryFilter === 'all' || e.category_id === selectedCategoryFilter)
                                                 .map((e) => ({ id: e.id, label: e.name_ar, subtitle: e.name, image: e.image }))}
                                             endpoint="/api/v1/admin/syofficial/reorder/entities"
+                                            canReorder={canReorder}
                                             onSaveSuccess={() => router.reload()}
                                         />
                                     </CardContent>

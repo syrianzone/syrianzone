@@ -32,7 +32,7 @@ import {
 } from '@/Components/Icons/ProjectIcons';
 import MainLayout from '@/Layouts/MainLayout';
 import { useAuth } from '@/Contexts/AuthContext';
-import { canModule } from '@/Lib/permissions';
+import { canAny, canModule } from '@/Lib/permissions';
 import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
@@ -266,6 +266,12 @@ export default function Dashboard({
   const canManagePlaces = canModule(perms, 'places');
   const canManageSyOfficial = canModule(perms, 'syofficial');
   const canManageGovApps = canModule(perms, 'govapps');
+  // Per-action poll capabilities. The tab itself opens for any polls.* holder,
+  // so without these a polls.delete-only account is offered create and edit
+  // buttons whose routes are tagged polls.create / polls.edit.
+  const canCreatePolls = canAny(perms, 'polls.create');
+  const canEditPolls = canAny(perms, 'polls.edit');
+  const canDeletePolls = canAny(perms, 'polls.delete');
 
   // Profile Form States
   const [profileName, setProfileName] = useState(auth.user.name);
@@ -770,6 +776,8 @@ export default function Dashboard({
                     <Button
                       onClick={() => setCreateOpen(true)}
                       className="w-fit"
+                      disabled={!canCreatePolls}
+                      title={canCreatePolls ? undefined : 'يحتاج صلاحية polls.create'}
                     >
                       <Plus className="h-4 w-4" />
                       إنشاء استبيان جديد
@@ -834,7 +842,13 @@ export default function Dashboard({
                                         ? "bg-primary text-primary-foreground border-primary"
                                         : "bg-muted hover:bg-accent text-muted-foreground hover:text-accent-foreground"
                                     )}
-                                    title={isEditing ? 'إغلاق المحرر' : 'تعديل'}
+                                    title={
+                                      !canEditPolls
+                                        ? 'يحتاج صلاحية polls.edit'
+                                        : isEditing
+                                          ? 'إغلاق المحرر'
+                                          : 'تعديل'
+                                    }
                                   >
                                     {isEditing ? <X className="h-4 w-4" /> : <Edit className="h-4 w-4" />}
                                   </button>
@@ -842,7 +856,7 @@ export default function Dashboard({
                                     <button
                                       onClick={() => handleDeletePoll(poll.id, poll.slug)}
                                       className="p-1.5 bg-muted hover:bg-destructive/15 text-muted-foreground hover:text-destructive rounded border border-border hover:border-destructive/40 transition-colors"
-                                      title="حذف"
+                                      title={canDeletePolls ? 'حذف' : 'يحتاج صلاحية polls.delete'}
                                     >
                                       <Trash2 className="h-4 w-4" />
                                     </button>
@@ -928,7 +942,11 @@ export default function Dashboard({
                                 />
                                 <Label htmlFor="edit-poll-active">التصويت نشط</Label>
                               </div>
-                              <Button onClick={handleSavePollMetadata} disabled={editingSaving}>
+                              <Button
+                                onClick={handleSavePollMetadata}
+                                disabled={editingSaving || !canEditPolls}
+                                title={canEditPolls ? undefined : 'يحتاج صلاحية polls.edit'}
+                              >
                                 <Save className="h-4 w-4 ml-2" />
                                 {editingSaving ? 'جاري الحفظ…' : 'حفظ الإعدادات'}
                               </Button>

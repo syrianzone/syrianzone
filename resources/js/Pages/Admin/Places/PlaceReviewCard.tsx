@@ -3,6 +3,7 @@ import { Check, ExternalLink, Loader2, Pencil, Plus, RotateCw, Trash2, Upload, X
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
+import { useAuth } from '@/Contexts/AuthContext';
 import { api, extractError } from '../../Places/_lib/api';
 import { CATEGORY_LABELS } from '../../Places/_lib/categories';
 import type { AdminPlace, PlaceStatus } from '../../Places/_lib/types';
@@ -28,6 +29,16 @@ export function PlaceReviewCard(props: {
   onChanged: () => void;
 }) {
   const { place, onApprove, onReject, onDelete, onChanged } = props;
+
+  // Every action below is gated on its own capability, matching the route tags
+  // in routes/web.php. Previously the whole moderation UI rendered for anyone
+  // holding any places.* grant, so a places.review-only reviewer saw eight
+  // buttons and 403'd on all of them.
+  const { can } = useAuth();
+  const canApprove = can('places.approve');
+  const canEdit = can('places.edit');
+  const canDelete = can('places.delete');
+  const canModeratePhotos = can('places.moderate_photos');
   const osmUrl = `https://www.openstreetmap.org/?mlat=${place.lat}&mlon=${place.lng}#map=17/${place.lat}/${place.lng}`;
   // fixed photos get fresh versioned urls; keyed here so the img swaps without a refetch
   const [photoUrls, setPhotoUrls] = useState<Record<number, string>>({});
@@ -135,41 +146,43 @@ export function PlaceReviewCard(props: {
                     <Loader2 className="h-4 w-4 animate-spin" />
                   </span>
                 ) : (
-                  <span className="absolute bottom-1 left-1 flex gap-1">
-                    <button
-                      type="button"
-                      aria-label="تدوير الصورة"
-                      title="تدوير الصورة ٩٠ درجة"
-                      onClick={() => rotate(photo.id)}
-                      className="rounded-md bg-background/80 p-1 text-foreground shadow-sm hover:bg-background"
-                    >
-                      <RotateCw className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label="إعادة رفع الصورة"
-                      title="إعادة رفع الصورة"
-                      onClick={() => pickReplacement(photo.id)}
-                      className="rounded-md bg-background/80 p-1 text-foreground shadow-sm hover:bg-background"
-                    >
-                      <Upload className="h-4 w-4" />
-                    </button>
-                    {place.photos.length > 1 && (
+                  canModeratePhotos && (
+                    <span className="absolute bottom-1 left-1 flex gap-1">
                       <button
                         type="button"
-                        aria-label="حذف الصورة"
-                        title="حذف الصورة"
-                        onClick={() => deletePhoto(photo.id)}
-                        className="rounded-md bg-background/80 p-1 text-destructive shadow-sm hover:bg-background"
+                        aria-label="تدوير الصورة"
+                        title="تدوير الصورة ٩٠ درجة"
+                        onClick={() => rotate(photo.id)}
+                        className="rounded-md bg-background/80 p-1 text-foreground shadow-sm hover:bg-background"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <RotateCw className="h-4 w-4" />
                       </button>
-                    )}
-                  </span>
+                      <button
+                        type="button"
+                        aria-label="إعادة رفع الصورة"
+                        title="إعادة رفع الصورة"
+                        onClick={() => pickReplacement(photo.id)}
+                        className="rounded-md bg-background/80 p-1 text-foreground shadow-sm hover:bg-background"
+                      >
+                        <Upload className="h-4 w-4" />
+                      </button>
+                      {place.photos.length > 1 && (
+                        <button
+                          type="button"
+                          aria-label="حذف الصورة"
+                          title="حذف الصورة"
+                          onClick={() => deletePhoto(photo.id)}
+                          className="rounded-md bg-background/80 p-1 text-destructive shadow-sm hover:bg-background"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </span>
+                  )
                 )}
               </div>
             ))}
-            {place.photos.length < 10 && (
+            {canEdit && place.photos.length < 10 && (
               <button
                 type="button"
                 aria-label="إضافة صورة"
@@ -218,30 +231,38 @@ export function PlaceReviewCard(props: {
           <p className="text-sm text-destructive">سبب الرفض: {place.rejection_reason}</p>
         )}
 
-        <div className="flex flex-wrap gap-2 pt-1">
-          {place.status === 'pending' && (
-            <>
-              <Button size="sm" onClick={() => onApprove(place.id)}>
-                <Check className="h-4 w-4" />
-                موافقة
+        {(canApprove || canEdit || canDelete) && (
+          <div className="flex flex-wrap gap-2 pt-1">
+            {place.status === 'pending' && canApprove && (
+              <>
+                <Button size="sm" onClick={() => onApprove(place.id)}>
+                  <Check className="h-4 w-4" />
+                  موافقة
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => onReject(place.id)}>
+                  <X className="h-4 w-4" />
+                  رفض
+                </Button>
+              </>
+            )}
+            {canEdit && (
+              <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>
+                <Pencil className="h-4 w-4" />
+                تعديل
               </Button>
-              <Button size="sm" variant="outline" onClick={() => onReject(place.id)}>
-                <X className="h-4 w-4" />
-                رفض
+            )}
+            {canDelete && (
+              <Button size="sm" variant="ghost" className="text-destructive" onClick={() => onDelete(place.id)}>
+                <Trash2 className="h-4 w-4" />
+                حذف
               </Button>
-            </>
-          )}
-          <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>
-            <Pencil className="h-4 w-4" />
-            تعديل
-          </Button>
-          <Button size="sm" variant="ghost" className="text-destructive" onClick={() => onDelete(place.id)}>
-            <Trash2 className="h-4 w-4" />
-            حذف
-          </Button>
-        </div>
+            )}
+          </div>
+        )}
 
-        <EditPlaceDialog open={editOpen} onOpenChange={setEditOpen} place={place} onSaved={onChanged} />
+        {canEdit && (
+          <EditPlaceDialog open={editOpen} onOpenChange={setEditOpen} place={place} onSaved={onChanged} />
+        )}
       </CardContent>
     </Card>
   );

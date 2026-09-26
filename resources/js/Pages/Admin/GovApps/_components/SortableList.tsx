@@ -7,20 +7,28 @@ import { GovAppData } from './AppDialog';
 
 interface SortableListProps {
     items: GovAppData[];
+    /**
+     * Whether the viewer holds `govapps.reorder`. When false the list renders
+     * read-only — no drag, no save — instead of a drop target whose POST is
+     * tagged `govapps.reorder` and would 403.
+     */
+    canReorder?: boolean;
 }
 
-export default function SortableList({ items: initialItems }: SortableListProps) {
+export default function SortableList({ items: initialItems, canReorder = true }: SortableListProps) {
     const [items, setItems] = useState(initialItems);
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
     const [saving, setSaving] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
 
     const handleDragStart = (index: number) => {
+        if (!canReorder) return;
         setDraggedIndex(index);
     };
 
     const handleDragOver = (e: React.DragEvent, index: number) => {
         e.preventDefault();
+        if (!canReorder) return;
         if (draggedIndex === null || draggedIndex === index) return;
 
         const newItems = [...items];
@@ -38,6 +46,7 @@ export default function SortableList({ items: initialItems }: SortableListProps)
     };
 
     const handleSaveOrder = () => {
+        if (!canReorder) return;
         setSaving(true);
         const payload = items.map((item, idx) => ({
             id: item.id,
@@ -58,9 +67,13 @@ export default function SortableList({ items: initialItems }: SortableListProps)
             <div className="flex items-center justify-between bg-muted/40 p-4 rounded-xl border">
                 <div>
                     <h3 className="font-bold text-sm">إعادة ترتيب التطبيقات الحكومية (Drag & Drop)</h3>
-                    <p className="text-xs text-muted-foreground">اسحب العنصر من مقبض السحب لتغيير ترتيب ظهوره للعموم.</p>
+                    <p className="text-xs text-muted-foreground">
+                        {canReorder
+                            ? 'اسحب العنصر من مقبض السحب لتغيير ترتيب ظهوره للعموم.'
+                            : 'يحتاج تغيير الترتيب صلاحية govapps.reorder'}
+                    </p>
                 </div>
-                {hasChanges && (
+                {canReorder && hasChanges && (
                     <Button onClick={handleSaveOrder} disabled={saving} size="sm" className="gap-1.5 font-bold">
                         <Save className="w-4 h-4" />
                         <span>{saving ? 'جاري الحفظ...' : 'حفظ الترتيب الجديد'}</span>
@@ -72,14 +85,14 @@ export default function SortableList({ items: initialItems }: SortableListProps)
                 {items.map((item, index) => (
                     <Card
                         key={item.id}
-                        draggable
+                        draggable={canReorder}
                         onDragStart={() => handleDragStart(index)}
                         onDragOver={(e) => handleDragOver(e, index)}
                         onDragEnd={handleDragEnd}
-                        className={`p-3 transition-all cursor-move border flex items-center justify-between bg-card ${draggedIndex === index ? 'opacity-50 border-primary border-dashed' : 'hover:border-primary/50'}`}
+                        className={`p-3 transition-all border flex items-center justify-between bg-card ${canReorder ? 'cursor-move ' : ''}${draggedIndex === index ? 'opacity-50 border-primary border-dashed' : 'hover:border-primary/50'}`}
                     >
                         <div className="flex items-center gap-3">
-                            <GripVertical className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                            {canReorder && <GripVertical className="w-5 h-5 text-muted-foreground flex-shrink-0" />}
                             <div className="w-10 h-10 rounded-xl overflow-hidden bg-muted flex items-center justify-center flex-shrink-0 border">
                                 <img
                                     src={item.icon || 'https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/govapps/mofa/icon.webp'}

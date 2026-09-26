@@ -15,13 +15,21 @@ interface SortableListProps {
     items: SortableItem[];
     endpoint: string; // e.g. '/api/v1/admin/syofficial/reorder/categories'
     onSaveSuccess?: () => void;
+    /**
+     * Whether the viewer holds the module's reorder capability. When false the
+     * list renders read-only: no drag affordance, no arrows, no save button.
+     * The parent resolves it, because the capability differs per module
+     * (syofficial.reorder vs govapps.reorder) and this component is shared.
+     */
+    canReorder?: boolean;
 }
 
-export default function SortableList({ items: initialItems, endpoint, onSaveSuccess }: SortableListProps) {
+export default function SortableList({ items: initialItems, endpoint, onSaveSuccess, canReorder = true }: SortableListProps) {
     const [items, setItems] = useState<SortableItem[]>(initialItems);
     const [saving, setSaving] = useState(false);
 
     const moveItem = (index: number, direction: 'up' | 'down') => {
+        if (!canReorder) return;
         const newItems = [...items];
         const targetIndex = direction === 'up' ? index - 1 : index + 1;
         if (targetIndex < 0 || targetIndex >= newItems.length) return;
@@ -33,6 +41,7 @@ export default function SortableList({ items: initialItems, endpoint, onSaveSucc
     };
 
     const handleSaveOrder = async () => {
+        if (!canReorder) return;
         setSaving(true);
         try {
             const orders = items.map((item, index) => ({
@@ -51,20 +60,26 @@ export default function SortableList({ items: initialItems, endpoint, onSaveSucc
     return (
         <div className="space-y-3" dir="rtl">
             <div className="flex justify-between items-center mb-2">
-                <span className="text-xs text-muted-foreground">استخدم أسهم الترتيب لتغيير تسلسل العرض</span>
-                <Button size="sm" onClick={handleSaveOrder} disabled={saving}>
-                    {saving ? 'جاري الحفظ...' : 'حفظ الترتيب الجديد'}
-                </Button>
+                <span className="text-xs text-muted-foreground">
+                    {canReorder
+                        ? 'استخدم أسهم الترتيب لتغيير تسلسل العرض'
+                        : 'يحتاج تغيير الترتيب صلاحية reordering'}
+                </span>
+                {canReorder && (
+                    <Button size="sm" onClick={handleSaveOrder} disabled={saving}>
+                        {saving ? 'جاري الحفظ...' : 'حفظ الترتيب الجديد'}
+                    </Button>
+                )}
             </div>
 
             <div className="space-y-2">
                 {items.map((item, idx) => (
                     <div
                         key={item.id}
-                        className="flex items-center justify-between p-3 rounded-xl border border-border bg-card shadow-2xs hover:border-primary/40 transition-colors"
+                        className="flex items-center justify-between p-3 rounded-xl border border-border bg-card shadow-2xs transition-colors"
                     >
                         <div className="flex items-center gap-3">
-                            <GripVertical className="w-5 h-5 text-muted-foreground/50 cursor-grab" />
+                            {canReorder && <GripVertical className="w-5 h-5 text-muted-foreground/50 cursor-grab" />}
                             {item.image && (
                                 <img
                                     src={formatEntityImage(item.image)}
@@ -78,26 +93,28 @@ export default function SortableList({ items: initialItems, endpoint, onSaveSucc
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-1">
-                            <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8"
-                                disabled={idx === 0}
-                                onClick={() => moveItem(idx, 'up')}
-                            >
-                                <ArrowUp className="w-4 h-4" />
-                            </Button>
-                            <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8"
-                                disabled={idx === items.length - 1}
-                                onClick={() => moveItem(idx, 'down')}
-                            >
-                                <ArrowDown className="w-4 h-4" />
-                            </Button>
-                        </div>
+                        {canReorder && (
+                            <div className="flex items-center gap-1">
+                                <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-8 w-8"
+                                    disabled={idx === 0}
+                                    onClick={() => moveItem(idx, 'up')}
+                                >
+                                    <ArrowUp className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-8 w-8"
+                                    disabled={idx === items.length - 1}
+                                    onClick={() => moveItem(idx, 'down')}
+                                >
+                                    <ArrowDown className="w-4 h-4" />
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>

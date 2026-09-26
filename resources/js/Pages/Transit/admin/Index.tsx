@@ -203,7 +203,11 @@ function TransitAdminPageContent() {
   const [importCityId, setImportCityId] = useState<string | undefined>(undefined)
 
   const queryClient = useQueryClient()
-  const { data: drafts = [], isLoading, error: draftsError } = useAdminDrafts()
+  // Both the drafts listing and the logs tab are tagged transit.review_drafts, so
+  // a transit.edit_routes-only operator must not be handed a fetcher and a tab
+  // that 403 on arrival.
+  const canReviewDrafts = can('transit.review_drafts')
+  const { data: drafts = [], isLoading, error: draftsError } = useAdminDrafts(canReviewDrafts)
 
   const activeCityId = adminTab === 'drafts' ? selectedDraft?.city_id : adminTab === 'import' ? importCityId : selectedRoute?.city_id
   const { data: refData, refetch: refetchRefData } = useMapData(activeCityId)
@@ -708,9 +712,11 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
             <TabsTrigger value="import" className="flex-1 text-xs gap-1.5">
               <Upload className="h-3.5 w-3.5" /> استيراد
             </TabsTrigger>
-            <TabsTrigger value="logs" className="flex-1 text-xs gap-1.5">
-              <History className="h-3.5 w-3.5" /> السجل
-            </TabsTrigger>
+            {canReviewDrafts && (
+              <TabsTrigger value="logs" className="flex-1 text-xs gap-1.5">
+                <History className="h-3.5 w-3.5" /> السجل
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {/* ── DRAFTS TAB ─────────────────────────────────────────────── */}

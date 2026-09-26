@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import axios from "@/lib/axios";
+import { useAuth } from "@/Contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -67,6 +68,17 @@ interface Props {
 }
 
 export default function AdminPollManager({ pollId, initialData, onRefresh }: Props) {
+    // Each control is gated on the capability its route requires (routes/web.php).
+    // The whole editor used to render for anyone holding any polls.* grant, so a
+    // polls.create-only user saw delete buttons they could not use and vice versa.
+    const { can, user } = useAuth();
+    const canCreate = can("polls.create");
+    const canEdit = can("polls.edit");
+    const canDelete = can("polls.delete");
+    // Candidate images are uploaded through /api/v1/admin/assets/upload, which
+    // sits in the superadmin-only group. Hiding the drop zone for everyone else
+    // turns a guaranteed 403 into a control that simply is not offered.
+    const canUploadImages = user?.role === "superadmin";
     const [groups, setGroups] = useState<Group[]>(initialData.groups || []);
     const [candidates, setCandidates] = useState<Candidate[]>(initialData.candidates || []);
     const [activeTab, setActiveTab] = useState<string>("all");
@@ -368,9 +380,11 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                                 onChange={e => setNewGroupName(e.target.value)}
                             />
                         </div>
-                        <Button size="sm" variant="outline" onClick={handleAddGroup} disabled={isAddingGroup}>
-                            <Plus className="h-4 w-4" />
-                        </Button>
+                        {canCreate && (
+                            <Button size="sm" variant="outline" onClick={handleAddGroup} disabled={isAddingGroup}>
+                                <Plus className="h-4 w-4" />
+                            </Button>
+                        )}
                     </div>
                 </div>
 
@@ -381,48 +395,58 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                         </h3>
                         {activeTab !== "all" && (
                             <div className="flex items-center gap-1 mr-4">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-8 w-8 p-0"
-                                    onClick={() => handleSetDefault(activeTab)}
-                                    title="تعيين كمجموعة افتراضية"
-                                >
-                                    <StarIcon
-                                        className={`h-4 w-4 ${groups.find(g => g.id === activeTab)?.is_default ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`}
-                                    />
-                                </Button>
-                                <div className="h-4 w-[1px] bg-border mx-1" />
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-8 w-8 p-0"
-                                    onClick={() => handleMoveGroup(activeTab, 'left')}
-                                    title="تحريك لليمين"
-                                    disabled={groups.findIndex(g => g.id === activeTab) === groups.length - 1}
-                                >
-                                    <ArrowRight className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-8 w-8 p-0"
-                                    onClick={() => handleMoveGroup(activeTab, 'right')}
-                                    title="تحريك لليسار"
-                                    disabled={groups.findIndex(g => g.id === activeTab) === 0}
-                                >
-                                    <ArrowLeft className="h-4 w-4" />
-                                </Button>
-                                <div className="h-4 w-[1px] bg-border mx-1" />
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-destructive h-8 w-8 p-0"
-                                    onClick={() => handleDeleteGroup(activeTab)}
-                                    title="حذف المجموعة"
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
+                                {canEdit && (
+                                    <>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-8 w-8 p-0"
+                                            onClick={() => handleSetDefault(activeTab)}
+                                            title="تعيين كمجموعة افتراضية"
+                                        >
+                                            <StarIcon
+                                                className={`h-4 w-4 ${groups.find(g => g.id === activeTab)?.is_default ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`}
+                                            />
+                                        </Button>
+                                        <div className="h-4 w-[1px] bg-border mx-1" />
+                                    </>
+                                )}
+                                {canEdit && (
+                                    <>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-8 w-8 p-0"
+                                            onClick={() => handleMoveGroup(activeTab, 'left')}
+                                            title="تحريك لليمين"
+                                            disabled={groups.findIndex(g => g.id === activeTab) === groups.length - 1}
+                                        >
+                                            <ArrowRight className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-8 w-8 p-0"
+                                            onClick={() => handleMoveGroup(activeTab, 'right')}
+                                            title="تحريك لليسار"
+                                            disabled={groups.findIndex(g => g.id === activeTab) === 0}
+                                        >
+                                            <ArrowLeft className="h-4 w-4" />
+                                        </Button>
+                                        <div className="h-4 w-[1px] bg-border mx-1" />
+                                    </>
+                                )}
+                                {canDelete && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-destructive h-8 w-8 p-0"
+                                        onClick={() => handleDeleteGroup(activeTab)}
+                                        title="حذف المجموعة"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                )}
                             </div>
                         )}
                     </div>
@@ -441,10 +465,12 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                                 </button>
                             ))}
                         </div>
-                        <Button onClick={() => openAddCandidate(activeTab === "all" ? null : activeTab)}>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add Candidate
-                        </Button>
+                        {canCreate && (
+                            <Button onClick={() => openAddCandidate(activeTab === "all" ? null : activeTab)}>
+                                <Plus className="mr-2 h-4 w-4" />
+                                Add Candidate
+                            </Button>
+                        )}
                     </div>
                 </div>
 
@@ -486,10 +512,12 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                                         )}
                                     </div>
                                     <div className="flex flex-col gap-1">
-                                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => openEditCandidate(candidate)} title="تعديل">
-                                            <Edit2 className="h-3 w-3" />
-                                        </Button>
-                                        {isArchived ? (
+                                        {canEdit && (
+                                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => openEditCandidate(candidate)} title="تعديل">
+                                                <Edit2 className="h-3 w-3" />
+                                            </Button>
+                                        )}
+                                        {canEdit && (isArchived ? (
                                             <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => handleRestore(candidate)} title="إعادة تفعيل">
                                                 <Undo2 className="h-3 w-3" />
                                             </Button>
@@ -497,10 +525,12 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                                             <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => openArchive(candidate)} title="أرشفة">
                                                 <Archive className="h-3 w-3" />
                                             </Button>
+                                        ))}
+                                        {canDelete && (
+                                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive" onClick={() => handleDeleteCandidate(candidate.id)} title="حذف">
+                                                <Trash2 className="h-3 w-3" />
+                                            </Button>
                                         )}
-                                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive" onClick={() => handleDeleteCandidate(candidate.id)} title="حذف">
-                                            <Trash2 className="h-3 w-3" />
-                                        </Button>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -537,19 +567,24 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                             <Label className="text-right pt-2">Image</Label>
                             <div className="col-span-3 space-y-2">
                                 <div
-                                    onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); }}
-                                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); }}
-                                    onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); }}
-                                    onDrop={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        setIsDragging(false);
-                                        if (!isUploading) handleDroppedFiles(e.dataTransfer.files);
-                                    }}
-                                    onClick={() => !isUploading && fileInputRef.current?.click()}
-                                    className={`flex items-center gap-3 rounded-md border-2 border-dashed p-3 cursor-pointer transition-colors ${
-                                        isDragging ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"
-                                    } ${isUploading ? "opacity-60 cursor-wait" : ""}`}
+                                    {...(canUploadImages ? {
+                                        onDragEnter: (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); },
+                                        onDragOver: (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); },
+                                        onDragLeave: (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); },
+                                        onDrop: (e: React.DragEvent) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setIsDragging(false);
+                                            if (!isUploading) handleDroppedFiles(e.dataTransfer.files);
+                                        },
+                                        onClick: () => !isUploading && fileInputRef.current?.click(),
+                                    } : {})}
+                                    className={`flex items-center gap-3 rounded-md border-2 border-dashed p-3 transition-colors ${
+                                        canUploadImages
+                                            ? `cursor-pointer ${isDragging ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"} ${isUploading ? "opacity-60 cursor-wait" : ""}`
+                                            : "border-border"
+                                    }`}
+                                    title={canUploadImages ? undefined : "رفع الصور متاح للمدير العام فقط"}
                                 >
                                     <div className="h-16 w-16 rounded-md bg-muted overflow-hidden flex-shrink-0 border">
                                         {cImage ? (
@@ -563,6 +598,7 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                                         type="file"
                                         accept="image/jpeg,image/png,image/webp"
                                         className="hidden"
+                                        disabled={!canUploadImages}
                                         onChange={(e) => {
                                             const file = e.target.files?.[0];
                                             if (file) startUpload([file]);
@@ -616,7 +652,9 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsCandidateModalOpen(false)}>Cancel</Button>
-                        <Button onClick={handleSaveCandidate}>Save</Button>
+                        <Button onClick={handleSaveCandidate} disabled={editingCandidate ? !canEdit : !canCreate}>
+                            Save
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -669,7 +707,7 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setArchiveTarget(null)}>إلغاء</Button>
-                        <Button onClick={handleSubmitArchive}>أرشفة</Button>
+                        <Button onClick={handleSubmitArchive} disabled={!canEdit}>أرشفة</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

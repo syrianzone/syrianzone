@@ -50,9 +50,17 @@ export function useRoutes(cityId: string) {
 
 // ─── Admin drafts ─────────────────────────────────────────────────────────────
 
-export function useAdminDrafts() {
+/**
+ * Pending route drafts for the moderation queue.
+ *
+ * `enabled` is passed in rather than hardcoded to true: the endpoint is tagged
+ * transit_admin:transit.review_drafts, so a transit.edit_routes-only operator
+ * must not fire a request that is guaranteed to 403 on mount.
+ */
+export function useAdminDrafts(enabled = true) {
   return useQuery({
     queryKey: ['admin-drafts'],
+    enabled,
     queryFn: () =>
       fetch(`${API()}/v1/admin/route-drafts`, {
         credentials: 'include',

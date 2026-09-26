@@ -257,17 +257,59 @@ Route::middleware('auth')->group(function () {
     Route::redirect('/admin/polls/{id}/edit', '/dashboard?edit-poll={id}', 301);
     Route::middleware('polls_admin')->group(function () {
         Route::prefix('api')->group(function () {
-            Route::post('/polls', [PollController::class, 'store']);
-            Route::put('/polls/{id}', [PollController::class, 'update']);
-            Route::delete('/polls/{id}', [PollController::class, 'destroy']);
+            Route::post('/polls', [PollController::class, 'store'])
+                ->middleware('polls_admin:polls.create');
+            Route::put('/polls/{id}', [PollController::class, 'update'])
+                ->middleware('polls_admin:polls.edit');
+            Route::delete('/polls/{id}', [PollController::class, 'destroy'])
+                ->middleware('polls_admin:polls.delete');
 
-            Route::apiResource('candidate-groups', \App\Http\Controllers\CandidateGroupController::class);
-            Route::post('/candidate-groups/reorder', [\App\Http\Controllers\CandidateGroupController::class, 'reorder']);
-            Route::post('/candidate-groups/{id}/default', [\App\Http\Controllers\CandidateGroupController::class, 'setDefault']);
+            // Candidates and candidate groups are the editable content of a
+            // poll. Creating them is part of building a poll, so it takes
+            // polls.create; changing them takes polls.edit; removing them takes
+            // polls.delete. That is what makes polls.create sufficient to
+            // assemble a poll and no more.
+            //
+            // These are spelled out rather than declared with apiResource
+            // because apiResource attaches one middleware string to the whole
+            // resource, and `any` here would let a create-only user delete.
+            $candidateGroup = \App\Http\Controllers\CandidateGroupController::class;
+            // Read-only, and tagged `any` to keep the previous breadth: any
+            // single polls capability could read these before, and reads are
+            // not the risk writes are. Only mutating actions are separated.
+            Route::get('/candidate-groups', [$candidateGroup, 'index'])
+                ->middleware('polls_admin:any');
+            Route::get('/candidate-groups/{id}', [$candidateGroup, 'show'])
+                ->middleware('polls_admin:any');
 
-            Route::apiResource('candidates', \App\Http\Controllers\CandidateController::class)->except(['index', 'show']);
-            Route::patch('/candidates/{id}/archive', [\App\Http\Controllers\CandidateController::class, 'archive']);
-            Route::patch('/candidates/{id}/restore', [\App\Http\Controllers\CandidateController::class, 'restore']);
+            Route::post('/candidate-groups', [$candidateGroup, 'store'])
+                ->middleware('polls_admin:polls.create');
+            Route::put('/candidate-groups/{id}', [$candidateGroup, 'update'])
+                ->middleware('polls_admin:polls.edit');
+            Route::patch('/candidate-groups/{id}', [$candidateGroup, 'update'])
+                ->middleware('polls_admin:polls.edit');
+            Route::delete('/candidate-groups/{id}', [$candidateGroup, 'destroy'])
+                ->middleware('polls_admin:polls.delete');
+
+            Route::post('/candidate-groups/reorder', [$candidateGroup, 'reorder'])
+                ->middleware('polls_admin:polls.edit');
+            Route::post('/candidate-groups/{id}/default', [$candidateGroup, 'setDefault'])
+                ->middleware('polls_admin:polls.edit');
+
+            $candidate = \App\Http\Controllers\CandidateController::class;
+            Route::post('/candidates', [$candidate, 'store'])
+                ->middleware('polls_admin:polls.create');
+            Route::put('/candidates/{id}', [$candidate, 'update'])
+                ->middleware('polls_admin:polls.edit');
+            Route::patch('/candidates/{id}', [$candidate, 'update'])
+                ->middleware('polls_admin:polls.edit');
+            Route::delete('/candidates/{id}', [$candidate, 'destroy'])
+                ->middleware('polls_admin:polls.delete');
+
+            Route::patch('/candidates/{id}/archive', [$candidate, 'archive'])
+                ->middleware('polls_admin:polls.edit');
+            Route::patch('/candidates/{id}/restore', [$candidate, 'restore'])
+                ->middleware('polls_admin:polls.edit');
         });
     });
 
@@ -290,29 +332,43 @@ Route::middleware('auth')->group(function () {
 
     // 2b. Hidden Places moderation (core admins, superadmins, places.* holders)
     Route::middleware('places_admin')->group(function () {
-        Route::get('/admin/places', [\App\Http\Controllers\PlaceAdminController::class, 'renderIndex']);
+        Route::get('/admin/places', [\App\Http\Controllers\PlaceAdminController::class, 'renderIndex'])
+            ->middleware('places_admin:any');
 
         Route::prefix('api/v1')->middleware('throttle:60,1')->group(function () {
-            Route::get('/admin/places', [\App\Http\Controllers\PlaceAdminController::class, 'index']);
-            Route::post('/admin/places/{id}/approve', [\App\Http\Controllers\PlaceAdminController::class, 'approve'])->whereNumber('id');
-            Route::post('/admin/places/{id}/reject', [\App\Http\Controllers\PlaceAdminController::class, 'reject'])->whereNumber('id');
-            Route::patch('/admin/places/{id}', [\App\Http\Controllers\PlaceAdminController::class, 'update'])->whereNumber('id');
-            Route::delete('/admin/places/{id}', [\App\Http\Controllers\PlaceAdminController::class, 'destroy'])->whereNumber('id');
-            Route::post('/admin/places/{id}/photos', [\App\Http\Controllers\PlaceAdminController::class, 'addPhoto'])->whereNumber('id');
-            Route::post('/admin/place-photos/{id}/rotate', [\App\Http\Controllers\PlaceAdminController::class, 'rotatePhoto'])->whereNumber('id');
-            Route::post('/admin/place-photos/{id}/replace', [\App\Http\Controllers\PlaceAdminController::class, 'replacePhoto'])->whereNumber('id');
-            Route::delete('/admin/place-photos/{id}', [\App\Http\Controllers\PlaceAdminController::class, 'deletePhoto'])->whereNumber('id');
+            Route::get('/admin/places', [\App\Http\Controllers\PlaceAdminController::class, 'index'])
+                ->middleware('places_admin:places.review');
+            Route::post('/admin/places/{id}/approve', [\App\Http\Controllers\PlaceAdminController::class, 'approve'])->whereNumber('id')
+                ->middleware('places_admin:places.approve');
+            Route::post('/admin/places/{id}/reject', [\App\Http\Controllers\PlaceAdminController::class, 'reject'])->whereNumber('id')
+                ->middleware('places_admin:places.approve');
+            Route::patch('/admin/places/{id}', [\App\Http\Controllers\PlaceAdminController::class, 'update'])->whereNumber('id')
+                ->middleware('places_admin:places.edit');
+            Route::delete('/admin/places/{id}', [\App\Http\Controllers\PlaceAdminController::class, 'destroy'])->whereNumber('id')
+                ->middleware('places_admin:places.delete');
+            // Adding a photo creates content on someone else's submission, so it
+            // is an edit of the place, not a photo-moderation action. Rotating,
+            // replacing and deleting operate on photos that already exist, which
+            // is what places.moderate_photos covers.
+            Route::post('/admin/places/{id}/photos', [\App\Http\Controllers\PlaceAdminController::class, 'addPhoto'])->whereNumber('id')
+                ->middleware('places_admin:places.edit');
+            Route::post('/admin/place-photos/{id}/rotate', [\App\Http\Controllers\PlaceAdminController::class, 'rotatePhoto'])->whereNumber('id')
+                ->middleware('places_admin:places.moderate_photos');
+            Route::post('/admin/place-photos/{id}/replace', [\App\Http\Controllers\PlaceAdminController::class, 'replacePhoto'])->whereNumber('id')
+                ->middleware('places_admin:places.moderate_photos');
+            Route::delete('/admin/place-photos/{id}', [\App\Http\Controllers\PlaceAdminController::class, 'deletePhoto'])->whereNumber('id')
+                ->middleware('places_admin:places.moderate_photos');
         });
     });
 
     // 3. Transit Admin Panel. The page shell needs any review capability;
     // mutating endpoints require the matching granular transit.* permission.
+    // Both group-level routes below are tagged `any` explicitly because the
+    // guard denies an untagged route rather than granting the whole module.
     Route::middleware('transit_admin')->group(function () {
         Route::get('/transit/admin', function () {
             return Inertia::render('Transit/admin/Index');
-        });
-
-        Route::post('/api/admin/users/{id}/toggle-ban', [DashboardController::class, 'toggleBan']);
+        })->middleware('transit_admin:any');
 
         Route::prefix('api/v1')->group(function () {
             Route::get('/admin/route-drafts', [\App\Http\Controllers\TransitAdminController::class, 'index'])
@@ -352,55 +408,100 @@ Route::middleware('auth')->group(function () {
         });
     });
 
+    // Banning a user is a dashboard action, not a transit one: it is called from
+    // resources/js/Pages/Dashboard/Index.tsx. It used to be declared inside the
+    // transit_admin group, which was both a misfiling and a hazard — that group
+    // gates by transit capability, so a user holding only `transit.review_drafts`
+    // reached a user-moderation endpoint, and saving it required the blanket
+    // `any` tag that ModuleCapabilityRoutesTest rightly rejects on a mutating
+    // route.
+    //
+    // There is no "ban users" capability in PermissionCatalogue, so the gate is
+    // DashboardController::toggleBan's own role check (admin / transit_admin /
+    // superadmin). Adding a real capability for it is a separate decision.
+    //
+    // No throttle added: this route had none before, and picking a limit is an
+    // operator decision rather than a side effect of moving it.
+    Route::post('/api/admin/users/{id}/toggle-ban', [DashboardController::class, 'toggleBan']);
+
     // 4. SyOfficial Admin Panel (accessible to core admins, syofficial_admin, and superadmins)
     Route::middleware('syofficial_admin')->group(function () {
-        Route::get('/admin/syofficial', [\App\Http\Controllers\SyOfficialAdminController::class, 'renderIndex']);
+        Route::get('/admin/syofficial', [\App\Http\Controllers\SyOfficialAdminController::class, 'renderIndex'])
+            ->middleware('syofficial_admin:any');
 
         Route::prefix('api/v1/admin/syofficial')->group(function () {
-            Route::post('/categories', [\App\Http\Controllers\SyOfficialAdminController::class, 'storeCategory']);
-            Route::put('/categories/{id}', [\App\Http\Controllers\SyOfficialAdminController::class, 'updateCategory']);
-            Route::delete('/categories/{id}', [\App\Http\Controllers\SyOfficialAdminController::class, 'destroyCategory']);
+            Route::post('/categories', [\App\Http\Controllers\SyOfficialAdminController::class, 'storeCategory'])
+                ->middleware('syofficial_admin:syofficial.create');
+            Route::put('/categories/{id}', [\App\Http\Controllers\SyOfficialAdminController::class, 'updateCategory'])
+                ->middleware('syofficial_admin:syofficial.edit');
+            // Cascades to every entity in the category, so it is gated on delete
+            // alone and not on any of the other four.
+            Route::delete('/categories/{id}', [\App\Http\Controllers\SyOfficialAdminController::class, 'destroyCategory'])
+                ->middleware('syofficial_admin:syofficial.delete');
 
-            Route::post('/entities', [\App\Http\Controllers\SyOfficialAdminController::class, 'storeEntity']);
-            Route::post('/entities/{id}', [\App\Http\Controllers\SyOfficialAdminController::class, 'updateEntity']);
-            Route::put('/entities/{id}', [\App\Http\Controllers\SyOfficialAdminController::class, 'updateEntity']);
-            Route::delete('/entities/{id}', [\App\Http\Controllers\SyOfficialAdminController::class, 'destroyEntity']);
+            Route::post('/entities', [\App\Http\Controllers\SyOfficialAdminController::class, 'storeEntity'])
+                ->middleware('syofficial_admin:syofficial.create');
+            Route::post('/entities/{id}', [\App\Http\Controllers\SyOfficialAdminController::class, 'updateEntity'])
+                ->middleware('syofficial_admin:syofficial.edit');
+            Route::put('/entities/{id}', [\App\Http\Controllers\SyOfficialAdminController::class, 'updateEntity'])
+                ->middleware('syofficial_admin:syofficial.edit');
+            Route::delete('/entities/{id}', [\App\Http\Controllers\SyOfficialAdminController::class, 'destroyEntity'])
+                ->middleware('syofficial_admin:syofficial.delete');
 
-            Route::post('/reorder/categories', [\App\Http\Controllers\SyOfficialAdminController::class, 'reorderCategories']);
-            Route::post('/reorder/entities', [\App\Http\Controllers\SyOfficialAdminController::class, 'reorderEntities']);
+            Route::post('/reorder/categories', [\App\Http\Controllers\SyOfficialAdminController::class, 'reorderCategories'])
+                ->middleware('syofficial_admin:syofficial.reorder');
+            Route::post('/reorder/entities', [\App\Http\Controllers\SyOfficialAdminController::class, 'reorderEntities'])
+                ->middleware('syofficial_admin:syofficial.reorder');
         });
     });
 
     // 5. GovApps Admin Panel
-    Route::middleware(\App\Http\Middleware\GovAppsAdmin::class)->group(function () {
-        Route::get('/admin/govapps', [\App\Http\Controllers\GovAppsAdminController::class, 'renderIndex']);
+    Route::middleware('govapps_admin')->group(function () {
+        Route::get('/admin/govapps', [\App\Http\Controllers\GovAppsAdminController::class, 'renderIndex'])
+            ->middleware('govapps_admin:any');
 
         Route::prefix('api/v1/admin/govapps')->group(function () {
-            Route::post('/', [\App\Http\Controllers\GovAppsAdminController::class, 'store']);
-            Route::post('/reorder', [\App\Http\Controllers\GovAppsAdminController::class, 'reorder']);
-            Route::post('/{id}', [\App\Http\Controllers\GovAppsAdminController::class, 'update']);
-            Route::put('/{id}', [\App\Http\Controllers\GovAppsAdminController::class, 'update']);
-            Route::delete('/{id}', [\App\Http\Controllers\GovAppsAdminController::class, 'destroy']);
+            Route::post('/', [\App\Http\Controllers\GovAppsAdminController::class, 'store'])
+                ->middleware('govapps_admin:govapps.create');
+            Route::post('/reorder', [\App\Http\Controllers\GovAppsAdminController::class, 'reorder'])
+                ->middleware('govapps_admin:govapps.reorder');
+            Route::post('/{id}', [\App\Http\Controllers\GovAppsAdminController::class, 'update'])
+                ->middleware('govapps_admin:govapps.edit');
+            Route::put('/{id}', [\App\Http\Controllers\GovAppsAdminController::class, 'update'])
+                ->middleware('govapps_admin:govapps.edit');
+            Route::delete('/{id}', [\App\Http\Controllers\GovAppsAdminController::class, 'destroy'])
+                ->middleware('govapps_admin:govapps.delete');
         });
     });
 
     // 6. Phonebook Admin Panel
     Route::middleware('phonebook_admin')->group(function () {
-        Route::get('/admin/phonebook', [\App\Http\Controllers\PhonebookAdminController::class, 'renderIndex']);
+        Route::get('/admin/phonebook', [\App\Http\Controllers\PhonebookAdminController::class, 'renderIndex'])
+            ->middleware('phonebook_admin:any');
 
         Route::prefix('api/v1/admin/phonebook')->group(function () {
-            Route::post('/categories', [\App\Http\Controllers\PhonebookAdminController::class, 'storeCategory']);
-            Route::put('/categories/{id}', [\App\Http\Controllers\PhonebookAdminController::class, 'updateCategory']);
-            Route::delete('/categories/{id}', [\App\Http\Controllers\PhonebookAdminController::class, 'destroyCategory']);
+            Route::post('/categories', [\App\Http\Controllers\PhonebookAdminController::class, 'storeCategory'])
+                ->middleware('phonebook_admin:phonebook.create');
+            Route::put('/categories/{id}', [\App\Http\Controllers\PhonebookAdminController::class, 'updateCategory'])
+                ->middleware('phonebook_admin:phonebook.edit');
+            Route::delete('/categories/{id}', [\App\Http\Controllers\PhonebookAdminController::class, 'destroyCategory'])
+                ->middleware('phonebook_admin:phonebook.delete');
 
-            Route::post('/entries', [\App\Http\Controllers\PhonebookAdminController::class, 'storeEntry']);
-            Route::post('/entries/{id}', [\App\Http\Controllers\PhonebookAdminController::class, 'updateEntry']);
-            Route::put('/entries/{id}', [\App\Http\Controllers\PhonebookAdminController::class, 'updateEntry']);
-            Route::post('/entries/{id}/toggle', [\App\Http\Controllers\PhonebookAdminController::class, 'toggleEntryActive']);
-            Route::delete('/entries/{id}', [\App\Http\Controllers\PhonebookAdminController::class, 'destroyEntry']);
+            Route::post('/entries', [\App\Http\Controllers\PhonebookAdminController::class, 'storeEntry'])
+                ->middleware('phonebook_admin:phonebook.create');
+            Route::post('/entries/{id}', [\App\Http\Controllers\PhonebookAdminController::class, 'updateEntry'])
+                ->middleware('phonebook_admin:phonebook.edit');
+            Route::put('/entries/{id}', [\App\Http\Controllers\PhonebookAdminController::class, 'updateEntry'])
+                ->middleware('phonebook_admin:phonebook.edit');
+            Route::post('/entries/{id}/toggle', [\App\Http\Controllers\PhonebookAdminController::class, 'toggleEntryActive'])
+                ->middleware('phonebook_admin:phonebook.toggle');
+            Route::delete('/entries/{id}', [\App\Http\Controllers\PhonebookAdminController::class, 'destroyEntry'])
+                ->middleware('phonebook_admin:phonebook.delete');
 
-            Route::post('/reorder/categories', [\App\Http\Controllers\PhonebookAdminController::class, 'reorderCategories']);
-            Route::post('/reorder/entries', [\App\Http\Controllers\PhonebookAdminController::class, 'reorderEntries']);
+            Route::post('/reorder/categories', [\App\Http\Controllers\PhonebookAdminController::class, 'reorderCategories'])
+                ->middleware('phonebook_admin:phonebook.reorder');
+            Route::post('/reorder/entries', [\App\Http\Controllers\PhonebookAdminController::class, 'reorderEntries'])
+                ->middleware('phonebook_admin:phonebook.reorder');
         });
     });
 });

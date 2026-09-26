@@ -40,7 +40,30 @@ Repo-wide styling and coding conventions. The most detailed normative reference 
 - **Pest** (`vendor/bin/pest`), RefreshDatabase auto-applied; sqlite :memory:, array cache/session drivers.
 - Lint/format with **Pint** (`vendor/bin/pint`).
 - **Never run Pint on `routes/web.php`.** Its `fully_qualified_strict_types` fixer strips the leading `\` from FQCNs, assuming a `use` import exists. That file has no namespace declaration, keeps `use` statements mid-file, and references several controllers that are never imported — so Pint rewrites `\App\Http\Controllers\PlaceAdminController` to `PlaceAdminController`, which PHP then resolves against the global namespace and fails to find. It surfaces as ~122 `ReflectionException: Class "...Controller" does not exist` test failures. Pint the app code and leave the route files alone.
+- **Do not run Pint on `bootstrap/app.php` either.** It is safe there, but Pint rewrites every inline FQCN into a new `use` import and realigns the whole alias table, so a one-line change to a middleware alias turns into a 40-line reformat that buries the real edit in review. Add the entry by hand and match the surrounding alignment.
+- Pint is **not** run in CI, and roughly 170 pre-existing files are not Pint-clean, so it is advisory. Do not reformat untouched files to "fix" a Pint run — keep the diff to what the change actually needs.
 - Feature suites cover Polls, Places, Voting API, Weather, Sitemap, Prayer, middleware, models, VotingService.
+
+## Admin route authorisation
+
+Admin panel groups are guarded by `ModuleCapabilityGuard`, which enforces **one
+capability per route**:
+
+- Every route inside a guarded group must name its capability, e.g.
+  `->middleware('polls_admin:polls.delete')`. A route with no tag is **denied**,
+  so a forgotten tag breaks a feature rather than silently over-granting.
+- `ModuleCapabilityGuard::ANY` means "any one capability in this module". Use it
+  only on page shells and read-only indexes, never on a mutating route.
+- The capability must belong to the middleware's own module, or the route is
+  locked out entirely.
+- Adding a capability id means adding it to `PermissionCatalogue` — the same list
+  the Filament user form renders. Never introduce a second vocabulary.
+- `ModuleCapabilityRoutesTest` asserts the route table matches all of the above,
+  so a typo fails the build instead of producing a route nobody can reach. Run
+  it after touching any admin group.
+- Role bypasses are resolved in `User::hasPermission()` (superadmin, the general
+  `admin` role, the per-module `*_admin` roles, and the `*` wildcard). The
+  middleware must not re-implement them.
 
 ## Commits
 

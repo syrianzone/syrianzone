@@ -2,37 +2,27 @@
 
 namespace App\Http\Middleware;
 
-use Closure;
-use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
-
-class PhonebookAdmin
+/**
+ * Phonebook directory admin.
+ *
+ * @see ModuleCapabilityGuard for why the whole group is no longer granted to
+ *      anyone holding a single capability.
+ */
+class PhonebookAdmin extends ModuleCapabilityGuard
 {
-    /**
-     * Handle an incoming request for Phonebook Admin panel & endpoints.
-     */
-    public function handle(Request $request, Closure $next): Response
+    public function alias(): string
     {
-        $user = $request->user();
+        return 'phonebook_admin';
+    }
 
-        if (!$user) {
-            return redirect()->route('login');
-        }
-
-        if (
-            $user->isSuperAdmin() ||
-            $user->role === 'admin' ||
-            $user->hasAnyPermission([
-                'phonebook.create',
-                'phonebook.edit',
-                'phonebook.toggle',
-                'phonebook.delete',
-                'phonebook.reorder'
-            ])
-        ) {
-            return $next($request);
-        }
-
-        abort(403, 'Unauthorized access to Phonebook Admin management.');
+    protected function capabilities(): array
+    {
+        return [
+            'phonebook.create',
+            'phonebook.edit',
+            'phonebook.toggle',
+            'phonebook.delete',
+            'phonebook.reorder',
+        ];
     }
 }

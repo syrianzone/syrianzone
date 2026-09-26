@@ -39,6 +39,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'phonebook_admin'  => \App\Http\Middleware\PhonebookAdmin::class,
             'places_admin'    => \App\Http\Middleware\PlacesAdmin::class,
             'polls_admin'     => \App\Http\Middleware\PollsAdmin::class,
+            // Previously the Gov Apps admin group referenced the class directly,
+            // which left it with no alias to pass a per-route capability through.
+            'govapps_admin'   => \App\Http\Middleware\GovAppsAdmin::class,
             'superadmin'      => \App\Http\Middleware\SuperAdmin::class,
         ]);
         $middleware->statefulApi();

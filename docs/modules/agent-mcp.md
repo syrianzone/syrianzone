@@ -101,10 +101,10 @@ Authorization: Bearer <token>
 
 ## 4. Agent permissions are stricter than dashboard permissions
 
-The `places_admin` middleware grants the **whole** places group to a caller
-holding **any one** places capability — a `places.review` user can approve,
-delete and moderate photos through the dashboard. An agent token does not get
-that blanket grant:
+A tool requires its capability specifically. The dashboard's admin panels now do
+the same — see [routes-api-map.md](../reference/routes-api-map.md) and
+`ModuleCapabilityGuard` — so the two surfaces agree, and the agent rules below
+are no longer the only place a distinction is drawn. What remains stricter:
 
 | Tool | Required capability |
 |---|---|

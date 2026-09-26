@@ -51,22 +51,38 @@ Generated from `routes/web.php` and `routes/api.php`. Grouped by feature area, m
 
 ### Admin moderation panels (role-gated)
 
+Every panel below is gated by a single per-route capability, not by module
+membership. `ModuleCapabilityGuard` (in `app/Http/Middleware/`) denies any
+route inside these groups that does not name a capability, so a capability such
+as `phonebook.reorder` no longer implies `phonebook.delete`. Page shells and
+read-only indexes are tagged `any`, meaning "any one capability in this module".
+Adding a route to one of these groups therefore requires choosing its capability;
+`ModuleCapabilityRoutesTest` fails the build if one is missing, is not a real
+capability, is used on the wrong module's middleware, or if `any` appears on a
+mutating route.
+
+Superadmin, the general `admin` role, and the per-module admin roles
+(`syofficial_admin`, `transit_admin`, `govapps_admin`, `phonebook_admin`,
+`places_admin`) bypass all of this via `User::hasPermission()`. Note that
+`polls` has no `polls_admin` role — only the middleware alias.
+
 | Area | Pages | API |
 |---|---|---|
-| Polls | `/dashboard` polls tab (inline create + edit; legacy `/admin/polls*` 301-redirects to dashboard) | `POST|PUT|DELETE /api/polls*` under `polls_admin`; candidate-groups apiResource (+reorder, setDefault); candidates apiResource (+archive/restore) |
-| Places | `/admin/places` (`places_admin`) | approve/reject/update/delete + photo add/rotate/replace/delete under `/api/v1/admin/place(s|-photos)` |
-| Transit | `/transit/admin` (`transit_admin`, per-action `transit.review_drafts|approve|reject|edit_routes` on mutating endpoints) | draft approve/reject; published-route CRUD incl. geojson, stops, logs, move, combine, split, status; My Maps import `POST /api/v1/admin/routes/import-preview` (review_drafts, 10/min) + `POST /api/v1/admin/routes/import-publish` (edit_routes, 30/min, `mode: draft\|direct`); `POST /api/admin/users/{id}/toggle-ban` |
+| Polls | `/dashboard` polls tab (inline create + edit; legacy `/admin/polls*` 301-redirects to dashboard) | `POST /api/polls` (create), `PUT /api/polls/{id}` (edit), `DELETE` (delete); candidate-groups read (`any`) + create/update/destroy + reorder/setDefault; candidates create/update/destroy + archive/restore |
+| Places | `/admin/places` (`places_admin:any`) | index (review), approve/reject (approve), update + addPhoto (edit), delete (delete), photo rotate/replace/delete (moderate_photos) under `/api/v1/admin/place(s|-photos)` |
+| Transit | `/transit/admin` (`transit_admin:any`; denial redirects to `/dashboard`) | draft approve/reject; published-route CRUD incl. geojson, stops, logs, move, combine, split, status; My Maps import `POST /api/v1/admin/routes/import-preview` (review_drafts, 10/min) + `POST /api/v1/admin/routes/import-publish` (edit_routes, 30/min, `mode: draft\|direct`). Governorate scoping is a second check, applied in `TransitAdminController` via `ChecksTransitScope` |
 | Guess Who | `/admin/guesswho` (`admin`; dashboard "من هو" link) | categories/characters CRUD under `/api/v1/admin/guesswho/*` |
 | Site popup | `/admin/site-popup` (`superadmin`) | `GET|PUT /api/v1/admin/site-popup` |
-| SyOfficial | Admin page | categories/entities CRUD + reorder under `/api/v1/admin/syofficial/*` |
-| Gov apps | Admin page | CRUD + reorder under `/api/v1/admin/govapps` |
-| Phonebook | Admin page | categories/entries CRUD, toggle active, reorder under `/api/v1/admin/phonebook` |
+| SyOfficial | `/admin/syofficial` (`syofficial_admin:any`) | categories/entities create (create), update (edit), delete (delete), reorder (reorder) under `/api/v1/admin/syofficial/*`. Deleting a category cascades to its entities |
+| Gov apps | `/admin/govapps` (`govapps_admin:any`) | create (create), update (edit), destroy (delete, soft), reorder (reorder) under `/api/v1/admin/govapps` |
+| Phonebook | `/admin/phonebook` (`phonebook_admin:any`) | categories/entries create (create), update (edit), toggle active (toggle), destroy (delete, hard), reorder (reorder) under `/api/v1/admin/phonebook` |
+| User ban | dashboard user list | `POST /api/admin/users/{id}/toggle-ban` — authorised by a role check inside `DashboardController::toggleBan`, not by a capability. It was previously misfiled inside the `transit_admin` group |
 
 ### Agent / MCP surface (`routes/ai.php`, bearer token — no session, no CSRF)
 
 | Route | Auth | Notes |
 |---|---|---|
-| `POST|GET|DELETE /mcp/admin` | `auth:sanctum` + `RequireApiToken` + `throttle:mcp` | Only registered when `MCP_ENABLED=true`; session cookies are refused. Effective permission = user's live permission AND token abilities. Tools: places moderation (read + approve/reject/edit/photos/delete). Tokens minted at `/admin/api-tokens` (dashboard sidebar, superadmin). See [modules/agent-mcp.md](../modules/agent-mcp.md) |
+| `POST|GET|DELETE /mcp/admin` | `auth:sanctum` + `RequireApiToken` + `throttle:mcp` | Only registered when `MCP_ENABLED=true`; session cookies are refused. Effective permission = user's live permission AND token abilities. Tools: places moderation, the SyOfficial directory, government apps, and transit governance (37 tools; combine/split stay dashboard-only). Tokens minted at `/admin/api-tokens` (dashboard sidebar, superadmin). See [modules/agent-mcp.md](../modules/agent-mcp.md) |
 
 ## JSON API (`api.php`)
 

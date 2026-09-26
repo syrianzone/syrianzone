@@ -2,31 +2,54 @@
 
 namespace App\Http\Middleware;
 
-use Closure;
-use Illuminate\Http\Request;
-
-class TransitAdmin
+/**
+ * Transit admin: draft review, approval, rejection, route edits, route deletion.
+ *
+ * Converted to the shared guard so there is one enforcement semantic across all
+ * six admin modules. Behaviour is unchanged: the two group-level routes that
+ * used to rely on the blanket fallback — the page shell and the user-ban
+ * endpoint — are now tagged `any` explicitly, and the per-route tags below were
+ * already correct.
+ *
+ * Note the governorate dimension: passing a capability here answers "may this
+ * user act on the transit module at all". Whether they may act on a *specific*
+ * governorate is a second question, answered in TransitAdminController via
+ * ChecksTransitScope, which every mutating handler calls with its own capability.
+ * MCP tools resolve the target row and then check the same scope.
+ */
+class TransitAdmin extends ModuleCapabilityGuard
 {
-    /**
-     * @param string ...$perms When given, require any of these specific
-     * transit.* capabilities (e.g. 'transit_admin:transit.approve').
-     * When omitted, require any review capability (view-level access).
-     */
-    public function handle(Request $request, Closure $next, string ...$perms)
+    public function alias(): string
     {
-        $user = $request->user();
+        return 'transit_admin';
+    }
 
-        $required = $perms !== []
-            ? $perms
-            : ['transit.review_drafts', 'transit.approve', 'transit.reject', 'transit.edit_routes', 'transit.delete_routes'];
+    protected function capabilities(): array
+    {
+        return [
+            'transit.review_drafts',
+            'transit.approve',
+            'transit.reject',
+            'transit.edit_routes',
+            'transit.delete_routes',
+        ];
+    }
 
-        if (!$user || !$user->hasAnyPermission($required)) {
-            if ($request->expectsJson() || $request->is('api/*')) {
-                return response()->json(['message' => 'Unauthorized'], 403);
-            }
-            return redirect('/dashboard');
-        }
+    /**
+     * Bounce to the dashboard rather than rendering a 403.
+     *
+     * This is the behaviour TransitAdmin had before it moved onto the shared
+     * guard, and TransitRedirectTest pins it. The transit page is one click from
+     * the main navigation, so a user who cannot moderate should land somewhere
+     * useful rather than on an error page. API calls still get a JSON 403.
+     */
+    protected function forbiddenRedirect(): ?string
+    {
+        return '/dashboard';
+    }
 
-        return $next($request);
+    protected function guestRedirect(): ?string
+    {
+        return '/dashboard';
     }
 }

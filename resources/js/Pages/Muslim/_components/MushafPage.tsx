@@ -222,23 +222,20 @@ export default function MushafPage({ data, currentAyahKey, onSelectAyah, maxHeig
                                 width={markerW[seg.digits.length] ?? data.fontSize * 2.4}
                               />
                               {active && onToggleBookmark && (
-                                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-[calc(100%+6px)] z-50">
-                                  <div className="relative">
-                                    <Button
-                                      variant="secondary"
-                                      size="icon"
-                                      className="h-10 w-10 rounded-full shadow-lg border border-border bg-card/95 backdrop-blur hover:bg-muted"
-                                      title={saved ? 'إزالة العلامة' : 'إضافة علامة'}
-                                      disabled={bookmarkBusy}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        onToggleBookmark();
-                                      }}
-                                    >
-                                      {saved ? <BookmarkCheck className="h-5 w-5 text-primary" /> : <Bookmark className="h-5 w-5" />}
-                                    </Button>
-                                    <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 border-x-[6px] border-x-transparent border-t-[6px] border-t-card drop-shadow-sm" />
-                                  </div>
+                                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50">
+                                  <Button
+                                    variant="secondary"
+                                    size="icon"
+                                    className="h-10 w-10 rounded-full shadow-lg border border-border bg-card/95 backdrop-blur hover:bg-muted"
+                                    title={saved ? 'إزالة العلامة' : 'إضافة علامة'}
+                                    disabled={bookmarkBusy}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onToggleBookmark();
+                                    }}
+                                  >
+                                    {saved ? <BookmarkCheck className="h-5 w-5 text-primary" /> : <Bookmark className="h-5 w-5" />}
+                                  </Button>
                                 </div>
                               )}
                             </span>

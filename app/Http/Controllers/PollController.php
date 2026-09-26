@@ -36,9 +36,13 @@ class PollController extends Controller
      * polls.edit rather than on a role — which meant a capability-only staff
      * account was shown a polls tab and then an active-only list.
      *
-     * Note this governs the *poll*, not the *candidate*. `show()` filters
-     * archived candidates on its own `include_archived` flag and does not call
-     * this; see the note there.
+     * This governs the *poll* list, in both renderIndex() and index(). It says
+     * nothing about *candidates*: show() filters archived candidates on its own
+     * `include_archived` flag, and deliberately does not consult this. Archived
+     * candidates are already public — the guest-accessible
+     * /api/polls/{slug}/leaderboard?status=former returns exactly the same rows —
+     * so that flag is a rendering convenience, not a moderation boundary, and
+     * gating it here would hide nothing.
      */
     private function canViewInactive(Request $request): bool
     {
@@ -122,7 +126,12 @@ class PollController extends Controller
 
     public function index(Request $request)
     {
-        return $request->user() ? Poll::all() : Poll::where('is_active', true)->get();
+        // Same gate as renderIndex(). This was `$request->user() ? Poll::all() :`,
+        // i.e. any signed-in account saw polls that had not launched, while the
+        // page at /polls showed them only to a polls editor. Two representations
+        // of one list, disagreeing. Nothing in the app called it, but the
+        // capability should decide the same way wherever the list is served.
+        return $this->canViewInactive($request) ? Poll::all() : Poll::where('is_active', true)->get();
     }
 
     public function store(Request $request)

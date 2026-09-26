@@ -78,7 +78,8 @@ test('can show poll by id', function () {
 });
 
 test('authenticated user can create poll', function () {
-    $this->actingAs(User::factory()->create())
+    // create poll is gated on polls.create by its route, so grant exactly that.
+    $this->actingAs(User::factory()->withPermissions(['polls.create'])->create())
         ->postJson('/api/polls', ['title' => 'New Poll', 'slug' => 'new-poll'])
         ->assertCreated()
         ->assertJsonPath('slug', 'new-poll');
@@ -94,7 +95,8 @@ test('unauthenticated user cannot create poll', function () {
 test('authenticated user can update poll', function () {
     $poll = Poll::factory()->create();
 
-    $this->actingAs(User::factory()->create())
+    // update poll is gated on polls.edit by its route, so grant exactly that.
+    $this->actingAs(User::factory()->withPermissions(['polls.edit'])->create())
         ->putJson("/api/polls/{$poll->id}", ['title' => 'Updated'])
         ->assertOk()
         ->assertJsonPath('title', 'Updated');
@@ -103,7 +105,8 @@ test('authenticated user can update poll', function () {
 test('authenticated user can delete poll', function () {
     $poll = Poll::factory()->create();
 
-    $this->actingAs(User::factory()->create())
+    // delete poll is gated on polls.delete by its route, so grant exactly that.
+    $this->actingAs(User::factory()->withPermissions(['polls.delete'])->create())
         ->deleteJson("/api/polls/{$poll->id}")
         ->assertNoContent();
 

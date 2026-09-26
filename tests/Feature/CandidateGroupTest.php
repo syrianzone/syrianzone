@@ -8,7 +8,8 @@ test('can list groups for poll', function () {
     $poll = Poll::factory()->create();
     CandidateGroup::factory()->count(3)->create(['poll_id' => $poll->id]);
 
-    $this->actingAs(User::factory()->create())
+    // list groups is gated on polls.create by its route, so grant exactly that.
+    $this->actingAs(User::factory()->withPermissions(['polls.create'])->create())
         ->getJson("/api/candidate-groups?poll_id={$poll->id}")
         ->assertOk()
         ->assertJsonCount(3);
@@ -17,7 +18,8 @@ test('can list groups for poll', function () {
 test('can create group', function () {
     $poll = Poll::factory()->create();
 
-    $this->actingAs(User::factory()->create())
+    // create group is gated on polls.create by its route, so grant exactly that.
+    $this->actingAs(User::factory()->withPermissions(['polls.create'])->create())
         ->postJson('/api/candidate-groups', ['poll_id' => $poll->id, 'name' => 'Ministers'])
         ->assertCreated()
         ->assertJsonPath('name', 'Ministers');
@@ -26,7 +28,8 @@ test('can create group', function () {
 test('can show group', function () {
     $group = CandidateGroup::factory()->create();
 
-    $this->actingAs(User::factory()->create())
+    // show group is gated on polls.create by its route, so grant exactly that.
+    $this->actingAs(User::factory()->withPermissions(['polls.create'])->create())
         ->getJson("/api/candidate-groups/{$group->id}")
         ->assertOk()
         ->assertJsonPath('id', $group->id);
@@ -35,7 +38,8 @@ test('can show group', function () {
 test('can update group', function () {
     $group = CandidateGroup::factory()->create();
 
-    $this->actingAs(User::factory()->create())
+    // update group is gated on polls.edit by its route, so grant exactly that.
+    $this->actingAs(User::factory()->withPermissions(['polls.edit'])->create())
         ->putJson("/api/candidate-groups/{$group->id}", ['name' => 'Governors'])
         ->assertOk()
         ->assertJsonPath('name', 'Governors');
@@ -44,7 +48,8 @@ test('can update group', function () {
 test('can delete group', function () {
     $group = CandidateGroup::factory()->create();
 
-    $this->actingAs(User::factory()->create())
+    // delete group is gated on polls.delete by its route, so grant exactly that.
+    $this->actingAs(User::factory()->withPermissions(['polls.delete'])->create())
         ->deleteJson("/api/candidate-groups/{$group->id}")
         ->assertOk();
 
@@ -56,7 +61,8 @@ test('can reorder groups', function () {
     $g1 = CandidateGroup::factory()->create(['poll_id' => $poll->id, 'sort_order' => 0]);
     $g2 = CandidateGroup::factory()->create(['poll_id' => $poll->id, 'sort_order' => 1]);
 
-    $this->actingAs(User::factory()->create())
+    // reorder groups is gated on polls.edit by its route, so grant exactly that.
+    $this->actingAs(User::factory()->withPermissions(['polls.edit'])->create())
         ->postJson('/api/candidate-groups/reorder', [
             'groups' => [
                 ['id' => $g1->id, 'sort_order' => 1],
@@ -73,7 +79,8 @@ test('can set default group', function () {
     $g1 = CandidateGroup::factory()->create(['poll_id' => $poll->id, 'is_default' => true]);
     $g2 = CandidateGroup::factory()->create(['poll_id' => $poll->id, 'is_default' => false]);
 
-    $this->actingAs(User::factory()->create())
+    // set default group is gated on polls.edit by its route, so grant exactly that.
+    $this->actingAs(User::factory()->withPermissions(['polls.edit'])->create())
         ->postJson("/api/candidate-groups/{$g2->id}/default")
         ->assertOk();
 

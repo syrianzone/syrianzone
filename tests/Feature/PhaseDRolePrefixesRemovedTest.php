@@ -154,3 +154,34 @@ it('refuses a module role at the admin API, which mints capability-backed users'
     expect($created->role)->toBe('user')
         ->and($created->effectivePermissions())->toEqual(PermissionCatalogue::all());
 });
+
+// ─── The test factory must not mint staff by default ────────────────────────
+
+it('does not mint a staff account from the bare factory', function () {
+    // Regression guard for a whole class of vacuous test. UserFactory defaulted
+    // to role 'admin', so every bare User::factory()->create() was a
+    // full-capability account through the isAdmin() short-circuit. A test
+    // asserting that a capability-gated route admits its caller then passed for
+    // the wrong reason — it would have passed with the capability check deleted.
+    //
+    // Fourteen tests across CandidateTest, CandidateGroupTest and PollTest were
+    // passing that way and now name the capability their route requires.
+    $user = User::factory()->create();
+
+    expect($user->role)->toBe('user')
+        ->and($user->permissions)->toBe([])
+        ->and($user->effectivePermissions())->toBe([])
+        ->and($user->isAdmin())->toBeFalse()
+        ->and($user->isSuperAdmin())->toBeFalse();
+});
+
+it('still offers explicit states for the accounts tests actually need', function () {
+    // The fix is not "the factory cannot make staff" — it is "staff is named at
+    // the call site". These are the states that replaced the old default.
+    expect(User::factory()->superadmin()->create()->isSuperAdmin())->toBeTrue()
+        ->and(User::factory()->admin()->create()->isAdmin())->toBeTrue()
+        ->and(User::factory()->module('transit')->create()->effectivePermissions())
+        ->toBe(PermissionCatalogue::forModule('transit'))
+        ->and(User::factory()->withPermissions(['polls.edit'])->create()->hasPermission('polls.edit'))
+        ->toBeTrue();
+});

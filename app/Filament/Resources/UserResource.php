@@ -45,15 +45,19 @@ class UserResource extends Resource
      */
     public static function roleOptions(): array
     {
+        // Phase B: the six per-module roles are gone from the form. They used to
+        // imply a whole module through User::ROLE_MODULE_PREFIXES, which made a
+        // role inseparable from a fixed bundle of capabilities — the opposite of
+        // what per-user grants are for. Access is now expressed by ticking
+        // capabilities below; the role only distinguishes staff from community.
+        //
+        // `admin` is retained deliberately as a deprecated alias: it still
+        // resolves the whole catalogue via User::isAdmin(), and Phase G removes
+        // it once no account depends on it. New accounts are created as `user`
+        // with explicit capabilities (AdminUserController), not as `admin`.
         return [
             'superadmin' => 'مدير عام (وصول كامل غير مقيد)',
-            'admin' => 'مشرف (أساسي) — كل الصلاحيات',
-            'transit_admin' => 'مشرف نقل',
-            'syofficial_admin' => 'مشرف الحسابات الرسمية',
-            'govapps_admin' => 'مشرف التطبيقات الحكومية',
-            'phonebook_admin' => 'مشرف دليل الهاتف',
-            'places_admin' => 'مشرف مشوار',
-            'users_admin' => 'مشرف المستخدمين',
+            'admin' => 'مشرف (قديم) — كل الصلاحيات، يُستبدل بمنح الصلاحيات مباشرة',
             'user' => 'مستخدم عادي',
         ];
     }
@@ -216,7 +220,7 @@ class UserResource extends Resource
                                         ->multiple()
                                         ->searchable()
                                         ->options(fn () => City::query()->orderBy('name_ar')->pluck('name_ar', 'id')->all())
-                                        ->visible(fn (Get $get) => filled($get('perm_transit')) || $get('role') === 'transit_admin');
+                                        ->visible(fn (Get $get) => filled($get('perm_transit')));
                                 }
 
                                 return Section::make($meta['label'])
@@ -247,12 +251,6 @@ class UserResource extends Resource
                     ->color(fn (string $state): string => match ($state) {
                         'superadmin' => 'danger',
                         'admin' => 'warning',
-                        'transit_admin' => 'success',
-                        'syofficial_admin' => 'success',
-                        'govapps_admin' => 'success',
-                        'phonebook_admin' => 'success',
-                        'places_admin' => 'success',
-                        'users_admin' => 'success',
                         'user' => 'info',
                         default => 'gray',
                     })

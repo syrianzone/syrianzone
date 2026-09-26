@@ -87,7 +87,9 @@ class User extends Authenticatable implements FilamentUser
             return true;
         }
 
-        $prefix = self::ROLE_MODULE_PREFIXES[$this->role] ?? null;
+        // Cast, because a null role would index the array with null, which is
+        // deprecated in PHP 8.1+ and is not suppressed by `?? null`.
+        $prefix = self::ROLE_MODULE_PREFIXES[(string) $this->role] ?? null;
 
         if ($prefix !== null && str_starts_with($permission, $prefix)) {
             return true;
@@ -116,7 +118,9 @@ class User extends Authenticatable implements FilamentUser
             return $catalogue;
         }
 
-        $prefix = self::ROLE_MODULE_PREFIXES[$this->role] ?? null;
+        // Cast, because a null role would index the array with null, which is
+        // deprecated in PHP 8.1+ and is not suppressed by `?? null`.
+        $prefix = self::ROLE_MODULE_PREFIXES[(string) $this->role] ?? null;
 
         $granted = $this->permissions ?? [];
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -14,6 +15,18 @@ class AdminUserController extends Controller
         return User::select('id', 'name', 'email', 'role', 'created_at')->get();
     }
 
+    /**
+     * Mint a staff account.
+     *
+     * This used to set `role => 'admin'` and nothing else, relying on
+     * User::isAdmin() short-circuiting every permission check. That made the
+     * account all-powerful by role and impossible to scope, which is the thing
+     * the move to capabilities is undoing. Access is now written explicitly.
+     *
+     * The default is still the whole catalogue, so a newly minted account has
+     * exactly the access it had before. Trim it per user afterwards — that is
+     * the intended workflow now, and the Filament user form is where it happens.
+     */
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -25,7 +38,8 @@ class AdminUserController extends Controller
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make(Str::random(16)),
-            'role' => 'admin',
+            'role' => 'user',
+            'permissions' => PermissionCatalogue::all(),
         ]), 201);
     }
 
@@ -38,6 +52,7 @@ class AdminUserController extends Controller
         }
 
         $user->delete();
+
         return response()->json(['message' => 'User deleted']);
     }
 }

@@ -5,7 +5,13 @@ import { usePage, router } from '@inertiajs/react';
 import { Shield, User, Bus, Settings2, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-// Mirrors AutoLoginDevUser::DEV_ROLES; dev-only.
+// Preset identities, mirrored from AutoLoginDevUser::DEV_USERS; dev-only.
+//
+// These are NOT users.role values any more. Each preset is a plain `user`
+// account holding an explicit capability list, named after the module it
+// previews — see AutoLoginDevUser. The names are kept because they are the
+// switcher's vocabulary, and because a module preset is still the most useful
+// thing to log in as when working on that panel.
 const ROLE_META: Record<string, { label: string; icon: React.ComponentType<{ className?: string }> }> = {
     user:              { label: 'مستخدم (User)',                    icon: User },
     transit_admin:     { label: 'مشرف تنقل (Transit)',               icon: Bus },
@@ -13,6 +19,7 @@ const ROLE_META: Record<string, { label: string; icon: React.ComponentType<{ cla
     govapps_admin:     { label: 'مشرف التطبيقات الحكومية',          icon: Settings2 },
     phonebook_admin:   { label: 'مشرف دليل الهاتف',                 icon: Settings2 },
     places_admin:      { label: 'مشرف مشوار',                       icon: Settings2 },
+    users_admin:       { label: 'مشرف المستخدمين',                  icon: Settings2 },
     admin:             { label: 'مدير (Admin)',                     icon: Settings2 },
     superadmin:        { label: 'مدير عام (Superadmin)',            icon: Shield },
 };

@@ -97,18 +97,34 @@ test('a module role plus an explicit grant elsewhere unions both', function () {
         ->and($user->hasPermission('polls.delete'))->toBeFalse();
 });
 
-test('the Filament role select can assign every role the model knows about', function () {
-    // Guards the original bug: phonebook_admin existed in User but had no entry
-    // in the select, so it was unassignable. Any role the model recognises must
-    // be offered here.
+test('the Filament role select offers exactly the roles that still mean something', function () {
+    // This used to assert the select and User::moduleImplyingRoles() agreed,
+    // which guarded a real bug: phonebook_admin existed on the model but had no
+    // entry in the select, so it was unassignable.
+    //
+    // Phase B inverts the relationship. The six module roles are no longer
+    // offered, because they no longer confer access — User::ROLE_MODULE_PREFIXES
+    // is what gave them meaning, and Phase D removes it. Keeping them
+    // selectable would produce accounts whose capabilities silently depend on a
+    // table that is on its way out. Access is now expressed by ticking
+    // capabilities in the same form.
+    //
+    // `admin` stays as a deprecated alias (Phase G removes it), and `user` is the
+    // only other value, so this is the complete set.
     $offered = array_keys(UserResource::roleOptions());
 
-    $recognised = array_merge(
-        ['superadmin', 'admin', 'user'],
-        array_keys(User::moduleImplyingRoles()),
-    );
+    expect($offered)->toEqualCanonicalizing(['superadmin', 'admin', 'user'])
+        ->and($offered)->not->toContain('places_admin', 'phonebook_admin', 'transit_admin');
+});
 
-    expect($offered)->toEqualCanonicalizing($recognised);
+test('no role outside superadmin, admin and user is assignable', function () {
+    // The inverse, so a future edit that re-adds a module role to the select
+    // fails here rather than shipping an account that depends on a role prefix.
+    $assignable = array_keys(UserResource::roleOptions());
+
+    foreach (User::moduleImplyingRoles() as $moduleRole => $prefix) {
+        expect($assignable)->not->toContain($moduleRole);
+    }
 });
 
 test('dev impersonation covers every assignable role', function () {

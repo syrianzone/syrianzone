@@ -7,9 +7,12 @@
  * Inertia props, so they read `auth.user.effective_permissions` (resolved
  * server-side by `User::effectivePermissions()`) and use these pure helpers.
  *
- * Always check capabilities, never `role === 'admin'`: a module role holds its
- * whole module implicitly with an empty `permissions` array, and a plain user
- * can hold explicit grants, so a role-string check hides admin panels from both.
+ * Always check capabilities, never a role string. A `user` can hold explicit
+ * grants, and the module roles that used to imply a whole bundle
+ * (transit_admin, govapps_admin, ...) no longer grant anything at all, so a
+ * role check hides panels from the first group and offers controls that 403 for
+ * the second. `permissions` is the only thing that grants access, apart from
+ * superadmin and the deprecated `admin` alias.
  */
 export type EffectivePermissions = string[] | null | undefined;
 

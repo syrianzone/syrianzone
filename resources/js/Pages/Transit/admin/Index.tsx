@@ -168,8 +168,12 @@ function TransitAdminPageContent() {
   const visibleCities = scopeRestricted ? cities.filter(c => allowedCities!.includes(c.id)) : cities
   const cityLabel = (id?: string | null) => cities.find(c => c.id === id)?.nameAr ?? id ?? ''
   const cityInScope = (cityId?: string | null) => allowedCities === null || (!!cityId && allowedCities.includes(cityId))
-  const isAdminRole = user?.role === 'admin' || user?.role === 'superadmin' || user?.role === 'transit_admin'
-  const canStudioEdit = (cityId?: string | null) => cityInScope(cityId) && (isAdminRole || canInCity('transit.edit_routes', cityId))
+  // transit.edit_routes is the whole test. The role list this replaced included
+  // transit_admin, which stopped granting anything when the role prefixes were
+  // removed — so a transit_admin account was offered studio edit controls that
+  // the server refuses. Server side this is the same capability, checked by
+  // TransitStudioController::canEditDraft() plus the governorate scope.
+  const canStudioEdit = (cityId?: string | null) => cityInScope(cityId) && canInCity('transit.edit_routes', cityId)
 
   const [isCombineModalOpen, setIsCombineModalOpen] = useState(false)
   const [combineCityId, setCombineCityId] = useState('')

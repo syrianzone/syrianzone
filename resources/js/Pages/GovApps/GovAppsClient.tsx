@@ -4,6 +4,7 @@ import { GovApp } from './types';
 import { Card, CardContent } from "@/components/ui/card";
 import { Smartphone, Globe, Pencil, Settings } from "lucide-react";
 import { usePage } from '@inertiajs/react';
+import { canAny, canModule } from '@/Lib/permissions'
 
 function AndroidIcon({ className }: { className?: string }) {
     return (
@@ -69,14 +70,21 @@ function DescriptionText({ description }: { description: string }) {
 
 export default function GovAppsClient({ initialData }: GovAppsClientProps) {
     const { auth } = usePage().props as any;
-    const userRole = auth?.user?.role;
-    const isSuperAdmin = userRole === 'superadmin' || userRole === 'admin' || userRole === 'govapps_admin';
+    const perms = auth?.user?.effective_permissions;
+    // Gated per action, matching the route each link opens. This used to test
+    // three role strings including govapps_admin — a role that stopped granting
+    // anything when the role prefixes were removed, so a govapps_admin account
+    // was offered an edit control that 403s.
+    //   panel link  -> govapps_admin:any
+    //   edit pencil -> govapps.edit (the save it leads to)
+    const canOpenPanel = canModule(perms, 'govapps');
+    const canEditEntries = canAny(perms, 'govapps.edit');
 
     return (
         <div className="min-h-screen bg-background" dir="rtl">
             <section className="bg-card py-10 shadow-sm border-b border-border">
                 <div className="container mx-auto px-4 text-center max-w-4xl">
-                    {isSuperAdmin && (
+                    {canOpenPanel && (
                         <div className="mb-4 flex justify-center">
                             <a
                                 href="/admin/govapps"
@@ -108,7 +116,7 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
                                 className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card/90 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
                             >
                                 <div className="relative aspect-square w-full overflow-hidden bg-muted/40">
-                                    {isSuperAdmin && (
+                                    {canEditEntries && (
                                         <a
                                             href={`/admin/govapps?edit=${app.id}`}
                                             className="absolute top-2 start-2 z-10 p-1.5 rounded-lg bg-background/90 hover:bg-primary hover:text-primary-foreground text-foreground backdrop-blur-md border border-border/70 shadow-md transition-all duration-200 opacity-90 hover:opacity-100 hover:scale-110 flex items-center gap-1 text-xs font-bold"

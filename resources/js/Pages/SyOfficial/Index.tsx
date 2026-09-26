@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/Components/ui/badge";
 import MainLayout from '@/Layouts/MainLayout';
 import { Head, usePage } from '@inertiajs/react';
+import { canAny, canModule } from '@/Lib/permissions'
 
 const R2_BASE = 'https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/syofficial/entities/';
 
@@ -236,8 +237,15 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
     }, [initialData, searchTerm, currentCategory]);
 
     const { auth } = usePage().props as any;
-    const userRole = auth?.user?.role;
-    const isSuperAdmin = userRole === 'superadmin' || userRole === 'admin' || userRole === 'syofficial_admin';
+    const perms = auth?.user?.effective_permissions;
+    // Gated per action, matching the route each link opens. This used to test
+    // three role strings including syofficial_admin — a role that stopped
+    // granting anything when the role prefixes were removed, so a
+    // syofficial_admin account was shown edit controls that all 403.
+    //   panel link   -> syofficial_admin:any
+    //   edit pencil  -> syofficial.edit (the save it leads to)
+    const canOpenPanel = canModule(perms, 'syofficial');
+    const canEditEntries = canAny(perms, 'syofficial.edit');
 
     const groupedData = useMemo(() => {
         if (currentCategory !== 'all') {
@@ -288,7 +296,7 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                         <h1 className="text-3xl md:text-5xl font-black text-foreground tracking-tight leading-tight">
                             {t.title}
                         </h1>
-                        {isSuperAdmin && (
+                        {canOpenPanel && (
                             <a
                                 href="/admin/syofficial"
                                 className="p-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-md flex items-center gap-1 text-xs font-bold shrink-0"
@@ -437,7 +445,7 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                                                     className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card/90 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
                                                 >
                                                     <div className="relative aspect-square w-full overflow-hidden bg-muted/40">
-                                                        {isSuperAdmin && (
+                                                        {canEditEntries && (
                                                             <a
                                                                 href={`/admin/syofficial?edit=${item.id}`}
                                                                 className="absolute top-2 start-2 z-10 p-1.5 rounded-lg bg-background/90 hover:bg-primary hover:text-primary-foreground text-foreground backdrop-blur-md border border-border/70 shadow-md transition-all duration-200 opacity-90 hover:opacity-100 hover:scale-110 flex items-center gap-1 text-xs font-bold"
@@ -505,7 +513,7 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                                             <TableHead className="text-start font-bold">{t.tableCategory}</TableHead>
                                             <TableHead className="text-start font-bold">{t.tableDesc}</TableHead>
                                             <TableHead className="text-start font-bold">{t.tableSocial}</TableHead>
-                                            {isSuperAdmin && <TableHead className="text-end font-bold">إجراءات الإدارة</TableHead>}
+                                            {canEditEntries && <TableHead className="text-end font-bold">إجراءات الإدارة</TableHead>}
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -554,7 +562,7 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                                                             ))}
                                                     </div>
                                                 </TableCell>
-                                                {isSuperAdmin && (
+                                                {canEditEntries && (
                                                     <TableCell className="text-end">
                                                         <a
                                                             href={`/admin/syofficial?edit=${item.id}`}

@@ -244,25 +244,36 @@ export default function Dashboard({
   allDrafts = [],
   publishedRoutes = []
 }: DashboardProps) {
-  const [activeTab, setActiveTab] = useState<'profile' | 'submissions' | 'polls'>(() => {
-    // ?tab=profile deep link from the navbar dropdown; profile is the only tab every role has
-    if (new URLSearchParams(window.location.search).get('tab') === 'profile') return 'profile';
-    return role === 'user' ? 'submissions' : (role === 'transit_admin' ? 'profile' : 'polls');
-  });
-
   // Read from the Inertia prop, NOT useAuth(): this component renders
   // <MainLayout> (and therefore AuthProvider) itself, so its body runs above
-  // the provider. The list is already role-resolved server-side, so a
-  // transit_admin role and an explicit transit.* grant both unlock the panel
-  // without this file re-deriving which role implies what.
-  const canTransitReview = (auth.user.effective_permissions ?? []).includes('transit.review_drafts');
-
-  // Module access is decided by capability, not by role string: a <module>_admin
-  // role holds its whole module implicitly (empty permissions array), and a
-  // plain user can hold explicit grants. Both were previously hidden from the
-  // panels they could actually reach.
-  const perms = auth.user.effective_permissions;
+  // the provider. The list is already resolved server-side, so this file never
+  // re-derives which role implies what.
+  const perms = auth.user.effective_permissions ?? [];
   const canManagePolls = canModule(perms, 'polls');
+  const canTransitReview = perms.includes('transit.review_drafts');
+
+  // Declared above the tab state because the default tab is chosen with the
+  // same gates the sidebar renders with, so the landing tab is always one whose
+  // button is actually on screen.
+  const [activeTab, setActiveTab] = useState<'profile' | 'submissions' | 'polls'>(() => {
+    // ?tab=profile deep link from the navbar dropdown; profile is the only tab
+    // every account has, so it is always a safe landing place.
+    if (new URLSearchParams(window.location.search).get('tab') === 'profile') return 'profile';
+
+    // This used to branch on `role === 'transit_admin'` and send a transit
+    // operator to their profile. That role stopped granting anything when the
+    // role prefixes were removed, so the branch was reading a dead string: the
+    // account holds transit.review_drafts, has a transit panel waiting in the
+    // sidebar, and was being dropped on the profile tab regardless.
+    if (role === 'user') return 'submissions';
+    if (canManagePolls) return 'polls';
+
+    return 'profile';
+  });
+
+  // Module access is decided by capability, not by role string. Every panel
+  // below is gated on a capability, so a `user` holding an explicit grant and a
+  // staff account holding a whole module are served by the same check.
   const canManagePlaces = canModule(perms, 'places');
   const canManageSyOfficial = canModule(perms, 'syofficial');
   const canManageGovApps = canModule(perms, 'govapps');

@@ -93,6 +93,35 @@ export function QuranIcon({ className = "w-7 h-7" }: ProjectIconProps) {
   );
 }
 
+// 2d. QuranRadio (Live recitation radio - Mushaf & broadcast arcs, same family)
+export function QuranRadioIcon({ className = "w-7 h-7" }: ProjectIconProps) {
+  return (
+    <svg viewBox="0 0 32 32" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M13 11c-1.8-1.4-3.9-1.9-6.3-1.7v12c2.4-.2 4.5.3 6.3 1.7 1.8-1.4 3.9-1.9 6.3-1.7v-12c-2.4-.2-4.5.3-6.3 1.7z"
+        className="fill-[#10B981]/15 dark:fill-[#34D399]/20 stroke-[#059669] dark:stroke-[#34D399]"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M13 11v12"
+        className="stroke-[#D97706] dark:stroke-[#FBBF24]"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M24 11.5a7 7 0 0 1 0 9M27 9a10.5 10.5 0 0 1 0 14"
+        className="stroke-[#D97706] dark:stroke-[#FBBF24]"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      {/* Theme Accent Touch */}
+      <circle cx="13" cy="9" r="1.6" fill="hsl(var(--primary))" />
+    </svg>
+  );
+}
+
 // 3. Phonebook (Directory - Amber & Emerald Directory Book)
 export function PhonebookIcon({ className = "w-7 h-7" }: ProjectIconProps) {
   return (

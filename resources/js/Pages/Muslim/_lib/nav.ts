@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import { useEffect, useState } from 'react';
 
-// Sub-view state for /muslim: a tools index with prayer + quran tools.
+// Sub-view state for /muslim: a tools index with prayer + quran + radio tools.
 // The navbar reads this to swap the hamburger for a back button.
-export type MuslimView = 'index' | 'prayer' | 'quran';
+export type MuslimView = 'index' | 'prayer' | 'quran' | 'radio';
 
 interface MuslimNavState {
   view: MuslimView;
@@ -26,6 +26,13 @@ interface MuslimNavState {
   /** Quran reader focus mode — hides navbar + chrome to enlarge text. */
   quranFocus: boolean;
   setQuranFocus: (focus: boolean) => void;
+  /**
+   * Radio sleep timer: the epoch ms at which playback stops, or null for
+   * endless. It lives here rather than in the applet so the countdown keeps
+   * running while the user reads the Quran or checks prayer times.
+   */
+  radioSleepUntil: number | null;
+  setRadioSleepUntil: (until: number | null) => void;
 }
 
 export const useMuslimNav = create<MuslimNavState>((set) => ({
@@ -43,6 +50,8 @@ export const useMuslimNav = create<MuslimNavState>((set) => ({
   setTargetAyah: (targetAyah) => set({ targetAyah }),
   quranFocus: false,
   setQuranFocus: (quranFocus) => set({ quranFocus }),
+  radioSleepUntil: null,
+  setRadioSleepUntil: (radioSleepUntil) => set({ radioSleepUntil }),
 }));
 
 /** Mobile breakpoint mirror (matches Tailwind's max-sm) for picking
@@ -58,11 +67,11 @@ export function useIsMobile(): boolean {
   }, []);
   return mobile;
 }
-/** Initial view from the URL (?tab=prayer|quran), defaulting to the index. */
+/** Initial view from the URL (?tab=prayer|quran|radio), defaulting to the index. */
 export function initialMuslimView(): MuslimView {
   if (typeof window === 'undefined') return 'index';
   const t = new URLSearchParams(window.location.search).get('tab');
-  return t === 'prayer' || t === 'quran' ? t : 'index';
+  return t === 'prayer' || t === 'quran' || t === 'radio' ? t : 'index';
 }
 
 /** Cosmetic URL sync (no navigation — the navbar reads the store). */

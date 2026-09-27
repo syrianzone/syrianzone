@@ -1,13 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Head } from '@inertiajs/react';
-import { Bookmark, ChevronLeft, MoonStar, Sparkles } from 'lucide-react';
+import { Bookmark, ChevronLeft, MoonStar } from 'lucide-react';
 import axios from '@/Lib/axios';
 import MainLayout from '@/Layouts/MainLayout';
 import { Card, CardContent } from '@/Components/ui/card';
-import { MuslimIcon, QuranIcon } from '@/Components/Icons/ProjectIcons';
+import { MuslimIcon, QuranIcon, QuranRadioIcon } from '@/Components/Icons/ProjectIcons';
 import BookmarksModal from './_components/BookmarksModal';
 import PrayerTab from './_components/PrayerTab';
 import QuranReader from './_components/QuranReader';
+import RadioTab from './_components/RadioTab';
+import { formatDuration } from './_lib/format';
 import { PRAYER_KEYS, PRAYER_LABELS, type PrayerKey } from './_lib/methods';
 import { DEFAULT_RECITER_ID, SURA_NAMES_AR } from './_lib/quran';
 import { prayerQueryParams, useMuslimPrefs } from './_lib/prefs';
@@ -28,16 +30,12 @@ const TOOLS: Array<{
     title: 'قارئ القرآن',
     icon: QuranIcon,
   },
+  {
+    id: 'radio',
+    title: 'إذاعة القرآن',
+    icon: QuranRadioIcon,
+  },
 ];
-
-function formatDuration(ms: number): string {
-  const total = Math.max(0, Math.floor(ms / 1000));
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${pad(h)}:${pad(m)}:${pad(s)}`;
-}
 
 interface LastBookmark {
   surah: number;
@@ -234,14 +232,6 @@ export default function Index() {
                   </CardContent>
                 </Card>
               ))}
-              <Card className="opacity-50" aria-disabled="true">
-                <CardContent className="flex flex-col items-center gap-2 p-4 text-center">
-                  <span className="rounded-2xl bg-muted p-2.5 text-muted-foreground">
-                    <Sparkles className="h-6 w-6" />
-                  </span>
-                  <span className="text-xs font-bold text-muted-foreground sm:text-sm">قريباً</span>
-                </CardContent>
-              </Card>
             </div>
           </div>
         )}
@@ -249,6 +239,12 @@ export default function Index() {
         {view === 'prayer' && (
           <div className="container mx-auto max-w-6xl px-4 py-8">
             <PrayerTab prefs={prefs} setPrefs={setPrefs} isLoggedIn={isLoggedIn} />
+          </div>
+        )}
+
+        {view === 'radio' && (
+          <div className="container mx-auto max-w-2xl px-4 py-8">
+            <RadioTab />
           </div>
         )}
 

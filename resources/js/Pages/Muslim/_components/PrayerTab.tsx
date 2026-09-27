@@ -15,6 +15,7 @@ import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
 import { MUSLIM_GOVERNORATES } from '../_lib/governorates';
+import { formatDuration } from '../_lib/format';
 import { PRAYER_KEYS, PRAYER_LABELS, PRAYER_METHODS, type PrayerKey } from '../_lib/methods';
 import { TRACKED_PRAYERS, todayKey, type MuslimPrefs } from '../_lib/prefs';
 import {
@@ -33,15 +34,6 @@ function prayerIcon(key: string, className?: string) {
     case 'Isha': return <Moon className={className} />;
     default: return <Clock className={className} />;
   }
-}
-
-function formatDuration(ms: number): string {
-  const total = Math.max(0, Math.floor(ms / 1000));
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${pad(h)}:${pad(m)}:${pad(s)}`;
 }
 
 interface Props {

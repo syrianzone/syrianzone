@@ -141,3 +141,66 @@ it('makes both sortable lists read-only without their reorder capability', funct
             ->toContain('if (!canReorder) return;');
     }
 });
+
+it('never calls useAuth() from a page that renders MainLayout', function () {
+    // AuthProvider is mounted *inside* MainLayout (Layouts/MainLayout.tsx), and
+    // app.tsx provides only DirectionProvider and QueryProvider. A page component
+    // that calls useAuth() in its own body therefore runs above the provider and
+    // throws "useAuth must be used within an AuthProvider" — the page renders
+    // blank, with no server error and nothing in the deploy log.
+    //
+    // This shipped broken on three admin pages, and the static gate above could
+    // not see it: that gate proves a capability check exists in the source, never
+    // that the component mounts. The rule is structural, so it is asserted
+    // structurally.
+    //
+    // A child component declared in the same file is fine — it renders inside
+    // MainLayout, which is how Dashboard's AvatarUploader still uses the context.
+    // Only a call in the page component's own body is fatal, hence the scan stops
+    // at that component's first return.
+    $pages = array_merge(
+        array_keys(adminUiGateCases()),
+        ['resources/js/Pages/Dashboard/Index.tsx'],
+    );
+
+    $checked = 0;
+
+    foreach ($pages as $file) {
+        $source = file_get_contents(base_path($file));
+
+        if ($source === false || ! str_contains($source, 'MainLayout')) {
+            continue;
+        }
+
+        if (! preg_match('/export default function\s+\w+\s*\(/', $source, $m, PREG_OFFSET_CAPTURE)) {
+            continue;
+        }
+
+        $from = $m[0][1] + strlen($m[0][0]);
+        $body = substr($source, $from);
+
+        // The page component's own body ends at its first return statement.
+        $body = preg_split('/\breturn\s*[\(<{]/', $body, 2)[0];
+
+        // Strip comments before looking for the call. The files that were fixed
+        // explain in prose why useAuth cannot be used here, and that prose would
+        // otherwise trip the check it documents.
+        $code = preg_replace(['#//[^\n]*#', '#/\*.*?\*/#s'], '', $body);
+
+        $checked++;
+
+        // Compared through str_contains rather than toContain: this suite's other
+        // gates do the same, and Pest's toContain does not do a substring check
+        // when given a string — it passes vacuously, which is how a guard written
+        // that way reports success while the bug is present.
+        expect(str_contains($code, 'useAuth('))->toBeFalse(
+            "{$file} renders MainLayout, so its own body runs above AuthProvider. "
+            .'Read auth.user.effective_permissions from usePage() and gate on that, '
+            .'or move the call into a child component that renders inside MainLayout.'
+        );
+    }
+
+    // The loop must actually have inspected the admin pages, or this test proves
+    // nothing at all — a guard that silently scans nothing always passes.
+    expect($checked)->toBeGreaterThanOrEqual(4);
+});

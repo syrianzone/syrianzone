@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Com
 import { Plus, Search, Edit3, Trash2, Smartphone, ArrowUpDown, Globe } from 'lucide-react';
 import AppDialog, { GovAppData } from './_components/AppDialog';
 import SortableList from './_components/SortableList';
-import { useAuth } from '@/Contexts/AuthContext';
+import { canAny } from '@/Lib/permissions'
 
 interface AdminGovAppsProps {
     apps: GovAppData[];
@@ -20,7 +20,15 @@ export default function GovAppsAdminIndex({ apps }: AdminGovAppsProps) {
 
     // Gated per capability, matching the route tags. The panel used to render
     // every control for any govapps.* holder.
-    const { can } = useAuth();
+    // AuthProvider is mounted *inside* MainLayout, so this component's body runs
+    // above it and useAuth() throws here — the page renders blank. Read the
+    // server-resolved capability list off the Inertia props instead. It needs no
+    // superadmin special case: User::effectivePermissions() already returns the
+    // whole catalogue for superadmin, which is what AuthContext.can() was
+    // re-deriving on the client.
+    const { auth } = usePage().props as any;
+    const can = (capability: string): boolean =>
+        canAny(auth?.user?.effective_permissions, capability);
     const canCreate = can('govapps.create');
     const canEdit = can('govapps.edit');
     const canDelete = can('govapps.delete');

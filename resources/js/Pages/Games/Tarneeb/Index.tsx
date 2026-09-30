@@ -3,7 +3,7 @@ import { Head } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
 import { TarneebIcon } from '@/Components/Icons/ProjectIcons';
 import GameShell from '../_components/GameShell';
-import Tarneeb from '../_components/Tarneeb';
+import Tarneeb, { TarneebRules } from '../_components/Tarneeb';
 
 export default function Index() {
   return (
@@ -18,7 +18,13 @@ export default function Index() {
         <meta property="og:description" content="طرنيب: زايد، اختر الحكم، واجمع الحيل حتى ٤١ نقطة." />
       </Head>
 
-      <GameShell title="طرنيب" description="زايد من ٧ إلى ١٣ واجمع الحيل حتى ٤١" icon={TarneebIcon} width="max-w-4xl">
+      <GameShell
+        title="طرنيب"
+        description="زايد من ٧ إلى ١٣، واختَر الحكم، واجمع الحيل حتى ٤١"
+        icon={TarneebIcon}
+        width="max-w-4xl"
+        rules={<TarneebRules />}
+      >
         <Tarneeb />
       </GameShell>
     </MainLayout>

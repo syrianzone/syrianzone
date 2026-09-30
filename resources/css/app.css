@@ -770,31 +770,36 @@
    Tarneeb — the table.
 
    Four seats around a trick area, the player's hand fanned out below it. The
-   cards are the shared `.sz-card` kit; the seat boxes set a smaller
-   `--sz-card-w` so an opponent's back is compact, and the hand sets a larger
-   one. The board is `dir="ltr"` (a trick reads clockwise, left to right) while
-   the page is RTL. */
+   cards are the shared `.sz-card` kit; an opponent's hand is a tight stack of
+   backs (one per card still held), and the player's is a face-up fan. The board
+   is `dir="ltr"` (a trick reads clockwise, left to right) while the page is
+   RTL.
+
+   The board and the action strip below it are both sized to reserve space, so
+   nothing moves when bids land, cards are played, or the contract panel
+   appears. */
 .sz-tar {
     --sz-card-radius: 0.5rem;
     --sz-card-h-ratio: 1.4286;
     --sz-tar-card-w: 5rem;
     --sz-tar-seat-w: 3.2rem;
+    --sz-tar-step: 0.22rem; /* how much of each held back stays showing */
 }
 
 .sz-tar__board {
     display: grid;
     grid-template-columns: auto minmax(9rem, 1fr) auto;
-    grid-template-rows: auto minmax(9rem, 1fr) auto;
+    grid-template-rows: auto minmax(9rem, 1fr);
     gap: 0.5rem;
     align-items: center;
     justify-items: center;
     margin-inline: auto;
     max-width: 34rem;
+    min-height: 16rem;
 }
 
 .sz-tar__seat {
     --sz-card-w: var(--sz-tar-seat-w);
-    width: var(--sz-tar-seat-w);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -814,9 +819,6 @@
 .sz-tar__seat--east {
     grid-area: 2 / 3;
 }
-.sz-tar__seat-card {
-    width: var(--sz-tar-seat-w);
-}
 
 .sz-tar__seat-name {
     font-size: 11px;
@@ -824,10 +826,38 @@
     color: hsl(var(--muted-foreground));
 }
 
+/* The bid is reserved a line, so a seat does not grow when it appears. */
 .sz-tar__seat-bid {
+    min-height: 1rem;
     font-size: 12px;
     font-weight: 800;
     color: hsl(var(--primary));
+}
+
+/* An opponent's hand: a stack of backs, oriented to its seat. */
+.sz-tar__seat-hand {
+    display: flex;
+}
+
+.sz-tar__seat-hand .sz-card {
+    width: var(--sz-tar-seat-w);
+    flex: 0 0 auto;
+}
+
+.sz-tar__seat-hand--h {
+    flex-direction: row;
+}
+
+.sz-tar__seat-hand--h .sz-card + .sz-card {
+    margin-left: calc(var(--sz-tar-step) - var(--sz-tar-seat-w));
+}
+
+.sz-tar__seat-hand--v {
+    flex-direction: column;
+}
+
+.sz-tar__seat-hand--v .sz-card + .sz-card {
+    margin-top: calc(var(--sz-tar-step) - var(--sz-tar-seat-w) * var(--sz-card-h-ratio));
 }
 
 /* The trick: the four played cards in a plus, with the trump in the middle. */
@@ -867,6 +897,29 @@
     grid-area: 3 / 2;
 }
 
+/* A played card drops in. */
+.sz-tar__slot .sz-card {
+    animation: sz-tar-deal 160ms ease-out;
+}
+
+@keyframes sz-tar-deal {
+    from {
+        opacity: 0;
+        transform: translateY(-0.4rem) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+/* The trick winner, held on the table until the player continues. */
+.sz-tar__slot--win .sz-card {
+    box-shadow:
+        0 0 0 3px hsl(var(--primary) / 0.6),
+        0 8px 16px hsl(0 0 0 / 0.35);
+}
+
 .sz-tar__trump {
     font-size: 1.6rem;
     font-weight: 800;
@@ -893,15 +946,29 @@
 
 /* A card the player may legally play right now. */
 .sz-tar__playable {
-    cursor: pointer;
+    cursor: grab;
     transition: transform 120ms, box-shadow 120ms;
 }
 
-.sz-tar__playable:hover {
-    transform: translateY(-0.7rem);
-    box-shadow:
-        0 0 0 3px hsl(var(--primary) / 0.5),
-        0 10px 18px hsl(0 0 0 / 0.35);
+.sz-tar__playable:active {
+    cursor: grabbing;
+}
+
+@media (hover: hover) {
+    .sz-tar__playable:hover {
+        transform: translateY(-0.7rem);
+        box-shadow:
+            0 0 0 3px hsl(var(--primary) / 0.5),
+            0 10px 18px hsl(0 0 0 / 0.35);
+    }
+}
+
+/* The action strip below the board, reserved so the board above never moves. */
+.sz-tar__actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 5.5rem;
 }
 
 .sz-tar__bid,
@@ -930,10 +997,35 @@
     border-color: hsl(var(--primary) / 0.5);
 }
 
+/* The card following the finger while it is dragged out to play. */
+.sz-tar__ghost {
+    position: fixed;
+    z-index: 60;
+    pointer-events: none;
+    filter: drop-shadow(0 8px 14px hsl(0 0 0 / 0.45));
+}
+
+.sz-tar__ghost .sz-card {
+    width: 100%;
+}
+
 @media (max-width: 640px) {
     .sz-tar {
-        --sz-tar-card-w: 3.2rem;
-        --sz-tar-seat-w: 2.4rem;
+        --sz-tar-card-w: 3.4rem;
+        --sz-tar-seat-w: 2.2rem;
+        --sz-tar-step: 0.18rem;
+    }
+
+    .sz-tar__hand .sz-card + .sz-card {
+        margin-left: calc(var(--sz-tar-card-w) * -0.66);
+    }
+
+    .sz-tar__board {
+        max-width: 100%;
+    }
+
+    .sz-tar__actions {
+        min-height: 5rem;
     }
 }
 

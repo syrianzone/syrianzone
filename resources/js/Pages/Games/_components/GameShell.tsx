@@ -1,6 +1,13 @@
 import React from 'react';
 import { Link } from '@inertiajs/react';
-import { ChevronLeft } from 'lucide-react';
+import { BookOpen, ChevronLeft } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/Components/ui/dialog';
 
 interface Props {
   title: string;
@@ -12,13 +19,22 @@ interface Props {
    * each one, so it asks for more.
    */
   width?: string;
+  /** The game's rules, shown behind a "القوانين" button when supplied. */
+  rules?: React.ReactNode;
   children: React.ReactNode;
 }
 
 // Chrome shared by every /games/<slug> page: a back link to the hub, the game
-// title, and whatever the game renders. Keeping this out of each game means a
-// new subgame gets consistent navigation for free.
-export default function GameShell({ title, description, icon: Icon, width = 'max-w-3xl', children }: Props) {
+// title, an optional rules button, and whatever the game renders. Keeping this
+// out of each game means a new subgame gets consistent navigation for free.
+export default function GameShell({
+  title,
+  description,
+  icon: Icon,
+  width = 'max-w-3xl',
+  rules,
+  children,
+}: Props) {
   return (
     <div className="min-h-svh bg-background text-foreground" dir="rtl">
       <div className={`container mx-auto ${width} px-4 py-6`}>
@@ -38,6 +54,26 @@ export default function GameShell({ title, description, icon: Icon, width = 'max
             <h1 className="text-2xl font-bold">{title}</h1>
             <p className="text-sm text-muted-foreground">{description}</p>
           </div>
+
+          {rules && (
+            <Dialog>
+              <DialogTrigger asChild>
+                <button
+                  type="button"
+                  className="ms-auto flex shrink-0 items-center gap-1.5 rounded-xl border border-input bg-background px-3 py-2 text-xs font-bold text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                >
+                  <BookOpen className="h-4 w-4" />
+                  القوانين
+                </button>
+              </DialogTrigger>
+              <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>قوانين {title}</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-3 text-sm leading-relaxed text-foreground">{rules}</div>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
 
         {children}

@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { SUIT_LABEL, type Card, type Suit } from '../_lib/cards';
 import { applyRound, createMatch, isMatchOver, type MatchState } from '../_lib/cardGames/match';
 import { power } from '../_lib/cardGames/hand';
+import { readStats, recordMatch, type MatchStats } from '../_lib/scores';
 import {
   DEFAULT_TARNEEB,
   TARNEEB_PLAYERS,
@@ -23,31 +24,58 @@ import {
 import { chooseBid, choosePlay, chooseTrump } from '../_lib/tarneebAi';
 import PlayingCard from './PlayingCard';
 
-/** Seat 0 is the player; 1 west, 2 north (the partner), 3 east. */
+/** Seat 0 is the player; 1 on the left, 2 opposite (the partner), 3 on the right. */
 const HUMAN = 0;
-const SEAT_NAMES = ['أنت', 'غرب', 'شريكك', 'شرق'];
+const SEAT_NAMES = ['أنت', 'يسارك', 'شريكك', 'يمينك'];
 const SUIT_ORDER: Record<Suit, number> = { S: 0, H: 1, D: 2, C: 3 };
 const SUITS: Suit[] = ['S', 'H', 'D', 'C'];
 /** How long an AI seat "thinks" before acting, so the table is followable. */
-const AI_DELAY = 700;
+const AI_DELAY = 750;
 
 const createFreshMatch = () =>
   createMatch({ players: TARNEEB_PLAYERS, units: TARNEEB_TEAMS, target: DEFAULT_TARNEEB.target });
 
+const EMPTY_STATS: MatchStats = { played: 0, wins: 0, losses: 0, draws: 0 };
+
 export default function Tarneeb() {
   const [match, setMatch] = useState<MatchState | null>(null);
   const [round, setRound] = useState<TarneebRound | null>(null);
+  const [stats, setStats] = useState<MatchStats>(EMPTY_STATS);
+  /** A completed trick stays on the table until the player says continue. */
+  const [paused, setPaused] = useState(false);
+  /** The card under the finger/mouse while dragging it out to play. */
+  const [ghost, setGhost] = useState<{ card: Card; x: number; y: number; w: number } | null>(null);
+
+  const recorded = useRef<MatchState | null>(null);
+  const seenHistory = useRef(0);
+  const drag = useRef<{
+    card: Card;
+    startX: number;
+    startY: number;
+    grabX: number;
+    grabY: number;
+    w: number;
+    active: boolean;
+  } | null>(null);
 
   useEffect(() => {
     const fresh = createFreshMatch();
     setMatch(fresh);
     setRound(createRound(DEFAULT_TARNEEB, fresh.dealer));
+    setStats(readStats('tarneeb'));
   }, []);
 
-  // An AI seat acts on its turn after a beat. Guarded against a stale state so a
-  // fast human tap cannot be overwritten.
+  // One effect drives the whole table: it holds a just-completed trick for the
+  // player, and otherwise lets the next AI seat act after a beat.
   useEffect(() => {
-    if (!round || round.phase === 'complete') return;
+    if (!round) return;
+    if (round.phase === 'playing' && round.history.length > seenHistory.current) {
+      seenHistory.current = round.history.length;
+      setPaused(true);
+      return;
+    }
+    seenHistory.current = round.history.length;
+    if (paused || round.phase === 'complete') return;
     const seat = round.turn;
     if (seat === null || seat === HUMAN) return;
     const timer = window.setTimeout(() => {
@@ -63,7 +91,13 @@ export default function Tarneeb() {
       });
     }, AI_DELAY);
     return () => window.clearTimeout(timer);
-  }, [round]);
+  }, [round, paused]);
+
+  useEffect(() => {
+    if (!match || !isMatchOver(match) || recorded.current === match) return;
+    recorded.current = match;
+    setStats(recordMatch('tarneeb', match.winner === teamOf(HUMAN) ? 'win' : 'loss'));
+  }, [match]);
 
   const hand = useMemo(() => {
     if (!round) return [];
@@ -77,7 +111,8 @@ export default function Tarneeb() {
   }
 
   const humanTurn = round.turn === HUMAN;
-  const legal = round.phase === 'playing' && humanTurn ? legalPlays(round, HUMAN) : [];
+  const canPlay = round.phase === 'playing' && humanTurn && !paused;
+  const legal = canPlay ? legalPlays(round, HUMAN) : [];
   const legalIds = new Set(legal.map((card) => card.id));
 
   const play = (card: Card) => {
@@ -86,30 +121,87 @@ export default function Tarneeb() {
   };
   const placeBid = (value: number) => setRound((current) => (current ? bid(current, HUMAN, value) : current));
   const doPass = () => setRound((current) => (current ? pass(current, HUMAN) : current));
-  const nameTrump = (suit: Suit) => setRound((current) => (current ? engineChooseTrump(current, HUMAN, suit) : current));
+  const nameTrump = (suit: Suit) =>
+    setRound((current) => (current ? engineChooseTrump(current, HUMAN, suit) : current));
+  const proceed = () => setPaused(false);
 
   const nextRound = () => {
-    if (!round || round.phase !== 'complete') return;
+    if (round.phase !== 'complete') return;
     const advanced = applyRound(match, isRedeal(round) ? [0, 0] : scoreRound(round));
     setMatch(advanced);
+    seenHistory.current = 0;
+    setPaused(false);
     if (!isMatchOver(advanced)) setRound(createRound(DEFAULT_TARNEEB, advanced.dealer));
   };
   const newGame = () => {
     const fresh = createFreshMatch();
+    recorded.current = null;
+    seenHistory.current = 0;
+    setPaused(false);
     setMatch(fresh);
     setRound(createRound(DEFAULT_TARNEEB, fresh.dealer));
   };
 
-  const playedBy = (seat: number) => round.trick.find((play) => play.seat === seat)?.card;
-  const lastAction = (seat: number) => {
-    const actions = round.auction.actions.filter((action) => action.seat === seat);
-    const last = actions[actions.length - 1];
-    if (!last) return null;
-    return 'pass' in last ? 'تمرير' : String(last.value);
+  // Card drag: a legal card can be pulled out and dropped on the table to play,
+  // or tapped. Only a real drag swallows the following click.
+  const startDrag = (card: Card, e: React.PointerEvent) => {
+    if (!legalIds.has(card.id)) return;
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    drag.current = {
+      card,
+      startX: e.clientX,
+      startY: e.clientY,
+      grabX: e.clientX - rect.left,
+      grabY: e.clientY - rect.top,
+      w: rect.width,
+      active: false,
+    };
+    const move = (ev: PointerEvent) => {
+      const d = drag.current;
+      if (!d) return;
+      if (!d.active) {
+        if (Math.hypot(ev.clientX - d.startX, ev.clientY - d.startY) < 8) return;
+        d.active = true;
+      }
+      if (ev.cancelable) ev.preventDefault();
+      setGhost({ card: d.card, x: ev.clientX - d.grabX, y: ev.clientY - d.grabY, w: d.w });
+    };
+    const up = (ev: PointerEvent) => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+      const d = drag.current;
+      drag.current = null;
+      setGhost(null);
+      if (!d?.active) return; // a tap falls through to onClick
+      const under = document.elementFromPoint(ev.clientX, ev.clientY);
+      const onTable = under instanceof Element && under.closest('.sz-tar') !== null;
+      const swallow = (ce: Event) => {
+        ce.stopPropagation();
+        ce.preventDefault();
+        window.removeEventListener('click', swallow, true);
+      };
+      window.addEventListener('click', swallow, true);
+      window.setTimeout(() => window.removeEventListener('click', swallow, true), 500);
+      if (onTable) play(d.card);
+    };
+    window.addEventListener('pointermove', move, { passive: false });
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
   };
+
+  const trick = paused && round.history.length > 0 ? round.history[round.history.length - 1].plays : round.trick;
+  const trickWinnerSeat = paused && round.history.length > 0 ? round.history[round.history.length - 1].winner : null;
+  const cardAt = (seat: number) => trick.find((play) => play.seat === seat)?.card;
 
   const you = teamOf(HUMAN);
   const them = you === 0 ? 1 : 0;
+  const lastAction = (seat: number) => {
+    const actions = round.auction.actions.filter((action) => action.seat === seat);
+    const last = actions[actions.length - 1];
+    if (!last) return '';
+    return 'pass' in last ? 'مرّر' : String(last.value);
+  };
 
   return (
     <div className="select-none">
@@ -117,37 +209,46 @@ export default function Tarneeb() {
         <Score label="فريقك" value={match.scores[you]} tone="primary" />
         <Score label="الخصوم" value={match.scores[them]} />
         <Score label="الهدف" value={match.options.target} />
-        <Score label="الجولة" value={match.round + 1} />
+        <Score label="الدست" value={match.round + 1} />
         <Button variant="outline" onClick={newGame} className="flex h-auto flex-col gap-1 rounded-xl px-3 py-2">
           <RefreshCw className="h-4 w-4" />
           <span className="text-[11px] font-bold">جديد</span>
         </Button>
       </div>
 
-      {round.declarer !== null && (
-        <p className="mb-2 text-center text-xs font-bold text-muted-foreground">
-          العقد {round.auction.highBid} على {SEAT_NAMES[round.declarer]}
-          {round.trump && <> · حكم {SUIT_LABEL[round.trump]}</>} · أخذنا {round.tricks[you]} و{round.tricks[them]}
-        </p>
-      )}
+      <p className="mb-1 min-h-[1rem] text-center text-[11px] font-bold text-muted-foreground">
+        نتائجك: {stats.wins} فوز · {stats.losses} خسارة
+      </p>
+
+      {/* Reserved so the board never moves as the contract appears. */}
+      <p className="mb-2 min-h-[1.25rem] text-center text-xs font-bold text-muted-foreground">
+        {round.declarer !== null ? (
+          <>
+            الطلب {round.auction.highBid} على {SEAT_NAMES[round.declarer]}
+            {round.trump && <> · الحكم {SUIT_LABEL[round.trump]}</>} · حيلنا {round.tricks[you]} وحيلهم{' '}
+            {round.tricks[them]}
+          </>
+        ) : (
+          ' '
+        )}
+      </p>
 
       <div className="sz-tar" dir="ltr">
         <div className="sz-tar__board">
-          <Seat name={SEAT_NAMES[2]} count={round.hands[2].length} action={lastAction(2)} className="sz-tar__seat--north" />
-
-          <Seat name={SEAT_NAMES[1]} count={round.hands[1].length} action={lastAction(1)} className="sz-tar__seat--west" />
+          <Seat name={SEAT_NAMES[2]} count={round.hands[2].length} action={lastAction(2)} orientation="h" className="sz-tar__seat--north" />
+          <Seat name={SEAT_NAMES[1]} count={round.hands[1].length} action={lastAction(1)} orientation="v" className="sz-tar__seat--west" />
 
           <div className="sz-tar__trick">
-            <Slot position="n" card={playedBy(2)} />
-            <Slot position="w" card={playedBy(1)} />
+            <Slot position="n" card={cardAt(2)} win={trickWinnerSeat === 2} />
+            <Slot position="w" card={cardAt(1)} win={trickWinnerSeat === 1} />
             <div className="sz-tar__slot sz-tar__slot--c">
               {round.trump ? <span className="sz-tar__trump">{SUIT_LABEL[round.trump]}</span> : null}
             </div>
-            <Slot position="e" card={playedBy(3)} />
-            <Slot position="s" card={playedBy(HUMAN)} />
+            <Slot position="e" card={cardAt(3)} win={trickWinnerSeat === 3} />
+            <Slot position="s" card={cardAt(HUMAN)} win={trickWinnerSeat === HUMAN} />
           </div>
 
-          <Seat name={SEAT_NAMES[3]} count={round.hands[3].length} action={lastAction(3)} className="sz-tar__seat--east" />
+          <Seat name={SEAT_NAMES[3]} count={round.hands[3].length} action={lastAction(3)} orientation="v" className="sz-tar__seat--east" />
         </div>
 
         <div className="sz-tar__hand">
@@ -157,14 +258,18 @@ export default function Tarneeb() {
               card={card}
               interactive={legalIds.has(card.id)}
               className={legalIds.has(card.id) ? 'sz-tar__playable' : ''}
+              onPointerDown={(e) => startDrag(card, e)}
               onClick={() => play(card)}
             />
           ))}
         </div>
       </div>
 
-      <div className="mt-4 text-center">
-        {round.phase === 'bidding' && (
+      {/* A fixed-height action strip, so the board above it never shifts. */}
+      <div className="sz-tar__actions mt-4">
+        {paused ? (
+          <Button onClick={proceed}>كمّل</Button>
+        ) : round.phase === 'bidding' ? (
           <Bidding
             turn={round.turn}
             high={round.auction.highBid}
@@ -172,9 +277,7 @@ export default function Tarneeb() {
             onBid={placeBid}
             onPass={doPass}
           />
-        )}
-
-        {round.phase === 'trump' && (
+        ) : round.phase === 'trump' ? (
           <div className="flex flex-wrap items-center justify-center gap-2">
             {round.declarer === HUMAN ? (
               <>
@@ -189,23 +292,19 @@ export default function Tarneeb() {
               <span className="text-sm text-muted-foreground">يختار {SEAT_NAMES[round.declarer ?? 0]} الحكم…</span>
             )}
           </div>
-        )}
-
-        {round.phase === 'playing' && (
+        ) : round.phase === 'playing' ? (
           <span className="text-sm text-muted-foreground">
-            {humanTurn ? 'دورك — العب ورقة' : `دور ${SEAT_NAMES[round.turn ?? 0]}…`}
+            {humanTurn ? 'دورك — نزّل ورقة' : `دور ${SEAT_NAMES[round.turn ?? 0]}…`}
           </span>
-        )}
-
-        {round.phase === 'complete' && (
+        ) : (
           <div className="mx-auto max-w-md rounded-2xl border border-border/60 bg-card/60 p-4">
             {isRedeal(round) ? (
-              <p className="text-sm font-bold">الكل تمرير — إعادة التوزيع</p>
+              <p className="text-sm font-bold">الكل مرّر — إعادة التوزيع</p>
             ) : (
               <p className="text-sm font-bold">
-                {SEAT_NAMES[round.declarer ?? 0]} عقد {round.auction.highBid} بأخذ {round.tricks[teamOf(round.declarer ?? 0)]}
+                {SEAT_NAMES[round.declarer ?? 0]} طلب {round.auction.highBid} وأكل {round.tricks[teamOf(round.declarer ?? 0)]}
                 {' · '}
-                {scoreRound(round)[you] > 0 ? 'نجح العقد' : 'فشل العقد'}
+                {scoreRound(round)[you] > 0 ? 'نجح الطلب' : 'فشل الطلب'}
               </p>
             )}
             {isMatchOver(match) ? (
@@ -217,13 +316,53 @@ export default function Tarneeb() {
               </div>
             ) : (
               <Button onClick={nextRound} className="mt-3">
-                الجولة التالية
+                الدست الجاي
               </Button>
             )}
           </div>
         )}
       </div>
+
+      {/* The card following the finger while it is dragged out to play. */}
+      {ghost && (
+        <div
+          className="sz-tar__ghost"
+          style={
+            {
+              left: ghost.x,
+              top: ghost.y,
+              width: ghost.w,
+              '--sz-card-w': `${ghost.w}px`,
+              '--sz-card-h-ratio': 1.4286,
+            } as React.CSSProperties
+          }
+        >
+          <PlayingCard card={ghost.card} decorative />
+        </div>
+      )}
     </div>
+  );
+}
+
+export function TarneebRules() {
+  return (
+    <>
+      <ul className="list-disc space-y-1 ps-5">
+        <li>أربعة لاعبين في فريقين، والشريك يجلس مقابلًا لك.</li>
+        <li>تُوزَّع الأوراق كلها، ١٣ ورقة لكل لاعب.</li>
+        <li>
+          المزايدة من ٧ إلى ١٣، وكل مزايدة أعلى من التي قبلها. إن لم ترغب بالمزايدة مرّر دورك، ومن يفز
+          بالطلب يختار الحكم.
+        </li>
+        <li>يبدأ الطالب باللعب، ويجب أن تتبع اللون إن كان معك؛ وإن لم يكن معك فيجوز أن تلعب أي ورقة.</li>
+        <li>الحكم يتقدّم على أي ورقة، وإن لم يُلعَب حكم يفوز أعلى ورقة من اللون المطلوب.</li>
+        <li>إن أكل الطالب عدد الحيل الذي طلبه سجّل عددها، وإن قصّر سجّل الخصوم قيمة الطلب.</li>
+        <li>أول فريق يبلغ ٤١ نقطة يفوز بالمباراة.</li>
+      </ul>
+      <p className="text-xs text-muted-foreground">
+        ملاحظة: قاعدة الكبوت (أخذ الحيل الثلاث عشرة كلها) لم تُضَف بعد.
+      </p>
+    </>
   );
 }
 
@@ -243,7 +382,7 @@ function Bidding({
   if (turn !== HUMAN) {
     return (
       <span className="text-sm text-muted-foreground">
-        {high === null ? `يفتح ${SEAT_NAMES[turn ?? 0]}…` : `أعلى مزايدة ${high} — دور ${SEAT_NAMES[turn ?? 0]}…`}
+        {high === null ? `يفتح ${SEAT_NAMES[turn ?? 0]}…` : `أعلى طلب ${high} — دور ${SEAT_NAMES[turn ?? 0]}…`}
       </span>
     );
   }
@@ -277,29 +416,31 @@ function Seat({
   name,
   count,
   action,
+  orientation,
   className = '',
 }: {
   name: string;
   count: number;
-  action: string | null;
+  action: string;
+  orientation: 'h' | 'v';
   className?: string;
 }) {
   return (
     <div className={`sz-tar__seat ${className}`}>
       <span className="sz-tar__seat-name">{name}</span>
-      <div className="sz-tar__seat-card">
-        <div className="sz-card sz-card--back">
-          <span className="sz-card__count">{count}</span>
-        </div>
+      <div className={`sz-tar__seat-hand sz-tar__seat-hand--${orientation}`}>
+        {Array.from({ length: count }, (_, i) => (
+          <div key={i} className="sz-card sz-card--back" aria-hidden="true" />
+        ))}
       </div>
-      {action !== null && <span className="sz-tar__seat-bid">{action}</span>}
+      <span className="sz-tar__seat-bid">{action}</span>
     </div>
   );
 }
 
-function Slot({ position, card }: { position: string; card?: Card }) {
+function Slot({ position, card, win }: { position: string; card?: Card; win: boolean }) {
   return (
-    <div className={`sz-tar__slot sz-tar__slot--${position}`}>
+    <div className={`sz-tar__slot sz-tar__slot--${position} ${win ? 'sz-tar__slot--win' : ''}`}>
       {card && <PlayingCard card={card} decorative />}
     </div>
   );

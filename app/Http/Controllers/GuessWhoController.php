@@ -6,6 +6,7 @@ use App\Models\GuessWhoCategory;
 use App\Models\GuessWhoCharacter;
 use App\Models\GuessWhoGame;
 use App\Events\GuessWhoActionEvent;
+use App\Events\GuessWhoStateEvent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -217,13 +218,12 @@ class GuessWhoController extends Controller
     }
 
     /**
-     * Relay one game action to the opponent over Reverb.
+     * The game move endpoint.
      *
-     * This is the first step of retiring the WebRTC data channel: the client
-     * POSTs {action, payload} and the server broadcasts it on the room's
-     * presence channel. Membership and the payload size are checked here, but
-     * the move is not yet policed against the rules — that arrives once the
-     * server holds the game state.
+     * The client POSTs {action, payload}; the server validates it against the
+     * room and the rules it now owns — whose turn it is, each player's secret —
+     * and broadcasts the resulting state over Reverb. Private cosmetic updates
+     * the server does not track (eliminations) are relayed unchanged.
      */
     public function action(Request $request, $roomCode)
     {
@@ -239,7 +239,7 @@ class GuessWhoController extends Controller
             return response()->json(['error' => 'الغرفة غير موجودة.'], 404);
         }
 
-        $players = [$game->player_1_session, $game->player_2_session];
+        $players = array_filter([$game->player_1_session, $game->player_2_session]);
         if (!in_array($validated['sender_session'], $players, true)) {
             return response()->json(['error' => 'غير مصرح لك باللعب في هذه الغرفة.'], 403);
         }
@@ -249,13 +249,112 @@ class GuessWhoController extends Controller
             return response()->json(['error' => 'حجم البيانات كبير جداً.'], 413);
         }
 
-        broadcast(new GuessWhoActionEvent(
-            $roomCode,
-            $validated['sender_session'],
-            $validated['action'],
-            $payload
-        ))->toOthers();
+        $sender = $validated['sender_session'];
+        $opponent = $game->player_1_session === $sender ? $game->player_2_session : $game->player_1_session;
+
+        return match ($validated['action']) {
+            'select_ready' => $this->selectReady($game, $sender, $payload),
+            'pass_turn' => $this->passTurn($game, $sender, $opponent),
+            'guess' => $this->guess($game, $sender, $opponent, $payload),
+            default => $this->relay($game, $sender, $validated['action'], $payload),
+        };
+    }
+
+    /** A player locks in a secret; once both have, the game starts and player 1 leads. */
+    private function selectReady(GuessWhoGame $game, string $sender, array $payload)
+    {
+        $id = $payload['id'] ?? null;
+        if (!is_int($id) || !in_array($id, $game->character_ids ?? [], true)) {
+            return response()->json(['error' => 'الشخصية غير صالحة لهذه الغرفة.'], 422);
+        }
+
+        $column = $game->player_1_session === $sender ? 'player_1_character_id' : 'player_2_character_id';
+        $game->{$column} = $id;
+
+        if ($game->player_1_character_id !== null && $game->player_2_character_id !== null) {
+            $game->status = 'playing';
+            $game->turn_session = $game->player_1_session;
+        } else {
+            $game->status = 'selecting';
+        }
+        $game->save();
+
+        return $this->broadcastState($game);
+    }
+
+    /** Hand the turn to the opponent. */
+    private function passTurn(GuessWhoGame $game, string $sender, ?string $opponent)
+    {
+        if ($game->status !== 'playing' || $game->turn_session !== $sender) {
+            return response()->json(['error' => 'ليس دورك الآن.'], 409);
+        }
+
+        $game->turn_session = $opponent;
+        $game->save();
+
+        return $this->broadcastState($game);
+    }
+
+    /** Resolve a guess against the opponent's secret; a wrong guess passes the turn. */
+    private function guess(GuessWhoGame $game, string $sender, ?string $opponent, array $payload)
+    {
+        if ($game->status !== 'playing' || $game->turn_session !== $sender) {
+            return response()->json(['error' => 'ليس دورك الآن.'], 409);
+        }
+
+        $guessId = $payload['character_id'] ?? null;
+        if (!is_int($guessId)) {
+            return response()->json(['error' => 'التخمين غير صالح.'], 422);
+        }
+
+        $opponentSecret = $game->player_1_session === $sender
+            ? $game->player_2_character_id
+            : $game->player_1_character_id;
+        if ($opponentSecret === null) {
+            return response()->json(['error' => 'الخصم لم يختر شخصيته بعد.'], 409);
+        }
+
+        $correct = $guessId === $opponentSecret;
+        if ($correct) {
+            $game->status = 'finished';
+            $game->winner_session = $sender;
+            $game->turn_session = null;
+        } else {
+            $game->turn_session = $opponent;
+        }
+        $game->save();
+
+        return $this->broadcastState($game, [
+            'by' => $sender,
+            'characterId' => $guessId,
+            'correct' => $correct,
+        ]);
+    }
+
+    /** A cosmetic, private update the server does not track — forwarded as-is. */
+    private function relay(GuessWhoGame $game, string $sender, string $action, array $payload)
+    {
+        broadcast(new GuessWhoActionEvent($game->room_code, $sender, $action, $payload))->toOthers();
 
         return response()->json(['status' => 'action_sent']);
+    }
+
+    /** Broadcast the authoritative slice, and answer the actor with it. */
+    private function broadcastState(GuessWhoGame $game, ?array $guess = null)
+    {
+        $turn = $game->status === 'playing' ? $game->turn_session : null;
+
+        broadcast(new GuessWhoStateEvent(
+            $game->room_code,
+            $turn,
+            $game->status,
+            $game->winner_session,
+            $guess
+        ));
+
+        return response()->json([
+            'status' => 'ok',
+            'state' => ['turn' => $turn, 'status' => $game->status, 'winner' => $game->winner_session],
+        ]);
     }
  }

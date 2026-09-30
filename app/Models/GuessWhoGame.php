@@ -21,6 +21,7 @@ class GuessWhoGame extends Model
         'player_1_character_id',
         'player_2_character_id',
         'status',
+        'turn_session',
         'winner_session',
     ];
 

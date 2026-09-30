@@ -206,6 +206,34 @@ export default function GameRoom({ game }: GameProps) {
     }
   }
 
+  // Apply the server's authoritative state: whose turn it is, the phase, and
+  // the outcome. The client no longer decides any of it locally.
+  function applyState(state: any) {
+    if (!state) return;
+
+    if (state.status === 'finished') {
+      setMyTurn(false);
+      setGameState('ended');
+      if (state.winner === sessionUuid) {
+        setWinMessage('مبروك! لقد فزت باللعبة بتخمين شخصية الخصم بنجاح!');
+      } else if (state.guess?.characterId) {
+        const name = game.category.characters.find((c) => c.id === state.guess.characterId)?.name_ar;
+        setWinMessage(`لقد فاز ${opponentNameRef.current}! خمّن أن شخصيتك هي: ${name ?? ''}`);
+      } else {
+        setWinMessage(`لقد فاز ${opponentNameRef.current}!`);
+      }
+      return;
+    }
+
+    if (state.status === 'playing') {
+      setGameState((prev) => (prev === 'ended' ? prev : 'playing'));
+      setMyTurn(state.turn === sessionUuid);
+      return;
+    }
+
+    setMyTurn(false);
+  }
+
   // Join registration on mount to claim slot 1/2 and prevent 3rd player entry
   useEffect(() => {
     let active = true;
@@ -295,6 +323,10 @@ export default function GameRoom({ game }: GameProps) {
           // The sender is on this same channel; only react to the opponent's.
           if (e.senderSession && e.senderSession === sessionUuid) return;
           handlePeerMessage({ action: e.action, payload: e.payload });
+        })
+        .listen('.state', (e: any) => {
+          // Authoritative: turn, phase, winner. Both players get this.
+          applyState(e);
         });
     });
 
@@ -307,39 +339,12 @@ export default function GameRoom({ game }: GameProps) {
     };
   }, [game.room_code, sessionUuid, isJoined]);
 
+  // The only thing still relayed as a raw action is the opponent's private
+  // elimination count; turns, guesses and outcomes arrive as authoritative
+  // `.state` broadcasts instead.
   const handlePeerMessage = (msg: any) => {
-    switch (msg.action) {
-      case 'select_ready':
-        break;
-      case 'elimination_update':
-        setOpponentRemaining(msg.payload.remaining);
-        break;
-      case 'guess':
-        const currentMySecret = mySecretRef.current;
-        const currentOpponentName = opponentNameRef.current;
-        const isCorrect = msg.payload.character_id === currentMySecret;
-        if (isCorrect) {
-          sendAction('guess_result', { success: true, winner: currentOpponentName });
-          setGameState('ended');
-          setWinMessage(`لقد فاز ${currentOpponentName}! خمن بنجاح أن شخصيتك هي: ${game.category.characters.find(c => c.id === currentMySecret)?.name_ar}`);
-        } else {
-          sendAction('guess_result', { success: false });
-          alert(`خمن الخصم بشكل خاطئ! دورك الآن.`);
-          setMyTurn(true);
-        }
-        break;
-      case 'guess_result':
-        if (msg.payload.success) {
-          setGameState('ended');
-          setWinMessage('مبروك! لقد فزت باللعبة بتخمين شخصية الخصم بنجاح!');
-        } else {
-          alert('تخمينك كان خاطئاً! انتهى دورك.');
-          setMyTurn(false);
-        }
-        break;
-      case 'pass_turn':
-        setMyTurn(true);
-        break;
+    if (msg.action === 'elimination_update') {
+      setOpponentRemaining(msg.payload.remaining);
     }
   };
 
@@ -352,18 +357,13 @@ export default function GameRoom({ game }: GameProps) {
 
   const handleChooseSecret = (id: number) => {
     setMySecret(id);
-    if (peerConnected) {
-      // Peer is already connected — data channel is open, transition immediately.
-      sendAction('select_ready', { id });
-      setGameState('playing');
-    } else {
-      // Peer not yet connected — move to a waiting state; the useEffect above
-      // will complete the transition once the peer joins and data channel opens.
-      setGameState('selecting');
-    }
+    sendAction('select_ready', { id });
+    // The server starts the game when both have chosen and broadcasts the turn;
+    // until then this is just the waiting screen.
+    setGameState(peerConnected ? 'playing' : 'selecting');
   };
 
-  const handleGuess = (charId: number, charName: string) => {
+  const handleGuess = (charId: number) => {
     if (!myTurn) {
       alert('ليس دورك حالياً لتخمين الشخصية.');
       return;
@@ -372,7 +372,7 @@ export default function GameRoom({ game }: GameProps) {
   };
 
   const handleEndTurn = () => {
-    setMyTurn(false);
+    if (!myTurn) return;
     sendAction('pass_turn', {});
   };
 

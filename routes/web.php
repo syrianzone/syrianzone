@@ -3,7 +3,6 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GuessWhoController;
 use App\Http\Controllers\HomeController;
-use App\Http\Controllers\SignalingController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -104,11 +103,9 @@ Route::get('/guesswho', [GuessWhoController::class, 'index']);
 Route::post('/guesswho/rooms', [GuessWhoController::class, 'createRoom'])->middleware('throttle:10,1');
 Route::get('/guesswho/room/{roomCode}', [GuessWhoController::class, 'showRoom']);
 Route::post('/guesswho/room/{roomCode}/join', [GuessWhoController::class, 'joinRoom'])->middleware('throttle:30,1');
-// The game's own moves go over Reverb now (replacing the WebRTC data channel);
-// `signal` stays only while the old path is being retired.
+// The game's own moves go over Reverb; the WebRTC signaling path is gone.
 Route::post('/guesswho/room/{roomCode}/action', [GuessWhoController::class, 'action'])->middleware('throttle:120,1');
 Route::get('/guesswho/room/{roomCode}/state', [GuessWhoController::class, 'state'])->middleware('throttle:60,1');
-Route::post('/guesswho/room/{roomCode}/signal', [SignalingController::class, 'signal'])->middleware('throttle:60,1');
 Route::post('/guesswho/broadcasting/auth', [GuessWhoController::class, 'authenticateBroadcasting'])->middleware('throttle:30,1');
 
 Route::get('/transit', function () {

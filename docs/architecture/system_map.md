@@ -115,7 +115,7 @@ Controllers issue raw spatial SQL (`ST_AsGeoJSON`, `ST_Distance_Sphere`) against
 | Transit | `/transit*`, `/api/v1/cities…`, `/studio/routes` | TransitAdminController, TransitStudioController, Api\V1\TransitController | Transit/ | [modules/transit.md](../modules/transit.md) |
 | Mishwar (hidden places) | `/mishwar`, `/api/v1/places…`, `/my/places…` | Place*, PlaceDiscovery, PlaceEngagement controllers | Places/ | [modules/mishwar-places.md](../modules/mishwar-places.md) |
 | Board ("لوحتي") | `/board`, `/api/v1/board` | BoardController | Board/ (14 widgets) | [modules/board.md](../modules/board.md) |
-| Guess Who | `/guesswho*`, signaling + broadcasting auth; admin at `/admin/guesswho` + `/api/v1/admin/guesswho/*` | GuessWhoController, SignalingController, GuessWhoAdminController | GuessWho/, Admin/GuessWho/ | [modules/guess-who.md](../modules/guess-who.md) |
+| Guess Who | `/guesswho*`, action relay + broadcasting auth over Reverb; admin at `/admin/guesswho` + `/api/v1/admin/guesswho/*` | GuessWhoController, GuessWhoAdminController | GuessWho/, Admin/GuessWho/ | [modules/guess-who.md](../modules/guess-who.md) |
 | Officials directory | `/syofficial`, `/api/v1/admin/syofficial/*` | SyOfficial*, SyOfficialAdminController | SyOfficial/ | [modules/directories.md](../modules/directories.md) |
 | Phonebook | `/phonebook`, `/api/v1/admin/phonebook/*` | Phonebook*, PhonebookAdminController | Phonebook/ | [modules/directories.md](../modules/directories.md) |
 | Gov apps | `/govapps`, `/api/v1/admin/govapps` | GovAppController, GovAppsAdminController | GovApps/ | [modules/directories.md](../modules/directories.md) |

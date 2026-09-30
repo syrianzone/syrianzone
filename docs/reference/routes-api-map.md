@@ -22,7 +22,7 @@ Generated from `routes/web.php` and `routes/api.php`. Grouped by feature area, m
 - ExternalDataController: `/syid`, `/syrian-contributors`, `/sites`, `/party`, `/house`, `/alignment`
 
 ### Guess Who
-- `GET /guesswho` · `POST /guesswho/rooms` (throttle 10/min) · `GET /guesswho/room/{roomCode}` · `POST .../join` (throttle 30/min) · `POST .../signal` · `POST /guesswho/broadcasting/auth`
+- `GET /guesswho` · `POST /guesswho/rooms` (throttle 10/min) · `GET /guesswho/room/{roomCode}` · `POST .../join` (throttle 30/min) · `POST .../action` (throttle 120/min) · `GET .../state` (throttle 60/min) · `POST /guesswho/broadcasting/auth`
 
 ### Games
 - `GET /games` · `GET /games/2048` · `GET /games/solitare` · `GET /games/tarneeb` (Inertia closures; records are device-local, no API)

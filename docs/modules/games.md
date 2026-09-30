@@ -42,6 +42,7 @@ resources/js/Pages/Games/
     │   └── match.ts             # shared rounds / target scoring
     ├── engine2048.ts            # pure 2048 rules (no React)
     ├── solitaire.ts             # pure Klondike rules (no React)
+    ├── tarneeb.ts               # tarneeb round engine + scoring (no React)
     └── scores.ts                # localStorage records
 ```
 
@@ -63,6 +64,20 @@ follow-suit and trick-winner rules (`trick.ts`), the ascending auction
 scoring (`match.ts`). A specific game is a thin module on top — the deck and the
 trick rules are the same whether it is tarneeb or trix; only the number of
 tricks, the trump convention and the round's point value differ.
+
+`_lib/tarneeb.ts` is the first such module: four seats in two partnerships
+(`teamOf`), a 13-card deal, the 7–13 auction driving `bidding.ts`, the declarer
+choosing trump, and trick-by-trick play driving `trick.ts`. A round is a plain
+value and every transition returns a new one (`bid`, `pass`, `chooseTrump`,
+`playCard`), so the table treats it like solitaire's `Deal`. Scoring is a single
+exported rule, `tarneebScore(bid, declarerTeam, tricks)` — the contract team
+scores the tricks it took when it reaches the bid, and the defenders score the
+bid when it does not.
+
+**Conventions.** Tarneeb varies from table to table, so the defaults live in
+`DEFAULT_TARNEEB` and everything variable is an option: `target` (41), the bid
+range (7–13) and the scoring rule (swappable). Not modelled yet, pending a
+canonical table: kaboot and the various doubles.
 
 ## 2a. Tests
 

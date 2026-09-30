@@ -3,7 +3,7 @@ import { Head } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
 import { SolitaireIcon } from '@/Components/Icons/ProjectIcons';
 import GameShell from '../_components/GameShell';
-import Solitaire from '../_components/Solitaire';
+import Solitaire, { SolitaireRules } from '../_components/Solitaire';
 
 export default function Index() {
   return (
@@ -26,6 +26,7 @@ export default function Index() {
         description="رتّب الأعمدة من ٢ إلى ١٣"
         icon={SolitaireIcon}
         width="max-w-6xl"
+        rules={<SolitaireRules />}
       >
         <Solitaire />
       </GameShell>

@@ -66,8 +66,8 @@ export default function GameShell({
                   القوانين
                 </button>
               </DialogTrigger>
-              <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
-                <DialogHeader>
+              <DialogContent dir="rtl" className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+                <DialogHeader className="text-start sm:text-start">
                   <DialogTitle>قوانين {title}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-3 text-sm leading-relaxed text-foreground">{rules}</div>

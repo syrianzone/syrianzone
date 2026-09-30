@@ -177,6 +177,20 @@ export function TarneebIcon({ className = "w-7 h-7" }: ProjectIconProps) {
   );
 }
 
+// 2i. Guess Who (multiplayer guessing - a magnifier over a question mark)
+export function GuessWhoIcon({ className = "w-7 h-7" }: ProjectIconProps) {
+  return (
+    <svg viewBox="0 0 32 32" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="13.5" cy="13.5" r="8.5" className="fill-[#FDE68A]/30 dark:fill-[#FCD34D]/20 stroke-[#D97706] dark:stroke-[#FBBF24]" strokeWidth="2" />
+      <path d="M20 20l6.8 6.8" className="stroke-[#0EA5E9] dark:stroke-[#38BDF8]" strokeWidth="2.75" strokeLinecap="round" />
+      <path d="M10.6 11.2a3 3 0 0 1 5.8 1c0 1.6-1.6 2-1.6 3.4" className="stroke-[#374151] dark:stroke-[#E2E8F0]" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="14.6" cy="18.5" r="1.15" className="fill-[#374151] dark:fill-[#E2E8F0]" />
+      {/* Theme Accent Touch */}
+      <path d="M26 7.5v3M24.5 9h3" stroke="hsl(var(--primary))" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 // 3. Phonebook (Directory - Amber & Emerald Directory Book)
 export function PhonebookIcon({ className = "w-7 h-7" }: ProjectIconProps) {
   return (

@@ -1,10 +1,10 @@
 import React from 'react';
 import { Head, Link } from '@inertiajs/react';
-import { Lock } from 'lucide-react';
+import { Lock, Users } from 'lucide-react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Card, CardContent } from '@/Components/ui/card';
 import { GamesIcon } from '@/Components/Icons/ProjectIcons';
-import { GAMES, gameHref } from './_lib/games';
+import { GAMES, gameEntryHref } from './_lib/games';
 
 function CardBody({ game }: { game: (typeof GAMES)[number] }) {
   return (
@@ -12,6 +12,12 @@ function CardBody({ game }: { game: (typeof GAMES)[number] }) {
       <game.icon className="h-10 w-10" />
       <span className="text-xs font-bold sm:text-sm">{game.title}</span>
       <span className="text-[11px] leading-snug text-muted-foreground">{game.tagline}</span>
+      {game.online && (
+        <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+          <Users className="h-3 w-3" />
+          لعب مع صديق
+        </span>
+      )}
       {game.comingSoon && (
         <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
           <Lock className="h-3 w-3" />
@@ -29,12 +35,12 @@ export default function Index() {
         <title>الألعاب | Syrian Zone</title>
         <meta
           name="description"
-          content="ألعاب Syrian Zone: 2048 وسوليتير وألعاب عربية أخرى — تعمل دون اتصال ودون تثبيت."
+          content="ألعاب Syrian Zone: 2048 وسوليتير وطرنيب، ولعبة من هو؟ مع صديق — تلعبها من المتصفح مباشرة، دون تحميل ولا تسجيل."
         />
         <meta property="og:title" content="الألعاب | Syrian Zone" />
         <meta
           property="og:description"
-          content="ألعاب بسيطة تلعبها من المتصفح مباشرة، بدون تحميل ولا تسجيل."
+          content="ألعاب تلعبها من المتصفح مباشرة: 2048 وسوليتير وطرنيب، ومن هو؟ مع صديق — بدون تحميل ولا تسجيل."
         />
       </Head>
 
@@ -60,7 +66,7 @@ export default function Index() {
               ) : (
                 <Link
                   key={game.slug}
-                  href={gameHref(game.slug)}
+                  href={gameEntryHref(game)}
                   className="w-[calc(50%-0.375rem)] no-underline transition-colors hover:bg-accent/40 focus-visible:outline-none sm:w-52"
                 >
                   <Card className="h-full cursor-pointer rounded-2xl transition-colors hover:border-primary/50">

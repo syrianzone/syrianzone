@@ -36,6 +36,10 @@ resources/js/Pages/Games/
 └── _lib/
     ├── games.ts                 # GAMES registry — the single source of truth
     ├── cards.ts                 # shared deck, labels and pip geometry
+    ├── cardGames/
+    │   ├── trick.ts             # shared trick-taking primitives
+    │   ├── bidding.ts           # shared ascending auction
+    │   └── match.ts             # shared rounds / target scoring
     ├── engine2048.ts            # pure 2048 rules (no React)
     ├── solitaire.ts             # pure Klondike rules (no React)
     └── scores.ts                # localStorage records
@@ -52,6 +56,13 @@ entirely by the generic `.sz-card*` classes in `app.css`; a board supplies the
 sizing context (`--sz-card-w`, `--sz-card-h-ratio`, `--sz-card-radius`) and
 lays out its own piles. Solitaire is the first consumer; the trick-taking games
 (tarneeb, trix) will reuse it rather than restate a card.
+
+`_lib/cardGames/` is the shared **engine kit** for trick-taking games: the
+follow-suit and trick-winner rules (`trick.ts`), the ascending auction
+(`bidding.ts`) and the round/target scaffolding with per-team or per-seat
+scoring (`match.ts`). A specific game is a thin module on top — the deck and the
+trick rules are the same whether it is tarneeb or trix; only the number of
+tricks, the trump convention and the round's point value differ.
 
 ## 2a. Tests
 

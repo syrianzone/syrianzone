@@ -766,6 +766,177 @@
     }
 }
 
+/* ---------------------------------------------------------------------------
+   Tarneeb — the table.
+
+   Four seats around a trick area, the player's hand fanned out below it. The
+   cards are the shared `.sz-card` kit; the seat boxes set a smaller
+   `--sz-card-w` so an opponent's back is compact, and the hand sets a larger
+   one. The board is `dir="ltr"` (a trick reads clockwise, left to right) while
+   the page is RTL. */
+.sz-tar {
+    --sz-card-radius: 0.5rem;
+    --sz-card-h-ratio: 1.4286;
+    --sz-tar-card-w: 5rem;
+    --sz-tar-seat-w: 3.2rem;
+}
+
+.sz-tar__board {
+    display: grid;
+    grid-template-columns: auto minmax(9rem, 1fr) auto;
+    grid-template-rows: auto minmax(9rem, 1fr) auto;
+    gap: 0.5rem;
+    align-items: center;
+    justify-items: center;
+    margin-inline: auto;
+    max-width: 34rem;
+}
+
+.sz-tar__seat {
+    --sz-card-w: var(--sz-tar-seat-w);
+    width: var(--sz-tar-seat-w);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    border-radius: 0.75rem;
+    border: 1px solid hsl(var(--border) / 0.5);
+    background: hsl(var(--muted) / 0.25);
+    padding: 0.4rem;
+}
+
+.sz-tar__seat--north {
+    grid-area: 1 / 2;
+}
+.sz-tar__seat--west {
+    grid-area: 2 / 1;
+}
+.sz-tar__seat--east {
+    grid-area: 2 / 3;
+}
+.sz-tar__seat-card {
+    width: var(--sz-tar-seat-w);
+}
+
+.sz-tar__seat-name {
+    font-size: 11px;
+    font-weight: 800;
+    color: hsl(var(--muted-foreground));
+}
+
+.sz-tar__seat-bid {
+    font-size: 12px;
+    font-weight: 800;
+    color: hsl(var(--primary));
+}
+
+/* The trick: the four played cards in a plus, with the trump in the middle. */
+.sz-tar__trick {
+    grid-area: 2 / 2;
+    --sz-card-w: var(--sz-tar-seat-w);
+    display: grid;
+    width: 100%;
+    height: 100%;
+    min-height: 9rem;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    place-items: center;
+}
+
+.sz-tar__slot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--sz-tar-seat-w);
+    min-height: calc(var(--sz-tar-seat-w) * var(--sz-card-h-ratio));
+}
+
+.sz-tar__slot--n {
+    grid-area: 1 / 2;
+}
+.sz-tar__slot--w {
+    grid-area: 2 / 1;
+}
+.sz-tar__slot--c {
+    grid-area: 2 / 2;
+}
+.sz-tar__slot--e {
+    grid-area: 2 / 3;
+}
+.sz-tar__slot--s {
+    grid-area: 3 / 2;
+}
+
+.sz-tar__trump {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: hsl(var(--primary));
+}
+
+/* The player's hand: a fan where each card leaves a readable strip. */
+.sz-tar__hand {
+    --sz-card-w: var(--sz-tar-card-w);
+    display: flex;
+    justify-content: center;
+    margin-top: 0.75rem;
+    min-height: calc(var(--sz-tar-card-w) * var(--sz-card-h-ratio));
+}
+
+.sz-tar__hand .sz-card {
+    width: var(--sz-tar-card-w);
+    flex: 0 0 auto;
+}
+
+.sz-tar__hand .sz-card + .sz-card {
+    margin-left: calc(var(--sz-tar-card-w) * -0.52);
+}
+
+/* A card the player may legally play right now. */
+.sz-tar__playable {
+    cursor: pointer;
+    transition: transform 120ms, box-shadow 120ms;
+}
+
+.sz-tar__playable:hover {
+    transform: translateY(-0.7rem);
+    box-shadow:
+        0 0 0 3px hsl(var(--primary) / 0.5),
+        0 10px 18px hsl(0 0 0 / 0.35);
+}
+
+.sz-tar__bid,
+.sz-tar__suit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.25rem;
+    height: 2.25rem;
+    padding-inline: 0.5rem;
+    border-radius: 0.75rem;
+    border: 1px solid hsl(var(--input));
+    background: hsl(var(--background));
+    font-size: 0.9rem;
+    font-weight: 800;
+    transition: background-color 120ms, border-color 120ms;
+}
+
+.sz-tar__suit {
+    font-size: 1.25rem;
+}
+
+.sz-tar__bid:hover,
+.sz-tar__suit:hover {
+    background: hsl(var(--accent));
+    border-color: hsl(var(--primary) / 0.5);
+}
+
+@media (max-width: 640px) {
+    .sz-tar {
+        --sz-tar-card-w: 3.2rem;
+        --sz-tar-seat-w: 2.4rem;
+    }
+}
+
 /* shadcn-style thin scrollbar for native overflow areas (dialogs, dropdowns). */
 .sz-scroll {
     scrollbar-width: thin;

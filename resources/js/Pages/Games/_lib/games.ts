@@ -1,5 +1,5 @@
 import type React from 'react';
-import { Game2048Icon, SolitaireIcon } from '@/Components/Icons/ProjectIcons';
+import { Game2048Icon, SolitaireIcon, TarneebIcon } from '@/Components/Icons/ProjectIcons';
 
 // Single registry for the hub. A game becomes reachable by adding one entry
 // here and a matching route in routes/web.php — the card grid, the sitemap
@@ -26,6 +26,12 @@ export const GAMES: GameEntry[] = [
     title: 'سوليتير',
     tagline: 'رتّب الأعمدة من ٢ إلى ١٣',
     icon: SolitaireIcon,
+  },
+  {
+    slug: 'tarneeb',
+    title: 'طرنيب',
+    tagline: 'زايد من ٧ إلى ١٣ واجمع الحيل حتى ٤١',
+    icon: TarneebIcon,
   },
 ];
 

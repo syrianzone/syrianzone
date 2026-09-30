@@ -163,6 +163,20 @@ export function SolitaireIcon({ className = "w-7 h-7" }: ProjectIconProps) {
   );
 }
 
+// 2h. Tarneeb (trick-taking - four cards to a trick, one trump, teal & amber)
+export function TarneebIcon({ className = "w-7 h-7" }: ProjectIconProps) {
+  return (
+    <svg viewBox="0 0 32 32" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="10" y="3" width="12" height="17" rx="2.5" transform="rotate(-8 16 11)" className="fill-[#F1F5F9]/70 dark:fill-[#E2E8F0]/20 stroke-[#64748B] dark:stroke-[#CBD5E1]" strokeWidth="2" />
+      <rect x="10" y="12" width="12" height="17" rx="2.5" className="fill-[#0EA5E9]/15 dark:fill-[#38BDF8]/20 stroke-[#0284C7] dark:stroke-[#38BDF8]" strokeWidth="2" />
+      <path d="M16 17c-1.2 1.6-2.4 2.7-2.4 4a2.4 2.4 0 0 0 4.8 0c0-1.3-1.2-2.4-2.4-4z" className="fill-[#EF4444] dark:fill-[#F87171]" />
+      <circle cx="20.5" cy="27" r="2.5" className="fill-[#F59E0B] dark:fill-[#FBBF24]" />
+      {/* Theme Accent Touch */}
+      <circle cx="16" cy="6" r="1.6" fill="hsl(var(--primary))" />
+    </svg>
+  );
+}
+
 // 3. Phonebook (Directory - Amber & Emerald Directory Book)
 export function PhonebookIcon({ className = "w-7 h-7" }: ProjectIconProps) {
   return (

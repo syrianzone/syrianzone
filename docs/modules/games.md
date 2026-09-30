@@ -17,6 +17,7 @@ renders on the server like any other Inertia page.
 | GET | `/games` | `Games/Index` | Hub; renders the card grid from `GAMES` |
 | GET | `/games/2048` | `Games/2048/Index` | Playable |
 | GET | `/games/solitare` | `Games/Solitare/Index` | Playable (Klondike) |
+| GET | `/games/tarneeb` | `Games/Tarneeb/Index` | Playable (Tarneeb vs three AI) |
 
 All three are public closures in `routes/web.php` with no middleware, no
 throttle and no auth gate — they are static shells, exactly like `/muslim`.
@@ -28,21 +29,25 @@ resources/js/Pages/Games/
 ├── Index.tsx                    # hub: icon + title + card grid
 ├── 2048/Index.tsx               # page shell (Head, MainLayout, GameShell)
 ├── Solitare/Index.tsx           # page shell
+├── Tarneeb/Index.tsx            # page shell
 ├── _components/
 │   ├── GameShell.tsx            # shared sub-page chrome: back link + title
 │   ├── PlayingCard.tsx          # shared card face/back, no game rules
 │   ├── Game2048.tsx             # the board: state, input, rendering
-│   └── Solitaire.tsx            # clock, selection, undo, drag plumbing
+│   ├── Solitaire.tsx            # clock, selection, undo, drag plumbing
+│   └── Tarneeb.tsx              # the table: seats, trick, bidding, hand
 └── _lib/
     ├── games.ts                 # GAMES registry — the single source of truth
     ├── cards.ts                 # shared deck, labels and pip geometry
     ├── cardGames/
     │   ├── trick.ts             # shared trick-taking primitives
     │   ├── bidding.ts           # shared ascending auction
-    │   └── match.ts             # shared rounds / target scoring
+    │   ├── match.ts             # shared rounds / target scoring
+    │   └── hand.ts              # shared hand-evaluation primitives
     ├── engine2048.ts            # pure 2048 rules (no React)
     ├── solitaire.ts             # pure Klondike rules (no React)
     ├── tarneeb.ts               # tarneeb round engine + scoring (no React)
+    ├── tarneebAi.ts             # tarneeb bidding and play heuristics (no React)
     └── scores.ts                # localStorage records
 ```
 
@@ -78,6 +83,23 @@ bid when it does not.
 `DEFAULT_TARNEEB` and everything variable is an option: `target` (41), the bid
 range (7–13) and the scoring rule (swappable). Not modelled yet, pending a
 canonical table: kaboot and the various doubles.
+
+`_lib/tarneebAi.ts` is the opponent, built on the shared hand reads in
+`cardGames/hand.ts` (`power`, `groupBySuit`, `topSequence`). It is a small,
+readable table policy — `estimateTricks` / `bestTrump` for the auction,
+`chooseBid` and `chooseTrump`, and `choosePlay`, which wins a trick with the
+cheapest card that beats the table, dumps low while partner is safe, and cashes
+an ace in a side suit when leading. It is pure, so the same functions drive one
+opponent or all four seats; `tarneebAi.test.ts` plays 200 AI-vs-AI rounds and
+asserts every one ends in thirteen tricks with a legal score.
+
+`_components/Tarneeb.tsx` is the table. Seat 0 is the player and the other three
+are driven by `tarneebAi` through a timed effect, so a turn is followable. It
+shows the four seats (opponents as a counted back), the trick in a plus with the
+trump in the middle, and the player's hand fanned below, where only the legal
+cards are tappable. The whole round is one `TarneebRound` value; the component
+only turns taps into `bid` / `pass` / `chooseTrump` / `playCard` and lets
+`cardGames/match.ts` carry the score between rounds.
 
 ## 2a. Tests
 

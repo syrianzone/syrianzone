@@ -56,6 +56,9 @@ Route::get('/games/2048', function () {
 Route::get('/games/solitare', function () {
     return Inertia::render('Games/Solitare/Index');
 });
+Route::get('/games/tarneeb', function () {
+    return Inertia::render('Games/Tarneeb/Index');
+});
 Route::get('/phonebook', [\App\Http\Controllers\PhonebookController::class, 'index']);
 Route::get('/shawarma', function () {
     return Inertia::render('Shawarma/Index');

@@ -19,6 +19,7 @@ test('each game has its own public route', function (string $path, string $compo
 })->with([
     ['/games/2048', 'Games/2048/Index'],
     ['/games/solitare', 'Games/Solitare/Index'],
+    ['/games/tarneeb', 'Games/Tarneeb/Index'],
 ]);
 
 test('an unknown game slug is not routed', function () {
@@ -26,7 +27,7 @@ test('an unknown game slug is not routed', function () {
 });
 
 test('every games route is a public closure with no middleware', function () {
-    foreach (['games', 'games/2048', 'games/solitare'] as $path) {
+    foreach (['games', 'games/2048', 'games/solitare', 'games/tarneeb'] as $path) {
         $route = collect(app('router')->getRoutes()->getRoutes())
             ->first(fn ($r) => $r->uri() === $path && in_array('GET', $r->methods(), true));
 

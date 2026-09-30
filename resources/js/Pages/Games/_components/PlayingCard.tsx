@@ -13,6 +13,8 @@ export interface PlayingCardProps {
   decorative?: boolean;
   picked?: boolean;
   hinted?: boolean;
+  /** Extra classes for a board-specific state (a legal-to-play glow, say). */
+  className?: string;
   onClick?: () => void;
   onDoubleClick?: () => void;
   onPointerDown?: (e: React.PointerEvent) => void;
@@ -32,6 +34,7 @@ export default function PlayingCard({
   decorative,
   picked,
   hinted,
+  className: extra,
   onClick,
   onDoubleClick,
   onPointerDown,
@@ -44,7 +47,7 @@ export default function PlayingCard({
     interactive ? 'cursor-grab active:cursor-grabbing' : ''
   } ${picked ? 'sz-card--picked' : ''} ${hinted ? 'sz-card--hinted' : ''} ${
     dropTarget ? 'sz-card--drop' : ''
-  }`;
+  } ${extra ?? ''}`;
 
   const body = (
     <>

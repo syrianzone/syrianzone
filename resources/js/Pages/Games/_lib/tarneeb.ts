@@ -37,7 +37,7 @@ export const TARNEEB_PLAYERS = 4;
 /** Cards each seat is dealt, which is also the number of tricks in a round. */
 export const TARNEEB_HAND = 13;
 /** Partnerships: seats 0 and 2 against 1 and 3. */
-export const TARNEEB_TEAMS: readonly (readonly Seat[])[] = [
+export const TARNEEB_TEAMS: Seat[][] = [
   [0, 2],
   [1, 3],
 ];

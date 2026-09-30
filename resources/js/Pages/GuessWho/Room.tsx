@@ -192,12 +192,19 @@ export default function GameRoom({ game }: GameProps) {
   const [peerDisconnected, setPeerDisconnected] = useState(false);
   const peerReconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // WebRTC Refs
-  const peerConnection = useRef<RTCPeerConnection | null>(null);
-  const dataChannel = useRef<RTCDataChannel | null>(null);
-  const iceCandidateQueue = useRef<RTCIceCandidateInit[]>([]);
-  // Debounce timer: collapses rapid Reverb leave/join flicker into one call attempt
-  const initiateCallTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Game actions go through the server, which relays them over Reverb. Defined
+  // as a declaration so the effects above can reference it.
+  async function sendAction(action: string, payload: any) {
+    try {
+      await axios.post(`/guesswho/room/${game.room_code}/action`, {
+        sender_session: sessionUuid,
+        action,
+        payload: payload ?? {},
+      });
+    } catch (err) {
+      console.error('Failed to send action:', err);
+    }
+  }
 
   // Join registration on mount to claim slot 1/2 and prevent 3rd player entry
   useEffect(() => {
@@ -232,20 +239,18 @@ export default function GameRoom({ game }: GameProps) {
     setBoard([...items].sort(() => Math.random() - 0.5));
   }, [game]);
 
-  // Auto-transition from 'selecting' → 'playing' once peer connects and secret is chosen.
-  // This prevents the game from starting while the data channel is not yet open.
+  // Auto-transition from 'selecting' → 'playing' once the opponent is in the
+  // room and the secret is chosen. The presence channel replaces the old
+  // "wait for the data channel to open" gate.
   useEffect(() => {
     if (peerConnected && mySecret !== null && (gameState === 'selecting' || gameState === 'lobby')) {
-      // Send directly via ref to avoid stale-closure on sendStateUpdate
-      if (dataChannel.current?.readyState === 'open') {
-        dataChannel.current.send(JSON.stringify({ action: 'select_ready', payload: { id: mySecret } }));
-      }
+      sendAction('select_ready', { id: mySecret });
       setGameState('playing');
     }
   }, [peerConnected, mySecret, gameState]);
 
 
-  // Configure WebRTC and Laravel Echo listeners
+  // Join the room's presence channel and listen for the opponent's actions.
   useEffect(() => {
     if (!isJoined) return;
 
@@ -253,73 +258,43 @@ export default function GameRoom({ game }: GameProps) {
     let isMounted = true;
     const channelName = `guesswho.${game.room_code}`;
 
+    // The opponent is present: adopt them and, by the tie-break the data
+    // channel used to apply, the lower session id takes the first turn.
+    const adoptPeer = (other: any) => {
+      setPeerUuid(other.session_id);
+      setOpponentName(other.name || 'لاعب آخر');
+      setPeerConnected(true);
+      setPeerDisconnected(false);
+      if (peerReconnectTimer.current) {
+        clearTimeout(peerReconnectTimer.current);
+        peerReconnectTimer.current = null;
+      }
+      setMyTurn(sessionUuid < other.session_id);
+    };
+
     initEcho().then((echo) => {
       if (!echo || !isMounted) return;
       activeEcho = echo;
 
-      console.log('[GuessWho] Joining presence channel:', channelName, 'as session:', sessionUuid);
-
       echo.join(channelName)
         .here((users: any[]) => {
-          console.log('[GuessWho] .here() fired, users in channel:', users);
-          const other = users.find(u => u.session_id !== sessionUuid);
-          if (other) {
-            console.log('[GuessWho] Peer already in channel:', other.session_id);
-            setPeerUuid(other.session_id);
-            setOpponentName(other.name || 'لاعب آخر');
-            if (sessionUuid < other.session_id) {
-              console.log('[GuessWho] I have smaller UUID, scheduling call');
-              scheduleCall(other.session_id);
-            } else {
-              console.log('[GuessWho] I have larger UUID, waiting for offer');
-            }
-          } else {
-            console.log('[GuessWho] No peer in channel yet, waiting for joining event');
-          }
+          const other = users.find((u) => u.session_id !== sessionUuid);
+          if (other) adoptPeer(other);
         })
-        .joining((user: any) => {
-          console.log('[GuessWho] .joining() fired, new user:', user.session_id);
-          setPeerUuid(user.session_id);
-          setOpponentName(user.name || 'لاعب آخر');
-          setPeerDisconnected(false);
-          if (peerReconnectTimer.current) {
-            clearTimeout(peerReconnectTimer.current);
-            peerReconnectTimer.current = null;
-          }
-          if (sessionUuid < user.session_id) {
-            console.log('[GuessWho] I have smaller UUID, scheduling call to joiner');
-            scheduleCall(user.session_id);
-          } else {
-            console.log('[GuessWho] I have larger UUID, waiting for offer from joiner');
-          }
-        })
+        .joining((user: any) => adoptPeer(user))
         .leaving((user: any) => {
-          console.log('[GuessWho] .leaving() fired, user left:', user.session_id);
           if (user.session_id === peerUuidRef.current) {
             setPeerConnected(false);
-            if (peerConnection.current) {
-              try {
-                peerConnection.current.close();
-              } catch (err) {
-                console.error('[GuessWho] Error closing peer connection on leaving:', err);
-              }
-              peerConnection.current = null;
-              dataChannel.current = null;
-              iceCandidateQueue.current = [];
-            }
-            peerReconnectTimer.current = setTimeout(() => {
-              setPeerDisconnected(true);
-            }, 5000);
+            peerReconnectTimer.current = setTimeout(() => setPeerDisconnected(true), 5000);
           }
         })
         .error((error: any) => {
           console.error('[GuessWho] Presence channel subscription error:', error);
         })
-        .listen('.signal', (e: any) => {
-          console.log('[GuessWho] Signal received:', e.type, 'targetSession:', e.targetSession);
-          if (e.targetSession === sessionUuid) {
-            handleSignal(e);
-          }
+        .listen('.action', (e: any) => {
+          // The sender is on this same channel; only react to the opponent's.
+          if (e.senderSession && e.senderSession === sessionUuid) return;
+          handlePeerMessage({ action: e.action, payload: e.payload });
         });
     });
 
@@ -328,216 +303,9 @@ export default function GameRoom({ game }: GameProps) {
       if (activeEcho) {
         activeEcho.leave(channelName);
       }
-      peerConnection.current?.close();
-      if (initiateCallTimer.current) clearTimeout(initiateCallTimer.current);
       if (peerReconnectTimer.current) clearTimeout(peerReconnectTimer.current);
     };
   }, [game.room_code, sessionUuid, isJoined]);
-
-  // Debounced call initiator — collapses rapid leave/join events into one stable attempt
-  const scheduleCall = (targetSession: string) => {
-    if (initiateCallTimer.current) clearTimeout(initiateCallTimer.current);
-    initiateCallTimer.current = setTimeout(async () => {
-      try {
-        console.log('[GuessWho] Debounce resolved, initiating call to:', targetSession);
-        await initiateCall(targetSession);
-        console.log('[GuessWho] initiateCall completed — offer sent, waiting for answer');
-      } catch (err) {
-        console.error('[GuessWho] initiateCall failed:', err);
-      }
-    }, 800);
-  };
-
-  // Setup Peer Connection
-  const createPeerConnection = (targetSession: string) => {
-    const pc = new RTCPeerConnection({
-      iceServers: [
-        // STUN — direct connection when NAT allows
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        // TURN — relay fallback for symmetric NATs (Open Relay by Metered, free)
-        {
-          urls: 'turn:openrelay.metered.ca:80',
-          username: 'openrelayproject',
-          credential: 'openrelayproject',
-        },
-        {
-          urls: 'turn:openrelay.metered.ca:443',
-          username: 'openrelayproject',
-          credential: 'openrelayproject',
-        },
-        {
-          urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-          username: 'openrelayproject',
-          credential: 'openrelayproject',
-        },
-        {
-          urls: 'turns:openrelay.metered.ca:443',
-          username: 'openrelayproject',
-          credential: 'openrelayproject',
-        },
-      ]
-    });
-
-    // Log all state transitions for debugging
-    pc.onconnectionstatechange = () =>
-      console.log('[GuessWho] PC connectionState:', pc.connectionState);
-    pc.onicegatheringstatechange = () =>
-      console.log('[GuessWho] ICE gatheringState:', pc.iceGatheringState);
-    pc.oniceconnectionstatechange = () =>
-      console.log('[GuessWho] ICE connectionState:', pc.iceConnectionState);
-    pc.onsignalingstatechange = () =>
-      console.log('[GuessWho] signalingState:', pc.signalingState);
-
-    pc.onicecandidate = (event) => {
-      if (event.candidate) {
-        console.log('[GuessWho] Sending ICE candidate:', event.candidate.type);
-        sendSignal(targetSession, 'candidate', event.candidate);
-      } else {
-        console.log('[GuessWho] ICE gathering complete');
-      }
-    };
-
-    pc.ondatachannel = (event) => {
-      setupDataChannel(event.channel);
-    };
-
-    peerConnection.current = pc;
-    return pc;
-  };
-
-  const setupDataChannel = (channel: RTCDataChannel) => {
-    dataChannel.current = channel;
-    channel.onopen = () => {
-      setPeerConnected(true);
-      const isPlayer1 = sessionUuid < (peerUuidRef.current || '');
-      setMyTurn(isPlayer1);
-    };
-    channel.onclose = () => setPeerConnected(false);
-    channel.onmessage = (e) => {
-      const msg = JSON.parse(e.data);
-      handlePeerMessage(msg);
-    };
-  };
-
-  const initiateCall = async (targetSession: string) => {
-    // Close any stale connection before re-initiating (handles Reverb reconnect flicker)
-    if (peerConnection.current) {
-      peerConnection.current.close();
-      peerConnection.current = null;
-      dataChannel.current = null;
-      iceCandidateQueue.current = [];
-    }
-    const pc = createPeerConnection(targetSession);
-    const dc = pc.createDataChannel('game_sync');
-    setupDataChannel(dc);
-
-    console.log('[GuessWho] Creating offer...');
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-    console.log('[GuessWho] Sending offer, sdpType:', offer.type);
-    await sendSignal(targetSession, 'offer', offer);
-    console.log('[GuessWho] Offer sent — waiting for answer from:', targetSession);
-  };
-
-  const handleSignal = async (e: any) => {
-    if (e.type === 'offer') {
-      console.log('[GuessWho] Received new offer signal. Re-creating peer connection.');
-      if (peerConnection.current) {
-        try {
-          peerConnection.current.close();
-        } catch (err) {
-          console.error('[GuessWho] Error closing peer connection on offer:', err);
-        }
-        peerConnection.current = null;
-        dataChannel.current = null;
-        iceCandidateQueue.current = [];
-      }
-    }
-
-    const pc = peerConnection.current || createPeerConnection(e.senderSession);
-
-    // SDP is sent as raw JSON (JSON safely carries \r\n). Older clients sent
-    // base64 via btoa(); accept both so a deploy doesn't break live rooms.
-    const decodeSdp = (data: any): RTCSessionDescriptionInit => {
-      const raw = data?.sdp;
-      if (typeof raw !== 'string') return data as RTCSessionDescriptionInit;
-      if (raw.includes('\n') || raw.includes('\r')) return { type: data.type, sdp: raw };
-      try {
-        return { type: data.type, sdp: atob(raw) };
-      } catch {
-        return { type: data.type, sdp: raw };
-      }
-    };
-
-    if (e.type === 'offer') {
-      try {
-        await pc.setRemoteDescription(new RTCSessionDescription(decodeSdp(e.data)));
-      } catch (err) {
-        console.error('[GuessWho] Invalid offer SDP, ignoring:', err);
-        return;
-      }
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      sendSignal(e.senderSession, 'answer', answer);
-      // Drain any candidates that arrived before the remote description was set
-      for (const candidate of iceCandidateQueue.current.splice(0)) {
-        try {
-          await pc.addIceCandidate(new RTCIceCandidate(candidate));
-        } catch (err) {
-          console.error('[GuessWho] Stale ICE candidate, ignoring:', err);
-        }
-      }
-    } else if (e.type === 'answer') {
-      try {
-        await pc.setRemoteDescription(new RTCSessionDescription(decodeSdp(e.data)));
-      } catch (err) {
-        console.error('[GuessWho] Invalid answer SDP, ignoring:', err);
-        return;
-      }
-      // Drain any candidates that arrived before the remote description was set
-      for (const candidate of iceCandidateQueue.current.splice(0)) {
-        try {
-          await pc.addIceCandidate(new RTCIceCandidate(candidate));
-        } catch (err) {
-          console.error('[GuessWho] Stale ICE candidate, ignoring:', err);
-        }
-      }
-    } else if (e.type === 'candidate') {
-      if (pc.remoteDescription) {
-        try {
-          await pc.addIceCandidate(new RTCIceCandidate(e.data));
-        } catch (err) {
-          console.error('[GuessWho] Stale ICE candidate, ignoring:', err);
-        }
-      } else if (iceCandidateQueue.current.length < 50) {
-        // Queue candidate until remote description is ready (bounded: drop
-        // beyond 50 to avoid unbounded growth on a dead peer)
-        iceCandidateQueue.current.push(e.data);
-      }
-    }
-  };
-
-  const sendSignal = async (targetSession: string, type: string, data: any) => {
-    try {
-      // Send SDP raw — JSON transports \r\n losslessly, base64 would add 33%.
-      await axios.post(`/guesswho/room/${game.room_code}/signal`, {
-        target_session: targetSession,
-        sender_session: sessionUuid,
-        type,
-        data
-      });
-    } catch (err) {
-      console.error('Failed to send signal:', err);
-    }
-  };
-
-  // Sync state over RTCDatachannel
-  const sendStateUpdate = (action: string, payload: any) => {
-    if (dataChannel.current?.readyState === 'open') {
-      dataChannel.current.send(JSON.stringify({ action, payload }));
-    }
-  };
 
   const handlePeerMessage = (msg: any) => {
     switch (msg.action) {
@@ -551,11 +319,11 @@ export default function GameRoom({ game }: GameProps) {
         const currentOpponentName = opponentNameRef.current;
         const isCorrect = msg.payload.character_id === currentMySecret;
         if (isCorrect) {
-          sendStateUpdate('guess_result', { success: true, winner: currentOpponentName });
+          sendAction('guess_result', { success: true, winner: currentOpponentName });
           setGameState('ended');
           setWinMessage(`لقد فاز ${currentOpponentName}! خمن بنجاح أن شخصيتك هي: ${game.category.characters.find(c => c.id === currentMySecret)?.name_ar}`);
         } else {
-          sendStateUpdate('guess_result', { success: false });
+          sendAction('guess_result', { success: false });
           alert(`خمن الخصم بشكل خاطئ! دورك الآن.`);
           setMyTurn(true);
         }
@@ -579,14 +347,14 @@ export default function GameRoom({ game }: GameProps) {
     const newBoard = board.map(c => c.id === id ? { ...c, eliminated: !c.eliminated } : c);
     setBoard(newBoard);
     const remaining = newBoard.filter(c => !c.eliminated).length;
-    sendStateUpdate('elimination_update', { remaining });
+    sendAction('elimination_update', { remaining });
   };
 
   const handleChooseSecret = (id: number) => {
     setMySecret(id);
     if (peerConnected) {
       // Peer is already connected — data channel is open, transition immediately.
-      sendStateUpdate('select_ready', { id });
+      sendAction('select_ready', { id });
       setGameState('playing');
     } else {
       // Peer not yet connected — move to a waiting state; the useEffect above
@@ -600,12 +368,12 @@ export default function GameRoom({ game }: GameProps) {
       alert('ليس دورك حالياً لتخمين الشخصية.');
       return;
     }
-    sendStateUpdate('guess', { character_id: charId });
+    sendAction('guess', { character_id: charId });
   };
 
   const handleEndTurn = () => {
     setMyTurn(false);
-    sendStateUpdate('pass_turn', {});
+    sendAction('pass_turn', {});
   };
 
   if (loadingJoin) {

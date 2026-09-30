@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\GuessWhoCategory;
 use App\Models\GuessWhoCharacter;
 use App\Models\GuessWhoGame;
+use App\Events\GuessWhoActionEvent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -12,6 +13,9 @@ use Inertia\Inertia;
 
 class GuessWhoController extends Controller
 {
+    /** Upper bound on a relayed game action payload (ids, counts, flags). */
+    private const MAX_ACTION_BYTES = 16384;
+
     // Render the lobby index with active categories and total characters
     public function index()
     {
@@ -210,5 +214,48 @@ class GuessWhoController extends Controller
         }
 
         return response()->json(['status' => 'joined', 'role' => $role]);
+    }
+
+    /**
+     * Relay one game action to the opponent over Reverb.
+     *
+     * This is the first step of retiring the WebRTC data channel: the client
+     * POSTs {action, payload} and the server broadcasts it on the room's
+     * presence channel. Membership and the payload size are checked here, but
+     * the move is not yet policed against the rules — that arrives once the
+     * server holds the game state.
+     */
+    public function action(Request $request, $roomCode)
+    {
+        // Actions are tiny (a character id, a count, a flag); anything larger is abuse.
+        $validated = $request->validate([
+            'sender_session' => 'required|string',
+            'action' => 'required|string|max:40',
+            'payload' => 'nullable|array',
+        ]);
+
+        $game = GuessWhoGame::where('room_code', $roomCode)->first();
+        if (!$game) {
+            return response()->json(['error' => 'الغرفة غير موجودة.'], 404);
+        }
+
+        $players = [$game->player_1_session, $game->player_2_session];
+        if (!in_array($validated['sender_session'], $players, true)) {
+            return response()->json(['error' => 'غير مصرح لك باللعب في هذه الغرفة.'], 403);
+        }
+
+        $payload = $validated['payload'] ?? [];
+        if (strlen(json_encode($payload)) > self::MAX_ACTION_BYTES) {
+            return response()->json(['error' => 'حجم البيانات كبير جداً.'], 413);
+        }
+
+        broadcast(new GuessWhoActionEvent(
+            $roomCode,
+            $validated['sender_session'],
+            $validated['action'],
+            $payload
+        ))->toOthers();
+
+        return response()->json(['status' => 'action_sent']);
     }
  }

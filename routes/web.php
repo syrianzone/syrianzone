@@ -107,6 +107,7 @@ Route::post('/guesswho/room/{roomCode}/join', [GuessWhoController::class, 'joinR
 // The game's own moves go over Reverb now (replacing the WebRTC data channel);
 // `signal` stays only while the old path is being retired.
 Route::post('/guesswho/room/{roomCode}/action', [GuessWhoController::class, 'action'])->middleware('throttle:120,1');
+Route::get('/guesswho/room/{roomCode}/state', [GuessWhoController::class, 'state'])->middleware('throttle:60,1');
 Route::post('/guesswho/room/{roomCode}/signal', [SignalingController::class, 'signal'])->middleware('throttle:60,1');
 Route::post('/guesswho/broadcasting/auth', [GuessWhoController::class, 'authenticateBroadcasting'])->middleware('throttle:30,1');
 

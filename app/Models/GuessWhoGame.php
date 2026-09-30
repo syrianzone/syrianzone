@@ -20,6 +20,8 @@ class GuessWhoGame extends Model
         'player_2_session',
         'player_1_character_id',
         'player_2_character_id',
+        'player_1_eliminated',
+        'player_2_eliminated',
         'status',
         'turn_session',
         'winner_session',
@@ -27,6 +29,8 @@ class GuessWhoGame extends Model
 
     protected $casts = [
         'character_ids' => 'array',
+        'player_1_eliminated' => 'array',
+        'player_2_eliminated' => 'array',
     ];
 
     public function category(): BelongsTo

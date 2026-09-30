@@ -5,9 +5,10 @@ use App\Models\GuessWhoCharacter;
 use App\Models\GuessWhoGame;
 use Illuminate\Support\Str;
 
-// The action endpoint is the WebRTC data channel's replacement, and now the
-// server owns the rules: whose turn it is and each player's secret. These cover
-// the HTTP contract and the validation (the null broadcaster no-ops in tests).
+// The action endpoint is the WebRTC data channel's replacement, and the server
+// now owns the rules: whose turn it is, each player's secret, and the private
+// eliminations. These cover the HTTP contract and the validation (the null
+// broadcaster no-ops in tests).
 
 beforeEach(function () {
     config(['broadcasting.default' => 'null']);
@@ -41,6 +42,17 @@ function guessWhoRoom(array $overrides = []): GuessWhoGame
     ], $overrides));
 }
 
+/** A live room with both secrets set and player 1 on turn. */
+function guessWhoStarted(): GuessWhoGame
+{
+    $room = guessWhoRoom(['status' => 'playing', 'turn_session' => 'qa-A']);
+    $room->player_1_character_id = $room->character_ids[0];
+    $room->player_2_character_id = $room->character_ids[1];
+    $room->save();
+
+    return $room;
+}
+
 function act(GuessWhoGame $room, string $session, string $action, array $payload = [])
 {
     return test()->postJson("/guesswho/room/{$room->room_code}/action", [
@@ -49,14 +61,6 @@ function act(GuessWhoGame $room, string $session, string $action, array $payload
         'payload' => $payload,
     ]);
 }
-
-test('a member relays a cosmetic action', function () {
-    $room = guessWhoRoom();
-
-    act($room, 'qa-A', 'elimination_update', ['remaining' => 9])
-        ->assertOk()
-        ->assertJson(['status' => 'action_sent']);
-});
 
 test('an outsider, an unknown room, an oversized payload and a bad action name are refused', function () {
     $room = guessWhoRoom();
@@ -68,6 +72,7 @@ test('an outsider, an unknown room, an oversized payload and a bad action name a
     ])->assertNotFound();
     act($room, 'qa-A', 'elimination_update', ['blob' => str_repeat('x', 20000)])->assertStatus(413);
     act($room, 'qa-A', str_repeat('x', 60))->assertStatus(422);
+    act($room, 'qa-A', 'not_a_real_action')->assertStatus(422);
 });
 
 test('choosing a secret must be a character in the room', function () {
@@ -93,8 +98,17 @@ test('the game starts, and player 1 leads, once both secrets are in', function (
     expect($fresh->turn_session)->toBe('qa-A');
 });
 
+test('eliminations are stored per player, and a bad character is refused', function () {
+    $room = guessWhoStarted();
+
+    act($room, 'qa-A', 'elimination_update', ['eliminated' => [$room->character_ids[0]]])->assertOk();
+    expect($room->fresh()->player_1_eliminated)->toBe([$room->character_ids[0]]);
+
+    act($room, 'qa-A', 'elimination_update', ['eliminated' => [99999]])->assertStatus(422);
+});
+
 test('only the player on turn may pass, and it hands the turn over', function () {
-    $room = guessWhoRoom(['status' => 'playing', 'turn_session' => 'qa-A']);
+    $room = guessWhoStarted();
 
     act($room, 'qa-B', 'pass_turn')->assertStatus(409);
     act($room, 'qa-A', 'pass_turn')->assertOk();
@@ -102,16 +116,7 @@ test('only the player on turn may pass, and it hands the turn over', function ()
 });
 
 test('a correct guess ends the game with the guesser as winner', function () {
-    $room = guessWhoRoom([
-        'status' => 'playing',
-        'turn_session' => 'qa-A',
-        'player_1_character_id' => null,
-        'player_2_character_id' => null,
-    ]);
-
-    $room->player_1_character_id = $room->character_ids[0];
-    $room->player_2_character_id = $room->character_ids[1];
-    $room->save();
+    $room = guessWhoStarted();
 
     act($room, 'qa-A', 'guess', ['character_id' => $room->character_ids[1]])->assertOk();
     $fresh = $room->fresh();
@@ -121,10 +126,7 @@ test('a correct guess ends the game with the guesser as winner', function () {
 });
 
 test('a wrong guess passes the turn', function () {
-    $room = guessWhoRoom(['status' => 'playing', 'turn_session' => 'qa-A']);
-    $room->player_1_character_id = $room->character_ids[0];
-    $room->player_2_character_id = $room->character_ids[1];
-    $room->save();
+    $room = guessWhoStarted();
 
     act($room, 'qa-A', 'guess', ['character_id' => $room->character_ids[2]])->assertOk();
     $fresh = $room->fresh();
@@ -134,11 +136,27 @@ test('a wrong guess passes the turn', function () {
 });
 
 test('a guess out of turn is refused', function () {
-    $room = guessWhoRoom(['status' => 'playing', 'turn_session' => 'qa-A']);
-    $room->player_1_character_id = $room->character_ids[0];
-    $room->player_2_character_id = $room->character_ids[1];
-    $room->save();
+    $room = guessWhoStarted();
 
     act($room, 'qa-B', 'guess', ['character_id' => $room->character_ids[0]])->assertStatus(409);
     expect($room->fresh()->status)->toBe('playing');
+});
+
+test('the snapshot reports the requesting player own view', function () {
+    $room = guessWhoStarted();
+    $room->player_1_eliminated = [$room->character_ids[0]];
+    $room->save();
+
+    $this->getJson("/guesswho/room/{$room->room_code}/state?sender_session=qa-A")
+        ->assertOk()
+        ->assertJson([
+            'self' => 'qa-A',
+            'status' => 'playing',
+            'turn' => 'qa-A',
+            'myCharacterId' => $room->character_ids[0],
+            'myEliminated' => [$room->character_ids[0]],
+            'opponentRemaining' => 3,
+        ]);
+
+    $this->getJson("/guesswho/room/{$room->room_code}/state?sender_session=qa-X")->assertForbidden();
 });

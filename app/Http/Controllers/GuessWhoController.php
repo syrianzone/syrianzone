@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\GuessWhoCategory;
 use App\Models\GuessWhoCharacter;
 use App\Models\GuessWhoGame;
-use App\Events\GuessWhoActionEvent;
 use App\Events\GuessWhoStateEvent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -254,10 +253,40 @@ class GuessWhoController extends Controller
 
         return match ($validated['action']) {
             'select_ready' => $this->selectReady($game, $sender, $payload),
+            'elimination_update' => $this->eliminate($game, $sender, $payload),
             'pass_turn' => $this->passTurn($game, $sender, $opponent),
             'guess' => $this->guess($game, $sender, $opponent, $payload),
-            default => $this->relay($game, $sender, $validated['action'], $payload),
+            default => response()->json(['error' => 'الحركة غير معروفة.'], 422),
         };
+    }
+
+    /** The requesting player's own view of the game, for a fresh load or a refresh. */
+    public function state(Request $request, $roomCode)
+    {
+        $validated = $request->validate(['sender_session' => 'required|string']);
+
+        $game = GuessWhoGame::where('room_code', $roomCode)->first();
+        if (!$game) {
+            return response()->json(['error' => 'الغرفة غير موجودة.'], 404);
+        }
+
+        $sender = $validated['sender_session'];
+        $isP1 = $game->player_1_session === $sender;
+        if (!$isP1 && $game->player_2_session !== $sender) {
+            return response()->json(['error' => 'غير مصرح لك باللعب في هذه الغرفة.'], 403);
+        }
+
+        $opponent = $isP1 ? $game->player_2_session : $game->player_1_session;
+
+        return response()->json([
+            'self' => $sender,
+            'status' => $game->status,
+            'turn' => $game->status === 'playing' ? $game->turn_session : null,
+            'winner' => $game->winner_session,
+            'myCharacterId' => $isP1 ? $game->player_1_character_id : $game->player_2_character_id,
+            'myEliminated' => ($isP1 ? $game->player_1_eliminated : $game->player_2_eliminated) ?? [],
+            'opponentRemaining' => $opponent ? ($this->remaining($game)[$opponent] ?? null) : null,
+        ]);
     }
 
     /** A player locks in a secret; once both have, the game starts and player 1 leads. */
@@ -332,11 +361,46 @@ class GuessWhoController extends Controller
     }
 
     /** A cosmetic, private update the server does not track — forwarded as-is. */
-    private function relay(GuessWhoGame $game, string $sender, string $action, array $payload)
+    private function eliminate(GuessWhoGame $game, string $sender, array $payload)
     {
-        broadcast(new GuessWhoActionEvent($game->room_code, $sender, $action, $payload))->toOthers();
+        $eliminated = $payload['eliminated'] ?? null;
+        if (!is_array($eliminated)) {
+            return response()->json(['error' => 'قائمة الاستبعاد غير صالحة.'], 422);
+        }
 
-        return response()->json(['status' => 'action_sent']);
+        $allowed = $game->character_ids ?? [];
+        foreach ($eliminated as $id) {
+            if (!is_int($id) || !in_array($id, $allowed, true)) {
+                return response()->json(['error' => 'الشخصية غير صالحة لهذه الغرفة.'], 422);
+            }
+        }
+
+        $column = $game->player_1_session === $sender ? 'player_1_eliminated' : 'player_2_eliminated';
+        $game->{$column} = array_values(array_unique($eliminated));
+        $game->save();
+
+        return $this->broadcastState($game);
+    }
+
+    /**
+     * Each player's remaining count, keyed by session. A player who has not
+     * chosen yet is null; only the count is public, never the eliminated ids.
+     */
+    private function remaining(GuessWhoGame $game): array
+    {
+        $total = count($game->character_ids ?? []);
+        $map = [];
+
+        foreach ([$game->player_1_session, $game->player_2_session] as $slot => $session) {
+            if (!$session) {
+                continue;
+            }
+            $secret = $slot === 0 ? $game->player_1_character_id : $game->player_2_character_id;
+            $eliminated = ($slot === 0 ? $game->player_1_eliminated : $game->player_2_eliminated) ?? [];
+            $map[$session] = $secret === null ? null : max(0, $total - count($eliminated));
+        }
+
+        return $map;
     }
 
     /** Broadcast the authoritative slice, and answer the actor with it. */
@@ -349,7 +413,8 @@ class GuessWhoController extends Controller
             $turn,
             $game->status,
             $game->winner_session,
-            $guess
+            $guess,
+            $this->remaining($game)
         ));
 
         return response()->json([

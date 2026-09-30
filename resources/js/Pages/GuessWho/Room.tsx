@@ -211,6 +211,12 @@ export default function GameRoom({ game }: GameProps) {
   function applyState(state: any) {
     if (!state) return;
 
+    // The opponent's remaining count rides along with every state broadcast.
+    if (state.remaining) {
+      const opponentCount = Object.entries(state.remaining).find(([sid]) => sid !== sessionUuid)?.[1];
+      if (typeof opponentCount === 'number') setOpponentRemaining(opponentCount);
+    }
+
     if (state.status === 'finished') {
       setMyTurn(false);
       setGameState('ended');
@@ -267,6 +273,51 @@ export default function GameRoom({ game }: GameProps) {
     setBoard([...items].sort(() => Math.random() - 0.5));
   }, [game]);
 
+  // Resume an in-progress game: fetch this player's authoritative snapshot and
+  // restore the secret, the board's eliminations, the turn and the counts, so a
+  // refresh or a rejoin picks up where it left off.
+  useEffect(() => {
+    if (!isJoined) return;
+    let active = true;
+
+    (async () => {
+      try {
+        const { data } = await axios.get(`/guesswho/room/${game.room_code}/state`, {
+          params: { sender_session: sessionUuid },
+        });
+        if (!active || !data) return;
+
+        if (data.myCharacterId) {
+          setMySecret(data.myCharacterId);
+          const eliminated = new Set<number>(data.myEliminated ?? []);
+          setBoard(prev => prev.map(c => ({ ...c, eliminated: eliminated.has(c.id) })));
+        }
+        if (typeof data.opponentRemaining === 'number') setOpponentRemaining(data.opponentRemaining);
+
+        if (data.status === 'playing') {
+          setGameState('playing');
+          setMyTurn(data.turn === sessionUuid);
+        } else if (data.status === 'finished') {
+          setGameState('ended');
+          setMyTurn(false);
+          setWinMessage(
+            data.winner === sessionUuid
+              ? 'مبروك! لقد فزت باللعبة بتخمين شخصية الخصم بنجاح!'
+              : `لقد فاز ${opponentNameRef.current}!`,
+          );
+        } else if (data.myCharacterId) {
+          setGameState('selecting');
+        }
+      } catch (err) {
+        console.error('Failed to load game state:', err);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [isJoined, game.room_code, sessionUuid]);
+
   // Auto-transition from 'selecting' → 'playing' once the opponent is in the
   // room and the secret is chosen. The presence channel replaces the old
   // "wait for the data channel to open" gate.
@@ -319,13 +370,8 @@ export default function GameRoom({ game }: GameProps) {
         .error((error: any) => {
           console.error('[GuessWho] Presence channel subscription error:', error);
         })
-        .listen('.action', (e: any) => {
-          // The sender is on this same channel; only react to the opponent's.
-          if (e.senderSession && e.senderSession === sessionUuid) return;
-          handlePeerMessage({ action: e.action, payload: e.payload });
-        })
         .listen('.state', (e: any) => {
-          // Authoritative: turn, phase, winner. Both players get this.
+          // Authoritative: turn, phase, winner, counts. Both players get this.
           applyState(e);
         });
     });
@@ -339,20 +385,12 @@ export default function GameRoom({ game }: GameProps) {
     };
   }, [game.room_code, sessionUuid, isJoined]);
 
-  // The only thing still relayed as a raw action is the opponent's private
-  // elimination count; turns, guesses and outcomes arrive as authoritative
-  // `.state` broadcasts instead.
-  const handlePeerMessage = (msg: any) => {
-    if (msg.action === 'elimination_update') {
-      setOpponentRemaining(msg.payload.remaining);
-    }
-  };
-
+  // Eliminations are private to the player and now stored server-side; the
+  // opponent only ever learns the remaining count, which arrives in `.state`.
   const toggleEliminate = (id: number) => {
     const newBoard = board.map(c => c.id === id ? { ...c, eliminated: !c.eliminated } : c);
     setBoard(newBoard);
-    const remaining = newBoard.filter(c => !c.eliminated).length;
-    sendAction('elimination_update', { remaining });
+    sendAction('elimination_update', { eliminated: newBoard.filter(c => c.eliminated).map(c => c.id) });
   };
 
   const handleChooseSecret = (id: number) => {

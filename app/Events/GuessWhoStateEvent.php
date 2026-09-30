@@ -21,7 +21,8 @@ class GuessWhoStateEvent implements ShouldBroadcastNow
         public ?string $turn,
         public string $status,
         public ?string $winner,
-        public ?array $guess = null
+        public ?array $guess = null,
+        public array $remaining = []
     ) {}
 
     public function broadcastOn(): array
@@ -43,6 +44,7 @@ class GuessWhoStateEvent implements ShouldBroadcastNow
             'status' => $this->status,
             'winner' => $this->winner,
             'guess' => $this->guess,
+            'remaining' => $this->remaining,
         ];
     }
 }

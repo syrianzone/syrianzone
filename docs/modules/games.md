@@ -75,14 +75,22 @@ tricks, the trump convention and the round's point value differ.
 choosing trump, and trick-by-trick play driving `trick.ts`. A round is a plain
 value and every transition returns a new one (`bid`, `pass`, `chooseTrump`,
 `playCard`), so the table treats it like solitaire's `Deal`. Scoring is a single
-exported rule, `tarneebScore(bid, declarerTeam, tricks)` — the contract team
-scores the tricks it took when it reaches the bid, and the defenders score the
-bid when it does not.
+exported rule, `tarneebScore(bid, declarerTeam, tricks, options)` — the contract
+team scores the tricks it took when it reaches the bid, and the defenders score
+the bid when it does not.
 
-**Conventions.** Tarneeb varies from table to table, so the defaults live in
-`DEFAULT_TARNEEB` and everything variable is an option: `target` (41), the bid
-range (7–13) and the scoring rule (swappable). Not modelled yet, pending a
-canonical table: kaboot and the various doubles.
+**Conventions.** Tarneeb varies from table to table, so everything variable is
+an option in `DEFAULT_TARNEEB`: `target` (41), the bid range (7–13), and the
+kaboot numbers below. The scoring rule itself is a standalone function, so a
+table that scores differently can swap it.
+
+**Kaboot** is the whole hand. Bidding it (the maximum bid) and making it scores
+`kabootMade` (26); failing it costs the declarer's team `kabootLoss` (16) while
+the defenders score `kabootDefence` (2) times their own tricks. A team that
+sweeps all thirteen on a lower bid is paid its tricks plus a `sweepBonus` (3).
+A kaboot loss is the one case where the declarer's entry is negative, which the
+match model carries directly. The doubles some tables allow are still not
+modelled.
 
 `_lib/tarneebAi.ts` is the opponent, built on the shared hand reads in
 `cardGames/hand.ts` (`power`, `groupBySuit`, `topSequence`). It is a small,

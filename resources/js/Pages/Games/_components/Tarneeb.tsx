@@ -7,6 +7,7 @@ import { power } from '../_lib/cardGames/hand';
 import { readStats, recordMatch, type MatchStats } from '../_lib/scores';
 import {
   DEFAULT_TARNEEB,
+  TARNEEB_HAND,
   TARNEEB_PLAYERS,
   TARNEEB_TEAMS,
   bid,
@@ -27,6 +28,8 @@ import PlayingCard from './PlayingCard';
 /** Seat 0 is the player; 1 on the left, 2 opposite (the partner), 3 on the right. */
 const HUMAN = 0;
 const SEAT_NAMES = ['أنت', 'يسارك', 'شريكك', 'يمينك'];
+/** The seats said as "from …", since "أنت" has no such form ("من أنت" is wrong). */
+const SEAT_FROM = ['منك', 'من يسارك', 'من شريكك', 'من يمينك'];
 const SUIT_ORDER: Record<Suit, number> = { S: 0, H: 1, D: 2, C: 3 };
 const SUITS: Suit[] = ['S', 'H', 'D', 'C'];
 /** How long an AI seat "thinks" before acting, so the table is followable. */
@@ -196,6 +199,11 @@ export default function Tarneeb() {
 
   const you = teamOf(HUMAN);
   const them = you === 0 ? 1 : 0;
+  const declTeam = round.declarer !== null ? teamOf(round.declarer) : null;
+  const declTricks = declTeam !== null ? round.tricks[declTeam] : 0;
+  const made = declTeam !== null && declTricks >= (round.auction.highBid ?? 0);
+  const swept = declTricks >= TARNEEB_HAND;
+  const roundPoints = round.phase === 'complete' && !isRedeal(round) ? scoreRound(round) : null;
   const lastAction = (seat: number) => {
     const actions = round.auction.actions.filter((action) => action.seat === seat);
     const last = actions[actions.length - 1];
@@ -224,8 +232,8 @@ export default function Tarneeb() {
       <p className="mb-2 min-h-[1.25rem] text-center text-xs font-bold text-muted-foreground">
         {round.declarer !== null ? (
           <>
-            الطلب {round.auction.highBid} على {SEAT_NAMES[round.declarer]}
-            {round.trump && <> · الحكم {SUIT_LABEL[round.trump]}</>} · حيلنا {round.tricks[you]} وحيلهم{' '}
+            الطلب {round.auction.highBid} {SEAT_FROM[round.declarer]}
+            {round.trump && <> · الحكم {SUIT_LABEL[round.trump]}</>} · طرنيبنا {round.tricks[you]} وطرنيبهم{' '}
             {round.tricks[them]}
           </>
         ) : (
@@ -302,9 +310,15 @@ export default function Tarneeb() {
               <p className="text-sm font-bold">الكل مرّر — إعادة التوزيع</p>
             ) : (
               <p className="text-sm font-bold">
-                {SEAT_NAMES[round.declarer ?? 0]} طلب {round.auction.highBid} وأكل {round.tricks[teamOf(round.declarer ?? 0)]}
+                {SEAT_NAMES[round.declarer ?? 0]} طلب {round.auction.highBid} وأكل {declTricks}
                 {' · '}
-                {scoreRound(round)[you] > 0 ? 'نجح الطلب' : 'فشل الطلب'}
+                {made ? 'نجح الطلب' : 'فشل الطلب'}
+                {swept && ' · كبوت!'}
+                {roundPoints && (
+                  <>
+                    {' · '}لنا {roundPoints[you]} ولهم {roundPoints[them]}
+                  </>
+                )}
               </p>
             )}
             {isMatchOver(match) ? (
@@ -356,12 +370,13 @@ export function TarneebRules() {
         </li>
         <li>يبدأ الطالب باللعب، ويجب أن تتبع اللون إن كان معك؛ وإن لم يكن معك فيجوز أن تلعب أي ورقة.</li>
         <li>الحكم يتقدّم على أي ورقة، وإن لم يُلعَب حكم يفوز أعلى ورقة من اللون المطلوب.</li>
-        <li>إن أكل الطالب عدد الحيل الذي طلبه سجّل عددها، وإن قصّر سجّل الخصوم قيمة الطلب.</li>
+        <li>إن أكل الطالب عدد الطرانيب الذي طلبه سجّل عددها، وإن قصّر سجّل الخصوم قيمة الطلب.</li>
+        <li>
+          الكبوت: من يطلب ١٣ ويأخذها كلها سجّل ٢٦، وإن فشل خسر ١٦ وسجّل الخصوم ضعف طرنيبهم. ومن يأخذ
+          الطرانيب الثلاث عشرة على طلب أقل يُكافأ بثلاث نقاط زيادة.
+        </li>
         <li>أول فريق يبلغ ٤١ نقطة يفوز بالمباراة.</li>
       </ul>
-      <p className="text-xs text-muted-foreground">
-        ملاحظة: قاعدة الكبوت (أخذ الحيل الثلاث عشرة كلها) لم تُضَف بعد.
-      </p>
     </>
   );
 }

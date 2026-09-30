@@ -8,12 +8,12 @@
 // values, and the rules stay testable without a browser.
 //
 // CONVENTIONS. Tarneeb is played differently from table to table; the knobs are
-// all in `TarneebOptions` (target, and the bid range) and the scoring rule is a
-// single exported function (`tarneebScore`) so it can be swapped. The defaults
-// are the common Levantine game: bid 7–13, play to 41, the contract team scores
-// the tricks it took when it makes the bid, and the defenders score the bid
-// when it fails. Kaboot (taking all thirteen) and the various doubles are NOT
-// modelled yet.
+// all in `TarneebOptions` and the scoring rule is a single exported function
+// (`tarneebScore`) so it can be swapped. The defaults are the common Levantine
+// game: bid 7–13, play to 41, the contract team scores the tricks it took when
+// it makes the bid, the defenders score the bid when it fails, and kaboot (the
+// whole hand) is scored as in `tarneebScore`. The doubles some tables allow are
+// still not modelled.
 
 import { createDeck, shuffle, type Card, type Suit } from './cards';
 import {
@@ -47,11 +47,30 @@ export interface TarneebOptions {
   target: number;
   /** Smallest legal bid. */
   minBid: number;
-  /** Largest legal bid — thirteen is every trick. */
+  /** Largest legal bid — the whole hand. */
   maxBid: number;
+  /** The bid that means every trick (kaboot). */
+  kaboot: number;
+  /** Points for a made kaboot contract. */
+  kabootMade: number;
+  /** Points the declarer's team loses for a failed kaboot contract. */
+  kabootLoss: number;
+  /** The defenders score this many times their own tricks when a kaboot fails. */
+  kabootDefence: number;
+  /** Bonus for sweeping all thirteen tricks on a bid short of kaboot. */
+  sweepBonus: number;
 }
 
-export const DEFAULT_TARNEEB: TarneebOptions = { target: 41, minBid: 7, maxBid: 13 };
+export const DEFAULT_TARNEEB: TarneebOptions = {
+  target: 41,
+  minBid: 7,
+  maxBid: 13,
+  kaboot: 13,
+  kabootMade: 26,
+  kabootLoss: 16,
+  kabootDefence: 2,
+  sweepBonus: 3,
+};
 
 export type Phase = 'bidding' | 'trump' | 'playing' | 'complete';
 
@@ -187,11 +206,44 @@ export function isRedeal(round: TarneebRound): boolean {
  * it took when it reached the bid, and the defenders score the bid when it did
  * not. `declarerTeam` is a team index (0 or 1).
  */
-export function tarneebScore(bid: number, declarerTeam: 0 | 1, tricks: [number, number]): [number, number] {
+/**
+ * Points per team for a finished contract.
+ *
+ * The base rule: the contract team scores the tricks it took when it reaches
+ * the bid, and the defenders score the bid when it does not.
+ *
+ * Kaboot is the whole hand. Bidding it and making it scores `kabootMade`;
+ * failing it costs the declarer's team `kabootLoss` while the defenders score
+ * `kabootDefence` times their own tricks. A team that sweeps all thirteen on a
+ * lower bid is paid its tricks plus a `sweepBonus`. Every value is an option,
+ * because the numbers differ from table to table.
+ *
+ * `declarerTeam` is a team index (0 or 1); the result is per team, and the
+ * declarer's entry can be negative.
+ */
+export function tarneebScore(
+  bid: number,
+  declarerTeam: 0 | 1,
+  tricks: [number, number],
+  options: TarneebOptions = DEFAULT_TARNEEB,
+): [number, number] {
   const points: [number, number] = [0, 0];
   const defenders: 0 | 1 = declarerTeam === 0 ? 1 : 0;
-  if (tricks[declarerTeam] >= bid) points[declarerTeam] = tricks[declarerTeam];
-  else points[defenders] = bid;
+  const taken = tricks[declarerTeam];
+  const made = taken >= bid;
+  const swept = taken >= TARNEEB_HAND;
+  const kaboot = bid >= options.kaboot;
+
+  if (made) {
+    if (kaboot) points[declarerTeam] = options.kabootMade;
+    else if (swept) points[declarerTeam] = taken + options.sweepBonus;
+    else points[declarerTeam] = taken;
+  } else if (kaboot) {
+    points[declarerTeam] = -options.kabootLoss;
+    points[defenders] = options.kabootDefence * tricks[defenders];
+  } else {
+    points[defenders] = bid;
+  }
   return points;
 }
 
@@ -200,5 +252,5 @@ export function scoreRound(round: TarneebRound): [number, number] {
   if (round.phase !== 'complete' || round.declarer === null || round.auction.highBid === null) {
     throw new Error('the round is not a scored contract');
   }
-  return tarneebScore(round.auction.highBid, teamOf(round.declarer), round.tricks);
+  return tarneebScore(round.auction.highBid, teamOf(round.declarer), round.tricks, round.options);
 }

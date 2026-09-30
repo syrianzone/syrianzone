@@ -30,7 +30,7 @@ export const GAMES: GameEntry[] = [
   {
     slug: 'tarneeb',
     title: 'طرنيب',
-    tagline: 'زايد من ٧ إلى ١٣ واجمع الحيل حتى ٤١',
+    tagline: 'زايد من ٧ إلى ١٣ واجمع الطرانيب حتى ٤١',
     icon: TarneebIcon,
   },
 ];

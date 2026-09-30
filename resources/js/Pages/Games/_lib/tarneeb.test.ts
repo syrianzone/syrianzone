@@ -144,6 +144,30 @@ describe('scoring', () => {
   });
 });
 
+describe('kaboot', () => {
+  it('pays double for bidding the whole hand and taking it', () => {
+    expect(tarneebScore(13, 0, [13, 0])).toEqual([26, 0]);
+    expect(tarneebScore(13, 1, [0, 13])).toEqual([0, 26]);
+  });
+
+  it('pays a sweep bonus for taking all thirteen on a lower bid', () => {
+    expect(tarneebScore(9, 0, [13, 0])).toEqual([16, 0]); // 13 tricks + 3
+    expect(tarneebScore(11, 1, [0, 13])).toEqual([0, 16]);
+  });
+
+  it('charges the declarer and pays the defenders double when a kaboot fails', () => {
+    expect(tarneebScore(13, 0, [10, 3])).toEqual([-16, 6]);
+    expect(tarneebScore(13, 1, [4, 9])).toEqual([8, -16]);
+  });
+
+  it('lets a table set its own numbers', () => {
+    const options = { ...DEFAULT_TARNEEB, kabootMade: 40, kabootLoss: 20, kabootDefence: 3, sweepBonus: 5 };
+    expect(tarneebScore(13, 0, [13, 0], options)).toEqual([40, 0]);
+    expect(tarneebScore(13, 0, [8, 5], options)).toEqual([-20, 15]);
+    expect(tarneebScore(10, 0, [13, 0], options)).toEqual([18, 0]);
+  });
+});
+
 describe('a whole round', () => {
   it('plays thirteen tricks and scores them consistently', () => {
     let round = createRound(DEFAULT_TARNEEB, 0, seeded(42));

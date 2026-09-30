@@ -43,6 +43,19 @@ Route::get('/roznama', function () {
 Route::get('/muslim', function () {
     return Inertia::render('Muslim/Index');
 });
+
+// Games hub: one real route per game (unlike /muslim, which fakes its tabs
+// with ?tab=). Each game is a self-contained Inertia page under Pages/Games/,
+// and every score is device-local — there is no games API and nothing to guard.
+Route::get('/games', function () {
+    return Inertia::render('Games/Index');
+});
+Route::get('/games/2048', function () {
+    return Inertia::render('Games/2048/Index');
+});
+Route::get('/games/solitare', function () {
+    return Inertia::render('Games/Solitare/Index');
+});
 Route::get('/phonebook', [\App\Http\Controllers\PhonebookController::class, 'index']);
 Route::get('/shawarma', function () {
     return Inertia::render('Shawarma/Index');

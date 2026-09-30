@@ -122,6 +122,47 @@ export function QuranRadioIcon({ className = "w-7 h-7" }: ProjectIconProps) {
   );
 }
 
+// 2e. Games (Games - arcade cabinet with a d-pad, violet & cyan)
+export function GamesIcon({ className = "w-7 h-7" }: ProjectIconProps) {
+  return (
+    <svg viewBox="0 0 32 32" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="3" y="11" width="26" height="14" rx="5" className="fill-[#8B5CF6]/15 dark:fill-[#A78BFA]/25 stroke-[#7C3AED] dark:stroke-[#A78BFA]" strokeWidth="2" />
+      <path d="M9 15v6M6 18h6" className="stroke-[#06B6D4] dark:stroke-[#22D3EE]" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="22" cy="16" r="1.8" className="fill-[#EF4444] dark:fill-[#F87171]" />
+      <circle cx="25.5" cy="19.5" r="1.8" className="fill-[#F59E0B] dark:fill-[#FBBF24]" />
+      {/* Theme Accent Touch */}
+      <circle cx="16" cy="8" r="1.8" fill="hsl(var(--primary))" />
+    </svg>
+  );
+}
+
+// 2f. Game2048 (2048 - four amber tiles merging into one, same family)
+export function Game2048Icon({ className = "w-7 h-7" }: ProjectIconProps) {
+  return (
+    <svg viewBox="0 0 32 32" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="4" y="4" width="11" height="11" rx="2.5" className="fill-[#F59E0B]/25 dark:fill-[#FBBF24]/30 stroke-[#D97706] dark:stroke-[#FBBF24]" strokeWidth="2" />
+      <rect x="17" y="4" width="11" height="11" rx="2.5" className="fill-[#F59E0B]/25 dark:fill-[#FBBF24]/30 stroke-[#D97706] dark:stroke-[#FBBF24]" strokeWidth="2" />
+      <rect x="4" y="17" width="11" height="11" rx="2.5" className="fill-[#F59E0B]/25 dark:fill-[#FBBF24]/30 stroke-[#D97706] dark:stroke-[#FBBF24]" strokeWidth="2" />
+      <rect x="17" y="17" width="11" height="11" rx="2.5" className="fill-[#D97706]/25 dark:fill-[#FBBF24]/35 stroke-[#D97706] dark:stroke-[#FBBF24]" strokeWidth="2" />
+      {/* Theme Accent Touch */}
+      <rect x="17" y="17" width="11" height="11" rx="2.5" fill="hsl(var(--primary))" opacity="0.35" />
+    </svg>
+  );
+}
+
+// 2g. Solitaire (Solitaire - fanned playing cards, crimson & emerald)
+export function SolitaireIcon({ className = "w-7 h-7" }: ProjectIconProps) {
+  return (
+    <svg viewBox="0 0 32 32" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="4" y="9" width="13" height="18" rx="2.5" className="fill-[#F1F5F9]/60 dark:fill-[#E2E8F0]/20 stroke-[#64748B] dark:stroke-[#CBD5E1]" strokeWidth="2" />
+      <rect x="10" y="6" width="13" height="18" rx="2.5" className="fill-[#10B981]/15 dark:fill-[#34D399]/20 stroke-[#059669] dark:stroke-[#34D399]" strokeWidth="2" />
+      <path d="M16.5 10.5c-1.2 1.6-2.5 2.7-2.5 4a2.5 2.5 0 0 0 5 0c0-1.3-1.3-2.4-2.5-4z" className="fill-[#EF4444] dark:fill-[#F87171]" />
+      {/* Theme Accent Touch */}
+      <circle cx="16.5" cy="18" r="1.6" fill="hsl(var(--primary))" />
+    </svg>
+  );
+}
+
 // 3. Phonebook (Directory - Amber & Emerald Directory Book)
 export function PhonebookIcon({ className = "w-7 h-7" }: ProjectIconProps) {
   return (

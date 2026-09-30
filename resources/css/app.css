@@ -185,6 +185,574 @@
     fill: var(--ink-base);
 }
 
+/* ---------------------------------------------------------------------------
+   2048 board.
+
+   Tiles are placed with `transform`, never `left`/`top`: a surviving tile keeps
+   its DOM node across moves (keyed by id), so a move is a transform change the
+   browser can transition. Positioning by left/top would jump instead.
+
+   The face is a child element because the slide and the pop both need the
+   transform axis — the pop has to be a second element so it cannot clobber the
+   translate that is doing the sliding.
+
+   Timings live in custom properties so the component can retune them, and the
+   pop/die are delayed by the slide length so they fire on landing rather than
+   at the start of the movement. */
+
+.sz-2048-cell {
+    /* One grid cell, for both the empty slots and the tiles.
+
+       An absolutely positioned element is laid out against the containing
+       block's PADDING box, so `left: 0` would sit on the border and ignore the
+       board's p-2 — the grid would butt against the top-left and leave the
+       padding stranded on the bottom and right. Offsetting by the pad here is
+       what makes the inset even on all four sides.
+
+       A percentage in `width` resolves against that same padding box (the whole
+       board), so `25%` is a quarter of the board rather than of its content
+       box. Four cells plus three gaps have to fill the content box exactly,
+       which is why each cell gives up its share of the padding and of the three
+       gaps that follow it:
+
+           4·cell + 3·gap = 100% − 2·pad
+           cell = 25% − (2·pad + 3·gap) / 4
+
+       The pitch (distance to the next cell) is then cell + gap, which is what
+       --sz-2048-pitch spells out for the transform below. Keep --sz-2048-pad
+       in step with the board's p-2 utility. */
+    --sz-2048-gap: 0.5rem;
+    --sz-2048-pad: 0.5rem;
+    --sz-2048-pitch: calc(100% + var(--sz-2048-gap));
+    position: absolute;
+    left: var(--sz-2048-pad);
+    top: var(--sz-2048-pad);
+    width: calc(25% - (2 * var(--sz-2048-pad) + 3 * var(--sz-2048-gap)) / 4);
+    height: calc(25% - (2 * var(--sz-2048-pad) + 3 * var(--sz-2048-gap)) / 4);
+}
+
+.sz-2048-tile {
+    transition-property: transform;
+    transition-duration: var(--sz-2048-slide, 140ms);
+    transition-timing-function: cubic-bezier(0.2, 0, 0.2, 1);
+    will-change: transform;
+}
+
+/* The tile a merge ate: slides into its killer, then fades out on arrival.
+   --sz-2048-fx/--fy/--tz are unitless cell coordinates, multiplied by the
+   pitch here so the ghost lands on exactly the same grid as a live tile. */
+.sz-2048-ghost {
+    position: absolute;
+    animation: sz-2048-slide-into var(--sz-2048-slide, 140ms) cubic-bezier(0.2, 0, 0.2, 1) both;
+}
+
+@keyframes sz-2048-slide-into {
+    from {
+        transform: translate(calc(var(--sz-2048-fx) * var(--sz-2048-pitch)), calc(var(--sz-2048-fy) * var(--sz-2048-pitch)));
+    }
+
+    to {
+        transform: translate(calc(var(--sz-2048-tx) * var(--sz-2048-pitch)), calc(var(--sz-2048-ty) * var(--sz-2048-pitch)));
+    }
+}
+
+.sz-2048-face {
+    display: flex;
+    height: 100%;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.75rem;
+    font-weight: 900;
+}
+
+.sz-2048-face-appear {
+    animation: sz-2048-appear var(--sz-2048-appear, 160ms) cubic-bezier(0.2, 0, 0.2, 1) both;
+}
+
+.sz-2048-face-pop {
+    animation: sz-2048-pop var(--sz-2048-pop, 200ms) cubic-bezier(0.2, 0, 0.2, 1)
+        var(--sz-2048-slide, 140ms) both;
+}
+
+/* A merge that did not travel has nothing to wait for, so it pops at once. */
+.sz-2048-face-pop-now {
+    animation: sz-2048-pop var(--sz-2048-pop, 200ms) cubic-bezier(0.2, 0, 0.2, 1) both;
+}
+
+.sz-2048-face-die {
+    animation: sz-2048-die var(--sz-2048-die, 160ms) ease-in var(--sz-2048-slide, 140ms) both;
+}
+
+@keyframes sz-2048-appear {
+    from {
+        transform: scale(0.2);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes sz-2048-pop {
+    0% {
+        transform: scale(1);
+    }
+
+    40% {
+        transform: scale(1.22);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes sz-2048-die {
+    from {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    to {
+        transform: scale(0.35);
+        opacity: 0;
+    }
+}
+
+/* A board is a grid of transforms, not of page flow — no reason to animate
+   any of it for someone who asked the OS not to. */
+@media (prefers-reduced-motion: reduce) {
+    .sz-2048-cell,
+    .sz-2048-tile,
+    .sz-2048-ghost,
+    .sz-2048-face-appear,
+    .sz-2048-face-pop,
+    .sz-2048-face-pop-now,
+    .sz-2048-face-die {
+        animation: none;
+        transition: none;
+    }
+}
+
+/* ---------------------------------------------------------------------------
+   Solitaire (Klondike).
+
+   A card is a fixed aspect box (7:10, the usual playing-card proportion).
+
+   THE SIZING MODEL. Every card dimension is a `cqw` length resolved against
+   `.sz-sol`, the one element with `container-type: inline-size`. That is what
+   makes the layout work at all, because the columns are built out of cascading
+   *lengths* — how much of a covered card stays showing — and a percentage
+   cannot be used for them. A `margin-top` percentage resolves against a width,
+   but a `min-height` percentage resolves against a height, which is indefinite
+   here, and a `font-size` percentage resolves against the parent's font-size.
+   Container units sidestep all three. Nothing below `.sz-sol` may declare its
+   own container, or the inherited lengths would silently start resolving
+   against the wrong box.
+
+   THE COLUMN. Top to bottom:
+
+   - The hidden stack, cascading straight down, as in Klondike.
+   - The face-up run, cascading down the same way but with a wider step, so
+     every card's corner index stays readable and only the top card — the one
+     that can actually move — is fully exposed. When hidden cards sit above it,
+     the run is pulled up one step so it starts *over* the last of them, and the
+     column reads as a single cascade rather than two bands with a seam.
+   - A dock: empty space below the run that the column grows into, with the
+     dashed outline that marks it as a drop target.
+
+   A card fills its track, so columns sit right next to each other; only the
+   waste fans *sideways*, because those are the drawn cards the player reads
+   off the top of the stock.
+
+   THE TOP ROW. Stock, waste and the four foundations sit in the same seven
+   tracks as the tableau, each card-sized slot left-aligned in its track, so
+   the foundations line up above the columns they will be fed from.
+
+   `.sz-sol-card` is itself `position: relative` and has to stay that way: the
+   corner index and centre pip are absolutely positioned, and without a
+   containing block on the card they resolve against `.sz-sol-pile` instead —
+   which stacks every rank in a column into the same spot, drawing it over the
+   hidden cards and leaving the face-up ones blank.
+
+   The board is `dir="ltr"` (a deal reads left to right) while the page is RTL,
+   so the corner index and the big centre pip are mirrored deliberately. */
+.sz-sol {
+    --sz-sol-h-ratio: 1.4286; /* 10/7 — matches .sz-sol-card aspect-ratio */
+    --sz-sol-gap: 0.4rem;
+    --sz-sol-radius: 0.5rem;
+    /* Cards fill their track, so the board is only as wide as seven cards plus
+       the gaps: the columns sit right next to each other and the whole deal
+       stays a comfortable, card-sized width instead of stretching edge to edge. */
+    --sz-sol-card-max: 6rem;
+    /* Vertical step for each pile: how much of a covered card stays showing.
+       Both are card-relative so they scale with the board. The face-down step is
+       tight so the hidden pile reads as one stack; the face-up step is wider so
+       every card's corner index stays readable (the enlarged corner suit made
+       that block taller). */
+    --sz-sol-hidden-step: calc(var(--sz-sol-card-w) * var(--sz-sol-h-ratio) * 0.12);
+    --sz-sol-face-step: calc(var(--sz-sol-card-w) * var(--sz-sol-h-ratio) * 0.29);
+    /* The drawn (waste) cards are the one pile that fans sideways, so its step
+       runs along the x axis instead. */
+    --sz-sol-peek-waste: 1.6rem;
+    --sz-sol-dock-ratio: 0.6; /* reserved empty space below a run, in card widths */
+
+    --sz-sol-track-w: calc((100cqw - 6 * var(--sz-sol-gap)) / 7);
+    --sz-sol-card-w: min(var(--sz-sol-card-max), var(--sz-sol-track-w));
+
+    max-width: calc(7 * var(--sz-sol-card-max) + 6 * var(--sz-sol-gap));
+    margin-inline: auto;
+    container-type: inline-size;
+}
+
+.sz-sol-row {
+    display: grid;
+    grid-template-columns: repeat(7, var(--sz-sol-track-w));
+    gap: var(--sz-sol-gap);
+    align-items: start;
+}
+
+.sz-sol-pile {
+    position: relative;
+    border-radius: var(--sz-sol-radius);
+    transition: background-color 150ms, box-shadow 150ms;
+}
+
+/* A neutral hover tint only. The legal-drop signal lives on the card that
+   would receive the dragged card (`.sz-sol-drop`), not here. */
+.sz-sol-pile--over {
+    background: hsl(var(--muted) / 0.55);
+}
+
+/* A top-row slot: one card wide, left-aligned in its track so the foundations
+   sit directly above the columns they feed. */
+.sz-sol-slot {
+    width: var(--sz-sol-card-w);
+}
+
+/* Shown only while a pile is empty: the slot a card would land on. */
+.sz-sol-blank {
+    display: flex;
+    width: 100%;
+    aspect-ratio: 7 / 10;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--sz-sol-radius);
+    background: hsl(var(--muted) / 0.3);
+    border: 1px dashed hsl(var(--border) / 0.55);
+}
+
+/* An empty tableau column, in the fan's slot rather than the whole track. */
+.sz-sol-blank--fan {
+    width: var(--sz-sol-card-w);
+}
+
+.sz-sol-drop {
+    outline-color: hsl(var(--primary));
+    box-shadow:
+        0 0 0 3px hsl(var(--primary) / 0.55),
+        0 2px 8px hsl(0 0 0 / 0.25);
+}
+
+.sz-sol-blank--drop {
+    border-color: hsl(var(--primary));
+    background: hsl(var(--primary) / 0.12);
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.4);
+}
+
+.sz-sol-blank--hit {
+    cursor: pointer;
+}
+
+.sz-sol-blank--hit:disabled {
+    cursor: default;
+    opacity: 0.4;
+}
+
+.sz-sol-glyph {
+    font-size: calc(var(--sz-sol-card-w) * 0.26);
+    font-weight: 800;
+    color: hsl(var(--muted-foreground) / 0.45);
+}
+
+/* A card fills its track. Each pile lays its own cascade on top of this with a
+   negative margin, so the base card carries no offset of its own. */
+.sz-sol-card {
+    display: block;
+    position: relative;
+    width: 100%;
+    aspect-ratio: 7 / 10;
+    border-radius: var(--sz-sol-radius);
+    box-shadow: 0 1px 3px hsl(0 0 0 / 0.35);
+}
+
+/* A tableau column, in three bands. The hidden stack and the face-up run both
+   cascade down; the dock is the space the run grows into. */
+.sz-sol-stack,
+.sz-sol-fan,
+.sz-sol-dock {
+    width: var(--sz-sol-card-w);
+}
+
+/* The hidden stack cascades straight down, one step at a time. */
+.sz-sol-stack .sz-sol-card {
+    width: var(--sz-sol-card-w);
+}
+
+.sz-sol-stack .sz-sol-card + .sz-sol-card {
+    margin-top: calc(var(--sz-sol-hidden-step) - var(--sz-sol-card-w) * var(--sz-sol-h-ratio));
+}
+
+/* The face-up run cascades down like the hidden stack, but with a wider step so
+   every card's corner index stays visible. */
+.sz-sol-fan {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.sz-sol-fan .sz-sol-card {
+    flex: 0 0 auto;
+    width: var(--sz-sol-card-w);
+}
+
+.sz-sol-fan .sz-sol-card + .sz-sol-card {
+    margin-top: calc(var(--sz-sol-face-step) - var(--sz-sol-card-w) * var(--sz-sol-h-ratio));
+}
+
+/* When hidden cards sit above the run, the run is pulled up so it starts *over*
+   the last of them — leaving the last hidden card showing the same step as every
+   other hidden card (not the wider face-up step), so the column reads as one
+   continuous cascade. */
+.sz-sol-fan--tucked {
+    margin-top: calc(var(--sz-sol-hidden-step) - var(--sz-sol-card-w) * var(--sz-sol-h-ratio));
+}
+
+/* The drawn cards fan sideways — the only pile laid out along the x axis — so
+   the last few draws stay readable instead of covering each other. */
+.sz-sol-waste {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+}
+
+.sz-sol-waste .sz-sol-card {
+    flex: 0 0 auto;
+    width: var(--sz-sol-card-w);
+}
+
+.sz-sol-waste .sz-sol-card + .sz-sol-card {
+    margin-left: calc(var(--sz-sol-peek-waste) - var(--sz-sol-card-w));
+}
+
+/* Reserved empty space below a run. A card dropped into the column joins the
+   fan; the dock is what stops that from pushing the column's edge anywhere. */
+.sz-sol-dock {
+    height: calc(var(--sz-sol-card-w) * var(--sz-sol-dock-ratio));
+    border: 1px dashed hsl(var(--border) / 0.3);
+    border-radius: var(--sz-sol-radius);
+}
+
+/* An empty column already outlines the slot a card would land in, so its dock
+   drops the outline rather than stacking a second dashed box under the first. */
+.sz-sol-dock--plain {
+    border-color: transparent;
+}
+
+.sz-sol-face {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #fdfcf9;
+    border: 1px solid hsl(30 20% 78%);
+    color: #1f2937;
+    transition: box-shadow 120ms, outline-color 120ms;
+    outline: 2px solid transparent;
+    outline-offset: -2px;
+    /* A face is a drag handle, so a touch on one must not scroll the board. */
+    touch-action: none;
+}
+
+.sz-sol-red {
+    color: #c02626;
+}
+
+.sz-sol-black {
+    color: #1f2937;
+}
+
+/* The corner index. Sized off the card, not the viewport, so it stays legible
+   however far the board has been scaled down. It is the strip the face-up
+   cascade leaves showing, so `--sz-sol-face-step` has to stay taller than this
+   block or a two-digit rank gets clipped. */
+.sz-sol-corner {
+    position: absolute;
+    top: 3.5%;
+    left: 6%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: calc(var(--sz-sol-card-w) * 0.155);
+    font-weight: 800;
+    line-height: 1;
+}
+
+.sz-sol-corner-suit {
+    font-size: 1.15em;
+}
+
+/* The pip field fills the card; each pip is placed by percentage from the
+   engine's PIP_LAYOUTS and centred on its own point. */
+.sz-sol-pips {
+    position: absolute;
+    inset: 0;
+}
+
+.sz-sol-pip {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    font-size: calc(var(--sz-sol-card-w) * 0.145);
+    line-height: 1;
+}
+
+/* A real deck mirrors everything under the middle line, so the card reads
+   symmetrically rather than as pips drifting down one side. */
+.sz-sol-pip--flip {
+    transform: translate(-50%, -50%) rotate(180deg);
+}
+
+/* An ace is one oversized pip, centred. Both centre treatments are inset
+   horizontally so they can never reach the corner index, which they otherwise
+   overlap on a small card. */
+.sz-sol-ace {
+    position: absolute;
+    inset: 12% 22%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: calc(var(--sz-sol-card-w) * 0.34);
+    line-height: 1;
+}
+
+/* A jack, queen or king is its letter with the suit beneath it. */
+.sz-sol-court {
+    position: absolute;
+    inset: 10% 24%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.1rem;
+}
+
+.sz-sol-court-letter {
+    font-size: calc(var(--sz-sol-card-w) * 0.28);
+    font-weight: 800;
+    line-height: 1;
+}
+
+.sz-sol-court-suit {
+    font-size: calc(var(--sz-sol-card-w) * 0.18);
+    line-height: 1;
+}
+
+/* The back follows the site theme: a gradient built from the active theme's
+   primary token (a lighter sheen down to a darker shade), so it changes with the
+   theme the way the rest of the chrome does. It is opaque on purpose — a
+   see-through back would let the felt and the cards behind it bleed through. The
+   Syrian Zone mark sits in the middle, used as a mask so it takes the theme's
+   primary-foreground colour, which is what keeps it legible on both the light
+   and the dark palettes.
+
+   Two overlapping backs would read as one card unless the edge between them is
+   drawn — the inset highlight plus the drop shadow is what makes a hairline peek
+   legible as a stack. */
+.sz-sol-back {
+    overflow: hidden;
+    background: linear-gradient(
+        145deg,
+        color-mix(in srgb, hsl(var(--primary)) 82%, white) 0%,
+        hsl(var(--primary)) 55%,
+        color-mix(in srgb, hsl(var(--primary)) 68%, black) 100%
+    );
+    border: 1px solid color-mix(in srgb, hsl(var(--primary)) 78%, black);
+    box-shadow:
+        0 1px 3px hsl(0 0 0 / 0.4),
+        inset 0 1px 0 hsl(var(--primary-foreground) / 0.35);
+}
+
+.sz-sol-back::after {
+    content: '';
+    position: absolute;
+    inset: 2%;
+    background-color: hsl(var(--primary-foreground));
+    -webkit-mask: url('/assets/favicon.png') center / contain no-repeat;
+    mask: url('/assets/favicon.png') center / contain no-repeat;
+}
+
+.sz-sol-count {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    font-size: calc(var(--sz-sol-card-w) * 0.2);
+    font-weight: 800;
+    color: hsl(var(--primary-foreground));
+    text-shadow: 0 1px 2px hsl(0 0 0 / 0.6);
+}
+
+.sz-sol-picked {
+    outline-color: hsl(var(--primary));
+    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.45), 0 2px 6px hsl(0 0 0 / 0.22);
+}
+
+.sz-sol-hinted {
+    outline-color: hsl(var(--primary) / 0.8);
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.35);
+}
+
+/* The card (or run) following the pointer while a drag is in flight. It sits
+   above the board and never takes pointer events, so the drop test can see
+   through it to the pile underneath. */
+.sz-sol-ghost {
+    position: fixed;
+    z-index: 60;
+    pointer-events: none;
+    filter: drop-shadow(0 8px 14px hsl(0 0 0 / 0.45));
+}
+
+.sz-sol-ghost .sz-sol-card {
+    width: 100%;
+}
+
+/* Card text is sized off the card, so the only thing a small screen has to
+   change is the cascade steps — there is no lane to reserve, just less room
+   between the rows of a run. */
+@media (max-width: 640px) {
+    .sz-sol {
+        --sz-sol-gap: 0.2rem;
+        --sz-sol-card-max: 3.4rem;
+        --sz-sol-peek-waste: 1.35rem;
+        --sz-sol-dock-ratio: 0.7;
+        --sz-sol-radius: 0.375rem;
+    }
+}
+
+/* A board is a grid of small tap targets, not motion worth animating. */
+@media (prefers-reduced-motion: reduce) {
+    .sz-sol-pile,
+    .sz-sol-face {
+        transition: none;
+    }
+}
+
 /* shadcn-style thin scrollbar for native overflow areas (dialogs, dropdowns). */
 .sz-scroll {
     scrollbar-width: thin;

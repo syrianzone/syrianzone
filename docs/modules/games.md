@@ -101,6 +101,22 @@ cards are tappable. The whole round is one `TarneebRound` value; the component
 only turns taps into `bid` / `pass` / `chooseTrump` / `playCard` and lets
 `cardGames/match.ts` carry the score between rounds.
 
+## Records
+
+`_lib/scores.ts` keeps everything device-local in `localStorage` under
+`sz-games-*` keys, in two shapes:
+
+- **A best record** — one number, for a run game. `recordResult('2048', score,
+  'higher')` and `recordResult('solitare', seconds, 'lower')` keep the best, and
+  `readRecord` reads it.
+- **A match tally** — `{ played, wins, losses, draws }`, for a match game.
+  `recordMatch('tarneeb', 'win')` returns the updated tally and `readStats`
+  reads it; the value is JSON with a `v` field so the shape can migrate.
+
+A game declares which shape it uses by which key map it appears in
+(`GAMES_RECORD_KEYS` or `GAMES_MATCH_KEYS`). Without a browser both reads come
+back empty and writes are swallowed, so SSR and private mode are safe.
+
 ## 2a. Tests
 
 The pure libraries are tested with Vitest (a JS runner alongside the Pest suite):

@@ -1,10 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Lightbulb, RefreshCw, Undo2 } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
+import { SUIT_LABEL, type Card, type Suit } from '../_lib/cards';
 import {
-  PIP_LAYOUTS,
-  RANK_LABEL,
-  SUIT_LABEL,
   autoMove,
   availableMoves,
   applyMove,
@@ -13,17 +11,14 @@ import {
   createDeal,
   describeMove,
   drawStock,
-  isCourt,
-  isRed,
   isWon,
   liftable,
-  type Card,
   type Deal,
   type Destination,
   type Source,
-  type Suit,
 } from '../_lib/solitaire';
 import { readRecord, recordResult } from '../_lib/scores';
+import PlayingCard from './PlayingCard';
 
 type Selection = { from: Source; ids: string[] };
 
@@ -406,8 +401,8 @@ export default function Solitaire() {
               className="sz-sol-blank sz-sol-blank--hit"
             >
               {deal.stock.length > 0 ? (
-                <span className="sz-sol-card sz-sol-back">
-                  <span className="sz-sol-count">{deal.stock.length}</span>
+                <span className="sz-card sz-card--back">
+                  <span className="sz-card__count">{deal.stock.length}</span>
                 </span>
               ) : (
                 <span className="sz-sol-glyph">{deal.waste.length > 0 ? '\u21bb' : ''}</span>
@@ -422,7 +417,7 @@ export default function Solitaire() {
             ) : (
               <div className="sz-sol-waste">
                 {deal.waste.slice(-3).map((card, i, shown) => (
-                  <CardFace
+                  <PlayingCard
                     key={card.id}
                     card={card}
                     // Draw-one: only the top card of the waste can move, so the
@@ -457,7 +452,7 @@ export default function Solitaire() {
                   <span className="sz-sol-glyph">{SUIT_LABEL[FOUNDATION_SUITS[index]]}</span>
                 </div>
               ) : (
-                <CardFace
+                <PlayingCard
                   card={pile[pile.length - 1]}
                   interactive
                   picked={selected?.from.kind === 'foundation' && selected.from.index === index}
@@ -494,7 +489,7 @@ export default function Solitaire() {
               >
                 <div className="sz-sol-stack">
                   {hidden.map((card) => (
-                    <div key={card.id} className="sz-sol-card sz-sol-back" aria-hidden="true" />
+                    <div key={card.id} className="sz-card sz-card--back" aria-hidden="true" />
                   ))}
                 </div>
 
@@ -524,7 +519,7 @@ export default function Solitaire() {
                       // pile reads as if the hidden cards were the target.
                       const receivesDrop = isLegalHere && i === up.length - 1;
                       return (
-                        <CardFace
+                        <PlayingCard
                           key={card.id}
                           card={card}
                           dropTarget={receivesDrop}
@@ -562,31 +557,14 @@ export default function Solitaire() {
               left: ghost.x,
               top: ghost.y,
               width: ghost.w,
-              '--sz-sol-card-w': `${ghost.w}px`,
-              '--sz-sol-h-ratio': 1.4286,
+              '--sz-card-w': `${ghost.w}px`,
+              '--sz-card-h-ratio': 1.4286,
               '--sz-sol-face-step': `${ghost.w * 1.4286 * 0.29}px`,
             } as React.CSSProperties
           }
         >
-          {ghost.run.map((card, i) => (
-            <div
-              key={card.id}
-              className={`sz-sol-card sz-sol-face ${isRed(card) ? 'sz-sol-red' : 'sz-sol-black'}`}
-              style={
-                i === 0
-                  ? undefined
-                  : {
-                      marginTop:
-                        'calc(var(--sz-sol-face-step) - var(--sz-sol-card-w) * var(--sz-sol-h-ratio))',
-                    }
-              }
-            >
-              <span className="sz-sol-corner">
-                {RANK_LABEL[card.rank]}
-                <span className="sz-sol-corner-suit">{SUIT_LABEL[card.suit]}</span>
-              </span>
-              <CardFaceArt card={card} />
-            </div>
+          {ghost.run.map((card) => (
+            <PlayingCard key={card.id} card={card} decorative />
           ))}
         </div>
       )}
@@ -636,96 +614,6 @@ function Pile({ dropKey, label, className = '', children, isOver, onPileClick }:
       <span className="sr-only">{label}</span>
       {children}
     </div>
-  );
-}
-
-interface CardFaceProps {
-  card: Card;
-  /** True while a dragged card would legally land on this card. */
-  dropTarget?: boolean;
-  interactive?: boolean;
-  picked?: boolean;
-  hinted?: boolean;
-  onClick?: () => void;
-  onDoubleClick?: () => void;
-  onPointerDown?: (e: React.PointerEvent) => void;
-}
-
-function CardFace({
-  card,
-  dropTarget,
-  interactive,
-  picked,
-  hinted,
-  onClick,
-  onDoubleClick,
-  onPointerDown,
-}: CardFaceProps) {
-  if (!card.faceUp) {
-    return <div className="sz-sol-card sz-sol-back" aria-hidden="true" />;
-  }
-  return (
-    <button
-      type="button"
-      onPointerDown={onPointerDown}
-      onClick={(e) => {
-        // The card sits inside a clickable pile; without this the same tap
-        // would be handled twice and cancel itself out.
-        e.stopPropagation();
-        onClick?.();
-      }}
-      onDoubleClick={(e) => {
-        e.stopPropagation();
-        onDoubleClick?.();
-      }}
-      aria-pressed={picked}
-      className={`sz-sol-card sz-sol-face ${card.suit === 'H' || card.suit === 'D' ? 'sz-sol-red' : 'sz-sol-black'} ${
-        interactive ? 'cursor-grab active:cursor-grabbing' : ''
-      } ${picked ? 'sz-sol-picked' : ''} ${hinted ? 'sz-sol-hinted' : ''} ${
-        dropTarget ? 'sz-sol-drop' : ''
-      }`}
-    >
-      <span className="sz-sol-corner">
-        {RANK_LABEL[card.rank]}
-        <span className="sz-sol-corner-suit">{SUIT_LABEL[card.suit]}</span>
-      </span>
-      <CardFaceArt card={card} />
-    </button>
-  );
-}
-
-/**
- * The body of a card: a traditional pip arrangement for the numbers, one large
- * pip for an ace, and the court letter with its suit for a jack, queen or king.
- */
-function CardFaceArt({ card }: { card: Card }) {
-  const suit = SUIT_LABEL[card.suit];
-
-  if (card.rank === 1) {
-    return <span className="sz-sol-ace">{suit}</span>;
-  }
-
-  if (isCourt(card.rank)) {
-    return (
-      <span className="sz-sol-court">
-        <span className="sz-sol-court-letter">{RANK_LABEL[card.rank]}</span>
-        <span className="sz-sol-court-suit">{suit}</span>
-      </span>
-    );
-  }
-
-  return (
-    <span className="sz-sol-pips">
-      {PIP_LAYOUTS[card.rank].map((pip, i) => (
-        <span
-          key={i}
-          className={`sz-sol-pip ${pip.flip ? 'sz-sol-pip--flip' : ''}`}
-          style={{ left: `${pip.x}%`, top: `${pip.y}%` }}
-        >
-          {suit}
-        </span>
-      ))}
-    </span>
   );
 }
 

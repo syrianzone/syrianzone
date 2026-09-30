@@ -16,7 +16,7 @@ renders on the server like any other Inertia page.
 |---|---|---|---|
 | GET | `/games` | `Games/Index` | Hub; renders the card grid from `GAMES` |
 | GET | `/games/2048` | `Games/2048/Index` | Playable |
-| GET | `/games/solitare` | `Games/Solitare/Index` | Placeholder ("قريباً") |
+| GET | `/games/solitare` | `Games/Solitare/Index` | Playable (Klondike) |
 
 All three are public closures in `routes/web.php` with no middleware, no
 throttle and no auth gate — they are static shells, exactly like `/muslim`.
@@ -30,10 +30,12 @@ resources/js/Pages/Games/
 ├── Solitare/Index.tsx           # page shell
 ├── _components/
 │   ├── GameShell.tsx            # shared sub-page chrome: back link + title
+│   ├── PlayingCard.tsx          # shared card face/back, no game rules
 │   ├── Game2048.tsx             # the board: state, input, rendering
 │   └── Solitaire.tsx            # clock, selection, undo, drag plumbing
 └── _lib/
     ├── games.ts                 # GAMES registry — the single source of truth
+    ├── cards.ts                 # shared deck, labels and pip geometry
     ├── engine2048.ts            # pure 2048 rules (no React)
     ├── solitaire.ts             # pure Klondike rules (no React)
     └── scores.ts                # localStorage records
@@ -42,6 +44,27 @@ resources/js/Pages/Games/
 `GameShell` is what keeps sub-games consistent: it renders the back link to
 `/games`, the title block and the icon, so a new game only has to supply its
 own board.
+
+`PlayingCard` and `_lib/cards.ts` are the shared **card kit**: the card value,
+the 52-card deck, the rank/suit labels and the pip geometry are game-agnostic,
+and the component draws any card face or back from them. They are styled
+entirely by the generic `.sz-card*` classes in `app.css`; a board supplies the
+sizing context (`--sz-card-w`, `--sz-card-h-ratio`, `--sz-card-radius`) and
+lays out its own piles. Solitaire is the first consumer; the trick-taking games
+(tarneeb, trix) will reuse it rather than restate a card.
+
+## 2a. Tests
+
+The pure libraries are tested with Vitest (a JS runner alongside the Pest suite):
+
+```
+bun run test:js        # vitest run
+bun run test:js:watch  # vitest
+```
+
+Tests live beside the code they cover (`_lib/cards.test.ts`,
+`_lib/solitaire.test.ts`) and run in a plain Node environment — no DOM, no
+browser — because the rules carry no React.
 
 ## 3. Adding a game
 

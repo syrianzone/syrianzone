@@ -565,6 +565,8 @@ Route::post('/api/user/settings', function (\Illuminate\Http\Request $request) {
         'settings.quranLastJuz' => 'nullable|integer|min:1|max:30',
         'settings.quranPageAt' => 'nullable|integer|min:0',
         'settings.quranReciterId' => 'nullable|string|max:64',
+        'settings.quranRadioBytes' => 'nullable|integer|min:0',
+        'settings.quranRadioSeconds' => 'nullable|integer|min:0',
         'settings.showEvents' => 'nullable|boolean',
         'settings.showSearch' => 'nullable|boolean',
         'settings.useCustomCoords' => 'nullable|boolean',
@@ -596,6 +598,14 @@ Route::post('/api/user/settings', function (\Illuminate\Http\Request $request) {
 
     return response()->json(['status' => 'ok', 'settings' => $user->settings]);
 })->middleware('throttle:60,1');
+
+// Quran radio data usage. Separate from the settings blob above because these
+// are additive counters shared across devices: a total would be last-write-wins,
+// so the client sends a delta and the server adds it under a row lock.
+Route::post('/api/user/radio-usage', [\App\Http\Controllers\RadioUsageController::class, 'add'])
+    ->middleware('throttle:60,1');
+Route::post('/api/user/radio-usage/clear', [\App\Http\Controllers\RadioUsageController::class, 'clear'])
+    ->middleware('throttle:10,1');
 
 // Dev-only: impersonate a user role for local development (never registered in production).
 use App\Http\Controllers\DevController;

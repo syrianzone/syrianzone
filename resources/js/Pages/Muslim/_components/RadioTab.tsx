@@ -1,12 +1,14 @@
 import React from 'react';
 import {
-  AlertCircle, ArrowRight, ChevronLeft, ChevronRight, Loader2, MoonStar, Pause, Play, Volume2, VolumeX,
+  AlertCircle, ArrowRight, ChevronLeft, ChevronRight, HardDrive, Loader2, MoonStar, Pause, Play, Volume2, VolumeX,
 } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
 import QuranStationPicker from '@/Components/QuranStationPicker';
 import { QuranRadioIcon } from '@/Components/Icons/ProjectIcons';
 import { useLiveRadio } from '@/Lib/useLiveRadio';
+import { useRadioUsage } from '@/Lib/useRadioUsage';
+import { formatBytes } from '@/Lib/radioUsage';
 import { formatDuration } from '../_lib/format';
 import { syncMuslimUrl, useMuslimNav } from '../_lib/nav';
 
@@ -29,6 +31,8 @@ export default function RadioTab() {
   const { station, isPlaying, isLoading, error, hasStarted } = radio;
 
   const [now, setNow] = React.useState(() => Date.now());
+  const [confirmClear, setConfirmClear] = React.useState(false);
+  const usage = useRadioUsage(isPlaying);
   // Wall clock of the current listening stretch, for the elapsed readout. A
   // ref keeps the transition logic readable across station changes.
   const startedRef = React.useRef<number | null>(null);
@@ -110,6 +114,17 @@ export default function RadioTab() {
     setSleepUntil(minutes === null ? null : Date.now() + minutes * 60_000);
   };
 
+  // Two taps: clearing is not undoable on the server.
+  const clearUsage = () => {
+    if (!confirmClear) {
+      setConfirmClear(true);
+      window.setTimeout(() => setConfirmClear(false), 4000);
+      return;
+    }
+    setConfirmClear(false);
+    void usage.clear();
+  };
+
   // Highlight whichever preset the remaining time rounds to, so the active
   // chip survives leaving and re-entering the applet.
   const remainingMinutes = sleepRemaining === null ? null : Math.ceil(sleepRemaining / 60_000);
@@ -130,8 +145,7 @@ export default function RadioTab() {
       {/* Now playing */}
       <Card>
         <CardContent className="flex flex-col items-center gap-4 p-6 text-center">
-          <div className="relative flex h-24 w-24 items-center justify-center rounded-full bg-primary/10">
-            {isPlaying && <span className="absolute inset-0 animate-ping rounded-full bg-primary/20" aria-hidden />}
+          <div className="flex h-24 w-24 items-center justify-center rounded-full bg-primary/10">
             <QuranRadioIcon className="h-12 w-12" />
           </div>
 
@@ -282,6 +296,66 @@ export default function RadioTab() {
           </div>
           <p className="text-[11px] text-muted-foreground">
             {hasStarted ? 'يتوقف البث تلقائياً عند انتهاء المهلة.' : 'اضغط تشغيل لبدء البث.'}
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Data usage */}
+      <Card>
+        <CardContent className="space-y-3 p-4">
+          <div className="flex items-center justify-between gap-2">
+            <p className="flex items-center gap-1.5 text-sm font-semibold">
+              <HardDrive className="h-4 w-4 text-primary" />
+              استهلاك البيانات
+            </p>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={clearUsage}
+              className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive"
+            >
+              {confirmClear ? 'تأكيد المسح' : 'مسح السجل'}
+            </Button>
+          </div>
+
+          <dl className="space-y-1.5 text-xs">
+            <div className="flex items-center justify-between gap-2">
+              <dt className="text-muted-foreground">الاستهلاك المتوقع</dt>
+              <dd className="whitespace-nowrap font-medium">
+                {formatBytes(usage.perHour)} / ساعة
+              </dd>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <dt className="text-muted-foreground">هذه الجلسة</dt>
+              <dd className="whitespace-nowrap font-mono tabular-nums">
+                {formatBytes(usage.session.bytes)}
+                <span className="mx-1.5 text-muted-foreground/60">·</span>
+                {formatDuration(usage.session.seconds * 1000)}
+              </dd>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <dt className="text-muted-foreground">هذا الجهاز</dt>
+              <dd className="whitespace-nowrap font-mono tabular-nums">
+                {formatBytes(usage.device.bytes)}
+                <span className="mx-1.5 text-muted-foreground/60">·</span>
+                {formatDuration(usage.device.seconds * 1000)}
+              </dd>
+            </div>
+            {usage.account && (
+              <div className="flex items-center justify-between gap-2">
+                <dt className="text-muted-foreground">حسابك (كل الأجهزة)</dt>
+                <dd className="whitespace-nowrap font-mono tabular-nums">
+                  {formatBytes(usage.account.bytes)}
+                  <span className="mx-1.5 text-muted-foreground/60">·</span>
+                  {formatDuration(usage.account.seconds * 1000)}
+                </dd>
+              </div>
+            )}
+          </dl>
+
+          <p className="text-[11px] leading-relaxed text-muted-foreground">
+            محسوب من معدّل البث (128 كيلوبت/ث) — البث متصل بلا ملف كامل، والقياس الفعلي غير متاح من المتصفح.
+            {usage.isLoggedIn ? ' حسابك محفوظ على الخادم.' : ' السجل محفوظ على هذا الجهاز فقط لأنك غير مسجّل.'}
           </p>
         </CardContent>
       </Card>

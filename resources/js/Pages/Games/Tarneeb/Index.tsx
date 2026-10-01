@@ -20,7 +20,6 @@ export default function Index() {
 
       <GameShell
         title="طرنيب"
-        description="زايد من ٧ إلى ١٣، واختَر الحكم، واجمع الطرانيب حتى ٤١"
         icon={TarneebIcon}
         width="max-w-4xl"
         rules={<TarneebRules />}

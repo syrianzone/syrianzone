@@ -14,7 +14,6 @@ import { useFocusMode } from '@/Contexts/FocusModeContext';
 
 interface Props {
   title: string;
-  description: string;
   icon: React.ComponentType<{ className?: string }>;
   /**
    * Tailwind max-width for the page column. A single square board is happy in
@@ -39,7 +38,6 @@ interface Props {
 // consistent navigation for free.
 export default function GameShell({
   title,
-  description,
   icon: Icon,
   width = 'max-w-3xl',
   rules,
@@ -82,10 +80,7 @@ export default function GameShell({
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-border/60 bg-card/60">
                   <Icon className="h-7 w-7" />
                 </span>
-                <div className="min-w-0 flex-1">
-                  <h1 className="text-2xl font-bold">{title}</h1>
-                  <p className="text-sm text-muted-foreground">{description}</p>
-                </div>
+                <h1 className="min-w-0 flex-1 text-2xl font-bold">{title}</h1>
               </>
             )}
 

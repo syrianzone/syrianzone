@@ -23,7 +23,6 @@ export default function Index() {
 
       <GameShell
         title="2048"
-        description="ادمج الأرقام المتشابهة لتصل إلى 2048"
         icon={Game2048Icon}
         rules={<Game2048Rules />}
       >

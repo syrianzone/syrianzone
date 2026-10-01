@@ -13,7 +13,6 @@ function CardBody({ game }: { game: (typeof GAMES)[number] }) {
     <CardContent className="flex flex-col items-center gap-2 p-4 text-center">
       <game.icon className="h-10 w-10" />
       <span className="text-xs font-bold sm:text-sm">{game.title}</span>
-      <span className="text-[11px] leading-snug text-muted-foreground">{game.tagline}</span>
       {game.online && (
         <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
           <Users className="h-3 w-3" />

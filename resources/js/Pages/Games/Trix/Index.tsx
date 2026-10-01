@@ -20,7 +20,6 @@ export default function Index() {
 
       <GameShell
         title="تركس"
-        description="خمسة طلبات وأربع ممالك — يهودية أو فريقين"
         icon={TrixIcon}
         width="max-w-4xl"
         rules={<TrixRules />}

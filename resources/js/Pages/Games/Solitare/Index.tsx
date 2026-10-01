@@ -23,7 +23,6 @@ export default function Index() {
 
       <GameShell
         title="سوليتير"
-        description="رتّب الأعمدة من ٢ إلى ١٣"
         icon={SolitaireIcon}
         width="max-w-6xl"
         rules={<SolitaireRules />}

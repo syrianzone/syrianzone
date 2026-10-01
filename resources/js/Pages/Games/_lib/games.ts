@@ -19,7 +19,6 @@ export interface GameEntry {
   /** URL segment under /games (also the React key). */
   slug: string;
   title: string;
-  tagline: string;
   icon: React.ComponentType<{ className?: string }>;
   /** Where the hub card links; defaults to `/games/<slug>`. */
   href?: string;
@@ -35,31 +34,26 @@ export const GAMES: GameEntry[] = [
   {
     slug: '2048',
     title: '2048',
-    tagline: 'ادمج الأرقام حتى تصل إلى 2048',
     icon: Game2048Icon,
   },
   {
     slug: 'solitare',
     title: 'سوليتير',
-    tagline: 'رتّب الأعمدة من ٢ إلى ١٣',
     icon: SolitaireIcon,
   },
   {
     slug: 'tarneeb',
     title: 'طرنيب',
-    tagline: 'زايد من ٧ إلى ١٣ واجمع الطرانيب حتى ٤١',
     icon: TarneebIcon,
   },
   {
     slug: 'trix',
     title: 'تركس',
-    tagline: 'خمسة طلبات وأربع ممالك — يهودية أو فريقين',
     icon: TrixIcon,
   },
   {
     slug: 'guesswho',
     title: 'مَنْ هُوَ؟',
-    tagline: 'تحدَّ صديقك: اسأل واستبعد حتى تكشف بطله',
     icon: GuessWhoIcon,
     href: '/guesswho',
     online: true,
@@ -67,7 +61,6 @@ export const GAMES: GameEntry[] = [
   {
     slug: 'president',
     title: 'رئيس الجمهورية',
-    tagline: 'محاكاة إدارة واقتصاد سوريا ما بعد الحرب',
     icon: PresidentIcon,
     href: 'https://game.hadealahmad.com',
     external: true,

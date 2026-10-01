@@ -782,7 +782,7 @@
 .sz-tbl {
     --sz-card-radius: 0.5rem;
     --sz-card-h-ratio: 1.4286;
-    --sz-tbl-card-w: 5rem;
+    --sz-tbl-card-w: 6rem; /* the player's hand; the seats keep their own size */
     --sz-tbl-seat-w: 3.2rem;
     --sz-tbl-step: 0.22rem; /* how much of each held back stays showing */
     --sz-tbl-run-step: 0.7rem; /* slot spacing down a التركس column */
@@ -974,6 +974,15 @@
     cursor: grabbing;
 }
 
+/* A tapped card, before the second tap plays it (touch): raised and ringed, so
+   the pick reads even though there is no hover on a phone. */
+.sz-tbl__hand .sz-card--picked {
+    transform: translateY(-0.7rem);
+    box-shadow:
+        0 0 0 3px hsl(var(--primary) / 0.55),
+        0 10px 18px hsl(0 0 0 / 0.35);
+}
+
 @media (hover: hover) {
     .sz-tbl__playable:hover {
         transform: translateY(-0.7rem);
@@ -1031,7 +1040,7 @@
 
 @media (max-width: 640px) {
     .sz-tbl {
-        --sz-tbl-card-w: 3.4rem;
+        --sz-tbl-card-w: 4.2rem; /* the player's hand; the seats keep their own size */
         --sz-tbl-seat-w: 2.2rem;
         --sz-tbl-step: 0.18rem;
         max-width: 100%;
@@ -1044,7 +1053,7 @@
     }
 
     .sz-tbl__hand .sz-card + .sz-card {
-        margin-left: calc(var(--sz-tbl-card-w) * -0.66);
+        margin-left: calc(var(--sz-tbl-card-w) * -0.68);
     }
 
     .sz-tbl__actions {

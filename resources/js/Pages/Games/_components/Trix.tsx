@@ -3,6 +3,7 @@ import { RefreshCw } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { SUIT_LABEL, type Card, type Suit } from '../_lib/cards';
 import { power } from '../_lib/cardGames/hand';
+import type { Play } from '../_lib/cardGames/trick';
 import { readLargeCards, writeLargeCards } from '../_lib/cardDisplay';
 import { readStats, recordMatch, type MatchStats } from '../_lib/scores';
 import {
@@ -47,8 +48,12 @@ export default function Trix() {
   const [stats, setStats] = useState<MatchStats>({ played: 0, wins: 0, losses: 0, draws: 0 });
   /** The card under the finger while dragging it out to play. */
   const [ghost, setGhost] = useState<{ card: Card; x: number; y: number; w: number } | null>(null);
+  /** The card picked on a touch screen, waiting for a second tap to play it. */
+  const [selected, setSelected] = useState<string | null>(null);
   const seen = useRef(0);
   const recorded = useRef(false);
+  /** The last pointer kind: a touch picks first, a mouse plays at once. */
+  const lastPointerType = useRef('');
   const drag = useRef<{
     card: Card;
     startX: number;
@@ -129,6 +134,11 @@ export default function Trix() {
     return [...cards].sort((a, b) => SUITS.indexOf(a.suit) - SUITS.indexOf(b.suit) || power(a) - power(b));
   }, [game]);
 
+  // A new deal or a played card drops any picked card.
+  useEffect(() => {
+    setSelected(null);
+  }, [game?.deal]);
+
   if (!game) {
     return <div className="py-16 text-center text-sm text-muted-foreground">جاري التوزيع…</div>;
   }
@@ -140,15 +150,38 @@ export default function Trix() {
   const legalIds = new Set(legal.map((card) => card.id));
   const canPass = humanTurn && deal?.contract === 'trix' && legal.length === 0;
 
+  // The trick to draw. While paused the one that just finished stays on the
+  // table, so its cards are still there when the player taps "كمّل" — as in
+  // tarneeb — rather than vanishing before the pause.
+  const liveTrick = deal && deal.contract !== 'trix' ? deal.round.trick : [];
+  const lastTrick =
+    deal && deal.contract !== 'trix' && paused && deal.round.history.length > 0
+      ? deal.round.history[deal.round.history.length - 1]
+      : null;
+  const trickPlays = lastTrick ? lastTrick.plays : liveTrick;
+  const trickWinnerSeat = lastTrick ? lastTrick.winner : null;
+
   const play = (card: Card) => {
     if (!legalIds.has(card.id)) return;
+    setSelected(null);
     setGame((g) => (g?.deal ? { ...g, deal: playCard(g.deal, HUMAN, card) } : g));
+  };
+  // On a touch screen a tap only picks the card — raised and ringed — and a
+  // second tap on it plays. A mouse click plays at once, and a drag plays out.
+  const tapCard = (card: Card) => {
+    if (!legalIds.has(card.id)) return;
+    if (lastPointerType.current === 'touch' && selected !== card.id) {
+      setSelected(card.id);
+      return;
+    }
+    play(card);
   };
   const doPass = () => setGame((g) => (g?.deal ? { ...g, deal: pass(g.deal, HUMAN) } : g));
 
   // Card drag: a legal card can be pulled out and dropped on the table to play,
   // or tapped. Only a real drag swallows the following click.
   const startDrag = (card: Card, e: React.PointerEvent) => {
+    lastPointerType.current = e.pointerType;
     if (!legalIds.has(card.id)) return;
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     drag.current = {
@@ -282,11 +315,11 @@ export default function Trix() {
               <Layout deal={deal} large={large} />
             ) : deal ? (
               <>
-                <Slot position="n" card={cardAt(deal, 2)} large={large} />
-                <Slot position="w" card={cardAt(deal, 1)} large={large} />
+                <Slot position="n" card={cardAtSeat(trickPlays, 2)} win={trickWinnerSeat === 2} large={large} />
+                <Slot position="w" card={cardAtSeat(trickPlays, 1)} win={trickWinnerSeat === 1} large={large} />
                 <div className="sz-tbl__slot sz-tbl__slot--c" />
-                <Slot position="e" card={cardAt(deal, 3)} large={large} />
-                <Slot position="s" card={cardAt(deal, HUMAN)} large={large} />
+                <Slot position="e" card={cardAtSeat(trickPlays, 3)} win={trickWinnerSeat === 3} large={large} />
+                <Slot position="s" card={cardAtSeat(trickPlays, HUMAN)} win={trickWinnerSeat === HUMAN} large={large} />
               </>
             ) : null}
           </div>
@@ -299,9 +332,10 @@ export default function Trix() {
               card={card}
               large={large}
               interactive={legalIds.has(card.id)}
+              picked={selected === card.id}
               className={legalIds.has(card.id) ? 'sz-tbl__playable' : ''}
               onPointerDown={(e) => startDrag(card, e)}
-              onClick={() => play(card)}
+              onClick={() => tapCard(card)}
             />
           ))}
         </div>
@@ -387,9 +421,8 @@ function handCount(game: TrixGame, seat: number): number {
   return deal.contract === 'trix' ? deal.hands[seat].length : deal.round.hands[seat].length;
 }
 
-function cardAt(deal: TrixDeal, seat: number): Card | undefined {
-  if (deal.contract === 'trix') return undefined;
-  return deal.round.trick.find((play) => play.seat === seat)?.card;
+function cardAtSeat(plays: Play[], seat: number): Card | undefined {
+  return plays.find((play) => play.seat === seat)?.card;
 }
 
 function cardOf(suit: Suit, power: number): Card {
@@ -484,9 +517,9 @@ function Seat({ name, count, className = '' }: { name: string; count: number; cl
   );
 }
 
-function Slot({ position, card, large }: { position: string; card?: Card; large: boolean }) {
+function Slot({ position, card, win, large }: { position: string; card?: Card; win: boolean; large: boolean }) {
   return (
-    <div className={`sz-tbl__slot sz-tbl__slot--${position}`}>
+    <div className={`sz-tbl__slot sz-tbl__slot--${position} ${win ? 'sz-tbl__slot--win' : ''}`}>
       {card && <PlayingCard card={card} decorative large={large} />}
     </div>
   );

@@ -54,6 +54,10 @@ export default function Tarneeb() {
   const [ghost, setGhost] = useState<{ card: Card; x: number; y: number; w: number } | null>(null);
   /** Draw every card as one big rank instead of pips. */
   const [large, setLarge] = useState(false);
+  /** The card picked on a touch screen, waiting for a second tap to play it. */
+  const [selected, setSelected] = useState<string | null>(null);
+  /** The last pointer kind: a touch picks first, a mouse plays at once. */
+  const lastPointerType = useRef('');
 
   const recorded = useRef<MatchState | null>(null);
   const seenHistory = useRef(0);
@@ -103,6 +107,11 @@ export default function Tarneeb() {
     return () => window.clearTimeout(timer);
   }, [round, paused]);
 
+  // A new trick or turn drops any picked card.
+  useEffect(() => {
+    setSelected(null);
+  }, [round]);
+
   useEffect(() => {
     if (!match || !isMatchOver(match) || recorded.current === match) return;
     recorded.current = match;
@@ -127,7 +136,18 @@ export default function Tarneeb() {
 
   const play = (card: Card) => {
     if (!legalIds.has(card.id)) return;
+    setSelected(null);
     setRound((current) => (current ? playCard(current, HUMAN, card) : current));
+  };
+  // On a touch screen a tap only picks the card — raised and ringed — and a
+  // second tap on it plays. A mouse click plays at once, and a drag plays out.
+  const tapCard = (card: Card) => {
+    if (!legalIds.has(card.id)) return;
+    if (lastPointerType.current === 'touch' && selected !== card.id) {
+      setSelected(card.id);
+      return;
+    }
+    play(card);
   };
   const placeBid = (value: number) => setRound((current) => (current ? bid(current, HUMAN, value) : current));
   const doPass = () => setRound((current) => (current ? pass(current, HUMAN) : current));
@@ -161,6 +181,7 @@ export default function Tarneeb() {
   // Card drag: a legal card can be pulled out and dropped on the table to play,
   // or tapped. Only a real drag swallows the following click.
   const startDrag = (card: Card, e: React.PointerEvent) => {
+    lastPointerType.current = e.pointerType;
     if (!legalIds.has(card.id)) return;
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     drag.current = {
@@ -300,8 +321,10 @@ export default function Tarneeb() {
               card={card}
               large={large}
               interactive={legalIds.has(card.id)}
+              picked={selected === card.id}
               className={legalIds.has(card.id) ? 'sz-tbl__playable' : ''}
-              onClick={() => play(card)}
+              onPointerDown={(e) => startDrag(card, e)}
+              onClick={() => tapCard(card)}
             />
           ))}
         </div>

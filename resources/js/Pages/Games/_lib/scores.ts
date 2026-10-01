@@ -21,6 +21,7 @@ export const GAMES_RECORD_KEYS = {
 /** Games whose record is a win/loss tally. */
 export const GAMES_MATCH_KEYS = {
   tarneeb: `${MATCH_PREFIX}tarneeb`,
+  trix: `${MATCH_PREFIX}trix`,
 } as const;
 
 export type GameSlug = keyof typeof GAMES_RECORD_KEYS;

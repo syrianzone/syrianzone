@@ -767,39 +767,52 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Tarneeb — the table.
+   Game table (tarneeb and trix).
 
-   Four seats around a trick area, the player's hand fanned out below it. The
-   cards are the shared `.sz-card` kit; an opponent's hand is a tight stack of
-   backs (one per card still held), and the player's is a face-up fan. The board
-   is `dir="ltr"` (a trick reads clockwise, left to right) while the page is
-   RTL.
+   The table is an invisible boundary that keeps a deal inside the viewport — the
+   game fills a fixed-height page and nothing scrolls. It is horizontal when the
+   screen is wide and vertical when it is narrow. The centre is a reserved play
+   area a game styles for its own cards; the seats hang on its edges and the
+   player's hand runs along the bottom. The box is also where a table background
+   will be painted later.
 
-   The board and the action strip below it are both sized to reserve space, so
-   nothing moves when bids land, cards are played, or the contract panel
-   appears. */
-.sz-tar {
+   The cards are the shared `.sz-card` kit; an opponent's hand is a tight stack
+   of backs, and the player's is a face-up fan. The board is `dir="ltr"` (a trick
+   reads clockwise, left to right) while the page is RTL. */
+.sz-tbl {
     --sz-card-radius: 0.5rem;
     --sz-card-h-ratio: 1.4286;
-    --sz-tar-card-w: 5rem;
-    --sz-tar-seat-w: 3.2rem;
-    --sz-tar-step: 0.22rem; /* how much of each held back stays showing */
-}
-
-.sz-tar__board {
-    display: grid;
-    grid-template-columns: auto minmax(9rem, 1fr) auto;
-    grid-template-rows: auto minmax(9rem, 1fr);
-    gap: 0.5rem;
-    align-items: center;
-    justify-items: center;
+    --sz-tbl-card-w: 5rem;
+    --sz-tbl-seat-w: 3.2rem;
+    --sz-tbl-step: 0.22rem; /* how much of each held back stays showing */
+    --sz-tbl-run-step: 0.7rem; /* slot spacing down a التركس column */
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    max-width: 60rem;
     margin-inline: auto;
-    max-width: 34rem;
-    min-height: 16rem;
+    overflow: hidden;
 }
 
-.sz-tar__seat {
-    --sz-card-w: var(--sz-tar-seat-w);
+/* The reserved play area — the space a game fills with its own cards, the
+   "space where cards are played" that each contract styles. */
+.sz-tbl__centre {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 62%;
+    height: 60%;
+}
+
+.sz-tbl__seat {
+    --sz-card-w: var(--sz-tbl-seat-w);
+    position: absolute;
+    z-index: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -810,24 +823,30 @@
     padding: 0.4rem;
 }
 
-.sz-tar__seat--north {
-    grid-area: 1 / 2;
+.sz-tbl__seat--north {
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
 }
-.sz-tar__seat--west {
-    grid-area: 2 / 1;
+.sz-tbl__seat--west {
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
 }
-.sz-tar__seat--east {
-    grid-area: 2 / 3;
+.sz-tbl__seat--east {
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
 }
 
-.sz-tar__seat-name {
+.sz-tbl__seat-name {
     font-size: 11px;
     font-weight: 800;
     color: hsl(var(--muted-foreground));
 }
 
 /* The bid is reserved a line, so a seat does not grow when it appears. */
-.sz-tar__seat-bid {
+.sz-tbl__seat-bid {
     min-height: 1rem;
     font-size: 12px;
     font-weight: 800;
@@ -835,74 +854,71 @@
 }
 
 /* An opponent's hand: a stack of backs, oriented to its seat. */
-.sz-tar__seat-hand {
+.sz-tbl__seat-hand {
     display: flex;
 }
 
-.sz-tar__seat-hand .sz-card {
-    width: var(--sz-tar-seat-w);
+.sz-tbl__seat-hand .sz-card {
+    width: var(--sz-tbl-seat-w);
     flex: 0 0 auto;
 }
 
-.sz-tar__seat-hand--h {
+.sz-tbl__seat-hand--h {
     flex-direction: row;
 }
 
-.sz-tar__seat-hand--h .sz-card + .sz-card {
-    margin-left: calc(var(--sz-tar-step) - var(--sz-tar-seat-w));
+.sz-tbl__seat-hand--h .sz-card + .sz-card {
+    margin-left: calc(var(--sz-tbl-step) - var(--sz-tbl-seat-w));
 }
 
-.sz-tar__seat-hand--v {
+.sz-tbl__seat-hand--v {
     flex-direction: column;
 }
 
-.sz-tar__seat-hand--v .sz-card + .sz-card {
-    margin-top: calc(var(--sz-tar-step) - var(--sz-tar-seat-w) * var(--sz-card-h-ratio));
+.sz-tbl__seat-hand--v .sz-card + .sz-card {
+    margin-top: calc(var(--sz-tbl-step) - var(--sz-tbl-seat-w) * var(--sz-card-h-ratio));
 }
 
-/* The trick: the four played cards in a plus, with the trump in the middle. */
-.sz-tar__trick {
-    grid-area: 2 / 2;
-    --sz-card-w: var(--sz-tar-seat-w);
+/* The trick: the four played cards in a plus, with the trump in the middle. It
+   sits inside `.sz-tbl__centre`, sized to its own cards. */
+.sz-tbl__trick {
+    --sz-card-w: var(--sz-tbl-seat-w);
     display: grid;
-    width: 100%;
-    height: 100%;
-    min-height: 9rem;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(3, 1fr);
+    grid-template-columns: repeat(3, auto);
+    grid-template-rows: repeat(3, auto);
     place-items: center;
 }
 
-.sz-tar__slot {
+.sz-tbl__slot {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: var(--sz-tar-seat-w);
-    min-height: calc(var(--sz-tar-seat-w) * var(--sz-card-h-ratio));
+    width: var(--sz-tbl-seat-w);
+    min-height: calc(var(--sz-tbl-seat-w) * var(--sz-card-h-ratio));
 }
 
-.sz-tar__slot--n {
+.sz-tbl__slot--n {
     grid-area: 1 / 2;
 }
-.sz-tar__slot--w {
+.sz-tbl__slot--w {
     grid-area: 2 / 1;
 }
-.sz-tar__slot--c {
+.sz-tbl__slot--c {
     grid-area: 2 / 2;
 }
-.sz-tar__slot--e {
+.sz-tbl__slot--e {
     grid-area: 2 / 3;
 }
-.sz-tar__slot--s {
+.sz-tbl__slot--s {
     grid-area: 3 / 2;
 }
 
 /* A played card drops in. */
-.sz-tar__slot .sz-card {
-    animation: sz-tar-deal 160ms ease-out;
+.sz-tbl__slot .sz-card {
+    animation: sz-tbl-deal 160ms ease-out;
 }
 
-@keyframes sz-tar-deal {
+@keyframes sz-tbl-deal {
     from {
         opacity: 0;
         transform: translateY(-0.4rem) scale(0.96);
@@ -914,48 +930,52 @@
 }
 
 /* The trick winner, held on the table until the player continues. */
-.sz-tar__slot--win .sz-card {
+.sz-tbl__slot--win .sz-card {
     box-shadow:
         0 0 0 3px hsl(var(--primary) / 0.6),
         0 8px 16px hsl(0 0 0 / 0.35);
 }
 
-.sz-tar__trump {
+.sz-tbl__trump {
     font-size: 1.6rem;
     font-weight: 800;
     color: hsl(var(--primary));
 }
 
-/* The player's hand: a fan where each card leaves a readable strip. */
-.sz-tar__hand {
-    --sz-card-w: var(--sz-tar-card-w);
+/* The player's hand: a fan along the bottom edge of the table, where each card
+   leaves a readable strip. */
+.sz-tbl__hand {
+    --sz-card-w: var(--sz-tbl-card-w);
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
     display: flex;
     justify-content: center;
-    margin-top: 0.75rem;
-    min-height: calc(var(--sz-tar-card-w) * var(--sz-card-h-ratio));
+    min-height: calc(var(--sz-tbl-card-w) * var(--sz-card-h-ratio));
 }
 
-.sz-tar__hand .sz-card {
-    width: var(--sz-tar-card-w);
+.sz-tbl__hand .sz-card {
+    width: var(--sz-tbl-card-w);
     flex: 0 0 auto;
 }
 
-.sz-tar__hand .sz-card + .sz-card {
-    margin-left: calc(var(--sz-tar-card-w) * -0.52);
+.sz-tbl__hand .sz-card + .sz-card {
+    margin-left: calc(var(--sz-tbl-card-w) * -0.52);
 }
 
 /* A card the player may legally play right now. */
-.sz-tar__playable {
+.sz-tbl__playable {
     cursor: grab;
     transition: transform 120ms, box-shadow 120ms;
 }
 
-.sz-tar__playable:active {
+.sz-tbl__playable:active {
     cursor: grabbing;
 }
 
 @media (hover: hover) {
-    .sz-tar__playable:hover {
+    .sz-tbl__playable:hover {
         transform: translateY(-0.7rem);
         box-shadow:
             0 0 0 3px hsl(var(--primary) / 0.5),
@@ -964,15 +984,15 @@
 }
 
 /* The action strip below the board, reserved so the board above never moves. */
-.sz-tar__actions {
+.sz-tbl__actions {
     display: flex;
     align-items: center;
     justify-content: center;
     min-height: 5.5rem;
 }
 
-.sz-tar__bid,
-.sz-tar__suit {
+.sz-tbl__bid,
+.sz-tbl__suit {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -987,46 +1007,88 @@
     transition: background-color 120ms, border-color 120ms;
 }
 
-.sz-tar__suit {
+.sz-tbl__suit {
     font-size: 1.25rem;
 }
 
-.sz-tar__bid:hover,
-.sz-tar__suit:hover {
+.sz-tbl__bid:hover,
+.sz-tbl__suit:hover {
     background: hsl(var(--accent));
     border-color: hsl(var(--primary) / 0.5);
 }
 
 /* The card following the finger while it is dragged out to play. */
-.sz-tar__ghost {
+.sz-tbl__ghost {
     position: fixed;
     z-index: 60;
     pointer-events: none;
     filter: drop-shadow(0 8px 14px hsl(0 0 0 / 0.45));
 }
 
-.sz-tar__ghost .sz-card {
+.sz-tbl__ghost .sz-card {
     width: 100%;
 }
 
 @media (max-width: 640px) {
-    .sz-tar {
-        --sz-tar-card-w: 3.4rem;
-        --sz-tar-seat-w: 2.2rem;
-        --sz-tar-step: 0.18rem;
-    }
-
-    .sz-tar__hand .sz-card + .sz-card {
-        margin-left: calc(var(--sz-tar-card-w) * -0.66);
-    }
-
-    .sz-tar__board {
+    .sz-tbl {
+        --sz-tbl-card-w: 3.4rem;
+        --sz-tbl-seat-w: 2.2rem;
+        --sz-tbl-step: 0.18rem;
         max-width: 100%;
     }
 
-    .sz-tar__actions {
-        min-height: 5rem;
+    /* Narrow screen: the table turns tall, so the play area does too. */
+    .sz-tbl__centre {
+        width: 86%;
+        height: 54%;
     }
+
+    .sz-tbl__hand .sz-card + .sz-card {
+        margin-left: calc(var(--sz-tbl-card-w) * -0.66);
+    }
+
+    .sz-tbl__actions {
+        min-height: 4.5rem;
+    }
+}
+
+/* The التركس centre: four suits, each a fixed column of thirteen slots running
+   Ace (top) down to 2 (bottom), so the Jack sits in the middle — queen/king/ace
+   above it, ten down to two below. The height is reserved up front, so laying a
+   card drops it into place and never shifts the board. */
+.sz-tbl__layout {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    align-items: flex-start;
+    width: 100%;
+}
+
+.sz-tbl__run {
+    --sz-card-w: var(--sz-tbl-seat-w);
+    position: relative;
+    width: var(--sz-tbl-seat-w);
+    height: calc(var(--sz-tbl-seat-w) * var(--sz-card-h-ratio) + 12 * var(--sz-tbl-run-step));
+}
+
+.sz-tbl__run-slot {
+    position: absolute;
+    left: 0;
+    width: 100%;
+}
+
+.sz-tbl__run .sz-card {
+    width: var(--sz-tbl-seat-w);
+}
+
+.sz-tbl__run-suit {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: hsl(var(--muted-foreground) / 0.5);
 }
 
 /* shadcn-style thin scrollbar for native overflow areas (dialogs, dropdowns). */

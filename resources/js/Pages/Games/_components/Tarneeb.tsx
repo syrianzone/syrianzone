@@ -24,8 +24,10 @@ import {
   type TarneebRound,
 } from '../_lib/tarneeb';
 import { chooseBid, choosePlay, chooseTrump } from '../_lib/tarneebAi';
+import { DialogClose } from '@/Components/ui/dialog';
 import PlayingCard from './PlayingCard';
 import CardStyleToggle from './CardStyleToggle';
+import GameMenu from './GameMenu';
 
 /** Seat 0 is the player; 1 on the left, 2 opposite (the partner), 3 on the right. */
 const HUMAN = 0;
@@ -189,7 +191,7 @@ export default function Tarneeb() {
       setGhost(null);
       if (!d?.active) return; // a tap falls through to onClick
       const under = document.elementFromPoint(ev.clientX, ev.clientY);
-      const onTable = under instanceof Element && under.closest('.sz-tar') !== null;
+      const onTable = under instanceof Element && under.closest('.sz-tbl') !== null;
       const swallow = (ce: Event) => {
         ce.stopPropagation();
         ce.preventDefault();
@@ -226,25 +228,43 @@ export default function Tarneeb() {
   };
 
   return (
-    <div className="select-none">
-      <div className="mb-3 flex items-stretch gap-2 text-center">
-        <Score label="فريقك" value={match.scores[you]} tone="primary" />
-        <Score label="الخصوم" value={match.scores[them]} />
-        <Score label="الهدف" value={match.options.target} />
-        <Score label="الدست" value={match.round + 1} />
-        <CardStyleToggle large={large} onToggle={toggleLarge} />
-        <Button variant="outline" onClick={newGame} className="flex h-auto flex-col gap-1 rounded-xl px-3 py-2">
-          <RefreshCw className="h-4 w-4" />
-          <span className="text-[11px] font-bold">جديد</span>
-        </Button>
-      </div>
+    <div className="flex h-full select-none flex-col">
+      {/* The two buttons portal into the shell header, beside القوانين. Only the
+          contract line stays here; its height is reserved so the table never
+          moves as the contract appears. */}
+      <GameMenu
+        stats={
+          <div className="space-y-3">
+            <div className="flex items-stretch gap-2 text-center">
+              <Score label="فريقك" value={match.scores[you]} tone="primary" />
+              <Score label="الخصوم" value={match.scores[them]} />
+              <Score label="الهدف" value={match.options.target} />
+              <Score label="الدست" value={match.round + 1} />
+            </div>
+            <p className="text-center text-xs font-bold text-muted-foreground">
+              نتائجك: {stats.wins} فوز · {stats.losses} خسارة
+            </p>
+          </div>
+        }
+        options={
+          <div className="space-y-3">
+            <div className="flex items-stretch gap-2">
+              <CardStyleToggle large={large} onToggle={toggleLarge} />
+              <DialogClose asChild>
+                <Button variant="outline" onClick={newGame} className="flex h-auto flex-1 flex-col gap-1 rounded-xl px-3 py-2">
+                  <RefreshCw className="h-4 w-4" />
+                  <span className="text-[11px] font-bold">جديد</span>
+                </Button>
+              </DialogClose>
+            </div>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              «أرقام» يبدّل شكل الورق بين الأنماط والرتب الكبيرة. «جديد» يبدأ مباراة جديدة.
+            </p>
+          </div>
+        }
+      />
 
-      <p className="mb-1 min-h-[1rem] text-center text-[11px] font-bold text-muted-foreground">
-        نتائجك: {stats.wins} فوز · {stats.losses} خسارة
-      </p>
-
-      {/* Reserved so the board never moves as the contract appears. */}
-      <p className="mb-2 min-h-[1.25rem] text-center text-xs font-bold text-muted-foreground">
+      <p className="mb-2 min-h-[1.25rem] shrink-0 text-center text-xs font-bold text-muted-foreground">
         {round.declarer !== null ? (
           <>
             الطلب {round.auction.highBid} {SEAT_FROM[round.declarer]}
@@ -256,32 +276,31 @@ export default function Tarneeb() {
         )}
       </p>
 
-      <div className="sz-tar" dir="ltr">
-        <div className="sz-tar__board">
-          <Seat name={SEAT_NAMES[2]} count={round.hands[2].length} action={lastAction(2)} orientation="h" className="sz-tar__seat--north" />
-          <Seat name={SEAT_NAMES[1]} count={round.hands[1].length} action={lastAction(1)} orientation="v" className="sz-tar__seat--west" />
+      <div className="sz-tbl" dir="ltr">
+        <Seat name={SEAT_NAMES[2]} count={round.hands[2].length} action={lastAction(2)} orientation="h" className="sz-tbl__seat--north" />
+        <Seat name={SEAT_NAMES[1]} count={round.hands[1].length} action={lastAction(1)} orientation="v" className="sz-tbl__seat--west" />
+        <Seat name={SEAT_NAMES[3]} count={round.hands[3].length} action={lastAction(3)} orientation="v" className="sz-tbl__seat--east" />
 
-          <div className="sz-tar__trick">
+        <div className="sz-tbl__centre">
+          <div className="sz-tbl__trick">
             <Slot position="n" card={cardAt(2)} win={trickWinnerSeat === 2} large={large} />
             <Slot position="w" card={cardAt(1)} win={trickWinnerSeat === 1} large={large} />
-            <div className="sz-tar__slot sz-tar__slot--c">
-              {round.trump ? <span className="sz-tar__trump">{SUIT_LABEL[round.trump]}</span> : null}
+            <div className="sz-tbl__slot sz-tbl__slot--c">
+              {round.trump ? <span className="sz-tbl__trump">{SUIT_LABEL[round.trump]}</span> : null}
             </div>
             <Slot position="e" card={cardAt(3)} win={trickWinnerSeat === 3} large={large} />
             <Slot position="s" card={cardAt(HUMAN)} win={trickWinnerSeat === HUMAN} large={large} />
           </div>
-
-          <Seat name={SEAT_NAMES[3]} count={round.hands[3].length} action={lastAction(3)} orientation="v" className="sz-tar__seat--east" />
         </div>
 
-        <div className="sz-tar__hand">
+        <div className="sz-tbl__hand">
           {hand.map((card) => (
             <PlayingCard
               key={card.id}
               card={card}
               large={large}
               interactive={legalIds.has(card.id)}
-              className={legalIds.has(card.id) ? 'sz-tar__playable' : ''}
+              className={legalIds.has(card.id) ? 'sz-tbl__playable' : ''}
               onClick={() => play(card)}
             />
           ))}
@@ -289,7 +308,7 @@ export default function Tarneeb() {
       </div>
 
       {/* A fixed-height action strip, so the board above it never shifts. */}
-      <div className="sz-tar__actions mt-4">
+      <div className="sz-tbl__actions mt-2 shrink-0">
         {paused ? (
           <Button onClick={proceed}>كمّل</Button>
         ) : round.phase === 'bidding' ? (
@@ -306,7 +325,7 @@ export default function Tarneeb() {
               <>
                 <span className="text-sm font-bold">اختر الحكم:</span>
                 {SUITS.map((suit) => (
-                  <button key={suit} type="button" onClick={() => nameTrump(suit)} className="sz-tar__suit">
+                  <button key={suit} type="button" onClick={() => nameTrump(suit)} className="sz-tbl__suit">
                     {SUIT_LABEL[suit]}
                   </button>
                 ))}
@@ -355,7 +374,7 @@ export default function Tarneeb() {
       {/* The card following the finger while it is dragged out to play. */}
       {ghost && (
         <div
-          className="sz-tar__ghost"
+          className="sz-tbl__ghost"
           style={
             {
               left: ghost.x,
@@ -420,7 +439,7 @@ function Bidding({
     <div className="flex flex-wrap items-center justify-center gap-2">
       <span className="text-sm font-bold">زايد:</span>
       {options.map((value) => (
-        <button key={value} type="button" onClick={() => onBid(value)} className="sz-tar__bid">
+        <button key={value} type="button" onClick={() => onBid(value)} className="sz-tbl__bid">
           {value}
         </button>
       ))}
@@ -456,21 +475,21 @@ function Seat({
   className?: string;
 }) {
   return (
-    <div className={`sz-tar__seat ${className}`}>
-      <span className="sz-tar__seat-name">{name}</span>
-      <div className={`sz-tar__seat-hand sz-tar__seat-hand--${orientation}`}>
+    <div className={`sz-tbl__seat ${className}`}>
+      <span className="sz-tbl__seat-name">{name}</span>
+      <div className={`sz-tbl__seat-hand sz-tbl__seat-hand--${orientation}`}>
         {Array.from({ length: count }, (_, i) => (
           <div key={i} className="sz-card sz-card--back" aria-hidden="true" />
         ))}
       </div>
-      <span className="sz-tar__seat-bid">{action}</span>
+      <span className="sz-tbl__seat-bid">{action}</span>
     </div>
   );
 }
 
 function Slot({ position, card, win, large }: { position: string; card?: Card; win: boolean; large: boolean }) {
   return (
-    <div className={`sz-tar__slot sz-tar__slot--${position} ${win ? 'sz-tar__slot--win' : ''}`}>
+    <div className={`sz-tbl__slot sz-tbl__slot--${position} ${win ? 'sz-tbl__slot--win' : ''}`}>
       {card && <PlayingCard card={card} decorative large={large} />}
     </div>
   );

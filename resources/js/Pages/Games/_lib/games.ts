@@ -5,6 +5,7 @@ import {
   PresidentIcon,
   SolitaireIcon,
   TarneebIcon,
+  TrixIcon,
 } from '@/Components/Icons/ProjectIcons';
 
 // Single registry for the hub. A game becomes reachable by adding one entry
@@ -48,6 +49,12 @@ export const GAMES: GameEntry[] = [
     title: 'طرنيب',
     tagline: 'زايد من ٧ إلى ١٣ واجمع الطرانيب حتى ٤١',
     icon: TarneebIcon,
+  },
+  {
+    slug: 'trix',
+    title: 'تركس',
+    tagline: 'خمسة طلبات وأربع ممالك — يهودية أو فريقين',
+    icon: TrixIcon,
   },
   {
     slug: 'guesswho',

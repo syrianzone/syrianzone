@@ -24,6 +24,7 @@ export default function Index() {
         icon={TarneebIcon}
         width="max-w-4xl"
         rules={<TarneebRules />}
+        fit
       >
         <Tarneeb />
       </GameShell>

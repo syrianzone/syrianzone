@@ -198,6 +198,20 @@ export function PresidentIcon({ className = "w-7 h-7" }: ProjectIconProps) {
   return <img src="/assets/games/president.svg" alt="" className={className} />;
 }
 
+// 2k. Trix (تركس — a kingdom of five contracts: a crown over a card)
+export function TrixIcon({ className = "w-7 h-7" }: ProjectIconProps) {
+  return (
+    <svg viewBox="0 0 32 32" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="6" y="10" width="14" height="19" rx="2.5" transform="rotate(-7 13 19)" className="fill-[#F1F5F9]/70 dark:fill-[#E2E8F0]/20 stroke-[#64748B] dark:stroke-[#CBD5E1]" strokeWidth="2" />
+      <rect x="12" y="8" width="14" height="19" rx="2.5" className="fill-[#F59E0B]/15 dark:fill-[#FBBF24]/20 stroke-[#D97706] dark:stroke-[#FBBF24]" strokeWidth="2" />
+      <path d="M15 15l1.8 2 2.2-3 2.2 3 1.8-2v5h-8z" className="fill-[#7C3AED]/85 dark:fill-[#A78BFA]" />
+      <circle cx="19" cy="23.5" r="1.3" className="fill-[#EF4444] dark:fill-[#F87171]" />
+      {/* Theme Accent Touch */}
+      <circle cx="9" cy="6" r="1.7" fill="hsl(var(--primary))" />
+    </svg>
+  );
+}
+
 // 3. Phonebook (Directory - Amber & Emerald Directory Book)
 export function PhonebookIcon({ className = "w-7 h-7" }: ProjectIconProps) {
   return (

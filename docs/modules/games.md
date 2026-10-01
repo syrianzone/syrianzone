@@ -18,6 +18,7 @@ renders on the server like any other Inertia page.
 | GET | `/games/2048` | `Games/2048/Index` | Playable |
 | GET | `/games/solitare` | `Games/Solitare/Index` | Playable (Klondike) |
 | GET | `/games/tarneeb` | `Games/Tarneeb/Index` | Playable (Tarneeb vs three AI) |
+| GET | `/games/trix` | `Games/Trix/Index` | Playable (Trix vs three AI; single or coop) |
 
 All three are public closures in `routes/web.php` with no middleware, no
 throttle and no auth gate — they are static shells, exactly like `/muslim`.
@@ -43,11 +44,15 @@ resources/js/Pages/Games/
     │   ├── trick.ts             # shared trick-taking primitives
     │   ├── bidding.ts           # shared ascending auction
     │   ├── match.ts             # shared rounds / target scoring
-    │   └── hand.ts              # shared hand-evaluation primitives
+    │   ├── hand.ts              # shared hand-evaluation primitives
+    │   ├── avoidance.ts         # shared no-trump trick-avoidance round
+    │   └── shedding.ts          # shared domino layout (trix / fan tan)
     ├── engine2048.ts            # pure 2048 rules (no React)
     ├── solitaire.ts             # pure Klondike rules (no React)
     ├── tarneeb.ts               # tarneeb round engine + scoring (no React)
     ├── tarneebAi.ts             # tarneeb bidding and play heuristics (no React)
+    ├── trix.ts                  # trix contracts, kingdom and scoring (no React)
+    ├── trixAi.ts                # trix contract choice and play (no React)
     └── scores.ts                # localStorage records
 ```
 
@@ -108,6 +113,82 @@ trump in the middle, and the player's hand fanned below, where only the legal
 cards are tappable. The whole round is one `TarneebRound` value; the component
 only turns taps into `bid` / `pass` / `chooseTrump` / `playCard` and lets
 `cardGames/match.ts` carry the score between rounds.
+
+## Trix (تركس)
+
+The second game on the kit, and the first with more than one rule set in it. Four
+players, no trump, and a session of **twenty deals** — four **ممالك** (kingdoms)
+of five **طلبات** (contracts). Each kingdom is owned by one player, who sees the
+deal and names each contract, leading it. Highest total wins.
+
+  queens       البنات      avoid taking queens            −25 each
+  diamonds     الديناري    every diamond taken            −10 each
+  tricks       اللطوش      every trick (لطش) taken         −15 each
+  kingOfHearts شيخ الكبة   whoever takes the king of hearts −75
+  trix         التركس      shed onto a layout from the Jacks +200/+150/+100/+50
+
+Two ways to play, which is the **coop / single** split: **يهودية** every player
+alone, or **فريقين** opposite seats are partners and their scores combine.
+
+- The four avoidance contracts reduce to `cardGames/avoidance.ts` (a no-trump
+  trick round that records what each seat collects); the positive التركس contract
+  is `cardGames/shedding.ts` (a layout that grows out from a pivot — the Jacks).
+- `_lib/trix.ts` is the Trix-specific part: the contracts and their scoring, and
+  the kingdom/session structure (`createGame` → `beginDeal` → `chooseContract` →
+  `finishDeal`). A deal is dealt *first* and the king names the contract from it,
+  as at a real table.
+- `_lib/trixAi.ts` is the opponent: it names a contract (picking التركس first,
+  which is unavoidable — it is the only positive contract), and plays each
+  avoidance contract by ducking and shedding the penalty card, sparing a winning
+  partner in coop; the التركس contract is shed by building the longest suit.
+- `_components/Trix.tsx` is the table; it shares the four-seat table boundary
+  with tarneeb (`.sz-tbl*`, formerly `.sz-tar*`), and shows the trick plus or the
+  shedding layout in the middle.
+
+`scores.ts` tallies both tarneeb and trix (`GAMES_MATCH_KEYS`). The conventions
+in `_lib/trix.ts` use the common numbers; doubling (التدبيل), early deal ends,
+and redeal conditions are not modelled.
+
+## The table (tarneeb and trix)
+
+Both card tables share one invisible boundary, `.sz-tbl` in `app.css`, so a deal
+*is* the page rather than something scrolled to. The games page passes
+`fit` to `GameShell`, which turns the shell into a fixed-height flex column
+(`h-[calc(100svh-4rem-1px)]`) with `overflow-hidden`; the game fills the leftover
+space as `flex h-full flex-col` and the boundary is `flex: 1 1 auto; min-height:
+0`. Nothing scrolls at any viewport.
+
+Inside the boundary the seats (`__seat--north/west/east`) are pinned to the
+edges, `__centre` is a reserved play area a game styles for its own cards (the
+trick plus, or the التركس shedding layout), and `__hand` runs along the bottom.
+The layout is horizontal when the screen is wide and turns tall on phones (a
+single `max-width: 640px` query rescales the card sizes and the centre), so the
+table works in both orientations. The boundary is also the future home of a
+custom table background — paint it on `.sz-tbl`.
+
+Both games keep only the line that changes a turn (the contract, or the running
+deal) on the page; the rest sits behind two buttons, `الإحصائيات` and `خيارات`,
+that `_components/GameMenu.tsx` portals into `GameShell`'s header slot beside
+"القوانين" (`_components/gameHeaderActions.ts` holds that slot's context, so the
+game keeps the state while the buttons live in the shared header).
+"الإحصائيات" holds the live scores and the win/loss record; "خيارات" holds the
+card-style toggle, the mode switch (trix) and "جديد" (which closes the modal as
+it starts a new game). Each game passes its own nodes in, since they score
+differently.
+
+## The header strip
+
+Every game's buttons live in one strip in `GameShell`, rendered through the shared
+`_components/HeaderButton.tsx` (icon + label on one line, the shape "القوانين"
+uses). A game that owns its state portals its buttons in with
+`_components/HeaderPortal.tsx`; Solitaire puts its four actions there while
+keeping the clock/moves readouts on the page.
+
+The strip also carries a **focus mode** toggle. Focus mode has to hide the
+navbar, which is a sibling of the page, so the state lives in
+`ConditionalLayout` and is provided through `Contexts/FocusModeContext`; `GameShell`
+reads it to drop the back link and the title and to grow from
+`h-[calc(100svh-4rem-1px)]` to `h-[100svh]`. The strip and the game stay.
 
 ## Records
 

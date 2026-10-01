@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Lightbulb, RefreshCw, Undo2 } from 'lucide-react';
+import { Hash, Lightbulb, RefreshCw, Undo2 } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { SUIT_LABEL, type Card, type Suit } from '../_lib/cards';
 import {
@@ -20,7 +20,8 @@ import {
 import { readRecord, recordResult } from '../_lib/scores';
 import { readLargeCards, writeLargeCards } from '../_lib/cardDisplay';
 import PlayingCard from './PlayingCard';
-import CardStyleToggle from './CardStyleToggle';
+import HeaderButton from './HeaderButton';
+import HeaderPortal from './HeaderPortal';
 
 type Selection = { from: Source; ids: string[] };
 
@@ -368,23 +369,27 @@ export default function Solitaire() {
 
   return (
     <div className="select-none">
+      {/* The action buttons portal into the shell header, beside القوانين; the
+          glanceable readouts stay here. */}
+      <HeaderPortal>
+        <HeaderButton icon={Undo2} onClick={undo} disabled={history.length === 0} title="تراجع">
+          تراجع
+        </HeaderButton>
+        <HeaderButton icon={Lightbulb} onClick={showHint} title="تلميح">
+          تلميح
+        </HeaderButton>
+        <HeaderButton icon={Hash} active={large} onClick={toggleLarge} title="إظهار الأرقام أو الأنماط">
+          أرقام
+        </HeaderButton>
+        <HeaderButton icon={RefreshCw} onClick={newGame} title="لعبة جديدة">
+          جديد
+        </HeaderButton>
+      </HeaderPortal>
+
       <div className="mb-4 flex items-stretch gap-2">
         <Stat label="الوقت" value={clock(elapsed)} />
         <Stat label="الحركات" value={moves} />
         <Stat label="أفضل وقت" value={best ? clock(best) : '—'} tone="primary" />
-        <div className="flex shrink-0 gap-2">
-          <IconButton label="تراجع" onClick={undo} disabled={history.length === 0}>
-            <Undo2 className="h-4 w-4" />
-          </IconButton>
-          <IconButton label="تلميح" onClick={showHint}>
-            <Lightbulb className="h-4 w-4" />
-          </IconButton>
-          <CardStyleToggle large={large} onToggle={toggleLarge} />
-          <Button variant="outline" onClick={newGame} className="flex h-auto flex-col gap-1 rounded-xl px-3 py-2">
-            <RefreshCw className="h-4 w-4" />
-            <span className="text-[11px] font-bold">جديد</span>
-          </Button>
-        </div>
       </div>
 
       {hintText && (
@@ -645,32 +650,6 @@ function Stat({ label, value, tone }: { label: string; value: React.ReactNode; t
         {value}
       </span>
     </div>
-  );
-}
-
-function IconButton({
-  label,
-  onClick,
-  disabled,
-  children,
-}: {
-  label: string;
-  onClick: () => void;
-  disabled?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      aria-label={label}
-      title={label}
-      className="flex h-auto w-11 shrink-0 flex-col items-center justify-center gap-1 rounded-xl border border-input bg-background px-2 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-40"
-    >
-      {children}
-      <span className="text-[11px] font-bold">{label}</span>
-    </button>
   );
 }
 

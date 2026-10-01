@@ -18,10 +18,13 @@ export default function ConditionalLayout({ children }: { children: React.ReactN
     path.match(/^\/transit\/city\/[^/]+\/map$/) !== null ||
     path.match(/^\/transit\/city\/[^/]+\/route\/[^/]+$/) !== null ||
     path.match(/^\/transit\/city\/[^/]+$/) !== null
+  // The games hub and each game: a non-sticky navbar too, but the page still
+  // scrolls when a board is taller than the screen.
+  const isGames = path === '/games' || path.startsWith('/games/')
 
   return (
     <div className={isFullHeight ? 'flex flex-col h-screen overflow-hidden' : ''}>
-      <Navbar sticky={!isFullHeight && !path.startsWith('/muslim') && path !== '/'} />
+      <Navbar sticky={!isFullHeight && !path.startsWith('/muslim') && path !== '/' && !isGames} />
       <div className={isFullHeight ? 'flex-1 min-h-0 overflow-hidden' : ''}>
         {children}
       </div>

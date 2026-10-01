@@ -191,6 +191,13 @@ export function GuessWhoIcon({ className = "w-7 h-7" }: ProjectIconProps) {
   );
 }
 
+// 2j. رئيس الجمهورية (external game — its own mark, shipped from public/)
+export function PresidentIcon({ className = "w-7 h-7" }: ProjectIconProps) {
+  // The game's own logo, copied from its favicon into public/assets/games/ so
+  // the hub does not hotlink it.
+  return <img src="/assets/games/president.svg" alt="" className={className} />;
+}
+
 // 3. Phonebook (Directory - Amber & Emerald Directory Book)
 export function PhonebookIcon({ className = "w-7 h-7" }: ProjectIconProps) {
   return (

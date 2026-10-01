@@ -36,7 +36,9 @@ export default function GameShell({
   children,
 }: Props) {
   return (
-    <div className="min-h-svh bg-background text-foreground" dir="rtl">
+    // The navbar is non-sticky on games, so the page is navbar + this block
+    // tall; the min-height only fills the viewport when the board is short.
+    <div className="min-h-[calc(100svh-4rem-1px)] bg-background text-foreground" dir="rtl">
       <div className={`container mx-auto ${width} px-4 py-6`}>
         <Link
           href="/games"

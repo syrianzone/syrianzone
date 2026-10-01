@@ -1,5 +1,11 @@
 import type React from 'react';
-import { Game2048Icon, GuessWhoIcon, SolitaireIcon, TarneebIcon } from '@/Components/Icons/ProjectIcons';
+import {
+  Game2048Icon,
+  GuessWhoIcon,
+  PresidentIcon,
+  SolitaireIcon,
+  TarneebIcon,
+} from '@/Components/Icons/ProjectIcons';
 
 // Single registry for the hub. A game becomes reachable by adding one entry
 // here and a matching route in routes/web.php — the card grid, the sitemap
@@ -18,6 +24,8 @@ export interface GameEntry {
   href?: string;
   /** Play with someone else over the network, not a solo board. */
   online?: boolean;
+  /** Hosted elsewhere: the card opens it in a new tab and is not ours to route. */
+  external?: boolean;
   /** Not yet playable — the card stays visible but routes nowhere. */
   comingSoon?: boolean;
 }
@@ -48,6 +56,14 @@ export const GAMES: GameEntry[] = [
     icon: GuessWhoIcon,
     href: '/guesswho',
     online: true,
+  },
+  {
+    slug: 'president',
+    title: 'رئيس الجمهورية',
+    tagline: 'محاكاة إدارة واقتصاد سوريا ما بعد الحرب',
+    icon: PresidentIcon,
+    href: 'https://game.hadealahmad.com',
+    external: true,
   },
 ];
 

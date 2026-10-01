@@ -18,7 +18,9 @@ import {
   type Source,
 } from '../_lib/solitaire';
 import { readRecord, recordResult } from '../_lib/scores';
+import { readLargeCards, writeLargeCards } from '../_lib/cardDisplay';
 import PlayingCard from './PlayingCard';
+import CardStyleToggle from './CardStyleToggle';
 
 type Selection = { from: Source; ids: string[] };
 
@@ -74,6 +76,8 @@ export default function Solitaire() {
   const [elapsed, setElapsed] = useState(0);
   const [won, setWon] = useState(false);
   const [newBest, setNewBest] = useState(false);
+  /** Draw every card as one big rank instead of pips (shared with the games). */
+  const [large, setLarge] = useState(false);
 
   // The board as handlers read it, so two moves in the same tick cannot race
   // on a stale copy from the render closure.
@@ -93,12 +97,19 @@ export default function Solitaire() {
     setNewBest(false);
   }, []);
 
+  const toggleLarge = () =>
+    setLarge((value) => {
+      writeLargeCards(!value);
+      return !value;
+    });
+
   useEffect(() => {
     const fresh = createDeal();
     board.current = fresh;
     setDeal(fresh);
     setReady(true);
     setBest(readRecord('solitare'));
+    setLarge(readLargeCards());
   }, []);
 
   // The clock stops when the game is finished.
@@ -368,6 +379,7 @@ export default function Solitaire() {
           <IconButton label="تلميح" onClick={showHint}>
             <Lightbulb className="h-4 w-4" />
           </IconButton>
+          <CardStyleToggle large={large} onToggle={toggleLarge} />
           <Button variant="outline" onClick={newGame} className="flex h-auto flex-col gap-1 rounded-xl px-3 py-2">
             <RefreshCw className="h-4 w-4" />
             <span className="text-[11px] font-bold">جديد</span>
@@ -420,6 +432,7 @@ export default function Solitaire() {
                   <PlayingCard
                     key={card.id}
                     card={card}
+                    large={large}
                     // Draw-one: only the top card of the waste can move, so the
                     // ones peeking out from under it are decoration, not targets.
                     interactive={i === shown.length - 1}
@@ -454,6 +467,7 @@ export default function Solitaire() {
               ) : (
                 <PlayingCard
                   card={pile[pile.length - 1]}
+                  large={large}
                   interactive
                   picked={selected?.from.kind === 'foundation' && selected.from.index === index}
                   hinted={hint?.kind === 'foundation' && hint.index === index}
@@ -522,6 +536,7 @@ export default function Solitaire() {
                         <PlayingCard
                           key={card.id}
                           card={card}
+                          large={large}
                           dropTarget={receivesDrop}
                           interactive={movable}
                           picked={selected?.ids.includes(card.id) ?? false}
@@ -564,7 +579,7 @@ export default function Solitaire() {
           }
         >
           {ghost.run.map((card) => (
-            <PlayingCard key={card.id} card={card} decorative />
+            <PlayingCard key={card.id} card={card} large={large} decorative />
           ))}
         </div>
       )}

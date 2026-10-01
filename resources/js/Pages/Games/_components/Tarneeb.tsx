@@ -5,6 +5,7 @@ import { SUIT_LABEL, type Card, type Suit } from '../_lib/cards';
 import { applyRound, createMatch, isMatchOver, type MatchState } from '../_lib/cardGames/match';
 import { power } from '../_lib/cardGames/hand';
 import { readStats, recordMatch, type MatchStats } from '../_lib/scores';
+import { readLargeCards, writeLargeCards } from '../_lib/cardDisplay';
 import {
   DEFAULT_TARNEEB,
   TARNEEB_HAND,
@@ -24,6 +25,7 @@ import {
 } from '../_lib/tarneeb';
 import { chooseBid, choosePlay, chooseTrump } from '../_lib/tarneebAi';
 import PlayingCard from './PlayingCard';
+import CardStyleToggle from './CardStyleToggle';
 
 /** Seat 0 is the player; 1 on the left, 2 opposite (the partner), 3 on the right. */
 const HUMAN = 0;
@@ -48,6 +50,8 @@ export default function Tarneeb() {
   const [paused, setPaused] = useState(false);
   /** The card under the finger/mouse while dragging it out to play. */
   const [ghost, setGhost] = useState<{ card: Card; x: number; y: number; w: number } | null>(null);
+  /** Draw every card as one big rank instead of pips. */
+  const [large, setLarge] = useState(false);
 
   const recorded = useRef<MatchState | null>(null);
   const seenHistory = useRef(0);
@@ -66,6 +70,7 @@ export default function Tarneeb() {
     setMatch(fresh);
     setRound(createRound(DEFAULT_TARNEEB, fresh.dealer));
     setStats(readStats('tarneeb'));
+    setLarge(readLargeCards());
   }, []);
 
   // One effect drives the whole table: it holds a just-completed trick for the
@@ -145,6 +150,12 @@ export default function Tarneeb() {
     setRound(createRound(DEFAULT_TARNEEB, fresh.dealer));
   };
 
+  const toggleLarge = () =>
+    setLarge((value) => {
+      writeLargeCards(!value);
+      return !value;
+    });
+
   // Card drag: a legal card can be pulled out and dropped on the table to play,
   // or tapped. Only a real drag swallows the following click.
   const startDrag = (card: Card, e: React.PointerEvent) => {
@@ -203,6 +214,9 @@ export default function Tarneeb() {
   const declTricks = declTeam !== null ? round.tricks[declTeam] : 0;
   const made = declTeam !== null && declTricks >= (round.auction.highBid ?? 0);
   const swept = declTricks >= TARNEEB_HAND;
+  // Second person when the declarer is you: "أنت طلبت ٨ وأكلت ٩".
+  const bidVerb = round.declarer === HUMAN ? 'طلبت' : 'طلب';
+  const tookVerb = round.declarer === HUMAN ? 'وأكلت' : 'وأكل';
   const roundPoints = round.phase === 'complete' && !isRedeal(round) ? scoreRound(round) : null;
   const lastAction = (seat: number) => {
     const actions = round.auction.actions.filter((action) => action.seat === seat);
@@ -218,6 +232,7 @@ export default function Tarneeb() {
         <Score label="الخصوم" value={match.scores[them]} />
         <Score label="الهدف" value={match.options.target} />
         <Score label="الدست" value={match.round + 1} />
+        <CardStyleToggle large={large} onToggle={toggleLarge} />
         <Button variant="outline" onClick={newGame} className="flex h-auto flex-col gap-1 rounded-xl px-3 py-2">
           <RefreshCw className="h-4 w-4" />
           <span className="text-[11px] font-bold">جديد</span>
@@ -247,13 +262,13 @@ export default function Tarneeb() {
           <Seat name={SEAT_NAMES[1]} count={round.hands[1].length} action={lastAction(1)} orientation="v" className="sz-tar__seat--west" />
 
           <div className="sz-tar__trick">
-            <Slot position="n" card={cardAt(2)} win={trickWinnerSeat === 2} />
-            <Slot position="w" card={cardAt(1)} win={trickWinnerSeat === 1} />
+            <Slot position="n" card={cardAt(2)} win={trickWinnerSeat === 2} large={large} />
+            <Slot position="w" card={cardAt(1)} win={trickWinnerSeat === 1} large={large} />
             <div className="sz-tar__slot sz-tar__slot--c">
               {round.trump ? <span className="sz-tar__trump">{SUIT_LABEL[round.trump]}</span> : null}
             </div>
-            <Slot position="e" card={cardAt(3)} win={trickWinnerSeat === 3} />
-            <Slot position="s" card={cardAt(HUMAN)} win={trickWinnerSeat === HUMAN} />
+            <Slot position="e" card={cardAt(3)} win={trickWinnerSeat === 3} large={large} />
+            <Slot position="s" card={cardAt(HUMAN)} win={trickWinnerSeat === HUMAN} large={large} />
           </div>
 
           <Seat name={SEAT_NAMES[3]} count={round.hands[3].length} action={lastAction(3)} orientation="v" className="sz-tar__seat--east" />
@@ -264,9 +279,9 @@ export default function Tarneeb() {
             <PlayingCard
               key={card.id}
               card={card}
+              large={large}
               interactive={legalIds.has(card.id)}
               className={legalIds.has(card.id) ? 'sz-tar__playable' : ''}
-              onPointerDown={(e) => startDrag(card, e)}
               onClick={() => play(card)}
             />
           ))}
@@ -310,7 +325,7 @@ export default function Tarneeb() {
               <p className="text-sm font-bold">الكل مرّر — إعادة التوزيع</p>
             ) : (
               <p className="text-sm font-bold">
-                {SEAT_NAMES[round.declarer ?? 0]} طلب {round.auction.highBid} وأكل {declTricks}
+                {SEAT_NAMES[round.declarer ?? 0]} {bidVerb} {round.auction.highBid} {tookVerb} {declTricks}
                 {' · '}
                 {made ? 'نجح الطلب' : 'فشل الطلب'}
                 {swept && ' · كبوت!'}
@@ -351,7 +366,7 @@ export default function Tarneeb() {
             } as React.CSSProperties
           }
         >
-          <PlayingCard card={ghost.card} decorative />
+          <PlayingCard card={ghost.card} decorative large={large} />
         </div>
       )}
     </div>
@@ -453,10 +468,10 @@ function Seat({
   );
 }
 
-function Slot({ position, card, win }: { position: string; card?: Card; win: boolean }) {
+function Slot({ position, card, win, large }: { position: string; card?: Card; win: boolean; large: boolean }) {
   return (
     <div className={`sz-tar__slot sz-tar__slot--${position} ${win ? 'sz-tar__slot--win' : ''}`}>
-      {card && <PlayingCard card={card} decorative />}
+      {card && <PlayingCard card={card} decorative large={large} />}
     </div>
   );
 }

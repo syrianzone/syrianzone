@@ -11,6 +11,11 @@ export interface PlayingCardProps {
   interactive?: boolean;
   /** Draw a plain box instead of a button — a drag ghost, a decorative stack. */
   decorative?: boolean;
+  /**
+   * Draw every card as one big rank with its suit under it, the way a court
+   * card reads, instead of the pip pattern — easier on a small screen.
+   */
+  large?: boolean;
   picked?: boolean;
   hinted?: boolean;
   /** Extra classes for a board-specific state (a legal-to-play glow, say). */
@@ -32,6 +37,7 @@ export default function PlayingCard({
   dropTarget,
   interactive,
   decorative,
+  large,
   picked,
   hinted,
   className: extra,
@@ -55,7 +61,7 @@ export default function PlayingCard({
         {RANK_LABEL[card.rank]}
         <span className="sz-card__corner-suit">{SUIT_LABEL[card.suit]}</span>
       </span>
-      <CardFaceArt card={card} />
+      <CardFaceArt card={card} large={large} />
     </>
   );
 
@@ -93,8 +99,19 @@ export default function PlayingCard({
  * The body of a card: a traditional pip arrangement for the numbers, one large
  * pip for an ace, and the court letter with its suit for a jack, queen or king.
  */
-function CardFaceArt({ card }: { card: Card }) {
+function CardFaceArt({ card, large }: { card: Card; large?: boolean }) {
   const suit = SUIT_LABEL[card.suit];
+
+  // The large face gives every card the court treatment — one big rank with its
+  // suit under it — which reads far better on a small screen than pips.
+  if (large) {
+    return (
+      <span className="sz-card__court">
+        <span className="sz-card__court-letter">{RANK_LABEL[card.rank]}</span>
+        <span className="sz-card__court-suit">{suit}</span>
+      </span>
+    );
+  }
 
   if (card.rank === 1) {
     return <span className="sz-card__ace">{suit}</span>;

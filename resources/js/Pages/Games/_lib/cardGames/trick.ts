@@ -8,6 +8,7 @@
 // without a table and reused by a future online engine.
 
 import type { Card, Suit } from '../cards';
+import { power } from './hand';
 
 export type Seat = number;
 
@@ -56,8 +57,10 @@ export function beats(challenger: Card, incumbent: Card, led: Suit, trump: Suit 
   const challengerTrumps = trump !== null && challenger.suit === trump;
   const incumbentTrumps = trump !== null && incumbent.suit === trump;
   if (challengerTrumps !== incumbentTrumps) return challengerTrumps;
-  if (challengerTrumps) return challenger.rank > incumbent.rank;
-  if (challenger.suit === led && incumbent.suit === led) return challenger.rank > incumbent.rank;
+  // Compare by playing power, not the stored rank: the ace is rank 1 but the
+  // highest card.
+  if (challengerTrumps) return power(challenger) > power(incumbent);
+  if (challenger.suit === led && incumbent.suit === led) return power(challenger) > power(incumbent);
   return challenger.suit === led;
 }
 

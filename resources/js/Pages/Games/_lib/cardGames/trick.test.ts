@@ -47,6 +47,14 @@ describe('following suit', () => {
 });
 
 describe('beats', () => {
+  it('ranks the ace above the king, not below the two', () => {
+    // The card stores the ace as rank 1; the ranking must not use the raw rank.
+    expect(beats(card(1, 'H'), card(13, 'H'), 'H', null)).toBe(true);
+    expect(beats(card(13, 'H'), card(1, 'H'), 'H', null)).toBe(false);
+    expect(beats(card(1, 'S'), card(2, 'S'), 'H', 'S')).toBe(true);
+    expect(beats(card(2, 'S'), card(1, 'S'), 'H', 'S')).toBe(false);
+  });
+
   it('lets a trump beat a plain card, and not the other way round', () => {
     expect(beats(card(2, 'S'), card(13, 'H'), 'H', 'S')).toBe(true);
     expect(beats(card(13, 'H'), card(2, 'S'), 'H', 'S')).toBe(false);
@@ -70,6 +78,11 @@ describe('beats', () => {
 describe('trickWinner', () => {
   it('takes the highest card of the led suit in a no-trump round', () => {
     const plays = [play(0, 5, 'H'), play(1, 9, 'H'), play(2, 13, 'S'), play(3, 8, 'H')];
+    expect(trickWinner(plays, null).seat).toBe(1);
+  });
+
+  it('gives the trick to an ace over a king', () => {
+    const plays = [play(0, 13, 'H'), play(1, 1, 'H'), play(2, 12, 'H')];
     expect(trickWinner(plays, null).seat).toBe(1);
   });
 

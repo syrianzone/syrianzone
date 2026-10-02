@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Hash, Lightbulb, RefreshCw, Undo2 } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { SUIT_LABEL, type Card, type Suit } from '../_lib/cards';
@@ -9,12 +9,12 @@ import {
   canDraw,
   canMove,
   createDeal,
-  describeMove,
   drawStock,
   isWon,
   liftable,
   type Deal,
   type Destination,
+  type Move,
   type Source,
 } from '../_lib/solitaire';
 import { readRecord, recordResult } from '../_lib/scores';
@@ -68,7 +68,8 @@ export default function Solitaire() {
   const [history, setHistory] = useState<Deal[]>([]);
   const [moves, setMoves] = useState(0);
   const [selected, setSelected] = useState<Selection | null>(null);
-  const [hint, setHint] = useState<Source | null>(null);
+  /** The move the last hint pointed at: its source is ringed, its destination dashed. */
+  const [hint, setHint] = useState<Move | null>(null);
   const [dragFrom, setDragFrom] = useState<Source | null>(null);
   const [over, setOver] = useState<string | null>(null);
   /** The run the pointer is carrying, with its current viewport position. */
@@ -329,7 +330,7 @@ export default function Solitaire() {
     }
     // Anything that reaches a foundation is the useful thing to point at.
     const pick = candidates.find((m) => m.to.kind === 'foundation') ?? candidates[0];
-    setHint(pick.from);
+    setHint(pick);
     setSelected({ from: pick.from, ids: liftable(board.current, pick.from)!.map((c) => c.id) });
   }, []);
 
@@ -342,13 +343,6 @@ export default function Solitaire() {
     commit(next);
     if (isWon(next)) setWon(true);
   }, [commit]);
-
-  const hintText = useMemo(() => {
-    if (!hint) return null;
-    const move = availableMoves(board.current).find((m) => sameSource(m.from, hint));
-    return move ? describeMove(board.current, move) : null;
-    // `deal` is the signal that the board changed, which invalidates a hint.
-  }, [hint, deal]);
 
   const stuck = ready && !won && !canDraw(deal) && availableMoves(deal).length === 0;
   const canFinish = availableMoves(deal).some((m) => m.to.kind === 'foundation');
@@ -392,11 +386,6 @@ export default function Solitaire() {
         <Stat label="أفضل وقت" value={best ? clock(best) : '—'} tone="primary" />
       </div>
 
-      {hintText && (
-        <p className="mb-3 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs font-bold text-primary">
-          {hintText}
-        </p>
-      )}
       {stuck && (
         <p className="mb-3 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs font-bold text-destructive">
           لا توجد حركات ممكنة. ابدأ لعبة جديدة.
@@ -442,7 +431,7 @@ export default function Solitaire() {
                     // ones peeking out from under it are decoration, not targets.
                     interactive={i === shown.length - 1}
                     picked={selected?.from.kind === 'waste'}
-                    hinted={hint?.kind === 'waste'}
+                    hinted={hint?.from.kind === 'waste'}
                     onClick={() => toggle({ kind: 'waste' })}
                     onDoubleClick={() => sendToFoundation({ kind: 'waste' })}
                     onPointerDown={(e) => startDrag({ kind: 'waste' }, e)}
@@ -457,32 +446,36 @@ export default function Solitaire() {
               the way a real deal is read. */}
           <div aria-hidden="true" />
 
-          {deal.foundations.map((pile, index) => (
-            <Pile
-              key={`f${index}`}
-              {...dropProps(`f${index}`)}
-              className="sz-sol-slot"
-              label={`الأساس ${index + 1}`}
-              onPileClick={() => onFoundation(index)}
-            >
-              {pile.length === 0 ? (
-                <div className="sz-sol-blank">
-                  <span className="sz-sol-glyph">{SUIT_LABEL[FOUNDATION_SUITS[index]]}</span>
-                </div>
-              ) : (
-                <PlayingCard
-                  card={pile[pile.length - 1]}
-                  large={large}
-                  interactive
-                  picked={selected?.from.kind === 'foundation' && selected.from.index === index}
-                  hinted={hint?.kind === 'foundation' && hint.index === index}
-                  onClick={() => onFoundation(index)}
-                  onDoubleClick={() => sendToFoundation({ kind: 'foundation', index })}
-                  onPointerDown={(e) => startDrag({ kind: 'foundation', index }, e)}
-                />
-              )}
-            </Pile>
-          ))}
+          {deal.foundations.map((pile, index) => {
+            const isHintTarget = hint?.to.kind === 'foundation' && hint.to.index === index;
+            return (
+              <Pile
+                key={`f${index}`}
+                {...dropProps(`f${index}`)}
+                className="sz-sol-slot"
+                label={`الأساس ${index + 1}`}
+                onPileClick={() => onFoundation(index)}
+              >
+                {pile.length === 0 ? (
+                  <div className={`sz-sol-blank ${isHintTarget ? 'sz-sol-target' : ''}`}>
+                    <span className="sz-sol-glyph">{SUIT_LABEL[FOUNDATION_SUITS[index]]}</span>
+                  </div>
+                ) : (
+                  <PlayingCard
+                    card={pile[pile.length - 1]}
+                    large={large}
+                    interactive
+                    picked={selected?.from.kind === 'foundation' && selected.from.index === index}
+                    hinted={hint?.from.kind === 'foundation' && hint.from.index === index}
+                    className={isHintTarget ? 'sz-sol-target' : ''}
+                    onClick={() => onFoundation(index)}
+                    onDoubleClick={() => sendToFoundation({ kind: 'foundation', index })}
+                    onPointerDown={(e) => startDrag({ kind: 'foundation', index }, e)}
+                  />
+                )}
+              </Pile>
+            );
+          })}
         </div>
 
         {/* Seven tableau columns, each a hidden stack cascading into a face-up
@@ -497,6 +490,7 @@ export default function Solitaire() {
             const firstUp = column.findIndex((card) => card.faceUp);
             const hidden = firstUp === -1 ? column : column.slice(0, firstUp);
             const up = firstUp === -1 ? [] : column.slice(firstUp);
+            const isHintTarget = hint?.to.kind === 'tableau' && hint.to.column === colIndex;
 
             return (
               <Pile
@@ -517,7 +511,7 @@ export default function Solitaire() {
                     <div
                       className={`sz-sol-blank sz-sol-blank--fan ${
                         isLegalHere ? 'sz-sol-blank--drop' : ''
-                      }`}
+                      } ${isHintTarget ? 'sz-sol-target' : ''}`}
                     />
                   )
                 ) : (
@@ -530,13 +524,14 @@ export default function Solitaire() {
                       };
                       const movable = liftable(board.current, from) !== null;
                       const hinted =
-                        hint?.kind === 'tableau' && hint.column === colIndex
-                          ? (liftable(board.current, hint)?.some((c) => c.id === card.id) ?? false)
+                        hint?.from.kind === 'tableau' && hint.from.column === colIndex
+                          ? (liftable(board.current, hint.from)?.some((c) => c.id === card.id) ?? false)
                           : false;
                       // A dragged card lands on the column's last face-up card,
                       // so that is the one to light up — highlighting the whole
                       // pile reads as if the hidden cards were the target.
                       const receivesDrop = isLegalHere && i === up.length - 1;
+                      const receivesHint = isHintTarget && i === up.length - 1;
                       return (
                         <PlayingCard
                           key={card.id}
@@ -546,6 +541,7 @@ export default function Solitaire() {
                           interactive={movable}
                           picked={selected?.ids.includes(card.id) ?? false}
                           hinted={hinted}
+                          className={receivesHint ? 'sz-sol-target' : ''}
                           onClick={() => movable && onTableauCard(colIndex, from)}
                           onDoubleClick={() => movable && sendToFoundation(from)}
                           onPointerDown={(e) => movable && startDrag(from, e)}

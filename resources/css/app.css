@@ -726,6 +726,19 @@
     box-shadow: 0 0 0 3px hsl(var(--primary) / 0.35);
 }
 
+/* Where a hint says to move: a dashed primary ring, told apart from the solid
+   ring on the card that should move. */
+.sz-sol-target {
+    outline-color: hsl(var(--primary));
+    outline-style: dashed;
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.4);
+}
+
+.sz-sol-blank.sz-sol-target {
+    border-color: hsl(var(--primary));
+    background: hsl(var(--primary) / 0.12);
+}
+
 /* The card (or run) following the pointer while a drag is in flight. It sits
    above the board and never takes pointer events, so the drop test can see
    through it to the pile underneath. */

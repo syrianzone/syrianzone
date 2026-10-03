@@ -62,6 +62,7 @@ import { Separator } from '@/components/ui/separator';
 
 import UserNav from './UserNav';
 import AppearanceMenu from './AppearanceMenu';
+import { GAMES, gameEntryHref } from '@/Pages/Games/_lib/games';
 import {
   SyOfficialIcon,
   RoznamaIcon,
@@ -119,6 +120,169 @@ const externalLinks = [
   { href: 'https://discord.gg/NqE8849VzA', text: 'مجتمع كوديكس', icon: CodexCommunityIcon },
   { href: 'https://chromewebstore.google.com/detail/syrian-flag-replacer/dngipobppehfhfggmbdiiiodgcibdeog', text: 'مبدل العلم', isFlag: true },
 ];
+
+/**
+ * Games come from the hub's own registry rather than a second list here: that
+ * file documents the card grid, the sitemap and the docs as reading it, so a
+ * copy in the navbar would be one more thing to forget when a game lands.
+ */
+const gameLinks = GAMES.map((game) => ({
+  href: gameEntryHref(game),
+  text: game.title,
+  icon: game.icon,
+  external: Boolean(game.external),
+}));
+
+type NavLink = {
+  href: string;
+  text: string;
+  icon: React.ComponentType<{ className?: string }>;
+  /** Leaves the site, so it opens in a new tab rather than routing. */
+  external?: boolean;
+};
+
+/**
+ * Icon over label, the home page's app-tile shape. Forwarded as a component so
+ * Radix's `asChild` can hand it a ref when it sits inside a navigation menu.
+ */
+const NavTile = React.forwardRef<
+  HTMLAnchorElement,
+  {
+    href: string;
+    text: string;
+    icon: React.ComponentType<{ className?: string }>;
+    isActive?: boolean;
+    external?: boolean;
+    onNavigate?: () => void;
+  }
+>(function NavTile({ href, text, icon: Icon, isActive, external, onNavigate, ...rest }, ref) {
+  const className = cn(
+    'group flex h-full select-none flex-col items-center justify-center gap-2 rounded-lg p-2.5 text-center no-underline outline-none transition-colors',
+    'hover:bg-accent/60 focus:bg-accent focus:text-accent-foreground',
+    isActive && 'bg-accent/50 text-primary',
+  );
+  const body = (
+    <>
+      <Icon className="h-7 w-7 shrink-0 text-foreground/80 transition-all group-hover:scale-110 group-hover:text-primary" />
+      <span className="text-xs font-bold leading-tight">{text}</span>
+    </>
+  );
+  if (external) {
+    return (
+      <a ref={ref} href={href} target="_blank" rel="noreferrer" className={className} {...rest}>
+        {body}
+      </a>
+    );
+  }
+  return (
+    <Link ref={ref} href={href} onClick={onNavigate} className={className} {...rest}>
+      {body}
+    </Link>
+  );
+});
+
+/** Three columns of tiles, matching the homepage grid. */
+function TileGrid({ links, pathname, onNavigate }: { links: NavLink[]; pathname: string; onNavigate?: () => void }) {
+  return (
+    <ul className="grid grid-cols-3 gap-1">
+      {links.map(({ href, text, icon, external }) => (
+        <li key={href}>
+          <NavTile
+            href={href}
+            text={text}
+            icon={icon}
+            external={external}
+            isActive={pathname === href}
+            onNavigate={onNavigate}
+          />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/**
+ * The "more" panel, shared by the desktop menu and the transit variant so the
+ * two cannot drift apart. Capped and scrollable: 15 links, six games and the
+ * external list is a tall column otherwise.
+ */
+function MorePanel({
+  links,
+  pathname,
+  onNavigate,
+  header,
+  showAboutLinks,
+}: {
+  links: NavLink[];
+  pathname: string;
+  onNavigate?: () => void;
+  header?: React.ReactNode;
+  showAboutLinks: boolean;
+}) {
+  return (
+    <div className="w-[400px] max-w-[92vw] md:w-[450px]">
+      {header}
+      <div className="sz-scroll max-h-[min(64vh,560px)] overflow-y-auto p-3">
+        <TileGrid links={links} pathname={pathname} onNavigate={onNavigate} />
+
+        <Separator className="my-3" />
+        <p className="mb-2 px-1 text-xs font-bold text-muted-foreground/60">ألعاب</p>
+        <TileGrid links={gameLinks} pathname={pathname} onNavigate={onNavigate} />
+
+        <Separator className="my-3" />
+        <ul className="space-y-0.5">
+          {externalLinks.map(({ href, text, icon: Icon, isFlag, image }) => (
+            <li key={href}>
+              <a
+                href={href}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              >
+                {isFlag ? (
+                  <img src="/flag-replacer/1f1f8-1f1fe.svg" alt="Flag" className="ml-1 h-4 w-4" />
+                ) : image ? (
+                  <img src={image} alt={text} className="h-4 w-4 object-contain" />
+                ) : Icon ? (
+                  <Icon className="h-4 w-4" />
+                ) : null}
+                {text}
+                <ExternalLink className="mr-auto h-3 w-3 opacity-50" />
+              </a>
+            </li>
+          ))}
+        </ul>
+
+        <Separator className="my-3" />
+        <div className="flex flex-wrap justify-center gap-4 py-1 text-xs text-muted-foreground">
+          {showAboutLinks && (
+            <>
+              <Link href="/about" className="flex items-center gap-1 transition-colors hover:text-primary">
+                <Info className="h-3.5 w-3.5" />
+                عن المنصة
+              </Link>
+              <span>•</span>
+              <Link href="/stats" className="flex items-center gap-1 transition-colors hover:text-primary">
+                <BarChart3 className="h-3.5 w-3.5" />
+                الإحصائيات
+              </Link>
+              <span>•</span>
+            </>
+          )}
+          <Link href="/privacy" className="flex items-center gap-1 transition-colors hover:text-primary">
+            <Shield className="h-3.5 w-3.5" />
+            سياسة الخصوصية
+          </Link>
+          <span>•</span>
+          <Link href="/terms" className="flex items-center gap-1 transition-colors hover:text-primary">
+            <FileText className="h-3.5 w-3.5" />
+            الشروط والأحكام
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Navbar({ sticky = true }: { sticky?: boolean }) {
   const { url } = usePage();
@@ -259,38 +423,19 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
 
                   <Separator className="my-2" />
                   <p className="text-xs font-bold text-muted-foreground/60 px-1">أقسام الموقع الأخرى</p>
-                  
-                  {navLinks.filter(n => n.href !== '/transit').map(({ href, text, icon: Icon }) => (
-                    <Link
-                      key={href}
-                      href={href}
-                      onClick={() => setIsOpen(false)}
-                      className={cn(
-                        "flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary",
-                        pathname === href ? "text-primary" : "text-muted-foreground"
-                      )}
-                    >
-                      <Icon className="h-4 w-4" />
-                      {text}
-                    </Link>
-                  ))}
+                  <TileGrid
+                    links={navLinks.filter((n) => n.href !== '/transit')}
+                    pathname={pathname}
+                    onNavigate={() => setIsOpen(false)}
+                  />
                 </>
               ) : (
-                navLinks.map(({ href, text, icon: Icon }) => (
-                  <Link
-                    key={href}
-                    href={href}
-                    onClick={() => setIsOpen(false)}
-                    className={cn(
-                      "flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary",
-                      pathname === href ? "text-primary" : "text-muted-foreground"
-                    )}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {text}
-                  </Link>
-                ))
+                <TileGrid links={navLinks} pathname={pathname} onNavigate={() => setIsOpen(false)} />
               )}
+
+              <Separator className="my-2" />
+              <p className="mb-2 text-xs font-bold text-muted-foreground/60 px-1">ألعاب</p>
+              <TileGrid links={gameLinks} pathname={pathname} onNavigate={() => setIsOpen(false)} />
               <Separator className="my-2" />
               {externalLinks.map(({ href, text, icon: Icon, isFlag, image }) => (
                 <a
@@ -395,69 +540,37 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
 
                 <NavigationMenuItem>
                   <NavigationMenuTrigger className="bg-transparent hover:bg-accent/50">أقسام الموقع</NavigationMenuTrigger>
-                  <NavigationMenuContent className="text-right">
-                    <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
-                      {navLinks.map(({ href, text, icon: Icon }) => (
-                        <li key={href}>
-                          <NavigationMenuLink asChild>
-                            <Link
-                              href={href}
-                              className={cn(
-                                "group block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-                                pathname === href ? "bg-accent/50 text-primary" : ""
-                              )}
-                            >
-                              <div className="flex items-center gap-2 text-sm font-medium leading-none mb-1">
-                                <Icon className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                                {text}
-                              </div>
-                              <p className="line-clamp-2 text-xs leading-snug text-muted-foreground">
-                                انتقل إلى صفحة {text} لمزيد من المعلومات.
-                              </p>
-                            </Link>
-                          </NavigationMenuLink>
-                        </li>
-                      ))}
-                      <Separator className="col-span-2 my-2" />
-                      {externalLinks.map(({ href, text, icon: Icon, isFlag, image }) => (
-                        <li key={href} className="col-span-1">
-                          <a
-                            href={href}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="flex items-center gap-2 rounded-md p-3 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                  <NavigationMenuContent>
+                    <MorePanel
+                      links={navLinks}
+                      pathname={pathname}
+                      showAboutLinks={false}
+                      header={
+                        <div className="space-y-1 border-b border-border p-3">
+                          <Link
+                            href="/transit"
+                            className={cn(
+                              'flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent',
+                              pathname === '/transit' ? 'text-primary' : 'text-muted-foreground'
+                            )}
                           >
-                            {isFlag ? (
-                              <img src="/flag-replacer/1f1f8-1f1fe.svg" alt="Flag" className="w-4 h-4 ml-1" />
-                            ) : image ? (
-                              <img src={image} alt={text} className="w-4 h-4 object-contain" />
-                            ) : Icon ? (
-                              <Icon className="h-4 w-4 text-muted-foreground" />
-                            ) : null}
-                            {text}
-                            <ExternalLink className="h-3 w-3 mr-auto opacity-50" />
-                          </a>
-                        </li>
-                      ))}
-                      <Separator className="col-span-2 my-2" />
-                      <li className="col-span-2 flex justify-center gap-6 text-xs text-muted-foreground py-1">
-                        <Link
-                          href="/privacy"
-                          className="flex items-center gap-1 hover:text-primary transition-colors"
-                        >
-                          <Shield className="h-3.5 w-3.5" />
-                          سياسة الخصوصية
-                        </Link>
-                        <span>•</span>
-                        <Link
-                          href="/terms"
-                          className="flex items-center gap-1 hover:text-primary transition-colors"
-                        >
-                          <FileText className="h-3.5 w-3.5" />
-                          الشروط والأحكام
-                        </Link>
-                      </li>
-                    </ul>
+                            <Bus className="h-4 w-4" />
+                            الرئيسية
+                          </Link>
+                          <Link
+                            href={studioHref}
+                            className={cn(
+                              'flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent',
+                              pathname === '/transit/studio' ? 'text-primary' : 'text-muted-foreground'
+                            )}
+                          >
+                            <Sparkles className="h-4 w-4 text-[var(--gold)]" />
+                            إضافة خط / الاستوديو
+                          </Link>
+                          <p className="px-3 pt-1 text-xs font-bold text-muted-foreground/60">أقسام الموقع الأخرى</p>
+                        </div>
+                      }
+                    />
                   </NavigationMenuContent>
                 </NavigationMenuItem>
               </>
@@ -483,85 +596,8 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
 
                 <NavigationMenuItem>
                   <NavigationMenuTrigger className="bg-transparent hover:bg-accent/50">المزيد</NavigationMenuTrigger>
-                  <NavigationMenuContent className="text-right">
-                    <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
-                      {navLinks.slice(5).map(({ href, text, icon: Icon }) => (
-                        <li key={href}>
-                          <NavigationMenuLink asChild>
-                            <Link
-                              href={href}
-                              className={cn(
-                                "group block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-                                pathname === href ? "bg-accent/50 text-primary" : ""
-                              )}
-                            >
-                              <div className="flex items-center gap-2 text-sm font-medium leading-none mb-1">
-                                <Icon className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                                {text}
-                              </div>
-                              <p className="line-clamp-2 text-xs leading-snug text-muted-foreground">
-                                انتقل إلى صفحة {text} لمزيد من المعلومات.
-                              </p>
-                            </Link>
-                          </NavigationMenuLink>
-                        </li>
-                      ))}
-                      <Separator className="col-span-2 my-2" />
-                      {externalLinks.map(({ href, text, icon: Icon, isFlag, image }) => (
-                        <li key={href} className="col-span-1">
-                          <a
-                            href={href}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="flex items-center gap-2 rounded-md p-3 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
-                          >
-                            {isFlag ? (
-                              <img src="/flag-replacer/1f1f8-1f1fe.svg" alt="Flag" className="w-4 h-4 ml-1" />
-                            ) : image ? (
-                              <img src={image} alt={text} className="w-4 h-4 object-contain" />
-                            ) : Icon ? (
-                              <Icon className="h-4 w-4 text-muted-foreground" />
-                            ) : null}
-                            {text}
-                            <ExternalLink className="h-3 w-3 mr-auto opacity-50" />
-                          </a>
-                        </li>
-                      ))}
-                      <Separator className="col-span-2 my-2" />
-                      <li className="col-span-2 flex flex-wrap justify-center gap-4 text-xs text-muted-foreground py-1">
-                        <Link
-                          href="/about"
-                          className="flex items-center gap-1 hover:text-primary transition-colors"
-                        >
-                          <Info className="h-3.5 w-3.5" />
-                          عن المنصة
-                        </Link>
-                        <span>•</span>
-                        <Link
-                          href="/stats"
-                          className="flex items-center gap-1 hover:text-primary transition-colors"
-                        >
-                          <BarChart3 className="h-3.5 w-3.5" />
-                          الإحصائيات
-                        </Link>
-                        <span>•</span>
-                        <Link
-                          href="/privacy"
-                          className="flex items-center gap-1 hover:text-primary transition-colors"
-                        >
-                          <Shield className="h-3.5 w-3.5" />
-                          سياسة الخصوصية
-                        </Link>
-                        <span>•</span>
-                        <Link
-                          href="/terms"
-                          className="flex items-center gap-1 hover:text-primary transition-colors"
-                        >
-                          <FileText className="h-3.5 w-3.5" />
-                          الشروط والأحكام
-                        </Link>
-                      </li>
-                    </ul>
+                  <NavigationMenuContent>
+                    <MorePanel links={navLinks.slice(5)} pathname={pathname} showAboutLinks />
                   </NavigationMenuContent>
                 </NavigationMenuItem>
               </>

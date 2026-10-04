@@ -76,7 +76,7 @@ describe('compass engine', () => {
     for (const f of FIGURES) {
       const answers = fillForFigure(f.name, 'full');
       const scores = computeScores(answers, 'full');
-      const { matches } = matchFigures(scores.axes, scores.align);
+      const { matches } = matchFigures(scores.axes, scores.align, FIGURES);
       if (matches[0]?.figure.name === f.name) selfTop++;
     }
     expect(selfTop).toBe(FIGURES.length);
@@ -88,7 +88,7 @@ describe('compass engine', () => {
       const answers: Record<string, number> = {};
       for (const id of AXIS_IDS) for (const { i } of activeQuestions(id, 'standard')) answers[axisKey(id, i)] = Math.floor(Math.random() * 5) - 2;
       const scores = computeScores(answers, 'standard');
-      const { hasStrongMatch } = matchFigures(scores.axes, scores.align);
+      const { hasStrongMatch } = matchFigures(scores.axes, scores.align, FIGURES);
       if (hasStrongMatch) strong++;
     }
     expect(strong / 200).toBeLessThan(0.2);

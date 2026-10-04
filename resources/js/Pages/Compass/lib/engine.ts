@@ -210,16 +210,22 @@ export interface MatchOptions {
 
 const THRESHOLD = 0.5;
 
-/** Match a user's axis scores against all figures. */
+/** Match a user's axis scores against the supplied roster.
+ *
+ *  The whitening reference (`buildWhitener`) stays pinned to the compiled
+ *  FIGURES distribution so spectrum matching and the similarity scale are
+ *  stable regardless of which characters an operator has enabled; only the
+ *  candidate list is dynamic. */
 export function matchFigures(
   scores: Partial<Record<AxisId, number | null>>,
   align: Record<AlignBloc, number>,
+  figures: Figure[],
   opts: MatchOptions = {}
 ): { matches: MatchedFigure[]; hasStrongMatch: boolean } {
   const W = buildWhitener();
   const D = W.axes.length;
   const hasAny = W.axes.some((a) => scores[a] != null);
-  if (!hasAny) return { matches: [], hasStrongMatch: false };
+  if (!hasAny || figures.length === 0) return { matches: [], hasStrongMatch: false };
 
   const u = W.axes.map((id) => (scores[id] == null ? 0 : ((scores[id] as number) - (W.mean[id] as number)) / (W.sd[id] as number)));
 
@@ -236,7 +242,7 @@ export function matchFigures(
     east: { west: 1, gulf: 0.8, turkish: 0.7, east: 0 },
   };
 
-  const results: MatchedFigure[] = FIGURES.map((f) => {
+  const results: MatchedFigure[] = figures.map((f) => {
     const x = W.axes.map((id) => (f.positions[id] == null ? 0 : ((f.positions[id] as number) - (W.mean[id] as number)) / (W.sd[id] as number)));
     const d = W.axes.map((_, i) => x[i] - u[i]);
     let q = 0;

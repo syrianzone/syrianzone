@@ -1,8 +1,9 @@
 import React from 'react';
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/card';
 import { Badge } from '@/Components/ui/badge';
+import { Button } from '@/Components/ui/button';
 import { Separator } from '@/Components/ui/separator';
 import {
     Compass,
@@ -85,7 +86,7 @@ function StatCard({
     );
 }
 
-export default function CompassAdminIndex({ stats }: { stats: Stats }) {
+export default function CompassAdminIndex({ stats, canManageFigures = false }: { stats: Stats; canManageFigures?: boolean }) {
     const spectrumTotal = stats.bySpectrum.reduce((sum, s) => sum + s.count, 0);
     const maxSpectrum = Math.max(1, ...stats.bySpectrum.map((s) => s.count));
     const maxDaily = Math.max(1, ...stats.daily.map((d) => d.count));
@@ -96,14 +97,26 @@ export default function CompassAdminIndex({ stats }: { stats: Stats }) {
             <div className="container mx-auto max-w-5xl space-y-6 px-4 py-8" dir="rtl">
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Compass className="h-6 w-6 text-primary" />
-                            إحصاءات «بوصلة سوريا»
-                        </CardTitle>
-                        <CardDescription>
-                            ملخّص مجهول الهوية للنتائج التي اختار أصحابها مشاركتها للإحصاء. لا تُحسب النتائج المحفوظة في الحسابات،
-                            ولا التي سُحبت موافقتها، ولا يظهر هنا أي معرّف شخصي.
-                        </CardDescription>
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Compass className="h-6 w-6 text-primary" />
+                                    إحصاءات «بوصلة سوريا»
+                                </CardTitle>
+                                <CardDescription className="mt-1">
+                                    ملخّص مجهول الهوية للنتائج التي اختار أصحابها مشاركتها للإحصاء. لا تُحسب النتائج المحفوظة في الحسابات،
+                                    ولا التي سُحبت موافقتها، ولا يظهر هنا أي معرّف شخصي.
+                                </CardDescription>
+                            </div>
+                            {canManageFigures && (
+                                <Button asChild variant="outline" className="gap-2">
+                                    <Link href="/admin/compass/figures">
+                                        <Compass className="h-4 w-4" />
+                                        إدارة الشخصيات
+                                    </Link>
+                                </Button>
+                            )}
+                        </div>
                     </CardHeader>
                 </Card>
 

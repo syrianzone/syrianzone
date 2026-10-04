@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
 import { RotateCcw, Timer, Zap, Layers, ChevronLeft, ChevronRight, Check } from 'lucide-react';
-import type { AnswerMap, QuizVersion } from './data/types';
+import type { AnswerMap, Figure, QuizVersion } from './data/types';
 import { AXES } from './data/axes';
 import { QUESTIONS } from './data/questions';
 import { ALIGN_QUESTIONS } from './data/align';
@@ -21,9 +21,10 @@ const VERSIONS: { id: QuizVersion; label: string; icon: React.ComponentType<{ cl
 
 interface Props {
   isLoggedIn: boolean;
+  figures: Figure[];
 }
 
-export default function CompassApp({ isLoggedIn }: Props) {
+export default function CompassApp({ isLoggedIn, figures }: Props) {
   const [phase, setPhase] = useState<'intro' | 'quiz' | 'result'>('intro');
   const [version, setVersion] = useState<QuizVersion>('standard');
   const [answers, setAnswers] = useState<AnswerMap>({});
@@ -172,6 +173,7 @@ export default function CompassApp({ isLoggedIn }: Props) {
           version={viewing.version}
           isLoggedIn={isLoggedIn}
           onRestart={() => setViewing(null)}
+          figures={figures}
           readOnly
         />
       </div>
@@ -223,6 +225,7 @@ export default function CompassApp({ isLoggedIn }: Props) {
           isLoggedIn={isLoggedIn}
           onRestart={restart}
           onSavedToAccount={refreshAccount}
+          figures={figures}
         />
       )}
     </div>

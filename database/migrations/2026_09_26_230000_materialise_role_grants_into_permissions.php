@@ -200,6 +200,7 @@ return new class extends Migration
             'phonebook.create', 'phonebook.edit', 'phonebook.toggle', 'phonebook.delete', 'phonebook.reorder',
             'polls.create', 'polls.edit', 'polls.delete',
             'compass.stats',
+            'compass.figures',
             'users.ban',
         ];
     }

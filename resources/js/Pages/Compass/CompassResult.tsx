@@ -4,7 +4,7 @@ import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
 import { Separator } from '@/Components/ui/separator';
 import { RotateCcw, Download, Trash2, ShieldCheck, AlertTriangle, Save, LogIn, BarChart3 } from 'lucide-react';
-import type { AnswerMap, AlignBloc, CompassResult as Result, QuizVersion } from './data/types';
+import type { AnswerMap, AlignBloc, CompassResult as Result, Figure, QuizVersion } from './data/types';
 import { AXES } from './data/axes';
 import { computeScores, computeConsistency, matchFigures, matchSpectrum, versionTotals } from './lib/engine';
 import { addResult, setLastResultId, clearLocal, saveResultToAccount, updateLocalResult, setPendingAccountSave, deleteAccountResults, deleteAccountResult, submitStats, removeStats } from './lib/storage';
@@ -32,6 +32,7 @@ export default function CompassResult({
   onRestart,
   onSavedToAccount,
   readOnly = false,
+  figures = [],
 }: {
   answers: AnswerMap;
   version: QuizVersion;
@@ -39,6 +40,8 @@ export default function CompassResult({
   onRestart: () => void;
   onSavedToAccount?: () => void;
   readOnly?: boolean;
+  /** Admin-managed roster; only enabled figures are passed in. */
+  figures?: Figure[];
 }) {
   const [saving, setSaving] = useState(false);
   const [statsShared, setStatsShared] = useState(false);
@@ -55,7 +58,7 @@ export default function CompassResult({
   const computed = useMemo(() => {
     const { axes, align } = computeScores(answers, version);
     const consistency = computeConsistency(answers, version);
-    const { matches, hasStrongMatch } = matchFigures(axes, align);
+    const { matches, hasStrongMatch } = matchFigures(axes, align, figures);
     const { spectrum, score: spectrumScore } = matchSpectrum(axes);
     const top = matches[0] ?? null;
     const total = versionTotals(version).total;
@@ -65,7 +68,7 @@ export default function CompassResult({
       .filter((x) => x.value != null)
       .sort((a, b) => Math.abs(b.value as number) - Math.abs(a.value as number));
     return { axes, align, consistency, matches, hasStrongMatch, spectrum, spectrumScore, top, total, answered, rankedAxes };
-  }, [answers, version]);
+  }, [answers, version, figures]);
 
   const buildResult = (): Result => ({
     version,

@@ -194,7 +194,7 @@ class AssetUploadController extends Controller
         // Allowlist: keys must live under a known top-level folder and must
         // not traverse. Without this any superadmin session (or CSRF'd browser)
         // could delete avatars, entity icons, or the brandkit zip.
-        $allowed = ['uploads', 'downloads', 'tierlist', 'syofficial', 'govapps', 'avatars', 'guesswho', 'places'];
+        $allowed = ['uploads', 'downloads', 'tierlist', 'syofficial', 'govapps', 'avatars', 'guesswho', 'places', 'compass'];
         $top = explode('/', $path)[0] ?? '';
         if (str_contains($path, '..') || !in_array($top, $allowed, true)) {
             return response()->json(['success' => false, 'message' => 'This path cannot be deleted.'], 422);

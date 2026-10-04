@@ -2,16 +2,17 @@ import React from 'react';
 import { Head } from '@inertiajs/react';
 import CompassResult from './CompassResult';
 import MainLayout from '@/Layouts/MainLayout';
-import type { AnswerMap, QuizVersion } from './data/types';
+import type { AnswerMap, Figure, QuizVersion } from './data/types';
 
 interface Props {
     version: QuizVersion;
     answers: AnswerMap;
     shareId: string;
+    figures?: Figure[];
 }
 
 /** Public shared-result page: anyone with the link sees the same card. */
-export default function Shared({ version, answers }: Props) {
+export default function Shared({ version, answers, figures = [] }: Props) {
     return (
         <MainLayout>
             <Head>
@@ -33,6 +34,7 @@ export default function Shared({ version, answers }: Props) {
                         onRestart={() => {
                             window.location.href = '/compass';
                         }}
+                        figures={figures}
                         readOnly
                     />
                 </main>

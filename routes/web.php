@@ -534,12 +534,25 @@ Route::middleware('auth')->group(function () {
         });
     });
 
-    // 7. Compass Admin Panel (read-only, anonymised statistics). The single
-    // capability is named explicitly on the route rather than `any`, so a
-    // future read route has to declare what it needs instead of inheriting.
+    // 7. Compass Admin Panel: anonymised statistics + character roster.
+    // Each route names its own capability; the read pages are not tagged `any`
+    // so a future route has to declare what it needs.
     Route::middleware('compass_admin')->group(function () {
         Route::get('/admin/compass', [\App\Http\Controllers\CompassAdminController::class, 'renderIndex'])
             ->middleware('compass_admin:compass.stats');
+        Route::get('/admin/compass/figures', [\App\Http\Controllers\CompassAdminController::class, 'renderFigures'])
+            ->middleware('compass_admin:compass.figures');
+
+        Route::prefix('api/v1/admin/compass/figures')
+            ->middleware('compass_admin:compass.figures')
+            ->group(function () {
+                Route::get('/', [\App\Http\Controllers\CompassAdminController::class, 'figuresList']);
+                Route::post('/', [\App\Http\Controllers\CompassAdminController::class, 'storeFigure']);
+                Route::post('/upload-image', [\App\Http\Controllers\CompassAdminController::class, 'uploadFigureImage']);
+                Route::put('/{id}', [\App\Http\Controllers\CompassAdminController::class, 'updateFigure'])->whereNumber('id');
+                Route::delete('/{id}', [\App\Http\Controllers\CompassAdminController::class, 'destroyFigure'])->whereNumber('id');
+                Route::post('/{id}/toggle', [\App\Http\Controllers\CompassAdminController::class, 'toggleFigure'])->whereNumber('id');
+            });
     });
 });
 

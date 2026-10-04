@@ -19,6 +19,7 @@ class CompassAdmin extends ModuleCapabilityGuard
     {
         return [
             'compass.stats',
+            'compass.figures',
         ];
     }
 }

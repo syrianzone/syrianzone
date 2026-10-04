@@ -89,7 +89,7 @@ export default function CompassResult({
 
   const handleSaveAccount = async () => {
     if (!isLoggedIn) {
-      window.location.href = '/login';
+      window.location.href = '/auth/google?redirect=' + encodeURIComponent('/compass');
       return;
     }
     setSaving(true);

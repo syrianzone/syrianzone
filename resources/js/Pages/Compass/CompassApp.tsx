@@ -8,7 +8,7 @@ import { AXES } from './data/axes';
 import { QUESTIONS } from './data/questions';
 import { ALIGN_QUESTIONS } from './data/align';
 import { activeQuestions, activeAlignQuestions, versionTotals, axisKey, alignKey } from './lib/engine';
-import { loadProgress, saveProgress, clearProgress, fetchAccountResults } from './lib/storage';
+import { loadProgress, saveProgress, clearProgress, fetchAccountResults, saveResultToAccount, takePendingAccountSave, setPendingAccountSave, updateLocalResult } from './lib/storage';
 import type { CompassResult as SavedResult } from './data/types';
 import CompassResult from './CompassResult';
 import SavedResults from './components/SavedResults';
@@ -47,6 +47,23 @@ export default function CompassApp({ isLoggedIn }: Props) {
   useEffect(() => {
     refreshAccount();
   }, [refreshAccount]);
+
+  // A logged-out user can finish the test, hit "save", and be sent to log in.
+  // The run is queued; once we come back authenticated, save it for them.
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    const pending = takePendingAccountSave();
+    if (!pending) return;
+    saveResultToAccount(pending)
+      .then((saved) => {
+        updateLocalResult(pending.id, { id: saved?.id ?? pending.id, savedToAccount: true });
+        refreshAccount();
+      })
+      .catch(() => {
+        // Put it back so a later visit can retry.
+        setPendingAccountSave(pending);
+      });
+  }, [isLoggedIn, refreshAccount]);
 
   // ---- build the flattened question list for the chosen version ----
   const items = useMemo(() => {

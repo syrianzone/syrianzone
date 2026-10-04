@@ -5,6 +5,7 @@ import type { AnswerMap, CompassResult, QuizVersion } from '../data/types';
 const KEY_PROGRESS = 'sz-compass-v2-progress';
 const KEY_RESULTS = 'sz-compass-v2-results';
 const KEY_LAST = 'sz-compass-v2-last'; // last completed result id (local)
+const KEY_PENDING_SAVE = 'sz-compass-v2-pending-save'; // queued account save
 
 export interface Progress {
   version: QuizVersion;
@@ -74,6 +75,46 @@ export function clearLocal() {
     localStorage.removeItem(KEY_RESULTS);
     localStorage.removeItem(KEY_LAST);
   } catch {}
+}
+
+/** Patch a single stored local result in place (by id), without adding a row. */
+export function updateLocalResult(
+  id: string | number | undefined | null,
+  patch: Partial<CompassResult>
+): void {
+  if (typeof window === 'undefined' || id == null) return;
+  const all = loadResults();
+  let changed = false;
+  const next = all.map((r) => {
+    if (String(r.id) !== String(id)) return r;
+    changed = true;
+    return { ...r, ...patch };
+  });
+  if (!changed) return;
+  try {
+    localStorage.setItem(KEY_RESULTS, JSON.stringify(next));
+  } catch {}
+}
+
+// ---- pending account save (survives the OAuth round-trip) ----
+/** Queue a completed result to be saved to the account once the user is
+ *  logged in. Called right before redirecting to the login provider. */
+export function setPendingAccountSave(result: CompassResult) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(KEY_PENDING_SAVE, JSON.stringify(result));
+  } catch {}
+}
+
+/** Read and clear the queued result, if any. */
+export function takePendingAccountSave(): CompassResult | null {
+  if (typeof window === 'undefined') return null;
+  const raw = localStorage.getItem(KEY_PENDING_SAVE);
+  if (!raw) return null;
+  try {
+    localStorage.removeItem(KEY_PENDING_SAVE);
+  } catch {}
+  return safeParse<CompassResult | null>(raw, null);
 }
 
 // ---- account sync ----

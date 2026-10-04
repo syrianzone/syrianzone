@@ -7,7 +7,7 @@ import { RotateCcw, Download, Trash2, ShieldCheck, AlertTriangle, Save, LogIn, B
 import type { AnswerMap, AlignBloc, CompassResult as Result, QuizVersion } from './data/types';
 import { AXES } from './data/axes';
 import { computeScores, computeConsistency, matchFigures, matchSpectrum, versionTotals } from './lib/engine';
-import { addResult, setLastResultId, clearLocal, saveResultToAccount, deleteAccountResults, deleteAccountResult, submitStats, removeStats } from './lib/storage';
+import { addResult, setLastResultId, clearLocal, saveResultToAccount, updateLocalResult, setPendingAccountSave, deleteAccountResults, deleteAccountResult, submitStats, removeStats } from './lib/storage';
 import FigureAvatar from './components/FigureAvatar';
 import SpectrumIcon from './components/SpectrumIcon';
 import { COMPASS_FLAGS } from './flags';
@@ -50,6 +50,7 @@ export default function CompassResult({
   const [imageBusy, setImageBusy] = useState(false);
   const [themeKey, setThemeKey] = useState('dark');
   const storyCardRef = useRef<HTMLDivElement>(null);
+  const localResultRef = useRef<Result | null>(null);
 
   const computed = useMemo(() => {
     const { axes, align } = computeScores(answers, version);
@@ -89,13 +90,23 @@ export default function CompassResult({
 
   const handleSaveAccount = async () => {
     if (!isLoggedIn) {
+      // Queue the run so it is saved automatically once the user is back from
+      // the login provider (the React state is lost on the full-page redirect).
+      const pending = localResultRef.current
+        ? { ...localResultRef.current, statsConsent: statsShared }
+        : { ...buildResult(), id: crypto.randomUUID?.() ?? Date.now() };
+      setPendingAccountSave(pending);
       window.location.href = '/auth/google?redirect=' + encodeURIComponent('/compass');
       return;
     }
     setSaving(true);
     try {
       const r = await saveResultToAccount(buildResult());
-      persistLocal({ savedToAccount: true, statsConsent: statsShared });
+      updateLocalResult(localResultRef.current?.id, {
+        id: r?.id ?? localResultRef.current?.id,
+        savedToAccount: true,
+        statsConsent: statsShared,
+      });
       setSavedToAccount(true);
       setSavedId(r?.id ?? null);
       onSavedToAccount?.();
@@ -110,6 +121,7 @@ export default function CompassResult({
     setSaving(true);
     try {
       if (savedId != null) await deleteAccountResult(savedId);
+      updateLocalResult(savedId ?? localResultRef.current?.id, { savedToAccount: false });
       setSavedToAccount(false);
       setSavedId(null);
       onSavedToAccount?.();
@@ -127,7 +139,7 @@ export default function CompassResult({
         const token = await submitStats(buildResult());
         setStatsToken(token);
         setStatsShared(true);
-        persistLocal({ statsConsent: true });
+        updateLocalResult(localResultRef.current?.id, { statsConsent: true });
       } else if (statsToken) {
         await removeStats(statsToken);
         setStatsShared(false);
@@ -177,7 +189,7 @@ export default function CompassResult({
   // keep a local copy on first render (never auto-saves to the account)
   React.useEffect(() => {
     if (readOnly) return;
-    persistLocal();
+    localResultRef.current = persistLocal();
     // Anonymous stats are ON by default: send once on mount. A failed send
     // (e.g. rate limit) leaves the button in the "share" state so the user can retry.
     handleStatsToggle(true);

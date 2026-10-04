@@ -75,6 +75,7 @@ final class PermissionCatalogue
             'compass' => [
                 'compass.stats' => 'عرض إحصاءات «بوصلة سوريا» المجهولة',
                 'compass.figures' => 'إدارة شخصيات البوصلة (إضافة وتعديل وتفعيل)',
+                'compass.personas' => 'إدارة أنماط البوصلة ونطاقاتها ومحتواها',
             ],
             'users' => [
                 'users.ban' => 'حظر المستخدمين ومنعهم من تقديم مسارات',

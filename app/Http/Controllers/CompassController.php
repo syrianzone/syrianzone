@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\CompassFigure;
+use App\Models\CompassPersona;
 use App\Models\CompassResult;
 use Inertia\Inertia;
 
@@ -13,6 +14,7 @@ class CompassController extends Controller
     {
         return Inertia::render('Compass/Index', [
             'figures' => $this->enabledFigures(),
+            'personas' => $this->enabledPersonas(),
         ]);
     }
 
@@ -29,6 +31,7 @@ class CompassController extends Controller
             'answers' => $row->answers,
             'shareId' => $shareId,
             'figures' => $this->enabledFigures(),
+            'personas' => $this->enabledPersonas(),
         ]);
     }
 
@@ -46,6 +49,22 @@ class CompassController extends Controller
             ->orderBy('id')
             ->get()
             ->map->toFigurePayload()
+            ->all();
+    }
+
+    /**
+     * The enabled personas, in display order. The engine picks one per run.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function enabledPersonas(): array
+    {
+        return CompassPersona::query()
+            ->where('enabled', true)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get()
+            ->map->toPersonaPayload()
             ->all();
     }
 }

@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import AxisBars from '@/Pages/Compass/components/AxisBars';
 import AlignmentCard from '@/Pages/Compass/components/AlignmentCard';
-import { SPECTRA } from '@/Pages/Compass/data/spectra';
 import type { AlignBloc, AxisId } from '@/Pages/Compass/data/types';
 
 interface RecentRow {
@@ -53,7 +52,8 @@ const BLOC_LABEL: Record<AlignBloc, string> = {
     neutral: 'حياد',
 };
 
-const spectrumName = (id: string | null) => SPECTRA.find((s) => s.id === id)?.name ?? '—';
+const spectrumNameFrom = (personas: { id: string; name: string }[], id: string | null) =>
+    personas.find((s) => s.id === id)?.name ?? '—';
 
 const pct = (v: number | null) => (v == null ? '—' : `${Math.round(v * 100)}%`);
 
@@ -86,7 +86,18 @@ function StatCard({
     );
 }
 
-export default function CompassAdminIndex({ stats, canManageFigures = false }: { stats: Stats; canManageFigures?: boolean }) {
+export default function CompassAdminIndex({
+    stats,
+    personas = [],
+    canManageFigures = false,
+    canManagePersonas = false,
+}: {
+    stats: Stats;
+    personas?: { id: string; name: string }[];
+    canManageFigures?: boolean;
+    canManagePersonas?: boolean;
+}) {
+    const spectrumName = (id: string | null) => spectrumNameFrom(personas, id);
     const spectrumTotal = stats.bySpectrum.reduce((sum, s) => sum + s.count, 0);
     const maxSpectrum = Math.max(1, ...stats.bySpectrum.map((s) => s.count));
     const maxDaily = Math.max(1, ...stats.daily.map((d) => d.count));
@@ -113,6 +124,14 @@ export default function CompassAdminIndex({ stats, canManageFigures = false }: {
                                     <Link href="/admin/compass/figures">
                                         <Compass className="h-4 w-4" />
                                         إدارة الشخصيات
+                                    </Link>
+                                </Button>
+                            )}
+                            {canManagePersonas && (
+                                <Button asChild variant="outline" className="gap-2">
+                                    <Link href="/admin/compass/personas">
+                                        <Compass className="h-4 w-4" />
+                                        إدارة الأنماط
                                     </Link>
                                 </Button>
                             )}

@@ -18,6 +18,7 @@ import type {
   Figure,
   MatchedFigure,
   QuizVersion,
+  Spectrum,
 } from '../data/types';
 
 export const AXIS_IDS = AXES.map((a) => a.id);
@@ -277,14 +278,40 @@ export function matchFigures(
 
 export { THRESHOLD as MATCH_THRESHOLD };
 
-/** Match the user's axis scores to a spectrum (umbrella label). Uses the same whitened space. */
-export function matchSpectrum(scores: Partial<Record<AxisId, number | null>>) {
+/** Match the user's axis scores to a spectrum (umbrella label). Uses the same whitened space.
+ *
+ *  Personas are supplied by the caller (admin-managed). A persona that declares
+ *  per-axis `ranges` only qualifies when every answered axis falls inside its
+ *  window; when the filter empties the pool the unfiltered best is returned, so a
+ *  run always resolves to something. */
+export function matchSpectrum(
+  scores: Partial<Record<AxisId, number | null>>,
+  personas: Spectrum[] = SPECTRA
+) {
   const W = buildWhitener();
   const D = W.axes.length;
-  if (!W.axes.some((a) => scores[a] != null)) return { spectrum: null, score: 0 };
+  if (!W.axes.some((a) => scores[a] != null) || personas.length === 0) {
+    return { spectrum: null, score: 0 };
+  }
   const u = W.axes.map((id) => (scores[id] == null ? 0 : ((scores[id] as number) - (W.mean[id] as number)) / (W.sd[id] as number)));
-  let best = { spectrum: SPECTRA[0], score: -1 };
-  for (const sp of SPECTRA) {
+
+  const qualifies = (sp: Spectrum): boolean => {
+    const ranges = sp.ranges;
+    if (!ranges) return true;
+    for (const id of W.axes) {
+      const range = ranges[id];
+      const value = scores[id];
+      if (!range || value == null) continue;
+      if (value < range.min || value > range.max) return false;
+    }
+    return true;
+  };
+
+  const pool = personas.filter(qualifies);
+  const candidates = pool.length > 0 ? pool : personas;
+
+  let best = { spectrum: candidates[0] as Spectrum | null, score: -1 };
+  for (const sp of candidates) {
     const x = W.axes.map((id) => (sp.center[id] == null ? 0 : ((sp.center[id] as number) - (W.mean[id] as number)) / (W.sd[id] as number)));
     const d = W.axes.map((_, i) => x[i] - u[i]);
     let q = 0;

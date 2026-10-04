@@ -201,6 +201,7 @@ return new class extends Migration
             'polls.create', 'polls.edit', 'polls.delete',
             'compass.stats',
             'compass.figures',
+            'compass.personas',
             'users.ban',
         ];
     }

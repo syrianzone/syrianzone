@@ -2,12 +2,13 @@ import React from 'react';
 import { Head, usePage } from '@inertiajs/react';
 import CompassApp from './CompassApp';
 import MainLayout from '@/Layouts/MainLayout';
-import type { Figure } from './data/types';
+import type { Figure, Spectrum } from './data/types';
 
 export default function CompassPage() {
-    const props = usePage().props as { auth?: { user?: { id: number } }; figures?: Figure[] };
+    const props = usePage().props as { auth?: { user?: { id: number } }; figures?: Figure[]; personas?: Spectrum[] };
     const user = props.auth?.user ?? null;
     const figures = props.figures ?? [];
+    const personas = props.personas ?? [];
 
     return (
         <MainLayout>
@@ -35,7 +36,7 @@ export default function CompassPage() {
                 </section>
 
                 <main className="flex-1 container mx-auto px-3 sm:px-4 py-6 relative z-10 max-w-3xl">
-                    <CompassApp isLoggedIn={Boolean(user)} figures={figures} />
+                    <CompassApp isLoggedIn={Boolean(user)} figures={figures} personas={personas} />
                 </main>
             </div>
         </MainLayout>

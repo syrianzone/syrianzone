@@ -542,6 +542,8 @@ Route::middleware('auth')->group(function () {
             ->middleware('compass_admin:compass.stats');
         Route::get('/admin/compass/figures', [\App\Http\Controllers\CompassAdminController::class, 'renderFigures'])
             ->middleware('compass_admin:compass.figures');
+        Route::get('/admin/compass/personas', [\App\Http\Controllers\CompassAdminController::class, 'renderPersonas'])
+            ->middleware('compass_admin:compass.personas');
 
         Route::prefix('api/v1/admin/compass/figures')
             ->middleware('compass_admin:compass.figures')
@@ -552,6 +554,16 @@ Route::middleware('auth')->group(function () {
                 Route::put('/{id}', [\App\Http\Controllers\CompassAdminController::class, 'updateFigure'])->whereNumber('id');
                 Route::delete('/{id}', [\App\Http\Controllers\CompassAdminController::class, 'destroyFigure'])->whereNumber('id');
                 Route::post('/{id}/toggle', [\App\Http\Controllers\CompassAdminController::class, 'toggleFigure'])->whereNumber('id');
+            });
+
+        Route::prefix('api/v1/admin/compass/personas')
+            ->middleware('compass_admin:compass.personas')
+            ->group(function () {
+                Route::get('/', [\App\Http\Controllers\CompassAdminController::class, 'personasList']);
+                Route::post('/', [\App\Http\Controllers\CompassAdminController::class, 'storePersona']);
+                Route::put('/{id}', [\App\Http\Controllers\CompassAdminController::class, 'updatePersona'])->whereNumber('id');
+                Route::delete('/{id}', [\App\Http\Controllers\CompassAdminController::class, 'destroyPersona'])->whereNumber('id');
+                Route::post('/{id}/toggle', [\App\Http\Controllers\CompassAdminController::class, 'togglePersona'])->whereNumber('id');
             });
     });
 });

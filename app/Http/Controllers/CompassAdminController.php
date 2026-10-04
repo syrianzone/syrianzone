@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\CompassFigure;
+use App\Models\CompassPersona;
 use App\Models\CompassResult;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -28,11 +29,23 @@ class CompassAdminController extends Controller
 
     private const BLOCS = ['west', 'gulf', 'turkish', 'east', 'neutral'];
 
+    /** Selectable persona icons. Mirrors the map in components/SpectrumIcon.tsx. */
+    public const PERSONA_ICONS = [
+        'Wrench', 'Landmark', 'MoonStar', 'Flag', 'Globe',
+        'Scale', 'HeartHandshake', 'Puzzle', 'ScrollText', 'Shield',
+    ];
+
     public function renderIndex(Request $request)
     {
         return inertia('Admin/Compass/Index', [
             'stats' => $this->stats(),
+            'personas' => CompassPersona::query()
+                ->orderBy('sort_order')
+                ->get(['slug', 'name'])
+                ->map(fn ($p) => ['id' => $p->slug, 'name' => $p->name])
+                ->all(),
             'canManageFigures' => (bool) $request->user()?->hasPermission('compass.figures'),
+            'canManagePersonas' => (bool) $request->user()?->hasPermission('compass.personas'),
         ]);
     }
 
@@ -192,6 +205,166 @@ class CompassAdminController extends Controller
         }
 
         return $positions;
+    }
+
+    // ---------------- personas ----------------
+
+    /** The persona (spectrum) manager. */
+    public function renderPersonas(Request $request)
+    {
+        return inertia('Admin/Compass/Personas', [
+            'personas' => $this->allPersonas(),
+            'axes' => self::AXIS_IDS,
+            'icons' => self::PERSONA_ICONS,
+            'canViewStats' => (bool) $request->user()?->hasPermission('compass.stats'),
+        ]);
+    }
+
+    public function personasList()
+    {
+        return response()->json(['success' => true, 'personas' => $this->allPersonas()]);
+    }
+
+    public function storePersona(Request $request)
+    {
+        $data = $request->validate($this->personaRules());
+
+        $persona = CompassPersona::create([
+            'slug' => $this->uniqueSlug($data['name']),
+            'name' => $data['name'],
+            'icon' => $data['icon'] ?? 'Shield',
+            'short' => $data['short'] ?? '',
+            'stances' => $this->cleanStances($data['stances'] ?? []),
+            'factoid' => $data['factoid'] ?? '',
+            'center' => $this->positionsFromInput($data['center'] ?? []),
+            'ranges' => $this->rangesFromInput($data['ranges'] ?? []),
+            'enabled' => (bool) ($data['enabled'] ?? true),
+            'sort_order' => (int) ($data['sort_order'] ?? ((int) CompassPersona::max('sort_order')) + 1),
+        ]);
+
+        return response()->json(['success' => true, 'persona' => $persona->toAdminPayload()]);
+    }
+
+    public function updatePersona(Request $request, $id)
+    {
+        $persona = CompassPersona::findOrFail($id);
+        $data = $request->validate($this->personaRules());
+
+        // `slug` is deliberately immutable: it is written onto stored results.
+        $persona->update([
+            'name' => $data['name'],
+            'icon' => $data['icon'] ?? 'Shield',
+            'short' => $data['short'] ?? '',
+            'stances' => $this->cleanStances($data['stances'] ?? []),
+            'factoid' => $data['factoid'] ?? '',
+            'center' => $this->positionsFromInput($data['center'] ?? []),
+            'ranges' => $this->rangesFromInput($data['ranges'] ?? []),
+            'enabled' => (bool) ($data['enabled'] ?? $persona->enabled),
+            'sort_order' => (int) ($data['sort_order'] ?? $persona->sort_order),
+        ]);
+
+        return response()->json(['success' => true, 'persona' => $persona->fresh()->toAdminPayload()]);
+    }
+
+    public function destroyPersona($id)
+    {
+        CompassPersona::findOrFail($id)->delete();
+
+        return response()->json(['success' => true]);
+    }
+
+    public function togglePersona($id)
+    {
+        $persona = CompassPersona::findOrFail($id);
+        $persona->update(['enabled' => ! $persona->enabled]);
+
+        return response()->json(['success' => true, 'enabled' => $persona->enabled]);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function allPersonas(): array
+    {
+        return CompassPersona::query()
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get()
+            ->map->toAdminPayload()
+            ->all();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function personaRules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:255'],
+            'icon' => ['nullable', 'string', 'max:64'],
+            'short' => ['nullable', 'string', 'max:600'],
+            'factoid' => ['nullable', 'string', 'max:4000'],
+            'stances' => ['nullable', 'array', 'max:12'],
+            'stances.*' => ['nullable', 'string', 'max:120'],
+            'enabled' => ['boolean'],
+            'sort_order' => ['nullable', 'integer', 'min:0', 'max:100000'],
+            'center' => ['present', 'array'],
+            'center.*' => ['nullable', 'numeric', 'min:-1', 'max:1'],
+            'ranges' => ['nullable', 'array'],
+            'ranges.*' => ['nullable', 'array:min,max'],
+            'ranges.*.min' => ['nullable', 'numeric', 'min:-1', 'max:1'],
+            'ranges.*.max' => ['nullable', 'numeric', 'min:-1', 'max:1'],
+        ];
+    }
+
+    /**
+     * Persona axis windows. A blank row (both bounds empty) is dropped so the
+     * persona is unrestricted on that axis.
+     *
+     * @param  array<string, mixed>  $input
+     * @return array<string, array{min: float, max: float}>
+     */
+    private function rangesFromInput(array $input): array
+    {
+        $ranges = [];
+        foreach (self::AXIS_IDS as $axis) {
+            $row = $input[$axis] ?? null;
+            if (! is_array($row)) {
+                continue;
+            }
+            $min = ($row['min'] ?? '') === '' ? null : $row['min'] ?? null;
+            $max = ($row['max'] ?? '') === '' ? null : $row['max'] ?? null;
+            if ($min === null && $max === null) {
+                continue;
+            }
+            $ranges[$axis] = [
+                'min' => round((float) ($min ?? -1), 4),
+                'max' => round((float) ($max ?? 1), 4),
+            ];
+        }
+
+        return $ranges;
+    }
+
+    /** @param  array<int, mixed>  $stances */
+    private function cleanStances(array $stances): array
+    {
+        return array_values(array_filter(
+            array_map(fn ($s) => is_string($s) ? trim($s) : '', $stances),
+            fn (string $s) => $s !== '',
+        ));
+    }
+
+    private function uniqueSlug(string $name): string
+    {
+        $base = Str::slug($name) ?: 'persona';
+        $slug = $base;
+        $i = 2;
+        while (CompassPersona::where('slug', $slug)->exists()) {
+            $slug = $base.'-'.$i++;
+        }
+
+        return $slug;
     }
 
     /**

@@ -66,6 +66,9 @@ export interface Figure {
   sourceUrl?: string;
 }
 
+/** Per-axis window. When present, a run must fall inside it to keep this persona. */
+export type PersonaRange = { min: number; max: number };
+
 /** A spectrum (umbrella ideological label) with stance copy + historical factoid. */
 export interface Spectrum {
   id: string;
@@ -75,6 +78,8 @@ export interface Spectrum {
   factoid: string; // ~100 words, region-free, neutral past tense
   center: Partial<Record<AxisId, number>>; // target vector for matching
   icon: string; // lucide icon name (rendered via SPECTRUM_ICONS)
+  /** Optional per-axis windows; a run outside any set window is excluded. */
+  ranges?: Partial<Record<AxisId, PersonaRange>>;
 }
 
 /** Per-run answers keyed by `axis#index` (numeric) or `align#index` (categorical). */

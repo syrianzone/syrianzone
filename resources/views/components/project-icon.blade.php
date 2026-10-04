@@ -46,6 +46,11 @@
             <path d="M8 8h6M8 16h10M8 24h14" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
             <circle cx="25" cy="8" r="1.5" fill="rgb(var(--primary-500, 37 99 235))"/>
         SVG,
+        'compass' => <<<'SVG'
+            <circle cx="16" cy="16" r="12" fill="#3B82F6" fill-opacity="0.12" stroke="#2563EB" stroke-width="2"/>
+            <path d="M21.5 10.5l-3.2 7.8-7.8 3.2 3.2-7.8 7.8-3.2z" fill="#F59E0B" fill-opacity="0.85" stroke="#D97706" stroke-width="1.5" stroke-linejoin="round"/>
+            <circle cx="16" cy="16" r="1.8" fill="rgb(var(--primary-500, 37 99 235))"/>
+        SVG,
         'users' => <<<'SVG'
             <circle cx="13" cy="11" r="5" fill="#3B82F6" fill-opacity="0.15" stroke="#2563EB" stroke-width="2"/>
             <path d="M4 27c0-5 4-9 9-9s9 4 9 9" fill="#3B82F6" fill-opacity="0.15" stroke="#2563EB" stroke-width="2" stroke-linecap="round"/>

@@ -533,6 +533,14 @@ Route::middleware('auth')->group(function () {
                 ->middleware('phonebook_admin:phonebook.reorder');
         });
     });
+
+    // 7. Compass Admin Panel (read-only, anonymised statistics). The single
+    // capability is named explicitly on the route rather than `any`, so a
+    // future read route has to declare what it needs instead of inheriting.
+    Route::middleware('compass_admin')->group(function () {
+        Route::get('/admin/compass', [\App\Http\Controllers\CompassAdminController::class, 'renderIndex'])
+            ->middleware('compass_admin:compass.stats');
+    });
 });
 
 // User settings API endpoint (throttled + whitelisted: previously accepted

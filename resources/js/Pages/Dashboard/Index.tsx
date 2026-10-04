@@ -21,6 +21,7 @@ import {
   BarChart3,
   X,
   Save,
+  Compass,
 } from 'lucide-react';
 import {
   TierlistIcon,
@@ -663,6 +664,17 @@ export default function Dashboard({
                   >
                     <PhonebookIcon className="h-5 w-5" />
                     دليل الهاتف
+                  </Link>
+                )}
+
+                {/* Compass Admin Tab — anonymous statistics, gated on compass.stats. */}
+                {canModule(perms, 'compass') && (
+                  <Link
+                    href="/admin/compass"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  >
+                    <Compass className="h-5 w-5" />
+                    بوصلة سوريا
                   </Link>
                 )}
 

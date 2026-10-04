@@ -72,6 +72,9 @@ final class PermissionCatalogue
                 'polls.edit' => 'تعديل الاستبيانات والمرشحين',
                 'polls.delete' => 'حذف الاستبيانات',
             ],
+            'compass' => [
+                'compass.stats' => 'عرض إحصاءات «بوصلة سوريا» المجهولة',
+            ],
             'users' => [
                 'users.ban' => 'حظر المستخدمين ومنعهم من تقديم مسارات',
             ],
@@ -92,6 +95,7 @@ final class PermissionCatalogue
             'places' => ['label' => 'مشوار', 'icon' => 'places'],
             'phonebook' => ['label' => 'دليل الهاتف', 'icon' => 'phonebook'],
             'polls' => ['label' => 'الاستبيانات', 'icon' => 'polls'],
+            'compass' => ['label' => 'بوصلة سوريا', 'icon' => 'compass'],
             'users' => ['label' => 'المستخدمون', 'icon' => 'users'],
         ];
     }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\CompassAdmin;
 use App\Http\Middleware\GovAppsAdmin;
 use App\Http\Middleware\ModuleCapabilityGuard;
 use App\Http\Middleware\PhonebookAdmin;
@@ -42,6 +43,7 @@ $guarded = [
     'phonebook_admin' => 'phonebook',
     'transit_admin' => 'transit',
     'users_admin' => 'users',
+    'compass_admin' => 'compass',
 ];
 
 it('leaves no route inside a guarded admin group without a capability', function () use ($guarded) {
@@ -157,6 +159,7 @@ it('declares only real capabilities in each middleware', function () {
         PhonebookAdmin::class,
         TransitAdmin::class,
         UsersAdmin::class,
+        CompassAdmin::class,
     ];
 
     foreach ($middlewares as $class) {
@@ -182,6 +185,7 @@ it('registers every guard under the alias it declares', function () {
         PhonebookAdmin::class,
         TransitAdmin::class,
         UsersAdmin::class,
+        CompassAdmin::class,
     ];
 
     foreach ($middlewares as $class) {

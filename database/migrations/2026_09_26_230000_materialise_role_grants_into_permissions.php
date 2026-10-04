@@ -199,6 +199,7 @@ return new class extends Migration
             'places.review', 'places.approve', 'places.edit', 'places.moderate_photos', 'places.delete',
             'phonebook.create', 'phonebook.edit', 'phonebook.toggle', 'phonebook.delete', 'phonebook.reorder',
             'polls.create', 'polls.edit', 'polls.delete',
+            'compass.stats',
             'users.ban',
         ];
     }

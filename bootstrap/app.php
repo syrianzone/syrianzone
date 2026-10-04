@@ -38,6 +38,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'phonebook_admin'  => \App\Http\Middleware\PhonebookAdmin::class,
             'places_admin'    => \App\Http\Middleware\PlacesAdmin::class,
             'polls_admin'     => \App\Http\Middleware\PollsAdmin::class,
+            // Compass admin: read-only anonymous statistics for the compass test.
+            'compass_admin'   => \App\Http\Middleware\CompassAdmin::class,
             // Previously the Gov Apps admin group referenced the class directly,
             // which left it with no alias to pass a per-route capability through.
             'govapps_admin'   => \App\Http\Middleware\GovAppsAdmin::class,

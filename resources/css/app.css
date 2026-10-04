@@ -1279,6 +1279,21 @@
     /* Legacy Alias Support */
     --sz-color-primary: 105 15.2% 36.1%;
     --sz-color-accent: 356 45.2% 45.1%;
+
+    /* Syrian Compass — figure category colours (light defaults) */
+    --fig-founder: #3b82f6;
+    --fig-baath: #ef4444;
+    --fig-islam: #16a34a;
+    --fig-civ: #ca8a04;
+    --fig-kurd: #9333ea;
+    --fig-minority: #ea580c;
+    --fig-current: #0284c7;
+    /* Alignment blocs (fixed, neutral) */
+    --align-west: #2563eb;
+    --align-gulf: #059669;
+    --align-turkish: #dc2626;
+    --align-east: #7c3aed;
+    --align-neutral: #64748b;
 }
 
 [data-theme="jasmine"] {
@@ -1361,6 +1376,20 @@
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 195 23.5% 15%;
     --sidebar-ring: 105 15.2% 36.1%;
+
+    /* Syrian Compass — figure colours (brighter for dark themes) */
+    --fig-founder: #60a5fa;
+    --fig-baath: #f87171;
+    --fig-islam: #4ade80;
+    --fig-civ: #facc15;
+    --fig-kurd: #c084fc;
+    --fig-minority: #fb923c;
+    --fig-current: #38bdf8;
+    --align-west: #60a5fa;
+    --align-gulf: #34d399;
+    --align-turkish: #f87171;
+    --align-east: #c084fc;
+    --align-neutral: #94a3b8;
 }
 
 

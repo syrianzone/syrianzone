@@ -30,9 +30,8 @@ use App\Http\Controllers\Api\PopulationAtlasController;
 use App\Http\Controllers\ExternalDataController;
 
 Route::get('/tierlist/leaderboard', [PollController::class, 'renderTierListLeaderboard']);
-Route::get('/compass', function () {
-    return Inertia::render('Compass/Index');
-});
+Route::get('/compass', [\App\Http\Controllers\CompassController::class, 'index']);
+Route::get('/compass/s/{shareId}', [\App\Http\Controllers\CompassController::class, 'shared']);
 Route::get('/priorities', function () {
     return Inertia::render('Priorities/Index');
 });

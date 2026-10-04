@@ -139,6 +139,26 @@ Route::prefix('v1')->group(function () {
         Route::get('/studio/routes/{id}/from-route', [\App\Http\Controllers\TransitStudioController::class, 'showForEdit']);
     });
 
+    // Syrian Compass: account results (auth) + account-independent share.
+    Route::prefix('compass')->group(function () {
+        Route::middleware(['auth', 'throttle:60,1'])->group(function () {
+            Route::get('/results', [\App\Http\Controllers\Api\CompassResultController::class, 'index']);
+            Route::post('/results', [\App\Http\Controllers\Api\CompassResultController::class, 'store'])
+                ->middleware('throttle:20,1');
+            Route::delete('/results', [\App\Http\Controllers\Api\CompassResultController::class, 'destroyAll']);
+            Route::delete('/results/{id}', [\App\Http\Controllers\Api\CompassResultController::class, 'destroy']);
+        });
+        // Share is account-independent: anyone can create/read a share key.
+        Route::middleware('throttle:30,1')->group(function () {
+            Route::post('/share', [\App\Http\Controllers\Api\CompassShareController::class, 'store']);
+            Route::get('/share/{shareId}', [\App\Http\Controllers\Api\CompassShareController::class, 'show']);
+            // Anonymous stats submission (opt-in), open to guests and users.
+            Route::post('/stats', [\App\Http\Controllers\Api\CompassStatsController::class, 'store'])
+                ->middleware('throttle:compass-stats');
+            Route::delete('/stats', [\App\Http\Controllers\Api\CompassStatsController::class, 'destroy']);
+        });
+    });
+
     // Hidden Places public reads. Throttled here only so the existing transit endpoints stay untouched.
     // Static /places/* paths must register before /places/{id}.
     Route::middleware('throttle:60,1')->group(function () {

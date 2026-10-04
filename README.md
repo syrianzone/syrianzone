@@ -49,6 +49,8 @@
 ## الإسنادات والترخيص للموارد (Attributions & Licenses)
 
 * **أيقونات المشاريع (Project Icons)**: الأيقونات الملونة المستوحاة والمستخدمة لمشاريع وأدوات الموقع مأخوذة من مجموعات [Streamline Icons](https://www.streamlinehq.com/) عبر [Icones](https://icones.js.org/) ومتاحة بموجب رخصة [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/).
+* **أيقونات الواجهة (UI Icons)**: أيقونات واجهة المستخدم مأخوذة من [Lucide](https://lucide.dev/) عبر [lucide-react]، متاحة بموجب رخصة [ISC](https://github.com/lucide-icons/lucide/blob/main/LICENSE).
+* **صور شخصيات بوصلة سوريا (Compass portraits)**: صور الشخصيات التاريخية والمعاصرة في بوصلة سوريا مأخوذة من [Wikimedia Commons](https://commons.wikimedia.org/) و[Wikipedia](https://wikipedia.org/) — أغلبها في الملكية العامة (Public Domain)، وبعضها بموجب رخص [CC BY](https://creativecommons.org/licenses/by/4.0/) و[CC BY-SA](https://creativecommons.org/licenses/by-sa/4.0/). قائمة كاملة بالمصادر والرخص في `public/images/compass/figures/credits.json`.
 * **نص المصحف وخطه (Quran text & font)**: نص مصحف المدينة بخط حفص وخط النسخ العثماني مأخوذ من [مجمع الملك فهد لطباعة المصحف الشريف](https://qurancomplex.gov.sa/) (King Fahd Glorious Quran Printing Complex).
 * **علامة نهاية الآية (Ayah marker)**: زخرفة علامة نهاية الآية مأخوذة من مشروع [quranpedia/ayah-markers](https://github.com/quranpedia/ayah-markers) (الملف `015-regular`، عائلة DigitalKhatt عبر [fonts.quran.ws](https://fonts.quran.ws/)).
 * **التلاوات الصوتية (Recitations)**: ملفات الصوت لكل آية مقدمة من [EveryAyah](https://everyayah.com/).

@@ -39,6 +39,20 @@ class AppServiceProvider extends ServiceProvider
         )
         );
 
+        RateLimiter::for('compass-stats', function (Request $request) {
+            $message = ['message' => 'يمكنك إرسال نتيجة مجهولة واحدة كل عشر دقائق.'];
+
+            // Anonymous (guest) submissions: one per 10 minutes per IP.
+            // Logged-in users: a bit more headroom, still capped.
+            if ($request->user()) {
+                return Limit::perMinutes(10, 5)->by('user:'.$request->user()->id)
+                    ->response(fn ($request, $headers) => response()->json($message, 429, $headers));
+            }
+
+            return Limit::perMinutes(10, 1)->by('ip:'.$request->ip())
+                ->response(fn ($request, $headers) => response()->json($message, 429, $headers));
+        });
+
         RateLimiter::for('studio-submit', function (Request $request) {
             $message = ['message' => 'تم تجاوز حد المحاولات المسموح، يرجى الانتظار قليلاً قبل إعادة المحاولة.'];
 

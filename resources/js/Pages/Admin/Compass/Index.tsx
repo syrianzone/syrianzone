@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/card';
@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import AxisBars from '@/Pages/Compass/components/AxisBars';
 import AlignmentCard from '@/Pages/Compass/components/AlignmentCard';
+import QuestionAverage, { type QuestionScope } from '@/Pages/Compass/components/QuestionAverage';
 import type { AlignBloc, AxisId } from '@/Pages/Compass/data/types';
 
 interface RecentRow {
@@ -33,8 +34,9 @@ interface Stats {
     last7: number;
     last30: number;
     byVersion: Record<string, number>;
-    bySpectrum: { id: string; count: number }[];
-    axisAverages: Partial<Record<AxisId, number | null>>;
+    bySpectrum: Record<string, { id: string; count: number }[]>;
+    axisAverages: Record<string, Partial<Record<AxisId, number | null>>>;
+    questions: Record<string, Record<string, QuestionScope>>;
     alignTotals: Record<AlignBloc, number>;
     avgConsistency: number | null;
     avgAnswered: number | null;
@@ -43,6 +45,13 @@ interface Stats {
 }
 
 const VERSION_LABEL: Record<string, string> = { short: 'قصيرة', standard: 'قياسية', full: 'كاملة' };
+
+const SCOPES = [
+    { id: 'all', label: 'الكل' },
+    { id: 'short', label: 'قصيرة' },
+    { id: 'standard', label: 'قياسية' },
+    { id: 'full', label: 'كاملة' },
+];
 
 const BLOC_LABEL: Record<AlignBloc, string> = {
     west: 'غربي',
@@ -97,10 +106,15 @@ export default function CompassAdminIndex({
     canManageFigures?: boolean;
     canManagePersonas?: boolean;
 }) {
+    const [scope, setScope] = useState('all');
+
     const spectrumName = (id: string | null) => spectrumNameFrom(personas, id);
-    const spectrumTotal = stats.bySpectrum.reduce((sum, s) => sum + s.count, 0);
-    const maxSpectrum = Math.max(1, ...stats.bySpectrum.map((s) => s.count));
+    const spectrum = stats.bySpectrum[scope] ?? stats.bySpectrum.all ?? [];
+    const spectrumTotal = spectrum.reduce((sum, s) => sum + s.count, 0);
+    const maxSpectrum = Math.max(1, ...spectrum.map((s) => s.count));
     const maxDaily = Math.max(1, ...stats.daily.map((d) => d.count));
+    const axisForScope = stats.axisAverages[scope] ?? stats.axisAverages.all;
+    const scopeLabel = SCOPES.find((s) => s.id === scope)?.label ?? 'الكل';
 
     return (
         <MainLayout>
@@ -146,20 +160,43 @@ export default function CompassAdminIndex({
                     <StatCard icon={ShieldCheck} label="متوسط الاتساق" value={pct(stats.avgConsistency)} />
                 </div>
 
+                {/* Length filter: drives the persona distribution, the axis
+                    averages and the question average below. */}
+                <Card>
+                    <CardContent className="pt-5 flex flex-wrap items-center gap-2">
+                        <span className="text-sm text-muted-foreground me-1">عرض المتوسطات حسب طول الاختبار:</span>
+                        {SCOPES.map((s) => (
+                            <button
+                                key={s.id}
+                                onClick={() => setScope(s.id)}
+                                className={`rounded-lg border px-3 py-1.5 text-sm font-bold transition ${
+                                    scope === s.id
+                                        ? 'border-primary bg-primary text-primary-foreground'
+                                        : 'border-border hover:bg-muted/50'
+                                }`}
+                            >
+                                {s.label}
+                            </button>
+                        ))}
+                    </CardContent>
+                </Card>
+
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                     {/* Spectrum distribution */}
                     <Card>
                         <CardHeader className="pb-3">
                             <CardTitle className="text-base">توزّع الأطياف</CardTitle>
                             <CardDescription className="text-xs">
-                                {spectrumTotal > 0 ? `${spectrumTotal} مشاركة مصنّفة` : 'لا توجد بيانات بعد'}
+                                {spectrumTotal > 0
+                                    ? `${spectrumTotal} مشاركة مصنّفة${scope !== 'all' ? ` (النسخة ${scopeLabel})` : ''}`
+                                    : 'لا توجد بيانات بعد'}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-2">
-                            {stats.bySpectrum.length === 0 && (
+                            {spectrum.length === 0 && (
                                 <p className="text-sm text-muted-foreground">لا توجد بيانات بعد.</p>
                             )}
-                            {stats.bySpectrum.map((s) => (
+                            {spectrum.map((s) => (
                                 <div key={s.id} className="flex items-center gap-2">
                                     <span className="w-36 shrink-0 truncate text-xs">{spectrumName(s.id)}</span>
                                     <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
@@ -213,17 +250,21 @@ export default function CompassAdminIndex({
                     <CardHeader className="pb-2">
                         <CardTitle className="text-base">المتوسط على المحاور</CardTitle>
                         <CardDescription className="text-xs">
-                            متوسط موضع كل المشاركين على الأحد عشر محوراً (الاتجاه كما يراه المستخدم).
+                            متوسط موضع المشاركين على الأحد عشر محوراً (الاتجاه كما يراه المستخدم)
+                            {scope !== 'all' ? ` — النسخة ${scopeLabel}` : ''}.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         {stats.total > 0 ? (
-                            <AxisBars axes={stats.axisAverages} />
+                            <AxisBars axes={axisForScope} />
                         ) : (
                             <p className="text-sm text-muted-foreground">لا توجد بيانات بعد.</p>
                         )}
                     </CardContent>
                 </Card>
+
+                {/* Question average */}
+                <QuestionAverage questions={stats.questions} scope={scope} scopeLabel={scopeLabel} />
 
                 {/* Alignment */}
                 <Card>

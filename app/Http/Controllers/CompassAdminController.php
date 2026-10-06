@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\CompassFigure;
 use App\Models\CompassPersona;
 use App\Models\CompassResult;
+use App\Support\Compass\CompassStats;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -21,12 +22,6 @@ use Illuminate\Validation\Rule;
  */
 class CompassAdminController extends Controller
 {
-    /** The numeric axes, in the same order the result page renders them. */
-    private const AXIS_IDS = [
-        'auth_lib', 'rel_sec', 'soc_cap', 'nat_glob', 'mil_pac', 'ret_rec',
-        'central_federal', 'identity_civic', 'ris_communal', 'women_rights', 'sect_memory',
-    ];
-
     private const BLOCS = ['west', 'gulf', 'turkish', 'east', 'neutral'];
 
     /** Selectable persona icons. Mirrors the map in components/SpectrumIcon.tsx. */
@@ -55,7 +50,7 @@ class CompassAdminController extends Controller
         return inertia('Admin/Compass/Figures', [
             'figures' => $this->allFigures(),
             'categories' => CompassFigure::CATEGORIES,
-            'axes' => self::AXIS_IDS,
+            'axes' => CompassStats::AXIS_IDS,
             'canViewStats' => (bool) $request->user()?->hasPermission('compass.stats'),
         ]);
     }
@@ -199,7 +194,7 @@ class CompassAdminController extends Controller
     private function positionsFromInput(array $input): array
     {
         $positions = [];
-        foreach (self::AXIS_IDS as $axis) {
+        foreach (CompassStats::AXIS_IDS as $axis) {
             $value = $input[$axis] ?? null;
             $positions[$axis] = ($value === '' || $value === null) ? null : round((float) $value, 4);
         }
@@ -214,7 +209,7 @@ class CompassAdminController extends Controller
     {
         return inertia('Admin/Compass/Personas', [
             'personas' => $this->allPersonas(),
-            'axes' => self::AXIS_IDS,
+            'axes' => CompassStats::AXIS_IDS,
             'icons' => self::PERSONA_ICONS,
             'canViewStats' => (bool) $request->user()?->hasPermission('compass.stats'),
         ]);
@@ -327,7 +322,7 @@ class CompassAdminController extends Controller
     private function rangesFromInput(array $input): array
     {
         $ranges = [];
-        foreach (self::AXIS_IDS as $axis) {
+        foreach (CompassStats::AXIS_IDS as $axis) {
             $row = $input[$axis] ?? null;
             if (! is_array($row)) {
                 continue;
@@ -376,37 +371,17 @@ class CompassAdminController extends Controller
             ->whereNull('user_id')
             ->where('stats_consent', true);
 
-        $total = $base()->count();
-        $last7 = $base()->where('created_at', '>=', now()->subDays(7))->count();
-        $last30 = $base()->where('created_at', '>=', now()->subDays(30))->count();
-
-        $byVersion = $base()
-            ->selectRaw('version, count(*) as c')
-            ->groupBy('version')
-            ->pluck('c', 'version')
-            ->map(fn ($c) => (int) $c)
-            ->all();
-
-        $bySpectrum = $base()
-            ->whereNotNull('spectrum')
-            ->selectRaw('spectrum, count(*) as c')
-            ->groupBy('spectrum')
-            ->orderByDesc('c')
-            ->get()
-            ->map(fn ($row) => ['id' => $row->spectrum, 'count' => (int) $row->c])
-            ->all();
+        // Shared with the public page: totals, per-scope axis averages, persona
+        // distribution and per-question answer counts.
+        $core = CompassStats::aggregateAnonymous();
 
         $avg = $base()
             ->selectRaw('avg(consistency) as consistency, avg(answered) as answered')
             ->first();
 
-        return [
-            'total' => $total,
-            'last7' => $last7,
-            'last30' => $last30,
-            'byVersion' => $byVersion,
-            'bySpectrum' => $bySpectrum,
-            'axisAverages' => $this->axisAverages($base),
+        return array_merge($core, [
+            'last7' => $base()->where('created_at', '>=', now()->subDays(7))->count(),
+            'last30' => $base()->where('created_at', '>=', now()->subDays(30))->count(),
             'alignTotals' => $this->alignTotals($base),
             'avgConsistency' => $avg?->consistency !== null ? round((float) $avg->consistency, 3) : null,
             'avgAnswered' => $avg?->answered !== null ? round((float) $avg->answered, 1) : null,
@@ -425,39 +400,7 @@ class CompassAdminController extends Controller
                     'topScore' => $row->top_score,
                 ])
                 ->all(),
-        ];
-    }
-
-    /**
-     * Mean position on each axis across every anonymous run. Axes a run did not
-     * answer (e.g. the transition-only axes) are left out of that axis's mean.
-     *
-     * @param  callable(): \Illuminate\Database\Eloquent\Builder  $base
-     * @return array<string, float|null>
-     */
-    private function axisAverages(callable $base): array
-    {
-        $sums = array_fill_keys(self::AXIS_IDS, 0.0);
-        $counts = array_fill_keys(self::AXIS_IDS, 0);
-
-        foreach ($base()->whereNotNull('scores')->pluck('scores') as $scores) {
-            if (! is_array($scores)) {
-                continue;
-            }
-            foreach (self::AXIS_IDS as $axis) {
-                if (isset($scores[$axis]) && is_numeric($scores[$axis])) {
-                    $sums[$axis] += (float) $scores[$axis];
-                    $counts[$axis]++;
-                }
-            }
-        }
-
-        $averages = [];
-        foreach (self::AXIS_IDS as $axis) {
-            $averages[$axis] = $counts[$axis] > 0 ? round($sums[$axis] / $counts[$axis], 3) : null;
-        }
-
-        return $averages;
+        ]);
     }
 
     /**

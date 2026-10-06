@@ -5,17 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\CompassFigure;
 use App\Models\CompassPersona;
 use App\Models\CompassResult;
+use App\Support\Compass\CompassStats;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 
 class CompassController extends Controller
 {
-    /** The numeric axes, in the order the result page renders them. */
-    private const AXIS_IDS = [
-        'auth_lib', 'rel_sec', 'soc_cap', 'nat_glob', 'mil_pac', 'ret_rec',
-        'central_federal', 'identity_civic', 'ris_communal', 'women_rights', 'sect_memory',
-    ];
-
     /** Cache key for the public aggregate; busted whenever a run is added/removed. */
     public const PUBLIC_STATS_CACHE_KEY = 'compass-public-stats-v2';
 
@@ -107,89 +102,10 @@ class CompassController extends Controller
      */
     private function publicStats(): array
     {
-        return Cache::remember(self::PUBLIC_STATS_CACHE_KEY, now()->addMinutes(10), function () {
-            $scopes = ['all', 'short', 'standard', 'full'];
-            $byVersion = ['short' => 0, 'standard' => 0, 'full' => 0];
-            $bySpectrum = [];
-            $axisAcc = [];     // scope => axis => [sum, count]
-            $questionAcc = []; // key => scope => [n, [c-2, c-1, c0, c+1, c+2]]
-            $total = 0;
-
-            CompassResult::query()
-                ->whereNull('user_id')
-                ->where('stats_consent', true)
-                ->get(['version', 'scores', 'spectrum', 'answers'])
-                ->each(function ($row) use (&$total, &$byVersion, &$bySpectrum, &$axisAcc, &$questionAcc, $scopes) {
-                    $total++;
-                    $version = $row->version;
-                    if (isset($byVersion[$version])) {
-                        $byVersion[$version]++;
-                    }
-
-                    $rowScopes = in_array($version, $scopes, true) ? ['all', $version] : ['all'];
-
-                    foreach ($rowScopes as $scope) {
-                        if ($row->spectrum) {
-                            $bySpectrum[$scope][$row->spectrum] = ($bySpectrum[$scope][$row->spectrum] ?? 0) + 1;
-                        }
-
-                        foreach (($row->scores ?? []) as $axisId => $value) {
-                            if ($value === null || ! is_numeric($value)) {
-                                continue;
-                            }
-                            $axisAcc[$scope][$axisId] ??= [0.0, 0];
-                            $axisAcc[$scope][$axisId][0] += (float) $value;
-                            $axisAcc[$scope][$axisId][1]++;
-                        }
-
-                        foreach (($row->answers ?? []) as $key => $value) {
-                            if (! is_numeric($value)) {
-                                continue;
-                            }
-                            $idx = (int) $value + 2;
-                            if ($idx < 0 || $idx > 4) {
-                                continue;
-                            }
-                            $questionAcc[$key][$scope] ??= [0, [0, 0, 0, 0, 0]];
-                            $questionAcc[$key][$scope][0]++;
-                            $questionAcc[$key][$scope][1][$idx]++;
-                        }
-                    }
-                });
-
-            $axisAverages = [];
-            foreach ($scopes as $scope) {
-                foreach (self::AXIS_IDS as $axis) {
-                    [$sum, $count] = $axisAcc[$scope][$axis] ?? [0.0, 0];
-                    $axisAverages[$scope][$axis] = $count > 0 ? round($sum / $count, 3) : null;
-                }
-            }
-
-            $questions = [];
-            foreach ($questionAcc as $key => $byScope) {
-                foreach ($byScope as $scope => [$n, $counts]) {
-                    $questions[$key][$scope] = ['n' => $n, 'counts' => $counts];
-                }
-            }
-
-            // Persona distribution per scope, most common first.
-            $spectrumByScope = [];
-            foreach ($scopes as $scope) {
-                $counts = $bySpectrum[$scope] ?? [];
-                arsort($counts);
-                $spectrumByScope[$scope] = collect($counts)
-                    ->map(fn ($count, $id) => ['id' => $id, 'count' => $count])
-                    ->values()
-                    ->all();
-            }
-
-            return [
-                'total' => $total,
-                'byVersion' => $byVersion,
-                'bySpectrum' => $spectrumByScope,
-                'axisAverages' => $axisAverages,
-                'questions' => $questions,
-            ];
-        });
+        return Cache::remember(
+            self::PUBLIC_STATS_CACHE_KEY,
+            now()->addMinutes(10),
+            fn () => CompassStats::aggregateAnonymous()
+        );
     }
 }

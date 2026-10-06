@@ -59,7 +59,14 @@ it('lets a capability holder and the superadmin in, and renders the stats', func
         ->assertInertia(fn (Assert $page) => $page
             ->component('Admin/Compass/Index')
             ->where('stats.total', 1)
-            ->where('stats.bySpectrum.0.id', 'tech_reform')
+            // Per-scope persona distribution, axis averages and question counts
+            // are now shared with the public page.
+            ->where('stats.bySpectrum.all.0.id', 'tech_reform')
+            ->where('stats.bySpectrum.short.0.id', 'tech_reform')
+            ->where('stats.axisAverages.all.auth_lib', 0.5)
+            ->where('stats.axisAverages.short.auth_lib', 0.5)
+            ->where('stats.questions.auth_lib#0.all.n', 1)
+            ->where('stats.questions.auth_lib#0.all.counts.4', 1)
         );
 
     // Superadmin resolves the whole catalogue, so no explicit grant is needed.

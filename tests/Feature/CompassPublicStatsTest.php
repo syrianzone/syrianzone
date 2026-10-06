@@ -55,9 +55,9 @@ it('counts only anonymous consented runs', function () {
 });
 
 it('averages a question and breaks the counts down by length', function () {
-    publicCompassRun(['version' => 'short', 'answers' => ['auth_lib#0' => 2]]);
-    publicCompassRun(['version' => 'short', 'answers' => ['auth_lib#0' => -2]]);
-    publicCompassRun(['version' => 'full', 'answers' => ['auth_lib#0' => 2]]);
+    publicCompassRun(['version' => 'short', 'answers' => ['auth_lib#0' => 2], 'spectrum' => 'tech_reform']);
+    publicCompassRun(['version' => 'short', 'answers' => ['auth_lib#0' => -2], 'spectrum' => 'civic_reform']);
+    publicCompassRun(['version' => 'full', 'answers' => ['auth_lib#0' => 2], 'spectrum' => 'tech_reform']);
 
     $this->get('/compass/stats')->assertInertia(fn (Assert $page) => $page
         ->where('stats.total', 3)
@@ -67,6 +67,13 @@ it('averages a question and breaks the counts down by length', function () {
         ->where('stats.questions.auth_lib#0.all.counts.0', 1) // one strongly-disagree
         ->where('stats.questions.auth_lib#0.all.counts.4', 2) // two strongly-agree
         ->where('stats.questions.auth_lib#0.short.n', 2)
+        // Persona distribution follows the length filter.
+        ->where('stats.bySpectrum.all.0.id', 'tech_reform')
+        ->where('stats.bySpectrum.all.0.count', 2)
+        ->where('stats.bySpectrum.short.0.count', 1)
+        ->has('stats.bySpectrum.short', 2)
+        ->has('stats.bySpectrum.full', 1)
+        ->where('stats.bySpectrum.full.0.id', 'tech_reform')
     );
 });
 

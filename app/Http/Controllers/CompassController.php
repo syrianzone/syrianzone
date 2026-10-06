@@ -17,7 +17,7 @@ class CompassController extends Controller
     ];
 
     /** Cache key for the public aggregate; busted whenever a run is added/removed. */
-    public const PUBLIC_STATS_CACHE_KEY = 'compass-public-stats-v1';
+    public const PUBLIC_STATS_CACHE_KEY = 'compass-public-stats-v2';
 
     /** The compass test page. */
     public function index()
@@ -125,13 +125,14 @@ class CompassController extends Controller
                     if (isset($byVersion[$version])) {
                         $byVersion[$version]++;
                     }
-                    if ($row->spectrum) {
-                        $bySpectrum[$row->spectrum] = ($bySpectrum[$row->spectrum] ?? 0) + 1;
-                    }
 
                     $rowScopes = in_array($version, $scopes, true) ? ['all', $version] : ['all'];
 
                     foreach ($rowScopes as $scope) {
+                        if ($row->spectrum) {
+                            $bySpectrum[$scope][$row->spectrum] = ($bySpectrum[$scope][$row->spectrum] ?? 0) + 1;
+                        }
+
                         foreach (($row->scores ?? []) as $axisId => $value) {
                             if ($value === null || ! is_numeric($value)) {
                                 continue;
@@ -171,15 +172,21 @@ class CompassController extends Controller
                 }
             }
 
-            arsort($bySpectrum);
+            // Persona distribution per scope, most common first.
+            $spectrumByScope = [];
+            foreach ($scopes as $scope) {
+                $counts = $bySpectrum[$scope] ?? [];
+                arsort($counts);
+                $spectrumByScope[$scope] = collect($counts)
+                    ->map(fn ($count, $id) => ['id' => $id, 'count' => $count])
+                    ->values()
+                    ->all();
+            }
 
             return [
                 'total' => $total,
                 'byVersion' => $byVersion,
-                'bySpectrum' => collect($bySpectrum)
-                    ->map(fn ($count, $id) => ['id' => $id, 'count' => $count])
-                    ->values()
-                    ->all(),
+                'bySpectrum' => $spectrumByScope,
                 'axisAverages' => $axisAverages,
                 'questions' => $questions,
             ];

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/card';
@@ -23,7 +23,7 @@ interface QuestionScope {
 interface Stats {
     total: number;
     byVersion: Record<string, number>;
-    bySpectrum: { id: string; count: number }[];
+    bySpectrum: Record<string, { id: string; count: number }[]>;
     axisAverages: Record<string, Partial<Record<AxisId, number | null>>>;
     questions: Record<string, Record<string, QuestionScope>>;
 }
@@ -78,11 +78,9 @@ export default function CompassStats({ stats, personas }: Props) {
 
     const personaName = (id: string) => personas.find((p) => p.id === id)?.name ?? id;
 
-    const spectrumTotal = useMemo(
-        () => stats.bySpectrum.reduce((s, x) => s + x.count, 0),
-        [stats.bySpectrum]
-    );
-    const maxSpectrum = Math.max(1, ...stats.bySpectrum.map((s) => s.count));
+    const spectrum = stats.bySpectrum[scope] ?? stats.bySpectrum.all ?? [];
+    const spectrumTotal = spectrum.reduce((s, x) => s + x.count, 0);
+    const maxSpectrum = Math.max(1, ...spectrum.map((s) => s.count));
 
     const qScope = stats.questions[question.key]?.[scope] ?? stats.questions[question.key]?.all;
     const qMean = meanOf(qScope?.counts);
@@ -183,10 +181,11 @@ export default function CompassStats({ stats, personas }: Props) {
                                     <CardTitle className="text-base">توزّع الأنماط</CardTitle>
                                     <CardDescription className="text-xs">
                                         {spectrumTotal} مشاركة مصنّفة على الأنماط
+                                        {scope !== 'all' && ` (النسخة ${SCOPES.find((s) => s.id === scope)?.label})`}
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-2">
-                                    {stats.bySpectrum.map((s) => (
+                                    {spectrum.map((s) => (
                                         <div key={s.id} className="flex items-center gap-2">
                                             <span className="w-40 shrink-0 truncate text-xs">{personaName(s.id)}</span>
                                             <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">

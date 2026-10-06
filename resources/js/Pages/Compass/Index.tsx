@@ -1,5 +1,6 @@
 import React from 'react';
-import { Head, usePage } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
+import { BarChart3 } from 'lucide-react';
 import CompassApp from './CompassApp';
 import MainLayout from '@/Layouts/MainLayout';
 import type { Figure, Spectrum } from './data/types';
@@ -32,6 +33,15 @@ export default function CompassPage() {
                         <p className="text-base md:text-lg text-muted-foreground">
                             اكتشف موقعك السياسي على أحد عشر محوراً وأقرب التوجّهات إليك
                         </p>
+                        <div className="mt-3">
+                            <Link
+                                href="/compass/stats"
+                                className="inline-flex items-center gap-1.5 text-sm font-bold text-primary hover:underline"
+                            >
+                                <BarChart3 className="h-4 w-4" />
+                                إحصاءات عامة مجهولة الهوية
+                            </Link>
+                        </div>
                     </div>
                 </section>
 

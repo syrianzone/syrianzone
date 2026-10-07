@@ -83,7 +83,13 @@ const UnblockSyriaNotification = () => {
 
                 <div className="flex flex-col gap-3 text-right" dir="rtl">
                     <div className="flex items-center gap-2.5">
-                        <span className="text-2xl" role="img" aria-label="Syria Flag">🇸🇾</span>
+                        <img
+                            src="/flag-replacer/1f1f8-1f1fe.svg"
+                            alt="علم سوريا"
+                            className="h-6 w-6 rounded-sm shrink-0"
+                            width={24}
+                            height={24}
+                        />
                         <h3 className="font-bold text-lg text-foreground tracking-tight">
                             {popup.title}
                         </h3>

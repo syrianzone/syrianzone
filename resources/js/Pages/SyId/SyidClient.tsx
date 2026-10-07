@@ -910,7 +910,7 @@ export default function SyidClient() {
                                                         />
                                                     </div>
                                                 </div>
-                                                <SelectItem value="full">🇸🇾 سوريا كاملة</SelectItem>
+                                                <SelectItem value="full">سوريا كاملة</SelectItem>
                                                 {filteredGovernorates.map((gov: any) => (
                                                     <SelectItem key={gov.id} value={gov.id}>
                                                         {gov.nameAr}

@@ -138,8 +138,14 @@ export function fetchRecitations(query: RecitationQuery = {}, signal?: AbortSign
   return v4Get<{ data: V4Recitation[] }>('/v4/recitations', query, signal).then((r) => r.data);
 }
 
+// A recitation code is a two-segment path (`reciter/rN`), so encode each
+// segment but keep its slash literal to match the documented route shape.
+function recitationPath(code: string): string {
+  return code.split('/').map(encodeURIComponent).join('/');
+}
+
 export function getRecitation(code: string, signal?: AbortSignal): Promise<V4Recitation> {
-  return v4Get<{ data: V4Recitation }>(`/v4/recitations/${encodeURIComponent(code)}`, undefined, signal).then(
+  return v4Get<{ data: V4Recitation }>(`/v4/recitations/${recitationPath(code)}`, undefined, signal).then(
     (r) => r.data,
   );
 }
@@ -169,7 +175,7 @@ export function getSurah(
   signal?: AbortSignal,
 ): Promise<V4SurahItem> {
   return v4Get<{ data: V4SurahItem }>(
-    `/v4/recitations/${encodeURIComponent(recitationCode)}/surahs/${surah}`,
+    `/v4/recitations/${recitationPath(recitationCode)}/surahs/${surah}`,
     undefined,
     signal,
   ).then((r) => r.data);
@@ -240,7 +246,7 @@ function getTimings<T = RawTimings>(
   signal?: AbortSignal,
 ): Promise<T> {
   return v4Get<{ data: T }>(
-    `/v4/recitations/${encodeURIComponent(recitationCode)}/surahs/${surah}/${level}-timings`,
+    `/v4/recitations/${recitationPath(recitationCode)}/surahs/${surah}/${level}-timings`,
     query,
     signal,
   ).then((r) => r.data);

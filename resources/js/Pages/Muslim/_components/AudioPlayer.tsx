@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Pause, Play, SkipBack, SkipForward, Volume1, Volume2, VolumeX } from 'lucide-react';
+import { Loader2, Pause, Play, SkipBack, SkipForward, Volume1, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import RecitationPicker from './RecitationPicker';
-import { SURA_NAMES_AR, ayahAudioUrl, recitationByCode, type Ayah } from '../_lib/quran';
+import { SURA_NAMES_AR, recitationByCode, type Ayah } from '../_lib/quran';
+import { useSurahAudio } from '../_lib/useSurahAudio';
 
 interface Props {
   ayat: Ayah[];
+  /** v4 recitation code (`reciter/rN`). */
   reciterCode: string;
   setReciterCode: (code: string) => void;
   currentKey: string | null;
@@ -22,8 +24,17 @@ export default function AudioPlayer({
   ayat, reciterCode, setReciterCode, currentKey, onSelectAyah, playSignal,
   onEndOfList,
 }: Props) {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [playing, setPlaying] = useState(false);
+  const recitation = recitationByCode(reciterCode);
+  const audio = useSurahAudio({
+    ayat,
+    recitation,
+    currentKey,
+    playSignal,
+    onSelectAyah,
+    onEndOfList,
+  });
+  const audioRef = audio.audioProps.ref;
+
   const [volume, setVolume] = useState(() => {
     const v = Number(window.localStorage.getItem('sz-muslim-volume') ?? 1);
     return Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 1;
@@ -31,90 +42,9 @@ export default function AudioPlayer({
   const [muted, setMuted] = useState(false);
   const [volumeOpen, setVolumeOpen] = useState(false);
   const volumeWrapRef = useRef<HTMLDivElement | null>(null);
-  const recitation = recitationByCode(reciterCode);
 
   const idx = Math.max(0, ayat.findIndex((a) => a.key === currentKey));
   const current: Ayah | undefined = ayat[idx];
-
-  // Stable player core (refs avoid stale closures in listeners).
-  const live = useRef({ ayat, currentKey, recitation, onSelectAyah, onEndOfList });
-  live.current = { ayat, currentKey, recitation, onSelectAyah, onEndOfList };
-
-  const playAt = (i: number) => {
-    const s = live.current;
-    const ayah = s.ayat[i];
-    const el = audioRef.current;
-    if (!ayah || !el) return;
-    s.onSelectAyah(ayah.key);
-    el.src = ayahAudioUrl(s.recitation, ayah.surah, ayah.ayah);
-    el.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
-  };
-
-  // Auto-advance to the next Ayah when one ends.
-  const handleEnded = () => {
-    const s = live.current;
-    const i = s.ayat.findIndex((a) => a.key === s.currentKey);
-    const el = audioRef.current;
-    if (!el) return;
-    if (i >= 0 && i + 1 < s.ayat.length) {
-      const next = s.ayat[i + 1];
-      s.onSelectAyah(next.key);
-      el.src = ayahAudioUrl(s.recitation, next.surah, next.ayah);
-      el.play().catch(() => setPlaying(false));
-    } else if (s.onEndOfList) {
-      s.onEndOfList();
-    } else {
-      setPlaying(false);
-    }
-  };
-
-  // Tap on Ayah text in the Mushaf starts playback from that Ayah.
-  const lastSignal = useRef(0);
-  useEffect(() => {
-    if (playSignal > lastSignal.current) {
-      lastSignal.current = playSignal;
-      const s = live.current;
-      const i = Math.max(0, s.ayat.findIndex((a) => a.key === s.currentKey));
-      if (s.ayat.length > 0) {
-        const ayah = s.ayat[i];
-        s.onSelectAyah(ayah.key);
-        const el = audioRef.current;
-        if (el) {
-          el.src = ayahAudioUrl(s.recitation, ayah.surah, ayah.ayah);
-          el.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
-        }
-      }
-    }
-  });
-
-  // Prefetch up to 10 Ayahs ahead silently to eliminate audio gaps
-  const prefetched = useRef(new Set<string>());
-  useEffect(() => {
-    if (!playing) return;
-    const end = Math.min(idx + 11, ayat.length);
-    for (let i = idx + 1; i < end; i++) {
-      const a = ayat[i];
-      const url = ayahAudioUrl(recitation, a.surah, a.ayah);
-      if (!prefetched.current.has(url)) {
-        prefetched.current.add(url);
-        // Opaque no-cors fetch correctly warms the browser's HTTP disk cache
-        // for the native <audio> element to consume instantly.
-        window.fetch(url, { mode: 'no-cors' }).catch(() => undefined);
-      }
-    }
-  }, [playing, idx, ayat, recitation]);
-
-  // Reciter switch keeps the position and reloads the same Ayah.
-  const prevReciter = useRef(reciterCode);
-  useEffect(() => {
-    if (prevReciter.current === reciterCode) return;
-    prevReciter.current = reciterCode;
-    const el = audioRef.current;
-    if (!el || !el.src || !current) return;
-    const wasPlaying = !el.paused;
-    el.src = ayahAudioUrl(recitation, current.surah, current.ayah);
-    if (wasPlaying) el.play().catch(() => setPlaying(false));
-  });
 
   // Volume + mute (persisted).
   useEffect(() => {
@@ -123,7 +53,7 @@ export default function AudioPlayer({
   useEffect(() => {
     const el = audioRef.current;
     if (el) el.volume = muted ? 0 : volume;
-  }, [volume, muted]);
+  }, [audioRef, volume, muted]);
 
   // Mobile: the voice icon toggles a volume popup (slider stays hidden).
   // Desktop: the icon mutes/unmutes, the slider is inline.
@@ -147,18 +77,7 @@ export default function AudioPlayer({
 
   if (ayat.length === 0) return null;
 
-  const toggle = () => {
-    const el = audioRef.current;
-    if (!el) return;
-    if (playing) {
-      el.pause();
-    } else if (el.src) {
-      el.play().catch(() => undefined);
-    } else {
-      playAt(idx);
-    }
-  };
-
+  const { playing, loading, error, progress } = audio;
   const effectiveVolume = muted ? 0 : volume;
   const VolumeIcon = effectiveVolume === 0 ? VolumeX : effectiveVolume < 0.5 ? Volume1 : Volume2;
 
@@ -167,7 +86,7 @@ export default function AudioPlayer({
     // the centered container; the overflow-hidden page wrapper clips the
     // scrollbar-width excess). Controls stay at the current narrow width.
     <div className="sticky bottom-0 z-40 ml-[calc(50%-50vw)] mr-[calc(50%-50vw)] border-t border-border bg-card/95 px-4 py-2 backdrop-blur">
-      <audio ref={audioRef} preload="none" onPlaying={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={handleEnded} />
+      <audio {...audio.audioProps} />
       <div className="mx-auto flex max-w-3xl items-center gap-2">
         {/* Right: volume (outline to match the reciter button). */}
         <div ref={volumeWrapRef} className="relative flex flex-1 items-center justify-start gap-1">
@@ -225,14 +144,14 @@ export default function AudioPlayer({
         {/* Center: transport + bookmark */}
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" title="الآية السابقة"
-            disabled={idx <= 0} onClick={() => playAt(idx - 1)}>
+            disabled={idx <= 0} onClick={audio.prev}>
             <SkipForward className="h-4 w-4" />
           </Button>
-          <Button size="icon" className="h-11 w-11 rounded-full shadow" title={playing ? 'إيقاف مؤقت' : 'تشغيل'} onClick={toggle}>
-            {playing ? <Pause className="h-5 w-5" /> : <Play className="ms-0.5 h-5 w-5" />}
+          <Button size="icon" className="h-11 w-11 rounded-full shadow" title={playing ? 'إيقاف مؤقت' : 'تشغيل'} onClick={audio.toggle}>
+            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : playing ? <Pause className="h-5 w-5" /> : <Play className="ms-0.5 h-5 w-5" />}
           </Button>
           <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" title="الآية التالية"
-            disabled={idx >= ayat.length - 1} onClick={() => playAt(idx + 1)}>
+            disabled={idx >= ayat.length - 1} onClick={audio.next}>
             <SkipBack className="h-4 w-4" />
           </Button>
         </div>
@@ -242,8 +161,21 @@ export default function AudioPlayer({
           <RecitationPicker value={recitation.code} onChange={setReciterCode} />
         </div>
       </div>
+      {/* Ayah progress: fills from the right (RTL) as the Ayah is recited. */}
+      <div className="mx-auto mt-1 max-w-3xl">
+        <div className="h-0.5 w-full overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full bg-primary transition-[width] duration-150 ease-linear"
+            style={{ width: `${Math.round(progress * 100)}%`, marginInlineStart: 'auto' }}
+          />
+        </div>
+      </div>
       <div className="mx-auto mt-0.5 max-w-3xl truncate text-center text-[11px] text-muted-foreground">
-        {current ? `آية ${current.key} · سورة ${SURA_NAMES_AR[current.surah] ?? current.surah}` : 'اختر آية من الصفحة'}
+        {error
+          ? <span className="text-destructive">{error}</span>
+          : current
+            ? `آية ${current.key} · سورة ${SURA_NAMES_AR[current.surah] ?? current.surah}`
+            : 'اختر آية من الصفحة'}
       </div>
     </div>
   );

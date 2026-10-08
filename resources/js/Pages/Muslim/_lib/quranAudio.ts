@@ -1,4 +1,4 @@
-import type { AyahTiming, V4SurahItem, WordTiming } from './mp3quran';
+import type { AyahTiming, LetterTiming, V4SurahItem, WordTiming } from './mp3quran';
 
 export interface AyahSpan {
   start: number;
@@ -140,4 +140,28 @@ export function findWordAt(words: WordTiming[], positionMs: number): WordTiming 
   if (candidate < 0) return null;
   const word = words[candidate];
   return positionMs < word[3] ? word : null;
+}
+
+/** The letter sounding at `positionMs`, or null in a gap / outside the file. */
+export function findLetterAt(letters: LetterTiming[], positionMs: number): LetterTiming | null {
+  let lo = 0;
+  let hi = letters.length - 1;
+  let candidate = -1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (letters[mid][3] <= positionMs) {
+      candidate = mid;
+      lo = mid + 1;
+    } else {
+      hi = mid - 1;
+    }
+  }
+  if (candidate < 0) return null;
+  const letter = letters[candidate];
+  return positionMs < letter[4] ? letter : null;
+}
+
+/** Key for a single word heard at one occurrence. */
+export function wordOccurrenceKey(ayah: number, position: number, occurrence: number): string {
+  return `${ayah}:${position}:${occurrence}`;
 }

@@ -11,6 +11,8 @@ interface Props {
   currentAyahKey: string | null;
   /** "sura:aya:wordIndex" of the word being recited right now (karaoke). */
   activeWordKey?: string | null;
+  /** Letter sweep fill (0..1) for the active word, when letter timings exist. */
+  activeWordProgress?: number | null;
   onSelectAyah: (key: string) => void;
   /** Cap the rendered height (mobile fit-to-viewport); null = natural size. */
   maxHeight?: number | null;
@@ -63,7 +65,7 @@ function useMarkerWidths(fontSize: number): {
  * inline ﴿﴾ tokens are swapped for quranpedia SVG rosettes sized to the
  * original advance so justification is preserved.
  */
-export default function MushafPage({ data, currentAyahKey, activeWordKey, onSelectAyah, maxHeight, savedKeys, onToggleBookmark, bookmarkBusy, forceFit }: Props) {
+export default function MushafPage({ data, currentAyahKey, activeWordKey, activeWordProgress, onSelectAyah, maxHeight, savedKeys, onToggleBookmark, bookmarkBusy, forceFit }: Props) {
   const pageRef = useRef<HTMLDivElement | null>(null);
   const [fitScale, setFitScale] = useState(1);
   const [pageHeight, setPageHeight] = useState<number | null>(null);
@@ -255,7 +257,15 @@ export default function MushafPage({ data, currentAyahKey, activeWordKey, onSele
                           wordCounters.set(counterKey, wIdx + 1);
                           const isActiveWord = key !== null && activeWordKey === `${key}:${wIdx}`;
                           return (
-                            <span key={j} className={`quran-word${isActiveWord ? ' is-active-word' : ''}`}>
+                            <span
+                              key={j}
+                              className={`quran-word${isActiveWord ? ' is-active-word' : ''}`}
+                              style={
+                                isActiveWord && activeWordProgress != null
+                                  ? ({ '--word-sweep': `${Math.round(activeWordProgress * 100)}%` } as React.CSSProperties)
+                                  : undefined
+                              }
+                            >
                               {seg.value}
                             </span>
                           );

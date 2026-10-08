@@ -1,7 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { getAyahTimings, getSurah, getWordTimings, type WordTiming } from './mp3quran';
+import {
+  getAyahTimings, getLetterTimings, getSurah, getWordTimings,
+  type LetterTiming, type WordTiming,
+} from './mp3quran';
 import { ayahAudioUrl, type Ayah, type Recitation } from './quran';
-import { ayahTimingMap, findWordAt, pickAudioTier } from './quranAudio';
+import { ayahTimingMap, findLetterAt, findWordAt, pickAudioTier, wordOccurrenceKey } from './quranAudio';
 
 /** One surah's playable file + its ayah/word timings, for the current recitation. */
 interface SurahAudio {
@@ -20,6 +23,12 @@ export interface ActiveWord {
   occurrence: number;
   /** API word texts of the ayah, for aligning to the local mushaf. */
   apiWords: string[] | null;
+  /** 1-based letter sounding inside the word, when letter timings exist. */
+  letterIndex: number | null;
+  /** Letters in the word (for the letter sweep). */
+  letterCount: number | null;
+  /** Model confidence for the active letter; null for a silent letter. */
+  letterConf: number | null;
 }
 
 export interface UseSurahAudioOptions {
@@ -86,6 +95,9 @@ export function useSurahAudio(opts: UseSurahAudioOptions): UseSurahAudio {
   const advanceRef = useRef<number | null>(null);
   const advancingRef = useRef(false);
   const activeWordRef = useRef<ActiveWord | null>(null);
+  // Letter timings are loaded per ayah, on demand (they are ~4x the word data).
+  const letterCacheRef = useRef<Map<string, { letters: LetterTiming[]; counts: Map<string, number> }>>(new Map());
+  const letterPendingRef = useRef<Set<string>>(new Set());
 
   const clearAdvance = () => {
     if (advanceRef.current !== null) {
@@ -148,6 +160,8 @@ export function useSurahAudio(opts: UseSurahAudioOptions): UseSurahAudio {
   // Switching reciter drops the cache; if we were playing, reload the ayah.
   useEffect(() => {
     cacheRef.current.clear();
+    letterCacheRef.current.clear();
+    letterPendingRef.current.clear();
     activeWordRef.current = null;
     setActiveWord(null);
     if (indexRef.current >= 0 && playing) {
@@ -259,24 +273,70 @@ export function useSurahAudio(opts: UseSurahAudioOptions): UseSurahAudio {
     if (pending !== null) seekAndPlay(pending);
   };
 
+  // Letter timings for one ayah, fetched once and cached (they are large).
+  const ensureLetters = (surah: number, ayah: number) => {
+    const key = `${surah}:${ayah}`;
+    if (letterCacheRef.current.has(key) || letterPendingRef.current.has(key)) return;
+    letterPendingRef.current.add(key);
+    void getLetterTimings(recitation.code, surah, { ayah })
+      .then((res) => {
+        const counts = new Map<string, number>();
+        for (const l of res.letters ?? []) {
+          const ck = wordOccurrenceKey(l[0], l[1], l[5]);
+          counts.set(ck, Math.max(counts.get(ck) ?? 0, l[2]));
+        }
+        letterCacheRef.current.set(key, { letters: res.letters ?? [], counts });
+      })
+      .catch(() => undefined)
+      .finally(() => letterPendingRef.current.delete(key));
+  };
+
   const handleTimeUpdate = () => {
     const el = audioRef.current;
     if (!el) return;
     const t = el.currentTime * 1000;
 
-    // Word-level karaoke: the word sounding now, when the surah has timings.
+    // Word-level karaoke + letter-level sweep from the timing data.
     const surah = currentSurahRef.current;
     if (surah !== null) {
       const entry = cacheRef.current.get(surah);
       if (entry && entry.words.length > 0) {
         const w = findWordAt(entry.words, t);
-        const next: ActiveWord | null = w
-          ? { surah, ayah: w[0], position: w[1], occurrence: w[4], apiWords: entry.wordText.get(w[0]) ?? null }
-          : null;
+        let next: ActiveWord | null = null;
+        if (w) {
+          ensureLetters(surah, w[0]);
+          const cached = letterCacheRef.current.get(`${surah}:${w[0]}`);
+          let letterIndex: number | null = null;
+          let letterCount: number | null = null;
+          let letterConf: number | null = null;
+          if (cached) {
+            letterCount = cached.counts.get(wordOccurrenceKey(w[0], w[1], w[4])) ?? null;
+            const l = findLetterAt(cached.letters, t);
+            if (l && l[0] === w[0] && l[1] === w[1] && l[5] === w[4]) {
+              letterIndex = l[2];
+              letterConf = l[6];
+            }
+          }
+          next = {
+            surah,
+            ayah: w[0],
+            position: w[1],
+            occurrence: w[4],
+            apiWords: entry.wordText.get(w[0]) ?? null,
+            letterIndex,
+            letterCount,
+            letterConf,
+          };
+        }
         const prev = activeWordRef.current;
         const changed =
           !prev !== !next ||
-          (prev && next && (prev.ayah !== next.ayah || prev.position !== next.position || prev.occurrence !== next.occurrence));
+          (prev && next && (
+            prev.ayah !== next.ayah ||
+            prev.position !== next.position ||
+            prev.occurrence !== next.occurrence ||
+            prev.letterIndex !== next.letterIndex
+          ));
         if (changed) {
           activeWordRef.current = next;
           setActiveWord(next);

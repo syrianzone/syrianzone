@@ -141,6 +141,12 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
     return idx >= 0 && idx < local.length ? `${activeWordInfo.surah}:${activeWordInfo.ayah}:${idx}` : null;
   })();
 
+  // Letter-level sweep fill for the active word (0..1), when letter timings exist.
+  const activeWordProgress =
+    activeWordInfo?.letterIndex != null && activeWordInfo.letterCount
+      ? Math.min(1, activeWordInfo.letterIndex / activeWordInfo.letterCount)
+      : null;
+
   // Landing from a bookmark/modal jump: select the target Ayah once loaded.
   useEffect(() => {
     if (targetAyah && ayat.some((a) => a.key === targetAyah)) {
@@ -366,6 +372,7 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
                     onToggleBookmark={toggleBookmark}
                     bookmarkBusy={bookmarkBusy}
                     activeWordKey={activeWordKey}
+                    activeWordProgress={activeWordProgress}
                   />
                 </div>
               ))}

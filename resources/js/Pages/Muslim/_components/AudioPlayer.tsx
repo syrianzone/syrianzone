@@ -87,6 +87,10 @@ export default function AudioPlayer({
   const { playing, loading, error, progress } = audio;
   const effectiveVolume = muted ? 0 : volume;
   const VolumeIcon = effectiveVolume === 0 ? VolumeX : effectiveVolume < 0.5 ? Volume1 : Volume2;
+  const letterText =
+    audio.activeWord?.letterIndex != null && audio.activeWord.letterCount
+      ? ` · الحرف ${audio.activeWord.letterIndex}/${audio.activeWord.letterCount}`
+      : '';
 
   return (
     // Full-viewport-width background (physical negative margins break out of
@@ -181,7 +185,7 @@ export default function AudioPlayer({
         {error
           ? <span className="text-destructive">{error}</span>
           : current
-            ? `آية ${current.key} · سورة ${SURA_NAMES_AR[current.surah] ?? current.surah}`
+            ? `آية ${current.key} · سورة ${SURA_NAMES_AR[current.surah] ?? current.surah}${letterText}`
             : 'اختر آية من الصفحة'}
       </div>
     </div>

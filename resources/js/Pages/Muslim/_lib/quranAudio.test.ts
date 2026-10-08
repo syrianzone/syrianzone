@@ -2,14 +2,16 @@ import { describe, expect, it } from 'vitest';
 import {
   ayahTimingMap,
   findAyahAt,
+  findLetterAt,
   findWordAt,
   normalizeArabicWord,
   pickAudioTier,
   sameWordSequence,
   splitPartTokens,
+  wordOccurrenceKey,
   wordsOfText,
 } from './quranAudio';
-import type { AyahTiming, WordTiming } from './mp3quran';
+import type { AyahTiming, LetterTiming, WordTiming } from './mp3quran';
 
 describe('pickAudioTier', () => {
   it('prefers mp3_64 over the source when Opus is unsupported (node)', () => {
@@ -146,5 +148,39 @@ describe('findWordAt', () => {
 
   it('returns null before the first word', () => {
     expect(findWordAt(words, 10)).toBeNull();
+  });
+});
+
+describe('findLetterAt', () => {
+  const letters: LetterTiming[] = [
+    [1, 1, 1, 8681, 9145, 1, 1],
+    [1, 1, 2, 9145, 10985, 1, 0.998],
+    [1, 1, 3, 10985, 11145, 1, 1],
+    [1, 1, 4, 11145, 11705, 1, 1],
+    [1, 1, 5, 11705, 12105, 1, 1],
+    [1, 1, 6, 11705, 12105, 1, null],
+  ];
+
+  it('finds the letter sounding at a position', () => {
+    expect(findLetterAt(letters, 9000)?.[2]).toBe(1);
+    expect(findLetterAt(letters, 11000)?.[2]).toBe(3);
+    // Letters 5 and 6 share a span (6 is silent); the binary search returns the
+    // last entry whose start is not after the position.
+    expect(findLetterAt(letters, 11900)?.[2]).toBe(6);
+  });
+
+  it('keeps a silent letter with a null confidence', () => {
+    expect(findLetterAt(letters, 11900)?.[6]).toBeNull();
+  });
+
+  it('returns null before the first letter', () => {
+    expect(findLetterAt(letters, 10)).toBeNull();
+  });
+});
+
+describe('wordOccurrenceKey', () => {
+  it('distinguishes repeated occurrences of the same word', () => {
+    expect(wordOccurrenceKey(1, 10, 1)).not.toBe(wordOccurrenceKey(1, 10, 2));
+    expect(wordOccurrenceKey(1, 10, 1)).toBe('1:10:1');
   });
 });

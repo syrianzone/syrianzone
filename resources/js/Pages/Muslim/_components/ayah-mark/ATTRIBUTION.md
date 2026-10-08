@@ -1,7 +1,7 @@
-# Ayah marker attribution
+# ayah mark attribution
 
-End-of-ayah rosette artwork vendored from
-https://github.com/quranpedia/ayah-markers
+Ayah-mark rosette artwork vendored from
+https://github.com/quranpedia/ayah-marks
 (file `markers/015-regular.svg`, collection entry `015-regular`,
 codepoint U+E029, number box cx=586.2 cy=291.2 w=522.7 h=290.4).
 
@@ -18,7 +18,7 @@ the project owner; replace it with an OFL-verified design (e.g. 001) if
 the terms cannot be confirmed.
 
 Theme used (as specified for 015-regular):
-.ayah-marker {
+.ayah-mark {
   --fill-base: #fff8e7;
   --fill-1: #f4e9bc;
   --ink-base: #083a3a;

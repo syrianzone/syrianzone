@@ -20,7 +20,7 @@ interface MuslimNavState {
   /** Homepage settings dialog (navbar gear instead of hamburger on /). */
   homeSettingsOpen: boolean;
   setHomeSettingsOpen: (open: boolean) => void;
-  /** "sura:aya" to land on after jumping from a bookmark. */
+  /** "surah:ayah" to land on after jumping from a bookmark. */
   targetAyah: string | null;
   setTargetAyah: (key: string | null) => void;
   /** Quran reader focus mode — hides navbar + chrome to enlarge text. */

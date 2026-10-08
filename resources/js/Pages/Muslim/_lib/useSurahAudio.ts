@@ -33,7 +33,7 @@ export interface ActiveWord {
 
 export interface UseSurahAudioOptions {
   /** Ayahs visible in the reader (the playback queue). */
-  ayat: Ayah[];
+  ayahs: Ayah[];
   recitation: Recitation;
   currentKey: string | null;
   /** Incremented by a tap on the Ayah text to start playback. */
@@ -94,7 +94,7 @@ export function useSurahAudio(opts: UseSurahAudioOptions): UseSurahAudio {
   const pendingSeekRef = useRef<number | null>(null);
   const advanceRef = useRef<number | null>(null);
   const advancingRef = useRef(false);
-  const activeWordRef = useRef<ActiveWord | null>(null);
+  const activeWordSnapshot = useRef<ActiveWord | null>(null);
   // Letter timings are loaded per ayah, on demand (they are ~4x the word data).
   const letterCacheRef = useRef<Map<string, { letters: LetterTiming[]; counts: Map<string, number> }>>(new Map());
   const letterPendingRef = useRef<Set<string>>(new Set());
@@ -146,13 +146,13 @@ export function useSurahAudio(opts: UseSurahAudioOptions): UseSurahAudio {
   );
 
   // A stable key for "the surahs on this page", so prefetch does not re-run on
-  // every render from a fresh `ayat` array identity.
-  const audioKey = useMemo(() => opts.ayat.map((a) => a.key).join(','), [opts.ayat]);
+  // every render from a fresh `ayahs` array identity.
+  const audioKey = useMemo(() => opts.ayahs.map((a) => a.key).join(','), [opts.ayahs]);
 
   // Prefetch the v4 file + timings for every surah visible on the page.
   useEffect(() => {
     const ctrl = new AbortController();
-    const surahs = [...new Set(live.current.ayat.map((a) => a.surah))];
+    const surahs = [...new Set(live.current.ayahs.map((a) => a.surah))];
     for (const s of surahs) void loadSurah(s, ctrl.signal);
     return () => ctrl.abort();
   }, [audioKey, loadSurah]);
@@ -162,7 +162,7 @@ export function useSurahAudio(opts: UseSurahAudioOptions): UseSurahAudio {
     cacheRef.current.clear();
     letterCacheRef.current.clear();
     letterPendingRef.current.clear();
-    activeWordRef.current = null;
+    activeWordSnapshot.current = null;
     setActiveWord(null);
     if (indexRef.current >= 0 && playing) {
       const i = indexRef.current;
@@ -209,11 +209,11 @@ export function useSurahAudio(opts: UseSurahAudioOptions): UseSurahAudio {
 
   const playIndex = (i: number) => {
     const s = live.current;
-    const ayah = s.ayat[i];
+    const ayah = s.ayahs[i];
     if (!ayah) return;
     indexRef.current = i;
     currentSurahRef.current = ayah.surah;
-    activeWordRef.current = null;
+    activeWordSnapshot.current = null;
     setActiveWord(null);
     s.onSelectAyah(ayah.key);
     setError(null);
@@ -249,7 +249,7 @@ export function useSurahAudio(opts: UseSurahAudioOptions): UseSurahAudio {
       advancingRef.current = false;
       return;
     }
-    if (i + 1 < s.ayat.length) playIndex(i + 1);
+    if (i + 1 < s.ayahs.length) playIndex(i + 1);
     else if (s.onEndOfList) s.onEndOfList();
     else {
       advancingRef.current = false;
@@ -328,7 +328,7 @@ export function useSurahAudio(opts: UseSurahAudioOptions): UseSurahAudio {
             letterConf,
           };
         }
-        const prev = activeWordRef.current;
+        const prev = activeWordSnapshot.current;
         const changed =
           !prev !== !next ||
           (prev && next && (
@@ -338,11 +338,11 @@ export function useSurahAudio(opts: UseSurahAudioOptions): UseSurahAudio {
             prev.letterIndex !== next.letterIndex
           ));
         if (changed) {
-          activeWordRef.current = next;
+          activeWordSnapshot.current = next;
           setActiveWord(next);
         }
-      } else if (activeWordRef.current) {
-        activeWordRef.current = null;
+      } else if (activeWordSnapshot.current) {
+        activeWordSnapshot.current = null;
         setActiveWord(null);
       }
     }
@@ -376,13 +376,13 @@ export function useSurahAudio(opts: UseSurahAudioOptions): UseSurahAudio {
       return;
     }
     const s = live.current;
-    const i = Math.max(0, s.ayat.findIndex((a) => a.key === s.currentKey));
-    if (s.ayat.length > 0) playIndex(i);
+    const i = Math.max(0, s.ayahs.findIndex((a) => a.key === s.currentKey));
+    if (s.ayahs.length > 0) playIndex(i);
   };
 
   const next = () => {
     const i = indexRef.current;
-    if (i >= 0 && i + 1 < live.current.ayat.length) playIndex(i + 1);
+    if (i >= 0 && i + 1 < live.current.ayahs.length) playIndex(i + 1);
   };
 
   const prev = () => {
@@ -400,8 +400,8 @@ export function useSurahAudio(opts: UseSurahAudioOptions): UseSurahAudio {
     if (playSignal > lastSignal.current) {
       lastSignal.current = playSignal;
       const s = live.current;
-      if (s.ayat.length > 0) {
-        const i = Math.max(0, s.ayat.findIndex((a) => a.key === s.currentKey));
+      if (s.ayahs.length > 0) {
+        const i = Math.max(0, s.ayahs.findIndex((a) => a.key === s.currentKey));
         apiRef.current.playIndex(i);
       }
     }
@@ -420,7 +420,7 @@ export function useSurahAudio(opts: UseSurahAudioOptions): UseSurahAudio {
     onPause: () => {
       setPlaying(false);
       clearAdvance();
-      activeWordRef.current = null;
+      activeWordSnapshot.current = null;
       setActiveWord(null);
     },
     onTimeUpdate: () => apiRef.current.handleTimeUpdate(),
@@ -428,7 +428,7 @@ export function useSurahAudio(opts: UseSurahAudioOptions): UseSurahAudio {
     onError: () => {
       setLoading(false);
       setPlaying(false);
-      activeWordRef.current = null;
+      activeWordSnapshot.current = null;
       setActiveWord(null);
       setError('تعذّر تشغيل التلاوة — تحقّق من الاتصال.');
     },

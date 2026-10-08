@@ -2,11 +2,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Loader2, Pause, Play, SkipBack, SkipForward, Volume1, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import RecitationPicker from './RecitationPicker';
-import { SURA_NAMES_AR, recitationByCode, type Ayah } from '../_lib/quran';
+import { SURAH_NAMES_AR, recitationByCode, type Ayah } from '../_lib/quran';
 import { useSurahAudio, type ActiveWord } from '../_lib/useSurahAudio';
 
 interface Props {
-  ayat: Ayah[];
+  ayahs: Ayah[];
   /** v4 recitation code (`reciter/rN`). */
   reciterCode: string;
   setReciterCode: (code: string) => void;
@@ -23,12 +23,12 @@ interface Props {
 // searchable reciter picker (left). Sticky bottom, in-flow, so Mushaf
 // text is never hidden under it.
 export default function AudioPlayer({
-  ayat, reciterCode, setReciterCode, currentKey, onSelectAyah, playSignal,
+  ayahs, reciterCode, setReciterCode, currentKey, onSelectAyah, playSignal,
   onEndOfList, onActiveWordChange,
 }: Props) {
   const recitation = recitationByCode(reciterCode);
   const audio = useSurahAudio({
-    ayat,
+    ayahs,
     recitation,
     currentKey,
     playSignal,
@@ -50,8 +50,8 @@ export default function AudioPlayer({
   const [volumeOpen, setVolumeOpen] = useState(false);
   const volumeWrapRef = useRef<HTMLDivElement | null>(null);
 
-  const idx = Math.max(0, ayat.findIndex((a) => a.key === currentKey));
-  const current: Ayah | undefined = ayat[idx];
+  const idx = Math.max(0, ayahs.findIndex((a) => a.key === currentKey));
+  const current: Ayah | undefined = ayahs[idx];
 
   // Volume + mute (persisted).
   useEffect(() => {
@@ -82,7 +82,7 @@ export default function AudioPlayer({
     return () => document.removeEventListener('mousedown', onDown);
   }, [volumeOpen]);
 
-  if (ayat.length === 0) return null;
+  if (ayahs.length === 0) return null;
 
   const { playing, loading, error, progress } = audio;
   const effectiveVolume = muted ? 0 : volume;
@@ -162,7 +162,7 @@ export default function AudioPlayer({
             {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : playing ? <Pause className="h-5 w-5" /> : <Play className="ms-0.5 h-5 w-5" />}
           </Button>
           <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" title="الآية التالية"
-            disabled={idx >= ayat.length - 1} onClick={audio.next}>
+            disabled={idx >= ayahs.length - 1} onClick={audio.next}>
             <SkipBack className="h-4 w-4" />
           </Button>
         </div>
@@ -185,7 +185,7 @@ export default function AudioPlayer({
         {error
           ? <span className="text-destructive">{error}</span>
           : current
-            ? `آية ${current.key} · سورة ${SURA_NAMES_AR[current.surah] ?? current.surah}${letterText}`
+            ? `آية ${current.key} · سورة ${SURAH_NAMES_AR[current.surah] ?? current.surah}${letterText}`
             : 'اختر آية من الصفحة'}
       </div>
     </div>

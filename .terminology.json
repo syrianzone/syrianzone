@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/realabdu/quranic-terminology-lint/main/terminology.schema.json",
+  "paths": [
+    "resources/js/Pages/Muslim",
+    "resources/js/Lib/quranRadio.ts",
+    "resources/js/Lib/useLiveRadio.ts",
+    "resources/js/Lib/useRadioUsage.ts",
+    "resources/js/Lib/radioUsage.ts",
+    "resources/js/Pages/Board/_widgets/quran",
+    "resources/js/Components/QuranStationPicker.tsx",
+    "resources/js/Components/Icons/ProjectIcons.tsx",
+    "docs/modules/muslim-corner.md",
+    "app/Models/QuranBookmark.php",
+    "app/Http/Controllers/QuranBookmarkController.php",
+    "database/migrations/2026_09_10_100000_create_quran_bookmarks_table.php",
+    "tests/Feature/QuranBookmarkTest.php",
+    "tests/Feature/RadioUsageTest.php"
+  ],
+  "exclude": [
+    "public/quran-data/**",
+    "public/fonts/**",
+    "public/build/**",
+    "bootstrap/ssr/**"
+  ],
+  "ignore_words": ["uthmanic"],
+  "external_names": ["\\bsuras\\b"],
+  "_comment": "Quran sections only. 'uthmanic' is the KFGQPC font/script name (the 'KFGQPC HAFS Uthmanic Script' family and prose describing it), not the rasm_uthmani code concept. 'suras' is the field name of the vendored Madina manifest JSON (public/quran-data/*/manifest.json)."
+}

@@ -38,7 +38,7 @@ describe('pickAudioTier', () => {
 });
 
 describe('ayahTimingMap', () => {
-  it('drops the basmalah and istiadhah rows', () => {
+  it('drops the basmalahh and istiadhah rows', () => {
     const map = ayahTimingMap([
       [-1, 0, 73],
       [0, 73, 7400],
@@ -120,7 +120,7 @@ describe('normalizeArabicWord', () => {
     expect(normalizeArabicWord('إِسۡرَآءِيلَ')).toBe(normalizeArabicWord('اسرائيل'));
   });
 
-  it('resolves a hamza carrier to its base letter', () => {
+  it('resolves a hamzah carrier to its base letter', () => {
     expect(normalizeArabicWord('وَرَآئِ')).toBe(normalizeArabicWord('وراي'));
   });
 

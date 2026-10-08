@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import rawSvg from './marker-015-regular.svg?raw';
 
-// End-of-ayah rosette from quranpedia/ayah-markers (015-regular — see
+// Ayah-mark rosette from quranpedia/ayah-marks (015-regular — see
 // ATTRIBUTION.md). Rendered inline so the line's measured width stays close
 // to the pipeline width the scaleX factor was computed for.
 // Number geometry (cx/cy/height) is the hand-placed box from collection.json,
@@ -42,16 +42,16 @@ interface Props {
   width: number;
 }
 
-export default function AyahMarker({ digits, width }: Props) {
+export default function AyahMark({ digits, width }: Props) {
   const height = (width * VIEW_H) / VIEW_W;
   const svg = useMemo(() => {
-    const label = `<text x="${NUM_CX}" y="${NUM_CY}" text-anchor="middle" dominant-baseline="central" font-size="${NUM_FONT_SIZE}" class="ayah-marker-num">${digits}</text></svg>`;
+    const label = `<text x="${NUM_CX}" y="${NUM_CY}" text-anchor="middle" dominant-baseline="central" font-size="${NUM_FONT_SIZE}" class="ayah-mark-num">${digits}</text></svg>`;
     return rawSvg.replace('</svg>', label);
   }, [digits]);
 
   return (
     <span
-      className="ayah-marker-svg"
+      className="ayah-mark-svg"
       aria-hidden="true"
       // Middle alignment centers the rosette on the text body (like the
       // original inline glyph); baseline alignment left it floating above.

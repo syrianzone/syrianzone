@@ -5,7 +5,7 @@ import { Button } from '@/Components/ui/button';
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from '@/Components/ui/dialog';
-import { SURA_NAMES_AR } from '../_lib/quran';
+import { SURAH_NAMES_AR } from '../_lib/quran';
 import { readGuestBookmarks, toggleGuestBookmark } from '../_lib/guestBookmarks';
 import { useMuslimNav } from '../_lib/nav';
 
@@ -112,7 +112,7 @@ export default function BookmarksModal({ isLoggedIn, onJump }: Props) {
                     }}
                   >
                     <span className="block truncate text-sm font-bold">
-                      {SURA_NAMES_AR[b.surah] ?? `سورة ${b.surah}`} · آية {b.ayah}
+                      {SURAH_NAMES_AR[b.surah] ?? `سورة ${b.surah}`} · آية {b.ayah}
                     </span>
                     <span className="mt-0.5 block text-[11px] tabular-nums text-muted-foreground">
                       صفحة {b.page} · جزء {b.juz}

@@ -1,22 +1,22 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { Bookmark, BookmarkCheck } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
-import AyahMarker from './ayah-marker/AyahMarker';
-import { BASMALA_LIGATURE, ensureRtlBidi, type QuranPage } from '../_lib/quran';
+import AyahMark from './ayah-mark/AyahMark';
+import { BASMALAH_LIGATURE, ensureRtlBidi, type QuranPage } from '../_lib/quran';
 import { splitPartTokens } from '../_lib/quranAudio';
 
 interface Props {
   data: QuranPage;
-  /** "sura:aya" of the Ayah the audio player is on (highlight). */
+  /** "surah:ayah" of the Ayah the audio player is on (highlight). */
   currentAyahKey: string | null;
-  /** "sura:aya:wordIndex" of the word being recited right now (karaoke). */
+  /** "surah:ayah:wordIndex" of the word being recited right now (karaoke). */
   activeWordKey?: string | null;
   /** Letter sweep fill (0..1) for the active word, when letter timings exist. */
   activeWordProgress?: number | null;
   onSelectAyah: (key: string) => void;
   /** Cap the rendered height (mobile fit-to-viewport); null = natural size. */
   maxHeight?: number | null;
-  /** "sura:aya" keys with a bookmark (subtle in-text marking). */
+  /** "surah:ayah" keys with a bookmark (subtle in-text marking). */
   savedKeys?: Set<string>;
   onToggleBookmark?: () => void;
   bookmarkBusy?: boolean;
@@ -76,9 +76,9 @@ export default function MushafPage({ data, currentAyahKey, activeWordKey, active
 
   const frameWidth = data.lineWidth + 4; // line box + page padding (2px each side)
 
-  const hoverAya = (sura: number, aya: number, on: boolean) => {
+  const hoverAyah = (surah: number, ayah: number, on: boolean) => {
     pageRef.current
-      ?.querySelectorAll(`.quran-part[data-sura="${sura}"][data-aya="${aya}"]`)
+      ?.querySelectorAll(`.quran-part[data-surah="${surah}"][data-ayah="${ayah}"]`)
       .forEach((el) => el.classList.toggle('is-hovered', on));
   };
 
@@ -96,7 +96,7 @@ export default function MushafPage({ data, currentAyahKey, activeWordKey, active
         const line = data.lines[idx];
         const content = lineEl.querySelector<HTMLElement>('.line-content');
         if (!line || !content) return;
-        if (!line || line.isTitle || line.isBasmala || line.stretch < 0) return;
+        if (!line || line.isTitle || line.isBasmalah || line.stretch < 0) return;
         const measured = content.scrollWidth;
         const requested = line.stretch * stretchScale;
         let effective = requested;
@@ -191,31 +191,31 @@ export default function MushafPage({ data, currentAyahKey, activeWordKey, active
           {data.lines.map((line) => (
             <div key={line.lineNumber} className="quran-line" data-line-num={line.lineNumber}>
               {line.isTitle ? (
-                <div className="sura-title-frame">
-                  <span className="sura-title-text">{line.titleText}</span>
+                <div className="surah-title-frame">
+                  <span className="surah-title-text">{line.titleText}</span>
                 </div>
-              ) : line.isBasmala ? (
+              ) : line.isBasmalah ? (
                 <div className="line-content centered">
-                  <span className="basmala-ligature">
-                    {line.basmalaText ? ensureRtlBidi(line.basmalaText) : BASMALA_LIGATURE}
+                  <span className="basmalah-ligature">
+                    {line.basmalahText ? ensureRtlBidi(line.basmalahText) : BASMALAH_LIGATURE}
                   </span>
                 </div>
               ) : (
                 <div className={`line-content ${line.stretch < 0 ? 'centered' : ''}`} data-stretch={line.stretch}>
                   {line.parts.map((part, i) => {
-                    const key = part.realAya > 0 ? `${part.sura + 1}:${part.realAya}` : null;
+                    const key = part.realAyah > 0 ? `${part.surah + 1}:${part.realAyah}` : null;
                     const active = key !== null && key === currentAyahKey;
                     const saved = key !== null && savedKeys?.has(key);
                     return (
                       <span
                         key={i}
                         className={`quran-part${active ? ' is-active' : ''}${saved ? ' is-saved' : ''}`}
-                        data-sura={part.sura}
-                        data-aya={part.aya}
-                        data-real-aya={part.realAya}
+                        data-surah={part.surah}
+                        data-ayah={part.ayah}
+                        data-real-ayah={part.realAyah}
                         onClick={key ? () => onSelectAyah(key) : undefined}
-                        onMouseEnter={() => hoverAya(part.sura, part.aya, true)}
-                        onMouseLeave={() => hoverAya(part.sura, part.aya, false)}
+                        onMouseEnter={() => hoverAyah(part.surah, part.ayah, true)}
+                        onMouseLeave={() => hoverAyah(part.surah, part.ayah, false)}
                       >
                         {splitPartTokens(part.text).map((seg, j) => {
                           if (seg.kind === 'space' || seg.kind === 'symbol') {
@@ -228,7 +228,7 @@ export default function MushafPage({ data, currentAyahKey, activeWordKey, active
                           if (seg.kind === 'marker') {
                             return (
                               <span key={j} className="relative inline-block leading-none">
-                                <AyahMarker
+                                <AyahMark
                                   digits={seg.digits}
                                   width={markerW[seg.digits.length] ?? data.fontSize * 2.4}
                                 />
@@ -252,7 +252,7 @@ export default function MushafPage({ data, currentAyahKey, activeWordKey, active
                               </span>
                             );
                           }
-                          const counterKey = key ?? `${part.sura}:${part.aya}`;
+                          const counterKey = key ?? `${part.surah}:${part.ayah}`;
                           const wIdx = wordCounters.get(counterKey) ?? 0;
                           wordCounters.set(counterKey, wIdx + 1);
                           const isActiveWord = key !== null && activeWordKey === `${key}:${wIdx}`;

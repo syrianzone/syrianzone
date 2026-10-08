@@ -24,7 +24,7 @@ export function pickAudioTier(files: V4SurahItem['files']): string | null {
   return files.opus_48?.url ?? null;
 }
 
-/** Ayah number → span. Basmalah (0) and istiadhah (-1) are dropped. */
+/** Ayah number → span. Basmalahh (0) and istiadhah (-1) are dropped. */
 export function ayahTimingMap(timings: AyahTiming[]): Map<number, AyahSpan> {
   const map = new Map<number, AyahSpan>();
   for (const [ayah, start, end] of timings) {
@@ -52,7 +52,7 @@ export function findAyahAt(timings: AyahTiming[], positionMs: number): AyahTimin
 
 // --- Word-level karaoke ------------------------------------------------------
 
-/** Marker token shape, duplicated from AyahMarker to keep this module pure. */
+/** Marker token shape, duplicated from AyahMark to keep this module pure. */
 const MARKER_RE = /﴿([٠-٩]{1,3})﴾/g;
 
 export type PartToken =
@@ -63,7 +63,7 @@ export type PartToken =
 
 /**
  * Split a part's display text into markers, whole words, standalone symbols
- * (waqf marks, rub-el-hizb, sajdah — no Arabic letter) and whitespace runs.
+ * (waqf marks, rubu_al_hizb, sajdah — no Arabic letter) and whitespace runs.
  * Concatenating the values reproduces the input exactly. Splitting happens only
  * at whitespace, so Arabic letter joining is never broken (skill §10).
  */
@@ -106,7 +106,7 @@ export function wordsOfText(text: string): string[] {
 /**
  * Aggressive normalisation for aligning the local Madina rasm with the API's
  * hafs edition: drop Quranic marks/tatweels and zero-width chars, unify alef,
- * ya and ta marbuta, resolve hamza carriers and small waw/yeh to their base
+ * ya and ta marbuta, resolve hamzah carriers and small waw/yeh to their base
  * letters, collapse doubled letters, and keep Arabic letters only. Applied to
  * both sides, so the comparison is consistent.
  */
@@ -120,7 +120,7 @@ export function normalizeArabicWord(word: string): string {
     .replace(/[أإآٱٲٳ]/g, 'ا')
     .replace(/ى/g, 'ي')
     .replace(/ة/g, 'ه')
-    // Hamza carriers keep their base letter; a bare hamza is not a letter here.
+    // Hamzah carriers keep their base letter; a bare hamzah is not a letter here.
     .replace(/ئ/g, 'ي')
     .replace(/ؤ/g, 'و')
     .replace(/ء/g, '')

@@ -11,7 +11,7 @@ import QuranReader from './_components/QuranReader';
 import RadioTab from './_components/RadioTab';
 import { formatDuration } from './_lib/format';
 import { PRAYER_KEYS, PRAYER_LABELS, type PrayerKey } from './_lib/methods';
-import { DEFAULT_RECITATION_CODE, SURA_NAMES_AR } from './_lib/quran';
+import { DEFAULT_RECITATION_CODE, SURAH_NAMES_AR } from './_lib/quran';
 import { prayerQueryParams, useMuslimPrefs } from './_lib/prefs';
 import { initialMuslimView, syncMuslimUrl, useMuslimNav, type MuslimView } from './_lib/nav';
 
@@ -206,7 +206,7 @@ export default function Index() {
                 <span className="min-w-0 flex-1">
                   <span className="block text-[11px] text-muted-foreground">آخر علامة — تابع القراءة</span>
                   <span className="block truncate text-sm font-bold">
-                    {SURA_NAMES_AR[lastBookmark.surah] ?? `سورة ${lastBookmark.surah}`} · آية {lastBookmark.ayah} · صفحة {lastBookmark.page}
+                    {SURAH_NAMES_AR[lastBookmark.surah] ?? `سورة ${lastBookmark.surah}`} · آية {lastBookmark.ayah} · صفحة {lastBookmark.page}
                   </span>
                 </span>
                 <ChevronLeft className="h-4 w-4 shrink-0 text-muted-foreground" />

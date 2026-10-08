@@ -10,7 +10,7 @@ This module is completely statically built out for speed and entirely offline-ca
 
 ### 1.1 Quran Reader (`/muslim?tab=quran`)
 A hyper-optimized complete Quran reading and listening client.
-- **Unified Payload Architecture**: The entire text structure (Ayahs, Suras, Parts, Page definitions) is heavily compressed into a single 290KB JSON payload (`public/quran-data/mushaf-unified.json`).
+- **Unified Payload Architecture**: The entire text structure (Ayahs, Surahs, Parts, Page definitions) is heavily compressed into a single 290KB JSON payload (`public/quran-data/mushaf-unified.json`).
 - **Main-Thread Yielding**: The JSON is dehydrated to CPU memory sequentially using `yieldToMain()` chunking, bypassing `requestIdleCallback` to guarantee immediate UI rendering while strictly avoiding main-thread freezes.
 - **Per-Surah Audio (MP3Quran v4)**: playback streams one file per surah and seeks to each Ayah's `start_ms` from the v4 ayah timings, so moving between Ayahs of one surah is a gapless in-file seek. Quality tiers are picked automatically (Opus → MP3-64 → source), the next surah is prefetched, and per-Ayah EveryAyah files remain as a fallback when a recitation/surah has no v4 timings.
 - **Karaoke Highlight**: the word sounding now is highlighted (v4 word timings, aligned to the local Madina words by normalised matching), and the active word fills letter by letter from the v4 letter timings (`الحرف k/n`), with auto page-flip at the end of the visible Ayahs.
@@ -38,7 +38,7 @@ All functionality is heavily front-end and statically bundled; minimal dynamic b
 ## 4. Data Sources & Credits
 - **Quran text & Madina layout**: King Fahd Glorious Quran Printing Complex (KFGQPC), vendored under `public/quran-data/`.
 - **Uthmanic font**: KFGQPC HAFS Uthmanic Script, vendored as `public/fonts/quran-hafs.woff2` for offline use.
-- **Ayah marker ornament**: `quranpedia/ayah-markers` (`015-regular`, DigitalKhatt family) — see `AyahMarker` ATTRIBUTION.md for the upstream license caveat.
+- **ayah mark ornament**: `quranpedia/ayah-marks` (`015-regular`, DigitalKhatt family) — see `AyahMark` ATTRIBUTION.md for the upstream license caveat.
 - **Recitation audio**: MP3Quran v4 (`https://api-staging.mp3quran.net/v4`, base set by `VITE_MP3QURAN_API`), streamed per surah from `cdn.mp3quran.net` with ayah/word/letter timings (excluded from the offline cache). EveryAyah per-Ayah files remain as a fallback.
 - **Quran radio**: MP3Quran v4 `/v4/radios`, filtered to the `القراء` and `القراءات العشر` categories.
 - **Prayer times**: Aladhan timings API via the server proxy (`GET /api/prayer-times`), cached per day.

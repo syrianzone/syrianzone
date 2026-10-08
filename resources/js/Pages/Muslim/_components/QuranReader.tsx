@@ -12,7 +12,7 @@ import { ChevronDown, Check } from 'lucide-react';
 import { guestBookmarkKeys, toggleGuestBookmark } from '../_lib/guestBookmarks';
 import { syncMuslimUrl, useMuslimNav } from '../_lib/nav';
 import {
-  SURA_NAMES_AR, TOTAL_PAGES, findPageForVerse, renderMushafPage, type Ayah, type QuranPage,
+  SURAH_NAMES_AR, TOTAL_PAGES, findPageForAyah, renderMushafPage, type Ayah, type QuranPage,
 } from '../_lib/quran';
 import { alignWordIndexes, wordsOfText } from '../_lib/quranAudio';
 import type { ActiveWord } from '../_lib/useSurahAudio';
@@ -89,8 +89,8 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
       .then((list) => {
         if (ctrl.signal.aborted) return;
         setPages(list);
-        const ayat = list.flatMap((d) => d.ayat);
-        setCurrentAyahKey((k) => (ayat.some((x) => x.key === k) ? k : (ayat[0]?.key ?? null)));
+        const ayahs = list.flatMap((d) => d.ayahs);
+        setCurrentAyahKey((k) => (ayahs.some((x) => x.key === k) ? k : (ayahs[0]?.key ?? null)));
         
         setAutoPlayPending((pending) => {
           if (pending) setTimeout(() => setPlaySignal((s) => s + 1), 50);
@@ -125,15 +125,15 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
     return () => { live = false; };
   }, [isLoggedIn]);
 
-  const ayat = pages.flatMap((d) => d.ayat);
-  const currentAyah: Ayah | undefined = ayat.find((a) => a.key === currentAyahKey) ?? ayat[0];
+  const ayahs = pages.flatMap((d) => d.ayahs);
+  const currentAyah: Ayah | undefined = ayahs.find((a) => a.key === currentAyahKey) ?? ayahs[0];
   const ayahSaved = currentAyah ? savedKeys.has(currentAyah.key) : false;
 
   // Map the API word position to the local Madina word index for highlighting.
   // Only when the local and API word sequences agree (identity alignment).
   const activeWordKey = (() => {
     if (!activeWordInfo?.apiWords) return null;
-    const ayah = ayat.find((a) => a.surah === activeWordInfo.surah && a.ayah === activeWordInfo.ayah);
+    const ayah = ayahs.find((a) => a.surah === activeWordInfo.surah && a.ayah === activeWordInfo.ayah);
     if (!ayah) return null;
     const local = wordsOfText(ayah.text);
     const map = alignWordIndexes(local, activeWordInfo.apiWords);
@@ -152,7 +152,7 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
 
   // Landing from a bookmark/modal jump: select the target Ayah once loaded.
   useEffect(() => {
-    if (targetAyah && ayat.some((a) => a.key === targetAyah)) {
+    if (targetAyah && ayahs.some((a) => a.key === targetAyah)) {
       setCurrentAyahKey(targetAyah);
       setTargetAyah(null);
     }
@@ -244,7 +244,7 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
     }
   };
 
-  // Jump box accepts a Page ("100") or a verse ("2:255", "2 255", "البقرة 255").
+  // Jump box accepts a Page ("100") or a ayah ("2:255", "2 255", "البقرة 255").
   const [jumpHint, setJumpHint] = useState<string | null>(null);
   const [surahSelectOpen, setSurahSelectOpen] = useState(false);
 
@@ -258,17 +258,17 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
       surah = Number(m[1]);
     } else {
       const name = m[1].replace(/^(سورة|سوره)\s+/, '').trim();
-      surah = SURA_NAMES_AR.indexOf(name);
+      surah = SURAH_NAMES_AR.indexOf(name);
       if (surah <= 0) return null;
     }
     const ayah = Number(m[2]);
-    const page = await findPageForVerse(surah, ayah);
+    const page = await findPageForAyah(surah, ayah);
     if (!page) return null;
     return { page, ayahKey: `${surah}:${ayah}` };
   };
 
   // Single header for the visible spread: Surah name(s) right, Juz left.
-  const surahs = [...new Set(pages.map((d) => d.suraName))].join(' · ');
+  const surahs = [...new Set(pages.map((d) => d.surahName))].join(' · ');
   const juzs = [...new Set(pages.map((d) => d.juz))].join('، ');
   const lastVisible = visiblePages[visiblePages.length - 1] ?? page;
   const pageLabel = isDesktop
@@ -300,7 +300,7 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
                 <button 
                   className="flex items-center gap-1 truncate text-sm font-bold text-primary bg-transparent outline-none cursor-pointer appearance-none px-1.5 py-0.5 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                 >
-                  <span className="truncate">{currentAyah ? SURA_NAMES_AR[currentAyah.surah] : surahs}</span>
+                  <span className="truncate">{currentAyah ? SURAH_NAMES_AR[currentAyah.surah] : surahs}</span>
                   <ChevronDown className="h-3.5 w-3.5 opacity-50 shrink-0" />
                 </button>
               </PopoverTrigger>
@@ -310,7 +310,7 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
                   <CommandList>
                     <CommandEmpty>لا يوجد تطابق.</CommandEmpty>
                     <CommandGroup>
-                      {SURA_NAMES_AR.map((name, i) => {
+                      {SURAH_NAMES_AR.map((name, i) => {
                         if (i === 0) return null;
                         return (
                           <CommandItem
@@ -447,7 +447,7 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
 
       <div className={`mt-3 shrink-0 ${isFocused ? 'hidden' : ''}`}>
         <AudioPlayer
-          ayat={ayat}
+          ayahs={ayahs}
           reciterCode={reciterCode}
           setReciterCode={setReciterCode}
           currentKey={currentAyahKey}

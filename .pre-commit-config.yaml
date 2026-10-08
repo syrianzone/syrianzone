@@ -1,0 +1,12 @@
+# Quranic vocabulary naming standard for the Quran-related sections.
+# See .terminology.json for the checked paths and exceptions.
+repos:
+  - repo: https://github.com/realabdu/quranic-terminology-lint
+    rev: v0.4.0
+    hooks:
+      - id: quranic-terminology
+        files: '^(resources/js/Pages/Muslim/|resources/js/Lib/(quranRadio|useLiveRadio|useRadioUsage|radioUsage)\.ts$|resources/js/Pages/Board/_widgets/quran/|resources/js/Components/QuranStationPicker\.tsx$|resources/js/Components/Icons/ProjectIcons\.tsx$|docs/modules/muslim-corner\.md$|app/Models/QuranBookmark\.php$|app/Http/Controllers/QuranBookmarkController\.php$|database/migrations/2026_09_10_100000_create_quran_bookmarks_table\.php$|tests/Feature/(QuranBookmarkTest|RadioUsageTest)\.php$)'
+      # Uncomment to apply supported replacements automatically. Review the
+      # diff: code renames can break bindings, imports and string references.
+      # - id: quranic-terminology-unsafe-fix
+      #   files: '^(resources/js/Pages/Muslim/|resources/js/Lib/(quranRadio|useLiveRadio|useRadioUsage|radioUsage)\.ts$|resources/js/Pages/Board/_widgets/quran/|resources/js/Components/QuranStationPicker\.tsx$|resources/js/Components/Icons/ProjectIcons\.tsx$|docs/modules/muslim-corner\.md$|app/Models/QuranBookmark\.php$|app/Http/Controllers/QuranBookmarkController\.php$|database/migrations/2026_09_10_100000_create_quran_bookmarks_table\.php$|tests/Feature/(QuranBookmarkTest|RadioUsageTest)\.php$)'

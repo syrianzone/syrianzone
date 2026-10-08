@@ -14,6 +14,8 @@ import { syncMuslimUrl, useMuslimNav } from '../_lib/nav';
 import {
   SURA_NAMES_AR, TOTAL_PAGES, findPageForVerse, renderMushafPage, type Ayah, type QuranPage,
 } from '../_lib/quran';
+import { sameWordSequence, wordsOfText } from '../_lib/quranAudio';
+import type { ActiveWord } from '../_lib/useSurahAudio';
 
 interface Props {
   page: number;
@@ -60,6 +62,8 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
   const [currentAyahKey, setCurrentAyahKey] = useState<string | null>(null);
   const [playSignal, setPlaySignal] = useState(0);
   const [autoPlayPending, setAutoPlayPending] = useState(false);
+  const [activeWordInfo, setActiveWordInfo] = useState<ActiveWord | null>(null);
+  const handleActiveWord = useCallback((word: ActiveWord | null) => setActiveWordInfo(word), []);
   const setView = useMuslimNav((s) => s.setView);
   const setBookmarksOpen = useMuslimNav((s) => s.setBookmarksOpen);
   const targetAyah = useMuslimNav((s) => s.targetAyah);
@@ -124,6 +128,18 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
   const ayat = pages.flatMap((d) => d.ayat);
   const currentAyah: Ayah | undefined = ayat.find((a) => a.key === currentAyahKey) ?? ayat[0];
   const ayahSaved = currentAyah ? savedKeys.has(currentAyah.key) : false;
+
+  // Map the API word position to the local Madina word index for highlighting.
+  // Only when the local and API word sequences agree (identity alignment).
+  const activeWordKey = (() => {
+    if (!activeWordInfo?.apiWords) return null;
+    const ayah = ayat.find((a) => a.surah === activeWordInfo.surah && a.ayah === activeWordInfo.ayah);
+    if (!ayah) return null;
+    const local = wordsOfText(ayah.text);
+    if (!sameWordSequence(local, activeWordInfo.apiWords)) return null;
+    const idx = activeWordInfo.position - 1;
+    return idx >= 0 && idx < local.length ? `${activeWordInfo.surah}:${activeWordInfo.ayah}:${idx}` : null;
+  })();
 
   // Landing from a bookmark/modal jump: select the target Ayah once loaded.
   useEffect(() => {
@@ -349,6 +365,7 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
                     forceFit={isFocused}
                     onToggleBookmark={toggleBookmark}
                     bookmarkBusy={bookmarkBusy}
+                    activeWordKey={activeWordKey}
                   />
                 </div>
               ))}
@@ -426,6 +443,7 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
           currentKey={currentAyahKey}
           onSelectAyah={setCurrentAyahKey}
           playSignal={playSignal}
+          onActiveWordChange={handleActiveWord}
           onEndOfList={() => {
             if (page + step <= TOTAL_PAGES) {
               go(page + step);

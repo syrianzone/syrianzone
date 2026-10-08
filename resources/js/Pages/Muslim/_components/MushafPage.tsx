@@ -1,13 +1,16 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { Bookmark, BookmarkCheck } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
-import AyahMarker, { splitMarkerTokens } from './ayah-marker/AyahMarker';
+import AyahMarker from './ayah-marker/AyahMarker';
 import { BASMALA_LIGATURE, ensureRtlBidi, type QuranPage } from '../_lib/quran';
+import { splitPartTokens } from '../_lib/quranAudio';
 
 interface Props {
   data: QuranPage;
   /** "sura:aya" of the Ayah the audio player is on (highlight). */
   currentAyahKey: string | null;
+  /** "sura:aya:wordIndex" of the word being recited right now (karaoke). */
+  activeWordKey?: string | null;
   onSelectAyah: (key: string) => void;
   /** Cap the rendered height (mobile fit-to-viewport); null = natural size. */
   maxHeight?: number | null;
@@ -60,12 +63,14 @@ function useMarkerWidths(fontSize: number): {
  * inline ﴿﴾ tokens are swapped for quranpedia SVG rosettes sized to the
  * original advance so justification is preserved.
  */
-export default function MushafPage({ data, currentAyahKey, onSelectAyah, maxHeight, savedKeys, onToggleBookmark, bookmarkBusy, forceFit }: Props) {
+export default function MushafPage({ data, currentAyahKey, activeWordKey, onSelectAyah, maxHeight, savedKeys, onToggleBookmark, bookmarkBusy, forceFit }: Props) {
   const pageRef = useRef<HTMLDivElement | null>(null);
   const [fitScale, setFitScale] = useState(1);
   const [pageHeight, setPageHeight] = useState<number | null>(null);
   const markerWidths = useMarkerWidths(data.fontSize);
   const markerW = markerWidths.widths;
+  // Per-ayah word counter, so word spans get stable indices across lines.
+  const wordCounters = new Map<string, number>();
 
   const frameWidth = data.lineWidth + 4; // line box + page padding (2px each side)
 
@@ -210,37 +215,51 @@ export default function MushafPage({ data, currentAyahKey, onSelectAyah, maxHeig
                         onMouseEnter={() => hoverAya(part.sura, part.aya, true)}
                         onMouseLeave={() => hoverAya(part.sura, part.aya, false)}
                       >
-                        {splitMarkerTokens(part.text).map((seg, j) =>
-                          seg.kind === 'text' ? (
-                            <span key={j} className="quran-chunk">
+                        {splitPartTokens(part.text).map((seg, j) => {
+                          if (seg.kind === 'space') {
+                            return (
+                              <span key={j} className="quran-chunk">
+                                {seg.value}
+                              </span>
+                            );
+                          }
+                          if (seg.kind === 'marker') {
+                            return (
+                              <span key={j} className="relative inline-block leading-none">
+                                <AyahMarker
+                                  digits={seg.digits}
+                                  width={markerW[seg.digits.length] ?? data.fontSize * 2.4}
+                                />
+                                {active && onToggleBookmark && (
+                                  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50">
+                                    <Button
+                                      variant="secondary"
+                                      size="icon"
+                                      className="h-10 w-10 rounded-full shadow-lg border border-border bg-card/95 backdrop-blur hover:bg-muted"
+                                      title={saved ? 'إزالة العلامة' : 'إضافة علامة'}
+                                      disabled={bookmarkBusy}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onToggleBookmark();
+                                      }}
+                                    >
+                                      {saved ? <BookmarkCheck className="h-5 w-5 text-primary" /> : <Bookmark className="h-5 w-5" />}
+                                    </Button>
+                                  </div>
+                                )}
+                              </span>
+                            );
+                          }
+                          const counterKey = key ?? `${part.sura}:${part.aya}`;
+                          const wIdx = wordCounters.get(counterKey) ?? 0;
+                          wordCounters.set(counterKey, wIdx + 1);
+                          const isActiveWord = key !== null && activeWordKey === `${key}:${wIdx}`;
+                          return (
+                            <span key={j} className={`quran-word${isActiveWord ? ' is-active-word' : ''}`}>
                               {seg.value}
                             </span>
-                          ) : (
-                            <span key={j} className="relative inline-block leading-none">
-                              <AyahMarker
-                                digits={seg.digits}
-                                width={markerW[seg.digits.length] ?? data.fontSize * 2.4}
-                              />
-                              {active && onToggleBookmark && (
-                                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50">
-                                  <Button
-                                    variant="secondary"
-                                    size="icon"
-                                    className="h-10 w-10 rounded-full shadow-lg border border-border bg-card/95 backdrop-blur hover:bg-muted"
-                                    title={saved ? 'إزالة العلامة' : 'إضافة علامة'}
-                                    disabled={bookmarkBusy}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      onToggleBookmark();
-                                    }}
-                                  >
-                                    {saved ? <BookmarkCheck className="h-5 w-5 text-primary" /> : <Bookmark className="h-5 w-5" />}
-                                  </Button>
-                                </div>
-                              )}
-                            </span>
-                          ),
-                        )}
+                          );
+                        })}
                       </span>
                     );
                   })}

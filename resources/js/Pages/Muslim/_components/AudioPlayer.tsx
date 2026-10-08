@@ -3,7 +3,7 @@ import { Loader2, Pause, Play, SkipBack, SkipForward, Volume1, Volume2, VolumeX 
 import { Button } from '@/Components/ui/button';
 import RecitationPicker from './RecitationPicker';
 import { SURA_NAMES_AR, recitationByCode, type Ayah } from '../_lib/quran';
-import { useSurahAudio } from '../_lib/useSurahAudio';
+import { useSurahAudio, type ActiveWord } from '../_lib/useSurahAudio';
 
 interface Props {
   ayat: Ayah[];
@@ -15,6 +15,8 @@ interface Props {
   /** Incremented when the user taps an Ayah in the text: start playing it. */
   playSignal: number;
   onEndOfList?: () => void;
+  /** The word being recited now, so the reader can highlight it. */
+  onActiveWordChange?: (word: ActiveWord | null) => void;
 }
 
 // Slim bottom player: volume (right), centered transport + bookmark,
@@ -22,7 +24,7 @@ interface Props {
 // text is never hidden under it.
 export default function AudioPlayer({
   ayat, reciterCode, setReciterCode, currentKey, onSelectAyah, playSignal,
-  onEndOfList,
+  onEndOfList, onActiveWordChange,
 }: Props) {
   const recitation = recitationByCode(reciterCode);
   const audio = useSurahAudio({
@@ -34,6 +36,11 @@ export default function AudioPlayer({
     onEndOfList,
   });
   const audioRef = audio.audioProps.ref;
+
+  // Surface the active word to the reader so the Mushaf can highlight it.
+  useEffect(() => {
+    onActiveWordChange?.(audio.activeWord);
+  }, [audio.activeWord, onActiveWordChange]);
 
   const [volume, setVolume] = useState(() => {
     const v = Number(window.localStorage.getItem('sz-muslim-volume') ?? 1);

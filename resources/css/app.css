@@ -163,6 +163,23 @@
     white-space: pre;
 }
 
+/* Whole-word spans (split only at whitespace, so letter joining is kept).
+   The active word is the karaoke highlight, layered over the active ayah. */
+.quran-word {
+    display: inline;
+    white-space: pre;
+    border-radius: 3px;
+    transition: background-color 120ms linear;
+}
+
+.quran-word.is-active-word {
+    background-color: hsl(var(--primary) / 0.4);
+}
+
+.quran-part.is-active .quran-word.is-active-word {
+    background-color: hsl(var(--primary) / 0.55);
+}
+
 /* quranpedia ayah-marker rosette (015-regular) with the specified theme.
    Fixed print-like palette (matches the Mushaf ornament in all site themes). */
 .ayah-marker-svg {

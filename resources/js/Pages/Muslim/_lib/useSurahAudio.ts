@@ -1,12 +1,25 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { getAyahTimings, getSurah } from './mp3quran';
+import { getAyahTimings, getSurah, getWordTimings, type WordTiming } from './mp3quran';
 import { ayahAudioUrl, type Ayah, type Recitation } from './quran';
-import { ayahTimingMap, pickAudioTier } from './quranAudio';
+import { ayahTimingMap, findWordAt, pickAudioTier } from './quranAudio';
 
-/** One surah's playable file + its ayah spans, for the current recitation. */
+/** One surah's playable file + its ayah/word timings, for the current recitation. */
 interface SurahAudio {
   url: string;
   ayahs: Map<number, { start: number; end: number }>;
+  words: WordTiming[];
+  /** Ayah number → rasm_uthmani of each word, by word position order. */
+  wordText: Map<number, string[]>;
+}
+
+export interface ActiveWord {
+  surah: number;
+  ayah: number;
+  /** 1-based word position inside the ayah. */
+  position: number;
+  occurrence: number;
+  /** API word texts of the ayah, for aligning to the local mushaf. */
+  apiWords: string[] | null;
 }
 
 export interface UseSurahAudioOptions {
@@ -38,6 +51,8 @@ export interface UseSurahAudio {
   error: string | null;
   /** Progress through the current ayah (0..1). */
   progress: number;
+  /** The word being recited right now, or null between words / when paused. */
+  activeWord: ActiveWord | null;
   toggle: () => void;
   next: () => void;
   prev: () => void;
@@ -56,6 +71,7 @@ export function useSurahAudio(opts: UseSurahAudioOptions): UseSurahAudio {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
+  const [activeWord, setActiveWord] = useState<ActiveWord | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const live = useRef(opts);
@@ -63,11 +79,13 @@ export function useSurahAudio(opts: UseSurahAudioOptions): UseSurahAudio {
 
   const cacheRef = useRef<Map<number, SurahAudio>>(new Map());
   const indexRef = useRef(-1);
+  const currentSurahRef = useRef<number | null>(null);
   const ayahStartRef = useRef(0);
   const playEndRef = useRef(0);
   const pendingSeekRef = useRef<number | null>(null);
   const advanceRef = useRef<number | null>(null);
   const advancingRef = useRef(false);
+  const activeWordRef = useRef<ActiveWord | null>(null);
 
   const clearAdvance = () => {
     if (advanceRef.current !== null) {
@@ -92,8 +110,19 @@ export function useSurahAudio(opts: UseSurahAudioOptions): UseSurahAudio {
             // timings unavailable: fall through to the per-ayah fallback
           }
         }
+        let words: WordTiming[] = [];
+        const wordText = new Map<number, string[]>();
+        if (item.timings?.includes('word')) {
+          try {
+            const w = await getWordTimings(recitation.code, surah, { include: 'text' }, signal);
+            words = w.words ?? [];
+            for (const [a, ws] of w.text?.ayahs ?? []) wordText.set(a, ws.map((x) => x[1]));
+          } catch {
+            // word timings unavailable: ayah-level highlight only
+          }
+        }
         if (!url) return null;
-        const entry: SurahAudio = { url, ayahs };
+        const entry: SurahAudio = { url, ayahs, words, wordText };
         cacheRef.current.set(surah, entry);
         return entry;
       } catch (e) {
@@ -119,6 +148,8 @@ export function useSurahAudio(opts: UseSurahAudioOptions): UseSurahAudio {
   // Switching reciter drops the cache; if we were playing, reload the ayah.
   useEffect(() => {
     cacheRef.current.clear();
+    activeWordRef.current = null;
+    setActiveWord(null);
     if (indexRef.current >= 0 && playing) {
       const i = indexRef.current;
       window.setTimeout(() => apiRef.current.playIndex(i), 0);
@@ -167,6 +198,9 @@ export function useSurahAudio(opts: UseSurahAudioOptions): UseSurahAudio {
     const ayah = s.ayat[i];
     if (!ayah) return;
     indexRef.current = i;
+    currentSurahRef.current = ayah.surah;
+    activeWordRef.current = null;
+    setActiveWord(null);
     s.onSelectAyah(ayah.key);
     setError(null);
     setLoading(true);
@@ -229,6 +263,30 @@ export function useSurahAudio(opts: UseSurahAudioOptions): UseSurahAudio {
     const el = audioRef.current;
     if (!el) return;
     const t = el.currentTime * 1000;
+
+    // Word-level karaoke: the word sounding now, when the surah has timings.
+    const surah = currentSurahRef.current;
+    if (surah !== null) {
+      const entry = cacheRef.current.get(surah);
+      if (entry && entry.words.length > 0) {
+        const w = findWordAt(entry.words, t);
+        const next: ActiveWord | null = w
+          ? { surah, ayah: w[0], position: w[1], occurrence: w[4], apiWords: entry.wordText.get(w[0]) ?? null }
+          : null;
+        const prev = activeWordRef.current;
+        const changed =
+          !prev !== !next ||
+          (prev && next && (prev.ayah !== next.ayah || prev.position !== next.position || prev.occurrence !== next.occurrence));
+        if (changed) {
+          activeWordRef.current = next;
+          setActiveWord(next);
+        }
+      } else if (activeWordRef.current) {
+        activeWordRef.current = null;
+        setActiveWord(null);
+      }
+    }
+
     const start = ayahStartRef.current;
     const end = playEndRef.current;
     if (Number.isFinite(end) && end > start) {
@@ -302,15 +360,19 @@ export function useSurahAudio(opts: UseSurahAudioOptions): UseSurahAudio {
     onPause: () => {
       setPlaying(false);
       clearAdvance();
+      activeWordRef.current = null;
+      setActiveWord(null);
     },
     onTimeUpdate: () => apiRef.current.handleTimeUpdate(),
     onEnded: () => apiRef.current.advance(),
     onError: () => {
       setLoading(false);
       setPlaying(false);
+      activeWordRef.current = null;
+      setActiveWord(null);
       setError('تعذّر تشغيل التلاوة — تحقّق من الاتصال.');
     },
   };
 
-  return { playing, loading, error, progress, toggle, next, prev, audioProps };
+  return { playing, loading, error, progress, activeWord, toggle, next, prev, audioProps };
 }

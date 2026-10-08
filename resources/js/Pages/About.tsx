@@ -219,7 +219,7 @@ export default function About() {
                                 <p>صور شخصيات «بوصلة سوريا» مصدرها Wikimedia Commons وWikipedia — أغلبها في الملكية العامة، وبعضها بموجب رخص CC BY وCC BY-SA. القائمة الكاملة بالمصادر والرخص في ملف credits.json ضمن مجلد الصور.</p>
                                 <p>بيانات الخرائط التفاعلية في الترانزيت ومشوار مستندة إلى OpenStreetMap وMapLibre GL JS بموجب رخصة ODbL / Open Data Commons.</p>
                                 <p>نص مصحف المدينة بخط حفص والخط العثماني في الركن الإسلامي من مجمع الملك فهد لطباعة المصحف الشريف، وعلامة نهاية الآية من مشروع quranpedia/ayah-markers.</p>
-                                <p>التلاوات الصوتية مقدمة من EveryAyah، ومواقيت الصلاة عبر Aladhan API، وبيانات الطقس من Open-Meteo وOpenWeatherMap، وتحديد الموقع التقريبي عبر ipwho.is.</p>
+                                <p>التلاوات الصوتية وتوقيتات الآيات والكلمات والحروف وبثّ الإذاعات مقدَّمة عبر واجهة MP3Quran v4 (ملفات الصوت من cdn.mp3quran.net) مع EveryAyah كمصدر احتياطي، ومواقيت الصلاة عبر Aladhan API، وبيانات الطقس من Open-Meteo وOpenWeatherMap، وتحديد الموقع التقريبي عبر ipwho.is.</p>
                             </CardContent>
                         </Card>
                     </TabsContent>
@@ -404,7 +404,7 @@ export default function About() {
                                 <p>Syrian Compass portraits are sourced from Wikimedia Commons and Wikipedia — mostly Public Domain, some under CC BY / CC BY-SA. The full source and license list is in the figures credits.json file.</p>
                                 <p>Interactive transit and place map data is powered by OpenStreetMap contributors and MapLibre GL JS under Open Data Commons (ODbL).</p>
                                 <p>The Madina mushaf text and Uthmanic font in the Muslim Corner come from the King Fahd Glorious Quran Printing Complex; the end-of-ayah ornament is from the quranpedia/ayah-markers project.</p>
-                                <p>Recitation audio is served by EveryAyah, prayer times by the Aladhan API, weather data by Open-Meteo and OpenWeatherMap, and approximate geolocation by ipwho.is.</p>
+                                <p>Recitation audio, ayah/word/letter timings and radio streams are provided by the MP3Quran v4 API (audio files from cdn.mp3quran.net), with EveryAyah as a fallback for per-ayah audio; prayer times by the Aladhan API, weather data by Open-Meteo and OpenWeatherMap, and approximate geolocation by ipwho.is.</p>
                             </CardContent>
                         </Card>
                     </TabsContent>

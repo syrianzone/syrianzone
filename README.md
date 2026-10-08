@@ -53,7 +53,7 @@
 * **صور شخصيات بوصلة سوريا (Compass portraits)**: صور الشخصيات التاريخية والمعاصرة في بوصلة سوريا مأخوذة من [Wikimedia Commons](https://commons.wikimedia.org/) و[Wikipedia](https://wikipedia.org/) — أغلبها في الملكية العامة (Public Domain)، وبعضها بموجب رخص [CC BY](https://creativecommons.org/licenses/by/4.0/) و[CC BY-SA](https://creativecommons.org/licenses/by-sa/4.0/). قائمة كاملة بالمصادر والرخص في `public/images/compass/figures/credits.json`.
 * **نص المصحف وخطه (Quran text & font)**: نص مصحف المدينة بخط حفص وخط النسخ العثماني مأخوذ من [مجمع الملك فهد لطباعة المصحف الشريف](https://qurancomplex.gov.sa/) (King Fahd Glorious Quran Printing Complex).
 * **علامة نهاية الآية (Ayah marker)**: زخرفة علامة نهاية الآية مأخوذة من مشروع [quranpedia/ayah-markers](https://github.com/quranpedia/ayah-markers) (الملف `015-regular`، عائلة DigitalKhatt عبر [fonts.quran.ws](https://fonts.quran.ws/)).
-* **التلاوات الصوتية (Recitations)**: ملفات الصوت لكل آية مقدمة من [EveryAyah](https://everyayah.com/).
+* **التلاوات والتوقيتات والإذاعات (Recitations, timings & radio)**: التلاوات الصوتية لكل سورة، وتوقيتات الآيات والكلمات والحروف، وبثّ الإذاعات مقدَّمة عبر [واجهة MP3Quran v4](https://mp3quran.net/) (ملفات الصوت من `cdn.mp3quran.net`)، مع [EveryAyah](https://everyayah.com/) كمصدر احتياطي للتلاوة لكل آية.
 * **مواقيت الصلاة (Prayer times)**: الحسابات مقدمة عبر [Aladhan API](https://aladhan.com/prayer-times-api).
 * **الطقس (Weather)**: البيانات مقدمة من [Open-Meteo](https://open-meteo.com/) و[OpenWeatherMap](https://openweathermap.org/).
 * **تحديد الموقع التقريبي (Geolocation)**: خدمة [ipwho.is](https://ipwho.is/).

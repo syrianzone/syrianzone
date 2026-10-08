@@ -19,8 +19,8 @@ interface Props {
   page: number;
   setPage: (p: number) => void;
   isLoggedIn: boolean;
-  reciterId: string;
-  setReciterId: (id: string) => void;
+  reciterCode: string;
+  setReciterCode: (code: string) => void;
 }
 
 function clampPage(p: number): number {
@@ -39,7 +39,7 @@ function useIsDesktop(): boolean {
   return desktop;
 }
 
-export default function QuranReader({ page, setPage, isLoggedIn, reciterId, setReciterId }: Props) {
+export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, setReciterCode }: Props) {
   const isDesktop = useIsDesktop();
   const step = isDesktop ? 2 : 1;
   // Desktop spread (RTL: right = page, left = page+1); mobile single page.
@@ -421,8 +421,8 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterId, setR
       <div className={`mt-3 shrink-0 ${isFocused ? 'hidden' : ''}`}>
         <AudioPlayer
           ayat={ayat}
-          reciterId={reciterId}
-          setReciterId={setReciterId}
+          reciterCode={reciterCode}
+          setReciterCode={setReciterCode}
           currentKey={currentAyahKey}
           onSelectAyah={setCurrentAyahKey}
           playSignal={playSignal}

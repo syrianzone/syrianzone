@@ -429,35 +429,90 @@ export function juzOfPageEstimate(page: number): number {
   return Math.min(30, Math.max(1, Math.ceil((page / 604) * 30)));
 }
 
-// --- Reciters (EveryAyah per-Ayah MP3s; folders verified at everyayah.com) ---
+// --- Recitations (MP3Quran v4 codes; EveryAyah per-Ayah MP3s for playback) ---
+//
+// A v4 "recitation" is one recording set: one reciter, one riwayah, one style,
+// addressed by a permanent `code` such as `mahmoud-husary/r1`. We select by
+// that code (never the numeric id, which 301s to it). Until the per-surah
+// streaming engine lands, each curated recitation also carries its EveryAyah
+// folder so per-Ayah playback keeps working.
 
-export interface Reciter {
-  id: string;
+export type RecitationStyle = 'murattal' | 'mujawwad' | 'muallim' | 'featured' | 'archival';
+
+export interface Recitation {
+  /** Permanent v4 recitation code (`reciter/rN`) — the stored preference. */
+  code: string;
   nameAr: string;
   nameEn: string;
-  folder: string;
+  /** v4 reciter code, e.g. `mahmoud-husary`. */
+  reciterCode: string;
+  style: RecitationStyle;
+  riwayah: string;
+  /** EveryAyah per-Ayah folder; null for recitations with no known source. */
+  folder: string | null;
 }
 
-export const QURAN_RECITERS: Reciter[] = [
-  { id: 'husary', nameAr: 'محمود خليل الحصري (مرتل)', nameEn: 'Husary (Murattal)', folder: 'Husary_128kbps' },
-  { id: 'husary-mujawwad', nameAr: 'الحصري (مجوّد)', nameEn: 'Husary (Mujawwad)', folder: 'Husary_128kbps_Mujawwad' },
-  { id: 'minshawi', nameAr: 'محمد صديق المنشاوي (مرتل)', nameEn: 'Minshawi (Murattal)', folder: 'Minshawy_Murattal_128kbps' },
-  { id: 'abdulbaset', nameAr: 'عبد الباسط عبد الصمد (مرتل)', nameEn: 'AbdulBaset (Murattal)', folder: 'Abdul_Basit_Murattal_192kbps' },
-  { id: 'afasy', nameAr: 'مشاري العفاسي', nameEn: 'Alafasy', folder: 'Alafasy_128kbps' },
-  { id: 'muaiqly', nameAr: 'ماهر المعيقلي', nameEn: 'Maher Al-Muaiqly', folder: 'MaherAlMuaiqly128kbps' },
+export const QURAN_RECITATIONS: Recitation[] = [
+  { code: 'mahmoud-husary/r1', reciterCode: 'mahmoud-husary', nameAr: 'محمود خليل الحصري (مرتل)', nameEn: 'Husary (Murattal)', style: 'murattal', riwayah: 'hafs_an_asim', folder: 'Husary_128kbps' },
+  { code: 'mahmoud-husary/r2', reciterCode: 'mahmoud-husary', nameAr: 'الحصري (مجوّد)', nameEn: 'Husary (Mujawwad)', style: 'mujawwad', riwayah: 'hafs_an_asim', folder: 'Husary_128kbps_Mujawwad' },
+  { code: 'muhammad-minshawi/r1', reciterCode: 'muhammad-minshawi', nameAr: 'محمد صديق المنشاوي (مرتل)', nameEn: 'Minshawi (Murattal)', style: 'murattal', riwayah: 'hafs_an_asim', folder: 'Minshawy_Murattal_128kbps' },
+  { code: 'abdulbasit-abdulsamad/r3', reciterCode: 'abdulbasit-abdulsamad', nameAr: 'عبد الباسط عبد الصمد (مرتل)', nameEn: 'AbdulBaset (Murattal)', style: 'murattal', riwayah: 'hafs_an_asim', folder: 'Abdul_Basit_Murattal_192kbps' },
+  { code: 'mishary-alafasy/r1', reciterCode: 'mishary-alafasy', nameAr: 'مشاري العفاسي', nameEn: 'Alafasy', style: 'murattal', riwayah: 'hafs_an_asim', folder: 'Alafasy_128kbps' },
+  { code: 'maher-muaiqly/r1', reciterCode: 'maher-muaiqly', nameAr: 'ماهر المعيقلي', nameEn: 'Maher Al-Muaiqly', style: 'murattal', riwayah: 'hafs_an_asim', folder: 'MaherAlMuaiqly128kbps' },
 ];
 
-export const DEFAULT_RECITER_ID = 'husary';
+export const DEFAULT_RECITATION_CODE = 'mahmoud-husary/r1';
 
-export function reciterById(id: string): Reciter {
-  return QURAN_RECITERS.find((r) => r.id === id) ?? QURAN_RECITERS[0];
+/** Legacy stored values (app ids and EveryAyah folders) → v4 recitation code. */
+export const LEGACY_RECITATION_ALIASES: Record<string, string> = {
+  husary: 'mahmoud-husary/r1',
+  Husary_128kbps: 'mahmoud-husary/r1',
+  'husary-mujawwad': 'mahmoud-husary/r2',
+  Husary_128kbps_Mujawwad: 'mahmoud-husary/r2',
+  minshawi: 'muhammad-minshawi/r1',
+  Minshawy_Murattal_128kbps: 'muhammad-minshawi/r1',
+  abdulbaset: 'abdulbasit-abdulsamad/r3',
+  Abdul_Basit_Murattal_192kbps: 'abdulbasit-abdulsamad/r3',
+  afasy: 'mishary-alafasy/r1',
+  Alafasy_128kbps: 'mishary-alafasy/r1',
+  muaiqly: 'maher-muaiqly/r1',
+  MaherAlMuaiqly128kbps: 'maher-muaiqly/r1',
+};
+
+/** Resolve a stored value (v4 code, legacy id or folder) to a v4 code. */
+export function normalizeRecitationCode(value: string | null | undefined): string {
+  if (!value) return DEFAULT_RECITATION_CODE;
+  if (QURAN_RECITATIONS.some((r) => r.code === value)) return value;
+  const aliased = LEGACY_RECITATION_ALIASES[value];
+  if (aliased) return aliased;
+  // Unknown v4 code: keep it so a future-phase recitation is not silently lost.
+  if (value.includes('/')) return value;
+  return DEFAULT_RECITATION_CODE;
 }
 
-/** EveryAyah per-Ayah file: SSSAA A zero-padded, e.g. 002255.mp3 */
-export function ayahAudioUrl(reciter: Reciter, surah: number, ayah: number): string {
+export function recitationByCode(code: string): Recitation {
+  const normalized = normalizeRecitationCode(code);
+  return QURAN_RECITATIONS.find((r) => r.code === normalized) ?? QURAN_RECITATIONS[0];
+}
+
+const STYLE_LABELS: Record<RecitationStyle, string> = {
+  murattal: 'مرتل',
+  mujawwad: 'مجوّد',
+  muallim: 'معلّم',
+  featured: 'مختارة',
+  archival: 'أرشيفية',
+};
+
+export function styleLabelAr(style: string): string {
+  return STYLE_LABELS[style as RecitationStyle] ?? style;
+}
+
+/** EveryAyah per-Ayah file: SSSAAA zero-padded, e.g. 002255.mp3. */
+export function ayahAudioUrl(recitation: Recitation, surah: number, ayah: number): string {
+  if (!recitation.folder) return '';
   const s = String(surah).padStart(3, '0');
   const a = String(ayah).padStart(3, '0');
-  return `https://everyayah.com/data/${reciter.folder}/${s}${a}.mp3`;
+  return `https://everyayah.com/data/${recitation.folder}/${s}${a}.mp3`;
 }
 
 export const TOTAL_PAGES = 604;

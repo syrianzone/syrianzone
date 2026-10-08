@@ -1,13 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Pause, Play, SkipBack, SkipForward, Volume1, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
-import ReciterPicker from './ReciterPicker';
-import { SURA_NAMES_AR, ayahAudioUrl, reciterById, type Ayah } from '../_lib/quran';
+import RecitationPicker from './RecitationPicker';
+import { SURA_NAMES_AR, ayahAudioUrl, recitationByCode, type Ayah } from '../_lib/quran';
 
 interface Props {
   ayat: Ayah[];
-  reciterId: string;
-  setReciterId: (id: string) => void;
+  reciterCode: string;
+  setReciterCode: (code: string) => void;
   currentKey: string | null;
   onSelectAyah: (key: string) => void;
   /** Incremented when the user taps an Ayah in the text: start playing it. */
@@ -19,7 +19,7 @@ interface Props {
 // searchable reciter picker (left). Sticky bottom, in-flow, so Mushaf
 // text is never hidden under it.
 export default function AudioPlayer({
-  ayat, reciterId, setReciterId, currentKey, onSelectAyah, playSignal,
+  ayat, reciterCode, setReciterCode, currentKey, onSelectAyah, playSignal,
   onEndOfList,
 }: Props) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -31,14 +31,14 @@ export default function AudioPlayer({
   const [muted, setMuted] = useState(false);
   const [volumeOpen, setVolumeOpen] = useState(false);
   const volumeWrapRef = useRef<HTMLDivElement | null>(null);
-  const reciter = reciterById(reciterId);
+  const recitation = recitationByCode(reciterCode);
 
   const idx = Math.max(0, ayat.findIndex((a) => a.key === currentKey));
   const current: Ayah | undefined = ayat[idx];
 
   // Stable player core (refs avoid stale closures in listeners).
-  const live = useRef({ ayat, currentKey, reciter, onSelectAyah, onEndOfList });
-  live.current = { ayat, currentKey, reciter, onSelectAyah, onEndOfList };
+  const live = useRef({ ayat, currentKey, recitation, onSelectAyah, onEndOfList });
+  live.current = { ayat, currentKey, recitation, onSelectAyah, onEndOfList };
 
   const playAt = (i: number) => {
     const s = live.current;
@@ -46,7 +46,7 @@ export default function AudioPlayer({
     const el = audioRef.current;
     if (!ayah || !el) return;
     s.onSelectAyah(ayah.key);
-    el.src = ayahAudioUrl(s.reciter, ayah.surah, ayah.ayah);
+    el.src = ayahAudioUrl(s.recitation, ayah.surah, ayah.ayah);
     el.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
   };
 
@@ -59,7 +59,7 @@ export default function AudioPlayer({
     if (i >= 0 && i + 1 < s.ayat.length) {
       const next = s.ayat[i + 1];
       s.onSelectAyah(next.key);
-      el.src = ayahAudioUrl(s.reciter, next.surah, next.ayah);
+      el.src = ayahAudioUrl(s.recitation, next.surah, next.ayah);
       el.play().catch(() => setPlaying(false));
     } else if (s.onEndOfList) {
       s.onEndOfList();
@@ -80,7 +80,7 @@ export default function AudioPlayer({
         s.onSelectAyah(ayah.key);
         const el = audioRef.current;
         if (el) {
-          el.src = ayahAudioUrl(s.reciter, ayah.surah, ayah.ayah);
+          el.src = ayahAudioUrl(s.recitation, ayah.surah, ayah.ayah);
           el.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
         }
       }
@@ -94,7 +94,7 @@ export default function AudioPlayer({
     const end = Math.min(idx + 11, ayat.length);
     for (let i = idx + 1; i < end; i++) {
       const a = ayat[i];
-      const url = ayahAudioUrl(reciter, a.surah, a.ayah);
+      const url = ayahAudioUrl(recitation, a.surah, a.ayah);
       if (!prefetched.current.has(url)) {
         prefetched.current.add(url);
         // Opaque no-cors fetch correctly warms the browser's HTTP disk cache
@@ -102,17 +102,17 @@ export default function AudioPlayer({
         window.fetch(url, { mode: 'no-cors' }).catch(() => undefined);
       }
     }
-  }, [playing, idx, ayat, reciter]);
+  }, [playing, idx, ayat, recitation]);
 
   // Reciter switch keeps the position and reloads the same Ayah.
-  const prevReciter = useRef(reciterId);
+  const prevReciter = useRef(reciterCode);
   useEffect(() => {
-    if (prevReciter.current === reciterId) return;
-    prevReciter.current = reciterId;
+    if (prevReciter.current === reciterCode) return;
+    prevReciter.current = reciterCode;
     const el = audioRef.current;
     if (!el || !el.src || !current) return;
     const wasPlaying = !el.paused;
-    el.src = ayahAudioUrl(reciter, current.surah, current.ayah);
+    el.src = ayahAudioUrl(recitation, current.surah, current.ayah);
     if (wasPlaying) el.play().catch(() => setPlaying(false));
   });
 
@@ -239,7 +239,7 @@ export default function AudioPlayer({
 
         {/* Left: searchable reciter picker */}
         <div className="flex flex-1 items-center justify-end">
-          <ReciterPicker value={reciter.id} onChange={setReciterId} />
+          <RecitationPicker value={recitation.code} onChange={setReciterCode} />
         </div>
       </div>
       <div className="mx-auto mt-0.5 max-w-3xl truncate text-center text-[11px] text-muted-foreground">

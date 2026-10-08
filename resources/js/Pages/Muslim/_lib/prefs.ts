@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePage } from '@inertiajs/react';
 import axios from '@/Lib/axios';
 import { DEFAULT_PRAYER_METHOD } from './methods';
+import { DEFAULT_RECITATION_CODE, normalizeRecitationCode } from './quran';
 import { effectivePrayerParams, getGeo, getLocMode, setGeo, setLocMode, clearGeo, LOC_CHANGED_EVENT, type GeoPoint, type LocMode } from './location';
 
 // Single source of truth for everything the prayer widgets share.
@@ -99,7 +100,7 @@ export function defaultMuslimPrefs(): MuslimPrefs {
     geo: getGeo(),
     prayerLog: readPrayerLog(),
     quranPage: Number(readLS(LS.page, '1')) || 1,
-    quranReciterId: readLS(LS.reciter, 'Husary_128kbps'),
+    quranReciterId: normalizeRecitationCode(readLS(LS.reciter, DEFAULT_RECITATION_CODE)),
   };
 }
 
@@ -134,7 +135,9 @@ export function useMuslimPrefs() {
       customLon: serverSettings.muslimLon !== undefined ? String(serverSettings.muslimLon) : base.customLon,
       prayerLog: serverSettings.prayerLog ?? base.prayerLog,
       quranPage: serverSettings.quranLastPage ?? base.quranPage,
-      quranReciterId: serverSettings.quranReciterId ?? base.quranReciterId,
+      quranReciterId: serverSettings.quranReciterId
+        ? normalizeRecitationCode(serverSettings.quranReciterId)
+        : base.quranReciterId,
     };
   });
 

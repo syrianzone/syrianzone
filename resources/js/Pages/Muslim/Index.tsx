@@ -11,7 +11,7 @@ import QuranReader from './_components/QuranReader';
 import RadioTab from './_components/RadioTab';
 import { formatDuration } from './_lib/format';
 import { PRAYER_KEYS, PRAYER_LABELS, type PrayerKey } from './_lib/methods';
-import { DEFAULT_RECITER_ID, SURA_NAMES_AR } from './_lib/quran';
+import { DEFAULT_RECITATION_CODE, SURA_NAMES_AR } from './_lib/quran';
 import { prayerQueryParams, useMuslimPrefs } from './_lib/prefs';
 import { initialMuslimView, syncMuslimUrl, useMuslimNav, type MuslimView } from './_lib/nav';
 
@@ -258,8 +258,8 @@ export default function Index() {
                 page={prefs.quranPage}
                 setPage={(p) => setPrefs({ quranPage: p })}
                 isLoggedIn={isLoggedIn}
-                reciterId={prefs.quranReciterId || DEFAULT_RECITER_ID}
-                setReciterId={(id) => setPrefs({ quranReciterId: id })}
+                reciterCode={prefs.quranReciterId || DEFAULT_RECITATION_CODE}
+                setReciterCode={(code) => setPrefs({ quranReciterId: code })}
               />
             </div>
           </div>

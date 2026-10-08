@@ -1,13 +1,15 @@
 // Live Quran recitation radio — shared data layer.
 //
-// The stream list is MP3Quran's public v3 API. Every stream is a Shoutcast
+// The stream list is MP3Quran's v4 API (`/v4/radios`), which categorises every
+// station and exposes a ready `stream_url`. Every stream is a Shoutcast
 // endpoint: `audio/mpeg`, 128 kbps, `access-control-allow-origin: *`,
 // `accept-ranges: none` and `cache-control: no-cache`. Two consequences the
 // players are built around: there is no duration and no seeking (so no
-// progress bar), and the service worker must never cache these hosts — it
-// currently only intercepts everyayah.com and lets everything else through.
+// progress bar), and the service worker must never cache non-audio hosts — it
+// only intercepts everyayah.com audio and lets everything else through.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { fetchRadios, type V4Radio } from '@/Pages/Muslim/_lib/mp3quran';
 
 export interface QuranRadioStation {
   id: number;
@@ -16,38 +18,43 @@ export interface QuranRadioStation {
 }
 
 /**
- * The `www.` host is deliberate: `mp3quran.net` answers 301 and the browser
- * pays a second round trip for every consumer of this list.
+ * v4 categorises every station, so the filter is an allowlist of recitation
+ * categories instead of the v3 id blocklist. `القراء` is a single reciter
+ * reading the Quran and `القراءات العشر` is the ten qiraahs. The translation,
+ * adhkar, tafsir, hadith, seerah, fatwa, ruqyah and mixed-reader compilation
+ * categories are all excluded.
  */
-export const QURAN_RADIO_API = 'https://www.mp3quran.net/api/v3/radios?language=ar';
-
-/**
- * Channels that are not one reciter reading the Quran. The endpoint returns
- * 177 stations and mixes recitation with adhkar, tafsir, hadith, seerah,
- * fatwas, ruqyah and ~22 translation feeds — none of which belong in a
- * recitation radio. Verified against the live list; new non-Quran channels
- * will show up until they are added here.
- */
-const NON_RECITER_IDS: ReadonlySet<number> = new Set([
-  // Mixed-reader compilations and single-surah channels.
-  108, 109, 115, 123, 10902, 109060, 109083,
-  // Other Islamic programming: adhkar, tafsir, hadith, seerah, fatwa, ruqyah, fiqh.
-  110, 113, 114, 116, 10903, 10904, 10906, 10907, 21114, 21115, 21117,
-  109061, 109066, 109067, 109069, 109073, 109076,
-  // Meanings of the Quran in other languages.
-  109039, 109040, 109041, 109042, 109043, 109044, 109045, 109046, 109047,
-  109048, 109049, 109050, 109051, 109052, 109053, 109054, 109055, 109056,
-  109057, 109058, 109059, 109062,
-  // A station rather than a reciter, and dead (404) since at least 2026-09.
-  109082,
+export const RECITATION_RADIO_CATEGORIES: ReadonlySet<string> = new Set([
+  'القراء',
+  'القراءات العشر',
 ]);
+
+/** One v4 radio row → the app's station shape; null when it is not a recitation. */
+export function mapRecitationRadio(radio: V4Radio): QuranRadioStation | null {
+  if (!RECITATION_RADIO_CATEGORIES.has(radio.category)) return null;
+  if (!radio.stream_url) return null;
+  return {
+    id: radio.id,
+    name: radio.name.replace(/[-\s]+$/, '').trim(),
+    url: radio.stream_url,
+  };
+}
+
+export function mapRecitationRadios(radios: V4Radio[]): QuranRadioStation[] {
+  const out: QuranRadioStation[] = [];
+  for (const r of radios) {
+    const station = mapRecitationRadio(r);
+    if (station) out.push(station);
+  }
+  return out;
+}
 
 /** Reciters pinned to the top of the list, in the order we want them heard. */
 export const POPULAR_QURAN_RADIO_IDS: readonly number[] = [74, 30, 70, 79, 63, 85, 32, 3];
 
 /**
  * What the player falls back to when the list cannot be fetched, so the
- * applet is never empty offline. Every entry answered 200 when checked.
+ * applet is never empty offline. Ids/urls verified against v4.
  */
 export const CURATED_QURAN_RADIOS: readonly QuranRadioStation[] = [
   { id: 74, name: 'محمود خليل الحصري', url: 'https://backup.qurango.net/radio/mahmoud_khalil_alhussary' },
@@ -59,10 +66,6 @@ export const CURATED_QURAN_RADIOS: readonly QuranRadioStation[] = [
   { id: 32, name: 'عبدالباسط عبدالصمد (مرتل)', url: 'https://backup.qurango.net/radio/abdulbasit_abdulsamad' },
   { id: 3, name: 'أحمد العجمي', url: 'https://backup.qurango.net/radio/ahmad_alajmy' },
 ];
-
-export function isReciterStation(station: { id: number }): boolean {
-  return !NON_RECITER_IDS.has(station.id);
-}
 
 /** Pinned reciters first, then everyone else alphabetically by Arabic name. */
 export function orderStations(stations: QuranRadioStation[]): QuranRadioStation[] {
@@ -87,11 +90,8 @@ export async function fetchQuranRadioStations(signal?: AbortSignal): Promise<Qur
   const onAbort = () => ctrl.abort();
   signal?.addEventListener('abort', onAbort);
   try {
-    const res = await fetch(QURAN_RADIO_API, { signal: ctrl.signal, headers: { Accept: 'application/json' } });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    const radios = Array.isArray(data?.radios) ? data.radios : [];
-    const reciters = radios.filter(isReciterStation);
+    const radios = await fetchRadios(ctrl.signal);
+    const reciters = mapRecitationRadios(radios);
     if (reciters.length === 0) throw new Error('empty list');
     return orderStations(reciters);
   } catch {

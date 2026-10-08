@@ -218,7 +218,7 @@ export default function MushafPage({ data, currentAyahKey, activeWordKey, active
                         onMouseLeave={() => hoverAya(part.sura, part.aya, false)}
                       >
                         {splitPartTokens(part.text).map((seg, j) => {
-                          if (seg.kind === 'space') {
+                          if (seg.kind === 'space' || seg.kind === 'symbol') {
                             return (
                               <span key={j} className="quran-chunk">
                                 {seg.value}

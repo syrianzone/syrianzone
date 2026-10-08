@@ -89,11 +89,25 @@ describe('splitPartTokens', () => {
     const tokens = splitPartTokens('بسم ﴿١﴾ الله');
     expect(tokens.map((t) => t.kind)).toEqual(['word', 'space', 'marker', 'space', 'word']);
   });
+
+  it('classifies a standalone symbol as a symbol, not a word', () => {
+    expect(splitPartTokens('۞ بسم').map((t) => t.kind)).toEqual(['symbol', 'space', 'word']);
+  });
+
+  it('keeps a symbol attached to a word as part of the word', () => {
+    const tokens = splitPartTokens('شَيْءٍۚ');
+    expect(tokens).toHaveLength(1);
+    expect(tokens[0].kind).toBe('word');
+  });
 });
 
 describe('wordsOfText', () => {
   it('drops markers and whitespace, keeping words in order', () => {
     expect(wordsOfText('بسم ﴿١﴾ الرحمن الرحيم')).toEqual(['بسم', 'الرحمن', 'الرحيم']);
+  });
+
+  it('ignores standalone symbols when counting words', () => {
+    expect(wordsOfText('۞ بسم الله')).toEqual(['بسم', 'الله']);
   });
 });
 

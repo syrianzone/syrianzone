@@ -58,10 +58,12 @@ const MARKER_RE = /﴿([٠-٩]{1,3})﴾/g;
 export type PartToken =
   | { kind: 'marker'; digits: string }
   | { kind: 'word'; value: string }
+  | { kind: 'symbol'; value: string }
   | { kind: 'space'; value: string };
 
 /**
- * Split a part's display text into markers, whole words and whitespace runs.
+ * Split a part's display text into markers, whole words, standalone symbols
+ * (waqf marks, rub-el-hizb, sajdah — no Arabic letter) and whitespace runs.
  * Concatenating the values reproduces the input exactly. Splitting happens only
  * at whitespace, so Arabic letter joining is never broken (skill §10).
  */
@@ -73,7 +75,10 @@ export function splitPartTokens(text: string): PartToken[] {
       const isSpace = /\s/.test(s[i]);
       let j = i;
       while (j < s.length && /\s/.test(s[j]) === isSpace) j += 1;
-      out.push(isSpace ? { kind: 'space', value: s.slice(i, j) } : { kind: 'word', value: s.slice(i, j) });
+      const value = s.slice(i, j);
+      if (isSpace) out.push({ kind: 'space', value });
+      else if (normalizeArabicWord(value) === '') out.push({ kind: 'symbol', value });
+      else out.push({ kind: 'word', value });
       i = j;
     }
   };

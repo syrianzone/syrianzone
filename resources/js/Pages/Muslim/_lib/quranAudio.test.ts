@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  alignWordIndexes,
   ayahTimingMap,
   findAyahAt,
   findLetterAt,
   findWordAt,
   normalizeArabicWord,
   pickAudioTier,
-  sameWordSequence,
   splitPartTokens,
   wordOccurrenceKey,
   wordsOfText,
@@ -119,23 +119,35 @@ describe('normalizeArabicWord', () => {
   it('unifies alef, ya and ta marbuta forms', () => {
     expect(normalizeArabicWord('إِسۡرَآءِيلَ')).toBe(normalizeArabicWord('اسرائيل'));
   });
+
+  it('resolves a hamza carrier to its base letter', () => {
+    expect(normalizeArabicWord('وَرَآئِ')).toBe(normalizeArabicWord('وراي'));
+  });
+
+  it('maps small waw/yeh to letters and collapses the elided duplicate', () => {
+    expect(normalizeArabicWord('لِيَسُـۥٓـُٔوا۟')).toBe(normalizeArabicWord('ليسوا'));
+  });
 });
 
-describe('sameWordSequence', () => {
-  it('accepts sequences that differ only in diacritics', () => {
-    expect(sameWordSequence(['ٱلنَّاسُ', 'ٱتَّقُواْ'], ['الناس', 'اتقوا'])).toBe(true);
+describe('alignWordIndexes', () => {
+  it('maps positions 1:1 for sequences that differ only in diacritics', () => {
+    expect(alignWordIndexes(['ٱلنَّاسُ', 'ٱتَّقُواْ'], ['الناس', 'اتقوا'])).toEqual([0, 1]);
   });
 
-  it('rejects a length mismatch', () => {
-    expect(sameWordSequence(['ا', 'ب'], ['ا'])).toBe(false);
+  it('merges two local words into one API word', () => {
+    expect(alignWordIndexes(['لو', 'ما', 'ك'], ['لوما', 'ك'])).toEqual([0, 2]);
   });
 
-  it('rejects a content mismatch', () => {
-    expect(sameWordSequence(['ا', 'ب'], ['ا', 'ج'])).toBe(false);
+  it('maps one local word onto two API words', () => {
+    expect(alignWordIndexes(['لوما', 'ك'], ['لو', 'ما', 'ك'])).toEqual([0, 0, 1]);
   });
 
-  it('rejects empty sequences', () => {
-    expect(sameWordSequence([], [])).toBe(false);
+  it('returns null when the sequences cannot be reconciled', () => {
+    expect(alignWordIndexes(['ا', 'ب'], ['ا', 'ج'])).toBeNull();
+  });
+
+  it('returns null for empty input', () => {
+    expect(alignWordIndexes([], [])).toBeNull();
   });
 });
 

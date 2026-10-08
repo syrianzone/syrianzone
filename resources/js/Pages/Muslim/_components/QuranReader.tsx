@@ -14,7 +14,7 @@ import { syncMuslimUrl, useMuslimNav } from '../_lib/nav';
 import {
   SURA_NAMES_AR, TOTAL_PAGES, findPageForVerse, renderMushafPage, type Ayah, type QuranPage,
 } from '../_lib/quran';
-import { sameWordSequence, wordsOfText } from '../_lib/quranAudio';
+import { alignWordIndexes, wordsOfText } from '../_lib/quranAudio';
 import type { ActiveWord } from '../_lib/useSurahAudio';
 
 interface Props {
@@ -136,9 +136,12 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
     const ayah = ayat.find((a) => a.surah === activeWordInfo.surah && a.ayah === activeWordInfo.ayah);
     if (!ayah) return null;
     const local = wordsOfText(ayah.text);
-    if (!sameWordSequence(local, activeWordInfo.apiWords)) return null;
-    const idx = activeWordInfo.position - 1;
-    return idx >= 0 && idx < local.length ? `${activeWordInfo.surah}:${activeWordInfo.ayah}:${idx}` : null;
+    const map = alignWordIndexes(local, activeWordInfo.apiWords);
+    if (!map) return null;
+    const localIdx = map[activeWordInfo.position - 1];
+    return localIdx != null && localIdx >= 0
+      ? `${activeWordInfo.surah}:${activeWordInfo.ayah}:${localIdx}`
+      : null;
   })();
 
   // Letter-level sweep fill for the active word (0..1), when letter timings exist.

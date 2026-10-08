@@ -106,26 +106,67 @@ export function wordsOfText(text: string): string[] {
 /**
  * Aggressive normalisation for aligning the local Madina rasm with the API's
  * hafs edition: drop Quranic marks/tatweels and zero-width chars, unify alef,
- * ya and ta marbuta, drop hamza carriers, and keep Arabic letters only.
+ * ya and ta marbuta, resolve hamza carriers and small waw/yeh to their base
+ * letters, collapse doubled letters, and keep Arabic letters only. Applied to
+ * both sides, so the comparison is consistent.
  */
 export function normalizeArabicWord(word: string): string {
   return word
-    .replace(/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED\u0640\u08F0-\u08FF]/g, '')
+    .replace(/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06E4\u06E7-\u06ED\u0640\u08F0-\u08FF]/g, '')
+    // Small waw / small yeh stand for a letter in the API edition.
+    .replace(/\u06E5/g, 'و')
+    .replace(/\u06E6/g, 'ي')
     .replace(/[\u200B-\u200F\u2066-\u2069\uFEFF]/g, '')
     .replace(/[أإآٱٲٳ]/g, 'ا')
     .replace(/ى/g, 'ي')
     .replace(/ة/g, 'ه')
-    .replace(/[ؤئء]/g, '')
-    .replace(/[^\u0621-\u064A]/g, '');
+    // Hamza carriers keep their base letter; a bare hamza is not a letter here.
+    .replace(/ئ/g, 'ي')
+    .replace(/ؤ/g, 'و')
+    .replace(/ء/g, '')
+    .replace(/[^\u0621-\u064A]/g, '')
+    // An elided letter can be written twice (small waw + full waw): collapse.
+    .replace(/(.)\1+/g, '$1');
 }
 
-/** True when the two word lists are the same length and match semantically. */
-export function sameWordSequence(local: string[], api: string[]): boolean {
-  if (local.length === 0 || local.length !== api.length) return false;
-  for (let i = 0; i < local.length; i += 1) {
-    if (normalizeArabicWord(local[i]) !== normalizeArabicWord(api[i])) return false;
+/**
+ * Map each API word position (index j → local word index) to the local Madina
+ * word. Exact matches are consumed first; adjacent local words may merge into
+ * one API word (or the reverse), which covers rasm splitting such as 15:7
+ * ("لو ما" vs "لوما"). Returns null when the sequences cannot be reconciled,
+ * in which case the caller falls back to ayah-level highlighting.
+ */
+export function alignWordIndexes(local: string[], api: string[]): number[] | null {
+  if (local.length === 0 || api.length === 0) return null;
+  const L = local.map(normalizeArabicWord);
+  const A = api.map(normalizeArabicWord);
+  const map = new Array<number>(A.length).fill(-1);
+  let i = 0;
+  let j = 0;
+  while (i < L.length && j < A.length) {
+    if (L[i] !== '' && L[i] === A[j]) {
+      map[j] = i;
+      i += 1;
+      j += 1;
+      continue;
+    }
+    if (i + 1 < L.length && L[i] + L[i + 1] === A[j]) {
+      map[j] = i;
+      i += 2;
+      j += 1;
+      continue;
+    }
+    if (j + 1 < A.length && L[i] === A[j] + A[j + 1]) {
+      map[j] = i;
+      map[j + 1] = i;
+      i += 1;
+      j += 2;
+      continue;
+    }
+    return null;
   }
-  return true;
+  if (i !== L.length || j !== A.length) return null;
+  return map;
 }
 
 /** The word sounding at `positionMs`, or null in a gap / outside the file. */

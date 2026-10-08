@@ -2,68 +2,49 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Loader2, Pause, Play, SkipBack, SkipForward, Volume1, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import RecitationPicker from './RecitationPicker';
-import { SURAH_NAMES_AR, recitationByCode, type Ayah } from '../_lib/quran';
-import { useSurahAudio, type ActiveWord } from '../_lib/useSurahAudio';
+import { SURAH_NAMES_AR, type Ayah } from '../_lib/quran';
+import { useQuranPlayer } from '@/Lib/quranPlayer';
 
 interface Props {
+  /** Ayahs on the visible page (only used to know the reader has content). */
   ayahs: Ayah[];
   /** v4 recitation code (`reciter/rN`). */
   reciterCode: string;
   setReciterCode: (code: string) => void;
-  currentKey: string | null;
-  onSelectAyah: (key: string) => void;
-  /** Incremented when the user taps an Ayah in the text: start playing it. */
-  playSignal: number;
-  onEndOfList?: () => void;
-  /** The word being recited now, so the reader can highlight it. */
-  onActiveWordChange?: (word: ActiveWord | null) => void;
+  /** Start (or restart) playback from the selected ayah. */
+  onPlayRequest: () => void;
 }
 
-// Slim bottom player: volume (right), centered transport + bookmark,
-// searchable reciter picker (left). Sticky bottom, in-flow, so Mushaf
-// text is never hidden under it.
-export default function AudioPlayer({
-  ayahs, reciterCode, setReciterCode, currentKey, onSelectAyah, playSignal,
-  onEndOfList, onActiveWordChange,
-}: Props) {
-  const recitation = recitationByCode(reciterCode);
-  const audio = useSurahAudio({
-    ayahs,
-    recitation,
-    currentKey,
-    playSignal,
-    onSelectAyah,
-    onEndOfList,
-  });
-  const audioRef = audio.audioProps.ref;
+// Reader transport bar. Playback itself lives in the global player; this binds
+// to it, and only reflects/controls it while the reader owns the queue.
+export default function AudioPlayer({ ayahs, reciterCode, setReciterCode, onPlayRequest }: Props) {
+  const playing = useQuranPlayer((s) => s.playing);
+  const loading = useQuranPlayer((s) => s.loading);
+  const error = useQuranPlayer((s) => s.error);
+  const progress = useQuranPlayer((s) => s.progress);
+  const source = useQuranPlayer((s) => s.source);
+  const current = useQuranPlayer((s) => s.current);
+  const activeWord = useQuranPlayer((s) => s.activeWord);
+  const volume = useQuranPlayer((s) => s.volume);
+  const muted = useQuranPlayer((s) => s.muted);
+  const setVolume = useQuranPlayer((s) => s.setVolume);
+  const setMuted = useQuranPlayer((s) => s.setMuted);
+  const toggle = useQuranPlayer((s) => s.toggle);
+  const next = useQuranPlayer((s) => s.next);
+  const prev = useQuranPlayer((s) => s.prev);
 
-  // Surface the active word to the reader so the Mushaf can highlight it.
-  useEffect(() => {
-    onActiveWordChange?.(audio.activeWord);
-  }, [audio.activeWord, onActiveWordChange]);
-
-  const [volume, setVolume] = useState(() => {
-    const v = Number(window.localStorage.getItem('sz-muslim-volume') ?? 1);
-    return Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 1;
-  });
-  const [muted, setMuted] = useState(false);
+  const readerActive = source === 'reader';
   const [volumeOpen, setVolumeOpen] = useState(false);
   const volumeWrapRef = useRef<HTMLDivElement | null>(null);
 
-  const idx = Math.max(0, ayahs.findIndex((a) => a.key === currentKey));
-  const current: Ayah | undefined = ayahs[idx];
-
-  // Volume + mute (persisted).
-  useEffect(() => {
-    window.localStorage.setItem('sz-muslim-volume', String(volume));
-  }, [volume]);
-  useEffect(() => {
-    const el = audioRef.current;
-    if (el) el.volume = muted ? 0 : volume;
-  }, [audioRef, volume, muted]);
+  const effectiveVolume = muted ? 0 : volume;
+  const VolumeIcon = effectiveVolume === 0 ? VolumeX : effectiveVolume < 0.5 ? Volume1 : Volume2;
+  const letterText =
+    readerActive && activeWord?.letterIndex != null && activeWord.letterCount
+      ? ` · الحرف ${activeWord.letterIndex}/${activeWord.letterCount}`
+      : '';
 
   // Mobile: the voice icon toggles a volume popup (slider stays hidden).
-  // Desktop: the icon mutes/unmutes, the slider is inline.
   const [isNarrow, setIsNarrow] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 419px)');
@@ -84,22 +65,15 @@ export default function AudioPlayer({
 
   if (ayahs.length === 0) return null;
 
-  const { playing, loading, error, progress } = audio;
-  const effectiveVolume = muted ? 0 : volume;
-  const VolumeIcon = effectiveVolume === 0 ? VolumeX : effectiveVolume < 0.5 ? Volume1 : Volume2;
-  const letterText =
-    audio.activeWord?.letterIndex != null && audio.activeWord.letterCount
-      ? ` · الحرف ${audio.activeWord.letterIndex}/${audio.activeWord.letterCount}`
-      : '';
+  const playButton = () => {
+    if (readerActive && playing) toggle();
+    else onPlayRequest();
+  };
 
   return (
-    // Full-viewport-width background (physical negative margins break out of
-    // the centered container; the overflow-hidden page wrapper clips the
-    // scrollbar-width excess). Controls stay at the current narrow width.
     <div className="sticky bottom-0 z-40 ml-[calc(50%-50vw)] mr-[calc(50%-50vw)] border-t border-border bg-card/95 px-4 py-2 backdrop-blur">
-      <audio {...audio.audioProps} />
       <div className="mx-auto flex max-w-3xl items-center gap-2">
-        {/* Right: volume (outline to match the reciter button). */}
+        {/* Right: volume */}
         <div ref={volumeWrapRef} className="relative flex flex-1 items-center justify-start gap-1">
           <Button
             variant="outline" size="icon" className="h-9 w-9 shrink-0 rounded-full"
@@ -107,7 +81,7 @@ export default function AudioPlayer({
             aria-expanded={isNarrow ? volumeOpen : undefined}
             onClick={() => {
               if (isNarrow) setVolumeOpen((o) => !o);
-              else setMuted((m) => !m);
+              else setMuted(!muted);
             }}
           >
             <VolumeIcon className="h-4 w-4" />
@@ -119,11 +93,7 @@ export default function AudioPlayer({
             step={0.05}
             value={effectiveVolume}
             aria-label="مستوى الصوت"
-            onChange={(e) => {
-              const v = Number(e.target.value);
-              setVolume(v);
-              setMuted(v === 0);
-            }}
+            onChange={(e) => setVolume(Number(e.target.value))}
             className="sz-range hidden w-20 min-[420px]:block sm:w-24"
             style={{
               background: `linear-gradient(to left, hsl(var(--primary)) ${effectiveVolume * 100}%, hsl(var(--primary) / 0.2) ${effectiveVolume * 100}%)`,
@@ -138,11 +108,7 @@ export default function AudioPlayer({
                 step={0.05}
                 value={effectiveVolume}
                 aria-label="مستوى الصوت"
-                onChange={(e) => {
-                  const v = Number(e.target.value);
-                  setVolume(v);
-                  setMuted(v === 0);
-                }}
+                onChange={(e) => setVolume(Number(e.target.value))}
                 className="sz-range block w-28"
                 style={{
                   background: `linear-gradient(to left, hsl(var(--primary)) ${effectiveVolume * 100}%, hsl(var(--primary) / 0.2) ${effectiveVolume * 100}%)`,
@@ -152,24 +118,24 @@ export default function AudioPlayer({
           )}
         </div>
 
-        {/* Center: transport + bookmark */}
+        {/* Center: transport */}
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" title="الآية السابقة"
-            disabled={idx <= 0} onClick={audio.prev}>
+            disabled={!readerActive} onClick={prev}>
             <SkipForward className="h-4 w-4" />
           </Button>
-          <Button size="icon" className="h-11 w-11 rounded-full shadow" title={playing ? 'إيقاف مؤقت' : 'تشغيل'} onClick={audio.toggle}>
-            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : playing ? <Pause className="h-5 w-5" /> : <Play className="ms-0.5 h-5 w-5" />}
+          <Button size="icon" className="h-11 w-11 rounded-full shadow" title={readerActive && playing ? 'إيقاف مؤقت' : 'تشغيل'} onClick={playButton}>
+            {readerActive && loading ? <Loader2 className="h-5 w-5 animate-spin" /> : readerActive && playing ? <Pause className="h-5 w-5" /> : <Play className="ms-0.5 h-5 w-5" />}
           </Button>
           <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" title="الآية التالية"
-            disabled={idx >= ayahs.length - 1} onClick={audio.next}>
+            disabled={!readerActive} onClick={next}>
             <SkipBack className="h-4 w-4" />
           </Button>
         </div>
 
         {/* Left: searchable reciter picker */}
         <div className="flex flex-1 items-center justify-end">
-          <RecitationPicker value={recitation.code} onChange={setReciterCode} />
+          <RecitationPicker value={reciterCode} onChange={setReciterCode} />
         </div>
       </div>
       {/* Ayah progress: fills from the right (RTL) as the Ayah is recited. */}
@@ -177,15 +143,15 @@ export default function AudioPlayer({
         <div className="h-0.5 w-full overflow-hidden rounded-full bg-muted">
           <div
             className="h-full bg-primary transition-[width] duration-150 ease-linear"
-            style={{ width: `${Math.round(progress * 100)}%`, marginInlineStart: 'auto' }}
+            style={{ width: `${Math.round((readerActive ? progress : 0) * 100)}%`, marginInlineStart: 'auto' }}
           />
         </div>
       </div>
       <div className="mx-auto mt-0.5 max-w-3xl truncate text-center text-[11px] text-muted-foreground">
-        {error
+        {readerActive && error
           ? <span className="text-destructive">{error}</span>
           : current
-            ? `آية ${current.key} · سورة ${SURAH_NAMES_AR[current.surah] ?? current.surah}${letterText}`
+            ? `آية ${current.surah}:${current.ayah} · سورة ${SURAH_NAMES_AR[current.surah] ?? current.surah}${letterText}`
             : 'اختر آية من الصفحة'}
       </div>
     </div>

@@ -150,6 +150,18 @@ export function getRecitation(code: string, signal?: AbortSignal): Promise<V4Rec
   );
 }
 
+export interface V4SurahSummary {
+  number: number;
+  code: string;
+  ayah_count: number;
+  revelation?: string;
+}
+
+/** The 114 surahs with their ayah counts (for a continuous queue). */
+export function fetchSurahs(signal?: AbortSignal): Promise<V4SurahSummary[]> {
+  return v4Get<{ data: V4SurahSummary[] }>('/v4/surahs', { all: true }, signal).then((r) => r.data);
+}
+
 // --- Audio files -------------------------------------------------------------
 
 export type AudioTier = 'original' | 'mp3_64' | 'opus_48';

@@ -23,7 +23,7 @@
     font-display: swap;
 }
 
-.quran-uthmani {
+.quran-rasm-uthmani {
     font-family: 'KFGQPC HAFS Uthmanic Script', 'KFGQPC Uthmanic Script HAFS', 'Amiri Quran', serif;
     text-rendering: optimizeLegibility;
     font-feature-settings: 'liga' 1;
@@ -148,7 +148,6 @@
 
 .quran-part.is-active {
     background-color: hsl(var(--primary) / 0.22);
-    color: hsl(var(--primary));
 }
 
 .quran-part.is-saved {

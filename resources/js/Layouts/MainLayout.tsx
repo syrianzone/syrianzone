@@ -1,6 +1,7 @@
 import React from 'react';
 import { AuthProvider } from '@/Contexts/AuthContext';
 import ConditionalLayout from '@/Components/ConditionalLayout';
+import GlobalRuntime from '@/Components/GlobalRuntime';
 import SettingsSync from '@/Pages/Muslim/_components/SettingsSync';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
@@ -10,6 +11,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 {children}
             </ConditionalLayout>
             <SettingsSync />
+            <GlobalRuntime />
         </AuthProvider>
     );
 }

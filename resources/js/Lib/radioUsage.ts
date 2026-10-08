@@ -1,10 +1,8 @@
-// Radio data-usage accounting.
+// Quran listening data-usage accounting.
 //
-// Every station in the registry is the same Shoutcast feed: MP3, 128 kbps
-// (verified from the `icy-br` header), `cache-control: no-cache`, no seek
-// range. That makes usage a function of listening time rather than something
-// worth measuring off the wire: a media element's transfer size is unreadable
-// cross-origin unless the response opts into timing, and these do not.
+// Playback streams the v4 on-demand files; a media element's transfer size is
+// unreadable from script, so usage is estimated from a nominal bitrate over the
+// listening time. It is an estimate, not a wire measurement.
 //
 // Three counters, deliberately separate:
 //
@@ -21,7 +19,7 @@
 // localStorage on a slower cadence: the readout ticks every second, and a
 // synchronous write per tick would be wasteful for no benefit.
 
-/** Every stream reports `icy-br: 128`. */
+/** Nominal bitrate used for the estimate. */
 export const STREAM_BITRATE_BPS = 128_000;
 
 /** What one hour of listening costs: 128 kbps * 3600 s / 8. */

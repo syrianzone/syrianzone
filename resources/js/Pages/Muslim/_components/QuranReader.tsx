@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { AlertCircle, ArrowRight, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight, Loader2, Maximize, Minimize } from 'lucide-react';
+import { AlertCircle, ArrowRight, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight, HardDrive, Loader2, Maximize, Minimize } from 'lucide-react';
 import axios from '@/Lib/axios';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
@@ -7,6 +7,8 @@ import AudioPlayer from './AudioPlayer';
 import MushafPage from './MushafPage';
 import { Popover, PopoverContent, PopoverTrigger } from '@/Components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/Components/ui/command';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/Components/ui/dialog';
+import QuranUsageCard from '@/Components/QuranUsageCard';
 import { ChevronDown, Check } from 'lucide-react';
 
 import { guestBookmarkKeys, toggleGuestBookmark } from '../_lib/guestBookmarks';
@@ -15,7 +17,7 @@ import {
   SURAH_NAMES_AR, TOTAL_PAGES, findPageForAyah, renderMushafPage, type Ayah, type QuranPage,
 } from '../_lib/quran';
 import { alignWordIndexes, wordsOfText } from '../_lib/quranAudio';
-import type { ActiveWord } from '../_lib/useSurahAudio';
+import { useQuranPlayer } from '@/Lib/quranPlayer';
 
 interface Props {
   page: number;
@@ -60,10 +62,12 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
   const [savedKeys, setSavedKeys] = useState<Set<string>>(() => guestBookmarkKeys());
   const [bookmarkBusy, setBookmarkBusy] = useState(false);
   const [currentAyahKey, setCurrentAyahKey] = useState<string | null>(null);
-  const [playSignal, setPlaySignal] = useState(0);
-  const [autoPlayPending, setAutoPlayPending] = useState(false);
-  const [activeWordInfo, setActiveWordInfo] = useState<ActiveWord | null>(null);
-  const handleActiveWord = useCallback((word: ActiveWord | null) => setActiveWordInfo(word), []);
+
+  // Global player: the reader follows its own queue; the word highlight comes
+  // from the shared player, so it also works while reading along with the radio.
+  const playerCurrent = useQuranPlayer((s) => s.current);
+  const playerSource = useQuranPlayer((s) => s.source);
+  const activeWord = useQuranPlayer((s) => s.activeWord);
   const setView = useMuslimNav((s) => s.setView);
   const setBookmarksOpen = useMuslimNav((s) => s.setBookmarksOpen);
   const targetAyah = useMuslimNav((s) => s.targetAyah);
@@ -91,11 +95,6 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
         setPages(list);
         const ayahs = list.flatMap((d) => d.ayahs);
         setCurrentAyahKey((k) => (ayahs.some((x) => x.key === k) ? k : (ayahs[0]?.key ?? null)));
-        
-        setAutoPlayPending((pending) => {
-          if (pending) setTimeout(() => setPlaySignal((s) => s + 1), 50);
-          return false;
-        });
       })
       .catch((e) => {
         if (e?.name !== 'AbortError') setError('تعذر تحميل الصفحة — تحقق من الاتصال ثم أعد المحاولة');
@@ -106,6 +105,25 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
     return () => ctrl.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, isDesktop, fontSize]);
+
+  // Keep the global player's recitation in step with the reader preference.
+  useEffect(() => {
+    useQuranPlayer.getState().setRecitation(reciterCode);
+  }, [reciterCode]);
+
+  // While the reader owns the queue, follow the reciter and flip the page when
+  // the recited ayah moves off the visible spread.
+  useEffect(() => {
+    if (playerSource !== 'reader' || !playerCurrent) return;
+    const key = `${playerCurrent.surah}:${playerCurrent.ayah}`;
+    setCurrentAyahKey((k) => (k === key ? k : key));
+    if (!ayahs.some((a) => a.key === key)) {
+      void findPageForAyah(playerCurrent.surah, playerCurrent.ayah).then((p) => {
+        if (p) setPage(clampPage(p));
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playerSource, playerCurrent, pagesKey]);
 
   // Saved ayahs: server list when logged in, guest device list otherwise
   // (union covers partially-pushed leftovers after a login merge).
@@ -132,22 +150,22 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
   // Map the API word position to the local Madina word index for highlighting.
   // Only when the local and API word sequences agree (identity alignment).
   const activeWordKey = (() => {
-    if (!activeWordInfo?.apiWords) return null;
-    const ayah = ayahs.find((a) => a.surah === activeWordInfo.surah && a.ayah === activeWordInfo.ayah);
+    if (!activeWord?.apiWords) return null;
+    const ayah = ayahs.find((a) => a.surah === activeWord.surah && a.ayah === activeWord.ayah);
     if (!ayah) return null;
     const local = wordsOfText(ayah.text);
-    const map = alignWordIndexes(local, activeWordInfo.apiWords);
+    const map = alignWordIndexes(local, activeWord.apiWords);
     if (!map) return null;
-    const localIdx = map[activeWordInfo.position - 1];
+    const localIdx = map[activeWord.position - 1];
     return localIdx != null && localIdx >= 0
-      ? `${activeWordInfo.surah}:${activeWordInfo.ayah}:${localIdx}`
+      ? `${activeWord.surah}:${activeWord.ayah}:${localIdx}`
       : null;
   })();
 
   // Letter-level sweep fill for the active word (0..1), when letter timings exist.
   const activeWordProgress =
-    activeWordInfo?.letterIndex != null && activeWordInfo.letterCount
-      ? Math.min(1, activeWordInfo.letterIndex / activeWordInfo.letterCount)
+    activeWord?.letterIndex != null && activeWord.letterCount
+      ? Math.min(1, activeWord.letterIndex / activeWord.letterCount)
       : null;
 
   // Landing from a bookmark/modal jump: select the target Ayah once loaded.
@@ -237,16 +255,21 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
 
   const requestPlay = (key: string) => {
     // First tap highlights the Ayah; tapping the highlighted Ayah plays it.
-    if (key === currentAyahKey) {
-      setPlaySignal((s) => s + 1);
-    } else {
-      setCurrentAyahKey(key);
-    }
+    if (key === currentAyahKey) startReader(key);
+    else setCurrentAyahKey(key);
+  };
+
+  // Play from the selected ayah, continuously; the reader follows the player.
+  const startReader = (startKey: string | null) => {
+    const start = ayahs.find((a) => a.key === startKey) ?? ayahs[0];
+    if (!start) return;
+    useQuranPlayer.getState().playReader({ surah: start.surah, ayah: start.ayah });
   };
 
   // Jump box accepts a Page ("100") or a ayah ("2:255", "2 255", "البقرة 255").
   const [jumpHint, setJumpHint] = useState<string | null>(null);
   const [surahSelectOpen, setSurahSelectOpen] = useState(false);
+  const [usageOpen, setUsageOpen] = useState(false);
 
   const resolveJump = async (raw: string): Promise<{ page: number; ayahKey: string | null } | null> => {
     const input = raw.trim();
@@ -284,12 +307,21 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
         <Button variant="ghost" size="sm" onClick={backToIndex} className="gap-1 px-2 text-xs text-muted-foreground">
           <ArrowRight className="h-4 w-4" /> رجوع
         </Button>
-        <Button
-          variant="ghost" size="sm" onClick={() => setBookmarksOpen(true)}
-          className="hidden gap-1.5 px-2 text-xs text-muted-foreground lg:inline-flex"
-        >
-          <Bookmark className="h-4 w-4" /> العلامات
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost" size="sm" onClick={() => setBookmarksOpen(true)}
+            className="hidden gap-1.5 px-2 text-xs text-muted-foreground lg:inline-flex"
+          >
+            <Bookmark className="h-4 w-4" /> العلامات
+          </Button>
+          <Button
+            variant="ghost" size="sm" onClick={() => setUsageOpen(true)}
+            className="gap-1.5 px-2 text-xs text-muted-foreground"
+            title="استهلاك البيانات"
+          >
+            <HardDrive className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
       )}
       {!isFocused && (
@@ -450,18 +482,22 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
           ayahs={ayahs}
           reciterCode={reciterCode}
           setReciterCode={setReciterCode}
-          currentKey={currentAyahKey}
-          onSelectAyah={setCurrentAyahKey}
-          playSignal={playSignal}
-          onActiveWordChange={handleActiveWord}
-          onEndOfList={() => {
-            if (page + step <= TOTAL_PAGES) {
-              go(page + step);
-              setAutoPlayPending(true);
-            }
-          }}
+          onPlayRequest={() => startReader(currentAyahKey)}
         />
       </div>
+
+      <Dialog open={usageOpen} onOpenChange={setUsageOpen}>
+        <DialogContent dir="rtl" className="sm:max-w-md">
+          <DialogHeader className="text-right sm:text-right">
+            <DialogTitle className="flex items-center gap-2">
+              <HardDrive className="h-5 w-5 text-primary" />
+              استهلاك البيانات
+            </DialogTitle>
+            <DialogDescription>بيانات التلاوة في القارئ والإذاعة</DialogDescription>
+          </DialogHeader>
+          <QuranUsageCard />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

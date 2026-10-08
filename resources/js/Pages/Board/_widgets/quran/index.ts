@@ -2,14 +2,12 @@ import { lazy } from 'react';
 import { Radio } from 'lucide-react';
 import type { WidgetDefinition } from '../../_lib/types';
 
-export interface QuranConfig {
-  defaultStationId?: string;
-}
+export interface QuranConfig {}
 
 export const quranWidget: WidgetDefinition<QuranConfig> = {
   id: 'quran',
   name: 'إذاعة القرآن الكريم',
-  description: 'استمع للبث المباشر لإذاعات القرآن الكريم عبر MP3Quran',
+  description: 'تلاوة متابَعة متواصلة مع نصّ ما يُقرأ، مشتركة مع الركن الإسلامي',
   icon: Radio,
   category: 'time',
   defaultSize: { w: 4, h: 2 },

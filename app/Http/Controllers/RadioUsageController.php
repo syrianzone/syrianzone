@@ -8,13 +8,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Quran radio data-usage accounting.
+ * Quran listening data-usage accounting.
  *
- * The client cannot read how many bytes a media element pulled (these
- * responses do not opt into timing), so it sends a *delta* of listening time
- * and the byte count that time implies. Deltas rather than totals, because the
- * counter is per user across devices: two phones listening at once must both
- * count, which last-write-wins on a total cannot do.
+ * The client cannot read how many bytes a media element pulled, so it sends a
+ * *delta* of listening time and the byte count that time implies. Deltas
+ * rather than totals, because the counter is per user across devices: two
+ * phones listening at once must both count, which last-write-wins on a total
+ * cannot do.
  */
 class RadioUsageController extends Controller
 {

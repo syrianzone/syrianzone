@@ -11,7 +11,7 @@ import QuranReader from './_components/QuranReader';
 import RadioTab from './_components/RadioTab';
 import { formatDuration } from './_lib/format';
 import { PRAYER_KEYS, PRAYER_LABELS, type PrayerKey } from './_lib/methods';
-import { DEFAULT_RECITATION_CODE, SURAH_NAMES_AR } from './_lib/quran';
+import { DEFAULT_RECITATION_CODE, SURAH_NAMES_AR, findPageForAyah } from './_lib/quran';
 import { prayerQueryParams, useMuslimPrefs } from './_lib/prefs';
 import { initialMuslimView, syncMuslimUrl, useMuslimNav, type MuslimView } from './_lib/nav';
 
@@ -144,6 +144,12 @@ export default function Index() {
     open('quran');
   };
 
+  // Followed recitation → reader: land on the ayah being recited.
+  const continueFromRadio = async (surah: number, ayah: number) => {
+    const page = await findPageForAyah(surah, ayah);
+    if (page) jumpToBookmark(page, `${surah}:${ayah}`);
+  };
+
   return (
     <MainLayout>
       <Head>
@@ -244,7 +250,7 @@ export default function Index() {
 
         {view === 'radio' && (
           <div className="container mx-auto max-w-2xl px-4 py-8">
-            <RadioTab />
+            <RadioTab onContinue={continueFromRadio} />
           </div>
         )}
 

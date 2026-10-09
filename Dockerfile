@@ -79,19 +79,24 @@ RUN mkdir -p /etc/s6-overlay/s6-rc.d/queue-worker/dependencies.d
 RUN echo "longrun" > /etc/s6-overlay/s6-rc.d/queue-worker/type
 COPY docker/s6/queue-worker-run /etc/s6-overlay/s6-rc.d/queue-worker/run
 RUN chmod +x /etc/s6-overlay/s6-rc.d/queue-worker/run
-RUN touch /etc/s6-overlay/s6-rc.d/user/contents.d/queue-worker
 
 RUN mkdir -p /etc/s6-overlay/s6-rc.d/laravel-scheduler/dependencies.d
 RUN echo "longrun" > /etc/s6-overlay/s6-rc.d/laravel-scheduler/type
 COPY docker/s6/laravel-scheduler-run /etc/s6-overlay/s6-rc.d/laravel-scheduler/run
 RUN chmod +x /etc/s6-overlay/s6-rc.d/laravel-scheduler/run
-RUN touch /etc/s6-overlay/s6-rc.d/user/contents.d/laravel-scheduler
 
 RUN mkdir -p /etc/s6-overlay/s6-rc.d/reverb-server/dependencies.d
 RUN echo "longrun" > /etc/s6-overlay/s6-rc.d/reverb-server/type
 COPY docker/s6/reverb-server-run /etc/s6-overlay/s6-rc.d/reverb-server/run
 RUN chmod +x /etc/s6-overlay/s6-rc.d/reverb-server/run
-RUN touch /etc/s6-overlay/s6-rc.d/user/contents.d/reverb-server
+
+# S6 Overlay v3.2.3.2 moved the "user" bundle from /etc/s6-overlay/s6-rc.d to
+# /etc/s6-overlay/user-bundles.d; the fallback keeps older base images working.
+RUN S6_USER_BUNDLE=/etc/s6-overlay/user-bundles.d/user; \
+    [ -d "$S6_USER_BUNDLE/contents.d" ] || S6_USER_BUNDLE=/etc/s6-overlay/s6-rc.d/user; \
+    touch "$S6_USER_BUNDLE/contents.d/queue-worker" \
+          "$S6_USER_BUNDLE/contents.d/laravel-scheduler" \
+          "$S6_USER_BUNDLE/contents.d/reverb-server"
 
 USER www-data
 

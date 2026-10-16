@@ -67,8 +67,8 @@ syrianzone/
 │   ├── Services/                # Isolated business logic (PlaceImageService, HalaSyriaService, WeatherService…)
 │   │   └── Places/               # Places moderation domain, shared by the dashboard and MCP tools
 │   ├── Support/                  # PermissionCatalogue + agent auth (ceiling authorizer, token issuer, audit)
-│   └── Exceptions/               # Domain refusals (Places/PlaceActionException)
-├── bootstrap/app.php            # Middleware config, middleware aliases, CSRF exceptions, AutoLoginDevUser
+│   └── Exceptions/               # Domain refusals extending DomainActionException (Places, Directories, Transit, Users)
+├── bootstrap/app.php            # Middleware config, aliases, CSRF exceptions, DomainActionException rendering, AutoLoginDevUser
 ├── config/                      # Standard Laravel config + reverb/scout/sentry/backup/inertia
 ├── database/migrations/         # Schema per module (see reference/database-schema.md)
 ├── docker/                      # s6-overlay longruns: queue-worker, scheduler, reverb-server; nginx conf
@@ -80,7 +80,7 @@ syrianzone/
 │   │   ├── Components/          # Shared UI: ui/ (shadcn), admin/, poll/, charts/, map/, Icons/
 │   │   ├── Contexts/            # AuthContext
 │   │   ├── Layouts/MainLayout.tsx
-│   │   ├── Lib/                 # axios client, cn(), theme/font utils, geo-utils, exportImage…
+│   │   ├── Lib/                 # axios client, apiError.ts, cn(), theme/font utils, geo-utils, exportImage…
 │   │   ├── Pages/               # One folder per route/module (Inertia pages)
 │   │   └── app.tsx / ssr.tsx    # Client + SSR entry points
 │   └── views/app.blade.php      # Inertia root view
@@ -99,7 +99,7 @@ syrianzone/
 Browser → Nginx → Laravel controller → returns `Inertia::render('Page/Name', props)` → React 19 page component hydrates. Subsequent navigation is XHR-based SPA navigation.
 
 ### API data flow
-React pages fetch JSON from `/api/*` using the shared axios client (`Lib/axios.ts`) wrapped in react-query (offlineFirst). Rate limits defined in `AppServiceProvider` + route middleware: `voting` 10/min, `public-api` 60/min per IP, `mcp` 120/min per API token (agent surface); contributors + `app-icon` + transit v1 reads + places reads throttle 60/min; Guess Who room create 10/min, join 30/min.
+React pages fetch JSON from `/api/*` using the shared axios client (`Lib/axios.ts`) wrapped in react-query (offlineFirst). Rate limits defined in `AppServiceProvider` + route middleware: `voting` 10/min, `public-api` 120/min per IP, `mcp` 120/min per API token (agent surface); contributors + `app-icon` + transit v1 reads + places reads throttle 60/min; Guess Who room create 10/min, join 30/min.
 
 ### Spatial query flow (transit/places)
 Controllers issue raw spatial SQL (`ST_AsGeoJSON`, `ST_Distance_Sphere`) against MySQL/MariaDB geometry columns; results cached (e.g. city geojson 1h) and large static datasets served from R2 CDN.

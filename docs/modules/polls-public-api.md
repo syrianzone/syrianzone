@@ -22,7 +22,7 @@ return full model rows.
 
 ## Rate limiting & paging
 
-- 60 requests per minute per IP (429 beyond that).
+- 120 requests per minute per IP (`throttle:public-api`; 429 `{ "message": "Too many requests. Slow down." }` beyond that).
 - `scores` and `ballots` are paginated: `?page=` and `?per_page=` (default
   100, max 1000), standard Laravel paginator envelope (`data`, `per_page`,
   `total`, ...).

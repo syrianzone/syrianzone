@@ -86,7 +86,7 @@ module `*_admin` roles and the old `admin` role stopped conferring capabilities
 | SyOfficial | `/admin/syofficial` (`syofficial_admin:any`) | categories/entities create (create), update (edit), delete (delete), reorder (reorder) under `/api/v1/admin/syofficial/*`. Deleting a category cascades to its entities |
 | Gov apps | `/admin/govapps` (`govapps_admin:any`) | create (create), update (edit), destroy (delete, soft), reorder (reorder) under `/api/v1/admin/govapps` |
 | Phonebook | `/admin/phonebook` (`phonebook_admin:any`) | categories/entries create (create), update (edit), toggle active (toggle), destroy (delete, hard), reorder (reorder) under `/api/v1/admin/phonebook` |
-| User ban | dashboard user list | `POST /api/v1/admin/users/{id}/toggle-ban` — gated by the `users.ban` capability in its own `users_admin` group. Not a content module: it is application-wide. Banning a superadmin is refused in the controller as a domain rule |
+| User ban | dashboard user list | `POST /api/v1/admin/users/{id}/toggle-ban` — gated by the `users.ban` capability in its own `users_admin` group. Not a content module: it is application-wide. Banning a superadmin or self-banning is refused in `UserModerationService` (`UserModerationException`) |
 
 ### Agent / MCP surface (`routes/ai.php`, bearer token — no session, no CSRF)
 
@@ -123,7 +123,9 @@ module `*_admin` roles and the old `admin` role stopped conferring capabilities
 
 **Public voting data** (`Api\V1\VotingDataController`, throttle `public-api`): see [modules/polls-public-api.md](../modules/polls-public-api.md).
 
-## Standard JSON Error Contract
+## Standard JSON Error Contract & Client Handling
+
+Clients calling any JSON endpoint should always send `Accept: application/json` so Laravel returns JSON rather than an Inertia HTML page or redirect on `401`/`404`/`422`.
 
 All JSON error responses (`HTTP >= 400`) follow a standardized shape:
 
@@ -132,15 +134,23 @@ All JSON error responses (`HTTP >= 400`) follow a standardized shape:
   "message": "Human-readable error description",
   "errors": {
     "field_name": ["First validation message for field_name"]
-  },
-  "code": "OPTIONAL_MACHINE_CODE"
+  }
 }
 ```
 
 - **`message`** *(always present)*: Top-level human-readable summary. Endpoints that historically returned `{ "error": "..." }` (such as `/api/submit`, `/guesswho/*`, `/api/user/settings`, `/api/user/radio-usage`, `/mcp/*`, and custom rate limiters) return both `message` and `error` for backwards compatibility, and `bootstrap/app.php` normalizes any exception-rendered `JsonResponse` that sets `error` without `message`.
-- **`errors`** *(optional, `422` validation)*: Field-keyed validation error arrays produced by `$request->validate()`.
-- **`code`** *(optional)*: Machine-readable error code (e.g. `OUT_OF_BOUNDS` in Mishwar Places).
+- **`errors`** *(optional, `422` validation)*: Field-keyed validation error arrays produced by `$request->validate()` (dot-notation for array fields such as `photos.0` or `stops.1.lat`).
+- **Status codes**:
+  - `400` Bad Request / domain rule refusal (e.g. poll minimum selection, place already moderated, invalid store on `/api/app-icon`).
+  - `401` Unauthenticated (`{ "message": "Unauthenticated." }`).
+  - `403` Forbidden / banned account / revoked or expired API token / disabled module.
+  - `404` Resource not found.
+  - `409` State conflict (e.g. duplicate directory ID, soft-deleted gov app ID collision).
+  - `413` Payload too large (e.g. settings JSON >40KB).
+  - `422` Validation or business-constraint refusal (`message` + optional `errors` bag).
+  - `429` Rate limit exceeded (`Retry-After`, `X-RateLimit-Limit`, and `X-RateLimit-Remaining` headers included).
 - **Domain exceptions**: `DomainActionException` subclasses (`PlaceActionException`, `DirectoryActionException`, `TransitActionException`, `UserModerationException`) are rendered centrally in `bootstrap/app.php` to `{ "message": "..." }` with `$e->httpStatus()`.
+- **Frontend helper**: Web consumers use `extractApiErrorMessage` and `extractApiFieldErrors` from `resources/js/Lib/apiError.ts`.
 
 ## Broadcasting channels (`channels.php`)
 Private/presence channels for Guess Who room state.

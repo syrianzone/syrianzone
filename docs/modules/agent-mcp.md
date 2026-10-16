@@ -352,3 +352,149 @@ The page also shows the ready-to-paste `curl` and points at
 - Banning a user is enforced by `RequireApiToken` on every call. This closes a
   pre-existing gap: `is_banned` was checked at login and in `canAccessPanel`, but
   on **no** admin endpoint, so a ban was advisory for a long-lived credential.
+
+Rate limiting: `throttle:mcp`, 120/min, keyed by **token id** so one noisy agent
+cannot exhaust another's budget on a shared egress IP.
+
+---
+
+## 8. Trying it locally
+
+```bash
+# 1. the surface is off unless you opt in
+echo 'MCP_ENABLED=true' >> .env && php artisan config:clear
+
+# 2. mint a token (or use /admin/api-tokens in the UI)
+php artisan tinker --execute='
+  $u = App\Models\User::where("role","superadmin")->first();
+  echo app(App\Support\Agents\TokenIssuer::class)
+        ->issue($u, "local-test", ["places.review","places.approve"])
+        ["token"]->plainTextToken;'
+
+# 3. call it
+curl -s -X POST http://localhost:8000/mcp/admin \
+  -H "Authorization: Bearer <token>" \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json, text/event-stream' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+```
+
+Without a token you get `401`. With a valid one you get the tool list scoped to
+that token's capabilities.
+
+Three protocol details that cost time, all found by driving a real session:
+
+- **`Accept: application/json, text/event-stream` is required.** The MCP HTTP
+  transport negotiates SSE; without it the client is refused.
+- **`execute_tools` answers as SSE even when it does not stream.** Its response
+  is `Content-Type: text/event-stream` with `data: {json}` frames, while a
+  direct `tools/call` for an advertised tool is plain `application/json`. A
+  client that only does `json.loads(body)` will fail on the catalogue path —
+  strip the `data: ` prefix, or branch on the content type.
+- **A browser session beats the bearer token.** `config('sanctum.guard')` lists
+  `web` first, so if a logged-in cookie is also sent, Sanctum resolves *that*
+  user and `RequireApiToken` rejects the resulting `TransientToken` with 403.
+  This is intended — a session is not a revocable agent credential — but it
+  means you cannot test the agent endpoint from a logged-in browser tab with
+  `fetch`. Use curl, or send no cookie.
+
+Resource URIs are pinned with `#[Uri]` rather than left to the class-name
+default, so the `uri` an agent reads in `resources/list` matches the `name`:
+
+| Resource | URI |
+|---|---|
+| `agent-permissions` | `syrianzone://agent/permissions` |
+| `agent-token-audit` | `syrianzone://agent/audit-trail` |
+
+If a code change appears not to take effect, note that the dev server keeps
+`opcache` with `revalidate_freq=180`: a long-running `php artisan serve` can
+serve a stale compile for up to three minutes. Restart it if in doubt.
+
+## 9. Tests
+
+`tests/Feature/Agent/`:
+
+| File | Covers |
+|---|---|
+| `AgentAuthorizationTest.php` | The ceiling: clamping, wildcard refusal, live revocation, governorate scoping, fail-closed paths |
+| `AgentHttpTest.php` | The edge: feature flag, guest, session-cookie refusal, ban, expiry, revocation, real bearer round trip |
+| `PlacesToolsTest.php` | Tool behaviour, domain refusals, `shouldRegister` gating, audit outcomes, redaction |
+| `ApiTokenIssuingTest.php` | Form → token: clamping, banned owners, unknown ids, TTL fallback |
+| `DirectoryToolsTest.php` | SyOfficial / Gov Apps: capability isolation, any-of read gates, soft vs hard delete, omitted-vs-null |
+| `TransitToolsTest.php` | Governorate scoping, including the two indirect routes (linked edit, move) and cross-module capability isolation |
+| `DirectoryDiscoveryTest.php` | The real JSON-RPC surface: `tools/list` gating, `search_tools`, and an `execute_tools` SSE round trip |
+| `SetUserBanToolTest.php` | The highest-consequence tool: capability gating, self-ban and superadmin refusals, idempotence, and not leaking the target's permissions |
+
+`tests/Feature/`, alongside the module's own:
+
+| File | Covers |
+|---|---|
+| `SyOfficialDirectoryTest.php`, `SyOfficialAdminTest.php` | Service rules, then the HTTP contract after the controller was reduced to an adapter |
+| `GovAppsServiceTest.php`, `GovAppsAdminTest.php` | Same split, plus the soft-delete id-reuse rule |
+| `TransitAdminServiceTest.php` | Approve/reject/status/update/move/delete, cache invalidation, and the two regression tests below |
+
+Two notes for anyone extending this:
+
+- Catalogue tools cannot be driven by the package's `AdminServer::tool(...)`
+  helper (it resolves primitives by class name, and `ToolSearch` needs its tools
+  injected). Use the `callTool()` helper in `tests/Pest.php`, which invokes
+  `handle()` exactly as the MCP `ToolInvoker` does.
+- `Response::structured()` returns a `ResponseFactory`, not a `Response`. Tool
+  `run()` signatures are `Response|ResponseFactory` for that reason.
+
+### Drive the real surface at least once
+
+`callTool()` skips the transport, which also skips schema serialisation. A
+catalogue tool with a bogus JSON-schema call (`->maxLength()` instead of
+`->max()`, for instance) passes every direct test and then fails for any real
+agent, because the schema is only built when `ToolSearch` renders it. So each
+module's discovery test goes over HTTP and exercises `tools/list`,
+`search_tools`, and an `execute_tools` round trip.
+
+### Two regression tests worth not deleting
+
+Both came out of extracting the transit service, and both are defects that were
+live in production:
+
+- `it republishes a linked route when its edit is approved` — submitting an edit
+  against a live route unpublishes it, so the map does not show stale data while
+  the edit is reviewed. The *reject* path put it back; the *approve* path did
+  not, so accepting an edit left the route permanently `disapproved` and
+  invisible to every public user. `rejectDraft()` and `approveDraft()` now both
+  restore, and the service docblock says why they must stay symmetric.
+- `it refuses an end-stop split without leaving a transaction open` — `splitRoute`
+  opened a transaction and then returned its 400 from inside the `try`, without
+  committing or rolling back, leaking an open transaction onto the connection for
+  the rest of the request. The guard now runs before the transaction opens. The
+  assertion compares `DB::transactionLevel()` against the level captured before
+  the call, because `RefreshDatabase` already holds one.
+
+---
+
+## 10. Adding a module
+
+1. Extract the module's admin logic into a transport-free service under
+   `app/Services/<Module>/`, and point the existing controller at it.
+2. Add tools in `app/Mcp/Tools/<Module>/` extending `AuditedTool`, declaring
+   `$permissions` (all required) or `$anyPermissions` (any one sufficient — see
+   §4).
+3. Register them in `app/Mcp/Servers/AdminServer.php` — read tools directly,
+   writes inside the `ToolSearch` array.
+4. Add tests, including one over the real JSON-RPC surface.
+
+For a governorate-scoped module, extend a tool base that wraps
+`AgentContext::allowedTransitCities()` and a `guardCity()` helper rather than
+reaching for the user directly, and remember that the city is usually only
+knowable **after** resolving the target row.
+
+**Do not** add a parallel permission vocabulary. If a module needs a capability
+that does not exist, add it to `PermissionCatalogue` — it is the same list the
+Filament user form renders. The one exception is deliberate: a read tool in a
+module with no read capability should use `$anyPermissions` rather than
+minting a capability that changes what every existing token resolves to.
+
+**Do not** expose an operation you cannot test. If a module's hardest operations
+depend on something the test database cannot provide — transit's spatial
+functions are the current example — leave them behind the dashboard and say so
+in the service docblock and here, rather than shipping them to an autonomous
+caller on the strength of "it is the same code path".

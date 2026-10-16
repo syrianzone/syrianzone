@@ -591,7 +591,7 @@ Route::middleware('auth')->group(function () {
 Route::post('/api/user/settings', function (\Illuminate\Http\Request $request) {
     $user = $request->user();
     if (!$user) {
-        return response()->json(['error' => 'Unauthenticated'], 401);
+        return response()->json(['message' => 'Unauthenticated.', 'error' => 'Unauthenticated'], 401);
     }
 
     $validated = $request->validate([
@@ -637,14 +637,14 @@ Route::post('/api/user/settings', function (\Illuminate\Http\Request $request) {
     $newSettings = $validated['settings'] ?? [];
     // customLinks replaces wholesale; cap JSON size so one client cannot bloat the row.
     if (isset($newSettings['customLinks']) && strlen(json_encode($newSettings['customLinks'])) > 20000) {
-        return response()->json(['error' => 'Too many links.'], 422);
+        return response()->json(['message' => 'Too many links.', 'error' => 'Too many links.'], 422);
     }
 
     $currentSettings = $user->settings ?? [];
 
     $mergedSettings = array_merge($currentSettings, $newSettings);
     if (strlen(json_encode($mergedSettings)) > 40000) {
-        return response()->json(['error' => 'Settings too large.'], 422);
+        return response()->json(['message' => 'Settings too large.', 'error' => 'Settings too large.'], 422);
     }
     $user->settings = $mergedSettings;
     $user->save();

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Exceptions\Places\PlaceActionException;
 use App\Services\Places\PlaceModerationService;
 use App\Services\Places\PlacePresenter;
 use Illuminate\Http\Request;
@@ -12,8 +11,9 @@ use Inertia\Inertia;
  * HTTP adapter for places moderation.
  *
  * Every write delegates to PlaceModerationService, which is also what the agent
- * MCP tools call. This class is left with request validation, the response
- * shape, and the domain-exception to status-code mapping — nothing else.
+ * MCP tools call. Domain refusals (PlaceActionException) are rendered into
+ * standardized JSON error responses by the global exception handler in
+ * bootstrap/app.php.
  */
 class PlaceAdminController extends Controller
 {
@@ -44,13 +44,11 @@ class PlaceAdminController extends Controller
             'lng' => 'sometimes|required|numeric|between:35.5,42.5',
         ]);
 
-        return $this->guard(function () use ($id, $validated, $places, $presenter, $request) {
-            $places->update($id, $validated);
+        $places->update($id, $validated);
 
-            return response()->json(
-                $presenter->item($presenter->present($places->findOrFail($id), $request->user()->id))
-            );
-        });
+        return response()->json(
+            $presenter->item($presenter->present($places->findOrFail($id), $request->user()->id))
+        );
     }
 
     public function addPhoto(int $id, Request $request, PlaceModerationService $places)
@@ -59,67 +57,55 @@ class PlaceAdminController extends Controller
             'photo' => 'required|image|mimes:jpg,jpeg,png,webp|max:12288|dimensions:min_width=200,min_height=200,max_width=6000,max_height=6000',
         ], $this->photoMessages());
 
-        return $this->guard(function () use ($id, $request, $places) {
-            $photo = $places->addPhoto($id, $request->file('photo'));
+        $photo = $places->addPhoto($id, $request->file('photo'));
 
-            return response()->json([
-                'id' => $photo->id,
-                'thumb_url' => $photo->thumb_url,
-                'display_url' => $photo->display_url,
-                'sort' => $photo->sort,
-            ], 201);
-        });
+        return response()->json([
+            'id' => $photo->id,
+            'thumb_url' => $photo->thumb_url,
+            'display_url' => $photo->display_url,
+            'sort' => $photo->sort,
+        ], 201);
     }
 
     public function deletePhoto(int $id, PlaceModerationService $places)
     {
-        return $this->guard(function () use ($id, $places) {
-            $places->deletePhoto($id);
+        $places->deletePhoto($id);
 
-            return response()->json(null, 204);
-        });
+        return response()->json(null, 204);
     }
 
     public function approve(int $id, PlaceModerationService $places)
     {
-        return $this->guard(function () use ($id, $places) {
-            $place = $places->approve($id);
+        $place = $places->approve($id);
 
-            return response()->json(['id' => $place->id, 'status' => 'approved']);
-        });
+        return response()->json(['id' => $place->id, 'status' => 'approved']);
     }
 
     public function reject(Request $request, int $id, PlaceModerationService $places)
     {
         $validated = $request->validate(['reason' => 'nullable|string|max:1000']);
 
-        return $this->guard(function () use ($id, $validated, $places) {
-            $place = $places->reject($id, $validated['reason'] ?? null);
+        $place = $places->reject($id, $validated['reason'] ?? null);
 
-            return response()->json(['id' => $place->id, 'status' => 'rejected']);
-        });
+        return response()->json(['id' => $place->id, 'status' => 'rejected']);
     }
 
     public function destroy(int $id, PlaceModerationService $places)
     {
-        return $this->guard(function () use ($id, $places) {
-            $places->delete($id);
+        $places->delete($id);
 
-            return response()->json(null, 204);
-        });
+        return response()->json(null, 204);
     }
 
     public function rotatePhoto(int $id, PlaceModerationService $places)
     {
-        return $this->guard(function () use ($id, $places) {
-            $photo = $places->rotatePhoto($id);
+        $photo = $places->rotatePhoto($id);
 
-            return response()->json([
-                'id' => $photo->id,
-                'thumb_url' => $photo->thumb_url,
-                'display_url' => $photo->display_url,
-            ]);
-        });
+        return response()->json([
+            'id' => $photo->id,
+            'thumb_url' => $photo->thumb_url,
+            'display_url' => $photo->display_url,
+        ]);
     }
 
     public function replacePhoto(int $id, Request $request, PlaceModerationService $places)
@@ -128,33 +114,13 @@ class PlaceAdminController extends Controller
             'photo' => 'required|image|mimes:jpg,jpeg,png,webp|max:12288|dimensions:min_width=200,min_height=200,max_width=6000,max_height=6000',
         ], $this->photoMessages());
 
-        return $this->guard(function () use ($id, $request, $places) {
-            $photo = $places->replacePhoto($id, $request->file('photo'));
+        $photo = $places->replacePhoto($id, $request->file('photo'));
 
-            return response()->json([
-                'id' => $photo->id,
-                'thumb_url' => $photo->thumb_url,
-                'display_url' => $photo->display_url,
-            ]);
-        });
-    }
-
-    /**
-     * Map a domain refusal onto the status codes the dashboard already handles.
-     *
-     * @param  callable(): mixed  $callback
-     */
-    private function guard(callable $callback): mixed
-    {
-        try {
-            return $callback();
-        } catch (PlaceActionException $e) {
-            if ($e->kind === PlaceActionException::NOT_FOUND) {
-                abort(404, $e->getMessage());
-            }
-
-            return response()->json(['message' => $e->getMessage()], $e->httpStatus());
-        }
+        return response()->json([
+            'id' => $photo->id,
+            'thumb_url' => $photo->thumb_url,
+            'display_url' => $photo->display_url,
+        ]);
     }
 
     private function photoMessages(): array

@@ -2,7 +2,7 @@
 
 namespace App\Exceptions\Directories;
 
-use RuntimeException;
+use App\Exceptions\DomainActionException;
 
 /**
  * Domain refusal from the directory modules (SyOfficial and Gov Apps).
@@ -16,7 +16,7 @@ use RuntimeException;
  * controller maps `kind` onto a status code, the MCP tool maps it onto an
  * agent-readable sentence.
  */
-class DirectoryActionException extends RuntimeException
+class DirectoryActionException extends DomainActionException
 {
     public const NOT_FOUND = 'not_found';
 
@@ -25,17 +25,6 @@ class DirectoryActionException extends RuntimeException
     public const ID_REQUIRED = 'id_required';
 
     public const CATEGORY_NOT_FOUND = 'category_not_found';
-
-    /**
-     * @param  array<string, mixed>  $context
-     */
-    public function __construct(
-        public readonly string $kind,
-        string $message,
-        public readonly array $context = [],
-    ) {
-        parent::__construct($message);
-    }
 
     /**
      * @param  class-string  $label  Human noun for the message, e.g. 'Entity'.

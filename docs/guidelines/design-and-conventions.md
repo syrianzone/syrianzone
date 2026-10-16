@@ -71,6 +71,7 @@ already exists. Before writing a component, search `Components/` and
 |---|---|
 | Toast / feedback | `Lib/notify.ts` + `Components/ui/sonner` |
 | Confirm dialog | `Lib/confirm.ts` + `Components/ConfirmHost` |
+| API error extraction | `Lib/apiError.ts` (`extractApiErrorMessage`, `extractApiFieldErrors`) |
 | Alert (inline) | `Components/ui/alert.tsx` |
 | Tabs / segmented switcher | `Lib/useTabList.ts` (custom) or `Components/ui/tabs` |
 | Filter chips | `Components/ui/filter-chip.tsx` |
@@ -93,6 +94,9 @@ Rules:
 
 - One controller per feature area under `app/Http/Controllers`, JSON APIs under `Api/` (versioned `V1`).
 - Business logic isolated in `app/Services` (e.g. `PlaceImageService`, `HalaSyriaService`). When more than one transport needs a rule (dashboard + agent), extract it to a transport-free service and let both call it.
+- **API error responses & domain exceptions**:
+  - Every `4xx`/`5xx` JSON error response includes a top-level string `message` key (`{ "message": "..." }`), matching Laravel's default exception envelope. Validation errors (`422`) add `errors: Record<string, string[]>`, and domain/geographic errors may add `code: string`. Legacy endpoints that historically returned `error` emit both `message` and `error` (`bootstrap/app.php` also normalizes any exception-rendered `JsonResponse` that has `error` without `message`).
+  - Domain services that back both HTTP controllers and MCP tools throw subclasses of `App\Exceptions\DomainActionException` (`PlaceActionException`, `DirectoryActionException`, `TransitActionException`, `UserModerationException`). `bootstrap/app.php` suppresses reporting for `DomainActionException` and renders it directly to `{ "message": $e->getMessage() }` with `$e->httpStatus()` (converting `404` on non-JSON web requests into a `NotFoundHttpException` so Inertia renders the 404 page).
 - Rate limiters named in `AppServiceProvider`: `voting` (10/min), `public-api` (60/min per IP), `mcp` (120/min, keyed by API token id so one agent cannot starve another behind the same IP), `studio-submit`; widget endpoints 60/min.
 - Module capability middleware aliases (`bootstrap/app.php`): `transit_admin`, `syofficial_admin`, `phonebook_admin`, `places_admin`, `polls_admin`, `govapps_admin`, `compass_admin`, `users_admin`, and `superadmin`. The `*_admin` aliases take per-route capability params (e.g. `transit_admin:transit.approve`). There is no general `admin` alias any more.
 - Capability ids live **only** in `app/Support/Permissions/PermissionCatalogue.php` — the Filament user form and agent API tokens both read it. Never introduce a second permission vocabulary.

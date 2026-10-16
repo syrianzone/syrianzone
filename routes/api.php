@@ -52,7 +52,10 @@ Route::get('/app-icon', function (Request $request) {
     if ($store === 'apple') {
         $id = $request->query('id');
         if (!$id || !ctype_digit($id)) {
-            return response()->json(['icon' => null], 400);
+            return response()->json([
+                'message' => 'Invalid or missing Apple store id.',
+                'icon' => null,
+            ], 400);
         }
 
         $cacheKey = 'app_icon_apple_' . $id;
@@ -72,7 +75,10 @@ Route::get('/app-icon', function (Request $request) {
     if ($store === 'play') {
         $package = $request->query('package');
         if (!$package || !preg_match('/^[a-zA-Z0-9._]+$/', $package)) {
-            return response()->json(['icon' => null], 400);
+            return response()->json([
+                'message' => 'Invalid or missing Google Play package.',
+                'icon' => null,
+            ], 400);
         }
 
         $cacheKey = 'app_icon_play_' . $package;
@@ -106,7 +112,10 @@ Route::get('/app-icon', function (Request $request) {
         return response()->json(['icon' => $icon]);
     }
 
-    return response()->json(['icon' => null], 400);
+    return response()->json([
+        'message' => 'Unsupported store.',
+        'icon' => null,
+    ], 400);
 })->middleware('throttle:60,1');
 
 Route::prefix('v1')->group(function () {

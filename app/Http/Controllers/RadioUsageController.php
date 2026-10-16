@@ -25,7 +25,7 @@ class RadioUsageController extends Controller
     public function add(Request $request): JsonResponse
     {
         if (! $user = $request->user()) {
-            return response()->json(['error' => 'Unauthenticated'], 401);
+            return response()->json(['message' => 'Unauthenticated.', 'error' => 'Unauthenticated'], 401);
         }
 
         $validated = $request->validate([
@@ -59,7 +59,7 @@ class RadioUsageController extends Controller
     public function clear(Request $request): JsonResponse
     {
         if (! $user = $request->user()) {
-            return response()->json(['error' => 'Unauthenticated'], 401);
+            return response()->json(['message' => 'Unauthenticated.', 'error' => 'Unauthenticated'], 401);
         }
 
         $settings = $user->settings ?? [];

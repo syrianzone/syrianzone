@@ -2,7 +2,7 @@
 
 namespace App\Exceptions\Users;
 
-use RuntimeException;
+use App\Exceptions\DomainActionException;
 
 /**
  * Domain refusal from user moderation.
@@ -15,24 +15,13 @@ use RuntimeException;
  * panel, MCP token use (RequireApiToken) and route/place submission — so the
  * two ways to get it wrong are refusals, not failures.
  */
-class UserModerationException extends RuntimeException
+class UserModerationException extends DomainActionException
 {
     /** Superadmins are not bannable at all. */
     public const TARGET_IS_SUPERADMIN = 'target_is_superadmin';
 
     /** The caller (or the agent acting for it) cannot ban its own account. */
     public const SELF_BAN = 'self_ban';
-
-    /**
-     * @param  array<string, mixed>  $context
-     */
-    public function __construct(
-        public readonly string $kind,
-        string $message,
-        public readonly array $context = [],
-    ) {
-        parent::__construct($message);
-    }
 
     public static function targetIsSuperadmin(?string $name = null): self
     {

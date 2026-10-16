@@ -265,7 +265,10 @@ class PollController extends Controller
 
         $totalAssigned = collect($data['tiers'])->flatten(1)->count();
         if ($totalAssigned < 3) {
-            return response()->json(['error' => 'Minimum selection is 3'], 400);
+            return response()->json([
+                'message' => 'Minimum selection is 3',
+                'error' => 'Minimum selection is 3',
+            ], 400);
         }
 
         $poll = Poll::where('slug', $data['pollSlug'])->firstOrFail();

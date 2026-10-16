@@ -123,5 +123,24 @@ module `*_admin` roles and the old `admin` role stopped conferring capabilities
 
 **Public voting data** (`Api\V1\VotingDataController`, throttle `public-api`): see [modules/polls-public-api.md](../modules/polls-public-api.md).
 
+## Standard JSON Error Contract
+
+All JSON error responses (`HTTP >= 400`) follow a standardized shape:
+
+```json
+{
+  "message": "Human-readable error description",
+  "errors": {
+    "field_name": ["First validation message for field_name"]
+  },
+  "code": "OPTIONAL_MACHINE_CODE"
+}
+```
+
+- **`message`** *(always present)*: Top-level human-readable summary. Endpoints that historically returned `{ "error": "..." }` (such as `/api/submit`, `/guesswho/*`, `/api/user/settings`, `/api/user/radio-usage`, `/mcp/*`, and custom rate limiters) return both `message` and `error` for backwards compatibility, and `bootstrap/app.php` normalizes any exception-rendered `JsonResponse` that sets `error` without `message`.
+- **`errors`** *(optional, `422` validation)*: Field-keyed validation error arrays produced by `$request->validate()`.
+- **`code`** *(optional)*: Machine-readable error code (e.g. `OUT_OF_BOUNDS` in Mishwar Places).
+- **Domain exceptions**: `DomainActionException` subclasses (`PlaceActionException`, `DirectoryActionException`, `TransitActionException`, `UserModerationException`) are rendered centrally in `bootstrap/app.php` to `{ "message": "..." }` with `$e->httpStatus()`.
+
 ## Broadcasting channels (`channels.php`)
 Private/presence channels for Guess Who room state.

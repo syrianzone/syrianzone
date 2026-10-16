@@ -1,11 +1,14 @@
 <?php
 
+use App\Exceptions\DomainActionException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -68,7 +71,36 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions) {
         \Sentry\Laravel\Integration::handles($exceptions);
 
+        $exceptions->dontReport([
+            DomainActionException::class,
+        ]);
+
+        $exceptions->render(function (DomainActionException $e, Request $request) {
+            if ($e->httpStatus() === 404 && ! $request->expectsJson()) {
+                throw new NotFoundHttpException($e->getMessage(), $e);
+            }
+
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], $e->httpStatus());
+        });
+
         $exceptions->respond(function (Response $response, \Throwable $exception, Request $request) {
+            if (
+                $response instanceof JsonResponse
+                && $response->getStatusCode() >= 400
+            ) {
+                $data = $response->getData(true);
+                if (
+                    is_array($data)
+                    && ! isset($data['message'])
+                    && isset($data['error'])
+                    && is_string($data['error'])
+                ) {
+                    $response->setData(['message' => $data['error']] + $data);
+                }
+            }
+
             if (
                 $response->getStatusCode() === 404
                 && $request->isMethod('GET')

@@ -1,4 +1,5 @@
 import axios from '@/Lib/axios';
+import { extractApiErrorMessage, extractApiFieldErrors } from '@/Lib/apiError';
 import type {
   GeoSuggestion,
   AdminPlace,
@@ -200,23 +201,24 @@ const STATUS_MESSAGES: Record<number, string> = {
 };
 
 export function extractError(e: unknown): string {
-  const err = e as { response?: { status?: number; data?: { message?: string; error?: string } } };
-  const message = err.response?.data?.message ?? err.response?.data?.error;
+  const message = extractApiErrorMessage(e, '');
   // only trust the app's own Arabic messages; Laravel defaults are English
   if (message && /[\u0600-\u06FF]/.test(message)) return message;
+  const err = e as { response?: { status?: number } };
   const status = err.response?.status;
   return (status !== undefined && STATUS_MESSAGES[status]) || 'حدث خطأ، حاول مجدداً';
 }
 
 export function extractFieldErrors(e: unknown): Record<string, string> | null {
-  const err = e as { response?: { status?: number; data?: { errors?: Record<string, string[]> } } };
-  if (err.response?.status !== 422 || !err.response.data?.errors) return null;
+  const err = e as { response?: { status?: number } };
+  if (err.response?.status !== 422) return null;
+  const raw = extractApiFieldErrors(e);
   const out: Record<string, string> = {};
-  for (const [key, msgs] of Object.entries(err.response.data.errors)) {
+  for (const [key, msg] of Object.entries(raw)) {
     // photos.0, photos.1 ... collapse onto the photos field
     const field = key.startsWith('photos') ? 'photos' : key.split('.')[0];
     // same guard as extractError: only trust the app's own Arabic messages
-    if (!(field in out) && msgs[0] && /[؀-ۿ]/.test(msgs[0])) out[field] = msgs[0];
+    if (!(field in out) && msg && /[\u0600-\u06ff]/.test(msg)) out[field] = msg;
   }
   return Object.keys(out).length ? out : null;
 }

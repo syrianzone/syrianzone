@@ -60,6 +60,7 @@ class RequireApiToken
     private function deny(Request $request, string $message): Response
     {
         return response()->json([
+            'message' => $message,
             'error' => $message,
         ], 403, [
             'WWW-Authenticate' => 'Bearer realm="mcp"',

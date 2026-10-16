@@ -39,13 +39,15 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
 
-        RateLimiter::for('voting', fn (Request $request) => Limit::perMinute(10)->by($request->ip())->response(fn () => response()->json(['error' => 'Too many votes. Please slow down.'], 429)
-        )
-        );
+        RateLimiter::for('voting', fn (Request $request) => Limit::perMinute(10)->by($request->ip())->response(fn () => response()->json([
+            'message' => 'Too many votes. Please slow down.',
+            'error' => 'Too many votes. Please slow down.',
+        ], 429)));
 
-        RateLimiter::for('public-api', fn (Request $request) => Limit::perMinute(60)->by($request->ip())->response(fn () => response()->json(['error' => 'Too many requests. Please slow down.'], 429)
-        )
-        );
+        RateLimiter::for('public-api', fn (Request $request) => Limit::perMinute(60)->by($request->ip())->response(fn () => response()->json([
+            'message' => 'Too many requests. Please slow down.',
+            'error' => 'Too many requests. Please slow down.',
+        ], 429)));
 
         RateLimiter::for('compass-stats', function (Request $request) {
             $message = ['message' => 'يمكنك إرسال نتيجة مجهولة واحدة كل عشر دقائق.'];
@@ -85,6 +87,7 @@ class AppServiceProvider extends ServiceProvider
                 : 'user:'.($request->user()?->getAuthIdentifier() ?? 'ip:'.$request->ip());
 
             return Limit::perMinute(120)->by($key)->response(fn () => response()->json([
+                'message' => 'Too many agent requests. Slow down and retry shortly.',
                 'error' => 'Too many agent requests. Slow down and retry shortly.',
             ], 429));
         });

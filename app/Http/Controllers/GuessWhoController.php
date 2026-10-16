@@ -6,6 +6,7 @@ use App\Models\GuessWhoCategory;
 use App\Models\GuessWhoCharacter;
 use App\Models\GuessWhoGame;
 use App\Events\GuessWhoStateEvent;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -68,7 +69,7 @@ class GuessWhoController extends Controller
         }
 
         if (count($characterIds) < 12) {
-            return response()->json(['error' => 'لا توجد شخصيات كافية لبدء اللعبة.'], 400);
+            return $this->jsonError('لا توجد شخصيات كافية لبدء اللعبة.', 400);
         }
 
         $game = GuessWhoGame::create([
@@ -114,7 +115,7 @@ class GuessWhoController extends Controller
         $channelName = $request->input('channel_name');
 
         if (!$socketId || !$channelName) {
-            return response()->json(['error' => 'البيانات غير صالحة.'], 400);
+            return $this->jsonError('البيانات غير صالحة.', 400);
         }
 
         // Retrieve guest session ID from headers or inputs
@@ -127,16 +128,16 @@ class GuessWhoController extends Controller
         // (which enforces channel definitions) — signing arbitrary private/user
         // channels here would hand guests valid auth for channels they don't own.
         if (!preg_match('/^(?:presence-)?guesswho\.(.+)$/', $channelName, $matches)) {
-            return response()->json(['error' => 'القناة غير مسموح بها.'], 403);
+            return $this->jsonError('القناة غير مسموح بها.', 403);
         }
 
         $roomCode = $matches[1];
         $game = GuessWhoGame::where('room_code', $roomCode)->first();
         if (!$game) {
-            return response()->json(['error' => 'الغرفة غير موجودة.'], 404);
+            return $this->jsonError('الغرفة غير موجودة.', 404);
         }
         if ($game->player_1_session !== $sessionId && $game->player_2_session !== $sessionId) {
-            return response()->json(['error' => 'غير مصرح لك بالانضمام لهذه الغرفة.'], 403);
+            return $this->jsonError('غير مصرح لك بالانضمام لهذه الغرفة.', 403);
         }
 
         // Retrieve authenticated user
@@ -158,24 +159,24 @@ class GuessWhoController extends Controller
         $appKey = env('REVERB_APP_KEY') ?: env('PUSHER_APP_KEY');
 
         if (!$appSecret) {
-            return response()->json(['error' => 'لم يتم إعداد Reverb App Secret.'], 500);
+            return $this->jsonError('لم يتم إعداد Reverb App Secret.', 500);
         }
 
         $signature = hash_hmac('sha256', $stringToSign, $appSecret);
- 
-         return response()->json([
-             'auth' => $appKey . ':' . $signature,
-             'channel_data' => $channelData,
-         ]);
-     }
- 
-     // Join a game room and claim player slots
-     public function joinRoom(Request $request, $roomCode)
-     {
-         $request->validate([
-             'player_session' => 'required|string'
-         ]);
- 
+
+        return response()->json([
+            'auth' => $appKey . ':' . $signature,
+            'channel_data' => $channelData,
+        ]);
+    }
+
+    // Join a game room and claim player slots
+    public function joinRoom(Request $request, $roomCode)
+    {
+        $request->validate([
+            'player_session' => 'required|string'
+        ]);
+
         $game = GuessWhoGame::where('room_code', $roomCode)->firstOrFail();
         $playerSession = $request->player_session;
 
@@ -210,7 +211,7 @@ class GuessWhoController extends Controller
         });
 
         if ($role === null) {
-            return response()->json(['error' => 'الغرفة ممتلئة بالكامل ولا يمكنك الانضمام.'], 403);
+            return $this->jsonError('الغرفة ممتلئة بالكامل ولا يمكنك الانضمام.', 403);
         }
 
         return response()->json(['status' => 'joined', 'role' => $role]);
@@ -235,17 +236,17 @@ class GuessWhoController extends Controller
 
         $game = GuessWhoGame::where('room_code', $roomCode)->first();
         if (!$game) {
-            return response()->json(['error' => 'الغرفة غير موجودة.'], 404);
+            return $this->jsonError('الغرفة غير موجودة.', 404);
         }
 
         $players = array_filter([$game->player_1_session, $game->player_2_session]);
         if (!in_array($validated['sender_session'], $players, true)) {
-            return response()->json(['error' => 'غير مصرح لك باللعب في هذه الغرفة.'], 403);
+            return $this->jsonError('غير مصرح لك باللعب في هذه الغرفة.', 403);
         }
 
         $payload = $validated['payload'] ?? [];
         if (strlen(json_encode($payload)) > self::MAX_ACTION_BYTES) {
-            return response()->json(['error' => 'حجم البيانات كبير جداً.'], 413);
+            return $this->jsonError('حجم البيانات كبير جداً.', 413);
         }
 
         $sender = $validated['sender_session'];
@@ -256,7 +257,7 @@ class GuessWhoController extends Controller
             'elimination_update' => $this->eliminate($game, $sender, $payload),
             'pass_turn' => $this->passTurn($game, $sender, $opponent),
             'guess' => $this->guess($game, $sender, $opponent, $payload),
-            default => response()->json(['error' => 'الحركة غير معروفة.'], 422),
+            default => $this->jsonError('الحركة غير معروفة.', 422),
         };
     }
 
@@ -267,13 +268,13 @@ class GuessWhoController extends Controller
 
         $game = GuessWhoGame::where('room_code', $roomCode)->first();
         if (!$game) {
-            return response()->json(['error' => 'الغرفة غير موجودة.'], 404);
+            return $this->jsonError('الغرفة غير موجودة.', 404);
         }
 
         $sender = $validated['sender_session'];
         $isP1 = $game->player_1_session === $sender;
         if (!$isP1 && $game->player_2_session !== $sender) {
-            return response()->json(['error' => 'غير مصرح لك باللعب في هذه الغرفة.'], 403);
+            return $this->jsonError('غير مصرح لك باللعب في هذه الغرفة.', 403);
         }
 
         $opponent = $isP1 ? $game->player_2_session : $game->player_1_session;
@@ -294,7 +295,7 @@ class GuessWhoController extends Controller
     {
         $id = $payload['id'] ?? null;
         if (!is_int($id) || !in_array($id, $game->character_ids ?? [], true)) {
-            return response()->json(['error' => 'الشخصية غير صالحة لهذه الغرفة.'], 422);
+            return $this->jsonError('الشخصية غير صالحة لهذه الغرفة.', 422);
         }
 
         $column = $game->player_1_session === $sender ? 'player_1_character_id' : 'player_2_character_id';
@@ -315,7 +316,7 @@ class GuessWhoController extends Controller
     private function passTurn(GuessWhoGame $game, string $sender, ?string $opponent)
     {
         if ($game->status !== 'playing' || $game->turn_session !== $sender) {
-            return response()->json(['error' => 'ليس دورك الآن.'], 409);
+            return $this->jsonError('ليس دورك الآن.', 409);
         }
 
         $game->turn_session = $opponent;
@@ -328,19 +329,19 @@ class GuessWhoController extends Controller
     private function guess(GuessWhoGame $game, string $sender, ?string $opponent, array $payload)
     {
         if ($game->status !== 'playing' || $game->turn_session !== $sender) {
-            return response()->json(['error' => 'ليس دورك الآن.'], 409);
+            return $this->jsonError('ليس دورك الآن.', 409);
         }
 
         $guessId = $payload['character_id'] ?? null;
         if (!is_int($guessId)) {
-            return response()->json(['error' => 'التخمين غير صالح.'], 422);
+            return $this->jsonError('التخمين غير صالح.', 422);
         }
 
         $opponentSecret = $game->player_1_session === $sender
             ? $game->player_2_character_id
             : $game->player_1_character_id;
         if ($opponentSecret === null) {
-            return response()->json(['error' => 'الخصم لم يختر شخصيته بعد.'], 409);
+            return $this->jsonError('الخصم لم يختر شخصيته بعد.', 409);
         }
 
         $correct = $guessId === $opponentSecret;
@@ -365,13 +366,13 @@ class GuessWhoController extends Controller
     {
         $eliminated = $payload['eliminated'] ?? null;
         if (!is_array($eliminated)) {
-            return response()->json(['error' => 'قائمة الاستبعاد غير صالحة.'], 422);
+            return $this->jsonError('قائمة الاستبعاد غير صالحة.', 422);
         }
 
         $allowed = $game->character_ids ?? [];
         foreach ($eliminated as $id) {
             if (!is_int($id) || !in_array($id, $allowed, true)) {
-                return response()->json(['error' => 'الشخصية غير صالحة لهذه الغرفة.'], 422);
+                return $this->jsonError('الشخصية غير صالحة لهذه الغرفة.', 422);
             }
         }
 
@@ -422,4 +423,16 @@ class GuessWhoController extends Controller
             'state' => ['turn' => $turn, 'status' => $game->status, 'winner' => $game->winner_session],
         ]);
     }
- }
+
+    /**
+     * Return a standardized JSON error with both `message` (standard) and
+     * `error` (legacy alias) so existing and standard consumers agree.
+     */
+    private function jsonError(string $message, int $status): JsonResponse
+    {
+        return response()->json([
+            'message' => $message,
+            'error' => $message,
+        ], $status);
+    }
+}

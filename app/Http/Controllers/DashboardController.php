@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Exceptions\Users\UserModerationException;
 use App\Models\Poll;
 use App\Models\Route;
 use App\Models\RouteDraft;
@@ -178,14 +177,10 @@ class DashboardController extends Controller
         //
         // The refusals themselves live in the service, shared with the agent
         // tool, so the dashboard and the MCP surface cannot diverge on who is
-        // bannable.
+        // bannable. UserModerationException is rendered by bootstrap/app.php.
         $userToBan = User::findOrFail($id);
 
-        try {
-            $userToBan = $moderation->toggleBanned($userToBan, $request->user());
-        } catch (UserModerationException $e) {
-            return response()->json(['message' => $e->getMessage()], $e->httpStatus());
-        }
+        $userToBan = $moderation->toggleBanned($userToBan, $request->user());
 
         return response()->json([
             'ok' => true,

@@ -2,6 +2,9 @@
 
 Generated from `routes/web.php` and `routes/api.php`. Grouped by feature area, matching the module docs.
 
+> [!TIP]
+> For detailed request/response schemas, query parameters, rate limits, error envelopes, and the full canonical-to-legacy alias map, see the **[Central API Reference (`docs/reference/api.md`)](api.md)**.
+
 ## Public web pages (`web.php`)
 
 ### Core / meta
@@ -24,7 +27,9 @@ Generated from `routes/web.php` and `routes/api.php`. Grouped by feature area, m
 - ExternalDataController: `/syid`, `/syrian-contributors`, `/sites`, `/party`, `/house`, `/alignment`
 
 ### Guess Who
-- `GET /guesswho` · `POST /guesswho/rooms` (throttle 10/min) · `GET /guesswho/room/{roomCode}` · `POST .../join` (throttle 30/min) · `POST .../action` (throttle 120/min) · `GET .../state` (throttle 60/min) · `POST /guesswho/broadcasting/auth`
+- Pages: `GET /guesswho` · `GET /guesswho/room/{roomCode}`
+- Canonical JSON API (`/api/v1/guesswho/*`): `POST /rooms` (10/min) · `POST /rooms/{roomCode}/join` (30/min) · `POST /rooms/{roomCode}/actions` (120/min) · `GET /rooms/{roomCode}/state` (60/min) · `POST /broadcasting/auth` (30/min)
+- Legacy JSON aliases (`/guesswho/*`): `POST /guesswho/rooms`, `POST /guesswho/room/{roomCode}/join`, `POST /guesswho/room/{roomCode}/action`, `GET /guesswho/room/{roomCode}/state`, `POST /guesswho/broadcasting/auth`
 
 ### Games
 - `GET /games` · `GET /games/2048` · `GET /games/solitare` · `GET /games/tarneeb` · `GET /games/trix` (Inertia closures; records are device-local, no API)
@@ -32,7 +37,7 @@ Generated from `routes/web.php` and `routes/api.php`. Grouped by feature area, m
 ### Muslim Corner
 - `GET /muslim` (hub) · `GET /muslim/prayer` · `GET /muslim/quran` · `GET /muslim/radio` (Inertia closures; old `/muslim?tab=` links 301 to the matching sub-page)
 - Quran bookmarks API: `GET`/`POST /api/v1/quran-bookmarks`, `DELETE /api/v1/quran-bookmarks/{surah}/{ayah}` (auth)
-- Radio data usage: `POST /api/user/radio-usage` (add), `POST /api/user/radio-usage/clear`
+- Radio data usage: canonical `POST /api/v1/user/radio-usage`, `DELETE /api/v1/user/radio-usage` (legacy `POST /api/user/radio-usage`, `POST /api/user/radio-usage/clear`)
 
 ### Transit
 - `GET /transit` (closure; cached cities with `ST_AsGeoJSON`)
@@ -45,112 +50,77 @@ Generated from `routes/web.php` and `routes/api.php`. Grouped by feature area, m
 
 ### Auth & dashboard
 - `GET /user`, `GET /auth/google` + callback, `POST /logout`
-- `POST /api/user/settings`
+- User settings: canonical `PATCH|PUT|POST /api/v1/user/settings` (legacy `POST /api/user/settings`)
 - `GET /dev/impersonate/{role}` (dev only)
 
 ## Authenticated (`web.php`, session+CSRF)
 
-- Dashboard: `GET /dashboard`; `POST /api/account/update|avatar|delete` (avatar throttled 10/min)
+- Dashboard: `GET /dashboard`
+- Account: canonical `GET /api/v1/user`, `PATCH|PUT /api/v1/account`, `POST /api/v1/account/avatar` (10/min), `DELETE /api/v1/account` (legacy `/api/user`, `POST /api/account/update|avatar|delete`)
 - Board sync: `GET|PUT /api/v1/board` (throttle 60/min)
-- Superadmin: users CRUD `/api/admins[/{id}]`; asset explorer `/admin/assets` + `/api/v1/admin/assets/(list|upload|delete)` (50MB cap); homepage popup `/admin/site-popup` + `GET|PUT /api/v1/admin/site-popup` (superadmin only, version-bump on update, shared as `sitePopup` prop)
+- Superadmin:
+  - Staff CRUD: canonical `GET|POST /api/v1/admin/admins`, `DELETE /api/v1/admin/admins/{id}` (legacy `/api/admins[/{id}]`)
+  - Asset explorer: `/admin/assets` + canonical `GET|POST|DELETE /api/v1/admin/assets` & `GET /api/v1/admin/assets/manifest` (legacy `/api/v1/admin/assets/(list|upload|delete)`)
+  - Homepage popup: `/admin/site-popup` + `GET|PUT /api/v1/admin/site-popup`
+  - Agent API tokens: `/admin/api-tokens` + `POST /api/v1/admin/api-tokens`, `DELETE /api/v1/admin/api-tokens/{id}`, `DELETE /api/v1/admin/users/{userId}/api-tokens` (legacy `POST /api/v1/admin/api-tokens/revoke-all/{userId}`)
 
-### Mishwar owner endpoints (`auth`)
+### Mishwar owner endpoints (`auth`, `/api/v1/*`)
 - `POST /places` (submit), `GET /my/places`, `PATCH /my/places/{id}`, `PATCH .../location`, `POST .../photos`, `POST .../resubmit`, `DELETE /my/places/{id}`
 - Photo ops: `DELETE|POST /my/place-photos/{id}(/rotate)`
 - Saves: `GET /my/saves`, `POST|DELETE /places/{id}/save`
 
-### Admin moderation panels (role-gated)
+### Admin moderation panels (capability-gated)
 
-Every panel below is gated by a single per-route capability, not by module
-membership. `ModuleCapabilityGuard` (in `app/Http/Middleware/`) denies any
-route inside these groups that does not name a capability, so a capability such
-as `phonebook.reorder` no longer implies `phonebook.delete`. Page shells and
-read-only indexes are tagged `any`, meaning "any one capability in this module".
-Adding a route to one of these groups therefore requires choosing its capability;
-`ModuleCapabilityRoutesTest` fails the build if one is missing, is not a real
-capability, is used on the wrong module's middleware, or if `any` appears on a
-mutating route.
+Every panel below is gated by a single per-route capability, not by module membership. `ModuleCapabilityGuard` (in `app/Http/Middleware/`) denies any route inside these groups that does not name a capability, so a capability such as `phonebook.reorder` no longer implies `phonebook.delete`. Page shells and read-only indexes are tagged `any`, meaning "any one capability in this module". Adding a route to one of these groups therefore requires choosing its capability; `ModuleCapabilityRoutesTest` fails the build if one is missing, is not a real capability, is used on the wrong module's middleware, or if `any` appears on a mutating route.
 
-Only `superadmin` bypasses this, through `User::hasPermission()`. Every other
-account reaches a route solely through its stored `permissions` array — the
-module `*_admin` roles and the old `admin` role stopped conferring capabilities
-(`2026_09_27`).
-
-| Area | Pages | API |
+| Area | Pages | Canonical API (`/api/v1/admin/*`) |
 |---|---|---|
-| Polls | `/dashboard` polls tab (inline create + edit; legacy `/admin/polls*` 301-redirects to dashboard) | `POST /api/polls` (create), `PUT /api/polls/{id}` (edit), `DELETE` (delete); candidate-groups read (`any`) + create/update/destroy + reorder/setDefault; candidates create/update/destroy + archive/restore |
-| Places | `/admin/places` (`places_admin:any`) | index (review), approve/reject (approve), update + addPhoto (edit), delete (delete), photo rotate/replace/delete (moderate_photos) under `/api/v1/admin/place(s|-photos)` |
-| Transit | `/transit/admin` (`transit_admin:any`; denial redirects to `/dashboard`) | draft approve/reject; published-route CRUD incl. geojson, stops, logs, move, combine, split, status; My Maps import `POST /api/v1/admin/routes/import-preview` (review_drafts, 30/min) + `POST /api/v1/admin/routes/import-publish` (edit_routes, 30/min, `mode: draft\|direct`). Governorate scoping is a second check, applied in `TransitAdminController` via `ChecksTransitScope` |
-| Guess Who | `/admin/guesswho` (superadmin; dashboard "من هو" link) | categories/characters CRUD under `/api/v1/admin/guesswho/*` |
-| Site popup | `/admin/site-popup` (`superadmin`) | `GET|PUT /api/v1/admin/site-popup` |
-| SyOfficial | `/admin/syofficial` (`syofficial_admin:any`) | categories/entities create (create), update (edit), delete (delete), reorder (reorder) under `/api/v1/admin/syofficial/*`. Deleting a category cascades to its entities |
-| Gov apps | `/admin/govapps` (`govapps_admin:any`) | create (create), update (edit), destroy (delete, soft), reorder (reorder) under `/api/v1/admin/govapps` |
-| Phonebook | `/admin/phonebook` (`phonebook_admin:any`) | categories/entries create (create), update (edit), toggle active (toggle), destroy (delete, hard), reorder (reorder) under `/api/v1/admin/phonebook` |
-| User ban | dashboard user list | `POST /api/v1/admin/users/{id}/toggle-ban` — gated by the `users.ban` capability in its own `users_admin` group. Not a content module: it is application-wide. Banning a superadmin or self-banning is refused in `UserModerationService` (`UserModerationException`) |
+| Polls | `/dashboard` polls tab (legacy `/admin/polls*` 301-redirects) | `/api/v1/admin/polls*`, `/api/v1/admin/candidate-groups*`, `/api/v1/admin/candidates*` (legacy `/api/polls*`, `/api/candidate-groups*`, `/api/candidates*`) |
+| Places | `/admin/places` (`places_admin:any`) | `/api/v1/admin/places*` and `/api/v1/admin/place-photos*` |
+| Transit | `/transit/admin` (`transit_admin:any`) | `/api/v1/admin/transit/route-drafts*`, `/api/v1/admin/transit/routes*` (legacy `/api/v1/admin/route-drafts*`, `/api/v1/admin/routes*`) |
+| Guess Who | `/admin/guesswho` (`superadmin`) | `/api/v1/admin/guesswho/categories*`, `/api/v1/admin/guesswho/characters*` |
+| Site popup | `/admin/site-popup` (`superadmin`) | `GET\|PUT /api/v1/admin/site-popup` |
+| SyOfficial | `/admin/syofficial` (`syofficial_admin:any`) | `/api/v1/admin/syofficial/categories*`, `/api/v1/admin/syofficial/entities*` |
+| Gov apps | `/admin/govapps` (`govapps_admin:any`) | `/api/v1/admin/govapps*` |
+| Phonebook | `/admin/phonebook` (`phonebook_admin:any`) | `/api/v1/admin/phonebook/categories*`, `/api/v1/admin/phonebook/entries*` |
+| Compass | `/admin/compass*` (`compass_admin:compass.*`) | `/api/v1/admin/compass/figures*`, `/api/v1/admin/compass/personas*` |
+| User ban | dashboard user list | `PATCH /api/v1/admin/users/{id}/ban` (legacy `POST /api/v1/admin/users/{id}/toggle-ban`) — `users_admin:users.ban` |
 
 ### Agent / MCP surface (`routes/ai.php`, bearer token — no session, no CSRF)
 
 | Route | Auth | Notes |
 |---|---|---|
-| `POST|GET|DELETE /mcp/admin` | `auth:sanctum` + `RequireApiToken` + `throttle:mcp` | Only registered when `MCP_ENABLED=true`; session cookies are refused. Effective permission = user's live permission AND token abilities. Tools: places moderation, the SyOfficial directory, government apps, transit governance, and user banning (38 tools; transit combine/split stay dashboard-only). Tokens minted at `/admin/api-tokens` (dashboard sidebar, superadmin). See [modules/agent-mcp.md](../modules/agent-mcp.md) |
+| `POST\|GET\|DELETE /mcp/admin` | `auth:sanctum` + `RequireApiToken` + `throttle:mcp` | Only registered when `MCP_ENABLED=true`; session cookies are refused. Effective permission = user's live permission AND token abilities. See [modules/agent-mcp.md](../modules/agent-mcp.md) |
 
-## JSON API (`api.php`)
+## JSON API (`api.php` — Canonical `/api/v1/*` + Legacy Aliases)
 
-### Legacy polls
-- `GET /polls`, `/polls/{idOrSlug}`, `/polls/{idOrSlug}/leaderboard`
-- `POST /submit` (throttle `voting` = 10/min)
+See **[docs/reference/api.md](api.md)** for full payload schemas and parameter tables.
 
-### Contributors & atlas
-- `GET /contributors`, `/contributors/{contributor}` (throttle 60/min)
-- `GET /population/master`, `/population/env-report` (page itself lives at `/atlas`)
-
-### Widget APIs (throttle 60/min)
-`/weather` · `/answers` · `/recipe-of-the-day` · `/events/today` · `/feed` · `/prayer-times` · `/metrics`
-
-### Utilities
-- `GET /app-icon` — proxies Apple iTunes Lookup & Google Play scraping (24h cache, throttle 60/min)
-
-### `v1/` group
-
-**Transit** (`Api\V1\TransitController`, reads throttle 60/min):
-- `GET /cities`, `/cities/{id}/routes`, `/cities/{id}/map-data`
-- `GET /stops/nearby`, `GET /search`
-- Transit Studio: `POST /studio/routes` (5/min); auth'd `GET|PUT /studio/routes/{id}`, `GET .../from-route`
-
-**Places**: `GET /places/map|nearby|geocode|photos|{id}` · `GET /guides`
-
-**Hotels**: `GET /hotels/map`, `/hotels`, `/hotels/{id}`
-
-**Public voting data** (`Api\V1\VotingDataController`, throttle `public-api`): see [modules/polls-public-api.md](../modules/polls-public-api.md).
-
-## Standard JSON Error Contract & Client Handling
-
-Clients calling any JSON endpoint should always send `Accept: application/json` so Laravel returns JSON rather than an Inertia HTML page or redirect on `401`/`404`/`422`.
-
-All JSON error responses (`HTTP >= 400`) follow a standardized shape:
-
-```json
-{
-  "message": "Human-readable error description",
-  "errors": {
-    "field_name": ["First validation message for field_name"]
-  }
-}
-```
-
-- **`message`** *(always present)*: Top-level human-readable summary. Endpoints that historically returned `{ "error": "..." }` (such as `/api/submit`, `/guesswho/*`, `/api/user/settings`, `/api/user/radio-usage`, `/mcp/*`, and custom rate limiters) return both `message` and `error` for backwards compatibility, and `bootstrap/app.php` normalizes any exception-rendered `JsonResponse` that sets `error` without `message`.
-- **`errors`** *(optional, `422` validation)*: Field-keyed validation error arrays produced by `$request->validate()` (dot-notation for array fields such as `photos.0` or `stops.1.lat`).
-- **Status codes**:
-  - `400` Bad Request / domain rule refusal (e.g. poll minimum selection, place already moderated, invalid store on `/api/app-icon`).
-  - `401` Unauthenticated (`{ "message": "Unauthenticated." }`).
-  - `403` Forbidden / banned account / revoked or expired API token / disabled module.
-  - `404` Resource not found.
-  - `409` State conflict (e.g. duplicate directory ID, soft-deleted gov app ID collision).
-  - `413` Payload too large (e.g. settings JSON >40KB).
-  - `422` Validation or business-constraint refusal (`message` + optional `errors` bag).
-  - `429` Rate limit exceeded (`Retry-After`, `X-RateLimit-Limit`, and `X-RateLimit-Remaining` headers included).
-- **Domain exceptions**: `DomainActionException` subclasses (`PlaceActionException`, `DirectoryActionException`, `TransitActionException`, `UserModerationException`) are rendered centrally in `bootstrap/app.php` to `{ "message": "..." }` with `$e->httpStatus()`.
-- **Frontend helper**: Web consumers use `extractApiErrorMessage` and `extractApiFieldErrors` from `resources/js/Lib/apiError.ts`.
+- **Search**:
+  - `GET /api/v1/search/global` (legacy `GET /api/v1/global-search`)
+  - `GET /api/v1/transit/search` (legacy `GET /api/v1/search`)
+  - `GET /api/v1/transit/pois` (legacy `GET /api/v1/geo/poi`)
+  - `GET /api/v1/places`, `GET /api/v1/places/geocode`
+- **Transit (`/api/v1/transit/*`)**:
+  - `GET /api/v1/transit/cities` (legacy `/api/v1/cities`)
+  - `GET /api/v1/transit/cities/{id}/routes` (legacy `/api/v1/cities/{id}/routes`)
+  - `GET /api/v1/transit/cities/{id}/map` & `/map-data` (legacy `/api/v1/cities/{id}/map-data`)
+  - `GET /api/v1/transit/stops/nearby` (legacy `/api/v1/stops/nearby`)
+  - `GET /api/v1/transit/search` (legacy `/api/v1/search`)
+  - `GET /api/v1/transit/pois` (legacy `/api/v1/geo/poi`)
+  - Transit Studio: `POST /api/v1/transit/studio/routes`, `GET|PUT|PATCH|DELETE /api/v1/transit/studio/routes/{id}`, `GET .../from-route` (legacy `/api/v1/studio/routes*`)
+- **Polls & Voting (`/api/v1/polls/*`)**:
+  - `GET /api/v1/polls`, `GET /api/v1/polls/{idOrSlug}`, `GET .../candidates`, `GET .../scores`, `GET .../ballots`, `GET .../leaderboard`
+  - `POST /api/v1/polls/{idOrSlug}/ballots` & `POST /api/v1/polls/ballots` (legacy `POST /api/submit`, `GET /api/polls*`)
+- **Places & Hotels (`/api/v1/places/*`, `/api/v1/hotels/*`)**:
+  - `GET /api/v1/places`, `/places/map`, `/places/nearby`, `/places/geocode`, `/places/photos`, `/places/{id}`, `/guides`
+  - `GET /api/v1/hotels`, `/hotels/map`, `/hotels/{id}`
+- **Compass (`/api/v1/compass/*`)**:
+  - `GET|POST|DELETE /api/v1/compass/results[/{id}]`, `POST|GET /api/v1/compass/shares[/{shareId}]` (legacy `/share`), `POST|DELETE /api/v1/compass/stats`
+- **Atlas, Contributors, Widgets & Utilities (`/api/v1/*` + legacy `/api/*`)**:
+  - `GET /api/v1/atlas`, `GET /api/v1/atlas/environment` (legacy `/api/population/master`, `/api/population/env-report`)
+  - `GET /api/v1/contributors[/{contributor}]` (legacy `/api/contributors*`)
+  - `GET /api/v1/weather`, `/prayer-times`, `/events/today`, `/recipes/today` (legacy `/recipe-of-the-day`), `/feed`, `/answers`, `/metrics`, `/app-icon`
 
 ## Broadcasting channels (`channels.php`)
 Private/presence channels for Guess Who room state.

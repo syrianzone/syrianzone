@@ -45,7 +45,7 @@ graph TD
 | Search | Laravel Scout, `collection` driver by default (`SCOUT_DRIVER`) |
 | Storage | Cloudflare R2 via Flysystem S3 driver (media, transit geojson, tierlist assets, spatie backups) |
 | Auth | Google OAuth via Socialite; Sanctum bearer tokens (agent/MCP surface); role middleware aliases |
-| Monitoring | Sentry (Laravel + @sentry/react, CI sourcemap upload), Prometheus `/api/metrics` |
+| Monitoring | Sentry (Laravel + @sentry/react, CI sourcemap upload), Prometheus `/api/v1/metrics` (`/api/metrics`) |
 | Backups | spatie/laravel-backup every 6h → local + R2 |
 | Bundler | Vite 8 (`laravel-vite-plugin`, SSR build, Bun in Docker stage 1) |
 
@@ -99,7 +99,7 @@ syrianzone/
 Browser → Nginx → Laravel controller → returns `Inertia::render('Page/Name', props)` → React 19 page component hydrates. Subsequent navigation is XHR-based SPA navigation.
 
 ### API data flow
-React pages fetch JSON from `/api/*` using the shared axios client (`Lib/axios.ts`) wrapped in react-query (offlineFirst). Rate limits defined in `AppServiceProvider` + route middleware: `voting` 10/min, `public-api` 120/min per IP, `mcp` 120/min per API token (agent surface); contributors + `app-icon` + transit v1 reads + places reads throttle 60/min; Guess Who room create 10/min, join 30/min.
+React pages fetch JSON from `/api/v1/*` (and legacy `/api/*` aliases) using the shared axios client (`Lib/axios.ts`) wrapped in react-query (offlineFirst). Rate limits defined in `AppServiceProvider` + route middleware: `voting` 10/min, `public-api` 120/min per IP, `mcp` 120/min per API token (agent surface); contributors + `app-icon` + transit v1 reads + places reads throttle 60/min; Guess Who room create 10/min, join 30/min. See [reference/api.md](../reference/api.md).
 
 ### Spatial query flow (transit/places)
 Controllers issue raw spatial SQL (`ST_AsGeoJSON`, `ST_Distance_Sphere`) against MySQL/MariaDB geometry columns; results cached (e.g. city geojson 1h) and large static datasets served from R2 CDN.
@@ -111,73 +111,25 @@ Controllers issue raw spatial SQL (`ST_AsGeoJSON`, `ST_Distance_Sphere`) against
 | Module | Routes | Controllers | Pages (`resources/js/Pages/`) | Doc |
 |---|---|---|---|---|
 | Home portal | `/` | HomeController | Home.tsx | — |
-| Polls / Tier list | `/polls/*`, `/tierlist*`, `/api/v1/polls*` | PollController, CandidateController, CandidateGroupController, Api\V1\VotingDataController | Polls/, TierList/ | [modules/polls-public-api.md](../modules/polls-public-api.md) |
-| Transit | `/transit*`, `/api/v1/cities…`, `/studio/routes` | TransitAdminController, TransitStudioController, Api\V1\TransitController | Transit/ | [modules/transit.md](../modules/transit.md) |
+| Polls / Tier list | `/polls/*`, `/tierlist*`, `/api/v1/polls*` | PollController, CandidateController, CandidateGroupController, Api\V1\VotingDataController | Polls/, TierList/ | [reference/api.md](../reference/api.md#4-polls--tier-list-voting-api-apiv1polls) |
+| Transit | `/transit*`, `/api/v1/transit/*` | TransitAdminController, TransitStudioController, Api\V1\TransitController | Transit/ | [modules/transit.md](../modules/transit.md), [reference/api.md](../reference/api.md#3-transit-api-apiv1transit) |
 | Mishwar (hidden places) | `/mishwar`, `/api/v1/places…`, `/my/places…` | Place*, PlaceDiscovery, PlaceEngagement controllers | Places/ | [modules/mishwar-places.md](../modules/mishwar-places.md) |
 | Board ("لوحتي") | `/board`, `/api/v1/board` | BoardController | Board/ (14 widgets) | [modules/board.md](../modules/board.md) |
-| Guess Who | `/guesswho*`, action relay + broadcasting auth over Reverb; admin (superadmin) at `/admin/guesswho` + `/api/v1/admin/guesswho/*` | GuessWhoController, GuessWhoAdminController | GuessWho/, Admin/GuessWho/ | [modules/guess-who.md](../modules/guess-who.md) |
+| Guess Who | `/guesswho*`, `/api/v1/guesswho/*`; admin (superadmin) at `/admin/guesswho` + `/api/v1/admin/guesswho/*` | GuessWhoController, GuessWhoAdminController | GuessWho/, Admin/GuessWho/ | [modules/guess-who.md](../modules/guess-who.md) |
 | Officials directory | `/syofficial`, `/api/v1/admin/syofficial/*` | SyOfficial*, SyOfficialAdminController | SyOfficial/ | [modules/directories.md](../modules/directories.md) |
 | Phonebook | `/phonebook`, `/api/v1/admin/phonebook/*` | Phonebook*, PhonebookAdminController | Phonebook/ | [modules/directories.md](../modules/directories.md) |
 | Gov apps | `/govapps`, `/api/v1/admin/govapps` | GovAppController, GovAppsAdminController | GovApps/ | [modules/directories.md](../modules/directories.md) |
 | Hotels (HalaSyria) | `/api/v1/hotels*` | HotelController, HalaSyriaService | Places/ hotel layer | [modules/directories.md](../modules/directories.md) |
-| Population atlas | `/atlas` (canonical; `/population` 301-redirects), `/population/master`, `/env-report` | Api\PopulationAtlasController | Population/ | [modules/population-atlas.md](../modules/population-atlas.md) |
-| Widgets APIs | `/weather`, `/answers`, `/recipe-of-the-day`, `/events/today`, `/feed`, `/prayer-times` | Weather/Answers/Recipe/Events/Feed/Prayer controllers | Board widgets consume these | [modules/board.md](../modules/board.md) |
+| Population atlas | `/atlas` (canonical; `/population` 301-redirects), `/api/v1/atlas*` | Api\PopulationAtlasController | Population/ | [modules/population-atlas.md](../modules/population-atlas.md) |
+| Widgets APIs | `/api/v1/weather`, `/answers`, `/recipes/today`, `/events/today`, `/feed`, `/prayer-times` | Weather/Answers/Recipe/Events/Feed/Prayer controllers | Board widgets consume these | [modules/board.md](../modules/board.md), [reference/api.md](../reference/api.md#7-atlas-contributors-widgets--utility-endpoints-apiv1) |
 | External data | `/syid`, `/sites`, `/party`, `/house`, `/alignment`, `/syrian-contributors` | ExternalDataController, ContributorController | SyId/, Sites/, Party/, House/, Alignment/, SyrianContributors/ | — |
 | Muslim Corner | `/muslim`, `/muslim/prayer`, `/muslim/quran`, `/muslim/radio`, `/roznama` | (Inertia closures) | Muslim/ (Index, Prayer, Quran, Radio), Roznama/ | [modules/muslim-corner.md](../modules/muslim-corner.md) |
 | Games | `/games`, `/games/{2048,solitare,tarneeb,trix}` | (Inertia closures) | Games/ | [modules/games.md](../modules/games.md) |
 | Quizzes | `/compass`, `/compass/stats`, `/compass/s/{shareId}`, `/priorities` | CompassController; `/priorities` is a closure | Compass/, Priorities/ | — |
 | Legal & info | `/about`, `/stats`, `/privacy`, `/terms` | AboutController; the rest are closures | About.tsx, Stats.tsx, Privacy.tsx, Terms.tsx | — |
 | Standalone pages | `/roznama`, `/shawarma`, `/justice`, `/crossings` | (Inertia closures) | Roznama/, Shawarma/, Justice/, Crossings/ | — |
-| Dashboard/auth | `/dashboard` (incl. polls-tab admin), `/auth/google*`, `/user` | AuthController, DashboardController, AdminUserController | Dashboard/ | — |
-| Assets admin | `/admin/assets`, `/api/v1/admin/assets/*` | AssetUploadController | Admin/AssetManager | [reference/asset-storage.md](../reference/asset-storage.md) |
+| Dashboard/auth | `/dashboard` (incl. polls-tab admin), `/auth/google*`, `/api/v1/user` | AuthController, DashboardController, AdminUserController | Dashboard/ | — |
+| Assets admin | `/admin/assets`, `/api/v1/admin/assets*` | AssetUploadController | Admin/AssetManager | [reference/asset-storage.md](../reference/asset-storage.md) |
 | Agent / MCP | `/mcp/admin` (bearer token; `MCP_ENABLED` flag), `/admin/api-tokens` | MCP tools in `app/Mcp/`, `ApiTokenAdminController`, `RequireApiToken` | Admin/ApiTokens/ | [modules/agent-mcp.md](../modules/agent-mcp.md) |
 | Site popup | `/admin/site-popup`, `/api/v1/admin/site-popup` (superadmin; shared as `sitePopup` prop, versioned dismiss) | SitePopupAdminController | Admin/SitePopup | — |
-| Meta | `/sitemap.xml`, `/healthcheck`, `/api/metrics`, `/api/app-icon` | Sitemap/Metrics controllers | — | — |
-
-Full route details: [reference/routes-api-map.md](../reference/routes-api-map.md).
-
----
-
-## 5. Roles & Access Control
-
-Middleware aliases registered in `bootstrap/app.php`: `transit_admin` (accepts per-action params e.g. `transit_admin:transit.approve`), `syofficial_admin`, `phonebook_admin`, `places_admin`, `polls_admin`, `govapps_admin`, `compass_admin`, `users_admin`, `superadmin`. There is no general `admin` alias. Users carry a `role` enum, optional JSON `permissions`, optional JSON `permission_scopes`, and soft-delete/ban fields.
-
-Authorisation is **capability-based, not role-based**. `User::hasPermission()` returns true for a `superadmin`, or when the id is in the account's `permissions` array (which may contain `*`). Nothing else grants anything: the six module roles (`*_admin`) stopped conferring capabilities in Phase D and the `admin` alias in Phase G (both `2026_09_27`), once Phase A had materialised what each role used to unlock. `User::effectivePermissions()` resolves the same rule against the catalogue; `hasPermission()` is that rule on a single id, and a test asserts they agree for every role × capability.
-
-`UserResource::roleOptions()` is the assignable-role list; a role present in PHP but missing there is unassignable. Dev-only impersonation at `/dev/impersonate/{role}` (DevRoleSwitcher) uses `AutoLoginDevUser::DEV_USERS`, which is now a set of **presets** — each a plain `user` account carrying an explicit capability list — not `users.role` values.
-
-Capability checks in React call `useAuth().can()`, which reads the server-resolved `effective_permissions` shared by `HandleInertiaRequests::userPayload()`. The frontend deliberately does **not** re-derive role implications — that duplication is what previously let the TS mirror fall behind the PHP rules.
-
-The 32 capability ids live in `app/Support/Permissions/PermissionCatalogue.php` and are the single source of truth for both the Filament user form and agent API tokens. Per-module JSON `permission_scopes` (e.g. `transit` governorates) narrow capabilities and are read live, so a change applies immediately.
-
-### Agent (MCP) access
-
-`/mcp/admin` exposes the admin capabilities to AI agents via [`laravel/mcp`](https://laravel.com/docs/mcp) + Sanctum bearer tokens, behind the `MCP_ENABLED` flag. Registered by the package provider from `routes/ai.php` (not by `withRouting()`), outside the `web`/`api` groups, so no session or CSRF. Authorisation is the **intersection** of the user's live permission and the token's abilities, so a token can only narrow. Tokens are minted at `/admin/api-tokens` (dashboard sidebar, superadmin-only, via `ApiTokenAdminController`); every call is audited to `mcp_tool_calls`. Full spec: [modules/agent-mcp.md](../modules/agent-mcp.md).
-
----
-
-## 6. Deployment
-
-Single Docker image built by GitHub Actions on push to `main`, pushed to ghcr.io, then deployed over SSH via `/opt/syrianzone/deploy.sh <sha>` with health gating. Exposes ports 8080 (HTTP) and 6001 (Reverb). See [getting-started/deployment.md](../getting-started/deployment.md) and staging notes in [getting-started/staging.md](../getting-started/staging.md).
-
----
-
-## 7. External Service Integrations
-
-| Integration | Used by |
-|---|---|
-| Google OAuth | Login (`/auth/google`) |
-| Cloudflare R2 | Media disk, transit geojson, tierlist assets, brand kit downloads, spatie backups |
-| Open-Meteo (forecast + archive), OpenWeatherMap fallback | Weather widget / climate atlas |
-| Aladhan API | Prayer times |
-| MP3Quran v4 + EveryAyah | Quran recitation audio and ayah/word/letter timings |
-| ipwho.is | Approximate (IP) location for prayer times when GPS is unavailable |
-| F3alia | Events feed (homepage + Roznama) |
-| Google Sheets published CSVs | SyID, house data, alignment quiz |
-| Supabase REST | Some external datasets |
-| Railway-hosted GraphQL events backend | Events today widget |
-| RSS feeds (SANA, Halab Today, Jard Chat, Syrian Observer) | News feed widget |
-| HalaSyria (`halasyria.com`) | Hotels sync every 2 days |
-| Google Places API | Place geocode/discovery in Mishwar |
-| iTunes Lookup + Play Store scraping | `/api/app-icon` icons |
-| Sentry, Prometheus | Error tracking & metrics |
+| Meta | `/sitemap.xml`, `/healthcheck`, `/api/v1/metrics`, `/api/v1/app-icon` | Sitemap/Metrics/AppIcon controllers | — | — |

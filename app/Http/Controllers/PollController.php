@@ -255,8 +255,12 @@ class PollController extends Controller
         );
     }
 
-    public function submit(Request $request, VotingService $votingService)
+    public function submit(Request $request, VotingService $votingService, ?string $idOrSlug = null)
     {
+        if ($idOrSlug !== null && ! $request->filled('pollSlug')) {
+            $request->merge(['pollSlug' => $idOrSlug]);
+        }
+
         $data = $request->validate([
             'pollSlug' => 'required|string',
             'tiers' => 'required|array',
@@ -271,7 +275,7 @@ class PollController extends Controller
             ], 400);
         }
 
-        $poll = Poll::where('slug', $data['pollSlug'])->firstOrFail();
+        $poll = Poll::where('slug', $data['pollSlug'])->orWhere('id', $data['pollSlug'])->firstOrFail();
         $votingService->submit(
             $poll,
             $data['tiers'],

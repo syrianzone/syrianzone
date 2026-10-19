@@ -20,8 +20,13 @@ renders on the server like any other Inertia page.
 | GET | `/games/tarneeb` | `Games/Tarneeb/Index` | Playable (Tarneeb vs three AI) |
 | GET | `/games/trix` | `Games/Trix/Index` | Playable (Trix vs three AI; single or coop) |
 
-All three are public closures in `routes/web.php` with no middleware, no
+All four are public closures in `routes/web.php` with no middleware, no
 throttle and no auth gate — they are static shells, exactly like `/muslim`.
+
+Guess Who is not one of these shells: it is the online, multiplayer game hosted
+by `GuessWhoController` at `/guesswho`, and it is currently marked `comingSoon`
+in `GAMES`, so the hub shows an inert card and nothing else in the UI links to
+it. Its route, API and admin surface stay live for direct access.
 
 ## 2. Layout
 

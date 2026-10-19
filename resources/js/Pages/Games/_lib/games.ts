@@ -57,6 +57,9 @@ export const GAMES: GameEntry[] = [
     icon: GuessWhoIcon,
     href: '/guesswho',
     online: true,
+    // Kept behind the "قريباً" card while the multiplayer rooms settle: the
+    // module is still routed at /guesswho, but nothing in the UI links to it.
+    comingSoon: true,
   },
   {
     slug: 'president',

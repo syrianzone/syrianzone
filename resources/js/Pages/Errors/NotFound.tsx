@@ -69,7 +69,8 @@ function GameTile({ game }: { game: GameEntry }) {
             <span className="text-xs font-medium text-foreground transition-colors group-hover:text-primary">
                 {game.title}
             </span>
-            {game.online && (
+            {/* Same rule as the hub: a coming-soon tile carries only "قريباً". */}
+            {game.online && !game.comingSoon && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
                     <Users className="h-3 w-3" />
                     لعب مع صديق

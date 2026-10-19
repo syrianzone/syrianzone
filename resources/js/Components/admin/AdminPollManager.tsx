@@ -6,13 +6,14 @@ import { useAuth } from "@/Contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Trash2, Edit2, Save, X, MoreVertical, Star as StarIcon, ArrowLeft, ArrowRight, Archive, Undo2 } from "lucide-react";
+import { useTabList } from '@/Lib/useTabList';
+import { Plus, Trash2, Edit2, Save, X, MoreVertical, Star as StarIcon, ArrowLeft, ArrowRight, Archive, Undo2, Power, PowerOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { confirmDialog } from "@/Lib/confirm";
+import { notify } from "@/Lib/notify";
 import {
     Dialog,
     DialogContent,
@@ -54,6 +55,8 @@ interface Group {
     key?: string | null;
     sort_order: number;
     is_default?: boolean;
+    /** Disabled categories keep their data but leave the public site. */
+    is_active?: boolean;
 }
 
 interface PollData {
@@ -67,6 +70,12 @@ interface Props {
     initialData: PollData;
     onRefresh: () => void;
 }
+
+/** Shared look for the group strip's tabs (active = primary pill). */
+const tabClass = (selected: boolean) =>
+    `inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md border border-border px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+        selected ? "bg-primary text-primary-foreground" : "bg-background text-foreground hover:bg-muted"
+    }`;
 
 export default function AdminPollManager({ pollId, initialData, onRefresh }: Props) {
     // Each control is gated on the capability its route requires (routes/web.php).
@@ -129,6 +138,34 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
         } catch (err: any) {
             console.error(err);
             setError(err?.response?.data?.message || "فشل تعيين المجموعة الافتراضية");
+        }
+    };
+
+    /**
+     * Disable / re-enable a category. Disabling is the reversible alternative
+     * to deleting it: the group, its candidates, their images and their scores
+     * all stay, but the category leaves the public tierlist, the leaderboard
+     * and the vote path until it is enabled again.
+     */
+    const handleToggleGroup = async (id: string, nextActive: boolean) => {
+        const group = groups.find(g => g.id === id);
+        const label = group?.name ?? "هذه المجموعة";
+
+        if (!nextActive && !(await confirmDialog({
+            title: `تعطيل «${label}»؟`,
+            description: "لن يُحذف شيء: المجموعة والمرشحون والصور والنتائج تبقى محفوظة. لكنها تختفي من صفحات التصويت والترتيب، ولن تُقبل أصوات جديدة عليها، حتى تعيد تفعيلها.",
+            confirmText: "تعطيل",
+        }))) return;
+
+        try {
+            await axios.patch(`/api/candidate-groups/${id}`, { is_active: nextActive });
+            notify.success(nextActive ? `تم تفعيل «${label}»` : `تم تعطيل «${label}»`);
+            onRefresh();
+        } catch (err: any) {
+            console.error(err);
+            const message = err?.response?.data?.message || "فشل تغيير حالة المجموعة";
+            setError(message);
+            notify.error(message);
         }
     };
 
@@ -339,6 +376,25 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
         return s === statusFilter;
     });
 
+    // A group row may predate is_active entirely; anything but an explicit
+    // false is treated as published, so a missing column never hides a group.
+    const activeGroup = activeTab === "all" ? null : groups.find(g => g.id === activeTab) ?? null;
+    const activeGroupIsDisabled = activeGroup?.is_active === false;
+    const isGroupDisabled = (groupId?: string | null) =>
+        Boolean(groupId) && groups.find(g => g.id === groupId)?.is_active === false;
+
+    // The strip is one tablist over one panel; "all" is a synthetic first tab.
+    const tabs = useTabList({ ids: ["all", ...groups.map(g => g.id)], active: activeTab, onChange: setActiveTab });
+
+    // Deleting or refreshing can leave the active tab pointing at a group that
+    // no longer exists; fall back to the full roster rather than an empty view.
+    useEffect(() => {
+        if (groups.length === 0) return;
+        if (activeTab !== "all" && !groups.some(g => g.id === activeTab)) {
+            setActiveTab("all");
+        }
+    }, [groups, activeTab]);
+
     // Successor candidates: same group, active, not the archive target itself
     const successorOptions = archiveTarget
         ? candidates.filter(c =>
@@ -352,51 +408,70 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
         <div className="space-y-6">
             {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <div className="flex justify-between items-center mb-4">
-                    <TabsList className="h-auto flex-wrap justify-start gap-1 bg-transparent p-0">
-                        <TabsTrigger
-                            value="all"
-                            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border bg-background"
+            <div className="flex justify-between items-center mb-4">
+                {/* The strip was a Radix Tabs list with no TabsContent, so
+                    every trigger pointed aria-controls at an id that was never
+                    rendered (axe: aria-valid-attr-value). It is a plain tablist
+                    over one panel, which is what the shared useTabList hook
+                    implements. */}
+                <div
+                    {...tabs.tabListProps}
+                    className="h-auto flex flex-wrap items-center justify-start gap-1 bg-transparent p-0"
+                    aria-label="مجموعات الاستبيان"
+                >
+                    <button
+                        type="button"
+                        {...tabs.tabProps("all")}
+                        className={tabClass(activeTab === "all")}
+                    >
+                        All Candidates ({candidates.length})
+                    </button>
+                    {groups.map(g => (
+                        <button
+                            key={g.id}
+                            type="button"
+                            {...tabs.tabProps(g.id)}
+                            className={`${tabClass(activeTab === g.id)} ${g.is_active === false ? "opacity-60" : ""}`}
                         >
-                            All Candidates ({candidates.length})
-                        </TabsTrigger>
-                        {groups.map(g => (
-                            <TabsTrigger
-                                key={g.id}
-                                value={g.id}
-                                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border border-border bg-background"
-                            >
-                                {g.name} ({candidates.filter(c => c.candidate_group_id === g.id).length})
-                            </TabsTrigger>
-                        ))}
-                    </TabsList>
-
-                    <div className="flex items-center gap-2">
-                        <div className="relative">
-                            <Input aria-label="اسم المجموعة الجديدة"
-                                placeholder="New Group Name"
-                                className="w-40 h-8 text-sm"
-                                value={newGroupName}
-                                onChange={e => setNewGroupName(e.target.value)}
-                            />
-                        </div>
-                        {canCreate && (
-                            <Button size="sm" variant="outline" onClick={handleAddGroup} disabled={isAddingGroup} aria-label="إضافة مجموعة">
-                                <Plus className="h-4 w-4" />
-                            </Button>
-                        )}
-                    </div>
+                            {g.name} ({candidates.filter(c => c.candidate_group_id === g.id).length})
+                            {g.is_active === false && (
+                                <span className="ms-1 rounded-full bg-muted-foreground/15 px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground">
+                                    معطّلة
+                                </span>
+                            )}
+                        </button>
+                    ))}
                 </div>
 
+                <div className="flex items-center gap-2">
+                    <div className="relative">
+                        <Input aria-label="اسم المجموعة الجديدة"
+                            placeholder="New Group Name"
+                            className="w-40 h-8 text-sm"
+                            value={newGroupName}
+                            onChange={e => setNewGroupName(e.target.value)}
+                        />
+                    </div>
+                    {canCreate && (
+                        <Button size="sm" variant="outline" onClick={handleAddGroup} disabled={isAddingGroup} aria-label="إضافة مجموعة">
+                            <Plus className="h-4 w-4" />
+                        </Button>
+                    )}
+                </div>
+            </div>
+
+            <div {...tabs.panelProps(activeTab)} className="focus-visible:outline-none">
                 <div className="mb-4 flex justify-between items-center bg-muted/40 p-2 rounded-md">
                     <div className="flex items-center gap-2">
                         <h3 className="font-semibold text-lg">
-                            {activeTab === "all" ? "جميع المرشحين" : groups.find(g => g.id === activeTab)?.name}
+                            {activeTab === "all" ? "جميع المرشحين" : activeGroup?.name}
                         </h3>
+                        {activeGroupIsDisabled && (
+                            <Badge variant="secondary" className="text-[10px]">معطّلة</Badge>
+                        )}
                         {activeTab !== "all" && (
                             <div className="flex items-center gap-1 ms-4">
-                                {canEdit && (
+                                {canEdit && !activeGroupIsDisabled && (
                                     <>
                                         <Button aria-label="تعيين كمجموعة افتراضية"
                                             variant="ghost"
@@ -433,6 +508,23 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                                             disabled={groups.findIndex(g => g.id === activeTab) === 0}
                                         >
                                             <ArrowLeft className="h-4 w-4" />
+                                        </Button>
+                                        <div className="h-4 w-[1px] bg-border mx-1" />
+                                    </>
+                                )}
+                                {canEdit && (
+                                    <>
+                                        <Button
+                                            variant={activeGroupIsDisabled ? "default" : "outline"}
+                                            size="sm"
+                                            className={`h-8 gap-1 px-2 text-xs ${activeGroupIsDisabled ? "" : "text-muted-foreground"}`}
+                                            onClick={() => handleToggleGroup(activeTab, activeGroupIsDisabled)}
+                                            title={activeGroupIsDisabled
+                                                ? "إظهار المجموعة للزوار من جديد"
+                                                : "إخفاء المجموعة عن الزوار مع الاحتفاظ ببياناتها"}
+                                        >
+                                            {activeGroupIsDisabled ? <Power className="h-4 w-4" /> : <PowerOff className="h-4 w-4" />}
+                                            {activeGroupIsDisabled ? "تفعيل" : "تعطيل"}
                                         </Button>
                                         <div className="h-4 w-[1px] bg-border mx-1" />
                                     </>
@@ -475,6 +567,13 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                     </div>
                 </div>
 
+                {activeGroupIsDisabled && (
+                    <p className="mb-4 text-xs text-muted-foreground">
+                        هذه المجموعة معطّلة: بياناتها ومرشحوها ونتائجهم محفوظة، لكنها لا تظهر في صفحات التصويت
+                        والترتيب ولن تُقبل أصوات جديدة عليها. استخدم زر التفعيل لإرجاعها.
+                    </p>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {displayedCandidates.map(candidate => {
                         const isArchived = (candidate.status ?? "active") === "archived";
@@ -502,6 +601,15 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                                             )}
                                             {isArchived && (
                                                 <Badge variant="secondary" className="text-[10px] px-1.5 py-0">سابق</Badge>
+                                            )}
+                                            {isGroupDisabled(candidate.candidate_group_id) && (
+                                                <Badge
+                                                    variant="outline"
+                                                    className="text-[10px] px-1.5 py-0"
+                                                    title="مجموعة معطّلة: لا تظهر للزوار"
+                                                >
+                                                    مجموعة معطّلة
+                                                </Badge>
                                             )}
                                         </div>
                                         {isArchived && (
@@ -543,7 +651,7 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                         </div>
                     )}
                 </div>
-            </Tabs>
+            </div>
 
             {/* Edit/Add Modal */}
             <Dialog open={isCandidateModalOpen} onOpenChange={setIsCandidateModalOpen}>
@@ -645,7 +753,9 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                                 <SelectContent>
                                     <SelectItem value="none">No Group</SelectItem>
                                     {groups.map(g => (
-                                        <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                                        <SelectItem key={g.id} value={g.id}>
+                                            {g.name}{g.is_active === false ? " (معطّلة)" : ""}
+                                        </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>

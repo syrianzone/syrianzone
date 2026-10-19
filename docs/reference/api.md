@@ -409,6 +409,18 @@ Every admin endpoint is protected by `auth` and a per-route capability middlewar
 | `PATCH /api/v1/admin/candidates/{id}/archive` | `PATCH /api/candidates/{id}/archive` | `polls.edit` |
 | `PATCH /api/v1/admin/candidates/{id}/restore` | `PATCH /api/candidates/{id}/restore` | `polls.edit` |
 
+`PUT|PATCH /candidate-groups/{id}` also accepts `is_active` (boolean). Setting it
+to `false` disables the category without deleting it: the row, its candidates,
+images and scores stay, but the category leaves `/tierlist` and `/polls/{slug}`,
+its ranks and history drop out of the leaderboard and its X snapshots, and
+`/api/submit` rejects ballots naming its candidates. Disabling the default
+category clears `is_default`, and a disabled category cannot be set as the
+default. `GET /api/polls/{idOrSlug}` returns the full roster (disabled
+categories included) only to callers holding `polls.edit` — that is how the
+dashboard editor finds a disabled category again; guests get the published
+subset. The read-only data API (`/api/v1/polls/*`) stays raw and lists every
+group and candidate, including disabled and archived ones.
+
 ### 9.2 Places (Mishwar) Admin (`places_admin`)
 | Method & Canonical Path | Required Capability |
 |---|---|

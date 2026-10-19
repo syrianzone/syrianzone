@@ -969,7 +969,7 @@ export default function Dashboard({
                               <div className="flex items-center gap-2">
                                 <Switch
                                   id="edit-poll-active"
-                                  checked={editingPoll.is_active}
+                                  checked={Boolean(editingPoll.is_active)}
                                   onCheckedChange={checked => setEditingPoll({ ...editingPoll, is_active: checked })}
                                 />
                                 <Label htmlFor="edit-poll-active">التصويت نشط</Label>

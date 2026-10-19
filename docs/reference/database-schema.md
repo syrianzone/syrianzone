@@ -50,7 +50,7 @@ erDiagram
 All UUID PKs.
 
 - **polls** — slug, title, timezone (default Europe/Amsterdam), is_active, user_id (nullable owner; `$hidden` so it never leaks on public poll reads)
-- **candidate_groups** — poll_id, name, key (`minister`, `governor`, …), sort_order, is_default
+- **candidate_groups** — poll_id, name, key (`minister`, `governor`, …), sort_order, is_default, is_active (a disabled category keeps its row, candidates and scores but leaves the public tierlist, the leaderboard and the vote path)
 - **candidates** — poll-scoped via group; name, title, image_url, category default `minister`, sort, candidate_group_id, legacy_id, archive fields (archived_at), user_id
 - **ballots** — poll_id, vote_day, voter_key (hashed identity), ip_hash, user_agent — never exposed by public API
 - **ballot_votes** — ballot_id, candidate_id, tier (S–F), position

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Poll;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class TierlistLeaderboard
 {
@@ -28,17 +29,30 @@ class TierlistLeaderboard
     {
         $status = self::normalizeStatus($status);
         if (! in_array($status, self::STATUSES, true)) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
+            throw ValidationException::withMessages([
                 'status' => 'Invalid status. Expected one of: active, former, all (archived is accepted as an alias of former).',
             ]);
         }
-        $groups = $poll->groups()->get();
+        $groups = $poll->groups()->active()->get();
         $candidatesQuery = $poll->candidates()->orderBy('sort');
 
         if ($status === 'active') {
             $candidatesQuery->where('status', 'active');
         } elseif ($status === 'former') {
             $candidatesQuery->where('status', 'archived');
+        }
+
+        // A disabled category is unpublished: its candidates keep their rows
+        // and scores but are ranked nowhere, so they must not reach the
+        // rankings, the history series or the X snapshots built from here.
+        $disabledGroupIds = $poll->groups()->disabled()->pluck('id');
+        if ($disabledGroupIds->isNotEmpty()) {
+            // whereNotIn alone would also drop null-group candidates, because
+            // NULL NOT IN (…) is NULL rather than true.
+            $candidatesQuery->where(function ($nested) use ($disabledGroupIds) {
+                $nested->whereNull('candidate_group_id')
+                    ->orWhereNotIn('candidate_group_id', $disabledGroupIds);
+            });
         }
 
         $candidates = $candidatesQuery->get()->keyBy('id');
@@ -147,6 +161,7 @@ class TierlistLeaderboard
                 })->groupBy('candidate_id')->get()
             );
         }
+
         return $rows
             ->map(function ($row) use ($candidates) {
                 $candidate = $candidates->get($row->candidate_id);

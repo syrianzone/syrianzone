@@ -56,25 +56,21 @@ class PollController extends Controller
         $poll = Poll::where('slug', $slug)->orWhere('id', $slug)->firstOrFail();
         $today = Carbon::now($poll->safeTimezone())->startOfDay();
 
-        $candidatesQuery = $poll->candidates()->orderBy('sort');
-        if (! $request->boolean('include_archived')) {
-            $candidatesQuery->where('status', 'active');
-        }
-
-        $candidates = $candidatesQuery->get()->map(fn ($c) => [
-            'id' => $c->id,
-            'name' => $c->name,
-            'title' => $c->title,
-            'imageUrl' => $c->image_url ?: null,
-            'originalUrl' => $c->image_url ?: null,
-            'category' => $c->category,
-            'candidate_group_id' => $c->candidate_group_id,
-        ]);
+        $candidates = $this->publicCandidates($poll, $request->boolean('include_archived'))
+            ->get()->map(fn ($c) => [
+                'id' => $c->id,
+                'name' => $c->name,
+                'title' => $c->title,
+                'imageUrl' => $c->image_url ?: null,
+                'originalUrl' => $c->image_url ?: null,
+                'category' => $c->category,
+                'candidate_group_id' => $c->candidate_group_id,
+            ]);
 
         return Inertia::render('Polls/Show', [
             'poll' => $poll,
             'candidates' => $candidates,
-            'groups' => $poll->groups,
+            'groups' => $poll->groups()->active()->get(),
             'voteDay' => $today->toIso8601String(),
         ]);
     }
@@ -95,22 +91,50 @@ class PollController extends Controller
         $poll = Poll::where('slug', Poll::CORE_POLL_SLUG)->firstOrFail();
         $today = Carbon::now($poll->safeTimezone())->startOfDay();
 
-        $candidates = $poll->candidates()->where('status', 'active')->orderBy('sort')->get()->map(fn ($c) => [
-            'id' => $c->id,
-            'name' => $c->name,
-            'title' => $c->title,
-            'imageUrl' => $c->image_url ?: null,
-            'originalUrl' => $c->image_url ?: null,
-            'category' => $c->category,
-            'candidate_group_id' => $c->candidate_group_id,
-        ]);
+        $candidates = $this->publicCandidates($poll)
+            ->get()->map(fn ($c) => [
+                'id' => $c->id,
+                'name' => $c->name,
+                'title' => $c->title,
+                'imageUrl' => $c->image_url ?: null,
+                'originalUrl' => $c->image_url ?: null,
+                'category' => $c->category,
+                'candidate_group_id' => $c->candidate_group_id,
+            ]);
 
         return Inertia::render('TierList/Index', [
             'poll' => $poll,
             'candidates' => $candidates,
-            'groups' => $poll->groups,
+            'groups' => $poll->groups()->active()->get(),
             'voteDay' => $today->toIso8601String(),
         ]);
+    }
+
+    /**
+     * The candidates a guest may see and rank: archived ones are included on
+     * request, but anyone in a disabled category never is — a disabled
+     * category is not published, so neither is its roster.
+     */
+    private function publicCandidates(Poll $poll, bool $includeArchived = false)
+    {
+        $query = $poll->candidates()->orderBy('sort');
+
+        if (! $includeArchived) {
+            $query->where('status', 'active');
+        }
+
+        $disabledGroupIds = $poll->groups()->disabled()->pluck('id');
+
+        if ($disabledGroupIds->isNotEmpty()) {
+            // Null-group candidates predate the grouping model; a plain
+            // whereNotIn would drop them too, because NULL NOT IN (…) is NULL.
+            $query->where(function ($nested) use ($disabledGroupIds) {
+                $nested->whereNull('candidate_group_id')
+                    ->orWhereNotIn('candidate_group_id', $disabledGroupIds);
+            });
+        }
+
+        return $query;
     }
 
     public function renderTierListLeaderboard(Request $request)
@@ -190,14 +214,23 @@ class PollController extends Controller
         $poll = Poll::where('id', $idOrSlug)->orWhere('slug', $idOrSlug)->firstOrFail();
         $today = Carbon::now($poll->safeTimezone())->startOfDay();
 
-        $candidatesQuery = $poll->candidates()->orderBy('sort');
-        if (! $request->boolean('include_archived')) {
+        // The dashboard editor reads this endpoint and must still see disabled
+        // categories (it is how they get re-enabled), so a polls editor gets the
+        // full roster. Everyone else gets what the public pages show: published
+        // categories only, and no candidate from a disabled one.
+        $isEditor = $request->user()?->hasPermission('polls.edit') ?? false;
+
+        $candidatesQuery = $isEditor
+            ? $poll->candidates()->orderBy('sort')
+            : $this->publicCandidates($poll, $request->boolean('include_archived'));
+
+        if ($isEditor && ! $request->boolean('include_archived')) {
             $candidatesQuery->where('status', 'active');
         }
 
         return response()->json([
             'poll' => $poll,
-            'groups' => $poll->groups,
+            'groups' => $isEditor ? $poll->groups()->get() : $poll->groups()->active()->get(),
             'candidates' => $candidatesQuery->get(),
             'todayScores' => DailyScore::where('poll_id', $poll->id)->where('day', $today)->get(),
             'voteDay' => $today->toIso8601String(),

@@ -271,7 +271,9 @@ class PollController extends Controller
     private function leaderboardPayload(Poll $poll, string $status): array
     {
         return Cache::remember(
-            "leaderboard:v1:{$poll->id}:{$status}",
+            // v2: groups are plain arrays carrying `rankingKey` (the payload
+            // shape before it could not drive the leaderboard tabs).
+            $this->tierlistLeaderboard->cacheKey($poll, $status),
             60,
             function () use ($poll, $status) {
                 $leaderboard = $this->tierlistLeaderboard->build($poll, $status);

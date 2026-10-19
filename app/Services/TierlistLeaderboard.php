@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\CandidateGroup;
 use App\Models\Poll;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -19,6 +21,29 @@ class TierlistLeaderboard
     public const STATUSES = ['active', 'former', 'all'];
 
     public const DB_ALIAS = 'archived';
+
+    /**
+     * Cache key for one poll + status view. Defined here so every writer that
+     * changes a category can invalidate exactly what the readers cached.
+     */
+    public function cacheKey(Poll $poll, string $status): string
+    {
+        return "leaderboard:v2:{$poll->id}:{$status}";
+    }
+
+    /**
+     * Drop every cached leaderboard view of a poll.
+     *
+     * Called when a category changes (created, renamed, reordered, disabled,
+     * deleted). Without it, disabling a category would leave its tab on the
+     * leaderboard for the cache TTL — the payload is cached, not rendered.
+     */
+    public function forgetCache(Poll $poll): void
+    {
+        foreach (self::STATUSES as $status) {
+            Cache::forget($this->cacheKey($poll, $status));
+        }
+    }
 
     public static function normalizeStatus(string $status): string
     {
@@ -57,6 +82,24 @@ class TierlistLeaderboard
 
         $candidates = $candidatesQuery->get()->keyBy('id');
         $scores = $this->scores($poll, $candidates);
+
+        // Groups are published as plain arrays so the client can render one tab
+        // per *published* category without re-deriving the ranking key that the
+        // legacy aliases in normalizeGroupKey() produce. A disabled category is
+        // absent here, which is what hides its tab on the leaderboard.
+        $groups = $groups->map(function (CandidateGroup $group) {
+            $key = $this->normalizeGroupKey($group->key ?? $group->id);
+
+            return [
+                'id' => $group->id,
+                'name' => $group->name,
+                'key' => $group->key,
+                'rankingKey' => $key,
+                'sortOrder' => $group->sort_order,
+                'isDefault' => (bool) $group->is_default,
+            ];
+        })->values();
+
         $rankings = [
             'ministers' => [],
             'governors' => [],
@@ -65,9 +108,9 @@ class TierlistLeaderboard
         ];
 
         foreach ($groups as $group) {
-            $key = $this->normalizeGroupKey($group->key ?? $group->id);
+            $key = $group['rankingKey'];
             $rankings[$key] = $scores
-                ->filter(fn (array $item) => $item['groupId'] === $group->id)
+                ->filter(fn (array $item) => $item['groupId'] === $group['id'])
                 ->values()
                 ->map(fn (array $item, int $index) => [...$item, 'rank' => $index + 1])
                 ->all();
@@ -86,8 +129,8 @@ class TierlistLeaderboard
     public function snapshot(Poll $poll): array
     {
         $leaderboard = $this->build($poll);
-        $groups = $leaderboard['groups']->map(function ($group) use ($leaderboard) {
-            $key = $this->normalizeGroupKey($group->key ?? $group->id);
+        $groups = $leaderboard['groups']->map(function (array $group) use ($leaderboard) {
+            $key = $group['rankingKey'];
             $candidates = collect($leaderboard['rankings'][$key] ?? [])
                 ->map(fn (array $candidate) => [
                     'id' => $candidate['candidateId'],
@@ -99,7 +142,7 @@ class TierlistLeaderboard
 
             return [
                 'key' => $key,
-                'name' => $group->name,
+                'name' => $group['name'],
                 'hash' => hash('sha256', json_encode([
                     'version' => 2,
                     'key' => $key,

@@ -262,6 +262,14 @@ Voter-identifying data is **never** returned by any endpoint:
 | `GET /api/v1/polls/{idOrSlug}/leaderboard` | `api.v1.polls.leaderboard` | `GET /api/polls/{idOrSlug}/leaderboard` | `public-api` (`120/min`) | Cached (60s + ETag) leaderboard rankings + daily history (`?status=active\|former\|all`) |
 | `POST /api/v1/polls/{idOrSlug}/ballots` | `api.v1.polls.ballots.store` | `POST /api/submit` | `voting` (`10/min`) | Submit a tier-list ballot for a poll (minimum 3 candidates ranked) |
 
+The leaderboard payload carries `groups` as `{ id, name, key, rankingKey,
+sortOrder, isDefault }`, and each published category's ranking rows live under
+its `rankingKey` (e.g. the `minister` category ranks under `ministers`). Only
+published categories are listed, so a client renders one tab per `groups` entry
+and never has to hardcode category keys. Any change to a category drops the
+cached payload for that poll, so a disabled category disappears immediately
+rather than after the 60s TTL.
+
 ### Submitting a Ballot (`POST /api/v1/polls/{idOrSlug}/ballots`)
 ```json
 {

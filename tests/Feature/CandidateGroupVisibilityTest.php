@@ -76,6 +76,9 @@ test('the leaderboard leaves a disabled category out of its groups and rankings'
     $payload = $this->getJson('/api/polls/best-ministers/leaderboard')->assertOk()->json();
 
     expect(collect($payload['groups'])->pluck('id')->all())->toBe([$published->id])
+        // The client renders one tab per entry in `groups`, so the ranking key
+        // it must read has to be shipped with the group.
+        ->and(collect($payload['groups'])->pluck('rankingKey')->all())->toBe(['ministers'])
         ->and(collect($payload['ministers'])->pluck('candidateId')->all())->toBe([$visible->id])
         // The disabled category keeps its scores in daily_scores but publishes
         // an empty bucket: no ranking rows, no history series.
@@ -159,6 +162,25 @@ test('a disabled category cannot be made the default one', function () {
         ->assertStatus(422);
 
     expect($disabled->fresh()->is_default)->toBeFalse();
+});
+
+test('disabling a category drops the cached leaderboard payload', function () {
+    ['published' => $published] = disabledCategoryFixture();
+
+    // Prime the payload cache with the published view.
+    $this->getJson('/api/polls/best-ministers/leaderboard')
+        ->assertOk()
+        ->assertJsonCount(1, 'groups');
+
+    $this->actingAs(User::factory()->withPermissions(['polls.edit'])->create())
+        ->patchJson("/api/candidate-groups/{$published->id}", ['is_active' => false])
+        ->assertOk();
+
+    // Without cache invalidation this would still carry the old tab and ranks
+    // for up to a minute.
+    $this->getJson('/api/polls/best-ministers/leaderboard')
+        ->assertOk()
+        ->assertJsonCount(0, 'groups');
 });
 
 test('the poll editor JSON shows every category to editors and only published ones to guests', function () {

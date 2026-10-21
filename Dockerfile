@@ -65,6 +65,79 @@ HEALTHCHECK --interval=1m --timeout=10s --retries=3 \
 
 USER root
 
+# Upgrade PHP in-place to 8.4.27 (fixes CVE-2026-109618 & CVE-2026-109619) if the
+# upstream serversideup/php:8.4-fpm-nginx base image still ships < 8.4.27.
+# Once upstream publishes >= 8.4.27, dpkg --compare-versions skips this automatically.
+ARG PHP_PATCH_VERSION=8.4.27
+ARG PHP_PATCH_URL="https://www.php.net/distributions/php-8.4.27.tar.xz"
+ARG PHP_PATCH_SHA256="dcf93923b0e38e0d5252b25b796520b5a47761a08b3488b6d0b5d1115764d3f0"
+RUN set -eux; \
+    if dpkg --compare-versions "$(php -r 'echo PHP_VERSION;')" lt "$PHP_PATCH_VERSION"; then \
+        savedAptMark="$(apt-mark showmanual)"; \
+        apt-get update; \
+        apt-get install -y --no-install-recommends \
+            libargon2-dev \
+            libcurl4-openssl-dev \
+            libonig-dev \
+            libreadline-dev \
+            libsodium-dev \
+            libsqlite3-dev \
+            libssl-dev \
+            libxml2-dev \
+            zlib1g-dev \
+        ; \
+        curl -fsSL -o /usr/src/php.tar.xz "$PHP_PATCH_URL"; \
+        echo "$PHP_PATCH_SHA256 */usr/src/php.tar.xz" | sha256sum -c -; \
+        docker-php-source extract; \
+        cd /usr/src/php; \
+        gnuArch="$(dpkg-architecture --query DEB_BUILD_GNU_TYPE)"; \
+        debMultiarch="$(dpkg-architecture --query DEB_BUILD_MULTIARCH)"; \
+        if [ ! -d /usr/include/curl ]; then \
+            ln -sfT "/usr/include/$debMultiarch/curl" /usr/local/include/curl; \
+        fi; \
+        export CFLAGS="$PHP_CFLAGS" CPPFLAGS="$PHP_CPPFLAGS" LDFLAGS="$PHP_LDFLAGS" \
+               PHP_BUILD_PROVIDER='https://github.com/docker-library/php' \
+               PHP_UNAME='Linux - Docker'; \
+        ./configure \
+            --build="$gnuArch" \
+            --sysconfdir=/usr/local/etc \
+            --with-config-file-path="$PHP_INI_DIR" \
+            --with-config-file-scan-dir="$PHP_INI_DIR/conf.d" \
+            --enable-option-checking=fatal \
+            --with-mhash \
+            --with-pic \
+            --enable-mbstring \
+            --enable-mysqlnd \
+            --with-password-argon2 \
+            --with-sodium=shared \
+            --with-pdo-sqlite=/usr \
+            --with-sqlite3=/usr \
+            --with-curl \
+            --with-iconv \
+            --with-openssl \
+            --with-readline \
+            --with-zlib \
+            --disable-phpdbg \
+            --with-pear \
+            --with-libdir="lib/$debMultiarch" \
+            --disable-cgi \
+            --enable-fpm \
+            --with-fpm-user=www-data \
+            --with-fpm-group=www-data; \
+        make -j"$(nproc)"; \
+        find -type f -name '*.a' -delete; \
+        make install; \
+        find /usr/local -type f -perm '/0111' -exec sh -euxc 'strip --strip-all "$@" || : ' -- '{}' +; \
+        make clean; \
+        cd /; \
+        docker-php-source delete; \
+        apt-mark auto '.*' > /dev/null; \
+        apt-mark manual $savedAptMark > /dev/null; \
+        apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
+        rm -rf /var/lib/apt/lists/*; \
+        php -v; \
+    fi
+
 # Enforce PHP advisory mitigations at PHP INI and FPM pool levels (cannot be
 # overridden at runtime via ini_set() or .env PHP_MEMORY_LIMIT):
 # - CVE-2026-109618: php_admin_value[memory_limit] = -1 removes the controllable

@@ -50,6 +50,7 @@ jobs:
         with:
           context: .
           platforms: linux/amd64
+          pull: true
           push: true
           tags: ghcr.io/syrianzone/syrianzone:staging-${{ github.sha }}
           # shares the production layer cache: same Dockerfile, so a staging

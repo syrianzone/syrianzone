@@ -68,6 +68,7 @@ jobs:
         with:
           context: .
           platforms: linux/amd64
+          pull: true
           push: true
           tags: |
             ghcr.io/syrianzone/syrianzone:${{ github.sha }}

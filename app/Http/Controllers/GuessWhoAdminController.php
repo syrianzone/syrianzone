@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\GuessWhoCategory;
 use App\Models\GuessWhoCharacter;
+use App\Models\GuessWhoGame;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -70,11 +72,26 @@ class GuessWhoAdminController extends Controller
     {
         $category = GuessWhoCategory::findOrFail($id);
 
-        foreach ($category->characters as $character) {
-            $this->deleteImage($character->image_path);
-            $character->delete();
+        $characters = $category->characters()->get(['id', 'image_path']);
+        $characterIds = $characters->pluck('id')->all();
+        $imagePaths = $characters->pluck('image_path')->filter()->unique()->values()->all();
+
+        DB::transaction(function () use ($category, $characterIds) {
+            if (!empty($characterIds)) {
+                GuessWhoGame::whereIn('player_1_character_id', $characterIds)
+                    ->update(['player_1_character_id' => null]);
+                GuessWhoGame::whereIn('player_2_character_id', $characterIds)
+                    ->update(['player_2_character_id' => null]);
+            }
+
+            GuessWhoGame::where('category_id', $category->id)->delete();
+            GuessWhoCharacter::where('category_id', $category->id)->delete();
+            $category->delete();
+        });
+
+        foreach ($imagePaths as $imagePath) {
+            $this->deleteImageIfUnused($imagePath);
         }
-        $category->delete();
 
         return redirect()->back()->with('success', 'تم حذف الفئة وشخصياتها بنجاح');
     }
@@ -117,9 +134,9 @@ class GuessWhoAdminController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        $imagePath = $character->image_path;
+        $oldImagePath = $character->image_path;
+        $imagePath = $oldImagePath;
         if ($request->hasFile('image_file')) {
-            $this->deleteImage($imagePath);
             $imagePath = $this->storeImage($request->file('image_file'));
         }
 
@@ -132,14 +149,27 @@ class GuessWhoAdminController extends Controller
             'is_active' => $validated['is_active'] ?? $character->is_active,
         ]);
 
+        if ($oldImagePath && $oldImagePath !== $imagePath) {
+            $this->deleteImageIfUnused($oldImagePath);
+        }
+
         return redirect()->back()->with('success', 'تم تحديث الشخصية بنجاح');
     }
 
     public function destroyCharacter(int $id)
     {
         $character = GuessWhoCharacter::findOrFail($id);
-        $this->deleteImage($character->image_path);
-        $character->delete();
+        $imagePath = $character->image_path;
+
+        DB::transaction(function () use ($character) {
+            GuessWhoGame::where('player_1_character_id', $character->id)
+                ->update(['player_1_character_id' => null]);
+            GuessWhoGame::where('player_2_character_id', $character->id)
+                ->update(['player_2_character_id' => null]);
+            $character->delete();
+        });
+
+        $this->deleteImageIfUnused($imagePath);
 
         return redirect()->back()->with('success', 'تم حذف الشخصية بنجاح');
     }
@@ -157,8 +187,29 @@ class GuessWhoAdminController extends Controller
 
     private function deleteImage(?string $path): void
     {
-        if ($path && Storage::disk('public')->exists($path)) {
-            Storage::disk('public')->delete($path);
+        if (!$path) {
+            return;
         }
+
+        try {
+            if (Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->delete($path);
+            }
+        } catch (\Throwable $e) {
+            report($e);
+        }
+    }
+
+    private function deleteImageIfUnused(?string $path): void
+    {
+        if (!$path) {
+            return;
+        }
+
+        if (GuessWhoCharacter::where('image_path', $path)->exists()) {
+            return;
+        }
+
+        $this->deleteImage($path);
     }
 }

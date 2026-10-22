@@ -16,10 +16,15 @@ class GuessWhoSeeder extends Seeder
 {
     public function run(): void
     {
+        if (GuessWhoCategory::query()->exists()) {
+            $this->command?->info('GuessWho categories already exist. Skipping startup seed to preserve admin changes.');
+            return;
+        }
+
         // Find the main best-ministers poll
         $poll = Poll::where('slug', 'best-ministers')->first();
         if (!$poll) {
-            $this->command->info("Best Ministers poll not found. Seeding with dummy categories.");
+            $this->command?->info("Best Ministers poll not found. Seeding with dummy categories.");
             $this->seedDummyData();
             return;
         }
@@ -42,13 +47,13 @@ class GuessWhoSeeder extends Seeder
                 ->where('status', 'active')
                 ->get();
 
-            $this->command->info("Seeding category: {$category->name_ar} with {$candidates->count()} characters.");
+            $this->command?->info("Seeding category: {$category->name_ar} with {$candidates->count()} characters.");
 
             foreach ($candidates as $candidate) {
                 $imagePath = $this->processCandidateImage($candidate->image_url);
 
                 if (!$imagePath) {
-                    $this->command->warn("Skipping candidate {$candidate->name} due to missing/inaccessible image.");
+                    $this->command?->warn("Skipping candidate {$candidate->name} due to missing/inaccessible image.");
                     continue;
                 }
 

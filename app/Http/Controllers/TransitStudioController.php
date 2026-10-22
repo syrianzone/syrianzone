@@ -90,6 +90,8 @@ class TransitStudioController extends Controller
             }
         }
 
+        $geojson = $this->normalizeGeoJson($request->input('geojson'));
+
         $draft = RouteDraft::create([
             'user_id' => $user?->id,
             'city_id' => $validated['city_id'],
@@ -98,7 +100,7 @@ class TransitStudioController extends Controller
             'price' => $validated['price'] ?? null,
             'color_index' => $validated['color_index'] ?? null,
             'notes' => $validated['notes'] ?? null,
-            'geojson' => $request->input('geojson'),
+            'geojson' => $geojson,
             'route_id' => $validated['route_id'] ?? null,
             'status' => 'pending',
         ]);
@@ -231,7 +233,7 @@ class TransitStudioController extends Controller
             $updateData['notes'] = $validated['notes'];
         }
         if ($request->has('geojson')) {
-            $updateData['geojson'] = $request->input('geojson');
+            $updateData['geojson'] = $this->normalizeGeoJson($request->input('geojson'));
         }
 
         // Any edit submission is a resubmission for review: the draft always goes
@@ -250,6 +252,39 @@ class TransitStudioController extends Controller
         $draft->update($updateData);
 
         return response()->json($draft);
+    }
+
+    /**
+     * Normalize incoming GeoJSON features so mobile/client quirks (such as
+     * wrapping Point coordinates in an extra array `[[lng, lat]]` instead of
+     * `[lng, lat]`) never corrupt MapLibre GL or MySQL ST_GeomFromGeoJSON.
+     */
+    private function normalizeGeoJson(mixed $geojson): mixed
+    {
+        if (! is_array($geojson) || ! is_array($geojson['features'] ?? null)) {
+            return $geojson;
+        }
+
+        foreach ($geojson['features'] as &$feature) {
+            if (! is_array($feature) || ! is_array($feature['geometry'] ?? null)) {
+                continue;
+            }
+
+            $type = $feature['geometry']['type'] ?? null;
+            $coords = $feature['geometry']['coordinates'] ?? null;
+
+            if ($type === 'Point' && is_array($coords)) {
+                while (isset($coords[0]) && is_array($coords[0])) {
+                    $coords = $coords[0];
+                }
+                if (isset($coords[0], $coords[1]) && is_numeric($coords[0]) && is_numeric($coords[1])) {
+                    $feature['geometry']['coordinates'] = [(float) $coords[0], (float) $coords[1]];
+                }
+            }
+        }
+        unset($feature);
+
+        return $geojson;
     }
 
     private function canEditDraft(Request $request, RouteDraft $draft): bool

@@ -114,6 +114,36 @@ function getCsrfToken(): string {
   return match ? decodeURIComponent(match[1]) : ''
 }
 
+function normalizeGeoJson(raw: any): FeatureCollection {
+  const empty: FeatureCollection = { type: 'FeatureCollection', features: [] }
+  let geojson = raw
+  if (typeof geojson === 'string') {
+    try { geojson = JSON.parse(geojson) } catch { return empty }
+  }
+  if (!geojson || !Array.isArray(geojson.features)) return empty
+
+  return {
+    ...geojson,
+    type: 'FeatureCollection',
+    features: geojson.features.map((f: any) => {
+      if (f?.geometry?.type === 'Point' && Array.isArray(f.geometry.coordinates)) {
+        let coords = f.geometry.coordinates
+        while (Array.isArray(coords) && Array.isArray(coords[0])) {
+          coords = coords[0]
+        }
+        return {
+          ...f,
+          geometry: {
+            ...f.geometry,
+            coordinates: coords,
+          },
+        }
+      }
+      return f
+    }),
+  }
+}
+
 function stopCount(draft: Draft) {
   let geojson = draft.geojson
   if (typeof geojson === 'string') {
@@ -162,7 +192,7 @@ function TransitAdminPageContent() {
   const [cities, setCities] = useState<any[]>([])
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
 
-  // ─── Capabilities + governorate scope ─────────────────────────────────────
+  // ─── Capabilities + governorate scope ───────────────────────────────────────
   const { user, can, canInCity, allowedTransitCities } = useAuth()
   const allowedCities = allowedTransitCities()
   const scopeRestricted = allowedCities !== null
@@ -301,17 +331,27 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
   if (!geojson) return null
   const coords: [number, number][] = []
 
+  const pushValidCoord = (c: any) => {
+    let cur = c
+    while (Array.isArray(cur) && Array.isArray(cur[0])) {
+      cur = cur[0]
+    }
+    if (Array.isArray(cur) && cur.length >= 2 && typeof cur[0] === 'number' && typeof cur[1] === 'number' && !Number.isNaN(cur[0]) && !Number.isNaN(cur[1])) {
+      coords.push([cur[0], cur[1]])
+    }
+  }
+
   const extractCoords = (geom: any) => {
     if (!geom || !geom.coordinates) return
     const { type, coordinates } = geom
     if (type === 'Point') {
-      coords.push(coordinates as [number, number])
+      pushValidCoord(coordinates)
     } else if (type === 'LineString' || type === 'MultiPoint') {
-      coordinates.forEach((c: any) => coords.push(c as [number, number]))
+      if (Array.isArray(coordinates)) coordinates.forEach((c: any) => pushValidCoord(c))
     } else if (type === 'MultiLineString' || type === 'Polygon') {
-      coordinates.forEach((line: any) => line.forEach((c: any) => coords.push(c as [number, number])))
+      if (Array.isArray(coordinates)) coordinates.forEach((line: any) => Array.isArray(line) && line.forEach((c: any) => pushValidCoord(c)))
     } else if (type === 'MultiPolygon') {
-      coordinates.forEach((poly: any) => poly.forEach((line: any) => line.forEach((c: any) => coords.push(c as [number, number]))))
+      if (Array.isArray(coordinates)) coordinates.forEach((poly: any) => Array.isArray(poly) && poly.forEach((line: any) => Array.isArray(line) && line.forEach((c: any) => pushValidCoord(c))))
     }
   }
 
@@ -335,12 +375,11 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
     const empty: FeatureCollection = { type: 'FeatureCollection', features: [] }
     let geojsonData: any = empty
     if (adminTab === 'drafts') {
-      geojsonData = selectedDraft?.geojson ?? empty
-      if (typeof geojsonData === 'string') { try { geojsonData = JSON.parse(geojsonData) } catch { geojsonData = empty } }
+      geojsonData = normalizeGeoJson(selectedDraft?.geojson)
     } else if (adminTab === 'routes') {
-      geojsonData = selectedRouteGeoJson ?? empty
+      geojsonData = normalizeGeoJson(selectedRouteGeoJson)
     } else if (adminTab === 'import') {
-      geojsonData = importPreviewGeoJson ?? empty
+      geojsonData = normalizeGeoJson(importPreviewGeoJson)
     }
     src?.setData(geojsonData)
 
@@ -391,7 +430,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
     if (mobileView === 'map') setTimeout(() => mapRef.current?.resize(), 60)
   }, [mobileView])
 
-  // ─── API Handlers ─────────────────────────────────────────────────────────
+  // ─── API Handlers ──────────────────────────────────────────────────────────
   const handleApprove = useCallback(async (id: number, colorIndex?: number) => {
     setActionLoading(true)
     const selectedColor = colorIndex ?? approveColorIndex
@@ -666,7 +705,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
     }
   }, [selectedRoute, fetchRoutes, showToast, queryClient])
 
-  // ─── Derived ──────────────────────────────────────────────────────────────
+  // ─── Derived ───────────────────────────────────────────────────────────────
   const stats = {
     pending: drafts.filter((d: Draft) => d.status === 'pending').length,
     approved: drafts.filter((d: Draft) => d.status === 'approved').length,
@@ -1158,7 +1197,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
         )}
       </div>
 
-      {/* ── Reject Dialog ───────────────────────────────────────────────── */}
+      {/* ── Reject Dialog ─────────────────────────────────────────────────── */}
       <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
         <DialogContent dir="rtl" className="sm:max-w-md">
           <DialogHeader>
@@ -1175,7 +1214,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
         </DialogContent>
       </Dialog>
 
-      {/* ── Combine Dialog ─────────────────────────────────────────────── */}
+      {/* ── Combine Dialog ────────────────────────────────────────────────── */}
       <Dialog open={isCombineModalOpen} onOpenChange={setIsCombineModalOpen}>
         <DialogContent dir="rtl" className="sm:max-w-lg">
           <DialogHeader>
@@ -1228,7 +1267,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
         </DialogContent>
       </Dialog>
 
-      {/* ── Split Dialog ───────────────────────────────────────────────── */}
+      {/* ── Split Dialog ──────────────────────────────────────────────────── */}
       <Dialog open={isSplitModalOpen} onOpenChange={setIsSplitModalOpen}>
         <DialogContent dir="rtl" className="sm:max-w-lg">
           <DialogHeader>
@@ -1264,7 +1303,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
         </DialogContent>
       </Dialog>
 
-      {/* ── Move Dialog ────────────────────────────────────────────────── */}
+      {/* ── Move Dialog ───────────────────────────────────────────────────── */}
       <Dialog open={isMoveModalOpen} onOpenChange={setIsMoveModalOpen}>
         <DialogContent dir="rtl" className="sm:max-w-md">
           <DialogHeader>
@@ -1287,7 +1326,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
         </DialogContent>
       </Dialog>
 
-      {/* ── Edit Route Dialog ──────────────────────────────────────────────── */}
+      {/* ── Edit Route Dialog ────────────────────────────────────────────── */}
       <Dialog open={isEditRouteModalOpen} onOpenChange={setIsEditRouteModalOpen}>
         <DialogContent dir="rtl" className="sm:max-w-md">
           <DialogHeader>
@@ -1332,7 +1371,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
         </DialogContent>
       </Dialog>
 
-      {/* ── Delete Route Dialog ────────────────────────────────────────── */}
+      {/* ── Delete Route Dialog ──────────────────────────────────────────── */}
       <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <DialogContent dir="rtl" className="sm:max-w-md">
           <DialogHeader>

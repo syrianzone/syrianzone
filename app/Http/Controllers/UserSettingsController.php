@@ -4,12 +4,13 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class UserSettingsController extends Controller
 {
     public function update(Request $request): JsonResponse
     {
-        $user = $request->user();
+        $user = $request->user() ?? Auth::guard('sanctum')->user();
         if (! $user) {
             return response()->json(['message' => 'Unauthenticated.', 'error' => 'Unauthenticated'], 401);
         }

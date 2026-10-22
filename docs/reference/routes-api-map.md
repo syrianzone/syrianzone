@@ -49,11 +49,12 @@ Generated from `routes/web.php` and `routes/api.php`. Grouped by feature area, m
 - `GET /board` → Board dashboard (guest mode via localStorage)
 
 ### Auth & dashboard
-- `GET /user`, `GET /auth/google` + callback, `POST /logout`
+- Web OAuth & session: `GET /user`, `GET /auth/google` + `GET /auth/google/callback`, `POST /logout`
+- Cross-platform mobile token OAuth (`api.php`): `POST /api/v1/auth/google/token` (alias `POST /api/v1/auth/google`), `GET /api/v1/auth/user`, `POST /api/v1/auth/logout`, `POST /api/v1/auth/logout-devices`
 - User settings: canonical `PATCH|PUT|POST /api/v1/user/settings` (legacy `POST /api/user/settings`)
 - `GET /dev/impersonate/{role}` (dev only)
 
-## Authenticated (`web.php`, session+CSRF)
+## Authenticated (`web.php`, session+CSRF or Sanctum Bearer token)
 
 - Dashboard: `GET /dashboard`
 - Account: canonical `GET /api/v1/user`, `PATCH|PUT /api/v1/account`, `POST /api/v1/account/avatar` (10/min), `DELETE /api/v1/account` (legacy `/api/user`, `POST /api/account/update|avatar|delete`)
@@ -61,10 +62,11 @@ Generated from `routes/web.php` and `routes/api.php`. Grouped by feature area, m
 - Superadmin:
   - Staff CRUD: canonical `GET|POST /api/v1/admin/admins`, `DELETE /api/v1/admin/admins/{id}` (legacy `/api/admins[/{id}]`)
   - Asset explorer: `/admin/assets` + canonical `GET|POST|DELETE /api/v1/admin/assets` & `GET /api/v1/admin/assets/manifest` (legacy `/api/v1/admin/assets/(list|upload|delete)`)
+  - Site navigation & icon catalog: `/admin/navigation` + `GET|PUT /api/v1/admin/navigation`
   - Homepage popup: `/admin/site-popup` + `GET|PUT /api/v1/admin/site-popup`
   - Agent API tokens: `/admin/api-tokens` + `POST /api/v1/admin/api-tokens`, `DELETE /api/v1/admin/api-tokens/{id}`, `DELETE /api/v1/admin/users/{userId}/api-tokens` (legacy `POST /api/v1/admin/api-tokens/revoke-all/{userId}`)
 
-### Mishwar owner endpoints (`auth`, `/api/v1/*`)
+### Mishwar owner endpoints (`auth:web,sanctum`, `/api/v1/*`)
 - `POST /places` (submit), `GET /my/places`, `PATCH /my/places/{id}`, `PATCH .../location`, `POST .../photos`, `POST .../resubmit`, `DELETE /my/places/{id}`
 - Photo ops: `DELETE|POST /my/place-photos/{id}(/rotate)`
 - Saves: `GET /my/saves`, `POST|DELETE /places/{id}/save`
@@ -79,6 +81,7 @@ Every panel below is gated by a single per-route capability, not by module membe
 | Places | `/admin/places` (`places_admin:any`) | `/api/v1/admin/places*` and `/api/v1/admin/place-photos*` |
 | Transit | `/transit/admin` (`transit_admin:any`) | `/api/v1/admin/transit/route-drafts*`, `/api/v1/admin/transit/routes*` (legacy `/api/v1/admin/route-drafts*`, `/api/v1/admin/routes*`) |
 | Guess Who | `/admin/guesswho` (`superadmin`) | `/api/v1/admin/guesswho/categories*`, `/api/v1/admin/guesswho/characters*` |
+| Site navigation | `/admin/navigation` (`superadmin`) | `GET\|PUT /api/v1/admin/navigation` |
 | Site popup | `/admin/site-popup` (`superadmin`) | `GET\|PUT /api/v1/admin/site-popup` |
 | SyOfficial | `/admin/syofficial` (`syofficial_admin:any`) | `/api/v1/admin/syofficial/categories*`, `/api/v1/admin/syofficial/entities*` |
 | Gov apps | `/admin/govapps` (`govapps_admin:any`) | `/api/v1/admin/govapps*` |
@@ -90,12 +93,17 @@ Every panel below is gated by a single per-route capability, not by module membe
 
 | Route | Auth | Notes |
 |---|---|---|
-| `POST\|GET\|DELETE /mcp/admin` | `auth:sanctum` + `RequireApiToken` + `throttle:mcp` | Only registered when `MCP_ENABLED=true`; session cookies are refused. Effective permission = user's live permission AND token abilities. See [modules/agent-mcp.md](../modules/agent-mcp.md) |
+| `POST\|GET\|DELETE /mcp/admin` | `auth:sanctum` + `RequireApiToken` + `throttle:mcp` | Only registered when `MCP_ENABLED=true`; session cookies and mobile user tokens (`abilities: ["mobile"]`) are refused. Effective permission = user's live permission AND token abilities. See [modules/agent-mcp.md](../modules/agent-mcp.md) |
 
 ## JSON API (`api.php` — Canonical `/api/v1/*` + Legacy Aliases)
 
 See **[docs/reference/api.md](api.md)** for full payload schemas and parameter tables.
 
+- **Auth (`/api/v1/auth/*`)**:
+  - `POST /api/v1/auth/google/token` (alias `POST /api/v1/auth/google`)
+  - `GET /api/v1/auth/user`, `POST /api/v1/auth/logout`, `POST /api/v1/auth/logout-devices`
+- **Navigation & Icon Catalog (`/api/v1/navigation`)**:
+  - `GET /api/v1/navigation` (optional `?surface=home|navbar|mobile_menubar` & `?include_disabled=1`)
 - **Search**:
   - `GET /api/v1/search/global` (legacy `GET /api/v1/global-search`)
   - `GET /api/v1/transit/search` (legacy `GET /api/v1/search`)
@@ -108,7 +116,7 @@ See **[docs/reference/api.md](api.md)** for full payload schemas and parameter t
   - `GET /api/v1/transit/stops/nearby` (legacy `/api/v1/stops/nearby`)
   - `GET /api/v1/transit/search` (legacy `/api/v1/search`)
   - `GET /api/v1/transit/pois` (legacy `/api/v1/geo/poi`)
-  - Transit Studio: `POST /api/v1/transit/studio/routes`, `GET|PUT|PATCH|DELETE /api/v1/transit/studio/routes/{id}`, `GET .../from-route` (legacy `/api/v1/studio/routes*`)
+  - Transit Studio: `GET|POST /api/v1/transit/studio/routes`, `GET|PUT|PATCH|DELETE /api/v1/transit/studio/routes/{id}`, `GET .../from-route` (legacy `/api/v1/studio/routes*`)
 - **Polls & Voting (`/api/v1/polls/*`)**:
   - `GET /api/v1/polls`, `GET /api/v1/polls/{idOrSlug}`, `GET .../candidates`, `GET .../scores`, `GET .../ballots`, `GET .../leaderboard`
   - `POST /api/v1/polls/{idOrSlug}/ballots` & `POST /api/v1/polls/ballots` (legacy `POST /api/submit`, `GET /api/polls*`)

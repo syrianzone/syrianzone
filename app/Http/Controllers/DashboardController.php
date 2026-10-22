@@ -100,6 +100,14 @@ class DashboardController extends Controller
 
         $user->update($data);
 
+        if ($request->bearerToken() !== null) {
+            return response()->json([
+                'ok' => true,
+                'message' => 'تم تحديث الحساب بنجاح',
+                'user' => \App\Http\Middleware\HandleInertiaRequests::userPayload($user->fresh()),
+            ]);
+        }
+
         return back()->with('success', 'تم تحديث الحساب بنجاح');
     }
 
@@ -154,9 +162,14 @@ class DashboardController extends Controller
         // Remove hosted avatars so R2 does not keep avatars/{id}/* forever.
         $avatars->deleteForUser($user);
 
-        Auth::logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        // Revoke all Sanctum tokens (mobile / API) belonging to the user.
+        $user->tokens()->delete();
+
+        Auth::guard('web')->logout();
+        if ($request->hasSession()) {
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
 
         $user->delete(); // Triggers soft delete
 

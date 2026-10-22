@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\PoiSearchController;
 use App\Http\Controllers\Api\V1\TransitController;
 use App\Http\Controllers\Api\V1\VotingDataController;
 use App\Http\Controllers\AppIconController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ContributorController;
 use App\Http\Controllers\EventsController;
 use App\Http\Controllers\FeedController;
@@ -20,6 +21,7 @@ use App\Http\Controllers\PlaceDiscoveryController;
 use App\Http\Controllers\PollController;
 use App\Http\Controllers\PrayerController;
 use App\Http\Controllers\RecipeController;
+use App\Http\Controllers\SiteNavigationAdminController;
 use App\Http\Controllers\TransitStudioController;
 use App\Http\Controllers\WeatherController;
 use Illuminate\Support\Facades\Route;
@@ -31,6 +33,31 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::prefix('v1')->group(function () {
+    // 0. Cross-Platform Authentication & Dynamic Navigation Catalog
+    Route::prefix('auth')->group(function () {
+        Route::post('/google/token', [AuthController::class, 'googleToken'])
+            ->middleware('throttle:20,1')
+            ->name('api.v1.auth.google.token');
+        Route::post('/google', [AuthController::class, 'googleToken'])
+            ->middleware('throttle:20,1');
+        Route::get('/user', [AuthController::class, 'user'])
+            ->middleware('throttle:60,1')
+            ->name('api.v1.auth.user');
+
+        Route::middleware('auth:sanctum')->group(function () {
+            Route::post('/logout', [AuthController::class, 'apiLogout'])
+                ->middleware('throttle:30,1')
+                ->name('api.v1.auth.logout');
+            Route::post('/logout-devices', [AuthController::class, 'apiLogoutAllDevices'])
+                ->middleware('throttle:10,1')
+                ->name('api.v1.auth.logout-devices');
+        });
+    });
+
+    Route::get('/navigation', [SiteNavigationAdminController::class, 'show'])
+        ->middleware('throttle:60,1')
+        ->name('api.v1.navigation.show');
+
     // 1. Cross-module global search
     Route::middleware('throttle:60,1')->group(function () {
         Route::get('/search/global', [GlobalSearchController::class, 'search'])
@@ -59,13 +86,16 @@ Route::prefix('v1')->group(function () {
                 ->name('api.v1.transit.pois.index');
         });
 
-        // Transit Studio: open for community contributions
+        // Transit Studio: open for community contributions (supports optional session or Bearer token)
         Route::post('/studio/routes', [TransitStudioController::class, 'store'])
             ->middleware('throttle:studio-submit')
             ->name('api.v1.transit.studio.routes.store');
 
-        // Transit Studio: edit existing drafts (requires auth)
-        Route::middleware('auth')->group(function () {
+        // Transit Studio: list & manage existing drafts (requires auth via web session or Sanctum Bearer token)
+        Route::middleware('auth:sanctum')->group(function () {
+            Route::get('/studio/routes', [TransitStudioController::class, 'index'])
+                ->middleware('throttle:60,1')
+                ->name('api.v1.transit.studio.routes.index');
             Route::get('/studio/routes/{id}', [TransitStudioController::class, 'show'])
                 ->name('api.v1.transit.studio.routes.show');
             Route::put('/studio/routes/{id}', [TransitStudioController::class, 'update'])
@@ -97,7 +127,9 @@ Route::prefix('v1')->group(function () {
     Route::post('/studio/routes', [TransitStudioController::class, 'store'])
         ->middleware('throttle:studio-submit');
 
-    Route::middleware('auth')->group(function () {
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/studio/routes', [TransitStudioController::class, 'index'])
+            ->middleware('throttle:60,1');
         Route::get('/studio/routes/{id}', [TransitStudioController::class, 'show']);
         // Authenticated iterative editing (admin geometry fixes, owner
         // resubmits): 10/min blocks legitimate rapid saving, so allow the
@@ -110,9 +142,9 @@ Route::prefix('v1')->group(function () {
         Route::get('/studio/routes/{id}/from-route', [TransitStudioController::class, 'showForEdit']);
     });
 
-    // 3. Syrian Compass: account results (auth) + account-independent share & stats
+    // 3. Syrian Compass: account results (auth:sanctum) + account-independent share & stats
     Route::prefix('compass')->group(function () {
-        Route::middleware(['auth', 'throttle:60,1'])->group(function () {
+        Route::middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
             Route::get('/results', [CompassResultController::class, 'index'])
                 ->name('api.v1.compass.results.index');
             Route::post('/results', [CompassResultController::class, 'store'])

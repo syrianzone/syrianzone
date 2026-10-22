@@ -14,6 +14,7 @@ import {
   Plus,
   Loader2,
   Megaphone,
+  LayoutGrid,
   KeyRound,
   CloudUpload,
   Gamepad2,
@@ -543,7 +544,7 @@ export default function Dashboard({
   const handleCancelMySubmission = async (id: number) => {
     if (!(await confirmDialog({ title: 'سحب هذا الاقتراح؟', description: 'سيتم إلغاء الاقتراح ولا يمكن التراجع.', destructive: true, confirmText: 'سحب' }))) return;
     try {
-      await axios.delete(`/api/v1/studio/routes/${id}`);
+      await axios.delete(`/api/v1/transit/studio/routes/${id}`);
       setLocalMyDrafts(prev => prev.filter(d => d.id !== id));
       setLocalDrafts(prev => prev.filter(d => d.id !== id));
       notify.success('تم سحب الاقتراح');
@@ -698,6 +699,17 @@ export default function Dashboard({
                   >
                     <Megaphone className="h-5 w-5" />
                     النافذة المنبثقة
+                  </Link>
+                )}
+
+                {/* Site Navigation & Icons Catalog Tab (Superadmin only) */}
+                {role === 'superadmin' && (
+                  <Link
+                    href="/admin/navigation"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  >
+                    <LayoutGrid className="h-5 w-5" />
+                    الأيقونات والقوائم
                   </Link>
                 )}
 

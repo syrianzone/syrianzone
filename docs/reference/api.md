@@ -1,15 +1,15 @@
 # Syrian Zone — Central API Reference (`/api/v1`)
 
-This document is the single canonical reference for all JSON API endpoints in **Syrian Zone** ([syrian.zone](https://syrian.zone)), covering public read/write APIs, search endpoints, authenticated user APIs, and capability-gated admin APIs.
+This document is the single canonical reference for all JSON API endpoints in **Syrian Zone** ([syrian.zone](https://syrian.zone)), covering Authentication (Web Session + Cross-Platform Mobile Bearer Tokens), Navigation & Icon Catalog APIs, Transit & Transit Studio APIs, Search endpoints, Polls, Hidden Places ("Mishwar"), Syrian Compass,Authenticated User APIs, and Capability-Gated Admin APIs.
 
 ---
 
-## 1. Conventions, Headers, Rate Limiting & Error Contract
+## 1. Conventions, Authentication, Rate Limiting & Error Contract
 
 ### Base URL & Versioning
 - **Canonical Base URL**: `https://syrian.zone/api/v1`
 - All canonical endpoints are versioned under `/api/v1/*` and have named Laravel routes (`api.v1.*`).
-- Legacy unversioned (`/api/*`) and un-nested (`/api/v1/cities`, `/api/v1/search`, `/api/v1/global-search`, `/api/v1/geo/poi`, etc.) endpoints remain active as backwards-compatible aliases (see [§10 Legacy & Alias Map](#10-legacy--deprecated-endpoint-aliases)).
+- Legacy unversioned (`/api/*`) and un-nested (`/api/v1/cities`, `/api/v1/search`, `/api/v1/global-search`, `/api/v1/geo/poi`, `/api/v1/studio/routes*`, etc.) endpoints remain active as backwards-compatible aliases (see [§11 Legacy & Alias Map](#11-legacy--deprecated-endpoint-aliases)).
 
 ### Required Headers
 Always send:
@@ -20,12 +20,90 @@ Content-Type: application/json
 > [!IMPORTANT]
 > Sending `Accept: application/json` is mandatory for mobile and SPA clients. Without it, Laravel treats validation (`422`), authentication (`401`), or not-found (`404`) responses as web browser navigation and may return HTML or a `302` redirect.
 
-### Authentication Modes
-1. **Public (`api.php`)**: Stateless, no cookies or CSRF required. Rate-limited per IP.
-2. **Authenticated Session (`web.php` + `/api/v1/*`)**: Uses first-party web session cookies + `X-XSRF-TOKEN` (or `X-CSRF-TOKEN`) header.
-3. **Agent / MCP Bearer Token (`routes/ai.php` — `/mcp/admin`)**: Uses `Authorization: Bearer <token>` via Sanctum (`auth:sanctum` + `RequireApiToken`). Session cookies are rejected on `/mcp/admin`.
+---
 
-### Standard Error Response Envelope
+### 1.1 Authentication Architecture (Single Cross-Platform User Pool)
+
+Syrian Zone uses a **single unified `users` table / account pool** across the Web application and mobile (Flutter) clients:
+- Accounts are matched by verified Google **`email`**. Signing in with the same Google account on Web and Flutter resolves to the exact same `User` record (`id`, `role`, `effective_permissions`, `avatar_url`, `settings`, saved places, Quran bookmarks, Compass results, and Transit Studio drafts).
+- If a user previously uploaded a custom avatar to Cloudflare R2 (`/avatars/{id}/...`), subsequent Google logins on any platform preserve the custom avatar rather than overwriting it with Google's profile picture.
+- Soft-deleted accounts (`deleted_at != null`) are automatically restored on re-login; banned accounts (`is_banned = true`) are rejected with `403 Forbidden`.
+
+#### Mode A — Web Browser Session Auth (`web` guard + CSRF)
+Used by the React/Inertia web app:
+1. **Login**: Redirect the browser to `GET /auth/google` (optional `?redirect=/transit/studio` relative path).
+2. **Callback**: `GET /auth/google/callback` upserts the user by `email`, establishes a stateful session cookie (`syrian_zone_session`) + remember-me cookie, and redirects to the intended path (default `/dashboard`).
+3. **Authenticated Requests**: Browser requests include the session cookie and `X-XSRF-TOKEN` (read from the `XSRF-TOKEN` cookie) or `X-CSRF-TOKEN`.
+4. **Logout**: `POST /logout` invalidates the web session and regenerates the CSRF token.
+
+#### Mode B — Mobile / Flutter Stateless Bearer Token Auth (`sanctum` guard)
+Used by native mobile clients (Flutter iOS/Android):
+1. **Native Google Sign-In**: The Flutter app authenticates the user natively via `google_sign_in` and obtains a Google **`id_token`** and/or **`access_token`**.
+2. **Token Exchange**: Call `POST /api/v1/auth/google/token` (or alias `POST /api/v1/auth/google`) with either `id_token` or `access_token` and an optional `device_name`.
+   - **Audience Verification**: Set `GOOGLE_ALLOWED_CLIENT_IDS` in `.env` as a comma-separated list of your Web, iOS, and Android Google OAuth Client IDs (defaults to `GOOGLE_CLIENT_ID`).
+3. **Authenticated Requests**: Send the returned Sanctum token on any authenticated `/api/v1/*` endpoint:
+   ```http
+   Authorization: Bearer <plainTextToken>
+   Accept: application/json
+   ```
+   No cookies or CSRF tokens are required when authenticating with `Authorization: Bearer <token>`.
+4. **Scope Isolation**: Mobile login tokens are minted with `abilities: ["mobile"]`. They authenticate all user-facing endpoints (`auth:sanctum` / `auth:web,sanctum`), are **rejected (`403`)** on the automated `/mcp/admin` agent endpoint, and are excluded from the superadmin MCP Agent token table (`/admin/api-tokens`).
+
+#### Auth Endpoints Summary
+
+| Method & Canonical Path | Route Name | Legacy / Web Alias | Auth | Rate Limit | Description |
+|---|---|---|---|---|---|
+| `GET /auth/google` | `login` | — | Public (Browser) | Web | Redirect browser to Google OAuth consent screen (`?redirect=/path`) |
+| `GET /auth/google/callback` | — | — | Public (Browser) | Web | Google OAuth web callback; logs in session & redirects |
+| `POST /api/v1/auth/google/token` | `api.v1.auth.google.token` | `POST /api/v1/auth/google` | Public | `20/min` | Exchange Google `id_token` or `access_token` for a Sanctum `Bearer` token |
+| `GET /api/v1/auth/user` | `api.v1.auth.user` | `GET /api/v1/user`, `GET /api/user`, `GET /user` | Session or Bearer | `60/min` | Return current user payload (or `null` on `/user` when guest) |
+| `POST /api/v1/auth/logout` | `api.v1.auth.logout` | `POST /logout` (web) | Session or Bearer | `30/min` | Revoke current Bearer token (or log out current web session) |
+| `POST /api/v1/auth/logout-devices` | `api.v1.auth.logout-devices` | — | Session or Bearer | `10/min` | Revoke **all** mobile Bearer tokens for the authenticated user |
+
+#### `POST /api/v1/auth/google/token` (and `POST /api/v1/auth/google`)
+**Request Body** (provide `id_token`, `access_token`, or both):
+```json
+{
+  "id_token": "eyJhbGciOiJSUzI1NiIs...",
+  "access_token": "ya29.a0AfH6SM...",
+  "device_name": "Flutter iOS (iPhone 16)"
+}
+```
+**Response (`200 OK`)**:
+```json
+{
+  "token": "14|9f8e7d6c5b4a3...",
+  "token_type": "Bearer",
+  "expires_at": null,
+  "user": {
+    "id": 42,
+    "name": "Hadi",
+    "email": "user@syrian.zone",
+    "avatar_url": "https://cdn.syrian.zone/avatars/42/avatar.webp",
+    "role": "user",
+    "settings": {
+      "theme": "dark",
+      "governorate": "damascus"
+    },
+    "radio_bytes_total": 0,
+    "radio_seconds_total": 0,
+    "effective_permissions": [],
+    "transit_governorates": null
+  }
+}
+```
+- **Errors**:
+  - `401 Unauthorized`: Invalid/expired Google token, unverified Google email, or `aud` not in `GOOGLE_ALLOWED_CLIENT_IDS`.
+  - `403 Forbidden`: `{ "message": "Your account has been banned." }`.
+  - `422 Unprocessable Entity`: Neither `id_token` nor `access_token` was provided.
+
+#### `POST /api/v1/auth/logout` & `POST /api/v1/auth/logout-devices`
+- `POST /api/v1/auth/logout`: Deletes only the caller's active `PersonalAccessToken` (`{ "ok": true, "message": "Logged out" }`).
+- `POST /api/v1/auth/logout-devices`: Deletes all `mobile` tokens belonging to the user across all phones/tablets (`{ "ok": true, "revoked_count": 2, "message": "Logged out from all devices" }`).
+
+---
+
+### 1.2 Standard Error Response Envelope
 Every JSON error response (`HTTP >= 400`) returns a standardized JSON object with a top-level `message` string and, on `422` validation failures, a field-keyed `errors` object:
 
 ```json
@@ -55,7 +133,108 @@ Every JSON error response (`HTTP >= 400`) returns a standardized JSON object wit
 
 ---
 
-## 2. Search & Discovery Endpoints
+## 2. Dynamic Navigation & Icon Catalog API (`/api/v1/navigation`)
+
+Single-source-of-truth catalog for all Syrian Zone modules, icons, titles, subtitles, routing targets, surface visibility (`home`, `navbar`, `mobile_menubar`), and nested `subCategories`. Consumed by both the Web app (via Inertia shared props + `/api/v1/navigation`) and Flutter mobile clients.
+
+| Method & Canonical Path | Route Name | Auth | Rate Limit | Description |
+|---|---|---|---|---|
+| `GET /api/v1/navigation` | `api.v1.navigation.index` | Public | `60/min` | Fetch the unified navigation & icon catalog |
+| `GET /api/v1/admin/navigation` | `api.v1.admin.navigation.show` | `superadmin` | `60/min` | Fetch navigation catalog for superadmin editor |
+| `PUT /api/v1/admin/navigation` | `api.v1.admin.navigation.update` | `superadmin` | `60/min` | Update order, visibility, icons, custom items, and `subCategories` (or reset) |
+
+### `GET /api/v1/navigation`
+**Query Parameters**:
+- `surface` *(optional)*: Filter items by surface (`home`, `navbar`, or `mobile_menubar`). When omitted, returns all enabled items across all surfaces so the client can filter locally.
+- `include_disabled` *(optional, boolean)*: Default `false`. When `1` / `true`, includes items where `enabled = false`.
+
+**Response (`200 OK`)**:
+```json
+{
+  "navbarTopCount": 4,
+  "useSeparateNavbarOrder": false,
+  "navbarOrder": ["transit", "mishwar", "polls", "compass"],
+  "version": 3,
+  "items": [
+    {
+      "id": "transit",
+      "title": "ترانزيت",
+      "subtitle": "شبكة وخطوط النقل العام",
+      "iconUrl": "https://syrian.zone/assets/icons/transit.svg",
+      "iconKey": "transit",
+      "type": "native",
+      "target": "transit_map",
+      "href": "/transit",
+      "enabled": true,
+      "surfaces": ["home", "navbar", "mobile_menubar"],
+      "subCategories": [
+        {
+          "id": "transit_studio",
+          "title": "استوديو المسارات",
+          "subtitle": "أضف أو عدل مساراً",
+          "iconUrl": null,
+          "iconKey": "transit",
+          "type": "native",
+          "target": "transit_studio",
+          "href": "/transit/studio"
+        }
+      ],
+      "text": "ترانزيت",
+      "image": "https://syrian.zone/assets/icons/transit.svg",
+      "isFlag": false,
+      "external": false,
+      "isInternal": true,
+      "showOnHome": true,
+      "showInNavbar": true,
+      "isCustom": false
+    }
+  ]
+}
+```
+
+#### Field Semantics for Cross-Platform Clients (Web + Flutter)
+- `id`: Stable canonical identifier (`transit`, `mishwar`, `polls`, `tierlist`, `compass`, `muslim`, `games`, `syofficial`, `phonebook`, `govapps`, `atlas`, etc.). Clients can select or exclude specific IDs per screen.
+- `title` / `subtitle`: Arabic display title and short description.
+- `iconUrl` / `iconKey`: Custom uploaded icon URL (Cloudflare R2 / HTTPS) or built-in vector icon key (`transit`, `mishwar`, `polls`, `compass`, `muslim`, `games`, etc.).
+- `type`:
+  - `"native"` — Open a native screen in Flutter identified by `target` (e.g. `transit_map`, `mishwar`, `polls`, `compass`, `muslim_hub`) or navigate internally to `href` on Web.
+  - `"web"` / `"webview"` — Internal web page without a dedicated native screen yet; open `href` in an in-app WebView on Flutter or internal link on Web.
+  - `"external"` — External website (`https://...`); open in external browser / custom tab.
+- `surfaces`: Array of surfaces where the item is active (`"home"`, `"navbar"`, `"mobile_menubar"`).
+- `subCategories`: Optional array of child items (e.g. `/muslim/prayer`, `/muslim/quran`, `/muslim/radio` under `muslim`, or individual games under `games`).
+
+### `PUT /api/v1/admin/navigation` (`superadmin` only)
+Managed visually from the dashboard at `/admin/navigation`.
+- To **reset** to code defaults, send `{ "reset": true }` or `{ "items": [] }`.
+- To **save** custom ordering, visibility (`enabled: false` hides an item globally; `surfaces` controls per-surface placement), custom icons, or `subCategories`, send:
+```json
+{
+  "navbarTopCount": 4,
+  "useSeparateNavbarOrder": false,
+  "navbarOrder": ["transit", "mishwar", "polls", "compass"],
+  "items": [
+    {
+      "id": "transit",
+      "title": "ترانزيت",
+      "subtitle": "شبكة وخطوط النقل العام",
+      "href": "/transit",
+      "iconKey": "transit",
+      "iconUrl": null,
+      "type": "native",
+      "target": "transit_map",
+      "enabled": true,
+      "surfaces": ["home", "navbar", "mobile_menubar"],
+      "subCategories": []
+    }
+  ]
+}
+```
+> [!NOTE]
+> Any built-in module from `SiteSetting::defaultNavigationItems()` that is omitted from `items` is automatically appended at the end of the catalog so newly deployed modules never disappear; to hide a built-in module, keep it in `items` with `"enabled": false` (or remove surfaces from its `"surfaces"` array).
+
+---
+
+## 3. Search & Discovery Endpoints
 
 All search endpoints live under `/api/v1` and accept `q` as the primary search query parameter.
 
@@ -91,9 +270,9 @@ Cross-module search returning up to 5 matches per module across Transit routes, 
 
 ---
 
-## 3. Transit API (`/api/v1/transit/*`)
+## 4. Transit & Transit Studio API (`/api/v1/transit/*`)
 
-Public, unauthenticated read API over published transit data (cities, routes, stops, GeoJSON map layers, and POIs), plus community Transit Studio route draft submissions.
+Public, unauthenticated read API over published transit data (cities, routes, stops, GeoJSON map layers, and POIs), plus community **Transit Studio** route draft creation, listing, editing, and withdrawal.
 
 - **Combined Damascus metro network**: `damascus` and `rif-dimashq` are served as one unified network because transit lines cross the boundary. Requesting either ID returns both.
 - **Unknown city ID**: Returns `404` `{ "message": "City not found." }` (never a cached empty `200`).
@@ -110,11 +289,12 @@ Public, unauthenticated read API over published transit data (cities, routes, st
 | `GET /api/v1/transit/stops/nearby` | `api.v1.transit.stops.nearby` | `GET /api/v1/stops/nearby` | Public | `60/min` | Stops within `radius` (`1..5000`m, default `500`) of `lat` & `lng` |
 | `GET /api/v1/transit/search` | `api.v1.transit.search` | `GET /api/v1/search` | Public | `60/min` | Search routes and stops by `q` and optional `city_id` |
 | `GET /api/v1/transit/pois` | `api.v1.transit.pois.index` | `GET /api/v1/geo/poi` | Public | `60/min` | Nearby points of interest (Photon OSM + Google Places fallback, 24h cache) |
-| `POST /api/v1/transit/studio/routes` | `api.v1.transit.studio.routes.store` | `POST /api/v1/studio/routes` | Public / Auth | `studio-submit` (`5/min` guest, `60/min` auth) | Submit a new Transit Studio route draft |
-| `GET /api/v1/transit/studio/routes/{id}` | `api.v1.transit.studio.routes.show` | `GET /api/v1/studio/routes/{id}` | Auth | `60/min` | Load an existing route draft for editing |
-| `PUT\|PATCH /api/v1/transit/studio/routes/{id}` | `api.v1.transit.studio.routes.update` | `PUT /api/v1/studio/routes/{id}` | Auth | `60/min` | Update an existing route draft |
-| `DELETE /api/v1/transit/studio/routes/{id}` | `api.v1.transit.studio.routes.destroy` | `DELETE /api/v1/studio/routes/{id}` | Auth | `10/min` | Delete a route draft |
-| `GET /api/v1/transit/studio/routes/{id}/from-route` | `api.v1.transit.studio.routes.from-route` | `GET /api/v1/studio/routes/{id}/from-route` | Auth | `60/min` | Load a published route into Studio editor format |
+| `GET /api/v1/transit/studio/routes` | `api.v1.transit.studio.routes.index` | `GET /api/v1/studio/routes` | Auth (`sanctum` / `web`) | `60/min` | List the authenticated user's own route drafts (newest first, optional `?status=`) |
+| `POST /api/v1/transit/studio/routes` | `api.v1.transit.studio.routes.store` | `POST /api/v1/studio/routes` | Public or Auth (`sanctum` / `web`) | `studio-submit` (`5/min` guest, `60/min` auth) | Submit a new Transit Studio route draft (or edit suggestion when `route_id` is passed) |
+| `GET /api/v1/transit/studio/routes/{id}` | `api.v1.transit.studio.routes.show` | `GET /api/v1/studio/routes/{id}` | Auth (`sanctum` / `web`) | `60/min` | Load an existing route draft for editing |
+| `PUT\|PATCH /api/v1/transit/studio/routes/{id}` | `api.v1.transit.studio.routes.update` | `PUT /api/v1/studio/routes/{id}` | Auth (`sanctum` / `web`) | `60/min` | Update an existing route draft and return it to `pending` review |
+| `DELETE /api/v1/transit/studio/routes/{id}` | `api.v1.transit.studio.routes.destroy` | `DELETE /api/v1/studio/routes/{id}` | Auth (`sanctum` / `web`) | `10/min` | Withdraw (delete) a `pending` route draft |
+| `GET /api/v1/transit/studio/routes/{id}/from-route` | `api.v1.transit.studio.routes.from-route` | `GET /api/v1/studio/routes/{id}/from-route` | Auth (`sanctum` / `web`) | `60/min` | Convert a published live route `{id}` into Studio GeoJSON editor format |
 
 ### `GET /api/v1/transit/cities`
 Cached for 1 hour (`transit:cities:api`). Coordinates use GeoJSON `[lng, lat]` order:
@@ -240,7 +420,176 @@ Query parameters: `q` (`3..100` chars, required), `city_id` (optional, biases se
 
 ---
 
-## 4. Polls & Tier-List Voting API (`/api/v1/polls/*`)
+### 4.1 Transit Studio APIs (`/api/v1/transit/studio/routes*`)
+
+Transit Studio allows community members and transit moderators to draw new bus/microbus routes and stops or suggest edits to existing published routes.
+
+#### How Authentication & Permissions Interact with Transit Studio
+1. **Authentication Support**: Every Transit Studio endpoint resolves the caller from **either** a web session cookie (`web` guard) **or** an `Authorization: Bearer <token>` header (`sanctum` guard). Both `/api/v1/transit/studio/routes` and legacy `/api/v1/studio/routes` are exempt from CSRF token requirements for public/API submissions.
+2. **New Route Draft (`POST /api/v1/transit/studio/routes` without `route_id`)**:
+   - Can be submitted by a **guest** (`user_id = null`, rate-limited to `5/min` per IP) or an **authenticated user** (`user_id = $user->id`, rate-limited to `60/min` per user ID).
+   - Banned users receive `403 Forbidden`.
+3. **Live Route Edit Suggestion (`POST /api/v1/transit/studio/routes` with `route_id`)**:
+   - **Requires authentication** (`401 Unauthorized` if guest).
+   - `route_id` must belong to the same `city_id` (`422` otherwise).
+   - **Immediate Live Route Unpublish Behavior**: As soon as a draft with `route_id` is created (or updated via `PUT /api/v1/transit/studio/routes/{id}`), the linked live route in `routes` is **immediately set to `status = 'disapproved'`** (removing it from the public map and invalidating city map caches) and an `unpublished_for_edit` audit row is recorded in `transit_route_logs`. The route remains hidden until a transit admin approves the draft (which applies the new geometry/stops and republishes the route) or republishes it from `/transit/admin`.
+4. **Viewing, Updating & Withdrawing Drafts (`GET`, `PUT|PATCH`, `DELETE`)**:
+   - **Requires authentication** (`auth:sanctum`).
+   - Allowed if the caller is the **draft owner** (`$draft->user_id === $user->id`) OR holds the **`transit.edit_routes`** capability (within their allowed governorate scope if governorate-scoped).
+   - `DELETE` is only allowed while `status === 'pending'` (`422` if already `approved` or `rejected`).
+
+#### 1. List Authenticated User's Drafts — `GET /api/v1/transit/studio/routes`
+- **Legacy Alias**: `GET /api/v1/studio/routes`
+- **Auth**: Required (Session cookie or `Authorization: Bearer <token>`).
+- **Query Parameters**:
+  - `status` *(optional)*: Filter by `pending`, `approved`, or `rejected`.
+- **Response (`200 OK`)**: Returns the user's drafts ordered newest first (`created_at DESC`) under both `data` and `drafts` keys:
+```json
+{
+  "data": [
+    {
+      "id": 108,
+      "user_id": 42,
+      "city_id": "damascus",
+      "route_id": "mezzeh-bab-touma",
+      "name_ar": "المزة - باب توما",
+      "name_en": "Mezzeh - Bab Touma",
+      "price": 3000,
+      "color_index": 2,
+      "notes": "تمت إضافة موقف ساحة الأمويين",
+      "status": "pending",
+      "rejection_reason": null,
+      "geojson": {
+        "type": "FeatureCollection",
+        "features": [
+          {
+            "type": "Feature",
+            "properties": { "type": "route" },
+            "geometry": { "type": "LineString", "coordinates": [[36.24, 33.50], [36.31, 33.51]] }
+          },
+          {
+            "type": "Feature",
+            "properties": { "type": "stop", "nameAr": "المزة" },
+            "geometry": { "type": "Point", "coordinates": [36.24, 33.50] }
+          }
+        ]
+      },
+      "city": { "id": "damascus", "name_ar": "دمشق", "name_en": "Damascus" },
+      "linked_route": { "id": "mezzeh-bab-touma", "name_ar": "المزة - باب توما", "name_en": "Mezzeh - Bab Touma" },
+      "created_at": "2026-04-15T10:00:00.000000Z",
+      "updated_at": "2026-04-15T10:00:00.000000Z"
+    }
+  ],
+  "drafts": [
+    { "...same items..." }
+  ]
+}
+```
+
+#### 2. Submit a New Route Draft (or Live Route Edit) — `POST /api/v1/transit/studio/routes`
+- **Legacy Alias**: `POST /api/v1/studio/routes`
+- **Auth**: Optional for new routes; **Required** when `route_id` is non-null.
+- **Request Body**:
+```json
+{
+  "city_id": "damascus",
+  "route_id": null,
+  "name_ar": "المزة - البرامكة",
+  "name_en": "Mezzeh - Baramkeh",
+  "price": 3000,
+  "color_index": 1,
+  "notes": "يمر عبر جسر الرئيس",
+  "geojson": {
+    "type": "FeatureCollection",
+    "features": [
+      {
+        "type": "Feature",
+        "properties": { "type": "route" },
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [[36.2412, 33.5011], [36.2895, 33.5124]]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": { "type": "stop", "nameAr": "المزة" },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [36.2412, 33.5011]
+        }
+      }
+    ]
+  }
+}
+```
+- **Validation Rules**:
+  - `city_id`: required, must exist in `cities.id`.
+  - `name_ar`: required, string, max `255`.
+  - `name_en`: nullable, string, max `255`.
+  - `price`: nullable, integer.
+  - `color_index`: nullable, integer (`0..20`).
+  - `notes`: nullable, string.
+  - `route_id`: nullable, must exist in `routes.id` and belong to `city_id`.
+  - `geojson`: required object with `features` array (`1..500` features), each containing `geometry.type` (`LineString`, `MultiLineString`, or `Point`) and `geometry.coordinates` (non-empty array).
+- **Response (`201 Created`)**: Returns the created `RouteDraft` object (including `id`, `status: "pending"`, `user_id`, `city_id`, `route_id`, `geojson`, `created_at`).
+
+#### 3. Load a Draft for Editing — `GET /api/v1/transit/studio/routes/{id}`
+- **Legacy Alias**: `GET /api/v1/studio/routes/{id}`
+- **Auth**: Required (owner or `transit.edit_routes`).
+- **Response (`200 OK`)**: Returns the `RouteDraft` object with `user`, `city`, and `linked_route` relations.
+
+#### 4. Load a Published Route into Studio Format — `GET /api/v1/transit/studio/routes/{id}/from-route`
+- **Legacy Alias**: `GET /api/v1/studio/routes/{id}/from-route`
+- **Auth**: Required (any authenticated user or scoped transit staff).
+- **Description**: Reads a live published route (`routes.id = {id}`), converts its PostGIS `route_geometries` (`LineString` / `MultiLineString`) and ordered `stops` (`Point` features with `properties: { type: "stop", nameAr }`) into a single Studio-compatible GeoJSON `FeatureCollection`, and returns:
+```json
+{
+  "id": "mezzeh-bab-touma",
+  "route_id": "mezzeh-bab-touma",
+  "city_id": "damascus",
+  "name_ar": "المزة - باب توما",
+  "name_en": "Mezzeh - Bab Touma",
+  "price": 3000,
+  "notes": null,
+  "geojson": {
+    "type": "FeatureCollection",
+    "features": [
+      {
+        "type": "Feature",
+        "properties": { "type": "route" },
+        "geometry": { "type": "LineString", "coordinates": [[36.24, 33.50], [36.31, 33.51]] }
+      },
+      {
+        "type": "Feature",
+        "properties": { "type": "stop", "nameAr": "المزة" },
+        "geometry": { "type": "Point", "coordinates": [36.24, 33.50] }
+      }
+    ]
+  },
+  "status": "published",
+  "user": { "name": "" },
+  "city": { "id": "damascus", "name_ar": "دمشق", "name_en": "Damascus" },
+  "is_published_route": true
+}
+```
+> [!TIP]
+> After loading a published route via `from-route`, submit the user's changes via `POST /api/v1/transit/studio/routes` with `"route_id": "<published-route-id>"`.
+
+#### 5. Update an Existing Draft — `PUT|PATCH /api/v1/transit/studio/routes/{id}`
+- **Legacy Alias**: `PUT /api/v1/studio/routes/{id}`
+- **Auth**: Required (owner or `transit.edit_routes`).
+- **Request Body**: Any subset of `city_id`, `name_ar`, `name_en`, `price`, `color_index`, `notes`, `geojson`.
+- **Behavior**: Resets `status` to `"pending"` and clears `rejection_reason` so rejected drafts re-enter the review queue. If linked to a `route_id`, ensures the live route is unpublished (`disapproved`) while pending review.
+- **Response (`200 OK`)**: Returns the updated `RouteDraft` object.
+
+#### 6. Withdraw a Pending Draft — `DELETE /api/v1/transit/studio/routes/{id}`
+- **Legacy Alias**: `DELETE /api/v1/studio/routes/{id}`
+- **Auth**: Required (owner or `transit.edit_routes`).
+- **Response (`200 OK`)**: `{ "ok": true }` (or `422` `{ "message": "Only pending drafts can be withdrawn." }` if already reviewed).
+
+---
+
+## 5. Polls & Tier-List Voting API (`/api/v1/polls/*`)
 
 Public REST API over tier-list polls, leaderboards, daily scores, anonymized ballots, and vote submission.
 
@@ -289,7 +638,7 @@ rather than after the 60s TTL.
 
 ---
 
-## 5. Hidden Places ("Mishwar") & Hotels API (`/api/v1/places/*`, `/api/v1/hotels/*`)
+## 6. Hidden Places ("Mishwar") & Hotels API (`/api/v1/places/*`, `/api/v1/hotels/*`)
 
 ### Public Read Endpoints (`throttle:60,1`)
 
@@ -306,7 +655,7 @@ rather than after the 60s TTL.
 | `GET /api/v1/hotels/map` | `api.v1.hotels.map` | `city`, `stars` | Lightweight hotel markers for map view |
 | `GET /api/v1/hotels/{id}` | `api.v1.hotels.show` | `{id}` (numeric) | Single hotel details, amenities, and room photos |
 
-### Authenticated Place Owner & Save Endpoints (`auth`, Session + CSRF)
+### Authenticated Place Owner & Save Endpoints (`auth:web,sanctum`, Session+CSRF or Bearer Token)
 
 | Method & Canonical Path | Route Name | Rate Limit | Description |
 |---|---|---|---|
@@ -325,14 +674,14 @@ rather than after the 60s TTL.
 
 ---
 
-## 6. Syrian Compass API (`/api/v1/compass/*`)
+## 7. Syrian Compass API (`/api/v1/compass/*`)
 
 | Method & Canonical Path | Route Name | Legacy Alias | Auth | Rate Limit | Description |
 |---|---|---|---|---|---|
-| `GET /api/v1/compass/results` | `api.v1.compass.results.index` | — | Auth | `60/min` | List signed-in user's saved compass results |
-| `POST /api/v1/compass/results` | `api.v1.compass.results.store` | — | Auth | `20/min` | Save a compass test result to user account |
-| `DELETE /api/v1/compass/results` | `api.v1.compass.results.destroy-all` | — | Auth | `60/min` | Delete all saved compass results for current user |
-| `DELETE /api/v1/compass/results/{id}` | `api.v1.compass.results.destroy` | — | Auth | `60/min` | Delete a specific saved compass result |
+| `GET /api/v1/compass/results` | `api.v1.compass.results.index` | — | Auth (`sanctum` / `web`) | `60/min` | List signed-in user's saved compass results |
+| `POST /api/v1/compass/results` | `api.v1.compass.results.store` | — | Auth (`sanctum` / `web`) | `20/min` | Save a compass test result to user account |
+| `DELETE /api/v1/compass/results` | `api.v1.compass.results.destroy-all` | — | Auth (`sanctum` / `web`) | `60/min` | Delete all saved compass results for current user |
+| `DELETE /api/v1/compass/results/{id}` | `api.v1.compass.results.destroy` | — | Auth (`sanctum` / `web`) | `60/min` | Delete a specific saved compass result |
 | `POST /api/v1/compass/shares` | `api.v1.compass.shares.store` | `POST /api/v1/compass/share` | Public | `30/min` | Create an account-independent shareable result card |
 | `GET /api/v1/compass/shares/{shareId}` | `api.v1.compass.shares.show` | `GET /api/v1/compass/share/{shareId}` | Public | `30/min` | Fetch a shared compass result by `shareId` |
 | `POST /api/v1/compass/stats` | `api.v1.compass.stats.store` | — | Public | `compass-stats` | Submit opt-in anonymous compass statistics |
@@ -340,7 +689,7 @@ rather than after the 60s TTL.
 
 ---
 
-## 7. Atlas, Contributors, Widgets & Utility Endpoints (`/api/v1/*`)
+## 8. Atlas, Contributors, Widgets & Utility Endpoints (`/api/v1/*`)
 
 All endpoints below are public and throttled at `60/min` (except `/api/v1/metrics` at `10/min`).
 
@@ -361,26 +710,26 @@ All endpoints below are public and throttled at `60/min` (except `/api/v1/metric
 
 ---
 
-## 8. Authenticated User, Board, Muslim Corner & Guess Who APIs (`web.php`)
+## 9. Authenticated User, Board, Muslim Corner & Guess Who APIs
 
-These endpoints run inside the `web` middleware group (Session + CSRF).
+These endpoints accept either a stateful Web session cookie + CSRF token (`web` guard) or a mobile `Authorization: Bearer <token>` header (`sanctum` guard).
 
 ### Account, Settings, Board & Muslim Corner
 
 | Method & Canonical Path | Route Name | Legacy Alias | Auth | Rate Limit | Description |
 |---|---|---|---|---|---|
-| `GET /api/v1/user` | `api.v1.user.show` | `GET /api/user`, `GET /user` | Auth | — | Current user profile + `effective_permissions` + `transit_governorates` |
-| `PATCH\|PUT /api/v1/account` | `api.v1.account.update` | `POST /api/account/update` | Auth | — | Update account `name` and `email` |
-| `POST /api/v1/account/avatar` | `api.v1.account.avatar.store` | `POST /api/account/avatar` | Auth | `10/min` | Upload profile avatar (`max 2MB`) |
-| `DELETE /api/v1/account` | `api.v1.account.destroy` | `POST /api/account/delete` | Auth | — | Permanently delete user account |
-| `PATCH\|PUT\|POST /api/v1/user/settings` | `api.v1.user.settings.update` | `POST /api/user/settings` | Auth | `60/min` | Merge whitelisted user preferences (`theme`, `language`, `governorate`, `customLinks`, etc.) |
-| `POST /api/v1/user/radio-usage` | `api.v1.user.radio-usage.store` | `POST /api/user/radio-usage` | Auth | `60/min` | Add Quran radio streaming delta (`bytes`, `seconds`) under row lock |
-| `DELETE /api/v1/user/radio-usage` | `api.v1.user.radio-usage.destroy` | `POST /api/user/radio-usage/clear` | Auth | `10/min` | Reset Quran radio usage counters |
-| `GET /api/v1/board` | `api.v1.board.show` | — | Auth | `60/min` | Fetch user's synced `/board` widget layout |
-| `PUT /api/v1/board` | `api.v1.board.update` | — | Auth | `60/min` | Save user's `/board` widget layout |
-| `GET /api/v1/quran-bookmarks` | `api.v1.quran-bookmarks.index` | — | Auth | `60/min` | List user's Quran ayah bookmarks |
-| `POST /api/v1/quran-bookmarks` | `api.v1.quran-bookmarks.store` | — | Auth | `60/min` | Create/update a Quran ayah bookmark |
-| `DELETE /api/v1/quran-bookmarks/{surah}/{ayah}` | `api.v1.quran-bookmarks.destroy` | — | Auth | `60/min` | Remove a Quran ayah bookmark |
+| `GET /api/v1/user` | `api.v1.user.show` | `GET /api/v1/auth/user`, `GET /api/user`, `GET /user` | Session or Bearer | — | Current user profile + `effective_permissions` + `transit_governorates` |
+| `PATCH\|PUT /api/v1/account` | `api.v1.account.update` | `POST /api/account/update` | Session or Bearer | — | Update account `name` and `email` (returns JSON for Bearer requests, Inertia redirect for Web) |
+| `POST /api/v1/account/avatar` | `api.v1.account.avatar.store` | `POST /api/account/avatar` | Session or Bearer | `10/min` | Upload profile avatar (`max 2MB`; returns `{ ok, avatar_url, user }` for Bearer requests) |
+| `DELETE /api/v1/account` | `api.v1.account.destroy` | `POST /api/account/delete` | Session or Bearer | — | Soft-delete user account & revoke tokens |
+| `PATCH\|PUT\|POST /api/v1/user/settings` | `api.v1.user.settings.update` | `POST /api/user/settings` | Session or Bearer | `60/min` | Merge whitelisted user preferences (`theme`, `language`, `governorate`, `customLinks`, etc.) |
+| `POST /api/v1/user/radio-usage` | `api.v1.user.radio-usage.store` | `POST /api/user/radio-usage` | Session or Bearer | `60/min` | Add Quran radio streaming delta (`bytes`, `seconds`) under row lock |
+| `DELETE /api/v1/user/radio-usage` | `api.v1.user.radio-usage.destroy` | `POST /api/user/radio-usage/clear` | Session or Bearer | `10/min` | Reset Quran radio usage counters |
+| `GET /api/v1/board` | `api.v1.board.show` | — | Session or Bearer | `60/min` | Fetch user's synced `/board` widget layout |
+| `PUT /api/v1/board` | `api.v1.board.update` | — | Session or Bearer | `60/min` | Save user's `/board` widget layout |
+| `GET /api/v1/quran-bookmarks` | `api.v1.quran-bookmarks.index` | — | Session or Bearer | `60/min` | List user's Quran ayah bookmarks |
+| `POST /api/v1/quran-bookmarks` | `api.v1.quran-bookmarks.store` | — | Session or Bearer | `60/min` | Create/update a Quran ayah bookmark |
+| `DELETE /api/v1/quran-bookmarks/{surah}/{ayah}` | `api.v1.quran-bookmarks.destroy` | — | Session or Bearer | `60/min` | Remove a Quran ayah bookmark |
 
 ### Multiplayer Guess Who Game (`web.php`)
 
@@ -394,11 +743,11 @@ These endpoints run inside the `web` middleware group (Session + CSRF).
 
 ---
 
-## 9. Admin & Moderation APIs (`/api/v1/admin/*`)
+## 10. Admin & Moderation APIs (`/api/v1/admin/*`)
 
-Every admin endpoint is protected by `auth` and a per-route capability middleware (`<module>_admin:<capability>`) enforced by `ModuleCapabilityGuard` and verified at test time by `ModuleCapabilityRoutesTest`. Only `superadmin` bypasses individual capability checks.
+Every admin endpoint is protected by `auth:web,sanctum` and a per-route capability middleware (`<module>_admin:<capability>`) enforced by `ModuleCapabilityGuard` and verified at test time by `ModuleCapabilityRoutesTest`. Only `superadmin` bypasses individual capability checks.
 
-### 9.1 Polls Admin (`polls_admin`)
+### 10.1 Polls Admin (`polls_admin`)
 | Method & Canonical Path | Legacy Alias | Required Capability |
 |---|---|---|
 | `POST /api/v1/admin/polls` | `POST /api/polls` | `polls.create` |
@@ -429,7 +778,7 @@ dashboard editor finds a disabled category again; guests get the published
 subset. The read-only data API (`/api/v1/polls/*`) stays raw and lists every
 group and candidate, including disabled and archived ones.
 
-### 9.2 Places (Mishwar) Admin (`places_admin`)
+### 10.2 Places (Mishwar) Admin (`places_admin`)
 | Method & Canonical Path | Required Capability |
 |---|---|
 | `GET /api/v1/admin/places` | `places.review` |
@@ -442,7 +791,7 @@ group and candidate, including disabled and archived ones.
 | `POST /api/v1/admin/place-photos/{id}/replace` | `places.moderate_photos` |
 | `DELETE /api/v1/admin/place-photos/{id}` | `places.moderate_photos` |
 
-### 9.3 Transit Admin (`transit_admin`, Governorate-Scoped)
+### 10.3 Transit Admin (`transit_admin`, Governorate-Scoped)
 | Method & Canonical Path | Legacy Alias | Required Capability |
 |---|---|---|
 | `GET /api/v1/admin/transit/route-drafts` | `GET /api/v1/admin/route-drafts` | `transit.review_drafts` |
@@ -461,7 +810,7 @@ group and candidate, including disabled and archived ones.
 | `POST /api/v1/admin/transit/routes/import-preview` | `POST /api/v1/admin/routes/import-preview` | `transit.review_drafts` (`30/min`) |
 | `POST /api/v1/admin/transit/routes/import-publish` | `POST /api/v1/admin/routes/import-publish` | `transit.edit_routes` (`30/min`) |
 
-### 9.4 Directory & Module Admin Panels
+### 10.4 Directory & Module Admin Panels
 - **SyOfficial (`syofficial_admin`, `/api/v1/admin/syofficial/*`)**:
   - `POST /categories` (`syofficial.create`), `PUT /categories/{id}` (`syofficial.edit`), `DELETE /categories/{id}` (`syofficial.delete`), `POST /categories/reorder` (`syofficial.reorder`, alias `/reorder/categories`).
   - `POST /entities` (`syofficial.create`), `PUT|POST /entities/{id}` (`syofficial.edit`), `DELETE /entities/{id}` (`syofficial.delete`), `POST /entities/reorder` (`syofficial.reorder`, alias `/reorder/entities`).
@@ -478,18 +827,20 @@ group and candidate, including disabled and archived ones.
 - **Superadmin (`superadmin`)**:
   - Staff & permissions: `GET|POST /api/v1/admin/admins`, `DELETE /api/v1/admin/admins/{id}` (legacy `/api/admins*`).
   - Asset Storage (Cloudflare R2): `GET /api/v1/admin/assets`, `GET /api/v1/admin/assets/manifest`, `POST /api/v1/admin/assets`, `DELETE /api/v1/admin/assets` (legacy `/api/v1/admin/assets/list|upload|delete`).
-  - Site Popup: `GET|PUT /api/v1/admin/site-popup`.
+  - Site Navigation & Icon Catalog: `GET /admin/navigation`, `GET|PUT /api/v1/admin/navigation`.
+  - Site Popup: `GET /admin/site-popup`, `GET|PUT /api/v1/admin/site-popup`.
   - Guess Who Roster: `POST|PUT|DELETE /api/v1/admin/guesswho/categories[/{id}]`, `POST|PUT|DELETE /api/v1/admin/guesswho/characters[/{id}]`.
   - Agent API Tokens: `POST /api/v1/admin/api-tokens`, `DELETE /api/v1/admin/api-tokens/{id}`, `DELETE /api/v1/admin/users/{userId}/api-tokens` (legacy `POST /api/v1/admin/api-tokens/revoke-all/{userId}`).
 
 ---
 
-## 10. Legacy & Deprecated Endpoint Aliases
+## 11. Legacy & Deprecated Endpoint Aliases
 
 All legacy endpoints below remain **100% functional** and invoke the exact same controller logic as their canonical `/api/v1/*` counterparts. New features, mobile clients, and documentation should use the canonical paths.
 
 | Legacy Path | Canonical `/api/v1/*` Path |
 |---|---|
+| `POST /api/v1/auth/google` | `POST /api/v1/auth/google/token` |
 | `GET /api/v1/global-search` | `GET /api/v1/search/global` |
 | `GET /api/v1/cities` | `GET /api/v1/transit/cities` |
 | `GET /api/v1/cities/{id}/routes` | `GET /api/v1/transit/cities/{id}/routes` |
@@ -497,6 +848,7 @@ All legacy endpoints below remain **100% functional** and invoke the exact same 
 | `GET /api/v1/stops/nearby` | `GET /api/v1/transit/stops/nearby` |
 | `GET /api/v1/search` | `GET /api/v1/transit/search` |
 | `GET /api/v1/geo/poi` | `GET /api/v1/transit/pois` |
+| `GET /api/v1/studio/routes` | `GET /api/v1/transit/studio/routes` |
 | `POST /api/v1/studio/routes` | `POST /api/v1/transit/studio/routes` |
 | `GET\|PUT\|DELETE /api/v1/studio/routes/{id}` | `GET\|PUT\|PATCH\|DELETE /api/v1/transit/studio/routes/{id}` |
 | `GET /api/v1/studio/routes/{id}/from-route` | `GET /api/v1/transit/studio/routes/{id}/from-route` |
@@ -518,7 +870,7 @@ All legacy endpoints below remain **100% functional** and invoke the exact same 
 | `GET /api/answers` | `GET /api/v1/answers` |
 | `GET /api/metrics` | `GET /api/v1/metrics` |
 | `GET /api/app-icon` | `GET /api/v1/app-icon` |
-| `GET /api/user` | `GET /api/v1/user` |
+| `GET /api/user` | `GET /api/v1/user` (or `GET /api/v1/auth/user`) |
 | `POST /api/account/update` | `PATCH /api/v1/account` |
 | `POST /api/account/avatar` | `POST /api/v1/account/avatar` |
 | `POST /api/account/delete` | `DELETE /api/v1/account` |

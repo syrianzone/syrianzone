@@ -27,6 +27,7 @@ use App\Http\Controllers\PollController;
 use App\Http\Controllers\QuranBookmarkController;
 use App\Http\Controllers\RadioUsageController;
 use App\Http\Controllers\SitemapController;
+use App\Http\Controllers\SiteNavigationAdminController;
 use App\Http\Controllers\SitePopupAdminController;
 use App\Http\Controllers\SyOfficialAdminController;
 use App\Http\Controllers\SyOfficialController;
@@ -241,7 +242,7 @@ Route::get('/auth/google', [AuthController::class, 'redirectToProvider'])->name(
 Route::get('/auth/google/callback', [AuthController::class, 'handleProviderCallback']);
 Route::post('/logout', [AuthController::class, 'logout']);
 
-Route::middleware('auth')->group(function () {
+Route::middleware('auth:web,sanctum')->group(function () {
     // 1. Unified User Dashboard Views and Actions
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
@@ -261,7 +262,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('/account', [DashboardController::class, 'deleteAccount'])
             ->name('api.v1.account.destroy');
 
-        // Board layout sync. Session + CSRF, so it lives here rather than api.php.
+        // Board layout sync. Session + CSRF or Sanctum Bearer token.
         Route::get('/board', [BoardController::class, 'show'])
             ->middleware('throttle:60,1')
             ->name('api.v1.board.show');
@@ -269,7 +270,7 @@ Route::middleware('auth')->group(function () {
             ->middleware('throttle:60,1')
             ->name('api.v1.board.update');
 
-        // Quran Ayah bookmarks (logged-in only). Session + CSRF like board sync.
+        // Quran Ayah bookmarks (logged-in only). Session + CSRF or Sanctum Bearer token.
         Route::get('/quran-bookmarks', [QuranBookmarkController::class, 'index'])
             ->middleware('throttle:60,1')
             ->name('api.v1.quran-bookmarks.index');
@@ -297,7 +298,7 @@ Route::middleware('auth')->group(function () {
         });
     });
 
-    Route::middleware(['auth', 'superadmin'])->group(function () {
+    Route::middleware(['auth:web,sanctum', 'superadmin'])->group(function () {
         Route::get('/admin/assets', [AssetUploadController::class, 'index']);
 
         // Canonical RESTful superadmin routes (/api/v1/admin/*)
@@ -328,6 +329,12 @@ Route::middleware('auth')->group(function () {
         Route::put('/api/v1/admin/site-popup', [SitePopupAdminController::class, 'update'])
             ->name('api.v1.admin.site-popup.update');
 
+        Route::get('/admin/navigation', [SiteNavigationAdminController::class, 'renderIndex']);
+        Route::get('/api/v1/admin/navigation', [SiteNavigationAdminController::class, 'show'])
+            ->name('api.v1.admin.navigation.show');
+        Route::put('/api/v1/admin/navigation', [SiteNavigationAdminController::class, 'update'])
+            ->name('api.v1.admin.navigation.update');
+
         // Agent API tokens (see docs/modules/agent-mcp.md). Superadmin-only:
         // minting a token grants capability to an automated client, so it is
         // not delegated to module admins the way the moderation panels are.
@@ -344,7 +351,7 @@ Route::middleware('auth')->group(function () {
             ->whereNumber('userId');
     });
 
-    // Hidden Places: authenticated writes (session + CSRF via the web group)
+    // Hidden Places: authenticated writes (session + CSRF or Sanctum Bearer token)
     Route::prefix('api/v1')->group(function () {
         // No per-user submission cap: moderation gates everything to the public map,
         // so this throttle is only a flood backstop no normal use touches.

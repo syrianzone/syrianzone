@@ -56,14 +56,16 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->statefulApi();
         $middleware->validateCsrfTokens(except: [
-            // Guest submissions only. The authenticated PUT /api/v1/studio/routes/{id}
-            // must keep CSRF protection — do not widen this to studio/routes/*.
+            // Guest submissions and stateless mobile token exchange.
             // Note: /api/* routes are stateless (no session CSRF) — these entries
             // cover same-path web-group hits. Guest vote fraud is mitigated by
             // throttle:voting (10/min/IP) + the ballots (poll_id, vote_day,
             // voter_key) unique index, not by CSRF. Do not add CAPTCHA here
             // without a UX review — it would block legitimate guest voting.
+            'api/v1/transit/studio/routes',
             'api/v1/studio/routes',
+            'api/v1/auth/google/token',
+            'api/v1/auth/google',
             'api/submit',
             'guesswho/broadcasting/auth',
         ]);

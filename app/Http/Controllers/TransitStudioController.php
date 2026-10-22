@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\ChecksTransitScope;
 use App\Models\RouteDraft;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -11,16 +12,55 @@ class TransitStudioController extends Controller
 {
     use ChecksTransitScope;
 
+    private function resolveUser(Request $request): ?User
+    {
+        $user = $request->user() ?? Auth::guard('sanctum')->user();
+        if ($user instanceof User && ! $request->user()) {
+            $request->setUserResolver(fn () => $user);
+        }
+
+        return $user instanceof User ? $user : null;
+    }
+
+    /**
+     * List the authenticated user's own route drafts (newest first).
+     */
+    public function index(Request $request)
+    {
+        $user = $this->resolveUser($request);
+        if (! $user) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+
+        $query = RouteDraft::where('user_id', $user->id)
+            ->with(['city:id,name_ar,name_en', 'linkedRoute:id,name_ar,name_en'])
+            ->orderBy('created_at', 'desc');
+
+        $status = $request->query('status');
+        if (is_string($status) && in_array($status, ['pending', 'approved', 'rejected'], true)) {
+            $query->where('status', $status);
+        }
+
+        $drafts = $query->get();
+
+        return response()->json([
+            'data' => $drafts,
+            'drafts' => $drafts,
+        ]);
+    }
+
     public function store(Request $request)
     {
-        if ($request->user() && $request->user()->is_banned) {
+        $user = $this->resolveUser($request);
+
+        if ($user && $user->is_banned) {
             return response()->json(['message' => 'Your account has been banned from submitting route drafts.'], 403);
         }
 
         // Linked-edit auth must run BEFORE creating the draft: otherwise an
         // anonymous POST with route_id leaves an orphan pending draft and no
         // unpublish, and could take routes offline at will.
-        if ($request->filled('route_id') && !Auth::check()) {
+        if ($request->filled('route_id') && ! $user) {
             return response()->json(['message' => 'Authentication is required to suggest edits to published routes.'], 401);
         }
 
@@ -43,15 +83,15 @@ class TransitStudioController extends Controller
 
         // A linked edit must target a route in the same city, otherwise the
         // draft would unpublish an unrelated live route on approve.
-        if (!empty($validated['route_id'])) {
+        if (! empty($validated['route_id'])) {
             $linked = \App\Models\Route::find($validated['route_id']);
-            if (!$linked || $linked->city_id !== $validated['city_id']) {
+            if (! $linked || $linked->city_id !== $validated['city_id']) {
                 return response()->json(['message' => 'Linked route must belong to the same city.'], 422);
             }
         }
 
         $draft = RouteDraft::create([
-            'user_id' => Auth::id(),
+            'user_id' => $user?->id,
             'city_id' => $validated['city_id'],
             'name_ar' => $validated['name_ar'],
             'name_en' => $validated['name_en'] ?? null,
@@ -67,7 +107,7 @@ class TransitStudioController extends Controller
         // unpublish that route immediately so the live map reflects the pending
         // state.
         if ($draft->route_id) {
-            $this->unpublishLinkedRoute($draft->route_id, $draft->id);
+            $this->unpublishLinkedRoute($draft->route_id, $draft->id, $user?->id);
         }
 
         return response()->json($draft, 201);
@@ -75,6 +115,8 @@ class TransitStudioController extends Controller
 
     public function show(Request $request, $id)
     {
+        $this->resolveUser($request);
+
         $draft = RouteDraft::with(['user:id,name', 'city:id,name_ar,name_en', 'linkedRoute:id,name_ar,name_en'])->findOrFail($id);
 
         if (! $this->canEditDraft($request, $draft)) {
@@ -86,7 +128,7 @@ class TransitStudioController extends Controller
 
     public function showForEdit(Request $request, $routeId)
     {
-        if (! $request->user()) {
+        if (! $this->resolveUser($request)) {
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
@@ -147,6 +189,7 @@ class TransitStudioController extends Controller
 
     public function update(Request $request, $id)
     {
+        $user = $this->resolveUser($request);
         $draft = RouteDraft::findOrFail($id);
 
         if (! $this->canEditDraft($request, $draft)) {
@@ -191,8 +234,6 @@ class TransitStudioController extends Controller
             $updateData['geojson'] = $request->input('geojson');
         }
 
-        $user = $request->user();
-
         // Any edit submission is a resubmission for review: the draft always goes
         // back to the pending queue (even when an admin edits someone else's draft
         // or an anonymous submission). If the draft is linked to a published route
@@ -203,7 +244,7 @@ class TransitStudioController extends Controller
         }
 
         if ($draft->route_id) {
-            $this->unpublishLinkedRoute($draft->route_id, $draft->id);
+            $this->unpublishLinkedRoute($draft->route_id, $draft->id, $user?->id);
         }
 
         $draft->update($updateData);
@@ -213,7 +254,7 @@ class TransitStudioController extends Controller
 
     private function canEditDraft(Request $request, RouteDraft $draft): bool
     {
-        $user = $request->user();
+        $user = $this->resolveUser($request);
         if (! $user) {
             return false;
         }
@@ -250,6 +291,7 @@ class TransitStudioController extends Controller
      */
     public function destroy(Request $request, $id)
     {
+        $this->resolveUser($request);
         $draft = RouteDraft::findOrFail($id);
 
         if (! $this->canEditDraft($request, $draft)) {
@@ -273,7 +315,7 @@ class TransitStudioController extends Controller
      * route is set to 'disapproved' (the same off-map status used elsewhere) and
      * a log entry records why it was withdrawn.
      */
-    private function unpublishLinkedRoute($routeId, $draftId)
+    private function unpublishLinkedRoute($routeId, $draftId, ?int $userId = null)
     {
         if (! $routeId) {
             return;
@@ -291,7 +333,7 @@ class TransitStudioController extends Controller
             'route_id' => $route->id,
             'action' => 'unpublished_for_edit',
             'description' => "سحب الخط '{$route->name_ar}' مؤقتاً من الخريطة بانتظار مراجعة التعديلات (مساهمة #{$draftId})",
-            'user_id' => auth()->id(),
+            'user_id' => $userId ?? auth()->id(),
         ]);
 
         $this->clearCityMapCache($route->city_id);

@@ -26,7 +26,7 @@ const HomeSettingsDialog = React.lazy(() => import('@/Pages/Home/_components/Hom
 const AddLinkDialog = React.lazy(() => import('@/Pages/Home/_components/AddLinkDialog'));
 const EditLinkDialog = React.lazy(() => import('@/Pages/Home/_components/EditLinkDialog'));
 
-import { SITE_LINKS } from '@/Lib/siteLinks';
+import { useSiteNavigation } from '@/Lib/siteLinks';
 
 const GOVERNORATES: Record<string, { lat: number; lon: number }> = {
     'damascus': { lat: 33.5138, lon: 36.2765 },
@@ -75,10 +75,11 @@ const WEATHER_TRANSLATIONS: Record<string, string> = {
 export default function Home() {
     const { props } = usePage<{ auth?: { user: { id: number; name: string; email: string; avatar_url: string; role: string; settings?: Record<string, any> | null } | null } }>();
     const user = props.auth?.user ?? null;
+    const { homeLinks } = useSiteNavigation();
 
     const [theme, setTheme] = useState<string | null>(null);
     const [systemDark, setSystemDark] = useState(false);
-        const [customLinks, setCustomLinks] = useState<CustomLink[]>([]);
+    const [customLinks, setCustomLinks] = useState<CustomLink[]>([]);
     const [editingLink, setEditingLink] = useState<CustomLink | null>(null);
     const [settingsOpen, setSettingsOpen] = [useMuslimNav((s) => s.homeSettingsOpen), useMuslimNav((s) => s.setHomeSettingsOpen)] as const;
     const [addLinkOpen, setAddLinkOpen] = useState(false);
@@ -522,11 +523,11 @@ export default function Home() {
                         {/* Internal Syrian Zone Tools */}
                         <div className="mb-12">
                             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-9 gap-x-2 gap-y-5">
-                                {SITE_LINKS.filter((l) => l.isInternal).map((link) => {
+                                {homeLinks.filter((l) => l.isInternal).map((link) => {
                                     const Icon = link.icon;
                                     return (
                                         <a
-                                            key={link.href}
+                                            key={link.id || link.href}
                                             href={link.href}
                                             target={link.external ? '_blank' : undefined}
                                             rel={link.external ? 'noopener noreferrer' : undefined}
@@ -554,11 +555,11 @@ export default function Home() {
                                 روابط خارجية وشقيقة
                             </h2>
                             <div className="flex flex-wrap justify-center gap-x-8 gap-y-5">
-                                {SITE_LINKS.filter((l) => !l.isInternal).map((link, idx) => {
+                                {homeLinks.filter((l) => !l.isInternal).map((link, idx) => {
                                     const Icon = link.icon;
                                     return (
                                         <a
-                                            key={idx}
+                                            key={link.id || link.href || idx}
                                             href={link.href}
                                             target="_blank"
                                             rel="noopener noreferrer"

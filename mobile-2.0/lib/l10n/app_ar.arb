@@ -1,0 +1,25 @@
+{
+    "@@locale": "ar",
+    "stops": "{count, plural, =0{لا يوجد مواقف} =1{موقف واحد} =2{موقفان} few{{formattedCount} مواقف} many{{formattedCount} موقف} other{{formattedCount} موقف}}",
+    "@stops": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            },
+            "formattedCount": {
+                "type": "String"
+            }
+        }
+    },
+    "routes": "{count, plural, =0{لا يوجد خطوط} =1{خط واحد} =2{خطان} few{{formattedCount} خطوط} many{{formattedCount} خط} other{{formattedCount} خط}}",
+    "@routes": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            },
+            "formattedCount": {
+                "type": "String"
+            }
+        }
+    }
+}

@@ -34,6 +34,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->api(prepend: [
             \App\Http\Middleware\AutoLoginDevUser::class,
         ]);
+
+        // Ensure AutoLoginDevUser runs after StartSession and before Authenticate
+        // on auth-guarded web and API routes.
+        $middleware->prependToPriorityList(
+            \Illuminate\Auth\Middleware\Authenticate::class,
+            \App\Http\Middleware\AutoLoginDevUser::class
+        );
         
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,

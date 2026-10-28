@@ -51,6 +51,7 @@ class HandleInertiaRequests extends Middleware
             'name' => $user->name,
             'email' => $user->email,
             'role' => $user->role,
+            'is_banned' => (bool) $user->is_banned,
             'avatar_url' => $user->avatar_url,
             'permissions' => $user->permissions ?? [],
             'effective_permissions' => $user->effectivePermissions(),
@@ -78,8 +79,8 @@ class HandleInertiaRequests extends Middleware
             'dev' => [
                 'enabled' => $devMode,
                 'roles' => $devMode ? AutoLoginDevUser::DEV_ROLES : [],
-                'currentRole' => $devMode && $request->user()
-                    ? $request->user()->role
+                'currentRole' => $devMode
+                    ? (new AutoLoginDevUser)->resolveRole($request)
                     : null,
             ],
             'sitePopup' => SiteSetting::getPopup(),

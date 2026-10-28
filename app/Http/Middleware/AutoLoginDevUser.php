@@ -148,7 +148,7 @@ class AutoLoginDevUser
             [
                 'name' => $spec['name'],
                 'google_id' => 'dev-'.$preset,
-                'avatar_url' => 'https://github.com/identicons/'.$preset.'.png',
+                'avatar_url' => null,
                 'password' => bcrypt('password'),
                 'role' => $preset === 'superadmin' ? 'superadmin' : 'user',
                 'permissions' => $permissions,
@@ -159,10 +159,17 @@ class AutoLoginDevUser
         // would keep the old role and whatever the July backfill gave it. Sync
         // on every hit: the preset is the source of truth, and this is
         // dev-only code so re-applying is free.
-        if ($user->permissions !== $permissions || ($preset === 'superadmin') !== $user->isSuperAdmin()) {
+        $hasBrokenIdenticon = is_string($user->avatar_url)
+            && str_starts_with($user->avatar_url, 'https://github.com/identicons/');
+        if (
+            $user->permissions !== $permissions
+            || ($preset === 'superadmin') !== $user->isSuperAdmin()
+            || $hasBrokenIdenticon
+        ) {
             $user->forceFill([
                 'permissions' => $permissions,
                 'role' => $preset === 'superadmin' ? 'superadmin' : 'user',
+                'avatar_url' => $hasBrokenIdenticon ? null : $user->avatar_url,
             ])->save();
         }
 

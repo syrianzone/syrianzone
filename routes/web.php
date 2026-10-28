@@ -12,6 +12,7 @@ use App\Http\Controllers\CandidateGroupController;
 use App\Http\Controllers\CompassAdminController;
 use App\Http\Controllers\CompassController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DevController;
 use App\Http\Controllers\ExternalDataController;
 use App\Http\Controllers\GovAppController;
 use App\Http\Controllers\GovAppsAdminController;
@@ -241,6 +242,7 @@ Route::get('/user', [AuthController::class, 'user']);
 Route::get('/auth/google', [AuthController::class, 'redirectToProvider'])->name('login');
 Route::get('/auth/google/callback', [AuthController::class, 'handleProviderCallback']);
 Route::post('/logout', [AuthController::class, 'logout']);
+Route::get('/dev/impersonate/{role}', [DevController::class, 'impersonate'])->name('dev.impersonate');
 
 Route::middleware('auth:web,sanctum')->group(function () {
     // 1. Unified User Dashboard Views and Actions

@@ -101,14 +101,14 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 pb-6 border-b border-border">
                         <div>
                             <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-                                <Globe className="w-8 h-8 text-primary" />
+                                <Globe className="w-8 h-8 text-primary shrink-0" />
                                 <span>لوحة إدارة الحسابات الرسمية (SyOfficial)</span>
                             </h1>
                             <p className="text-muted-foreground mt-1">إضافة، تعديل، وترتيب الجهات الرسمية والفئات واستضافة الصور عبر Cloudflare R2</p>
                         </div>
 
                         {(canCreate || canReorder) && (
-                            <div className="flex items-center gap-3">
+                            <div className="flex flex-wrap items-center gap-3">
                                 {canCreate && (
                                     <>
                                         <Button
@@ -146,7 +146,7 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
 
                     {/* Main Tabs */}
                     <Tabs defaultValue="entities" className="space-y-6">
-                        <TabsList className="bg-card border border-border p-1 rounded-xl">
+                        <TabsList className="bg-card border border-border p-1 rounded-xl flex flex-wrap h-auto max-w-full">
                             <TabsTrigger value="entities" className="gap-2 text-sm">
                                 <Globe className="w-4 h-4" />
                                 <span>الجهات الرسمية ({entities.length})</span>

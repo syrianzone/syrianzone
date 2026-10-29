@@ -402,7 +402,7 @@ export function useGlobalSearchData(query: string, scope: FilterScope, enabled =
 
 const IS_MAC = typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform || navigator.userAgent || '');
 const SHORTCUT_LABEL = IS_MAC ? '⌘ K' : 'Ctrl K';
-const SHORTCUT_ARIA = IS_MAC ? 'بحث سريع في المنصة (⌘K)' : 'بحث سريع في المنصة (Ctrl+K)';
+const SHORTCUT_ARIA = `بحث سريع في المنصة (${SHORTCUT_LABEL})`;
 
 export function DesktopSearchTrigger({ className = '' }: { className?: string }) {
     const setSearchOpen = useMuslimNav((s) => s.setSearchOpen);

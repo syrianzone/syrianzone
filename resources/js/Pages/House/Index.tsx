@@ -18,11 +18,22 @@ export default function HousePage({ members2026 }: Props) {
     const [gender, setGender] = useState('all');
     const [selection, setSelection] = useState('all');
     const [age, setAge] = useState('all');
+    const [social, setSocial] = useState('all');
 
-    const members = useMemo(
-        () => (members2026 && members2026.length > 0 ? members2026 : MEMBERS_2026),
-        [members2026],
-    );
+    const members = useMemo(() => {
+        if (!members2026 || members2026.length === 0) return MEMBERS_2026;
+        const byName = new Map(MEMBERS_2026.map((m) => [m.name_ar.trim(), m]));
+        return members2026.map((m) => {
+            if (m.facebook_url || m.twitter_url) return m;
+            const fallback = byName.get((m.name_ar || '').trim());
+            if (!fallback) return m;
+            return {
+                ...m,
+                facebook_url: m.facebook_url ?? fallback.facebook_url,
+                twitter_url: m.twitter_url ?? fallback.twitter_url,
+            };
+        });
+    }, [members2026]);
     const counts = useMemo(() => {
         const active = members.filter((m) => (m.status || 'active') === 'active');
         return {
@@ -37,9 +48,10 @@ export default function HousePage({ members2026 }: Props) {
         if (d === 'governorate') setGov((v) => (v === key ? 'all' : key));
         else if (d === 'gender') setGender((v) => (v === key ? 'all' : key));
         else if (d === 'selection') setSelection((v) => (v === key ? 'all' : key));
+        else if (d === 'social') setSocial((v) => (v === key ? 'all' : key));
         else setAge((v) => (v === key ? 'all' : key));
     };
-    const selectedKey = dim === 'governorate' ? gov : dim === 'gender' ? gender : dim === 'selection' ? selection : age;
+    const selectedKey = dim === 'governorate' ? gov : dim === 'gender' ? gender : dim === 'selection' ? selection : dim === 'social' ? social : age;
 
     return (
         <MainLayout>
@@ -56,7 +68,7 @@ export default function HousePage({ members2026 }: Props) {
                     />
                     <MemberTable2026
                         members={members}
-                        filters={{ gov, gender, selection, age, onGov: setGov, onGender: setGender, onSelection: setSelection, onAge: setAge }}
+                        filters={{ gov, gender, selection, age, social, onGov: setGov, onGender: setGender, onSelection: setSelection, onAge: setAge, onSocial: setSocial }}
                     />
 
                     <div id="historical-archive" className="scroll-mt-24">

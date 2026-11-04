@@ -3,6 +3,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:syrianzone/core/extensions/navigation_extensions.dart';
 import 'package:syrianzone/core/extensions/text_theme_extensions.dart';
 import 'package:syrianzone/core/routing/routes.dart';
+import 'package:syrianzone/feature/auth/ui/app_bar_auth_button.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -16,12 +17,15 @@ class HomeScreen extends StatelessWidget {
           width: 48,
           height: 48,
         ),
+        actions: const [
+          AppBarAuthButton(),
+        ],
       ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(8.0),
           child: GridView.builder(
-            itemCount: 2, // Example item count
+            itemCount: 2,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 3,
               mainAxisSpacing: 4.0,

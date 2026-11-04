@@ -1,5 +1,5 @@
 class TextUtil {
-  static String toArabicDigits(int value) {
+  static String toArabicDigits(Object value) {
     const westernDigits = '0123456789';
     const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
     return value.toString().split('').map((char) {

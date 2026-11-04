@@ -12,14 +12,8 @@ CityResponse _$CityResponseFromJson(Map<String, dynamic> json) => CityResponse(
   nameEn: json['nameEn'] as String,
   status: json['status'] as String,
   zoom: (json['zoom'] as num).toDouble(),
-  center: (json['center'] as List<dynamic>)
-      .map((e) => (e as num).toDouble())
-      .toList(),
-  bounds: (json['bounds'] as List<dynamic>)
-      .map(
-        (e) => (e as List<dynamic>).map((e) => (e as num).toDouble()).toList(),
-      )
-      .toList(),
+  center: const LngLatConverter().fromJson(json['center']),
+  bounds: const LngLatListConverter().fromJson(json['bounds']),
   routeCount: (json['routeCount'] as num).toInt(),
   icon: CityIcon.fromJson(json['icon'] as Map<String, dynamic>),
 );
@@ -31,8 +25,8 @@ Map<String, dynamic> _$CityResponseToJson(CityResponse instance) =>
       'nameEn': instance.nameEn,
       'status': instance.status,
       'zoom': instance.zoom,
-      'center': instance.center,
-      'bounds': instance.bounds,
+      'center': const LngLatConverter().toJson(instance.center),
+      'bounds': const LngLatListConverter().toJson(instance.bounds),
       'routeCount': instance.routeCount,
       'icon': instance.icon,
     };

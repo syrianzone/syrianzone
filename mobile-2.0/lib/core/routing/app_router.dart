@@ -10,6 +10,11 @@ import 'package:syrianzone/core/routing/routes.dart';
 import 'package:syrianzone/feature/home/ui/home_screen.dart';
 import 'package:syrianzone/feature/transit/ui/transit_screen.dart';
 import 'package:syrianzone/feature/transit_cities/ui/transit_cities_screen.dart';
+import 'package:syrianzone/feature/transit_studio/logic/transit_studio_cubit.dart';
+import 'package:syrianzone/feature/transit_studio/ui/transit_studio_screen.dart';
+import 'package:syrianzone/feature/transit_submissions/logic/transit_submissions_cubit.dart';
+import 'package:syrianzone/feature/transit_submissions/ui/transit_submissions_screen.dart';
+import 'package:syrianzone/core/network/response/user_submissions_response.dart';
 import 'package:syrianzone/core/widget/splash.dart';
 import 'package:syrianzone/feature/mishwar/logic/mishwar_cubit.dart';
 import 'package:syrianzone/feature/mishwar/ui/mishwar_screen.dart';
@@ -59,6 +64,29 @@ class AppRouter {
           builder: (_) => BlocProvider(
             create: (_) => getIt<MishwarCubit>()..loadInitialData(),
             child: const MishwarScreen(),
+          )
+        );
+      case Routes.transitStudio:
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider(
+            create: (_) {
+              final cubit = getIt<TransitStudioCubit>();
+              if (arguments is RouteDraftItem) {
+                cubit.initForEdit(arguments);
+              } else {
+                cubit.loadCities();
+              }
+              return cubit;
+            },
+            child: const TransitStudioScreen(),
+          ),
+        );
+
+      case Routes.transitSubmissions:
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider(
+            create: (_) => getIt<TransitSubmissionsCubit>()..loadSubmissions(),
+            child: const TransitSubmissionsScreen(),
           ),
         );
 

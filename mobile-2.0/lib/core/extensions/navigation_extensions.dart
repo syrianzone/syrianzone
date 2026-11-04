@@ -1,16 +1,24 @@
 import 'package:flutter/material.dart';
 
 extension NavigationExtensions on BuildContext {
-  void pop() {
-    Navigator.of(this).pop();
+  void pop<T extends Object?>([T? result]) {
+    Navigator.of(this).pop<T>(result);
   }
 
-  void pushNamed(String routeName, {Object? arguments}) {
-    Navigator.of(this).pushNamed(routeName, arguments: arguments);
+  Future<T?> pushNamed<T extends Object?>(String routeName, {Object? arguments}) {
+    return Navigator.of(this).pushNamed<T>(routeName, arguments: arguments);
   }
 
-  void pushReplacementNamed(String routeName, {Object? arguments}) {
-    Navigator.of(this).pushReplacementNamed(routeName, arguments: arguments);
+  Future<T?> pushReplacementNamed<T extends Object?, TO extends Object?>(
+    String routeName, {
+    TO? result,
+    Object? arguments,
+  }) {
+    return Navigator.of(this).pushReplacementNamed<T, TO>(
+      routeName,
+      result: result,
+      arguments: arguments,
+    );
   }
 
   bool canPop() {

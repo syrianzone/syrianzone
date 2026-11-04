@@ -6,10 +6,12 @@ import '../repo/transit_repo.dart';
 
 class TransitCubit extends Cubit<TransitState> with SafeEmit<TransitState> {
   final TransitRepo _transitRepo;
+  int _searchRequestId = 0;
+
   TransitCubit(this._transitRepo) : super(TransitState());
 
-
   void clearSearch() {
+    _searchRequestId++;
     safeEmit(state.copyWith(
       searchResults: null,
       searchLoading: false,
@@ -18,13 +20,26 @@ class TransitCubit extends Cubit<TransitState> with SafeEmit<TransitState> {
   }
 
   void searchTransit(String query, String cityId) async {
+    final currentRequestId = ++_searchRequestId;
     safeEmit(state.copyWith(searchLoading: true, searchErrorMessage: null));
 
     final result = await _transitRepo.searchTransit(query, cityId);
 
+    // If a newer search has been dispatched since this request started, discard results
+    if (currentRequestId != _searchRequestId) {
+      return;
+    }
+
     result.when(
-      success: (searchResults) => safeEmit(state.copyWith(searchResults: searchResults, searchLoading: false, searchErrorMessage: null)),
-      error: (message) => safeEmit(state.copyWith(searchLoading: false, searchErrorMessage: message)),
+      success: (searchResults) => safeEmit(state.copyWith(
+        searchResults: searchResults,
+        searchLoading: false,
+        searchErrorMessage: null,
+      )),
+      error: (message) => safeEmit(state.copyWith(
+        searchLoading: false,
+        searchErrorMessage: message,
+      )),
     );
   }
 

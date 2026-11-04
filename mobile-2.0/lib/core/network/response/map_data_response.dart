@@ -1,4 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'package:syrianzone/core/data/model/lng_lat.dart';
+import 'package:syrianzone/core/network/json_converter/geometry_converter.dart';
 
 part 'map_data_response.g.dart';
 
@@ -11,7 +13,6 @@ class MapDataResponse {
 
   factory MapDataResponse.fromJson(Map<String, dynamic> json) =>
       _$MapDataResponseFromJson(json);
-
 }
 
 @JsonSerializable()
@@ -25,7 +26,6 @@ class MapRouteFeatureCollection {
 
   factory MapRouteFeatureCollection.fromJson(Map<String, dynamic> json) =>
       _$MapRouteFeatureCollectionFromJson(json);
-
 }
 
 @JsonSerializable()
@@ -39,14 +39,13 @@ class MapStopFeatureCollection {
 
   factory MapStopFeatureCollection.fromJson(Map<String, dynamic> json) =>
       _$MapStopFeatureCollectionFromJson(json);
-
 }
 
 @JsonSerializable()
 class MapRouteFeature {
   @JsonKey(defaultValue: 'Feature')
   final String type;
-  final MapLineStringGeometry geometry;
+  final MapRouteGeometry geometry;
   final MapRouteProperties properties;
 
   MapRouteFeature({
@@ -57,7 +56,6 @@ class MapRouteFeature {
 
   factory MapRouteFeature.fromJson(Map<String, dynamic> json) =>
       _$MapRouteFeatureFromJson(json);
-
 }
 
 @JsonSerializable()
@@ -75,22 +73,41 @@ class MapStopFeature {
 
   factory MapStopFeature.fromJson(Map<String, dynamic> json) =>
       _$MapStopFeatureFromJson(json);
-
 }
 
 @JsonSerializable()
-class MapLineStringGeometry {
+class MapRouteGeometry {
   @JsonKey(defaultValue: 'LineString')
   final String type;
-  @JsonKey(defaultValue: <List<double>>[])
-  final List<List<double>> coordinates;
 
-  MapLineStringGeometry({required this.type, required this.coordinates});
+  @GeometryCoordinatesConverter()
+  final Object coordinates;
 
-  factory MapLineStringGeometry.fromJson(Map<String, dynamic> json) =>
-      _$MapLineStringGeometryFromJson(json);
+  MapRouteGeometry({
+    required this.type,
+    required this.coordinates,
+  });
 
+  factory MapRouteGeometry.lineString(List<LngLat> coordinates) =>
+      MapRouteGeometry(type: 'LineString', coordinates: coordinates);
+
+  factory MapRouteGeometry.multiLineString(List<List<LngLat>> segments) =>
+      MapRouteGeometry(type: 'MultiLineString', coordinates: segments);
+
+  factory MapRouteGeometry.fromJson(Map<String, dynamic> json) =>
+      _$MapRouteGeometryFromJson(json);
+
+  List<List<LngLat>> get segments {
+    if (coordinates is List<List<LngLat>>) {
+      return coordinates as List<List<LngLat>>;
+    } else if (coordinates is List<LngLat>) {
+      return [coordinates as List<LngLat>];
+    }
+    return const [];
+  }
 }
+
+typedef MapLineStringGeometry = MapRouteGeometry;
 
 @JsonSerializable()
 class MapPointGeometry {
@@ -103,7 +120,6 @@ class MapPointGeometry {
 
   factory MapPointGeometry.fromJson(Map<String, dynamic> json) =>
       _$MapPointGeometryFromJson(json);
-
 }
 
 @JsonSerializable()
@@ -141,7 +157,6 @@ class MapRouteProperties {
 
   factory MapRouteProperties.fromJson(Map<String, dynamic> json) =>
       _$MapRoutePropertiesFromJson(json);
-
 }
 
 @JsonSerializable()
@@ -161,5 +176,4 @@ class MapStopProperties {
 
   factory MapStopProperties.fromJson(Map<String, dynamic> json) =>
       _$MapStopPropertiesFromJson(json);
-
 }

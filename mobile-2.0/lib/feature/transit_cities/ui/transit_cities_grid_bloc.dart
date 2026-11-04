@@ -82,8 +82,8 @@ class TransitCitiesGridBloc extends StatelessWidget {
                               city.id,
                               city.nameAr,
                               // `center` is a GeoJSON Point: [lng, lat].
-                              latitude: city.center[1],
-                              longitude: city.center[0],
+                              latitude: city.center.latitude,
+                              longitude: city.center.longitude,
                               zoom: city.zoom,
                             ),
                           );

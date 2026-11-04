@@ -46,17 +46,21 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
               );
-              }else {
-                return Card(
-                  color: Colors.grey.withAlpha(200),
-                  child: Center(
-                    child: Column(
-                      spacing: 4,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.location_on,color: Colors.red,size: 48),
-                        Text("مشوار",style:context.textTheme.headlineSmall),
-                      ],
+              } else {
+                return InkWell(
+                  onTap: () {
+                    context.pushNamed(Routes.mishwar);
+                  },
+                  child: Card(
+                    child: Center(
+                      child: Column(
+                        spacing: 4,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.location_on, color: Colors.red, size: 48),
+                          Text("مشوار", style: context.textTheme.headlineSmall),
+                        ],
+                      ),
                     ),
                   ),
                 );

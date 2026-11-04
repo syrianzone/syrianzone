@@ -4,8 +4,6 @@ import 'package:syrianzone/core/di/get_it.dart';
 import 'package:syrianzone/core/routing/app_router.dart';
 import 'package:syrianzone/core/routing/routes.dart';
 import 'package:syrianzone/core/theme/app_theme.dart';
-import 'package:syrianzone/core/widget/splash.dart';
-import 'package:syrianzone/feature/home/ui/home_screen.dart';
 import 'package:syrianzone/l10n/app_localizations.dart';
 
 void main() {

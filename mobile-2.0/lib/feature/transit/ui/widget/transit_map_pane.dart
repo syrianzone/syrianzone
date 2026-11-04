@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_osm_plugin/flutter_osm_plugin.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:syrianzone/core/constants/map_constants.dart';
 import 'package:syrianzone/core/constants/route_palette.dart';
 import 'package:syrianzone/core/network/response/map_data_response.dart';
 import 'package:syrianzone/core/util/color_util.dart';
@@ -43,17 +44,6 @@ class _TransitMapPaneState extends State<TransitMapPane> {
   GeoPoint? _userMarkerGeoPoint;
   StreamSubscription<Position>? _positionStreamSubscription;
   bool _isLoadingUserLocation = false;
-
-  final _tileLayer = CustomTile(
-    urlsServers: List<TileURLs>.of([
-      TileURLs(
-        url: "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png?key=cb1_4ory_1_2bda41a1b635c4e066436c8f",
-      ),
-    ]),
-    
-    tileExtension: 'png',
-    sourceName: 'Carto Streets',
-  );
 
   @override
   void initState() {
@@ -609,7 +599,7 @@ class _TransitMapPaneState extends State<TransitMapPane> {
             _isMapReady = isReady;
             if (isReady) {
               _mapController.changeTileLayer(
-                tileLayer: _tileLayer,
+                tileLayer: MapConstants.cartoDarkTileLayer,
               );
               _renderMapDataIfReady();
               _initUserLocation(centerOnUser: false);

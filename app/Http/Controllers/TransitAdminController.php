@@ -18,14 +18,8 @@ use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
  * Writes delegate to TransitAdminService, which is also what the agent MCP
  * tools call. This class keeps the scope checks (they need a Request), the
  * per-route validation, and the exact status codes the dashboard already
- * depends on.
- *
- * combineRoutes() and splitRoute() are still inline. They are the only two
- * operations not shared with the agent surface, and deliberately so: both do
- * coordinate-level surgery on route geometry, neither has any test coverage
- * (the spatial SQL needs MySQL, not the SQLite test database), and both rewrite
- * multiple live routes in one transaction. They should move behind
- * TransitAdminService only once they are covered.
+ * depends on. Domain refusals (TransitActionException) are rendered into
+ * standardized JSON error responses by bootstrap/app.php.
  */
 class TransitAdminController extends Controller
 {
@@ -63,7 +57,7 @@ class TransitAdminController extends Controller
                 $request->user()?->getAuthIdentifier(),
             );
         } catch (TransitActionException $e) {
-            return response()->json(['message' => $e->getMessage()], $e->httpStatus());
+            throw $e;
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Failed to approve draft',
@@ -89,15 +83,11 @@ class TransitAdminController extends Controller
             $this->ensureTransitCityAccess($request, $linkedCityId, ['transit.reject']);
         }
 
-        try {
-            $this->transit->rejectDraft(
-                $draft,
-                $validated['reason'] ?? null,
-                $request->user()?->getAuthIdentifier(),
-            );
-        } catch (TransitActionException $e) {
-            return response()->json(['message' => $e->getMessage()], $e->httpStatus());
-        }
+        $this->transit->rejectDraft(
+            $draft,
+            $validated['reason'] ?? null,
+            $request->user()?->getAuthIdentifier(),
+        );
 
         return response()->json(['message' => 'Draft rejected']);
     }
@@ -136,7 +126,7 @@ class TransitAdminController extends Controller
                 return response()->json(['message' => $e->getMessage()]);
             }
 
-            return response()->json(['message' => $e->getMessage()], $e->httpStatus());
+            throw $e;
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Failed to update route status',
@@ -168,7 +158,7 @@ class TransitAdminController extends Controller
                 $request->user()?->getAuthIdentifier(),
             );
         } catch (TransitActionException $e) {
-            return response()->json(['message' => $e->getMessage()], $e->httpStatus());
+            throw $e;
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Failed to move route',
@@ -247,8 +237,7 @@ class TransitAdminController extends Controller
     }
 
     /**
-     * Combine two routes into a new one. Still dashboard-only; see the class
-     * docblock.
+     * Combine two routes into a new one.
      */
     public function combineRoutes(Request $request): SymfonyResponse
     {
@@ -273,7 +262,7 @@ class TransitAdminController extends Controller
                 $request->user()?->getAuthIdentifier(),
             );
         } catch (TransitActionException $e) {
-            return response()->json(['message' => $e->getMessage()], $e->httpStatus());
+            throw $e;
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Failed to combine routes',
@@ -285,8 +274,7 @@ class TransitAdminController extends Controller
     }
 
     /**
-     * Split a route at one of its stops. Still dashboard-only; see the class
-     * docblock.
+     * Split a route at one of its stops.
      */
     public function splitRoute(Request $request): SymfonyResponse
     {
@@ -311,7 +299,7 @@ class TransitAdminController extends Controller
                 $request->user()?->getAuthIdentifier(),
             );
         } catch (TransitActionException $e) {
-            return response()->json(['message' => $e->getMessage()], $e->httpStatus());
+            throw $e;
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Failed to split route',

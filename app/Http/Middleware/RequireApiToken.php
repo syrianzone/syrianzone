@@ -34,6 +34,13 @@ class RequireApiToken
             );
         }
 
+        if ($token->abilities === ['mobile']) {
+            return $this->deny(
+                $request,
+                'Mobile user tokens are not accepted for MCP agent access.'
+            );
+        }
+
         // Defensive: a token whose morph does not match the authenticated user
         // would mean the two were resolved from different sources. Refuse
         // rather than guess.
@@ -60,6 +67,7 @@ class RequireApiToken
     private function deny(Request $request, string $message): Response
     {
         return response()->json([
+            'message' => $message,
             'error' => $message,
         ], 403, [
             'WWW-Authenticate' => 'Bearer realm="mcp"',

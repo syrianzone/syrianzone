@@ -7,12 +7,14 @@ use App\Models\BallotItem;
 use App\Models\Candidate;
 use App\Models\Poll;
 use Carbon\Carbon;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class VotingService
 {
     private const TIER_MINIMUMS = ['S' => 50, 'A' => 40, 'B' => 30, 'C' => 20, 'D' => 10, 'F' => 0];
+
     private const TIER_BONUSES = [
         'S' => [5, 3, 1, 0, 0, 0, 0, 0, 0, 0],
         'A' => [4, 2, 1, 0, 0, 0, 0, 0, 0, 0],
@@ -26,7 +28,7 @@ class VotingService
     {
         $voteDay = Carbon::now($poll->safeTimezone())->startOfDay();
 
-        $this->rejectArchivedCandidates($poll, $tiers);
+        $this->rejectIneligibleCandidates($poll, $tiers);
 
         // One ballot per device per poll per day. The DB unique index
         // (poll_id, vote_day, voter_key) is the source of truth; this
@@ -60,7 +62,7 @@ class VotingService
 
                 $this->updateDailyScores($poll, $voteDay, $scoreDelta);
             });
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (QueryException $e) {
             // Race: two concurrent submits passed the pre-check; the unique
             // index rejected the second. Report as already-voted, not 500.
             if (str_contains($e->getMessage(), 'ballots_poll_day_voter_unique') || ($e->errorInfo[1] ?? null) === 1062) {
@@ -72,7 +74,13 @@ class VotingService
         }
     }
 
-    private function rejectArchivedCandidates(Poll $poll, array $tiers): void
+    /**
+     * A ballot may only score candidates that are open for voting: they must
+     * belong to this poll, not be archived, and not sit in a disabled category.
+     * The middle check stops cross-poll ids; the last one stops a crafted
+     * payload from voting in a category the admin took off the tierlist.
+     */
+    private function rejectIneligibleCandidates(Poll $poll, array $tiers): void
     {
         $ids = collect($tiers)
             ->flatten(1)
@@ -81,7 +89,9 @@ class VotingService
             ->unique()
             ->values();
 
-        if ($ids->isEmpty()) return;
+        if ($ids->isEmpty()) {
+            return;
+        }
 
         // Candidates must exist AND belong to this poll: without the scoping
         // check, ids from other polls would pass validation and their points
@@ -106,6 +116,23 @@ class VotingService
                 'tiers' => 'Ballot contains archived candidates.',
             ]);
         }
+
+        // A disabled category is unpublished, so its roster is not votable —
+        // otherwise its scores could still move through the public API.
+        $disabledGroupIds = $poll->groups()->disabled()->pluck('id');
+
+        if ($disabledGroupIds->isNotEmpty()) {
+            $inDisabledCategory = Candidate::where('poll_id', $poll->id)
+                ->whereIn('id', $ids)
+                ->whereIn('candidate_group_id', $disabledGroupIds)
+                ->exists();
+
+            if ($inDisabledCategory) {
+                throw ValidationException::withMessages([
+                    'tiers' => 'Ballot contains candidates from a disabled category.',
+                ]);
+            }
+        }
     }
 
     private function calculateScores(Ballot $ballot, array $tiers): array
@@ -121,11 +148,13 @@ class VotingService
         $scoreDelta = [];
 
         foreach ($tiers as $tierKey => $items) {
-            if (!isset(self::TIER_MINIMUMS[$tierKey])) continue;
+            if (! isset(self::TIER_MINIMUMS[$tierKey])) {
+                continue;
+            }
 
             foreach ($items as $index => $item) {
                 $candidateId = $item['candidateId'] ?? null;
-                if (!$candidateId || !is_string($candidateId)) {
+                if (! $candidateId || ! is_string($candidateId)) {
                     throw ValidationException::withMessages([
                         'tiers' => 'Each tier item must reference a candidate.',
                     ]);

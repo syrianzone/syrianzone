@@ -14,6 +14,7 @@ import {
   Plus,
   Loader2,
   Megaphone,
+  LayoutGrid,
   KeyRound,
   CloudUpload,
   Gamepad2,
@@ -128,6 +129,7 @@ interface DashboardProps {
       name: string;
       email: string;
       role: string;
+      is_banned?: boolean;
       avatar_url: string | null;
       /** Resolved server-side by User::effectivePermissions(); see AuthContext. */
       effective_permissions?: string[];
@@ -263,13 +265,11 @@ export default function Dashboard({
     // every account has, so it is always a safe landing place.
     if (new URLSearchParams(window.location.search).get('tab') === 'profile') return 'profile';
 
-    // This used to branch on `role === 'transit_admin'` and send a transit
-    // operator to their profile. That role stopped granting anything when the
-    // role prefixes were removed, so the branch was reading a dead string: the
-    // account holds transit.review_drafts, has a transit panel waiting in the
-    // sidebar, and was being dropped on the profile tab regardless.
-    if (role === 'user') return 'submissions';
+    // Check canManagePolls first so poll managers and full-catalogue admins
+    // (whose role is also 'user') land on the Polls tab rather than an empty
+    // route-submissions tab.
     if (canManagePolls) return 'polls';
+    if (role === 'user') return 'submissions';
 
     return 'profile';
   });
@@ -543,7 +543,7 @@ export default function Dashboard({
   const handleCancelMySubmission = async (id: number) => {
     if (!(await confirmDialog({ title: 'سحب هذا الاقتراح؟', description: 'سيتم إلغاء الاقتراح ولا يمكن التراجع.', destructive: true, confirmText: 'سحب' }))) return;
     try {
-      await axios.delete(`/api/v1/studio/routes/${id}`);
+      await axios.delete(`/api/v1/transit/studio/routes/${id}`);
       setLocalMyDrafts(prev => prev.filter(d => d.id !== id));
       setLocalDrafts(prev => prev.filter(d => d.id !== id));
       notify.success('تم سحب الاقتراح');
@@ -567,6 +567,13 @@ export default function Dashboard({
       <h1 className="sr-only">لوحة التحكم</h1>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {auth.user.is_banned && (
+            <div role="alert" className="mb-6 flex items-center gap-3 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive">
+              <Ban className="h-5 w-5 shrink-0" />
+              <span>تم حظر حسابك من المساهمة — لا يمكنك إرسال مسارات نقل أو أماكن جديدة حالياً.</span>
+            </div>
+          )}
+
           {role === 'superadmin' && (
             <div className="flex justify-end mb-8">
               <a
@@ -701,6 +708,17 @@ export default function Dashboard({
                   </Link>
                 )}
 
+                {/* Site Navigation & Icons Catalog Tab (Superadmin only) */}
+                {role === 'superadmin' && (
+                  <Link
+                    href="/admin/navigation"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  >
+                    <LayoutGrid className="h-5 w-5" />
+                    الأيقونات والقوائم
+                  </Link>
+                )}
+
                 {/* Agent API tokens (Superadmin only) — minting a token grants
                     capability to an automated client, so it is not delegated to
                     module admins the way the moderation panels are. */}
@@ -773,9 +791,11 @@ export default function Dashboard({
                                 سحب الاقتراح
                               </Button>
                             )}
-                            <a href={`/transit/studio?edit=${draft.id}`}>
-                              <Button variant="outline" size="sm">تعديل</Button>
-                            </a>
+                            {!auth.user.is_banned && (
+                              <a href={`/transit/studio?edit=${draft.id}`}>
+                                <Button variant="outline" size="sm">تعديل</Button>
+                              </a>
+                            )}
                             {draft.status === 'approved' && draft.route_id && (
                               <a href={`/transit/city/${draft.city_id}?route=${draft.route_id}`}>
                                 <Button variant="outline" size="sm" className="text-emerald-600 dark:text-emerald-400 border-emerald-500/40 hover:text-emerald-600">
@@ -969,7 +989,7 @@ export default function Dashboard({
                               <div className="flex items-center gap-2">
                                 <Switch
                                   id="edit-poll-active"
-                                  checked={editingPoll.is_active}
+                                  checked={Boolean(editingPoll.is_active)}
                                   onCheckedChange={checked => setEditingPoll({ ...editingPoll, is_active: checked })}
                                 />
                                 <Label htmlFor="edit-poll-active">التصويت نشط</Label>

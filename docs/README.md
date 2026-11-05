@@ -4,7 +4,7 @@ Documentation for [syrian.zone](https://syrian.zone) — a civic/community porta
 
 ## Documentation Map
 
-The docs folder mirrors the project structure: `getting-started/` for running the app, `architecture/` for how it fits together, `modules/` per feature area (matching `app/Http/Controllers` groupings), `reference/` for schemas/routes/assets, and `guidelines/` for conventions.
+The docs folder mirrors the project structure: `getting-started/` for running the app, `architecture/` for how it fits together, `modules/` per feature area (matching `app/Http/Controllers` groupings), `reference/` for schemas/routes/assets/APIs, and `guidelines/` for conventions.
 
 | Path | Contents |
 |---|---|
@@ -24,15 +24,15 @@ The docs folder mirrors the project structure: `getting-started/` for running th
 | [modules/mishwar-places.md](modules/mishwar-places.md) | Hidden Places ("مشوار") at `/mishwar` — largest spec; §2 doubles as repo-wide code conventions |
 | [modules/agent-mcp.md](modules/agent-mcp.md) | Agent/MCP surface at `/mcp/admin` — tokens, the permission ceiling, audit trail |
 | [modules/transit.md](modules/transit.md) | Transit maps + community Transit Studio + moderation workflow |
-| [modules/polls-public-api.md](modules/polls-public-api.md) | Public read-only voting data API (`/api/v1/polls`) |
 | [modules/guess-who.md](modules/guess-who.md) | Multiplayer Guess Who game (state relayed over Reverb) |
 | [modules/directories.md](modules/directories.md) | SyOfficial, Phonebook, Gov Apps, Hotels directories |
 | [modules/muslim-corner.md](modules/muslim-corner.md) | Muslim Corner: prayer times, Quran reader, followed-recitation radio |
 | [modules/games.md](modules/games.md) | Games hub at `/games`: 2048, solitaire, tarneeb, trix (plus Guess Who / president), one real route per game |
 | [modules/population-atlas.md](modules/population-atlas.md) | Population & climate atlas at `/atlas` (legacy `/population` redirects) |
 | **Reference** | |
-| [reference/database-schema.md](reference/database-schema.md) | ER-style schema chart of every table (from migrations) |
+| [reference/api.md](reference/api.md) | **Central API Reference (`/api/v1`)** — all public, search, transit, polls, places, user, and admin JSON endpoints + error contract + legacy aliases |
 | [reference/routes-api-map.md](reference/routes-api-map.md) | Full web + API route map grouped by feature |
+| [reference/database-schema.md](reference/database-schema.md) | ER-style schema chart of every table (from migrations) |
 | [reference/asset-storage.md](reference/asset-storage.md) | Cloudflare R2 bucket layout, asset manager, local dev fallback |
 | **Guidelines** | |
 | [guidelines/design-and-conventions.md](guidelines/design-and-conventions.md) | Styling/design tokens, RTL rules, language/i18n, theming, shadcn patterns, backend/frontend conventions |

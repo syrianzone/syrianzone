@@ -517,7 +517,16 @@ class TransitAdminService
             if ($type === 'LineString' || $type === 'MultiLineString') {
                 $line = $feature['geometry'];
             } elseif ($type === 'Point') {
-                $stops[] = $feature;
+                $coords = $feature['geometry']['coordinates'] ?? null;
+                if (is_array($coords)) {
+                    while (isset($coords[0]) && is_array($coords[0])) {
+                        $coords = $coords[0];
+                    }
+                    if (isset($coords[0], $coords[1]) && is_numeric($coords[0]) && is_numeric($coords[1])) {
+                        $feature['geometry']['coordinates'] = [(float) $coords[0], (float) $coords[1]];
+                        $stops[] = $feature;
+                    }
+                }
             }
         }
 

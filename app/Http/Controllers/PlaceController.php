@@ -7,6 +7,7 @@ use App\Models\PlacePhoto;
 use App\Services\GuideLevelService;
 use App\Services\PlaceImageService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -148,17 +149,18 @@ class PlaceController extends Controller
     $lat = (float) $validated['lat'];
     $lng = (float) $validated['lng'];
     $radiusKm = (float) ($validated['radius_km'] ?? 2);
+    $user = $request->user() ?? Auth::guard('sanctum')->user();
     // Only the requester's own pending places are included, or any account could
     // enumerate other users' unmoderated submissions that show deliberately 404s.
-    $includePending = $request->boolean('include_pending') && $request->user();
+    $includePending = $request->boolean('include_pending') && $user;
 
     $latDelta = $radiusKm / 111.045;
     $lngDelta = $radiusKm / (111.045 * max(cos(deg2rad($lat)), 0.01));
 
-    $candidates = Place::where(function ($q) use ($includePending, $request) {
+    $candidates = Place::where(function ($q) use ($includePending, $user) {
         $q->where('status', 'approved');
         if ($includePending) {
-          $q->orWhere(fn ($own) => $own->where('status', 'pending')->where('user_id', $request->user()->id));
+          $q->orWhere(fn ($own) => $own->where('status', 'pending')->where('user_id', $user->id));
         }
       })
       ->whereBetween('lat', [$lat - $latDelta, $lat + $latDelta])
@@ -187,7 +189,7 @@ class PlaceController extends Controller
   public function show(Request $request, GuideLevelService $levels, int $id)
   {
     $place = Place::with(['user', 'photos'])->findOrFail($id);
-    $user = $request->user();
+    $user = $request->user() ?? Auth::guard('sanctum')->user();
 
     if ($place->status !== 'approved') {
       // Owner, or staff with a places capability. The role checks this replaced

@@ -4,30 +4,9 @@ import {
   Grip,
   X,
   ChevronDown,
-  CheckCircle2,
-  Palette,
-  Users2,
-  Landmark,
-  Compass,
-  Crosshair,
-  MessageSquare,
-  Utensils,
-  Globe,
-  ListOrdered,
-  Link as LinkIcon,
-  Newspaper,
   Bus,
-  Smartphone,
-  MessageSquareCode,
-  Sliders,
-  Scale,
-  Calendar,
-  Phone,
   Sparkles,
-  HelpCircle,
   Shield,
-  MapPin,
-  LayoutGrid,
   Bookmark,
   Settings,
   Info,
@@ -54,7 +33,7 @@ import { Separator } from '@/components/ui/separator';
 import UserNav from './UserNav';
 import AppearanceMenu from './AppearanceMenu';
 import { DesktopSearchTrigger, MobileMenuSearchSection } from './GlobalCommandPalette';
-import { SITE_LINKS, type SiteLink } from '@/Lib/siteLinks';
+import { useSiteNavigation, type SiteLink } from '@/Lib/siteLinks';
 
 /** Columns for the desktop mega menu, matching the homepage's tile grid. */
 const MEGA_GRID = 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-9';
@@ -131,8 +110,8 @@ const NavTile = React.forwardRef<
 function TileGrid({ links, pathname, onNavigate, className }: { links: SiteLink[]; pathname: string; onNavigate?: () => void; className?: string }) {
   return (
     <ul className={cn('grid grid-cols-3 gap-1', className)}>
-      {links.map(({ href, text, icon, image, isFlag, external }) => (
-        <li key={href}>
+      {links.map(({ id, href, text, icon, image, isFlag, external }) => (
+        <li key={id || href}>
           <NavTile
             href={href}
             text={text}
@@ -214,26 +193,46 @@ function NavTopLink({
   href,
   label,
   icon: Icon,
+  image,
+  external,
   active,
   gold,
 }: {
   href: string;
   label: string;
   icon?: React.ComponentType<{ className?: string }>;
+  image?: string;
+  external?: boolean;
   active?: boolean;
   gold?: boolean;
 }) {
-  return (
-    <Link
-      href={href}
-      className={cn(
-        navigationMenuTriggerStyle(),
-        'bg-transparent hover:bg-accent/50',
-        active && 'text-primary bg-accent/50',
-      )}
-    >
-      {Icon && <Icon className={cn('h-4 w-4 me-2', gold && 'text-[var(--gold)]')} />}
+  const cls = cn(
+    navigationMenuTriggerStyle(),
+    'bg-transparent hover:bg-accent/50',
+    active && 'text-primary bg-accent/50',
+  );
+  const content = (
+    <>
+      {image ? (
+        <img src={image} alt="" className="h-4 w-4 me-2 object-contain" />
+      ) : Icon ? (
+        <Icon className={cn('h-4 w-4 me-2', gold && 'text-[var(--gold)]')} />
+      ) : null}
       {label}
+    </>
+  );
+
+  if (external) {
+    return (
+      <a href={href} target="_blank" rel="noreferrer" className={cls}>
+        {content}
+      </a>
+    );
+  }
+
+  return (
+    <Link href={href} className={cls}>
+      {content}
     </Link>
   );
 }
@@ -275,6 +274,7 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [theme, setTheme] = React.useState('dark');
   const { user } = useAuth();
+  const { navbarLinks, navbarTopLinks, navbarMoreLinks } = useSiteNavigation();
 
   // Where the mobile menu reveals from: the trigger's centre, in viewport
   // coordinates (the sheet is fixed to the viewport, so these line up).
@@ -505,10 +505,20 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
             </>
           ) : (
             <>
-              {SITE_LINKS.slice(0, 5).map(({ href, text, icon: Icon }) => (
-                <NavTopLink key={href} href={href} icon={Icon ?? undefined} label={text} active={pathname === href} />
+              {navbarTopLinks.map(({ id, href, text, icon: Icon, image, external }) => (
+                <NavTopLink
+                  key={id || href}
+                  href={href}
+                  icon={Icon ?? undefined}
+                  image={image}
+                  external={external}
+                  label={text}
+                  active={pathname === href}
+                />
               ))}
-              <MoreTrigger ref={moreBtnRef} label="المزيد" open={moreOpen} onToggle={() => setMoreOpen((o) => !o)} />
+              {navbarMoreLinks.length > 0 && (
+                <MoreTrigger ref={moreBtnRef} label="المزيد" open={moreOpen} onToggle={() => setMoreOpen((o) => !o)} />
+              )}
             </>
           )}
         </nav>
@@ -518,7 +528,7 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
             <div className="sz-menu-pop">
               {isTransitPage ? (
                 <MorePanel
-                  links={SITE_LINKS}
+                  links={navbarLinks}
                   pathname={pathname}
                   showAboutLinks={false}
                   onNavigate={() => setMoreOpen(false)}
@@ -551,7 +561,7 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
                   }
                 />
               ) : (
-                <MorePanel links={SITE_LINKS.slice(5)} pathname={pathname} showAboutLinks onNavigate={() => setMoreOpen(false)} />
+                <MorePanel links={navbarMoreLinks} pathname={pathname} showAboutLinks onNavigate={() => setMoreOpen(false)} />
               )}
             </div>
           </div>

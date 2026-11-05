@@ -38,6 +38,8 @@ class HouseMembers2026Seeder extends Seeder
                     'category' => $data['category'] ?? null,
                     'status' => in_array($data['status'] ?? '', ['active', 'resigned', 'dead', 'inactive'], true) ? $data['status'] : 'active',
                     'management_position' => $data['management_position'] ?? null,
+                    'facebook_url' => ! empty($data['facebook_url']) ? $data['facebook_url'] : null,
+                    'twitter_url' => ! empty($data['twitter_url']) ? $data['twitter_url'] : null,
                     'updated_at' => now(),
                     'created_at' => now(),
                 ]

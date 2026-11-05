@@ -15,7 +15,9 @@ function GameTile({ game }: { game: GameEntry }) {
       <span className="text-xs font-medium text-foreground transition-colors group-hover:text-primary">
         {game.title}
       </span>
-      {game.online && (
+      {/* A coming-soon tile shows one badge only: "قريباً" is the state, and
+          "لعب مع صديق" would advertise a game nobody can start. */}
+      {game.online && !game.comingSoon && (
         <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
           <Users className="h-3 w-3" />
           لعب مع صديق

@@ -59,10 +59,20 @@ interface LeaderboardEntry {
     successorId?: string | null;
 }
 
+interface LeaderboardGroup {
+    id: string;
+    name: string;
+    key?: string | null;
+    /** Server-normalized rankings key (e.g. the `minister` group ranks under `ministers`). */
+    rankingKey?: string;
+    isDefault?: boolean;
+}
+
 interface LeaderboardData {
     poll: { id: string; title: string; slug?: string };
     status?: string;
     generated_at?: string | null;
+    groups?: LeaderboardGroup[];
     [key: string]: any;
 }
 
@@ -74,11 +84,26 @@ function formatNumberKM(n: number): string {
     return String(n);
 }
 
-function buildSuccessorIndex(data: LeaderboardData): Record<string, string> {
+// The tabs are the *published* categories the server sent. A disabled category
+// is not in `groups`, so it gets no tab and its rows are never read — the fix
+// belongs here rather than in the query, because the tab strip used to be a
+// hardcoded list of four keys.
+function publishedGroups(data: LeaderboardData): LeaderboardGroup[] {
+    return Array.isArray(data.groups) ? data.groups : [];
+}
+
+function groupKey(group: LeaderboardGroup): string {
+    return group.rankingKey || group.key || group.id;
+}
+
+function rowsFor(data: LeaderboardData, group: LeaderboardGroup): LeaderboardEntry[] {
+    return data[groupKey(group)] || [];
+}
+
+function buildSuccessorIndex(groups: LeaderboardGroup[], data: LeaderboardData): Record<string, string> {
     const index: Record<string, string> = {};
-    for (const key of ["ministers", "governors", "security", "jolani"]) {
-        const rows: LeaderboardEntry[] = data[key] || [];
-        for (const r of rows) index[r.candidateId] = r.name;
+    for (const group of groups) {
+        for (const row of rowsFor(data, group)) index[row.candidateId] = row.name;
     }
     return index;
 }
@@ -267,7 +292,10 @@ export default function Leaderboard(initialProps: LeaderboardProps) {
         );
     }
 
-    const successorIndex = buildSuccessorIndex(data);
+    const groups = publishedGroups(data);
+    const successorIndex = buildSuccessorIndex(groups, data);
+    const defaultGroup = groups.find((g) => g.isDefault) ?? groups[0];
+    const defaultKey = defaultGroup ? groupKey(defaultGroup) : "ministers";
 
     return (
         <MainLayout>
@@ -306,91 +334,55 @@ export default function Leaderboard(initialProps: LeaderboardProps) {
                     );
                 })()}
 
-                {data.history && (
-                    <Tabs defaultValue="ministers" dir="rtl" className="w-full">
+                {groups.length === 0 && (
+                    <div className="text-center text-gray-500 py-8">
+                        لا توجد تصنيفات منشورة حالياً.
+                    </div>
+                )}
+
+                {groups.length > 0 && data.history && (
+                    <Tabs defaultValue={defaultKey} dir="rtl" className="w-full">
                         <div className="flex flex-col items-center gap-3 mb-6">
-                            <TabsList className="grid w-full max-w-md grid-cols-4">
-                                <TabsTrigger value="ministers">الحكومة</TabsTrigger>
-                                <TabsTrigger value="governors">المحافظون</TabsTrigger>
-                                <TabsTrigger value="security">الأمن</TabsTrigger>
-                                <TabsTrigger value="jolani">الجولاني</TabsTrigger>
+                            <TabsList className="flex h-auto w-full max-w-2xl flex-wrap justify-center gap-1">
+                                {groups.map((group) => (
+                                    <TabsTrigger key={groupKey(group)} value={groupKey(group)}>
+                                        {group.name}
+                                    </TabsTrigger>
+                                ))}
                             </TabsList>
                             <StatusToggle value={status} onChange={handleStatusChange} />
                         </div>
 
-                        <TabsContent value="ministers">
-                            <TimeseriesChart
-                                history={data.history}
-                                candidates={data.ministers || data.minister || []}
-                                title="تقدم الحكومة"
-                            />
-                            {(data.ministers || data.minister || []).length >= 3 && (
-                                <Top3Podium rows={(data.ministers || data.minister || []).slice(0, 3)} title="أفضل ٣ على الإطلاق - الحكومة" />
-                            )}
-                            <LeaderboardTable
-                                rows={data.ministers || data.minister || []}
-                                title="قائمة التصنيف التفصيلية - الحكومة"
-                                successorIndex={successorIndex}
-                            />
-                        </TabsContent>
-
-                        <TabsContent value="governors">
-                            <TimeseriesChart
-                                history={data.history}
-                                candidates={data.governors || data.governor || []}
-                                title="تقدم المحافظين"
-                            />
-                            {(data.governors || data.governor || []).length >= 3 && (
-                                <Top3Podium rows={(data.governors || data.governor || []).slice(0, 3)} title="أفضل ٣ - المحافظون" />
-                            )}
-                            <LeaderboardTable
-                                rows={data.governors || data.governor || []}
-                                title="قائمة المحافظين"
-                                successorIndex={successorIndex}
-                            />
-                        </TabsContent>
-
-                        <TabsContent value="security">
-                            <TimeseriesChart
-                                history={data.history}
-                                candidates={data.security || []}
-                                title="تقدم مسؤولي الأمن"
-                            />
-                            {(data.security || []).length >= 3 && (
-                                <Top3Podium rows={(data.security || []).slice(0, 3)} title="أفضل ٣ - مسؤولي الأمن" />
-                            )}
-                            <LeaderboardTable
-                                rows={data.security || []}
-                                title="قائمة مسؤولي الأمن"
-                                successorIndex={successorIndex}
-                            />
-                        </TabsContent>
-
-                        <TabsContent value="jolani">
-                            <TimeseriesChart
-                                history={data.history}
-                                candidates={data.jolani || []}
-                                title="تقدم شخصيات الجولاني"
-                            />
-                            {(data.jolani || []).length >= 3 && (
-                                <Top3Podium rows={(data.jolani || []).slice(0, 3)} title="أفضل ٣ شخصيات الجولاني" />
-                            )}
-                            <LeaderboardTable
-                                rows={data.jolani || []}
-                                title="شخصيات الجولاني"
-                                successorIndex={successorIndex}
-                            />
-                        </TabsContent>
+                        {groups.map((group) => {
+                            const rows = rowsFor(data, group);
+                            return (
+                                <TabsContent key={groupKey(group)} value={groupKey(group)}>
+                                    <TimeseriesChart
+                                        history={data.history}
+                                        candidates={rows}
+                                        title={`تقدم ${group.name}`}
+                                    />
+                                    {rows.length >= 3 && (
+                                        <Top3Podium rows={rows.slice(0, 3)} title={`أفضل ٣ - ${group.name}`} />
+                                    )}
+                                    <LeaderboardTable
+                                        rows={rows}
+                                        title={`قائمة ${group.name}`}
+                                        successorIndex={successorIndex}
+                                    />
+                                </TabsContent>
+                            );
+                        })}
                     </Tabs>
                 )}
 
-                {!data.history && (
+                {defaultGroup && !data.history && (
                     <>
                         <div className="text-center text-red-500 mb-4">بيانات التاريخ غير متوفرة</div>
                         <div className="max-w-screen-md mx-auto">
                             <LeaderboardTable
-                                rows={data.ministers || data.minister || []}
-                                title="قائمة التصنيف التفصيلية - الحكومة"
+                                rows={rowsFor(data, defaultGroup)}
+                                title={`قائمة ${defaultGroup.name}`}
                                 successorIndex={successorIndex}
                             />
                         </div>

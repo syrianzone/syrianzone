@@ -1,11 +1,14 @@
 <?php
 
+use App\Exceptions\DomainActionException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -31,6 +34,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->api(prepend: [
             \App\Http\Middleware\AutoLoginDevUser::class,
         ]);
+
+        // Ensure AutoLoginDevUser runs after StartSession and before Authenticate
+        // on auth-guarded web and API routes.
+        $middleware->prependToPriorityList(
+            \Illuminate\Auth\Middleware\Authenticate::class,
+            \App\Http\Middleware\AutoLoginDevUser::class
+        );
         
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
@@ -53,14 +63,16 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->statefulApi();
         $middleware->validateCsrfTokens(except: [
-            // Guest submissions only. The authenticated PUT /api/v1/studio/routes/{id}
-            // must keep CSRF protection — do not widen this to studio/routes/*.
+            // Guest submissions and stateless mobile token exchange.
             // Note: /api/* routes are stateless (no session CSRF) — these entries
             // cover same-path web-group hits. Guest vote fraud is mitigated by
             // throttle:voting (10/min/IP) + the ballots (poll_id, vote_day,
             // voter_key) unique index, not by CSRF. Do not add CAPTCHA here
             // without a UX review — it would block legitimate guest voting.
+            'api/v1/transit/studio/routes',
             'api/v1/studio/routes',
+            'api/v1/auth/google/token',
+            'api/v1/auth/google',
             'api/submit',
             'guesswho/broadcasting/auth',
         ]);
@@ -68,7 +80,36 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions) {
         \Sentry\Laravel\Integration::handles($exceptions);
 
+        $exceptions->dontReport([
+            DomainActionException::class,
+        ]);
+
+        $exceptions->render(function (DomainActionException $e, Request $request) {
+            if ($e->httpStatus() === 404 && ! $request->expectsJson()) {
+                throw new NotFoundHttpException($e->getMessage(), $e);
+            }
+
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], $e->httpStatus());
+        });
+
         $exceptions->respond(function (Response $response, \Throwable $exception, Request $request) {
+            if (
+                $response instanceof JsonResponse
+                && $response->getStatusCode() >= 400
+            ) {
+                $data = $response->getData(true);
+                if (
+                    is_array($data)
+                    && ! isset($data['message'])
+                    && isset($data['error'])
+                    && is_string($data['error'])
+                ) {
+                    $response->setData(['message' => $data['error']] + $data);
+                }
+            }
+
             if (
                 $response->getStatusCode() === 404
                 && $request->isMethod('GET')

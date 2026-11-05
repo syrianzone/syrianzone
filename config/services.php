@@ -39,6 +39,13 @@ return [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect' => env('GOOGLE_REDIRECT_URL'),
+        // Optional comma-separated list of OAuth Client IDs (Web, Android, iOS)
+        // accepted as audience (aud) when verifying native Google id_tokens.
+        // Defaults to GOOGLE_CLIENT_ID when GOOGLE_ALLOWED_CLIENT_IDS is unset.
+        'allowed_client_ids' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('GOOGLE_ALLOWED_CLIENT_IDS', (string) env('GOOGLE_CLIENT_ID', '')))
+        ))),
     ],
 
     'google_places' => [

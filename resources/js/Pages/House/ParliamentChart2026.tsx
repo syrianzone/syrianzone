@@ -4,12 +4,26 @@ import { Badge } from '@/Components/ui/badge';
 import { FilterChip } from '@/Components/ui/filter-chip';
 import type { Member2026 } from './members2026';
 
-export type Dim = 'governorate' | 'gender' | 'selection' | 'age';
+export type Dim = 'governorate' | 'gender' | 'selection' | 'age' | 'social';
 
 const GOV_COLORS = ['#cb6d62', '#8a5100', '#8b902d', '#10703a', '#00a5a9', '#005d95', '#a482d2', '#854079', '#556A4E', '#A73F46', '#b5892e', '#5b7fa6', '#7a5c3e', '#4e8a7a'];
 const GENDER_COLOR: Record<string, string> = { M: '#556A4E', F: '#A73F46' };
 // Omran selection_method has exactly two values: انتخابات (136) / تعيين (70)
 const SELECTION_COLOR: Record<string, string> = { 'انتخابات': '#556A4E', 'تعيين': '#A73F46' };
+const SOCIAL_COLOR: Record<string, string> = { has_social: '#556A4E', no_social: '#A73F46' };
+
+export const SOCIAL_LABEL: Record<string, string> = {
+    has_social: 'لديه حساب',
+    no_social: 'بدون حساب',
+};
+
+export function hasSocialMedia(m: Member2026): boolean {
+    return Boolean((m.facebook_url && m.facebook_url.trim()) || (m.twitter_url && m.twitter_url.trim()));
+}
+
+export function socialGroupOf(m: Member2026): 'has_social' | 'no_social' {
+    return hasSocialMedia(m) ? 'has_social' : 'no_social';
+}
 
 export function ageOf(m: Member2026): number | null {
     const y = parseInt(m.birth_year, 10);
@@ -49,6 +63,7 @@ function groupKey(m: Member2026, dim: Dim): string {
     if (dim === 'gender') return m.gender === 'F' ? 'F' : 'M';
     if (dim === 'selection') return m.selection_method || 'غير محدد';
     if (dim === 'age') return ageGroupOf(m);
+    if (dim === 'social') return socialGroupOf(m);
     return m.governorate_ar || 'غير محدد';
 }
 
@@ -164,12 +179,13 @@ export default function ParliamentChart2026({ members, dim, onDimChange, selecte
         if (dim === 'gender') return GENDER_COLOR[m.gender] || '#888';
         if (dim === 'selection') return SELECTION_COLOR[m.selection_method] || '#888';
         if (dim === 'age') return AGE_COLOR[ageGroupOf(m)] || '#888';
+        if (dim === 'social') return SOCIAL_COLOR[socialGroupOf(m)] || '#888';
         return govColor[m.governorate_ar || 'غير محدد'];
     };
     const legendColor = (k: string) =>
-        dim === 'gender' ? GENDER_COLOR[k] : dim === 'selection' ? SELECTION_COLOR[k] : dim === 'age' ? AGE_COLOR[k] : govColor[k];
+        dim === 'gender' ? GENDER_COLOR[k] : dim === 'selection' ? SELECTION_COLOR[k] : dim === 'age' ? AGE_COLOR[k] : dim === 'social' ? SOCIAL_COLOR[k] : govColor[k];
     const labelOf = (k: string) =>
-        dim === 'gender' ? (k === 'F' ? 'إناث' : 'ذكور') : dim === 'age' ? (AGE_LABEL[k] || k) : k;
+        dim === 'gender' ? (k === 'F' ? 'إناث' : 'ذكور') : dim === 'age' ? (AGE_LABEL[k] || k) : dim === 'social' ? (SOCIAL_LABEL[k] || k) : k;
     const hoverCount = hoverGroup ? groups.find(([k]) => k === hoverGroup)?.[1] || 0 : 0;
 
     return (
@@ -180,6 +196,7 @@ export default function ParliamentChart2026({ members, dim, onDimChange, selecte
                     <FilterChip active={dim === 'governorate'} onClick={() => { onDimChange('governorate'); setHoverGroup(null); }}>المحافظة</FilterChip>
                     <FilterChip active={dim === 'gender'} onClick={() => { onDimChange('gender'); setHoverGroup(null); }}>الجنس</FilterChip>
                     <FilterChip active={dim === 'age'} onClick={() => { onDimChange('age'); setHoverGroup(null); }}>الفئة العمرية</FilterChip>
+                    <FilterChip active={dim === 'social'} onClick={() => { onDimChange('social'); setHoverGroup(null); }}>التواصل الاجتماعي</FilterChip>
                 </div>
                 <p className="text-xs text-muted-foreground">اضغط على أي فئة لتصفية الجدول أدناه</p>
             </CardHeader>

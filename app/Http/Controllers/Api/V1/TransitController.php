@@ -15,6 +15,11 @@ class TransitController extends Controller
 {
     public function __construct(private readonly GovernorateIconService $governorateIcons) {}
 
+    public function cities()
+    {
+        return $this->getCities();
+    }
+
     public function getCities()
     {
         // Dedicated key: the /transit page caches the same rows under
@@ -74,6 +79,11 @@ class TransitController extends Controller
         return ($id === 'damascus' || $id === 'rif-dimashq') ? ['damascus', 'rif-dimashq'] : [$id];
     }
 
+    public function routes($id)
+    {
+        return $this->getRoutes($id);
+    }
+
     public function getRoutes($id)
     {
         $cityIds = $this->cityIdsFor($id);
@@ -99,6 +109,11 @@ class TransitController extends Controller
         });
 
         return response()->json($mapped);
+    }
+
+    public function mapData($id)
+    {
+        return $this->getMapData($id);
     }
 
     public function getMapData($id)
@@ -169,6 +184,11 @@ class TransitController extends Controller
         });
 
         return response()->json($data)->header('Cache-Control', 'public, max-age=600');
+    }
+
+    public function nearbyStops(Request $request)
+    {
+        return $this->getNearbyStops($request);
     }
 
     public function getNearbyStops(Request $request)

@@ -31,7 +31,7 @@ import {
 import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
 import { cn } from '@/lib/utils';
-import { SITE_LINKS } from '@/Lib/siteLinks';
+import { useSiteNavigation } from '@/Lib/siteLinks';
 import { GAMES } from '@/Pages/Games/_lib/games';
 import { TOOLS as MUSLIM_TOOLS } from '@/Pages/Muslim/_lib/tools';
 import { useMuslimNav } from '@/Pages/Muslim/_lib/nav';
@@ -254,6 +254,7 @@ export const FILTER_TABS: Array<{ id: FilterScope; label: string }> = [
 export function useGlobalSearchData(query: string, scope: FilterScope, enabled = true) {
     const [remote, setRemote] = useState<RemoteSearchResults>(EMPTY_REMOTE);
     const [loadingRemote, setLoadingRemote] = useState(false);
+    const { allLinks } = useSiteNavigation();
 
     useEffect(() => {
         const trimmed = query.trim();
@@ -301,15 +302,16 @@ export function useGlobalSearchData(query: string, scope: FilterScope, enabled =
 
     const matchedSiteLinks = useMemo(() => {
         if (scope !== 'all' && scope !== 'tools') return [];
-        return SITE_LINKS.filter((item) =>
+        return allLinks.filter((item) =>
             matchesSearch(
                 trimmedQuery,
                 item.text,
+                item.subtitle,
                 SITE_LINK_DESCRIPTIONS[item.href],
                 item.href,
             ),
         );
-    }, [trimmedQuery, scope]);
+    }, [trimmedQuery, scope, allLinks]);
 
     const matchedCities = useMemo(() => {
         if (scope !== 'all' && scope !== 'transit') return [];
@@ -398,6 +400,10 @@ export function useGlobalSearchData(query: string, scope: FilterScope, enabled =
     };
 }
 
+const IS_MAC = typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform || navigator.userAgent || '');
+const SHORTCUT_LABEL = IS_MAC ? '⌘ K' : 'Ctrl K';
+const SHORTCUT_ARIA = `بحث سريع في المنصة (${SHORTCUT_LABEL})`;
+
 export function DesktopSearchTrigger({ className = '' }: { className?: string }) {
     const setSearchOpen = useMuslimNav((s) => s.setSearchOpen);
     return (
@@ -405,7 +411,7 @@ export function DesktopSearchTrigger({ className = '' }: { className?: string })
             type="button"
             variant="outline"
             onClick={() => setSearchOpen(true)}
-            aria-label="بحث سريع في المنصة (Ctrl+K)"
+            aria-label={SHORTCUT_ARIA}
             className={`hidden lg:inline-flex h-9 items-center justify-between gap-3 rounded-xl border-border/80 bg-muted/40 px-3 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors ${className}`}
         >
             <span className="flex items-center gap-2">
@@ -416,7 +422,7 @@ export function DesktopSearchTrigger({ className = '' }: { className?: string })
                 dir="ltr"
                 className="pointer-events-none inline-flex h-5 select-none items-center gap-0.5 rounded-md border border-border bg-background px-1.5 font-mono text-[10px] font-semibold text-muted-foreground shadow-2xs"
             >
-                Ctrl K
+                {SHORTCUT_LABEL}
             </kbd>
         </Button>
     );
@@ -564,7 +570,7 @@ export function SearchResultsContent({
                         أقسام وأدوات المنصة
                     </p>
                     <ul className={cn('grid gap-x-2 gap-y-4 py-1', gridColsClass)}>
-                        {matchedSiteLinks.map(({ href, text, icon: Icon, image, isFlag, external }) => {
+                        {matchedSiteLinks.map(({ id, href, text, icon: Icon, image, isFlag, external }) => {
                             const isActive = pathname === href;
                             const tileClassName =
                                 'group flex h-full select-none flex-col items-center gap-2 rounded-lg px-1 py-2 text-center no-underline outline-none hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring transition-colors';
@@ -606,7 +612,7 @@ export function SearchResultsContent({
                             );
 
                             return (
-                                <li key={href}>
+                                <li key={id || href}>
                                     {external ? (
                                         <a
                                             href={href}
@@ -1137,7 +1143,7 @@ export function HomeInlineSearchSection({
                             dir="ltr"
                             className="hidden sm:inline-flex h-6 select-none items-center gap-0.5 rounded-md border border-border bg-muted/60 px-2 font-mono text-[11px] font-semibold text-muted-foreground shrink-0"
                         >
-                            Ctrl K
+                            {SHORTCUT_LABEL}
                         </kbd>
                     )}
                 </div>
@@ -1292,7 +1298,8 @@ export default function GlobalCommandPalette() {
                                             : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
                                     }`}
                                 >
-                                    {tab.label}\n                                </button>
+                                    {tab.label}
+                                </button>
                             );
                         })}
                     </div>
@@ -1323,7 +1330,7 @@ export default function GlobalCommandPalette() {
                             </span>
                         </div>
                         <span dir="ltr" className="font-mono text-[10px] opacity-75">
-                            Ctrl + K
+                            {IS_MAC ? '⌘ + K' : 'Ctrl + K'}
                         </span>
                     </div>
                 </Command>

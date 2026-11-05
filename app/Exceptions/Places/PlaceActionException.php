@@ -2,7 +2,7 @@
 
 namespace App\Exceptions\Places;
 
-use RuntimeException;
+use App\Exceptions\DomainActionException;
 
 /**
  * Domain refusal from the places moderation layer.
@@ -11,7 +11,7 @@ use RuntimeException;
  * response code, the MCP tool maps it onto an error response. Neither knows
  * about the other, and a third caller would not have to care either.
  */
-class PlaceActionException extends RuntimeException
+class PlaceActionException extends DomainActionException
 {
     public const NOT_PENDING = 'not_pending';
 
@@ -22,17 +22,6 @@ class PlaceActionException extends RuntimeException
     public const LAST_PHOTO = 'last_photo';
 
     public const PHOTO_FILE_MISSING = 'photo_file_missing';
-
-    /**
-     * @param  array<string, mixed>  $context
-     */
-    public function __construct(
-        public readonly string $kind,
-        string $message,
-        public readonly array $context = [],
-    ) {
-        parent::__construct($message);
-    }
 
     public static function notPending(string $status): self
     {

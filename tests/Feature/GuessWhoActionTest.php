@@ -3,6 +3,7 @@
 use App\Models\GuessWhoCategory;
 use App\Models\GuessWhoCharacter;
 use App\Models\GuessWhoGame;
+use App\Models\User;
 use Illuminate\Support\Str;
 
 // The action endpoint is the WebRTC data channel's replacement, and the server
@@ -159,4 +160,45 @@ test('the snapshot reports the requesting player own view', function () {
         ]);
 
     $this->getJson("/guesswho/room/{$room->room_code}/state?sender_session=qa-X")->assertForbidden();
+});
+
+test('admin can delete a category and character even when referenced by active or finished games', function () {
+    $admin = User::factory()->create(['role' => 'superadmin']);
+
+    $room = guessWhoStarted();
+    $categoryId = $room->category_id;
+    $characterIds = $room->character_ids;
+
+    // Also create a mixed/random game (category_id = null) referencing characters from this category
+    $mixedRoom = GuessWhoGame::create([
+        'room_code' => (string) Str::uuid(),
+        'category_id' => null,
+        'character_ids' => $characterIds,
+        'player_1_session' => 'mix-A',
+        'player_2_session' => 'mix-B',
+        'player_1_character_id' => $characterIds[0],
+        'player_2_character_id' => $characterIds[2],
+        'status' => 'finished',
+    ]);
+
+    // Deleting a single character referenced by games succeeds without FK error
+    $this->actingAs($admin)
+        ->from('/admin/guesswho')
+        ->delete("/api/v1/admin/guesswho/characters/{$characterIds[0]}")
+        ->assertRedirect('/admin/guesswho');
+
+    expect(GuessWhoCharacter::find($characterIds[0]))->toBeNull();
+    expect($room->fresh()->player_1_character_id)->toBeNull();
+    expect($mixedRoom->fresh()->player_1_character_id)->toBeNull();
+
+    // Deleting the entire category succeeds even when remaining characters are referenced by games
+    $this->actingAs($admin)
+        ->from('/admin/guesswho')
+        ->delete("/api/v1/admin/guesswho/categories/{$categoryId}")
+        ->assertRedirect('/admin/guesswho');
+
+    expect(GuessWhoCategory::find($categoryId))->toBeNull();
+    expect(GuessWhoCharacter::where('category_id', $categoryId)->count())->toBe(0);
+    expect(GuessWhoGame::find($room->id))->toBeNull();
+    expect($mixedRoom->fresh()->player_2_character_id)->toBeNull();
 });

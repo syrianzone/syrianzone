@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Exceptions\Directories\DirectoryActionException;
 use App\Services\SyOfficial\SyOfficialDirectoryService;
 use App\Services\SyOfficial\SyOfficialPresenter;
 use Closure;
@@ -15,8 +14,9 @@ use Symfony\Component\HttpFoundation\Response;
  *
  * This class is now only a transport adapter: validation, then a delegation to
  * SyOfficialDirectoryService. The same service backs the agent MCP tools, so a
- * rule enforced here is enforced there too. Do not re-inline domain logic in
- * this file.
+ * rule enforced here is enforced there too. Domain refusals
+ * (DirectoryActionException) are rendered into standardized HTTP/JSON responses
+ * by bootstrap/app.php.
  */
 class SyOfficialAdminController extends Controller
 {
@@ -148,9 +148,9 @@ class SyOfficialAdminController extends Controller
             'orders.*.order_column' => 'required|integer',
         ]);
 
-        return $this->writeJson(
-            fn () => $this->directory->reorderCategories($validated['orders']),
-        );
+        $this->directory->reorderCategories($validated['orders']);
+
+        return response()->json(['message' => 'تم إعادة الترتيب بنجاح']);
     }
 
     public function reorderEntities(Request $request): Response
@@ -161,46 +161,15 @@ class SyOfficialAdminController extends Controller
             'orders.*.order_column' => 'required|integer',
         ]);
 
-        return $this->writeJson(
-            fn () => $this->directory->reorderEntities($validated['orders']),
-        );
-    }
-
-    /**
-     * Run a domain action and redirect back with the admin's success toast.
-     *
-     * The service refuses with DirectoryActionException instead of calling
-     * abort() or findOrFail(), so that the MCP tools can report the same
-     * refusals in agent language. This is where that becomes an HTTP status
-     * again: a missing id is a 404, anything else is a 422 with the message.
-     */
-    private function write(Closure $action, string $success): RedirectResponse
-    {
-        try {
-            $action();
-        } catch (DirectoryActionException $e) {
-            if (in_array($e->kind, [DirectoryActionException::NOT_FOUND, DirectoryActionException::CATEGORY_NOT_FOUND], true)) {
-                abort(404, $e->getMessage());
-            }
-
-            return response()->json(['message' => $e->getMessage()], $e->httpStatus());
-        }
-
-        return redirect()->back()->with('success', $success);
-    }
-
-    private function writeJson(Closure $action): Response
-    {
-        try {
-            $action();
-        } catch (DirectoryActionException $e) {
-            if (in_array($e->kind, [DirectoryActionException::NOT_FOUND, DirectoryActionException::CATEGORY_NOT_FOUND], true)) {
-                abort(404, $e->getMessage());
-            }
-
-            return response()->json(['message' => $e->getMessage()], $e->httpStatus());
-        }
+        $this->directory->reorderEntities($validated['orders']);
 
         return response()->json(['message' => 'تم إعادة الترتيب بنجاح']);
+    }
+
+    private function write(Closure $action, string $success): RedirectResponse
+    {
+        $action();
+
+        return redirect()->back()->with('success', $success);
     }
 }

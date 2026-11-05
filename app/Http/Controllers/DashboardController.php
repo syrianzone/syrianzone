@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Exceptions\Users\UserModerationException;
 use App\Models\Poll;
 use App\Models\Route;
 use App\Models\RouteDraft;
@@ -101,6 +100,14 @@ class DashboardController extends Controller
 
         $user->update($data);
 
+        if ($request->bearerToken() !== null) {
+            return response()->json([
+                'ok' => true,
+                'message' => 'تم تحديث الحساب بنجاح',
+                'user' => \App\Http\Middleware\HandleInertiaRequests::userPayload($user->fresh()),
+            ]);
+        }
+
         return back()->with('success', 'تم تحديث الحساب بنجاح');
     }
 
@@ -155,9 +162,14 @@ class DashboardController extends Controller
         // Remove hosted avatars so R2 does not keep avatars/{id}/* forever.
         $avatars->deleteForUser($user);
 
-        Auth::logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        // Revoke all Sanctum tokens (mobile / API) belonging to the user.
+        $user->tokens()->delete();
+
+        Auth::guard('web')->logout();
+        if ($request->hasSession()) {
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
 
         $user->delete(); // Triggers soft delete
 
@@ -178,14 +190,10 @@ class DashboardController extends Controller
         //
         // The refusals themselves live in the service, shared with the agent
         // tool, so the dashboard and the MCP surface cannot diverge on who is
-        // bannable.
+        // bannable. UserModerationException is rendered by bootstrap/app.php.
         $userToBan = User::findOrFail($id);
 
-        try {
-            $userToBan = $moderation->toggleBanned($userToBan, $request->user());
-        } catch (UserModerationException $e) {
-            return response()->json(['message' => $e->getMessage()], $e->httpStatus());
-        }
+        $userToBan = $moderation->toggleBanned($userToBan, $request->user());
 
         return response()->json([
             'ok' => true,

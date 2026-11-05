@@ -5,8 +5,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/Components/ui/table';
 import { Badge } from '@/Components/ui/badge';
 import { FilterChip } from '@/Components/ui/filter-chip';
+import { Facebook, Twitter } from '@/Components/ui/icons';
 import type { Member2026 } from './members2026';
-import { AGE_LABEL, ageGroupOf } from './ParliamentChart2026';
+import { AGE_LABEL, ageGroupOf, SOCIAL_LABEL, socialGroupOf } from './ParliamentChart2026';
 
 const STATUS_LABEL: Record<string, string> = { active: 'نشط', resigned: 'مستقيل', dead: 'متوفى', inactive: 'غير نشط' };
 
@@ -15,16 +16,18 @@ interface TableFilters {
     gender: string;
     selection: string;
     age: string;
+    social: string;
     onGov: (v: string) => void;
     onGender: (v: string) => void;
     onSelection: (v: string) => void;
     onAge: (v: string) => void;
+    onSocial: (v: string) => void;
 }
 
 export default function MemberTable2026({ members, filters }: { members: Member2026[]; filters: TableFilters }) {
     const [q, setQ] = useState('');
     const [status, setStatus] = useState('active');
-    const { gov, gender, selection, age, onGov, onGender, onSelection, onAge } = filters;
+    const { gov, gender, selection, age, social, onGov, onGender, onSelection, onAge, onSocial } = filters;
 
     const govs = useMemo(() => Array.from(new Set(members.map((m) => m.governorate_ar).filter(Boolean))).sort(), [members]);
 
@@ -36,10 +39,11 @@ export default function MemberTable2026({ members, filters }: { members: Member2
                 if (gender !== 'all' && m.gender !== gender) return false;
                 if (selection !== 'all' && m.selection_method !== selection) return false;
                 if (age !== 'all' && ageGroupOf(m) !== age) return false;
+                if (social !== 'all' && socialGroupOf(m) !== social) return false;
                 if (q && !m.name_ar.includes(q.trim())) return false;
                 return true;
             }),
-        [members, q, gov, gender, selection, age, status],
+        [members, q, gov, gender, selection, age, social, status],
     );
 
 
@@ -62,7 +66,7 @@ export default function MemberTable2026({ members, filters }: { members: Member2
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
                         <Input aria-label="بحث بالاسم..." placeholder="بحث بالاسم..." value={q} onChange={(e) => setQ(e.target.value)} />
                         <Select value={gov} onValueChange={onGov}>
                             <SelectTrigger aria-label="المحافظة"><SelectValue placeholder="المحافظة" /></SelectTrigger>
@@ -80,6 +84,10 @@ export default function MemberTable2026({ members, filters }: { members: Member2
                             <SelectTrigger aria-label="الفئة العمرية"><SelectValue placeholder="الفئة العمرية" /></SelectTrigger>
                             <SelectContent><SelectItem value="all">كل الأعمار</SelectItem>{Object.entries(AGE_LABEL).filter(([k]) => k !== 'غير محدد').map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent>
                         </Select>
+                        <Select value={social} onValueChange={onSocial}>
+                            <SelectTrigger aria-label="التواصل الاجتماعي"><SelectValue placeholder="التواصل الاجتماعي" /></SelectTrigger>
+                            <SelectContent><SelectItem value="all">كل الحسابات</SelectItem>{Object.entries(SOCIAL_LABEL).map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent>
+                        </Select>
                         <Select value={status} onValueChange={setStatus}>
                             <SelectTrigger aria-label="الحالة"><SelectValue placeholder="الحالة" /></SelectTrigger>
                             <SelectContent>{Object.entries(STATUS_LABEL).map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent>
@@ -87,7 +95,7 @@ export default function MemberTable2026({ members, filters }: { members: Member2
                     </div>
                     <div className="overflow-x-auto rounded-md border border-border">
                         <Table>
-                            <TableHeader><TableRow><TableHead className="text-right">الاسم</TableHead><TableHead className="text-right">المحافظة</TableHead><TableHead className="text-right">الجنس</TableHead><TableHead className="text-right">سنة الميلاد</TableHead><TableHead className="text-right">طريقة التعيين</TableHead></TableRow></TableHeader>
+                            <TableHeader><TableRow><TableHead className="text-right">الاسم</TableHead><TableHead className="text-right">المحافظة</TableHead><TableHead className="text-right">الجنس</TableHead><TableHead className="text-right">سنة الميلاد</TableHead><TableHead className="text-right">طريقة التعيين</TableHead><TableHead className="text-right">التواصل الاجتماعي</TableHead></TableRow></TableHeader>
                             <TableBody>
                                 {filtered.map((m) => (
                                     <TableRow key={m.member_number || m.name_ar}>
@@ -96,9 +104,41 @@ export default function MemberTable2026({ members, filters }: { members: Member2
                                         <TableCell>{m.gender === 'F' ? 'أنثى' : 'ذكر'}</TableCell>
                                         <TableCell>{m.birth_year}</TableCell>
                                         <TableCell><Badge variant="outline">{m.selection_method || '—'}</Badge></TableCell>
+                                        <TableCell>
+                                            {(m.facebook_url && m.facebook_url.trim()) || (m.twitter_url && m.twitter_url.trim()) ? (
+                                                <div className="flex items-center gap-1">
+                                                    {m.facebook_url && m.facebook_url.trim() && (
+                                                        <a
+                                                            href={m.facebook_url.trim()}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            title={`فيسبوك — ${m.name_ar}`}
+                                                            aria-label={`صفحة فيسبوك للعضو ${m.name_ar}`}
+                                                            className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:text-primary hover:bg-muted transition"
+                                                        >
+                                                            <Facebook className="h-4 w-4" />
+                                                        </a>
+                                                    )}
+                                                    {m.twitter_url && m.twitter_url.trim() && (
+                                                        <a
+                                                            href={m.twitter_url.trim()}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            title={`إكس (تويتر) — ${m.name_ar}`}
+                                                            aria-label={`حساب إكس (تويتر) للعضو ${m.name_ar}`}
+                                                            className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:text-primary hover:bg-muted transition"
+                                                        >
+                                                            <Twitter className="h-4 w-4" />
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <span className="text-muted-foreground">—</span>
+                                            )}
+                                        </TableCell>
                                     </TableRow>
                                 ))}
-                                {filtered.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-10">لا توجد نتائج</TableCell></TableRow>}
+                                {filtered.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-10">لا توجد نتائج</TableCell></TableRow>}
                             </TableBody>
                         </Table>
                     </div>

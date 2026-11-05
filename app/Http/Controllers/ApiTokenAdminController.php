@@ -146,6 +146,7 @@ class ApiTokenAdminController extends Controller
             ->latest('id')
             ->limit(200)
             ->get()
+            ->reject(fn (PersonalAccessToken $token) => $token->abilities === ['mobile'])
             ->map(fn (PersonalAccessToken $token) => [
                 'id' => $token->id,
                 'name' => $token->name,

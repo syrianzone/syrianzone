@@ -43,6 +43,13 @@ ENV PHP_FPM_REQUEST_TERMINATE_TIMEOUT=60s
 ENV PHP_FPM_PM_MAX_CHILDREN=50
 ENV PHP_FPM_PM=ondemand
 
+# Security hardening against PHP RCE advisories CVE-2026-109618 & CVE-2026-109619
+# (https://www.php.net/archive/2026.php#2026-10-21-5)
+ENV PHP_MEMORY_LIMIT=-1
+ENV PHP_POST_MAX_SIZE=64M
+ENV PHP_UPLOAD_MAX_FILE_SIZE=52M
+ENV NGINX_CLIENT_MAX_BODY_SIZE=64M
+
 # Performance & Stability (Nginx)
 ENV NGINX_FASTCGI_READ_TIMEOUT=65s
 
@@ -57,6 +64,17 @@ HEALTHCHECK --interval=1m --timeout=10s --retries=3 \
     CMD curl -f http://localhost:8080/healthcheck || exit 1
 
 USER root
+
+# Enforce PHP advisory mitigations at PHP INI and FPM pool levels (cannot be
+# overridden at runtime via ini_set() or .env PHP_MEMORY_LIMIT):
+# - CVE-2026-109618: php_admin_value[memory_limit] = -1 removes the controllable
+#   PHP memory limit bailout path; container mem_limit (4g) acts as cgroup boundary.
+# - CVE-2026-109619: session.upload_progress.enabled = 0 disables upload progress
+#   session state initialization before request parsing.
+RUN printf "; CVE-2026-109618 & CVE-2026-109619 mitigations\nmemory_limit = -1\nsession.upload_progress.enabled = 0\n" \
+        > /usr/local/etc/php/conf.d/zz-security-mitigations.ini \
+    && printf "\n; CVE-2026-109618 & CVE-2026-109619 mitigations\nphp_admin_value[memory_limit] = -1\nphp_admin_flag[session.upload_progress.enabled] = off\n" \
+        >> /usr/local/etc/php-fpm.d/docker-php-serversideup-pool.conf
 
 # mariadb-client: spatie/laravel-backup shells out to mysqldump; without it the
 # scheduled db backups fail silently. Debian ships no Oracle mysql-client; the

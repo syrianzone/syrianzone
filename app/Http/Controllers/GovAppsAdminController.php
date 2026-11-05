@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Exceptions\Directories\DirectoryActionException;
 use App\Services\GovApps\GovAppPresenter;
 use App\Services\GovApps\GovAppService;
 use Closure;
@@ -14,8 +13,8 @@ use Symfony\Component\HttpFoundation\Response;
  * HTTP adapter for the government apps admin.
  *
  * Every write delegates to GovAppService, which is also what the agent MCP
- * tools call. This class is left with request validation, the response shape,
- * and the domain-exception to status-code mapping — nothing else.
+ * tools call. Domain refusals (DirectoryActionException) are rendered into
+ * standardized HTTP/JSON responses by bootstrap/app.php.
  */
 class GovAppsAdminController extends Controller
 {
@@ -98,36 +97,15 @@ class GovAppsAdminController extends Controller
             'orders.*.order_column' => 'required|integer',
         ]);
 
-        return $this->writeJson(fn () => $this->apps->reorder($validated['orders']));
+        $this->apps->reorder($validated['orders']);
+
+        return response()->json(['message' => 'تم إعادة الترتيب بنجاح']);
     }
 
     private function write(Closure $action, string $success): RedirectResponse
     {
-        try {
-            $action();
-        } catch (DirectoryActionException $e) {
-            if ($e->kind === DirectoryActionException::NOT_FOUND) {
-                abort(404, $e->getMessage());
-            }
-
-            return response()->json(['message' => $e->getMessage()], $e->httpStatus());
-        }
+        $action();
 
         return redirect()->back()->with('success', $success);
-    }
-
-    private function writeJson(Closure $action): Response
-    {
-        try {
-            $action();
-        } catch (DirectoryActionException $e) {
-            if ($e->kind === DirectoryActionException::NOT_FOUND) {
-                abort(404, $e->getMessage());
-            }
-
-            return response()->json(['message' => $e->getMessage()], $e->httpStatus());
-        }
-
-        return response()->json(['message' => 'تم إعادة الترتيب بنجاح']);
     }
 }

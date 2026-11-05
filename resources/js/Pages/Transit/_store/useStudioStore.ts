@@ -92,11 +92,17 @@ export const useStudioStore = create<StudioState>((set) => ({
       if (f.geometry?.type === 'LineString') {
         drawnLine = f.geometry.coordinates as [number, number][]
       } else if (f.geometry?.type === 'Point') {
-        stops.push({
-          id: Date.now() + stops.length,
-          coordinates: f.geometry.coordinates as [number, number],
-          nameAr: f.properties?.nameAr ?? '',
-        })
+        let coords = f.geometry.coordinates
+        while (Array.isArray(coords) && Array.isArray(coords[0])) {
+          coords = coords[0]
+        }
+        if (Array.isArray(coords) && coords.length >= 2 && typeof coords[0] === 'number' && typeof coords[1] === 'number') {
+          stops.push({
+            id: Date.now() + stops.length,
+            coordinates: [coords[0], coords[1]],
+            nameAr: f.properties?.nameAr ?? '',
+          })
+        }
       }
     }
     const isPublishedRoute = !!draft.is_published_route

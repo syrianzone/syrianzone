@@ -216,13 +216,15 @@ the tools call:
   plus the photo rules
 - `app/Services/Places/PlacePresenter.php` — the one serialisation shape, so an
   agent and a human never see different fields
-- `app/Exceptions/Places/PlaceActionException.php` — refusals carry a `kind`, so
-  the controller maps to a status code and the tool maps to an agent-readable
-  sentence without either knowing about the other
+- `app/Exceptions/DomainActionException.php` (subclassed by
+  `app/Exceptions/Places/PlaceActionException.php`) — refusals carry a `kind`, so
+  `bootstrap/app.php` renders them centrally to `{ "message": $e->getMessage() }`
+  with `$e->httpStatus()` on HTTP requests and the tool maps them to an
+  agent-readable sentence without either knowing about the other
 
 The same pattern, same three-part shape, now covers three more modules:
 
-| Module | Service | Presenter | Exception |
+| Module | Service | Presenter | Exception (`extends DomainActionException`) |
 |---|---|---|---|
 | SyOfficial | `Services/SyOfficial/SyOfficialDirectoryService` | `SyOfficialPresenter` | `Exceptions/Directories/DirectoryActionException` |
 | Gov Apps | `Services/GovApps/GovAppService` | `GovAppPresenter` | `Exceptions/Directories/DirectoryActionException` |
@@ -234,12 +236,15 @@ moderated; at most 10 photos and at least 1; both photo-count guards run under
 a row lock on the place; every change that can alter the map payload forgets the
 `places:map` cache.
 
-Each of the three admin controllers is now a thin HTTP adapter that keeps only
-its scope checks, its per-route validation, and the exact status codes the
-dashboard already depends on. `TransitAdminController::updateRouteStatus`, for
-example, answers **200** for "already that status" while every other refusal in
-the module answers 4xx — preserved deliberately rather than normalised, because
-the admin form treats it as a successful no-op.
+Each of the admin controllers (`PlaceAdminController`, `GovAppsAdminController`,
+`SyOfficialAdminController`, `DashboardController`, `TransitAdminController`) is
+a thin HTTP adapter that keeps only its scope checks and per-route validation,
+letting `DomainActionException` bubble up to the centralized renderer in
+`bootstrap/app.php`. `TransitAdminController::updateRouteStatus`, for example,
+catches `STATUS_UNCHANGED` specifically to answer **200** for "already that
+status" while every other refusal in the module bubbles up and answers 4xx —
+preserved deliberately rather than normalised, because the admin form treats it
+as a successful no-op.
 
 ### Directory specifics worth knowing
 

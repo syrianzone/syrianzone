@@ -2,7 +2,7 @@
 
 namespace App\Exceptions\Transit;
 
-use RuntimeException;
+use App\Exceptions\DomainActionException;
 
 /**
  * Domain refusal from the transit moderation service.
@@ -15,7 +15,7 @@ use RuntimeException;
  * correct answer to the question, and the agent should be able to recover from
  * it by reading the draft's current state — not see a 500.
  */
-class TransitActionException extends RuntimeException
+class TransitActionException extends DomainActionException
 {
     /** The draft is no longer awaiting review. */
     public const DRAFT_NOT_PENDING = 'draft_not_pending';
@@ -34,17 +34,6 @@ class TransitActionException extends RuntimeException
 
     /** A split was asked for at the first or last stop, or at a foreign stop. */
     public const INVALID_SPLIT_STOP = 'invalid_split_stop';
-
-    /**
-     * @param  array<string, mixed>  $context
-     */
-    public function __construct(
-        public readonly string $kind,
-        string $message,
-        public readonly array $context = [],
-    ) {
-        parent::__construct($message);
-    }
 
     public static function draftNotPending(string $currentStatus, int $draftId): self
     {

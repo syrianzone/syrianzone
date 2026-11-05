@@ -50,16 +50,22 @@ export default function GuessWhoAdminIndex({ categories, characters }: AdminGues
     const handleDeleteCategory = async (id: number) => {
         const ok = await confirmDialog({ title: 'حذف هذه الفئة؟', description: 'سيتم حذف الفئة وجميع شخصياتها.', destructive: true, confirmText: 'حذف' });
         if (ok) {
-            router.delete(`/api/v1/admin/guesswho/categories/${id}`);
-            notify.success('تم حذف الفئة');
+            router.delete(`/api/v1/admin/guesswho/categories/${id}`, {
+                preserveScroll: true,
+                onSuccess: () => notify.success('تم حذف الفئة'),
+                onError: () => notify.error('تعذر حذف الفئة'),
+            });
         }
     };
 
     const handleDeleteCharacter = async (id: number) => {
         const ok = await confirmDialog({ title: 'حذف هذه الشخصية؟', destructive: true, confirmText: 'حذف' });
         if (ok) {
-            router.delete(`/api/v1/admin/guesswho/characters/${id}`);
-            notify.success('تم حذف الشخصية');
+            router.delete(`/api/v1/admin/guesswho/characters/${id}`, {
+                preserveScroll: true,
+                onSuccess: () => notify.success('تم حذف الشخصية'),
+                onError: () => notify.error('تعذر حذف الشخصية'),
+            });
         }
     };
 

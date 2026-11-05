@@ -11,18 +11,24 @@ use App\Http\Controllers\Api\V1\TransitController;
 use App\Http\Controllers\Api\V1\VotingDataController;
 use App\Http\Controllers\AppIconController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BoardController;
 use App\Http\Controllers\ContributorController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EventsController;
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\HotelController;
 use App\Http\Controllers\MetricsController;
 use App\Http\Controllers\PlaceController;
 use App\Http\Controllers\PlaceDiscoveryController;
+use App\Http\Controllers\PlaceEngagementController;
 use App\Http\Controllers\PollController;
 use App\Http\Controllers\PrayerController;
+use App\Http\Controllers\QuranBookmarkController;
+use App\Http\Controllers\RadioUsageController;
 use App\Http\Controllers\RecipeController;
 use App\Http\Controllers\SiteNavigationAdminController;
 use App\Http\Controllers\TransitStudioController;
+use App\Http\Controllers\UserSettingsController;
 use App\Http\Controllers\WeatherController;
 use Illuminate\Support\Facades\Route;
 
@@ -33,7 +39,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::prefix('v1')->group(function () {
-    // 0. Cross-Platform Authentication & Dynamic Navigation Catalog
+    // 0. Cross-Platform Authentication, Account, User Preferences & Dynamic Navigation Catalog
     Route::prefix('auth')->group(function () {
         Route::post('/google/token', [AuthController::class, 'googleToken'])
             ->middleware('throttle:20,1')
@@ -52,6 +58,60 @@ Route::prefix('v1')->group(function () {
                 ->middleware('throttle:10,1')
                 ->name('api.v1.auth.logout-devices');
         });
+    });
+
+    Route::middleware('auth:sanctum')->group(function () {
+        // Shares one definition with the Inertia payload so /user and the
+        // initial page load can never disagree about the user's capabilities.
+        Route::get('/user', [AuthController::class, 'user'])
+            ->name('api.v1.user.show');
+
+        Route::patch('/account', [DashboardController::class, 'updateAccount'])
+            ->name('api.v1.account.update');
+        Route::put('/account', [DashboardController::class, 'updateAccount']);
+        Route::post('/account/avatar', [DashboardController::class, 'updateAvatar'])
+            ->middleware('throttle:10,1')
+            ->name('api.v1.account.avatar.store');
+        Route::delete('/account', [DashboardController::class, 'deleteAccount'])
+            ->name('api.v1.account.destroy');
+
+        // User settings & Quran radio usage API endpoints
+        Route::prefix('user')->group(function () {
+            Route::patch('/settings', [UserSettingsController::class, 'update'])
+                ->middleware('throttle:60,1')
+                ->name('api.v1.user.settings.update');
+            Route::put('/settings', [UserSettingsController::class, 'update'])
+                ->middleware('throttle:60,1');
+            Route::post('/settings', [UserSettingsController::class, 'update'])
+                ->middleware('throttle:60,1');
+
+            Route::post('/radio-usage', [RadioUsageController::class, 'add'])
+                ->middleware('throttle:60,1')
+                ->name('api.v1.user.radio-usage.store');
+            Route::delete('/radio-usage', [RadioUsageController::class, 'clear'])
+                ->middleware('throttle:10,1')
+                ->name('api.v1.user.radio-usage.destroy');
+        });
+
+        // Board layout sync. Session + CSRF or Sanctum Bearer token.
+        Route::get('/board', [BoardController::class, 'show'])
+            ->middleware('throttle:60,1')
+            ->name('api.v1.board.show');
+        Route::put('/board', [BoardController::class, 'update'])
+            ->middleware('throttle:60,1')
+            ->name('api.v1.board.update');
+
+        // Quran Ayah bookmarks (logged-in only). Session + CSRF or Sanctum Bearer token.
+        Route::get('/quran-bookmarks', [QuranBookmarkController::class, 'index'])
+            ->middleware('throttle:60,1')
+            ->name('api.v1.quran-bookmarks.index');
+        Route::post('/quran-bookmarks', [QuranBookmarkController::class, 'store'])
+            ->middleware('throttle:60,1')
+            ->name('api.v1.quran-bookmarks.store');
+        Route::delete('/quran-bookmarks/{surah}/{ayah}', [QuranBookmarkController::class, 'destroy'])
+            ->whereNumber('surah')->whereNumber('ayah')
+            ->middleware('throttle:60,1')
+            ->name('api.v1.quran-bookmarks.destroy');
     });
 
     Route::get('/navigation', [SiteNavigationAdminController::class, 'show'])
@@ -174,7 +234,7 @@ Route::prefix('v1')->group(function () {
         });
     });
 
-    // 4. Hidden Places (Mishwar) & HalaSyria Hotels public reads
+    // 4. Hidden Places (Mishwar) & HalaSyria Hotels public reads + authenticated writes
     // Static /places/* paths must register before /places/{id}.
     Route::middleware('throttle:60,1')->group(function () {
         Route::get('/places/map', [PlaceController::class, 'mapData'])
@@ -201,6 +261,53 @@ Route::prefix('v1')->group(function () {
         Route::get('/hotels/{id}', [HotelController::class, 'show'])
             ->whereNumber('id')
             ->name('api.v1.hotels.show');
+    });
+
+    // Hidden Places: authenticated writes (session + CSRF or Sanctum Bearer token)
+    Route::middleware('auth:sanctum')->group(function () {
+        // No per-user submission cap: moderation gates everything to the public map,
+        // so this throttle is only a flood backstop no normal use touches.
+        Route::post('/places', [PlaceController::class, 'store'])
+            ->middleware('throttle:60,1')
+            ->name('api.v1.places.store');
+        Route::get('/my/places', [PlaceController::class, 'mine'])
+            ->middleware('throttle:60,1')
+            ->name('api.v1.my.places.index');
+        // Every accepted move re-enters the moderation queue, so mirror the
+        // store() coarse shield instead of a per-minute rate.
+        Route::patch('/my/places/{id}/location', [PlaceController::class, 'updateLocation'])
+            ->whereNumber('id')->middleware('throttle:20,60')
+            ->name('api.v1.my.places.location.update');
+        // Owner mutations share the same coarse hourly shield: every accepted
+        // content change re-enters the moderation queue.
+        Route::patch('/my/places/{id}', [PlaceController::class, 'updateDetails'])
+            ->whereNumber('id')->middleware('throttle:20,60')
+            ->name('api.v1.my.places.update');
+        Route::post('/my/places/{id}/photos', [PlaceController::class, 'addPhoto'])
+            ->whereNumber('id')->middleware('throttle:20,60')
+            ->name('api.v1.my.places.photos.store');
+        Route::post('/my/places/{id}/resubmit', [PlaceController::class, 'resubmit'])
+            ->whereNumber('id')->middleware('throttle:20,60')
+            ->name('api.v1.my.places.resubmit');
+        Route::delete('/my/places/{id}', [PlaceController::class, 'destroy'])
+            ->whereNumber('id')->middleware('throttle:20,60')
+            ->name('api.v1.my.places.destroy');
+        Route::delete('/my/place-photos/{id}', [PlaceController::class, 'deletePhoto'])
+            ->whereNumber('id')->middleware('throttle:20,60')
+            ->name('api.v1.my.place-photos.destroy');
+        Route::post('/my/place-photos/{id}/rotate', [PlaceController::class, 'rotatePhoto'])
+            ->whereNumber('id')->middleware('throttle:20,60')
+            ->name('api.v1.my.place-photos.rotate');
+        Route::get('/my/saves', [PlaceEngagementController::class, 'mySaves'])
+            ->middleware('throttle:60,1')
+            ->name('api.v1.my.saves.index');
+
+        Route::post('/places/{id}/save', [PlaceEngagementController::class, 'save'])
+            ->whereNumber('id')->middleware('throttle:60,1')
+            ->name('api.v1.places.save.store');
+        Route::delete('/places/{id}/save', [PlaceEngagementController::class, 'unsave'])
+            ->whereNumber('id')->middleware('throttle:60,1')
+            ->name('api.v1.places.save.destroy');
     });
 
     // 5. Public Polls & Voting API

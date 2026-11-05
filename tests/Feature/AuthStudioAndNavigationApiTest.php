@@ -342,3 +342,69 @@ test('GET /api/v1/navigation and superadmin PUT /api/v1/admin/navigation manage 
 
     expect($this->getJson('/api/v1/navigation')->json('items'))->toHaveCount($defaultTotalCount);
 });
+
+test('user-facing /api/v1/* write routes live in api group without unconditional web CSRF and accept Bearer tokens', function () {
+    \Illuminate\Support\Facades\Storage::fake('public');
+
+    $routeNames = [
+        'api.v1.places.store',
+        'api.v1.my.places.index',
+        'api.v1.my.places.update',
+        'api.v1.my.places.location.update',
+        'api.v1.my.places.photos.store',
+        'api.v1.my.places.resubmit',
+        'api.v1.my.places.destroy',
+        'api.v1.my.place-photos.destroy',
+        'api.v1.my.place-photos.rotate',
+        'api.v1.my.saves.index',
+        'api.v1.places.save.store',
+        'api.v1.places.save.destroy',
+        'api.v1.board.show',
+        'api.v1.board.update',
+        'api.v1.quran-bookmarks.index',
+        'api.v1.quran-bookmarks.store',
+        'api.v1.quran-bookmarks.destroy',
+        'api.v1.account.update',
+        'api.v1.account.avatar.store',
+        'api.v1.account.destroy',
+        'api.v1.user.settings.update',
+        'api.v1.user.radio-usage.store',
+        'api.v1.user.radio-usage.destroy',
+    ];
+
+    foreach ($routeNames as $name) {
+        $route = \Illuminate\Support\Facades\Route::getRoutes()->getByName($name);
+        expect($route)->not->toBeNull("Missing named route {$name}");
+        expect($route->middleware())->toContain('api')
+            ->not->toContain('web');
+    }
+
+    $user = User::factory()->create(['role' => 'user']);
+    $token = $user->createToken('Flutter Client', ['mobile'])->plainTextToken;
+
+    // POST /api/v1/places with Bearer token
+    $this->withHeader('Authorization', 'Bearer '.$token)
+        ->post('/api/v1/places', [
+            'name' => 'مقهى النوفرة',
+            'category' => 'cultural',
+            'description' => 'مقهى تاريخي قديم في دمشق القديمة قرب الجامع الأموي',
+            'lat' => 33.5104,
+            'lng' => 36.2913,
+            'photos' => [\Illuminate\Http\UploadedFile::fake()->image('photo.jpg', 640, 480)],
+        ], ['Accept' => 'application/json'])
+        ->assertCreated()
+        ->assertJsonPath('status', 'pending');
+
+    // PATCH /api/v1/user/settings with Bearer token
+    $this->withHeader('Authorization', 'Bearer '.$token)
+        ->patchJson('/api/v1/user/settings', ['settings' => ['theme' => 'dark']])
+        ->assertOk()
+        ->assertJsonPath('settings.theme', 'dark');
+
+    // POST /api/v1/quran-bookmarks with Bearer token
+    $this->withHeader('Authorization', 'Bearer '.$token)
+        ->postJson('/api/v1/quran-bookmarks', ['surah' => 1, 'ayah' => 1, 'page' => 1, 'juz' => 1])
+        ->assertOk()
+        ->assertJsonPath('saved', true);
+});
+

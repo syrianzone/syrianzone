@@ -54,22 +54,16 @@ Generated from `routes/web.php` and `routes/api.php`. Grouped by feature area, m
 - User settings: canonical `PATCH|PUT|POST /api/v1/user/settings` (legacy `POST /api/user/settings`)
 - `GET /dev/impersonate/{role}` (dev only)
 
-## Authenticated (`web.php`, session+CSRF or Sanctum Bearer token)
+## Authenticated (`web.php` & `api.php`)
 
-- Dashboard: `GET /dashboard`
-- Account: canonical `GET /api/v1/user`, `PATCH|PUT /api/v1/account`, `POST /api/v1/account/avatar` (10/min), `DELETE /api/v1/account` (legacy `/api/user`, `POST /api/account/update|avatar|delete`)
-- Board sync: `GET|PUT /api/v1/board` (throttle 60/min)
-- Superadmin:
+- Dashboard (`web.php`): `GET /dashboard`
+- Legacy account aliases (`web.php`): `/api/user`, `POST /api/account/update|avatar|delete`, `POST /api/user/settings`, `POST /api/user/radio-usage(/clear)`
+- Superadmin (`web.php`):
   - Staff CRUD: canonical `GET|POST /api/v1/admin/admins`, `DELETE /api/v1/admin/admins/{id}` (legacy `/api/admins[/{id}]`)
   - Asset explorer: `/admin/assets` + canonical `GET|POST|DELETE /api/v1/admin/assets` & `GET /api/v1/admin/assets/manifest` (legacy `/api/v1/admin/assets/(list|upload|delete)`)
   - Site navigation & icon catalog: `/admin/navigation` + `GET|PUT /api/v1/admin/navigation`
   - Homepage popup: `/admin/site-popup` + `GET|PUT /api/v1/admin/site-popup`
   - Agent API tokens: `/admin/api-tokens` + `POST /api/v1/admin/api-tokens`, `DELETE /api/v1/admin/api-tokens/{id}`, `DELETE /api/v1/admin/users/{userId}/api-tokens` (legacy `POST /api/v1/admin/api-tokens/revoke-all/{userId}`)
-
-### Mishwar owner endpoints (`auth:web,sanctum`, `/api/v1/*`)
-- `POST /places` (submit), `GET /my/places`, `PATCH /my/places/{id}`, `PATCH .../location`, `POST .../photos`, `POST .../resubmit`, `DELETE /my/places/{id}`
-- Photo ops: `DELETE|POST /my/place-photos/{id}(/rotate)`
-- Saves: `GET /my/saves`, `POST|DELETE /places/{id}/save`
 
 ### Admin moderation panels (capability-gated)
 
@@ -102,6 +96,11 @@ See **[docs/reference/api.md](api.md)** for full payload schemas and parameter t
 - **Auth (`/api/v1/auth/*`)**:
   - `POST /api/v1/auth/google/token` (alias `POST /api/v1/auth/google`)
   - `GET /api/v1/auth/user`, `POST /api/v1/auth/logout`, `POST /api/v1/auth/logout-devices`
+- **Account, Preferences, Board & Bookmarks (`auth:sanctum`)**:
+  - Account: `GET /api/v1/user`, `PATCH|PUT /api/v1/account`, `POST /api/v1/account/avatar` (10/min), `DELETE /api/v1/account`
+  - User settings & radio usage: `PATCH|PUT|POST /api/v1/user/settings` (60/min), `POST /api/v1/user/radio-usage` (60/min), `DELETE /api/v1/user/radio-usage` (10/min)
+  - Board sync: `GET|PUT /api/v1/board` (60/min)
+  - Quran bookmarks: `GET|POST /api/v1/quran-bookmarks`, `DELETE /api/v1/quran-bookmarks/{surah}/{ayah}` (60/min)
 - **Navigation & Icon Catalog (`/api/v1/navigation`)**:
   - `GET /api/v1/navigation` (optional `?surface=home|navbar|mobile_menubar` & `?include_disabled=1`)
 - **Search**:
@@ -120,9 +119,10 @@ See **[docs/reference/api.md](api.md)** for full payload schemas and parameter t
 - **Polls & Voting (`/api/v1/polls/*`)**:
   - `GET /api/v1/polls`, `GET /api/v1/polls/{idOrSlug}`, `GET .../candidates`, `GET .../scores`, `GET .../ballots`, `GET .../leaderboard`
   - `POST /api/v1/polls/{idOrSlug}/ballots` & `POST /api/v1/polls/ballots` (legacy `POST /api/submit`, `GET /api/polls*`)
-- **Places & Hotels (`/api/v1/places/*`, `/api/v1/hotels/*`)**:
-  - `GET /api/v1/places`, `/places/map`, `/places/nearby`, `/places/geocode`, `/places/photos`, `/places/{id}`, `/guides`
-  - `GET /api/v1/hotels`, `/hotels/map`, `/hotels/{id}`
+- **Places & Hotels (`/api/v1/places/*`, `/api/v1/my/*`, `/api/v1/hotels/*`)**:
+  - Public reads: `GET /api/v1/places`, `/places/map`, `/places/nearby`, `/places/geocode`, `/places/photos`, `/places/{id}`, `/guides`
+  - Authenticated writes & saves (`auth:sanctum`): `POST /api/v1/places`, `GET /api/v1/my/places`, `PATCH /api/v1/my/places/{id}`, `PATCH .../location`, `POST .../photos`, `POST .../resubmit`, `DELETE /api/v1/my/places/{id}`, `DELETE|POST /api/v1/my/place-photos/{id}(/rotate)`, `GET /api/v1/my/saves`, `POST|DELETE /api/v1/places/{id}/save`
+  - Hotels: `GET /api/v1/hotels`, `/hotels/map`, `/hotels/{id}`
 - **Compass (`/api/v1/compass/*`)**:
   - `GET|POST|DELETE /api/v1/compass/results[/{id}]`, `POST|GET /api/v1/compass/shares[/{shareId}]` (legacy `/share`), `POST|DELETE /api/v1/compass/stats`
 - **Atlas, Contributors, Widgets & Utilities (`/api/v1/*` + legacy `/api/*`)**:

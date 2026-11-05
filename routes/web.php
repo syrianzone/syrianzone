@@ -23,9 +23,7 @@ use App\Http\Controllers\PhonebookAdminController;
 use App\Http\Controllers\PhonebookController;
 use App\Http\Controllers\PlaceAdminController;
 use App\Http\Controllers\PlaceController;
-use App\Http\Controllers\PlaceEngagementController;
 use App\Http\Controllers\PollController;
-use App\Http\Controllers\QuranBookmarkController;
 use App\Http\Controllers\RadioUsageController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\SiteNavigationAdminController;
@@ -248,43 +246,6 @@ Route::middleware('auth:web,sanctum')->group(function () {
     // 1. Unified User Dashboard Views and Actions
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Canonical versioned account & profile routes (/api/v1/*)
-    Route::prefix('api/v1')->group(function () {
-        // Shares one definition with the Inertia payload so /user and the
-        // initial page load can never disagree about the user's capabilities.
-        Route::get('/user', [AuthController::class, 'user'])
-            ->name('api.v1.user.show');
-
-        Route::patch('/account', [DashboardController::class, 'updateAccount'])
-            ->name('api.v1.account.update');
-        Route::put('/account', [DashboardController::class, 'updateAccount']);
-        Route::post('/account/avatar', [DashboardController::class, 'updateAvatar'])
-            ->middleware('throttle:10,1')
-            ->name('api.v1.account.avatar.store');
-        Route::delete('/account', [DashboardController::class, 'deleteAccount'])
-            ->name('api.v1.account.destroy');
-
-        // Board layout sync. Session + CSRF or Sanctum Bearer token.
-        Route::get('/board', [BoardController::class, 'show'])
-            ->middleware('throttle:60,1')
-            ->name('api.v1.board.show');
-        Route::put('/board', [BoardController::class, 'update'])
-            ->middleware('throttle:60,1')
-            ->name('api.v1.board.update');
-
-        // Quran Ayah bookmarks (logged-in only). Session + CSRF or Sanctum Bearer token.
-        Route::get('/quran-bookmarks', [QuranBookmarkController::class, 'index'])
-            ->middleware('throttle:60,1')
-            ->name('api.v1.quran-bookmarks.index');
-        Route::post('/quran-bookmarks', [QuranBookmarkController::class, 'store'])
-            ->middleware('throttle:60,1')
-            ->name('api.v1.quran-bookmarks.store');
-        Route::delete('/quran-bookmarks/{surah}/{ayah}', [QuranBookmarkController::class, 'destroy'])
-            ->whereNumber('surah')->whereNumber('ayah')
-            ->middleware('throttle:60,1')
-            ->name('api.v1.quran-bookmarks.destroy');
-    });
-
     // Legacy unversioned account & user aliases (/api/*)
     Route::post('/api/account/update', [DashboardController::class, 'updateAccount']);
     Route::post('/api/account/avatar', [DashboardController::class, 'updateAvatar'])->middleware('throttle:10,1');
@@ -351,53 +312,6 @@ Route::middleware('auth:web,sanctum')->group(function () {
             ->name('api.v1.admin.users.api-tokens.destroy-all');
         Route::post('/api/v1/admin/api-tokens/revoke-all/{userId}', [ApiTokenAdminController::class, 'revokeAllForUser'])
             ->whereNumber('userId');
-    });
-
-    // Hidden Places: authenticated writes (session + CSRF or Sanctum Bearer token)
-    Route::prefix('api/v1')->group(function () {
-        // No per-user submission cap: moderation gates everything to the public map,
-        // so this throttle is only a flood backstop no normal use touches.
-        Route::post('/places', [PlaceController::class, 'store'])
-            ->middleware('throttle:60,1')
-            ->name('api.v1.places.store');
-        Route::get('/my/places', [PlaceController::class, 'mine'])
-            ->middleware('throttle:60,1')
-            ->name('api.v1.my.places.index');
-        // Every accepted move re-enters the moderation queue, so mirror the
-        // store() coarse shield instead of a per-minute rate.
-        Route::patch('/my/places/{id}/location', [PlaceController::class, 'updateLocation'])
-            ->whereNumber('id')->middleware('throttle:20,60')
-            ->name('api.v1.my.places.location.update');
-        // Owner mutations share the same coarse hourly shield: every accepted
-        // content change re-enters the moderation queue.
-        Route::patch('/my/places/{id}', [PlaceController::class, 'updateDetails'])
-            ->whereNumber('id')->middleware('throttle:20,60')
-            ->name('api.v1.my.places.update');
-        Route::post('/my/places/{id}/photos', [PlaceController::class, 'addPhoto'])
-            ->whereNumber('id')->middleware('throttle:20,60')
-            ->name('api.v1.my.places.photos.store');
-        Route::post('/my/places/{id}/resubmit', [PlaceController::class, 'resubmit'])
-            ->whereNumber('id')->middleware('throttle:20,60')
-            ->name('api.v1.my.places.resubmit');
-        Route::delete('/my/places/{id}', [PlaceController::class, 'destroy'])
-            ->whereNumber('id')->middleware('throttle:20,60')
-            ->name('api.v1.my.places.destroy');
-        Route::delete('/my/place-photos/{id}', [PlaceController::class, 'deletePhoto'])
-            ->whereNumber('id')->middleware('throttle:20,60')
-            ->name('api.v1.my.place-photos.destroy');
-        Route::post('/my/place-photos/{id}/rotate', [PlaceController::class, 'rotatePhoto'])
-            ->whereNumber('id')->middleware('throttle:20,60')
-            ->name('api.v1.my.place-photos.rotate');
-        Route::get('/my/saves', [PlaceEngagementController::class, 'mySaves'])
-            ->middleware('throttle:60,1')
-            ->name('api.v1.my.saves.index');
-
-        Route::post('/places/{id}/save', [PlaceEngagementController::class, 'save'])
-            ->whereNumber('id')->middleware('throttle:60,1')
-            ->name('api.v1.places.save.store');
-        Route::delete('/places/{id}/save', [PlaceEngagementController::class, 'unsave'])
-            ->whereNumber('id')->middleware('throttle:60,1')
-            ->name('api.v1.places.save.destroy');
     });
 
     // 2. Polls & General Admin Panel (accessible to core admins and superadmins)
@@ -884,24 +798,6 @@ Route::middleware('auth:web,sanctum')->group(function () {
                 Route::post('/{id}/toggle', [CompassAdminController::class, 'togglePersona'])->whereNumber('id');
             });
     });
-});
-
-// User settings & Quran radio usage API endpoints (canonical /api/v1/* + legacy /api/*)
-Route::prefix('api/v1/user')->group(function () {
-    Route::patch('/settings', [UserSettingsController::class, 'update'])
-        ->middleware('throttle:60,1')
-        ->name('api.v1.user.settings.update');
-    Route::put('/settings', [UserSettingsController::class, 'update'])
-        ->middleware('throttle:60,1');
-    Route::post('/settings', [UserSettingsController::class, 'update'])
-        ->middleware('throttle:60,1');
-
-    Route::post('/radio-usage', [RadioUsageController::class, 'add'])
-        ->middleware('throttle:60,1')
-        ->name('api.v1.user.radio-usage.store');
-    Route::delete('/radio-usage', [RadioUsageController::class, 'clear'])
-        ->middleware('throttle:10,1')
-        ->name('api.v1.user.radio-usage.destroy');
 });
 
 // Legacy unversioned user settings & radio usage endpoints

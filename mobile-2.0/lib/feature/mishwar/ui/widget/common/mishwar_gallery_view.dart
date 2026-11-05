@@ -107,7 +107,7 @@ class _MishwarGalleryViewState extends State<MishwarGalleryView> {
           child: RefreshIndicator(
             color: const Color(0xFF965B0E),
             onRefresh: () async {
-              context.read<MishwarCubit>().fetchPlaces(refresh: true);
+              await context.read<MishwarCubit>().fetchPlaces(refresh: true);
             },
             child: GridView.builder(
               controller: _scrollController,

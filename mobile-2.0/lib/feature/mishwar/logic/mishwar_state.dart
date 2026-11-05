@@ -1,8 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:syrianzone/core/network/response/guides_response.dart';
-import 'package:syrianzone/core/network/response/hotel_detail_response.dart';
 import 'package:syrianzone/core/network/response/hotel_response.dart';
-import 'package:syrianzone/core/network/response/place_detail_response.dart';
 import 'package:syrianzone/core/network/response/places_map_response.dart';
 import 'package:syrianzone/core/network/response/places_response.dart';
 
@@ -12,7 +10,6 @@ part 'mishwar_state.freezed.dart';
 sealed class MishwarState with _$MishwarState {
   factory MishwarState({
     @Default(0) int selectedTabIndex,
-    //TODO USE GOOGLE LOGIN FROM THE OTHER BRANCH INSTEAD OF THIS STATE
     @Default(false) bool isLoggedIn,
 
     // Places tab
@@ -51,13 +48,8 @@ sealed class MishwarState with _$MishwarState {
     @Default(false) bool isLoadingGuides,
     String? guidesError,
     @Default('points') String guidesSort,
-    GuideItemResponse? selectedGuide,
 
-    // Selection & details
-    PlaceDetailResponse? selectedPlace,
-    @Default(false) bool isLoadingPlaceDetail,
-    HotelDetailResponse? selectedHotel,
-    @Default(false) bool isLoadingHotelDetail,
+    // Map highlights
     int? highlightedPlaceId,
     int? highlightedHotelId,
 

@@ -38,15 +38,13 @@ Map<String, dynamic> _$PlaceMapFeatureToJson(PlaceMapFeature instance) =>
 PlaceMapGeometry _$PlaceMapGeometryFromJson(Map<String, dynamic> json) =>
     PlaceMapGeometry(
       type: json['type'] as String,
-      coordinates: (json['coordinates'] as List<dynamic>)
-          .map((e) => (e as num).toDouble())
-          .toList(),
+      coordinates: const LngLatConverter().fromJson(json['coordinates']),
     );
 
 Map<String, dynamic> _$PlaceMapGeometryToJson(PlaceMapGeometry instance) =>
     <String, dynamic>{
       'type': instance.type,
-      'coordinates': instance.coordinates,
+      'coordinates': const LngLatConverter().toJson(instance.coordinates),
     };
 
 PlaceMapProperties _$PlaceMapPropertiesFromJson(Map<String, dynamic> json) =>

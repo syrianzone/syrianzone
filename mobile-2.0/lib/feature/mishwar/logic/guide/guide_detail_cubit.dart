@@ -9,8 +9,6 @@ class GuideDetailCubit extends Cubit<GuideDetailState> with SafeEmit<GuideDetail
   }) : super(initialState);
 
   Future<void> loadGuide(GuideItemResponse guide) async {
-    safeEmit(const GuideDetailState.loading());
-    await Future.delayed(const Duration(milliseconds: 300));
     safeEmit(GuideDetailState.success(guide));
   }
 }

@@ -116,21 +116,49 @@ class MishwarGuidesTab extends StatelessWidget {
                           message: state.guidesError!,
                           onRetry: () => context.read<MishwarCubit>().fetchGuides(),
                         )
-                      : ListView.builder(
-                          itemCount: state.guides.length,
-                          itemBuilder: (context, index) {
-                            final guide = state.guides[index];
-                            return GuideTile(
-                              guide: guide,
-                              onTap: () {
-                                GuideDetailBottomSheet.show(
-                                  context,
-                                  guide: guide,
-                                  onShowOnMap: () => onShowGuideOnMap(guide),
-                                );
-                              },
-                            );
+                      : RefreshIndicator(
+                          color: const Color(0xFF965B0E),
+                          onRefresh: () async {
+                            await context.read<MishwarCubit>().fetchGuides();
                           },
+                          child: state.guides.isEmpty
+                              ? ListView(
+                                  physics: const AlwaysScrollableScrollPhysics(),
+                                  children: const [
+                                    SizedBox(height: 100),
+                                    Center(
+                                      child: Padding(
+                                        padding: EdgeInsets.all(24.0),
+                                        child: Text(
+                                          'لا يوجد مرشدون حالياً',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                            color: Color(0xFF5A4D41),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : ListView.builder(
+                                  physics: const AlwaysScrollableScrollPhysics(),
+                                  itemCount: state.guides.length,
+                                  itemBuilder: (context, index) {
+                                    final guide = state.guides[index];
+                                    return GuideTile(
+                                      guide: guide,
+                                      onTap: () {
+                                        GuideDetailBottomSheet.show(
+                                          context,
+                                          guide: guide,
+                                          onShowOnMap: () => onShowGuideOnMap(guide),
+                                        );
+                                      },
+                                    );
+                                  },
+                                ),
                         ),
             ),
           ],

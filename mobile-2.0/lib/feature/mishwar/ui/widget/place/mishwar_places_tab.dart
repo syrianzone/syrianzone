@@ -118,44 +118,57 @@ class _MishwarPlacesTabState extends State<MishwarPlacesTab> {
                           message: state.placesError!,
                           onRetry: () => context.read<MishwarCubit>().fetchPlaces(refresh: true),
                         )
-                      : state.places.isEmpty
-                          ? const Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(24.0),
-                                child: Text(
-                                  'لا توجد أماكن متاحة',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFF5A4D41),
-                                  ),
-                                ),
-                              ),
-                            )
-                          : ListView.builder(
-                              controller: _scrollController,
-                              itemCount: state.places.length + (state.hasMorePlaces ? 1 : 0),
-                              itemBuilder: (context, index) {
-                                if (index == state.places.length) {
-                                  return const Padding(
-                                    padding: EdgeInsets.symmetric(vertical: 16),
-                                    child: Center(
-                                      child: SizedBox(
-                                        width: 24,
-                                        height: 24,
-                                        child: CircularProgressIndicator(strokeWidth: 2),
+                      : RefreshIndicator(
+                          color: const Color(0xFF965B0E),
+                          onRefresh: () async {
+                            await context.read<MishwarCubit>().fetchPlaces(refresh: true);
+                          },
+                          child: state.places.isEmpty
+                              ? ListView(
+                                  physics: const AlwaysScrollableScrollPhysics(),
+                                  children: const [
+                                    SizedBox(height: 100),
+                                    Center(
+                                      child: Padding(
+                                        padding: EdgeInsets.all(24.0),
+                                        child: Text(
+                                          'لا توجد أماكن متاحة',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                            color: Color(0xFF5A4D41),
+                                          ),
+                                        ),
                                       ),
                                     ),
-                                  );
-                                }
-                                final place = state.places[index];
-                                return PlaceCard(
-                                  place: place,
-                                  onTap: () => widget.onPlaceTap(place),
-                                );
-                              },
-                            ),
+                                  ],
+                                )
+                              : ListView.builder(
+                                  controller: _scrollController,
+                                  physics: const AlwaysScrollableScrollPhysics(),
+                                  itemCount: state.places.length + (state.hasMorePlaces ? 1 : 0),
+                                  itemBuilder: (context, index) {
+                                    if (index == state.places.length) {
+                                      return const Padding(
+                                        padding: EdgeInsets.symmetric(vertical: 16),
+                                        child: Center(
+                                          child: SizedBox(
+                                            width: 24,
+                                            height: 24,
+                                            child: CircularProgressIndicator(strokeWidth: 2),
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                    final place = state.places[index];
+                                    return PlaceCard(
+                                      place: place,
+                                      onTap: () => widget.onPlaceTap(place),
+                                    );
+                                  },
+                                ),
+                        ),
             ),
           ],
         );

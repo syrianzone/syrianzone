@@ -1,4 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'package:syrianzone/core/data/model/lng_lat.dart';
+import 'package:syrianzone/core/network/json_converter/lng_lat_json_converter.dart';
 
 part 'places_map_response.g.dart';
 
@@ -35,8 +37,8 @@ class PlaceMapFeature {
 @JsonSerializable()
 class PlaceMapGeometry {
   final String type;
-  //TODO USE LNGLAT CONVERTER 
-  final List<double> coordinates; // [lng, lat]
+  @LngLatConverter()
+  final LngLat coordinates; // [lng, lat]
 
   PlaceMapGeometry({
     required this.type,
@@ -46,8 +48,8 @@ class PlaceMapGeometry {
   factory PlaceMapGeometry.fromJson(Map<String, dynamic> json) =>
       _$PlaceMapGeometryFromJson(json);
 
-  double get longitude => coordinates.isNotEmpty ? coordinates[0] : 0.0;
-  double get latitude => coordinates.length > 1 ? coordinates[1] : 0.0;
+  double get longitude => coordinates.longitude;
+  double get latitude => coordinates.latitude;
 }
 
 @JsonSerializable()

@@ -12,6 +12,8 @@ import 'package:syrianzone/feature/mishwar/logic/mishwar_cubit.dart';
 import 'package:syrianzone/feature/mishwar/logic/place/place_detail_cubit.dart';
 import 'package:syrianzone/feature/mishwar/logic/place/place_detail_state.dart';
 import 'package:syrianzone/feature/mishwar/repo/mishwar_repo.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:syrianzone/feature/mishwar/ui/widget/common/mishwar_filter_bottom_sheet.dart';
 import 'package:syrianzone/feature/mishwar/ui/widget/common/mishwar_gallery_view.dart';
@@ -23,6 +25,12 @@ import 'package:syrianzone/feature/mishwar/ui/widget/place/add_place_bottom_shee
 import 'package:syrianzone/feature/mishwar/ui/widget/place/place_detail_bottom_sheet.dart';
 
 void main() {
+  setUpAll(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    FlutterSecureStorage.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({});
+    await setupGetIt();
+  });
   testWidgets('GuideDetailBottomSheet renders in light mode with RTL and stats', (tester) async {
     final guide = GuideItemResponse(
       rank: 1,
@@ -99,7 +107,6 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() => tester.view.resetPhysicalSize());
 
-    setupGetIt();
     final cubit = getIt<MishwarCubit>();
 
     await tester.pumpWidget(

@@ -2,14 +2,28 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:syrianzone/core/bloc/safe_emit_mixin.dart';
 import 'package:syrianzone/core/network/api_result.dart';
-import 'package:syrianzone/core/network/response/guides_response.dart';
+import 'package:syrianzone/feature/auth/logic/auth_cubit.dart';
+import 'package:syrianzone/feature/auth/logic/auth_state.dart';
 import 'package:syrianzone/feature/mishwar/logic/mishwar_state.dart';
 import 'package:syrianzone/feature/mishwar/repo/mishwar_repo.dart';
 
 class MishwarCubit extends Cubit<MishwarState> with SafeEmit<MishwarState> {
   final MishwarRepo _repo;
+  final AuthCubit? _authCubit;
+  StreamSubscription<AuthState>? _authSub;
 
-  MishwarCubit(this._repo) : super(MishwarState());
+  MishwarCubit(this._repo, [this._authCubit])
+      : super(MishwarState(isLoggedIn: _authCubit?.isAuthenticated ?? false)) {
+    _authSub = _authCubit?.stream.listen((authState) {
+      final loggedIn = authState.maybeWhen(
+        authenticated: (_) => true,
+        orElse: () => false,
+      );
+      if (state.isLoggedIn != loggedIn) {
+        setLoggedIn(loggedIn);
+      }
+    });
+  }
 
   Timer? _searchDebounce;
 
@@ -162,16 +176,9 @@ class MishwarCubit extends Cubit<MishwarState> with SafeEmit<MishwarState> {
 
   @override
   Future<void> close() {
+    _authSub?.cancel();
     _searchDebounce?.cancel();
     return super.close();
-  }
-
-  void selectGuide(GuideItemResponse guide) {
-    safeEmit(state.copyWith(selectedGuide: guide));
-  }
-
-  void clearSelectedGuide() {
-    safeEmit(state.copyWith(selectedGuide: null));
   }
 
   Future<void> fetchPlacesMap() async {
@@ -190,38 +197,8 @@ class MishwarCubit extends Cubit<MishwarState> with SafeEmit<MishwarState> {
     );
   }
 
-  Future<void> selectPlace(int id) async {
-    safeEmit(state.copyWith(
-      highlightedPlaceId: id,
-      selectedPlace: null,
-      isLoadingPlaceDetail: true,
-    ));
-
-    final result = await _repo.getPlaceDetail(id);
-    result.when(
-      success: (place) {
-        safeEmit(state.copyWith(
-          selectedPlace: place,
-          isLoadingPlaceDetail: false,
-        ));
-      },
-      error: (error) {
-        safeEmit(state.copyWith(
-          isLoadingPlaceDetail: false,
-        ));
-      },
-    );
-  }
-
   void highlightPlace(int? id) {
     safeEmit(state.copyWith(highlightedPlaceId: id));
-  }
-
-  void clearSelectedPlace() {
-    safeEmit(state.copyWith(
-      selectedPlace: null,
-      highlightedPlaceId: null,
-    ));
   }
 
   // --- Hotels ---
@@ -276,38 +253,8 @@ class MishwarCubit extends Cubit<MishwarState> with SafeEmit<MishwarState> {
     );
   }
 
-  Future<void> selectHotel(int id) async {
-    safeEmit(state.copyWith(
-      highlightedHotelId: id,
-      selectedHotel: null,
-      isLoadingHotelDetail: true,
-    ));
-
-    final result = await _repo.getHotelDetail(id);
-    result.when(
-      success: (hotel) {
-        safeEmit(state.copyWith(
-          selectedHotel: hotel,
-          isLoadingHotelDetail: false,
-        ));
-      },
-      error: (error) {
-        safeEmit(state.copyWith(
-          isLoadingHotelDetail: false,
-        ));
-      },
-    );
-  }
-
   void highlightHotel(int? id) {
     safeEmit(state.copyWith(highlightedHotelId: id));
-  }
-
-  void clearSelectedHotel() {
-    safeEmit(state.copyWith(
-      selectedHotel: null,
-      highlightedHotelId: null,
-    ));
   }
 
   // --- Guides ---

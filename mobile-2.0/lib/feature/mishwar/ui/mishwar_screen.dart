@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:syrianzone/core/constants/map_constants.dart';
 import 'package:syrianzone/core/network/response/places_map_response.dart';
+import 'package:syrianzone/feature/auth/ui/auth_bottom_sheet.dart';
 import 'package:syrianzone/feature/mishwar/constants/mishwar_constants.dart';
 import 'package:syrianzone/feature/mishwar/logic/mishwar_cubit.dart';
 import 'package:syrianzone/feature/mishwar/logic/mishwar_state.dart';
@@ -42,7 +43,6 @@ class _MishwarScreenState extends State<MishwarScreen> with TickerProviderStateM
       vsync: this,
       duration: const Duration(milliseconds: 250),
     );
-    //TODO USE LOGGED IN FROM OTHER BRANCH ONCE WE GET THERE
     final isLoggedIn = context.read<MishwarCubit>().state.isLoggedIn;
     _tabController = TabController(length: isLoggedIn ? 5 : 3, vsync: this);
     _tabController.addListener(_onTabChanged);
@@ -110,54 +110,11 @@ class _MishwarScreenState extends State<MishwarScreen> with TickerProviderStateM
     _animateSheetTo(target);
   }
 
-  void _showLoginPrompt(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (dialogCtx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: AlertDialog(
-          backgroundColor: const Color(0xFFFCFBF7),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Row(
-            children: [
-              Icon(Icons.lock_outline, color: Color(0xFF9E5C0A)),
-              SizedBox(width: 8),
-              Text(
-                'تسجيل الدخول مطلوب',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF221A14),
-                ),
-              ),
-            ],
-          ),
-          content: const Text(
-            'يتطلب إضافة مكان جديد تسجيل الدخول إلى حسابك للمساهمة في مشوار.',
-            style: TextStyle(fontSize: 14, color: Color(0xFF5A4D41), height: 1.5),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogCtx),
-              child: const Text('إلغاء', style: TextStyle(color: Color(0xFF7A6D5E))),
-            ),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF9E5C0A),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              onPressed: () {
-                Navigator.pop(dialogCtx);
-                context.read<MishwarCubit>().setLoggedIn(true);
-                context.read<MishwarCubit>().startLocationPicker();
-              },
-              child: const Text('تسجيل الدخول ومتابعة'),
-            ),
-          ],
-        ),
-      ),
-    );
+  Future<void> _showLoginPrompt(BuildContext context) async {
+    final success = await AuthBottomSheet.show(context);
+    if (success && context.mounted) {
+      context.read<MishwarCubit>().startLocationPicker();
+    }
   }
 
   void _openPlaceDetail({
@@ -417,12 +374,8 @@ class _MishwarScreenState extends State<MishwarScreen> with TickerProviderStateM
                               (f) => f?.properties.id == id,
                               orElse: () => null,
                             );
-                            final lat = (feature != null && feature.geometry.coordinates.length >= 2)
-                                ? feature.geometry.coordinates[1]
-                                : MapConstants.defaultLat;
-                            final lng = (feature != null && feature.geometry.coordinates.length >= 2)
-                                ? feature.geometry.coordinates[0]
-                                : MapConstants.defaultLon;
+                            final lat = feature?.geometry.latitude ?? MapConstants.defaultLat;
+                            final lng = feature?.geometry.longitude ?? MapConstants.defaultLon;
                             _openPlaceDetail(
                               placeId: id,
                               lat: lat,
@@ -436,12 +389,8 @@ class _MishwarScreenState extends State<MishwarScreen> with TickerProviderStateM
                               (f) => f?.properties.id == id,
                               orElse: () => null,
                             );
-                            final lat = (feature != null && feature.geometry.coordinates.length >= 2)
-                                ? feature.geometry.coordinates[1]
-                                : null;
-                            final lng = (feature != null && feature.geometry.coordinates.length >= 2)
-                                ? feature.geometry.coordinates[0]
-                                : null;
+                            final lat = feature?.geometry.latitude;
+                            final lng = feature?.geometry.longitude;
                             _openHotelDetail(
                               hotelId: id,
                               lat: lat,

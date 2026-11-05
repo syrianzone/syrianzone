@@ -230,18 +230,16 @@ class MishwarMapPaneState extends State<MishwarMapPane> {
       final points = <MishwarMapPoint>[];
       for (final f in widget.features) {
         final coords = f.geometry.coordinates;
-        if (coords.length >= 2) {
-          final isHotel = (f.properties.type == 'hotel') || widget.isHotelMap;
-          points.add(
-            MishwarMapPoint(
-              id: f.properties.id,
-              name: f.properties.name,
-              lat: coords[1],
-              lng: coords[0],
-              type: isHotel ? 'hotel' : 'place',
-            ),
-          );
-        }
+        final isHotel = (f.properties.type == 'hotel') || widget.isHotelMap;
+        points.add(
+          MishwarMapPoint(
+            id: f.properties.id,
+            name: f.properties.name,
+            lat: coords.latitude,
+            lng: coords.longitude,
+            type: isHotel ? 'hotel' : 'place',
+          ),
+        );
       }
 
       if (points.isEmpty) return;

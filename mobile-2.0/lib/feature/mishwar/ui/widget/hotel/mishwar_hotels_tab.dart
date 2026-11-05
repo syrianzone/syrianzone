@@ -74,28 +74,56 @@ class _MishwarHotelsTabState extends State<MishwarHotelsTab> {
             onRetry: () => context.read<MishwarCubit>().fetchHotels(refresh: true),
           );
         }
-        return ListView.builder(
-          controller: _scrollController,
-          itemCount: state.hotels.length + (state.hasMoreHotels ? 1 : 0),
-          itemBuilder: (context, index) {
-            if (index == state.hotels.length) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                child: Center(
-                  child: SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                ),
-              );
-            }
-            final hotel = state.hotels[index];
-            return HotelCard(
-              hotel: hotel,
-              onTap: () => widget.onHotelTap(hotel),
-            );
+        return RefreshIndicator(
+          color: const Color(0xFF965B0E),
+          onRefresh: () async {
+            await context.read<MishwarCubit>().fetchHotels(refresh: true);
           },
+          child: state.hotels.isEmpty
+              ? ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: const [
+                    SizedBox(height: 100),
+                    Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(24.0),
+                        child: Text(
+                          'لا توجد فنادق متاحة',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF5A4D41),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : ListView.builder(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  itemCount: state.hotels.length + (state.hasMoreHotels ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (index == state.hotels.length) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Center(
+                          child: SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                      );
+                    }
+                    final hotel = state.hotels[index];
+                    return HotelCard(
+                      hotel: hotel,
+                      onTap: () => widget.onHotelTap(hotel),
+                    );
+                  },
+                ),
         );
       },
     );

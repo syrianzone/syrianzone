@@ -11,8 +11,10 @@ import 'package:syrianzone/core/network/response/hotel_response.dart';
 import 'package:syrianzone/core/network/response/map_data_response.dart';
 import 'package:syrianzone/core/network/response/nearby_stop_response.dart';
 import 'package:syrianzone/core/network/response/place_detail_response.dart';
+import 'package:syrianzone/core/network/response/place_photos_response.dart';
 import 'package:syrianzone/core/network/response/places_map_response.dart';
 import 'package:syrianzone/core/network/response/places_response.dart';
+import 'package:syrianzone/core/network/response/save_place_response.dart';
 import 'package:syrianzone/core/network/response/submit_place_response.dart';
 import 'package:syrianzone/core/network/response/transit_search_response.dart';
 import 'package:syrianzone/core/network/response/user_response.dart';
@@ -65,6 +67,14 @@ abstract class ApiService {
     @Query("sort") String? sort,
     @Query("page") int? page,
     @Query("user_id") int? userId,
+    @CancelRequest() CancelToken? cancelToken,
+  });
+
+  @GET("places/photos")
+  Future<PlacePhotosResponse> getPlacePhotos({
+    @Query("page") int? page,
+    @Query("user_id") int? userId,
+    @CancelRequest() CancelToken? cancelToken,
   });
 
   @GET("places/map")
@@ -76,6 +86,22 @@ abstract class ApiService {
   @POST("places")
   Future<SubmitPlaceResponse> submitPlace(@Body() FormData formData);
 
+  @POST("places/{id}/save")
+  Future<SavePlaceResponse> savePlace(@Path("id") int id);
+
+  @DELETE("places/{id}/save")
+  Future<SavePlaceResponse> unsavePlace(@Path("id") int id);
+
+  @GET("my/saves")
+  Future<PlacesResponse> getMySavedPlaces({
+    @Query("page") int? page,
+  });
+
+  @GET("my/places")
+  Future<PlacesResponse> getMyPlaces({
+    @Query("page") int? page,
+  });
+
   // Hotels
   @GET("hotels")
   Future<HotelsResponse> getHotels({
@@ -83,6 +109,7 @@ abstract class ApiService {
     @Query("q") String? query,
     @Query("min_stars") int? minStars,
     @Query("page") int? page,
+    @CancelRequest() CancelToken? cancelToken,
   });
 
   @GET("hotels/map")
@@ -95,6 +122,7 @@ abstract class ApiService {
   @GET("guides")
   Future<GuidesResponse> getGuides({
     @Query("sort") String? sort,
+    @CancelRequest() CancelToken? cancelToken,
   });
   @POST("studio/routes")
   Future<void> submitRoute(

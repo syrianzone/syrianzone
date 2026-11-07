@@ -81,6 +81,10 @@ class PlaceCard extends StatelessWidget {
                           ),
                         ],
                       ),
+                      if (place.status != null) ...[
+                        const SizedBox(width: 8),
+                        _buildStatusBadge(place.status!),
+                      ],
                     ],
                   ),
                 ],
@@ -104,6 +108,47 @@ class PlaceCard extends StatelessWidget {
         Icons.photo_outlined,
         color: Color(0xFFA89988),
         size: 24,
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge(String status) {
+    Color bg;
+    Color fg;
+    String label;
+
+    switch (status) {
+      case 'approved':
+        bg = const Color(0xFFE8F5E9);
+        fg = const Color(0xFF2E7D32);
+        label = 'معتمد';
+        break;
+      case 'rejected':
+        bg = const Color(0xFFFFEBEE);
+        fg = const Color(0xFFC62828);
+        label = 'مرفوض';
+        break;
+      case 'pending':
+      default:
+        bg = const Color(0xFFFFF8E1);
+        fg = const Color(0xFFF57F17);
+        label = 'قيد المراجعة';
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 10.5,
+          fontWeight: FontWeight.w700,
+          color: fg,
+        ),
       ),
     );
   }

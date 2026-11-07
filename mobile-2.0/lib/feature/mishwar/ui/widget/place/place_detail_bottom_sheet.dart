@@ -6,6 +6,8 @@ import 'package:shimmer/shimmer.dart';
 import 'package:syrianzone/core/di/get_it.dart';
 import 'package:syrianzone/core/network/response/place_detail_response.dart';
 import 'package:syrianzone/core/util/map_util.dart';
+import 'package:syrianzone/feature/auth/logic/auth_cubit.dart';
+import 'package:syrianzone/feature/auth/ui/auth_bottom_sheet.dart';
 import 'package:syrianzone/feature/mishwar/logic/place/place_detail_cubit.dart';
 import 'package:syrianzone/feature/mishwar/logic/place/place_detail_state.dart';
 import 'package:syrianzone/feature/mishwar/repo/mishwar_repo.dart';
@@ -480,12 +482,14 @@ class _PlaceDetailBottomSheetState extends State<PlaceDetailBottomSheet> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text(
-                    place.name,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF2F2722),
+                  Expanded(
+                    child: Text(
+                      place.name,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF2F2722),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -639,43 +643,63 @@ class _PlaceDetailBottomSheetState extends State<PlaceDetailBottomSheet> {
               ),
             ),
             const SizedBox(width: 8),
-            OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Color(0xFFE4D8C8)),
-                minimumSize: const Size(0, 46),
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              onPressed: () {
-                _scaffoldMessengerKey.currentState?.hideCurrentSnackBar();
-                _scaffoldMessengerKey.currentState?.showSnackBar(
-                  SnackBar(
-                    behavior: SnackBarBehavior.floating,
-                    backgroundColor: const Color(0xFF2F2722),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    content: const Directionality(
-                      textDirection: TextDirection.rtl,
-                      child: Text(
-                        'يتطلب حفظ الأماكن تسجيل الدخول',
-                        style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
-                      ),
+            Builder(
+              builder: (context) {
+                final isSaved = place.savedByMe ?? false;
+                return OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(
+                      color: isSaved ? const Color(0xFF965B0E) : const Color(0xFFE4D8C8),
                     ),
-                    duration: const Duration(seconds: 2),
+                    backgroundColor: isSaved ? const Color(0xFFF3ECE3) : Colors.transparent,
+                    minimumSize: const Size(0, 46),
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  onPressed: () async {
+                    final isAuth = getIt<AuthCubit>().isAuthenticated;
+                    if (!isAuth) {
+                      final loggedIn = await AuthBottomSheet.show(context);
+                      if (loggedIn != true || !context.mounted) return;
+                    }
+                    final success = await context.read<PlaceDetailCubit>().toggleSave();
+                    if (!success && context.mounted) {
+                      _scaffoldMessengerKey.currentState?.hideCurrentSnackBar();
+                      _scaffoldMessengerKey.currentState?.showSnackBar(
+                        SnackBar(
+                          behavior: SnackBarBehavior.floating,
+                          backgroundColor: const Color(0xFF2F2722),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          content: const Directionality(
+                            textDirection: TextDirection.rtl,
+                            child: Text(
+                              'تعذر تحديث حالة الحفظ، يرجى المحاولة لاحقاً',
+                              style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  },
+                  icon: Icon(
+                    isSaved ? Icons.bookmark : Icons.bookmark_border,
+                    size: 18,
+                    color: isSaved ? const Color(0xFF965B0E) : const Color(0xFF8D7E6E),
+                  ),
+                  label: Text(
+                    place.savesCount.toString(),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: isSaved ? const Color(0xFF965B0E) : const Color(0xFF8D7E6E),
+                    ),
                   ),
                 );
               },
-              icon: const Icon(Icons.bookmark_border, size: 18, color: Color(0xFF8D7E6E)),
-              label: Text(
-                place.savesCount.toString(),
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF8D7E6E),
-                ),
-              ),
             ),
           ],
         ),

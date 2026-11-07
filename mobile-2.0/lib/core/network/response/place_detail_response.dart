@@ -1,42 +1,26 @@
-import 'package:json_annotation/json_annotation.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
+part 'place_detail_response.freezed.dart';
 part 'place_detail_response.g.dart';
 
+@freezed
 @JsonSerializable()
-class PlaceDetailResponse {
-  final int id;
-  final String name;
-  final String category;
-  final String? description;
-  final double lat;
-  final double lng;
-  @JsonKey(name: 'thumb_url')
-  final String? thumbUrl;
-  @JsonKey(name: 'saves_count')
-  final int savesCount;
-  final String? status;
-  final PlaceAuthor? user;
-  final List<PlacePhotoItem> photos;
-  @JsonKey(name: 'saved_by_me')
-  final bool? savedByMe;
-  @JsonKey(name: 'created_at')
-  final String? createdAt;
-
-  PlaceDetailResponse({
-    required this.id,
-    required this.name,
-    required this.category,
-    this.description,
-    required this.lat,
-    required this.lng,
-    this.thumbUrl,
-    this.savesCount = 0,
-    this.status,
-    this.user,
-    this.photos = const [],
-    this.savedByMe,
-    this.createdAt,
-  });
+sealed class PlaceDetailResponse with _$PlaceDetailResponse {
+  const factory PlaceDetailResponse({
+    required int id,
+    required String name,
+    required String category,
+    String? description,
+    required double lat,
+    required double lng,
+    @JsonKey(name: 'thumb_url') String? thumbUrl,
+    @Default(0) @JsonKey(name: 'saves_count') int savesCount,
+    String? status,
+    PlaceAuthor? user,
+    @Default([]) List<PlacePhotoItem> photos,
+    @JsonKey(name: 'saved_by_me') bool? savedByMe,
+    @JsonKey(name: 'created_at') String? createdAt,
+  }) = _PlaceDetailResponse;
 
   factory PlaceDetailResponse.fromJson(Map<String, dynamic> json) =>
       _$PlaceDetailResponseFromJson(json);
@@ -61,6 +45,8 @@ class PlaceAuthor {
 
   factory PlaceAuthor.fromJson(Map<String, dynamic> json) =>
       _$PlaceAuthorFromJson(json);
+
+  Map<String, dynamic> toJson() => _$PlaceAuthorToJson(this);
 }
 
 @JsonSerializable()
@@ -81,4 +67,6 @@ class PlacePhotoItem {
 
   factory PlacePhotoItem.fromJson(Map<String, dynamic> json) =>
       _$PlacePhotoItemFromJson(json);
+
+  Map<String, dynamic> toJson() => _$PlacePhotoItemToJson(this);
 }

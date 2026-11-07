@@ -13,6 +13,7 @@ class MishwarMapPane extends StatefulWidget {
   final ValueChanged<int>? onPlaceSelected;
   final ValueChanged<int>? onHotelSelected;
   final int? highlightedId;
+  final String? highlightedType;
   final bool isPickingLocation;
   final ValueChanged<GeoPoint>? onLocationPicked;
   final VoidCallback? onCancelLocationPicker;
@@ -24,6 +25,7 @@ class MishwarMapPane extends StatefulWidget {
     this.onPlaceSelected,
     this.onHotelSelected,
     this.highlightedId,
+    this.highlightedType,
     this.isPickingLocation = false,
     this.onLocationPicked,
     this.onCancelLocationPicker,
@@ -77,12 +79,14 @@ class MishwarMapPaneState extends State<MishwarMapPane> {
   @override
   void didUpdateWidget(covariant MishwarMapPane oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.highlightedId != oldWidget.highlightedId) {
+    final bool highlightChanged = widget.highlightedId != oldWidget.highlightedId ||
+        widget.highlightedType != oldWidget.highlightedType;
+    if (highlightChanged) {
       if (widget.highlightedId == null) {
         _highlightedMarker = null;
       }
       _renderMarkers();
-    } else if (widget.features != oldWidget.features || widget.isHotelMap != oldWidget.isHotelMap) {
+    } else if (!identical(widget.features, oldWidget.features) || widget.isHotelMap != oldWidget.isHotelMap) {
       _renderMarkers();
     }
   }
@@ -112,14 +116,22 @@ class MishwarMapPaneState extends State<MishwarMapPane> {
     final clusters = <MapCluster>[];
     for (final p in points) {
       // Highlighted point is never clustered with other points so it always stands out
-      if (widget.highlightedId != null && p.id == widget.highlightedId) {
+      final isItemHighlighted = widget.highlightedId != null &&
+          p.id == widget.highlightedId &&
+          (widget.highlightedType == null || p.type == widget.highlightedType);
+
+      if (isItemHighlighted) {
         clusters.add(MapCluster(lat: p.lat, lng: p.lng, points: [p]));
         continue;
       }
 
       bool added = false;
       for (final c in clusters) {
-        if (widget.highlightedId != null && c.points.any((pt) => pt.id == widget.highlightedId)) {
+        final hasHighlighted = widget.highlightedId != null &&
+            c.points.any((pt) =>
+                pt.id == widget.highlightedId &&
+                (widget.highlightedType == null || pt.type == widget.highlightedType));
+        if (hasHighlighted) {
           continue;
         }
         final dLat = (c.lat - p.lat).abs();
@@ -261,7 +273,9 @@ class MishwarMapPaneState extends State<MishwarMapPane> {
         _drawnMarkers.add(geoPoint);
 
         final isHighlighted = (widget.highlightedId != null &&
-                cluster.points.any((p) => p.id == widget.highlightedId)) ||
+                cluster.points.any((p) =>
+                    p.id == widget.highlightedId &&
+                    (widget.highlightedType == null || p.type == widget.highlightedType))) ||
             (_highlightedMarker != null &&
                 (geoPoint.latitude - _highlightedMarker!.latitude).abs() < 0.0003 &&
                 (geoPoint.longitude - _highlightedMarker!.longitude).abs() < 0.0003);

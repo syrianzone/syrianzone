@@ -6,8 +6,10 @@ import 'package:syrianzone/core/network/response/guides_response.dart';
 import 'package:syrianzone/core/network/response/hotel_detail_response.dart';
 import 'package:syrianzone/core/network/response/hotel_response.dart';
 import 'package:syrianzone/core/network/response/place_detail_response.dart';
+import 'package:syrianzone/core/network/response/place_photos_response.dart';
 import 'package:syrianzone/core/network/response/places_map_response.dart';
 import 'package:syrianzone/core/network/response/places_response.dart';
+import 'package:syrianzone/core/network/response/save_place_response.dart';
 import 'package:syrianzone/core/network/response/submit_place_response.dart';
 
 class MishwarRepo {
@@ -20,6 +22,7 @@ class MishwarRepo {
     String? sort,
     int? page,
     int? userId,
+    CancelToken? cancelToken,
   }) async {
     try {
       final response = await _apiService.getPlaces(
@@ -28,6 +31,24 @@ class MishwarRepo {
         sort: sort,
         page: page,
         userId: userId,
+        cancelToken: cancelToken,
+      );
+      return ApiResult.success(response);
+    } catch (e) {
+      return ApiResult.error(ApiErrorHandler.handleError(e));
+    }
+  }
+
+  Future<ApiResult<PlacePhotosResponse>> getPlacePhotos({
+    int? page,
+    int? userId,
+    CancelToken? cancelToken,
+  }) async {
+    try {
+      final response = await _apiService.getPlacePhotos(
+        page: page,
+        userId: userId,
+        cancelToken: cancelToken,
       );
       return ApiResult.success(response);
     } catch (e) {
@@ -58,6 +79,7 @@ class MishwarRepo {
     String? query,
     int? minStars,
     int? page,
+    CancelToken? cancelToken,
   }) async {
     try {
       final response = await _apiService.getHotels(
@@ -65,6 +87,7 @@ class MishwarRepo {
         query: query,
         minStars: minStars,
         page: page,
+        cancelToken: cancelToken,
       );
       return ApiResult.success(response);
     } catch (e) {
@@ -90,9 +113,9 @@ class MishwarRepo {
     }
   }
 
-  Future<ApiResult<GuidesResponse>> getGuides({String? sort}) async {
+  Future<ApiResult<GuidesResponse>> getGuides({String? sort, CancelToken? cancelToken}) async {
     try {
-      final response = await _apiService.getGuides(sort: sort);
+      final response = await _apiService.getGuides(sort: sort, cancelToken: cancelToken);
       return ApiResult.success(response);
     } catch (e) {
       return ApiResult.error(ApiErrorHandler.handleError(e));
@@ -127,6 +150,42 @@ class MishwarRepo {
       }
 
       final response = await _apiService.submitPlace(formData);
+      return ApiResult.success(response);
+    } catch (e) {
+      return ApiResult.error(ApiErrorHandler.handleError(e));
+    }
+  }
+
+  Future<ApiResult<SavePlaceResponse>> savePlace(int id) async {
+    try {
+      final response = await _apiService.savePlace(id);
+      return ApiResult.success(response);
+    } catch (e) {
+      return ApiResult.error(ApiErrorHandler.handleError(e));
+    }
+  }
+
+  Future<ApiResult<SavePlaceResponse>> unsavePlace(int id) async {
+    try {
+      final response = await _apiService.unsavePlace(id);
+      return ApiResult.success(response);
+    } catch (e) {
+      return ApiResult.error(ApiErrorHandler.handleError(e));
+    }
+  }
+
+  Future<ApiResult<PlacesResponse>> getMySavedPlaces({int page = 1}) async {
+    try {
+      final response = await _apiService.getMySavedPlaces(page: page);
+      return ApiResult.success(response);
+    } catch (e) {
+      return ApiResult.error(ApiErrorHandler.handleError(e));
+    }
+  }
+
+  Future<ApiResult<PlacesResponse>> getMyPlaces({int page = 1}) async {
+    try {
+      final response = await _apiService.getMyPlaces(page: page);
       return ApiResult.success(response);
     } catch (e) {
       return ApiResult.error(ApiErrorHandler.handleError(e));

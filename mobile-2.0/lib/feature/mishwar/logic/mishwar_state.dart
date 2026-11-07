@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:syrianzone/core/network/response/guides_response.dart';
 import 'package:syrianzone/core/network/response/hotel_response.dart';
+import 'package:syrianzone/core/network/response/place_photos_response.dart';
 import 'package:syrianzone/core/network/response/places_map_response.dart';
 import 'package:syrianzone/core/network/response/places_response.dart';
 
@@ -48,6 +49,27 @@ sealed class MishwarState with _$MishwarState {
     @Default(false) bool isLoadingGuides,
     String? guidesError,
     @Default('points') String guidesSort,
+
+    // Gallery tab 
+    @Default([]) List<PlacePhotoFeedItem> galleryPhotos,
+    @Default(false) bool isLoadingGallery,
+    String? galleryError,
+    @Default(1) int galleryPage,
+    @Default(true) bool hasMoreGalleryPhotos,
+
+    // Saved places tab (محفوظاتي)
+    @Default([]) List<PlaceResponse> savedPlaces,
+    @Default(false) bool isLoadingSavedPlaces,
+    String? savedPlacesError,
+    @Default(1) int savedPlacesPage,
+    @Default(true) bool hasMoreSavedPlaces,
+
+    // My contributions tab (مساهماتي)
+    @Default([]) List<PlaceResponse> myContributions,
+    @Default(false) bool isLoadingMyContributions,
+    String? myContributionsError,
+    @Default(1) int myContributionsPage,
+    @Default(true) bool hasMoreMyContributions,
 
     // Map highlights
     int? highlightedPlaceId,

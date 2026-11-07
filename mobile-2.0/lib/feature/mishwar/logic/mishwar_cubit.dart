@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:bloc/bloc.dart';
+import 'package:dio/dio.dart';
 import 'package:syrianzone/core/bloc/safe_emit_mixin.dart';
 import 'package:syrianzone/core/network/api_result.dart';
 import 'package:syrianzone/feature/auth/logic/auth_cubit.dart';
@@ -26,6 +27,10 @@ class MishwarCubit extends Cubit<MishwarState> with SafeEmit<MishwarState> {
   }
 
   Timer? _searchDebounce;
+  CancelToken? _placesCancelToken;
+  CancelToken? _searchCancelToken;
+  CancelToken? _guidesCancelToken;
+  CancelToken? _galleryCancelToken;
 
 
   void setTab(int index) {
@@ -36,6 +41,10 @@ class MishwarCubit extends Cubit<MishwarState> with SafeEmit<MishwarState> {
       fetchPlaces();
     } else if (index == 1 && state.hotels.isEmpty) {
       fetchHotels();
+    } else if (state.isLoggedIn && index == 2 && state.savedPlaces.isEmpty) {
+      fetchSavedPlaces();
+    } else if (state.isLoggedIn && index == 3 && state.myContributions.isEmpty) {
+      fetchMyContributions();
     } else if (isGuidesTab && state.guides.isEmpty) {
       fetchGuides();
     }
@@ -61,12 +70,18 @@ class MishwarCubit extends Cubit<MishwarState> with SafeEmit<MishwarState> {
       places: refresh ? [] : state.places,
     ));
 
+    _placesCancelToken?.cancel();
+    final cancelToken = _placesCancelToken = CancelToken();
+
     final result = await _repo.getPlaces(
       category: state.selectedCategory,
       query: null,
       page: page,
       userId: state.filterUserId,
+      cancelToken: cancelToken,
     );
+
+    if (cancelToken.isCancelled) return;
 
     result.when(
       success: (response) {
@@ -139,10 +154,16 @@ class MishwarCubit extends Cubit<MishwarState> with SafeEmit<MishwarState> {
         searchError: null,
       ));
 
+      _searchCancelToken?.cancel();
+      final cancelToken = _searchCancelToken = CancelToken();
+
       final result = await _repo.getPlaces(
         query: trimmed,
         page: 1,
+        cancelToken: cancelToken,
       );
+
+      if (cancelToken.isCancelled) return;
 
       result.when(
         success: (response) {
@@ -165,6 +186,7 @@ class MishwarCubit extends Cubit<MishwarState> with SafeEmit<MishwarState> {
 
   void clearPlacesSearch() {
     _searchDebounce?.cancel();
+    _searchCancelToken?.cancel();
     if (state.placesSearchQuery == null && state.searchResults.isEmpty) return;
     safeEmit(state.copyWith(
       placesSearchQuery: null,
@@ -178,6 +200,10 @@ class MishwarCubit extends Cubit<MishwarState> with SafeEmit<MishwarState> {
   Future<void> close() {
     _authSub?.cancel();
     _searchDebounce?.cancel();
+    _placesCancelToken?.cancel();
+    _searchCancelToken?.cancel();
+    _guidesCancelToken?.cancel();
+    _galleryCancelToken?.cancel();
     return super.close();
   }
 
@@ -198,7 +224,10 @@ class MishwarCubit extends Cubit<MishwarState> with SafeEmit<MishwarState> {
   }
 
   void highlightPlace(int? id) {
-    safeEmit(state.copyWith(highlightedPlaceId: id));
+    safeEmit(state.copyWith(
+      highlightedPlaceId: id,
+      highlightedHotelId: null,
+    ));
   }
 
   // --- Hotels ---
@@ -254,7 +283,10 @@ class MishwarCubit extends Cubit<MishwarState> with SafeEmit<MishwarState> {
   }
 
   void highlightHotel(int? id) {
-    safeEmit(state.copyWith(highlightedHotelId: id));
+    safeEmit(state.copyWith(
+      highlightedHotelId: id,
+      highlightedPlaceId: null,
+    ));
   }
 
   // --- Guides ---
@@ -268,7 +300,12 @@ class MishwarCubit extends Cubit<MishwarState> with SafeEmit<MishwarState> {
       guidesSort: sortKey,
     ));
 
-    final result = await _repo.getGuides(sort: sortKey);
+    _guidesCancelToken?.cancel();
+    final cancelToken = _guidesCancelToken = CancelToken();
+
+    final result = await _repo.getGuides(sort: sortKey, cancelToken: cancelToken);
+    if (cancelToken.isCancelled) return;
+
     result.when(
       success: (response) {
         safeEmit(state.copyWith(
@@ -287,7 +324,83 @@ class MishwarCubit extends Cubit<MishwarState> with SafeEmit<MishwarState> {
   }
 
   void setLoggedIn(bool loggedIn) {
-    safeEmit(state.copyWith(isLoggedIn: loggedIn));
+    safeEmit(state.copyWith(
+      isLoggedIn: loggedIn,
+      savedPlaces: loggedIn ? state.savedPlaces : [],
+      myContributions: loggedIn ? state.myContributions : [],
+    ));
+    if (loggedIn) {
+      if (state.selectedTabIndex == 2) fetchSavedPlaces(refresh: true);
+      if (state.selectedTabIndex == 3) fetchMyContributions(refresh: true);
+    }
+  }
+
+  // --- Saved Places (محفوظاتي) ---
+  Future<void> fetchSavedPlaces({bool refresh = false}) async {
+    if (!refresh && state.isLoadingSavedPlaces) return;
+
+    final page = refresh ? 1 : state.savedPlacesPage;
+    safeEmit(state.copyWith(
+      isLoadingSavedPlaces: true,
+      savedPlacesError: null,
+      savedPlacesPage: page,
+      savedPlaces: refresh ? [] : state.savedPlaces,
+    ));
+
+    final result = await _repo.getMySavedPlaces(page: page);
+    result.when(
+      success: (response) {
+        final newPlaces = refresh ? response.data : [...state.savedPlaces, ...response.data];
+        final hasMore = response.currentPage < response.lastPage;
+        safeEmit(state.copyWith(
+          savedPlaces: newPlaces,
+          isLoadingSavedPlaces: false,
+          savedPlacesError: null,
+          savedPlacesPage: page + 1,
+          hasMoreSavedPlaces: hasMore,
+        ));
+      },
+      error: (error) {
+        safeEmit(state.copyWith(
+          isLoadingSavedPlaces: false,
+          savedPlacesError: error,
+        ));
+      },
+    );
+  }
+
+  // --- My Contributions (مساهماتي) ---
+  Future<void> fetchMyContributions({bool refresh = false}) async {
+    if (!refresh && state.isLoadingMyContributions) return;
+
+    final page = refresh ? 1 : state.myContributionsPage;
+    safeEmit(state.copyWith(
+      isLoadingMyContributions: true,
+      myContributionsError: null,
+      myContributionsPage: page,
+      myContributions: refresh ? [] : state.myContributions,
+    ));
+
+    final result = await _repo.getMyPlaces(page: page);
+    result.when(
+      success: (response) {
+        final newPlaces = refresh ? response.data : [...state.myContributions, ...response.data];
+        final hasMore = response.currentPage < response.lastPage;
+        safeEmit(state.copyWith(
+          myContributions: newPlaces,
+          isLoadingMyContributions: false,
+          myContributionsError: null,
+          myContributionsPage: page + 1,
+          hasMoreMyContributions: hasMore,
+        ));
+      },
+      error: (error) {
+        safeEmit(state.copyWith(
+          isLoadingMyContributions: false,
+          myContributionsError: error,
+        ));
+      },
+    );
   }
 
   // --- Add Place Flow ---
@@ -368,6 +481,51 @@ class MishwarCubit extends Cubit<MishwarState> with SafeEmit<MishwarState> {
           submitPlaceError: error,
         ));
         return false;
+      },
+    );
+  }
+
+  // --- Gallery Photos (/api/v1/places/photos) ---
+  Future<void> fetchGalleryPhotos({bool refresh = false}) async {
+    if (!refresh && (state.isLoadingGallery || !state.hasMoreGalleryPhotos)) return;
+
+    final page = refresh ? 1 : state.galleryPage;
+    safeEmit(state.copyWith(
+      isLoadingGallery: true,
+      galleryError: null,
+      galleryPage: page,
+      galleryPhotos: refresh ? [] : state.galleryPhotos,
+    ));
+
+    _galleryCancelToken?.cancel();
+    final cancelToken = _galleryCancelToken = CancelToken();
+
+    final result = await _repo.getPlacePhotos(
+      page: page,
+      cancelToken: cancelToken,
+    );
+
+    if (cancelToken.isCancelled) return;
+
+    result.when(
+      success: (response) {
+        final newPhotos = refresh
+            ? response.data
+            : [...state.galleryPhotos, ...response.data];
+        final hasMore = response.currentPage < response.lastPage;
+        safeEmit(state.copyWith(
+          galleryPhotos: newPhotos,
+          isLoadingGallery: false,
+          galleryError: null,
+          hasMoreGalleryPhotos: hasMore,
+          galleryPage: page + 1,
+        ));
+      },
+      error: (error) {
+        safeEmit(state.copyWith(
+          isLoadingGallery: false,
+          galleryError: error,
+        ));
       },
     );
   }

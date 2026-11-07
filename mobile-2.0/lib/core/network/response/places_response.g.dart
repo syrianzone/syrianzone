@@ -40,6 +40,9 @@ PlaceResponse _$PlaceResponseFromJson(Map<String, dynamic> json) =>
       lng: (json['lng'] as num).toDouble(),
       thumbUrl: json['thumb_url'] as String?,
       savesCount: (json['saves_count'] as num?)?.toInt() ?? 0,
+      status: json['status'] as String?,
+      rejectionReason: json['rejection_reason'] as String?,
+      createdAt: json['created_at'] as String?,
     );
 
 Map<String, dynamic> _$PlaceResponseToJson(PlaceResponse instance) =>
@@ -52,4 +55,7 @@ Map<String, dynamic> _$PlaceResponseToJson(PlaceResponse instance) =>
       'lng': instance.lng,
       'thumb_url': instance.thumbUrl,
       'saves_count': instance.savesCount,
+      'status': instance.status,
+      'rejection_reason': instance.rejectionReason,
+      'created_at': instance.createdAt,
     };

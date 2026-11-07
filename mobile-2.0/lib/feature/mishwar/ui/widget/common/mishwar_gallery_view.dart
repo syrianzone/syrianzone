@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:syrianzone/core/network/response/places_response.dart';
+import 'package:syrianzone/core/network/response/place_photos_response.dart';
 import 'package:syrianzone/feature/mishwar/constants/mishwar_constants.dart';
 import 'package:syrianzone/feature/mishwar/logic/mishwar_cubit.dart';
 import 'package:syrianzone/feature/mishwar/logic/mishwar_state.dart';
 import 'package:syrianzone/feature/mishwar/ui/widget/common/mishwar_error_view.dart';
 
 class MishwarGalleryView extends StatefulWidget {
-  final ValueChanged<PlaceResponse> onPlaceTap;
+  final ValueChanged<PlacePhotoEmbeddedPlace> onPlaceTap;
 
   const MishwarGalleryView({
     super.key,
@@ -26,6 +26,15 @@ class _MishwarGalleryViewState extends State<MishwarGalleryView> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final cubit = context.read<MishwarCubit>();
+      if (cubit.state.galleryPhotos.isEmpty &&
+          !cubit.state.isLoadingGallery &&
+          cubit.state.hasMoreGalleryPhotos) {
+        cubit.fetchGalleryPhotos();
+      }
+    });
   }
 
   @override
@@ -37,8 +46,8 @@ class _MishwarGalleryViewState extends State<MishwarGalleryView> {
   void _onScroll() {
     if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 300) {
       final cubit = context.read<MishwarCubit>();
-      if (!cubit.state.isLoadingPlaces && cubit.state.hasMorePlaces) {
-        cubit.fetchPlaces();
+      if (!cubit.state.isLoadingGallery && cubit.state.hasMoreGalleryPhotos) {
+        cubit.fetchGalleryPhotos();
       }
     }
   }
@@ -47,23 +56,23 @@ class _MishwarGalleryViewState extends State<MishwarGalleryView> {
   Widget build(BuildContext context) {
     return BlocBuilder<MishwarCubit, MishwarState>(
       builder: (context, state) {
-        if (state.isLoadingPlaces && state.places.isEmpty) {
+        if (state.isLoadingGallery && state.galleryPhotos.isEmpty) {
           return _buildShimmerGrid();
         }
 
-        if (state.placesError != null && state.places.isEmpty) {
+        if (state.galleryError != null && state.galleryPhotos.isEmpty) {
           return Center(
             child: Padding(
               padding: const EdgeInsets.only(top: 80),
               child: MishwarErrorView(
-                message: state.placesError!,
-                onRetry: () => context.read<MishwarCubit>().fetchPlaces(refresh: true),
+                message: state.galleryError!,
+                onRetry: () => context.read<MishwarCubit>().fetchGalleryPhotos(refresh: true),
               ),
             ),
           );
         }
 
-        if (state.places.isEmpty) {
+        if (state.galleryPhotos.isEmpty) {
           return Center(
             child: Padding(
               padding: const EdgeInsets.only(top: 100, left: 24, right: 24),
@@ -81,7 +90,7 @@ class _MishwarGalleryViewState extends State<MishwarGalleryView> {
                   ),
                   const SizedBox(height: 14),
                   const Text(
-                    'لا توجد أماكن متوفرة',
+                    'لا توجد صور متوفرة',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -89,12 +98,10 @@ class _MishwarGalleryViewState extends State<MishwarGalleryView> {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Text(
-                    state.selectedCategory != null
-                        ? 'لا توجد أماكن في تصنيف "${MishwarConstants.getCategoryLabel(state.selectedCategory)}"'
-                        : 'لم يتم إضافة أماكن بعد.',
+                  const Text(
+                    'لم يتم إضافة صور للأماكن بعد.',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 13, color: Color(0xFF6D6054)),
+                    style: TextStyle(fontSize: 13, color: Color(0xFF6D6054)),
                   ),
                 ],
               ),
@@ -107,7 +114,7 @@ class _MishwarGalleryViewState extends State<MishwarGalleryView> {
           child: RefreshIndicator(
             color: const Color(0xFF965B0E),
             onRefresh: () async {
-              await context.read<MishwarCubit>().fetchPlaces(refresh: true);
+              await context.read<MishwarCubit>().fetchGalleryPhotos(refresh: true);
             },
             child: GridView.builder(
               controller: _scrollController,
@@ -118,14 +125,14 @@ class _MishwarGalleryViewState extends State<MishwarGalleryView> {
                 mainAxisSpacing: 10,
                 childAspectRatio: 1.0,
               ),
-              itemCount: state.places.length + (state.isLoadingPlaces ? 2 : 0),
+              itemCount: state.galleryPhotos.length + (state.isLoadingGallery ? 2 : 0),
               itemBuilder: (context, index) {
-                if (index >= state.places.length) {
+                if (index >= state.galleryPhotos.length) {
                   return _buildSingleShimmerCard();
                 }
 
-                final place = state.places[index];
-                return _buildGalleryCard(place);
+                final photo = state.galleryPhotos[index];
+                return _buildGalleryCard(photo);
               },
             ),
           ),
@@ -134,13 +141,14 @@ class _MishwarGalleryViewState extends State<MishwarGalleryView> {
     );
   }
 
-  Widget _buildGalleryCard(PlaceResponse place) {
-    final hasPhoto = place.thumbUrl != null && place.thumbUrl!.isNotEmpty;
+  Widget _buildGalleryCard(PlacePhotoFeedItem photo) {
+    final imageUrl = photo.thumbUrl ?? photo.displayUrl;
+    final hasPhoto = imageUrl != null && imageUrl.isNotEmpty;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => widget.onPlaceTap(place),
+        onTap: () => widget.onPlaceTap(photo.place),
         borderRadius: BorderRadius.circular(16),
         child: Container(
           decoration: BoxDecoration(
@@ -160,10 +168,10 @@ class _MishwarGalleryViewState extends State<MishwarGalleryView> {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                // Place Image
+                // Photo Image
                 if (hasPhoto)
                   Image.network(
-                    place.thumbUrl!,
+                    imageUrl,
                     fit: BoxFit.cover,
                     loadingBuilder: (context, child, loadingProgress) {
                       if (loadingProgress == null) return child;
@@ -195,7 +203,7 @@ class _MishwarGalleryViewState extends State<MishwarGalleryView> {
                   ),
                 ),
 
-                // Text overlay (Title & Category)
+                // Text overlay (Place Name & Category)
                 Positioned(
                   left: 10,
                   right: 10,
@@ -205,7 +213,7 @@ class _MishwarGalleryViewState extends State<MishwarGalleryView> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        place.name,
+                        photo.place.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -222,45 +230,22 @@ class _MishwarGalleryViewState extends State<MishwarGalleryView> {
                         ),
                       ),
                       const SizedBox(height: 3),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Flexible(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.25),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                MishwarConstants.getCategoryLabel(place.category),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.25),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          MishwarConstants.getCategoryLabel(photo.place.category),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
                           ),
-                          if (place.savesCount > 0)
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.bookmark, size: 12, color: Color(0xFFF59E0B)),
-                                const SizedBox(width: 2),
-                                Text(
-                                  '${place.savesCount}',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                        ],
+                        ),
                       ),
                     ],
                   ),

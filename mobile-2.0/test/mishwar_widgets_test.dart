@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:syrianzone/core/network/response/guides_response.dart';
 import 'package:syrianzone/core/network/response/place_detail_response.dart';
+import 'package:syrianzone/core/network/response/place_photos_response.dart';
 import 'package:syrianzone/core/di/get_it.dart';
 import 'package:syrianzone/feature/mishwar/logic/guide/guide_detail_cubit.dart';
 import 'package:syrianzone/feature/mishwar/logic/guide/guide_detail_state.dart';
@@ -22,6 +23,8 @@ import 'package:syrianzone/feature/mishwar/ui/widget/guide/guide_detail_bottom_s
 import 'package:syrianzone/feature/mishwar/ui/widget/guide/mishwar_guides_tab.dart';
 import 'package:syrianzone/feature/mishwar/ui/widget/hotel/hotel_detail_bottom_sheet.dart';
 import 'package:syrianzone/feature/mishwar/ui/widget/place/add_place_bottom_sheet.dart';
+import 'package:syrianzone/feature/mishwar/ui/widget/place/mishwar_contributions_tab.dart';
+import 'package:syrianzone/feature/mishwar/ui/widget/place/mishwar_saved_places_tab.dart';
 import 'package:syrianzone/feature/mishwar/ui/widget/place/place_detail_bottom_sheet.dart';
 
 void main() {
@@ -261,21 +264,48 @@ void main() {
 
   testWidgets('MishwarGalleryView renders place cards and triggers onPlaceTap', (tester) async {
     final cubit = getIt<MishwarCubit>();
+    final photo = PlacePhotoFeedItem(
+      id: 1,
+      thumbUrl: null,
+      displayUrl: null,
+      place: PlacePhotoEmbeddedPlace(
+        id: 10,
+        name: 'قلعة دمشق',
+        category: 'historical',
+        lat: 33.5118,
+        lng: 36.3065,
+      ),
+    );
+    cubit.emit(cubit.state.copyWith(
+      galleryPhotos: [photo],
+      isLoadingGallery: false,
+      galleryError: null,
+    ));
 
+    PlacePhotoEmbeddedPlace? tappedPlace;
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
           body: BlocProvider.value(
             value: cubit,
             child: MishwarGalleryView(
-              onPlaceTap: (_) {},
+              onPlaceTap: (place) {
+                tappedPlace = place;
+              },
             ),
           ),
         ),
       ),
     );
+    await tester.pump();
 
     expect(find.byType(MishwarGalleryView), findsOneWidget);
+    expect(find.text('قلعة دمشق'), findsOneWidget);
+
+    await tester.tap(find.text('قلعة دمشق'));
+    await tester.pump();
+    expect(tappedPlace?.id, 10);
+    expect(tappedPlace?.name, 'قلعة دمشق');
   });
 
   testWidgets('MishwarGuidesTab renders header and opens MishwarRanksBottomSheet on ranks tap', (tester) async {
@@ -465,5 +495,83 @@ void main() {
     expect(find.text('تعذر تحميل بيانات المرشد'), findsOneWidget);
     expect(find.text('تعذر جلب تفاصيل المرشد'), findsOneWidget);
     expect(find.text('إعادة المحاولة'), findsOneWidget);
+  });
+
+  testWidgets('MishwarSavedPlacesTab renders empty state when list is empty', (tester) async {
+    final cubit = getIt<MishwarCubit>();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: BlocProvider.value(
+            value: cubit,
+            child: MishwarSavedPlacesTab(
+              onPlaceTap: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('لم تقم بحفظ أي أماكن بعد'), findsOneWidget);
+    expect(find.text('الأماكن التي تحفظها ستظهر هنا لتتمكن من الرجوع إليها بسهولة.'), findsOneWidget);
+    expect(find.byIcon(Icons.bookmark_border_rounded), findsOneWidget);
+  });
+
+  testWidgets('MishwarContributionsTab renders empty state and triggers onAddPlace', (tester) async {
+    final cubit = getIt<MishwarCubit>();
+    bool addPlaceTapped = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: BlocProvider.value(
+            value: cubit,
+            child: MishwarContributionsTab(
+              onPlaceTap: (_) {},
+              onAddPlace: () {
+                addPlaceTapped = true;
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('لم تقم بإضافة أي أماكن بعد'), findsOneWidget);
+    expect(find.text('أضف مكاناً الآن'), findsOneWidget);
+
+    await tester.tap(find.text('أضف مكاناً الآن'));
+    await tester.pump();
+
+    expect(addPlaceTapped, isTrue);
+  });
+
+  testWidgets('MishwarGalleryView renders empty state', (tester) async {
+    final cubit = getIt<MishwarCubit>();
+    cubit.emit(cubit.state.copyWith(
+      galleryPhotos: [],
+      hasMoreGalleryPhotos: false,
+      isLoadingGallery: false,
+      galleryError: null,
+    ));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: BlocProvider.value(
+            value: cubit,
+            child: MishwarGalleryView(
+              onPlaceTap: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('لا توجد صور متوفرة'), findsOneWidget);
+    expect(find.text('لم يتم إضافة صور للأماكن بعد.'), findsOneWidget);
+    expect(find.byIcon(Icons.photo_library_outlined), findsOneWidget);
   });
 }

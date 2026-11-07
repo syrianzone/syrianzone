@@ -41,6 +41,11 @@ class PlaceResponse {
   final String? thumbUrl;
   @JsonKey(name: 'saves_count')
   final int savesCount;
+  final String? status;
+  @JsonKey(name: 'rejection_reason')
+  final String? rejectionReason;
+  @JsonKey(name: 'created_at')
+  final String? createdAt;
 
   PlaceResponse({
     required this.id,
@@ -51,6 +56,9 @@ class PlaceResponse {
     required this.lng,
     this.thumbUrl,
     this.savesCount = 0,
+    this.status,
+    this.rejectionReason,
+    this.createdAt,
   });
 
   factory PlaceResponse.fromJson(Map<String, dynamic> json) =>

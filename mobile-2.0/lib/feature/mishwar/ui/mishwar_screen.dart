@@ -10,13 +10,14 @@ import 'package:syrianzone/feature/mishwar/ui/widget/common/mishwar_filter_botto
 import 'package:syrianzone/feature/mishwar/ui/widget/common/mishwar_gallery_view.dart';
 import 'package:syrianzone/feature/mishwar/ui/widget/common/mishwar_search_bar.dart';
 import 'package:syrianzone/feature/mishwar/ui/widget/common/mishwar_sheet_constants.dart';
-import 'package:syrianzone/feature/mishwar/ui/widget/common/placeholder_tab.dart';
 import 'package:syrianzone/feature/mishwar/ui/widget/guide/mishwar_guides_tab.dart';
 import 'package:syrianzone/feature/mishwar/ui/widget/hotel/hotel_detail_bottom_sheet.dart';
 import 'package:syrianzone/feature/mishwar/ui/widget/hotel/mishwar_hotels_tab.dart';
 import 'package:syrianzone/feature/mishwar/ui/widget/map/mishwar_map_pane.dart';
 import 'package:syrianzone/feature/mishwar/ui/widget/place/add_place_bottom_sheet.dart';
+import 'package:syrianzone/feature/mishwar/ui/widget/place/mishwar_contributions_tab.dart';
 import 'package:syrianzone/feature/mishwar/ui/widget/place/mishwar_places_tab.dart';
+import 'package:syrianzone/feature/mishwar/ui/widget/place/mishwar_saved_places_tab.dart';
 import 'package:syrianzone/feature/mishwar/ui/widget/place/place_detail_bottom_sheet.dart';
 
 class MishwarScreen extends StatefulWidget {
@@ -36,13 +37,26 @@ class _MishwarScreenState extends State<MishwarScreen> with TickerProviderStateM
   bool _isGalleryMode = false;
   String _typeFilter = 'all'; // 'all', 'places', 'hotels'
 
+  List<PlaceMapFeature>? _cachedMapFeatures;
+  List<PlaceMapFeature>? _lastMapPlaces;
+  List<PlaceMapFeature>? _lastMapHotels;
+  String? _lastTypeFilter;
+  int? _lastSelectedTabIndex;
+  int? _lastFilterUserId;
+
   @override
   void initState() {
     super.initState();
     _sheetAnimController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 250),
-    );
+    )..addListener(() {
+        if (_sheetAnimation != null) {
+          setState(() {
+            _sheetFraction = _sheetAnimation!.value;
+          });
+        }
+      });
     final isLoggedIn = context.read<MishwarCubit>().state.isLoggedIn;
     _tabController = TabController(length: isLoggedIn ? 5 : 3, vsync: this);
     _tabController.addListener(_onTabChanged);
@@ -75,12 +89,40 @@ class _MishwarScreenState extends State<MishwarScreen> with TickerProviderStateM
     _sheetAnimController.stop();
     _sheetAnimation = Tween<double>(begin: _sheetFraction, end: target).animate(
       CurvedAnimation(parent: _sheetAnimController, curve: Curves.easeOutCubic),
-    )..addListener(() {
-        setState(() {
-          _sheetFraction = _sheetAnimation!.value;
-        });
-      });
+    );
     _sheetAnimController.forward(from: 0);
+  }
+
+  List<PlaceMapFeature> _getMapFeatures(MishwarState state) {
+    if (_cachedMapFeatures != null &&
+        identical(_lastMapPlaces, state.mapPlaces) &&
+        identical(_lastMapHotels, state.mapHotels) &&
+        _lastTypeFilter == _typeFilter &&
+        _lastSelectedTabIndex == state.selectedTabIndex &&
+        _lastFilterUserId == state.filterUserId) {
+      return _cachedMapFeatures!;
+    }
+
+    _lastMapPlaces = state.mapPlaces;
+    _lastMapHotels = state.mapHotels;
+    _lastTypeFilter = _typeFilter;
+    _lastSelectedTabIndex = state.selectedTabIndex;
+    _lastFilterUserId = state.filterUserId;
+
+    List<PlaceMapFeature> rawMapFeatures;
+    if (_typeFilter == 'hotels') {
+      rawMapFeatures = state.mapHotels;
+    } else if (_typeFilter == 'places') {
+      rawMapFeatures = state.mapPlaces;
+    } else {
+      rawMapFeatures = [...state.mapPlaces, ...state.mapHotels];
+    }
+
+    _cachedMapFeatures = (state.selectedTabIndex != 1 && state.filterUserId != null)
+        ? rawMapFeatures.where((f) => f.properties.userId == state.filterUserId).toList()
+        : rawMapFeatures;
+
+    return _cachedMapFeatures!;
   }
 
   void _snapToClosestFraction([double? velocity]) {
@@ -201,20 +243,7 @@ class _MishwarScreenState extends State<MishwarScreen> with TickerProviderStateM
       builder: (context, state) {
         _ensureTabController(state.isLoggedIn);
 
-        // Switch map features between places and hotels, or show both if 'all'
-        final List<PlaceMapFeature> rawMapFeatures;
-        if (_typeFilter == 'hotels') {
-          rawMapFeatures = state.mapHotels;
-        } else if (_typeFilter == 'places') {
-          rawMapFeatures = state.mapPlaces;
-        } else {
-          // 'all': show both places and hotels
-          rawMapFeatures = [...state.mapPlaces, ...state.mapHotels];
-        }
-
-        final mapFeatures = (state.selectedTabIndex != 1 && state.filterUserId != null)
-            ? rawMapFeatures.where((f) => f.properties.userId == state.filterUserId).toList()
-            : rawMapFeatures;
+        final mapFeatures = _getMapFeatures(state);
 
         String activeFilterLabel = 'تصفية';
         bool hasActiveFilter = false;
@@ -266,15 +295,28 @@ class _MishwarScreenState extends State<MishwarScreen> with TickerProviderStateM
                     );
                   },
                 ),
-                const PlaceholderTab(
-                  icon: Icons.bookmark_border,
-                  title: 'محفوظاتي',
-                  subtitle: 'سجّل الدخول لعرض الأماكن التي قمت بحفظها للرجوع إليها لاحقاً.',
+                MishwarSavedPlacesTab(
+                  onPlaceTap: (place) {
+                    _openPlaceDetail(
+                      placeId: place.id,
+                      lat: place.lat,
+                      lng: place.lng,
+                      name: place.name,
+                      category: place.category,
+                    );
+                  },
                 ),
-                const PlaceholderTab(
-                  icon: Icons.add_location_alt_outlined,
-                  title: 'مساهماتي',
-                  subtitle: 'سجّل الدخول لعرض الأماكن التي قمت بمشاركتها ومتابعة حالة مراجعتها.',
+                MishwarContributionsTab(
+                  onPlaceTap: (place) {
+                    _openPlaceDetail(
+                      placeId: place.id,
+                      lat: place.lat,
+                      lng: place.lng,
+                      name: place.name,
+                      category: place.category,
+                    );
+                  },
+                  onAddPlace: () => context.read<MishwarCubit>().startLocationPicker(),
                 ),
                 MishwarGuidesTab(
                   onShowGuideOnMap: (guide) {
@@ -369,8 +411,11 @@ class _MishwarScreenState extends State<MishwarScreen> with TickerProviderStateM
                           key: _mapPaneKey,
                           features: mapFeatures,
                           highlightedId: state.highlightedPlaceId ?? state.highlightedHotelId,
+                          highlightedType: state.highlightedPlaceId != null
+                              ? 'place'
+                              : (state.highlightedHotelId != null ? 'hotel' : null),
                           onPlaceSelected: (id) {
-                            final feature = mapFeatures.cast<PlaceMapFeature?>().firstWhere(
+                            final feature = state.mapPlaces.cast<PlaceMapFeature?>().firstWhere(
                               (f) => f?.properties.id == id,
                               orElse: () => null,
                             );
@@ -385,7 +430,7 @@ class _MishwarScreenState extends State<MishwarScreen> with TickerProviderStateM
                             );
                           },
                           onHotelSelected: (id) {
-                            final feature = mapFeatures.cast<PlaceMapFeature?>().firstWhere(
+                            final feature = state.mapHotels.cast<PlaceMapFeature?>().firstWhere(
                               (f) => f?.properties.id == id,
                               orElse: () => null,
                             );

@@ -296,7 +296,7 @@ $Res call({
 });
 
 
-
+$PlaceDetailResponseCopyWith<$Res> get place;
 
 }
 /// @nodoc
@@ -316,7 +316,16 @@ as PlaceDetailResponse,
   ));
 }
 
-
+/// Create a copy of PlaceDetailState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$PlaceDetailResponseCopyWith<$Res> get place {
+  
+  return $PlaceDetailResponseCopyWith<$Res>(_self.place, (value) {
+    return _then(_self.copyWith(place: value));
+  });
+}
 }
 
 /// @nodoc

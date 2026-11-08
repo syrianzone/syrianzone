@@ -151,15 +151,15 @@ function MuslimNotFound({ path, onBack }: { path: string; onBack: () => void }) 
                 </p>
 
                 <div className="mt-5 flex flex-wrap items-center justify-center gap-2.5">
+                    <Button type="button" variant="outline" onClick={onBack} className="gap-2">
+                        <ArrowRight className="h-4 w-4" />
+                        رجوع
+                    </Button>
                     <Button asChild className="gap-2">
                         <Link href="/muslim">
                             <MuslimIcon className="h-4 w-4" />
                             الركن الإسلامي
                         </Link>
-                    </Button>
-                    <Button type="button" variant="outline" onClick={onBack} className="gap-2">
-                        <ArrowRight className="h-4 w-4" />
-                        رجوع
                     </Button>
                 </div>
             </div>
@@ -269,6 +269,10 @@ function GamesNotFound({ path, onBack }: { path: string; onBack: () => void }) {
                 </p>
 
                 <div className="mt-5 flex flex-wrap items-center justify-center gap-2.5">
+                    <Button type="button" variant="ghost" onClick={onBack} className="gap-2">
+                        <ArrowRight className="h-4 w-4" />
+                        رجوع
+                    </Button>
                     <Button asChild className="gap-2">
                         <Link href={gameEntryHref(pickedGame)}>
                             <PickedIcon className="h-4 w-4" />
@@ -289,10 +293,6 @@ function GamesNotFound({ path, onBack }: { path: string; onBack: () => void }) {
                             <GamesIcon className="h-4 w-4" />
                             صالة الألعاب
                         </Link>
-                    </Button>
-                    <Button type="button" variant="ghost" onClick={onBack} className="gap-2">
-                        <ArrowRight className="h-4 w-4" />
-                        رجوع
                     </Button>
                 </div>
             </div>
@@ -349,6 +349,10 @@ function TransitNotFound({ path, onBack }: { path: string; onBack: () => void })
                 </p>
 
                 <div className="mt-5 flex flex-wrap items-center justify-center gap-2.5">
+                    <Button type="button" variant="outline" onClick={onBack} className="gap-2">
+                        <ArrowRight className="h-4 w-4" />
+                        رجوع
+                    </Button>
                     <Button asChild className="gap-2">
                         <Link href="/transit">
                             <TransitIcon className="h-4 w-4" />
@@ -357,10 +361,6 @@ function TransitNotFound({ path, onBack }: { path: string; onBack: () => void })
                     </Button>
                     <Button asChild variant="secondary" className="gap-2">
                         <Link href="/mishwar">دليل مشوار</Link>
-                    </Button>
-                    <Button type="button" variant="outline" onClick={onBack} className="gap-2">
-                        <ArrowRight className="h-4 w-4" />
-                        رجوع
                     </Button>
                 </div>
 
@@ -493,15 +493,15 @@ function GeneralNotFound({ path, onBack }: { path: string; onBack: () => void })
                 </p>
 
                 <div className="mt-5 flex flex-wrap items-center justify-center gap-2.5">
+                    <Button type="button" variant="outline" onClick={onBack} className="gap-2">
+                        <ArrowRight className="h-4 w-4" />
+                        رجوع
+                    </Button>
                     <Button asChild className="gap-2">
                         <Link href="/">
                             <Home className="h-4 w-4" />
                             الصفحة الرئيسية
                         </Link>
-                    </Button>
-                    <Button type="button" variant="outline" onClick={onBack} className="gap-2">
-                        <ArrowRight className="h-4 w-4" />
-                        رجوع
                     </Button>
                 </div>
             </div>

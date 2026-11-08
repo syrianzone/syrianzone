@@ -289,7 +289,7 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
             )}
 
             {/* Header Overlay */}
-            <div className="absolute top-4 right-4 z-[400] pointer-events-none">
+            <div className="absolute top-4 end-4 z-[400] pointer-events-none">
                 <div className="bg-card/90 backdrop-blur p-3 rounded-lg shadow-lg border border-border pointer-events-auto max-w-xs">
                     <h1 className="text-base font-bold text-foreground mb-0.5">أطلس سوريا</h1>
                     <p className="text-xs text-muted-foreground leading-relaxed">
@@ -380,7 +380,7 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                 </Suspense>
 
                 {/* Legend Overlay */}
-                <div className="absolute bottom-6 right-6 z-[400] bg-card/90 backdrop-blur p-3 rounded-lg shadow-lg border border-border text-sm min-w-[150px]">
+                <div className="absolute bottom-6 end-20 z-[400] bg-card/90 backdrop-blur p-3 rounded-lg shadow-lg border border-border text-sm min-w-[150px]">
                     <h2 className="font-bold mb-2 text-foreground flex items-center gap-2">
                         {currentDataType === DATA_TYPES.RAINFALL && <CloudRain size={16} className="text-primary" />}
                         {currentDataType === DATA_TYPES.ENVIRONMENTAL && <ThermometerSun size={16} className="text-primary" />}
@@ -401,9 +401,9 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
             </div>
 
             {/* Side Panel */}
-            <div className={`absolute top-0 left-0 bottom-0 z-[500] w-full sm:w-80 bg-card border-r border-border shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col ${isPanelOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-                <button aria-label={isPanelOpen ? 'إغلاق اللوحة' : 'فتح اللوحة'} onClick={() => setIsPanelOpen(!isPanelOpen)} className="absolute -right-10 top-1/2 transform -translate-y-1/2 w-10 h-16 bg-card text-primary rounded-r-lg shadow-md flex items-center justify-center hover:bg-accent border-y border-r border-border transition-colors" title={isPanelOpen ? 'إغلاق اللوحة' : 'فتح اللوحة'}>
-                    {isPanelOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
+            <div className={`absolute top-0 start-0 bottom-0 z-[500] w-full sm:w-80 bg-card border-e border-border shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col ${isPanelOpen ? 'translate-x-0' : '-translate-x-full rtl:translate-x-full'}`}>
+                <button aria-label={isPanelOpen ? 'إغلاق اللوحة' : 'فتح اللوحة'} onClick={() => setIsPanelOpen(!isPanelOpen)} className="absolute -end-10 top-1/2 transform -translate-y-1/2 w-10 h-16 bg-card text-primary rounded-e-lg shadow-md flex items-center justify-center hover:bg-accent border-y border-e border-border transition-colors" title={isPanelOpen ? 'إغلاق اللوحة' : 'فتح اللوحة'}>
+                    {isPanelOpen ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
                 </button>
 
                 <div className="p-4 border-b border-border bg-card">
@@ -446,7 +446,7 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                     {currentDataType === DATA_TYPES.RAINFALL ? (
                         <div className="flex flex-col h-full">
                             {selectedRainfallProvince ? (
-                                <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
+                                <div className="space-y-6 animate-in fade-in slide-in-from-start-4 duration-300">
                                     <div className="flex justify-between items-start">
                                         <div>
                                             <h2 className="text-xl font-bold text-foreground">{selectedRainfallProvince.name}</h2>
@@ -483,7 +483,7 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                         /* OPTION 2: ENVIRONMENTAL PANEL CONTENT */
                         <div className="flex flex-col h-full">
                             {selectedEnvProvince ? (
-                                <div className="space-y-4 animate-in fade-in slide-in-from-left-4 duration-300">
+                                <div className="space-y-4 animate-in fade-in slide-in-from-start-4 duration-300">
                                     {/* Enhanced Header with Weather Icon */}
                                     <div className="relative overflow-hidden rounded-xl p-4 bg-gradient-to-br from-sky-500/20 via-cyan-500/10 to-emerald-500/20 border border-sky-500/20">
                                         <div className="absolute top-2 left-2 opacity-20">
@@ -582,7 +582,7 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                                                 </div>
                                                 <span className="text-lg font-bold">{selectedEnvProvince.data.current_conditions?.humidity_percent ?? '—'}%</span>
                                                 <div className="mt-1 h-1 bg-muted rounded-full overflow-hidden">
-                                                    <div className="h-full bg-gradient-to-r from-blue-400 to-cyan-400 transition-all duration-500" style={{ width: `${selectedEnvProvince.data.current_conditions?.humidity_percent ?? 0}%` }}></div>
+                                                    <div className="h-full bg-gradient-to-l from-blue-400 to-cyan-400 transition-all duration-500" style={{ width: `${selectedEnvProvince.data.current_conditions?.humidity_percent ?? 0}%` }}></div>
                                                 </div>
                                             </div>
                                             <div className="bg-card/80 backdrop-blur-sm p-2.5 rounded-lg border border-border/30 hover:border-slate-500/30 transition-colors group">
@@ -609,7 +609,7 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                                                 </div>
                                                 <span className="text-lg font-bold">{selectedEnvProvince.data.current_conditions?.cloud_cover_percent ?? '—'}%</span>
                                                 <div className="mt-1 h-1 bg-muted rounded-full overflow-hidden">
-                                                    <div className="h-full bg-gradient-to-r from-slate-400 to-slate-600 transition-all duration-500" style={{ width: `${selectedEnvProvince.data.current_conditions?.cloud_cover_percent ?? 0}%` }}></div>
+                                                    <div className="h-full bg-gradient-to-l from-slate-400 to-slate-600 transition-all duration-500" style={{ width: `${selectedEnvProvince.data.current_conditions?.cloud_cover_percent ?? 0}%` }}></div>
                                                 </div>
                                             </div>
                                             <div className="bg-card/80 backdrop-blur-sm p-2.5 rounded-lg border border-border/30 hover:border-cyan-500/30 transition-colors group">
@@ -756,7 +756,7 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                                                             <span className="text-red-400">{selectedEnvProvince.data.historical_summary.avg_max_temp_c}°</span>
                                                         </span>
                                                     </div>
-                                                    <div className="h-2 bg-gradient-to-r from-blue-500 via-yellow-500 to-red-500 rounded-full"></div>
+                                                    <div className="h-2 bg-gradient-to-l from-blue-500 via-yellow-500 to-red-500 rounded-full"></div>
                                                 </div>
                                                 <div className="flex justify-between items-center bg-card/50 p-2 rounded-lg">
                                                     <span className="text-xs text-muted-foreground flex items-center gap-1">
@@ -801,7 +801,7 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                                 </div>
                             ) : (
                                 /* Country-Level Summary when no province selected */
-                                <div className="space-y-4 animate-in fade-in slide-in-from-left-4 duration-300">
+                                <div className="space-y-4 animate-in fade-in slide-in-from-start-4 duration-300">
                                     <div className="text-center py-4">
                                         <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 flex items-center justify-center">
                                             <Leaf size={32} className="text-emerald-500" />

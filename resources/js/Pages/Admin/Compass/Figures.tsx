@@ -410,11 +410,11 @@ export default function CompassFigures({ figures, categories, axes = [], canView
                     </div>
 
                     <DialogFooter className="flex-row-reverse gap-2">
+                        <Button variant="outline" onClick={() => setOpen(false)}>إلغاء</Button>
                         <Button onClick={handleSave} disabled={saving || !form.name.trim()} className="gap-2">
                             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                             {editing ? 'حفظ التعديلات' : 'إضافة'}
                         </Button>
-                        <Button variant="outline" onClick={() => setOpen(false)}>إلغاء</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

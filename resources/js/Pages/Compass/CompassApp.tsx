@@ -162,8 +162,9 @@ export default function CompassApp({ isLoggedIn, figures, personas }: Props) {
       if (e.key in map) {
         if (tag === 'BUTTON' || tag === 'A') return;
         answer(map[e.key]);
-      } else if (e.key === 'ArrowLeft') goPrev();
-      else if (e.key === 'ArrowRight') goNext();
+      // RTL: the previous button sits on the right, so ArrowRight goes back
+      } else if (e.key === 'ArrowRight') goPrev();
+      else if (e.key === 'ArrowLeft') goNext();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);

@@ -300,7 +300,7 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
           </Button>
         </div>
         <p className="text-[10px] text-muted-foreground leading-relaxed">
-          الخريطة يجب أن تكون عامة (Share ← Anyone with link). للخرائط الخاصة: من My Maps اختر Export ← KML ثم ارفع الملف هنا.
+          الخريطة يجب أن تكون عامة (Share → Anyone with link). للخرائط الخاصة: من My Maps اختر Export → KML ثم ارفع الملف هنا.
         </p>
         {error && (
           <div className="p-2.5 bg-destructive/10 border border-destructive/30 rounded-lg text-[11px] text-destructive leading-relaxed">

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowRight, ExternalLink, Star } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, ExternalLink, Star } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { api, extractError } from '../_lib/api';
@@ -63,16 +63,18 @@ export function HotelDetailView(props: { hotelId: number; onClose: () => void })
                     <button
                       type="button"
                       onClick={() => setImgIdx((i) => (i === 0 ? images.length - 1 : i - 1))}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 px-2 py-1 text-xs text-white"
+                      className="absolute start-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-1 text-white"
+                      aria-label="الصورة السابقة"
                     >
-                      ‹
+                      <ChevronRight className="h-4 w-4" />
                     </button>
                     <button
                       type="button"
                       onClick={() => setImgIdx((i) => (i === images.length - 1 ? 0 : i + 1))}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 px-2 py-1 text-xs text-white"
+                      className="absolute end-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-1 text-white"
+                      aria-label="الصورة التالية"
                     >
-                      ›
+                      <ChevronLeft className="h-4 w-4" />
                     </button>
                     <span className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-2 py-0.5 text-[10px] text-white">
                       {imgIdx + 1} / {images.length}

@@ -1685,10 +1685,38 @@ html {
     .button {
         cursor: pointer;
     }
+
+    /* Icons whose arrow follows the reading direction (open-in-new tab,
+       sign in/out, undo/redo) mirror in RTL, like Material's auto-mirrored
+       set. Chevrons/arrows are NOT here: those are picked per meaning (back =
+       ArrowRight/ChevronRight, next = ChevronLeft). `:dir()` keeps deliberate
+       dir="ltr" islands unmirrored. Uses `transform`, so it composes with
+       Tailwind v4's rotate/scale/translate utilities. */
+    :is(.lucide-external-link, .lucide-log-in, .lucide-log-out, .lucide-undo-2, .lucide-redo-2):dir(rtl) {
+        transform: scaleX(-1);
+    }
 }
 
 html {
     direction: rtl;
+}
+
+/* Recharts legends/tooltips carry Arabic labels, so they read right-to-left
+   even when the plot itself sits in a dir="ltr" island (time axes). Recharts
+   sets physical inline margins (margin-right) on legend items and swatches,
+   which glue the swatch to the label in RTL, hence the !important logical
+   overrides. */
+.recharts-default-legend,
+.recharts-default-tooltip {
+    direction: rtl;
+}
+.recharts-default-legend .recharts-legend-item {
+    margin-right: 0 !important;
+    margin-inline: 5px !important;
+}
+.recharts-default-legend .recharts-legend-item > svg {
+    margin-right: 0 !important;
+    margin-inline-end: 4px !important;
 }
 
 html[data-font="system"],

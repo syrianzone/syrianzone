@@ -35,7 +35,9 @@
         "date": "2025-03-29",
         "note_ar": "الإعلان عن الحكومة الانتقالية (22 وزيراً) في قصر الشعب يوم 29 آذار 2025، وتذكر شفق نيوز صراحة أن الإعلان تأخر عن مطلع آذار.",
         "url": "https://shafaq.com/en/World/New-government-takes-office-in-Syria-following-al-Assad-s-ouster",
-        "verified": true
+        "verified": true,
+        "supports_verdict": true,
+        "event_date": "2025-03-29"
       }
     ],
     "sources": [
@@ -106,7 +108,9 @@
         "date": "2025-06-22",
         "note_ar": "صدور المرسوم 102 لعام 2025 بزيادة الرواتب 200% (والمرسوم 103 للمعاشات)، وتذكر الشرق أن حكومة البشير وعدت بـ400% ولم تتمكن من التنفيذ بسبب الضغوط الاقتصادية والعقوبات.",
         "url": "https://asharq.com/politics/140235/سوريا-الشرع-يصدر-مرسوما-بزيادة-الرواتب-200/",
-        "verified": true
+        "verified": true,
+        "supports_verdict": true,
+        "event_date": "2025-06-22"
       },
       {
         "date": "2025-06-22",
@@ -198,7 +202,8 @@
         "date": "2025-03-20",
         "note_ar": "الجزيرة: التغذية متاحة نحو 4 ساعات يومياً في أغلب المناطق، والوزير يتحدث عن رفعها إلى 8 ساعات مستقبلاً بعد وصول الفيول، وقال: \"لا يمكن توفير التغذية الكهربائية على مدار الساعة\".",
         "url": "https://www.aljazeera.net/ebusiness/2025/3/20/syria-gas-daily-provide-electricity",
-        "verified": true
+        "verified": true,
+        "supports_verdict": true
       },
       {
         "date": "2025-03-28",
@@ -361,7 +366,8 @@
         "date": "2025-08-26",
         "note_ar": "الوزير يعلن 8 ساعات يومياً في جميع المحافظات (من 4) بعد الغاز الأذربيجاني؛ لا هدف جديد معلن.",
         "url": "https://www.aljazeera.net/ebusiness/2025/8/26/%D9%83%D9%8A%D9%81-%D8%A3%D8%AB%D8%B1%D8%AA-%D8%B2%D9%8A%D8%A7%D8%AF%D8%A9-%D8%B3%D8%A7%D8%B9%D8%A7%D8%AA-%D8%A7%D9%84%D8%AA%D8%BA%D8%B0%D9%8A%D8%A9",
-        "verified": true
+        "verified": true,
+        "supports_verdict": true
       },
       {
         "date": "2026-01-29",
@@ -502,7 +508,8 @@
         "date": "2026-02-12",
         "note_ar": "سانا: تعميم بصرف تعويض طبيعة عمل 40% من الأجر للمعلمين المفصولين بسبب الثورة والمتعاقد معهم، في إطار \"تسوية الأوضاع الوظيفية والقانونية\" — ما يعني أن جزءاً منهم عاد فعلاً.",
         "url": "https://sana.sy/education/2401038/",
-        "verified": true
+        "verified": true,
+        "supports_verdict": true
       },
       {
         "date": "2026-06-01",
@@ -556,7 +563,9 @@
         "date": "2025-10-07",
         "note_ar": "أُجري الاقتراع في 5 تشرين الأول 2025 (نحو 6000 عضو هيئات ناخبة) وأُعلنت نتائج أولية لـ119 نائباً مع بقاء 21 مقعداً شاغراً، وتأجيل التصويت في السويداء ومناطق خارج سيطرة الحكومة.",
         "url": "https://www.thestar.com.my/news/world/2025/10/07/first-results-for-syria039s-new-parliament-show-low-share-for-minorities-women",
-        "verified": true
+        "verified": true,
+        "supports_verdict": true,
+        "event_date": "2025-10-05"
       },
       {
         "date": "2026-02-11",
@@ -699,7 +708,9 @@
         "date": "2026-03-02",
         "note_ar": "سانا: بدأ الاستبدال في 1 كانون الثاني لمدة 90 يوماً، والحاكم يمدد المهلة 60 يوماً اعتباراً من 1 نيسان 2026.",
         "url": "https://sana.sy/economy/2416274/",
-        "verified": true
+        "verified": true,
+        "supports_verdict": true,
+        "event_date": "2026-01-01"
       },
       {
         "date": "2026-06-01",
@@ -825,8 +836,8 @@
     "deadline_reasoning": "\"بحلول 2027\" غامضة (بداية العام أم خلاله)؛ اعتُمد الهدف التشغيلي المعلن للمبادرة الحكومية: أيلول 2027.",
     "target": {
       "value": 1150,
-      "unit_ar": "مخيم (العدد المطلوب إغلاقه)",
-      "baseline": 1150,
+      "unit_ar": "مخيماً مغلقاً",
+      "baseline": 0,
       "baseline_note": "1150 مخيماً (801 في إدلب و349 في حلب) ونحو مليون نازح وفق الأناضول، أيار 2026. الهدف: صفر مخيمات."
     },
     "sector": "returns",
@@ -845,7 +856,8 @@
         "date": "2026-10-26",
         "note_ar": "نائب وزير الطوارئ وإدارة الكوارث (Ahmed Ekzayez): نحو 25% من النازحين في مخيمات الشمال عادوا منذ إطلاق المبادرة في 9 أيار 2026، والهدف تفكيك المخيمات بحلول أيلول 2027.",
         "url": "https://english.aawsat.com/node/5333715",
-        "verified": true
+        "verified": true,
+        "supports_verdict": true
       }
     ],
     "sources": [

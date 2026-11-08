@@ -34,7 +34,7 @@ export interface PromiseTarget {
 }
 
 /** What the big number means; see Promise::counter(). */
-export type CounterMode = 'left' | 'today' | 'overdue' | 'since' | 'early' | 'ontime' | 'late' | 'took' | 'since_deadline';
+export type CounterMode = 'left' | 'today' | 'overdue' | 'since' | 'early' | 'ontime' | 'late' | 'took' | 'closed';
 
 export interface PromiseCounter {
     mode: CounterMode;

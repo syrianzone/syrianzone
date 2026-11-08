@@ -271,12 +271,13 @@ class PromisePresenter
         $baseline = $promise->baseline_value;
         $target = $promise->target_value;
 
+        // Progress runs from the baseline towards the target in either direction
+        // (more hours, or fewer camps). With no distance between the two there
+        // is nothing to measure, so no percentage is shown.
         $percent = null;
-        if ($current !== null) {
-            $span = $target - ($baseline ?? 0);
-            $percent = $span == 0.0
-                ? 100
-                : (int) round(max(0, min(100, (($current - ($baseline ?? 0)) / $span) * 100)));
+        $span = $target - ($baseline ?? 0);
+        if ($current !== null && $span != 0.0) {
+            $percent = (int) round(max(0, min(100, (($current - ($baseline ?? 0)) / $span) * 100)));
         }
 
         return [

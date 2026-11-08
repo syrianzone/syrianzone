@@ -14,30 +14,39 @@ interface Props {
     live?: boolean;
 }
 
+/** How each verdict is said in a sentence ("تحقق بعد الموعد بـ…"). */
+const VERDICT: Partial<Record<PromiseState, string>> = {
+    fulfilled: 'تحقق',
+    partially_fulfilled: 'تحقق جزئياً',
+    broken: 'حُكم بأنه لم يتحقق',
+    postponed: 'أُجّل',
+    retracted: 'سُحب',
+};
+
 /** The caption under the numeral, and the full sentence for screen readers. */
 function describe(state: PromiseState, { mode, value }: PromiseCounter): { caption: string; spoken: string } {
     const n = value ?? 0;
     const word = dayWord(n);
     const days = daysPhrase(n);
-    const kept = state === 'partially_fulfilled' ? 'تحقق جزئياً' : 'تحقق';
+    const verdict = VERDICT[state] ?? STATE_META[state].label;
 
     switch (mode) {
         case 'left': return { caption: `${word} حتى الموعد`, spoken: `بقي ${days} حتى الموعد` };
         case 'today': return { caption: 'الموعد اليوم', spoken: 'الموعد اليوم' };
         case 'overdue': return { caption: `${word} من التأخير`, spoken: `تجاوز الموعد بـ${days}` };
         case 'since': return { caption: `${word} منذ إطلاق الوعد`, spoken: `مضى ${days} منذ إطلاق الوعد` };
-        case 'early': return { caption: `${word} قبل الموعد`, spoken: `${kept} قبل الموعد بـ${days}` };
-        case 'ontime': return { caption: 'في الموعد تماماً', spoken: `${kept} في الموعد تماماً` };
-        case 'late': return { caption: `${word} بعد الموعد`, spoken: `${kept} بعد الموعد بـ${days}` };
-        case 'took': return { caption: `${word} حتى ${kept}`, spoken: `${kept} بعد ${days} من إطلاقه` };
-        case 'since_deadline': return { caption: `${word} منذ انقضاء الموعد`, spoken: `مضى ${days} منذ انقضاء الموعد` };
+        case 'early': return { caption: `${word} قبل الموعد`, spoken: `${verdict} قبل الموعد بـ${days}` };
+        case 'ontime': return { caption: 'في يوم الموعد', spoken: `${verdict} في يوم الموعد` };
+        case 'late': return { caption: `${word} بعد الموعد`, spoken: `${verdict} بعد الموعد بـ${days}` };
+        case 'took': return { caption: `${word} بعد إطلاقه`, spoken: `${verdict} بعد ${days} من إطلاقه` };
+        case 'closed': return { caption: STATE_META[state].label, spoken: verdict };
     }
 }
 
 /**
  * The big number on a promise. Its meaning comes from the server
  * (Promise::counter) so every surface agrees: open promises count down, or up
- * once overdue; closed ones freeze on the number that describes the verdict.
+ * once overdue; closed ones freeze on the verdict date.
  * Whole days are computed in Syrian time server-side; the live clock only
  * starts after hydration so the server render and the client match.
  *

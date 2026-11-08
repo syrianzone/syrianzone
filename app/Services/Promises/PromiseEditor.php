@@ -22,9 +22,17 @@ use Illuminate\Support\Facades\DB;
  *    or the previous status change, so the log reads in order.
  *  - `progress` and `official_response` entries must cite a source too.
  *  - `resolved_at` is set by closing verdicts only and cleared on reopen.
+ *  - No log entry is dated before the statement, and the statement date
+ *    cannot move past the log.
  *  - Once a promise has ever been public, its status changes are permanent.
  *    Before that, the latest one can be undone (to fix a researched date).
+ *  - Verdicts are recorded under a row lock on the promise, so concurrent
+ *    requests cannot interleave the log.
+ *  - Marking a restated original `postponed` is a verdict, so it only happens
+ *    for an actor who may rule on promises.
  *  - A published promise only points at an approved speaker.
+ *  - Any change to a promise or its public log touches the promise, so its
+ *    `updated_at` (detail page, sitemap) follows the evidence.
  *  - Field shapes are validated at the edge (controllers); this class
  *    enforces the domain rules and keeps the relation rows consistent.
  */
@@ -49,6 +57,11 @@ class PromiseEditor
             $restatesId = $data['restates_promise_id'] ?? null;
             if ($restatesId !== null) {
                 $this->assertRestatable($promise, $restatesId);
+            }
+
+            $firstEntry = $promise?->updates()->min('happened_on');
+            if ($firstEntry && $data['statement_date'] > substr((string) $firstEntry, 0, 10)) {
+                throw PromiseActionException::statementAfterLog(substr((string) $firstEntry, 0, 10));
             }
 
             // The title is a snapshot of the speaker's office at the time. A
@@ -99,6 +112,8 @@ class PromiseEditor
                 $this->syncSources($promise, $data['sources']);
             }
 
+            $promise->touch();
+
             if ($linkChanged && $promise->review_status === 'published') {
                 $this->postponeRestatedOriginal($promise->fresh(), $actor);
             }
@@ -118,12 +133,18 @@ class PromiseEditor
             throw PromiseActionException::sourceRequired();
         }
 
-        $earliest = $this->earliestStatusDate($promise);
-        if ($entry['happened_on'] < $earliest) {
-            throw PromiseActionException::dateOutOfOrder($earliest);
-        }
-
         return DB::transaction(function () use ($promise, $to, $entry, $actor) {
+            $promise = Promise::query()->lockForUpdate()->findOrFail($promise->id);
+
+            if ($promise->status === $to) {
+                throw PromiseActionException::sameStatus();
+            }
+
+            $earliest = $this->earliestStatusDate($promise);
+            if ($entry['happened_on'] < $earliest) {
+                throw PromiseActionException::dateOutOfOrder($earliest);
+            }
+
             $from = $promise->status;
 
             $promise->update([
@@ -157,7 +178,12 @@ class PromiseEditor
             throw PromiseActionException::sourceRequired();
         }
 
-        return $promise->updates()->create([
+        $statement = $promise->statement_date->format('Y-m-d');
+        if ($data['happened_on'] < $statement) {
+            throw PromiseActionException::dateOutOfOrder($statement);
+        }
+
+        $update = $promise->updates()->create([
             'type' => $data['type'],
             'happened_on' => $data['happened_on'],
             'body' => $data['body'] ?? null,
@@ -166,6 +192,9 @@ class PromiseEditor
             'archive_url' => $data['archive_url'] ?? null,
             'created_by' => $actor?->id,
         ]);
+        $promise->touch();
+
+        return $update;
     }
 
     /** Remove a progress reading, official response or note. */
@@ -179,6 +208,7 @@ class PromiseEditor
         }
 
         $update->delete();
+        $promise->touch();
     }
 
     /**
@@ -187,12 +217,14 @@ class PromiseEditor
      */
     public function undoStatusChange(Promise $promise, int $updateId): Promise
     {
-        if ($promise->published_at !== null) {
-            throw PromiseActionException::logIsPermanent();
-        }
-
         return DB::transaction(function () use ($promise, $updateId) {
-            $latest = $this->statusChanges($promise)->lockForUpdate()->first();
+            $promise = Promise::query()->lockForUpdate()->findOrFail($promise->id);
+
+            if ($promise->published_at !== null) {
+                throw PromiseActionException::logIsPermanent();
+            }
+
+            $latest = $this->statusChanges($promise)->first();
 
             if ($latest === null || $latest->id !== $updateId) {
                 throw PromiseActionException::onlyLatestStatus();
@@ -217,9 +249,15 @@ class PromiseEditor
     /**
      * When a published promise restates an earlier, still-open one, the
      * earlier one is marked postponed with a public log entry pointing here.
+     * That is a verdict, so it only happens for an actor who may rule; for
+     * anyone else the link is kept and the original waits for a ruler.
      */
     public function postponeRestatedOriginal(Promise $promise, ?User $actor = null): void
     {
+        if (! $actor?->hasPermission('promises.rule')) {
+            return;
+        }
+
         $original = $promise->restates;
         if ($original === null || ! $original->isOpen() || $promise->review_status !== 'published') {
             return;

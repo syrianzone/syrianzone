@@ -155,10 +155,11 @@ Public reads return only aggregates.
 **The big number** comes from `Promise::counter()` so every surface agrees.
 Open promises count down (`left`, `today`), keep counting once late
 (`overdue`), or count up from the statement when there is no deadline
-(`since`). Closed promises freeze on the number that describes the verdict:
-kept `early` / `ontime` / `late` relative to the deadline, `took` N days when
-there was no deadline, or `since_deadline` for broken ones. Arabic number
-agreement for «يوم» follows the last two digits (`dayWord()`).
+(`since`). Closed promises, whatever the verdict, freeze on the verdict date:
+`early` / `ontime` / `late` relative to the deadline, or `took` N days after
+the statement when there was no deadline (`closed` when no verdict date is
+recorded). Arabic number agreement for «يوم» follows the last two digits
+(`dayWord()`).
 
 ### `/promises/{number}`
 
@@ -185,9 +186,14 @@ manually) · **Sectors**. The dashboard sidebar links here for anyone holding a
 `promises.*` capability; the public page has no admin button.
 
 Status changes are dated in order (never before the statement or the previous
-change). Once a promise has ever been public they are permanent, corrected by
-a new change. Before that, staff holding `promises.rule` can undo the latest
-one, so a verdict date taken from research can be fixed.
+change), and are written under a row lock so concurrent verdicts cannot
+interleave. No log entry precedes the statement, and the statement date cannot
+move past the log. Once a promise has ever been public its status changes are
+permanent, corrected by a new change. Before that, staff holding
+`promises.rule` can undo the latest one, so a verdict date taken from research
+can be fixed. Marking a restated original `postponed` is also a verdict, so it
+happens automatically only for staff holding `promises.rule`. Reports are
+resolved under a row lock, so one cannot be accepted twice.
 
 Publishing needs at least one source and a speaker who is not rejected (a
 pending one is approved with the promise); a speaker with published promises
@@ -253,9 +259,10 @@ Everything lands unpublished (`origin = research`). Speakers are matched to
 people the site already knows by normalised name (titles and spelling variants
 tolerated, single unambiguous match only); everyone else becomes a pending
 speaker approved on publish. The researcher's confidence, caveats, unverified
-links and unmatched institution names go into the note editors see. Evidence
-dates are publication dates, not event dates: a delivered verdict is dated by
-the first report and a broken one by the latest, and the note asks the editor
-to confirm the real date before publishing.
+links and unmatched institution names go into the note editors see. A verdict
+is set only from the evidence item marked `supports_verdict`, dated by its
+`event_date` when the evidence states one, otherwise by its publication date
+(and the note asks the editor to confirm the real date). The command exits
+non-zero when any row fails.
 
 Tests use `PromiseFactory` / `PromiseSpeakerFactory`; there is no demo seeder.

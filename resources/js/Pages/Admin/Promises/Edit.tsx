@@ -416,7 +416,7 @@ export default function PromiseEditor({ promise: initial, options, queueCount }:
                                             </SelectContent>
                                         </Select>
                                         <FieldError id="restates_promise_id-error" message={errors.restates_promise_id} />
-                                        <p className="text-xs text-muted-foreground">حين يُنشر هذا الوعد يُعلَّم الوعد الأصلي «أُجّل» تلقائياً مع رابط إلى هذا الوعد.</p>
+                                        <p className="text-xs text-muted-foreground">يُعلَّم الوعد الأصلي «أُجّل» مع رابط إلى هذا الوعد حين يُنشر هذا الوعد أو يُربط بعد نشره، إن كان لمن يفعل ذلك صلاحية الحكم على الوعود.</p>
                                     </div>
                                 </CardContent>
                             </Card>

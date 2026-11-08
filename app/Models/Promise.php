@@ -202,20 +202,19 @@ class Promise extends Model
      * The one number a promise displays, and what it means.
      *
      * Open promises count down to the deadline (or up from the statement when
-     * there is none) and keep counting once overdue. Closed promises freeze on
-     * the number that describes the verdict: how early or late a kept promise
-     * was kept, or how long a broken one has been past due.
-     *
-     * Modes: left, today, overdue, since, early, ontime, late, took, since_deadline.
+     * there is none) and keep counting once overdue. Closed promises, whatever
+     * the verdict, freeze on the verdict date: how many days before or after
+     * the deadline it came (`early`, `ontime`, `late`), or, with no deadline,
+     * how long after the statement (`took`). A closed promise with no verdict
+     * date shows its state alone (`closed`).
      *
      * @return array{mode: string, value: int|null}
      */
     public function counter(?CarbonImmutable $today = null): array
     {
-        $today ??= self::today();
-        $days = $this->daysUntilDeadline($today);
-
         if ($this->isOpen()) {
+            $days = $this->daysUntilDeadline($today);
+
             return match (true) {
                 $days === null => ['mode' => 'since', 'value' => $this->daysSinceStatement($today)],
                 $days > 0 => ['mode' => 'left', 'value' => $days],
@@ -224,32 +223,26 @@ class Promise extends Model
             };
         }
 
-        $resolved = $this->resolved_at
-            ? CarbonImmutable::parse($this->resolved_at->format('Y-m-d'), self::TIMEZONE)
-            : null;
+        if ($this->resolved_at === null) {
+            return ['mode' => 'closed', 'value' => null];
+        }
+
+        $resolved = CarbonImmutable::parse($this->resolved_at->format('Y-m-d'), self::TIMEZONE);
         $deadline = $this->deadline();
 
-        if (in_array($this->status, ['fulfilled', 'partially_fulfilled'], true) && $resolved) {
-            if ($deadline) {
-                $diff = (int) $deadline->diffInDays($resolved, false);
-
-                return match (true) {
-                    $diff < 0 => ['mode' => 'early', 'value' => abs($diff)],
-                    $diff === 0 => ['mode' => 'ontime', 'value' => null],
-                    default => ['mode' => 'late', 'value' => $diff],
-                };
-            }
-
+        if ($deadline === null) {
             $made = CarbonImmutable::parse($this->statement_date->format('Y-m-d'), self::TIMEZONE);
 
             return ['mode' => 'took', 'value' => max(0, (int) $made->diffInDays($resolved, false))];
         }
 
-        if ($this->status === 'broken' && $days !== null && $days < 0) {
-            return ['mode' => 'since_deadline', 'value' => abs($days)];
-        }
+        $diff = (int) $deadline->diffInDays($resolved, false);
 
-        return ['mode' => 'since', 'value' => $this->daysSinceStatement($today)];
+        return match (true) {
+            $diff < 0 => ['mode' => 'early', 'value' => abs($diff)],
+            $diff === 0 => ['mode' => 'ontime', 'value' => null],
+            default => ['mode' => 'late', 'value' => $diff],
+        };
     }
 
     /** Fulfilled, but after the deadline had passed. */

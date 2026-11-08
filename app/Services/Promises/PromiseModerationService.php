@@ -22,7 +22,10 @@ use Illuminate\Support\Facades\DB;
  *  - A promise is published only with at least one source and an approved
  *    speaker. A pending speaker proposed alongside it is approved with it,
  *    since the reviewer has just looked at both; a rejected one blocks it.
- *  - Publishing a restatement marks the still-open original `postponed`.
+ *  - Publishing a restatement marks the still-open original `postponed`
+ *    when the reviewer may also rule on promises.
+ *  - Reports are reloaded under a row lock before they are resolved, so two
+ *    reviewers cannot both accept one (or accept one that was dismissed).
  */
 class PromiseModerationService
 {
@@ -140,13 +143,10 @@ class PromiseModerationService
      */
     public function acceptReport(PromiseReport $report, User $reviewer, ?string $note = null): PromiseReport
     {
-        if ($report->status !== 'pending') {
-            throw PromiseActionException::notPending($report->status);
-        }
+        return DB::transaction(function () use ($report, $reviewer, $note) {
+            $report = $this->lockPendingReport($report);
+            $promise = $report->promise ?? throw PromiseActionException::notFound();
 
-        $promise = $report->promise ?? throw PromiseActionException::notFound();
-
-        return DB::transaction(function () use ($report, $promise, $reviewer, $note) {
             if ($report->kind === 'progress') {
                 $this->editor->addUpdate($promise, [
                     'type' => $report->source_url ? 'progress' : 'note',
@@ -169,16 +169,28 @@ class PromiseModerationService
 
     public function dismissReport(PromiseReport $report, User $reviewer, ?string $note = null): PromiseReport
     {
+        return DB::transaction(function () use ($report, $reviewer, $note) {
+            $report = $this->lockPendingReport($report);
+
+            $report->update([
+                'status' => 'dismissed',
+                'reviewed_by' => $reviewer->id,
+                'reviewed_at' => now(),
+                'resolution_note' => $note,
+            ]);
+
+            return $report;
+        });
+    }
+
+    /** Reload a report under a row lock and make sure it is still pending. */
+    private function lockPendingReport(PromiseReport $report): PromiseReport
+    {
+        $report = PromiseReport::query()->lockForUpdate()->findOrFail($report->id);
+
         if ($report->status !== 'pending') {
             throw PromiseActionException::notPending($report->status);
         }
-
-        $report->update([
-            'status' => 'dismissed',
-            'reviewed_by' => $reviewer->id,
-            'reviewed_at' => now(),
-            'resolution_note' => $note,
-        ]);
 
         return $report;
     }

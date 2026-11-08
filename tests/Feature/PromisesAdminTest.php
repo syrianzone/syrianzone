@@ -278,7 +278,7 @@ test('the research import lands everything unpublished and is idempotent', funct
         'status_assessment' => 'broken',
         'status_evidence' => [
             ['date' => '2025-11-01', 'note_ar' => 'تأجيل', 'url' => 'https://example.com/1', 'verified' => true],
-            ['date' => '2026-01-10', 'note_ar' => 'لم يُفتتح', 'url' => 'https://example.com/2', 'verified' => false],
+            ['date' => '2026-01-10', 'note_ar' => 'لم يُفتتح', 'url' => 'https://example.com/2', 'verified' => false, 'supports_verdict' => true],
         ],
         'sources' => [['url' => 'https://example.com/src', 'outlet' => 'سانا', 'type' => 'press_conference', 'published_date' => '2025-05-01', 'language' => 'ar', 'archive_url' => null, 'verified' => true]],
         'confidence' => 'medium',
@@ -459,6 +459,121 @@ test('the counter freezes on the verdict and counts in Syrian days', function ()
         ->and($due(['status' => 'partially_fulfilled', 'resolved_at' => '2026-01-01'])->counter())->toBe(['mode' => 'ontime', 'value' => null])
         ->and($due(['status' => 'fulfilled', 'resolved_at' => '2026-01-01', 'deadline_date' => '2025-12-01'])->counter())->toBe(['mode' => 'late', 'value' => 31])
         ->and($due(['status' => 'fulfilled', 'resolved_at' => '2025-06-11', 'deadline_date' => null])->counter())->toBe(['mode' => 'took', 'value' => 10])
-        ->and($due(['status' => 'broken', 'deadline_date' => '2025-12-22'])->counter())->toBe(['mode' => 'since_deadline', 'value' => 10])
         ->and($due(['deadline_date' => null])->counter())->toBe(['mode' => 'since', 'value' => 214]);
+});
+
+test('every closed verdict freezes on its date instead of counting on', function () {
+    $verdicts = fn () => [
+        Promise::factory()->create(['status' => 'broken', 'deadline_date' => '2025-12-01', 'resolved_at' => '2025-12-11'])->counter(),
+        Promise::factory()->create(['status' => 'postponed', 'deadline_date' => '2025-12-01', 'resolved_at' => '2025-11-21'])->counter(),
+        Promise::factory()->create(['status' => 'retracted', 'deadline_date' => null, 'statement_date' => '2025-06-01', 'resolved_at' => '2025-06-21'])->counter(),
+        Promise::factory()->create(['status' => 'broken', 'resolved_at' => null])->counter(),
+    ];
+
+    $this->travelTo(CarbonImmutable::parse('2026-01-15 12:00:00', 'UTC'));
+    $before = $verdicts();
+    $this->travelTo(CarbonImmutable::parse('2026-09-15 12:00:00', 'UTC'));
+
+    expect($verdicts())->toBe($before)
+        ->and($before)->toBe([
+            ['mode' => 'late', 'value' => 10],
+            ['mode' => 'early', 'value' => 10],
+            ['mode' => 'took', 'value' => 20],
+            ['mode' => 'closed', 'value' => null],
+        ]);
+});
+
+test('linking a restatement postpones the original only for staff who may rule', function () {
+    $editorOnly = User::factory()->create(['role' => 'user', 'permissions' => ['promises.edit']]);
+    $ruler = moduleStaff('promises');
+    $original = Promise::factory()->published()->overdue()->create();
+    $restatement = Promise::factory()->published()->create(['statement_date' => '2025-10-01']);
+    $payload = fn () => promisePayload([
+        'speaker_ref' => 'speaker:'.$restatement->speaker_id,
+        'statement_date' => '2025-10-01',
+        'deadline_date' => '2026-06-01',
+        'restates_promise_id' => $original->id,
+    ]);
+
+    $this->actingAs($editorOnly)->putJson("/api/v1/admin/promises/{$restatement->id}", $payload())->assertOk();
+    expect($restatement->fresh()->restates_promise_id)->toBe($original->id)
+        ->and($original->fresh()->status)->toBe('pending');
+
+    $this->actingAs($ruler)->putJson("/api/v1/admin/promises/{$restatement->id}", array_merge($payload(), ['restates_promise_id' => null]))->assertOk();
+    $this->actingAs($ruler)->putJson("/api/v1/admin/promises/{$restatement->id}", $payload())->assertOk();
+    expect($original->fresh()->status)->toBe('postponed');
+});
+
+test('the log never precedes the statement and the statement cannot move past the log', function () {
+    $staff = moduleStaff('promises');
+    $promise = Promise::factory()->create(['statement_date' => '2025-06-01']);
+
+    $this->actingAs($staff)->postJson("/api/v1/admin/promises/{$promise->id}/updates", [
+        'type' => 'note', 'happened_on' => '2025-05-01', 'body' => 'قبل التصريح',
+    ])->assertUnprocessable();
+
+    $this->actingAs($staff)->postJson("/api/v1/admin/promises/{$promise->id}/updates", [
+        'type' => 'note', 'happened_on' => '2025-07-01', 'body' => 'بعد التصريح',
+    ])->assertOk();
+
+    $this->actingAs($staff)->putJson("/api/v1/admin/promises/{$promise->id}", promisePayload([
+        'speaker_ref' => 'speaker:'.$promise->speaker_id,
+        'statement_date' => '2025-08-01',
+        'deadline_date' => '2026-01-01',
+    ]))->assertUnprocessable()->assertJsonPath('message', 'لا يمكن أن يأتي تاريخ التصريح بعد أول بند في سجل الوعد (2025-07-01)');
+});
+
+test('a change to the public log moves the promise\'s last-updated date', function () {
+    $staff = moduleStaff('promises');
+    $promise = Promise::factory()->published()->create();
+    $promise->forceFill(['updated_at' => now()->subWeek()])->saveQuietly();
+    $before = $promise->fresh()->updated_at;
+
+    $this->actingAs($staff)->postJson("/api/v1/admin/promises/{$promise->id}/updates", [
+        'type' => 'note', 'happened_on' => Promise::today()->format('Y-m-d'), 'body' => 'تحديث',
+    ])->assertOk();
+
+    expect($promise->fresh()->updated_at->greaterThan($before))->toBeTrue();
+});
+
+test('a target whose baseline equals it shows no progress percentage', function () {
+    $promise = Promise::factory()->published()->create(['target_value' => 1150, 'target_unit' => 'مخيم', 'baseline_value' => 1150]);
+    $promise->updates()->create(['type' => 'progress', 'happened_on' => '2025-09-01', 'value' => 1, 'source_url' => 'https://example.com/p']);
+
+    $this->get("/promises/{$promise->number}")->assertInertia(fn (Assert $page) => $page
+        ->where('promise.target.current', 1)
+        ->where('promise.target.percent', null)
+    );
+});
+
+test('the import takes the verdict only from marked evidence and fails loudly on bad rows', function () {
+    $file = tempnam(sys_get_temp_dir(), 'promises').'.json';
+    $row = fn (string $title, array $evidence, string $date = '2025-05-01') => [
+        'title_ar' => $title, 'quote' => 'نص', 'quote_is_verbatim' => true, 'speaker_name_ar' => 'شخص الاختبار',
+        'statement_date' => $date, 'statement_venue' => 'speech', 'deadline_date' => '2025-12-31',
+        'sector' => 'transport', 'governorates' => ['national'], 'status_assessment' => 'fulfilled',
+        'status_evidence' => $evidence,
+        'sources' => [['url' => 'https://example.com/src', 'type' => 'speech']],
+    ];
+    file_put_contents($file, json_encode([
+        $row('بلا دليل معلَّم', [['date' => '2025-06-01', 'note_ar' => 'خبر', 'url' => 'https://example.com/a']]),
+        $row('دليل معلَّم بتاريخ الحدث', [
+            ['date' => '2025-06-01', 'note_ar' => 'تأجيل محتمل', 'url' => 'https://example.com/b'],
+            ['date' => '2025-07-20', 'note_ar' => 'افتُتح', 'url' => 'https://example.com/c', 'supports_verdict' => true, 'event_date' => '2025-07-15'],
+        ]),
+        $row('دليل قبل التصريح', [['date' => '2025-01-01', 'note_ar' => 'قديم', 'url' => 'https://example.com/d']], '2025-05-01'),
+    ], JSON_UNESCAPED_UNICODE));
+
+    $this->artisan('promises:import-research', ['path' => $file])->assertFailed();
+
+    $unmarked = Promise::where('title', 'بلا دليل معلَّم')->sole();
+    $marked = Promise::where('title', 'دليل معلَّم بتاريخ الحدث')->sole();
+
+    expect($unmarked->status)->toBe('pending')
+        ->and($unmarked->submitter_note)->toContain('لم يُحدَّد الدليل الذي يثبته')
+        ->and($marked->status)->toBe('fulfilled')
+        ->and($marked->resolved_at->format('Y-m-d'))->toBe('2025-07-15')
+        ->and(Promise::where('title', 'دليل قبل التصريح')->exists())->toBeFalse();
+
+    @unlink($file);
 });

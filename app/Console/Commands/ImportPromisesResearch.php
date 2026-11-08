@@ -53,6 +53,7 @@ class ImportPromisesResearch extends Command
 
         $dryRun = (bool) $this->option('dry-run');
         $rows = [];
+        $failed = 0;
 
         foreach ($items as $i => $item) {
             $title = mb_substr(trim((string) ($item['title_ar'] ?? '')), 0, 200);
@@ -110,11 +111,19 @@ class ImportPromisesResearch extends Command
                 $rows[] = [$i + 1, $title, ($dryRun ? 'would import' : 'imported').' · '.$status];
             } catch (\Throwable $e) {
                 DB::rollBack();
+                $failed++;
                 $rows[] = [$i + 1, $title, 'failed: '.$e->getMessage()];
             }
         }
 
         $this->table(['#', 'Title', 'Result'], $rows);
+
+        if ($failed > 0) {
+            $this->error("{$failed} of ".count($items).' rows failed; the others were '.($dryRun ? 'checked' : 'imported').'.');
+
+            return self::FAILURE;
+        }
+
         $this->info($dryRun
             ? 'Dry run: nothing was written.'
             : 'Done. Imported promises are unpublished; review them at /admin/promises/review.');
@@ -217,10 +226,14 @@ class ImportPromisesResearch extends Command
     }
 
     /**
-     * Turn the researcher's status evidence into change-log entries: earlier
-     * evidence as sourced notes, the latest as the status change itself. An
-     * "overdue, unclear" assessment stays pending; the site shows it as
-     * overdue on its own once the deadline has passed.
+     * Turn the researcher's status evidence into change-log entries.
+     *
+     * The verdict is set only from the evidence item the researcher marked
+     * `supports_verdict`; it is never inferred from an item's position. It is
+     * dated by that item's `event_date` when given, otherwise by its
+     * publication date (and the editor note asks for the real date). Every
+     * other item becomes a sourced note. Without a marked item the promise
+     * stays pending; an overdue one shows as overdue on its own.
      *
      * @param  array<string, mixed>  $item
      */
@@ -233,14 +246,8 @@ class ImportPromisesResearch extends Command
 
         $status = (string) ($item['status_assessment'] ?? 'pending');
         $settable = in_array($status, Promise::STATUSES, true) && $status !== 'pending';
-        // Evidence dates are publication dates, not event dates. Delivery is
-        // dated by the first report of it (later reports only confirm it); a
-        // broken, postponed or retracted verdict by the latest report.
-        $verdict = ! $settable ? null : (
-            in_array($status, ['fulfilled', 'partially_fulfilled', 'in_progress'], true)
-                ? $evidence->first()
-                : $evidence->last()
-        );
+        $verdict = $settable ? $evidence->first(fn ($e) => (bool) ($e['supports_verdict'] ?? false)) : null;
+        $today = Promise::today()->format('Y-m-d');
 
         foreach ($evidence as $e) {
             if ($verdict && $e === $verdict) {
@@ -248,24 +255,26 @@ class ImportPromisesResearch extends Command
             }
             $editor->addUpdate($promise, [
                 'type' => 'note',
-                'happened_on' => min($e['date'], Promise::today()->format('Y-m-d')),
+                'happened_on' => min($e['date'], $today),
                 'body' => $e['note_ar'] ?? null,
                 'source_url' => $e['url'],
             ]);
         }
 
         if ($verdict) {
-            $date = min($verdict['date'], Promise::today()->format('Y-m-d'));
+            $date = min($verdict['event_date'] ?? $verdict['date'], $today);
             $editor->changeStatus($promise, $status, [
                 'happened_on' => $date,
                 'body' => $verdict['note_ar'] ?? null,
                 'source_url' => $verdict['url'],
             ]);
 
-            return "تاريخ الحالة ({$date}) هو تاريخ نشر الدليل لا تاريخ الحدث: تحقق منه، وللتصحيح تراجع عن تغيير الحالة في السجل وأعد تسجيله بالتاريخ الصحيح قبل النشر.";
+            return isset($verdict['event_date'])
+                ? null
+                : "تاريخ الحالة ({$date}) هو تاريخ نشر الدليل لا تاريخ الحدث: تحقق منه، وللتصحيح تراجع عن تغيير الحالة في السجل وأعد تسجيله بالتاريخ الصحيح قبل النشر.";
         }
 
-        return $settable ? "التقييم المقترح: {$status} (بلا رابط دليل، لم تُغيَّر الحالة)" : null;
+        return $settable ? "التقييم المقترح: {$status} (لم يُحدَّد الدليل الذي يثبته، فلم تُغيَّر الحالة)" : null;
     }
 
     /**

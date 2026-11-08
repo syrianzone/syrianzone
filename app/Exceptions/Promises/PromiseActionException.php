@@ -82,6 +82,20 @@ class PromiseActionException extends DomainActionException
         );
     }
 
+    public static function statementAfterLog(string $firstEntry): self
+    {
+        return new self(
+            self::DATE_OUT_OF_ORDER,
+            "لا يمكن أن يأتي تاريخ التصريح بعد أول بند في سجل الوعد ({$firstEntry})",
+            ['first_entry' => $firstEntry],
+        );
+    }
+
+    public static function sameStatus(): self
+    {
+        return new self(self::NOT_PENDING, 'هذه هي الحالة الحالية للوعد');
+    }
+
     public static function logIsPermanent(): self
     {
         return new self(

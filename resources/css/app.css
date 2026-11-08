@@ -1,10 +1,11 @@
 @import "tailwindcss";
+/* v4-native animate-in/out. Not the v3 tailwindcss-animate plugin: under v4 it
+   has no default duration, so popups without a duration class never animate. */
+@import "tw-animate-css";
 /* explicit sources: v4 auto-detection missed classes in some environments,
    silently dropping utilities that only one component uses */
 @source "../js";
 @source "../views";
-
-@plugin "tailwindcss-animate";
 
 /* Ensure all typography declarations swap instantly to avoid FOIT */
 @font-face {

@@ -4,6 +4,7 @@ namespace App\Support\Seo;
 
 use App\Models\City;
 use App\Models\Poll;
+use App\Models\Promise;
 use Illuminate\Http\Request;
 
 /**
@@ -126,6 +127,14 @@ class SeoMeta
             'title' => 'بوصلة سوريا | Syrian Zone',
             'description' => 'اكتشف موقعك السياسي على أحد عشر محوراً عبر اختبار بوصلة سوريا التفاعلي، وقارن نتائجك مع الشخصيات والقوى السياسية.',
         ],
+        '/promises' => [
+            'title' => 'عداد الوعود | Syrian Zone',
+            'description' => 'سجل علني موثّق بالمصادر لوعود المسؤولين السوريين منذ 8 كانون الأول 2024، مع عدّاد تنازلي لكل وعد وما تحقق منه.',
+        ],
+        '/promises/suggest' => [
+            'title' => 'اقترح وعداً — عداد الوعود | Syrian Zone',
+            'description' => 'أرسل وعداً علنياً أطلقه مسؤول سوري مع رابط المصدر، ليراجعه المحررون ويضيفوه إلى عداد الوعود.',
+        ],
         '/compass/stats' => [
             'title' => 'إحصاءات بوصلة سوريا | Syrian Zone',
             'description' => 'إحصاءات مجمّعة ومجهولة الهوية عن نتائج بوصلة سوريا عبر المحاور والفئات والمشاركات.',
@@ -221,6 +230,8 @@ class SeoMeta
         '/priorities' => '/og/priorities.png',
         '/compass' => '/og/compass.png',
         '/compass/stats' => '/og/compass.png',
+        '/promises' => '/og/promises.png',
+        '/promises/suggest' => '/og/promises.png',
         '/alignment' => '/og/compass.png',
         '/games' => '/og/games.png',
         '/games/2048' => '/og/games.png',
@@ -261,6 +272,8 @@ class SeoMeta
         '/games' => 'CollectionPage',
         '/syrian-contributors' => 'CollectionPage',
         '/shawarma' => 'CollectionPage',
+        '/promises' => 'CollectionPage',
+        '/promises/suggest' => 'WebPage',
         '/atlas' => 'Dataset',
         '/compass' => 'Quiz',
         '/alignment' => 'Quiz',
@@ -281,6 +294,7 @@ class SeoMeta
         '/muslim/quran' => ['/muslim', 'الركن الإسلامي'],
         '/muslim/radio' => ['/muslim', 'الركن الإسلامي'],
         '/compass/stats' => ['/compass', 'بوصلة سوريا'],
+        '/promises/suggest' => ['/promises', 'عداد الوعود'],
         '/games/2048' => ['/games', 'الألعاب'],
         '/games/solitare' => ['/games', 'الألعاب'],
         '/games/tarneeb' => ['/games', 'الألعاب'],
@@ -319,7 +333,8 @@ class SeoMeta
         $canonical = $canonicalPath === '/' ? $base.'/' : $base.$canonicalPath;
         $image = self::absolute((string) ($page['image'] ?? self::IMAGES[$path] ?? self::dynamicImage($path) ?? config('seo.default_image')), $base);
         $robots = ($dynamicNoindex || self::isNoindex($path)) ? 'noindex, follow' : 'index, follow';
-        $schema = self::SCHEMA[$path] ?? (str_starts_with($path, '/polls/') ? 'Article' : 'WebPage');
+        $schema = self::SCHEMA[$path]
+            ?? ((str_starts_with($path, '/polls/') || str_starts_with($path, '/promises/')) ? 'Article' : 'WebPage');
         $twitterSite = config('seo.twitter_site');
 
         $meta = [
@@ -408,6 +423,22 @@ class SeoMeta
                 }
             }
 
+            if (preg_match('#^/promises/(\d+)$#', $path, $m)) {
+                $promise = Promise::published()->where('number', (int) $m[1])->with('speaker')->first();
+                if ($promise) {
+                    $speaker = $promise->speaker?->name;
+                    $lead = $promise->summary ?: $promise->quote;
+
+                    return [
+                        $promise->title.' — الوعد رقم '.$promise->number.' | عداد الوعود',
+                        mb_substr(trim(($speaker ? $speaker.': ' : '').preg_replace('/\s+/u', ' ', (string) $lead)), 0, 200),
+                        '/promises/'.$promise->number,
+                        false,
+                        'article',
+                    ];
+                }
+            }
+
             if (preg_match('#^/compass/s/([^/]+)$#', $path)) {
                 return [
                     'نتيجة مشتركة — بوصلة سوريا | Syrian Zone',
@@ -486,6 +517,12 @@ class SeoMeta
             return '/og/compass.png';
         }
 
+        // Countdowns change daily, so promise pages share the section card
+        // rather than freezing a number into a per-record image.
+        if (preg_match('#^/promises/\d+$#', $path)) {
+            return '/og/promises.png';
+        }
+
         return null;
     }
 
@@ -520,6 +557,10 @@ class SeoMeta
 
         if (str_starts_with($path, '/compass/s/')) {
             return ['/compass', 'بوصلة سوريا'];
+        }
+
+        if (str_starts_with($path, '/promises/')) {
+            return ['/promises', 'عداد الوعود'];
         }
 
         return null;
@@ -596,9 +637,12 @@ class SeoMeta
             $graph[] = $page;
         }
 
+        // The string is printed raw inside <script> (app.blade.php and
+        // SeoHead), and titles can come from visitor submissions, so `<`, `>`
+        // and `&` are escaped: a "</script>" in a title must stay data.
         return (string) json_encode(
             ['@context' => 'https://schema.org', '@graph' => $graph],
-            JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE,
+            JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP,
         );
     }
 }

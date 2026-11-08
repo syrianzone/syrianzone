@@ -31,10 +31,13 @@ PUBLIC_ROUTES = [
     "/muslim/prayer", "/muslim/quran", "/muslim/radio",
     "/games", "/games/2048", "/games/solitare", "/board",
     "/mishwar", "/transit", "/transit/studio",
+    "/promises", "/promises/suggest",
 ]
 ADMIN_ROUTES = [
     "/dashboard", "/admin/govapps", "/admin/phonebook", "/admin/syofficial",
     "/admin/guesswho", "/admin/assets",
+    "/admin/promises", "/admin/promises/new", "/admin/promises/review",
+    "/admin/promises/speakers", "/admin/promises/sectors",
 ]
 
 AXE_AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "best-practice"]

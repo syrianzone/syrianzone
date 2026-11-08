@@ -28,6 +28,7 @@ import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
 import {
   TierlistIcon,
+  PromisesIcon,
   TransitIcon,
   MishwarIcon,
   SyOfficialIcon,
@@ -683,6 +684,17 @@ export default function Dashboard({
                   >
                     <Compass className="h-5 w-5" />
                     بوصلة سوريا
+                  </Link>
+                )}
+
+                {/* Promises Tracker Admin Tab */}
+                {canModule(perms, 'promises') && (
+                  <Link
+                    href="/admin/promises"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  >
+                    <PromisesIcon className="h-5 w-5" />
+                    عداد الوعود
                   </Link>
                 )}
 

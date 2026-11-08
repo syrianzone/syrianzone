@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowUp, ArrowDown, GripVertical } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
-import { formatEntityImage } from '@/Pages/SyOfficial/Index';
+import { formatEntityImage } from '@/Lib/entityImage';
 import axios from 'axios';
 
 export interface SortableItem {

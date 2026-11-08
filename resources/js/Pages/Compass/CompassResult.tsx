@@ -15,7 +15,7 @@ import AxisBars from './components/AxisBars';
 import AlignmentCard from './components/AlignmentCard';
 import CompassCanvas from './components/CompassCanvas';
 import CompassShareCard from './components/CompassShareCard';
-import { exportElementAsPng } from './lib/exportImage';
+import { exportElementAsPng } from '@/Lib/exportElementAsPng';
 
 const BLOC_LABEL: Record<AlignBloc, string> = {
   west: 'غربي',

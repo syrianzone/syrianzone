@@ -77,6 +77,14 @@ final class PermissionCatalogue
                 'compass.figures' => 'إدارة شخصيات البوصلة (إضافة وتعديل وتفعيل)',
                 'compass.personas' => 'إدارة أنماط البوصلة ونطاقاتها ومحتواها',
             ],
+            'promises' => [
+                'promises.create' => 'إضافة الوعود',
+                'promises.edit' => 'تعديل الوعود ومصادرها وسجل تقدّمها',
+                'promises.rule' => 'الحكم على الوعود وتغيير حالتها',
+                'promises.review' => 'مراجعة الاقتراحات والبلاغات ونشر الوعود',
+                'promises.speakers' => 'إدارة قائمة أصحاب التصريحات والقطاعات',
+                'promises.delete' => 'حذف الوعود',
+            ],
             'users' => [
                 'users.ban' => 'حظر المستخدمين ومنعهم من تقديم مسارات',
             ],
@@ -98,6 +106,7 @@ final class PermissionCatalogue
             'phonebook' => ['label' => 'دليل الهاتف', 'icon' => 'phonebook'],
             'polls' => ['label' => 'الاستبيانات', 'icon' => 'polls'],
             'compass' => ['label' => 'بوصلة سوريا', 'icon' => 'compass'],
+            'promises' => ['label' => 'عداد الوعود', 'icon' => 'promises'],
             'users' => ['label' => 'المستخدمون', 'icon' => 'users'],
         ];
     }

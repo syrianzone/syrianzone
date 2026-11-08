@@ -103,3 +103,17 @@ Full contract: [modules/mishwar-places.md](../modules/mishwar-places.md).
 - **phonebook_categories** — id key (emergency, embassies…), label_ar/en, icon, order_column, is_active
 - **phonebook_entries** — category_id, name_ar/en, number, is_whatsapp, source_url, order_column, is_active
 - **hotels** — hala_syria_id UUID unique, bilingual names/city, slug, lat/lng indexed, star_rating, rating, review_count, now_show_rate, address, phone/email, images JSON, amenity booleans, source_url, last_synced_at (synced from HalaSyria every 2 days)
+
+## Promises tracker (عداد الوعود)
+
+Full contract: [specs/promises.md](../specs/promises.md).
+
+- **promise_sectors** — string id key (`electricity`, …), label, icon (lucide key), order_column, is_active. Seeded by the create migration.
+- **promise_speakers** — uuid; name, title, institution_id → official_entities, image_url, x_handle; optional unique links `candidate_id` → candidates, `official_entity_id` → official_entities, `house_member_id` → house_members_2026; status approved|pending|rejected + moderation columns.
+- **promises** — uuid; `number` (public id, assigned on first publish), title, summary, quote, quote_is_verbatim, speaker_id, speaker_title (snapshot), institution_id, sector_id, is_national, statement_date, statement_venue, deadline_wording/date/reasoning, target_value/unit, baseline_value/note, status (pending|in_progress|fulfilled|partially_fulfilled|broken|postponed|retracted), resolved_at, restates_promise_id (self), review_status pending|published|rejected, origin editor|public|research, submitter_note + moderation columns, soft deletes. `overdue` is derived, never stored.
+- **promise_governorate**, **promise_tags** — pivots (governorate slugs from `App\Support\Governorates`; free tags).
+- **promise_sources** — url, outlet, type, published_date, language, archive_url, screenshot_url, video_timestamp, is_primary, sort.
+- **promise_updates** — the public change log: type progress|status_change|official_response|note, happened_on, body, status_from/to, value, source_url, archive_url, created_by.
+- **promise_reports** — visitor progress/error reports with review status.
+- **promise_votes** — "will it be kept?": voter_key + ip_hash are HMACs (app key); unique (promise_id, voter_key); only aggregates are ever read publicly.
+

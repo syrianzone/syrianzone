@@ -11,6 +11,7 @@ use App\Models\PhonebookCategory;
 use App\Models\PhonebookEntry;
 use App\Models\Place;
 use App\Models\Poll;
+use App\Models\Promise;
 use App\Models\Route as TransitRoute;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -50,6 +51,7 @@ class SitemapBuilder
         ['/atlas', 0.9, 'monthly'],
         ['/phonebook', 0.9, 'weekly'],
         ['/govapps', 0.9, 'weekly'],
+        ['/promises', 0.9, 'daily'],
         ['/sites', 0.9, 'weekly'],
         ['/syid', 0.9, 'monthly'],
         ['/muslim', 0.9, 'daily'],
@@ -97,6 +99,7 @@ class SitemapBuilder
         $urls = array_merge(
             $this->staticUrls(),
             $this->pollUrls(),
+            $this->promiseUrls(),
             $this->transitCityUrls(),
         );
 
@@ -163,6 +166,9 @@ class SitemapBuilder
                 Place::where('status', 'approved')->max('updated_at'),
             ]),
             '/polls' => $this->latestOf([Poll::where('is_active', true)->max('updated_at')]),
+            // Only published promises are public, so the review queue must not
+            // move this page's lastmod.
+            '/promises' => $this->latestOf([Promise::published()->max('updated_at')]),
             '/tierlist' => $tierListPoll ? $this->pollLastmod($tierListPoll) : null,
             '/tierlist/leaderboard' => $tierListPoll ? $this->leaderboardLastmod($tierListPoll->id) : null,
             // Sheet-backed pages: last successful fetch time, not a deploy stamp.
@@ -207,6 +213,21 @@ class SitemapBuilder
         }
 
         return $urls;
+    }
+
+    /**
+     * One entry per published promise. Unpublished and rejected suggestions
+     * 404, so they must never be listed.
+     *
+     * @return SitemapUrl[]
+     */
+    private function promiseUrls(): array
+    {
+        return Promise::published()
+            ->orderBy('number')
+            ->get(['number', 'updated_at'])
+            ->map(fn (Promise $p) => new SitemapUrl('/promises/'.$p->number, 0.7, 'weekly', $p->updated_at))
+            ->all();
     }
 
     /**

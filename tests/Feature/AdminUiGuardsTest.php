@@ -45,6 +45,21 @@ function adminUiGateCases(): array
         'resources/js/Pages/Admin/Phonebook/Index.tsx' => [
             'phonebook.create', 'phonebook.edit', 'phonebook.toggle', 'phonebook.delete',
         ],
+        'resources/js/Pages/Admin/Promises/Index.tsx' => [
+            'promises.create', 'promises.edit', 'promises.review', 'promises.delete',
+        ],
+        'resources/js/Pages/Admin/Promises/Edit.tsx' => [
+            'promises.create', 'promises.edit', 'promises.rule', 'promises.review',
+        ],
+        'resources/js/Pages/Admin/Promises/Review.tsx' => [
+            'promises.review', 'promises.edit',
+        ],
+        'resources/js/Pages/Admin/Promises/Speakers.tsx' => [
+            'promises.speakers',
+        ],
+        'resources/js/Pages/Admin/Promises/Sectors.tsx' => [
+            'promises.speakers',
+        ],
     ];
 }
 

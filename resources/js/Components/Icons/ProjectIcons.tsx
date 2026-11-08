@@ -295,6 +295,20 @@ export function CompassIcon({ className = "w-7 h-7" }: ProjectIconProps) {
   );
 }
 
+// 8b. Promises (عداد الوعود - Hourglass with a kept-promise tick)
+export function PromisesIcon({ className = "w-7 h-7" }: ProjectIconProps) {
+  return (
+    <svg viewBox="0 0 32 32" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M8 4h16M8 28h16" className="stroke-[#475569] dark:stroke-[#CBD5E1]" strokeWidth="2.5" strokeLinecap="round" />
+      <path d="M10 4v3.5c0 3 3 5.5 5 8.5-2 3-5 5.5-5 8.5V28h12v-3.5c0-3-3-5.5-5-8.5 2-3 5-5.5 5-8.5V4" className="fill-[#F59E0B]/15 dark:fill-[#FBBF24]/20 stroke-[#D97706] dark:stroke-[#FBBF24]" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M12.5 25c0-1.8 1.7-3.4 3.5-4.6 1.8 1.2 3.5 2.8 3.5 4.6z" className="fill-[#F59E0B] dark:fill-[#FBBF24]" />
+      <path d="M21 21.5l2.5 2.5 5-5.5" className="stroke-[#10B981] dark:stroke-[#34D399]" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      {/* Theme Accent Touch */}
+      <circle cx="16" cy="10" r="1.8" fill="hsl(var(--primary))" />
+    </svg>
+  );
+}
+
 // 9. Priorities (Syria Priorities - Multicolor Sliders)
 export function PrioritiesIcon({ className = "w-7 h-7" }: ProjectIconProps) {
   return (

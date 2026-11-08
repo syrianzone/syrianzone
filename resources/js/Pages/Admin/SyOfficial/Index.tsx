@@ -11,7 +11,7 @@ import { Plus, Search, Edit3, Trash2, Layers, FolderPlus, ArrowUpDown, Globe, Ey
 import CategoryDialog, { CategoryData } from './_components/CategoryDialog';
 import EntityDialog, { EntityData } from './_components/EntityDialog';
 import SortableList from './_components/SortableList';
-import { formatEntityImage } from '@/Pages/SyOfficial/Index';
+import { formatEntityImage } from '@/Lib/entityImage';
 import { canAny } from '@/Lib/permissions'
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';

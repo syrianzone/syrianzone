@@ -51,6 +51,13 @@
             <path d="M21.5 10.5l-3.2 7.8-7.8 3.2 3.2-7.8 7.8-3.2z" fill="#F59E0B" fill-opacity="0.85" stroke="#D97706" stroke-width="1.5" stroke-linejoin="round"/>
             <circle cx="16" cy="16" r="1.8" fill="rgb(var(--primary-500, 37 99 235))"/>
         SVG,
+        'promises' => <<<'SVG'
+            <path d="M8 4h16M8 28h16" stroke="#475569" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M10 4v3.5c0 3 3 5.5 5 8.5-2 3-5 5.5-5 8.5V28h12v-3.5c0-3-3-5.5-5-8.5 2-3 5-5.5 5-8.5V4" fill="#F59E0B" fill-opacity="0.15" stroke="#D97706" stroke-width="2" stroke-linejoin="round"/>
+            <path d="M12.5 25c0-1.8 1.7-3.4 3.5-4.6 1.8 1.2 3.5 2.8 3.5 4.6z" fill="#F59E0B"/>
+            <path d="M21 21.5l2.5 2.5 5-5.5" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="16" cy="10" r="1.8" fill="rgb(var(--primary-500, 37 99 235))"/>
+        SVG,
         'users' => <<<'SVG'
             <circle cx="13" cy="11" r="5" fill="#3B82F6" fill-opacity="0.15" stroke="#2563EB" stroke-width="2"/>
             <path d="M4 27c0-5 4-9 9-9s9 4 9 9" fill="#3B82F6" fill-opacity="0.15" stroke="#2563EB" stroke-width="2" stroke-linecap="round"/>

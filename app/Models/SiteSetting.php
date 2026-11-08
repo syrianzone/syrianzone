@@ -168,6 +168,18 @@ class SiteSetting extends Model
                 ],
             ],
             [
+                'id' => 'promises',
+                'title' => 'عداد الوعود',
+                'subtitle' => 'وعود المسؤولين العلنية ومواعيدها وما تحقق منها',
+                'href' => '/promises',
+                'type' => 'web',
+                'target' => '/promises',
+                'iconKey' => 'promises',
+                'iconUrl' => null,
+                'isInternal' => true,
+                'subCategories' => [],
+            ],
+            [
                 'id' => 'priorities',
                 'title' => 'أولويات سوريا',
                 'subtitle' => 'استبيان وترتيب أولويات إعادة الإعمار والتنمية في سوريا',

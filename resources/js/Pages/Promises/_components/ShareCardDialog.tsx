@@ -1,0 +1,99 @@
+import { useRef, useState } from 'react';
+import { usePage } from '@inertiajs/react';
+import { Button } from '@/Components/ui/button';
+import {
+    Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@/Components/ui/dialog';
+import { Download, Loader2 } from 'lucide-react';
+import { notify } from '@/Lib/notify';
+import Countdown from './Countdown';
+import SpeakerAvatar from './SpeakerAvatar';
+import StateBadge from './StateBadge';
+import { formatDate } from '../_lib/format';
+import type { PromiseDetailData } from '../_lib/types';
+
+/**
+ * A square card with today's count, rendered in the browser so it is never
+ * stale (pre-rendered OG images would freeze the number). The exporter is
+ * loaded on demand: html2canvas is heavy and most visitors never share.
+ *
+ * Nothing inside the captured node may use `truncate`: html2canvas lays out
+ * ellipsised right-to-left text wrongly and clips Arabic names.
+ */
+export default function ShareCardDialog({ promise, open, onOpenChange }: {
+    promise: PromiseDetailData;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+}) {
+    const { seo } = usePage().props as { seo?: { canonical?: string } };
+    const frameRef = useRef<HTMLDivElement>(null);
+    const [busy, setBusy] = useState(false);
+
+    // The canonical URL comes from the server (config('seo.base_url')), so the
+    // card prints the public address even when exported from a local or
+    // staging host.
+    const shareUrl = (seo?.canonical ?? `/promises/${promise.number}`).replace(/^https?:\/\//, '');
+
+    const download = async () => {
+        if (!frameRef.current) return;
+        setBusy(true);
+        try {
+            const { exportElementAsPng } = await import('@/Lib/exportElementAsPng');
+            await exportElementAsPng(frameRef.current, `promise-${promise.number}.png`);
+        } catch {
+            notify.error('تعذّر إنشاء الصورة');
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent dir="rtl" className="max-h-[92vh] overflow-y-auto sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>صورة للمشاركة</DialogTitle>
+                    <DialogDescription>صورة بعدّاد اليوم لنشرها على وسائل التواصل.</DialogDescription>
+                </DialogHeader>
+
+                {/* The captured node is this padded frame rather than the rounded
+                    card, so the image's corners take the theme background instead
+                    of the exporter's fixed fill. */}
+                <div id={`promise-share-${promise.number}`} ref={frameRef} dir="rtl" className="mx-auto w-full max-w-sm bg-background p-3">
+                    <div className="flex aspect-square flex-col justify-between gap-4 rounded-xl border border-border bg-card p-6 text-card-foreground">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="flex min-w-0 items-center gap-2.5">
+                                <SpeakerAvatar name={promise.speaker.name} image={promise.speaker.image} size={44} />
+                                <div className="min-w-0">
+                                    <p className="text-sm font-bold leading-snug">{promise.speaker.name}</p>
+                                    {promise.speaker.title && (
+                                        <p className="text-xs leading-snug text-muted-foreground">{promise.speaker.title}</p>
+                                    )}
+                                </div>
+                            </div>
+                            <StateBadge state={promise.state} keptLate={promise.keptLate} />
+                        </div>
+                        <p className="text-lg font-extrabold leading-snug">{promise.title}</p>
+                        <Countdown state={promise.state} counter={promise.counter} size="lg" />
+                        <div className="flex items-end justify-between gap-2 border-t border-border pt-3 text-xs text-muted-foreground">
+                            <span>
+                                {promise.deadlineDate ? `الموعد ${formatDate(promise.deadlineDate)}` : `أُطلق ${formatDate(promise.statementDate)}`}
+                            </span>
+                            <span className="text-end font-semibold text-foreground">
+                                عداد الوعود
+                                <br />
+                                <span dir="ltr">{shareUrl}</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <DialogFooter className="gap-2 sm:justify-start">
+                    <Button onClick={download} disabled={busy} className="gap-2">
+                        {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Download className="h-4 w-4" aria-hidden="true" />}
+                        تحميل الصورة
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}

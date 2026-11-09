@@ -8,6 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CheckCircle2Icon, AlertCircleIcon, Download } from "lucide-react";
 import { exportTierListFromData } from "@/lib/exportImage";
 import { getOriginalImageUrl } from "@/Lib/imageUtils";
+import { getDeviceId } from "@/Lib/deviceId";
 import axios from "@/lib/axios";
 import JSZip from "jszip";
 
@@ -304,8 +305,7 @@ export default function TierBoard({
             return;
         }
         setIsSubmitting(true);
-        const deviceId = localStorage.getItem("deviceId") || crypto.randomUUID();
-        localStorage.setItem("deviceId", deviceId);
+        const deviceId = getDeviceId() ?? crypto.randomUUID();
         const payload: {
             pollSlug?: string;
             deviceId: string;

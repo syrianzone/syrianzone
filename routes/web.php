@@ -24,6 +24,8 @@ use App\Http\Controllers\PhonebookController;
 use App\Http\Controllers\PlaceAdminController;
 use App\Http\Controllers\PlaceController;
 use App\Http\Controllers\PollController;
+use App\Http\Controllers\PromiseController;
+use App\Http\Controllers\PromisesAdminController;
 use App\Http\Controllers\RadioUsageController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\SiteNavigationAdminController;
@@ -60,6 +62,10 @@ Route::get('/tierlist/leaderboard', [PollController::class, 'renderTierListLeade
 Route::get('/compass', [CompassController::class, 'index']);
 Route::get('/compass/stats', [CompassController::class, 'stats']);
 Route::get('/compass/s/{shareId}', [CompassController::class, 'shared']);
+// Promises tracker (عداد الوعود). Unknown or unpublished numbers 404.
+Route::get('/promises', [PromiseController::class, 'index']);
+Route::get('/promises/suggest', [PromiseController::class, 'suggest']);
+Route::get('/promises/{number}', [PromiseController::class, 'show'])->where('number', '[0-9]{1,9}');
 Route::get('/priorities', function () {
     return Inertia::render('Priorities/Index');
 });
@@ -797,6 +803,109 @@ Route::middleware('auth:web,sanctum')->group(function () {
                     ->name('api.v1.admin.compass.personas.toggle');
                 Route::post('/{id}/toggle', [CompassAdminController::class, 'togglePersona'])->whereNumber('id');
             });
+    });
+
+    // 8. Promises Admin Panel (عداد الوعود): promises, review queue, speakers
+    // and sectors. Every route names its capability; `any` is used only on
+    // read-only page shells and the speaker search their pickers call.
+    Route::middleware('promises_admin')->group(function () {
+        Route::get('/admin/promises', [PromisesAdminController::class, 'renderIndex'])
+            ->middleware('promises_admin:any');
+        Route::get('/admin/promises/new', [PromisesAdminController::class, 'renderEditor'])
+            ->middleware('promises_admin:promises.create');
+        Route::get('/admin/promises/review', [PromisesAdminController::class, 'renderReview'])
+            ->middleware('promises_admin:promises.review');
+        Route::get('/admin/promises/speakers', [PromisesAdminController::class, 'renderSpeakers'])
+            ->middleware('promises_admin:promises.speakers');
+        Route::get('/admin/promises/sectors', [PromisesAdminController::class, 'renderSectors'])
+            ->middleware('promises_admin:promises.speakers');
+        // A read-only page shell: editors, rulers and reviewers all work from
+        // it, and every control on it is gated by its own capability.
+        Route::get('/admin/promises/{id}/edit', [PromisesAdminController::class, 'renderEditor'])
+            ->whereUuid('id')
+            ->middleware('promises_admin:any');
+
+        Route::prefix('api/v1/admin/promises')->middleware('throttle:120,1')->group(function () {
+            Route::get('/speakers/search', [PromisesAdminController::class, 'searchSpeakers'])
+                ->middleware('promises_admin:any')
+                ->name('api.v1.admin.promises.speakers.search');
+            Route::post('/upload-image', [PromisesAdminController::class, 'uploadImage'])
+                ->middleware('promises_admin:promises.edit')
+                ->name('api.v1.admin.promises.upload-image');
+            Route::post('/speakers/upload-image', [PromisesAdminController::class, 'uploadImage'])
+                ->middleware('promises_admin:promises.speakers')
+                ->name('api.v1.admin.promises.speakers.upload-image');
+
+            Route::post('/', [PromisesAdminController::class, 'store'])
+                ->middleware('promises_admin:promises.create')
+                ->name('api.v1.admin.promises.store');
+            Route::put('/{id}', [PromisesAdminController::class, 'update'])
+                ->whereUuid('id')->middleware('promises_admin:promises.edit')
+                ->name('api.v1.admin.promises.update');
+            Route::delete('/{id}', [PromisesAdminController::class, 'destroy'])
+                ->whereUuid('id')->middleware('promises_admin:promises.delete')
+                ->name('api.v1.admin.promises.destroy');
+            Route::post('/{id}/status', [PromisesAdminController::class, 'changeStatus'])
+                ->whereUuid('id')->middleware('promises_admin:promises.rule')
+                ->name('api.v1.admin.promises.status');
+            Route::delete('/{id}/status/{updateId}', [PromisesAdminController::class, 'undoStatusChange'])
+                ->whereUuid('id')->whereNumber('updateId')->middleware('promises_admin:promises.rule')
+                ->name('api.v1.admin.promises.status.undo');
+            Route::post('/{id}/updates', [PromisesAdminController::class, 'addUpdate'])
+                ->whereUuid('id')->middleware('promises_admin:promises.edit')
+                ->name('api.v1.admin.promises.updates.store');
+            Route::delete('/{id}/updates/{updateId}', [PromisesAdminController::class, 'removeUpdate'])
+                ->whereUuid('id')->whereNumber('updateId')->middleware('promises_admin:promises.edit')
+                ->name('api.v1.admin.promises.updates.destroy');
+            Route::post('/{id}/publish', [PromisesAdminController::class, 'publish'])
+                ->whereUuid('id')->middleware('promises_admin:promises.review')
+                ->name('api.v1.admin.promises.publish');
+            Route::post('/{id}/unpublish', [PromisesAdminController::class, 'unpublish'])
+                ->whereUuid('id')->middleware('promises_admin:promises.review')
+                ->name('api.v1.admin.promises.unpublish');
+            Route::post('/{id}/reject', [PromisesAdminController::class, 'reject'])
+                ->whereUuid('id')->middleware('promises_admin:promises.review')
+                ->name('api.v1.admin.promises.reject');
+
+            Route::post('/speakers', [PromisesAdminController::class, 'storeSpeaker'])
+                ->middleware('promises_admin:promises.speakers')
+                ->name('api.v1.admin.promises.speakers.store');
+            Route::put('/speakers/{id}', [PromisesAdminController::class, 'updateSpeaker'])
+                ->whereUuid('id')->middleware('promises_admin:promises.speakers')
+                ->name('api.v1.admin.promises.speakers.update');
+            Route::delete('/speakers/{id}', [PromisesAdminController::class, 'destroySpeaker'])
+                ->whereUuid('id')->middleware('promises_admin:promises.speakers')
+                ->name('api.v1.admin.promises.speakers.destroy');
+            Route::post('/speakers/{id}/approve', [PromisesAdminController::class, 'approveSpeaker'])
+                ->whereUuid('id')->middleware('promises_admin:promises.review')
+                ->name('api.v1.admin.promises.speakers.approve');
+            Route::post('/speakers/{id}/reject', [PromisesAdminController::class, 'rejectSpeaker'])
+                ->whereUuid('id')->middleware('promises_admin:promises.review')
+                ->name('api.v1.admin.promises.speakers.reject');
+
+            Route::post('/reports/{id}/accept', [PromisesAdminController::class, 'acceptReport'])
+                ->whereNumber('id')->middleware('promises_admin:promises.review')
+                ->name('api.v1.admin.promises.reports.accept');
+            Route::post('/reports/{id}/dismiss', [PromisesAdminController::class, 'dismissReport'])
+                ->whereNumber('id')->middleware('promises_admin:promises.review')
+                ->name('api.v1.admin.promises.reports.dismiss');
+
+            Route::post('/sectors', [PromisesAdminController::class, 'storeSector'])
+                ->middleware('promises_admin:promises.speakers')
+                ->name('api.v1.admin.promises.sectors.store');
+            Route::post('/sectors/reorder', [PromisesAdminController::class, 'reorderSectors'])
+                ->middleware('promises_admin:promises.speakers')
+                ->name('api.v1.admin.promises.sectors.reorder');
+            Route::put('/sectors/{id}', [PromisesAdminController::class, 'updateSector'])
+                ->middleware('promises_admin:promises.speakers')
+                ->name('api.v1.admin.promises.sectors.update');
+            Route::patch('/sectors/{id}/toggle', [PromisesAdminController::class, 'toggleSector'])
+                ->middleware('promises_admin:promises.speakers')
+                ->name('api.v1.admin.promises.sectors.toggle');
+            Route::delete('/sectors/{id}', [PromisesAdminController::class, 'destroySector'])
+                ->middleware('promises_admin:promises.speakers')
+                ->name('api.v1.admin.promises.sectors.destroy');
+        });
     });
 });
 

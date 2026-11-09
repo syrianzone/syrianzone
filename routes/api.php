@@ -23,6 +23,7 @@ use App\Http\Controllers\PlaceDiscoveryController;
 use App\Http\Controllers\PlaceEngagementController;
 use App\Http\Controllers\PollController;
 use App\Http\Controllers\PrayerController;
+use App\Http\Controllers\PromiseController;
 use App\Http\Controllers\QuranBookmarkController;
 use App\Http\Controllers\RadioUsageController;
 use App\Http\Controllers\RecipeController;
@@ -309,6 +310,24 @@ Route::prefix('v1')->group(function () {
             ->whereNumber('id')->middleware('throttle:60,1')
             ->name('api.v1.places.save.destroy');
     });
+
+    // Promises tracker (عداد الوعود): visitor input. Suggestions and reports
+    // need a signed-in account and land in the review queue; the "will it be
+    // kept?" vote is open to guests and shares the tier-list `voting` limiter.
+    Route::get('/promises/speakers', [PromiseController::class, 'speakers'])
+        ->middleware('throttle:public-api')
+        ->name('api.v1.promises.speakers');
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/promises', [PromiseController::class, 'storeSuggestion'])
+            ->middleware('throttle:10,60')
+            ->name('api.v1.promises.store');
+        Route::post('/promises/{number}/reports', [PromiseController::class, 'storeReport'])
+            ->where('number', '[0-9]{1,9}')->middleware('throttle:20,60')
+            ->name('api.v1.promises.reports.store');
+    });
+    Route::post('/promises/{number}/vote', [PromiseController::class, 'vote'])
+        ->where('number', '[0-9]{1,9}')->middleware('throttle:voting')
+        ->name('api.v1.promises.vote');
 
     // 5. Public Polls & Voting API
     // Never exposes voter identifiers (voter_key, ip_hash, user_agent) or polls.user_id.

@@ -125,6 +125,7 @@ Controllers issue raw spatial SQL (`ST_AsGeoJSON`, `ST_Distance_Sphere`) against
 | External data | `/syid`, `/sites`, `/party`, `/house`, `/alignment`, `/syrian-contributors` | ExternalDataController, ContributorController | SyId/, Sites/, Party/, House/, Alignment/, SyrianContributors/ | — |
 | Muslim Corner | `/muslim`, `/muslim/prayer`, `/muslim/quran`, `/muslim/radio`, `/roznama` | (Inertia closures) | Muslim/ (Index, Prayer, Quran, Radio), Roznama/ | [modules/muslim-corner.md](../modules/muslim-corner.md) |
 | Games | `/games`, `/games/{2048,solitare,tarneeb,trix}` | (Inertia closures) | Games/ | [modules/games.md](../modules/games.md) |
+| Promises tracker (عداد الوعود) | `/promises`, `/promises/{number}`, `/promises/suggest`, `/api/v1/promises*`; admin `/admin/promises*` + `/api/v1/admin/promises/*` | PromiseController, PromisesAdminController, `app/Services/Promises/*` | Promises/, Admin/Promises/ | [specs/promises.md](../specs/promises.md) |
 | Quizzes | `/compass`, `/compass/stats`, `/compass/s/{shareId}`, `/priorities` | CompassController; `/priorities` is a closure | Compass/, Priorities/ | — |
 | Legal & info | `/about`, `/stats`, `/privacy`, `/terms` | AboutController; the rest are closures | About.tsx, Stats.tsx, Privacy.tsx, Terms.tsx | — |
 | Standalone pages | `/roznama`, `/shawarma`, `/justice`, `/crossings` | (Inertia closures) | Roznama/, Shawarma/, Justice/, Crossings/ | — |

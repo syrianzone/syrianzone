@@ -44,6 +44,7 @@ $guarded = [
     'transit_admin' => 'transit',
     'users_admin' => 'users',
     'compass_admin' => 'compass',
+    'promises_admin' => 'promises',
 ];
 
 it('leaves no route inside a guarded admin group without a capability', function () use ($guarded) {

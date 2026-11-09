@@ -3,12 +3,17 @@ import html2canvas from 'html2canvas-pro';
 const COLOR_FALLBACK = 'rgba(148, 163, 184, 0.35)';
 
 /**
- * Export a DOM node to a PNG download. Mirrors the technique used by
- * `PrioritiesApp.downloadStoryAsImage`: clone trimming, removal of decorative
- * blur orbs, forcing the Arabic font/letter-spacing, and scrubbing modern CSS
- * colour functions (oklch/oklab/color-mix) that html2canvas cannot parse.
+ * Render a DOM node to a canvas the way every share image on the site is
+ * rendered. Mirrors the technique used by `PrioritiesApp.downloadStoryAsImage`:
+ * clone trimming, removal of decorative blur orbs, forcing the Arabic
+ * font/letter-spacing, and scrubbing modern CSS colour functions
+ * (oklch/oklab/color-mix) that html2canvas cannot parse.
+ *
+ * Avoid `text-overflow: ellipsis` (Tailwind `truncate`) inside a captured
+ * node: html2canvas measures right-to-left text wrongly and clips Arabic
+ * names down to their first letter.
  */
-export async function exportElementAsPng(el: HTMLElement, filename: string): Promise<void> {
+async function renderElementToCanvas(el: HTMLElement): Promise<HTMLCanvasElement> {
   if (typeof document !== 'undefined' && document.fonts) {
     try {
       await document.fonts.ready;
@@ -17,7 +22,7 @@ export async function exportElementAsPng(el: HTMLElement, filename: string): Pro
     }
   }
 
-  const canvas = await html2canvas(el, {
+  return html2canvas(el, {
     scale: 3,
     useCORS: true,
     allowTaint: true,
@@ -80,7 +85,11 @@ export async function exportElementAsPng(el: HTMLElement, filename: string): Pro
       clonedDoc.querySelectorAll('*').forEach((node) => cleanElement(node as HTMLElement));
     },
   });
+}
 
+/** Render a DOM node (see renderElementToCanvas) and download it as a PNG. */
+export async function exportElementAsPng(el: HTMLElement, filename: string): Promise<void> {
+  const canvas = await renderElementToCanvas(el);
   const dataUrl = canvas.toDataURL('image/png');
   const link = document.createElement('a');
   link.download = filename;

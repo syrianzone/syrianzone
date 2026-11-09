@@ -10,16 +10,7 @@ import { Badge } from "@/Components/ui/badge";
 import MainLayout from '@/Layouts/MainLayout';
 import { usePage } from '@inertiajs/react';
 import { canAny, canModule } from '@/Lib/permissions'
-
-const R2_BASE = 'https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/syofficial/entities/';
-
-export function formatEntityImage(img: string | null | undefined): string {
-    if (!img || img.trim().length === 0) return '/placeholder-user.jpg';
-    if (img.startsWith('http://') || img.startsWith('https://')) return img;
-    if (img.startsWith('/assets/') || img.startsWith('/storage/')) return img;
-    const filename = img.split('/').pop() || img;
-    return `${R2_BASE}${filename}`;
-}
+import { formatEntityImage } from '@/Lib/entityImage';
 
 interface CategoryData {
     id: string;

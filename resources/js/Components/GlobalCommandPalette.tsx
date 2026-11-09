@@ -32,6 +32,7 @@ import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useSiteNavigation } from '@/Lib/siteLinks';
+import { normalizeArabic } from '@/Lib/arabic';
 import { GAMES } from '@/Pages/Games/_lib/games';
 import { TOOLS as MUSLIM_TOOLS } from '@/Pages/Muslim/_lib/tools';
 import { useMuslimNav } from '@/Pages/Muslim/_lib/nav';
@@ -200,18 +201,6 @@ const SURAHS: Array<{ number: number; name: string; ayahs: number }> = [
     { number: 113, name: 'سورة الفلق', ayahs: 5 },
     { number: 114, name: 'سورة الناس', ayahs: 6 },
 ];
-
-function normalizeArabic(text: string): string {
-    return text
-        .toLowerCase()
-        .replace(/[\u064B-\u065F\u0670\u0640]/g, '')
-        .replace(/[أإآٱ]/g, 'ا')
-        .replace(/ة/g, 'ه')
-        .replace(/ى/g, 'ي')
-        .replace(/ؤ/g, 'و')
-        .replace(/ئ/g, 'ي')
-        .trim();
-}
 
 function matchesSearch(query: string, ...targets: Array<string | undefined | null>): boolean {
     const q = normalizeArabic(query);

@@ -202,6 +202,7 @@ return new class extends Migration
             'compass.stats',
             'compass.figures',
             'compass.personas',
+            'promises.create', 'promises.edit', 'promises.rule', 'promises.review', 'promises.speakers', 'promises.delete',
             'users.ban',
         ];
     }

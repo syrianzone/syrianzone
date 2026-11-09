@@ -62,6 +62,8 @@ return Application::configure(basePath: dirname(__DIR__))
             // application-wide, so it is authorised by its own capability.
             'users_admin'     => \App\Http\Middleware\UsersAdmin::class,
             'superadmin'      => \App\Http\Middleware\SuperAdmin::class,
+            // Agent API tokens: any capability holder, for their own tokens.
+            'agent_tokens'    => \App\Http\Middleware\AgentTokensAccess::class,
         ]);
         $middleware->statefulApi();
         $middleware->validateCsrfTokens(except: [

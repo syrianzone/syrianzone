@@ -34,6 +34,12 @@ interface Owner { id: number; name: string; role: string }
 interface TtlOption { value: string; label: string }
 
 export interface ApiTokensData {
+    /**
+     * True for anyone but a superadmin: the page manages only the viewer's own
+     * tokens, `owners` is just them, and `capabilities` is narrowed server-side
+     * to what they hold.
+     */
+    selfService: boolean;
     tokens: TokenRow[];
     owners: Owner[];
     capabilityGroups: Record<string, { label: string; icon: string }>;
@@ -60,13 +66,16 @@ function formatDate(iso: string | null): string {
 }
 
 export default function ApiTokensIndex(props: ApiTokensData) {
-    const { tokens, owners, capabilityGroups, capabilities, ttlOptions, endpoint } = props;
+    const { selfService, tokens, owners, capabilityGroups, capabilities, ttlOptions, endpoint } = props;
 
     const [showForm, setShowForm] = useState(false);
     const [saving, setSaving] = useState(false);
 
     // Mint form state
-    const [ownerId, setOwnerId] = useState<string>('');
+    // Self-service tokens always belong to the viewer, the only owner offered.
+    const [ownerId, setOwnerId] = useState<string>(
+        selfService && owners[0] ? String(owners[0].id) : '',
+    );
     const [name, setName] = useState('');
     const [ttl, setTtl] = useState<string>(ttlOptions[1]?.value ?? '30d');
     const [selected, setSelected] = useState<string[]>([]);
@@ -106,7 +115,12 @@ export default function ApiTokensIndex(props: ApiTokensData) {
 
     const submit = async () => {
         if (!ownerId || !name.trim() || selected.length === 0) {
-            notify('اختر المستخدم، وسم الرمز، وصلاحية واحدة على الأقل.', false);
+            notify(
+                selfService
+                    ? 'سمِّ الرمز واختر صلاحية واحدة على الأقل.'
+                    : 'اختر المستخدم، وسم الرمز، وصلاحية واحدة على الأقل.',
+                false,
+            );
             return;
         }
         setSaving(true);
@@ -243,14 +257,20 @@ export default function ApiTokensIndex(props: ApiTokensData) {
                         <CardHeader>
                             <CardTitle className="text-base">إنشاء رمز</CardTitle>
                             <CardDescription>
-                                يُمنح الرمز ما يملكه المستخدم بالفعل فقط. لا يوجد خيار «الكل» —
-                                عمداً، حتى لا يتفوق الرمز على صاحبه.
+                                {selfService
+                                    ? 'الرمز لحسابك، ويحمل من صلاحياتك ما تختاره فقط. وإذا سُحبت منك صلاحية توقّف الرمز عن استخدامها فوراً.'
+                                    : 'يُمنح الرمز ما يملكه المستخدم بالفعل فقط. لا يوجد خيار «الكل» — عمداً، حتى لا يتفوق الرمز على صاحبه.'}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-5">
                             <div className="grid gap-4 sm:grid-cols-3">
                                 <div className="space-y-2">
                                     <Label htmlFor="owner">المستخدم</Label>
+                                    {selfService ? (
+                                        <p id="owner" className="h-10 flex items-center text-sm font-medium">
+                                            {owners[0]?.name ?? '—'}
+                                        </p>
+                                    ) : (
                                     <Select value={ownerId} onValueChange={setOwnerId} dir="rtl">
                                         <SelectTrigger id="owner" aria-label="اختر مستخدماً">
                                             <SelectValue placeholder="اختر مستخدماً" />
@@ -263,6 +283,7 @@ export default function ApiTokensIndex(props: ApiTokensData) {
                                             ))}
                                         </SelectContent>
                                     </Select>
+                                    )}
                                 </div>
 
                                 <div className="space-y-2">
@@ -349,7 +370,9 @@ export default function ApiTokensIndex(props: ApiTokensData) {
                 {/* Token list */}
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-base">الرموز الصادرة ({tokens.length})</CardTitle>
+                        <CardTitle className="text-base">
+                            {selfService ? 'رموزك' : 'الرموز الصادرة'} ({tokens.length})
+                        </CardTitle>
                     </CardHeader>
                     <CardContent>
                         {tokens.length === 0 ? (
@@ -361,7 +384,7 @@ export default function ApiTokensIndex(props: ApiTokensData) {
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead className="text-right">الاسم</TableHead>
-                                        <TableHead className="text-right">المستخدم</TableHead>
+                                        {!selfService && <TableHead className="text-right">المستخدم</TableHead>}
                                         <TableHead className="text-right">الصلاحيات</TableHead>
                                         <TableHead className="text-right">آخر استخدام</TableHead>
                                         <TableHead className="text-right">ينتهي</TableHead>
@@ -372,6 +395,7 @@ export default function ApiTokensIndex(props: ApiTokensData) {
                                     {tokens.map((t) => (
                                         <TableRow key={t.id}>
                                             <TableCell className="font-medium" dir="ltr">{t.name}</TableCell>
+                                            {!selfService && (
                                             <TableCell>
                                                 <div className="flex items-center gap-1.5">
                                                     {t.owner?.name ?? '—'}
@@ -380,6 +404,7 @@ export default function ApiTokensIndex(props: ApiTokensData) {
                                                     )}
                                                 </div>
                                             </TableCell>
+                                            )}
                                             <TableCell>
                                                 <div className="flex flex-wrap gap-1">
                                                     {(t.abilities ?? []).map((a) => (
@@ -399,7 +424,9 @@ export default function ApiTokensIndex(props: ApiTokensData) {
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex items-center gap-1">
-                                                    {t.owner && (
+                                                    {/* Revoke-all also ends the user's mobile sessions,
+                                                        so it stays a superadmin leak response. */}
+                                                    {!selfService && t.owner && (
                                                         <Button aria-label="إبطال كل رموز هذا المستخدم"
                                                             size="sm"
                                                             variant="ghost"

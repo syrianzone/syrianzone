@@ -356,13 +356,43 @@ window onto other credentials.
 
 `/admin/api-tokens`, linked from the dashboard sidebar as **رموز الوكلاء**. It
 lives with the other `/admin/*` sections rather than in Filament — one UI per
-job; the Filament resource that first owned this was removed. Access is
-superadmin-only (`superadmin` middleware), matching what the Filament panel
-previously enforced via `canAccessPanel()`. Minting a token grants capability to
-an automated client, so unlike the moderation panels it is not delegated to
-module admins.
+job; the Filament resource that first owned this was removed.
 
-Pick a user, a name, a TTL (7/30/90/180 days, default 30) and the capabilities.
+Access is decided by the `agent_tokens` middleware
+(`app/Http/Middleware/AgentTokensAccess.php`), and the page has two modes:
+
+| Who | Sees and manages | Capabilities offered |
+|---|---|---|
+| Superadmin | every agent token, for any eligible owner | the whole catalogue |
+| Any other account holding ≥1 capability | **only their own** tokens; the owner is pinned to them | only what they hold |
+| No capability, or banned | 403 | — |
+
+Self-service is safe because of §2: a token is a ceiling, never a grant.
+`TokenIssuer` clamps it to the owner's live permissions, and every agent call
+re-checks them. So letting a places moderator mint a `places.review` token for
+themselves gives an agent nothing that moderator could not already do, and
+taking `places.review` away from them stops the token on its next call.
+
+The rules a self-service user cannot get around:
+
+- **Owner is pinned.** `store` defaults a missing `user_id` to the caller
+  and refuses any other id with 403.
+- **Own tokens only.** `destroy` looks up someone else's token as a 404, so ids
+  cannot be probed, and does not revoke the caller's own mobile-app session
+  (`abilities: ["mobile"]`), which this page does not list.
+- **Revoke-all stays superadmin-only.** It also ends the user's mobile sessions,
+  so it is a leak response, not self-service.
+- **No minting with a token.** Every token route refuses a caller authenticated
+  by a bearer `PersonalAccessToken`, superadmins included. Otherwise an agent
+  holding a narrow token could call `POST /api/v1/admin/api-tokens` and mint
+  itself one carrying everything its owner holds, escaping its own ceiling.
+  Tokens are minted from a signed-in browser session only.
+
+The dashboard sidebar shows **رموز الوكلاء** to superadmins and to any account
+whose `effective_permissions` is non-empty.
+
+Pick a user (superadmins only), a name, a TTL (7/30/90/180 days, default 30)
+and the capabilities.
 The page also shows the ready-to-paste `curl` and points at
 `php artisan mcp:inspector mcp/admin`.
 

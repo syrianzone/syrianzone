@@ -731,10 +731,10 @@ export default function Dashboard({
                   </Link>
                 )}
 
-                {/* Agent API tokens (Superadmin only) — minting a token grants
-                    capability to an automated client, so it is not delegated to
-                    module admins the way the moderation panels are. */}
-                {role === 'superadmin' && (
+                {/* Agent API tokens. Any account holding a capability can mint
+                    tokens for itself, clamped to what it holds (a token is a
+                    ceiling, never a grant); superadmins manage everyone's. */}
+                {(role === 'superadmin' || perms.length > 0) && (
                   <Link
                     href="/admin/api-tokens"
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"

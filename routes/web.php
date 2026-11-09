@@ -304,20 +304,31 @@ Route::middleware('auth:web,sanctum')->group(function () {
         Route::put('/api/v1/admin/navigation', [SiteNavigationAdminController::class, 'update'])
             ->name('api.v1.admin.navigation.update');
 
-        // Agent API tokens (see docs/modules/agent-mcp.md). Superadmin-only:
-        // minting a token grants capability to an automated client, so it is
-        // not delegated to module admins the way the moderation panels are.
+        // Revoking every token of a user is superadmin-only: it also ends that
+        // user's mobile sessions, so it is a leak response, not self-service.
+        // The page, minting and single revocation are in the agent_tokens
+        // group below.
+        Route::delete('/api/v1/admin/users/{userId}/api-tokens', [ApiTokenAdminController::class, 'revokeAllForUser'])
+            ->whereNumber('userId')
+            ->middleware('agent_tokens')
+            ->name('api.v1.admin.users.api-tokens.destroy-all');
+        Route::post('/api/v1/admin/api-tokens/revoke-all/{userId}', [ApiTokenAdminController::class, 'revokeAllForUser'])
+            ->whereNumber('userId')
+            ->middleware('agent_tokens');
+    });
+
+    // Agent API tokens (see docs/modules/agent-mcp.md). Open to any account
+    // holding a capability, for its own tokens only: a token is clamped to its
+    // owner's live permissions, so it can never exceed them. Superadmins manage
+    // everyone's. `agent_tokens` also refuses bearer-token callers, so an agent
+    // cannot mint itself a wider token.
+    Route::middleware(['auth:web,sanctum', 'agent_tokens'])->group(function () {
         Route::get('/admin/api-tokens', [ApiTokenAdminController::class, 'renderIndex']);
         Route::post('/api/v1/admin/api-tokens', [ApiTokenAdminController::class, 'store'])
             ->name('api.v1.admin.api-tokens.store');
         Route::delete('/api/v1/admin/api-tokens/{id}', [ApiTokenAdminController::class, 'destroy'])
             ->whereNumber('id')
             ->name('api.v1.admin.api-tokens.destroy');
-        Route::delete('/api/v1/admin/users/{userId}/api-tokens', [ApiTokenAdminController::class, 'revokeAllForUser'])
-            ->whereNumber('userId')
-            ->name('api.v1.admin.users.api-tokens.destroy-all');
-        Route::post('/api/v1/admin/api-tokens/revoke-all/{userId}', [ApiTokenAdminController::class, 'revokeAllForUser'])
-            ->whereNumber('userId');
     });
 
     // 2. Polls & General Admin Panel (accessible to core admins and superadmins)

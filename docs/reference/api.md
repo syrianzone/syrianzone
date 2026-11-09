@@ -47,7 +47,7 @@ Used by native mobile clients (Flutter iOS/Android):
    Accept: application/json
    ```
    No cookies or CSRF tokens are required when authenticating with `Authorization: Bearer <token>`.
-4. **Scope Isolation**: Mobile login tokens are minted with `abilities: ["mobile"]`. They authenticate all user-facing endpoints (`auth:sanctum` / `auth:web,sanctum`), are **rejected (`403`)** on the automated `/mcp/admin` agent endpoint, and are excluded from the superadmin MCP Agent token table (`/admin/api-tokens`).
+4. **Scope Isolation**: Mobile login tokens are minted with `abilities: ["mobile"]`. They authenticate all user-facing endpoints (`auth:sanctum` / `auth:web,sanctum`), are **rejected (`403`)** on the automated `/mcp/admin` agent endpoint, and are excluded from the MCP agent token table (`/admin/api-tokens`).
 
 #### Auth Endpoints Summary
 
@@ -830,7 +830,7 @@ group and candidate, including disabled and archived ones.
   - Site Navigation & Icon Catalog: `GET /admin/navigation`, `GET|PUT /api/v1/admin/navigation`.
   - Site Popup: `GET /admin/site-popup`, `GET|PUT /api/v1/admin/site-popup`.
   - Guess Who Roster: `POST|PUT|DELETE /api/v1/admin/guesswho/categories[/{id}]`, `POST|PUT|DELETE /api/v1/admin/guesswho/characters[/{id}]`.
-  - Agent API Tokens: `POST /api/v1/admin/api-tokens`, `DELETE /api/v1/admin/api-tokens/{id}`, `DELETE /api/v1/admin/users/{userId}/api-tokens` (legacy `POST /api/v1/admin/api-tokens/revoke-all/{userId}`).
+  - Agent API Tokens, revoke all for a user: `DELETE /api/v1/admin/users/{userId}/api-tokens` (legacy `POST /api/v1/admin/api-tokens/revoke-all/{userId}`). Minting (`POST /api/v1/admin/api-tokens`) and single revocation (`DELETE /api/v1/admin/api-tokens/{id}`) are open to any capability holder for their own tokens; see [agent-mcp.md §7](../modules/agent-mcp.md).
 
 ---
 

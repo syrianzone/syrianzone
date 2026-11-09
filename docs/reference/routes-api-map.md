@@ -63,7 +63,8 @@ Generated from `routes/web.php` and `routes/api.php`. Grouped by feature area, m
   - Asset explorer: `/admin/assets` + canonical `GET|POST|DELETE /api/v1/admin/assets` & `GET /api/v1/admin/assets/manifest` (legacy `/api/v1/admin/assets/(list|upload|delete)`)
   - Site navigation & icon catalog: `/admin/navigation` + `GET|PUT /api/v1/admin/navigation`
   - Homepage popup: `/admin/site-popup` + `GET|PUT /api/v1/admin/site-popup`
-  - Agent API tokens: `/admin/api-tokens` + `POST /api/v1/admin/api-tokens`, `DELETE /api/v1/admin/api-tokens/{id}`, `DELETE /api/v1/admin/users/{userId}/api-tokens` (legacy `POST /api/v1/admin/api-tokens/revoke-all/{userId}`)
+  - Agent API tokens, revoke all for a user: `DELETE /api/v1/admin/users/{userId}/api-tokens` (legacy `POST /api/v1/admin/api-tokens/revoke-all/{userId}`)
+- Agent API tokens (`web.php`, `agent_tokens` middleware: any capability holder, own tokens only; superadmins manage all; bearer-token callers refused): `/admin/api-tokens` + `POST /api/v1/admin/api-tokens`, `DELETE /api/v1/admin/api-tokens/{id}`
 
 ### Admin moderation panels (capability-gated)
 

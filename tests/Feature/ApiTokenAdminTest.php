@@ -3,6 +3,7 @@
 use App\Models\User;
 use App\Support\Agents\TokenIssuer;
 use Illuminate\Support\Facades\Date;
+use Laravel\Sanctum\PersonalAccessToken;
 
 /*
 |--------------------------------------------------------------------------
@@ -11,9 +12,10 @@ use Illuminate\Support\Facades\Date;
 |
 | The token UI lives in the Inertia dashboard alongside the other /admin/*
 | sections, not in Filament. What matters here is that the HTTP layer keeps
-| enforcing what the services already guarantee — especially that the endpoint
-| is superadmin-only, and that an over-broad request is clamped rather than
-| granted.
+| enforcing what the services already guarantee: a superadmin manages every
+| token, any other capability holder manages only their own, an over-broad
+| request is clamped rather than granted, and an API token can never be used to
+| mint another one.
 |
 */
 
@@ -22,20 +24,25 @@ function superadmin(): User
     return User::factory()->create(['role' => 'superadmin', 'permissions' => []]);
 }
 
-test('the tokens page is superadmin-only', function () {
+test('the tokens page needs a capability, not a role', function () {
     $this->get('/admin/api-tokens')->assertRedirect(route('login'));
 
-    $this->actingAs(User::factory()->create(['role' => 'admin']))
+    // Neither role grants anything any more, so neither holds a capability.
+    $this->actingAs(User::factory()->create(['role' => 'admin', 'permissions' => []]))
+        ->get('/admin/api-tokens')->assertForbidden();
+
+    $this->actingAs(User::factory()->create(['role' => 'user', 'permissions' => []]))
+        ->get('/admin/api-tokens')->assertForbidden();
+
+    $this->actingAs(moduleStaff('places', ['is_banned' => true]))
         ->get('/admin/api-tokens')->assertForbidden();
 
     $this->actingAs(moduleStaff('places'))
-        ->get('/admin/api-tokens')->assertForbidden();
-
-    $this->actingAs(User::factory()->create(['role' => 'user']))
-        ->get('/admin/api-tokens')->assertForbidden();
+        ->get('/admin/api-tokens')->assertOk();
 });
 
 test('a superadmin gets the page with the data it needs', function () {
+    // (superadmin mode: every token, every eligible owner, the whole catalogue)
     $owner = moduleStaff('transit');
     app(TokenIssuer::class)->issue($owner, 'existing', ['transit.approve']);
 
@@ -47,6 +54,7 @@ test('a superadmin gets the page with the data it needs', function () {
             ->where('tokens.0.name', 'existing')
             ->where('tokens.0.owner.id', $owner->id)
             ->where('tokens.0.abilities', ['transit.approve'])
+            ->where('selfService', false)
             ->has('owners')
             ->has('capabilityGroups')
             ->has('capabilities')
@@ -168,11 +176,11 @@ test('minting validates its input', function () {
         ->assertJsonValidationErrors('permissions');
 });
 
-test('non-superadmins cannot mint', function () {
+test('accounts without any capability cannot mint', function () {
     $owner = User::factory()->create(['role' => 'admin']);
 
     foreach (['admin', 'places_admin', 'transit_admin'] as $role) {
-        $this->actingAs(User::factory()->create(['role' => $role]))
+        $this->actingAs(User::factory()->create(['role' => $role, 'permissions' => []]))
             ->postJson('/api/v1/admin/api-tokens', [
                 'user_id' => $owner->id,
                 'name' => 'nope',
@@ -183,6 +191,115 @@ test('non-superadmins cannot mint', function () {
     }
 
     expect($owner->tokens()->count())->toBe(0);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Self-service: a capability holder managing their own tokens
+|--------------------------------------------------------------------------
+*/
+
+test('a capability holder sees only their own tokens and their own capabilities', function () {
+    $staff = moduleStaff('places');
+    app(TokenIssuer::class)->issue($staff, 'mine', ['places.review']);
+    app(TokenIssuer::class)->issue(moduleStaff('transit'), 'someone-else', ['transit.approve']);
+
+    $this->actingAs($staff)
+        ->get('/admin/api-tokens')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('Admin/ApiTokens/Index')
+            ->where('selfService', true)
+            ->has('tokens', 1)
+            ->where('tokens.0.name', 'mine')
+            ->has('owners', 1)
+            ->where('owners.0.id', $staff->id)
+            // only the places group, and only what the account holds in it
+            ->has('capabilities', 1)
+            ->has('capabilities.places')
+            ->missing('capabilities.transit')
+        );
+});
+
+test('a capability holder mints a token for themselves, clamped to what they hold', function () {
+    $staff = User::factory()->create(['role' => 'user', 'permissions' => ['places.review']]);
+
+    $this->actingAs($staff)
+        ->postJson('/api/v1/admin/api-tokens', [
+            'name' => 'my-agent',
+            'ttl' => '30d',
+            'permissions' => ['places.review', 'places.delete', 'polls.delete'],
+        ])
+        ->assertCreated()
+        ->assertJsonPath('abilities', ['places.review'])
+        ->assertJsonPath('dropped', ['places.delete', 'polls.delete']);
+
+    expect($staff->tokens()->sole()->abilities)->toBe(['places.review']);
+});
+
+test('a capability holder cannot mint a token for someone else', function () {
+    $staff = moduleStaff('places');
+    $other = moduleStaff('places');
+
+    $this->actingAs($staff)
+        ->postJson('/api/v1/admin/api-tokens', [
+            'user_id' => $other->id,
+            'name' => 'not-mine',
+            'ttl' => '30d',
+            'permissions' => ['places.review'],
+        ])
+        ->assertForbidden();
+
+    expect($other->tokens()->count())->toBe(0)
+        ->and($staff->tokens()->count())->toBe(0);
+});
+
+test('a capability holder revokes only their own agent tokens', function () {
+    $staff = moduleStaff('places');
+    $own = app(TokenIssuer::class)->issue($staff, 'mine', ['places.review'])['token']->accessToken;
+    $mobile = $staff->createToken('phone', ['mobile'])->accessToken;
+    $foreign = app(TokenIssuer::class)->issue(moduleStaff('places'), 'theirs', ['places.review'])['token']->accessToken;
+
+    $this->actingAs($staff)->deleteJson("/api/v1/admin/api-tokens/{$foreign->id}")->assertNotFound();
+    // a mobile app session is not an agent token, so this page cannot end it
+    $this->actingAs($staff)->deleteJson("/api/v1/admin/api-tokens/{$mobile->id}")->assertNotFound();
+    $this->actingAs($staff)->deleteJson("/api/v1/admin/api-tokens/{$own->id}")->assertOk();
+
+    expect(PersonalAccessToken::find($own->id))->toBeNull()
+        ->and(PersonalAccessToken::find($mobile->id))->not->toBeNull()
+        ->and(PersonalAccessToken::find($foreign->id))->not->toBeNull();
+});
+
+test('revoking every token of a user stays superadmin-only', function () {
+    $staff = moduleStaff('places');
+    app(TokenIssuer::class)->issue($staff, 'mine', ['places.review']);
+
+    $this->actingAs($staff)
+        ->postJson("/api/v1/admin/api-tokens/revoke-all/{$staff->id}")
+        ->assertForbidden();
+
+    expect($staff->tokens()->count())->toBe(1);
+});
+
+test('an API token cannot be used to mint another token', function () {
+    // Otherwise a narrow agent token could mint itself one carrying everything
+    // its owner holds, escaping its own ceiling. Holds for superadmins too.
+    foreach ([moduleStaff('places'), superadmin()] as $owner) {
+        $plain = app(TokenIssuer::class)->issue($owner, 'narrow', ['places.review'])['token']->plainTextToken;
+
+        $this->app['auth']->forgetGuards();
+
+        $this->withHeader('Authorization', 'Bearer '.$plain)
+            ->postJson('/api/v1/admin/api-tokens', [
+                'user_id' => $owner->id,
+                'name' => 'wider',
+                'ttl' => '30d',
+                'permissions' => ['places.review', 'places.delete'],
+            ])
+            ->assertForbidden();
+
+        expect($owner->tokens()->count())->toBe(1);
+    }
 });
 
 test('a token can be revoked', function () {

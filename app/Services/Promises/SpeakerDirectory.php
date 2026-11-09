@@ -57,7 +57,7 @@ class SpeakerDirectory
             ->get();
 
         $options = $speakers->map(fn (PromiseSpeaker $s) => [
-            'ref' => 'speaker:'.$s->id,
+            'ref' => $s->ref(),
             'name' => $s->name,
             'title' => $s->title,
             'image' => $s->resolvedImage(),
@@ -179,7 +179,7 @@ class SpeakerDirectory
                     'house' => $linked->firstWhere('house_member_id', (int) $id),
                     default => null,
                 };
-                $ref = $owner ? 'speaker:'.$owner->id : $kind.':'.$id;
+                $ref = $owner ? $owner->ref() : $kind.':'.$id;
 
                 if ($hay === $needle) {
                     $exact[$ref] = true;

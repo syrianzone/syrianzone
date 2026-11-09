@@ -65,6 +65,7 @@ class Promise extends Model
 
     protected $casts = [
         'number' => 'integer',
+        'version' => 'integer',
         'quote_is_verbatim' => 'boolean',
         'is_national' => 'boolean',
         'statement_date' => 'date:Y-m-d',
@@ -144,6 +145,16 @@ class Promise extends Model
     public function scopePublished(Builder $query): Builder
     {
         return $query->where('review_status', 'published')->whereNotNull('number');
+    }
+
+    /**
+     * Promises waiting in the review queue: not yet published or rejected.
+     *
+     * @param  Builder<Promise>  $query
+     */
+    public function scopeInReviewQueue(Builder $query): Builder
+    {
+        return $query->where('review_status', 'pending');
     }
 
     public static function today(): CarbonImmutable

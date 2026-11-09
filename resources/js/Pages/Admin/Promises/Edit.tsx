@@ -118,6 +118,10 @@ export default function PromiseEditor({ promise: initial, options, queueCount }:
     const [promise, setPromise] = useState<AdminPromiseDetail | null>(initial);
     const [form, setForm] = useState<FormState>(() => toForm(initial));
     const [saved, setSaved] = useState(() => fingerprint(toForm(initial)));
+    // The version the form's fields were loaded at. Log, status and unpublish
+    // responses refresh `promise` but not the form, so saving must send this,
+    // not promise.version, or a stale form would pass the server's check.
+    const [formVersion, setFormVersion] = useState(initial?.version ?? 0);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [saving, setSaving] = useState(false);
     const [statusOpen, setStatusOpen] = useState(false);
@@ -133,6 +137,7 @@ export default function PromiseEditor({ promise: initial, options, queueCount }:
         setPromise(next);
         setForm(nextForm);
         setSaved(fingerprint(nextForm));
+        setFormVersion(next.version);
     };
 
     const toggleGovernorate = (id: string) =>
@@ -179,7 +184,7 @@ export default function PromiseEditor({ promise: initial, options, queueCount }:
         setErrors({});
         try {
             if (promise) {
-                const res = await axios.put(`/api/v1/admin/promises/${promise.id}`, payload());
+                const res = await axios.put(`/api/v1/admin/promises/${promise.id}`, { ...payload(), version: formVersion });
                 adopt(res.data.promise);
                 notify.success('حُفظت التعديلات');
             } else {

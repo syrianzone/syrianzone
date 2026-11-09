@@ -4,6 +4,7 @@ use App\Models\Promise;
 use App\Models\PromiseSpeaker;
 use App\Models\User;
 use App\Support\Agents\TokenIssuer;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Support\Collection;
 
 /*
@@ -102,10 +103,13 @@ test('a token with all six promises.* abilities is offered the read tools and no
         'get-promise',
         'search-promise-speakers',
         'get-promise-form-options',
+        'get-promise-review-queue',
+        'list-promise-speakers',
+        'list-promise-sectors',
         'search_tools',
         'execute_tools',
     )
-        ->and($names)->not->toContain('list-places', 'list-gov-apps');
+        ->and($names)->not->toContain('list-places', 'list-gov-apps', 'publish-promise');
 });
 
 test('search_tools with query promise returns the write tools', function () {
@@ -128,7 +132,63 @@ test('search_tools with query promise returns the write tools', function () {
         'update-promise',
         'add-promise-update',
         'remove-promise-update',
+        'publish-promise',
+        'unpublish-promise',
+        'reject-promise',
+        'set-promise-status',
+        'undo-promise-status',
+        'delete-promise',
+        'approve-promise-speaker',
+        'reject-promise-speaker',
+        'accept-promise-report',
+        'dismiss-promise-report',
+        'create-promise-speaker',
+        'update-promise-speaker',
+        'delete-promise-speaker',
+        'create-promise-sector',
+        'update-promise-sector',
+        'toggle-promise-sector',
+        'delete-promise-sector',
+        'reorder-promise-sectors',
     );
+});
+
+test('a review-only token is offered the queue and publishing, but no verdicts, people or sectors', function () {
+    $staff = User::factory()->create(['role' => 'user', 'permissions' => PermissionCatalogue::forModule('promises')]);
+    $plain = app(TokenIssuer::class)->issue($staff, 'promises-reviewer', ['promises.review'])['token']->plainTextToken;
+
+    $names = promisesMcpToolNames($plain);
+    $found = promisesMcpSearchToolNames($plain, 'promise');
+
+    expect($names)->toContain('get-promise-review-queue', 'list-promises')
+        ->and($names)->not->toContain('list-promise-speakers', 'list-promise-sectors')
+        ->and($found)->toContain('publish-promise', 'reject-promise', 'accept-promise-report', 'approve-promise-speaker')
+        ->and($found)->not->toContain(
+            'set-promise-status',
+            'undo-promise-status',
+            'delete-promise',
+            'update-promise',
+            'create-promise-speaker',
+            'reorder-promise-sectors',
+        );
+});
+
+test('execute_tools round trip of set-promise-status logs a sourced verdict', function () {
+    $promise = Promise::factory()->published()->create(['statement_date' => '2025-06-01']);
+    $staff = User::factory()->create(['role' => 'user', 'permissions' => ['promises.rule']]);
+    $plain = app(TokenIssuer::class)->issue($staff, 'promises-ruler', ['promises.rule'])['token']->plainTextToken;
+
+    $result = promisesMcpExecuteTool($plain, 'set-promise-status', [
+        'id' => $promise->id,
+        'status' => 'in_progress',
+        'happened_on' => '2025-07-01',
+        'source_url' => 'https://example.com/started',
+    ]);
+
+    expect($result['results'][0]['isError'] ?? true)->toBeFalse()
+        ->and($result['results'][0]['structuredContent']['status'] ?? null)->toBe('in_progress')
+        ->and($promise->fresh()->status)->toBe('in_progress')
+        ->and($promise->updates()->sole()->source_url)->toBe('https://example.com/started');
 });
 
 test('execute_tools round trip of create-promise returns created true and a promise row exists', function () {
@@ -174,6 +234,9 @@ test('a token with only places.review sees none of the promise tools', function 
             'get-promise',
             'search-promise-speakers',
             'get-promise-form-options',
+            'get-promise-review-queue',
+            'list-promise-speakers',
+            'list-promise-sectors',
         );
 
     $found = promisesMcpSearchToolNames($plain, 'promise');
@@ -182,5 +245,10 @@ test('a token with only places.review sees none of the promise tools', function 
         'update-promise',
         'add-promise-update',
         'remove-promise-update',
+        'publish-promise',
+        'set-promise-status',
+        'delete-promise',
+        'create-promise-speaker',
+        'create-promise-sector',
     );
 });

@@ -49,7 +49,7 @@ class PromiseSubmissionService
             }
 
             $promise = $this->editor->save(null, [
-                'speaker_ref' => 'speaker:'.$speaker->id,
+                'speaker_ref' => $speaker->ref(),
                 'speaker_title' => $data['speaker_title'] ?? $speaker->title,
                 'title' => $data['title'],
                 'quote' => $data['quote'],

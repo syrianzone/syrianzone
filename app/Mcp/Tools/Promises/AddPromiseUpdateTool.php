@@ -13,15 +13,17 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Attributes\Title;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
 #[Name('add-promise-update')]
 #[Title('Add Promise Update')]
 #[Description(
-    'Add an entry to the change log of an unpublished promise (progress reading, official response, or editorial note). '
-    .'Published promises are refused: their public log is edited in the dashboard. '
-    .'progress and official_response require a source_url. The date cannot precede the statement date or be in the future. '
-    .'Status changes (verdicts) are NOT made here.'
+    'Add an entry to a promise\'s change log: a progress reading, an official response, or an editorial note. '
+    .'On a published promise the entry is public immediately. progress and official_response require a source_url. '
+    .'The date cannot precede the statement date or be in the future. '
+    .'Status changes (verdicts) are NOT made here: use set-promise-status.'
 )]
+#[IsDestructive]
 class AddPromiseUpdateTool extends PromisesTool
 {
     protected array $permissions = ['promises.edit'];
@@ -64,10 +66,6 @@ class AddPromiseUpdateTool extends PromisesTool
         return $this->attempt(function () use ($request, $context) {
             $id = (string) $request->get('id');
             $promise = $this->findPromise($id);
-
-            if ($refusal = $this->refusePublished($promise)) {
-                return $refusal;
-            }
 
             $rules = app(PromiseRules::class);
             $data = $request->validate([

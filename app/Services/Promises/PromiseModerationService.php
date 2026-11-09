@@ -23,18 +23,22 @@ use Illuminate\Support\Facades\DB;
  *    speaker. A pending speaker proposed alongside it is approved with it,
  *    since the reviewer has just looked at both; a rejected one blocks it.
  *  - Publishing a restatement marks the still-open original `postponed`
- *    when the reviewer may also rule on promises.
- *  - Reports are reloaded under a row lock before they are resolved, so two
- *    reviewers cannot both accept one (or accept one that was dismissed).
+ *    when the caller says the reviewer may also rule on promises.
+ *  - Every review action reloads its row under a lock and checks its state
+ *    there, so two reviewers (or a reviewer and an agent) cannot both resolve
+ *    one item, and a person cannot be rejected while a promise of theirs is
+ *    being published. Locks are taken promise first, then person. A row
+ *    deleted in the meantime is refused as not found.
  */
 class PromiseModerationService
 {
     public function __construct(private readonly PromiseEditor $editor) {}
 
-    public function publish(Promise $promise, User $reviewer): Promise
+    public function publish(Promise $promise, User $reviewer, bool $mayRule = false): Promise
     {
-        return DB::transaction(function () use ($promise, $reviewer) {
-            $promise = Promise::query()->lockForUpdate()->findOrFail($promise->id);
+        return DB::transaction(function () use ($promise, $reviewer, $mayRule) {
+            $promise = Promise::query()->lockForUpdate()->find($promise->id)
+                ?? throw PromiseActionException::notFound();
 
             if ($promise->review_status === 'published') {
                 throw PromiseActionException::alreadyPublished();
@@ -43,7 +47,7 @@ class PromiseModerationService
                 throw PromiseActionException::promiseNeedsSource();
             }
 
-            $speaker = $promise->speaker;
+            $speaker = PromiseSpeaker::query()->lockForUpdate()->find($promise->speaker_id);
             if ($speaker === null || $speaker->status === 'rejected') {
                 throw PromiseActionException::speakerNotApproved();
             }
@@ -63,7 +67,7 @@ class PromiseModerationService
                 'rejection_reason' => null,
             ]);
 
-            $this->editor->postponeRestatedOriginal($promise->fresh(), $reviewer);
+            $this->editor->postponeRestatedOriginal($promise->fresh(), $reviewer, $mayRule);
 
             return $promise->fresh();
         });
@@ -72,68 +76,79 @@ class PromiseModerationService
     /** Take a published promise off the public site. It keeps its number. */
     public function unpublish(Promise $promise, User $reviewer): Promise
     {
-        if ($promise->review_status !== 'published') {
-            throw PromiseActionException::notPublished();
-        }
+        return DB::transaction(function () use ($promise, $reviewer) {
+            $promise = Promise::query()->lockForUpdate()->find($promise->id)
+                ?? throw PromiseActionException::notFound();
 
-        $promise->update([
-            'review_status' => 'pending',
-            'reviewed_by' => $reviewer->id,
-            'reviewed_at' => now(),
-        ]);
+            if ($promise->review_status !== 'published') {
+                throw PromiseActionException::notPublished();
+            }
 
-        return $promise->fresh();
+            $promise->update([
+                'review_status' => 'pending',
+                'reviewed_by' => $reviewer->id,
+                'reviewed_at' => now(),
+            ]);
+
+            return $promise->fresh();
+        });
     }
 
     public function reject(Promise $promise, User $reviewer, ?string $reason = null): Promise
     {
-        if ($promise->review_status !== 'pending') {
-            throw PromiseActionException::notPending($promise->review_status);
-        }
+        return DB::transaction(function () use ($promise, $reviewer, $reason) {
+            $promise = Promise::query()->lockForUpdate()->find($promise->id)
+                ?? throw PromiseActionException::notFound();
 
-        $promise->update([
-            'review_status' => 'rejected',
-            'rejection_reason' => $reason,
-            'reviewed_by' => $reviewer->id,
-            'reviewed_at' => now(),
-        ]);
+            if ($promise->review_status !== 'pending') {
+                throw PromiseActionException::notPending($promise->review_status);
+            }
 
-        return $promise->fresh();
+            $promise->update([
+                'review_status' => 'rejected',
+                'rejection_reason' => $reason,
+                'reviewed_by' => $reviewer->id,
+                'reviewed_at' => now(),
+            ]);
+
+            return $promise->fresh();
+        });
     }
 
     public function approveSpeaker(PromiseSpeaker $speaker, User $reviewer): PromiseSpeaker
     {
-        if ($speaker->status !== 'pending') {
-            throw PromiseActionException::notPending($speaker->status);
-        }
+        return DB::transaction(function () use ($speaker, $reviewer) {
+            $speaker = $this->lockPendingSpeaker($speaker);
 
-        $speaker->update([
-            'status' => 'approved',
-            'reviewed_by' => $reviewer->id,
-            'reviewed_at' => now(),
-            'rejection_reason' => null,
-        ]);
+            $speaker->update([
+                'status' => 'approved',
+                'reviewed_by' => $reviewer->id,
+                'reviewed_at' => now(),
+                'rejection_reason' => null,
+            ]);
 
-        return $speaker;
+            return $speaker;
+        });
     }
 
     public function rejectSpeaker(PromiseSpeaker $speaker, User $reviewer, ?string $reason = null): PromiseSpeaker
     {
-        if ($speaker->status !== 'pending') {
-            throw PromiseActionException::notPending($speaker->status);
-        }
-        if ($speaker->promises()->where('review_status', 'published')->exists()) {
-            throw PromiseActionException::speakerHasPublishedPromises();
-        }
+        return DB::transaction(function () use ($speaker, $reviewer, $reason) {
+            $speaker = $this->lockPendingSpeaker($speaker);
 
-        $speaker->update([
-            'status' => 'rejected',
-            'rejection_reason' => $reason,
-            'reviewed_by' => $reviewer->id,
-            'reviewed_at' => now(),
-        ]);
+            if ($speaker->promises()->where('review_status', 'published')->exists()) {
+                throw PromiseActionException::speakerHasPublishedPromises();
+            }
 
-        return $speaker;
+            $speaker->update([
+                'status' => 'rejected',
+                'rejection_reason' => $reason,
+                'reviewed_by' => $reviewer->id,
+                'reviewed_at' => now(),
+            ]);
+
+            return $speaker;
+        });
     }
 
     /**
@@ -183,10 +198,37 @@ class PromiseModerationService
         });
     }
 
+    public function findReport(int $id): PromiseReport
+    {
+        return PromiseReport::with('promise')->find($id) ?? throw PromiseActionException::notFound('البلاغ');
+    }
+
+    /** Items waiting in the review queue (the models' `inReviewQueue` scopes). */
+    public function queueCount(): int
+    {
+        return Promise::inReviewQueue()->count()
+            + PromiseSpeaker::inReviewQueue()->count()
+            + PromiseReport::inReviewQueue()->count();
+    }
+
+    /** Reload a person under a row lock and make sure they are still pending. */
+    private function lockPendingSpeaker(PromiseSpeaker $speaker): PromiseSpeaker
+    {
+        $speaker = PromiseSpeaker::query()->lockForUpdate()->find($speaker->id)
+            ?? throw PromiseActionException::notFound('الشخص');
+
+        if ($speaker->status !== 'pending') {
+            throw PromiseActionException::notPending($speaker->status);
+        }
+
+        return $speaker;
+    }
+
     /** Reload a report under a row lock and make sure it is still pending. */
     private function lockPendingReport(PromiseReport $report): PromiseReport
     {
-        $report = PromiseReport::query()->lockForUpdate()->findOrFail($report->id);
+        $report = PromiseReport::query()->lockForUpdate()->find($report->id)
+            ?? throw PromiseActionException::notFound('البلاغ');
 
         if ($report->status !== 'pending') {
             throw PromiseActionException::notPending($report->status);

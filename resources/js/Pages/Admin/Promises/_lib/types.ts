@@ -61,6 +61,8 @@ export interface AdminPromiseDetail {
     rejectionReason: string | null;
     sources: PromiseSourceData[];
     updates: PromiseUpdateData[];
+    /** Bumped by every save of the promise's fields; the editor sends the version its form was loaded at. */
+    version: number;
 }
 
 export interface EditorOptions {

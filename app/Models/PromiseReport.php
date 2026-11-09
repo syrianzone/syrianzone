@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -29,5 +30,16 @@ class PromiseReport extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Reports waiting in the review queue. A report on a deleted promise drops
+     * out: there is nothing left to act on.
+     *
+     * @param  Builder<PromiseReport>  $query
+     */
+    public function scopeInReviewQueue(Builder $query): Builder
+    {
+        return $query->where('status', 'pending')->whereHas('promise');
     }
 }

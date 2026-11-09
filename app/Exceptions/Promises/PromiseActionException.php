@@ -43,6 +43,8 @@ class PromiseActionException extends DomainActionException
 
     public const BANNED = 'banned';
 
+    public const STALE = 'stale';
+
     public static function notFound(string $what = 'الوعد'): self
     {
         return new self(self::NOT_FOUND, "{$what} غير موجود");
@@ -154,12 +156,21 @@ class PromiseActionException extends DomainActionException
         return new self(self::BANNED, 'حسابك موقوف عن المشاركة');
     }
 
+    public static function staleEdit(int $version): self
+    {
+        return new self(
+            self::STALE,
+            'عدّل أحدٌ الوعد بعد أن فتحته، أعد تحميل الصفحة ثم طبّق تعديلك',
+            ['version' => $version],
+        );
+    }
+
     public function httpStatus(): int
     {
         return match ($this->kind) {
             self::NOT_FOUND => 404,
             self::NOT_PENDING, self::NOT_PUBLISHED, self::ALREADY_PUBLISHED,
-            self::VOTING_CLOSED, self::LOG_IS_PERMANENT, self::ONLY_LATEST_STATUS => 409,
+            self::VOTING_CLOSED, self::LOG_IS_PERMANENT, self::ONLY_LATEST_STATUS, self::STALE => 409,
             self::BANNED => 403,
             default => 422,
         };

@@ -121,6 +121,74 @@ final class PromiseRules
     }
 
     /**
+     * A person added by staff: linked from the directory by `ref`, or typed in.
+     *
+     * @return array<string, mixed>
+     */
+    public function newSpeaker(): array
+    {
+        return [
+            'ref' => ['nullable', 'string', 'max:80', 'required_without:name'],
+            ...$this->speaker(required: false),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function sector(bool $creating): array
+    {
+        return [
+            ...($creating ? ['id' => ['required', 'string', 'max:32', 'regex:/^[a-z][a-z0-9_-]*$/', 'unique:promise_sectors,id']] : []),
+            'label' => ['required', 'string', 'max:255'],
+            'icon' => ['nullable', 'string', 'max:64'],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function sectorOrder(): array
+    {
+        return [
+            'ids' => ['required', 'array'],
+            'ids.*' => ['string', 'distinct', 'exists:promise_sectors,id'],
+        ];
+    }
+
+    /**
+     * Why a suggestion or a proposed person was turned down.
+     *
+     * @return array<string, mixed>
+     */
+    public function reason(): array
+    {
+        return ['reason' => ['nullable', 'string', 'max:1000']];
+    }
+
+    /**
+     * The reviewer's note when resolving a report.
+     *
+     * @return array<string, mixed>
+     */
+    public function note(): array
+    {
+        return ['note' => ['nullable', 'string', 'max:2000']];
+    }
+
+    /**
+     * The promise version an edit was based on. Every edit of an existing
+     * promise must name it, so a stale form cannot overwrite a newer save
+     * (see PromiseEditor::saveIfUnchanged).
+     *
+     * @return array<int, string>
+     */
+    public function version(): array
+    {
+        return ['required', 'integer', 'min:0'];
+    }
+
+    /**
      * Arabic messages for every admin form. Keys a given form does not use are
      * ignored by the validator.
      *
@@ -216,6 +284,10 @@ final class PromiseRules
             'label.max' => $long,
             'ids.required' => 'تعذّر حفظ الترتيب',
             'ids.*.exists' => 'تعذّر حفظ الترتيب',
+            'ids.*.distinct' => 'تعذّر حفظ الترتيب',
+            'version.required' => 'أعد تحميل الصفحة ثم احفظ تعديلك',
+            'version.integer' => 'أعد تحميل الصفحة ثم احفظ تعديلك',
+            'version.min' => 'أعد تحميل الصفحة ثم احفظ تعديلك',
         ];
     }
 }

@@ -155,7 +155,7 @@ class ImportPromisesResearch extends Command
                 $speaker->update(['name' => $name]);
             }
 
-            return 'speaker:'.$speaker->id;
+            return $speaker->ref();
         }
 
         $speaker = PromiseSpeaker::create([
@@ -164,7 +164,7 @@ class ImportPromisesResearch extends Command
             'status' => 'pending',
         ]);
 
-        return 'speaker:'.$speaker->id;
+        return $speaker->ref();
     }
 
     /**

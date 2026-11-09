@@ -65,6 +65,22 @@ class PromiseSpeaker extends Model
         return $query->where('status', 'approved');
     }
 
+    /**
+     * People proposed by the public, waiting in the review queue.
+     *
+     * @param  Builder<PromiseSpeaker>  $query
+     */
+    public function scopeInReviewQueue(Builder $query): Builder
+    {
+        return $query->where('status', 'pending');
+    }
+
+    /** How the promise forms and agent tools refer to this person (see SpeakerDirectory::resolve). */
+    public function ref(): string
+    {
+        return 'speaker:'.$this->id;
+    }
+
     /** Own photo first, then whatever the linked record carries. */
     public function resolvedImage(): ?string
     {

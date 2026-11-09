@@ -25,7 +25,7 @@ evidence for every claim the site makes.
 | Period | Statements made on or after **8 Dec 2024**. |
 | Language | Arabic only (quotes stay verbatim in their original language). |
 | Numbers | Western digits; cards show whole days; the detail page adds a live days:hours:minutes clock. |
-| Layout | Scoreboard on top, filter chips + selects, card grid with a big countdown per card. |
+| Layout | Scoreboard on top, status chips + combined search and filters, card grid with a big countdown per card. |
 | v1 pages | `/promises` list, `/promises/{number}` detail with share card, `/promises/suggest`, admin section. |
 | Seed data | ~15 researched real promises, imported **unpublished** into the review queue; an editor verifies and publishes each one. |
 
@@ -144,9 +144,14 @@ Public reads return only aggregates.
 ### `/promises`
 
 - Scoreboard: total · kept (on time / late) · partially · broken · overdue · open.
-- Filter chips (`Components/ui/filter-chip`): all, overdue, due soon (≤ 30 days),
-  in progress, kept, broken, postponed/retracted.
-- Selects: sector, governorate, institution, speaker, tag; free-text search.
+- Status chips, then a search field (`SmartFilterSearch`) with sector,
+  governorate, speaker, institution and tag filters. Several values in one
+  filter match any of them; different filters must all match. Chip counts follow
+  the other filters; the scoreboard stays global.
+- Filters and sort live in the URL (`state[]=overdue&state[]=broken`), so a
+  filtered view can be shared. Search text is not put in the URL.
+- The detail page's back link returns to the filtered list (`?from=`, local
+  `/promises` URLs only).
 - Default sort by urgency: most overdue first, then soonest deadline, then
   count-ups, then resolved.
 - Card: speaker avatar + name/title, title, the big number, status badge,

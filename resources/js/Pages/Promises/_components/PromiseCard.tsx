@@ -13,7 +13,7 @@ import type { PromiseCardData } from '../_lib/types';
  * One promise in the list. The title is the only link; it stretches over the
  * card so the whole card is clickable without nesting interactive elements.
  */
-export default function PromiseCard({ promise }: { promise: PromiseCardData }) {
+export default function PromiseCard({ promise, returnUrl = '/promises' }: { promise: PromiseCardData; returnUrl?: string }) {
     const SectorIcon = sectorIcon(promise.sector?.icon);
 
     return (
@@ -34,7 +34,7 @@ export default function PromiseCard({ promise }: { promise: PromiseCardData }) {
 
                 <h2 className="text-base font-bold leading-snug text-foreground">
                     <Link
-                        href={`/promises/${promise.number}`}
+                        href={`/promises/${promise.number}${returnUrl === '/promises' ? '' : `?from=${encodeURIComponent(returnUrl)}`}`}
                         className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none group-hover:text-primary"
                     >
                         {promise.title}

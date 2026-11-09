@@ -83,8 +83,8 @@ class PromiseSpeaker extends Model
             return $this->candidate->x_handle;
         }
 
-        $twitter = $this->houseMember?->twitter_url;
-        if ($twitter && preg_match('~(?:x|twitter)\.com/([A-Za-z0-9_]{1,15})~', $twitter, $m)) {
+        $twitter = $this->officialEntity?->socials['twitter'] ?? $this->houseMember?->twitter_url;
+        if (is_string($twitter) && preg_match('~(?:x|twitter)\.com/([A-Za-z0-9_]{1,15})~', $twitter, $m)) {
             return $m[1];
         }
 

@@ -116,6 +116,10 @@ class ImportPromisesResearch extends Command
             }
         }
 
+        if (! $dryRun && ! $this->argument('path')) {
+            $this->directory->syncKnownPeople();
+        }
+
         $this->table(['#', 'Title', 'Result'], $rows);
 
         if ($failed > 0) {
@@ -132,7 +136,7 @@ class ImportPromisesResearch extends Command
     }
 
     /**
-     * Link to a person the site already knows when the name matches exactly;
+     * Link to a person the site already knows when the name matches;
      * otherwise propose a new speaker for the editor to approve.
      *
      * @param  array<string, mixed>  $item
@@ -142,7 +146,7 @@ class ImportPromisesResearch extends Command
         $name = trim((string) $item['speaker_name_ar']);
 
         if ($ref = $this->directory->findExisting($name)) {
-            $speaker = $this->directory->resolve($ref);
+            $speaker = $this->directory->resolve($ref, forStaff: true);
 
             // Directory names often carry the title ("وزير الطاقة محمد البشير").
             // A speaker row created by this link takes the bare researched name;

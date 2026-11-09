@@ -240,11 +240,33 @@ test('a person already in the tier list becomes one linked speaker however often
         ->and(collect($directory->search('المثال'))->pluck('ref')->all())->toBe(['speaker:'.$first->id]);
 });
 
-test('free-text names match directory entries despite titles and spelling', function () {
-    $candidate = Candidate::factory()->create(['name' => 'د. عبدالقادر الحصرية']);
+test('free-text names match directory entries despite titles, patronymics and cross-directory overlap', function () {
+    $poll = \App\Models\Poll::factory()->create(['slug' => \App\Models\Poll::CORE_POLL_SLUG, 'is_active' => true]);
+    $candidate = Candidate::factory()->create(['poll_id' => $poll->id, 'name' => 'د. عبدالقادر الحصرية', 'status' => 'active']);
+    $ministerCand = Candidate::factory()->create(['poll_id' => $poll->id, 'name' => 'محمد تركو', 'title' => 'وزير التربية', 'status' => 'active']);
+    $category = \App\Models\OfficialCategory::create(['id' => 'ministers', 'label_ar' => 'الوزراء', 'label_en' => 'Ministers', 'is_active' => true]);
+    $official = \App\Models\OfficialEntity::create([
+        'id' => 'pf-turko',
+        'category_id' => $category->id,
+        'name' => 'Mohammad Turko',
+        'name_ar' => 'محمد عبد الرحمن تركو',
+        'description_ar' => 'وزير التربية والتعليم',
+        'is_active' => true,
+    ]);
 
-    expect(app(SpeakerDirectory::class)->findExisting('عبد القادر الحصرية'))->toBe('candidate:'.$candidate->id)
-        ->and(app(SpeakerDirectory::class)->findExisting('شخص غير معروف تماماً'))->toBeNull();
+    $directory = app(SpeakerDirectory::class);
+
+    expect($directory->findExisting('عبد القادر الحصرية'))->toBe('candidate:'.$candidate->id)
+        // Appears in both Tierlist and Official Accounts; resolves to Tierlist candidate rather than colliding
+        ->and($directory->findExisting('محمد عبد الرحمن تركو'))->toBe('candidate:'.$ministerCand->id)
+        ->and($directory->findExisting('شخص غير معروف تماماً'))->toBeNull();
+
+    $directory->syncKnownPeople();
+
+    $synced = PromiseSpeaker::where('candidate_id', $ministerCand->id)->sole();
+    expect($synced->official_entity_id)->toBe($official->id)
+        ->and($synced->status)->toBe('approved')
+        ->and(PromiseSpeaker::count())->toBe(2);
 });
 
 test('speakers and sectors in use cannot be deleted', function () {

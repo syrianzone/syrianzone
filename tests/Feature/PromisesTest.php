@@ -221,6 +221,13 @@ test('public speaker search offers approved speakers and publicly listed officia
         ->not->toContain('سامر المخفي')
         ->not->toContain('سامر الموقوف');
 
+    $initialNames = collect($this->getJson('/api/v1/promises/speakers?q=')->assertOk()->json('speakers'))->pluck('name');
+    expect($initialNames)->toContain('سامر المعتمد')
+        ->toContain('سامر الوزير')
+        ->not->toContain('سامر المقترح')
+        ->not->toContain('سامر المخفي')
+        ->not->toContain('سامر الموقوف');
+
     // Nor can a suggestion attach to someone the site does not list.
     $this->actingAs(User::factory()->create())->postJson('/api/v1/promises', [
         'speaker_ref' => 'candidate:'.$hidden->id,

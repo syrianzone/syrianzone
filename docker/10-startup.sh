@@ -39,6 +39,10 @@ fi
 echo "🏨 Syncing HalaSyria hotels..."
 php /var/www/html/artisan hotels:sync || echo "⚠️ HalaSyria hotel sync skipped or failed."
 
+# 4b. Import researched promises & sync Tierlist/Official speakers (idempotent)
+echo "📜 Syncing promises research & speakers..."
+php /var/www/html/artisan promises:import-research || echo "⚠️ Promises research import skipped or failed."
+
 # 5. Optimize configurations and cache
 echo "⚡ Optimizing Laravel application..."
 php /var/www/html/artisan optimize:clear

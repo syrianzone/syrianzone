@@ -65,14 +65,10 @@ class SpeakerDirectory
             'pending' => $s->status === 'pending',
         ]);
 
-        if ($query === '') {
-            return $options->values()->all();
-        }
-
         $linked = PromiseSpeaker::query()->get(['candidate_id', 'official_entity_id', 'house_member_id']);
 
         $candidates = $this->candidates($forStaff)
-            ->where('name', 'like', $like)
+            ->when($query !== '', fn ($q) => $q->where('name', 'like', $like))
             ->whereNotIn('id', $linked->pluck('candidate_id')->filter()->all())
             ->orderByRaw("CASE WHEN status = 'active' THEN 0 ELSE 1 END")
             ->orderBy('name')
@@ -88,14 +84,14 @@ class SpeakerDirectory
             ]);
 
         $officials = $this->officials($forStaff)
-            ->where(fn ($q) => $q->where('name_ar', 'like', $like)->orWhere('name', 'like', $like))
+            ->when($query !== '', fn ($q) => $q->where(fn ($sub) => $sub->where('name_ar', 'like', $like)->orWhere('name', 'like', $like)))
             ->whereNotIn('id', $linked->pluck('official_entity_id')->filter()->all())
             ->orderBy('order_column')
             ->limit(self::PER_SOURCE)
             ->get(['id', 'name', 'name_ar', 'description_ar', 'image'])
             ->map(fn (OfficialEntity $e) => [
                 'ref' => 'official:'.$e->id,
-                'name' => $e->name_ar ?: $e->name,
+                'name' => self::cleanName($e->name_ar ?: $e->name),
                 'title' => $e->description_ar,
                 'image' => $e->image,
                 'source' => 'official',
@@ -103,7 +99,7 @@ class SpeakerDirectory
             ]);
 
         $house = HouseMember2026::query()
-            ->where('name_ar', 'like', $like)
+            ->when($query !== '', fn ($q) => $q->where('name_ar', 'like', $like))
             ->whereNotIn('id', $linked->pluck('house_member_id')->filter()->all())
             ->orderBy('name_ar')
             ->limit(self::PER_SOURCE)
@@ -117,13 +113,27 @@ class SpeakerDirectory
                 'pending' => false,
             ]);
 
-        return Collection::make()
+        $combined = Collection::make()
             ->concat($options)
             ->concat($candidates)
             ->concat($officials)
-            ->concat($house)
-            ->values()
-            ->all();
+            ->concat($house);
+
+        $deduped = [];
+        foreach ($combined as $item) {
+            $duplicate = false;
+            foreach ($deduped as $existing) {
+                if (self::namesMatch((string) $existing['name'], (string) $item['name'])) {
+                    $duplicate = true;
+                    break;
+                }
+            }
+            if (! $duplicate) {
+                $deduped[] = $item;
+            }
+        }
+
+        return $deduped;
     }
 
     /**
@@ -131,9 +141,10 @@ class SpeakerDirectory
      *
      * Directory names carry titles and spelling variants ("وزير الطاقة محمد
      * البشير", "د. عبد القادر الحصرية", "عبدالسلام هيكل"), so names are
-     * normalised and matched by containment in either direction. Only an
-     * unambiguous single match is returned; anything else is null so the
-     * caller proposes a new speaker for review instead of guessing.
+     * normalised and matched by priority pool (speaker -> candidate -> official
+     * -> house). Only an unambiguous single match within the highest-priority
+     * matching pool is returned; anything else is null so the caller proposes a
+     * new speaker for review instead of guessing.
      */
     public function findExisting(string $name): ?string
     {
@@ -150,33 +161,132 @@ class SpeakerDirectory
         ];
 
         $linked = PromiseSpeaker::query()->get(['id', 'candidate_id', 'official_entity_id', 'house_member_id']);
-        $matches = [];
 
         foreach ($pools as $kind => $names) {
+            $exact = [];
+            $fuzzy = [];
+
             foreach ($names as $id => $candidate) {
-                $hay = self::normalizeName((string) $candidate);
-                if (mb_strlen($hay) < self::MIN_MATCH_LENGTH || (! str_contains($hay, $needle) && ! str_contains($needle, $hay))) {
+                $candidateStr = (string) $candidate;
+                $hay = self::normalizeName($candidateStr);
+                if (mb_strlen($hay) < self::MIN_MATCH_LENGTH) {
                     continue;
                 }
 
-                // A record already linked to a speaker resolves to that speaker.
                 $owner = match ($kind) {
                     'candidate' => $linked->firstWhere('candidate_id', $id),
                     'official' => $linked->firstWhere('official_entity_id', $id),
                     'house' => $linked->firstWhere('house_member_id', (int) $id),
                     default => null,
                 };
-                $matches[$owner ? 'speaker:'.$owner->id : $kind.':'.$id] = true;
+                $ref = $owner ? 'speaker:'.$owner->id : $kind.':'.$id;
+
+                if ($hay === $needle) {
+                    $exact[$ref] = true;
+                } elseif (self::namesMatch($candidateStr, $name)) {
+                    $fuzzy[$ref] = true;
+                }
+            }
+
+            $matches = $exact !== [] ? $exact : $fuzzy;
+            if (count($matches) === 1) {
+                return array_key_first($matches);
+            }
+            if (count($matches) > 1) {
+                return null;
             }
         }
 
-        return count($matches) === 1 ? array_key_first($matches) : null;
+        return null;
+    }
+
+    /**
+     * Ensure every publicly listed Tierlist candidate and Officials-directory
+     * person has a linked PromiseSpeaker row, and link any existing speaker
+     * whose normalised name matches unambiguously.
+     */
+    public function syncKnownPeople(): void
+    {
+        // 1. Link any unlinked existing speaker rows that match a known source.
+        $unlinked = PromiseSpeaker::query()
+            ->where('status', '!=', 'rejected')
+            ->whereNull('candidate_id')
+            ->whereNull('official_entity_id')
+            ->whereNull('house_member_id')
+            ->get();
+
+        foreach ($unlinked as $speaker) {
+            $this->attachSourceLinks($speaker);
+        }
+
+        // 2. Sync active candidates in the core tier-list poll.
+        $candidates = $this->candidates(false)
+            ->where('status', 'active')
+            ->orderBy('name')
+            ->get();
+
+        foreach ($candidates as $candidate) {
+            if (PromiseSpeaker::where('candidate_id', $candidate->id)->exists()) {
+                continue;
+            }
+
+            $existing = $this->findMatchingSpeaker($candidate->name);
+            if ($existing && $existing->candidate_id === null) {
+                $existing->update([
+                    'candidate_id' => $candidate->id,
+                    'title' => $existing->title ?: $candidate->title,
+                    'status' => 'approved',
+                ]);
+                $this->attachOfficialLink($existing);
+
+                continue;
+            }
+
+            $speaker = $this->fromCandidate($candidate->id, true);
+            $this->attachOfficialLink($speaker);
+        }
+
+        // 3. Sync active people in the officials directory (ministers, public_figures).
+        $officials = $this->officials(false)
+            ->orderBy('order_column')
+            ->get();
+
+        foreach ($officials as $entity) {
+            if (PromiseSpeaker::where('official_entity_id', $entity->id)->exists()) {
+                continue;
+            }
+
+            $name = self::cleanName($entity->name_ar ?: $entity->name);
+            $existing = $this->findMatchingSpeaker($name);
+            if ($existing) {
+                if ($existing->official_entity_id === null) {
+                    $existing->update([
+                        'official_entity_id' => $entity->id,
+                        'title' => $existing->title ?: $entity->description_ar,
+                        'status' => 'approved',
+                    ]);
+                }
+
+                continue;
+            }
+
+            $this->fromOfficial($entity->id, true);
+        }
+    }
+
+    /** Strip parenthetical nicknames and common honorifics/titles for display. */
+    public static function cleanName(string $name): string
+    {
+        $name = preg_replace('/\([^)]*\)/u', ' ', $name) ?? $name;
+        $name = preg_replace('/(^|\s)(الأستاذ|الاستاذ|الدكتورة|الدكتور|دكتورة|دكتور|د\.|المهندسة|المهندس|م\.|اللواء|العقيد|العميد|المستشار|السيدة|السيد|وزير الطاقة)\s*/u', ' ', $name) ?? $name;
+
+        return trim(preg_replace('/\s+/u', ' ', $name) ?? $name);
     }
 
     /** Strip honorifics, spaces and spelling variants so names compare. */
     public static function normalizeName(string $name): string
     {
-        $name = preg_replace('/(^|\s)(د\.|الدكتور|دكتور|المهندس|م\.)\s*/u', '$1', $name) ?? $name;
+        $name = self::cleanName($name);
         $name = preg_replace('/[\x{064B}-\x{065F}\x{0670}\x{0640}]/u', '', $name) ?? $name;
 
         return str_replace(
@@ -184,6 +294,58 @@ class SpeakerDirectory
             ['ا', 'ا', 'ا', 'ا', 'ه', 'ي', '', '', ''],
             trim($name),
         );
+    }
+
+    /**
+     * Compare two Arabic person names, accounting for leading titles/prefixes
+     * ("وزير الطاقة محمد البشير" vs "محمد البشير", "محمد يسر برنية" vs "يسر برنية")
+     * and middle patronymics ("محمد عبد الرحمن تركو" vs "محمد تركو").
+     */
+    public static function namesMatch(string $a, string $b): bool
+    {
+        $normA = self::normalizeName($a);
+        $normB = self::normalizeName($b);
+
+        if (mb_strlen($normA) < self::MIN_MATCH_LENGTH || mb_strlen($normB) < self::MIN_MATCH_LENGTH) {
+            return false;
+        }
+
+        if ($normA === $normB || str_ends_with($normA, $normB) || str_ends_with($normB, $normA)) {
+            return true;
+        }
+
+        $shortA = self::firstAndLastNormalized($a);
+        $shortB = self::firstAndLastNormalized($b);
+
+        return $shortA !== null && $shortA === $shortB;
+    }
+
+    private static function firstAndLastNormalized(string $name): ?string
+    {
+        $clean = self::cleanName($name);
+        $clean = preg_replace('/[\x{064B}-\x{065F}\x{0670}\x{0640}]/u', '', $clean) ?? $clean;
+        $rawWords = array_values(array_filter(preg_split('/[\s.\-]+/u', trim($clean)) ?: []));
+
+        $compounds = ['عبد', 'ابو', 'ابي', 'نور', 'علاء', 'محي', 'تقي', 'بهاء', 'ضياء', 'سيف', 'صلاح', 'جمال', 'كمال', 'شمس', 'عز', 'سعد', 'فخر', 'زين'];
+        $tokens = [];
+        for ($i = 0; $i < count($rawWords); $i++) {
+            $w = str_replace(['أ', 'إ', 'آ', 'ٱ', 'ة', 'ى'], ['ا', 'ا', 'ا', 'ا', 'ه', 'ي'], $rawWords[$i]);
+            if (in_array($w, $compounds, true) && isset($rawWords[$i + 1])) {
+                $next = str_replace(['أ', 'إ', 'آ', 'ٱ', 'ة', 'ى'], ['ا', 'ا', 'ا', 'ا', 'ه', 'ي'], $rawWords[$i + 1]);
+                $tokens[] = $w.$next;
+                $i++;
+            } else {
+                $tokens[] = $w;
+            }
+        }
+
+        if (count($tokens) < 2) {
+            return null;
+        }
+
+        $combined = $tokens[0].$tokens[count($tokens) - 1];
+
+        return mb_strlen($combined) >= self::MIN_MATCH_LENGTH ? $combined : null;
     }
 
     /**
@@ -253,7 +415,7 @@ class SpeakerDirectory
 
         return PromiseSpeaker::firstOrCreate(
             ['official_entity_id' => $entity->id],
-            ['name' => $entity->name_ar ?: $entity->name, 'title' => $entity->description_ar, 'status' => 'approved'],
+            ['name' => self::cleanName($entity->name_ar ?: $entity->name), 'title' => $entity->description_ar, 'status' => 'approved'],
         );
     }
 
@@ -265,6 +427,52 @@ class SpeakerDirectory
             ['house_member_id' => $member->id],
             ['name' => $member->name_ar, 'title' => $this->houseTitle($member), 'status' => 'approved'],
         );
+    }
+
+    private function findMatchingSpeaker(string $name): ?PromiseSpeaker
+    {
+        $speakers = PromiseSpeaker::query()->where('status', '!=', 'rejected')->get();
+        $matches = $speakers->filter(fn (PromiseSpeaker $s) => self::namesMatch($s->name, $name))->values();
+
+        return $matches->count() === 1 ? $matches->first() : null;
+    }
+
+    private function attachSourceLinks(PromiseSpeaker $speaker): void
+    {
+        $candidates = $this->candidates(true)->get(['id', 'name', 'title']);
+        $candMatches = $candidates->filter(fn (Candidate $c) => self::namesMatch($c->name, $speaker->name))->values();
+        if ($candMatches->count() === 1) {
+            $cand = $candMatches->first();
+            if (! PromiseSpeaker::where('candidate_id', $cand->id)->exists()) {
+                $speaker->update([
+                    'candidate_id' => $cand->id,
+                    'title' => $speaker->title ?: $cand->title,
+                    'status' => 'approved',
+                ]);
+            }
+        }
+
+        $this->attachOfficialLink($speaker);
+    }
+
+    private function attachOfficialLink(PromiseSpeaker $speaker): void
+    {
+        if ($speaker->official_entity_id !== null) {
+            return;
+        }
+
+        $officials = $this->officials(true)->get(['id', 'name', 'name_ar', 'description_ar']);
+        $offMatches = $officials->filter(fn (OfficialEntity $e) => self::namesMatch($e->name_ar ?: $e->name, $speaker->name))->values();
+        if ($offMatches->count() === 1) {
+            $off = $offMatches->first();
+            if (! PromiseSpeaker::where('official_entity_id', $off->id)->exists()) {
+                $speaker->update([
+                    'official_entity_id' => $off->id,
+                    'title' => $speaker->title ?: $off->description_ar,
+                    'status' => 'approved',
+                ]);
+            }
+        }
     }
 
     private function houseTitle(HouseMember2026 $member): string

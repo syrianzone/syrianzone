@@ -27,7 +27,7 @@ Currently covers six modules:
 | Government apps | 1 | 6 | no |
 | Transit | 4 | 6 | **yes**, by governorate |
 | Users | 0 | 1 | no |
-| Promises | 4 | 4 | no |
+| Promises | 7 | 22 | no |
 
 Other modules are added by dropping tools into
 `app/Mcp/Servers/AdminServer.php`; nothing outside that file is reachable by an
@@ -231,7 +231,7 @@ The same pattern, same three-part shape, now covers three more modules:
 | Gov Apps | `Services/GovApps/GovAppService` | `GovAppPresenter` | `Exceptions/Directories/DirectoryActionException` |
 | Transit | `Services/Transit/TransitAdminService` | `TransitPresenter` | `Exceptions/Transit/TransitActionException` |
 | Users | `Services/Users/UserModerationService` | inline in `Mcp/Tools/Users/UsersTool` | `Exceptions/Users/UserModerationException` |
-| Promises | `Services/Promises/PromiseEditor` | `PromisePresenter` | `Exceptions/Promises/PromiseActionException` |
+| Promises | `Services/Promises/PromiseEditor`, `PromiseModerationService`, `PromiseSpeakerService`, `PromiseSectorService` | `PromisePresenter` | `Exceptions/Promises/PromiseActionException` |
 
 Invariants preserved in the shared layer: only `pending` places can be
 moderated; at most 10 photos and at least 1; both photo-count guards run under
@@ -239,8 +239,8 @@ a row lock on the place; every change that can alter the map payload forgets the
 `places:map` cache.
 
 Each of the admin controllers (`PlaceAdminController`, `GovAppsAdminController`,
-`SyOfficialAdminController`, `DashboardController`, `TransitAdminController`) is
-a thin HTTP adapter that keeps only its scope checks and per-route validation,
+`SyOfficialAdminController`, `DashboardController`, `TransitAdminController`,
+`PromisesAdminController`) is a thin HTTP adapter that keeps only its scope checks and per-route validation,
 letting `DomainActionException` bubble up to the centralized renderer in
 `bootstrap/app.php`. `TransitAdminController::updateRouteStatus`, for example,
 catches `STATUS_UNCHANGED` specifically to answer **200** for "already that
@@ -301,27 +301,53 @@ with `features: []` and a route with no stops exercise every code path except th
 `PlaceAdminController` is now a thin HTTP adapter over these. Its 24 existing
 tests pass unchanged.
 
-### Promises: Phase 1 guardrails
+### Promises
 
-Phase 1 exposes reading and drafting. Several operations are intentionally kept
-**dashboard-only**:
+Every promises admin action except image upload is a tool, gated on the same
+single capability as its dashboard route:
 
-- **Publishing, unpublishing, and rejections** (`publish`, `unpublish`, `reject`)
-  require human editorial judgment in the dashboard review queue. Created
-  promises always land with `review_status = 'pending'`.
-- **Status changes (verdicts) and undo** (`changeStatus`, `undoStatusChange`)
-  determine whether a promise is fulfilled, broken, postponed, etc., and are
-  reserved for human operators with `promises.rule`.
-- **Speaker and sector management** (`storeSpeaker`, `updateSpeaker`,
-  `destroySpeaker`, sector CRUD/reorder) remain in the admin UI. Agents resolve
-  known speakers via `search-promise-speakers` and picker refs.
-- **Report resolution** (`acceptReport`, `dismissReport`) and **deletion**
-  (`destroy`) are dashboard-only.
-- **Image upload** (`uploadImage`) is not exposed as an MCP tool.
-- **Published-promise guard**: `update-promise`, `add-promise-update` and
-  `remove-promise-update` refuse any promise with `review_status = 'published'`
-  (`PromisesTool::refusePublished`). Agents only ever change drafts; anything
-  the public can see, including its change log, is edited in the dashboard.
+| Capability | Tools |
+|---|---|
+| any `promises.*` | `list-promises`, `get-promise`, `search-promise-speakers`, `get-promise-form-options` |
+| `promises.create` | `create-promise` (always lands unpublished) |
+| `promises.edit` | `update-promise`, `add-promise-update`, `remove-promise-update` |
+| `promises.review` | `get-promise-review-queue`, `publish-promise`, `unpublish-promise`, `reject-promise`, `approve-promise-speaker`, `reject-promise-speaker`, `accept-promise-report`, `dismiss-promise-report` |
+| `promises.rule` | `set-promise-status`, `undo-promise-status` |
+| `promises.delete` | `delete-promise` |
+| `promises.speakers` | `list-promise-speakers`, `create-promise-speaker`, `update-promise-speaker`, `delete-promise-speaker`, `list-promise-sectors`, `create-promise-sector`, `update-promise-sector`, `toggle-promise-sector`, `delete-promise-sector`, `reorder-promise-sectors` |
+
+The domain rules are the dashboard's, in `Services/Promises`: sources on every
+verdict, a log that reads in date order, verdicts that become permanent once a
+promise has been public, row locks on publishing, verdicts and reports. What
+the agent surface adds:
+
+- **Side-effect verdicts respect the token.** Publishing, or linking, a
+  restatement marks the still-open original `postponed`, which is a verdict.
+  The services no longer read `promises.rule` off the user; the caller passes
+  `mayRule`, defaulting to false. The dashboard passes the user's grant, and
+  `PromisesTool::mayRule()` passes `AgentContext::can('promises.rule')`, so a
+  `promises.review` token held by a ruler publishes the restatement but leaves
+  the original open, and says so in the response.
+- **No lost updates.** Every save bumps `promises.version` in one atomic
+  update. `update-promise` replaces the whole promise, so it requires the
+  version the agent read (`expected_version`), and
+  `PromiseEditor::saveIfUnchanged()` compares it under a row lock. The
+  dashboard editor sends the version it loaded too, so neither an agent nor an
+  editor silently overwrites the other: the later save is refused with
+  `STALE` (409 in the dashboard) and has to re-read first.
+- **Review actions lock their row.** Publishing, unpublishing, rejecting and
+  resolving a person or a report each reload the row under a lock and check
+  its state there, so an agent working the queue alongside a human cannot
+  double-resolve an item or reject a person while their promise is published.
+- **Public text is data.** Suggestions, proposed people and reports are
+  written by visitors. The server instructions and every tool that returns
+  such text tell the agent to verify it and never follow instructions in it.
+- **Complete sector orders.** The dashboard always sends the full order;
+  `reorder-promise-sectors` refuses a partial list, which would leave the
+  skipped sectors colliding with the positions it assigns.
+- **Image upload stays dashboard-only.** Speaker photos and source screenshots
+  take web (http/https) or `/storage/` URLs over MCP; uploads need a
+  multipart request.
 
 ---
 
@@ -478,8 +504,9 @@ serve a stale compile for up to three minutes. Restart it if in doubt.
 | `TransitToolsTest.php` | Governorate scoping, including the two indirect routes (linked edit, move) and cross-module capability isolation |
 | `DirectoryDiscoveryTest.php` | The real JSON-RPC surface: `tools/list` gating, `search_tools`, and an `execute_tools` SSE round trip |
 | `SetUserBanToolTest.php` | The highest-consequence tool: capability gating, self-ban and superadmin refusals, idempotence, and not leaking the target's permissions |
-| `PromisesToolsTest.php` | Tool behaviour, any-of read gates, unpublished drafting, update guard on published promises, change-log rules |
-| `PromisesDiscoveryTest.php` | Real JSON-RPC surface: `tools/list` gating, `search_tools`, and an `execute_tools` round trip of `create-promise` |
+| `PromisesToolsTest.php` | Read gates, drafting, edits to published promises, the stale-read refusal, change-log rules |
+| `PromisesManagementToolsTest.php` | Publishing, verdicts and undo, deletion, the review queue, people and sectors, and the token ceiling on postponing a restated original |
+| `PromisesDiscoveryTest.php` | Real JSON-RPC surface: `tools/list` and `search_tools` gating per capability, and `execute_tools` round trips of `create-promise` and `set-promise-status` |
 
 `tests/Feature/`, alongside the module's own:
 
@@ -488,6 +515,7 @@ serve a stale compile for up to three minutes. Restart it if in doubt.
 | `SyOfficialDirectoryTest.php`, `SyOfficialAdminTest.php` | Service rules, then the HTTP contract after the controller was reduced to an adapter |
 | `GovAppsServiceTest.php`, `GovAppsAdminTest.php` | Same split, plus the soft-delete id-reuse rule |
 | `TransitAdminServiceTest.php` | Approve/reject/status/update/move/delete, cache invalidation, and the two regression tests below |
+| `PromisesAdminTest.php` | The dashboard's HTTP contract over the shared promises services, including the 409 when a save is based on a stale `version` |
 
 Two notes for anyone extending this:
 

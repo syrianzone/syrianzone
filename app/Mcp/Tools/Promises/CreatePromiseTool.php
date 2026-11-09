@@ -13,6 +13,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Attributes\Title;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
 #[Name('create-promise')]
 #[Title('Create Promise')]
@@ -21,6 +22,7 @@ use Laravel\Mcp\Server\Attributes\Title;
     .'to the human review queue; nothing becomes public immediately. All text content must be in Arabic. '
     .'Call get-promise-form-options and search-promise-speakers first. At least one source is required.'
 )]
+#[IsDestructive]
 class CreatePromiseTool extends PromisesTool
 {
     protected array $permissions = ['promises.create'];

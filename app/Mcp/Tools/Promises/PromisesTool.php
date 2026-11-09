@@ -6,12 +6,20 @@ use App\Exceptions\Promises\PromiseActionException;
 use App\Mcp\Tools\AuditedTool;
 use App\Models\Promise;
 use App\Models\PromiseSource;
+use App\Services\Promises\PromiseEditor;
+use App\Support\Agents\AgentContext;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 
 /**
  * Shared base for promises tracker tools.
+ *
+ * Each tool needs exactly the capability its dashboard route needs, and the
+ * domain rules live in App\Services\Promises, shared with the dashboard. The
+ * one thing a tool must add is the token: a service that asks whether the
+ * actor may rule is told by mayRule(), never by the user row alone, so a token
+ * without `promises.rule` cannot reach a verdict through a side effect.
  */
 abstract class PromisesTool extends AuditedTool
 {
@@ -33,9 +41,11 @@ abstract class PromisesTool extends AuditedTool
             return $callback();
         } catch (PromiseActionException $e) {
             return Response::error(match ($e->kind) {
-                PromiseActionException::NOT_FOUND => sprintf(
-                    '%s Call list-promises to find valid ids.',
-                    $e->getMessage()
+                PromiseActionException::NOT_FOUND => sprintf('%s %s', $e->getMessage(), $this->notFoundHint()),
+                PromiseActionException::STALE => sprintf(
+                    '%s The promise changed after you read it (it is now at version %d). Call get-promise again, apply your change to the fresh values, and retry with the new version.',
+                    $e->getMessage(),
+                    $e->context['version'] ?? 0
                 ),
                 PromiseActionException::BAD_SPEAKER_REF => sprintf(
                     '%s Call search-promise-speakers and pass one of the returned `ref` values.',
@@ -46,21 +56,62 @@ abstract class PromisesTool extends AuditedTool
         }
     }
 
+    /** Where the agent finds valid ids when the one it passed does not exist. */
+    protected function notFoundHint(): string
+    {
+        return 'Call list-promises to find valid ids.';
+    }
+
     protected function findPromise(string $id): Promise
     {
-        return Promise::find($id) ?? throw PromiseActionException::notFound();
+        return app(PromiseEditor::class)->find($id);
+    }
+
+    /** Whether this agent may rule on promises: its user AND its token. */
+    protected function mayRule(AgentContext $context): bool
+    {
+        return $context->can('promises.rule');
     }
 
     /**
-     * Phase-1 guard: agents draft, they never change what the public sees.
-     * Anything already published (its fields or its public change log) is
-     * edited in the dashboard. Returns the refusal, or null when allowed.
+     * A public promise restating one that is still open, which only an agent
+     * with promises.rule can mark postponed; empty otherwise.
+     *
+     * @return array{note?: string}
      */
-    protected function refusePublished(Promise $promise): ?Response
+    protected function restatementNote(Promise $promise): array
     {
-        return $promise->review_status === 'published'
-            ? Response::error('This promise is published. Published promises and their public change log are edited in the dashboard, not by agents.')
-            : null;
+        $original = $promise->review_status === 'published' ? $promise->restates : null;
+
+        return $original?->isOpen() ? ['note' => sprintf(
+            'Promise #%d, which this one restates, is still open. Marking it postponed needs promises.rule (set-promise-status).',
+            $original->number,
+        )] : [];
+    }
+
+    /**
+     * Shared field schema for create-promise-speaker and update-promise-speaker.
+     *
+     * @return array<string, mixed>
+     */
+    protected function speakerFieldsSchema(JsonSchema $schema): array
+    {
+        return [
+            'title' => $schema->string()
+                ->description('Their current office in Arabic, e.g. "وزير الطاقة". Max 255 characters.')
+                ->max(255),
+
+            'institution_id' => $schema->string()
+                ->description('Optional institution id from get-promise-form-options.'),
+
+            'image_url' => $schema->string()
+                ->description('Optional photo URL (http/https or a /storage/ path). Uploads are dashboard-only.')
+                ->max(2048),
+
+            'x_handle' => $schema->string()
+                ->description('Optional handle on X, letters, digits and underscores, with or without @.')
+                ->max(16),
+        ];
     }
 
     /**

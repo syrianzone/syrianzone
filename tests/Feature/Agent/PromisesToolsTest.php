@@ -9,6 +9,7 @@ use App\Mcp\Tools\Promises\UpdatePromiseTool;
 use App\Models\McpToolCall;
 use App\Models\Promise;
 use App\Models\PromiseSpeaker;
+use App\Services\Promises\PromiseEditor;
 use Illuminate\Support\Str;
 
 /*
@@ -93,24 +94,55 @@ test('a token with only promises.edit is denied create-promise and nothing is cr
         ->and(Promise::count())->toBe(0);
 });
 
-test('update-promise edits an unpublished promise; update-promise on a published promise returns an error and leaves title unchanged', function () {
+test('update-promise edits drafts and published promises alike, given the version it read', function () {
     $user = agentUser(['permissions' => ['promises.edit']]);
     agentToken($user, ['promises.edit']);
 
-    // Unpublished promise can be edited
-    $promise = Promise::factory()->create(['title' => 'العنوان الأصلي']);
-    $res = callTool(UpdatePromiseTool::class, agentPromisePayload(['id' => $promise->id, 'title' => 'العنوان المحدث']));
+    $draft = Promise::factory()->create(['title' => 'العنوان الأصلي']);
+    $res = callTool(UpdatePromiseTool::class, agentPromisePayload([
+        'id' => $draft->id,
+        'expected_version' => 0,
+        'title' => 'العنوان المحدث',
+    ]));
 
     expect(toolPayload($res)['updated'])->toBeTrue()
-        ->and($promise->fresh()->title)->toBe('العنوان المحدث');
+        ->and($draft->fresh()->title)->toBe('العنوان المحدث');
 
-    // Published promise cannot be edited by agents
     $published = Promise::factory()->published()->create(['title' => 'عنوان منشور']);
-    $resPublished = callTool(UpdatePromiseTool::class, agentPromisePayload(['id' => $published->id, 'title' => 'عنوان معدل جديد']));
+    $read = toolPayload(callTool(GetPromiseTool::class, ['id' => $published->id]))['promise'];
+    $res = callTool(UpdatePromiseTool::class, agentPromisePayload([
+        'id' => $published->id,
+        'expected_version' => $read['version'],
+        'title' => 'عنوان منشور مصحح',
+    ]));
 
-    expect($resPublished->isError())->toBeTrue()
-        ->and(toolText($resPublished))->toContain('This promise is published')
-        ->and($published->fresh()->title)->toBe('عنوان منشور');
+    expect(toolPayload($res)['updated'])->toBeTrue()
+        ->and($published->fresh()->title)->toBe('عنوان منشور مصحح')
+        ->and($published->fresh()->review_status)->toBe('published');
+});
+
+test('update-promise refuses a stale read, even one from the same second, so it never overwrites a newer edit', function () {
+    $user = agentUser(['permissions' => ['promises.edit']]);
+    agentToken($user, ['promises.edit']);
+
+    $promise = Promise::factory()->create(['title' => 'العنوان الأصلي']);
+    $read = toolPayload(callTool(GetPromiseTool::class, ['id' => $promise->id]))['promise'];
+
+    app(PromiseEditor::class)->save($promise, agentPromisePayload(['title' => 'تعديل محرر آخر']));
+
+    $res = callTool(UpdatePromiseTool::class, agentPromisePayload([
+        'id' => $promise->id,
+        'expected_version' => $read['version'],
+        'title' => 'تعديل الوكيل',
+    ]));
+
+    expect($res->isError())->toBeTrue()
+        ->and(toolText($res))->toContain('version 1')
+        ->and($promise->fresh()->title)->toBe('تعديل محرر آخر');
+
+    $missing = callTool(UpdatePromiseTool::class, agentPromisePayload(['id' => $promise->id]));
+    expect($missing->isError())->toBeTrue()
+        ->and($promise->fresh()->title)->toBe('تعديل محرر آخر');
 });
 
 test('add-promise-update adds a progress entry with a source; a progress entry without source_url is refused; then remove-promise-update removes the added entry', function () {
@@ -155,8 +187,6 @@ test('remove-promise-update refuses a status_change entry', function () {
     $user = agentUser(['permissions' => ['promises.edit']]);
     agentToken($user, ['promises.edit']);
 
-    // A draft, so the refusal comes from the permanent-log rule rather than
-    // the published-promise guard.
     $promise = Promise::factory()->create();
     $statusUpdate = $promise->updates()->create([
         'type' => 'status_change',
@@ -172,19 +202,20 @@ test('remove-promise-update refuses a status_change entry', function () {
     ]);
 
     expect($remRes->isError())->toBeTrue()
-        ->and(toolText($remRes))->not->toContain('This promise is published')
         ->and($promise->updates()->where('id', $statusUpdate->id)->exists())->toBeTrue();
 });
 
-test('the change-log tools refuse published promises, so agents never alter what the public sees', function () {
+test('the change-log tools work on published promises, keeping status changes permanent', function () {
     $user = agentUser(['permissions' => ['promises.edit']]);
     agentToken($user, ['promises.edit']);
 
     $promise = Promise::factory()->published()->create(['statement_date' => '2025-06-01']);
-    $existing = $promise->updates()->create([
-        'type' => 'note',
-        'happened_on' => '2025-07-01',
-        'body' => 'ملاحظة منشورة',
+    $verdict = $promise->updates()->create([
+        'type' => 'status_change',
+        'happened_on' => '2025-06-15',
+        'status_from' => 'pending',
+        'status_to' => 'in_progress',
+        'source_url' => 'https://example.com/started',
     ]);
 
     $add = callTool(AddPromiseUpdateTool::class, [
@@ -193,16 +224,15 @@ test('the change-log tools refuse published promises, so agents never alter what
         'happened_on' => '2025-07-02',
         'body' => 'ملاحظة جديدة',
     ]);
-    $remove = callTool(RemovePromiseUpdateTool::class, [
-        'id' => $promise->id,
-        'update_id' => $existing->id,
-    ]);
+    $note = $promise->updates()->where('type', 'note')->sole();
 
-    expect($add->isError())->toBeTrue()
-        ->and(toolText($add))->toContain('This promise is published')
-        ->and($remove->isError())->toBeTrue()
-        ->and(toolText($remove))->toContain('This promise is published')
-        ->and($promise->updates()->count())->toBe(1);
+    $removeNote = callTool(RemovePromiseUpdateTool::class, ['id' => $promise->id, 'update_id' => $note->id]);
+    $removeVerdict = callTool(RemovePromiseUpdateTool::class, ['id' => $promise->id, 'update_id' => $verdict->id]);
+
+    expect(toolPayload($add)['added'])->toBeTrue()
+        ->and(toolPayload($removeNote)['removed'])->toBeTrue()
+        ->and($removeVerdict->isError())->toBeTrue()
+        ->and($promise->updates()->pluck('id')->all())->toBe([$verdict->id]);
 });
 
 test('get-promise by unknown id returns an error mentioning list-promises', function () {

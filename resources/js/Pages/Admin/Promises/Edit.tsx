@@ -179,7 +179,7 @@ export default function PromiseEditor({ promise: initial, options, queueCount }:
         setErrors({});
         try {
             if (promise) {
-                const res = await axios.put(`/api/v1/admin/promises/${promise.id}`, payload());
+                const res = await axios.put(`/api/v1/admin/promises/${promise.id}`, { ...payload(), version: promise.version });
                 adopt(res.data.promise);
                 notify.success('حُفظت التعديلات');
             } else {

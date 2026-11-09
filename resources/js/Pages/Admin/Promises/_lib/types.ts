@@ -61,6 +61,8 @@ export interface AdminPromiseDetail {
     rejectionReason: string | null;
     sources: PromiseSourceData[];
     updates: PromiseUpdateData[];
+    /** Sent back on save, which is refused if someone saved the promise since. */
+    version: number;
 }
 
 export interface EditorOptions {

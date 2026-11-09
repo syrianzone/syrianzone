@@ -29,7 +29,13 @@ use Illuminate\Support\Facades\DB;
  *  - Verdicts are recorded under a row lock on the promise, so concurrent
  *    requests cannot interleave the log.
  *  - Marking a restated original `postponed` is a verdict, so it only happens
- *    for an actor who may rule on promises.
+ *    when the caller says the actor may rule on promises. The caller decides
+ *    because only it knows the full grant: the dashboard asks the user, an
+ *    agent asks the user and its token. It defaults to no.
+ *  - Every save bumps the promise's `version` in one atomic update. A save
+ *    that names the version it read is refused under a row lock once the
+ *    promise has moved on, so a full replacement built from stale values
+ *    never overwrites a newer edit.
  *  - A published promise only points at an approved speaker.
  *  - Any change to a promise or its public log touches the promise, so its
  *    `updated_at` (detail page, sitemap) follows the evidence.
@@ -40,14 +46,20 @@ class PromiseEditor
 {
     public function __construct(private readonly SpeakerDirectory $speakers) {}
 
+    public function find(string $id): Promise
+    {
+        return Promise::find($id) ?? throw PromiseActionException::notFound();
+    }
+
     /**
      * Create or update a promise and replace its sources, governorates and tags.
      *
      * @param  array<string, mixed>  $data  validated input
+     * @param  bool  $mayRule  whether the actor may rule on promises (see postponeRestatedOriginal)
      */
-    public function save(?Promise $promise, array $data, ?User $actor = null): Promise
+    public function save(?Promise $promise, array $data, ?User $actor = null, bool $mayRule = false): Promise
     {
-        return DB::transaction(function () use ($promise, $data, $actor) {
+        return DB::transaction(function () use ($promise, $data, $actor, $mayRule) {
             $speaker = $this->speakers->resolve((string) $data['speaker_ref'], forStaff: true);
 
             if ($promise?->published_at && $speaker->status !== 'approved') {
@@ -112,13 +124,33 @@ class PromiseEditor
                 $this->syncSources($promise, $data['sources']);
             }
 
-            $promise->touch();
+            // Also moves updated_at, which the detail page and sitemap read.
+            $promise->increment('version');
 
             if ($linkChanged && $promise->review_status === 'published') {
-                $this->postponeRestatedOriginal($promise->fresh(), $actor);
+                $this->postponeRestatedOriginal($promise->fresh(), $actor, $mayRule);
             }
 
             return $promise->fresh();
+        });
+    }
+
+    /**
+     * Save only if the promise is still the version the caller read.
+     *
+     * @param  array<string, mixed>  $data  validated input
+     */
+    public function saveIfUnchanged(Promise $promise, int $readVersion, array $data, ?User $actor = null, bool $mayRule = false): Promise
+    {
+        return DB::transaction(function () use ($promise, $readVersion, $data, $actor, $mayRule) {
+            $current = Promise::query()->lockForUpdate()->find($promise->id)
+                ?? throw PromiseActionException::notFound();
+
+            if ($current->version !== $readVersion) {
+                throw PromiseActionException::staleEdit($current->version);
+            }
+
+            return $this->save($current, $data, $actor, $mayRule);
         });
     }
 
@@ -134,7 +166,8 @@ class PromiseEditor
         }
 
         return DB::transaction(function () use ($promise, $to, $entry, $actor) {
-            $promise = Promise::query()->lockForUpdate()->findOrFail($promise->id);
+            $promise = Promise::query()->lockForUpdate()->find($promise->id)
+                ?? throw PromiseActionException::notFound();
 
             if ($promise->status === $to) {
                 throw PromiseActionException::sameStatus();
@@ -218,7 +251,8 @@ class PromiseEditor
     public function undoStatusChange(Promise $promise, int $updateId): Promise
     {
         return DB::transaction(function () use ($promise, $updateId) {
-            $promise = Promise::query()->lockForUpdate()->findOrFail($promise->id);
+            $promise = Promise::query()->lockForUpdate()->find($promise->id)
+                ?? throw PromiseActionException::notFound();
 
             if ($promise->published_at !== null) {
                 throw PromiseActionException::logIsPermanent();
@@ -249,12 +283,12 @@ class PromiseEditor
     /**
      * When a published promise restates an earlier, still-open one, the
      * earlier one is marked postponed with a public log entry pointing here.
-     * That is a verdict, so it only happens for an actor who may rule; for
+     * That is a verdict, so it only happens when the actor may rule; for
      * anyone else the link is kept and the original waits for a ruler.
      */
-    public function postponeRestatedOriginal(Promise $promise, ?User $actor = null): void
+    public function postponeRestatedOriginal(Promise $promise, ?User $actor, bool $mayRule): void
     {
-        if (! $actor?->hasPermission('promises.rule')) {
+        if (! $mayRule) {
             return;
         }
 

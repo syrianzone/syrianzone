@@ -3,7 +3,9 @@
 namespace App\Services\Promises;
 
 use App\Models\Promise;
+use App\Models\PromiseReport;
 use App\Models\PromiseSector;
+use App\Models\PromiseSpeaker;
 use App\Models\PromiseUpdate;
 use App\Support\Governorates;
 use Carbon\CarbonImmutable;
@@ -207,7 +209,7 @@ class PromisePresenter
             'quote' => $promise->quote,
             'quoteIsVerbatim' => (bool) $promise->quote_is_verbatim,
             'speaker' => $promise->speaker ? [
-                'ref' => 'speaker:'.$promise->speaker->id,
+                'ref' => $promise->speaker->ref(),
                 'name' => $promise->speaker->name,
                 'title' => $promise->speaker->title,
                 'image' => $promise->speaker->resolvedImage(),
@@ -246,6 +248,76 @@ class PromisePresenter
             'rejectionReason' => $promise->rejection_reason,
             'sources' => $promise->sources->map->toPayload()->all(),
             'updates' => $promise->updates->map->toPayload()->all(),
+            'version' => (int) $promise->version,
+        ];
+    }
+
+    /**
+     * Everything waiting for a reviewer, oldest first: unpublished promises,
+     * people proposed by the public, and reports on promises that still exist.
+     *
+     * @return array{promises: array<int, array<string, mixed>>, speakers: array<int, array<string, mixed>>, reports: array<int, array<string, mixed>>}
+     */
+    public function reviewQueue(): array
+    {
+        $promises = Promise::query()
+            ->inReviewQueue()
+            ->with(['speaker', 'submitter'])
+            ->withCount('sources')
+            ->orderBy('created_at')
+            ->get();
+
+        $speakers = PromiseSpeaker::query()
+            ->inReviewQueue()
+            ->withCount('promises')
+            ->orderBy('created_at')
+            ->get();
+
+        $reports = PromiseReport::query()
+            ->inReviewQueue()
+            ->with(['promise:id,number,title', 'user:id,name'])
+            ->orderBy('created_at')
+            ->get();
+
+        return [
+            'promises' => $promises->map(fn (Promise $p) => $this->adminRow($p))->all(),
+            'speakers' => $speakers->map->toAdminPayload()->all(),
+            'reports' => $reports->map(fn (PromiseReport $r) => $this->adminReport($r))->all(),
+        ];
+    }
+
+    /**
+     * A visitor's progress update or error report, for the review queue.
+     *
+     * @return array<string, mixed>
+     */
+    public function adminReport(PromiseReport $report): array
+    {
+        return [
+            'id' => $report->id,
+            'kind' => $report->kind,
+            'body' => $report->body,
+            'sourceUrl' => $report->source_url,
+            'createdOn' => $report->created_at?->timezone(Promise::TIMEZONE)->format('Y-m-d'),
+            'userName' => $report->user?->name,
+            'promise' => [
+                'id' => $report->promise->id,
+                'number' => $report->promise->number,
+                'title' => $report->promise->title,
+            ],
+        ];
+    }
+
+    /**
+     * A sector with what the admin list shows beside it.
+     *
+     * @return array<string, mixed>
+     */
+    public function adminSector(PromiseSector $sector): array
+    {
+        return $sector->toOption() + [
+            'isActive' => (bool) $sector->is_active,
+            'promisesCount' => (int) ($sector->promises_count ?? 0),
         ];
     }
 

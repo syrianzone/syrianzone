@@ -18,9 +18,8 @@ use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
 #[Name('remove-promise-update')]
 #[Title('Remove Promise Update')]
 #[Description(
-    'Remove a progress reading, official response, or note entry from the change log of an unpublished promise. '
-    .'Published promises are refused. '
-    .'Status-change entries (verdicts) are permanent and are refused.'
+    'Remove a progress reading, official response, or note from a promise\'s change log. '
+    .'Status-change entries are refused: use undo-promise-status, which only works before the promise is ever published.'
 )]
 #[IsDestructive]
 #[IsIdempotent]
@@ -50,10 +49,6 @@ class RemovePromiseUpdateTool extends PromisesTool
 
         return $this->attempt(function () use ($validated) {
             $promise = $this->findPromise((string) $validated['id']);
-
-            if ($refusal = $this->refusePublished($promise)) {
-                return $refusal;
-            }
 
             app(PromiseEditor::class)->removeUpdate($promise, (int) $validated['update_id']);
 

@@ -19,9 +19,10 @@ use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
 #[Name('update-promise')]
 #[Title('Update Promise')]
 #[Description(
-    'Update an unpublished promise. This is a full replacement — pass every field you want to keep '
-    .'(call get-promise first and resend its values; sources are replaced wholesale). '
-    .'Only unpublished promises can be edited.'
+    'Update a promise, published or not. This is a full replacement: call get-promise first and resend every '
+    .'field you want to keep (sources are replaced wholesale). Pass the version you read as expected_version; '
+    .'the update is refused if anyone changed the promise since, so you never overwrite a newer edit. '
+    .'Changes to a published promise are public immediately. Verdicts are not changed here: use set-promise-status.'
 )]
 #[IsDestructive]
 #[IsIdempotent]
@@ -35,6 +36,10 @@ class UpdatePromiseTool extends PromisesTool
             'id' => $schema->string()
                 ->description('UUID of the promise to update. Required.')
                 ->required(),
+            'expected_version' => $schema->integer()
+                ->description('The promise\'s version as get-promise returned it. Required.')
+                ->min(0)
+                ->required(),
             ...$this->promiseFieldsSchema($schema),
         ];
     }
@@ -42,26 +47,26 @@ class UpdatePromiseTool extends PromisesTool
     protected function run(Request $request, AgentContext $context): Response|ResponseFactory
     {
         return $this->attempt(function () use ($request, $context) {
-            $id = (string) $request->get('id');
-            $promise = $this->findPromise($id);
-
-            if ($refusal = $this->refusePublished($promise)) {
-                return $refusal;
-            }
+            $promise = $this->findPromise((string) $request->get('id'));
 
             $rules = app(PromiseRules::class);
             $data = $request->validate([
                 'id' => 'required|string',
+                'expected_version' => 'required|integer|min:0',
                 ...$rules->promise($promise),
             ], $rules->messages());
 
-            unset($data['id']);
+            $readVersion = (int) $data['expected_version'];
+            unset($data['id'], $data['expected_version']);
 
-            $updated = app(PromiseEditor::class)->save($promise, $data, $context->user);
+            $updated = app(PromiseEditor::class)->saveIfUnchanged(
+                $promise, $readVersion, $data, $context->user, $this->mayRule($context),
+            );
 
             return Response::structured([
                 'updated' => true,
                 'promise' => app(PromisePresenter::class)->adminDetail($updated),
+                ...$this->restatementNote($updated),
             ]);
         });
     }

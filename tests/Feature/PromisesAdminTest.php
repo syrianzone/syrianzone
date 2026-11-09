@@ -509,6 +509,20 @@ test('every closed verdict freezes on its date instead of counting on', function
         ]);
 });
 
+test('an editor\'s save is refused once someone else has saved the promise since it was opened', function () {
+    $staff = moduleStaff('promises');
+    $promise = Promise::factory()->create();
+    $payload = fn (string $title, int $version) => promisePayload(['title' => $title, 'version' => $version]);
+
+    $this->actingAs($staff)->putJson("/api/v1/admin/promises/{$promise->id}", $payload('أول حفظ', 0))
+        ->assertOk()
+        ->assertJsonPath('promise.version', 1);
+    $this->actingAs($staff)->putJson("/api/v1/admin/promises/{$promise->id}", $payload('حفظ قديم', 0))
+        ->assertStatus(409);
+
+    expect($promise->fresh()->title)->toBe('أول حفظ');
+});
+
 test('linking a restatement postpones the original only for staff who may rule', function () {
     $editorOnly = User::factory()->create(['role' => 'user', 'permissions' => ['promises.edit']]);
     $ruler = moduleStaff('promises');

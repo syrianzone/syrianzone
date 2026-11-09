@@ -318,9 +318,10 @@ Phase 1 exposes reading and drafting. Several operations are intentionally kept
 - **Report resolution** (`acceptReport`, `dismissReport`) and **deletion**
   (`destroy`) are dashboard-only.
 - **Image upload** (`uploadImage`) is not exposed as an MCP tool.
-- **Published-promise edit guard**: `update-promise` refuses to edit any promise
-  with `review_status === 'published'`. Once published, promises are edited
-  exclusively via the dashboard.
+- **Published-promise guard**: `update-promise`, `add-promise-update` and
+  `remove-promise-update` refuse any promise with `review_status = 'published'`
+  (`PromisesTool::refusePublished`). Agents only ever change drafts; anything
+  the public can see, including its change log, is edited in the dashboard.
 
 ---
 

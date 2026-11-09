@@ -45,8 +45,8 @@ class UpdatePromiseTool extends PromisesTool
             $id = (string) $request->get('id');
             $promise = $this->findPromise($id);
 
-            if ($promise->review_status === 'published') {
-                return Response::error('This promise is published. Published promises are edited in the dashboard, not by agents.');
+            if ($refusal = $this->refusePublished($promise)) {
+                return $refusal;
             }
 
             $rules = app(PromiseRules::class);

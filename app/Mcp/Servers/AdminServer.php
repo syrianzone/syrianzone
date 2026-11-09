@@ -99,8 +99,8 @@ Promises tracker: agents may read promises and draft new ones. A created promise
 is unpublished (review_status `pending`) and waits for a human editor to publish
 it. Speakers are referenced by a `ref` from search-promise-speakers; valid sectors,
 governorates, venues and source types come from get-promise-form-options.
-Published promises cannot be edited by agents, and publishing, verdicts
-(status changes) and deletion are dashboard-only.
+Published promises, including their public change log, cannot be changed by
+agents; publishing, verdicts (status changes) and deletion are dashboard-only.
 
 Some tools are hidden depending on the capabilities of the token you were given.
 If a capability you expect is missing, say so rather than retrying: a

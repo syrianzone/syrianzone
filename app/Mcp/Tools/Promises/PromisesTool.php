@@ -52,6 +52,18 @@ abstract class PromisesTool extends AuditedTool
     }
 
     /**
+     * Phase-1 guard: agents draft, they never change what the public sees.
+     * Anything already published (its fields or its public change log) is
+     * edited in the dashboard. Returns the refusal, or null when allowed.
+     */
+    protected function refusePublished(Promise $promise): ?Response
+    {
+        return $promise->review_status === 'published'
+            ? Response::error('This promise is published. Published promises and their public change log are edited in the dashboard, not by agents.')
+            : null;
+    }
+
+    /**
      * Shared field schema for create-promise and update-promise.
      *
      * @return array<string, mixed>

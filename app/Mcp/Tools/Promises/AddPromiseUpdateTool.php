@@ -17,7 +17,8 @@ use Laravel\Mcp\Server\Attributes\Title;
 #[Name('add-promise-update')]
 #[Title('Add Promise Update')]
 #[Description(
-    'Add an entry to the public change log of a promise (progress reading, official response, or editorial note). '
+    'Add an entry to the change log of an unpublished promise (progress reading, official response, or editorial note). '
+    .'Published promises are refused: their public log is edited in the dashboard. '
     .'progress and official_response require a source_url. The date cannot precede the statement date or be in the future. '
     .'Status changes (verdicts) are NOT made here.'
 )]
@@ -63,6 +64,10 @@ class AddPromiseUpdateTool extends PromisesTool
         return $this->attempt(function () use ($request, $context) {
             $id = (string) $request->get('id');
             $promise = $this->findPromise($id);
+
+            if ($refusal = $this->refusePublished($promise)) {
+                return $refusal;
+            }
 
             $rules = app(PromiseRules::class);
             $data = $request->validate([

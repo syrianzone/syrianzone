@@ -155,7 +155,9 @@ test('remove-promise-update refuses a status_change entry', function () {
     $user = agentUser(['permissions' => ['promises.edit']]);
     agentToken($user, ['promises.edit']);
 
-    $promise = Promise::factory()->published()->create();
+    // A draft, so the refusal comes from the permanent-log rule rather than
+    // the published-promise guard.
+    $promise = Promise::factory()->create();
     $statusUpdate = $promise->updates()->create([
         'type' => 'status_change',
         'happened_on' => '2025-07-01',
@@ -170,7 +172,37 @@ test('remove-promise-update refuses a status_change entry', function () {
     ]);
 
     expect($remRes->isError())->toBeTrue()
+        ->and(toolText($remRes))->not->toContain('This promise is published')
         ->and($promise->updates()->where('id', $statusUpdate->id)->exists())->toBeTrue();
+});
+
+test('the change-log tools refuse published promises, so agents never alter what the public sees', function () {
+    $user = agentUser(['permissions' => ['promises.edit']]);
+    agentToken($user, ['promises.edit']);
+
+    $promise = Promise::factory()->published()->create(['statement_date' => '2025-06-01']);
+    $existing = $promise->updates()->create([
+        'type' => 'note',
+        'happened_on' => '2025-07-01',
+        'body' => 'ملاحظة منشورة',
+    ]);
+
+    $add = callTool(AddPromiseUpdateTool::class, [
+        'id' => $promise->id,
+        'type' => 'note',
+        'happened_on' => '2025-07-02',
+        'body' => 'ملاحظة جديدة',
+    ]);
+    $remove = callTool(RemovePromiseUpdateTool::class, [
+        'id' => $promise->id,
+        'update_id' => $existing->id,
+    ]);
+
+    expect($add->isError())->toBeTrue()
+        ->and(toolText($add))->toContain('This promise is published')
+        ->and($remove->isError())->toBeTrue()
+        ->and(toolText($remove))->toContain('This promise is published')
+        ->and($promise->updates()->count())->toBe(1);
 });
 
 test('get-promise by unknown id returns an error mentioning list-promises', function () {

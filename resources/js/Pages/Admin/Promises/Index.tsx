@@ -144,14 +144,14 @@ export default function PromisesAdminIndex({ promises, queueCount }: Props) {
                                             <TableCell className="tabular-nums text-muted-foreground">{p.number ?? '—'}</TableCell>
                                             <TableCell>
                                                 <p className="font-medium text-foreground">{p.title}</p>
-                                                <p className="text-xs text-muted-foreground">
+                                                <div className="text-xs text-muted-foreground">
                                                     {p.speakerName}
                                                     {p.speakerPending && <Badge variant="outline" className="ms-1.5 text-[10px]">{PENDING_SPEAKER_LABEL}</Badge>}
                                                     {' · '}{ORIGIN_LABEL[p.origin] ?? p.origin}
                                                     {p.pendingReportsCount > 0 && (
                                                         <Badge variant="destructive" className="ms-1.5 text-[10px]">بلاغات: {p.pendingReportsCount}</Badge>
                                                     )}
-                                                </p>
+                                                </div>
                                             </TableCell>
                                             <TableCell><StateBadge state={p.state} /></TableCell>
                                             <TableCell>

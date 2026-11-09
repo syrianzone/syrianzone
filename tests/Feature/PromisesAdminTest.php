@@ -300,6 +300,10 @@ test('the research import lands everything unpublished and is idempotent', funct
         ->toContain('وزارة غير موجودة');
 
     @unlink($file);
+
+    Promise::withTrashed()->forceDelete();
+    $this->artisan('promises:import-research')->assertSuccessful();
+    expect(Promise::count())->toBe(14);
 });
 
 test('before publication the latest status change can be undone to fix its date', function () {

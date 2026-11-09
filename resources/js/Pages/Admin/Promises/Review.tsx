@@ -80,11 +80,11 @@ export default function PromisesReview({ promises, speakers, reports, queueCount
                                     <CardContent className="flex flex-col gap-3 p-4 md:flex-row md:items-start md:justify-between">
                                         <div className="min-w-0 space-y-1">
                                             <h3 className="font-semibold text-foreground">{p.title}</h3>
-                                            <p className="text-sm text-muted-foreground">
+                                            <div className="text-sm text-muted-foreground">
                                                 {p.speakerName}
                                                 {p.speakerPending && <Badge variant="outline" className="ms-1.5 text-[10px]">{PENDING_SPEAKER_LABEL}</Badge>}
                                                 {' · '}{formatDate(p.statementDate)} · {ORIGIN_LABEL[p.origin]} · المصادر: {p.sourcesCount}
-                                            </p>
+                                            </div>
                                             {p.submitterName && <p className="text-xs text-muted-foreground">اقترحه: {p.submitterName}</p>}
                                             {p.submitterNote && <p className="line-clamp-3 whitespace-pre-line rounded-md bg-muted p-2 text-sm text-muted-foreground">{p.submitterNote}</p>}
                                         </div>

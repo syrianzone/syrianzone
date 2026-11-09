@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { ExternalLink } from 'lucide-react';
 import { PromisesIcon } from '@/Components/Icons/ProjectIcons';
 import AdminNav from './AdminNav';
@@ -12,6 +12,7 @@ export default function AdminHeader({ title, current, queueCount, actions }: {
 }) {
     return (
         <div className="space-y-4">
+            <Head title={title} />
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                     <PromisesIcon className="h-7 w-7" />

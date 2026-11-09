@@ -202,10 +202,10 @@ export default function PromiseSpeakers({ speakers, institutions, queueCount }: 
                                                 <div className="flex items-center gap-2.5">
                                                     <SpeakerAvatar name={s.name} image={s.image} size={32} />
                                                     <div>
-                                                        <p className="font-medium text-foreground">
+                                                        <div className="font-medium text-foreground">
                                                             {s.name}
                                                             {s.status === 'pending' && <Badge variant="outline" className="ms-1.5 text-[10px]">{PENDING_SPEAKER_LABEL}</Badge>}
-                                                        </p>
+                                                        </div>
                                                         {s.title && <p className="text-xs text-muted-foreground">{s.title}</p>}
                                                     </div>
                                                 </div>

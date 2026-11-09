@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, ExternalLink } from 'lucide-react';
 import { usePage } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,7 @@ const UnblockSyriaNotification = () => {
     const [isVisible, setIsVisible] = useState(false);
     const [isDismissing, setIsDismissing] = useState(false);
     const [hasMounted, setHasMounted] = useState(false);
+    const panelRef = useRef<HTMLDivElement>(null);
 
     const dismissKey = `site_popup_dismissed_v${popup.version}`;
     // Back-compat: users who dismissed the old hardcoded popup should see
@@ -50,6 +51,29 @@ const UnblockSyriaNotification = () => {
         }
     }, [dismissKey, popup.enabled]);
 
+    // The panel is fixed in a corner and can sit over page controls (e.g. the
+    // promises filter button). Once the user interacts with anything else on
+    // the page, or presses the panel's own body, step aside for this page view
+    // without recording a dismissal.
+    useEffect(() => {
+        if (!isVisible || isDismissing) return;
+        const outside = (target: EventTarget | null) => target instanceof Node && !panelRef.current?.contains(target);
+        const onPointerDown = (event: PointerEvent) => {
+            const target = event.target;
+            if (outside(target) || target instanceof Element && !target.closest('a, button')) setIsVisible(false);
+        };
+        const onFocusIn = (event: FocusEvent) => {
+            const target = event.target;
+            if (outside(target) && target instanceof Element && target.matches('input, textarea, select, [contenteditable="true"]')) setIsVisible(false);
+        };
+        document.addEventListener('pointerdown', onPointerDown, true);
+        document.addEventListener('focusin', onFocusIn, true);
+        return () => {
+            document.removeEventListener('pointerdown', onPointerDown, true);
+            document.removeEventListener('focusin', onFocusIn, true);
+        };
+    }, [isVisible, isDismissing]);
+
     const handleDismiss = () => {
         setIsDismissing(true);
         setTimeout(() => {
@@ -63,16 +87,17 @@ const UnblockSyriaNotification = () => {
 
     return (
         <div
+            ref={panelRef}
             role="region"
             aria-label="إشعار الموقع"
             aria-live="polite"
-            className={`fixed bottom-4 end-4 z-[60] max-w-[350px] w-[calc(100%-2rem)] md:w-full transition-all duration-300 ease-out ${
+            className={`pointer-events-none fixed bottom-4 end-4 z-[60] max-w-[350px] w-[calc(100%-2rem)] md:w-full transition-all duration-300 ease-out ${
                 isDismissing
                     ? 'opacity-0 translate-y-4 scale-95 pointer-events-none'
                     : 'opacity-100 translate-y-0 scale-100 animate-in fade-in slide-in-from-bottom-4 zoom-in-95'
             }`}
         >
-            <div className="bg-background/95 backdrop-blur-md border border-border shadow-2xl rounded-2xl p-4 relative overflow-hidden ring-1 ring-black/5 dark:ring-white/5">
+            <div className="pointer-events-auto bg-background/95 backdrop-blur-md border border-border shadow-2xl rounded-2xl p-4 relative overflow-hidden ring-1 ring-black/5 dark:ring-white/5">
                 {/* Minimalist side accent */}
                 <div className="absolute top-0 end-0 w-1.5 h-full bg-primary" />
 

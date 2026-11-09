@@ -163,9 +163,9 @@ export function BoardTile(props: {
           onPointerDown={handleResizeStart}
           title="سحب لتغيير الحجم"
           aria-label="سحب لتغيير الحجم"
-          className="absolute bottom-1 left-1 z-20 flex h-6 w-6 cursor-nwse-resize items-center justify-center rounded-tr-md rounded-bl-lg bg-card/90 text-muted-foreground border border-border shadow-xs hover:bg-primary hover:text-primary-foreground transition-all touch-none opacity-80 group-hover/tile:opacity-100"
+          className="absolute bottom-1 end-1 z-20 flex h-6 w-6 cursor-nesw-resize items-center justify-center rounded-ss-md rounded-ee-lg bg-card/90 text-muted-foreground border border-border shadow-xs hover:bg-primary hover:text-primary-foreground transition-all touch-none opacity-80 group-hover/tile:opacity-100"
         >
-          <Scaling className="h-3.5 w-3.5 rotate-90" />
+          <Scaling className="h-3.5 w-3.5" />
         </button>
       )}
 

@@ -221,7 +221,7 @@ export default function GlobalSearchBox({ cityId, className }: GlobalSearchBoxPr
           onBlur={() => setTimeout(() => setIsOpen(false), 150)}
           onKeyDown={handleKeyDown}
           placeholder="ابحث عن خط، موقف، أو مكان (مسجد، مقهى...)"
-          className="h-9 rounded-full border-border bg-card/95 ps-9 ps-9 text-sm shadow-md transition-colors focus-visible:ring-1 focus-visible:ring-ring"
+          className="h-9 rounded-full border-border bg-card/95 ps-9 pe-9 text-sm shadow-md transition-colors focus-visible:ring-1 focus-visible:ring-ring"
         />
         <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground flex items-center">
           {loading ? (

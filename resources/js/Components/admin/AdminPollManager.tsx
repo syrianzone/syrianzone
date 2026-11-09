@@ -493,9 +493,9 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                                             variant="ghost"
                                             size="sm"
                                             className="h-8 w-8 p-0"
-                                            onClick={() => handleMoveGroup(activeTab, 'left')}
+                                            onClick={() => handleMoveGroup(activeTab, 'right')}
                                             title="تحريك لليمين"
-                                            disabled={groups.findIndex(g => g.id === activeTab) === groups.length - 1}
+                                            disabled={groups.findIndex(g => g.id === activeTab) === 0}
                                         >
                                             <ArrowRight className="h-4 w-4" />
                                         </Button>
@@ -503,9 +503,9 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
                                             variant="ghost"
                                             size="sm"
                                             className="h-8 w-8 p-0"
-                                            onClick={() => handleMoveGroup(activeTab, 'right')}
+                                            onClick={() => handleMoveGroup(activeTab, 'left')}
                                             title="تحريك لليسار"
-                                            disabled={groups.findIndex(g => g.id === activeTab) === 0}
+                                            disabled={groups.findIndex(g => g.id === activeTab) === groups.length - 1}
                                         >
                                             <ArrowLeft className="h-4 w-4" />
                                         </Button>

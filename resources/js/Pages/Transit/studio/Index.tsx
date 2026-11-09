@@ -1500,7 +1500,7 @@ function TransitStudioPageContent() {
             <AccordionItem value="submission">
               <AccordionTrigger>
                 <div className="flex items-center gap-2 min-w-0">
-                  <Send className="h-4 w-4 text-primary shrink-0" />
+                  <Send className="h-4 w-4 text-primary shrink-0 rtl:-scale-x-100" />
                   <span className="truncate font-semibold">إرسال المسودة والتسليم</span>
                 </div>
                 <Badge variant="outline" className="text-[10px] shrink-0 me-1">
@@ -1548,7 +1548,7 @@ function TransitStudioPageContent() {
                         {submitting ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
-                          <Send className="h-4 w-4 text-primary" />
+                          <Send className="h-4 w-4 text-primary rtl:-scale-x-100" />
                         )}
                         إرسال كزائر (مجهول)
                       </Button>
@@ -1580,7 +1580,7 @@ function TransitStudioPageContent() {
                         {submitting ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
-                          <Send className="h-4 w-4" />
+                          <Send className="h-4 w-4 rtl:-scale-x-100" />
                         )}
                         {isEditMode ? 'تحديث المسودة باسمي' : 'إرسال المسودة باسمي'}
                       </Button>

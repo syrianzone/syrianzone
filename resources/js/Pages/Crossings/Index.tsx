@@ -128,9 +128,11 @@ export default function CrossingsPage() {
               the page — a viewport-height box with its own scroll container is
               what phones handle worst (browser chrome makes 100vh taller than the
               visible area, and the inner list ends up unreachable). Only from lg
-              does this become the pinned split: table left, map right.
+              does this become the pinned split: in RTL the table docks on the
+              start (right) side, the map fills the end (left), clear of the map's
+              bottom-left controls.
             */}
-            <div className="flex flex-col-reverse lg:h-[calc(100vh-64px)] lg:flex-row-reverse lg:overflow-hidden" dir="rtl">
+            <div className="flex flex-col-reverse lg:h-[calc(100vh-64px)] lg:flex-row lg:overflow-hidden" dir="rtl">
                 {/* Table side */}
                 <aside className="flex flex-col border-border bg-card lg:min-h-0 lg:w-[26%] lg:min-w-[320px] lg:max-w-[440px] lg:border-e">
                     <div className="border-b border-border p-4">

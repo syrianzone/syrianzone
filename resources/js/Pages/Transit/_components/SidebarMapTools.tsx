@@ -1,6 +1,6 @@
 'use client'
 
-import { MapPin, MapPinOff, Filter, ChevronLeft, Plus } from 'lucide-react'
+import { MapPin, MapPinOff, Filter, ChevronRight, Plus } from 'lucide-react'
 import { Link } from '@inertiajs/react'
 import { useMapStore } from '../_store/useMapStore'
 import { useAuth } from '@/Contexts/AuthContext'
@@ -43,7 +43,7 @@ export function SidebarMapTools({ city, routes, selectedRouteId, allStops }: Sid
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild>
             <Link href={`/transit/city/${city?.id}`} aria-label="رجوع للمدينة">
-              <ChevronLeft className="h-5 w-5" />
+              <ChevronRight className="h-5 w-5" />
             </Link>
           </Button>
           <div className="flex-1 min-w-0">

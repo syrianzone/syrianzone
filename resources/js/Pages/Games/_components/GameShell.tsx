@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from '@inertiajs/react';
-import { BookOpen, ChevronLeft, Maximize2, Minimize2 } from 'lucide-react';
+import { BookOpen, ChevronRight, Maximize2, Minimize2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -69,7 +69,7 @@ export default function GameShell({
               href="/games"
               className="mb-2 inline-flex shrink-0 items-center gap-1 text-xs font-bold text-muted-foreground no-underline transition-colors hover:text-primary"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronRight className="h-4 w-4" />
               كل الألعاب
             </Link>
           )}

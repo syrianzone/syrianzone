@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef } from 'react';
-import { MapContainer, GeoJSON, ZoomControl, useMap } from 'react-leaflet';
+import { MapContainer, GeoJSON, ZoomControl, AttributionControl, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { DATA_TYPES, CityData, RainfallData } from '../../types';
@@ -324,9 +324,11 @@ path.leaflet-interactive:hover {
                 zoomControl={false}
                 scrollWheelZoom={true}
                 doubleClickZoom={true}
-                attributionControl={true}
+                attributionControl={false}
             >
+                {/* Controls live on the end (left) side: the data panel docks on the start (right) side in RTL */}
                 <ZoomControl position="bottomleft" />
+                <AttributionControl position="bottomleft" />
                 <MapUpdater geoJsonData={geoJsonData} />
                 <DismissTooltipOnMapMove getTip={getTip} />
                 <GeoJSON

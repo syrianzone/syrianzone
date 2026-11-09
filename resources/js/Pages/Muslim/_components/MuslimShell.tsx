@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from '@inertiajs/react';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 
 interface Props {
   title: string;
@@ -21,7 +21,7 @@ export default function MuslimShell({ title, icon: Icon, width = 'max-w-2xl', ch
           href="/muslim"
           className="mb-3 inline-flex items-center gap-1 text-xs font-bold text-muted-foreground no-underline transition-colors hover:text-primary"
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronRight className="h-4 w-4" />
           الركن الإسلامي
         </Link>
 

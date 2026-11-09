@@ -32,9 +32,9 @@ evidence for every claim the site makes.
 Defaults chosen where there was no preference:
 
 - **Placement:** a home-page tool tile only (added through Admin → icons & menus). Home strip, board widget and links from official profiles are later.
-- **Extras in v1:** public change log (status/deadline history with sources), official-response entries, "kept late" tally. Agent (MCP) tools are v2.
+- **Extras in v1:** public change log (status/deadline history with sources), official-response entries, "kept late" tally. Agent (MCP) tools are v2 (phase 1: read and drafting is implemented; see [agent-mcp.md](../modules/agent-mcp.md)).
 
-Out of scope for v1: follow/reminders, automatic posts to X, per-official scorecard pages, MCP tools, board widget, English/Kurdish content.
+Out of scope for v1: follow/reminders, automatic posts to X, per-official scorecard pages, full MCP tools (phase 1 read + drafting is live; see [agent-mcp.md](../modules/agent-mcp.md)), board widget, English/Kurdish content.
 
 ## 2. Data model
 

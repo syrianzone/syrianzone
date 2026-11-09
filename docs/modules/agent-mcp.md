@@ -18,7 +18,7 @@ human clicking through the dashboard.
 - It is **off by default**. `MCP_ENABLED=false` registers no route at all, so
   the endpoint 404s.
 
-Currently covers five modules:
+Currently covers six modules:
 
 | Module | Read tools | Write tools | Scoped |
 |---|---:|---:|---|
@@ -27,6 +27,7 @@ Currently covers five modules:
 | Government apps | 1 | 6 | no |
 | Transit | 4 | 6 | **yes**, by governorate |
 | Users | 0 | 1 | no |
+| Promises | 4 | 4 | no |
 
 Other modules are added by dropping tools into
 `app/Mcp/Servers/AdminServer.php`; nothing outside that file is reachable by an
@@ -230,6 +231,7 @@ The same pattern, same three-part shape, now covers three more modules:
 | Gov Apps | `Services/GovApps/GovAppService` | `GovAppPresenter` | `Exceptions/Directories/DirectoryActionException` |
 | Transit | `Services/Transit/TransitAdminService` | `TransitPresenter` | `Exceptions/Transit/TransitActionException` |
 | Users | `Services/Users/UserModerationService` | inline in `Mcp/Tools/Users/UsersTool` | `Exceptions/Users/UserModerationException` |
+| Promises | `Services/Promises/PromiseEditor` | `PromisePresenter` | `Exceptions/Promises/PromiseActionException` |
 
 Invariants preserved in the shared layer: only `pending` places can be
 moderated; at most 10 photos and at least 1; both photo-count guards run under
@@ -298,6 +300,27 @@ with `features: []` and a route with no stops exercise every code path except th
 
 `PlaceAdminController` is now a thin HTTP adapter over these. Its 24 existing
 tests pass unchanged.
+
+### Promises: Phase 1 guardrails
+
+Phase 1 exposes reading and drafting. Several operations are intentionally kept
+**dashboard-only**:
+
+- **Publishing, unpublishing, and rejections** (`publish`, `unpublish`, `reject`)
+  require human editorial judgment in the dashboard review queue. Created
+  promises always land with `review_status = 'pending'`.
+- **Status changes (verdicts) and undo** (`changeStatus`, `undoStatusChange`)
+  determine whether a promise is fulfilled, broken, postponed, etc., and are
+  reserved for human operators with `promises.rule`.
+- **Speaker and sector management** (`storeSpeaker`, `updateSpeaker`,
+  `destroySpeaker`, sector CRUD/reorder) remain in the admin UI. Agents resolve
+  known speakers via `search-promise-speakers` and picker refs.
+- **Report resolution** (`acceptReport`, `dismissReport`) and **deletion**
+  (`destroy`) are dashboard-only.
+- **Image upload** (`uploadImage`) is not exposed as an MCP tool.
+- **Published-promise edit guard**: `update-promise` refuses to edit any promise
+  with `review_status === 'published'`. Once published, promises are edited
+  exclusively via the dashboard.
 
 ---
 
@@ -424,6 +447,8 @@ serve a stale compile for up to three minutes. Restart it if in doubt.
 | `TransitToolsTest.php` | Governorate scoping, including the two indirect routes (linked edit, move) and cross-module capability isolation |
 | `DirectoryDiscoveryTest.php` | The real JSON-RPC surface: `tools/list` gating, `search_tools`, and an `execute_tools` SSE round trip |
 | `SetUserBanToolTest.php` | The highest-consequence tool: capability gating, self-ban and superadmin refusals, idempotence, and not leaking the target's permissions |
+| `PromisesToolsTest.php` | Tool behaviour, any-of read gates, unpublished drafting, update guard on published promises, change-log rules |
+| `PromisesDiscoveryTest.php` | Real JSON-RPC surface: `tools/list` gating, `search_tools`, and an `execute_tools` round trip of `create-promise` |
 
 `tests/Feature/`, alongside the module's own:
 

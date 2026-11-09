@@ -19,6 +19,14 @@ use App\Mcp\Tools\Places\ListPlacesTool;
 use App\Mcp\Tools\Places\RejectPlaceTool;
 use App\Mcp\Tools\Places\RotatePlacePhotoTool;
 use App\Mcp\Tools\Places\UpdatePlaceTool;
+use App\Mcp\Tools\Promises\AddPromiseUpdateTool;
+use App\Mcp\Tools\Promises\CreatePromiseTool;
+use App\Mcp\Tools\Promises\GetPromiseFormOptionsTool;
+use App\Mcp\Tools\Promises\GetPromiseTool;
+use App\Mcp\Tools\Promises\ListPromisesTool;
+use App\Mcp\Tools\Promises\RemovePromiseUpdateTool;
+use App\Mcp\Tools\Promises\SearchPromiseSpeakersTool;
+use App\Mcp\Tools\Promises\UpdatePromiseTool;
 use App\Mcp\Tools\SyOfficial\CreateSyOfficialCategoryTool;
 use App\Mcp\Tools\SyOfficial\CreateSyOfficialEntityTool;
 use App\Mcp\Tools\SyOfficial\DeleteSyOfficialCategoryTool;
@@ -67,7 +75,7 @@ use Laravel\Mcp\Server\Tools\ToolSearch;
 #[Instructions(<<<'MARKDOWN'
 Administrative access to the Syrian Zone dashboard: community-submitted places
 (mishwar) moderation, the SyOfficial directory of official entities, the
-government apps directory, and transit route governance.
+government apps directory, transit route governance, and the promises tracker.
 
 Moderation lifecycle: a submitted place starts `pending`. Approve it to publish
 it to the map, or reject it with a reason. Only `pending` places can be
@@ -86,6 +94,13 @@ Governorate scope. Transit capabilities may be restricted to specific
 governorates. When that applies, the listings only return what is in scope and
 writes outside it are refused; the `scope` field of a listing says so
 explicitly. There is no equivalent scope on the other modules.
+
+Promises tracker: agents may read promises and draft new ones. A created promise
+is unpublished (review_status `pending`) and waits for a human editor to publish
+it. Speakers are referenced by a `ref` from search-promise-speakers; valid sectors,
+governorates, venues and source types come from get-promise-form-options.
+Published promises cannot be edited by agents, and publishing, verdicts
+(status changes) and deletion are dashboard-only.
 
 Some tools are hidden depending on the capabilities of the token you were given.
 If a capability you expect is missing, say so rather than retrying: a
@@ -111,6 +126,10 @@ class AdminServer extends Server
         GetTransitDraftGeometryTool::class,
         ListTransitRoutesTool::class,
         ListTransitRouteHistoryTool::class,
+        ListPromisesTool::class,
+        GetPromiseTool::class,
+        SearchPromiseSpeakersTool::class,
+        GetPromiseFormOptionsTool::class,
 
         ToolSearch::class => [
             // Places
@@ -148,6 +167,12 @@ class AdminServer extends Server
             UpdateTransitRouteTool::class,
             MoveTransitRouteTool::class,
             DeleteTransitRouteTool::class,
+
+            // Promises
+            CreatePromiseTool::class,
+            UpdatePromiseTool::class,
+            AddPromiseUpdateTool::class,
+            RemovePromiseUpdateTool::class,
 
             // User moderation
             SetUserBanTool::class,

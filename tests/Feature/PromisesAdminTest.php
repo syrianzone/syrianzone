@@ -415,6 +415,7 @@ test('a restatement link must point at a published promise and the successor sho
     Promise::factory()->create(['restates_promise_id' => $original->id]);
 
     $this->actingAs($staff)->putJson("/api/v1/admin/promises/{$original->id}", promisePayload([
+        'version' => $original->version,
         'restates_promise_id' => $draftTarget->id,
     ]))->assertUnprocessable()->assertJsonPath('errors.restates_promise_id.0', 'يجب أن يكون الوعد السابق منشوراً');
 
@@ -426,6 +427,7 @@ test('staff can update a promise and its tags are de-duplicated as the database 
     $promise = Promise::factory()->published()->create(['speaker_title' => 'وزير سابق']);
 
     $this->actingAs($staff)->putJson("/api/v1/admin/promises/{$promise->id}", promisePayload([
+        'version' => $promise->fresh()->version,
         'speaker_ref' => 'speaker:'.$promise->speaker_id,
         'speaker_title' => null,
         'title' => 'عنوان معدّل',
@@ -434,6 +436,7 @@ test('staff can update a promise and its tags are de-duplicated as the database 
     ]))->assertUnprocessable()->assertJsonValidationErrors('target_value');
 
     $this->actingAs($staff)->putJson("/api/v1/admin/promises/{$promise->id}", promisePayload([
+        'version' => $promise->fresh()->version,
         'speaker_ref' => 'speaker:'.$promise->speaker_id,
         'speaker_title' => null,
         'title' => 'عنوان معدّل',
@@ -523,12 +526,28 @@ test('an editor\'s save is refused once someone else has saved the promise since
     expect($promise->fresh()->title)->toBe('أول حفظ');
 });
 
+test('an editor\'s save must name the version it was loaded at', function () {
+    $staff = moduleStaff('promises');
+    $promise = Promise::factory()->create();
+
+    $this->actingAs($staff)->putJson("/api/v1/admin/promises/{$promise->id}", promisePayload(['title' => 'بلا نسخة']))
+        ->assertUnprocessable()
+        ->assertJsonPath('errors.version.0', 'أعد تحميل الصفحة ثم احفظ تعديلك');
+    $this->actingAs($staff)->putJson("/api/v1/admin/promises/{$promise->id}", promisePayload(['title' => 'نسخة فارغة', 'version' => null]))
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('version');
+
+    expect($promise->fresh()->version)->toBe(0)
+        ->and($promise->fresh()->title)->not->toBe('بلا نسخة');
+});
+
 test('linking a restatement postpones the original only for staff who may rule', function () {
     $editorOnly = User::factory()->create(['role' => 'user', 'permissions' => ['promises.edit']]);
     $ruler = moduleStaff('promises');
     $original = Promise::factory()->published()->overdue()->create();
     $restatement = Promise::factory()->published()->create(['statement_date' => '2025-10-01']);
     $payload = fn () => promisePayload([
+        'version' => $restatement->fresh()->version,
         'speaker_ref' => 'speaker:'.$restatement->speaker_id,
         'statement_date' => '2025-10-01',
         'deadline_date' => '2026-06-01',
@@ -557,6 +576,7 @@ test('the log never precedes the statement and the statement cannot move past th
     ])->assertOk();
 
     $this->actingAs($staff)->putJson("/api/v1/admin/promises/{$promise->id}", promisePayload([
+        'version' => $promise->fresh()->version,
         'speaker_ref' => 'speaker:'.$promise->speaker_id,
         'statement_date' => '2025-08-01',
         'deadline_date' => '2026-01-01',

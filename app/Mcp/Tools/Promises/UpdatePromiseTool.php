@@ -52,7 +52,7 @@ class UpdatePromiseTool extends PromisesTool
             $rules = app(PromiseRules::class);
             $data = $request->validate([
                 'id' => 'required|string',
-                'expected_version' => 'required|integer|min:0',
+                'expected_version' => $rules->version(),
                 ...$rules->promise($promise),
             ], $rules->messages());
 

@@ -177,6 +177,18 @@ final class PromiseRules
     }
 
     /**
+     * The promise version an edit was based on. Every edit of an existing
+     * promise must name it, so a stale form cannot overwrite a newer save
+     * (see PromiseEditor::saveIfUnchanged).
+     *
+     * @return array<int, string>
+     */
+    public function version(): array
+    {
+        return ['required', 'integer', 'min:0'];
+    }
+
+    /**
      * Arabic messages for every admin form. Keys a given form does not use are
      * ignored by the validator.
      *
@@ -273,6 +285,9 @@ final class PromiseRules
             'ids.required' => 'تعذّر حفظ الترتيب',
             'ids.*.exists' => 'تعذّر حفظ الترتيب',
             'ids.*.distinct' => 'تعذّر حفظ الترتيب',
+            'version.required' => 'أعد تحميل الصفحة ثم احفظ تعديلك',
+            'version.integer' => 'أعد تحميل الصفحة ثم احفظ تعديلك',
+            'version.min' => 'أعد تحميل الصفحة ثم احفظ تعديلك',
         ];
     }
 }

@@ -101,23 +101,22 @@ class PromisesAdminController extends Controller
     }
 
     /**
-     * Save the editor form. The form sends the version it loaded, so a save
-     * cannot overwrite an edit made since by another editor or an agent.
+     * Save the editor form. The form must send the version its fields were
+     * loaded at, so a save never overwrites an edit made since by another
+     * editor or an agent.
      */
     public function update(Request $request, string $id): JsonResponse
     {
         $promise = $this->findPromise($id);
         $data = $request->validate(
-            ['version' => ['nullable', 'integer', 'min:0'], ...$this->rules->promise($promise)],
+            ['version' => $this->rules->version(), ...$this->rules->promise($promise)],
             $this->rules->messages(),
         );
 
-        $version = $data['version'] ?? null;
+        $version = (int) $data['version'];
         unset($data['version']);
 
-        $promise = $version === null
-            ? $this->editor->save($promise, $data, $request->user(), $this->mayRule($request))
-            : $this->editor->saveIfUnchanged($promise, (int) $version, $data, $request->user(), $this->mayRule($request));
+        $promise = $this->editor->saveIfUnchanged($promise, $version, $data, $request->user(), $this->mayRule($request));
 
         return response()->json(['success' => true, 'promise' => $this->presenter->adminDetail($promise)]);
     }

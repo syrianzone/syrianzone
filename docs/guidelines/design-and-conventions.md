@@ -75,6 +75,7 @@ already exists. Before writing a component, search `Components/` and
 | Alert (inline) | `Components/ui/alert.tsx` |
 | Tabs / segmented switcher | `Lib/useTabList.ts` (custom) or `Components/ui/tabs` |
 | Filter chips | `Components/ui/filter-chip.tsx` |
+| Search field with filter chips | `Components/SmartFilterSearch.tsx` |
 | Buttons, dialogs, sheets, selects, tables, scroll areas | `Components/ui/*` |
 | Icon-only button | `Components/ui/button` + `aria-label` |
 | Weather icons, cluster layers, media-query hook | one shared helper per concern |

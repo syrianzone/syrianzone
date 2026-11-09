@@ -19,6 +19,7 @@ import Timeline from './_components/Timeline';
 import VotePanel from './_components/VotePanel';
 import { formatDate } from './_lib/format';
 import { STATE_META, VENUE_LABEL, sectorIcon } from './_lib/status';
+import { promiseReturnUrl } from './_lib/filters';
 import type { PromiseDetailData } from './_lib/types';
 
 interface Props {
@@ -30,7 +31,9 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 }
 
 export default function PromiseShow({ promise }: Props) {
-    const { auth } = usePage().props as { auth?: { user?: { id: number } | null } };
+    const page = usePage();
+    const { auth } = page.props as { auth?: { user?: { id: number } | null } };
+    const returnUrl = promiseReturnUrl(page.url);
     const user = auth?.user ?? null;
     const [reportKind, setReportKind] = useState<ReportKind | null>(null);
     const [shareOpen, setShareOpen] = useState(false);
@@ -58,7 +61,7 @@ export default function PromiseShow({ promise }: Props) {
         <MainLayout>
             <div className="container mx-auto max-w-6xl space-y-6 px-4 py-8">
                 <nav aria-label="مسار التنقل">
-                    <Link href="/promises" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+                    <Link href={returnUrl} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
                         <ArrowRight className="h-4 w-4" aria-hidden="true" />عداد الوعود
                     </Link>
                 </nav>

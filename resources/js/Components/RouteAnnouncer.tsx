@@ -6,11 +6,13 @@ import { usePage } from '@inertiajs/react';
  * to the main landmark, so a page change is perceivable without a full reload.
  *
  * On the first render it does nothing (the browser already announced the
- * initial document). On every subsequent url change it focuses #main-content and
- * posts the new document title to a polite live region.
+ * initial document). A different pathname focuses #main-content and announces
+ * the title. Query-only changes belong to the current page's live regions and
+ * must not take focus away from a search field or filter control.
  */
 export default function RouteAnnouncer() {
   const { url } = usePage();
+  const pathname = url.split(/[?#]/)[0];
   const firstRender = useRef(true);
   const [message, setMessage] = useState('');
 
@@ -28,7 +30,7 @@ export default function RouteAnnouncer() {
       }
     }, 80);
     return () => window.clearTimeout(timer);
-  }, [url]);
+  }, [pathname]);
 
   return (
     <div role="status" aria-atomic="true" className="sr-only">

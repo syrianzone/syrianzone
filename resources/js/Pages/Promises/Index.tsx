@@ -1,142 +1,62 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, router, usePage } from '@inertiajs/react';
+import { useEffect, useMemo } from 'react';
+import { Link, router, usePage, useRemember } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
-import { Input } from '@/Components/ui/input';
 import { FilterChip } from '@/Components/ui/filter-chip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
+import SmartFilterSearch from '@/Components/SmartFilterSearch';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/Components/ui/accordion';
-import { Plus, Search, SearchX } from 'lucide-react';
+import { Plus, SearchX } from 'lucide-react';
 import { PromisesIcon } from '@/Components/Icons/ProjectIcons';
-import { normalizeArabic } from '@/Lib/arabic';
+import { toggleFilterValue, type SmartFilterValue } from '@/Lib/smartFilterSearch';
+import { cn } from '@/Lib/utils';
 import PromiseCard from './_components/PromiseCard';
 import Scoreboard from './_components/Scoreboard';
-import type { Option, PromiseCardData, PromiseStats, SectorOption } from './_lib/types';
+import { filterPromises, matchesState, promiseFilterFacets, promiseListUrl, readPromiseFilters, SORT_OPTIONS, visiblePromises, type PromiseFilterOptions } from './_lib/filters';
+import type { PromiseCardData, PromiseStats } from './_lib/types';
 
 interface Props {
     promises: PromiseCardData[];
     stats: PromiseStats;
-    filters: {
-        sectors: SectorOption[];
-        governorates: Option[];
-        institutions: Array<{ id: string; name: string }>;
-        speakers: Array<{ id: string; name: string }>;
-        tags: string[];
-    };
+    filters: PromiseFilterOptions;
     dueSoonDays: number;
-}
-
-type StateFilter = 'all' | 'overdue' | 'due_soon' | 'open' | 'fulfilled' | 'partial' | 'broken' | 'other';
-type SortKey = 'urgency' | 'newest' | 'deadline';
-
-const ALL = 'all';
-
-/** Same groups, same order and same names as the scoreboard tiles. */
-const STATE_FILTERS: Array<{ key: StateFilter; label: string }> = [
-    { key: 'all', label: 'الكل' },
-    { key: 'overdue', label: 'متأخرة' },
-    { key: 'due_soon', label: 'تقترب مواعيدها' },
-    { key: 'open', label: 'لم تُحسم بعد' },
-    { key: 'fulfilled', label: 'تحققت' },
-    { key: 'partial', label: 'تحققت جزئياً' },
-    { key: 'broken', label: 'لم تتحقق' },
-    { key: 'other', label: 'أُجّلت أو سُحبت' },
-];
-
-/** Filters that live in the address bar, so a filtered view can be shared. */
-const URL_FILTERS = ['state', 'sector', 'governorate', 'institution', 'speaker', 'tag'] as const;
-
-function matchesState(p: PromiseCardData, filter: StateFilter, dueSoonDays: number): boolean {
-    switch (filter) {
-        case 'all': return true;
-        case 'overdue': return p.state === 'overdue';
-        case 'due_soon': return (p.state === 'pending' || p.state === 'in_progress') && p.daysLeft !== null && p.daysLeft <= dueSoonDays;
-        case 'open': return p.state === 'pending' || p.state === 'in_progress';
-        case 'fulfilled': return p.state === 'fulfilled';
-        case 'partial': return p.state === 'partially_fulfilled';
-        case 'broken': return p.state === 'broken';
-        case 'other': return p.state === 'postponed' || p.state === 'retracted';
-    }
-}
-
-function queryOf(url: string): URLSearchParams {
-    const q = url.indexOf('?');
-    return new URLSearchParams(q === -1 ? '' : url.slice(q + 1));
 }
 
 export default function PromisesIndex({ promises, stats, filters, dueSoonDays }: Props) {
     const page = usePage();
-    // Read once on mount: the page URL (server and client alike) is the
-    // source of the initial filters, so a shared link opens filtered.
-    const [initial] = useState(() => queryOf(page.url));
-    const fromUrl = (key: string) => initial.get(key) ?? ALL;
+    const facets = useMemo(() => promiseFilterFacets(filters), [filters]);
+    // Remember free text alongside URL filters when navigating Back/Forward.
+    const initialValue = useMemo(() => readPromiseFilters(page.url, facets), [page.url, facets]);
+    const [value, setValue] = useRemember<SmartFilterValue>(initialValue, 'promises.filters');
+    const base = useMemo(() => filterPromises(promises, value), [promises, value]);
+    const visible = useMemo(() => visiblePromises(base, value, dueSoonDays), [base, value, dueSoonDays]);
+    const stateFacet = useMemo(() => facets.find((facet) => facet.key === 'state'), [facets]);
+    const searchFacets = useMemo(() => facets.filter((facet) => facet.key !== 'state'), [facets]);
+    const stateOptions = useMemo(() => stateFacet?.options.map((option) => ({
+        ...option, count: base.filter((p) => matchesState(p, option.value, dueSoonDays)).length,
+    })) ?? [], [stateFacet, base, dueSoonDays]);
+    const { state: selectedStates = [], ...searchFilters } = value.filters;
+    const searchValue = { ...value, filters: searchFilters };
+    const listUrl = promiseListUrl(value);
 
-    const [state, setState] = useState<StateFilter>(() => {
-        const v = initial.get('state') as StateFilter | null;
-        return v && STATE_FILTERS.some((f) => f.key === v) ? v : 'all';
-    });
-    const [sector, setSector] = useState(() => fromUrl('sector'));
-    const [governorate, setGovernorate] = useState(() => fromUrl('governorate'));
-    const [institution, setInstitution] = useState(() => fromUrl('institution'));
-    const [speaker, setSpeaker] = useState(() => fromUrl('speaker'));
-    const [tag, setTag] = useState(() => fromUrl('tag'));
-    const [sort, setSort] = useState<SortKey>('urgency');
-    const [q, setQ] = useState('');
-
-    // Mirror the filters into the URL with a client-side Inertia visit, so the
-    // page URL Inertia stores in history matches: Back from a promise returns
-    // to the same filtered list.
     useEffect(() => {
-        const values: Record<(typeof URL_FILTERS)[number], string> = { state, sector, governorate, institution, speaker, tag };
-        const next = new URLSearchParams();
-        for (const key of URL_FILTERS) {
-            if (values[key] !== ALL) next.set(key, values[key]);
-        }
-        const qs = next.toString();
-        const url = qs ? `/promises?${qs}` : '/promises';
-        if (url !== page.url) router.replace({ url, preserveState: true, preserveScroll: true });
-    }, [state, sector, governorate, institution, speaker, tag]); // eslint-disable-line react-hooks/exhaustive-deps
+        const url = new URL(page.url, window.location.origin);
+        if (!url.searchParams.has('q')) return;
+        url.searchParams.delete('q');
+        router.replace({ url: `${url.pathname}${url.search}${url.hash}`, preserveState: true, preserveScroll: true });
+    }, [page.url]);
 
-    // Everything except the state chip, so each chip can show its own count.
-    const base = useMemo(() => {
-        const needle = normalizeArabic(q);
-        return promises.filter((p) => {
-            if (sector !== ALL && p.sector?.id !== sector) return false;
-            if (governorate === 'national' && !p.isNational) return false;
-            if (governorate !== ALL && governorate !== 'national' && !p.governorates.includes(governorate)) return false;
-            if (institution !== ALL && p.institution?.id !== institution) return false;
-            if (speaker !== ALL && p.speaker.id !== speaker) return false;
-            if (tag !== ALL && !p.tags.includes(tag)) return false;
-            if (needle && !normalizeArabic(`${p.title} ${p.speaker.name ?? ''}`).includes(needle)) return false;
-            return true;
-        });
-    }, [promises, sector, governorate, institution, speaker, tag, q]);
+    function changeFilters(next: SmartFilterValue) {
+        const previousUrl = promiseListUrl(value);
+        setValue(next);
+        const url = promiseListUrl(next);
+        if (url === previousUrl) return;
+        // page.url may lag behind a rapid second selection; compare local values.
+        router.replace({ url, preserveState: true, preserveScroll: true });
+    }
 
-    const counts = useMemo(() => {
-        const c = {} as Record<StateFilter, number>;
-        for (const f of STATE_FILTERS) c[f.key] = base.filter((p) => matchesState(p, f.key, dueSoonDays)).length;
-        return c;
-    }, [base, dueSoonDays]);
-
-    const visible = useMemo(() => {
-        const list = base.filter((p) => matchesState(p, state, dueSoonDays));
-        if (sort === 'newest') return [...list].sort((a, b) => b.statementDate.localeCompare(a.statementDate));
-        if (sort === 'deadline') {
-            return [...list].sort((a, b) => (a.deadlineDate ?? '9999').localeCompare(b.deadlineDate ?? '9999'));
-        }
-        return list; // server order: most urgent first
-    }, [base, state, sort, dueSoonDays]);
-
-    const resetFilters = () => {
-        setState('all');
-        setSector(ALL);
-        setGovernorate(ALL);
-        setInstitution(ALL);
-        setSpeaker(ALL);
-        setTag(ALL);
-        setQ('');
-    };
+    const resetFilters = () => changeFilters({ search: '', filters: {}, sort: value.sort });
 
     return (
         <MainLayout>
@@ -161,85 +81,62 @@ export default function PromisesIndex({ promises, stats, filters, dueSoonDays }:
             <div className="container mx-auto max-w-7xl space-y-6 px-4 py-8">
                 <Scoreboard stats={stats} />
 
-                <Card>
-                    <CardContent className="space-y-4 p-5">
-                        <div className="flex flex-wrap gap-2" role="group" aria-label="تصفية حسب الحالة">
-                            {STATE_FILTERS.map((f) => (
-                                <FilterChip key={f.key} active={state === f.key} onClick={() => setState(f.key)}>
-                                    {f.label} ({counts[f.key]})
+                <div className="rounded-xl border border-input bg-card shadow-sm transition-colors focus-within:border-foreground/25">
+                    <div className="flex flex-nowrap gap-1.5 overflow-x-auto overflow-y-hidden overscroll-x-contain border-b border-border/70 p-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-wrap sm:overflow-visible" role="group" aria-label="تصفية حسب الحالة">
+                        {[{ value: 'all', label: 'الكل', count: base.length }, ...stateOptions].map((option) => {
+                            const active = option.value === 'all' ? selectedStates.length === 0 : selectedStates.includes(option.value);
+                            return (
+                                <FilterChip key={option.value} active={active} activeVariant="outline"
+                                    className={cn(
+                                        'min-h-9 shrink-0 gap-1.5 rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shadow-none transition-none focus:ring-0 focus:ring-offset-0 focus-visible:ring-1 focus-visible:ring-border',
+                                        active ? 'border-foreground/15 bg-muted/60 text-foreground'
+                                            : 'border-border/70 bg-transparent text-muted-foreground',
+                                    )}
+                                    onClick={() => {
+                                        if (option.value === 'all') changeFilters(searchValue);
+                                        else if (stateFacet) changeFilters(toggleFilterValue(value, stateFacet, option.value));
+                                    }}>
+                                    {option.label}
+                                    <span className="text-xs tabular-nums">{option.count}</span>
                                 </FilterChip>
-                            ))}
-                        </div>
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                            <div className="relative sm:col-span-2 lg:col-span-1">
-                                <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-                                <Input
-                                    aria-label="ابحث في الوعود"
-                                    placeholder="ابحث بالعنوان أو اسم المسؤول..."
-                                    value={q}
-                                    onChange={(e) => setQ(e.target.value)}
-                                    className="ps-9"
-                                />
-                            </div>
-                            <Select value={sector} onValueChange={setSector}>
-                                <SelectTrigger aria-label="القطاع"><SelectValue placeholder="القطاع" /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value={ALL}>كل القطاعات</SelectItem>
-                                    {filters.sectors.map((s) => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                            <Select value={governorate} onValueChange={setGovernorate}>
-                                <SelectTrigger aria-label="المحافظة"><SelectValue placeholder="المحافظة" /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value={ALL}>كل المحافظات</SelectItem>
-                                    <SelectItem value="national">على مستوى البلاد</SelectItem>
-                                    {filters.governorates.map((g) => <SelectItem key={g.id} value={g.id}>{g.label}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                            <Select value={speaker} onValueChange={setSpeaker}>
-                                <SelectTrigger aria-label="صاحب الوعد"><SelectValue placeholder="صاحب الوعد" /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value={ALL}>كل المسؤولين</SelectItem>
-                                    {filters.speakers.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                            {filters.institutions.length > 0 && (
-                                <Select value={institution} onValueChange={setInstitution}>
-                                    <SelectTrigger aria-label="الجهة المسؤولة"><SelectValue placeholder="الجهة المسؤولة" /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value={ALL}>كل الجهات</SelectItem>
-                                        {filters.institutions.map((i) => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                            )}
-                            {filters.tags.length > 0 && (
-                                <Select value={tag} onValueChange={setTag}>
-                                    <SelectTrigger aria-label="الوسم"><SelectValue placeholder="الوسم" /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value={ALL}>كل الوسوم</SelectItem>
-                                        {filters.tags.map((t) => <SelectItem key={t} value={t}>#{t}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                            )}
-                            <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
-                                <SelectTrigger aria-label="الترتيب"><SelectValue placeholder="الترتيب" /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="urgency">الأكثر إلحاحاً</SelectItem>
-                                    <SelectItem value="deadline">الأقرب موعداً</SelectItem>
-                                    <SelectItem value="newest">الأحدث تصريحاً</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </CardContent>
-                </Card>
+                            );
+                        })}
+                    </div>
+                    <SmartFilterSearch
+                        embedded
+                        mobileFiltersScroll
+                        facets={searchFacets} value={searchValue}
+                        onChange={(next) => changeFilters({
+                            ...next,
+                            filters: { ...next.filters, ...(selectedStates.length ? { state: selectedStates } : {}) },
+                        })}
+                        placeholder="ابحث بالعنوان أو اسم المسؤول..." ariaLabel="ابحث في الوعود"
+                    />
+                </div>
 
-                <p className="text-sm text-muted-foreground" aria-live="polite">
-                    {visible.length === promises.length ? `عدد الوعود: ${promises.length}` : `الوعود المعروضة: ${visible.length} من أصل ${promises.length}`}
-                </p>
+                <div className="flex items-center justify-between gap-3">
+                    <p className="min-w-0 text-sm text-muted-foreground" role="status" aria-live="polite" aria-atomic="true">
+                        {visible.length === promises.length ? `عدد الوعود: ${promises.length}` : `الوعود المعروضة: ${visible.length} من أصل ${promises.length}`}
+                    </p>
+                    <Select value={value.sort} onValueChange={(sort) => changeFilters({ ...value, sort })}>
+                        <SelectTrigger aria-label="ترتيب الوعود"
+                            className="h-10 w-auto shrink-0 gap-2 border-0 px-1.5 text-muted-foreground shadow-none focus:ring-0 focus-visible:ring-1 focus-visible:ring-border focus-visible:ring-offset-0">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent align="end">
+                            {SORT_OPTIONS.map((option) => (
+                                <SelectItem key={option.value} value={option.value}
+                                    className="focus:bg-muted/50 focus:text-foreground data-[highlighted]:bg-muted/50 data-[highlighted]:text-foreground">
+                                    {option.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
 
                 {visible.length > 0 ? (
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {visible.map((p) => <PromiseCard key={p.id} promise={p} />)}
+                        {visible.map((p) => <PromiseCard key={p.id} promise={p} returnUrl={listUrl} />)}
                     </div>
                 ) : (
                     <Card>

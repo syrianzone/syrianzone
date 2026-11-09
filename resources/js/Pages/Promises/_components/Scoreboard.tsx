@@ -3,9 +3,8 @@ import { cn } from '@/Lib/utils';
 import type { PromiseStats } from '../_lib/types';
 
 /**
- * The summary counters above the list. Plain figures, not filters: the chips
- * below are the filtering control, with the same groups and names. Every
- * promise falls in exactly one tile after the total, so the tiles add up.
+ * Global totals, independent of the active list filters. Every promise falls
+ * in exactly one tile after the total, so the tiles add up.
  */
 export default function Scoreboard({ stats }: { stats: PromiseStats }) {
     const items: Array<{ label: string; value: number; tone?: string; note?: string }> = [

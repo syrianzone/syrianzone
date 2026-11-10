@@ -62,6 +62,7 @@ export const UPDATE_TYPE_LABEL: Record<string, string> = {
     status_change: 'تغيّر الحالة',
     official_response: 'ردّ رسمي',
     note: 'ملاحظة',
+    deadline_change: 'تأجيل الموعد',
 };
 
 /** Where a speaker-picker option comes from (SpeakerDirectory::search). */

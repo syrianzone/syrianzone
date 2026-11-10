@@ -191,6 +191,14 @@ export default function PromiseShow({ promise }: Props) {
                                         <dt className="text-muted-foreground">التاريخ المعتمد في العداد</dt>
                                         <dd className="mt-0.5 font-semibold text-foreground">{promise.deadlineDate ? formatDate(promise.deadlineDate) : 'لا يوجد — نعدّ الأيام منذ إطلاقه'}</dd>
                                     </div>
+                                    {(promise.postponedCount ?? 0) > 0 && promise.originalDeadlineDate && (
+                                        <div className="sm:col-span-2">
+                                            <dt className="text-muted-foreground">الموعد الأصلي قبل التأجيل</dt>
+                                            <dd className="mt-0.5 font-semibold text-muted-foreground">
+                                                <span className="line-through">{formatDate(promise.originalDeadlineDate)}</span>{promise.originalDeadlineWording ? ` («${promise.originalDeadlineWording}»)` : ''} · <span className="text-amber-600 dark:text-amber-400">تأجّل {promise.postponedCount === 1 ? 'مرة واحدة' : `${promise.postponedCount} مرات`}</span>
+                                            </dd>
+                                        </div>
+                                    )}
                                     {promise.resolvedAt && (
                                         <div>
                                             <dt className="text-muted-foreground">تاريخ الحكم</dt>
@@ -228,6 +236,45 @@ export default function PromiseShow({ promise }: Props) {
                                 <SourceList sources={promise.sources} />
                             </CardContent>
                         </Card>
+
+                        {(promise.relatedPromises?.length ?? 0) > 0 && (
+                            <Card>
+                                <CardHeader className="pb-3">
+                                    <SectionTitle>وعود مرتبطة بهذا الملف ({promise.relatedPromises!.length})</SectionTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <ul className="divide-y divide-border" role="list">
+                                        {promise.relatedPromises!.map((r) => {
+                                            const subtitle = [
+                                                r.speakerName,
+                                                r.deadlineDate ? `الموعد ${formatDate(r.deadlineDate)}` : (r.statementDate ? formatDate(r.statementDate) : ''),
+                                            ].filter(Boolean).join(' · ');
+
+                                            return (
+                                                <li key={r.number} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                                                    <div className="min-w-0">
+                                                        <Link
+                                                            href={`/promises/${r.number}`}
+                                                            className="font-medium text-foreground hover:text-primary hover:underline line-clamp-1"
+                                                        >
+                                                            الوعد رقم {r.number} — {r.title}
+                                                        </Link>
+                                                        {subtitle && (
+                                                            <p className="mt-0.5 text-xs text-muted-foreground">
+                                                                {subtitle}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                    <div className="shrink-0">
+                                                        <StateBadge state={r.state} />
+                                                    </div>
+                                                </li>
+                                            );
+                                        })}
+                                    </ul>
+                                </CardContent>
+                            </Card>
+                        )}
                     </div>
 
                     <aside className="space-y-6" aria-label="العداد والتفاعل">

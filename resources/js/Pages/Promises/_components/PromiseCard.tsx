@@ -64,10 +64,17 @@ export default function PromiseCard({ promise, returnUrl = '/promises', layout =
                 {promise.target && <div className={cn(list && 'max-sm:hidden')}><TargetProgress target={promise.target} /></div>}
 
                 <div className={cn('flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3 text-xs text-muted-foreground', list && 'max-sm:hidden')}>
-                    <span className="inline-flex items-center gap-1">
-                        <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
-                        {promise.deadlineDate ? `الموعد ${formatDate(promise.deadlineDate)}` : 'بلا موعد محدد'}
-                    </span>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <span className="inline-flex items-center gap-1">
+                            <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
+                            {promise.deadlineDate ? `الموعد ${formatDate(promise.deadlineDate)}` : 'بلا موعد محدد'}
+                        </span>
+                        {(promise.postponedCount ?? 0) > 0 && promise.originalDeadlineDate && (
+                            <span className="text-muted-foreground/80">
+                                الموعد الأصلي: <span className="line-through">{formatDate(promise.originalDeadlineDate)}</span>
+                            </span>
+                        )}
+                    </div>
                     <span className="inline-flex items-center gap-2">
                         {promise.sector && (
                             <span className="inline-flex items-center gap-1">

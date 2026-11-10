@@ -1,4 +1,14 @@
-import type { PromiseSourceData, PromiseState, PromiseStatus, PromiseUpdateData, SectorOption, SpeakerOption } from '@/Pages/Promises/_lib/types';
+import type {
+    PromiseSourceData,
+    PromiseState,
+    PromiseStatus,
+    PromiseUpdateData,
+    PromiseUpdateType,
+    SectorOption,
+    SpeakerOption,
+} from '@/Pages/Promises/_lib/types';
+
+export type { PromiseUpdateType };
 
 /** Shapes produced by PromisePresenter::adminRow / adminDetail. */
 
@@ -61,6 +71,10 @@ export interface AdminPromiseDetail {
     rejectionReason: string | null;
     sources: PromiseSourceData[];
     updates: PromiseUpdateData[];
+    originalDeadlineDate?: string | null;
+    originalDeadlineWording?: string | null;
+    postponedCount?: number;
+    relatedPromiseIds?: string[];
     /** Bumped by every save of the promise's fields; the editor sends the version its form was loaded at. */
     version: number;
 }
@@ -75,6 +89,7 @@ export interface EditorOptions {
     earliestDate: string;
     today: string;
     restatable: Array<{ id: string; number: number; title: string }>;
+    restatablePromises?: Array<{ id: string; number: number; title: string }>;
 }
 
 export interface AdminSpeaker {

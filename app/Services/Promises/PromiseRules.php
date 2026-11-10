@@ -25,6 +25,11 @@ final class PromiseRules
     /** Comfortably inside the decimal(18,2) columns that store measurements. */
     public const MAX_MEASURE = 999_999_999_999;
 
+    public function httpUrl(): string
+    {
+        return 'url:http,https';
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -64,6 +69,12 @@ final class PromiseRules
                 Rule::exists('promises', 'id')->where('review_status', 'published')->whereNull('deleted_at'),
                 Rule::notIn(array_filter([$promise?->id])),
             ],
+            'related_promise_ids' => ['nullable', 'array', 'max:20'],
+            'related_promise_ids.*' => [
+                'string', 'distinct',
+                Rule::exists('promises', 'id')->where('review_status', 'published')->whereNull('deleted_at'),
+                Rule::notIn(array_filter([$promise?->id])),
+            ],
             'sources' => ['required', 'array', 'min:1', 'max:20'],
             'sources.*.url' => ['required', 'url:http,https', 'max:2048'],
             'sources.*.outlet' => ['nullable', 'string', 'max:255'],
@@ -83,12 +94,30 @@ final class PromiseRules
     public function update(): array
     {
         return [
-            'type' => ['required', Rule::in(array_diff(PromiseUpdate::TYPES, ['status_change']))],
+            'type' => ['required', Rule::in(array_diff(PromiseUpdate::TYPES, ['status_change', 'deadline_change']))],
             'happened_on' => ['required', 'date_format:Y-m-d', 'before_or_equal:'.Promise::today()->format('Y-m-d')],
             'body' => ['nullable', 'string', 'max:2000', 'required_unless:type,progress'],
             'value' => ['nullable', 'numeric', 'between:-'.self::MAX_MEASURE.','.self::MAX_MEASURE, 'required_if:type,progress'],
             'source_url' => ['nullable', 'url:http,https', 'max:2048'],
             'archive_url' => ['nullable', 'url:http,https', 'max:2048'],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function reschedule(Promise $promise): array
+    {
+        $statementDate = $promise->statement_date->format('Y-m-d');
+
+        return [
+            'deadline_date' => ['required', 'date', 'date_format:Y-m-d', 'after_or_equal:'.$statementDate],
+            'deadline_wording' => ['nullable', 'string', 'max:255'],
+            'deadline_reasoning' => ['nullable', 'string', 'max:2000'],
+            'happened_on' => ['required', 'date', 'date_format:Y-m-d', 'after_or_equal:'.$statementDate, 'before_or_equal:'.Promise::today()->format('Y-m-d')],
+            'source_url' => ['required', 'string', 'max:2048', $this->httpUrl()],
+            'archive_url' => ['nullable', 'string', 'max:2048', $this->httpUrl()],
+            'body' => ['nullable', 'string', 'max:2000'],
         ];
     }
 
@@ -232,8 +261,12 @@ final class PromiseRules
             'baseline_value.numeric' => $number,
             'baseline_value.between' => $number,
             'baseline_note.max' => $long,
+            'deadline_date.required' => 'حدد موعد الإنجاز الجديد',
             'restates_promise_id.exists' => 'يجب أن يكون الوعد السابق منشوراً',
             'restates_promise_id.not_in' => 'لا يمكن أن يكون الوعد إعادة لنفسه',
+            'related_promise_ids.max' => 'عشرون وعداً مرتبطاً كحد أقصى',
+            'related_promise_ids.*.exists' => 'يجب أن يكون الوعد المرتبط منشوراً',
+            'related_promise_ids.*.not_in' => 'لا يمكن للوعد أن يرتبط بنفسه',
             'sources.required' => 'أضف مصدراً واحداً على الأقل',
             'sources.min' => 'أضف مصدراً واحداً على الأقل',
             'sources.max' => 'عشرون مصدراً كحد أقصى',

@@ -84,6 +84,11 @@ export default function ShareCardDialog({ promise, open, onOpenChange }: {
         }
     };
 
+    const coSpeakers = promise.coSpeakers ?? [];
+    const allSpeakers = [promise.speaker, ...coSpeakers];
+    const speakerNames = allSpeakers.map((s) => s.name).filter(Boolean).join(' و');
+    const speakerTitles = allSpeakers.map((s) => s.title).filter(Boolean).join(' · ');
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent dir="rtl" className="max-h-[92vh] overflow-y-auto sm:max-w-md">
@@ -99,11 +104,25 @@ export default function ShareCardDialog({ promise, open, onOpenChange }: {
                     <div className="flex aspect-square flex-col justify-between gap-4 rounded-xl border border-border bg-card p-6 text-card-foreground">
                         <div className="flex items-center justify-between gap-3">
                             <div className="flex min-w-0 items-center gap-2.5">
-                                <SpeakerAvatar name={promise.speaker.name} image={promise.speaker.image} size={44} />
+                                {coSpeakers.length > 0 ? (
+                                    <div className="flex shrink-0 items-center">
+                                        {allSpeakers.map((s, idx) => (
+                                            <SpeakerAvatar
+                                                key={s.id ?? idx}
+                                                name={s.name}
+                                                image={s.image}
+                                                size={40}
+                                                className={`ring-2 ring-card${idx > 0 ? ' -ms-2.5' : ''}`}
+                                            />
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <SpeakerAvatar name={promise.speaker.name} image={promise.speaker.image} size={44} />
+                                )}
                                 <div className="min-w-0">
-                                    <p className="text-sm font-bold leading-snug">{promise.speaker.name}</p>
-                                    {promise.speaker.title && (
-                                        <p className="text-xs leading-snug text-muted-foreground">{promise.speaker.title}</p>
+                                    <p className="text-sm font-bold leading-snug">{speakerNames}</p>
+                                    {speakerTitles && (
+                                        <p className="text-xs leading-snug text-muted-foreground">{speakerTitles}</p>
                                     )}
                                 </div>
                             </div>

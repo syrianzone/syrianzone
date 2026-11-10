@@ -4,6 +4,7 @@ namespace App\Services\Promises;
 
 use App\Exceptions\Promises\PromiseActionException;
 use App\Models\Promise;
+use App\Models\PromiseCoSpeaker;
 use App\Models\PromiseGovernorate;
 use App\Models\PromiseSource;
 use App\Models\PromiseTag;
@@ -122,6 +123,10 @@ class PromiseEditor
 
             if (array_key_exists('sources', $data)) {
                 $this->syncSources($promise, $data['sources']);
+            }
+
+            if (array_key_exists('co_speakers', $data)) {
+                $this->syncCoSpeakers($promise, (array) ($data['co_speakers'] ?? []), $speaker->id);
             }
 
             if (array_key_exists('related_promise_ids', $data)) {
@@ -494,6 +499,47 @@ class PromiseEditor
 
         if ($pairs !== []) {
             DB::table('promise_relations')->insertOrIgnore($pairs);
+        }
+    }
+
+    /**
+     * Replace co-speakers on a joint promise.
+     *
+     * @param  array<int, array<string, mixed>>  $coSpeakers
+     */
+    private function syncCoSpeakers(Promise $promise, array $coSpeakers, string $primarySpeakerId): void
+    {
+        $promise->coSpeakerRows()->delete();
+
+        $seen = [$primarySpeakerId => true];
+        $sort = 0;
+
+        foreach (array_values($coSpeakers) as $item) {
+            $ref = trim((string) ($item['speaker_ref'] ?? ''));
+            if ($ref === '') {
+                continue;
+            }
+
+            $coSpeaker = $this->speakers->resolve($ref, forStaff: true);
+            if ($promise->published_at && $coSpeaker->status !== 'approved') {
+                throw PromiseActionException::speakerNotApproved();
+            }
+
+            if (isset($seen[$coSpeaker->id])) {
+                continue;
+            }
+            $seen[$coSpeaker->id] = true;
+
+            $title = filled($item['speaker_title'] ?? null)
+                ? (string) $item['speaker_title']
+                : $coSpeaker->title;
+
+            PromiseCoSpeaker::create([
+                'promise_id' => $promise->id,
+                'speaker_id' => $coSpeaker->id,
+                'speaker_title' => $title,
+                'sort' => $sort++,
+            ]);
         }
     }
 }

@@ -129,6 +129,17 @@ abstract class PromisesTool extends AuditedTool
             'speaker_title' => $schema->string()
                 ->description('Optional title of the speaker at the time of the statement.'),
 
+            'co_speakers' => $schema->array()
+                ->description('Optional co-speakers when a promise is announced jointly by two or more officials on the same occasion.')
+                ->max(5)
+                ->items($schema->object([
+                    'speaker_ref' => $schema->string()
+                        ->description('Speaker reference from search-promise-speakers. Required.')
+                        ->required(),
+                    'speaker_title' => $schema->string()
+                        ->description('Optional title of the co-speaker at the time of the statement.'),
+                ])),
+
             'title' => $schema->string()
                 ->description('Promise title in Arabic (max 200 chars). Required.')
                 ->max(200)

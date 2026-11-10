@@ -40,6 +40,9 @@ final class PromiseRules
         return [
             'speaker_ref' => ['required', 'string', 'max:80'],
             'speaker_title' => ['nullable', 'string', 'max:255'],
+            'co_speakers' => ['nullable', 'array', 'max:5'],
+            'co_speakers.*.speaker_ref' => ['required', 'string', 'max:80'],
+            'co_speakers.*.speaker_title' => ['nullable', 'string', 'max:255'],
             'title' => ['required', 'string', 'max:200'],
             'summary' => ['nullable', 'string', 'max:2000'],
             'quote' => ['required', 'string', 'max:5000'],

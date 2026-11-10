@@ -195,6 +195,9 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
     if (isLoading) {
         return (
             <div className="flex flex-col items-center justify-center h-[calc(100vh-64px)] bg-background text-foreground gap-6">
+                {/* The loaded view has its own heading; without this one the page
+                    the server sends, which is this state, has none. */}
+                <h1 className="sr-only">أطلس سوريا التفاعلي</h1>
                 <div className="relative">
                     <div className="w-20 h-20 rounded-full border-4 border-primary/20 border-t-primary animate-spin"></div>
                     <div className="absolute inset-0 flex items-center justify-center">
@@ -212,6 +215,7 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
     if (error) {
         return (
             <div className="flex flex-col items-center justify-center h-[calc(100vh-64px)] bg-background text-foreground gap-6 px-4">
+                <h1 className="sr-only">أطلس سوريا التفاعلي</h1>
                 <div className="text-center max-w-md">
                     <div className="text-red-500 mb-4">
                         <AlertTriangle size={64} />

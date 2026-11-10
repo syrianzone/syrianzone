@@ -155,12 +155,8 @@ class TransitStudioController extends Controller
         }
 
         // Get stops
-        $stops = $route->stops()->orderBy('pivot_order')->get();
-        foreach ($stops as $s) {
-            $stopGeom = \Illuminate\Support\Facades\DB::table('stops')
-                ->selectRaw('ST_AsGeoJSON(geometry) as geojson')
-                ->where('id', $s->id)
-                ->value('geojson');
+        foreach ($route->stopPoints() as $s) {
+            $stopGeom = $s->geojson;
             if ($stopGeom) {
                 $features[] = [
                     'type' => 'Feature',

@@ -44,6 +44,23 @@ class SiteSetting extends Model
         });
     }
 
+    /**
+     * Popup and navigation for the shared Inertia props, read with one cache
+     * round trip instead of two. Every page pays for this, and on the database
+     * cache store each lookup is its own query.
+     *
+     * @return array{popup: array<string, mixed>, navigation: array<string, mixed>}
+     */
+    public static function shared(): array
+    {
+        $cached = Cache::many(['site_popup', 'site_navigation']);
+
+        return [
+            'popup' => $cached['site_popup'] ?? static::getPopup(),
+            'navigation' => $cached['site_navigation'] ?? static::getNavigation(),
+        ];
+    }
+
     public static function flushPopupCache(): void
     {
         Cache::forget('site_popup');

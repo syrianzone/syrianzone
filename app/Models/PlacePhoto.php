@@ -26,6 +26,13 @@ class PlacePhoto extends Model
 
   private function versionedUrl(string $path): string
   {
-    return Storage::disk(config('filesystems.media_disk'))->url($path) . '?v=' . ($this->updated_at?->getTimestamp() ?? 0);
+    return self::versionedUrlFor($path, $this->updated_at?->getTimestamp());
+  }
+
+  // The same URL from a raw path and timestamp, for bulk payloads (the map)
+  // that read photo rows without building a model for each one.
+  public static function versionedUrlFor(string $path, ?int $version): string
+  {
+    return Storage::disk(config('filesystems.media_disk'))->url($path) . '?v=' . ($version ?? 0);
   }
 }

@@ -6,7 +6,9 @@ use App\Models\DailyScore;
 use App\Models\Poll;
 use App\Services\TierlistLeaderboard;
 use App\Services\VotingService;
+use App\Support\Seo\SeoMeta;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -53,10 +55,13 @@ class PollController extends Controller
 
     public function renderShow(Request $request, $slug)
     {
-        $poll = Poll::where('slug', $slug)->orWhere('id', $slug)->firstOrFail();
+        $poll = Poll::idOrSlug($slug)->firstOrFail();
+        SeoMeta::remember($request, 'poll', $poll);
         $today = Carbon::now($poll->safeTimezone())->startOfDay();
 
-        $candidates = $this->publicCandidates($poll, $request->boolean('include_archived'))
+        $groups = $poll->groups()->get();
+
+        $candidates = $this->publicCandidates($poll, $request->boolean('include_archived'), $groups)
             ->get()->map(fn ($c) => [
                 'id' => $c->id,
                 'name' => $c->name,
@@ -70,7 +75,7 @@ class PollController extends Controller
         return Inertia::render('Polls/Show', [
             'poll' => $poll,
             'candidates' => $candidates,
-            'groups' => $poll->groups()->active()->get(),
+            'groups' => $groups->where('is_active', true)->values(),
             'voteDay' => $today->toIso8601String(),
         ]);
     }
@@ -80,7 +85,8 @@ class PollController extends Controller
         $validated = $request->validate([
             'status' => 'sometimes|string|in:active,archived,former,all',
         ]);
-        $poll = Poll::where('id', $slug)->orWhere('slug', $slug)->firstOrFail();
+        $poll = Poll::idOrSlug($slug)->firstOrFail();
+        SeoMeta::remember($request, 'poll', $poll);
         $status = TierlistLeaderboard::normalizeStatus($validated['status'] ?? 'active');
 
         return Inertia::render('Polls/Leaderboard', $this->leaderboardPayload($poll, $status));
@@ -91,7 +97,9 @@ class PollController extends Controller
         $poll = Poll::where('slug', Poll::CORE_POLL_SLUG)->firstOrFail();
         $today = Carbon::now($poll->safeTimezone())->startOfDay();
 
-        $candidates = $this->publicCandidates($poll)
+        $groups = $poll->groups()->get();
+
+        $candidates = $this->publicCandidates($poll, false, $groups)
             ->get()->map(fn ($c) => [
                 'id' => $c->id,
                 'name' => $c->name,
@@ -105,7 +113,7 @@ class PollController extends Controller
         return Inertia::render('TierList/Index', [
             'poll' => $poll,
             'candidates' => $candidates,
-            'groups' => $poll->groups()->active()->get(),
+            'groups' => $groups->where('is_active', true)->values(),
             'voteDay' => $today->toIso8601String(),
         ]);
     }
@@ -115,7 +123,7 @@ class PollController extends Controller
      * request, but anyone in a disabled category never is — a disabled
      * category is not published, so neither is its roster.
      */
-    private function publicCandidates(Poll $poll, bool $includeArchived = false)
+    private function publicCandidates(Poll $poll, bool $includeArchived = false, ?Collection $groups = null)
     {
         $query = $poll->candidates()->orderBy('sort');
 
@@ -123,7 +131,11 @@ class PollController extends Controller
             $query->where('status', 'active');
         }
 
-        $disabledGroupIds = $poll->groups()->disabled()->pluck('id');
+        // Callers that also render the category list pass the groups they
+        // already loaded, so the roster costs one groups query, not two.
+        $disabledGroupIds = $groups !== null
+            ? $groups->where('is_active', false)->pluck('id')
+            : $poll->groups()->disabled()->pluck('id');
 
         if ($disabledGroupIds->isNotEmpty()) {
             // Null-group candidates predate the grouping model; a plain
@@ -211,7 +223,7 @@ class PollController extends Controller
 
     public function show(Request $request, $idOrSlug)
     {
-        $poll = Poll::where('id', $idOrSlug)->orWhere('slug', $idOrSlug)->firstOrFail();
+        $poll = Poll::idOrSlug($idOrSlug)->firstOrFail();
         $today = Carbon::now($poll->safeTimezone())->startOfDay();
 
         // The dashboard editor reads this endpoint and must still see disabled
@@ -220,9 +232,11 @@ class PollController extends Controller
         // categories only, and no candidate from a disabled one.
         $isEditor = $request->user()?->hasPermission('polls.edit') ?? false;
 
+        $groups = $poll->groups()->get();
+
         $candidatesQuery = $isEditor
             ? $poll->candidates()->orderBy('sort')
-            : $this->publicCandidates($poll, $request->boolean('include_archived'));
+            : $this->publicCandidates($poll, $request->boolean('include_archived'), $groups);
 
         if ($isEditor && ! $request->boolean('include_archived')) {
             $candidatesQuery->where('status', 'active');
@@ -230,7 +244,7 @@ class PollController extends Controller
 
         return response()->json([
             'poll' => $poll,
-            'groups' => $isEditor ? $poll->groups()->get() : $poll->groups()->active()->get(),
+            'groups' => $isEditor ? $groups : $groups->where('is_active', true)->values(),
             'candidates' => $candidatesQuery->get(),
             'todayScores' => DailyScore::where('poll_id', $poll->id)->where('day', $today)->get(),
             'voteDay' => $today->toIso8601String(),
@@ -245,7 +259,7 @@ class PollController extends Controller
         $validated = $request->validate([
             'status' => 'sometimes|string|in:active,archived,former,all',
         ]);
-        $poll = Poll::where('id', $slug)->orWhere('slug', $slug)->firstOrFail();
+        $poll = Poll::idOrSlug($slug)->firstOrFail();
         $status = TierlistLeaderboard::normalizeStatus($validated['status'] ?? 'active');
         $results = $this->leaderboardPayload($poll, $status);
 
@@ -310,7 +324,7 @@ class PollController extends Controller
             ], 400);
         }
 
-        $poll = Poll::where('slug', $data['pollSlug'])->orWhere('id', $data['pollSlug'])->firstOrFail();
+        $poll = Poll::idOrSlug($data['pollSlug'])->firstOrFail();
         $votingService->submit(
             $poll,
             $data['tiers'],
@@ -327,6 +341,9 @@ class PollController extends Controller
         $query = DB::table('daily_scores')
             ->where('poll_id', $pollId)
             ->select('candidate_id', 'day', 'votes', 'score')
+            // Primary-key order (poll_id, candidate_id, day): rows come back
+            // already grouped per candidate and date-sorted, with no filesort.
+            ->orderBy('candidate_id')
             ->orderBy('day');
 
         if ($candidates !== null) {
@@ -336,45 +353,50 @@ class PollController extends Controller
             $query->whereIn('candidate_id', $candidates->keys());
         }
 
-        $rows = $query->get();
+        // One pass. The rows arrive grouped per candidate and date-ordered (see
+        // the ORDER BY above), so there is nothing to group or sort again; doing
+        // that through collections cost more than the query for a year of
+        // daily scores.
+        $cutoffs = [];
+        $history = [];
 
-        if ($candidates !== null) {
-            $rows = $rows->filter(function ($row) use ($candidates) {
-                $c = $candidates->get($row->candidate_id);
-                if (! $c) {
-                    return false;
-                }
-                if ($c->status === 'archived' && $c->term_ended_at) {
-                    return $row->day <= $c->term_ended_at->toDateString();
-                }
+        foreach ($query->get() as $row) {
+            $id = $row->candidate_id;
 
-                return true;
-            });
+            if ($candidates !== null) {
+                if (! array_key_exists($id, $cutoffs)) {
+                    $c = $candidates->get($id);
+                    // false: not one of ours. null: no cutoff. string: last day of the term.
+                    $cutoffs[$id] = $c === null
+                        ? false
+                        : (($c->status === 'archived' && $c->term_ended_at) ? $c->term_ended_at->toDateString() : null);
+                }
+                if ($cutoffs[$id] === false || ($cutoffs[$id] !== null && ! ($row->day <= $cutoffs[$id]))) {
+                    continue;
+                }
+            }
+
+            $history[$id][] = [
+                'date' => $row->day,
+                'votes' => (int) $row->votes,
+                'score' => (int) $row->score,
+            ];
         }
 
-        return $rows
-            ->groupBy('candidate_id')
-            ->map(function ($items) {
-                $series = $items->sortBy('day')->values()->map(fn ($i) => [
-                    'date' => $i->day,
-                    'votes' => (int) $i->votes,
-                    'score' => (int) $i->score,
-                ])->all();
-
-                // Downsample long histories to weekly buckets (last point per
-                // ISO week wins; the series is date-ordered). Charts cannot
-                // render thousands of daily points, and the payload stays
-                // bounded as the poll ages.
-                if (count($series) > 180) {
-                    $bucketed = [];
-                    foreach ($series as $point) {
-                        $bucketed[date('o-W', strtotime($point['date']))] = $point;
-                    }
-                    $series = array_values($bucketed);
+        foreach ($history as $id => $series) {
+            // Downsample long histories to weekly buckets (last point per
+            // ISO week wins; the series is date-ordered). Charts cannot
+            // render thousands of daily points, and the payload stays
+            // bounded as the poll ages.
+            if (count($series) > 180) {
+                $bucketed = [];
+                foreach ($series as $point) {
+                    $bucketed[date('o-W', strtotime($point['date']))] = $point;
                 }
+                $history[$id] = array_values($bucketed);
+            }
+        }
 
-                return $series;
-            })
-            ->toArray();
+        return $history;
     }
 }

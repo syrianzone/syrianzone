@@ -351,3 +351,32 @@ it('returns an empty geometry for a draft that carries no features', function ()
     expect($payload['line'])->toBeNull()
         ->and($payload['stops'])->toBe([]);
 });
+
+// ─── Filters run before the limit, not after it ────────────────────────────
+
+it('lists a pending draft even when newer drafts of other statuses fill the limit', function () {
+    transitToolDraft('homs', ['name_ar' => 'قديمة بانتظار المراجعة', 'created_at' => now()->subDays(3)]);
+    transitToolDraft('homs', ['name_ar' => 'أحدث ١', 'status' => 'approved']);
+    transitToolDraft('homs', ['name_ar' => 'أحدث ٢', 'status' => 'rejected']);
+
+    agentToken($this->scoped, ['transit.review_drafts']);
+    $payload = toolPayload(callTool(ListTransitDraftsTool::class, ['limit' => 2]));
+
+    expect($payload['count'])->toBe(1)
+        ->and($payload['drafts'][0]['name_ar'])->toBe('قديمة بانتظار المراجعة');
+});
+
+it('lists one route history even when newer entries for other routes fill the limit', function () {
+    transitToolRoute('homs-old', 'homs');
+    transitToolRoute('homs-busy', 'homs');
+
+    TransitRouteLog::create(['route_id' => 'homs-old', 'action' => 'update', 'description' => 'قديم', 'created_at' => now()->subDays(3)]);
+    TransitRouteLog::create(['route_id' => 'homs-busy', 'action' => 'update', 'description' => 'حديث ١']);
+    TransitRouteLog::create(['route_id' => 'homs-busy', 'action' => 'update', 'description' => 'حديث ٢']);
+
+    agentToken($this->scoped, ['transit.review_drafts']);
+    $payload = toolPayload(callTool(ListTransitRouteHistoryTool::class, ['route_id' => 'homs-old', 'limit' => 2]));
+
+    expect($payload['count'])->toBe(1)
+        ->and($payload['entries'][0]['description'])->toBe('قديم');
+});

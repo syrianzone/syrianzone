@@ -71,6 +71,8 @@ class HandleInertiaRequests extends Middleware
     {
         $devMode = AutoLoginDevUser::isDevMode();
 
+        $site = SiteSetting::shared();
+
         return [
             ...parent::share($request),
             'auth' => [
@@ -83,12 +85,15 @@ class HandleInertiaRequests extends Middleware
                     ? (new AutoLoginDevUser)->resolveRole($request)
                     : null,
             ],
-            'sitePopup' => SiteSetting::getPopup(),
-            'siteNavigation' => SiteSetting::getNavigation(),
+            'sitePopup' => $site['popup'],
+            'siteNavigation' => $site['navigation'],
             // One resolved SEO object per request, rendered by the single
             // <SeoHead> component. The root view renders the same values
             // server-side when SSR is off. See docs/guidelines/seo.md.
-            'seo' => \App\Support\Seo\SeoMeta::resolve($request),
+            // Lazy, so it runs after the controller: a page that already loaded its
+            // record (SeoMeta::remember) is not queried for it a second time, and
+            // JSON responses on the web stack never resolve it at all.
+            'seo' => fn () => \App\Support\Seo\SeoMeta::resolve($request),
         ];
     }
 

@@ -14,16 +14,17 @@ class PhonebookController extends Controller
      */
     public function index()
     {
-        // Auto seed database if empty
-        if (PhonebookCategory::count() === 0) {
-            try {
-                (new \Database\Seeders\PhonebookSeeder())->run();
-            } catch (\Exception $e) {
-                // Fail gracefully
-            }
-        }
-
         $categories = Cache::remember('phonebook:db_categories_v1', 600, function () {
+            // Seed an empty directory on first use. Checked here, inside the
+            // cached read, so a warm page does not count the table on every hit.
+            if (PhonebookCategory::count() === 0) {
+                try {
+                    (new \Database\Seeders\PhonebookSeeder())->run();
+                } catch (\Exception $e) {
+                    // Fail gracefully
+                }
+            }
+
             return PhonebookCategory::where('is_active', true)
                 ->orderBy('order_column')
                 ->get();

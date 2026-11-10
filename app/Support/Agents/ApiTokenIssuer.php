@@ -34,7 +34,11 @@ final class ApiTokenIssuer
     {
         $capabilities = PermissionCatalogue::all();
 
+        // Only an account that is a superadmin or stores at least one grant can
+        // pass the check below, so everyone else is left in the database. The
+        // PHP predicate still decides; this only keeps it off the whole table.
         return User::query()
+            ->where(fn ($q) => $q->where('role', 'superadmin')->orWhereJsonLength('permissions', '>', 0))
             ->get()
             ->filter(fn (User $user) => collect($capabilities)
                 ->contains(fn (string $permission) => $user->hasPermission($permission)))

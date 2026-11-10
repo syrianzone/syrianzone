@@ -45,13 +45,19 @@ class TransitAdminService
      * Bounded: the drafts table grows without limit, so a bare ->get() would
      * eventually take down the listing.
      *
+     * A status filter belongs here, in the query. Applied to the returned
+     * collection it runs after the limit, so "the pending drafts" silently
+     * becomes "the pending ones among the newest N of any status".
+     *
      * @param  array<int, string>|null  $allowedCities  Null means unrestricted.
+     * @param  string|null  $status  Null means every status.
      * @return Collection<int, RouteDraft>
      */
-    public function drafts(?array $allowedCities = null, int $limit = 500)
+    public function drafts(?array $allowedCities = null, int $limit = 500, ?string $status = null)
     {
         return RouteDraft::with(['user:id,name', 'city:id,name_ar,name_en', 'linkedRoute:id,name_ar,name_en'])
             ->when($allowedCities !== null, fn ($q) => $q->whereIn('city_id', $allowedCities))
+            ->when($status !== null, fn ($q) => $q->where('status', $status))
             ->orderBy('created_at', 'desc')
             ->limit($limit)
             ->get();
@@ -64,18 +70,20 @@ class TransitAdminService
     public function routes(?array $allowedCities = null)
     {
         return Route::with(['city:id,name_ar,name_en'])
-            ->withCount('stops')
+            ->withStopsCount()
             ->when($allowedCities !== null, fn ($q) => $q->whereIn('city_id', $allowedCities))
             ->get();
     }
 
     /**
      * @param  array<int, string>|null  $allowedCities
+     * @param  string|null  $routeId  One route's history; filtered before the limit.
      * @return Collection<int, TransitRouteLog>
      */
-    public function logs(?array $allowedCities = null, int $limit = 200)
+    public function logs(?array $allowedCities = null, int $limit = 200, ?string $routeId = null)
     {
         return TransitRouteLog::with(['user:id,name'])
+            ->when($routeId !== null, fn ($q) => $q->where('route_id', $routeId))
             ->when($allowedCities !== null, fn ($q) => $q->whereHas(
                 'route',
                 fn ($r) => $r->whereIn('city_id', $allowedCities)

@@ -9,6 +9,7 @@ use App\Support\Seo\Preview\Arabic;
 use App\Support\Seo\Preview\DescribesCards;
 use App\Support\Seo\Preview\Preview;
 use App\Support\Seo\Preview\PreviewResolver;
+use App\Support\Seo\SeoMeta;
 use Illuminate\Http\Request;
 
 /** /promises/{number}: one published promise. */
@@ -47,7 +48,7 @@ final class PromisePreview implements CardSource, PreviewResolver
             return null;
         }
 
-        $promise = $this->find((int) $m[1]);
+        $promise = SeoMeta::remembered($request, 'promise') ?? $this->find((int) $m[1]);
         if ($promise === null) {
             return null;
         }

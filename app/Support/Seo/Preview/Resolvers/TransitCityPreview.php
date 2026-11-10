@@ -9,6 +9,7 @@ use App\Support\Seo\Preview\Arabic;
 use App\Support\Seo\Preview\DescribesCards;
 use App\Support\Seo\Preview\Preview;
 use App\Support\Seo\Preview\PreviewResolver;
+use App\Support\Seo\SeoMeta;
 use Illuminate\Http\Request;
 
 /** /transit/city/{id}: the public transport map of one city. */
@@ -34,7 +35,7 @@ final class TransitCityPreview implements CardSource, PreviewResolver
             return null;
         }
 
-        $city = City::find($m[1]);
+        $city = SeoMeta::remembered($request, 'city') ?? City::find($m[1]);
         if ($city === null) {
             return null;
         }

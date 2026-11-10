@@ -115,14 +115,6 @@ const pollPublicUrl = (slug: string) =>
 const pollLeaderboardUrl = (slug: string) =>
   slug === 'best-ministers' ? '/tierlist/leaderboard' : `/polls/${slug}/leaderboard`;
 
-interface Route {
-  id: string;
-  name_ar: string;
-  name_en: string | null;
-  city: City | null;
-  price_new: number | null;
-}
-
 interface DashboardProps {
   auth: {
     user: {
@@ -140,8 +132,6 @@ interface DashboardProps {
   cities: City[];
   myDrafts?: Draft[];
   polls?: Poll[];
-  allDrafts?: Draft[];
-  publishedRoutes?: Route[];
 }
 
 // Rendered inside the <MainLayout> children, where the AuthProvider that
@@ -246,9 +236,7 @@ export default function Dashboard({
   role,
   cities,
   myDrafts = [],
-  polls = [],
-  allDrafts = [],
-  publishedRoutes = []
+  polls = []
 }: DashboardProps) {
   // Read from the Inertia prop, NOT useAuth(): this component renders
   // <MainLayout> (and therefore AuthProvider) itself, so its body runs above
@@ -305,7 +293,6 @@ export default function Dashboard({
   const [rejectLoading, setRejectLoading] = useState(false);
 
   // Ban Status states for dynamic list updates
-  const [localDrafts, setLocalDrafts] = useState<Draft[]>(allDrafts);
   const [localPolls, setLocalPolls] = useState<Poll[]>(polls);
   const [localMyDrafts, setLocalMyDrafts] = useState<Draft[]>(myDrafts);
 
@@ -439,7 +426,6 @@ export default function Dashboard({
       const res = await axios.post(`/api/v1/admin/route-drafts/${id}/approve`);
       notify.success('تمت الموافقة على المسار ونشره.');
       // Update local state status
-      setLocalDrafts(prev => prev.map(d => d.id === id ? { ...d, status: 'approved' } : d));
     } catch (err: any) {
       notify.error('خطأ أثناء الموافقة: ' + (err.response?.data?.message ?? err.message));
     } finally {
@@ -463,7 +449,6 @@ export default function Dashboard({
         reason: rejectReason.trim() || null
       });
       setRejectOpen(false);
-      setLocalDrafts(prev => prev.map(d => d.id === rejectDraftId ? { ...d, status: 'rejected', rejection_reason: rejectReason } : d));
       notify.success('تم رفض المسار.');
     } catch (err: any) {
       notify.error('خطأ أثناء الرفض: ' + (err.response?.data?.message ?? err.message));
@@ -546,7 +531,6 @@ export default function Dashboard({
     try {
       await axios.delete(`/api/v1/transit/studio/routes/${id}`);
       setLocalMyDrafts(prev => prev.filter(d => d.id !== id));
-      setLocalDrafts(prev => prev.filter(d => d.id !== id));
       notify.success('تم سحب الاقتراح');
     } catch (err: any) {
       notify.error('تعذر سحب الاقتراح: ' + (err.response?.data?.message ?? err.message));

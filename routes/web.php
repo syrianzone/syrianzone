@@ -226,7 +226,9 @@ Route::get('/transit', function () {
 });
 
 Route::get('/transit/city/{id}', function ($id) {
-    abort_unless(City::whereKey($id)->exists(), 404);
+    $city = City::find($id);
+    abort_unless($city !== null, 404);
+    \App\Support\Seo\SeoMeta::remember(request(), 'city', $city);
 
     return Inertia::render('Transit/city/[id]/Index', ['id' => $id]);
 })->where('id', '[a-z0-9\-]+');

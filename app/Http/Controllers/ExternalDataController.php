@@ -10,6 +10,8 @@ use Inertia\Inertia;
 
 class ExternalDataController extends Controller
 {
+    public const HOUSE_MEMBERS_CACHE_KEY = 'house:members_2026_v1';
+
     /**
      * Render Syrian ID page.
      */
@@ -56,15 +58,24 @@ class ExternalDataController extends Controller
      */
     public function house()
     {
-        $members = [];
-        try {
-            if (\Illuminate\Support\Facades\Schema::hasTable('house_members_2026')) {
+        // The roster only changes with a deploy (seeder or migration), so it is
+        // cached. It used to be read in full on every visit, behind a
+        // Schema::hasTable() probe that is itself an information_schema query.
+        // A failed or empty read is not cached, so a table that appears later
+        // (a deploy mid-flight) shows up on the next request.
+        $members = Cache::get(self::HOUSE_MEMBERS_CACHE_KEY);
+        if (! is_array($members)) {
+            $members = [];
+            try {
                 $members = \App\Models\HouseMember2026::query()
                     ->orderBy('governorate_ar')->orderBy('name_ar')
                     ->get()->toArray();
+                if ($members !== []) {
+                    Cache::put(self::HOUSE_MEMBERS_CACHE_KEY, $members, 600);
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('house_members_2026 read failed', ['error' => $e->getMessage()]);
             }
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('house_members_2026 read failed', ['error' => $e->getMessage()]);
         }
 
         return Inertia::render('House/Index', [

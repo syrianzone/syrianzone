@@ -92,6 +92,10 @@ class PromiseSectorService
             foreach (array_values($ids) as $i => $id) {
                 PromiseSector::whereKey($id)->update(['order_column' => $i]);
             }
+
+            // A query-builder update fires no model event, and the sector order
+            // is part of the cached /promises payload.
+            PromiseIndexCache::flush();
         });
     }
 }

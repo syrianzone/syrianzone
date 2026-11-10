@@ -345,7 +345,9 @@ it('withholds the polls data from a user holding only transit capabilities', fun
         );
 });
 
-it('gives a transit reviewer the drafts and routes payload', function () {
+it('does not ship transit drafts or routes to the dashboard', function () {
+    // The dashboard page never read them; a reviewer works on the transit admin
+    // page, which fetches its own governorate-scoped data.
     $reviewer = User::factory()->withPermissions(['transit.review_drafts'])->create();
 
     $this->actingAs($reviewer)
@@ -353,8 +355,8 @@ it('gives a transit reviewer the drafts and routes payload', function () {
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('Dashboard/Index')
-            ->has('allDrafts')
-            ->has('publishedRoutes')
+            ->missing('allDrafts')
+            ->missing('publishedRoutes')
         );
 });
 
@@ -387,8 +389,6 @@ it('gives a full-catalogue account every dashboard panel', function () {
         ->assertInertia(fn ($page) => $page
             ->component('Dashboard/Index')
             ->has('polls')
-            ->has('allDrafts')
-            ->has('publishedRoutes')
         );
 });
 

@@ -41,7 +41,7 @@ final class PollPreview implements CardSource, PreviewResolver
         }
 
         // UUID links resolve too and are canonicalised to the slug.
-        $poll = Poll::where('slug', $m[1])->orWhere('id', $m[1])->first();
+        $poll = SeoMeta::remembered($request, 'poll') ?? Poll::idOrSlug($m[1])->first();
         if ($poll === null) {
             return null;
         }

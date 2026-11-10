@@ -5,6 +5,7 @@ namespace App\Support\Seo;
 use App\Support\Seo\Og\StaticCards;
 use App\Support\Seo\Preview\Preview;
 use App\Support\Seo\Preview\Previews;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
 /**
@@ -314,6 +315,29 @@ class SeoMeta
         $request->attributes->set(self::ATTRIBUTE, $meta);
 
         return $meta;
+    }
+
+    /**
+     * Hand the page's record to the preview resolvers so they do not fetch it
+     * again.
+     *
+     * The head tags and the shared `seo` prop are resolved while the response
+     * renders, after the controller has run. A controller that already loaded
+     * the poll, city or promise the URL names passes it here, and its resolver
+     * builds the preview from that instance instead of a second query.
+     */
+    public static function remember(Request $request, string $kind, ?Model $record): void
+    {
+        if ($record !== null) {
+            $request->attributes->set('seo_record_'.$kind, $record);
+        }
+    }
+
+    public static function remembered(Request $request, string $kind): ?Model
+    {
+        $record = $request->attributes->get('seo_record_'.$kind);
+
+        return $record instanceof Model ? $record : null;
     }
 
     /** A page listed in PAGES, with its card from resources/og/cards.json. */

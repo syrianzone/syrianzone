@@ -276,7 +276,12 @@ class SeoMeta
         }
 
         $path = '/'.trim($request->path(), '/');
-        $preview = self::fixedPage($path) ?? Previews::resolve($request, $path) ?? self::fallback($path);
+        // Resolvers go first: a record opened through a query string
+        // (/mishwar?place=12) lives on the path of a fixed page.
+        $preview = Previews::resolve($request, $path) ?? self::fixedPage($path) ?? self::fallback($path);
+        // Structured data describes the canonical page. For such a record that
+        // is the page it is a view of, not the record.
+        $about = $preview->sharePath === null ? $preview : (self::fixedPage($preview->canonicalPath) ?? $preview);
 
         $base = rtrim((string) config('seo.base_url'), '/');
         $absolute = fn (string $relative) => $relative === '/' ? $base.'/' : $base.$relative;
@@ -295,7 +300,7 @@ class SeoMeta
             'canonical' => $canonical,
             'robots' => ($preview->noindex || self::isNoindex($path)) ? 'noindex, follow' : 'index, follow',
             'twitter_site' => is_string($twitterSite) && $twitterSite !== '' ? $twitterSite : null,
-            'json_ld' => self::jsonLd($path, $preview->schema, $preview->title, $preview->description, $canonical, $base, $preview->parent),
+            'json_ld' => self::jsonLd($path, $about->schema, $about->title, $about->description, $canonical, $base, $about->parent),
         ];
 
         $request->attributes->set(self::ATTRIBUTE, $meta);

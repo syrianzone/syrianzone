@@ -34,6 +34,18 @@ class Poll extends Model
         return in_array($tz, timezone_identifiers_list(), true) ? $tz : 'UTC';
     }
 
+    /**
+     * Resolve a poll from a route segment that may be either its id or its
+     * slug. Every public poll endpoint accepts both; this is the one place that
+     * says how.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<Poll>  $query
+     */
+    public function scopeIdOrSlug($query, string $idOrSlug)
+    {
+        return $query->where(fn ($q) => $q->where('id', $idOrSlug)->orWhere('slug', $idOrSlug));
+    }
+
     public function user() { return $this->belongsTo(User::class); }
     public function candidates() { return $this->hasMany(Candidate::class); }
     public function ballots() { return $this->hasMany(Ballot::class); }

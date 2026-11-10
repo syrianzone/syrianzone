@@ -37,9 +37,12 @@ final class CompassStats
      * The running tally is cached under this key. Bump the suffix whenever the
      * shape of the tally (not the output) changes.
      */
-    private const TALLY_KEY = 'compass-stats-tally-v1';
+    private const TALLY_KEY = 'compass-stats-tally-v2';
 
-    /** Backstop: the tally is rebuilt from scratch at least this often. */
+    /**
+     * Backstop: a tally is rebuilt from scratch once it is this old, counted
+     * from when it was first built. Folding in new runs does not extend it.
+     */
     private const TALLY_TTL_SECONDS = 86400;
 
     /**
@@ -65,23 +68,39 @@ final class CompassStats
      * about half a second at 28k runs, and the public aggregate is rebuilt
      * after every single submission.
      *
-     * A count check makes this self-correcting: if the number of runs in the
+     * Two things keep it honest. A count check: if the number of runs in the
      * table no longer matches the tally (a run was withdrawn, or rows were
      * removed some other way) the tally is thrown away and rebuilt in full.
+     * And a fixed deadline: a tally is rebuilt in full a day after it was first
+     * built, however many runs were folded into it since, so a correction made
+     * to an existing run (which leaves the count unchanged) is picked up within
+     * a day rather than never.
      *
-     * @return array{lastId: int, total: int, byVersion: array<string, int>, bySpectrum: array<string, array<string, int>>, axis: array<string, array<string, array{0: float, 1: int}>>, questions: array<string, array<string, array{0: int, 1: array<int, int>}>>, align: array<string, float>}
+     * @return array{builtAt: int, lastId: int, total: int, byVersion: array<string, int>, bySpectrum: array<string, array<string, int>>, axis: array<string, array<string, array{0: float, 1: int}>>, questions: array<string, array<string, array{0: int, 1: array<int, int>}>>, align: array<string, float>}
      */
     public static function tally(): array
     {
+        $now = now()->getTimestamp();
         $cached = Cache::get(self::TALLY_KEY);
-        $tally = self::fold(is_array($cached) ? $cached : self::emptyTally());
+
+        // Trust the cached tally only until its own deadline. The cache entry is
+        // also written to expire then, but the check does not depend on that.
+        if (! is_array($cached) || ! isset($cached['builtAt']) || $now - $cached['builtAt'] >= self::TALLY_TTL_SECONDS) {
+            $cached = null;
+        }
+
+        $tally = self::fold($cached ?? self::emptyTally());
 
         if ($tally['total'] !== self::anonymousRuns()->count()) {
             $tally = self::fold(self::emptyTally());
         }
 
         if ($tally !== $cached) {
-            Cache::put(self::TALLY_KEY, $tally, self::TALLY_TTL_SECONDS);
+            // Expire at the deadline of the original build, not a day from now:
+            // a put with the full lifetime on every new run would push the
+            // rebuild back for as long as people kept submitting.
+            $remaining = max(1, self::TALLY_TTL_SECONDS - ($now - $tally['builtAt']));
+            Cache::put(self::TALLY_KEY, $tally, $remaining);
         }
 
         return $tally;
@@ -97,6 +116,7 @@ final class CompassStats
     private static function emptyTally(): array
     {
         return [
+            'builtAt' => now()->getTimestamp(),
             'lastId' => 0,
             'total' => 0,
             'byVersion' => ['short' => 0, 'standard' => 0, 'full' => 0],

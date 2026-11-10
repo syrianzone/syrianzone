@@ -201,6 +201,34 @@ it('rebuilds the compass tally when a run is withdrawn', function () {
         ->and($stats['axisAverages']['all']['auth_lib'])->toEqual(1.0);
 });
 
+it('rebuilds the compass tally a day after it was built, however many runs arrive', function () {
+    $builtAt = now();
+    $corrected = tallyRun(['scores' => ['auth_lib' => 1.0]]);
+    expect(inertiaProp($this->get('/compass/stats'), 'stats.axisAverages.all.auth_lib'))->toEqual(1.0);
+
+    // A steady trickle of submissions must not push the rebuild back.
+    foreach ([8, 16, 23] as $hours) {
+        $this->travelTo($builtAt->copy()->addHours($hours));
+        tallyRun(['scores' => ['auth_lib' => 1.0]]);
+        Cache::forget(CompassController::PUBLIC_STATS_CACHE_KEY);
+        $this->get('/compass/stats')->assertOk();
+    }
+
+    // A correction to an existing run: the row count does not change, so only
+    // the deadline can pick it up.
+    DB::table('compass_results')->where('id', $corrected->id)->update(['scores' => json_encode(['auth_lib' => -1.0])]);
+
+    Cache::forget(CompassController::PUBLIC_STATS_CACHE_KEY);
+    expect(inertiaProp($this->get('/compass/stats'), 'stats.axisAverages.all.auth_lib'))->toEqual(1.0);
+
+    // 25 hours after the tally was first built.
+    $this->travelTo($builtAt->copy()->addHours(25));
+    Cache::forget(CompassController::PUBLIC_STATS_CACHE_KEY);
+
+    // (-1 + 1 + 1 + 1) / 4
+    expect(inertiaProp($this->get('/compass/stats'), 'stats.axisAverages.all.auth_lib'))->toEqual(0.5);
+});
+
 it('never counts a signed-in or non-consenting run in the tally', function () {
     tallyRun();
     tallyRun(['stats_consent' => false]);

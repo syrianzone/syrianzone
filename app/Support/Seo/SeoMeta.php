@@ -20,6 +20,9 @@ use Illuminate\Http\Request;
  */
 class SeoMeta
 {
+    /** Request attribute the resolved metadata is memoised under. */
+    private const ATTRIBUTE = 'seo_meta';
+
     /**
      * Fixed pages: path => [title, description, type?, image?].
      *
@@ -308,8 +311,8 @@ class SeoMeta
     {
         // Resolved once per request: the view composer and the Inertia shared
         // prop both ask for it on a full page load.
-        if ($request->attributes->has('seo_meta')) {
-            return $request->attributes->get('seo_meta');
+        if ($request->attributes->has(self::ATTRIBUTE)) {
+            return $request->attributes->get(self::ATTRIBUTE);
         }
 
         $path = '/'.trim($request->path(), '/');
@@ -349,9 +352,32 @@ class SeoMeta
             'json_ld' => self::jsonLd($path, $schema, $title, $description, $canonical, $base),
         ];
 
-        $request->attributes->set('seo_meta', $meta);
+        $request->attributes->set(self::ATTRIBUTE, $meta);
 
         return $meta;
+    }
+
+    /**
+     * Replaces parts of the metadata already resolved for this request, for a
+     * response that is not the page its URL names (a 404 above all). The
+     * structured data is rebuilt so it never describes the missing page.
+     *
+     * @param  array{title?:string,description?:string,robots?:string}  $changes
+     */
+    public static function override(Request $request, array $changes): void
+    {
+        $meta = array_merge(self::resolve($request), $changes);
+        $base = rtrim((string) config('seo.base_url'), '/');
+        $meta['json_ld'] = self::jsonLd(
+            '/'.trim($request->path(), '/'),
+            'WebPage',
+            $meta['title'],
+            $meta['description'],
+            $meta['canonical'],
+            $base,
+        );
+
+        $request->attributes->set(self::ATTRIBUTE, $meta);
     }
 
     /**

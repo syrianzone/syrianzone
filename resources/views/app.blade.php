@@ -7,12 +7,12 @@
     {{-- links the browser pageload trace to the backend request that rendered it --}}
     {!! \Sentry\Laravel\Integration::sentryMeta() !!}
 
-    {{-- Server-rendered SEO fallback, used whenever Inertia SSR is off or the
-         SSR gateway returns null. When SSR succeeds, the single <SeoHead>
-         component renders these same values from the shared `seo` prop via
-         @inertiaHead, so rendering them here too would duplicate them.
-         One source of truth either way. See docs/guidelines/seo.md. --}}
-    @unless (isset($page) && app(\Inertia\Ssr\SsrState::class)->setPage($page)->dispatch())
+    {{-- Per-page SEO and share-preview tags, printed here on every response.
+         They never depend on the React tree or on the SSR process: a page that
+         renders nothing on the server, or an SSR outage, still sends a
+         complete <head> to crawlers and link-preview scrapers. Each tag
+         carries `inertia` so <SeoHead> replaces it, rather than duplicating
+         it, during client-side navigation. See docs/guidelines/seo.md. --}}
     <title inertia>{{ $meta['title'] ?? config('app.name', 'المساحة السورية | Syrian Zone') }}</title>
 
     @isset($meta)
@@ -43,7 +43,6 @@
     <script type="application/ld+json" inertia>{!! $meta['json_ld'] !!}</script>
     @endif
     @endisset
-    @endunless
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

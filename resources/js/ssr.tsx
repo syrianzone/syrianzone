@@ -6,15 +6,14 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { QueryProvider } from '@/Providers/QueryProvider';
 import { DirectionProvider } from '@radix-ui/react-direction';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Syrian Zone';
-
 createServer((page) =>
     createInertiaApp({
         page,
         render: ReactDOMServer.renderToString,
-        // SeoHead supplies the full title (already carrying the brand); keep the
-        // callback identity so the app name is not appended twice.
-        title: (title) => title || appName,
+        // The root Blade view prints the page title. Returning the title as
+        // given (and nothing for an empty one) keeps the SSR head from adding
+        // a second, generic <title> next to it.
+        title: (title) => title,
         resolve: (name) =>
             resolvePageComponent(
                 `./Pages/${name}.tsx`,

@@ -1,17 +1,15 @@
 import { Head, usePage } from '@inertiajs/react';
 
 /**
- * The single renderer of per-page <head> metadata.
+ * Keeps the per-page <head> metadata in step with client-side navigation.
  *
- * Values come from the `seo` Inertia shared prop, resolved server-side once per
- * request by App\Support\Seo\SeoMeta (title, description, canonical, robots,
- * OpenGraph, Twitter, JSON-LD). Because it lives in the layout, every page gets
- * it and SPA navigation updates it from the fresh shared prop.
- *
- * When Inertia SSR is off (or unreachable), the root view renders the same
- * values server-side for non-JS crawlers; when SSR succeeds, this component is
- * rendered by the SSR process. Either way there is one source of truth.
- * See docs/guidelines/seo.md.
+ * The tags themselves are printed by the root Blade view on every full page
+ * load, from the same `seo` shared prop (resolved once per request by
+ * App\Support\Seo\SeoMeta). That makes them independent of what a page renders
+ * on the server. This component therefore renders nothing during SSR, where it
+ * would only duplicate them; in the browser it takes the server-printed tags
+ * over (they carry the `inertia` attribute) and updates them as the visitor
+ * moves between pages. See docs/guidelines/seo.md.
  */
 export interface SeoData {
   title: string;
@@ -28,7 +26,7 @@ export interface SeoData {
 
 export default function SeoHead() {
   const { seo } = usePage<{ seo?: SeoData }>().props;
-  if (!seo) return null;
+  if (!seo || typeof window === 'undefined') return null;
 
   return (
     <Head>

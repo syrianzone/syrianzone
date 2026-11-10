@@ -28,9 +28,9 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        // Server-render per-page SEO metadata for the initial HTML response.
-        // Inertia SSR is off, so social scrapers (which don't run JS) would
-        // otherwise see only the generic app title. See docs/guidelines/seo.md.
+        // Per-page SEO and share-preview metadata for the root view, which
+        // prints it on every response so crawlers and link-preview scrapers
+        // never depend on JavaScript or on SSR. See docs/guidelines/seo.md.
         View::composer('app', function ($view) {
             $view->with('meta', \App\Support\Seo\SeoMeta::resolve(request()));
         });

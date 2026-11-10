@@ -48,6 +48,7 @@ final class TransitRoutePreview implements CardSource, PreviewResolver
 
         return new Preview(
             title: $route->name_ar.' | مواصلات '.$city,
+            shareTitle: $route->name_ar,
             description: 'مسار ومواقف '.$route->name_ar.' في '.$city.' على خريطة ترانزيت سوريا.',
             canonicalPath: $path,
             image: $this->describe($route)->url(),

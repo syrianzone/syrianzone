@@ -72,7 +72,10 @@ test('the place tags reach the html a scraper reads', function () {
 
     $html = $this->get('/mishwar?place='.$place->id)->assertOk()->getContent();
 
-    expect($html)->toContain('<meta property="og:title" content="بحيرة قطينة | مشوار" inertia>')
+    expect($html)->toContain('<title inertia>بحيرة قطينة | مشوار</title>')
+        ->and($html)->toContain('<meta property="og:title" content="بحيرة قطينة" inertia>')
+        ->and($html)->toContain('<meta name="twitter:title" content="بحيرة قطينة" inertia>')
+        ->and($html)->toContain('<meta property="og:image:alt" content="بحيرة قطينة" inertia>')
         ->and($html)->toContain('<meta property="og:url" content="https://syrian.zone/mishwar?place='.$place->id.'" inertia>')
         ->and($html)->toContain('<link rel="canonical" href="https://syrian.zone/mishwar" inertia>')
         ->and($html)->toContain('content="https://syrian.zone/og/r/place/'.$place->id.'.png?v=');

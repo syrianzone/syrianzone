@@ -21,19 +21,17 @@
     <meta name="robots" content="{{ $meta['robots'] }}" inertia>
     <meta property="og:site_name" content="{{ config('seo.site_name', 'Syrian Zone') }}" inertia>
     <meta property="og:locale" content="ar_SY" inertia>
-    <meta property="og:title" content="{{ $meta['title'] }}" inertia>
+    <meta property="og:title" content="{{ $meta['og_title'] }}" inertia>
     <meta property="og:description" content="{{ $meta['description'] }}" inertia>
     <meta property="og:type" content="{{ $meta['type'] }}" inertia>
     <meta property="og:url" content="{{ $meta['url'] }}" inertia>
     <meta property="og:image" content="{{ $meta['image'] }}" inertia>
+    <meta property="og:image:type" content="{{ $meta['image_type'] }}" inertia>
     <meta property="og:image:width" content="1200" inertia>
     <meta property="og:image:height" content="630" inertia>
-    <meta property="og:image:alt" content="{{ $meta['title'] }}" inertia>
-    @isset($meta['audio'])
-    <meta property="og:audio" content="{{ $meta['audio'] }}" inertia>
-    @endisset
+    <meta property="og:image:alt" content="{{ $meta['og_title'] }}" inertia>
     <meta name="twitter:card" content="summary_large_image" inertia>
-    <meta name="twitter:title" content="{{ $meta['title'] }}" inertia>
+    <meta name="twitter:title" content="{{ $meta['og_title'] }}" inertia>
     <meta name="twitter:description" content="{{ $meta['description'] }}" inertia>
     <meta name="twitter:image" content="{{ $meta['image'] }}" inertia>
     @if (!empty($meta['twitter_site'] ?? config('seo.twitter_site')))

@@ -21,6 +21,7 @@ final class GuessWhoRoomPreview implements PreviewResolver
 
         return new Preview(
             title: 'دعوة للعب «من هو؟» | Syrian Zone',
+            shareTitle: 'دعوة للعب «من هو؟»',
             description: 'صديقك يدعوك إلى غرفة لعب مباشرة في «من هو؟». اطرح الأسئلة واستبعد الشخصيات لتكشف بطاقته السرّية.',
             canonicalPath: $path,
             image: StaticCards::url('guesswho-invite'),

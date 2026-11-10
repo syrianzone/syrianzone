@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Poll;
 use App\Support\Seo\Og\StaticCards;
 use App\Support\Seo\SeoMeta;
 use Illuminate\Http\Request;
@@ -59,4 +60,44 @@ test('the committed cards are up to date with their copy, templates and artwork'
     $check = Process::path(base_path())->timeout(120)->run(['node', 'scripts/og/build.mjs', '--check']);
 
     expect($check->exitCode())->toBe(0, $check->errorOutput() ?: $check->output());
+});
+
+test('a link preview shows the page name alone; the browser tab adds the site name', function () {
+    foreach (SeoMeta::pagePaths() as $path) {
+        $meta = SeoMeta::resolve(Request::create($path, 'GET'));
+
+        if ($path === '/') {
+            expect($meta['title'])->toBe($meta['og_title']);
+
+            continue;
+        }
+
+        expect($meta['title'])->toBe($meta['og_title'].' | Syrian Zone')
+            ->and($meta['og_title'])->not->toContain('Syrian Zone')->not->toContain('syrian.zone');
+    }
+});
+
+test('record previews show the record name without its section suffix', function () {
+    $poll = Poll::factory()->create(['slug' => 'governors', 'title' => 'تقييم المحافظين']);
+    $meta = SeoMeta::resolve(Request::create('/polls/governors', 'GET'));
+
+    expect($meta['title'])->toBe('تقييم المحافظين | استطلاعات سوريا زون')
+        ->and($meta['og_title'])->toBe('تقييم المحافظين');
+});
+
+test('the head declares the card type and size, and the site account', function () {
+    $html = $this->get('/promises')->assertOk()->getContent();
+
+    expect($html)->toContain('<meta property="og:image:type" content="image/png" inertia>')
+        ->and($html)->toContain('<meta property="og:image:width" content="1200" inertia>')
+        ->and($html)->toContain('<meta property="og:image:height" content="630" inertia>')
+        ->and($html)->toContain('<meta name="twitter:site" content="@SyrianZone" inertia>')
+        ->and($html)->toContain('<meta property="og:title" content="عداد الوعود" inertia>')
+        ->and($html)->toContain('<title inertia>عداد الوعود | Syrian Zone</title>');
+});
+
+test('a missing page previews with its own title too', function () {
+    $html = $this->get('/no-such-page')->assertNotFound()->getContent();
+
+    expect($html)->toContain('<meta property="og:title" content="الصفحة غير موجودة (404)" inertia>');
 });

@@ -41,6 +41,7 @@ final class TransitCityPreview implements CardSource, PreviewResolver
 
         return new Preview(
             title: 'مواصلات '.$city->name_ar.' | ترانزيت',
+            shareTitle: 'مواصلات '.$city->name_ar,
             description: 'خريطة خطوط المواصلات العامة والسرافيس والمواقف في '.$city->name_ar.' على ترانزيت سوريا.',
             canonicalPath: $path,
             image: $this->describe($city)->url(),

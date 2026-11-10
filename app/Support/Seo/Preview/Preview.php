@@ -15,6 +15,10 @@ final readonly class Preview
      * @param  string|null  $sharePath  path and query for og:url when the shared
      *                                  link is narrower than the canonical page
      *                                  (a record opened through a query string)
+     * @param  string|null  $shareTitle  the title a link preview shows, when it
+     *                                   should differ from the document title:
+     *                                   the page or record's own name, without
+     *                                   the site or section suffix
      */
     public function __construct(
         public string $title,
@@ -26,5 +30,6 @@ final readonly class Preview
         public string $schema = 'WebPage',
         public ?array $parent = null,
         public ?string $sharePath = null,
+        public ?string $shareTitle = null,
     ) {}
 }

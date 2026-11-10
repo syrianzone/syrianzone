@@ -23,6 +23,7 @@ final class PrioritiesSharePreview implements PreviewResolver
 
         return new Preview(
             title: 'أولوياتي لسوريا المستقبل | Syrian Zone',
+            shareTitle: 'أولوياتي لسوريا المستقبل',
             description: 'شاهد ترتيبي لأولويات سوريا المستقبل، ثم رتّب أولوياتك وقارن بينهما.',
             canonicalPath: '/priorities',
             image: StaticCards::url('priorities-share'),

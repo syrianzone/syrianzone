@@ -21,30 +21,35 @@ class SeoMeta
     /** Request attribute the resolved metadata is memoised under. */
     private const ATTRIBUTE = 'seo_meta';
 
+    /** Appended to a fixed page's title for the browser tab and search results. */
+    private const TITLE_SUFFIX = ' | Syrian Zone';
+
     /**
-     * Fixed pages: path => [title, description, type?, image?]. Each page's
+     * Fixed pages: path => [title, description, type?, suffix?]. Each page's
      * share card is listed in resources/og/cards.json (see Og\StaticCards).
      *
-     * Titles include the site suffix already, matching what the browser tab
-     * shows, so the client and server never disagree.
+     * `title` is the page's own name. The document title adds TITLE_SUFFIX
+     * (unless `suffix` is false); a link preview shows the bare title, because
+     * there the site name already travels in og:site_name.
      */
     private const PAGES = [
         '/' => [
             'title' => 'المساحة السورية — منصة سورية مفتوحة المصدر',
             'description' => 'المساحة السورية - منصة تفاعلية تجمع وتوفر الموارد والخدمات والمعلومات المفتوحة المتعلقة بالشأن السوري من استطلاعات رأي، وأدلة رسمية، وأطلس، وترانزيت، وهويات بصرية.',
+            'suffix' => false, // the title is the brand itself
         ],
         '/tierlist' => [
-            'title' => 'تير ليست الحكومة السورية | Syrian Zone',
+            'title' => 'تير ليست الحكومة السورية',
             'description' => 'شارك في تقييم وتصنيف أداء أعضاء الحكومة السورية الجديدة عبر منصة تير ليست تفاعلية وشاركه مع الآخرين.',
             'type' => 'article',
         ],
         '/tierlist/leaderboard' => [
-            'title' => 'نتائج تقييم الحكومة السورية | Syrian Zone',
+            'title' => 'نتائج تقييم الحكومة السورية',
             'description' => 'إحصائيات ونتائج تصويت تير ليست الحكومة السورية، المحافظين، والشخصيات العامة ببيانات تفاعلية محدثة.',
             'type' => 'article',
         ],
         '/polls' => [
-            'title' => 'الاستبيانات واستطلاعات الرأي | Syrian Zone',
+            'title' => 'الاستبيانات واستطلاعات الرأي',
             'description' => 'شارك في الاستبيانات واستطلاعات الرأي المجتمعية حول مختلف القضايا والشؤون السورية.',
         ],
         '/mishwar' => [
@@ -60,109 +65,109 @@ class SeoMeta
             'description' => 'استوديو ترانزيت - ارسم خطوط المواصلات العامة، أضف المواقف، وشارك مسارك لمدن سوريا على الخريطة.',
         ],
         '/syofficial' => [
-            'title' => 'الحسابات الرسمية السورية | Syrian Zone',
+            'title' => 'الحسابات الرسمية السورية',
             'description' => 'دليل الحسابات والجهات الرسمية السورية الموثقة على منصات التواصل، مصنّف حسب القطاعات والجهات.',
         ],
         '/phonebook' => [
-            'title' => 'دليل الهاتف والواتساب الخدمي | Syrian Zone',
+            'title' => 'دليل الهاتف والواتساب الخدمي',
             'description' => 'دليل أرقام الهواتف وخطوط الواتساب الرسمية للجهات الحكومية والخدمية السورية. أرقام الطوارئ، الشكاوى، والمؤسسات الرسمية.',
         ],
         '/govapps' => [
-            'title' => 'دليل التطبيقات والخدمات الحكومية | Syrian Zone',
+            'title' => 'دليل التطبيقات والخدمات الحكومية',
             'description' => 'دليل تفاعلي لاستكشاف، ومتابعة، وتقييم التطبيقات والخدمات الإلكترونية الصادرة عن الجهات الحكومية السورية.',
         ],
         '/sites' => [
-            'title' => 'دليل المواقع السورية | Syrian Zone',
+            'title' => 'دليل المواقع السورية',
             'description' => 'دليل تفاعلي شامل للمواقع الإلكترونية والخدمات والمنصات السورية المفيدة بمختلف المجالات.',
         ],
         '/party' => [
-            'title' => 'دليل الأحزاب والقوى السياسية | Syrian Zone',
+            'title' => 'دليل الأحزاب والقوى السياسية',
             'description' => 'دليل تفاعلي للتعرف على الأحزاب، والتنظيمات، والقوى السياسية والمدنية الفاعلة في الساحة السورية.',
         ],
         '/house' => [
-            'title' => 'المجلس التشريعي السوري 2026 | Syrian Zone',
+            'title' => 'المجلس التشريعي السوري 2026',
             'description' => 'التشكيلة النهائية لمجلس الشعب السوري 2026: مخطط القاعة، إحصائيات، وقائمة الأعضاء. المصدر: مركز عمران للدراسات الاستراتيجية.',
             'type' => 'article',
         ],
         '/justice' => [
-            'title' => 'العدالة الانتقالية | Syrian Zone',
+            'title' => 'العدالة الانتقالية',
             'description' => 'العدالة الانتقالية - قوائم وإحصائيات رموز نظام الأسد والمجرمين الموقوفين لدى وزارة الداخلية السورية وهيكل القيادة العسكرية والأمنية.',
             'type' => 'article',
         ],
         '/crossings' => [
-            'title' => 'الحالة الفنية للمنافذ الحدودية في سوريا | Syrian Zone',
+            'title' => 'الحالة الفنية للمنافذ الحدودية في سوريا',
             'description' => 'متابعة الحالة الفنية وساعات العمل للمنافذ الحدودية السورية والمعابر البرية، مع أرقام التواصل والمواقع.',
         ],
         '/atlas' => [
-            'title' => 'أطلس سوريا التفاعلي | Syrian Zone',
+            'title' => 'أطلس سوريا التفاعلي',
             'description' => 'أطلس سوريا التفاعلي - منصة لاستكشاف البيانات السكانية والجغرافية والإحصائية التفصيلية لمختلف المحافظات والمدن السورية.',
         ],
         '/syid' => [
-            'title' => 'الهوية البصرية السورية | syrian.zone',
+            'title' => 'الهوية البصرية السورية',
             'description' => 'عناصر الهوية البصرية السورية - دليل وموارد غير رسمية تشمل الألوان والخطوط وخريطة سوريا ونسب العلم السوري وتطبيقاته.',
         ],
         '/muslim' => [
-            'title' => 'الركن الإسلامي | Syrian Zone',
+            'title' => 'الركن الإسلامي',
             'description' => 'الركن الإسلامي - مواقيت الصلاة، قارئ القرآن بالرسم العثماني، وإذاعة القرآن الكريم، في مكان واحد.',
         ],
         '/muslim/prayer' => [
-            'title' => 'مواقيت الصلاة | الركن الإسلامي | Syrian Zone',
+            'title' => 'مواقيت الصلاة | الركن الإسلامي',
             'description' => 'مواقيت الصلاة اليومية في سوريا حسب مدينتك وطريقة الحساب، مع عدّاد للصلاة القادمة وتتبّع الصلوات المنجزة.',
         ],
         '/muslim/quran' => [
-            'title' => 'قارئ القرآن | الركن الإسلامي | Syrian Zone',
+            'title' => 'قارئ القرآن | الركن الإسلامي',
             'description' => 'قارئ القرآن بالرسم العثماني مع التلاوة الصوتية، تتبّع الآيات والكلمات، وعلامات الحفظ — يعمل دون اتصال.',
         ],
         '/muslim/radio' => [
-            'title' => 'إذاعة القرآن | الركن الإسلامي | Syrian Zone',
+            'title' => 'إذاعة القرآن | الركن الإسلامي',
             'description' => 'إذاعة القرآن الكريم وتلاوة مستمرة مع اختيار القارئ ومؤقت للنوم ومشغّل مصغّر يتابع القراءة.',
         ],
         '/roznama' => [
-            'title' => 'الروزنامة السورية | Syrian Zone',
+            'title' => 'الروزنامة السورية',
             'description' => 'الروزنامة السورية الرسمية: التوقيت المحلي، التاريخ الهجري والميلادي بأسماء الأشهر السورية، مواقيت الصلاة، والأعياد والعطل الرسمية للدولة السورية بموجب المرسوم 188 لعام 2025.',
         ],
         '/priorities' => [
-            'title' => 'أولويات سوريا المستقبل | Syrian Zone',
+            'title' => 'أولويات سوريا المستقبل',
             'description' => 'رتب أولوياتك للجمهورية العربية السورية المستقبلية وشاركها مع المجتمع عبر بطاقات مخصصة وتفاعلية.',
         ],
         '/compass' => [
-            'title' => 'بوصلة سوريا | Syrian Zone',
+            'title' => 'بوصلة سوريا',
             'description' => 'اكتشف موقعك السياسي على أحد عشر محوراً عبر اختبار بوصلة سوريا التفاعلي، وقارن نتائجك مع الشخصيات والقوى السياسية.',
         ],
         '/promises' => [
-            'title' => 'عداد الوعود | Syrian Zone',
+            'title' => 'عداد الوعود',
             'description' => 'سجل علني موثّق بالمصادر لوعود المسؤولين السوريين منذ 8 كانون الأول 2024، مع عدّاد تنازلي لكل وعد وما تحقق منه.',
         ],
         '/promises/suggest' => [
-            'title' => 'اقترح وعداً — عداد الوعود | Syrian Zone',
+            'title' => 'اقترح وعداً — عداد الوعود',
             'description' => 'أرسل وعداً علنياً أطلقه مسؤول سوري مع رابط المصدر، ليراجعه المحررون ويضيفوه إلى عداد الوعود.',
         ],
         '/compass/stats' => [
-            'title' => 'إحصاءات بوصلة سوريا | Syrian Zone',
+            'title' => 'إحصاءات بوصلة سوريا',
             'description' => 'إحصاءات مجمّعة ومجهولة الهوية عن نتائج بوصلة سوريا عبر المحاور والفئات والمشاركات.',
         ],
         '/alignment' => [
-            'title' => 'مواءمة البوصلة السياسية | Syrian Zone',
+            'title' => 'مواءمة البوصلة السياسية',
             'description' => 'أداة مواءمة البوصلة السياسية السورية - قارن توجهاتك وميولك مع المكونات والقوى السياسية المختلفة.',
         ],
         '/games' => [
-            'title' => 'الألعاب | Syrian Zone',
+            'title' => 'الألعاب',
             'description' => 'مجموعة ألعاب سورية تفاعلية: 2048، سوليتير، طرنيب، تركس، ومن هو؟ — العب مجاناً على المساحة السورية.',
         ],
-        '/games/2048' => ['title' => '2048 | الألعاب | Syrian Zone', 'description' => 'لعبة 2048 الكلاسيكية على المساحة السورية - حرّك المربعات واجمع الأرقام للوصول إلى 2048.'],
-        '/games/solitare' => ['title' => 'سوليتير | الألعاب | Syrian Zone', 'description' => 'لعبة سوليتير (كلوندايك) الكلاسيكية - رتّب البطاقات على أربعة أسس.'],
-        '/games/tarneeb' => ['title' => 'طرنيب | الألعاب | Syrian Zone', 'description' => 'لعبة الطرنيب الشهيرة - العب مع شريكك ضد فريق الخصوم واجمع الطلبات.'],
-        '/games/trix' => ['title' => 'تركس | الألعاب | Syrian Zone', 'description' => 'لعبة التركس الشهيرة - العب الفريقين أو اليهودية واستمتع بالذكاء والتخطيط.'],
+        '/games/2048' => ['title' => '2048 | الألعاب', 'description' => 'لعبة 2048 الكلاسيكية على المساحة السورية - حرّك المربعات واجمع الأرقام للوصول إلى 2048.'],
+        '/games/solitare' => ['title' => 'سوليتير | الألعاب', 'description' => 'لعبة سوليتير (كلوندايك) الكلاسيكية - رتّب البطاقات على أربعة أسس.'],
+        '/games/tarneeb' => ['title' => 'طرنيب | الألعاب', 'description' => 'لعبة الطرنيب الشهيرة - العب مع شريكك ضد فريق الخصوم واجمع الطلبات.'],
+        '/games/trix' => ['title' => 'تركس | الألعاب', 'description' => 'لعبة التركس الشهيرة - العب الفريقين أو اليهودية واستمتع بالذكاء والتخطيط.'],
         '/guesswho' => [
-            'title' => 'لعبة من هو؟ - Guess Who | Syrian Zone',
+            'title' => 'لعبة من هو؟ - Guess Who',
             'description' => "تحدّ صديقك في لعبة التخمين الشهيرة 'من هو؟' بالاتصال المباشر! اطرح الأسئلة واستبعد الشخصيات لتكشف بطاقة خصمك السرية.",
         ],
         '/board' => [
-            'title' => 'لوحتي | لوحة أدواتك اليومية المخصصة في سوريا زون',
+            'title' => 'لوحتي | لوحة أدواتك اليومية المخصصة',
             'description' => 'لوح أدوات مخصص: الطقس، مواقيت الصلاة، المهام، الملاحظات، الأخبار، والمزيد في لوحة واحدة قابلة للتخصيص.',
         ],
         '/syrian-contributors' => [
-            'title' => 'أفضل المساهمين السوريين في GitHub | Syrian Zone',
+            'title' => 'أفضل المساهمين السوريين في GitHub',
             'description' => 'قائمة وتصنيف لأكثر المطورين والمبرمجين السوريين مساهمةً في المشاريع مفتوحة المصدر على GitHub على المستويات اليومية والشهرية والسنوية.',
         ],
         '/shawarma' => [
@@ -170,19 +175,19 @@ class SeoMeta
             'description' => 'تقييم وتصنيف محلات الشاورما السورية الشهيرة - قائمة مكدوس لأفضل محلات الشاورما.',
         ],
         '/stats' => [
-            'title' => 'إحصائيات المنصة | Syrian Zone',
+            'title' => 'إحصائيات المنصة',
             'description' => 'إحصائيات وتقارير تفاعلية حول المنصة وزوارها والنشاط العام في المساحة السورية.',
         ],
         '/about' => [
-            'title' => 'عن المنصة | Syrian Zone',
+            'title' => 'عن المنصة',
             'description' => 'تعرف على منصة المساحة السورية (Syrian Zone) - مشروع تفاعلي غير تجاري ومفتوح المصدر يقدم أدوات وموارد بالشأن السوري.',
         ],
         '/privacy' => [
-            'title' => 'سياسة الخصوصية | Syrian Zone',
+            'title' => 'سياسة الخصوصية',
             'description' => 'سياسة الخصوصية لمنصة المساحة السورية - تعرف على كيفية حماية بياناتك والتقنيات المستخدمة.',
         ],
         '/terms' => [
-            'title' => 'الشروط والأحكام | Syrian Zone',
+            'title' => 'الشروط والأحكام',
             'description' => 'الشروط والأحكام لمنصة المساحة السورية - شروط الاستخدام، السلوك المقبول، وحدود المسؤولية.',
         ],
     ];
@@ -265,7 +270,7 @@ class SeoMeta
     }
 
     /**
-     * @return array{title:string,description:string,type:string,image:string,url:string,canonical:string,robots:string,json_ld:string,twitter_site:?string}
+     * @return array{title:string,og_title:string,description:string,type:string,image:string,image_type:string,url:string,canonical:string,robots:string,json_ld:string,twitter_site:?string}
      */
     public static function resolve(Request $request): array
     {
@@ -290,9 +295,12 @@ class SeoMeta
 
         $meta = [
             'title' => $preview->title,
+            // The title a link preview shows: the page or record's own name.
+            'og_title' => $preview->shareTitle ?? $preview->title,
             'description' => $preview->description,
             'type' => $preview->type,
             'image' => self::absolute($preview->image, $base),
+            'image_type' => str_contains($preview->image, '.jpg') ? 'image/jpeg' : 'image/png',
             // What a share points at. Usually the canonical page; for a record
             // opened through a query string it keeps that parameter, so each
             // record previews as itself instead of collapsing into its section.
@@ -309,7 +317,7 @@ class SeoMeta
     }
 
     /** A page listed in PAGES, with its card from resources/og/cards.json. */
-    private static function fixedPage(string $path): ?Preview
+    public static function fixedPage(string $path): ?Preview
     {
         $page = self::PAGES[$path] ?? null;
         if ($page === null) {
@@ -317,7 +325,8 @@ class SeoMeta
         }
 
         return new Preview(
-            title: $page['title'],
+            title: $page['title'].(($page['suffix'] ?? true) ? self::TITLE_SUFFIX : ''),
+            shareTitle: $page['title'],
             description: $page['description'],
             canonicalPath: $path,
             image: StaticCards::forPath($path) ?? StaticCards::url(StaticCards::DEFAULT),
@@ -343,10 +352,13 @@ class SeoMeta
      * response that is not the page its URL names (a 404 above all). The
      * structured data is rebuilt so it never describes the missing page.
      *
-     * @param  array{title?:string,description?:string,robots?:string}  $changes
+     * @param  array{title?:string,og_title?:string,description?:string,robots?:string}  $changes
      */
     public static function override(Request $request, array $changes): void
     {
+        if (isset($changes['title'])) {
+            $changes['og_title'] ??= str($changes['title'])->beforeLast(self::TITLE_SUFFIX)->toString();
+        }
         $meta = array_merge(self::resolve($request), $changes);
         $base = rtrim((string) config('seo.base_url'), '/');
         $meta['json_ld'] = self::jsonLd(

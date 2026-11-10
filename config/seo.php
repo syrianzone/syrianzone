@@ -36,11 +36,12 @@ return [
     | Twitter
     |--------------------------------------------------------------------------
     |
-    | Optional @handle for twitter:site. Left null when the account is unknown.
+    | The @handle for twitter:site: the account the site's own cards are posted
+    | from. Set SEO_TWITTER_SITE to an empty value to leave the tag out.
     |
     */
 
-    'twitter_site' => env('SEO_TWITTER_SITE'),
+    'twitter_site' => env('SEO_TWITTER_SITE', '@SyrianZone'),
 
     /*
     |--------------------------------------------------------------------------

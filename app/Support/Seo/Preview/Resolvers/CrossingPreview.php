@@ -49,6 +49,7 @@ final class CrossingPreview implements CardSource, PreviewResolver
 
         return new Preview(
             title: $crossing['name'].' | المنافذ الحدودية',
+            shareTitle: $crossing['name'],
             description: $kind.$with.': الحالة وساعات العمل وأرقام التواصل والموقع على الخريطة.',
             canonicalPath: '/crossings',
             image: $this->describe($crossing)->url(),

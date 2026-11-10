@@ -61,6 +61,7 @@ final class PlacePreview implements CardSource, PreviewResolver
 
         return new Preview(
             title: $place->name.' | مشوار',
+            shareTitle: $place->name,
             description: Arabic::excerpt($place->description) ?: 'مكان '.$category.' على خريطة مشوار: الصور والموقع والتفاصيل.',
             // The map is one page; a place is a view of it, not a page to index.
             canonicalPath: '/mishwar',

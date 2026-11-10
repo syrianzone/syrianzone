@@ -5,10 +5,10 @@ namespace App\Support\Seo\Preview\Resolvers;
 use App\Models\Poll;
 use App\Support\Seo\Og\CardSource;
 use App\Support\Seo\Og\RecordCard;
-use App\Support\Seo\Og\StaticCards;
 use App\Support\Seo\Preview\DescribesCards;
 use App\Support\Seo\Preview\Preview;
 use App\Support\Seo\Preview\PreviewResolver;
+use App\Support\Seo\SeoMeta;
 use Illuminate\Http\Request;
 
 /** /polls/{slug} and /polls/{slug}/leaderboard: one poll and its results. */
@@ -49,22 +49,24 @@ final class PollPreview implements CardSource, PreviewResolver
         $leaderboard = isset($m[2]);
 
         if ($poll->slug === self::TIER_LIST_SLUG) {
+            $page = SeoMeta::fixedPage($leaderboard ? '/tierlist/leaderboard' : '/tierlist');
+
             return new Preview(
-                title: $leaderboard ? 'نتائج تقييم الحكومة السورية | Syrian Zone' : 'تير ليست الحكومة السورية | Syrian Zone',
-                description: $leaderboard
-                    ? 'إحصائيات ونتائج تصويت تير ليست الحكومة السورية، المحافظين، والشخصيات العامة ببيانات تفاعلية محدثة.'
-                    : 'شارك في تقييم وتصنيف أداء أعضاء الحكومة السورية الجديدة عبر منصة تير ليست تفاعلية وشاركه مع الآخرين.',
-                canonicalPath: $leaderboard ? '/tierlist/leaderboard' : '/tierlist',
-                image: StaticCards::url($leaderboard ? 'tierlist-leaderboard' : 'tierlist'),
+                title: $page->title,
+                description: $page->description,
+                canonicalPath: $page->canonicalPath,
+                image: $page->image,
                 type: 'article',
                 noindex: ! $poll->is_active,
                 schema: 'Article',
                 parent: self::PARENT,
+                shareTitle: $page->shareTitle,
             );
         }
 
         return new Preview(
             title: ($leaderboard ? 'نتائج ' : '').$poll->title.' | استطلاعات سوريا زون',
+            shareTitle: ($leaderboard ? 'نتائج ' : '').$poll->title,
             description: $leaderboard
                 ? 'إحصائيات ونتائج تصويت '.$poll->title.' على المساحة السورية.'
                 : 'شارك في استطلاع الرأي والتقييم المجتمعي لـ '.$poll->title.' وصوّت وشارك رأيك معنا.',

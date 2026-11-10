@@ -56,7 +56,8 @@ final class PromisePreview implements CardSource, PreviewResolver
 
         return new Preview(
             title: $promise->title.' — الوعد رقم '.$promise->number.' | عداد الوعود',
-            description: Arabic::excerpt(($speaker ? $speaker.': ' : '').($promise->summary ?: $promise->quote), 200),
+            shareTitle: $promise->title,
+            description: Arabic::excerpt(($speaker ? $speaker.': ' : '').($promise->summary ?: $promise->quote)),
             canonicalPath: '/promises/'.$promise->number,
             image: $this->describe($promise)->url(),
             type: 'article',

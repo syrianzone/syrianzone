@@ -3,14 +3,17 @@
 //   node scripts/og/preview.mjs [--out dir] [--samples file.json] [--meta file.json]
 //
 // Fixed pages come from resources/og/cards.json. Record cards (promises,
-// places, routes, ...) are drawn from a samples file, since they need data:
+// places, routes, ...) need data, so they are drawn from a samples file;
+// preview-samples.json is used unless another is given:
 //
-//   [{ "group": "Promises", "items": [{ "name": "...", "model": {...},
+//   [{ "group": "Promises", "note": "...", "items": [{ "name": "...", "model": {...},
 //       "meta": { "title": "...", "description": "...", "url": "..." }, "jpeg": false }] }]
 //
 // `--meta` maps a page path to the title and description its link preview
 // shows, so the sheet can mock the whole chat bubble and not only the image.
 // Every card is drawn in both colourways; the page has a switch between them.
+// Serve the output folder over HTTP to view it (for example
+// `python3 -m http.server --directory storage/app/og-preview`).
 
 import { execFileSync } from 'node:child_process'
 import { mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
@@ -23,7 +26,7 @@ const args = {}
 for (let i = 2; i < process.argv.length; i += 2) args[process.argv[i].replace(/^--/, '')] = process.argv[i + 1]
 
 const OUT = resolve(args.out ?? join(ROOT, 'storage', 'app', 'og-preview'))
-const samples = args.samples ? JSON.parse(readFileSync(args.samples, 'utf8')) : []
+const samples = JSON.parse(readFileSync(args.samples ?? join(ROOT, 'scripts', 'og', 'preview-samples.json'), 'utf8'))
 const meta = args.meta ? JSON.parse(readFileSync(args.meta, 'utf8')) : {}
 
 const THEMES = ['dark', 'light']

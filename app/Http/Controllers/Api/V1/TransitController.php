@@ -76,7 +76,7 @@ class TransitController extends Controller
             abort(404, 'City not found.');
         }
 
-        return ($id === 'damascus' || $id === 'rif-dimashq') ? ['damascus', 'rif-dimashq'] : [$id];
+        return City::mapGroup($id);
     }
 
     public function routes($id)
@@ -258,7 +258,7 @@ class TransitController extends Controller
         }
 
         $cityId = $request->input('city_id');
-        $cityIds = ($cityId === 'damascus' || $cityId === 'rif-dimashq') ? ['damascus', 'rif-dimashq'] : ($cityId ? [$cityId] : null);
+        $cityIds = is_string($cityId) && $cityId !== '' ? City::mapGroup($cityId) : null;
 
         $routeSearch = Route::search($query);
         if ($cityIds) {

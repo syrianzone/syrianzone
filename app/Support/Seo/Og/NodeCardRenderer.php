@@ -16,9 +16,9 @@ final class NodeCardRenderer implements CardRenderer
 {
     public function __construct(private readonly CardImages $images) {}
 
-    public function render(array $model, string $format = 'png'): string
+    public function render(array $model, string $format = 'png'): DrawnCard
     {
-        $model = $this->images->embed($model);
+        [$model, $complete] = $this->images->embed($model);
         $out = tempnam(sys_get_temp_dir(), 'og-card-');
         if ($out === false) {
             throw new CardRenderFailed('could not create a temporary file');
@@ -39,7 +39,7 @@ final class NodeCardRenderer implements CardRenderer
                 throw new CardRenderFailed('the renderer did not write a PNG');
             }
 
-            return $format === 'jpg' ? $this->toJpeg($png) : $png;
+            return new DrawnCard($format === 'jpg' ? $this->toJpeg($png) : $png, $complete);
         } catch (CardRenderFailed $e) {
             throw $e;
         } catch (\Throwable $e) {

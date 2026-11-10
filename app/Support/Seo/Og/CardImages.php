@@ -30,10 +30,15 @@ final class CardImages
 
     /**
      * @param  array<string, mixed>  $model
-     * @return array<string, mixed> the model with every image inlined or removed
+     * @return array{0: array<string, mixed>, 1: bool} the model with every
+     *                                                 image inlined or removed,
+     *                                                 and whether all of them
+     *                                                 could be loaded
      */
     public function embed(array $model): array
     {
+        $complete = true;
+
         foreach (self::SLOTS as $slot => [$width, $height]) {
             $source = data_get($model, $slot);
             if (! is_string($source) || $source === '') {
@@ -43,12 +48,13 @@ final class CardImages
             $inline = $this->inline($source, $width, $height);
             if ($inline === null) {
                 data_forget($model, $slot);
+                $complete = false;
             } else {
                 data_set($model, $slot, $inline);
             }
         }
 
-        return $model;
+        return [$model, $complete];
     }
 
     private function inline(string $source, int $width, int $height): ?string
@@ -97,12 +103,7 @@ final class CardImages
     {
         // A site-relative path is a file this application serves itself.
         if (str_starts_with($source, '/') && ! str_starts_with($source, '//')) {
-            $public = realpath(public_path());
-            $file = realpath(public_path(ltrim(strtok($source, '?') ?: '', '/')));
-
-            return $public && $file && str_starts_with($file, $public.DIRECTORY_SEPARATOR) && filesize($file) <= self::MAX_BYTES
-                ? (string) file_get_contents($file)
-                : null;
+            return $this->readLocal(ltrim(strtok($source, '?') ?: '', '/'));
         }
 
         $host = parse_url($source, PHP_URL_HOST);
@@ -121,6 +122,30 @@ final class CardImages
         ])->get($source);
 
         return $response->successful() && strlen($response->body()) <= self::MAX_BYTES ? $response->body() : null;
+    }
+
+    /**
+     * A file under the public directory, or an upload under /storage/. Uploads
+     * are read from the public disk itself: /storage is only a symlink to it,
+     * so resolving the path leads outside the public directory, and the link
+     * may not exist at all where this runs.
+     */
+    private function readLocal(string $relative): ?string
+    {
+        [$root, $file] = str_starts_with($relative, 'storage/')
+            ? [Storage::disk('public')->path(''), Storage::disk('public')->path(substr($relative, strlen('storage/')))]
+            : [public_path(), public_path($relative)];
+
+        // Resolved before comparing, so "../" cannot climb out of the root.
+        $root = realpath($root);
+        $file = realpath($file);
+        if ($root === false || $file === false || ! is_file($file)
+            || ! str_starts_with($file, rtrim($root, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR)
+            || filesize($file) > self::MAX_BYTES) {
+            return null;
+        }
+
+        return (string) file_get_contents($file);
     }
 
     /**

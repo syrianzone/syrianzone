@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\City;
 use App\Models\Place;
 use App\Models\PlacePhoto;
 use App\Support\Seo\Og\StaticCards;
@@ -138,6 +139,30 @@ test('a route link previews as the route on its city map', function () {
     }
     expect(deepLinkMeta('/transit/city/homs?route=damascus-001')['title'])->toBe('مواصلات حمص | ترانزيت')
         ->and(Previews::cardSource('route')->card('damascus-draft'))->toBeNull();
+});
+
+test('cities that share one map accept each other\'s routes', function () {
+    seedDeepLinkCity('damascus', 'دمشق');
+    seedDeepLinkCity('rif-dimashq', 'ريف دمشق');
+    seedDeepLinkCity('homs', 'حمص');
+    seedDeepLinkRoute('rif-001', 'rif-dimashq', 'صحنايا – نهر عيشة');
+    seedDeepLinkRoute('damascus-001', 'damascus', 'مزة جبل – كراج الست');
+
+    // The Damascus map shows the countryside's routes too, so this is the
+    // address the page itself produces when one of them is selected.
+    $meta = deepLinkMeta('/transit/city/damascus?route=rif-001');
+
+    expect($meta['title'])->toBe('صحنايا – نهر عيشة | مواصلات ريف دمشق')
+        ->and($meta['url'])->toBe('https://syrian.zone/transit/city/damascus?route=rif-001')
+        ->and($meta['canonical'])->toBe('https://syrian.zone/transit/city/damascus')
+        ->and($meta['image'])->toContain('/og/r/route/rif-001.png?v=')
+        ->and(deepLinkMeta('/transit/city/rif-dimashq?route=damascus-001')['og_title'])->toBe('مزة جبل – كراج الست')
+        // a city outside the shared map still does not claim the route
+        ->and(deepLinkMeta('/transit/city/homs?route=rif-001')['title'])->toBe('مواصلات حمص | ترانزيت');
+
+    expect(City::mapGroup('damascus'))->toBe(['damascus', 'rif-dimashq'])
+        ->and(City::mapGroup('rif-dimashq'))->toBe(['damascus', 'rif-dimashq'])
+        ->and(City::mapGroup('homs'))->toBe(['homs']);
 });
 
 test('route colours on the card are the ones the map uses', function () {

@@ -23,7 +23,7 @@ class OgDoctor extends Command
         $started = microtime(true);
 
         try {
-            $png = $renderer->render([
+            $card = $renderer->render([
                 'kind' => 'split',
                 'url' => 'syrian.zone',
                 'title' => 'المساحة السورية',
@@ -37,7 +37,7 @@ class OgDoctor extends Command
             return self::FAILURE;
         }
 
-        $this->info(sprintf('Share cards can be drawn (%d KB in %d ms).', strlen($png) / 1024, (microtime(true) - $started) * 1000));
+        $this->info(sprintf('Share cards can be drawn (%d KB in %d ms).', strlen($card->bytes) / 1024, (microtime(true) - $started) * 1000));
 
         return self::SUCCESS;
     }

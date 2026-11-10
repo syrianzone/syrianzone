@@ -2,6 +2,7 @@
 
 namespace App\Support\Seo\Preview\Resolvers;
 
+use App\Models\City;
 use App\Models\Route;
 use App\Support\Seo\Og\CardSource;
 use App\Support\Seo\Og\RecordCard;
@@ -39,8 +40,10 @@ final class TransitRoutePreview implements CardSource, PreviewResolver
             return null;
         }
 
+        // Some cities share one map (Damascus and its countryside), so a route
+        // of one is a valid selection on the page of the other.
         $route = $this->find($routeId);
-        if ($route === null || $route->city_id !== $m[1]) {
+        if ($route === null || ! in_array($route->city_id, City::mapGroup($m[1]), true)) {
             return null;
         }
 

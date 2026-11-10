@@ -174,13 +174,19 @@ php artisan og:doctor   # prove the renderer works in this environment
 1. Serves the file from `storage/app/og/` if this version was already drawn.
 2. Otherwise draws it under a lock: `CardImages` fetches and shrinks any photo,
    `NodeCardRenderer` runs `node scripts/og/render.mjs`, and `CardCache` stores
-   the result and deletes older versions of the same card.
+   the result.
 3. Falls back to the section card when the record is unknown or drawing fails.
+
+A card whose photo could not be loaded is still drawn, without it, but is kept
+as a `.partial` file: it is served with a short cache and drawn again after ten
+minutes, so the photo appears once the media host is back. Files of older
+versions are deleted ten minutes after they are replaced, not at once, because
+a request may already be about to open one.
 
 | Response | `Cache-Control` |
 | --- | --- |
-| Current version (`?v=` matches) | `public, max-age=31536000, immutable` |
-| Older or missing `?v=`, unknown record | `public, max-age=300` |
+| Current version (`?v=` matches), fully drawn | `public, max-age=31536000, immutable` |
+| Older or missing `?v=`, unknown record, or drawn without its photo | `public, max-age=300` |
 | Drawing failed | `public, max-age=30` |
 
 The version is a hash of everything the card shows plus the template recipe, so
@@ -190,8 +196,10 @@ Cloudflare caching it.
 
 `CardImages` only fetches photos over HTTPS from the site's own media hosts
 (plus `OG_IMAGE_HOSTS`), without following redirects, with a byte limit and a
-pixel limit, and re-encodes them before drawing. A photo that fails any check is
-left out and the card is drawn without it.
+pixel limit, and re-encodes them before drawing. A site-relative path is read
+from disk instead: `/storage/...` from the public disk, anything else from
+`public/`. A photo that fails any check is left out and the card is drawn
+without it.
 
 Node must be on the `PATH` of the PHP process (`OG_NODE_BINARY` overrides the
 binary). The production image already has it for the Inertia SSR server, and
@@ -231,7 +239,7 @@ Every fixed page has its own card at `/og/<slug>.png`; the slug is in
 | `/promises/{number}` | `PromisePreview` | `/og/r/promise/{number}.png` | published promises |
 | `/polls/{slug}`, `/polls/{slug}/leaderboard` | `PollPreview` | `/og/r/poll/{slug}.png` (the tier list poll uses its page cards) | active polls |
 | `/transit/city/{id}` | `TransitCityPreview` | `/og/r/city/{id}.png` | published cities |
-| `/transit/city/{id}?route={routeId}` | `TransitRoutePreview` | `/og/r/route/{routeId}.png` | no (canonical is the city) |
+| `/transit/city/{id}?route={routeId}` | `TransitRoutePreview` (accepts routes of any city on the same map, see `City::mapGroup()`) | `/og/r/route/{routeId}.png` | no (canonical is the city) |
 | `/mishwar?place={id}` | `PlacePreview` | `/og/r/place/{id}.jpg` | no (canonical is `/mishwar`) |
 | `/crossings?c={n}` | `CrossingPreview` | `/og/r/crossing/{n}.png` | no (canonical is `/crossings`) |
 | `/priorities?state=…` | `PrioritiesSharePreview` | `priorities-share` | no |

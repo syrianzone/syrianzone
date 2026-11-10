@@ -2,7 +2,7 @@
 
 namespace App\Support\Seo\Og;
 
-/** Draws a card model into image bytes. */
+/** Draws a card model into an image. */
 interface CardRenderer
 {
     /**
@@ -11,5 +11,5 @@ interface CardRenderer
      *
      * @throws CardRenderFailed when the card cannot be drawn
      */
-    public function render(array $model, string $format = 'png'): string;
+    public function render(array $model, string $format = 'png'): DrawnCard;
 }

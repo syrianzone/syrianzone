@@ -21,6 +21,17 @@ class DashboardController extends Controller
      * per user is honoured. There is no polls_admin role, so role-gating this
      * is what made the polls capabilities unusable outside `admin`.
      */
+    /**
+     * Draft columns the dashboard lists. `geojson` (the full drawn route, often
+     * the bulk of the row) is left out: the dashboard never reads it, and the
+     * transit admin page and the studio fetch it themselves when a draft is
+     * opened.
+     */
+    private const DRAFT_LIST_COLUMNS = [
+        'id', 'user_id', 'city_id', 'route_id', 'name_ar', 'name_en', 'price', 'notes',
+        'status', 'rejection_reason', 'color_index', 'created_at', 'updated_at',
+    ];
+
     private function canModule(User $user, string $module): bool
     {
         foreach ($user->effectivePermissions() as $capability) {
@@ -50,6 +61,7 @@ class DashboardController extends Controller
         // 2. Normal Users see their own route submissions
         if ($user->role === 'user') {
             $data['myDrafts'] = RouteDraft::where('user_id', $user->id)
+                ->select(self::DRAFT_LIST_COLUMNS)
                 ->with('city:id,name_ar,name_en')
                 ->orderBy('created_at', 'desc')
                 ->get();
@@ -67,21 +79,11 @@ class DashboardController extends Controller
             $data['polls'] = Poll::withCount('candidates')->get();
         }
 
-        // 4. Transit reviewers see all route drafts and published routes.
-        //
-        // Same role-vs-capability split as above: the sidebar link is gated on
-        // effective_permissions, so a user holding transit.review_drafts was
-        // sent here and then given no data. The full drafts/route payloads are
-        // only consumed by the transit admin page, which fetches its own
-        // scoped data; sharing them here duplicated it without the governorate
-        // scoping, so the condition is kept narrow to match.
-        if ($user->hasPermission('transit.review_drafts')) {
-            $data['allDrafts'] = RouteDraft::with(['user:id,name,email,is_banned', 'city:id,name_ar,name_en'])
-                ->orderBy('created_at', 'desc')
-                ->limit(500)
-                ->get();
-            $data['publishedRoutes'] = Route::with('city:id,name_ar,name_en')->limit(1000)->get();
-        }
+        // Transit reviewers get no drafts or routes here. The dashboard used to
+        // ship up to 500 drafts and 1000 routes as `allDrafts` and
+        // `publishedRoutes`, but the page never read either: reviewing happens
+        // on the transit admin page, which fetches its own, governorate-scoped
+        // data.
 
         return Inertia::render('Dashboard/Index', $data);
     }

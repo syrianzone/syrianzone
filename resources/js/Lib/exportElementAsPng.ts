@@ -87,20 +87,34 @@ async function renderElementToCanvas(el: HTMLElement): Promise<HTMLCanvasElement
   });
 }
 
-/** Export a DOM node as PNG for download or native sharing. */
-export async function exportElementAsPng(el: HTMLElement, filename: string, action: 'download' | 'share' = 'download'): Promise<void> {
+export async function renderElementAsPngFile(el: HTMLElement, filename: string): Promise<File> {
   const canvas = await renderElementToCanvas(el);
-  const dataUrl = canvas.toDataURL('image/png');
-  if (action === 'share') {
-    const bytes = Uint8Array.from(atob(dataUrl.split(',')[1]), (character) => character.charCodeAt(0));
-    const file = new File([bytes], filename, { type: 'image/png' });
-    await navigator.share({ files: [file] });
-    return;
-  }
+  const blob = await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((result) => result ? resolve(result) : reject(new Error('PNG encoding failed')), 'image/png');
+  });
+  return new File([blob], filename, { type: 'image/png' });
+}
+
+/** Download a PNG from a DOM node or a prepared file. */
+export async function exportElementAsPng(source: HTMLElement | File, filename: string): Promise<void> {
   const link = document.createElement('a');
-  link.download = filename;
-  link.href = dataUrl;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  let objectUrl: string | undefined;
+  try {
+    if (source instanceof File) {
+      objectUrl = URL.createObjectURL(source);
+      link.href = objectUrl;
+    } else {
+      const canvas = await renderElementToCanvas(source);
+      link.href = canvas.toDataURL('image/png');
+    }
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+  } finally {
+    link.remove();
+    if (objectUrl) {
+      const url = objectUrl;
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+    }
+  }
 }

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePage } from '@inertiajs/react';
 import { Button } from '@/Components/ui/button';
 import {
@@ -29,8 +29,18 @@ export default function ShareCardDialog({ promise, open, onOpenChange }: {
     const { seo } = usePage().props as { seo?: { canonical?: string } };
     const frameRef = useRef<HTMLDivElement>(null);
     const [busy, setBusy] = useState<'download' | 'share' | null>(null);
+    const [preparedFile, setPreparedFile] = useState<File | null>(null);
+    const generation = useRef(0);
+    const exporting = useRef(false);
     const filename = `promise-${promise.number}.png`;
     const supportsImages = useCanShare(() => ({ files: [new File([], filename, { type: 'image/png' })] }));
+
+    useEffect(() => {
+        setPreparedFile(null);
+        setBusy(null);
+        exporting.current = false;
+        return () => { generation.current += 1; };
+    }, [open, promise]);
 
     // The canonical URL comes from the server (config('seo.base_url')), so the
     // card prints the public address even when exported from a local or
@@ -38,15 +48,39 @@ export default function ShareCardDialog({ promise, open, onOpenChange }: {
     const shareUrl = (seo?.canonical ?? `/promises/${promise.number}`).replace(/^https?:\/\//, '');
 
     const exportImage = async (action: 'download' | 'share') => {
-        if (!frameRef.current) return;
+        const frame = frameRef.current;
+        if (!frame || exporting.current) return;
+        exporting.current = true;
+        const current = generation.current;
+        const isCurrent = () => current === generation.current && frameRef.current === frame && frame.isConnected;
         setBusy(action);
         try {
-            const { exportElementAsPng } = await import('@/Lib/exportElementAsPng');
-            await exportElementAsPng(frameRef.current, filename, action);
+            let file = preparedFile;
+            if (!file) {
+                const { renderElementAsPngFile } = await import('@/Lib/exportElementAsPng');
+                if (!isCurrent()) return;
+                file = await renderElementAsPngFile(frame, filename);
+                if (!isCurrent()) return;
+                setPreparedFile(file);
+            }
+            if (action === 'download') {
+                const { exportElementAsPng } = await import('@/Lib/exportElementAsPng');
+                if (isCurrent()) await exportElementAsPng(file, filename);
+            } else {
+                try {
+                    await navigator.share({ files: [file] });
+                } catch (error) {
+                    if (!preparedFile && error instanceof DOMException && error.name === 'NotAllowedError') return;
+                    throw error;
+                }
+            }
         } catch (error) {
-            if (!isShareCancelled(error)) notify.error(action === 'share' ? 'تعذّرت مشاركة الصورة' : 'تعذّر إنشاء الصورة');
+            if (isCurrent() && !isShareCancelled(error)) notify.error(action === 'share' ? 'تعذّرت مشاركة الصورة' : 'تعذّر إنشاء الصورة');
         } finally {
-            setBusy(null);
+            if (isCurrent()) {
+                exporting.current = false;
+                setBusy(null);
+            }
         }
     };
 
@@ -94,7 +128,7 @@ export default function ShareCardDialog({ promise, open, onOpenChange }: {
                     {supportsImages && (
                         <Button onClick={() => exportImage('share')} disabled={busy !== null} className="gap-2" aria-busy={busy === 'share'}>
                             {busy === 'share' ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Share2 className="h-4 w-4" aria-hidden="true" />}
-                            مشاركة الصورة
+                            {busy === 'share' && !preparedFile ? 'جارٍ تجهيز الصورة…' : preparedFile ? 'جاهزة للمشاركة, شارك!' : 'مشاركة الصورة'}
                         </Button>
                     )}
                     <Button variant={supportsImages ? 'outline' : 'default'} onClick={() => exportImage('download')} disabled={busy !== null} className="gap-2" aria-busy={busy === 'download'}>

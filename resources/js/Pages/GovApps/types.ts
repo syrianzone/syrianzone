@@ -1,12 +1,12 @@
 export interface GovApp {
     id: string;
     name: string;
-    description: string;
+    description: string | null;
     icon: string;
     images: string[];
     links: {
-        official?: string;
-        android?: string;
-        apple?: string;
+        official?: string | null;
+        android?: string | null;
+        apple?: string | null;
     };
 }

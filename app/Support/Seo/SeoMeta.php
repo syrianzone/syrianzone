@@ -309,7 +309,7 @@ class SeoMeta
             'canonical' => $canonical,
             'robots' => ($preview->noindex || self::isNoindex($path)) ? 'noindex, follow' : 'index, follow',
             'twitter_site' => is_string($twitterSite) && $twitterSite !== '' ? $twitterSite : null,
-            'json_ld' => self::jsonLd($path, $about->schema, $about->title, $about->description, $canonical, $base, $about->parent),
+            'json_ld' => self::jsonLd($path, $about, $canonical, $base),
         ];
 
         $request->attributes->set(self::ATTRIBUTE, $meta);
@@ -387,12 +387,15 @@ class SeoMeta
         $base = rtrim((string) config('seo.base_url'), '/');
         $meta['json_ld'] = self::jsonLd(
             '/'.trim($request->path(), '/'),
-            'WebPage',
-            $meta['title'],
-            $meta['description'],
+            new Preview(
+                title: $meta['title'],
+                description: $meta['description'],
+                canonicalPath: '/'.trim($request->path(), '/'),
+                image: $meta['image'],
+                shareTitle: $meta['og_title'],
+            ),
             $meta['canonical'],
             $base,
-            null,
         );
 
         $request->attributes->set(self::ATTRIBUTE, $meta);
@@ -423,48 +426,66 @@ class SeoMeta
      * Organization + WebSite + a typed page node + (for non-root) a
      * BreadcrumbList.
      *
+     * A headline and a breadcrumb carry the page or record's own name, without
+     * the document-title suffix: "… | Syrian Zone" there repeats what the
+     * WebSite node already says.
+     *
      * Returns a ready-to-embed JSON string (the "@context" key must not pass
      * through Blade, which would treat it as a directive).
      */
-    /**
-     * @param  array{0:string,1:string}|null  $parent  breadcrumb parent as [path, label]
-     */
-    private static function jsonLd(string $path, string $schema, string $title, string $description, string $canonical, string $base, ?array $parent): string
+    private static function jsonLd(string $path, Preview $about, string $canonical, string $base): string
     {
+        $organizationId = $base.'/#organization';
         $websiteId = $base.'/#website';
         $breadcrumbId = $canonical.'#breadcrumb';
+        $name = $about->shareTitle ?? $about->title;
+        $alternateName = config('seo.alternate_name');
 
         $graph = [
-            [
+            array_filter([
                 '@type' => 'Organization',
-                '@id' => $base.'/#organization',
+                '@id' => $organizationId,
                 'name' => config('seo.site_name'),
+                'alternateName' => $alternateName,
                 'url' => $base.'/',
                 'logo' => $base.'/assets/icon-512.png',
-            ],
-            [
+                'sameAs' => array_values((array) config('seo.same_as', [])),
+            ]),
+            array_filter([
                 '@type' => 'WebSite',
                 '@id' => $websiteId,
                 'name' => config('seo.site_name'),
+                'alternateName' => $alternateName,
                 'url' => $base.'/',
                 'inLanguage' => 'ar',
-                'publisher' => ['@id' => $base.'/#organization'],
-            ],
+                'publisher' => ['@id' => $organizationId],
+            ]),
         ];
 
         $page = [
-            '@type' => $schema,
+            '@type' => $about->schema,
             '@id' => $canonical.'#webpage',
             'url' => $canonical,
-            'name' => $title,
-            'description' => $description,
+            'name' => $about->title,
+            'description' => $about->description,
             'inLanguage' => 'ar',
             'isPartOf' => ['@id' => $websiteId],
         ];
 
-        if ($schema === 'Article') {
-            $page['headline'] = $title;
-            $page['publisher'] = ['@id' => $base.'/#organization'];
+        if ($about->schema === 'Article') {
+            $page['headline'] = $name;
+            $page['image'] = self::absolute($about->image, $base);
+            // The site's editors write and maintain these pages; no single
+            // person is credited on them.
+            $page['author'] = ['@id' => $organizationId];
+            $page['publisher'] = ['@id' => $organizationId];
+        }
+
+        if ($about->published !== null) {
+            $page['datePublished'] = $about->published->format(DATE_ATOM);
+        }
+        if ($about->modified !== null) {
+            $page['dateModified'] = $about->modified->format(DATE_ATOM);
         }
 
         if ($path !== '/') {
@@ -475,13 +496,12 @@ class SeoMeta
                 ['@type' => 'ListItem', 'position' => 1, 'name' => 'الرئيسية', 'item' => $base.'/'],
             ];
 
-            if ($parent !== null) {
-                [$parentPath, $parentLabel] = $parent;
+            if ($about->parent !== null) {
+                [$parentPath, $parentLabel] = $about->parent;
                 $items[] = ['@type' => 'ListItem', 'position' => 2, 'name' => $parentLabel, 'item' => $base.$parentPath];
-                $items[] = ['@type' => 'ListItem', 'position' => 3, 'name' => $title, 'item' => $canonical];
-            } else {
-                $items[] = ['@type' => 'ListItem', 'position' => 2, 'name' => $title, 'item' => $canonical];
             }
+
+            $items[] = ['@type' => 'ListItem', 'position' => count($items) + 1, 'name' => $name, 'item' => $canonical];
 
             $graph[] = [
                 '@type' => 'BreadcrumbList',

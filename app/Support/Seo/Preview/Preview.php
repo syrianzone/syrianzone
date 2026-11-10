@@ -19,6 +19,9 @@ final readonly class Preview
      *                                   should differ from the document title:
      *                                   the page or record's own name, without
      *                                   the site or section suffix
+     * @param  \DateTimeInterface|null  $published  when the record first became
+     *                                              public, for structured data
+     * @param  \DateTimeInterface|null  $modified  when its content last changed
      */
     public function __construct(
         public string $title,
@@ -31,5 +34,7 @@ final readonly class Preview
         public ?array $parent = null,
         public ?string $sharePath = null,
         public ?string $shareTitle = null,
+        public ?\DateTimeInterface $published = null,
+        public ?\DateTimeInterface $modified = null,
     ) {}
 }

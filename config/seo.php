@@ -19,6 +19,25 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Identity
+    |--------------------------------------------------------------------------
+    |
+    | The Arabic name the site also goes by, and the profiles that are the same
+    | project elsewhere. Both go into the Organization and WebSite structured
+    | data, so a search engine can tell that "المساحة السورية" and "Syrian
+    | Zone" are one thing and which accounts are its own.
+    |
+    */
+
+    'alternate_name' => 'المساحة السورية',
+
+    'same_as' => [
+        'https://github.com/syrianzone/syrianzone',
+        'https://x.com/SyrianZone',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Defaults
     |--------------------------------------------------------------------------
     |

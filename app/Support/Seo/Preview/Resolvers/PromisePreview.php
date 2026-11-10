@@ -64,6 +64,8 @@ final class PromisePreview implements CardSource, PreviewResolver
             type: 'article',
             schema: 'Article',
             parent: ['/promises', 'عداد الوعود'],
+            published: $promise->published_at,
+            modified: $promise->updated_at,
         );
     }
 

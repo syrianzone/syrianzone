@@ -93,25 +93,21 @@ class VotingService
             return;
         }
 
-        // Candidates must exist AND belong to this poll: without the scoping
-        // check, ids from other polls would pass validation and their points
-        // would be written into this poll's daily scores.
-        $validCount = Candidate::where('poll_id', $poll->id)
+        // One read answers all three questions. Candidates must exist AND
+        // belong to this poll: without the scoping check, ids from other polls
+        // would pass validation and their points would be written into this
+        // poll's daily scores.
+        $candidates = Candidate::where('poll_id', $poll->id)
             ->whereIn('id', $ids)
-            ->count();
+            ->get(['id', 'status', 'candidate_group_id']);
 
-        if ($validCount !== $ids->count()) {
+        if ($candidates->count() !== $ids->count()) {
             throw ValidationException::withMessages([
                 'tiers' => 'Ballot contains candidates that do not belong to this poll.',
             ]);
         }
 
-        $archived = Candidate::where('poll_id', $poll->id)
-            ->whereIn('id', $ids)
-            ->where('status', 'archived')
-            ->exists();
-
-        if ($archived) {
+        if ($candidates->contains('status', 'archived')) {
             throw ValidationException::withMessages([
                 'tiers' => 'Ballot contains archived candidates.',
             ]);
@@ -119,19 +115,12 @@ class VotingService
 
         // A disabled category is unpublished, so its roster is not votable —
         // otherwise its scores could still move through the public API.
-        $disabledGroupIds = $poll->groups()->disabled()->pluck('id');
+        $groupIds = $candidates->pluck('candidate_group_id')->filter()->unique()->values();
 
-        if ($disabledGroupIds->isNotEmpty()) {
-            $inDisabledCategory = Candidate::where('poll_id', $poll->id)
-                ->whereIn('id', $ids)
-                ->whereIn('candidate_group_id', $disabledGroupIds)
-                ->exists();
-
-            if ($inDisabledCategory) {
-                throw ValidationException::withMessages([
-                    'tiers' => 'Ballot contains candidates from a disabled category.',
-                ]);
-            }
+        if ($groupIds->isNotEmpty() && $poll->groups()->disabled()->whereIn('id', $groupIds)->exists()) {
+            throw ValidationException::withMessages([
+                'tiers' => 'Ballot contains candidates from a disabled category.',
+            ]);
         }
     }
 
@@ -146,6 +135,7 @@ class VotingService
         }
 
         $scoreDelta = [];
+        $rows = [];
 
         foreach ($tiers as $tierKey => $items) {
             if (! isset(self::TIER_MINIMUMS[$tierKey])) {
@@ -160,12 +150,13 @@ class VotingService
                     ]);
                 }
 
-                BallotItem::create([
+                $rows[] = [
+                    'id' => $ballot->newUniqueId(),
                     'ballot_id' => $ballot->id,
                     'candidate_id' => $candidateId,
                     'tier' => $tierKey,
                     'position' => $item['pos'] ?? $index,
-                ]);
+                ];
 
                 $points = self::TIER_MINIMUMS[$tierKey] + (self::TIER_BONUSES[$tierKey][$index] ?? 0);
                 $scoreDelta[$candidateId] = [
@@ -175,38 +166,53 @@ class VotingService
             }
         }
 
+        // One statement for the whole ballot rather than one per candidate.
+        if ($rows !== []) {
+            BallotItem::insert($rows);
+        }
+
         return $scoreDelta;
     }
 
+    /**
+     * Add this ballot's points to the day's totals in a single upsert.
+     *
+     * It used to be an UPDATE per candidate (plus an INSERT and a second UPDATE
+     * for the first vote of the day). Rows are written in candidate order so two
+     * concurrent ballots take their row locks in the same sequence.
+     */
     private function updateDailyScores(Poll $poll, Carbon $voteDay, array $scoreDelta): void
     {
+        if ($scoreDelta === []) {
+            return;
+        }
+
+        ksort($scoreDelta);
+        $now = now();
+        $day = $voteDay->toDateString();
+
+        $rows = [];
         foreach ($scoreDelta as $candidateId => $delta) {
-            $where = [
+            $rows[] = [
                 'poll_id' => $poll->id,
                 'candidate_id' => $candidateId,
-                'day' => $voteDay->toDateString(),
+                'day' => $day,
+                'votes' => (int) $delta['votes'],
+                'score' => (int) $delta['score'],
+                'updated_at' => $now,
             ];
-            $increments = [
-                'votes' => DB::raw('votes + '.(int) $delta['votes']),
-                'score' => DB::raw('score + '.(int) $delta['score']),
-                'updated_at' => now(),
-            ];
-
-            $updated = DB::table('daily_scores')->where($where)->update($increments);
-            if ($updated !== 0) {
-                continue;
-            }
-
-            $inserted = DB::table('daily_scores')->insertOrIgnore([
-                ...$where,
-                'votes' => $delta['votes'],
-                'score' => $delta['score'],
-                'updated_at' => now(),
-            ]);
-
-            if ($inserted === 0) {
-                DB::table('daily_scores')->where($where)->update($increments);
-            }
         }
+
+        // The incoming row is VALUES(col) on MySQL/MariaDB and excluded.col on
+        // SQLite/PostgreSQL.
+        $incoming = in_array(DB::connection()->getDriverName(), ['mysql', 'mariadb'], true)
+            ? fn (string $column) => "VALUES({$column})"
+            : fn (string $column) => "excluded.{$column}";
+
+        DB::table('daily_scores')->upsert($rows, ['poll_id', 'candidate_id', 'day'], [
+            'votes' => DB::raw('daily_scores.votes + '.$incoming('votes')),
+            'score' => DB::raw('daily_scores.score + '.$incoming('score')),
+            'updated_at' => $now,
+        ]);
     }
 }

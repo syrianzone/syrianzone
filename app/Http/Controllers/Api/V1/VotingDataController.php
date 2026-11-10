@@ -95,10 +95,10 @@ class VotingDataController extends Controller
             ->orderBy('candidate_id');
 
         if (! empty($filters['from'])) {
-            $query->whereDate('day', '>=', $filters['from']);
+            $query->where('day', '>=', Carbon::parse($filters['from'])->toDateString());
         }
         if (! empty($filters['to'])) {
-            $query->whereDate('day', '<=', $filters['to']);
+            $query->where('day', '<', Carbon::parse($filters['to'])->addDay()->toDateString());
         }
         if (! empty($filters['candidate_id'])) {
             $query->where('candidate_id', $filters['candidate_id']);
@@ -123,10 +123,10 @@ class VotingDataController extends Controller
             ->orderBy('id');
 
         if (! empty($filters['from'])) {
-            $query->whereDate('vote_day', '>=', $filters['from']);
+            $query->where('vote_day', '>=', Carbon::parse($filters['from'])->toDateString());
         }
         if (! empty($filters['to'])) {
-            $query->whereDate('vote_day', '<=', $filters['to']);
+            $query->where('vote_day', '<', Carbon::parse($filters['to'])->addDay()->toDateString());
         }
 
         return response()->json($query->paginate($this->perPage($request)));
@@ -134,8 +134,7 @@ class VotingDataController extends Controller
 
     private function findPoll($idOrSlug): Poll
     {
-        return Poll::where('id', $idOrSlug)
-            ->orWhere('slug', $idOrSlug)
+        return Poll::idOrSlug((string) $idOrSlug)
             ->firstOrFail(self::POLL_COLUMNS);
     }
 

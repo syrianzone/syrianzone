@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { SmartFilterValue } from '@/Lib/smartFilterSearch';
 import type { PromiseCardData } from './types';
-import { filterPromises, matchesState, promiseFilterFacets, promiseListUrl, promiseReturnUrl, readPromiseFilters, visiblePromises } from './filters';
+import { canReturnToPromiseList, filterPromises, matchesState, promiseFilterFacets, promiseListUrl, promiseReturnUrl, readPromiseFilters, visiblePromises } from './filters';
 
 const facets = promiseFilterFacets({
     sectors: [{ id: 'energy', label: 'الكهرباء والطاقة', icon: null }, { id: 'health', label: 'الصحة', icon: null }],
@@ -51,6 +51,31 @@ describe('shareable promise filters', () => {
     it('returns to the full filtered list from detail context', () => {
         const list = promiseListUrl({ ...empty, filters: { state: ['overdue', 'open'] } });
         expect(promiseReturnUrl(`/promises/1?from=${encodeURIComponent(list)}`)).toBe(list);
+    });
+});
+
+describe('return to a remembered promise list', () => {
+    const listUrl = '/promises?sector=energy&sort=newest';
+    const detailUrl = `/promises/12?from=${encodeURIComponent(listUrl)}`;
+    const visit = { detailUrl, listUrl };
+
+    it('accepts the exact detail visit and its original filtered list', () => {
+        expect(canReturnToPromiseList(visit, detailUrl)).toBe(true);
+        expect(canReturnToPromiseList({ detailUrl: '/promises/12', listUrl: '/promises' }, '/promises/12')).toBe(true);
+    });
+
+    it('uses the list URL when no matching card visit was recorded', () => {
+        expect(canReturnToPromiseList(undefined, detailUrl)).toBe(false);
+        expect(canReturnToPromiseList({ detailUrl }, detailUrl)).toBe(false);
+    });
+
+    it('rejects another detail, changed return filters, and external destinations', () => {
+        expect(canReturnToPromiseList(visit, detailUrl.replace('/12?', '/13?'))).toBe(false);
+        expect(canReturnToPromiseList(visit, '/promises/12')).toBe(false);
+        expect(canReturnToPromiseList({ ...visit, listUrl: '/promises' }, detailUrl)).toBe(false);
+        expect(canReturnToPromiseList({ ...visit, listUrl: 'https://example.com' }, detailUrl)).toBe(false);
+        expect(canReturnToPromiseList({ detailUrl: 'https://example.com/promises/12', listUrl: '/promises' }, 'https://example.com/promises/12')).toBe(false);
+        expect(canReturnToPromiseList({ detailUrl: '/admin', listUrl: '/promises' }, '/admin')).toBe(false);
     });
 });
 

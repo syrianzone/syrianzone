@@ -150,8 +150,13 @@ Public reads return only aggregates.
   the other filters; the scoreboard stays global.
 - Filters and sort live in the URL (`state[]=overdue&state[]=broken`), so a
   filtered view can be shared. Search text is not put in the URL.
-- The detail page's back link returns to the filtered list (`?from=`, local
-  `/promises` URLs only).
+- Applied filters support RTL arrow navigation, Enter/Escape to edit/leave,
+  and Delete/Backspace to remove a filter or value. Backspace in an empty
+  input focuses the preceding item first.
+- Closing suggestions keeps them hidden until Filters is activated again.
+- The detail page's back link restores the list's filters and local search
+  after a card visit. Direct visits, reloads and new tabs fall back to
+  `?from=` (local `/promises` URLs only).
 - Default sort by urgency: most overdue first, then soonest deadline, then
   count-ups, then resolved.
 - Card: speaker avatar + name/title, title, the big number, status badge,

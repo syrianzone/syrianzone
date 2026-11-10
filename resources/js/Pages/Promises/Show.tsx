@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
@@ -19,7 +19,7 @@ import Timeline from './_components/Timeline';
 import VotePanel from './_components/VotePanel';
 import { formatDate } from './_lib/format';
 import { STATE_META, VENUE_LABEL, sectorIcon } from './_lib/status';
-import { promiseReturnUrl } from './_lib/filters';
+import { canReturnToPromiseList, PROMISE_LIST_VISIT_KEY, promiseReturnUrl } from './_lib/filters';
 import type { PromiseDetailData } from './_lib/types';
 
 interface Props {
@@ -61,7 +61,13 @@ export default function PromiseShow({ promise }: Props) {
         <MainLayout>
             <div className="container mx-auto max-w-6xl space-y-6 px-4 py-8">
                 <nav aria-label="مسار التنقل">
-                    <Link href={returnUrl} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+                    <Link href={returnUrl} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+                        onBefore={() => {
+                            if (window.history.length > 1 && canReturnToPromiseList(router.restore(PROMISE_LIST_VISIT_KEY), page.url)) {
+                                window.history.back();
+                                return false;
+                            }
+                        }}>
                         <ArrowRight className="h-4 w-4" aria-hidden="true" />عداد الوعود
                     </Link>
                 </nav>

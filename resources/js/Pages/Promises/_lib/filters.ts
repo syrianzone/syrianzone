@@ -70,6 +70,15 @@ export function promiseReturnUrl(detailUrl: string): string {
     return from && /^\/promises(?:\?[^#]*)?$/.test(from) ? from : '/promises';
 }
 
+export const PROMISE_LIST_VISIT_KEY = 'promises.listVisit';
+
+/** Only a matching detail history entry can return to its original list. */
+export function canReturnToPromiseList(visit: unknown, detailUrl: string): boolean {
+    if (!visit || typeof visit !== 'object' || !/^\/promises\/\d+(?:\?[^#]*)?$/.test(detailUrl)) return false;
+    const context = visit as Record<string, unknown>;
+    return context.detailUrl === detailUrl && context.listUrl === promiseReturnUrl(detailUrl);
+}
+
 export function matchesState(p: PromiseCardData, state: string, dueSoonDays: number): boolean {
     switch (state) {
         case 'overdue': return p.state === 'overdue';

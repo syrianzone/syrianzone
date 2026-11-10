@@ -1,9 +1,12 @@
 <?php
 
 use App\Models\Poll;
+use App\Support\Seo\Og\StaticCards;
 use App\Support\Seo\SeoMeta;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Vite;
+use Inertia\Ssr\Gateway;
+use Inertia\Ssr\Response;
 
 test('server-rendered html includes seo meta and json-ld even when inertia.ssr.enabled is true and ssr server is offline', function () {
     Vite::useHotFile(storage_path('framework/testing/hot-missing'));
@@ -14,8 +17,42 @@ test('server-rendered html includes seo meta and json-ld even when inertia.ssr.e
 
     expect($html)->toContain('<title inertia>عن المنصة | Syrian Zone</title>')
         ->and($html)->toContain('<link rel="canonical" href="https://syrian.zone/about" inertia>')
-        ->and($html)->toContain('<meta property="og:image" content="https://syrian.zone/og/about.png" inertia>')
+        ->and($html)->toContain('<meta property="og:image" content="https://syrian.zone'.StaticCards::url('about').'" inertia>')
         ->and($html)->toContain('<script type="application/ld+json" inertia>');
+});
+
+test('head tags are printed once even when ssr succeeds but the page rendered nothing', function () {
+    // A page that returns nothing on its first server render (a "mounted"
+    // guard, a loading state) leaves the SSR head empty. The tags must not
+    // depend on it: this is what left /phonebook without any preview.
+    $this->app->bind(Gateway::class, fn () => new class implements Gateway
+    {
+        public function dispatch(array $page): ?Response
+        {
+            return new Response('', '<div id="app"></div>');
+        }
+    });
+
+    $html = $this->get('/phonebook')->assertOk()->getContent();
+
+    expect(substr_count($html, '<title'))->toBe(1)
+        ->and(substr_count($html, 'property="og:image"'))->toBe(1)
+        ->and(substr_count($html, 'rel="canonical"'))->toBe(1)
+        ->and(substr_count($html, 'application/ld+json'))->toBe(1)
+        ->and($html)->toContain('<title inertia>دليل الهاتف والواتساب الخدمي | Syrian Zone</title>')
+        ->and($html)->toContain('<meta property="og:image" content="https://syrian.zone'.StaticCards::url('phonebook').'" inertia>');
+});
+
+test('a missing page announces itself as a 404 and is not indexed', function () {
+    $html = $this->get('/no-such-page')->assertNotFound()->getContent();
+
+    expect($html)->toContain('<title inertia>الصفحة غير موجودة (404) | Syrian Zone</title>')
+        ->and($html)->toContain('<meta name="robots" content="noindex, follow" inertia>')
+        ->and($html)->not->toContain('<title inertia>المساحة السورية — منصة سورية مفتوحة المصدر</title>');
+
+    $jsonLd = json_decode(str($html)->betweenFirst('<script type="application/ld+json" inertia>', '</script>')->toString(), true);
+    $page = collect($jsonLd['@graph'])->firstWhere('@type', 'WebPage');
+    expect($page['name'])->toBe('الصفحة غير موجودة (404) | Syrian Zone');
 });
 
 test('poll show and leaderboard routes resolve distinct metadata and canonicals', function () {

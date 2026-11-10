@@ -120,11 +120,11 @@ return Application::configure(basePath: dirname(__DIR__))
                 && ! $request->expectsJson()
                 && ! $request->is('api/*', 'superadmin*')
             ) {
-                $seo = \App\Support\Seo\SeoMeta::resolve($request);
-                $seo['title'] = 'الصفحة غير موجودة (404) | Syrian Zone';
-                $seo['description'] = 'الصفحة التي تبحث عنها غير موجودة أو تم نقلها — استكشف أدوات ومشاريع المساحة السورية.';
-                $seo['robots'] = 'noindex, follow';
-                $request->attributes->set('seo.meta', $seo);
+                \App\Support\Seo\SeoMeta::override($request, [
+                    'title' => 'الصفحة غير موجودة (404) | Syrian Zone',
+                    'description' => 'الصفحة التي تبحث عنها غير موجودة أو تم نقلها — استكشف أدوات ومشاريع المساحة السورية.',
+                    'robots' => 'noindex, follow',
+                ]);
 
                 Inertia::share(app(\App\Http\Middleware\HandleInertiaRequests::class)->share($request));
 

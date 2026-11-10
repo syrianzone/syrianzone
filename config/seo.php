@@ -22,8 +22,8 @@ return [
     | Defaults
     |--------------------------------------------------------------------------
     |
-    | Used for any page the resolver has no specific entry for. The image is a
-    | site-relative path (1200x630 PNG); it is made absolute when emitted.
+    | Used for any page the resolver has no specific entry for. The default
+    | share image is the site's own card (App\Support\Seo\Og\StaticCards).
     |
     */
 
@@ -31,17 +31,33 @@ return [
 
     'default_description' => 'المساحة السورية - منصة تفاعلية تجمع وتوفر الموارد والخدمات والمعلومات المفتوحة المتعلقة بالشأن السوري: استطلاعات رأي، أدلة رسمية، أطلس، ترانزيت، وهويات بصرية.',
 
-    'default_image' => '/og/home.png',
-
     /*
     |--------------------------------------------------------------------------
     | Twitter
     |--------------------------------------------------------------------------
     |
-    | Optional @handle for twitter:site. Left null when the account is unknown.
+    | The @handle for twitter:site: the account the site's own cards are posted
+    | from. Set SEO_TWITTER_SITE to an empty value to leave the tag out.
     |
     */
 
-    'twitter_site' => env('SEO_TWITTER_SITE'),
+    'twitter_site' => env('SEO_TWITTER_SITE', '@SyrianZone'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Share cards drawn on demand
+    |--------------------------------------------------------------------------
+    |
+    | Cards of single records (a promise, a place...) are drawn by a Node script
+    | the first time they are requested. `image_hosts` lists extra hosts a card
+    | may fetch a photo from, beyond this site's own media storage.
+    |
+    */
+
+    'cards' => [
+        'node' => env('OG_NODE_BINARY', 'node'),
+        'timeout' => (int) env('OG_RENDER_TIMEOUT', 10),
+        'image_hosts' => array_values(array_filter(array_map('trim', explode(',', (string) env('OG_IMAGE_HOSTS', ''))))),
+    ],
 
 ];

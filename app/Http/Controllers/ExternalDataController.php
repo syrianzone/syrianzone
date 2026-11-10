@@ -28,10 +28,27 @@ class ExternalDataController extends Controller
 
     /**
      * Render Syrian Contributors page.
+     *
+     * The leaderboard is a static file the page used to fetch in the browser,
+     * which left the server-rendered HTML with nothing but a spinner. Sending
+     * it as a prop puts the list in the first response.
      */
     public function contributors()
     {
-        return Inertia::render('SyrianContributors/Index');
+        return Inertia::render('SyrianContributors/Index', [
+            'contributors' => $this->contributorsFromFile(),
+        ]);
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function contributorsFromFile(): array
+    {
+        $file = public_path('contributors.json');
+        $decoded = is_file($file) ? json_decode((string) file_get_contents($file), true) : null;
+
+        return is_array($decoded) && array_is_list($decoded) ? $decoded : [];
     }
 
     /**

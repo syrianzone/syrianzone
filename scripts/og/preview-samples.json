@@ -1,0 +1,120 @@
+[
+  {
+    "group": "Promises",
+    "note": "Drawn on demand by PromisePreview: status, number, sector, speaker and the absolute deadline date.",
+    "items": [
+      {
+        "name": "/promises/{number} (kept, late)",
+        "model": {
+          "kind": "split", "url": "syrian.zone/promises/7", "kicker": { "icon": "promises", "label": "عداد الوعود" },
+          "pills": [{ "label": "تحقق (متأخراً)", "tone": "primary", "glyph": "BadgeCheck" }, { "label": "الوعد رقم 7" }],
+          "title": "عودة صدور جريدة الثورة ورقياً مطلع أيلول 2025",
+          "person": { "name": "حمزة المصطفى", "role": "وزير الإعلام · وزارة الإعلام السورية" },
+          "meta": { "glyph": "Calendar", "label": "الموعد", "value": "10 أيلول 2025" }
+        }
+      },
+      {
+        "name": "/promises/{number} (overdue)",
+        "model": {
+          "kind": "split", "url": "syrian.zone/promises/9", "kicker": { "icon": "promises", "label": "عداد الوعود" },
+          "pills": [{ "label": "متأخر", "tone": "destructive", "glyph": "AlarmClock" }, { "label": "الوعد رقم 9" }, { "label": "الرواتب والأجور" }],
+          "title": "استئناف صرف رواتب المتقاعدين العسكريين بعد 2011 بعد إنجاز لجنة وطنية عملها خلال شهر",
+          "person": { "name": "محمد يسر برنية", "role": "وزير المالية · وزارة المالية السورية" },
+          "meta": { "glyph": "Calendar", "label": "الموعد", "value": "30 أيلول 2025" }
+        }
+      },
+      {
+        "name": "/promises/{number} (pending)",
+        "model": {
+          "kind": "split", "url": "syrian.zone/promises/1", "kicker": { "icon": "promises", "label": "عداد الوعود" },
+          "pills": [{ "label": "قيد الانتظار", "tone": "outline", "glyph": "Hourglass" }, { "label": "الوعد رقم 1" }, { "label": "الحوكمة والانتخابات" }],
+          "title": "إجراء انتخابات رئاسية بعد أربع سنوات وفق الإعلان الدستوري",
+          "person": { "name": "أحمد الشرع", "role": "رئيس الجمهورية العربية السورية (المرحلة الانتقالية)" },
+          "meta": { "glyph": "Calendar", "label": "الموعد", "value": "6 كانون الأول 2029" }
+        }
+      }
+    ]
+  },
+  {
+    "group": "Other records",
+    "note": "Polls, transit cities and routes, crossings, and a place whose photograph is unavailable. With a photograph a place is drawn full-bleed; pass your own --samples file to see that.",
+    "items": [
+      {
+        "name": "/polls/{slug}",
+        "model": {
+          "kind": "split", "url": "syrian.zone/polls/governors", "kicker": { "icon": "tierlist", "label": "استطلاعات الرأي" },
+          "pills": [{ "label": "استطلاع مفتوح", "tone": "primary", "glyph": "Vote" }],
+          "title": "تقييم أداء المحافظين", "subtitle": "صوّت ورتّب المرشحين وشارك رأيك", "art": { "type": "icon", "icon": "tierlist" }
+        }
+      },
+      {
+        "name": "/transit/city/{id}",
+        "model": {
+          "kind": "split", "url": "syrian.zone/transit/city/damascus", "kicker": { "icon": "transit", "label": "ترانزيت" },
+          "title": "مواصلات دمشق", "subtitle": "خريطة خطوط السرافيس والباصات والمواقف", "art": { "type": "figure", "value": 29, "label": "خطاً" }
+        }
+      },
+      {
+        "name": "/transit/city/{id}?route={routeId}",
+        "model": {
+          "kind": "split", "url": "syrian.zone/transit/city/damascus", "kicker": { "icon": "transit", "label": "ترانزيت" },
+          "pills": [{ "label": "دمشق", "glyph": "MapPin" }, { "label": "خط نقل عام", "glyph": "Bus" }],
+          "title": "خط ذهاب برزة البلد - شارع الثورة", "art": { "type": "route", "colour": "#c44b4b" }
+        }
+      },
+      {
+        "name": "/crossings?c={n}",
+        "model": {
+          "kind": "split", "url": "syrian.zone/crossings", "kicker": { "icon": "crossings", "label": "المنافذ الحدودية" },
+          "pills": [{ "label": "منفذ برّي", "glyph": "Car" }, { "label": "تركيا", "glyph": "Globe" }, { "label": "مسافرين وتجاري" }],
+          "title": "منفذ باب الهوى الحدودي", "art": { "type": "icon", "icon": "crossings" }
+        }
+      },
+      {
+        "name": "/mishwar?place={id} (no photograph)",
+        "model": {
+          "kind": "photo", "url": "syrian.zone/mishwar", "kicker": { "icon": "mishwar", "label": "مشوار" },
+          "pills": [{ "label": "تاريخي", "glyph": "Landmark" }], "title": "قلعة حلب", "art": { "type": "icon", "icon": "mishwar" }
+        }
+      }
+    ]
+  },
+  {
+    "group": "Stress cases",
+    "note": "What the layout does with text it cannot show as written.",
+    "items": [
+      {
+        "name": "a 145-character title",
+        "model": {
+          "kind": "split", "url": "syrian.zone/promises/4", "kicker": { "icon": "promises", "label": "عداد الوعود" },
+          "pills": [{ "label": "تحقق (متأخراً)", "tone": "primary", "glyph": "BadgeCheck" }, { "label": "الوعد رقم 4" }],
+          "title": "دمج كافة المؤسسات المدنية والعسكرية في شمال شرق سوريا (بما فيها المعابر والمطار وحقول النفط والغاز) ضمن الدولة بحلول نهاية 2025 وفق اتفاق 10 آذار",
+          "person": { "name": "أحمد الشرع", "role": "رئيس الجمهورية العربية السورية (المرحلة الانتقالية)" },
+          "meta": { "glyph": "Calendar", "label": "الموعد", "value": "31 كانون الأول 2025" }
+        }
+      },
+      {
+        "name": "mixed Arabic, Latin and numbers",
+        "model": {
+          "kind": "split", "url": "syrian.zone/syrian-contributors", "title": "أفضل 10 مطورين سوريين على GitHub في 2026",
+          "subtitle": "ترتيب يومي وشهري وسنوي: @username وغيره (React, Laravel, Swift)", "art": { "type": "icon", "icon": "contributors" }
+        }
+      },
+      {
+        "name": "emoji and unsupported symbols are dropped",
+        "model": {
+          "kind": "split", "url": "syrian.zone/mishwar", "kicker": { "icon": "mishwar", "label": "مشوار" },
+          "pills": [{ "label": "مأكولات", "glyph": "Utensils" }], "title": "مطعم الشام 🍽️✨ ألذّ شاورما 🌯 في دمشق", "art": { "type": "icon", "icon": "mishwar" }
+        }
+      },
+      {
+        "name": "full diacritics",
+        "model": { "kind": "split", "url": "syrian.zone/muslim/quran", "title": "قَارِئُ القُرْآنِ الكَرِيمِ", "subtitle": "بِالرَّسْمِ العُثْمَانِيِّ مَعَ التِّلَاوَةِ", "art": { "type": "icon", "icon": "quran" } }
+      },
+      {
+        "name": "one very long Latin word",
+        "model": { "kind": "split", "url": "syrian.zone/sites", "title": "Supercalifragilisticexpialidocious.syrian.zone", "subtitle": "عنوان لاتيني طويل بلا فراغات", "art": { "type": "icon", "icon": "sites" } }
+      }
+    ]
+  }
+]

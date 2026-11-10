@@ -20,6 +20,7 @@ use App\Http\Controllers\GuessWhoAdminController;
 use App\Http\Controllers\GuessWhoController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PhonebookAdminController;
+use App\Http\Controllers\OgCardController;
 use App\Http\Controllers\PhonebookController;
 use App\Http\Controllers\PlaceAdminController;
 use App\Http\Controllers\PlaceController;
@@ -51,6 +52,14 @@ Route::get('/healthcheck', function () {
 // from the database, so a checked-in sitemap.xml would drift the moment either
 // changes. Cached for an hour inside the controller.
 Route::get('/sitemap.xml', [SitemapController::class, 'index']);
+
+// Share cards of single records, drawn on demand (see OgCardController). Kept
+// out of the web group on purpose: a session cookie on the response would stop
+// Cloudflare from caching the image.
+Route::get('/og/r/{type}/{key}.{format}', [OgCardController::class, 'show'])
+    ->where(['type' => '[a-z]+', 'key' => '[A-Za-z0-9_\-]+', 'format' => 'png|jpg'])
+    ->withoutMiddleware('web')
+    ->middleware('throttle:300,1');
 
 Route::get('/syofficial', [SyOfficialController::class, 'index']);
 Route::get('/polls', [PollController::class, 'renderIndex']);

@@ -43,6 +43,11 @@ php /var/www/html/artisan hotels:sync || echo "⚠️ HalaSyria hotel sync skipp
 echo "📜 Syncing promises research & speakers..."
 php /var/www/html/artisan promises:import-research || echo "⚠️ Promises research import skipped or failed."
 
+# 4c. Share cards of single records are drawn on demand by Node. A failure there
+# is quiet by design (the visitor gets the section card), so check it loudly here.
+echo "🖼️ Checking the share card renderer..."
+php /var/www/html/artisan og:doctor || echo "⚠️ Share cards cannot be drawn; record pages will use their section card."
+
 # 5. Optimize configurations and cache
 echo "⚡ Optimizing Laravel application..."
 php /var/www/html/artisan optimize:clear

@@ -15,7 +15,7 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['resources/js/**/*.test.ts'],
+    include: ['resources/js/**/*.test.ts', 'scripts/og/**/*.test.ts'],
     environment: 'node',
   },
 });

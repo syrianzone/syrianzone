@@ -238,17 +238,19 @@ verdicts/status), `promises.review` (moderation queue), `promises.delete`,
 - **Votes:** `voter_key` = HMAC(app key, signed-in user id, or else the
   device id) and `ip_hash` = HMAC(app key, IP). Unique per promise, `voting`
   rate limiter, aggregates only in public reads.
-- **SEO:** `SeoMeta` gets `/promises` and `/promises/suggest` entries plus a
-  dynamic branch for `/promises/{number}` (title, description, canonical,
-  breadcrumb, 404 for unknown or unpublished numbers). `SitemapBuilder` lists
-  published promises.
-- **Share images:** the repo's OG images are pre-rendered PNGs, so a countdown
-  baked into one would go stale. Link previews for every promises page use the
-  section card `public/og/promises.png` (listed in `scripts/generate_og.py`),
-  and the detail page offers a **"download share image"** rendered in the
-  browser (`Lib/exportElementAsPng`, lazy-loaded) with the live count. Nothing
-  inside the captured node may use `truncate`: html2canvas clips ellipsised
-  Arabic text.
+- **SEO:** `SeoMeta` gets `/promises` and `/promises/suggest` entries, and
+  `PromisePreview` describes `/promises/{number}` (title, description,
+  canonical, breadcrumb; unknown or unpublished numbers get a 404).
+  `SitemapBuilder` lists published promises.
+- **Share images:** every promise has a link-preview card of its own, drawn on
+  demand by `App\Support\Seo\Preview\Resolvers\PromisePreview` (see
+  [seo.md](../guidelines/seo.md)). It shows the status, number, sector, speaker
+  and the absolute deadline date, never a countdown: chat apps keep a preview
+  for weeks, so a number of days baked into it would be wrong the next morning.
+  The card is redrawn when any of those change. For the live count the detail
+  page also offers a **"download share image"** rendered in the browser
+  (`Lib/exportElementAsPng`, lazy-loaded). Nothing inside the captured node may
+  use `truncate`: html2canvas clips ellipsised Arabic text.
 - **Untrusted text:** titles and quotes can come from visitors, so the JSON-LD
   is encoded with `JSON_HEX_TAG | JSON_HEX_AMP`; every URL that is rendered as
   a link is validated as `http(s)` (or a `/storage/` upload) on the server and

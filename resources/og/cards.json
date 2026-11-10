@@ -1,0 +1,56 @@
+{
+  "comment": "The share card of every fixed page: one entry per card, listing the paths that use it. `title` and `subtitle` are written for the card (short, measured to fit); they are not the meta title and description. `icon` is a key of SITE_ICON_MAP. Run `npm run og:build` after editing.",
+  "cards": [
+    { "slug": "home", "paths": ["/"], "kind": "brand", "title": "المساحة السورية", "subtitle": "منصة سورية مفتوحة المصدر" },
+
+    { "slug": "tierlist", "paths": ["/tierlist"], "title": "تقييم الحكومة", "subtitle": "قيّم أداء الوزراء والمسؤولين وشارك ترتيبك", "icon": "tierlist" },
+    { "slug": "tierlist-leaderboard", "paths": ["/tierlist/leaderboard"], "title": "نتائج تقييم الحكومة", "subtitle": "ترتيب الوزراء والمحافظين بحسب تصويت الزوار", "icon": "tierlist" },
+    { "slug": "polls", "paths": ["/polls"], "title": "استطلاعات الرأي", "subtitle": "شارك برأيك في القضايا والشؤون السورية", "icon": "tierlist" },
+    { "slug": "promises", "paths": ["/promises"], "title": "عداد الوعود", "subtitle": "وعود المسؤولين العلنية ومواعيدها وما تحقق منها", "icon": "promises" },
+    { "slug": "promises-suggest", "paths": ["/promises/suggest"], "title": "اقترح وعداً", "subtitle": "أرسل وعداً علنياً مع مصدره ليراجعه المحررون", "icon": "promises" },
+    { "slug": "priorities", "paths": ["/priorities"], "title": "أولويات سوريا", "subtitle": "رتّب أولوياتك لسوريا المستقبل وشاركها", "icon": "priorities" },
+    { "slug": "compass", "paths": ["/compass"], "title": "بوصلة سوريا", "subtitle": "اكتشف موقعك السياسي على أحد عشر محوراً", "icon": "compass" },
+    { "slug": "compass-stats", "paths": ["/compass/stats"], "title": "إحصاءات البوصلة", "subtitle": "نتائج مجمّعة ومجهولة الهوية لاختبار بوصلة سوريا", "icon": "compass" },
+    { "slug": "alignment", "paths": ["/alignment"], "title": "مواءمة البوصلة", "subtitle": "قارن توجّهاتك بالقوى والتيارات السياسية", "icon": "compass" },
+
+    { "slug": "mishwar", "paths": ["/mishwar"], "title": "مشوار", "subtitle": "دليل وخريطة الأماكن والمطاعم والمقاهي في سوريا", "icon": "mishwar" },
+    { "slug": "transit", "paths": ["/transit"], "title": "ترانزيت سوريا", "subtitle": "خرائط وخطوط النقل العام في المدن السورية", "icon": "transit" },
+    { "slug": "transit-studio", "paths": ["/transit/studio"], "title": "استوديو ترانزيت", "subtitle": "ارسم خطوط المواصلات والمواقف وشاركها", "icon": "transit" },
+    { "slug": "crossings", "paths": ["/crossings"], "title": "المنافذ الحدودية", "subtitle": "حالة المعابر والمطارات والمرافئ وساعات عملها", "icon": "crossings" },
+    { "slug": "atlas", "paths": ["/atlas"], "title": "أطلس سوريا", "subtitle": "بيانات سكانية وخرائط للمحافظات والمدن", "icon": "atlas" },
+
+    { "slug": "syofficial", "paths": ["/syofficial"], "title": "الحسابات الرسمية", "subtitle": "دليل الحسابات الموثّقة للوزارات والمؤسسات السورية", "icon": "syofficial" },
+    { "slug": "phonebook", "paths": ["/phonebook"], "title": "دليل الهاتف", "subtitle": "أرقام الطوارئ والاستعلامات والخدمات العامة", "icon": "phonebook" },
+    { "slug": "govapps", "paths": ["/govapps"], "title": "تطبيقات الحكومة", "subtitle": "دليل التطبيقات والخدمات الإلكترونية الحكومية", "icon": "govapps" },
+    { "slug": "sites", "paths": ["/sites"], "title": "دليل المواقع", "subtitle": "مواقع ومنصات ومبادرات رقمية سورية مفيدة", "icon": "sites" },
+    { "slug": "party", "paths": ["/party"], "title": "دليل الأحزاب", "subtitle": "الأحزاب والتيارات والقوى السياسية السورية", "icon": "party" },
+    { "slug": "house", "paths": ["/house"], "title": "المجلس التشريعي", "subtitle": "تشكيلة مجلس الشعب 2026: المقاعد والأعضاء", "icon": "house" },
+    { "slug": "justice", "paths": ["/justice"], "title": "العدالة الانتقالية", "subtitle": "قوائم وإحصاءات للتوثيق والمحاسبة", "icon": "justice" },
+    { "slug": "syid", "paths": ["/syid"], "title": "الهوية البصرية", "subtitle": "ألوان وخطوط وشعارات الهوية البصرية السورية", "icon": "syid" },
+
+    { "slug": "muslim", "paths": ["/muslim"], "title": "الركن الإسلامي", "subtitle": "مواقيت الصلاة، القرآن الكريم، وإذاعة القرآن", "icon": "muslim" },
+    { "slug": "muslim-prayer", "paths": ["/muslim/prayer"], "title": "مواقيت الصلاة", "subtitle": "بحسب مدينتك، مع عدّاد للصلاة القادمة", "icon": "muslim" },
+    { "slug": "muslim-quran", "paths": ["/muslim/quran"], "title": "قارئ القرآن", "subtitle": "بالرسم العثماني مع التلاوة، ويعمل دون اتصال", "icon": "quran" },
+    { "slug": "muslim-radio", "paths": ["/muslim/radio"], "title": "إذاعة القرآن", "subtitle": "تلاوة مستمرة مع اختيار القارئ ومؤقّت للنوم", "icon": "quran_radio" },
+    { "slug": "roznama", "paths": ["/roznama"], "title": "الروزنامة السورية", "subtitle": "التقويم السوري والهجري والأعياد والعطل الرسمية", "icon": "roznama" },
+    { "slug": "board", "paths": ["/board"], "title": "لوحتي", "subtitle": "الطقس والصلاة والمهام والأخبار في لوحة واحدة", "icon": "board" },
+
+    { "slug": "games", "paths": ["/games"], "title": "الألعاب", "subtitle": "2048، سوليتير، طرنيب، تركس، ومن هو؟", "icon": "games" },
+    { "slug": "games-2048", "paths": ["/games/2048"], "title": "2048", "subtitle": "حرّك المربعات واجمع الأرقام حتى تصل إلى 2048", "icon": "game_2048" },
+    { "slug": "games-solitaire", "paths": ["/games/solitare"], "title": "سوليتير", "subtitle": "رتّب أوراق اللعب على الأسس الأربعة", "icon": "solitaire" },
+    { "slug": "games-tarneeb", "paths": ["/games/tarneeb"], "title": "طرنيب", "subtitle": "العب مع شريكك ضد فريق الخصوم", "icon": "tarneeb" },
+    { "slug": "games-trix", "paths": ["/games/trix"], "title": "تركس", "subtitle": "لعبة الورق الشهيرة بالذكاء والتخطيط", "icon": "trix" },
+    { "slug": "guesswho", "paths": ["/guesswho"], "title": "من هو؟", "subtitle": "تحدَّ صديقك في لعبة التخمين المباشرة", "icon": "guesswho" },
+    { "slug": "guesswho-invite", "paths": [], "url": "syrian.zone/guesswho", "title": "دعوة للعب «من هو؟»", "subtitle": "صديقك ينتظرك في الغرفة لبدء التحدّي", "icon": "guesswho", "cta": "ادخل الغرفة" },
+
+    { "slug": "priorities-share", "paths": [], "url": "syrian.zone/priorities", "title": "أولوياتي لسوريا", "subtitle": "شاهد ترتيبي لأولويات سوريا المستقبل وقارنه بترتيبك", "icon": "priorities", "cta": "رتّب أولوياتك" },
+    { "slug": "compass-share", "paths": [], "url": "syrian.zone/compass", "title": "نتيجتي في بوصلة سوريا", "subtitle": "شاهد النتيجة ثم اكتشف موقعك أنت على المحاور", "icon": "compass", "cta": "ابدأ الاختبار" },
+
+    { "slug": "syrian-contributors", "paths": ["/syrian-contributors"], "title": "المساهمون السوريون", "subtitle": "أكثر المطورين السوريين مساهمةً على GitHub", "icon": "contributors" },
+    { "slug": "shawarma", "paths": ["/shawarma"], "title": "تير ليست الشاورما", "subtitle": "تقييم محلات الشاورما السورية الشهيرة", "icon": "recipes" },
+    { "slug": "stats", "paths": ["/stats"], "title": "إحصائيات المنصة", "subtitle": "أرقام الزيارات والنشاط العام في المساحة السورية", "icon": "stats" },
+    { "slug": "about", "paths": ["/about"], "title": "عن المنصة", "subtitle": "مشروع غير تجاري ومفتوح المصدر للشأن السوري", "emblem": true },
+    { "slug": "privacy", "paths": ["/privacy"], "title": "سياسة الخصوصية", "subtitle": "كيف نحمي بياناتك وما التقنيات التي نستخدمها", "emblem": true },
+    { "slug": "terms", "paths": ["/terms"], "title": "الشروط والأحكام", "subtitle": "شروط الاستخدام والسلوك المقبول", "emblem": true }
+  ]
+}

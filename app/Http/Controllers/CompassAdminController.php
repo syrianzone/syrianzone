@@ -372,17 +372,27 @@ class CompassAdminController extends Controller
             ->where('stats_consent', true);
 
         // Shared with the public page: totals, per-scope axis averages, persona
-        // distribution and per-question answer counts.
-        $core = CompassStats::aggregateAnonymous();
+        // distribution and per-question answer counts, all read from the one
+        // running tally (CompassStats::tally) rather than by walking every run.
+        $tally = CompassStats::tally();
+        $core = CompassStats::present($tally);
 
-        $avg = $base()
-            ->selectRaw('avg(consistency) as consistency, avg(answered) as answered')
+        // One pass for the averages and both trailing windows.
+        $summary = $base()
+            ->selectRaw(
+                'avg(consistency) as consistency, avg(answered) as answered, '
+                .'sum(case when created_at >= ? then 1 else 0 end) as last7, '
+                .'sum(case when created_at >= ? then 1 else 0 end) as last30',
+                [now()->subDays(7), now()->subDays(30)]
+            )
+            ->toBase()
             ->first();
+        $avg = $summary;
 
         return array_merge($core, [
-            'last7' => $base()->where('created_at', '>=', now()->subDays(7))->count(),
-            'last30' => $base()->where('created_at', '>=', now()->subDays(30))->count(),
-            'alignTotals' => $this->alignTotals($base),
+            'last7' => (int) ($summary->last7 ?? 0),
+            'last30' => (int) ($summary->last30 ?? 0),
+            'alignTotals' => $this->alignTotals($tally['align']),
             'avgConsistency' => $avg?->consistency !== null ? round((float) $avg->consistency, 3) : null,
             'avgAnswered' => $avg?->answered !== null ? round((float) $avg->answered, 1) : null,
             'daily' => $this->daily($base),
@@ -406,22 +416,15 @@ class CompassAdminController extends Controller
     /**
      * Summed per-bloc alignment weight across every anonymous run.
      *
-     * @param  callable(): \Illuminate\Database\Eloquent\Builder  $base
+     * @param  array<string, float>  $summed  Every key seen in a run's `align`, summed.
      * @return array<string, float>
      */
-    private function alignTotals(callable $base): array
+    private function alignTotals(array $summed): array
     {
         $totals = array_fill_keys(self::BLOCS, 0.0);
 
-        foreach ($base()->whereNotNull('align')->pluck('align') as $align) {
-            if (! is_array($align)) {
-                continue;
-            }
-            foreach (self::BLOCS as $bloc) {
-                if (isset($align[$bloc]) && is_numeric($align[$bloc])) {
-                    $totals[$bloc] += (float) $align[$bloc];
-                }
-            }
+        foreach (self::BLOCS as $bloc) {
+            $totals[$bloc] = (float) ($summed[$bloc] ?? 0.0);
         }
 
         return $totals;

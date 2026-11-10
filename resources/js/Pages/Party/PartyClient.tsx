@@ -4,13 +4,13 @@ import React, { useState, useMemo } from 'react';
 import { formatSocialUrl, getLanguageName } from './data';
 import { Organization } from './types';
 import {
-    Search, X, FilterX, MapPin, Globe, FileText, Users,
+    Search, MapPin, Globe, FileText, Users,
     LayoutGrid, List, Plus, ExternalLink, Send
 } from 'lucide-react';
 import { Twitter, Facebook, Instagram, Youtube } from '@/components/ui/icons';
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import SmartFilterSearch from '@/Components/SmartFilterSearch';
+import { matchesFilterText, type SmartFilterFacet, type SmartFilterValue } from '@/Lib/smartFilterSearch';
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -31,19 +31,35 @@ export default function PartyClient({ initialOrganizations }: PartyClientProps) 
     const [displayCount, setDisplayCount] = useState(ITEMS_PER_PAGE);
 
     // --- Derive Filter Options ---
-    const categories = useMemo(() => Array.from(new Set(initialOrganizations.map(o => o.type).filter(Boolean))).sort(), [initialOrganizations]);
-    const countries = useMemo(() => Array.from(new Set(initialOrganizations.map(o => o.country).filter(Boolean))).sort(), [initialOrganizations]);
-    const cities = useMemo(() => Array.from(new Set(initialOrganizations.map(o => o.city).filter(Boolean))).sort(), [initialOrganizations]);
-    const languages = useMemo(() => Array.from(new Set(initialOrganizations.map(o => o.lang).filter(Boolean))).sort(), [initialOrganizations]);
+    const categories = useMemo(() => Array.from(new Set(initialOrganizations.map(o => o.type).filter((v): v is string => Boolean(v)))).sort(), [initialOrganizations]);
+    const countries = useMemo(() => Array.from(new Set(initialOrganizations.map(o => o.country).filter((v): v is string => Boolean(v)))).sort(), [initialOrganizations]);
+    const cities = useMemo(() => Array.from(new Set(initialOrganizations.map(o => o.city).filter((v): v is string => Boolean(v)))).sort(), [initialOrganizations]);
+    const languages = useMemo(() => Array.from(new Set(initialOrganizations.map(o => o.lang).filter((v): v is string => Boolean(v)))).sort(), [initialOrganizations]);
+    const facets = useMemo<SmartFilterFacet[]>(() => [
+        { key: 'category', label: 'نوع المنظمة', aliases: ['النوع'], options: categories.map(value => ({ value, label: value })) },
+        { key: 'country', label: 'البلد', options: countries.map(value => ({ value, label: value })) },
+        { key: 'city', label: 'المدينة', options: cities.map(value => ({ value, label: value })) },
+        { key: 'lang', label: 'اللغة', options: languages.map(value => ({ value, label: getLanguageName(value) })) },
+    ].filter(facet => facet.options.length > 0), [categories, countries, cities, languages]);
+    const searchValue: SmartFilterValue = {
+        search: searchTerm,
+        filters: Object.fromEntries(Object.entries({ category: categoryFilter, country: countryFilter, city: cityFilter, lang: langFilter })
+            .filter(([, value]) => value !== 'all').map(([key, value]) => [key, [value]])),
+        sort: '',
+    };
+
+    function changeSearch(next: SmartFilterValue) {
+        setSearchTerm(next.search);
+        setCategoryFilter(next.filters.category?.[0] ?? 'all');
+        setCountryFilter(next.filters.country?.[0] ?? 'all');
+        setCityFilter(next.filters.city?.[0] ?? 'all');
+        setLangFilter(next.filters.lang?.[0] ?? 'all');
+    }
 
     // --- Filter Logic ---
     const filteredOrganizations = useMemo(() => {
         return initialOrganizations.filter(org => {
-            const matchSearch = searchTerm === '' ||
-                org.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                org.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                org.formattedLocation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                org.type?.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchSearch = matchesFilterText(`${org.name} ${org.description ?? ''} ${org.formattedLocation ?? ''} ${org.type ?? ''}`, searchTerm);
 
             const matchCategory = categoryFilter === 'all' || org.type === categoryFilter;
             const matchCountry = countryFilter === 'all' || org.country === countryFilter;
@@ -101,97 +117,19 @@ export default function PartyClient({ initialOrganizations }: PartyClientProps) 
                         </div>
                     </div>
 
-                    {/* SyOfficial-styled Search Box */}
-                    <div className="flex flex-col md:flex-row gap-4 max-w-2xl mx-auto items-center">
-                        <div className="relative w-full">
-                            <Search className="absolute start-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
-                            <Input aria-label="ابحث في المنظمات السياسية بالاسم أو النوع أو المكان..."
-                                type="text"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                placeholder="ابحث في المنظمات السياسية بالاسم أو النوع أو المكان..."
-                                className="w-full ps-12 pe-10 h-14 text-lg bg-card border-border rounded-xl shadow-sm focus:ring-2 focus:ring-primary focus:border-transparent"
-                            />
-                            {searchTerm && (
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => setSearchTerm('')}
-                                    className="absolute end-3 top-1/2 -translate-y-1/2 h-8 w-8 text-muted-foreground hover:text-foreground"
-                                >
-                                    <X className="h-4 w-4" />
-                                </Button>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Filter Dropdowns */}
-                    <div className="flex flex-wrap gap-3 justify-center items-center pt-2">
-                        <div className="min-w-[140px]">
-                            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                                <SelectTrigger className="w-full bg-card border-border text-foreground" aria-label="نوع المنظمة">
-                                    <SelectValue placeholder="نوع المنظمة" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-card text-foreground">
-                                    <SelectItem value="all">جميع الأنواع</SelectItem>
-                                    {categories.map((c: any) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="min-w-[140px]">
-                            <Select value={countryFilter} onValueChange={setCountryFilter}>
-                                <SelectTrigger className="w-full bg-card border-border text-foreground" aria-label="البلد">
-                                    <SelectValue placeholder="البلد" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-card text-foreground">
-                                    <SelectItem value="all">جميع البلدان</SelectItem>
-                                    {countries.map((c: any) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="min-w-[140px]">
-                            <Select value={cityFilter} onValueChange={setCityFilter}>
-                                <SelectTrigger className="w-full bg-card border-border text-foreground" aria-label="المدينة">
-                                    <SelectValue placeholder="المدينة" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-card text-foreground">
-                                    <SelectItem value="all">جميع المدن</SelectItem>
-                                    {cities.map((c: any) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="min-w-[140px]">
-                            <Select value={langFilter} onValueChange={setLangFilter}>
-                                <SelectTrigger className="w-full bg-card border-border text-foreground" aria-label="اللغة">
-                                    <SelectValue placeholder="اللغة" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-card text-foreground">
-                                    <SelectItem value="all">جميع اللغات</SelectItem>
-                                    {languages.map((l: any) => <SelectItem key={l} value={l}>{getLanguageName(l)}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        {(categoryFilter !== 'all' || countryFilter !== 'all' || cityFilter !== 'all' || langFilter !== 'all' || searchTerm) && (
-                            <Button
-                                variant="outline"
-                                onClick={clearFilters}
-                                className="border-border text-muted-foreground hover:text-foreground gap-2"
-                                size="sm"
-                            >
-                                <FilterX className="h-4 w-4" />
-                                مسح الفلاتر
-                            </Button>
-                        )}
-                    </div>
                 </div>
             </section>
 
             {/* Content Area */}
             <div className="container mx-auto px-4 py-8">
+                {initialOrganizations.length > 0 && (
+                    <SmartFilterSearch
+                        mobileFiltersScroll
+                        className="mb-5"
+                        facets={facets} value={searchValue} onChange={changeSearch}
+                        placeholder="ابحث بالاسم أو النوع أو المكان أو اختر تصفية..." ariaLabel="ابحث في المنظمات السياسية"
+                    />
+                )}
                 {/* Visual Controls */}
                 <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
                     <span role="status" aria-live="polite" className="text-sm text-muted-foreground font-medium">

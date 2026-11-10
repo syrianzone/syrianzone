@@ -6,7 +6,6 @@ use App\Exceptions\Promises\PromiseActionException;
 use App\Models\Promise;
 use App\Models\PromiseVote;
 use App\Models\User;
-use Illuminate\Database\UniqueConstraintViolationException;
 
 /**
  * "Will it be kept?" votes.
@@ -34,17 +33,19 @@ class PromiseVoteService
 
         $voterKey = $this->voterKey($user, $deviceId);
 
-        try {
-            PromiseVote::updateOrCreate(
-                ['promise_id' => $promise->id, 'voter_key' => $voterKey],
-                ['believes' => $believes, 'ip_hash' => $ip ? $this->hmac('ip:'.$ip) : null],
-            );
-        } catch (UniqueConstraintViolationException) {
-            // Two concurrent first votes from the same voter: the other one won.
-            PromiseVote::where('promise_id', $promise->id)
-                ->where('voter_key', $voterKey)
-                ->update(['believes' => $believes]);
-        }
+        // One atomic statement on the (promise_id, voter_key) unique index: a
+        // first vote inserts, a changed mind updates, and two concurrent first
+        // votes from the same voter cannot collide.
+        PromiseVote::upsert(
+            [[
+                'promise_id' => $promise->id,
+                'voter_key' => $voterKey,
+                'believes' => $believes,
+                'ip_hash' => $ip ? $this->hmac('ip:'.$ip) : null,
+            ]],
+            ['promise_id', 'voter_key'],
+            ['believes', 'ip_hash', 'updated_at'],
+        );
 
         return $this->tally($promise);
     }

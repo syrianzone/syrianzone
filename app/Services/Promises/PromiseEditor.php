@@ -412,8 +412,11 @@ class PromiseEditor
         $slugs = array_values(array_unique(array_intersect($slugs, Governorates::slugs())));
 
         PromiseGovernorate::where('promise_id', $promise->id)->delete();
-        foreach ($slugs as $slug) {
-            PromiseGovernorate::create(['promise_id' => $promise->id, 'governorate' => $slug]);
+        if ($slugs !== []) {
+            PromiseGovernorate::insert(array_map(
+                fn (string $slug) => ['promise_id' => $promise->id, 'governorate' => $slug],
+                $slugs,
+            ));
         }
 
         // A promise scoped to no governorate is national by definition.
@@ -438,8 +441,10 @@ class PromiseEditor
             ->values();
 
         PromiseTag::where('promise_id', $promise->id)->delete();
-        foreach ($tags as $tag) {
-            PromiseTag::create(['promise_id' => $promise->id, 'tag' => $tag]);
+        if ($tags->isNotEmpty()) {
+            PromiseTag::insert($tags->map(
+                fn (string $tag) => ['promise_id' => $promise->id, 'tag' => $tag],
+            )->all());
         }
     }
 

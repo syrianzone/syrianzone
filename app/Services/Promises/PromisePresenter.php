@@ -41,6 +41,14 @@ class PromisePresenter
     {
         $today = Promise::today();
 
+        return PromiseIndexCache::remember($today, fn () => $this->buildIndex($today));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildIndex(CarbonImmutable $today): array
+    {
         $promises = Promise::published()
             ->with([...self::PUBLIC_WITH, 'updates' => fn ($q) => $q->where('type', 'progress')])
             ->get();

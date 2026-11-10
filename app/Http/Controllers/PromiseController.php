@@ -8,6 +8,7 @@ use App\Services\Promises\PromisePresenter;
 use App\Services\Promises\PromiseSubmissionService;
 use App\Services\Promises\PromiseVoteService;
 use App\Services\Promises\SpeakerDirectory;
+use App\Support\Seo\SeoMeta;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -35,6 +36,7 @@ class PromiseController extends Controller
     public function show(int $number): Response
     {
         $promise = $this->findPublished($number);
+        SeoMeta::remember(request(), 'promise', $promise);
 
         return inertia('Promises/Show', [
             'promise' => $this->presenter->detail($promise),

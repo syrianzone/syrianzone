@@ -2,10 +2,18 @@
 
 namespace App\Providers;
 
+use App\Http\Controllers\ExternalDataController;
+use App\Models\HouseMember2026;
+use App\Models\Promise;
+use App\Models\PromiseSector;
+use App\Models\PromiseSpeaker;
+use App\Models\PromiseUpdate;
+use App\Services\Promises\PromiseIndexCache;
 use App\Support\Agents\AgentAuthorizer;
 use App\Support\Agents\AgentContext;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
@@ -37,6 +45,16 @@ class AppServiceProvider extends ServiceProvider
         View::composer('app', function ($view) {
             $view->with('meta', \App\Support\Seo\SeoMeta::resolve(request()));
         });
+
+        // Any write to the tracker drops the cached /promises payload.
+        foreach ([Promise::class, PromiseUpdate::class, PromiseSpeaker::class, PromiseSector::class] as $model) {
+            $model::saved(fn () => PromiseIndexCache::flush());
+            $model::deleted(fn () => PromiseIndexCache::flush());
+        }
+
+        // The cached /house roster follows edits made through the model.
+        HouseMember2026::saved(fn () => Cache::forget(ExternalDataController::HOUSE_MEMBERS_CACHE_KEY));
+        HouseMember2026::deleted(fn () => Cache::forget(ExternalDataController::HOUSE_MEMBERS_CACHE_KEY));
 
         if (config('app.env') === 'production') {
             URL::forceScheme('https');

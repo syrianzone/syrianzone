@@ -203,6 +203,11 @@ abstract class PromisesTool extends AuditedTool
             'restates_promise_id' => $schema->string()
                 ->description('UUID of an earlier published promise this promise supersedes/restates.'),
 
+            'related_promise_ids' => $schema->array()
+                ->description('Optional array of UUIDs of published promises related to this one.')
+                ->max(20)
+                ->items($schema->string()),
+
             'sources' => $schema->array()
                 ->description('Sources supporting the promise. At least one source is required.')
                 ->min(1)
@@ -238,5 +243,15 @@ abstract class PromisesTool extends AuditedTool
                 ]))
                 ->required(),
         ];
+    }
+
+    /**
+     * Shared field schema for create-promise and update-promise.
+     *
+     * @return array<string, mixed>
+     */
+    protected function promiseInputSchema(JsonSchema $schema): array
+    {
+        return $this->promiseFieldsSchema($schema);
     }
 }

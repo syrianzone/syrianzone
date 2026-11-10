@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ArrowLeft, Archive, ExternalLink, Flag } from 'lucide-react';
+import { ArrowLeft, Archive, CalendarClock, ExternalLink, Flag } from 'lucide-react';
 import StateBadge from './StateBadge';
 import { formatDate, formatNumber, safeHref } from '../_lib/format';
 import { UPDATE_TYPE_LABEL, VENUE_LABEL } from '../_lib/status';
@@ -39,11 +39,22 @@ export default function Timeline({ statementDate, statementVenue, updates, unit,
                 const archive = safeHref(u.archiveUrl);
                 return (
                     <li key={u.id} className="relative">
-                        <span className="absolute -start-[calc(1.875rem+0.5px)] top-1 h-3 w-3 rounded-full border-2 border-primary bg-background" aria-hidden="true" />
+                        {u.type === 'deadline_change' ? (
+                            <span className="absolute -start-[calc(2rem+0.5px)] top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 ring-4 ring-background dark:text-amber-400" aria-hidden="true">
+                                <CalendarClock className="h-2.5 w-2.5" />
+                            </span>
+                        ) : (
+                            <span className="absolute -start-[calc(1.875rem+0.5px)] top-1 h-3 w-3 rounded-full border-2 border-primary bg-background" aria-hidden="true" />
+                        )}
                         <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
-                                <p className="text-xs text-muted-foreground">
-                                    {formatDate(u.happenedOn)} · {UPDATE_TYPE_LABEL[u.type] ?? u.type}
+                                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                    {u.type === 'deadline_change' && (
+                                        <CalendarClock className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+                                    )}
+                                    <span>
+                                        {formatDate(u.happenedOn)} · {UPDATE_TYPE_LABEL[u.type] ?? (u.type === 'deadline_change' ? 'تأجيل الموعد' : u.type)}
+                                    </span>
                                 </p>
                                 {u.type === 'status_change' && u.statusTo && (
                                     <div className="mt-1.5 flex flex-wrap items-center gap-2">
@@ -57,6 +68,12 @@ export default function Timeline({ statementDate, statementVenue, updates, unit,
                                     <p className="mt-1 font-semibold text-foreground">
                                         القراءة: <span className="tabular-nums">{formatNumber(u.value)}</span>{suffix}
                                     </p>
+                                )}
+                                {u.type === 'deadline_change' && (
+                                    <div className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                                        <CalendarClock className="h-4 w-4 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+                                        <span>تأجيل الموعد</span>
+                                    </div>
                                 )}
                                 {u.body && <p className="mt-1.5 whitespace-pre-line text-sm leading-relaxed text-foreground">{u.body}</p>}
                                 {(source || archive) && (

@@ -62,6 +62,9 @@ export interface PromiseCardData {
     keptLate: boolean;
     resolvedAt: string | null;
     target: PromiseTarget | null;
+    originalDeadlineDate?: string | null;
+    originalDeadlineWording?: string | null;
+    postponedCount?: number;
 }
 
 export interface PromiseSourceData {
@@ -77,9 +80,16 @@ export interface PromiseSourceData {
     isPrimary: boolean;
 }
 
+export type PromiseUpdateType =
+    | 'progress'
+    | 'status_change'
+    | 'official_response'
+    | 'note'
+    | 'deadline_change';
+
 export interface PromiseUpdateData {
     id: number;
-    type: 'progress' | 'status_change' | 'official_response' | 'note';
+    type: PromiseUpdateType;
     happenedOn: string;
     body: string | null;
     statusFrom: PromiseStatus | null;
@@ -93,6 +103,9 @@ export interface RelatedPromise {
     number: number;
     title: string;
     state: PromiseState;
+    speakerName?: string | null;
+    statementDate?: string | null;
+    deadlineDate?: string | null;
 }
 
 export interface PromiseDetailData extends PromiseCardData {
@@ -108,6 +121,7 @@ export interface PromiseDetailData extends PromiseCardData {
     updates: PromiseUpdateData[];
     restates: RelatedPromise | null;
     restatedBy: RelatedPromise | null;
+    relatedPromises?: RelatedPromise[];
     votes: { yes: number; no: number };
     votingOpen: boolean;
     publishedAt: string | null;

@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * A public promise made by an official. See docs/specs/promises.md.
@@ -57,6 +59,7 @@ class Promise extends Model
         'speaker_id', 'speaker_title', 'institution_id', 'sector_id', 'is_national',
         'statement_date', 'statement_venue',
         'deadline_wording', 'deadline_date', 'deadline_reasoning',
+        'original_deadline_date', 'original_deadline_wording', 'postponed_count',
         'target_value', 'target_unit', 'baseline_value', 'baseline_note',
         'status', 'resolved_at', 'restates_promise_id',
         'review_status', 'origin', 'submitter_note',
@@ -70,6 +73,8 @@ class Promise extends Model
         'is_national' => 'boolean',
         'statement_date' => 'date:Y-m-d',
         'deadline_date' => 'date:Y-m-d',
+        'original_deadline_date' => 'date',
+        'postponed_count' => 'integer',
         'resolved_at' => 'date:Y-m-d',
         'target_value' => 'float',
         'baseline_value' => 'float',
@@ -275,5 +280,38 @@ class Promise extends Model
     public function tags(): array
     {
         return $this->tagRows->pluck('tag')->all();
+    }
+
+    /**
+     * All UUIDs linked to this promise in promise_relations in either direction.
+     *
+     * @return array<int, string>
+     */
+    public function relatedPromiseIds(): array
+    {
+        $a = DB::table('promise_relations')->where('promise_id', $this->id)->pluck('related_promise_id')->all();
+        $b = DB::table('promise_relations')->where('related_promise_id', $this->id)->pluck('promise_id')->all();
+
+        return array_values(array_unique(array_merge($a, $b)));
+    }
+
+    /**
+     * Published promises related to this one, ordered by statement date then number.
+     *
+     * @return Collection<int, Promise>
+     */
+    public function relatedPublishedPromises(): Collection
+    {
+        $ids = $this->relatedPromiseIds();
+        if ($ids === []) {
+            return collect();
+        }
+
+        return self::published()
+            ->with('speaker')
+            ->whereIn('id', $ids)
+            ->orderBy('statement_date', 'asc')
+            ->orderBy('number', 'asc')
+            ->get();
     }
 }

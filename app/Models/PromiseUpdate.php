@@ -11,10 +11,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class PromiseUpdate extends Model
 {
-    public const TYPES = ['progress', 'status_change', 'official_response', 'note'];
+    public const TYPES = ['progress', 'status_change', 'official_response', 'note', 'deadline_change'];
 
     /** Entry types that must cite a source. */
-    public const SOURCED_TYPES = ['progress', 'status_change', 'official_response'];
+    public const SOURCED_TYPES = ['progress', 'status_change', 'official_response', 'deadline_change'];
 
     protected $fillable = [
         'promise_id', 'type', 'happened_on', 'body', 'status_from', 'status_to',

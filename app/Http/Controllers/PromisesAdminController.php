@@ -146,6 +146,17 @@ class PromisesAdminController extends Controller
         return response()->json(['success' => true, 'promise' => $this->presenter->adminDetail($promise)]);
     }
 
+    public function reschedule(Request $request, string $promise): JsonResponse
+    {
+        $target = $this->findPromise($promise);
+
+        $data = $request->validate($this->rules->reschedule($target), $this->rules->messages());
+
+        $updated = $this->editor->rescheduleDeadline($target, $data, $request->user());
+
+        return response()->json(['success' => true, 'promise' => $this->presenter->adminDetail($updated)]);
+    }
+
     public function addUpdate(Request $request, string $id): JsonResponse
     {
         $promise = $this->findPromise($id);

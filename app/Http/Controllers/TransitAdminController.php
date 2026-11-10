@@ -320,10 +320,8 @@ class TransitAdminController extends Controller
 
         $this->ensureTransitCityAccess($request, $route->city_id, ['transit.review_drafts']);
 
-        $stops = $route->stops()->orderBy('pivot_order')->get();
-        $formatted = $stops->map(function ($s) {
-            $geomJson = DB::table('stops')->selectRaw('ST_AsGeoJSON(geometry) as geojson')->where('id', $s->id)->value('geojson');
-            $coords = json_decode($geomJson, true)['coordinates'] ?? [0, 0];
+        $formatted = $route->stopPoints()->map(function ($s) {
+            $coords = json_decode((string) $s->geojson, true)['coordinates'] ?? [0, 0];
 
             return [
                 'id' => $s->id,
@@ -360,9 +358,8 @@ class TransitAdminController extends Controller
             ];
         }
 
-        $stops = $route->stops()->orderBy('pivot_order')->get();
-        foreach ($stops as $s) {
-            $stopGeomJson = DB::table('stops')->selectRaw('ST_AsGeoJSON(geometry) as geojson')->where('id', $s->id)->value('geojson');
+        foreach ($route->stopPoints() as $s) {
+            $stopGeomJson = $s->geojson;
             if ($stopGeomJson) {
                 $features[] = [
                     'type' => 'Feature',

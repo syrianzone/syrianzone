@@ -13,6 +13,9 @@ use Illuminate\Support\Facades\DB;
 
 class TransitController extends Controller
 {
+    /** Most results one search returns per kind (routes, stops). */
+    private const SEARCH_LIMIT = 50;
+
     public function __construct(private readonly GovernorateIconService $governorateIcons) {}
 
     public function cities()
@@ -89,10 +92,10 @@ class TransitController extends Controller
         $cityIds = $this->cityIdsFor($id);
         $cacheKey = 'transit:routes:'.implode('+', $cityIds);
         $mapped = Cache::remember($cacheKey, 600, function () use ($cityIds) {
-            // NOTE: select() must come before withCount() — a later select()
+            // NOTE: select() must come before withStopsCount() — a later select()
             // replaces the column list and would drop the count subselect,
             // leaving stops_count null in the public payload.
-            $routes = Route::whereIn('city_id', $cityIds)->where('status', 'published')->select('id', 'city_id', 'name_ar', 'name_en', 'color_index', 'price_old', 'price_new')->withCount('stops')->get();
+            $routes = Route::whereIn('city_id', $cityIds)->where('status', 'published')->select('id', 'city_id', 'name_ar', 'name_en', 'color_index', 'price_old', 'price_new')->withStopsCount()->get();
 
             return $routes->map(function ($r) {
                 return [
@@ -209,20 +212,27 @@ class TransitController extends Controller
         // causing ST_Distance_Sphere to error out on every request.
         $pointJson = json_encode(['type' => 'Point', 'coordinates' => [(float) $lng, (float) $lat]]);
 
-        // Bounding-box prefilter so the spatial full-scan only runs on nearby
-        // rows: 1° lat ≈ 111km, lng scaled by cos(lat). The exact radius check
-        // below remains authoritative; this only narrows candidates.
+        // Bounding-box prefilter, so the exact distance check only runs on
+        // nearby rows: 1° lat ≈ 111km, lng scaled by cos(lat).
+        //
+        // The box is a GeoJSON polygon tested with MBRContains, not a pair of
+        // ST_X/ST_Y ranges. On a geographic SRS MySQL returns latitude from
+        // ST_X and longitude from ST_Y, so the old ranges compared longitude
+        // with a latitude band and matched nothing. MBRContains has no axis to
+        // get wrong and is what the spatial index on stops.geometry serves.
         $latDelta = $radius / 111000;
         $lngDelta = $radius / max(111000 * cos(deg2rad((float) $lat)), 20000);
         $minLat = (float) $lat - $latDelta;
         $maxLat = (float) $lat + $latDelta;
         $minLng = (float) $lng - $lngDelta;
         $maxLng = (float) $lng + $lngDelta;
+        $boxJson = json_encode(['type' => 'Polygon', 'coordinates' => [[
+            [$minLng, $minLat], [$maxLng, $minLat], [$maxLng, $maxLat], [$minLng, $maxLat], [$minLng, $minLat],
+        ]]]);
 
         $stops = DB::table('stops')
             ->select('id', 'name_ar', 'city_id', DB::raw('ST_AsGeoJSON(geometry) as geojson'))
-            ->whereBetween(DB::raw('ST_Y(geometry)'), [$minLat, $maxLat])
-            ->whereBetween(DB::raw('ST_X(geometry)'), [$minLng, $maxLng])
+            ->whereRaw('MBRContains(ST_GeomFromGeoJSON(?), geometry)', [$boxJson])
             ->whereRaw('ST_Distance_Sphere(geometry, ST_GeomFromGeoJSON(?)) <= ?', [$pointJson, $radius])
             ->get();
 
@@ -260,25 +270,40 @@ class TransitController extends Controller
         $cityId = $request->input('city_id');
         $cityIds = is_string($cityId) && $cityId !== '' ? City::mapGroup($cityId) : null;
 
-        $routeSearch = Route::search($query);
-        if ($cityIds) {
-            $routeSearch->whereIn('city_id', $cityIds);
-        }
-        $routes = $routeSearch->get()->map(function ($route) {
-            return [
-                'type' => 'route',
-                'id' => $route->id,
-                'nameAr' => $route->name_ar,
-                'nameEn' => $route->name_en,
-                'cityId' => $route->city_id,
-            ];
-        });
+        // Plain indexed-table queries with a cap. This used to go through
+        // Scout, whose default `collection` engine loads every route and every
+        // stop (geometry included) into PHP and filters there, on each
+        // keystroke, with no limit on what comes back. The columns matched are
+        // the same ones the models expose to Scout.
+        $like = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], (string) $query).'%';
+        $matching = fn (array $columns) => function ($q) use ($columns, $like) {
+            foreach ($columns as $column) {
+                $q->orWhere($column, 'like', $like);
+            }
+        };
 
-        $stopSearch = Stop::search($query);
-        if ($cityIds) {
-            $stopSearch->whereIn('city_id', $cityIds);
-        }
-        $stopResults = $stopSearch->get();
+        $routes = Route::query()
+            ->where($matching(['id', 'name_ar', 'name_en', 'city_id']))
+            ->when($cityIds, fn ($q) => $q->whereIn('city_id', $cityIds))
+            ->orderBy('name_ar')
+            ->limit(self::SEARCH_LIMIT)
+            ->get(['id', 'name_ar', 'name_en', 'city_id'])
+            ->map(function ($route) {
+                return [
+                    'type' => 'route',
+                    'id' => $route->id,
+                    'nameAr' => $route->name_ar,
+                    'nameEn' => $route->name_en,
+                    'cityId' => $route->city_id,
+                ];
+            });
+
+        $stopResults = Stop::query()
+            ->where($matching(['id', 'name_ar', 'city_id']))
+            ->when($cityIds, fn ($q) => $q->whereIn('city_id', $cityIds))
+            ->orderBy('name_ar')
+            ->limit(self::SEARCH_LIMIT)
+            ->get(['id', 'name_ar', 'city_id']);
 
         // Batch geometry lookups — one query for all matching stops
         $geoMap = DB::table('stops')

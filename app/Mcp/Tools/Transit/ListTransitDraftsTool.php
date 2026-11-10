@@ -100,11 +100,9 @@ class ListTransitDraftsTool extends TransitTool
                 : array_values(array_intersect($allowed, [$validated['city_id']]));
         }
 
-        $drafts = $service->drafts($allowed, $limit)
-            ->when(
-                ($validated['status'] ?? 'pending') !== 'all',
-                fn ($q) => $q->where('status', $validated['status'] ?? 'pending')
-            );
+        $status = $validated['status'] ?? 'pending';
+
+        $drafts = $service->drafts($allowed, $limit, $status === 'all' ? null : $status);
 
         $presenter = app(TransitPresenter::class);
 

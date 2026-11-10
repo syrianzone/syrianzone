@@ -73,11 +73,11 @@ class ListTransitRouteHistoryTool extends TransitTool
 
         $allowed = $context->allowedTransitCities();
 
-        $logs = app(TransitAdminService::class)->logs($allowed, $validated['limit'] ?? 50)
-            ->when(
-                isset($validated['route_id']),
-                fn ($q) => $q->where('route_id', $validated['route_id'])
-            );
+        $logs = app(TransitAdminService::class)->logs(
+            $allowed,
+            $validated['limit'] ?? 50,
+            $validated['route_id'] ?? null,
+        );
 
         return Response::structured([
             'count' => $logs->count(),

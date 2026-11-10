@@ -87,6 +87,11 @@ class Promise extends Model
         return $this->belongsTo(PromiseSpeaker::class, 'speaker_id');
     }
 
+    public function coSpeakerRows(): HasMany
+    {
+        return $this->hasMany(PromiseCoSpeaker::class, 'promise_id')->orderBy('sort')->orderBy('id');
+    }
+
     public function institution(): BelongsTo
     {
         return $this->belongsTo(OfficialEntity::class, 'institution_id');

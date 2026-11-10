@@ -123,9 +123,9 @@ export function filterPromises(promises: PromiseCardData[], value: SmartFilterVa
         any('sector', (v) => p.sector?.id === v)
         && any('governorate', (v) => v === 'national' ? p.isNational : p.governorates.includes(v))
         && any('institution', (v) => p.institution?.id === v)
-        && any('speaker', (v) => p.speaker.id === v)
+        && any('speaker', (v) => p.speaker.id === v || (p.coSpeakers ?? []).some((s) => s.id === v))
         && any('tag', (v) => p.tags.includes(v))
-        && (!needle || normalizeArabic(`${p.title} ${p.speaker.name ?? ''}`).includes(needle))
+        && (!needle || normalizeArabic(`${p.title} ${p.speaker.name ?? ''} ${(p.coSpeakers ?? []).map((s) => s.name ?? '').join(' ')}`).includes(needle))
     ));
 }
 

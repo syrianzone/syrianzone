@@ -39,9 +39,15 @@ export default function PromiseShow({ promise }: Props) {
     const [reportKind, setReportKind] = useState<ReportKind | null>(null);
     const [shareOpen, setShareOpen] = useState(false);
     const [sharing, setSharing] = useState(false);
+    const coSpeakers = promise.coSpeakers ?? [];
+    const allSpeakers = [
+        { ...promise.speaker, xHandle: promise.speakerXHandle, institutionName: promise.institution?.name ?? null },
+        ...coSpeakers.map((s) => ({ ...s, xHandle: s.xHandle ?? null, institutionName: null })),
+    ];
+    const speakerNames = allSpeakers.map((s) => s.name).filter(Boolean).join(' و');
     const shareData: ShareData = {
         title: promise.title,
-        text: `«${promise.title}»${promise.speaker.name ? ` — ${promise.speaker.name}` : ''}\nتابع حالة الوعد وآخر تحديثاته على عداد الوعود:`,
+        text: `«${promise.title}»${speakerNames ? ` — ${speakerNames}` : ''}\nتابع حالة الوعد وآخر تحديثاته على عداد الوعود:`,
         url: seo?.canonical ?? `/promises/${promise.number}`,
     };
     const canShare = useCanShare(() => shareData);
@@ -106,26 +112,30 @@ export default function PromiseShow({ promise }: Props) {
                         </Badge>
                     </div>
                     <h1 className="text-2xl font-black leading-tight text-foreground md:text-4xl">{promise.title}</h1>
-                    <div className="flex flex-wrap items-center gap-3">
-                        <SpeakerAvatar name={promise.speaker.name} image={promise.speaker.image} size={48} />
-                        <div>
-                            <p className="font-bold text-foreground">{promise.speaker.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                                {[promise.speaker.title, promise.institution?.name].filter(Boolean).join(' · ')}
-                            </p>
-                        </div>
-                        {promise.speakerXHandle && (
-                            <a
-                                href={`https://x.com/${encodeURIComponent(promise.speakerXHandle)}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-                            >
-                                <Twitter className="h-4 w-4" aria-hidden="true" />
-                                <span className="sr-only">حسابه على إكس: </span>
-                                <span dir="ltr">@{promise.speakerXHandle}</span>
-                            </a>
-                        )}
+                    <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+                        {allSpeakers.map((s, idx) => (
+                            <div key={s.id ?? idx} className="flex flex-wrap items-center gap-3">
+                                <SpeakerAvatar name={s.name} image={s.image} size={48} />
+                                <div>
+                                    <p className="font-bold text-foreground">{s.name}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                        {[s.title, s.institutionName].filter(Boolean).join(' · ')}
+                                    </p>
+                                </div>
+                                {s.xHandle && (
+                                    <a
+                                        href={`https://x.com/${encodeURIComponent(s.xHandle)}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+                                    >
+                                        <Twitter className="h-4 w-4" aria-hidden="true" />
+                                        <span className="sr-only">حسابه على إكس: </span>
+                                        <span dir="ltr">@{s.xHandle}</span>
+                                    </a>
+                                )}
+                            </div>
+                        ))}
                     </div>
                     {promise.tags.length > 0 && (
                         <ul className="flex flex-wrap gap-1.5" aria-label="الوسوم">
@@ -171,7 +181,7 @@ export default function PromiseShow({ promise }: Props) {
                                         «{promise.quote}»
                                     </blockquote>
                                     <figcaption className="text-sm text-muted-foreground">
-                                        {promise.speaker.name} · {VENUE_LABEL[promise.statementVenue] ?? ''} · {formatDate(promise.statementDate)}
+                                        {speakerNames} · {VENUE_LABEL[promise.statementVenue] ?? ''} · {formatDate(promise.statementDate)}
                                         {!promise.quoteIsVerbatim && ' · (بتصرّف)'}
                                     </figcaption>
                                 </figure>
@@ -184,7 +194,7 @@ export default function PromiseShow({ promise }: Props) {
                             <CardContent className="space-y-3 text-sm">
                                 <dl className="grid gap-3 sm:grid-cols-2">
                                     <div>
-                                        <dt className="text-muted-foreground">كما ورد على لسانه</dt>
+                                        <dt className="text-muted-foreground">{coSpeakers.length > 0 ? 'كما ورد على لسانهم' : 'كما ورد على لسانه'}</dt>
                                         <dd className="mt-0.5 font-semibold text-foreground">{promise.deadlineWording ? `«${promise.deadlineWording}»` : 'لم يُذكر موعد'}</dd>
                                     </div>
                                     <div>

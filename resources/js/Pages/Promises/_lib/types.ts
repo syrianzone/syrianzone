@@ -41,11 +41,20 @@ export interface PromiseCounter {
     value: number | null;
 }
 
+export interface PromiseCoSpeakerData {
+    id: string | null;
+    name: string | null;
+    title: string | null;
+    image: string | null;
+    xHandle?: string | null;
+}
+
 export interface PromiseCardData {
     id: string;
     number: number;
     title: string;
     speaker: { id: string | null; name: string | null; title: string | null; image: string | null };
+    coSpeakers?: PromiseCoSpeakerData[];
     institution: { id: string; name: string } | null;
     sector: SectorOption | null;
     isNational: boolean;

@@ -43,6 +43,7 @@ export interface AdminPromiseDetail {
     quoteIsVerbatim: boolean;
     speaker: SpeakerOption | null;
     speakerTitle: string | null;
+    coSpeakers?: Array<{ speaker: SpeakerOption | null; speakerTitle: string | null }>;
     institutionId: string | null;
     sectorId: string | null;
     isNational: boolean;

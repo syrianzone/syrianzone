@@ -23,6 +23,10 @@ export default function PromiseCard({ promise, returnUrl = '/promises', layout =
     const sourcePage = usePage();
     const SectorIcon = sectorIcon(promise.sector?.icon);
     const list = layout === 'list';
+    const coSpeakers = promise.coSpeakers ?? [];
+    const allSpeakers = [promise.speaker, ...coSpeakers];
+    const speakerNames = allSpeakers.map((s) => s.name).filter(Boolean).join(' و');
+    const speakerTitles = allSpeakers.map((s) => s.title).filter(Boolean).join(' · ');
     const countdown = (
         <Countdown state={promise.state} counter={promise.counter} deadlineDate={promise.deadlineDate} statementDate={promise.statementDate} size={list ? 'sm' : 'md'} />
     );
@@ -32,11 +36,25 @@ export default function PromiseCard({ promise, returnUrl = '/promises', layout =
             <CardContent className={cn('flex flex-1 flex-col', list ? 'min-w-0 gap-1.5 p-3 sm:gap-3 sm:p-5' : 'gap-4 p-5')}>
                 <div className={cn('flex justify-between gap-3', list ? 'items-center' : 'items-start')}>
                     <div className="flex min-w-0 items-center gap-2.5">
-                        <SpeakerAvatar name={promise.speaker.name} image={promise.speaker.image} size={40} className={cn(list && 'max-sm:hidden')} />
+                        {coSpeakers.length > 0 ? (
+                            <div className={cn('flex shrink-0 items-center', list && 'max-sm:hidden')}>
+                                {allSpeakers.map((s, idx) => (
+                                    <SpeakerAvatar
+                                        key={s.id ?? idx}
+                                        name={s.name}
+                                        image={s.image}
+                                        size={38}
+                                        className={cn('ring-2 ring-card', idx > 0 && '-ms-2.5')}
+                                    />
+                                ))}
+                            </div>
+                        ) : (
+                            <SpeakerAvatar name={promise.speaker.name} image={promise.speaker.image} size={40} className={cn(list && 'max-sm:hidden')} />
+                        )}
                         <div className="min-w-0">
-                            <p className={cn('truncate font-semibold', list ? 'text-xs text-muted-foreground sm:text-sm sm:text-foreground' : 'text-sm text-foreground')}>{promise.speaker.name}</p>
-                            {promise.speaker.title && (
-                                <p className={cn('truncate text-xs text-muted-foreground', list && 'max-sm:hidden')}>{promise.speaker.title}</p>
+                            <p className={cn('truncate font-semibold', list ? 'text-xs text-muted-foreground sm:text-sm sm:text-foreground' : 'text-sm text-foreground')}>{speakerNames}</p>
+                            {speakerTitles && (
+                                <p className={cn('truncate text-xs text-muted-foreground', list && 'max-sm:hidden')}>{speakerTitles}</p>
                             )}
                         </div>
                     </div>

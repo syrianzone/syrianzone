@@ -25,6 +25,7 @@ class PromisePresenter
     /** Relations every public payload needs. */
     public const PUBLIC_WITH = [
         'speaker.candidate', 'speaker.officialEntity', 'speaker.houseMember',
+        'coSpeakerRows.speaker.candidate', 'coSpeakerRows.speaker.officialEntity', 'coSpeakerRows.speaker.houseMember',
         'institution', 'sector', 'governorateRows', 'tagRows',
     ];
 
@@ -56,8 +57,10 @@ class PromisePresenter
                 'sectors' => PromiseSector::active()->orderBy('order_column')->get()->map->toOption()->all(),
                 'governorates' => Governorates::options(),
                 'institutions' => $cards->pluck('institution')->filter()->unique('id')->sortBy('name')->values()->all(),
-                'speakers' => $cards->map(fn ($c) => ['id' => $c['speaker']['id'], 'name' => $c['speaker']['name']])
-                    ->unique('id')->sortBy('name')->values()->all(),
+                'speakers' => $cards->flatMap(fn ($c) => [
+                    ['id' => $c['speaker']['id'], 'name' => $c['speaker']['name']],
+                    ...collect($c['coSpeakers'] ?? [])->map(fn ($cs) => ['id' => $cs['id'], 'name' => $cs['name']])->all(),
+                ])->filter(fn ($s) => filled($s['id']))->unique('id')->sortBy('name')->values()->all(),
                 'tags' => $cards->pluck('tags')->flatten()->unique()->sort()->values()->all(),
             ],
             'dueSoonDays' => Promise::DUE_SOON_DAYS,
@@ -71,6 +74,18 @@ class PromisePresenter
     {
         $today ??= Promise::today();
         $speaker = $promise->speaker;
+        $coSpeakers = $promise->relationLoaded('coSpeakerRows')
+            ? $promise->coSpeakerRows
+                ->map(fn ($row) => [
+                    'id' => $row->speaker?->id,
+                    'name' => $row->speaker?->name,
+                    'title' => $row->speaker_title ?: $row->speaker?->title,
+                    'image' => $row->speaker?->resolvedImage(),
+                ])
+                ->filter(fn (array $s) => $s['id'] !== null)
+                ->values()
+                ->all()
+            : [];
 
         return [
             'id' => $promise->id,
@@ -82,6 +97,7 @@ class PromisePresenter
                 'title' => $promise->speaker_title ?: $speaker?->title,
                 'image' => $speaker?->resolvedImage(),
             ],
+            'coSpeakers' => $coSpeakers,
             'institution' => $promise->institution ? [
                 'id' => $promise->institution->id,
                 'name' => $promise->institution->name_ar ?: $promise->institution->name,
@@ -119,7 +135,20 @@ class PromisePresenter
             ? ['number' => $p->number, 'title' => $p->title, 'state' => $p->displayState($today)]
             : null;
 
-        return $this->card($promise, $today) + [
+        $card = $this->card($promise, $today);
+        $card['coSpeakers'] = $promise->coSpeakerRows
+            ->map(fn ($row) => [
+                'id' => $row->speaker?->id,
+                'name' => $row->speaker?->name,
+                'title' => $row->speaker_title ?: $row->speaker?->title,
+                'image' => $row->speaker?->resolvedImage(),
+                'xHandle' => $row->speaker?->resolvedXHandle(),
+            ])
+            ->filter(fn (array $s) => $s['id'] !== null)
+            ->values()
+            ->all();
+
+        return $card + [
             'summary' => $promise->summary,
             'quote' => $promise->quote,
             'quoteIsVerbatim' => (bool) $promise->quote_is_verbatim,
@@ -179,12 +208,19 @@ class PromisePresenter
      */
     public function adminRow(Promise $promise): array
     {
+        $coNames = $promise->relationLoaded('coSpeakerRows')
+            ? $promise->coSpeakerRows->map(fn ($r) => $r->speaker?->name)->filter()->all()
+            : [];
+        $allNames = array_values(array_filter([$promise->speaker?->name, ...$coNames]));
+        $coPending = $promise->relationLoaded('coSpeakerRows')
+            && $promise->coSpeakerRows->contains(fn ($r) => $r->speaker?->status === 'pending');
+
         return [
             'id' => $promise->id,
             'number' => $promise->number,
             'title' => $promise->title,
-            'speakerName' => $promise->speaker?->name,
-            'speakerPending' => $promise->speaker?->status === 'pending',
+            'speakerName' => $allNames !== [] ? implode(' و', $allNames) : null,
+            'speakerPending' => $promise->speaker?->status === 'pending' || $coPending,
             'status' => $promise->status,
             'state' => $promise->displayState(),
             'reviewStatus' => $promise->review_status,
@@ -208,7 +244,9 @@ class PromisePresenter
     public function adminDetail(Promise $promise): array
     {
         $promise->loadMissing([
-            'speaker.candidate', 'speaker.officialEntity', 'sources', 'updates',
+            'speaker.candidate', 'speaker.officialEntity',
+            'coSpeakerRows.speaker.candidate', 'coSpeakerRows.speaker.officialEntity',
+            'sources', 'updates',
             'governorateRows', 'tagRows', 'restates', 'submitter',
         ]);
 
@@ -228,6 +266,21 @@ class PromisePresenter
                 'pending' => $promise->speaker->status === 'pending',
             ] : null,
             'speakerTitle' => $promise->speaker_title,
+            'coSpeakers' => $promise->coSpeakerRows
+                ->filter(fn ($row) => $row->speaker !== null)
+                ->map(fn ($row) => [
+                    'speaker' => [
+                        'ref' => $row->speaker->ref(),
+                        'name' => $row->speaker->name,
+                        'title' => $row->speaker->title,
+                        'image' => $row->speaker->resolvedImage(),
+                        'source' => 'speaker',
+                        'pending' => $row->speaker->status === 'pending',
+                    ],
+                    'speakerTitle' => $row->speaker_title,
+                ])
+                ->values()
+                ->all(),
             'institutionId' => $promise->institution_id,
             'sectorId' => $promise->sector_id,
             'isNational' => (bool) $promise->is_national,

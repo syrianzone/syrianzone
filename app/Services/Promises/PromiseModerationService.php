@@ -55,6 +55,16 @@ class PromiseModerationService
                 $this->approveSpeaker($speaker, $reviewer);
             }
 
+            foreach ($promise->coSpeakerRows()->get() as $coRow) {
+                $coSpeaker = PromiseSpeaker::query()->lockForUpdate()->find($coRow->speaker_id);
+                if ($coSpeaker === null || $coSpeaker->status === 'rejected') {
+                    throw PromiseActionException::speakerNotApproved();
+                }
+                if ($coSpeaker->status === 'pending') {
+                    $this->approveSpeaker($coSpeaker, $reviewer);
+                }
+            }
+
             $number = $promise->number
                 ?? ((int) Promise::withTrashed()->lockForUpdate()->max('number')) + 1;
 

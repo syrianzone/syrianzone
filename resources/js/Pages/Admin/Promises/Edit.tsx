@@ -12,7 +12,7 @@ import { Label } from '@/Components/ui/label';
 import { Switch } from '@/Components/ui/switch';
 import { Textarea } from '@/Components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
-import { ArrowRight, CalendarClock, ExternalLink, EyeOff, Gavel, Loader2, Save, Upload, X, XCircle } from 'lucide-react';
+import { ArrowRight, CalendarClock, ExternalLink, EyeOff, Gavel, Loader2, Plus, Save, Upload, X, XCircle } from 'lucide-react';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
 import { extractApiErrorMessage, extractApiFieldErrors } from '@/Lib/apiError';
@@ -37,9 +37,15 @@ interface Props {
 
 const NONE = '__none';
 
+export interface CoSpeakerForm {
+    speaker: SpeakerOption | null;
+    speakerTitle: string;
+}
+
 interface FormState {
     speaker: SpeakerOption | null;
     speakerTitle: string;
+    coSpeakers: CoSpeakerForm[];
     institutionId: string;
     sectorId: string;
     title: string;
@@ -67,6 +73,10 @@ export function initialForm(p: AdminPromiseDetail | null): FormState {
     return {
         speaker: p?.speaker ?? null,
         speakerTitle: p?.speakerTitle ?? '',
+        coSpeakers: (p?.coSpeakers ?? []).map((cs) => ({
+            speaker: cs.speaker ?? null,
+            speakerTitle: cs.speakerTitle ?? '',
+        })),
         institutionId: p?.institutionId ?? NONE,
         sectorId: p?.sectorId ?? NONE,
         title: p?.title ?? '',
@@ -116,6 +126,12 @@ export function toPayload(form: FormState) {
     return {
         speaker_ref: form.speaker?.ref ?? '',
         speaker_title: orNull(form.speakerTitle),
+        co_speakers: form.coSpeakers
+            .filter((cs) => cs.speaker?.ref)
+            .map((cs) => ({
+                speaker_ref: cs.speaker!.ref,
+                speaker_title: orNull(cs.speakerTitle),
+            })),
         institution_id: form.institutionId === NONE ? null : form.institutionId,
         sector_id: form.sectorId === NONE ? null : form.sectorId,
         title: form.title.trim(),
@@ -297,6 +313,76 @@ export default function PromiseEditor({ promise: initial, options, queueCount }:
                                             </SelectContent>
                                         </Select>
                                         <FieldError id="institution_id-error" message={errors.institution_id} />
+                                    </div>
+                                    <div className="space-y-3 border-t border-border pt-4 md:col-span-2">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div>
+                                                <Label className="text-sm font-medium">مسؤولون مشاركون في إطلاق الوعد (اختياري)</Label>
+                                                <p className="text-xs text-muted-foreground">عندما يُطلق الوعد بشكل مشترك بين أكثر من مسؤول في المناسبة نفسها.</p>
+                                            </div>
+                                            {form.coSpeakers.length < 5 && (
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="gap-1.5"
+                                                    onClick={() => set('coSpeakers', [...form.coSpeakers, { speaker: null, speakerTitle: '' }])}
+                                                >
+                                                    <Plus className="h-3.5 w-3.5" aria-hidden="true" />إضافة مسؤول مشارك
+                                                </Button>
+                                            )}
+                                        </div>
+                                        {form.coSpeakers.map((cs, idx) => (
+                                            <div key={idx} className="grid gap-3 rounded-lg border border-border bg-muted/30 p-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+                                                <div className="space-y-1.5">
+                                                    <Label htmlFor={`co_speaker_ref_${idx}`}>المسؤول المشارك {idx + 1}</Label>
+                                                    <SpeakerPicker
+                                                        id={`co_speaker_ref_${idx}`}
+                                                        endpoint="/api/v1/admin/promises/speakers/search"
+                                                        value={cs.speaker}
+                                                        onChange={(s) =>
+                                                            set(
+                                                                'coSpeakers',
+                                                                form.coSpeakers.map((item, i) =>
+                                                                    i === idx
+                                                                        ? { speaker: s, speakerTitle: item.speakerTitle || s.title || '' }
+                                                                        : item,
+                                                                ),
+                                                            )
+                                                        }
+                                                        invalid={!!errors[`co_speakers.${idx}.speaker_ref`]}
+                                                        describedBy={errors[`co_speakers.${idx}.speaker_ref`] ? `co_speaker_ref_${idx}-error` : undefined}
+                                                    />
+                                                    <FieldError id={`co_speaker_ref_${idx}-error`} message={errors[`co_speakers.${idx}.speaker_ref`]} />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <Label htmlFor={`co_speaker_title_${idx}`}>منصبه وقت التصريح</Label>
+                                                    <Input
+                                                        id={`co_speaker_title_${idx}`}
+                                                        value={cs.speakerTitle}
+                                                        onChange={(e) =>
+                                                            set(
+                                                                'coSpeakers',
+                                                                form.coSpeakers.map((item, i) =>
+                                                                    i === idx ? { ...item, speakerTitle: e.target.value } : item,
+                                                                ),
+                                                            )
+                                                        }
+                                                    />
+                                                </div>
+                                                <div className="flex items-end">
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        aria-label={`إزالة المسؤول المشارك ${idx + 1}`}
+                                                        onClick={() => set('coSpeakers', form.coSpeakers.filter((_, i) => i !== idx))}
+                                                    >
+                                                        <X className="h-4 w-4 text-muted-foreground hover:text-destructive" aria-hidden="true" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 </CardContent>
                             </Card>

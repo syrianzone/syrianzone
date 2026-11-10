@@ -153,8 +153,8 @@ Text rules, all in `lib/text.mjs`:
   direction controls are dropped.
 
 Keep a card's background flat. A textured or radial background makes the PNG
-several times larger; the cards are 40 to 75 KB, and previews are fetched over
-slow connections.
+several times larger. Fixed-page cards are 36 to 50 KB and record cards stay
+near 100 KB, which matters because previews are fetched over slow connections.
 
 ### Commands
 

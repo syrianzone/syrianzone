@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
-import { Input } from '@/Components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
+import SmartFilterSearch from '@/Components/SmartFilterSearch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/Components/ui/table';
 import { Badge } from '@/Components/ui/badge';
 import { FilterChip } from '@/Components/ui/filter-chip';
 import { Facebook, Twitter } from '@/Components/ui/icons';
+import { matchesFilterText, type SmartFilterFacet, type SmartFilterValue } from '@/Lib/smartFilterSearch';
 import type { Member2026 } from './members2026';
 import { AGE_LABEL, ageGroupOf, SOCIAL_LABEL, socialGroupOf } from './ParliamentChart2026';
 
@@ -30,6 +30,28 @@ export default function MemberTable2026({ members, filters }: { members: Member2
     const { gov, gender, selection, age, social, onGov, onGender, onSelection, onAge, onSocial } = filters;
 
     const govs = useMemo(() => Array.from(new Set(members.map((m) => m.governorate_ar).filter(Boolean))).sort(), [members]);
+    const facets = useMemo<SmartFilterFacet[]>(() => [
+        { key: 'gov', label: 'المحافظة', aliases: ['محافظة'], options: govs.map((g) => ({ value: g, label: g })) },
+        { key: 'gender', label: 'الجنس', options: [{ value: 'M', label: 'ذكر' }, { value: 'F', label: 'أنثى' }] },
+        { key: 'selection', label: 'طريقة التعيين', aliases: ['التعيين'], options: [{ value: 'انتخابات', label: 'انتخابات' }, { value: 'تعيين', label: 'تعيين' }] },
+        { key: 'age', label: 'الفئة العمرية', aliases: ['العمر'], options: Object.entries(AGE_LABEL).map(([value, label]) => ({ value, label })) },
+        { key: 'social', label: 'التواصل الاجتماعي', aliases: ['الحسابات'], options: Object.entries(SOCIAL_LABEL).map(([value, label]) => ({ value, label })) },
+    ], [govs]);
+    const searchValue: SmartFilterValue = {
+        search: q,
+        filters: Object.fromEntries(Object.entries({ gov, gender, selection, age, social })
+            .filter(([, value]) => value !== 'all').map(([key, value]) => [key, [value]])),
+        sort: '',
+    };
+
+    function changeSearch(next: SmartFilterValue) {
+        setQ(next.search);
+        onGov(next.filters.gov?.[0] ?? 'all');
+        onGender(next.filters.gender?.[0] ?? 'all');
+        onSelection(next.filters.selection?.[0] ?? 'all');
+        onAge(next.filters.age?.[0] ?? 'all');
+        onSocial(next.filters.social?.[0] ?? 'all');
+    }
 
     const filtered = useMemo(
         () =>
@@ -40,7 +62,7 @@ export default function MemberTable2026({ members, filters }: { members: Member2
                 if (selection !== 'all' && m.selection_method !== selection) return false;
                 if (age !== 'all' && ageGroupOf(m) !== age) return false;
                 if (social !== 'all' && socialGroupOf(m) !== social) return false;
-                if (q && !m.name_ar.includes(q.trim())) return false;
+                if (q && !matchesFilterText(m.name_ar, q)) return false;
                 return true;
             }),
         [members, q, gov, gender, selection, age, social, status],
@@ -58,7 +80,7 @@ export default function MemberTable2026({ members, filters }: { members: Member2
         <div className="space-y-6">
             <Card>
                 <CardHeader className="flex flex-row flex-wrap gap-2 items-center justify-between">
-                    <CardTitle>قائمة الأعضاء ({filtered.length})</CardTitle>
+                    <CardTitle aria-live="polite" aria-atomic="true">قائمة الأعضاء ({filtered.length})</CardTitle>
                     <div className="flex flex-wrap gap-2">
                         {Object.entries(STATUS_LABEL).map(([k, l]) => (
                             <FilterChip key={k} active={status === k} onClick={() => setStatus(k)}>{l} ({counts[k] || 0})</FilterChip>
@@ -66,33 +88,11 @@ export default function MemberTable2026({ members, filters }: { members: Member2
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                        <Input aria-label="بحث بالاسم..." placeholder="بحث بالاسم..." value={q} onChange={(e) => setQ(e.target.value)} />
-                        <Select value={gov} onValueChange={onGov}>
-                            <SelectTrigger aria-label="المحافظة"><SelectValue placeholder="المحافظة" /></SelectTrigger>
-                            <SelectContent><SelectItem value="all">كل المحافظات</SelectItem>{govs.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
-                        </Select>
-                        <Select value={gender} onValueChange={onGender}>
-                            <SelectTrigger aria-label="الجنس"><SelectValue placeholder="الجنس" /></SelectTrigger>
-                            <SelectContent><SelectItem value="all">الكل</SelectItem><SelectItem value="M">ذكر</SelectItem><SelectItem value="F">أنثى</SelectItem></SelectContent>
-                        </Select>
-                        <Select value={selection} onValueChange={onSelection}>
-                            <SelectTrigger aria-label="طريقة التعيين"><SelectValue placeholder="طريقة التعيين" /></SelectTrigger>
-                            <SelectContent><SelectItem value="all">انتخاب + تعيين</SelectItem><SelectItem value="انتخابات">انتخابات</SelectItem><SelectItem value="تعيين">تعيين</SelectItem></SelectContent>
-                        </Select>
-                        <Select value={age} onValueChange={onAge}>
-                            <SelectTrigger aria-label="الفئة العمرية"><SelectValue placeholder="الفئة العمرية" /></SelectTrigger>
-                            <SelectContent><SelectItem value="all">كل الأعمار</SelectItem>{Object.entries(AGE_LABEL).filter(([k]) => k !== 'غير محدد').map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent>
-                        </Select>
-                        <Select value={social} onValueChange={onSocial}>
-                            <SelectTrigger aria-label="التواصل الاجتماعي"><SelectValue placeholder="التواصل الاجتماعي" /></SelectTrigger>
-                            <SelectContent><SelectItem value="all">كل الحسابات</SelectItem>{Object.entries(SOCIAL_LABEL).map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent>
-                        </Select>
-                        <Select value={status} onValueChange={setStatus}>
-                            <SelectTrigger aria-label="الحالة"><SelectValue placeholder="الحالة" /></SelectTrigger>
-                            <SelectContent>{Object.entries(STATUS_LABEL).map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent>
-                        </Select>
-                    </div>
+                    <SmartFilterSearch
+                        mobileFiltersScroll
+                        facets={facets} value={searchValue} onChange={changeSearch}
+                        placeholder="ابحث بالاسم أو اختر تصفية..." ariaLabel="ابحث في قائمة الأعضاء"
+                    />
                     <div className="overflow-x-auto rounded-md border border-border">
                         <Table>
                             <TableHeader><TableRow><TableHead className="text-right">الاسم</TableHead><TableHead className="text-right">المحافظة</TableHead><TableHead className="text-right">الجنس</TableHead><TableHead className="text-right">سنة الميلاد</TableHead><TableHead className="text-right">طريقة التعيين</TableHead><TableHead className="text-right">التواصل الاجتماعي</TableHead></TableRow></TableHeader>

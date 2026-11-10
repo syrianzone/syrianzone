@@ -16,6 +16,8 @@ import 'package:syrianzone/feature/transit_submissions/logic/transit_submissions
 import 'package:syrianzone/feature/transit_submissions/ui/transit_submissions_screen.dart';
 import 'package:syrianzone/core/network/response/user_submissions_response.dart';
 import 'package:syrianzone/core/widget/splash.dart';
+import 'package:syrianzone/feature/mishwar/logic/mishwar_cubit.dart';
+import 'package:syrianzone/feature/mishwar/ui/mishwar_screen.dart';
 
 class AppRouter {
   Route? generateRoute(RouteSettings settings) {
@@ -57,6 +59,13 @@ class AppRouter {
           ),
         );
 
+      case Routes.mishwar:
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider(
+            create: (_) => getIt<MishwarCubit>()..loadInitialData(),
+            child: const MishwarScreen(),
+          )
+        );
       case Routes.transitStudio:
         return MaterialPageRoute(
           builder: (_) => BlocProvider(

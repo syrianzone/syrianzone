@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_osm_plugin/flutter_osm_plugin.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:syrianzone/core/constants/map_constants.dart';
 import 'package:syrianzone/core/constants/route_palette.dart';
 import 'package:syrianzone/core/data/model/lng_lat.dart';
 import 'package:syrianzone/core/network/response/map_data_response.dart';
@@ -48,7 +49,6 @@ class _TransitMapPaneState extends State<TransitMapPane> {
   StreamSubscription<Position>? _positionStreamSubscription;
   bool _isLoadingUserLocation = false;
 
-  
   @override
   void initState() {
     super.initState();
@@ -627,7 +627,7 @@ class _TransitMapPaneState extends State<TransitMapPane> {
             _isMapReady = isReady;
             if (isReady) {
               _mapController.changeTileLayer(
-                tileLayer: osmTile,
+                tileLayer: MapConstants.cartoDarkTileLayer,
               );
               _renderMapDataIfReady();
               _initUserLocation(centerOnUser: false);

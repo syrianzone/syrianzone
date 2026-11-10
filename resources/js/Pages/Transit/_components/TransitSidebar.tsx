@@ -1,10 +1,11 @@
 'use client'
 
 import { useMemo, useEffect, useRef } from 'react'
+import { usePage } from '@inertiajs/react'
 import citiesData from '../_data/cities.json'
 import { useRoutes, useMapData } from '../_hooks/useMapData'
 import { useMapStore } from '../_store/useMapStore'
-import type { City } from '../_types'
+import type { City, RouteProperties } from '../_types'
 import { SidebarRoutes } from './SidebarRoutes'
 import { SidebarRouteDetail } from './SidebarRouteDetail'
 import { SidebarMapTools } from './SidebarMapTools'
@@ -21,7 +22,9 @@ export function TransitSidebar({ pathname, search }: TransitSidebarProps) {
   const { selectedRouteId, setSelectedRouteId } = useMapStore()
   const prevCityIdRef = useRef(cityId)
 
-  const { data: routes } = useRoutes(cityId || '')
+  // The city page carries its own route list; any other transit page has none.
+  const page = usePage<{ id?: string; routes?: RouteProperties[] }>().props
+  const { data: routes } = useRoutes(cityId || '', page.id === cityId ? page.routes : undefined)
   const { data: mapData } = useMapData(cityId || undefined)
 
   const city = useMemo(() => cities.find(c => c.id === cityId), [cityId])

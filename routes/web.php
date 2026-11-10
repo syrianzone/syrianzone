@@ -233,7 +233,12 @@ Route::get('/transit/city/{id}', function ($id) {
     abort_unless($city !== null, 404);
     \App\Support\Seo\SeoMeta::remember(request(), 'city', $city);
 
-    return Inertia::render('Transit/city/[id]/Index', ['id' => $id]);
+    // The route list travels with the page, so the first HTML names the
+    // city's lines instead of an empty state that fills in after a fetch.
+    return Inertia::render('Transit/city/[id]/Index', [
+        'id' => $id,
+        'routes' => app(\App\Services\Transit\PublishedRoutes::class)->forCity($id),
+    ]);
 })->where('id', '[a-z0-9\-]+');
 
 Route::get('/transit/city/{id}/map', function ($id) {

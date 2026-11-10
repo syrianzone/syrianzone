@@ -118,3 +118,30 @@ test('signed-in studio submitters are not held to the guest rate', function () {
         $this->actingAs($user)->postJson('/api/v1/studio/routes', [])->assertStatus(422);
     }
 });
+
+test('the city page carries the same route list as the api', function () {
+    seedRoutesCity();
+    Cache::forget('transit:routes:homs');
+
+    Route::create([
+        'id' => 'route-homs-page',
+        'city_id' => 'homs',
+        'name_ar' => 'خط الصفحة',
+        'status' => 'published',
+    ]);
+    Route::create([
+        'id' => 'route-homs-draft',
+        'city_id' => 'homs',
+        'name_ar' => 'مسودة',
+        'status' => 'draft',
+    ]);
+
+    $this->get('/transit/city/homs')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('Transit/city/[id]/Index')
+            ->where('id', 'homs')
+            ->where('routes', $this->getJson('/api/v1/cities/homs/routes')->json())
+            ->has('routes', 1)
+            ->where('routes.0.nameAr', 'خط الصفحة'));
+});

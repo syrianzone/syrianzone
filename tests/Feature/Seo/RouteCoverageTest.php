@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Route;
  * Routes that answer GET without being a page: endpoints, and shims that only
  * redirect. A new public page does not belong here; give it an entry instead.
  */
-const NOT_PAGES = ['healthcheck', 'sitemap.xml', 'broadcasting/auth', 'sanctum/csrf-cookie', 'places'];
+const NOT_PAGES = ['healthcheck', 'sitemap.xml', 'llms.txt', 'broadcasting/auth', 'sanctum/csrf-cookie', 'places'];
 
 test('every public page declares its own title, description and share card', function () {
     $missing = [];

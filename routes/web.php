@@ -20,6 +20,7 @@ use App\Http\Controllers\GuessWhoAdminController;
 use App\Http\Controllers\GuessWhoController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PhonebookAdminController;
+use App\Http\Controllers\LlmsTxtController;
 use App\Http\Controllers\OgCardController;
 use App\Http\Controllers\PhonebookController;
 use App\Http\Controllers\PlaceAdminController;
@@ -54,6 +55,10 @@ Route::get('/healthcheck', function () {
 // the same reason as the share cards below: a session cookie on the response
 // stops Cloudflare from caching it.
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])
+    ->withoutMiddleware('web');
+
+// A Markdown index of the site for language-model tools (see Seo\LlmsTxt).
+Route::get('/llms.txt', [LlmsTxtController::class, 'show'])
     ->withoutMiddleware('web');
 
 // Share cards of single records, drawn on demand (see OgCardController). Kept

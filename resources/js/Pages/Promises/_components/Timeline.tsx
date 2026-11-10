@@ -26,7 +26,7 @@ export default function Timeline({ statementDate, statementVenue, updates, unit,
     return (
         <ol className="relative space-y-6 border-s border-border ps-6">
             <li className="relative">
-                <span className="absolute -start-[31px] top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary ring-4 ring-background" aria-hidden="true">
+                <span className="absolute -start-[calc(2rem+0.5px)] top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary ring-4 ring-background" aria-hidden="true">
                     <Flag className="h-2.5 w-2.5 text-primary-foreground" />
                 </span>
                 <p className="text-xs text-muted-foreground">{formatDate(statementDate)}</p>
@@ -39,7 +39,7 @@ export default function Timeline({ statementDate, statementVenue, updates, unit,
                 const archive = safeHref(u.archiveUrl);
                 return (
                     <li key={u.id} className="relative">
-                        <span className="absolute -start-[29px] top-1 h-3 w-3 rounded-full border-2 border-primary bg-background" aria-hidden="true" />
+                        <span className="absolute -start-[calc(1.875rem+0.5px)] top-1 h-3 w-3 rounded-full border-2 border-primary bg-background" aria-hidden="true" />
                         <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
                                 <p className="text-xs text-muted-foreground">

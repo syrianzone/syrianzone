@@ -4,8 +4,9 @@ import { Button } from '@/Components/ui/button';
 import {
     Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/Components/ui/dialog';
-import { Download, Loader2 } from 'lucide-react';
+import { Download, Loader2, Share2 } from 'lucide-react';
 import { notify } from '@/Lib/notify';
+import { isShareCancelled, useCanShare } from '@/Lib/webShare';
 import Countdown from './Countdown';
 import SpeakerAvatar from './SpeakerAvatar';
 import StateBadge from './StateBadge';
@@ -27,23 +28,25 @@ export default function ShareCardDialog({ promise, open, onOpenChange }: {
 }) {
     const { seo } = usePage().props as { seo?: { canonical?: string } };
     const frameRef = useRef<HTMLDivElement>(null);
-    const [busy, setBusy] = useState(false);
+    const [busy, setBusy] = useState<'download' | 'share' | null>(null);
+    const filename = `promise-${promise.number}.png`;
+    const supportsImages = useCanShare(() => ({ files: [new File([], filename, { type: 'image/png' })] }));
 
     // The canonical URL comes from the server (config('seo.base_url')), so the
     // card prints the public address even when exported from a local or
     // staging host.
     const shareUrl = (seo?.canonical ?? `/promises/${promise.number}`).replace(/^https?:\/\//, '');
 
-    const download = async () => {
+    const exportImage = async (action: 'download' | 'share') => {
         if (!frameRef.current) return;
-        setBusy(true);
+        setBusy(action);
         try {
             const { exportElementAsPng } = await import('@/Lib/exportElementAsPng');
-            await exportElementAsPng(frameRef.current, `promise-${promise.number}.png`);
-        } catch {
-            notify.error('تعذّر إنشاء الصورة');
+            await exportElementAsPng(frameRef.current, filename, action);
+        } catch (error) {
+            if (!isShareCancelled(error)) notify.error(action === 'share' ? 'تعذّرت مشاركة الصورة' : 'تعذّر إنشاء الصورة');
         } finally {
-            setBusy(false);
+            setBusy(null);
         }
     };
 
@@ -73,7 +76,7 @@ export default function ShareCardDialog({ promise, open, onOpenChange }: {
                             <StateBadge state={promise.state} keptLate={promise.keptLate} />
                         </div>
                         <p className="text-lg font-extrabold leading-snug">{promise.title}</p>
-                        <Countdown state={promise.state} counter={promise.counter} size="lg" />
+                        <Countdown state={promise.state} counter={promise.counter} deadlineDate={promise.deadlineDate} statementDate={promise.statementDate} size="lg" />
                         <div className="flex items-end justify-between gap-2 border-t border-border pt-3 text-xs text-muted-foreground">
                             <span>
                                 {promise.deadlineDate ? `الموعد ${formatDate(promise.deadlineDate)}` : `أُطلق ${formatDate(promise.statementDate)}`}
@@ -88,8 +91,14 @@ export default function ShareCardDialog({ promise, open, onOpenChange }: {
                 </div>
 
                 <DialogFooter className="gap-2 sm:justify-start">
-                    <Button onClick={download} disabled={busy} className="gap-2">
-                        {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Download className="h-4 w-4" aria-hidden="true" />}
+                    {supportsImages && (
+                        <Button onClick={() => exportImage('share')} disabled={busy !== null} className="gap-2" aria-busy={busy === 'share'}>
+                            {busy === 'share' ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Share2 className="h-4 w-4" aria-hidden="true" />}
+                            مشاركة الصورة
+                        </Button>
+                    )}
+                    <Button variant={supportsImages ? 'outline' : 'default'} onClick={() => exportImage('download')} disabled={busy !== null} className="gap-2" aria-busy={busy === 'download'}>
+                        {busy === 'download' ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Download className="h-4 w-4" aria-hidden="true" />}
                         تحميل الصورة
                     </Button>
                 </DialogFooter>

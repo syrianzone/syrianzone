@@ -51,7 +51,7 @@ export default function PromiseCard({ promise, returnUrl = '/promises' }: { prom
                 </h2>
 
                 <div className="flex flex-1 items-center justify-center py-1">
-                    <Countdown state={promise.state} counter={promise.counter} />
+                    <Countdown state={promise.state} counter={promise.counter} deadlineDate={promise.deadlineDate} statementDate={promise.statementDate} />
                 </div>
 
                 {promise.target && <TargetProgress target={promise.target} />}

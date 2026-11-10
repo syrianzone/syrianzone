@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Poll;
+use App\Support\Seo\Og\StaticCards;
 use App\Support\Seo\SeoMeta;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Vite;
@@ -14,7 +15,7 @@ test('server-rendered html includes seo meta and json-ld even when inertia.ssr.e
 
     expect($html)->toContain('<title inertia>عن المنصة | Syrian Zone</title>')
         ->and($html)->toContain('<link rel="canonical" href="https://syrian.zone/about" inertia>')
-        ->and($html)->toContain('<meta property="og:image" content="https://syrian.zone/og/about.png" inertia>')
+        ->and($html)->toContain('<meta property="og:image" content="https://syrian.zone'.StaticCards::url('about').'" inertia>')
         ->and($html)->toContain('<script type="application/ld+json" inertia>');
 });
 
@@ -37,7 +38,7 @@ test('head tags are printed once even when ssr succeeds but the page rendered no
         ->and(substr_count($html, 'rel="canonical"'))->toBe(1)
         ->and(substr_count($html, 'application/ld+json'))->toBe(1)
         ->and($html)->toContain('<title inertia>دليل الهاتف والواتساب الخدمي | Syrian Zone</title>')
-        ->and($html)->toContain('<meta property="og:image" content="https://syrian.zone/og/phonebook.png" inertia>');
+        ->and($html)->toContain('<meta property="og:image" content="https://syrian.zone'.StaticCards::url('phonebook').'" inertia>');
 });
 
 test('a missing page announces itself as a 404 and is not indexed', function () {

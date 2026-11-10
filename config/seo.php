@@ -22,16 +22,14 @@ return [
     | Defaults
     |--------------------------------------------------------------------------
     |
-    | Used for any page the resolver has no specific entry for. The image is a
-    | site-relative path (1200x630 PNG); it is made absolute when emitted.
+    | Used for any page the resolver has no specific entry for. The default
+    | share image is the site's own card (App\Support\Seo\Og\StaticCards).
     |
     */
 
     'default_title' => 'المساحة السورية — منصة سورية مفتوحة المصدر',
 
     'default_description' => 'المساحة السورية - منصة تفاعلية تجمع وتوفر الموارد والخدمات والمعلومات المفتوحة المتعلقة بالشأن السوري: استطلاعات رأي، أدلة رسمية، أطلس، ترانزيت، وهويات بصرية.',
-
-    'default_image' => '/og/home.png',
 
     /*
     |--------------------------------------------------------------------------

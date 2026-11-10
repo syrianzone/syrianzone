@@ -5,6 +5,7 @@ namespace App\Support\Seo;
 use App\Models\City;
 use App\Models\Poll;
 use App\Models\Promise;
+use App\Support\Seo\Og\StaticCards;
 use Illuminate\Http\Request;
 
 /**
@@ -24,7 +25,8 @@ class SeoMeta
     private const ATTRIBUTE = 'seo_meta';
 
     /**
-     * Fixed pages: path => [title, description, type?, image?].
+     * Fixed pages: path => [title, description, type?, image?]. Each page's
+     * share card is listed in resources/og/cards.json (see Og\StaticCards).
      *
      * Titles include the site suffix already, matching what the browser tab
      * shows, so the client and server never disagree.
@@ -203,55 +205,6 @@ class SeoMeta
     ];
 
     /**
-     * Section share images (1200×630 PNG under public/og/). Pages absent here
-     * fall back to config('seo.default_image'). An explicit `image` in PAGES
-     * wins over this map.
-     */
-    private const IMAGES = [
-        '/' => '/og/home.png',
-        '/tierlist' => '/og/tierlist.png',
-        '/tierlist/leaderboard' => '/og/tierlist.png',
-        '/polls' => '/og/tierlist.png',
-        '/mishwar' => '/og/mishwar.png',
-        '/transit' => '/og/transit.png',
-        '/transit/studio' => '/og/transit.png',
-        '/syofficial' => '/og/syofficial.png',
-        '/phonebook' => '/og/phonebook.png',
-        '/govapps' => '/og/govapps.png',
-        '/sites' => '/og/sites.png',
-        '/party' => '/og/party.png',
-        '/house' => '/og/house.png',
-        '/justice' => '/og/justice.png',
-        '/crossings' => '/og/crossings.png',
-        '/atlas' => '/og/atlas.png',
-        '/syid' => '/og/syid.png',
-        '/muslim' => '/og/muslim.png',
-        '/muslim/prayer' => '/og/muslim-prayer.png',
-        '/muslim/quran' => '/og/muslim-quran.png',
-        '/muslim/radio' => '/og/muslim.png',
-        '/roznama' => '/og/roznama.png',
-        '/priorities' => '/og/priorities.png',
-        '/compass' => '/og/compass.png',
-        '/compass/stats' => '/og/compass.png',
-        '/promises' => '/og/promises.png',
-        '/promises/suggest' => '/og/promises.png',
-        '/alignment' => '/og/compass.png',
-        '/games' => '/og/games.png',
-        '/games/2048' => '/og/games.png',
-        '/games/solitare' => '/og/games.png',
-        '/games/tarneeb' => '/og/games.png',
-        '/games/trix' => '/og/games.png',
-        '/guesswho' => '/og/guesswho.png',
-        '/board' => '/og/board.png',
-        '/syrian-contributors' => '/og/syrian-contributors.png',
-        '/shawarma' => '/og/shawarma.png',
-        '/stats' => '/og/about.png',
-        '/about' => '/og/about.png',
-        '/privacy' => '/og/about.png',
-        '/terms' => '/og/about.png',
-    ];
-
-    /**
      * JSON-LD type for the page node, keyed by path. Anything absent is a plain
      * WebPage. Kept separate from PAGES so the copy and the schema can evolve
      * independently.
@@ -305,6 +258,16 @@ class SeoMeta
     ];
 
     /**
+     * The fixed pages that declare their own metadata.
+     *
+     * @return list<string>
+     */
+    public static function pagePaths(): array
+    {
+        return array_keys(self::PAGES);
+    }
+
+    /**
      * @return array{title:string,description:string,type:string,image:string,url:string,canonical:string,robots:string,json_ld:string,twitter_site:?string}
      */
     public static function resolve(Request $request): array
@@ -334,7 +297,10 @@ class SeoMeta
 
         $base = rtrim((string) config('seo.base_url'), '/');
         $canonical = $canonicalPath === '/' ? $base.'/' : $base.$canonicalPath;
-        $image = self::absolute((string) ($page['image'] ?? self::IMAGES[$path] ?? self::dynamicImage($path) ?? config('seo.default_image')), $base);
+        $image = self::absolute(
+            $page['image'] ?? StaticCards::forPath($path) ?? self::dynamicImage($path) ?? StaticCards::url(StaticCards::DEFAULT),
+            $base,
+        );
         $robots = ($dynamicNoindex || self::isNoindex($path)) ? 'noindex, follow' : 'index, follow';
         $schema = self::SCHEMA[$path]
             ?? ((str_starts_with($path, '/polls/') || str_starts_with($path, '/promises/')) ? 'Article' : 'WebPage');
@@ -495,58 +461,27 @@ class SeoMeta
     }
 
     /**
-     * Per-record share image, when one has been generated (see
-     * scripts/generate_og.py + `php artisan seo:og-manifest`). Falls back to
-     * the section card when no record-specific card exists on disk.
+     * Share image for a database-backed page: its own card where one exists,
+     * otherwise the card of the section it belongs to.
      */
     private static function dynamicImage(string $path): ?string
     {
         if (preg_match('#^/polls/([^/]+)(?:/leaderboard)?$#', $path, $m)) {
-            $slug = $m[1];
-            if ($slug === 'best-ministers') {
-                return '/og/tierlist.png';
-            }
-
-            $rel = sprintf('/og/polls/%s.png', $slug);
-            if (is_file(public_path(ltrim($rel, '/')))) {
-                return $rel;
-            }
-
-            try {
-                $poll = Poll::where('id', $slug)->first(['slug']);
-                if ($poll) {
-                    if ($poll->slug === 'best-ministers') {
-                        return '/og/tierlist.png';
-                    }
-                    $bySlug = sprintf('/og/polls/%s.png', $poll->slug);
-                    if (is_file(public_path(ltrim($bySlug, '/')))) {
-                        return $bySlug;
-                    }
-                }
-            } catch (\Throwable) {
-                // ignore DB errors
-            }
-
-            return '/og/tierlist.png';
+            return StaticCards::url($m[1] === 'best-ministers' ? 'tierlist' : 'polls');
         }
 
         if (preg_match('#^/transit/city/([^/]+)$#', $path, $m)) {
             $rel = sprintf('/og/cities/%s.png', $m[1]);
-            if (is_file(public_path(ltrim($rel, '/')))) {
-                return $rel;
-            }
 
-            return '/og/transit.png';
+            return is_file(public_path(ltrim($rel, '/'))) ? $rel : StaticCards::url('transit');
         }
 
         if (preg_match('#^/compass/s/([^/]+)$#', $path)) {
-            return '/og/compass.png';
+            return StaticCards::url('compass-share');
         }
 
-        // Countdowns change daily, so promise pages share the section card
-        // rather than freezing a number into a per-record image.
         if (preg_match('#^/promises/\d+$#', $path)) {
-            return '/og/promises.png';
+            return StaticCards::url('promises');
         }
 
         return null;

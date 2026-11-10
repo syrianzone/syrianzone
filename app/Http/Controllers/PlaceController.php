@@ -15,11 +15,15 @@ use Inertia\Inertia;
 
 class PlaceController extends Controller
 {
-  // list shapes only read the first thumb, skip hydrating full photo rows
+  // List shapes only read the first thumb, so only the cover photo (lowest sort)
+  // of each place is loaded, and only the columns thumb_url needs. A place can
+  // carry up to ten photos; the map alone was pulling every one of them.
   public static function thumbPhotos(): array
   {
     // updated_at feeds the cache-busting ?v= in thumb_url
-    return ['photos' => fn ($q) => $q->select('id', 'place_id', 'thumb_path', 'sort', 'updated_at')];
+    return ['photos' => fn ($q) => $q
+      ->select('id', 'place_id', 'thumb_path', 'sort', 'updated_at')
+      ->whereRaw('place_photos.sort = (select min(cover.sort) from place_photos as cover where cover.place_id = place_photos.place_id)')];
   }
 
   public function renderIndex()
@@ -30,22 +34,46 @@ class PlaceController extends Controller
   public function mapData()
   {
     $geojson = Cache::remember('places:map', 300, function () {
-      $places = Place::where('status', 'approved')->with(self::thumbPhotos())->get();
-      return [
-        'type' => 'FeatureCollection',
-        'features' => $places->map(fn ($p) => [
+      // Every approved place is a pin, so this is the largest read in the
+      // module and it is rebuilt after any moderation or photo change. Plain
+      // rows instead of a model per place and per photo, with only the pin's
+      // columns (no description, no moderation fields) and only the cover.
+      $covers = DB::table('place_photos')
+        ->join('places', 'places.id', '=', 'place_photos.place_id')
+        ->where('places.status', 'approved')
+        ->whereRaw('place_photos.sort = (select min(cover.sort) from place_photos as cover where cover.place_id = place_photos.place_id)')
+        ->orderBy('place_photos.id')
+        ->get(['place_photos.place_id', 'place_photos.thumb_path', 'place_photos.updated_at']);
+
+      $timezone = new \DateTimeZone(config('app.timezone'));
+      $thumbs = [];
+      foreach ($covers as $cover) {
+        // first row wins when two photos share the lowest sort, as before
+        $thumbs[$cover->place_id] ??= PlacePhoto::versionedUrlFor(
+          $cover->thumb_path,
+          $cover->updated_at ? (new \DateTimeImmutable($cover->updated_at, $timezone))->getTimestamp() : null,
+        );
+      }
+
+      $features = [];
+      $places = DB::table('places')->where('status', 'approved')->orderBy('id')
+        ->get(['id', 'name', 'category', 'lat', 'lng', 'user_id']);
+      foreach ($places as $p) {
+        $features[] = [
           'type' => 'Feature',
-          'geometry' => ['type' => 'Point', 'coordinates' => [$p->lng, $p->lat]],
+          'geometry' => ['type' => 'Point', 'coordinates' => [(float) $p->lng, (float) $p->lat]],
           'properties' => [
-            'id' => $p->id,
+            'id' => (int) $p->id,
             'name' => $p->name,
             'category' => $p->category,
             // user_id lets the client filter pins to one guide without a per-user cache
             'user_id' => (int) $p->user_id,
-            'thumb_url' => $p->photos->first()?->thumb_url,
+            'thumb_url' => $thumbs[$p->id] ?? null,
           ],
-        ])->values()->all(),
-      ];
+        ];
+      }
+
+      return ['type' => 'FeatureCollection', 'features' => $features];
     });
 
     // 60s of client-side staleness is accepted: moved or moderated pins may linger

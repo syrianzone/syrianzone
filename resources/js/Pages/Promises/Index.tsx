@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, router, usePage, useRemember } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Button } from '@/Components/ui/button';
@@ -7,14 +7,20 @@ import { FilterChip } from '@/Components/ui/filter-chip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
 import SmartFilterSearch from '@/Components/SmartFilterSearch';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/Components/ui/accordion';
-import { Plus, SearchX } from 'lucide-react';
+import { LayoutGrid, List, Plus, SearchX } from 'lucide-react';
 import { PromisesIcon } from '@/Components/Icons/ProjectIcons';
 import { toggleFilterValue, type SmartFilterValue } from '@/Lib/smartFilterSearch';
 import { cn } from '@/Lib/utils';
-import PromiseCard from './_components/PromiseCard';
+import PromiseCard, { type PromiseCardLayout } from './_components/PromiseCard';
 import Scoreboard from './_components/Scoreboard';
-import { filterPromises, matchesState, promiseFilterFacets, promiseListUrl, readPromiseFilters, SORT_OPTIONS, visiblePromises, type PromiseFilterOptions } from './_lib/filters';
+import { activeScoreboardState, filterPromises, matchesState, promiseFilterFacets, promiseListUrl, readPromiseFilters, selectScoreboardState, SORT_OPTIONS, visiblePromises, type PromiseFilterOptions } from './_lib/filters';
 import type { PromiseCardData, PromiseStats } from './_lib/types';
+
+const LAYOUT_KEY = 'promises-layout';
+const LAYOUT_OPTIONS = [
+    { value: 'grid', label: 'عرض كبطاقات', icon: LayoutGrid },
+    { value: 'list', label: 'عرض كقائمة', icon: List },
+] as const;
 
 interface Props {
     promises: PromiseCardData[];
@@ -39,6 +45,26 @@ export default function PromisesIndex({ promises, stats, filters, dueSoonDays }:
     const { state: selectedStates = [], ...searchFilters } = value.filters;
     const searchValue = { ...value, filters: searchFilters };
     const listUrl = promiseListUrl(value);
+    const filtersRef = useRef<HTMLDivElement>(null);
+    // Read after mount (localStorage) so the server render and first client render match.
+    const [layout, setLayout] = useState<PromiseCardLayout>('grid');
+
+    useEffect(() => {
+        try {
+            if (localStorage.getItem(LAYOUT_KEY) === 'list') setLayout('list');
+        } catch {
+            /* storage unavailable: the grid stays the default */
+        }
+    }, []);
+
+    function changeLayout(next: PromiseCardLayout) {
+        setLayout(next);
+        try {
+            localStorage.setItem(LAYOUT_KEY, next);
+        } catch {
+            /* storage unavailable: the choice is just not remembered */
+        }
+    }
 
     useEffect(() => {
         const url = new URL(page.url, window.location.origin);
@@ -57,6 +83,15 @@ export default function PromisesIndex({ promises, stats, filters, dueSoonDays }:
     }
 
     const resetFilters = () => changeFilters({ search: '', filters: {}, sort: value.sort });
+
+    function showScoreboardState(state: string | null) {
+        changeFilters(selectScoreboardState(value, state));
+        // Bring the results up when they start low on screen (phones, mostly).
+        const box = filtersRef.current;
+        if (!box || box.getBoundingClientRect().bottom <= window.innerHeight * 0.7) return;
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        box.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+    }
 
     return (
         <MainLayout>
@@ -79,9 +114,9 @@ export default function PromisesIndex({ promises, stats, filters, dueSoonDays }:
             </section>
 
             <div className="container mx-auto max-w-7xl space-y-6 px-4 py-8">
-                <Scoreboard stats={stats} />
+                <Scoreboard stats={stats} active={activeScoreboardState(value)} onSelect={showScoreboardState} />
 
-                <div className="rounded-xl border border-input bg-card shadow-sm transition-colors focus-within:border-foreground/25">
+                <div ref={filtersRef} className="scroll-mt-20 rounded-xl border border-input bg-card shadow-sm transition-colors focus-within:border-foreground/25">
                     <div className="flex flex-nowrap gap-1.5 overflow-x-auto overflow-y-hidden overscroll-x-contain border-b border-border/70 p-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-wrap sm:overflow-visible" role="group" aria-label="تصفية حسب الحالة">
                         {[{ value: 'all', label: 'الكل', count: base.length }, ...stateOptions].map((option) => {
                             const active = option.value === 'all' ? selectedStates.length === 0 : selectedStates.includes(option.value);
@@ -115,7 +150,7 @@ export default function PromisesIndex({ promises, stats, filters, dueSoonDays }:
                 </div>
 
                 <div className="flex items-center justify-between gap-3">
-                    <p className="min-w-0 text-sm text-muted-foreground" role="status" aria-live="polite" aria-atomic="true">
+                    <p className="me-auto min-w-0 text-sm text-muted-foreground" role="status" aria-live="polite" aria-atomic="true">
                         {visible.length === promises.length ? `عدد الوعود: ${promises.length}` : `الوعود المعروضة: ${visible.length} من أصل ${promises.length}`}
                     </p>
                     <Select value={value.sort} onValueChange={(sort) => changeFilters({ ...value, sort })}>
@@ -132,11 +167,21 @@ export default function PromisesIndex({ promises, stats, filters, dueSoonDays }:
                             ))}
                         </SelectContent>
                     </Select>
+                    <div role="group" aria-label="طريقة العرض" className="flex shrink-0 items-center gap-0.5 rounded-lg border border-border/70 p-0.5">
+                        {LAYOUT_OPTIONS.map(({ value: option, label, icon: Icon }) => (
+                            <Button key={option} variant="ghost" size="icon" aria-label={label} title={label}
+                                aria-pressed={layout === option} onClick={() => changeLayout(option)}
+                                className={cn('h-8 w-8 focus-visible:ring-1 focus-visible:ring-border focus-visible:ring-offset-0',
+                                    layout === option ? 'bg-foreground/10 text-foreground' : 'text-muted-foreground')}>
+                                <Icon aria-hidden="true" />
+                            </Button>
+                        ))}
+                    </div>
                 </div>
 
                 {visible.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {visible.map((p) => <PromiseCard key={p.id} promise={p} returnUrl={listUrl} />)}
+                    <div className={layout === 'list' ? 'flex flex-col gap-2 sm:gap-3' : 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3'}>
+                        {visible.map((p) => <PromiseCard key={p.id} promise={p} returnUrl={listUrl} layout={layout} />)}
                     </div>
                 ) : (
                     <Card>

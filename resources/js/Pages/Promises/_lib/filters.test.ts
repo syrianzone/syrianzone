@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { SmartFilterValue } from '@/Lib/smartFilterSearch';
 import type { PromiseCardData } from './types';
-import { canReturnToPromiseList, filterPromises, matchesState, promiseFilterFacets, promiseListUrl, promiseReturnUrl, readPromiseFilters, visiblePromises } from './filters';
+import { activeScoreboardState, canReturnToPromiseList, filterPromises, matchesState, promiseFilterFacets, promiseListUrl, promiseReturnUrl, readPromiseFilters, selectScoreboardState, visiblePromises } from './filters';
 
 const facets = promiseFilterFacets({
     sectors: [{ id: 'energy', label: 'الكهرباء والطاقة', icon: null }, { id: 'health', label: 'الصحة', icon: null }],
@@ -101,5 +101,29 @@ describe('promise filtering semantics', () => {
         expect(visiblePromises(promises, { ...empty, sort: 'deadline' }, 30).map((p) => p.id)).toEqual(['2', '1', '3']);
         expect(visiblePromises(promises, { ...empty, sort: 'newest' }, 30).map((p) => p.id)).toEqual(['2', '1', '3']);
         expect(promises.map((p) => p.id)).toEqual(['1', '2', '3']);
+    });
+});
+
+describe('scoreboard tiles', () => {
+    it('marks a tile active only when the list shows exactly its state', () => {
+        expect(activeScoreboardState(empty)).toBeNull();
+        expect(activeScoreboardState({ ...empty, filters: { state: ['overdue'], sector: [] } })).toBe('overdue');
+        expect(activeScoreboardState({ ...empty, filters: { state: ['overdue', 'open'] } })).toBeUndefined();
+        expect(activeScoreboardState({ ...empty, filters: { state: ['overdue'], sector: ['energy'] } })).toBeUndefined();
+        expect(activeScoreboardState({ ...empty, search: 'كهرباء', filters: { state: ['overdue'] } })).toBeUndefined();
+        expect(activeScoreboardState({ ...empty, search: 'كهرباء' })).toBeUndefined();
+    });
+
+    it('narrows to the clicked state alone so the list matches its global count, keeping the sort', () => {
+        const busy = { search: 'كهرباء', sort: 'deadline', filters: { state: ['open', 'broken'], sector: ['energy'] } };
+        expect(selectScoreboardState(busy, 'overdue')).toEqual({ search: '', sort: 'deadline', filters: { state: ['overdue'] } });
+        expect(promiseListUrl(selectScoreboardState(empty, 'other'))).toBe('/promises?state=other');
+    });
+
+    it('returns to the full list from the total or the tile already shown', () => {
+        const overdue = { ...empty, sort: 'newest', filters: { state: ['overdue'] } };
+        expect(selectScoreboardState(overdue, 'overdue')).toEqual({ ...empty, sort: 'newest' });
+        expect(selectScoreboardState(overdue, null)).toEqual({ ...empty, sort: 'newest' });
+        expect(selectScoreboardState(overdue, 'fulfilled').filters).toEqual({ state: ['fulfilled'] });
     });
 });

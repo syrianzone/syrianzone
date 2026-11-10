@@ -1,6 +1,7 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { Card, CardContent } from '@/Components/ui/card';
 import { CalendarDays } from 'lucide-react';
+import { cn } from '@/Lib/utils';
 import Countdown from './Countdown';
 import SpeakerAvatar from './SpeakerAvatar';
 import StateBadge from './StateBadge';
@@ -13,28 +14,36 @@ import type { PromiseCardData } from '../_lib/types';
 /**
  * One promise in the list. The title is the only link; it stretches over the
  * card so the whole card is clickable without nesting interactive elements.
+ * The `list` layout is a full-width row with the counter beside the content;
+ * on phones it shrinks to the speaker, state and title so rows stay short.
  */
-export default function PromiseCard({ promise, returnUrl = '/promises' }: { promise: PromiseCardData; returnUrl?: string }) {
+export type PromiseCardLayout = 'grid' | 'list';
+
+export default function PromiseCard({ promise, returnUrl = '/promises', layout = 'grid' }: { promise: PromiseCardData; returnUrl?: string; layout?: PromiseCardLayout }) {
     const sourcePage = usePage();
     const SectorIcon = sectorIcon(promise.sector?.icon);
+    const list = layout === 'list';
+    const countdown = (
+        <Countdown state={promise.state} counter={promise.counter} deadlineDate={promise.deadlineDate} statementDate={promise.statementDate} size={list ? 'sm' : 'md'} />
+    );
 
     return (
-        <Card className="group relative flex h-full flex-col transition-colors hover:border-primary/50 focus-within:ring-2 focus-within:ring-ring">
-            <CardContent className="flex flex-1 flex-col gap-4 p-5">
-                <div className="flex items-start justify-between gap-3">
+        <Card className={cn('group relative flex h-full transition-colors hover:border-primary/50 focus-within:ring-2 focus-within:ring-ring', list ? 'flex-row' : 'flex-col')}>
+            <CardContent className={cn('flex flex-1 flex-col', list ? 'min-w-0 gap-1.5 p-3 sm:gap-3 sm:p-5' : 'gap-4 p-5')}>
+                <div className={cn('flex justify-between gap-3', list ? 'items-center' : 'items-start')}>
                     <div className="flex min-w-0 items-center gap-2.5">
-                        <SpeakerAvatar name={promise.speaker.name} image={promise.speaker.image} size={40} />
+                        <SpeakerAvatar name={promise.speaker.name} image={promise.speaker.image} size={40} className={cn(list && 'max-sm:hidden')} />
                         <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-foreground">{promise.speaker.name}</p>
+                            <p className={cn('truncate font-semibold', list ? 'text-xs text-muted-foreground sm:text-sm sm:text-foreground' : 'text-sm text-foreground')}>{promise.speaker.name}</p>
                             {promise.speaker.title && (
-                                <p className="truncate text-xs text-muted-foreground">{promise.speaker.title}</p>
+                                <p className={cn('truncate text-xs text-muted-foreground', list && 'max-sm:hidden')}>{promise.speaker.title}</p>
                             )}
                         </div>
                     </div>
-                    <StateBadge state={promise.state} keptLate={promise.keptLate} />
+                    <StateBadge state={promise.state} keptLate={promise.keptLate} className={cn(list && 'max-sm:px-2 max-sm:py-0 max-sm:text-[11px]')} />
                 </div>
 
-                <h2 className="text-base font-bold leading-snug text-foreground">
+                <h2 className={cn('font-bold leading-snug text-foreground', list ? 'line-clamp-2 text-sm sm:text-base' : 'text-base')}>
                     <Link
                         href={`/promises/${promise.number}${returnUrl === '/promises' ? '' : `?from=${encodeURIComponent(returnUrl)}`}`}
                         onSuccess={(page) => {
@@ -50,13 +59,11 @@ export default function PromiseCard({ promise, returnUrl = '/promises' }: { prom
                     </Link>
                 </h2>
 
-                <div className="flex flex-1 items-center justify-center py-1">
-                    <Countdown state={promise.state} counter={promise.counter} deadlineDate={promise.deadlineDate} statementDate={promise.statementDate} />
-                </div>
+                {!list && <div className="flex flex-1 items-center justify-center py-1">{countdown}</div>}
 
-                {promise.target && <TargetProgress target={promise.target} />}
+                {promise.target && <div className={cn(list && 'max-sm:hidden')}><TargetProgress target={promise.target} /></div>}
 
-                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3 text-xs text-muted-foreground">
+                <div className={cn('flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3 text-xs text-muted-foreground', list && 'max-sm:hidden')}>
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                         <span className="inline-flex items-center gap-1">
                             <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
@@ -79,6 +86,9 @@ export default function PromiseCard({ promise, returnUrl = '/promises' }: { prom
                     </span>
                 </div>
             </CardContent>
+            {list && (
+                <div className="flex w-20 shrink-0 items-center justify-center border-s border-border px-1.5 py-2 sm:w-40 sm:px-2 sm:py-4">{countdown}</div>
+            )}
         </Card>
     );
 }

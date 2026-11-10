@@ -10,7 +10,8 @@ interface Props {
     /** Date-only anchors for the calendar caption; deadline also drives the live clock. */
     deadlineDate?: string | null;
     statementDate?: string;
-    size?: 'md' | 'lg';
+    /** `sm` fits the narrow counter column of a list row. */
+    size?: 'sm' | 'md' | 'lg';
     /** Adds a ticking days/hours/minutes clock under the number (detail page). */
     live?: boolean;
 }
@@ -64,21 +65,29 @@ export default function Countdown({ state, counter, deadlineDate, statementDate,
         <div className="flex flex-col items-center text-center">
             <span className="sr-only">{spoken}</span>
             {counter.value === null ? (
-                <Icon aria-hidden="true" className={cn(size === 'lg' ? 'h-16 w-16' : 'h-12 w-12', STATE_META[state].tone)} />
+                <Icon aria-hidden="true" className={cn({ sm: 'h-7 w-7 sm:h-9 sm:w-9', md: 'h-12 w-12', lg: 'h-16 w-16' }[size], STATE_META[state].tone)} />
             ) : (
                 <span
                     aria-hidden="true"
                     dir="ltr"
                     className={cn(
                         'font-black leading-none tabular-nums',
-                        size === 'lg' ? 'text-6xl md:text-7xl' : 'text-5xl',
+                        { sm: 'text-2xl sm:text-4xl', md: 'text-5xl', lg: 'text-6xl md:text-7xl' }[size],
                         open ? STATE_META[state].tone : 'text-muted-foreground',
                     )}
                 >
                     {counter.mode === 'overdue' ? `+${counter.value}` : counter.value}
                 </span>
             )}
-            <span aria-hidden="true" className="mt-1.5 text-sm font-medium text-muted-foreground">{calendarCaption ?? caption}</span>
+            {size === 'sm' ? (
+                // Phones get the short day caption; the calendar wording needs the wider column.
+                <span aria-hidden="true" className="mt-1 text-[11px] font-medium leading-tight text-muted-foreground sm:text-xs">
+                    <span className="sm:hidden">{caption}</span>
+                    <span className="max-sm:hidden">{calendarCaption ?? caption}</span>
+                </span>
+            ) : (
+                <span aria-hidden="true" className="mt-1.5 text-sm font-medium text-muted-foreground">{calendarCaption ?? caption}</span>
+            )}
             {live && counter.mode === 'left' && deadlineDate && <LiveClock deadlineDate={deadlineDate} />}
         </div>
     );

@@ -42,4 +42,21 @@ return [
 
     'twitter_site' => env('SEO_TWITTER_SITE'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Share cards drawn on demand
+    |--------------------------------------------------------------------------
+    |
+    | Cards of single records (a promise, a place...) are drawn by a Node script
+    | the first time they are requested. `image_hosts` lists extra hosts a card
+    | may fetch a photo from, beyond this site's own media storage.
+    |
+    */
+
+    'cards' => [
+        'node' => env('OG_NODE_BINARY', 'node'),
+        'timeout' => (int) env('OG_RENDER_TIMEOUT', 10),
+        'image_hosts' => array_values(array_filter(array_map('trim', explode(',', (string) env('OG_IMAGE_HOSTS', ''))))),
+    ],
+
 ];

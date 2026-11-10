@@ -5,6 +5,8 @@ use App\Support\Seo\Og\StaticCards;
 use App\Support\Seo\SeoMeta;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Vite;
+use Inertia\Ssr\Gateway;
+use Inertia\Ssr\Response;
 
 test('server-rendered html includes seo meta and json-ld even when inertia.ssr.enabled is true and ssr server is offline', function () {
     Vite::useHotFile(storage_path('framework/testing/hot-missing'));
@@ -23,11 +25,11 @@ test('head tags are printed once even when ssr succeeds but the page rendered no
     // A page that returns nothing on its first server render (a "mounted"
     // guard, a loading state) leaves the SSR head empty. The tags must not
     // depend on it: this is what left /phonebook without any preview.
-    $this->app->bind(Inertia\Ssr\Gateway::class, fn () => new class implements Inertia\Ssr\Gateway
+    $this->app->bind(Gateway::class, fn () => new class implements Gateway
     {
-        public function dispatch(array $page): ?Inertia\Ssr\Response
+        public function dispatch(array $page): ?Response
         {
-            return new Inertia\Ssr\Response('', '<div id="app"></div>');
+            return new Response('', '<div id="app"></div>');
         }
     });
 

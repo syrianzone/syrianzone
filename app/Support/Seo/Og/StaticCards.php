@@ -18,8 +18,8 @@ final class StaticCards
     /** @var array<string, string>|null path => slug */
     private static ?array $paths = null;
 
-    /** @var array<string, string>|null slug => content hash */
-    private static ?array $versions = null;
+    /** @var array<string, mixed>|null the decoded public/og/manifest.json */
+    private static ?array $manifest = null;
 
     /** Site-relative URL of the card a fixed page uses, or null when the path has none. */
     public static function forPath(string $path): ?string
@@ -61,7 +61,23 @@ final class StaticCards
     /** @return array<string, string> slug => content hash */
     public static function versions(): array
     {
-        return self::$versions ??= self::read(public_path('og/manifest.json'))['cards'] ?? [];
+        return self::manifest()['cards'] ?? [];
+    }
+
+    /**
+     * Hash of everything a card is drawn from (templates, tokens, icons,
+     * fonts, artwork). Part of every on-demand card's version, so a design
+     * change redraws those too.
+     */
+    public static function recipe(): string
+    {
+        return (string) (self::manifest()['recipe'] ?? '');
+    }
+
+    /** @return array<string, mixed> */
+    private static function manifest(): array
+    {
+        return self::$manifest ??= self::read(public_path('og/manifest.json'));
     }
 
     /** @return array<string, mixed> */

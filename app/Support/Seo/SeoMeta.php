@@ -2,22 +2,19 @@
 
 namespace App\Support\Seo;
 
-use App\Models\City;
-use App\Models\Poll;
-use App\Models\Promise;
 use App\Support\Seo\Og\StaticCards;
+use App\Support\Seo\Preview\Preview;
+use App\Support\Seo\Preview\Previews;
 use Illuminate\Http\Request;
 
 /**
- * Resolves the metadata for the initial HTML response and Inertia shared props.
+ * Resolves the SEO and share-preview metadata of a request: one result that
+ * the root Blade view prints into <head> and <SeoHead> keeps current during
+ * client-side navigation.
  *
- * When Inertia SSR is active, <SeoHead> renders these values via @inertiaHead.
- * When SSR is disabled or unreachable, resources/views/app.blade.php renders
- * the exact same values server-side so non-JS crawlers and social scrapers
- * (WhatsApp, Telegram, X, Facebook) always receive complete metadata.
- *
- * The map is intentionally explicit (mirrors the client titles/descriptions) so
- * a page's SEO copy lives in one obvious place.
+ * Fixed pages are listed in PAGES below. Database-backed pages (a promise, a
+ * poll, a place...) each have a PreviewResolver under Preview/Resolvers. Any
+ * other URL gets the site defaults. See docs/guidelines/seo.md.
  */
 class SeoMeta
 {
@@ -279,48 +276,61 @@ class SeoMeta
         }
 
         $path = '/'.trim($request->path(), '/');
-        if ($path === '//') {
-            $path = '/';
-        }
-
-        $page = self::PAGES[$path] ?? null;
-        $title = $page['title'] ?? config('seo.default_title');
-        $description = $page['description'] ?? config('seo.default_description');
-        $type = $page['type'] ?? 'website';
-        $canonicalPath = $path;
-        $dynamicNoindex = false;
-
-        // Dynamic pages: fill the title/description/canonical from the record when cheap.
-        if ($page === null) {
-            [$title, $description, $canonicalPath, $dynamicNoindex, $type] = self::dynamicMeta($path, $title, $description, $type);
-        }
+        $preview = self::fixedPage($path) ?? Previews::resolve($request, $path) ?? self::fallback($path);
 
         $base = rtrim((string) config('seo.base_url'), '/');
-        $canonical = $canonicalPath === '/' ? $base.'/' : $base.$canonicalPath;
-        $image = self::absolute(
-            $page['image'] ?? StaticCards::forPath($path) ?? self::dynamicImage($path) ?? StaticCards::url(StaticCards::DEFAULT),
-            $base,
-        );
-        $robots = ($dynamicNoindex || self::isNoindex($path)) ? 'noindex, follow' : 'index, follow';
-        $schema = self::SCHEMA[$path]
-            ?? ((str_starts_with($path, '/polls/') || str_starts_with($path, '/promises/')) ? 'Article' : 'WebPage');
+        $absolute = fn (string $relative) => $relative === '/' ? $base.'/' : $base.$relative;
+        $canonical = $absolute($preview->canonicalPath);
         $twitterSite = config('seo.twitter_site');
 
         $meta = [
-            'title' => $title,
-            'description' => $description,
-            'type' => $type,
-            'image' => $image,
-            'url' => $canonical,
+            'title' => $preview->title,
+            'description' => $preview->description,
+            'type' => $preview->type,
+            'image' => self::absolute($preview->image, $base),
+            // What a share points at. Usually the canonical page; for a record
+            // opened through a query string it keeps that parameter, so each
+            // record previews as itself instead of collapsing into its section.
+            'url' => $absolute($preview->sharePath ?? $preview->canonicalPath),
             'canonical' => $canonical,
-            'robots' => $robots,
+            'robots' => ($preview->noindex || self::isNoindex($path)) ? 'noindex, follow' : 'index, follow',
             'twitter_site' => is_string($twitterSite) && $twitterSite !== '' ? $twitterSite : null,
-            'json_ld' => self::jsonLd($path, $schema, $title, $description, $canonical, $base),
+            'json_ld' => self::jsonLd($path, $preview->schema, $preview->title, $preview->description, $canonical, $base, $preview->parent),
         ];
 
         $request->attributes->set(self::ATTRIBUTE, $meta);
 
         return $meta;
+    }
+
+    /** A page listed in PAGES, with its card from resources/og/cards.json. */
+    private static function fixedPage(string $path): ?Preview
+    {
+        $page = self::PAGES[$path] ?? null;
+        if ($page === null) {
+            return null;
+        }
+
+        return new Preview(
+            title: $page['title'],
+            description: $page['description'],
+            canonicalPath: $path,
+            image: StaticCards::forPath($path) ?? StaticCards::url(StaticCards::DEFAULT),
+            type: $page['type'] ?? 'website',
+            schema: self::SCHEMA[$path] ?? 'WebPage',
+            parent: self::PARENT_BREADCRUMBS[$path] ?? null,
+        );
+    }
+
+    /** Any other URL: the site's own title, description and card. */
+    private static function fallback(string $path): Preview
+    {
+        return new Preview(
+            title: (string) config('seo.default_title'),
+            description: (string) config('seo.default_description'),
+            canonicalPath: $path,
+            image: StaticCards::url(StaticCards::DEFAULT),
+        );
     }
 
     /**
@@ -341,111 +351,10 @@ class SeoMeta
             $meta['description'],
             $meta['canonical'],
             $base,
+            null,
         );
 
         $request->attributes->set(self::ATTRIBUTE, $meta);
-    }
-
-    /**
-     * @return array{0:string,1:string,2:string,3:bool,4:string}
-     */
-    private static function dynamicMeta(string $path, string $title, string $description, string $type): array
-    {
-        try {
-            if (preg_match('#^/polls/([^/]+)/leaderboard$#', $path, $m)) {
-                $poll = Poll::where('slug', $m[1])->orWhere('id', $m[1])->first();
-                if ($poll) {
-                    if ($poll->slug === 'best-ministers') {
-                        $tierLb = self::PAGES['/tierlist/leaderboard'];
-
-                        return [
-                            $tierLb['title'],
-                            $tierLb['description'],
-                            '/tierlist/leaderboard',
-                            ! $poll->is_active,
-                            'article',
-                        ];
-                    }
-
-                    return [
-                        'نتائج '.$poll->title.' | استطلاعات سوريا زون',
-                        'إحصائيات ونتائج تصويت '.$poll->title.' على المساحة السورية.',
-                        '/polls/'.$poll->slug.'/leaderboard',
-                        ! $poll->is_active,
-                        'article',
-                    ];
-                }
-            }
-
-            if (preg_match('#^/polls/([^/]+)$#', $path, $m)) {
-                $poll = Poll::where('slug', $m[1])->orWhere('id', $m[1])->first();
-                if ($poll) {
-                    if ($poll->slug === 'best-ministers') {
-                        $tier = self::PAGES['/tierlist'];
-
-                        return [
-                            $tier['title'],
-                            $tier['description'],
-                            '/tierlist',
-                            ! $poll->is_active,
-                            'article',
-                        ];
-                    }
-
-                    return [
-                        $poll->title.' | استطلاعات سوريا زون',
-                        'شارك في استطلاع الرأي والتقييم المجتمعي لـ '.$poll->title.' وصوّت وشارك رأيك معنا.',
-                        '/polls/'.$poll->slug,
-                        ! $poll->is_active,
-                        'article',
-                    ];
-                }
-            }
-
-            if (preg_match('#^/transit/city/([^/]+)$#', $path, $m)) {
-                $city = City::find($m[1]);
-                if ($city) {
-                    return [
-                        'مواصلات '.$city->name_ar.' | ترانزيت',
-                        'خريطة خطوط المواصلات العامة والسرافيس والمواقف في '.$city->name_ar.' على ترانزيت سوريا.',
-                        $path,
-                        false,
-                        'website',
-                    ];
-                }
-            }
-
-            if (preg_match('#^/promises/(\d+)$#', $path, $m)) {
-                $promise = Promise::published()->where('number', (int) $m[1])->with('speaker')->first();
-                if ($promise) {
-                    $speaker = $promise->speaker?->name;
-                    $lead = $promise->summary ?: $promise->quote;
-
-                    return [
-                        $promise->title.' — الوعد رقم '.$promise->number.' | عداد الوعود',
-                        mb_substr(trim(($speaker ? $speaker.': ' : '').preg_replace('/\s+/u', ' ', (string) $lead)), 0, 200),
-                        '/promises/'.$promise->number,
-                        false,
-                        'article',
-                    ];
-                }
-            }
-
-            if (preg_match('#^/compass/s/([^/]+)$#', $path)) {
-                return [
-                    'نتيجة مشتركة — بوصلة سوريا | Syrian Zone',
-                    'استعرض النتيجة المشتركة على اختبار بوصلة سوريا السياسي التفاعلي واكتشف موقعك على أحد عشر محوراً.',
-                    $path,
-                    true,
-                    'website',
-                ];
-            }
-        } catch (\Throwable) {
-            // A missing table or a bad slug must never break the page render;
-            // fall through to the generic title/description.
-        }
-
-        return [$title, $description, $path, false, $type];
     }
 
     private static function isNoindex(string $path): bool
@@ -460,33 +369,6 @@ class SeoMeta
         return false;
     }
 
-    /**
-     * Share image for a database-backed page: its own card where one exists,
-     * otherwise the card of the section it belongs to.
-     */
-    private static function dynamicImage(string $path): ?string
-    {
-        if (preg_match('#^/polls/([^/]+)(?:/leaderboard)?$#', $path, $m)) {
-            return StaticCards::url($m[1] === 'best-ministers' ? 'tierlist' : 'polls');
-        }
-
-        if (preg_match('#^/transit/city/([^/]+)$#', $path, $m)) {
-            $rel = sprintf('/og/cities/%s.png', $m[1]);
-
-            return is_file(public_path(ltrim($rel, '/'))) ? $rel : StaticCards::url('transit');
-        }
-
-        if (preg_match('#^/compass/s/([^/]+)$#', $path)) {
-            return StaticCards::url('compass-share');
-        }
-
-        if (preg_match('#^/promises/\d+$#', $path)) {
-            return StaticCards::url('promises');
-        }
-
-        return null;
-    }
-
     private static function absolute(string $image, string $base): string
     {
         if (str_starts_with($image, 'http://') || str_starts_with($image, 'https://')) {
@@ -497,44 +379,16 @@ class SeoMeta
     }
 
     /**
-     * Resolves the intermediate parent hub [path, label] for nested routes so
-     * BreadcrumbList reflects a 3-level hierarchy when appropriate.
-     *
-     * @return array{0:string,1:string}|null
-     */
-    private static function parentBreadcrumb(string $path): ?array
-    {
-        if (isset(self::PARENT_BREADCRUMBS[$path])) {
-            return self::PARENT_BREADCRUMBS[$path];
-        }
-
-        if (str_starts_with($path, '/polls/')) {
-            return ['/polls', 'الاستبيانات واستطلاعات الرأي'];
-        }
-
-        if (str_starts_with($path, '/transit/city/')) {
-            return ['/transit', 'ترانزيت سوريا'];
-        }
-
-        if (str_starts_with($path, '/compass/s/')) {
-            return ['/compass', 'بوصلة سوريا'];
-        }
-
-        if (str_starts_with($path, '/promises/')) {
-            return ['/promises', 'عداد الوعود'];
-        }
-
-        return null;
-    }
-
-    /**
      * Organization + WebSite + a typed page node + (for non-root) a
      * BreadcrumbList.
      *
      * Returns a ready-to-embed JSON string (the "@context" key must not pass
      * through Blade, which would treat it as a directive).
      */
-    private static function jsonLd(string $path, string $schema, string $title, string $description, string $canonical, string $base): string
+    /**
+     * @param  array{0:string,1:string}|null  $parent  breadcrumb parent as [path, label]
+     */
+    private static function jsonLd(string $path, string $schema, string $title, string $description, string $canonical, string $base, ?array $parent): string
     {
         $websiteId = $base.'/#website';
         $breadcrumbId = $canonical.'#breadcrumb';
@@ -580,7 +434,6 @@ class SeoMeta
                 ['@type' => 'ListItem', 'position' => 1, 'name' => 'الرئيسية', 'item' => $base.'/'],
             ];
 
-            $parent = self::parentBreadcrumb($path);
             if ($parent !== null) {
                 [$parentPath, $parentLabel] = $parent;
                 $items[] = ['@type' => 'ListItem', 'position' => 2, 'name' => $parentLabel, 'item' => $base.$parentPath];

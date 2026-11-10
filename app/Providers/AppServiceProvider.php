@@ -24,6 +24,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(AgentAuthorizer::class);
 
         $this->app->bind(AgentContext::class, fn () => AgentContext::anonymous());
+
+        // Share cards are drawn by the Node renderer; tests swap in a fake.
+        $this->app->bind(\App\Support\Seo\Og\CardRenderer::class, \App\Support\Seo\Og\NodeCardRenderer::class);
     }
 
     public function boot(): void

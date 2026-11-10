@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { Card, CardContent } from '@/Components/ui/card';
 import { CalendarDays } from 'lucide-react';
 import Countdown from './Countdown';
@@ -6,6 +6,7 @@ import SpeakerAvatar from './SpeakerAvatar';
 import StateBadge from './StateBadge';
 import TargetProgress from './TargetProgress';
 import { formatDate } from '../_lib/format';
+import { PROMISE_LIST_VISIT_KEY, promiseReturnUrl } from '../_lib/filters';
 import { sectorIcon } from '../_lib/status';
 import type { PromiseCardData } from '../_lib/types';
 
@@ -14,6 +15,7 @@ import type { PromiseCardData } from '../_lib/types';
  * card so the whole card is clickable without nesting interactive elements.
  */
 export default function PromiseCard({ promise, returnUrl = '/promises' }: { promise: PromiseCardData; returnUrl?: string }) {
+    const sourcePage = usePage();
     const SectorIcon = sectorIcon(promise.sector?.icon);
 
     return (
@@ -35,6 +37,13 @@ export default function PromiseCard({ promise, returnUrl = '/promises' }: { prom
                 <h2 className="text-base font-bold leading-snug text-foreground">
                     <Link
                         href={`/promises/${promise.number}${returnUrl === '/promises' ? '' : `?from=${encodeURIComponent(returnUrl)}`}`}
+                        onSuccess={(page) => {
+                            if (sourcePage.component === 'Promises/Index' && sourcePage.url.split('?')[0] === '/promises'
+                                && page.component === 'Promises/Show' && page.url.split('?')[0] === `/promises/${promise.number}`
+                                && promiseReturnUrl(page.url) === returnUrl) {
+                                router.remember({ detailUrl: page.url, listUrl: returnUrl }, PROMISE_LIST_VISIT_KEY);
+                            }
+                        }}
                         className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none group-hover:text-primary"
                     >
                         {promise.title}
@@ -42,7 +51,7 @@ export default function PromiseCard({ promise, returnUrl = '/promises' }: { prom
                 </h2>
 
                 <div className="flex flex-1 items-center justify-center py-1">
-                    <Countdown state={promise.state} counter={promise.counter} />
+                    <Countdown state={promise.state} counter={promise.counter} deadlineDate={promise.deadlineDate} statementDate={promise.statementDate} />
                 </div>
 
                 {promise.target && <TargetProgress target={promise.target} />}

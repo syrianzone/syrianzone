@@ -59,6 +59,7 @@ export default function SmartFilterSearch({
     const [editingKey, setEditingKey] = useState<string | null>(null);
     const [filterQuery, setFilterQuery] = useState('');
     const [open, setOpen] = useState(false);
+    const [dismissed, setDismissed] = useState(false);
     const [browse, setBrowse] = useState(false);
     const [active, setActive] = useState(-1);
     const [announcement, setAnnouncement] = useState('');
@@ -107,7 +108,7 @@ export default function SmartFilterSearch({
         return items.length === 1 && items[0].kind === 'search' ? [] : items;
     }, [facets, parsed, draft, browse, editingFacet, filterQuery]);
     const activeRow = rows[active];
-    const menuOpen = open && rows.length > 0;
+    const menuOpen = !dismissed && open && rows.length > 0;
     const optionId = (row: Suggestion) => `${listId}-${encodeURIComponent(row.id)}`;
     const heading = !browse && editingFacet ? editingFacet.label : 'البحث والتصفيات';
 
@@ -133,12 +134,57 @@ export default function SmartFilterSearch({
     }
 
     function showGroups() {
+        inputRef.current?.focus();
         setEditingKey(null);
         setFilterQuery('');
         setBrowse(true);
         setActive(-1);
         setOpen(true);
+    }
+
+    function chips() {
+        return Array.from(fieldRef.current?.querySelectorAll<HTMLElement>('[data-filter-key]') ?? []);
+    }
+
+    function focusSearch() {
         inputRef.current?.focus();
+        setEditingKey(null);
+        setFilterQuery('');
+        setOpen(false);
+        setActive(-1);
+    }
+
+    function focusChip(key: string) {
+        const chip = chips().find((element) => element.dataset.filterKey === key);
+        if (!chip || !value.filters[key]?.length) {
+            focusSearch();
+            return;
+        }
+        chip.focus();
+        chip.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
+
+    // Facets follow DOM order; ArrowLeft moves forward in this RTL field.
+    function focusSibling(key: string | null, step: -1 | 1) {
+        const elements = chips();
+        const index = key === null ? elements.length : elements.findIndex((element) => element.dataset.filterKey === key);
+        const next = elements[index + step];
+        if (next) focusChip(next.dataset.filterKey!);
+        else if (step === 1) focusSearch();
+    }
+
+    function openFacet(facet: SmartFilterFacet, activeIndex = -1) {
+        facetInputRefs.current.get(facet.key)?.focus();
+        setEditingKey(facet.key);
+        setFilterQuery('');
+        setBrowse(false);
+        setOpen(true);
+        setActive(activeIndex);
+    }
+
+    function leaveEditor() {
+        if (editingKey) focusChip(editingKey);
+        else focusSearch();
     }
 
     function choose(row: Suggestion) {
@@ -175,9 +221,18 @@ export default function SmartFilterSearch({
         }
     }
 
-    function remove(facet: SmartFilterFacet, option: SmartFilterOption) {
+    function remove(facet: SmartFilterFacet, option: SmartFilterOption, keyboard = false) {
+        if (keyboard) {
+            const chip = chips().find((element) => element.dataset.filterKey === facet.key);
+            const buttons = Array.from(chip?.querySelectorAll<HTMLButtonElement>('[data-filter-value]') ?? []);
+            const index = buttons.findIndex((button) => button.dataset.filterValue === option.value);
+            const next = buttons[index + 1] ?? buttons[index - 1];
+            if (next) next.focus();
+            else focusSibling(facet.key, 1);
+        }
         emit(toggleFilterValue(value, facet, option.value));
         setAnnouncement(`أُزيلت تصفية ${facet.label}: ${option.label}`);
+        if (keyboard) return;
         setEditingKey(facet.key);
         setFilterQuery('');
         setBrowse(false);
@@ -187,18 +242,94 @@ export default function SmartFilterSearch({
     }
 
     function removeFacet(facet: SmartFilterFacet) {
+        focusSibling(facet.key, 1);
         const filters = { ...value.filters };
         delete filters[facet.key];
         emit({ ...value, filters });
         setEditingKey(null);
         setFilterQuery('');
         setAnnouncement(`أُزيلت تصفية ${facet.label} بالكامل`);
-        inputRef.current?.focus();
         setOpen(false);
+    }
+
+    function chipKeyDown(event: KeyboardEvent<HTMLSpanElement>, facet: SmartFilterFacet) {
+        if (event.target instanceof HTMLInputElement || event.nativeEvent.isComposing
+            || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+        const target = event.target as HTMLElement;
+        const option = facet.options.find((item) => item.value === target.dataset.filterValue);
+        if (event.key === 'Delete' || event.key === 'Backspace') {
+            event.preventDefault();
+            if (option) remove(facet, option, true);
+            else removeFacet(facet);
+        } else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+            event.preventDefault();
+            const step = event.key === 'ArrowLeft' ? 1 : -1;
+            if (option) {
+                const buttons = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[data-filter-value]'));
+                const next = buttons[buttons.indexOf(target as HTMLButtonElement) + step];
+                if (next) next.focus();
+                else if (step === 1) openFacet(facet);
+                else focusChip(facet.key);
+            } else focusSibling(facet.key, step);
+        } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp'
+            || target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+            event.preventDefault();
+            openFacet(facet, event.key === 'ArrowUp' ? facet.options.length - 1 : event.key === 'ArrowDown' ? 0 : -1);
+        } else if (event.key === 'Escape') {
+            event.preventDefault();
+            event.stopPropagation();
+            if (target === event.currentTarget) focusSearch();
+            else focusChip(facet.key);
+        }
     }
 
     function keyDown(event: KeyboardEvent<HTMLInputElement>) {
         if (event.nativeEvent.isComposing) return;
+        if (event.key !== 'Tab' && (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey)) return;
+        const input = event.currentTarget;
+        const collapsed = input.selectionStart === input.selectionEnd;
+        if (collapsed && (event.key === 'ArrowLeft' || event.key === 'ArrowRight')) {
+            if (!input.value && menuOpen && activeRow?.kind === 'facet' && event.key === 'ArrowLeft') {
+                event.preventDefault();
+                choose(activeRow);
+                return;
+            }
+            if (event.key === 'ArrowRight' && input.selectionStart === 0) {
+                if (editingFacet) {
+                    event.preventDefault();
+                    const chip = chips().find((element) => element.dataset.filterKey === editingFacet.key);
+                    const buttons = chip?.querySelectorAll<HTMLButtonElement>('[data-filter-value]');
+                    if (buttons?.length) buttons[buttons.length - 1].focus();
+                    else showGroups();
+                } else if (hasChips) {
+                    event.preventDefault();
+                    focusSibling(null, -1);
+                }
+                return;
+            }
+            if (editingFacet && event.key === 'ArrowLeft' && input.selectionEnd === input.value.length) {
+                event.preventDefault();
+                focusSibling(editingFacet.key, 1);
+                return;
+            }
+        }
+        if (event.key === 'Backspace' && !input.value && collapsed) {
+            if (editingFacet) {
+                const chip = chips().find((element) => element.dataset.filterKey === editingFacet.key);
+                const buttons = chip?.querySelectorAll<HTMLButtonElement>('[data-filter-value]');
+                if (buttons?.length) {
+                    event.preventDefault();
+                    buttons[buttons.length - 1].focus();
+                } else {
+                    event.preventDefault();
+                    leaveEditor();
+                }
+            } else if (hasChips) {
+                event.preventDefault();
+                focusSibling(null, -1);
+            }
+            return;
+        }
         if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
             event.preventDefault();
             setOpen(true);
@@ -212,12 +343,16 @@ export default function SmartFilterSearch({
             event.preventDefault();
             if (menuOpen && activeRow) choose(activeRow);
             else setOpen(false);
-        } else if (event.key === 'Escape' && open) {
+        } else if (event.key === 'Escape' && (open || editingFacet)) {
             event.preventDefault();
             event.stopPropagation();
-            setOpen(false);
+            leaveEditor();
         } else if (event.key === 'Tab') {
             setOpen(false); // Never turn a suggestion into a selection on Tab.
+            if (editingFacet && !value.filters[editingFacet.key]?.length) {
+                event.preventDefault();
+                focusSearch();
+            }
         }
     }
 
@@ -231,7 +366,7 @@ export default function SmartFilterSearch({
                     )}>
                         <Search className="ms-1 hidden h-4 w-4 shrink-0 text-muted-foreground sm:block" aria-hidden="true" />
                         {hasChips && <div role="group" aria-label="التصفيات المطبقة" className={mobileFiltersScroll
-                            ? 'flex min-w-0 max-w-full basis-full flex-nowrap items-center gap-1.5 overflow-x-auto overflow-y-hidden overscroll-x-contain pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:contents'
+                            ? 'flex min-w-0 max-w-full basis-full flex-nowrap items-center gap-1.5 overflow-x-auto overflow-y-hidden overscroll-x-contain p-1 scroll-px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:contents'
                             : 'contents'}>
                             {facets.map((facet) => {
                                 const options = facet.options.filter((o) => value.filters[facet.key]?.includes(o.value));
@@ -239,6 +374,14 @@ export default function SmartFilterSearch({
                                 const inputId = `${id}-facet-${encodeURIComponent(facet.key)}`;
                                 return options.length > 0 || editing ? (
                                     <FilterChipGroup key={facet.key} label={facet.label} options={options} inputId={inputId}
+                                        data-filter-key={facet.key} tabIndex={0} aria-describedby={hintId}
+                                        onKeyDown={(event) => chipKeyDown(event, facet)}
+                                        onFocus={(event) => {
+                                            if (event.target instanceof HTMLInputElement) return;
+                                            if (!options.length) { focusSearch(); return; }
+                                            setEditingKey(null); setFilterQuery(''); setBrowse(false); setOpen(false); setActive(-1);
+                                        }}
+                                        onClick={(event) => { if (event.target === event.currentTarget) event.currentTarget.focus(); }}
                                         className={mobileFiltersScroll ? 'max-sm:max-w-none max-sm:shrink-0 max-sm:whitespace-nowrap max-sm:[&>span]:flex-nowrap' : undefined}
                                         onRemove={(selected) => {
                                             const option = options.find((o) => o.value === selected);
@@ -288,7 +431,11 @@ export default function SmartFilterSearch({
                                 className="h-9 w-9 gap-0 px-0 text-xs text-muted-foreground hover:bg-muted/30 hover:text-foreground focus-visible:ring-1 focus-visible:ring-border focus-visible:ring-offset-0 sm:w-auto sm:gap-1.5 sm:px-2.5"
                                 aria-label="التصفيات" title="التصفيات" aria-haspopup="listbox"
                                 aria-expanded={menuOpen} aria-controls={menuOpen ? listId : undefined}
-                                onClick={() => menuOpen && browse ? setOpen(false) : showGroups()}>
+                                onClick={() => {
+                                    setDismissed(false);
+                                    if (menuOpen && browse) setOpen(false);
+                                    else showGroups();
+                                }}>
                                 <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
                                 <span className="sr-only sm:not-sr-only">التصفيات</span>
                                 {chosenCount > 0 && <span className="hidden tabular-nums sm:inline" aria-label={`${chosenCount} تصفيات مختارة`}>{chosenCount}</span>}
@@ -297,9 +444,9 @@ export default function SmartFilterSearch({
                     </div>
                 </PopoverAnchor>
                 <PopoverContent align="start" side="bottom" collisionPadding={16} sideOffset={8} role="region" aria-label="اقتراحات البحث والتصفية"
-                    className="flex max-h-[min(26rem,var(--radix-popover-content-available-height))] w-[min(28rem,var(--radix-popover-trigger-width))] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-xl p-1.5"
+                    className="flex max-h-[min(26rem,var(--radix-popover-content-available-height))] w-[min(28rem,var(--radix-popover-trigger-width))] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-xl bg-background/95 p-1.5 shadow-lg shadow-foreground/5 backdrop-blur supports-[backdrop-filter]:bg-background/60"
                     onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()}
-                    onEscapeKeyDown={() => inputRef.current?.focus()}
+                    onEscapeKeyDown={(event) => { event.preventDefault(); leaveEditor(); }}
                     onInteractOutside={(e) => { if (fieldRef.current?.contains(e.target as Node)) e.preventDefault(); }}>
                     <div className="flex min-h-11 shrink-0 items-center gap-2 border-b border-border px-2 pb-1.5">
                         {editingFacet && !browse && (
@@ -308,7 +455,13 @@ export default function SmartFilterSearch({
                                 aria-label="العودة إلى مجموعات التصفيات" title="العودة إلى التصفيات"
                                 onClick={showGroups}><ChevronRight className="h-4 w-4" aria-hidden="true" /></Button>
                         )}
-                        <span id={headingId} className="text-sm font-semibold">{heading}</span>
+                        <span id={headingId} className="min-w-0 flex-1 text-sm font-semibold">{heading}</span>
+                        <Button type="button" variant="ghost" size="icon"
+                            className="h-9 w-9 shrink-0 rounded-full p-0 text-muted-foreground hover:bg-transparent hover:text-foreground focus-visible:ring-1 focus-visible:ring-border focus-visible:ring-offset-0"
+                            aria-label="إغلاق اقتراحات البحث والتصفية" title="إغلاق"
+                            onClick={() => { setDismissed(true); focusSearch(); }}>
+                            <X className="h-4 w-4" aria-hidden="true" />
+                        </Button>
                     </div>
                     {/* The scrollbar uses LTR positioning; all list content remains RTL. */}
                     <ScrollArea dir="ltr" type="auto" className="min-h-0"
@@ -340,7 +493,7 @@ export default function SmartFilterSearch({
                     </ScrollArea>
                 </PopoverContent>
             </Popover>
-            <p id={hintId} className="sr-only">اكتب للبحث، أو افتح التصفيات. استخدم السهمين للأعلى والأسفل للتنقل، وEnter للاختيار، وEscape للإغلاق.</p>
+            <p id={hintId} className="sr-only">الأيمن والأيسر للتنقل بين التصفيات وقيمها، وEnter للدخول، وEscape للخروج، وDelete لحذف المحدد. Backspace في حقل فارغ يحدد العنصر السابق. الأعلى والأسفل للتنقل في الاقتراحات وEnter للاختيار.</p>
             <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">{announcement}</div>
         </div>
     );

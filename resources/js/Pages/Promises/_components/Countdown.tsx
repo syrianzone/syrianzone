@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
 import { cn } from '@/Lib/utils';
-import { dayWord, daysPhrase, hoursPhrase, minutesPhrase } from '../_lib/format';
+import { calendarCounterCaption, dayWord, daysPhrase, hoursPhrase, minutesPhrase } from '../_lib/format';
 import { STATE_META, isOpenState } from '../_lib/status';
 import type { PromiseCounter, PromiseState } from '../_lib/types';
 
 interface Props {
     state: PromiseState;
     counter: PromiseCounter;
-    /** Deadline as YYYY-MM-DD, needed only for the live clock. */
+    /** Date-only anchors for the calendar caption; deadline also drives the live clock. */
     deadlineDate?: string | null;
+    statementDate?: string;
     size?: 'md' | 'lg';
     /** Adds a ticking days/hours/minutes clock under the number (detail page). */
     live?: boolean;
@@ -53,9 +54,10 @@ function describe(state: PromiseState, { mode, value }: PromiseCounter): { capti
  * The visual is aria-hidden and a single sr-only sentence carries the meaning,
  * so screen readers hear "بقي 47 يوماً حتى الموعد", not "47" then a caption.
  */
-export default function Countdown({ state, counter, deadlineDate, size = 'md', live = false }: Props) {
+export default function Countdown({ state, counter, deadlineDate, statementDate, size = 'md', live = false }: Props) {
     const open = isOpenState(state);
     const { caption, spoken } = describe(state, counter);
+    const calendarCaption = calendarCounterCaption(counter, { deadlineDate, statementDate });
     const Icon = STATE_META[state].icon;
 
     return (
@@ -76,7 +78,7 @@ export default function Countdown({ state, counter, deadlineDate, size = 'md', l
                     {counter.mode === 'overdue' ? `+${counter.value}` : counter.value}
                 </span>
             )}
-            <span aria-hidden="true" className="mt-1.5 text-sm font-medium text-muted-foreground">{caption}</span>
+            <span aria-hidden="true" className="mt-1.5 text-sm font-medium text-muted-foreground">{calendarCaption ?? caption}</span>
             {live && counter.mode === 'left' && deadlineDate && <LiveClock deadlineDate={deadlineDate} />}
         </div>
     );

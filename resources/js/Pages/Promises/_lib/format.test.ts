@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { dayWord, daysPhrase, formatDate, hoursPhrase, minutesPhrase, safeHref, speakerImage } from './format';
+import { calendarCounterCaption, dayWord, daysPhrase, formatDate, hoursPhrase, minutesPhrase, safeHref, speakerImage } from './format';
+import type { CounterMode } from './types';
 
 describe('dayWord (Arabic counted noun after a numeral)', () => {
     it.each([
@@ -54,6 +55,66 @@ describe('formatDate', () => {
     it('is empty for missing dates', () => {
         expect(formatDate(null)).toBe('');
         expect(formatDate(undefined)).toBe('');
+    });
+});
+
+describe('calendar counter captions', () => {
+    it.each([
+        ['2025-01-31', 27, null],
+        ['2025-01-31', 28, 'شهر من التأخير'],
+        ['2024-01-31', 28, null],
+        ['2024-01-31', 29, 'شهر من التأخير'],
+        ['2025-01-01', 30, null],
+        ['2025-01-01', 31, 'شهر من التأخير'],
+        ['2025-04-01', 30, 'شهر من التأخير'],
+        ['2025-01-31', 58, 'أكثر من شهر من التأخير'],
+        ['2025-01-31', 59, 'شهران من التأخير'],
+        ['2024-02-29', 365, 'سنة من التأخير'],
+        ['2024-02-29', 366, 'أكثر من سنة من التأخير'],
+        ['2023-03-01', 365, 'أكثر من 11 شهراً من التأخير'],
+        ['2025-01-01', 304, '10 أشهر من التأخير'],
+        ['2025-01-01', 305, 'أكثر من 10 أشهر من التأخير'],
+        ['2025-01-01', 365, 'سنة من التأخير'],
+        ['2025-01-01', 425, 'أكثر من سنة وشهرين من التأخير'],
+        ['2025-01-01', 730, 'سنتان من التأخير'],
+        ['2025-01-01', 789, 'سنتان وشهران من التأخير'],
+        ['2025-01-01', 790, 'أكثر من سنتين وشهرين من التأخير'],
+        ['2025-01-01', 1095, '3 سنوات من التأخير'],
+    ])('uses calendar anniversaries from %s over %i days', (deadlineDate, value, expected) => {
+        expect(calendarCounterCaption({ mode: 'overdue', value }, { deadlineDate })).toBe(expected);
+    });
+
+    it.each<[CounterMode, number, string]>([
+        ['left', 59, 'بقي شهران على الموعد'],
+        ['left', 60, 'بقي أكثر من شهرين على الموعد'],
+        ['early', 59, 'قبل الموعد بشهرين'],
+        ['early', 60, 'قبل الموعد بأكثر من شهرين'],
+        ['late', 61, 'شهران بعد الموعد'],
+        ['late', 62, 'أكثر من شهرين بعد الموعد'],
+        ['since', 61, 'شهران منذ إطلاق الوعد'],
+        ['since', 62, 'أكثر من شهرين منذ إطلاق الوعد'],
+        ['took', 61, 'بعد شهرين من إطلاقه'],
+        ['took', 62, 'بعد أكثر من شهرين من إطلاقه'],
+    ])('keeps the context and Arabic case for %s (%i days)', (mode, value, expected) => {
+        expect(calendarCounterCaption({ mode, value }, { deadlineDate: '2025-03-01', statementDate: '2025-03-01' })).toBe(expected);
+    });
+
+    it('uses the statement for counters without a deadline', () => {
+        expect(calendarCounterCaption({ mode: 'since', value: 90 }, { statementDate: '2025-01-01', deadlineDate: null }))
+            .toBe('3 أشهر منذ إطلاق الوعد');
+    });
+
+    it.each<CounterMode>(['today', 'ontime', 'closed'])('preserves the %s caption', (mode) => {
+        expect(calendarCounterCaption({ mode, value: 365 }, { deadlineDate: '2025-01-01' })).toBeNull();
+    });
+
+    it('falls back for missing or invalid dates and non-duration values', () => {
+        for (const deadlineDate of [null, undefined, '', 'invalid', '2025-02-29', '2025-13-01']) {
+            expect(calendarCounterCaption({ mode: 'overdue', value: 365 }, { deadlineDate })).toBeNull();
+        }
+        for (const value of [null, 0, -1, 1.5, Infinity]) {
+            expect(calendarCounterCaption({ mode: 'overdue', value }, { deadlineDate: '2025-01-01' })).toBeNull();
+        }
     });
 });
 

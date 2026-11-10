@@ -87,10 +87,16 @@ async function renderElementToCanvas(el: HTMLElement): Promise<HTMLCanvasElement
   });
 }
 
-/** Render a DOM node (see renderElementToCanvas) and download it as a PNG. */
-export async function exportElementAsPng(el: HTMLElement, filename: string): Promise<void> {
+/** Export a DOM node as PNG for download or native sharing. */
+export async function exportElementAsPng(el: HTMLElement, filename: string, action: 'download' | 'share' = 'download'): Promise<void> {
   const canvas = await renderElementToCanvas(el);
   const dataUrl = canvas.toDataURL('image/png');
+  if (action === 'share') {
+    const bytes = Uint8Array.from(atob(dataUrl.split(',')[1]), (character) => character.charCodeAt(0));
+    const file = new File([bytes], filename, { type: 'image/png' });
+    await navigator.share({ files: [file] });
+    return;
+  }
   const link = document.createElement('a');
   link.download = filename;
   link.href = dataUrl;

@@ -1,13 +1,14 @@
 import { useState } from 'react';
-import { Link, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent, CardHeader } from '@/Components/ui/card';
 import { Alert, AlertDescription } from '@/Components/ui/alert';
-import { ArrowRight, Flag, Image as ImageIcon, Link2, MapPin, MessageSquarePlus, Quote } from 'lucide-react';
+import { ArrowRight, Flag, Image as ImageIcon, Link2, MapPin, MessageSquarePlus, Quote, Share2 } from 'lucide-react';
 import { Twitter } from '@/Components/ui/icons';
 import { notify } from '@/Lib/notify';
+import { isShareCancelled, useCanShare } from '@/Lib/webShare';
 import Countdown from './_components/Countdown';
 import ReportDialog, { type ReportKind } from './_components/ReportDialog';
 import ShareCardDialog from './_components/ShareCardDialog';
@@ -19,7 +20,7 @@ import Timeline from './_components/Timeline';
 import VotePanel from './_components/VotePanel';
 import { formatDate } from './_lib/format';
 import { STATE_META, VENUE_LABEL, sectorIcon } from './_lib/status';
-import { promiseReturnUrl } from './_lib/filters';
+import { canReturnToPromiseList, PROMISE_LIST_VISIT_KEY, promiseReturnUrl } from './_lib/filters';
 import type { PromiseDetailData } from './_lib/types';
 
 interface Props {
@@ -32,13 +33,31 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 
 export default function PromiseShow({ promise }: Props) {
     const page = usePage();
-    const { auth } = page.props as { auth?: { user?: { id: number } | null } };
+    const { auth, seo } = page.props as { auth?: { user?: { id: number } | null }; seo?: { canonical?: string } };
     const returnUrl = promiseReturnUrl(page.url);
     const user = auth?.user ?? null;
     const [reportKind, setReportKind] = useState<ReportKind | null>(null);
     const [shareOpen, setShareOpen] = useState(false);
+    const [sharing, setSharing] = useState(false);
+    const shareData: ShareData = {
+        title: promise.title,
+        text: `«${promise.title}»${promise.speaker.name ? ` — ${promise.speaker.name}` : ''}\nتابع حالة الوعد وآخر تحديثاته على عداد الوعود:`,
+        url: seo?.canonical ?? `/promises/${promise.number}`,
+    };
+    const canShare = useCanShare(() => shareData);
     const SectorIcon = sectorIcon(promise.sector?.icon);
     const loginHref = `/auth/google?redirect=${encodeURIComponent(`/promises/${promise.number}`)}`;
+
+    const share = async () => {
+        setSharing(true);
+        try {
+            await navigator.share(shareData);
+        } catch (error) {
+            if (!isShareCancelled(error)) notify.error('تعذّرت مشاركة الوعد');
+        } finally {
+            setSharing(false);
+        }
+    };
 
     const copyLink = async () => {
         try {
@@ -61,7 +80,13 @@ export default function PromiseShow({ promise }: Props) {
         <MainLayout>
             <div className="container mx-auto max-w-6xl space-y-6 px-4 py-8">
                 <nav aria-label="مسار التنقل">
-                    <Link href={returnUrl} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+                    <Link href={returnUrl} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+                        onBefore={() => {
+                            if (window.history.length > 1 && canReturnToPromiseList(router.restore(PROMISE_LIST_VISIT_KEY), page.url)) {
+                                window.history.back();
+                                return false;
+                            }
+                        }}>
                         <ArrowRight className="h-4 w-4" aria-hidden="true" />عداد الوعود
                     </Link>
                 </nav>
@@ -141,7 +166,7 @@ export default function PromiseShow({ promise }: Props) {
                             <CardContent className="space-y-4 p-6">
                                 <h2 className="sr-only">نص الوعد</h2>
                                 <figure className="space-y-3">
-                                    <blockquote dir="auto" className="relative border-s-4 border-primary ps-4 text-lg leading-relaxed text-foreground">
+                                    <blockquote dir="auto" className="relative ps-4 text-lg leading-relaxed text-foreground">
                                         <Quote className="absolute -start-1 -top-3 h-5 w-5 -scale-x-100 text-primary/40" aria-hidden="true" />
                                         «{promise.quote}»
                                     </blockquote>
@@ -212,6 +237,7 @@ export default function PromiseShow({ promise }: Props) {
                                     state={promise.state}
                                     counter={promise.counter}
                                     deadlineDate={promise.deadlineDate}
+                                    statementDate={promise.statementDate}
                                     size="lg"
                                     live
                                 />
@@ -229,6 +255,11 @@ export default function PromiseShow({ promise }: Props) {
                                 <Button variant="outline" className="justify-start gap-2" onClick={() => setShareOpen(true)}>
                                     <ImageIcon className="h-4 w-4" aria-hidden="true" />صورة للمشاركة
                                 </Button>
+                                {canShare && (
+                                    <Button variant="outline" className="justify-start gap-2" onClick={share} disabled={sharing}>
+                                        <Share2 className="h-4 w-4" aria-hidden="true" />مشاركة الوعد
+                                    </Button>
+                                )}
                                 <Button variant="outline" className="justify-start gap-2" onClick={copyLink}>
                                     <Link2 className="h-4 w-4" aria-hidden="true" />نسخ الرابط
                                 </Button>

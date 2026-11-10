@@ -39,31 +39,30 @@ export const FilterChip = React.forwardRef<HTMLButtonElement, FilterChipProps>(
   }
 );
 
-interface FilterChipGroupProps {
+interface FilterChipGroupProps extends React.HTMLAttributes<HTMLSpanElement> {
   label: string;
   options: ReadonlyArray<{ value: string; label: string }>;
   onRemove: (value: string) => void;
   onClear: () => void;
   children?: React.ReactNode;
   inputId?: string;
-  className?: string;
 }
 
 /** One facet chip, with independently removable values and one group clear action. */
-export function FilterChipGroup({ label, options, onRemove, onClear, children, inputId, className }: FilterChipGroupProps) {
+export function FilterChipGroup({ label, options, onRemove, onClear, children, inputId, className, ...props }: FilterChipGroupProps) {
   return (
     <span role="group" aria-label={`تصفية ${label}`}
       className={cn(
         badgeVariants({ variant: 'outline' }),
-        'min-h-9 max-w-full items-start gap-1 rounded-2xl border-border bg-muted/20 py-px pe-0.5 ps-2.5 text-xs font-medium text-foreground focus-within:border-foreground/25',
+        'min-h-9 max-w-full items-start gap-1 rounded-2xl border-border bg-muted/20 py-px pe-0.5 ps-2.5 text-xs font-medium text-foreground focus-within:border-foreground/25 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/40',
         className,
-      )}>
+      )} {...props}>
       <label htmlFor={inputId} className="shrink-0 cursor-text leading-8 text-muted-foreground">{label}</label>
       <span className="relative flex min-w-0 flex-wrap items-center gap-x-0.5">
         {options.map((option, index) => (
           <span key={option.value} className="inline-flex min-w-0 max-w-full items-center">
             {index > 0 && <span className="shrink-0 text-muted-foreground" aria-hidden="true">،</span>}
-            <button type="button" onClick={() => onRemove(option.value)}
+            <button type="button" data-filter-value={option.value} onClick={() => onRemove(option.value)}
               aria-label={`إزالة تصفية ${label}: ${option.label}`} title={`إزالة ${option.label}`}
               className="min-h-8 min-w-0 rounded px-0.5 py-0 text-start leading-relaxed break-words hover:line-through focus-visible:line-through focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-border">
               {option.label}

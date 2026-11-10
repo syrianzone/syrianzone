@@ -50,8 +50,11 @@ Route::get('/healthcheck', function () {
 
 // Generated rather than shipped as a static file: polls and transit cities come
 // from the database, so a checked-in sitemap.xml would drift the moment either
-// changes. Cached for an hour inside the controller.
-Route::get('/sitemap.xml', [SitemapController::class, 'index']);
+// changes. Cached for an hour inside the controller. Outside the web group for
+// the same reason as the share cards below: a session cookie on the response
+// stops Cloudflare from caching it.
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])
+    ->withoutMiddleware('web');
 
 // Share cards of single records, drawn on demand (see OgCardController). Kept
 // out of the web group on purpose: a session cookie on the response would stop

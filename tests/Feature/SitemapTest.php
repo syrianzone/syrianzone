@@ -23,6 +23,13 @@ test('sitemap is served as xml', function () {
         ->assertHeader('Content-Type', 'application/xml; charset=UTF-8');
 });
 
+test('sitemap sets no cookie, so a shared cache may keep it', function () {
+    $response = $this->get('/sitemap.xml')->assertOk();
+
+    expect($response->headers->getCookies())->toBe([])
+        ->and($response->headers->get('Cache-Control'))->toContain('public');
+});
+
 test('sitemap is well-formed with a urlset root', function () {
     $xml = simplexml_load_string($this->get('/sitemap.xml')->getContent());
 

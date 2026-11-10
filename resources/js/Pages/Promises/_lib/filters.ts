@@ -20,6 +20,8 @@ export const STATE_FILTERS = [
     { value: 'other', label: 'أُجّلت أو سُحبت' },
 ] as const;
 
+export type PromiseStateFilter = (typeof STATE_FILTERS)[number]['value'];
+
 export const SORT_OPTIONS: readonly SmartFilterOption[] = [
     { value: 'urgency', label: 'الأكثر إلحاحاً' },
     { value: 'deadline', label: 'الأقرب موعداً' },
@@ -90,6 +92,27 @@ export function matchesState(p: PromiseCardData, state: string, dueSoonDays: num
         case 'other': return p.state === 'postponed' || p.state === 'retracted';
         default: return false;
     }
+}
+
+/**
+ * The scoreboard tile the list shows exactly: one state and nothing else, or
+ * `null` for the unfiltered list. Any other combination matches no tile.
+ */
+export function activeScoreboardState(value: SmartFilterValue): string | null | undefined {
+    if (value.search.trim()) return undefined;
+    const keys = Object.keys(value.filters).filter((key) => value.filters[key].length);
+    if (keys.length === 0) return null;
+    return keys.length === 1 && keys[0] === 'state' && value.filters.state.length === 1 ? value.filters.state[0] : undefined;
+}
+
+/**
+ * Scoreboard counts are global, so a tile narrows the list to its state alone,
+ * keeping only the sort; the list then matches the number clicked. Selecting
+ * the tile already shown returns to the full list.
+ */
+export function selectScoreboardState(value: SmartFilterValue, state: string | null): SmartFilterValue {
+    const shown = state === null || activeScoreboardState(value) === state;
+    return { search: '', sort: value.sort, filters: shown ? {} : { state: [state] } };
 }
 
 /** Leave state filtering to visiblePromises so status counts use this full set. */

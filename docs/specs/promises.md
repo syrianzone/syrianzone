@@ -25,7 +25,7 @@ evidence for every claim the site makes.
 | Period | Statements made on or after **8 Dec 2024**. |
 | Language | Arabic only (quotes stay verbatim in their original language). |
 | Numbers | Western digits; cards show whole days; the detail page adds a live days:hours:minutes clock. |
-| Layout | Scoreboard on top, status chips + combined search and filters, card grid with a big countdown per card. |
+| Layout | Scoreboard on top, status chips + combined search and filters, card grid with a big countdown per card, or a compact list. |
 | v1 pages | `/promises` list, `/promises/{number}` detail with share card, `/promises/suggest`, admin section. |
 | Seed data | ~15 researched real promises, imported **unpublished** into the review queue; an editor verifies and publishes each one. |
 
@@ -144,6 +144,10 @@ Public reads return only aggregates.
 ### `/promises`
 
 - Scoreboard: total · kept (on time / late) · partially · broken · overdue · open.
+  Each number is a toggle that shows only its promises (clearing other filters
+  and search, so the list matches the number); the total shows them all.
+- Grid or list view, remembered per browser. On phones a list row keeps only
+  the speaker, state, title and countdown.
 - Status chips, then a search field (`SmartFilterSearch`) with sector,
   governorate, speaker, institution and tag filters. Several values in one
   filter match any of them; different filters must all match. Chip counts follow

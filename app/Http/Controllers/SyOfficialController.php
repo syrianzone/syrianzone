@@ -14,16 +14,17 @@ class SyOfficialController extends Controller
      */
     public function index()
     {
-        // If database is empty, auto seed initial dataset
-        if (OfficialCategory::count() === 0) {
-            try {
-                (new \Database\Seeders\SyOfficialSeeder())->run();
-            } catch (\Exception $e) {
-                // Fail gracefully
-            }
-        }
-
         $categories = Cache::remember('syofficial:db_categories_v2', 600, function () {
+            // Seed an empty directory on first use. Checked here, inside the
+            // cached read, so a warm page does not count the table on every hit.
+            if (OfficialCategory::count() === 0) {
+                try {
+                    (new \Database\Seeders\SyOfficialSeeder())->run();
+                } catch (\Exception $e) {
+                    // Fail gracefully
+                }
+            }
+
             return OfficialCategory::where('is_active', true)
                 ->orderBy('order_column')
                 ->get();

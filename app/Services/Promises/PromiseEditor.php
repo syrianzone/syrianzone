@@ -124,6 +124,10 @@ class PromiseEditor
                 $this->syncSources($promise, $data['sources']);
             }
 
+            if (array_key_exists('related_promise_ids', $data)) {
+                $this->syncRelatedPromises($promise, (array) ($data['related_promise_ids'] ?? []));
+            }
+
             // Also moves updated_at, which the detail page and sitemap read.
             $promise->increment('version');
 
@@ -197,6 +201,56 @@ class PromiseEditor
             ]);
 
             return $promise->fresh();
+        });
+    }
+
+    /**
+     * Revise a deadline in place and record the revision in the change log.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function rescheduleDeadline(Promise $promise, array $data, ?User $actor = null): Promise
+    {
+        return DB::transaction(function () use ($promise, $data, $actor) {
+            $locked = Promise::lockForUpdate()->findOrFail($promise->id);
+
+            $oldDate = $locked->deadline_date?->format('Y-m-d');
+            $oldWording = $locked->deadline_wording;
+
+            if ($locked->original_deadline_date === null && $locked->deadline_date !== null) {
+                $locked->original_deadline_date = $locked->deadline_date;
+                $locked->original_deadline_wording = $locked->deadline_wording;
+            }
+
+            $locked->postponed_count = ((int) $locked->postponed_count) + 1;
+
+            $locked->deadline_date = $data['deadline_date'];
+            if (array_key_exists('deadline_wording', $data) && $data['deadline_wording'] !== null) {
+                $locked->deadline_wording = $data['deadline_wording'];
+            }
+            if (array_key_exists('deadline_reasoning', $data) && $data['deadline_reasoning'] !== null) {
+                $locked->deadline_reasoning = $data['deadline_reasoning'];
+            }
+
+            if ($locked->status === 'postponed') {
+                $locked->status = 'pending';
+                $locked->resolved_at = null;
+            }
+
+            $locked->save();
+
+            $body = ($data['body'] ?? null) ?: ($oldDate ? "تأجّل موعد الوعد من {$oldDate} إلى {$data['deadline_date']}" : "حُدّد موعد جديد للوعد: {$data['deadline_date']}");
+
+            $locked->updates()->create([
+                'type' => 'deadline_change',
+                'happened_on' => $data['happened_on'],
+                'source_url' => $data['source_url'],
+                'archive_url' => $data['archive_url'] ?? null,
+                'created_by' => $actor?->id,
+                'body' => $body,
+            ]);
+
+            return $locked->fresh();
         });
     }
 
@@ -409,6 +463,37 @@ class PromiseEditor
                 'is_primary' => $hasPrimary ? (bool) ($source['is_primary'] ?? false) : $i === 0,
                 'sort' => $i,
             ]);
+        }
+    }
+
+    /**
+     * Sync bidirectional related promises using canonical pairs [min, max].
+     *
+     * @param  array<int, string>  $relatedIds
+     */
+    private function syncRelatedPromises(Promise $promise, array $relatedIds): void
+    {
+        DB::table('promise_relations')
+            ->where('promise_id', $promise->id)
+            ->orWhere('related_promise_id', $promise->id)
+            ->delete();
+
+        $pairs = [];
+        $uniqueIds = array_values(array_unique(array_filter($relatedIds)));
+        foreach ($uniqueIds as $otherId) {
+            if ($otherId === $promise->id) {
+                continue;
+            }
+
+            $pairs[] = [
+                'promise_id' => min($promise->id, $otherId),
+                'related_promise_id' => max($promise->id, $otherId),
+                'relation_type' => 'related',
+            ];
+        }
+
+        if ($pairs !== []) {
+            DB::table('promise_relations')->insertOrIgnore($pairs);
         }
     }
 }

@@ -40,6 +40,7 @@ use App\Mcp\Tools\Promises\RejectPromiseSpeakerTool;
 use App\Mcp\Tools\Promises\RejectPromiseTool;
 use App\Mcp\Tools\Promises\RemovePromiseUpdateTool;
 use App\Mcp\Tools\Promises\ReorderPromiseSectorsTool;
+use App\Mcp\Tools\Promises\ReschedulePromiseTool;
 use App\Mcp\Tools\Promises\SearchPromiseSpeakersTool;
 use App\Mcp\Tools\Promises\SetPromiseStatusTool;
 use App\Mcp\Tools\Promises\TogglePromiseSectorTool;
@@ -207,6 +208,7 @@ class AdminServer extends Server
             RejectPromiseTool::class,
             SetPromiseStatusTool::class,
             UndoPromiseStatusTool::class,
+            ReschedulePromiseTool::class,
             DeletePromiseTool::class,
             ApprovePromiseSpeakerTool::class,
             RejectPromiseSpeakerTool::class,

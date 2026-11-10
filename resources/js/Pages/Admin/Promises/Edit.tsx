@@ -12,7 +12,7 @@ import { Label } from '@/Components/ui/label';
 import { Switch } from '@/Components/ui/switch';
 import { Textarea } from '@/Components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
-import { ArrowRight, ExternalLink, EyeOff, Gavel, Loader2, Save, Upload, XCircle } from 'lucide-react';
+import { ArrowRight, CalendarClock, ExternalLink, EyeOff, Gavel, Loader2, Save, Upload, X, XCircle } from 'lucide-react';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
 import { extractApiErrorMessage, extractApiFieldErrors } from '@/Lib/apiError';
@@ -22,6 +22,7 @@ import StateBadge from '@/Pages/Promises/_components/StateBadge';
 import { VENUE_LABEL } from '@/Pages/Promises/_lib/status';
 import type { SpeakerOption } from '@/Pages/Promises/_lib/types';
 import AdminHeader from './_components/AdminHeader';
+import RescheduleDialog from './_components/RescheduleDialog';
 import SourcesEditor, { emptySource, sourceKey, type SourceForm } from './_components/SourcesEditor';
 import StatusDialog from './_components/StatusDialog';
 import UpdatesPanel from './_components/UpdatesPanel';
@@ -58,10 +59,11 @@ interface FormState {
     governorates: string[];
     tags: string;
     restatesPromiseId: string;
+    relatedPromiseIds: string[];
     sources: SourceForm[];
 }
 
-function toForm(p: AdminPromiseDetail | null): FormState {
+export function initialForm(p: AdminPromiseDetail | null): FormState {
     return {
         speaker: p?.speaker ?? null,
         speakerTitle: p?.speakerTitle ?? '',
@@ -84,6 +86,7 @@ function toForm(p: AdminPromiseDetail | null): FormState {
         governorates: p?.governorates ?? [],
         tags: (p?.tags ?? []).join('، '),
         restatesPromiseId: p?.restatesPromiseId ?? NONE,
+        relatedPromiseIds: p?.relatedPromiseIds ?? [],
         sources: p && p.sources.length > 0
             ? p.sources.map((s) => ({
                 key: sourceKey(),
@@ -101,49 +104,16 @@ function toForm(p: AdminPromiseDetail | null): FormState {
     };
 }
 
+export const toForm = initialForm;
+
 /** Form content without client-only keys, for "has anything changed?". */
 const fingerprint = (f: FormState) => JSON.stringify({ ...f, sources: f.sources.map(({ key: _key, ...rest }) => rest) });
 
 const orNull = (v: string) => (v.trim() === '' ? null : v.trim());
 const numOrNull = (v: string) => (v.trim() === '' ? null : Number(v));
 
-export default function PromiseEditor({ promise: initial, options, queueCount }: Props) {
-    const can = useCan();
-    const canCreate = can('promises.create');
-    const canEdit = can('promises.edit');
-    const canRule = can('promises.rule');
-    const canReview = can('promises.review');
-    const canSave = initial ? canEdit : canCreate;
-
-    const [promise, setPromise] = useState<AdminPromiseDetail | null>(initial);
-    const [form, setForm] = useState<FormState>(() => toForm(initial));
-    const [saved, setSaved] = useState(() => fingerprint(toForm(initial)));
-    // The version the form's fields were loaded at. Log, status and unpublish
-    // responses refresh `promise` but not the form, so saving must send this,
-    // not promise.version, or a stale form would pass the server's check.
-    const [formVersion, setFormVersion] = useState(initial?.version ?? 0);
-    const [errors, setErrors] = useState<Record<string, string>>({});
-    const [saving, setSaving] = useState(false);
-    const [statusOpen, setStatusOpen] = useState(false);
-    const [busy, setBusy] = useState(false);
-
-    const dirty = useMemo(() => fingerprint(form) !== saved, [form, saved]);
-
-    const set = <K extends keyof FormState>(key: K, value: FormState[K]) => setForm((f) => ({ ...f, [key]: value }));
-
-    /** Take a promise returned by the server as both the record and the form. */
-    const adopt = (next: AdminPromiseDetail) => {
-        const nextForm = toForm(next);
-        setPromise(next);
-        setForm(nextForm);
-        setSaved(fingerprint(nextForm));
-        setFormVersion(next.version);
-    };
-
-    const toggleGovernorate = (id: string) =>
-        set('governorates', form.governorates.includes(id) ? form.governorates.filter((g) => g !== id) : [...form.governorates, id]);
-
-    const payload = () => ({
+export function toPayload(form: FormState) {
+    return {
         speaker_ref: form.speaker?.ref ?? '',
         speaker_title: orNull(form.speakerTitle),
         institution_id: form.institutionId === NONE ? null : form.institutionId,
@@ -165,6 +135,7 @@ export default function PromiseEditor({ promise: initial, options, queueCount }:
         governorates: form.isNational ? [] : form.governorates,
         tags: form.tags.split(/[،,]/).map((t) => t.trim()).filter(Boolean),
         restates_promise_id: form.restatesPromiseId === NONE ? null : form.restatesPromiseId,
+        related_promise_ids: form.relatedPromiseIds,
         sources: form.sources.map((s) => ({
             url: s.url.trim(),
             outlet: orNull(s.outlet),
@@ -176,7 +147,49 @@ export default function PromiseEditor({ promise: initial, options, queueCount }:
             video_timestamp: orNull(s.videoTimestamp),
             is_primary: s.isPrimary,
         })),
-    });
+    };
+}
+
+export default function PromiseEditor({ promise: initial, options, queueCount }: Props) {
+    const can = useCan();
+    const canCreate = can('promises.create');
+    const canEdit = can('promises.edit');
+    const canRule = can('promises.rule');
+    const canReview = can('promises.review');
+    const canSave = initial ? canEdit : canCreate;
+
+    const [promise, setPromise] = useState<AdminPromiseDetail | null>(initial);
+    const [form, setForm] = useState<FormState>(() => toForm(initial));
+    const [saved, setSaved] = useState(() => fingerprint(toForm(initial)));
+    // The version the form's fields were loaded at. Log, status and unpublish
+    // responses refresh `promise` but not the form, so saving must send this,
+    // not promise.version, or a stale form would pass the server's check.
+    const [formVersion, setFormVersion] = useState(initial?.version ?? 0);
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [saving, setSaving] = useState(false);
+    const [statusOpen, setStatusOpen] = useState(false);
+    const [rescheduleOpen, setRescheduleOpen] = useState(false);
+    const [busy, setBusy] = useState(false);
+
+    const dirty = useMemo(() => fingerprint(form) !== saved, [form, saved]);
+
+    const set = <K extends keyof FormState>(key: K, value: FormState[K]) => setForm((f) => ({ ...f, [key]: value }));
+
+    /** Take a promise returned by the server as both the record and the form. */
+    const adopt = (next: AdminPromiseDetail) => {
+        const nextForm = toForm(next);
+        setPromise(next);
+        setForm(nextForm);
+        setSaved(fingerprint(nextForm));
+        setFormVersion(next.version);
+    };
+
+    const restatableList = options.restatablePromises ?? options.restatable ?? [];
+
+    const toggleGovernorate = (id: string) =>
+        set('governorates', form.governorates.includes(id) ? form.governorates.filter((g) => g !== id) : [...form.governorates, id]);
+
+    const payload = () => toPayload(form);
 
     const save = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -417,11 +430,58 @@ export default function PromiseEditor({ promise: initial, options, queueCount }:
                                             <SelectTrigger id="restates_promise_id" {...fieldA11y('restates_promise_id-error', errors.restates_promise_id)}><SelectValue /></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value={NONE}>— لا —</SelectItem>
-                                                {options.restatable.map((r) => <SelectItem key={r.id} value={r.id}>#{r.number} — {r.title}</SelectItem>)}
+                                                {restatableList.map((r) => <SelectItem key={r.id} value={r.id}>#{r.number} — {r.title}</SelectItem>)}
                                             </SelectContent>
                                         </Select>
                                         <FieldError id="restates_promise_id-error" message={errors.restates_promise_id} />
                                         <p className="text-xs text-muted-foreground">يُعلَّم الوعد الأصلي «أُجّل» مع رابط إلى هذا الوعد حين يُنشر هذا الوعد أو يُربط بعد نشره، إن كان لمن يفعل ذلك صلاحية الحكم على الوعود.</p>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="related_promise_select">وعود مرتبطة بهذا الملف</Label>
+                                        {form.relatedPromiseIds.length > 0 && (
+                                            <div className="flex flex-wrap gap-2 pb-1" role="list" aria-label="الوعود المرتبطة المختارة">
+                                                {form.relatedPromiseIds.map((id) => {
+                                                    const r = restatableList.find((item) => item.id === id);
+                                                    return (
+                                                        <Badge key={id} variant="secondary" className="flex items-center gap-1.5 py-1 pe-1.5 ps-2.5 text-xs font-normal">
+                                                            <span>{r ? `#{r.number} — ${r.title}` : `#${id}`}</span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => set('relatedPromiseIds', form.relatedPromiseIds.filter((item) => item !== id))}
+                                                                className="rounded-full p-0.5 hover:bg-muted-foreground/20 focus:outline-none focus:ring-1 focus:ring-ring"
+                                                                aria-label={`إزالة الوعد ${r ? `#${r.number}` : id}`}
+                                                            >
+                                                                <X className="h-3 w-3" aria-hidden="true" />
+                                                            </button>
+                                                        </Badge>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                        <Select
+                                            value={NONE}
+                                            onValueChange={(val) => {
+                                                if (val && val !== NONE && !form.relatedPromiseIds.includes(val)) {
+                                                    set('relatedPromiseIds', [...form.relatedPromiseIds, val]);
+                                                }
+                                            }}
+                                        >
+                                            <SelectTrigger id="related_promise_select">
+                                                <SelectValue placeholder="— اختر وعداً لإضافته —" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value={NONE} disabled>— اختر وعداً لإضافته —</SelectItem>
+                                                {restatableList
+                                                    .filter((r) => !form.relatedPromiseIds.includes(r.id))
+                                                    .map((r) => (
+                                                        <SelectItem key={r.id} value={r.id}>
+                                                            #{r.number} — {r.title}
+                                                        </SelectItem>
+                                                    ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <p className="text-xs text-muted-foreground">تظهر هذه الوعود في قسم «وعود مرتبطة بهذا الملف» في صفحة العرض العامة.</p>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -502,9 +562,14 @@ export default function PromiseEditor({ promise: initial, options, queueCount }:
                                 <CardContent className="space-y-3">
                                     <StateBadge state={promise.state} />
                                     {canRule && (
-                                        <Button variant="outline" className="w-full gap-2" onClick={() => setStatusOpen(true)}>
-                                            <Gavel className="h-4 w-4" aria-hidden="true" />تغيير الحالة
-                                        </Button>
+                                        <div className="space-y-2">
+                                            <Button variant="outline" className="w-full gap-2" onClick={() => setStatusOpen(true)}>
+                                                <Gavel className="h-4 w-4" aria-hidden="true" />تغيير الحالة
+                                            </Button>
+                                            <Button variant="outline" className="w-full gap-2" onClick={() => setRescheduleOpen(true)}>
+                                                <CalendarClock className="h-4 w-4" aria-hidden="true" />تأجيل/تعديل الموعد (مع حفظ الموعد الأصلي)
+                                            </Button>
+                                        </div>
                                     )}
                                 </CardContent>
                             </Card>
@@ -521,14 +586,24 @@ export default function PromiseEditor({ promise: initial, options, queueCount }:
             </div>
 
             {promise && canRule && (
-                <StatusDialog
-                    key={`${promise.status}-${promise.updates.length}`}
-                    promise={promise}
-                    today={options.today}
-                    open={statusOpen}
-                    onOpenChange={setStatusOpen}
-                    onSaved={setPromise}
-                />
+                <>
+                    <StatusDialog
+                        key={`${promise.status}-${promise.updates.length}`}
+                        promise={promise}
+                        today={options.today}
+                        open={statusOpen}
+                        onOpenChange={setStatusOpen}
+                        onSaved={setPromise}
+                    />
+                    <RescheduleDialog
+                        key={`reschedule-${promise.deadlineDate}-${promise.postponedCount ?? 0}`}
+                        promise={promise}
+                        today={options.today}
+                        open={rescheduleOpen}
+                        onOpenChange={setRescheduleOpen}
+                        onSaved={adopt}
+                    />
+                </>
             )}
         </MainLayout>
     );

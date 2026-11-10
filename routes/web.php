@@ -835,6 +835,10 @@ Route::middleware('auth:web,sanctum')->group(function () {
         Route::get('/admin/promises/{id}/edit', [PromisesAdminController::class, 'renderEditor'])
             ->whereUuid('id')
             ->middleware('promises_admin:any');
+        Route::post('/admin/promises/{promise}/reschedule', [PromisesAdminController::class, 'reschedule'])
+            ->whereUuid('promise')
+            ->middleware('promises_admin:promises.rule')
+            ->name('admin.promises.reschedule');
 
         Route::prefix('api/v1/admin/promises')->middleware('throttle:120,1')->group(function () {
             Route::get('/speakers/search', [PromisesAdminController::class, 'searchSpeakers'])
@@ -862,6 +866,9 @@ Route::middleware('auth:web,sanctum')->group(function () {
             Route::delete('/{id}/status/{updateId}', [PromisesAdminController::class, 'undoStatusChange'])
                 ->whereUuid('id')->whereNumber('updateId')->middleware('promises_admin:promises.rule')
                 ->name('api.v1.admin.promises.status.undo');
+            Route::post('/{promise}/reschedule', [PromisesAdminController::class, 'reschedule'])
+                ->whereUuid('promise')->middleware('promises_admin:promises.rule')
+                ->name('api.v1.admin.promises.reschedule');
             Route::post('/{id}/updates', [PromisesAdminController::class, 'addUpdate'])
                 ->whereUuid('id')->middleware('promises_admin:promises.edit')
                 ->name('api.v1.admin.promises.updates.store');

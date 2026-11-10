@@ -222,9 +222,14 @@ const ContributorsList = ({
   )
 }
 
-export default function SyrianContributorsPage() {
-  const [contributors, setContributors] = useState<Contributor[]>([])
-  const [loading, setLoading] = useState(true)
+const PAGE_HEADING = "أفضل المساهمين في GitHub"
+
+export default function SyrianContributorsPage({ contributors: initial = [] }: { contributors?: Contributor[] }) {
+  // The list arrives with the page, so it is part of the server-rendered HTML.
+  // The browser only refreshes it: at once if the server had nothing to send,
+  // and then every hour for a tab left open.
+  const [contributors, setContributors] = useState<Contributor[]>(initial)
+  const [loading, setLoading] = useState(initial.length === 0)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [isEagleLogo, setIsEagleLogo] = useState(false)
 
@@ -245,7 +250,7 @@ export default function SyrianContributorsPage() {
       }
     }
 
-    fetchContributors()
+    if (initial.length === 0) fetchContributors()
 
     const interval = setInterval(fetchContributors, 60 * 60 * 1000)
     return () => clearInterval(interval)
@@ -257,21 +262,27 @@ export default function SyrianContributorsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-yellow-500 mx-auto mb-4"></div>
-          <p className="text-xl text-muted-foreground">جاري تحميل البيانات...</p>
+      <MainLayout>
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <div className="text-center">
+            <h1 className="sr-only">{PAGE_HEADING}</h1>
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-yellow-500 mx-auto mb-4"></div>
+            <p className="text-xl text-muted-foreground">جاري تحميل البيانات...</p>
+          </div>
         </div>
-      </div>
+      </MainLayout>
     )
   }
 
-  if (loadError || contributors.length === 0) {
+  // A failed refresh keeps the list already on screen; the message is only
+  // for the case where there is nothing to show at all.
+  if (contributors.length === 0) {
     return (
       <MainLayout>
         
         <div className="min-h-screen flex items-center justify-center bg-background p-6">
           <div className="text-center max-w-md">
+            <h1 className="sr-only">{PAGE_HEADING}</h1>
             <p className="text-xl text-foreground mb-2">لا توجد بيانات لعرضها حالياً</p>
             <p className="text-muted-foreground mb-4">{loadError ?? 'ملف المساهمين فارغ. حاول مجدداً لاحقاً.'}</p>
             <Button onClick={() => window.location.reload()}>إعادة المحاولة</Button>
@@ -330,7 +341,7 @@ export default function SyrianContributorsPage() {
 
             <div className="relative z-10">
               <h1 className="text-5xl font-bold mb-4 drop-shadow-lg text-foreground transition-all duration-500">
-                أفضل المساهمين في GitHub
+                {PAGE_HEADING}
               </h1>
               <h2 className="text-3xl font-semibold mb-2 drop-shadow-md text-foreground/80 transition-all duration-500">
                 الجمهورية العربية السورية
@@ -430,7 +441,7 @@ export default function SyrianContributorsPage() {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes slide {
           0% {
             background-position: 0% 0%;

@@ -321,6 +321,17 @@ it('renders the house page with an empty list when there are no members', functi
 // component would 500 in production. Cheap to cover, and it is the only thing
 // these four methods do.
 
+it('sends the contributors leaderboard with the page, so it is in the server-rendered html', function () {
+    $list = json_decode(file_get_contents(public_path('contributors.json')), true);
+
+    expect($list)->not->toBeEmpty();
+
+    $this->get('/syrian-contributors')->assertOk()
+        ->assertInertia(fn ($page) => $page->component('SyrianContributors/Index')
+            ->has('contributors', count($list))
+            ->where('contributors.0.username', $list[0]['username']));
+});
+
 it('renders the static pages these routes exist for', function (string $uri, string $component) {
     $this->get($uri)->assertOk()
         ->assertInertia(fn ($page) => $page->component($component));

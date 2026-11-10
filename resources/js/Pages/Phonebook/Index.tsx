@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { usePage } from '@inertiajs/react';
 import {
     Phone, MessageSquare, Copy, Check, ExternalLink, Search, X, LayoutGrid, Table as TableIcon, PhoneCall, Info, Settings, Pencil
@@ -35,7 +35,8 @@ interface PhonebookProps {
 }
 
 export default function Index({ initialData }: PhonebookProps) {
-    const { auth } = usePage().props as any;
+    const page = usePage();
+    const { auth } = page.props as any;
     const user = auth?.user;
     // Server-resolved capabilities (role implications already applied), not the
     // raw permissions array: a phonebook_admin holds phonebook.* implicitly
@@ -46,17 +47,15 @@ export default function Index({ initialData }: PhonebookProps) {
         : [];
     const canManage = effective.includes('phonebook.edit') || effective.includes('phonebook.create');
 
-    const [searchTerm, setSearchTerm] = useState('');
+    // A shared search link carries `?q=`. It is read from the page URL, which
+    // the server and the browser both have, so the list is filtered in the
+    // server-rendered HTML and the first client render matches it.
+    const [searchTerm, setSearchTerm] = useState(
+        () => new URLSearchParams(page.url.split('?')[1] ?? '').get('q') ?? '',
+    );
     const [currentCategory, setCurrentCategory] = useState('all');
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
     const [copiedId, setCopiedId] = useState<string | null>(null);
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => {
-        setMounted(true);
-        const q = new URLSearchParams(window.location.search).get('q');
-        if (q) setSearchTerm(q);
-    }, []);
 
     // Get dynamic categories list from data
     const categories = useMemo(() => {
@@ -135,8 +134,6 @@ export default function Index({ initialData }: PhonebookProps) {
         }
         return `https://wa.me/${cleaned}`;
     };
-
-    if (!mounted) return null;
 
     return (
         <MainLayout>

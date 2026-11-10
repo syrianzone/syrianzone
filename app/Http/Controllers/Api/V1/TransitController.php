@@ -7,6 +7,7 @@ use App\Models\City;
 use App\Models\Route;
 use App\Models\Stop;
 use App\Services\Transit\GovernorateIconService;
+use App\Services\Transit\PublishedRoutes;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -82,36 +83,16 @@ class TransitController extends Controller
         return City::mapGroup($id);
     }
 
-    public function routes($id)
+    public function routes($id, PublishedRoutes $routes)
     {
-        return $this->getRoutes($id);
+        return $this->getRoutes($id, $routes);
     }
 
-    public function getRoutes($id)
+    public function getRoutes($id, PublishedRoutes $routes)
     {
-        $cityIds = $this->cityIdsFor($id);
-        $cacheKey = 'transit:routes:'.implode('+', $cityIds);
-        $mapped = Cache::remember($cacheKey, 600, function () use ($cityIds) {
-            // NOTE: select() must come before withStopsCount() — a later select()
-            // replaces the column list and would drop the count subselect,
-            // leaving stops_count null in the public payload.
-            $routes = Route::whereIn('city_id', $cityIds)->where('status', 'published')->select('id', 'city_id', 'name_ar', 'name_en', 'color_index', 'price_old', 'price_new')->withStopsCount()->get();
+        $this->cityIdsFor($id);
 
-            return $routes->map(function ($r) {
-                return [
-                    'id' => $r->id,
-                    'cityId' => $r->city_id,
-                    'nameAr' => $r->name_ar,
-                    'nameEn' => $r->name_en,
-                    'colorIndex' => $r->color_index,
-                    'priceOld' => $r->price_old,
-                    'priceNew' => $r->price_new,
-                    'stopsCount' => $r->stops_count,
-                ];
-            })->all();
-        });
-
-        return response()->json($mapped);
+        return response()->json($routes->forCity($id));
     }
 
     public function mapData($id)

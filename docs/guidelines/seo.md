@@ -57,6 +57,7 @@ render their own `<Head>` for title or meta tags.
 | [`resources/views/app.blade.php`](../../resources/views/app.blade.php) | Prints the tags |
 | [`resources/js/Components/SeoHead.tsx`](../../resources/js/Components/SeoHead.tsx) | Updates the tags during client-side navigation |
 | [`app/Services/Sitemap/`](../../app/Services/Sitemap) | `SitemapBuilder` and `SitemapWriter` for `/sitemap.xml` |
+| [`app/Support/Seo/LlmsTxt.php`](../../app/Support/Seo/LlmsTxt.php) | The sections and pages of `/llms.txt` |
 | [`public/robots.txt`](../../public/robots.txt) | Disallowed areas and the sitemap address |
 
 ## Titles
@@ -81,9 +82,26 @@ resolver, set `title` (document) and `shareTitle` (preview).
    description), and an `icon` key from `SITE_ICON_MAP`.
 3. Run `npm run og:build` and commit `public/og/<slug>.png` and `manifest.json`.
 4. Add `[path, priority, changefreq]` to `SitemapBuilder::STATIC_PAGES`.
-5. Give the page a single `<h1>` (use `sr-only` when the design has none).
+5. Give the page a single `<h1>` (use `sr-only` when the design has none),
+   present in every state the server can render, including loading and error.
+6. If the page is one a reader should be pointed to, add it to a section of
+   `LlmsTxt::SECTIONS`.
 
 `tests/Feature/Seo/RouteCoverageTest.php` fails until steps 1 to 3 are done.
+
+## What the first HTML must contain
+
+Search engines may run JavaScript; AI crawlers and link-preview scrapers do
+not. Whatever the server sends is all they read.
+
+- Pass the data a page is about as Inertia props, so SSR renders it. A page
+  that fetches its main content in the browser sends an empty or "loading"
+  state, or worse a false one: the transit city page used to say "0 routes".
+  When the client also refetches, seed the query from the prop (see
+  `useRoutes` and `App\Services\Transit\PublishedRoutes`).
+- Links a crawler should follow must be `<a href>` elements present in that
+  HTML. A menu that mounts its links when opened hides them; keep the panel in
+  the document and toggle its visibility instead, as the navbar does.
 
 ## Adding a kind of record page
 
@@ -219,14 +237,33 @@ have a card: a game room link is meant to be shared.
 
 `SeoMeta::jsonLd()` emits one `@graph` per page:
 
-1. `Organization` (`https://syrian.zone/#organization`)
+1. `Organization` (`https://syrian.zone/#organization`), with the Arabic name
+   as `alternateName` and the project's profiles as `sameAs` (both in
+   `config/seo.php`)
 2. `WebSite` (`https://syrian.zone/#website`, `inLanguage: ar`)
-3. The page node: `WebPage`, or the type from `SeoMeta::SCHEMA` or the resolver
-   (`Article` nodes also get `headline` and `publisher`)
+3. The page node: `WebPage`, or the type from `SeoMeta::SCHEMA` or the resolver.
+   `Article` nodes also get `headline`, `image` (the share card), `author` and
+   `publisher`. A resolver that sets `published` and `modified` on its
+   `Preview` adds `datePublished` and `dateModified`; set them only from the
+   record's own timestamps, never from a deploy or request time.
 4. `BreadcrumbList`: `الرئيسية → Page`, or `الرئيسية → Hub → Page`
+
+`headline` and the last breadcrumb use the page's own name (`shareTitle`),
+without the document-title suffix.
 
 Blade treats `@context` as a directive, so the JSON is built in PHP and printed
 raw. Titles can come from visitors, so `<`, `>` and `&` are escaped in it.
+
+## llms.txt
+
+`/llms.txt` is a short Markdown index of the site in the format proposed at
+[llmstxt.org](https://llmstxt.org): a title, a one-line summary, and sections
+of links with a note each. `LlmsTxt::SECTIONS` lists the pages; their names and
+notes come from `SeoMeta::PAGES`. Search engines do not read the file. It is
+there for coding agents and assistants that are handed the site's address.
+
+`/llms.txt` and `/sitemap.xml` are registered outside the `web` middleware
+group, like the card route, so they carry no cookie and the CDN can cache them.
 
 ## Route inventory
 

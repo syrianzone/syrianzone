@@ -413,7 +413,7 @@ export default function Home() {
     return (
         <MainLayout>
             
-      <h1 className="sr-only">الرئيسية</h1>
+      <h1 className="sr-only">المساحة السورية</h1>
             <div className="min-h-screen text-foreground transition-colors" dir="rtl">
                 {/* Home Navbar (desktop): logo + dates + minis + controls */}
                 <header className="hidden lg:block border-b border-border bg-card/60 backdrop-blur-sm">

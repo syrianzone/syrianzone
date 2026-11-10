@@ -20,6 +20,7 @@ use App\Http\Controllers\GuessWhoAdminController;
 use App\Http\Controllers\GuessWhoController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PhonebookAdminController;
+use App\Http\Controllers\LlmsTxtController;
 use App\Http\Controllers\OgCardController;
 use App\Http\Controllers\PhonebookController;
 use App\Http\Controllers\PlaceAdminController;
@@ -50,8 +51,15 @@ Route::get('/healthcheck', function () {
 
 // Generated rather than shipped as a static file: polls and transit cities come
 // from the database, so a checked-in sitemap.xml would drift the moment either
-// changes. Cached for an hour inside the controller.
-Route::get('/sitemap.xml', [SitemapController::class, 'index']);
+// changes. Cached for an hour inside the controller. Outside the web group for
+// the same reason as the share cards below: a session cookie on the response
+// stops Cloudflare from caching it.
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])
+    ->withoutMiddleware('web');
+
+// A Markdown index of the site for language-model tools (see Seo\LlmsTxt).
+Route::get('/llms.txt', [LlmsTxtController::class, 'show'])
+    ->withoutMiddleware('web');
 
 // Share cards of single records, drawn on demand (see OgCardController). Kept
 // out of the web group on purpose: a session cookie on the response would stop
@@ -230,7 +238,12 @@ Route::get('/transit/city/{id}', function ($id) {
     abort_unless($city !== null, 404);
     \App\Support\Seo\SeoMeta::remember(request(), 'city', $city);
 
-    return Inertia::render('Transit/city/[id]/Index', ['id' => $id]);
+    // The route list travels with the page, so the first HTML names the
+    // city's lines instead of an empty state that fills in after a fetch.
+    return Inertia::render('Transit/city/[id]/Index', [
+        'id' => $id,
+        'routes' => app(\App\Services\Transit\PublishedRoutes::class)->forCity($id),
+    ]);
 })->where('id', '[a-z0-9\-]+');
 
 Route::get('/transit/city/{id}/map', function ($id) {

@@ -39,11 +39,17 @@ const fetchRoutes = async (cityId: string): Promise<RouteProperties[]> => {
   return res.json()
 }
 
-export function useRoutes(cityId: string) {
+/**
+ * `initialData` is the list the server sent with the page, when it sent one:
+ * the sidebar then renders the routes on the server and on first paint instead
+ * of an empty state.
+ */
+export function useRoutes(cityId: string, initialData?: RouteProperties[]) {
   return useQuery({
     queryKey: ['routes', cityId],
     queryFn: () => fetchRoutes(cityId),
     enabled: !!cityId,
+    initialData,
     staleTime: 5 * 60 * 1000,
   })
 }

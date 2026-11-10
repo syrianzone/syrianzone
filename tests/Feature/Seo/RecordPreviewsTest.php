@@ -73,6 +73,21 @@ test('a published promise previews as itself with a card of its own', function (
         ->and($graph->firstWhere('@type', 'BreadcrumbList')['itemListElement'][1]['item'])->toBe('https://syrian.zone/promises');
 });
 
+test('a promise is described as a dated article under its own name', function () {
+    $promise = Promise::factory()->published()->create(['title' => 'إعادة الكهرباء إلى حلب']);
+
+    $meta = previewMeta('/promises/'.$promise->number);
+    $graph = collect(json_decode($meta['json_ld'], true)['@graph']);
+    $article = $graph->firstWhere('@type', 'Article');
+
+    expect($article['headline'])->toBe('إعادة الكهرباء إلى حلب')
+        ->and($article['image'])->toBe($meta['image'])
+        ->and($article['author'])->toBe(['@id' => 'https://syrian.zone/#organization'])
+        ->and($article['datePublished'])->toBe($promise->published_at->format(DATE_ATOM))
+        ->and($article['dateModified'])->toBe($promise->updated_at->format(DATE_ATOM))
+        ->and($graph->firstWhere('@type', 'BreadcrumbList')['itemListElement'][2]['name'])->toBe('إعادة الكهرباء إلى حلب');
+});
+
 test('a promise card shows status, number, sector, speaker and an absolute deadline', function () {
     $promise = Promise::factory()->published()->create([
         'title' => 'إعادة الكهرباء إلى حلب',

@@ -124,3 +124,19 @@ test('nested routes emit 3-level BreadcrumbList in JSON-LD', function () {
 test('non-existent transit city returns 404 instead of a soft-404 200', function () {
     $this->get('/transit/city/not-a-real-city-123')->assertNotFound();
 });
+
+test('the organization and website carry the arabic name and the project profiles', function () {
+    $graph = collect(json_decode(SeoMeta::resolve(Request::create('/', 'GET'))['json_ld'], true)['@graph']);
+
+    expect($graph->firstWhere('@type', 'Organization'))
+        ->toMatchArray(['alternateName' => 'المساحة السورية', 'sameAs' => config('seo.same_as')])
+        ->and($graph->firstWhere('@type', 'WebSite')['alternateName'])->toBe('المساحة السورية');
+});
+
+test('a fixed page keeps dates out of its structured data', function () {
+    $page = collect(json_decode(SeoMeta::resolve(Request::create('/house', 'GET'))['json_ld'], true)['@graph'])
+        ->firstWhere('@type', 'Article');
+
+    expect($page['headline'])->toBe('المجلس التشريعي السوري 2026')
+        ->and($page)->not->toHaveKeys(['datePublished', 'dateModified']);
+});

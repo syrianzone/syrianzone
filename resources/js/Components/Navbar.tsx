@@ -64,6 +64,8 @@ const NavTile = React.forwardRef<
         <img
           src="/flag-replacer/1f1f8-1f1fe.svg"
           alt=""
+          loading="lazy"
+          decoding="async"
           className="h-12 w-12 shrink-0 object-contain transition-transform group-hover:scale-110"
         />
       ) : image ? (
@@ -523,49 +525,53 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
           )}
         </nav>
 
-        {moreOpen && (
-          <div ref={morePanelRef} className="fixed inset-x-0 top-16 z-50 flex justify-center">
-            <div className="sz-menu-pop">
-              {isTransitPage ? (
-                <MorePanel
-                  links={navbarLinks}
-                  pathname={pathname}
-                  showAboutLinks={false}
-                  onNavigate={() => setMoreOpen(false)}
-                  header={
-                    <div className="space-y-1 border-b border-border p-3">
-                      <Link
-                        href="/transit"
-                        onClick={() => setMoreOpen(false)}
-                        className={cn(
-                          'flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent',
-                          pathname === '/transit' ? 'text-primary' : 'text-muted-foreground'
-                        )}
-                      >
-                        <Bus className="h-4 w-4" />
-                        الرئيسية
-                      </Link>
-                      <Link
-                        href={studioHref}
-                        onClick={() => setMoreOpen(false)}
-                        className={cn(
-                          'flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent',
-                          pathname === '/transit/studio' ? 'text-primary' : 'text-muted-foreground'
-                        )}
-                      >
-                        <Sparkles className="h-4 w-4 text-[var(--gold)]" />
-                        إضافة خط / الاستوديو
-                      </Link>
-                      <p className="px-3 pt-1 text-xs font-bold text-muted-foreground/60">أقسام الموقع الأخرى</p>
-                    </div>
-                  }
-                />
-              ) : (
-                <MorePanel links={navbarMoreLinks} pathname={pathname} showAboutLinks onNavigate={() => setMoreOpen(false)} />
-              )}
-            </div>
+        {/* Always in the document, hidden until opened: the panel holds the
+            only links to most sections, and a crawler follows links it finds
+            in the HTML, not ones a click would add. */}
+        <div
+          ref={morePanelRef}
+          className={cn('fixed inset-x-0 top-16 z-50 justify-center', moreOpen ? 'flex' : 'hidden')}
+        >
+          <div className="sz-menu-pop">
+            {isTransitPage ? (
+              <MorePanel
+                links={navbarLinks}
+                pathname={pathname}
+                showAboutLinks={false}
+                onNavigate={() => setMoreOpen(false)}
+                header={
+                  <div className="space-y-1 border-b border-border p-3">
+                    <Link
+                      href="/transit"
+                      onClick={() => setMoreOpen(false)}
+                      className={cn(
+                        'flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent',
+                        pathname === '/transit' ? 'text-primary' : 'text-muted-foreground'
+                      )}
+                    >
+                      <Bus className="h-4 w-4" />
+                      الرئيسية
+                    </Link>
+                    <Link
+                      href={studioHref}
+                      onClick={() => setMoreOpen(false)}
+                      className={cn(
+                        'flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent',
+                        pathname === '/transit/studio' ? 'text-primary' : 'text-muted-foreground'
+                      )}
+                    >
+                      <Sparkles className="h-4 w-4 text-[var(--gold)]" />
+                      إضافة خط / الاستوديو
+                    </Link>
+                    <p className="px-3 pt-1 text-xs font-bold text-muted-foreground/60">أقسام الموقع الأخرى</p>
+                  </div>
+                }
+              />
+            ) : (
+              <MorePanel links={navbarMoreLinks} pathname={pathname} showAboutLinks onNavigate={() => setMoreOpen(false)} />
+            )}
           </div>
-        )}
+        </div>
 
         {/* Controls: search (desktop), appearance, page-scoped settings, separator, account/login */}
         <div className="flex flex-1 items-center justify-end gap-1.5 sm:gap-2">

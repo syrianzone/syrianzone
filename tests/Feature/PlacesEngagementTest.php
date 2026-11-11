@@ -77,12 +77,10 @@ test('my saves orders by save time not place age', function () {
 
 test('removed engagement endpoints are gone', function () {
   $user = engagementUser();
-  $admin = User::factory()->create(['role' => 'admin']);
   $place = Place::factory()->approved()->create();
 
+  // Reports came back (PlacesReportsTest); likes and comments stay removed.
   $this->actingAs($user)->postJson("/api/v1/places/{$place->id}/like")->assertNotFound();
   $this->actingAs($user)->postJson("/api/v1/places/{$place->id}/comments", ['body' => 'مرحبا'])->assertNotFound();
-  $this->actingAs($user)->postJson("/api/v1/places/{$place->id}/report", ['reason' => 'spam'])->assertNotFound();
   $this->actingAs($user)->getJson("/api/v1/places/{$place->id}/comments")->assertNotFound();
-  $this->actingAs($admin)->getJson('/api/v1/admin/place-reports')->assertNotFound();
 });

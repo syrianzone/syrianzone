@@ -14,6 +14,7 @@ import 'package:syrianzone/feature/mishwar/repo/mishwar_repo.dart';
 import 'package:syrianzone/feature/mishwar/ui/widget/common/mishwar_sheet_constants.dart';
 import 'package:syrianzone/feature/mishwar/ui/widget/guide/guide_level_badge.dart';
 import 'package:syrianzone/feature/mishwar/ui/widget/place/category_badge.dart';
+import 'package:syrianzone/feature/mishwar/ui/widget/place/report_place_bottom_sheet.dart';
 
 class PlaceDetailBottomSheet extends StatefulWidget {
   final int? placeId;
@@ -703,7 +704,57 @@ class _PlaceDetailBottomSheetState extends State<PlaceDetailBottomSheet> {
             ),
           ],
         ),
+
+        // Report (only published places can be reported)
+        if (place.status == null || place.status == 'approved') ...[
+          const SizedBox(height: 4),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TextButton.icon(
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF8D7E6E),
+                minimumSize: const Size(0, 44),
+              ),
+              onPressed: () => _reportPlace(context, place),
+              icon: const Icon(Icons.flag_outlined, size: 18),
+              label: const Text(
+                'إبلاغ عن هذا المكان',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+        ],
       ],
+    );
+  }
+
+  Future<void> _reportPlace(BuildContext context, PlaceDetailResponse place) async {
+    if (!getIt<AuthCubit>().isAuthenticated) {
+      final loggedIn = await AuthBottomSheet.show(context);
+      if (loggedIn != true || !context.mounted) return;
+    }
+    final message = await ReportPlaceBottomSheet.show(
+      context,
+      placeId: place.id,
+      placeName: place.name,
+    );
+    if (message == null || !mounted) return;
+    _scaffoldMessengerKey.currentState?.hideCurrentSnackBar();
+    _scaffoldMessengerKey.currentState?.showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: const Color(0xFF2F2722),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        content: Directionality(
+          textDirection: TextDirection.rtl,
+          child: Text(
+            message,
+            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+          ),
+        ),
+        duration: const Duration(seconds: 3),
+      ),
     );
   }
 

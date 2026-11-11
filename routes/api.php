@@ -21,6 +21,7 @@ use App\Http\Controllers\MetricsController;
 use App\Http\Controllers\PlaceController;
 use App\Http\Controllers\PlaceDiscoveryController;
 use App\Http\Controllers\PlaceEngagementController;
+use App\Http\Controllers\PlaceReportController;
 use App\Http\Controllers\PollController;
 use App\Http\Controllers\PrayerController;
 use App\Http\Controllers\PromiseController;
@@ -309,6 +310,11 @@ Route::prefix('v1')->group(function () {
         Route::delete('/places/{id}/save', [PlaceEngagementController::class, 'unsave'])
             ->whereNumber('id')->middleware('throttle:60,1')
             ->name('api.v1.places.save.destroy');
+        // One report per user per place (unique index); the throttle only caps
+        // a user flooding the moderation queue across many places.
+        Route::post('/places/{id}/report', [PlaceReportController::class, 'store'])
+            ->whereNumber('id')->middleware('throttle:10,60')
+            ->name('api.v1.places.report.store');
     });
 
     // Promises tracker (عداد الوعود): visitor input. Suggestions and reports

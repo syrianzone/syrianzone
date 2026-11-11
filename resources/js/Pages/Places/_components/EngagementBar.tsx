@@ -4,6 +4,7 @@ import { useAuth } from '@/Contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/Lib/utils';
 import { api } from '../_lib/api';
+import { ReportButton } from './ReportButton';
 
 export function EngagementBar(props: {
   placeId: number;
@@ -103,6 +104,7 @@ export function EngagementBar(props: {
             افتح في خرائط جوجل
           </a>
         </Button>
+        <ReportButton placeId={placeId} />
       </div>
       {showLogin && (
         <a href="/auth/google" className="text-sm text-primary underline underline-offset-4">

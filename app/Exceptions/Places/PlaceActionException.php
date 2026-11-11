@@ -17,6 +17,8 @@ class PlaceActionException extends DomainActionException
 
     public const NOT_FOUND = 'not_found';
 
+    public const NOT_APPROVED = 'not_approved';
+
     public const PHOTO_LIMIT = 'photo_limit';
 
     public const LAST_PHOTO = 'last_photo';
@@ -31,6 +33,15 @@ class PlaceActionException extends DomainActionException
         return new self(
             self::NOT_PENDING,
             "Place is already {$status}",
+            ['status' => $status],
+        );
+    }
+
+    public static function notApproved(string $status): self
+    {
+        return new self(
+            self::NOT_APPROVED,
+            "Place is {$status}, only approved places can be unpublished",
             ['status' => $status],
         );
     }
@@ -77,7 +88,7 @@ class PlaceActionException extends DomainActionException
     {
         return match ($this->kind) {
             self::NOT_FOUND => 404,
-            self::NOT_PENDING => 400,
+            self::NOT_PENDING, self::NOT_APPROVED => 400,
             default => 422,
         };
     }

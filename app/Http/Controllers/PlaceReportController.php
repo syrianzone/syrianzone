@@ -82,30 +82,48 @@ class PlaceReportController extends Controller
      * dismiss: the report is unfounded.
      * unpublish: uphold it, take the place off the map (back to pending review)
      *            and close every open report on that place.
+     *
+     * Only open reports can be acted on, so a stale admin tab cannot re-hide a
+     * place that was re-approved after an earlier report was handled.
      */
     public function resolve(Request $request, int $id, PlaceModerationService $places)
     {
-        $report = PlaceReport::findOrFail($id);
         $validated = $request->validate([
             'action' => 'required|string|in:dismiss,unpublish',
         ]);
+        $action = $validated['action'];
 
-        if ($validated['action'] === 'dismiss') {
-            $report->update(['status' => 'dismissed']);
-
-            return response()->json(['id' => $report->id, 'status' => 'dismissed']);
-        }
-
-        DB::transaction(function () use ($report, $places) {
-            if ($report->place->status === 'approved') {
-                $places->unpublish($report->place_id);
+        $report = DB::transaction(function () use ($id, $action) {
+            $report = PlaceReport::lockForUpdate()->findOrFail($id);
+            if ($report->status !== 'open') {
+                return null;
             }
-            $report->update(['status' => 'resolved']);
-            PlaceReport::where('place_id', $report->place_id)
-                ->where('status', 'open')
-                ->update(['status' => 'resolved']);
+
+            if ($action === 'dismiss') {
+                $report->update(['status' => 'dismissed']);
+            } else {
+                PlaceReport::where('place_id', $report->place_id)
+                    ->where('status', 'open')
+                    ->update(['status' => 'resolved']);
+            }
+
+            return $report;
         });
 
-        return response()->json(['id' => $report->id, 'status' => 'resolved']);
+        if ($report === null) {
+            return response()->json(['message' => 'تمت معالجة هذا البلاغ مسبقاً'], 409);
+        }
+
+        // Outside the transaction: unpublish() clears the map cache, which must
+        // happen after the status change is committed or a concurrent map read
+        // could re-cache the still-approved pin.
+        if ($action === 'unpublish' && $report->place()->value('status') === 'approved') {
+            $places->unpublish($report->place_id);
+        }
+
+        return response()->json([
+            'id' => $report->id,
+            'status' => $action === 'dismiss' ? 'dismissed' : 'resolved',
+        ]);
     }
 }

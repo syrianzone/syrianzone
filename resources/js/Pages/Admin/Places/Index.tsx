@@ -62,9 +62,11 @@ export default function Index() {
     }
   }, []);
 
+  // Refetch when returning to the places tab: resolving a report there can
+  // move a place between statuses.
   useEffect(() => {
-    fetchPlaces(status, page);
-  }, [status, page, fetchPlaces]);
+    if (tab === 'places') fetchPlaces(status, page);
+  }, [tab, status, page, fetchPlaces]);
 
   const refetch = () => fetchPlaces(status, page);
 

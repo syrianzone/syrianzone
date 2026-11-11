@@ -85,6 +85,8 @@ export function ReportsTab() {
       await fetchReports(status, page);
     } catch (e) {
       notify.error(extractError(e));
+      // e.g. 409 when another moderator already handled it: show the current state
+      await fetchReports(status, page);
     } finally {
       setBusyId(null);
     }

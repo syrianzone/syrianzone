@@ -91,3 +91,18 @@ test('upholding a report unpublishes the place and closes its open reports', fun
   expect($second->fresh()->status)->toBe('resolved');
   expect(Cache::has('places:map'))->toBeFalse();
 });
+
+test('closed reports cannot be acted on again', function () {
+  $place = Place::factory()->approved()->create();
+  $report = PlaceReport::create(['place_id' => $place->id, 'user_id' => reporter()->id, 'reason' => 'spam', 'status' => 'resolved']);
+
+  $this->actingAs(reportsAdmin())
+    ->postJson("/api/v1/admin/place-reports/{$report->id}/resolve", ['action' => 'unpublish'])
+    ->assertStatus(409);
+  $this->actingAs(reportsAdmin())
+    ->postJson("/api/v1/admin/place-reports/{$report->id}/resolve", ['action' => 'dismiss'])
+    ->assertStatus(409);
+
+  expect($place->fresh()->status)->toBe('approved');
+  expect($report->fresh()->status)->toBe('resolved');
+});

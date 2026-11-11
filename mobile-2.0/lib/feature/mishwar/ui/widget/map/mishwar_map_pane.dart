@@ -537,6 +537,8 @@ class MishwarMapPaneState extends State<MishwarMapPane> {
                 setState(() {
                   _currentZoom = newZoom;
                 });
+              } else {
+                _currentZoom = newZoom;
               }
             },
           ),
@@ -558,7 +560,8 @@ class MishwarMapPaneState extends State<MishwarMapPane> {
               _buildMapButton(
                 icon: Icons.add,
                 onTap: () {
-                  final nextZoom = (_currentZoom + 1)
+                  final currentZoom = _mapController.camera.zoom;
+                  final nextZoom = (currentZoom + 1)
                       .clamp(MapConstants.mishwarMinZoom, MapConstants.maxZoom);
                   _mapController.move(_mapController.camera.center, nextZoom);
                   setState(() {
@@ -570,7 +573,8 @@ class MishwarMapPaneState extends State<MishwarMapPane> {
               _buildMapButton(
                 icon: Icons.remove,
                 onTap: () {
-                  final nextZoom = (_currentZoom - 1)
+                  final currentZoom = _mapController.camera.zoom;
+                  final nextZoom = (currentZoom - 1)
                       .clamp(MapConstants.mishwarMinZoom, MapConstants.maxZoom);
                   _mapController.move(_mapController.camera.center, nextZoom);
                   setState(() {

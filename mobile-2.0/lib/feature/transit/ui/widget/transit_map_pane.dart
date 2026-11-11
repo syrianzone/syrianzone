@@ -245,13 +245,21 @@ class _TransitMapPaneState extends State<TransitMapPane> {
 
                   MapStopFeature? matched;
                   if (widget.mapData != null) {
-                    for (final f in widget.mapData!.stops.features) {
-                      if (f.properties.id == stop.id ||
-                          (f.geometry.coordinates.length >= 2 &&
-                              (f.geometry.coordinates[0] - stop.coordinates[0]).abs() < 0.0001 &&
-                              (f.geometry.coordinates[1] - stop.coordinates[1]).abs() < 0.0001)) {
+                    final stops = widget.mapData!.stops.features;
+                    for (final f in stops) {
+                      if (f.properties.id == stop.id) {
                         matched = f;
                         break;
+                      }
+                    }
+                    if (matched == null) {
+                      for (final f in stops) {
+                        if (f.geometry.coordinates.length >= 2 &&
+                            (f.geometry.coordinates[0] - stop.coordinates[0]).abs() < 0.0001 &&
+                            (f.geometry.coordinates[1] - stop.coordinates[1]).abs() < 0.0001) {
+                          matched = f;
+                          break;
+                        }
                       }
                     }
                   }

@@ -206,6 +206,10 @@ class _TransitStudioMapPaneState extends State<TransitStudioMapPane> {
         mode == StudioToolMode.movePoint ||
         mode == StudioToolMode.none) {
       cubit.selectPointToMove(index);
+    } else if (mode == StudioToolMode.addStops) {
+      if (index >= 0 && index < cubit.state.roadPoints.length) {
+        cubit.addStop(cubit.state.roadPoints[index]);
+      }
     }
   }
 

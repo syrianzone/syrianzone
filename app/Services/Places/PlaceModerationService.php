@@ -62,6 +62,26 @@ class PlaceModerationService
     }
 
     /**
+     * Take a published place off the public map and send it back to the review
+     * queue (used when a report is upheld). It can then be rejected, edited or
+     * re-approved through the normal pending flow.
+     */
+    public function unpublish(int $id): Place
+    {
+        $place = $this->findOrFail($id);
+
+        if ($place->status !== 'approved') {
+            throw PlaceActionException::notApproved($place->status);
+        }
+
+        $place->update(['status' => 'pending', 'approved_at' => null]);
+
+        $this->bustMapCache();
+
+        return $place;
+    }
+
+    /**
      * @param  array<string, mixed>  $attributes
      */
     public function update(int $id, array $attributes): Place

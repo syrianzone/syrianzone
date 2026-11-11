@@ -17,4 +17,5 @@ class Place extends Model
   public function user() { return $this->belongsTo(User::class)->withTrashed(); }
   public function photos() { return $this->hasMany(PlacePhoto::class)->orderBy('sort'); }
   public function saves() { return $this->hasMany(PlaceSave::class); }
+  public function reports() { return $this->hasMany(PlaceReport::class); }
 }

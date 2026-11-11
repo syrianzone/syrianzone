@@ -3,6 +3,7 @@ import { extractApiErrorMessage, extractApiFieldErrors } from '@/Lib/apiError';
 import type {
   GeoSuggestion,
   AdminPlace,
+  AdminPlaceReport,
   GridPhoto,
   Guide,
   GuidesSort,
@@ -17,6 +18,8 @@ import type {
   PlaceDetail,
   PlaceFeatureCollection,
   PlaceListItem,
+  PlaceReportReason,
+  PlaceReportStatus,
 } from './types';
 
 const base = '/api/v1';
@@ -122,6 +125,21 @@ export const api = {
 
   async unsave(id: number): Promise<{ saved: boolean; saves_count: number }> {
     const { data } = await axios.delete(`${base}/places/${id}/save`);
+    return data;
+  },
+
+  async report(id: number, reason: PlaceReportReason, details?: string): Promise<{ message: string }> {
+    const { data } = await axios.post(`${base}/places/${id}/report`, { reason, details });
+    return data;
+  },
+
+  async adminListReports(status: PlaceReportStatus | 'all', page?: number): Promise<Paginated<AdminPlaceReport>> {
+    const { data } = await axios.get(`${base}/admin/place-reports`, { params: { status, page } });
+    return data;
+  },
+
+  async adminResolveReport(id: number, action: 'dismiss' | 'unpublish'): Promise<{ id: number; status: PlaceReportStatus }> {
+    const { data } = await axios.post(`${base}/admin/place-reports/${id}/resolve`, { action });
     return data;
   },
 

@@ -24,6 +24,7 @@ use App\Http\Controllers\LlmsTxtController;
 use App\Http\Controllers\OgCardController;
 use App\Http\Controllers\PhonebookController;
 use App\Http\Controllers\PlaceAdminController;
+use App\Http\Controllers\PlaceReportController;
 use App\Http\Controllers\PlaceController;
 use App\Http\Controllers\PollController;
 use App\Http\Controllers\PromiseController;
@@ -547,6 +548,13 @@ Route::middleware('auth:web,sanctum')->group(function () {
             Route::delete('/admin/place-photos/{id}', [PlaceAdminController::class, 'deletePhoto'])->whereNumber('id')
                 ->middleware('places_admin:places.moderate_photos')
                 ->name('api.v1.admin.place-photos.destroy');
+            Route::get('/admin/place-reports', [PlaceReportController::class, 'index'])
+                ->middleware('places_admin:places.review')
+                ->name('api.v1.admin.place-reports.index');
+            // Upholding a report unpublishes the place, which is an approval decision.
+            Route::post('/admin/place-reports/{id}/resolve', [PlaceReportController::class, 'resolve'])->whereNumber('id')
+                ->middleware('places_admin:places.approve')
+                ->name('api.v1.admin.place-reports.resolve');
         });
     });
 

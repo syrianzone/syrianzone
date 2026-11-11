@@ -46,9 +46,11 @@ export default function Index() {
 
 ### 3.1 Schema
 
-Live tables: `places`, `place_photos`, `place_saves`.
+Live tables: `places`, `place_photos`, `place_saves`, `place_reports`.
 
 Likes, comments, and reports were removed from the product. The original create migrations (prefix `2026_07_15_1000NN_`) remain in the tree because production ran them; the `2026_07_16_2000NN_` drop migrations remove `place_likes`, `place_comments`, and `place_reports`, and drop the `likes_count` and `comments_count` counter columns from `places`. Their `down()` methods recreate the originals exactly.
+
+Reports came back on 2026-11-11 (`2026_11_11_120000_recreate_place_reports_table`): Google Play's user-generated-content policy requires an in-app way to flag content, and the mobile app uses the same endpoint. `place_reports`: `place_id` and `user_id` (both cascade on delete), `reason` (one of `spam`, `wrong_info`, `inappropriate`, `duplicate`, `other`), nullable `details` (max 1000), `status` (`open` | `resolved` | `dismissed`, default `open`), unique `(place_id, user_id)`. Model `PlaceReport`; `Place::reports()`.
 
 **`places`** (after `2026_07_16_200004_drop_place_counters_from_places_table.php`)
 
@@ -222,7 +224,9 @@ $request->validate([
 
 **`POST /api/v1/places/{id}/save`** / **`DELETE /api/v1/places/{id}/save`** -> `PlaceEngagementController@save` / `@unsave`. Middleware `throttle:60,1`. `firstOrCreate` on the unique pair; increment `saves_count` only when newly created, decrement only when the delete actually removed a row (guard against double-unsave driving the counter negative). 200: `{ "saved": true|false, "saves_count": n }`. Save targets must be approved places, else 404.
 
-There are no like, comment, or report endpoints. `POST/DELETE /api/v1/places/{id}/like`, `GET/POST /api/v1/places/{id}/comments`, `DELETE /api/v1/place-comments/{id}`, and `POST /api/v1/places/{id}/report` were removed and now 404.
+**`POST /api/v1/places/{id}/report`** -> `PlaceReportController@store`. `auth:sanctum`, `throttle:10,60`. Body `{ reason, details? }`. Approved places only, else 404; banned users 403. One report per user per place: 201 `{ message }` when created, 200 `{ message }` when the user already reported it.
+
+There are no like or comment endpoints. `POST/DELETE /api/v1/places/{id}/like`, `GET/POST /api/v1/places/{id}/comments`, and `DELETE /api/v1/place-comments/{id}` were removed and now 404.
 
 ### 5.3 Admin moderation (routes/web.php, inside `auth` group, nested `Route::middleware('admin')`, group throttle `60,1`)
 
@@ -236,7 +240,7 @@ There are no like, comment, or report endpoints. `POST/DELETE /api/v1/places/{id
 
 **Moderation edit endpoints**: `PATCH /api/v1/admin/places/{id}` (partial field update), `POST /api/v1/admin/places/{id}/photos` (add, count guard `>= 10` -> 422 `لا يمكن إضافة أكثر من 10 صور`), `POST /api/v1/admin/place-photos/{id}/replace`, `POST /api/v1/admin/place-photos/{id}/rotate`, `DELETE /api/v1/admin/place-photos/{id}` (min-1 guard). Photo rule everywhere: `required|image|mimes:jpg,jpeg,png,webp|max:12288|dimensions:min_width=200,min_height=200,max_width=6000,max_height=6000` with the same Arabic messages as the owner endpoints.
 
-`GET /api/v1/admin/place-reports` and `POST /api/v1/admin/place-reports/{id}/resolve` were removed and now 404.
+**Reports**: `GET /api/v1/admin/place-reports?status=open|resolved|dismissed|all` (`places.review`, default `open`, paginated 20) and `POST /api/v1/admin/place-reports/{id}/resolve` with `{ action: "dismiss" | "unpublish" }` (`places.approve`). Only `open` reports can be acted on (409 otherwise), so a stale admin tab cannot re-hide a re-approved place. `dismiss` marks that report dismissed. `unpublish` calls `PlaceModerationService::unpublish()` (approved -> pending, `approved_at` cleared, map cache busted) when the place is still published, after marking this report and every other open report on the place resolved (the cache bust runs after that transaction commits). The place then goes through the normal pending flow (reject, edit, or re-approve). The admin page shows these under a "البلاغات" tab (`Admin/Places/ReportsTab.tsx`).
 
 ### 5.4 Inertia pages (routes/web.php)
 
@@ -579,7 +583,7 @@ Tests:
 
 ## 10. NON-GOALS (do not build these)
 
-- No likes, comments, or reports: removed from the product entirely (endpoints 404, tables dropped).
+- No likes or comments: removed from the product entirely (endpoints 404, tables dropped).
 - No draft saving. Owners edit via the `/api/v1/my/*` management endpoints above; every content edit re-enters moderation.
 - No follower or social features, no guide profile pages (leaderboard rows are not links), no guide sorts beyond submissions/saves/recent.
 - No photo captions.

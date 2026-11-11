@@ -92,6 +92,13 @@ abstract class ApiService {
   @DELETE("places/{id}/save")
   Future<SavePlaceResponse> unsavePlace(@Path("id") int id);
 
+  /// Body: `{reason, details?}`. Returns `{message}` (201 new, 200 already reported).
+  @POST("places/{id}/report")
+  Future<Map<String, dynamic>> reportPlace(
+    @Path("id") int id,
+    @Body() Map<String, dynamic> body,
+  );
+
   @GET("my/saves")
   Future<PlacesResponse> getMySavedPlaces({
     @Query("page") int? page,

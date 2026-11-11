@@ -36,6 +36,19 @@ export interface PlaceFeatureCollection { type: 'FeatureCollection'; features: P
 
 export interface Paginated<T> { data: T[]; current_page: number; last_page: number; total: number; }
 
+export type PlaceReportReason = 'spam' | 'wrong_info' | 'inappropriate' | 'duplicate' | 'other';
+export type PlaceReportStatus = 'open' | 'resolved' | 'dismissed';
+
+export interface AdminPlaceReport {
+  id: number;
+  reason: PlaceReportReason;
+  details: string | null;
+  status: PlaceReportStatus;
+  created_at: string;
+  user: { id: number; name: string };
+  place: { id: number; name: string; status: PlaceStatus };
+}
+
 export type GuidesSort = 'submissions' | 'saves' | 'recent';
 
 export interface Guide {

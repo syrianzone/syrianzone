@@ -174,6 +174,25 @@ class MishwarRepo {
     }
   }
 
+  /// Returns the server's confirmation message.
+  Future<ApiResult<String>> reportPlace(
+    int id, {
+    required String reason,
+    String? details,
+  }) async {
+    try {
+      final response = await _apiService.reportPlace(id, {
+        'reason': reason,
+        if (details != null && details.isNotEmpty) 'details': details,
+      });
+      return ApiResult.success(
+        response['message'] as String? ?? 'شكراً لك، سنراجع البلاغ قريباً',
+      );
+    } catch (e) {
+      return ApiResult.error(ApiErrorHandler.handleError(e));
+    }
+  }
+
   Future<ApiResult<PlacesResponse>> getMySavedPlaces({int page = 1}) async {
     try {
       final response = await _apiService.getMySavedPlaces(page: page);

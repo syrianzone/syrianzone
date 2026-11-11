@@ -62,3 +62,8 @@ study/
 
 # Rendered tierlist card previews
 scripts/tierlist-card/out/
+
+# Android signing keys: never commit
+*.jks
+*.keystore
+key.properties

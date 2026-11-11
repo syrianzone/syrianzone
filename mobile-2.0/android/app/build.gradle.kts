@@ -1,15 +1,22 @@
 import java.io.FileInputStream
 import java.util.Properties
 
-// Release signing. Locally: create android/key.properties (git-ignored).
-// In CI: the workflow writes key.properties from repository secrets.
-// Without it, release builds fall back to the debug key so `flutter run
+// Release signing. Values come from environment variables first (CI, where
+// passwords are passed verbatim — no Properties escaping), then from
+// android/key.properties (git-ignored, for local builds).
+// With neither, release builds fall back to the debug key so `flutter run
 // --release` still works — but such builds cannot be uploaded to Play.
 val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
+
+fun signingValue(env: String, prop: String): String? =
+    System.getenv(env)?.takeIf { it.isNotEmpty() } ?: keystoreProperties.getProperty(prop)
+
+val releaseStoreFile = signingValue("ANDROID_KEYSTORE_PATH", "storeFile")
+val hasReleaseSigning = releaseStoreFile != null
 
 plugins {
     id("com.android.application")
@@ -44,19 +51,19 @@ android {
     }
 
     signingConfigs {
-        if (keystorePropertiesFile.exists()) {
+        if (hasReleaseSigning) {
             create("release") {
-                keyAlias = keystoreProperties["keyAlias"] as String
-                keyPassword = keystoreProperties["keyPassword"] as String
-                storeFile = file(keystoreProperties["storeFile"] as String)
-                storePassword = keystoreProperties["storePassword"] as String
+                storeFile = file(releaseStoreFile!!)
+                storePassword = signingValue("ANDROID_KEYSTORE_PASSWORD", "storePassword")
+                keyAlias = signingValue("ANDROID_KEY_ALIAS", "keyAlias")
+                keyPassword = signingValue("ANDROID_KEY_PASSWORD", "keyPassword")
             }
         }
     }
 
     buildTypes {
         release {
-            signingConfig = if (keystorePropertiesFile.exists()) {
+            signingConfig = if (hasReleaseSigning) {
                 signingConfigs.getByName("release")
             } else {
                 signingConfigs.getByName("debug")

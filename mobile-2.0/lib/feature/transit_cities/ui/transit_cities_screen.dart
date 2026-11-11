@@ -18,50 +18,56 @@ class TransitCitiesScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(centerTitle: true, title: BumpyBusAnimation()),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              Container(
-                color: context.colorScheme.primary,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 16, 8, 16),
-                  child: Column(
-                    children: [
-                      Text(
-                        "ترانزيت سوريا",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+          child: SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            child: Column(
+              children: [
+                Container(
+                  color: context.colorScheme.primary,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(8, 16, 8, 16),
+                    child: Column(
+                      children: [
+                        Text(
+                          "ترانزيت سوريا",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        "دليل وخرائط تفاعلية لشبكات وخطوط المواصلات العامة والسرافيس في المدن السورية — يجمعها المجتمع ويحدّثها، ومتاحة للجميع مجاناً.",
-                        style: TextStyle(color: Colors.white, fontSize: 16),
-                        textAlign: TextAlign.right,
-                      ),
+                        const SizedBox(height: 8),
+                        Text(
+                          "دليل وخرائط تفاعلية لشبكات وخطوط المواصلات العامة والسرافيس في المدن السورية — يجمعها المجتمع ويحدّثها، ومتاحة للجميع مجاناً.",
+                          style: TextStyle(color: Colors.white, fontSize: 16),
+                          textAlign: TextAlign.right,
+                        ),
 
-                      const SizedBox(height: 16),
+                        const SizedBox(height: 16),
 
-                      const _TransitCitiesStats(),
-                    ],
+                        const _TransitCitiesStats(),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: TransitCitiesGridBloc(),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16.0, 4.0, 16.0, 24.0),
-                child: _ContributeRouteButton(
-                  onTap: () {
-                    context.pushNamed(Routes.transitStudio);
-                  },
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: TransitCitiesGridBloc(),
                 ),
-              ),
-            ],
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16.0, 4.0, 16.0, 24.0),
+                  child: _ContributeRouteButton(
+                    onTap: () {
+                      FocusManager.instance.primaryFocus?.unfocus();
+                      context.pushNamed(Routes.transitStudio);
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

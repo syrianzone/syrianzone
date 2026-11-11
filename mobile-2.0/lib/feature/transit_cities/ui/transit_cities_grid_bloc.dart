@@ -76,6 +76,7 @@ class TransitCitiesGridBloc extends StatelessWidget {
                         borderRadius: BorderRadius.circular(24),
                         onTap: () {
                           if (!isActive) return;
+                          FocusManager.instance.primaryFocus?.unfocus();
                           context.pushNamed(
                             Routes.transit,
                             arguments: TransitArgs(
@@ -214,6 +215,7 @@ class _TransitCitiesSearchField extends StatefulWidget {
 
 class _TransitCitiesSearchFieldState extends State<_TransitCitiesSearchField> {
   final TextEditingController _controller = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
 
   @override
   void initState() {
@@ -225,6 +227,7 @@ class _TransitCitiesSearchFieldState extends State<_TransitCitiesSearchField> {
   void dispose() {
     _controller.removeListener(_onTextChanged);
     _controller.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -236,27 +239,41 @@ class _TransitCitiesSearchFieldState extends State<_TransitCitiesSearchField> {
 
   void _clearSearch() {
     _controller.clear();
+    _focusNode.unfocus();
     context.read<TransitCitiesCubit>().searchCities('');
   }
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
-      controller: _controller,
-      onChanged: context.read<TransitCitiesCubit>().searchCities,
-      textInputAction: TextInputAction.search,
-      decoration: InputDecoration(
-        hintText: 'ابحث عن مدينة',
-        prefixIcon: const Icon(Icons.search),
-        suffixIcon: _controller.text.isEmpty
-            ? null
-            : IconButton(
-                onPressed: _clearSearch,
-                icon: const Icon(Icons.clear),
-              ),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-        filled: true,
-        fillColor: Colors.white,
+    final hasSearch = _controller.text.isNotEmpty;
+
+    return PopScope(
+      canPop: !hasSearch,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (hasSearch) {
+          _clearSearch();
+        }
+      },
+      child: TextField(
+        controller: _controller,
+        focusNode: _focusNode,
+        onChanged: context.read<TransitCitiesCubit>().searchCities,
+        onSubmitted: (_) => _focusNode.unfocus(),
+        textInputAction: TextInputAction.search,
+        decoration: InputDecoration(
+          hintText: 'ابحث عن مدينة',
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: _controller.text.isEmpty
+              ? null
+              : IconButton(
+                  onPressed: _clearSearch,
+                  icon: const Icon(Icons.clear),
+                ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+          filled: true,
+          fillColor: Colors.white,
+        ),
       ),
     );
   }

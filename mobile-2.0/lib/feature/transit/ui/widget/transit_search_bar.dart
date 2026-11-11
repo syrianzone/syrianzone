@@ -88,20 +88,41 @@ class _TransitSearchBarState extends State<TransitSearchBar> {
     context.read<TransitCubit>().clearSearch();
   }
 
+  void _closeSearch() {
+    _debounceTimer?.cancel();
+    _searchController.clear();
+    _focusNode.unfocus();
+    setState(() {
+      _showResults = false;
+    });
+    context.read<TransitCubit>().clearSearch();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<TransitCubit, TransitState>(
-      builder: (context, state) {
-        final searchResults = state.searchResults;
-        final hasResults = searchResults != null &&
-            (searchResults.routes.isNotEmpty ||
-                searchResults.stops.isNotEmpty);
-        final hasError = state.searchErrorMessage != null;
-        final showCard = _showResults &&
-            _searchController.text.trim().isNotEmpty &&
-            (hasResults || hasError || (!state.searchLoading && searchResults != null));
+    final isSearchOpen =
+        _showResults || _focusNode.hasFocus || _searchController.text.isNotEmpty;
 
-        return Column(
+    return PopScope(
+      canPop: !isSearchOpen,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (isSearchOpen) {
+          _closeSearch();
+        }
+      },
+      child: BlocBuilder<TransitCubit, TransitState>(
+        builder: (context, state) {
+          final searchResults = state.searchResults;
+          final hasResults = searchResults != null &&
+              (searchResults.routes.isNotEmpty ||
+                  searchResults.stops.isNotEmpty);
+          final hasError = state.searchErrorMessage != null;
+          final showCard = _showResults &&
+              _searchController.text.trim().isNotEmpty &&
+              (hasResults || hasError || (!state.searchLoading && searchResults != null));
+
+          return Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -301,6 +322,7 @@ class _TransitSearchBarState extends State<TransitSearchBar> {
           ],
         );
       },
+    ),
     );
   }
 

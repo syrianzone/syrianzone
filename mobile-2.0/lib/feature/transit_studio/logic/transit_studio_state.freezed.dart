@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$TransitStudioState {
 
- bool get isLoadingCities; List<CityResponse> get cities; String? get citiesError; CityResponse? get selectedCity; bool get isLoadingMapData; MapDataResponse? get cityMapData; String? get mapDataError; StudioToolMode get activeTool; List<GeoPoint> get roadPoints; int? get selectedPointIndex; List<StudioStop> get stops; int get selectedColorIndex; bool get isSubmitting; bool get submitSuccess; String? get errorMessage; String? get successMessage; int? get expandSectionIndex; int? get editingDraftId; String? get editingDraftTitle;
+ bool get isLoadingCities; List<CityResponse> get cities; String? get citiesError; CityResponse? get selectedCity; bool get isLoadingMapData; MapDataResponse? get cityMapData; String? get mapDataError; StudioToolMode get activeTool; List<LatLng> get roadPoints; int? get selectedPointIndex; List<StudioStop> get stops; int get selectedColorIndex; bool get isSubmitting; bool get submitSuccess; String? get errorMessage; String? get successMessage; int? get expandSectionIndex; int? get editingDraftId; String? get editingDraftTitle;
 /// Create a copy of TransitStudioState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -45,7 +45,7 @@ abstract mixin class $TransitStudioStateCopyWith<$Res>  {
   factory $TransitStudioStateCopyWith(TransitStudioState value, $Res Function(TransitStudioState) _then) = _$TransitStudioStateCopyWithImpl;
 @useResult
 $Res call({
- bool isLoadingCities, List<CityResponse> cities, String? citiesError, CityResponse? selectedCity, bool isLoadingMapData, MapDataResponse? cityMapData, String? mapDataError, StudioToolMode activeTool, List<GeoPoint> roadPoints, int? selectedPointIndex, List<StudioStop> stops, int selectedColorIndex, bool isSubmitting, bool submitSuccess, String? errorMessage, String? successMessage, int? expandSectionIndex, int? editingDraftId, String? editingDraftTitle
+ bool isLoadingCities, List<CityResponse> cities, String? citiesError, CityResponse? selectedCity, bool isLoadingMapData, MapDataResponse? cityMapData, String? mapDataError, StudioToolMode activeTool, List<LatLng> roadPoints, int? selectedPointIndex, List<StudioStop> stops, int selectedColorIndex, bool isSubmitting, bool submitSuccess, String? errorMessage, String? successMessage, int? expandSectionIndex, int? editingDraftId, String? editingDraftTitle
 });
 
 
@@ -73,7 +73,7 @@ as bool,cityMapData: freezed == cityMapData ? _self.cityMapData : cityMapData //
 as MapDataResponse?,mapDataError: freezed == mapDataError ? _self.mapDataError : mapDataError // ignore: cast_nullable_to_non_nullable
 as String?,activeTool: null == activeTool ? _self.activeTool : activeTool // ignore: cast_nullable_to_non_nullable
 as StudioToolMode,roadPoints: null == roadPoints ? _self.roadPoints : roadPoints // ignore: cast_nullable_to_non_nullable
-as List<GeoPoint>,selectedPointIndex: freezed == selectedPointIndex ? _self.selectedPointIndex : selectedPointIndex // ignore: cast_nullable_to_non_nullable
+as List<LatLng>,selectedPointIndex: freezed == selectedPointIndex ? _self.selectedPointIndex : selectedPointIndex // ignore: cast_nullable_to_non_nullable
 as int?,stops: null == stops ? _self.stops : stops // ignore: cast_nullable_to_non_nullable
 as List<StudioStop>,selectedColorIndex: null == selectedColorIndex ? _self.selectedColorIndex : selectedColorIndex // ignore: cast_nullable_to_non_nullable
 as int,isSubmitting: null == isSubmitting ? _self.isSubmitting : isSubmitting // ignore: cast_nullable_to_non_nullable
@@ -168,7 +168,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool isLoadingCities,  List<CityResponse> cities,  String? citiesError,  CityResponse? selectedCity,  bool isLoadingMapData,  MapDataResponse? cityMapData,  String? mapDataError,  StudioToolMode activeTool,  List<GeoPoint> roadPoints,  int? selectedPointIndex,  List<StudioStop> stops,  int selectedColorIndex,  bool isSubmitting,  bool submitSuccess,  String? errorMessage,  String? successMessage,  int? expandSectionIndex,  int? editingDraftId,  String? editingDraftTitle)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool isLoadingCities,  List<CityResponse> cities,  String? citiesError,  CityResponse? selectedCity,  bool isLoadingMapData,  MapDataResponse? cityMapData,  String? mapDataError,  StudioToolMode activeTool,  List<LatLng> roadPoints,  int? selectedPointIndex,  List<StudioStop> stops,  int selectedColorIndex,  bool isSubmitting,  bool submitSuccess,  String? errorMessage,  String? successMessage,  int? expandSectionIndex,  int? editingDraftId,  String? editingDraftTitle)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TransitStudioState() when $default != null:
 return $default(_that.isLoadingCities,_that.cities,_that.citiesError,_that.selectedCity,_that.isLoadingMapData,_that.cityMapData,_that.mapDataError,_that.activeTool,_that.roadPoints,_that.selectedPointIndex,_that.stops,_that.selectedColorIndex,_that.isSubmitting,_that.submitSuccess,_that.errorMessage,_that.successMessage,_that.expandSectionIndex,_that.editingDraftId,_that.editingDraftTitle);case _:
@@ -189,7 +189,7 @@ return $default(_that.isLoadingCities,_that.cities,_that.citiesError,_that.selec
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool isLoadingCities,  List<CityResponse> cities,  String? citiesError,  CityResponse? selectedCity,  bool isLoadingMapData,  MapDataResponse? cityMapData,  String? mapDataError,  StudioToolMode activeTool,  List<GeoPoint> roadPoints,  int? selectedPointIndex,  List<StudioStop> stops,  int selectedColorIndex,  bool isSubmitting,  bool submitSuccess,  String? errorMessage,  String? successMessage,  int? expandSectionIndex,  int? editingDraftId,  String? editingDraftTitle)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool isLoadingCities,  List<CityResponse> cities,  String? citiesError,  CityResponse? selectedCity,  bool isLoadingMapData,  MapDataResponse? cityMapData,  String? mapDataError,  StudioToolMode activeTool,  List<LatLng> roadPoints,  int? selectedPointIndex,  List<StudioStop> stops,  int selectedColorIndex,  bool isSubmitting,  bool submitSuccess,  String? errorMessage,  String? successMessage,  int? expandSectionIndex,  int? editingDraftId,  String? editingDraftTitle)  $default,) {final _that = this;
 switch (_that) {
 case _TransitStudioState():
 return $default(_that.isLoadingCities,_that.cities,_that.citiesError,_that.selectedCity,_that.isLoadingMapData,_that.cityMapData,_that.mapDataError,_that.activeTool,_that.roadPoints,_that.selectedPointIndex,_that.stops,_that.selectedColorIndex,_that.isSubmitting,_that.submitSuccess,_that.errorMessage,_that.successMessage,_that.expandSectionIndex,_that.editingDraftId,_that.editingDraftTitle);case _:
@@ -209,7 +209,7 @@ return $default(_that.isLoadingCities,_that.cities,_that.citiesError,_that.selec
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool isLoadingCities,  List<CityResponse> cities,  String? citiesError,  CityResponse? selectedCity,  bool isLoadingMapData,  MapDataResponse? cityMapData,  String? mapDataError,  StudioToolMode activeTool,  List<GeoPoint> roadPoints,  int? selectedPointIndex,  List<StudioStop> stops,  int selectedColorIndex,  bool isSubmitting,  bool submitSuccess,  String? errorMessage,  String? successMessage,  int? expandSectionIndex,  int? editingDraftId,  String? editingDraftTitle)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool isLoadingCities,  List<CityResponse> cities,  String? citiesError,  CityResponse? selectedCity,  bool isLoadingMapData,  MapDataResponse? cityMapData,  String? mapDataError,  StudioToolMode activeTool,  List<LatLng> roadPoints,  int? selectedPointIndex,  List<StudioStop> stops,  int selectedColorIndex,  bool isSubmitting,  bool submitSuccess,  String? errorMessage,  String? successMessage,  int? expandSectionIndex,  int? editingDraftId,  String? editingDraftTitle)?  $default,) {final _that = this;
 switch (_that) {
 case _TransitStudioState() when $default != null:
 return $default(_that.isLoadingCities,_that.cities,_that.citiesError,_that.selectedCity,_that.isLoadingMapData,_that.cityMapData,_that.mapDataError,_that.activeTool,_that.roadPoints,_that.selectedPointIndex,_that.stops,_that.selectedColorIndex,_that.isSubmitting,_that.submitSuccess,_that.errorMessage,_that.successMessage,_that.expandSectionIndex,_that.editingDraftId,_that.editingDraftTitle);case _:
@@ -224,7 +224,7 @@ return $default(_that.isLoadingCities,_that.cities,_that.citiesError,_that.selec
 
 
 class _TransitStudioState extends TransitStudioState {
-  const _TransitStudioState({this.isLoadingCities = false, final  List<CityResponse> cities = const [], this.citiesError, this.selectedCity, this.isLoadingMapData = false, this.cityMapData, this.mapDataError, this.activeTool = StudioToolMode.none, final  List<GeoPoint> roadPoints = const [], this.selectedPointIndex, final  List<StudioStop> stops = const [], this.selectedColorIndex = 0, this.isSubmitting = false, this.submitSuccess = false, this.errorMessage, this.successMessage, this.expandSectionIndex, this.editingDraftId, this.editingDraftTitle}): _cities = cities,_roadPoints = roadPoints,_stops = stops,super._();
+  const _TransitStudioState({this.isLoadingCities = false, final  List<CityResponse> cities = const [], this.citiesError, this.selectedCity, this.isLoadingMapData = false, this.cityMapData, this.mapDataError, this.activeTool = StudioToolMode.none, final  List<LatLng> roadPoints = const [], this.selectedPointIndex, final  List<StudioStop> stops = const [], this.selectedColorIndex = 0, this.isSubmitting = false, this.submitSuccess = false, this.errorMessage, this.successMessage, this.expandSectionIndex, this.editingDraftId, this.editingDraftTitle}): _cities = cities,_roadPoints = roadPoints,_stops = stops,super._();
   
 
 @override@JsonKey() final  bool isLoadingCities;
@@ -241,8 +241,8 @@ class _TransitStudioState extends TransitStudioState {
 @override final  MapDataResponse? cityMapData;
 @override final  String? mapDataError;
 @override@JsonKey() final  StudioToolMode activeTool;
- final  List<GeoPoint> _roadPoints;
-@override@JsonKey() List<GeoPoint> get roadPoints {
+ final  List<LatLng> _roadPoints;
+@override@JsonKey() List<LatLng> get roadPoints {
   if (_roadPoints is EqualUnmodifiableListView) return _roadPoints;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_roadPoints);
@@ -295,7 +295,7 @@ abstract mixin class _$TransitStudioStateCopyWith<$Res> implements $TransitStudi
   factory _$TransitStudioStateCopyWith(_TransitStudioState value, $Res Function(_TransitStudioState) _then) = __$TransitStudioStateCopyWithImpl;
 @override @useResult
 $Res call({
- bool isLoadingCities, List<CityResponse> cities, String? citiesError, CityResponse? selectedCity, bool isLoadingMapData, MapDataResponse? cityMapData, String? mapDataError, StudioToolMode activeTool, List<GeoPoint> roadPoints, int? selectedPointIndex, List<StudioStop> stops, int selectedColorIndex, bool isSubmitting, bool submitSuccess, String? errorMessage, String? successMessage, int? expandSectionIndex, int? editingDraftId, String? editingDraftTitle
+ bool isLoadingCities, List<CityResponse> cities, String? citiesError, CityResponse? selectedCity, bool isLoadingMapData, MapDataResponse? cityMapData, String? mapDataError, StudioToolMode activeTool, List<LatLng> roadPoints, int? selectedPointIndex, List<StudioStop> stops, int selectedColorIndex, bool isSubmitting, bool submitSuccess, String? errorMessage, String? successMessage, int? expandSectionIndex, int? editingDraftId, String? editingDraftTitle
 });
 
 
@@ -323,7 +323,7 @@ as bool,cityMapData: freezed == cityMapData ? _self.cityMapData : cityMapData //
 as MapDataResponse?,mapDataError: freezed == mapDataError ? _self.mapDataError : mapDataError // ignore: cast_nullable_to_non_nullable
 as String?,activeTool: null == activeTool ? _self.activeTool : activeTool // ignore: cast_nullable_to_non_nullable
 as StudioToolMode,roadPoints: null == roadPoints ? _self._roadPoints : roadPoints // ignore: cast_nullable_to_non_nullable
-as List<GeoPoint>,selectedPointIndex: freezed == selectedPointIndex ? _self.selectedPointIndex : selectedPointIndex // ignore: cast_nullable_to_non_nullable
+as List<LatLng>,selectedPointIndex: freezed == selectedPointIndex ? _self.selectedPointIndex : selectedPointIndex // ignore: cast_nullable_to_non_nullable
 as int?,stops: null == stops ? _self._stops : stops // ignore: cast_nullable_to_non_nullable
 as List<StudioStop>,selectedColorIndex: null == selectedColorIndex ? _self.selectedColorIndex : selectedColorIndex // ignore: cast_nullable_to_non_nullable
 as int,isSubmitting: null == isSubmitting ? _self.isSubmitting : isSubmitting // ignore: cast_nullable_to_non_nullable

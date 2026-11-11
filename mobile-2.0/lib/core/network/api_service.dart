@@ -8,6 +8,7 @@ import 'package:syrianzone/core/network/response/city_response.dart';
 import 'package:syrianzone/core/network/response/guides_response.dart';
 import 'package:syrianzone/core/network/response/hotel_detail_response.dart';
 import 'package:syrianzone/core/network/response/hotel_response.dart';
+import 'package:syrianzone/core/network/response/hotels_map_response.dart';
 import 'package:syrianzone/core/network/response/map_data_response.dart';
 import 'package:syrianzone/core/network/response/nearby_stop_response.dart';
 import 'package:syrianzone/core/network/response/place_detail_response.dart';
@@ -113,7 +114,7 @@ abstract class ApiService {
   });
 
   @GET("hotels/map")
-  Future<PlacesMapResponse> getHotelsMap();
+  Future<HotelsMapResponse> getHotelsMap();
 
   @GET("hotels/{id}")
   Future<HotelDetailResponse> getHotelDetail(@Path("id") int id);

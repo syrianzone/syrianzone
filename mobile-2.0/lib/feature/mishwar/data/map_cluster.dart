@@ -1,8 +1,8 @@
 import 'package:syrianzone/feature/mishwar/data/mishwar_map_point.dart';
 
 class MapCluster {
-  final double lat;
-  final double lng;
+  double lat;
+  double lng;
   final List<MishwarMapPoint> points;
 
   MapCluster({
@@ -12,4 +12,21 @@ class MapCluster {
   });
 
   bool get isSingle => points.length == 1;
+
+  void addPoint(MishwarMapPoint p) {
+    points.add(p);
+    recomputeCentroid();
+  }
+
+  void recomputeCentroid() {
+    if (points.isEmpty) return;
+    double sumLat = 0;
+    double sumLng = 0;
+    for (final pt in points) {
+      sumLat += pt.lat;
+      sumLng += pt.lng;
+    }
+    lat = sumLat / points.length;
+    lng = sumLng / points.length;
+  }
 }

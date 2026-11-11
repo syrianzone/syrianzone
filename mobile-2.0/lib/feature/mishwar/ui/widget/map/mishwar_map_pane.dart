@@ -1,23 +1,27 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_osm_plugin/flutter_osm_plugin.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:syrianzone/core/constants/map_constants.dart';
-import 'package:syrianzone/core/network/response/places_map_response.dart';
+import 'package:syrianzone/core/data/model/map_feature_item.dart';
 import 'package:syrianzone/core/util/text_util.dart';
 import 'package:syrianzone/feature/mishwar/data/map_cluster.dart';
 import 'package:syrianzone/feature/mishwar/data/mishwar_map_point.dart';
 
 class MishwarMapPane extends StatefulWidget {
-  final List<PlaceMapFeature> features;
+  final List<MapFeatureItem> features;
   final ValueChanged<int>? onPlaceSelected;
   final ValueChanged<int>? onHotelSelected;
   final int? highlightedId;
   final String? highlightedType;
   final bool isPickingLocation;
-  final ValueChanged<GeoPoint>? onLocationPicked;
+  final ValueChanged<LatLng>? onLocationPicked;
   final VoidCallback? onCancelLocationPicker;
   final bool isHotelMap;
+  final VoidCallback? onClusterTapped;
+  final VoidCallback? onMapTapped;
+  final double bottomOffsetRatio;
 
   const MishwarMapPane({
     super.key,
@@ -30,6 +34,9 @@ class MishwarMapPane extends StatefulWidget {
     this.onLocationPicked,
     this.onCancelLocationPicker,
     this.isHotelMap = false,
+    this.onClusterTapped,
+    this.onMapTapped,
+    this.bottomOffsetRatio = 0.0,
   });
 
   @override
@@ -37,75 +44,130 @@ class MishwarMapPane extends StatefulWidget {
 }
 
 class MishwarMapPaneState extends State<MishwarMapPane> {
-  late final MapController _mapController;
-  bool _isMapReady = false;
-  final List<GeoPoint> _drawnMarkers = <GeoPoint>[];
-  final Map<String, MapCluster> _clusterByCoordinate = {};
+  // Website exact design tokens (from PlacesLayer.tsx & HotelsLayer.tsx)
+  static const Color placeClusterColor = Color(0xD956644F); // hsl(105, 12%, 38%) @ 85% opacity
+  static const Color hotelClusterColor = Color(0xD9C05621); // #c05621 @ 85% opacity
+  static const Color placePinColor = Color(0xFF7D8A5C); // #7d8a5c
+  static const Color hotelPinColor = Color(0xFFC05621); // #c05621
+  static const Color pinHighlightAmber = Color(0xFFD97706); // amber glow
 
-  GeoPoint? _userMarkerGeoPoint;
-  GeoPoint? _highlightedMarker;
-  GeoPoint? _pendingTargetLocation;
+  late final MapController _mapController;
+  LatLng? _userMarkerLatLng;
+  LatLng? _highlightedMarker;
   StreamSubscription<Position>? _positionStreamSubscription;
   bool _isLoadingUserLocation = false;
-  double _currentZoom = 7.0;
+  double _currentZoom = MapConstants.mishwarInitialZoom;
+
+  // Memoized clustering state
+  int _lastComputedTier = -1;
+  List<MapFeatureItem>? _lastFeatures;
+  bool? _lastIsHotelMap;
+  int? _lastHighlightedId;
+  List<MapCluster> _cachedClusters = const [];
 
   @override
   void initState() {
     super.initState();
-    _mapController = MapController.withPosition(
-      initPosition: GeoPoint(
-        latitude: MapConstants.defaultLat,
-        longitude: MapConstants.defaultLon,
-      ),
-    );
-    _mapController.listenerMapSingleTapping.addListener(_onMapTapped);
-  }
-
-  void _onMapTapped() {
-    final point = _mapController.listenerMapSingleTapping.value;
-    if (point != null && widget.isPickingLocation) {
-      widget.onLocationPicked?.call(point);
-    }
+    _mapController = MapController();
+    _recomputeClustersIfNeeded();
+    _initUserLocation(centerOnUser: false);
   }
 
   @override
   void dispose() {
-    _mapController.listenerMapSingleTapping.removeListener(_onMapTapped);
     _positionStreamSubscription?.cancel();
     _positionStreamSubscription = null;
+    _mapController.dispose();
     super.dispose();
   }
 
   @override
   void didUpdateWidget(covariant MishwarMapPane oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final bool highlightChanged = widget.highlightedId != oldWidget.highlightedId ||
-        widget.highlightedType != oldWidget.highlightedType;
-    if (highlightChanged) {
+    if (widget.highlightedId != oldWidget.highlightedId ||
+        widget.highlightedType != oldWidget.highlightedType) {
       if (widget.highlightedId == null) {
         _highlightedMarker = null;
       }
-      _renderMarkers();
-    } else if (!identical(widget.features, oldWidget.features) || widget.isHotelMap != oldWidget.isHotelMap) {
-      _renderMarkers();
     }
   }
 
-  Future<void> zoomToLocation(double lat, double lng, {double zoom = 15.0}) async {
-    final point = GeoPoint(latitude: lat, longitude: lng);
-    _highlightedMarker = point;
-    _currentZoom = zoom;
+  /// Exact zoom cutoff matching website (clusterMaxZoom: 10)
+  int _getZoomTier(double zoom) {
+    if (zoom > MapConstants.clusterMaxZoom) return -1; // Unclustered individual pins (clusterMaxZoom: 10 on web)
+    return (zoom * 2).floor(); // 0.5 zoom steps
+  }
 
-    if (!_isMapReady) {
-      _pendingTargetLocation = point;
+  double _getVerticalViewportOffset() {
+    if (widget.bottomOffsetRatio <= 0.0) return 0.0;
+    try {
+      final mapHeight = _mapController.camera.nonRotatedSize.height;
+      if (mapHeight <= 0.0) return 0.0;
+      final coveredHeight = mapHeight * widget.bottomOffsetRatio;
+      return -(coveredHeight / 2);
+    } catch (_) {
+      return 0.0;
+    }
+  }
+
+  Future<void> zoomToLocation(
+    double lat,
+    double lng, {
+    double zoom = MapConstants.detailZoom,
+    Offset? offset,
+  }) async {
+    if (!mounted) return;
+    final point = LatLng(lat, lng);
+    setState(() {
+      _highlightedMarker = point;
+      _currentZoom = zoom;
+    });
+
+    try {
+      final effectiveOffset = offset ?? Offset(0, _getVerticalViewportOffset());
+      _mapController.move(point, zoom, offset: effectiveOffset);
+    } catch (_) {}
+  }
+
+  void _recomputeClustersIfNeeded() {
+    final currentTier = _getZoomTier(_currentZoom);
+    final featuresChanged = !identical(widget.features, _lastFeatures);
+    final hotelMapChanged = widget.isHotelMap != _lastIsHotelMap;
+    final highlightChanged = widget.highlightedId != _lastHighlightedId;
+
+    if (currentTier == _lastComputedTier &&
+        !featuresChanged &&
+        !hotelMapChanged &&
+        !highlightChanged) {
       return;
     }
 
-    try {
-      await _mapController.moveTo(point);
-      await _mapController.setZoom(zoomLevel: zoom);
-      await _renderMarkers();
-    } catch (_) {}
+    _lastComputedTier = currentTier;
+    _lastFeatures = widget.features;
+    _lastIsHotelMap = widget.isHotelMap;
+    _lastHighlightedId = widget.highlightedId;
+
+    final points = <MishwarMapPoint>[];
+    for (final f in widget.features) {
+      final isHotel = (f.mapType == 'hotel') || widget.isHotelMap;
+      points.add(
+        MishwarMapPoint(
+          id: f.id,
+          name: f.displayName,
+          lat: f.latitude,
+          lng: f.longitude,
+          type: isHotel ? 'hotel' : 'place',
+        ),
+      );
+    }
+
+    // Dynamic radius matching website clusterRadius: 25px
+    // At zoom z, 25px corresponds to 35.16 / (1 << z) degrees
+    final clusterRadius = currentTier == -1
+        ? 0.0
+        : (35.16 / (1 << _currentZoom.clamp(5, 10).floor()));
+
+    _cachedClusters = _computeClusters(points, clusterRadius);
   }
 
   List<MapCluster> _computeClusters(List<MishwarMapPoint> points, double clusterRadius) {
@@ -115,7 +177,6 @@ class MishwarMapPaneState extends State<MishwarMapPane> {
 
     final clusters = <MapCluster>[];
     for (final p in points) {
-      // Highlighted point is never clustered with other points so it always stands out
       final isItemHighlighted = widget.highlightedId != null &&
           p.id == widget.highlightedId &&
           (widget.highlightedType == null || p.type == widget.highlightedType);
@@ -137,7 +198,7 @@ class MishwarMapPaneState extends State<MishwarMapPane> {
         final dLat = (c.lat - p.lat).abs();
         final dLng = (c.lng - p.lng).abs();
         if (dLat < clusterRadius && dLng < clusterRadius) {
-          c.points.add(p);
+          c.addPoint(p);
           added = true;
           break;
         }
@@ -149,51 +210,27 @@ class MishwarMapPaneState extends State<MishwarMapPane> {
     return clusters;
   }
 
-  Widget _buildHighlightedMarkerWidget() {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        // Pulsing glowing amber halo
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: const Color(0xFFD97706).withValues(alpha: 0.35),
-            shape: BoxShape.circle,
-          ),
-        ),
-        // Selected Pin
-        Container(
-          width: 28,
-          height: 28,
-          decoration: BoxDecoration(
-            color: const Color(0xFFD97706),
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 2.5),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x66000000),
-                blurRadius: 8,
-                offset: Offset(0, 3),
-              ),
-            ],
-          ),
-          child: const Icon(Icons.place, size: 16, color: Colors.white),
-        ),
-      ],
-    );
-  }
+  Widget _buildNormalMarkerWidget({required bool isHotel, required bool isSelected}) {
+    // Normal circle: 12px. Selected circle: 20px (same circle shape, bigger to indicate selection)
+    final size = isSelected ? 20.0 : 12.0;
+    final color = isHotel ? hotelPinColor : placePinColor;
 
-  Widget _buildNormalMarkerWidget({required bool isHotel}) {
     return Container(
-      width: 16,
-      height: 16,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
-        color: isHotel ? const Color(0xFFDC2626) : const Color(0xFF4A7C38),
+        color: color,
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 2),
-        boxShadow: const [
-          BoxShadow(color: Colors.black26, blurRadius: 4),
+        border: Border.all(
+          color: Colors.white,
+          width: isSelected ? 2.5 : 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: isSelected ? const Color(0x77000000) : Colors.black26,
+            blurRadius: isSelected ? 6 : 3,
+            offset: isSelected ? const Offset(0, 2) : Offset.zero,
+          ),
         ],
       ),
     );
@@ -204,17 +241,20 @@ class MishwarMapPaneState extends State<MishwarMapPane> {
     required bool isHotel,
     required double size,
   }) {
+    final bgColor = isHotel ? hotelClusterColor : placeClusterColor;
+
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: isHotel
-            ? const Color(0xFFDC2626).withValues(alpha: 0.92)
-            : const Color(0xFF456B34).withValues(alpha: 0.92),
+        color: bgColor,
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 2),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.8),
+          width: 1.5,
+        ),
         boxShadow: const [
-          BoxShadow(color: Colors.black38, blurRadius: 6),
+          BoxShadow(color: Colors.black38, blurRadius: 5),
         ],
       ),
       alignment: Alignment.center,
@@ -222,129 +262,20 @@ class MishwarMapPaneState extends State<MishwarMapPane> {
         TextUtil.toArabicDigits(count),
         style: const TextStyle(
           color: Colors.white,
-          fontSize: 12,
+          fontSize: 11, // Matching website text-size: 11
           fontWeight: FontWeight.bold,
         ),
       ),
     );
   }
 
-  Future<void> _renderMarkers() async {
-    if (!_isMapReady) return;
+  void _handleClusterClicked(MapCluster cluster) {
+    final point = LatLng(cluster.lat, cluster.lng);
 
-    try {
-      if (_drawnMarkers.isNotEmpty) {
-        await _mapController.removeMarkers(_drawnMarkers);
-        _drawnMarkers.clear();
-      }
-      _clusterByCoordinate.clear();
-
-      final points = <MishwarMapPoint>[];
-      for (final f in widget.features) {
-        final coords = f.geometry.coordinates;
-        final isHotel = (f.properties.type == 'hotel') || widget.isHotelMap;
-        points.add(
-          MishwarMapPoint(
-            id: f.properties.id,
-            name: f.properties.name,
-            lat: coords.latitude,
-            lng: coords.longitude,
-            type: isHotel ? 'hotel' : 'place',
-          ),
-        );
-      }
-
-      if (points.isEmpty) return;
-
-      // Group into clusters if zoomed out, or single points if zoomed in (zoom >= 13)
-      final clusterRadius = _currentZoom < 9.0
-          ? 0.45
-          : _currentZoom < 13.0
-              ? 0.12
-              : 0.0;
-
-      final clusters = _computeClusters(points, clusterRadius);
-
-      final markerFutures = <Future<void>>[];
-      for (final cluster in clusters) {
-        final geoPoint = GeoPoint(latitude: cluster.lat, longitude: cluster.lng);
-        final key = '${geoPoint.latitude.toStringAsFixed(4)},${geoPoint.longitude.toStringAsFixed(4)}';
-        _clusterByCoordinate[key] = cluster;
-        _drawnMarkers.add(geoPoint);
-
-        final isHighlighted = (widget.highlightedId != null &&
-                cluster.points.any((p) =>
-                    p.id == widget.highlightedId &&
-                    (widget.highlightedType == null || p.type == widget.highlightedType))) ||
-            (_highlightedMarker != null &&
-                (geoPoint.latitude - _highlightedMarker!.latitude).abs() < 0.0003 &&
-                (geoPoint.longitude - _highlightedMarker!.longitude).abs() < 0.0003);
-
-        final isHotel = cluster.points.first.type == 'hotel' || widget.isHotelMap;
-
-        if (cluster.isSingle) {
-          // Single green point for place, red for hotel (or highlighted amber)
-          markerFutures.add(
-            _mapController.addMarker(
-              geoPoint,
-              markerIcon: MarkerIcon(
-                iconWidget: isHighlighted
-                    ? _buildHighlightedMarkerWidget()
-                    : _buildNormalMarkerWidget(isHotel: isHotel),
-              ),
-            ),
-          );
-        } else {
-          // Cluster circle with count
-          final isHotelCluster = cluster.points.any((p) => p.type == 'hotel') || widget.isHotelMap;
-          final count = cluster.points.length;
-          final size = (28.0 + (count > 20 ? 12.0 : (count > 5 ? 6.0 : 0.0))).clamp(28.0, 42.0);
-          markerFutures.add(
-            _mapController.addMarker(
-              geoPoint,
-              markerIcon: MarkerIcon(
-                iconWidget: _buildClusterMarkerWidget(
-                  count: count,
-                  isHotel: isHotelCluster,
-                  size: size,
-                ),
-              ),
-            ),
-          );
-        }
-      }
-
-      // If a point was explicitly highlighted and not part of the drawn clusters
-      final hasDrawnHighlighted = _drawnMarkers.any((m) =>
-          _highlightedMarker != null &&
-          (m.latitude - _highlightedMarker!.latitude).abs() < 0.0003 &&
-          (m.longitude - _highlightedMarker!.longitude).abs() < 0.0003);
-
-      if (_highlightedMarker != null && !hasDrawnHighlighted) {
-        _drawnMarkers.add(_highlightedMarker!);
-        markerFutures.add(
-          _mapController.addMarker(
-            _highlightedMarker!,
-            markerIcon: MarkerIcon(
-              iconWidget: _buildHighlightedMarkerWidget(),
-            ),
-          ),
-        );
-      }
-
-      await Future.wait(markerFutures);
-    } catch (_) {}
-  }
-
-  void _handleMarkerClicked(GeoPoint point) async {
     if (widget.isPickingLocation) {
       widget.onLocationPicked?.call(point);
       return;
     }
-
-    final key = '${point.latitude.toStringAsFixed(4)},${point.longitude.toStringAsFixed(4)}';
-    final cluster = _clusterByCoordinate[key];
-    if (cluster == null) return;
 
     if (cluster.isSingle) {
       final item = cluster.points.first;
@@ -353,18 +284,153 @@ class MishwarMapPaneState extends State<MishwarMapPane> {
       } else {
         widget.onPlaceSelected?.call(item.id);
       }
-    } else {
-      // Zoom into the cluster
-      await _mapController.moveTo(point);
-      await _mapController.zoomIn();
-      _currentZoom += 2;
-      _renderMarkers();
+      return;
     }
+
+    // Website behavior: zoom in a small step (+1.2) while maintaining the cluster center
+    widget.onClusterTapped?.call();
+    final nextZoom = (_currentZoom + MapConstants.clusterStepZoom)
+        .clamp(MapConstants.mishwarMinZoom, MapConstants.maxZoom);
+    final yOffset = _getVerticalViewportOffset();
+    _mapController.move(point, nextZoom, offset: Offset(0, yOffset));
+    setState(() {
+      _currentZoom = nextZoom;
+    });
+  }
+
+  List<Marker> _buildMarkers() {
+    _recomputeClustersIfNeeded();
+
+    if (_cachedClusters.isEmpty && _highlightedMarker == null && _userMarkerLatLng == null) {
+      return const [];
+    }
+
+    final markers = <Marker>[];
+    bool hasDrawnHighlighted = false;
+
+    for (final cluster in _cachedClusters) {
+      final geoPoint = LatLng(cluster.lat, cluster.lng);
+
+      final isHighlighted = (widget.highlightedId != null &&
+              cluster.points.any((p) =>
+                  p.id == widget.highlightedId &&
+                  (widget.highlightedType == null || p.type == widget.highlightedType))) ||
+          (_highlightedMarker != null &&
+              (geoPoint.latitude - _highlightedMarker!.latitude).abs() < 0.0003 &&
+              (geoPoint.longitude - _highlightedMarker!.longitude).abs() < 0.0003);
+
+      if (isHighlighted) {
+        hasDrawnHighlighted = true;
+      }
+
+      final isHotel = cluster.points.first.type == 'hotel' || widget.isHotelMap;
+
+      if (cluster.isSingle) {
+        final hitSize = isHighlighted ? 36.0 : 28.0;
+        markers.add(
+          Marker(
+            point: geoPoint,
+            width: hitSize,
+            height: hitSize,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => _handleClusterClicked(cluster),
+              child: Center(
+                child: _buildNormalMarkerWidget(isHotel: isHotel, isSelected: isHighlighted),
+              ),
+            ),
+          ),
+        );
+      } else {
+        final isHotelCluster = cluster.points.any((p) => p.type == 'hotel') || widget.isHotelMap;
+        final count = cluster.points.length;
+
+        // Website step: <10: 20px, 10-29: 26px, >=30: 32px
+        final size = count < 10 ? 20.0 : (count < 30 ? 26.0 : 32.0);
+        final hitSize = size < 28.0 ? 28.0 : size;
+
+        markers.add(
+          Marker(
+            point: geoPoint,
+            width: hitSize,
+            height: hitSize,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => _handleClusterClicked(cluster),
+              child: Center(
+                child: _buildClusterMarkerWidget(
+                  count: count,
+                  isHotel: isHotelCluster,
+                  size: size,
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+    }
+
+    if (_highlightedMarker != null && !hasDrawnHighlighted) {
+      markers.add(
+        Marker(
+          point: _highlightedMarker!,
+          width: 36,
+          height: 36,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              if (widget.isPickingLocation) {
+                widget.onLocationPicked?.call(_highlightedMarker!);
+              }
+            },
+            child: Center(
+              child: _buildNormalMarkerWidget(
+                isHotel: widget.isHotelMap || widget.highlightedType == 'hotel',
+                isSelected: true,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (_userMarkerLatLng != null) {
+      markers.add(
+        Marker(
+          point: _userMarkerLatLng!,
+          width: 32,
+          height: 32,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF1A73E8).withValues(alpha: 0.25),
+                ),
+              ),
+              const Icon(
+                Icons.circle,
+                size: 22.0,
+                color: Colors.white,
+              ),
+              const Icon(
+                Icons.circle,
+                size: 16.0,
+                color: Color(0xFF1A73E8),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return markers;
   }
 
   Future<void> _initUserLocation({bool centerOnUser = false}) async {
-    if (!mounted || !_isMapReady) return;
-
     try {
       LocationPermission permission = await Geolocator.checkPermission();
       if (centerOnUser && permission == LocationPermission.denied) {
@@ -375,7 +441,7 @@ class MishwarMapPaneState extends State<MishwarMapPane> {
           permission == LocationPermission.whileInUse;
       if (!hasPermission) return;
 
-      if (centerOnUser) {
+      if (centerOnUser && mounted) {
         setState(() => _isLoadingUserLocation = true);
       }
 
@@ -386,25 +452,18 @@ class MishwarMapPaneState extends State<MishwarMapPane> {
         ),
       );
 
-      final point = GeoPoint(latitude: position.latitude, longitude: position.longitude);
+      if (!mounted) return;
 
-      if (_userMarkerGeoPoint != null) {
-        try {
-          await _mapController.removeMarker(_userMarkerGeoPoint!);
-        } catch (_) {}
-      }
-
-      _userMarkerGeoPoint = point;
-      await _mapController.addMarker(
-        point,
-        markerIcon: const MarkerIcon(
-          icon: Icon(Icons.my_location, color: Colors.blueAccent, size: 28),
-        ),
-      );
+      final point = LatLng(position.latitude, position.longitude);
+      setState(() {
+        _userMarkerLatLng = point;
+      });
 
       if (centerOnUser) {
-        await _mapController.moveTo(point);
-        await _mapController.setZoom(zoomLevel: 14);
+        _mapController.move(point, MapConstants.userLocationZoom);
+        setState(() {
+          _currentZoom = MapConstants.userLocationZoom;
+        });
       }
     } catch (_) {
     } finally {
@@ -414,32 +473,79 @@ class MishwarMapPaneState extends State<MishwarMapPane> {
     }
   }
 
+  Widget _buildMapButton({
+    required IconData icon,
+    required VoidCallback onTap,
+    bool isLoading = false,
+    Color iconColor = const Color(0xFF2F2722),
+  }) {
+    return Container(
+      width: 38,
+      height: 38,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        border: Border.all(color: const Color(0xFFE4D8C8)),
+        boxShadow: const [
+          BoxShadow(color: Color(0x22000000), blurRadius: 6, offset: Offset(0, 2)),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: isLoading ? null : onTap,
+          child: isLoading
+              ? const Center(
+                  child: SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
+              : Icon(icon, color: iconColor, size: 20),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        OSMFlutter(
-          controller: _mapController,
-          onMapIsReady: (isReady) async {
-            _isMapReady = isReady;
-            if (isReady) {
-              await _mapController.changeTileLayer(tileLayer: MapConstants.cartoDarkTileLayer);
-              if (_pendingTargetLocation != null) {
-                final target = _pendingTargetLocation!;
-                _pendingTargetLocation = null;
-                await zoomToLocation(target.latitude, target.longitude);
+        FlutterMap(
+          mapController: _mapController,
+          options: MapOptions(
+            initialCenter: MapConstants.defaultCenter,
+            initialZoom: MapConstants.mishwarInitialZoom,
+            minZoom: MapConstants.mishwarMinZoom,
+            maxZoom: MapConstants.maxZoom,
+            interactionOptions: const InteractionOptions(
+              flags: InteractiveFlag.all,
+            ),
+            onTap: (tapPosition, point) {
+              if (widget.isPickingLocation) {
+                widget.onLocationPicked?.call(point);
               } else {
-                await _renderMarkers();
+                widget.onMapTapped?.call();
               }
-              _initUserLocation(centerOnUser: false);
-            }
-          },
-          mapIsLoading: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-          onGeoPointClicked: _handleMarkerClicked,
-          osmOption: const OSMOption(
-            showZoomController: false,
-            zoomOption: ZoomOption(initZoom: 7, minZoomLevel: 5, maxZoomLevel: 19),
+            },
+            onPositionChanged: (camera, hasGesture) {
+              final newZoom = camera.zoom;
+              if (_getZoomTier(newZoom) != _getZoomTier(_currentZoom) || !hasGesture) {
+                setState(() {
+                  _currentZoom = newZoom;
+                });
+              }
+            },
           ),
+          children: [
+            MapConstants.cartoDarkTileLayer,
+            MarkerLayer(
+              markers: _buildMarkers(),
+            ),
+          ],
         ),
 
         // Controls overlay (Zoom +/- & My Location)
@@ -451,19 +557,25 @@ class MishwarMapPaneState extends State<MishwarMapPane> {
             children: [
               _buildMapButton(
                 icon: Icons.add,
-                onTap: () async {
-                  await _mapController.zoomIn();
-                  _currentZoom += 1;
-                  await _renderMarkers();
+                onTap: () {
+                  final nextZoom = (_currentZoom + 1)
+                      .clamp(MapConstants.mishwarMinZoom, MapConstants.maxZoom);
+                  _mapController.move(_mapController.camera.center, nextZoom);
+                  setState(() {
+                    _currentZoom = nextZoom;
+                  });
                 },
               ),
               const SizedBox(height: 6),
               _buildMapButton(
                 icon: Icons.remove,
-                onTap: () async {
-                  await _mapController.zoomOut();
-                  _currentZoom -= 1;
-                  await _renderMarkers();
+                onTap: () {
+                  final nextZoom = (_currentZoom - 1)
+                      .clamp(MapConstants.mishwarMinZoom, MapConstants.maxZoom);
+                  _mapController.move(_mapController.camera.center, nextZoom);
+                  setState(() {
+                    _currentZoom = nextZoom;
+                  });
                 },
               ),
               const SizedBox(height: 10),
@@ -533,39 +645,6 @@ class MishwarMapPaneState extends State<MishwarMapPane> {
             ),
           ),
       ],
-    );
-  }
-
-  Widget _buildMapButton({
-    required IconData icon,
-    required VoidCallback onTap,
-    bool isLoading = false,
-    Color iconColor = const Color(0xFF2F2722),
-  }) {
-    return Container(
-      width: 38,
-      height: 38,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFFE4D8C8)),
-        boxShadow: const [
-          BoxShadow(color: Color(0x22000000), blurRadius: 6, offset: Offset(0, 2)),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        shape: const CircleBorder(),
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: isLoading ? null : onTap,
-          child: isLoading
-              ? const Center(
-                  child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
-                )
-              : Icon(icon, color: iconColor, size: 20),
-        ),
-      ),
     );
   }
 }

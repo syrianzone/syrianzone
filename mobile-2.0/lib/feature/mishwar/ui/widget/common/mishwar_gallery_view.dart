@@ -39,11 +39,13 @@ class _MishwarGalleryViewState extends State<MishwarGalleryView> {
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
   }
 
   void _onScroll() {
+    if (!mounted || !_scrollController.hasClients) return;
     if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 300) {
       final cubit = context.read<MishwarCubit>();
       if (!cubit.state.isLoadingGallery && cubit.state.hasMoreGalleryPhotos) {
@@ -117,6 +119,7 @@ class _MishwarGalleryViewState extends State<MishwarGalleryView> {
               await context.read<MishwarCubit>().fetchGalleryPhotos(refresh: true);
             },
             child: GridView.builder(
+              key: const PageStorageKey<String>('mishwar_gallery_grid_view'),
               controller: _scrollController,
               padding: const EdgeInsets.fromLTRB(14, 68, 14, 24),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(

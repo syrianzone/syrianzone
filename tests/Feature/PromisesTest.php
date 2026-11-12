@@ -203,6 +203,35 @@ test('voting closes once a verdict is set', function () {
         ->assertStatus(409);
 });
 
+test('the list carries each promise\'s tally, and a vote shows up despite the cached index', function () {
+    $open = Promise::factory()->published()->create();
+    $settled = Promise::factory()->published()->create(['status' => 'fulfilled']);
+
+    $card = fn (Promise $promise) => collect($this->get('/promises')->assertOk()->inertiaProps('promises'))
+        ->firstWhere('number', $promise->number);
+
+    expect($card($open))->toMatchArray(['votingOpen' => true, 'votes' => ['yes' => 0, 'no' => 0]])
+        ->and($card($settled))->toMatchArray(['votingOpen' => false, 'votes' => ['yes' => 0, 'no' => 0]]);
+
+    $this->postJson("/api/v1/promises/{$open->number}/vote", ['believes' => true, 'device_id' => 'device-a'])->assertOk();
+    $this->postJson("/api/v1/promises/{$open->number}/vote", ['believes' => false, 'device_id' => 'device-b'])->assertOk();
+
+    // Only the aggregate is exposed: no voter identity reaches the page.
+    expect($card($open))->toMatchArray(['votes' => ['yes' => 1, 'no' => 1]])
+        ->and(json_encode($this->get('/promises')->inertiaProps()))->not->toContain('voter_key')->not->toContain('ip_hash');
+});
+
+test('promise votes are rate limited per guest address', function () {
+    $promise = Promise::factory()->published()->create();
+
+    foreach (range(1, 30) as $i) {
+        $this->postJson("/api/v1/promises/{$promise->number}/vote", ['believes' => true, 'device_id' => "device-{$i}"])->assertOk();
+    }
+
+    $this->postJson("/api/v1/promises/{$promise->number}/vote", ['believes' => true, 'device_id' => 'device-31'])
+        ->assertStatus(429);
+});
+
 test('public speaker search offers approved speakers and publicly listed officials only', function () {
     $tierList = Poll::factory()->create(['slug' => Poll::CORE_POLL_SLUG]);
     $draftPoll = Poll::factory()->create(['is_active' => false]);

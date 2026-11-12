@@ -41,7 +41,17 @@ class PromisePresenter
     {
         $today = Promise::today();
 
-        return PromiseIndexCache::remember($today, fn () => $this->buildIndex($today));
+        $index = PromiseIndexCache::remember($today, fn () => $this->buildIndex($today));
+
+        // Tallies change far more often than the tracker, so they are merged
+        // in per request instead of living in (and flushing) the index cache.
+        $tallies = $this->votes->tallies();
+        $index['promises'] = array_map(
+            fn (array $card) => [...$card, 'votes' => $tallies[$card['id']] ?? ['yes' => 0, 'no' => 0]],
+            $index['promises'],
+        );
+
+        return $index;
     }
 
     /**
@@ -128,6 +138,7 @@ class PromisePresenter
             'keptLate' => $promise->wasKeptLate(),
             'resolvedAt' => $promise->resolved_at?->format('Y-m-d'),
             'target' => $this->target($promise),
+            'votingOpen' => $promise->isOpen(),
         ];
     }
 
@@ -180,7 +191,6 @@ class PromisePresenter
                 'deadlineDate' => $p->deadline_date?->format('Y-m-d'),
             ])->values()->all(),
             'votes' => $this->votes->tally($promise),
-            'votingOpen' => $promise->isOpen(),
             'publishedAt' => $promise->published_at?->toIso8601String(),
             'updatedAt' => $promise->updated_at?->toIso8601String(),
         ];

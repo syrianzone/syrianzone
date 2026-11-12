@@ -9,7 +9,7 @@ const card = (id: string, patch: Partial<PromiseCardData> = {}): PromiseCardData
     isNational: true, governorates: [], tags: [],
     statementDate: '2025-01-01', deadlineDate: null, deadlineWording: null,
     status: 'pending', state: 'pending', daysLeft: null, daysSince: 1,
-    counter: { mode: 'since', value: 1 }, keptLate: false, resolvedAt: null, target: null, ...patch,
+    counter: { mode: 'since', value: 1 }, keptLate: false, resolvedAt: null, target: null, votingOpen: true, ...patch,
 });
 
 const ALL_STATES: PromiseState[] = ['pending', 'in_progress', 'overdue', 'fulfilled', 'partially_fulfilled', 'broken', 'postponed', 'retracted'];

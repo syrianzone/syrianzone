@@ -65,6 +65,20 @@ class AppServiceProvider extends ServiceProvider
             'error' => 'Too many votes. Please slow down.',
         ], 429)));
 
+        // "Will it be kept?" votes can be cast straight from the /promises
+        // cards, so one visitor may answer many in a row; the tier-list limit
+        // (10/min per IP) would cut off honest voters behind a shared address.
+        // Signed-in voters are counted per account, guests per IP.
+        RateLimiter::for('promise-voting', function (Request $request) {
+            $limit = $request->user()
+                ? Limit::perMinute(60)->by('user:'.$request->user()->id)
+                : Limit::perMinute(30)->by('ip:'.$request->ip());
+
+            return $limit->response(fn ($request, $headers) => response()->json([
+                'message' => 'صوّتَ كثيراً في وقت قصير، انتظر دقيقة ثم حاول مجدداً',
+            ], 429, $headers));
+        });
+
         RateLimiter::for('public-api', fn (Request $request) => Limit::perMinute(60)->by($request->ip())->response(fn () => response()->json([
             'message' => 'Too many requests. Please slow down.',
             'error' => 'Too many requests. Please slow down.',

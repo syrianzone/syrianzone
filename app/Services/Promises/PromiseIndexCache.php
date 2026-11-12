@@ -26,7 +26,7 @@ class PromiseIndexCache
 {
     public const TTL_SECONDS = 300;
 
-    private const KEY = 'promises:index:v1:';
+    private const KEY = 'promises:index:v2:';
 
     /**
      * @param  Closure(): array<string, mixed>  $build

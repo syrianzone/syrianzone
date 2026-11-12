@@ -148,3 +148,10 @@ export function safeHref(url: string | null | undefined): string | null {
     if (!url) return null;
     return /^(https?:\/\/|\/(?!\/))/i.test(url.trim()) ? url : null;
 }
+
+const VOTE: NounForms = { one: 'صوت', two: 'صوتان', few: 'أصوات', many: 'صوتاً' };
+
+/** "صوت واحد", "صوتان", "7 أصوات", "131 صوتاً". */
+export function voteCount(n: number): string {
+    return phrase(n, VOTE, 'صوت واحد');
+}

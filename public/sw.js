@@ -170,7 +170,7 @@ self.addEventListener('fetch', (event) => {
 
     // 3. Inertia XHR SPA navigations on public pages: Network-First with runtime cache fallback
     if (event.request.headers.get('X-Inertia')) {
-        if (!url.pathname.startsWith('/api/') && !url.pathname.startsWith('/transit/api/')) {
+        if (!url.pathname.startsWith('/api/')) {
             event.respondWith(runtimeNetworkFirst(event.request));
         }
         return;
@@ -180,7 +180,6 @@ self.addEventListener('fetch', (event) => {
     if (
         event.request.mode !== 'navigate' ||
         url.pathname.startsWith('/api/') ||
-        url.pathname.startsWith('/transit/api/') ||
         event.request.headers.get('X-Requested-With')
     ) {
         return;

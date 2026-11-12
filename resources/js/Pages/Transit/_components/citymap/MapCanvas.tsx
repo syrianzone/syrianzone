@@ -1,5 +1,3 @@
-'use client'
-
 import { useCallback, useEffect, useRef, useState, createContext, useContext } from 'react'
 import type maplibregl from 'maplibre-gl'
 import { MapCanvas as SharedMapCanvas } from '@/Components/map/MapCanvas'

@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Services\GovApps\GovAppPresenter;
 use App\Services\GovApps\GovAppService;
-use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -44,14 +43,13 @@ class GovAppsAdminController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        return $this->write(
-            fn () => $this->apps->create(
-                $validated,
-                $validated['links'] ?? [],
-                $request->file('icon_file'),
-            ),
-            'تم إضافة التطبيق الحكومي بنجاح',
+        $this->apps->create(
+            $validated,
+            $validated['links'] ?? [],
+            $request->file('icon_file'),
         );
+
+        return redirect()->back()->with('success', 'تم إضافة التطبيق الحكومي بنجاح');
     }
 
     public function update(Request $request, string $id): RedirectResponse
@@ -67,26 +65,24 @@ class GovAppsAdminController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        return $this->write(
-            fn () => $this->apps->update(
-                $id,
-                $validated,
-                // null means "leave the existing links alone". The dashboard
-                // form always submits this field; a caller that omits links
-                // entirely previously wiped the column.
-                $validated['links'] ?? null,
-                $request->file('icon_file'),
-            ),
-            'تم تحديث بيانات التطبيق بنجاح',
+        $this->apps->update(
+            $id,
+            $validated,
+            // null means "leave the existing links alone". The dashboard
+            // form always submits this field; a caller that omits links
+            // entirely previously wiped the column.
+            $validated['links'] ?? null,
+            $request->file('icon_file'),
         );
+
+        return redirect()->back()->with('success', 'تم تحديث بيانات التطبيق بنجاح');
     }
 
     public function destroy(string $id): RedirectResponse
     {
-        return $this->write(
-            fn () => $this->apps->delete($id),
-            'تم حذف التطبيق بنجاح',
-        );
+        $this->apps->delete($id);
+
+        return redirect()->back()->with('success', 'تم حذف التطبيق بنجاح');
     }
 
     public function reorder(Request $request): Response
@@ -100,12 +96,5 @@ class GovAppsAdminController extends Controller
         $this->apps->reorder($validated['orders']);
 
         return response()->json(['message' => 'تم إعادة الترتيب بنجاح']);
-    }
-
-    private function write(Closure $action, string $success): RedirectResponse
-    {
-        $action();
-
-        return redirect()->back()->with('success', $success);
     }
 }

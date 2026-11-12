@@ -10,7 +10,6 @@ export interface MapCanvasProps {
   center?: [number, number];
   zoom?: number;
   bounds?: maplibregl.LngLatBoundsLike;
-  fitBounds?: { bounds: maplibregl.LngLatBoundsLike; padding?: number };
   maxBounds?: maplibregl.LngLatBoundsLike;
   minZoom?: number;
   maxZoom?: number;
@@ -22,7 +21,6 @@ export function MapCanvas({
   center,
   zoom,
   bounds,
-  fitBounds,
   maxBounds,
   minZoom,
   maxZoom,
@@ -38,7 +36,7 @@ export function MapCanvas({
   // Capture initial values in refs so they don't become effect deps.
   // center/zoom/bounds are init-only: changing them after mount has no effect
   // (use map.flyTo / map.fitBounds for programmatic moves instead).
-  const initRef = useRef({ center, zoom, bounds, fitBounds, maxBounds, minZoom, maxZoom });
+  const initRef = useRef({ center, zoom, bounds, maxBounds, minZoom, maxZoom });
 
   // Empty deps: map is created once on mount and torn down on unmount only.
   // Never put center/zoom/bounds here — they're new object references every
@@ -46,7 +44,7 @@ export function MapCanvas({
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
-    const { center: initCenter, zoom: initZoom, bounds: initBounds, fitBounds: initFitBounds, maxBounds: initMaxBounds, minZoom: initMinZoom, maxZoom: initMaxZoom } = initRef.current;
+    const { center: initCenter, zoom: initZoom, bounds: initBounds, maxBounds: initMaxBounds, minZoom: initMinZoom, maxZoom: initMaxZoom } = initRef.current;
 
     styleRef.current = resolveBasemapStyle();
     const mapOptions: maplibregl.MapOptions = {
@@ -70,10 +68,6 @@ export function MapCanvas({
 
     mapInstance.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
     mapInstance.addControl(new maplibregl.NavigationControl(), 'bottom-left');
-
-    if (initFitBounds) {
-      mapInstance.fitBounds(initFitBounds.bounds, { padding: initFitBounds.padding ?? 60 });
-    }
 
     mapInstance.on('load', () => {
       setMap(mapInstance);

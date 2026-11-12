@@ -25,7 +25,3 @@ export const MUSLIM_GOVERNORATES: Record<string, GovernorateEntry> = {
   hasakah: { lat: 36.5023, lon: 40.7382, label: 'الحسكة', labelEn: 'Hasakah' },
   raqqa: { lat: 35.952, lon: 39.0081, label: 'الرقة', labelEn: 'Raqqa' },
 };
-
-export const MUSLIM_GOVERNORATE_OPTIONS = Object.entries(MUSLIM_GOVERNORATES).map(
-  ([value, g]) => ({ value, label: g.label }),
-);

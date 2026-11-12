@@ -95,7 +95,7 @@ export default function Index() {
       .then(setFeatures)
       .catch((e) => setNotice({ text: extractError(e), destructive: true }));
     api.hotelMapData()
-      .then((data) => { console.log('[Index] hotelMapData resolved, features:', data.features?.length); setHotelFeatures(data); })
+      .then(setHotelFeatures)
       .catch((e) => { console.warn('[Index] hotelMapData failed:', e); });
   }, []);
 
@@ -214,15 +214,9 @@ export default function Index() {
     setAddMode(false);
   }
 
-  function handlePinClick(id: number) {
+  function handlePinClick(id: number, type: 'place' | 'hotel') {
     setSelectedId(id);
-    setSelectedType('place');
-    setAddMode(false);
-  }
-
-  function handleHotelPinClick(id: number) {
-    setSelectedId(id);
-    setSelectedType('hotel');
+    setSelectedType(type);
     setAddMode(false);
   }
 
@@ -240,24 +234,13 @@ export default function Index() {
   }
 
   // panel taps must expand the mobile sheet too, or the detail opens 224px tall
-  function handlePanelSelect(id: number, lat: number, lng: number) {
+  function handlePanelSelect(id: number, lat: number, lng: number, type: 'place' | 'hotel') {
     setSelectedId(id);
-    setSelectedType('place');
-    flyTo(lng, lat);
-  }
-
-  function handlePanelSelectHotel(id: number, lat: number, lng: number) {
-    setSelectedId(id);
-    setSelectedType('hotel');
+    setSelectedType(type);
     flyTo(lng, lat);
   }
 
   function handleClose() {
-    setSelectedId(null);
-    setSelectedType(null);
-  }
-
-  function handleCloseHotel() {
     setSelectedId(null);
     setSelectedType(null);
   }
@@ -286,8 +269,8 @@ export default function Index() {
             addMode={addMode}
             focus={focus}
             highlight={highlight}
-            onPinClick={handlePinClick}
-            onHotelPinClick={handleHotelPinClick}
+            onPinClick={(id) => handlePinClick(id, 'place')}
+            onHotelPinClick={(id) => handlePinClick(id, 'hotel')}
             onMapClick={handleMapClick}
             // bottom-56 keeps the map's bottom-left controls above the collapsed mobile sheet
             className="absolute inset-0"
@@ -372,10 +355,9 @@ export default function Index() {
                 loading={listLoading}
                 selectedId={selectedId}
                 selectedType={selectedType}
-                onSelect={handlePanelSelect}
+                onSelect={(id, lat, lng) => handlePanelSelect(id, lat, lng, 'place')}
                 onClose={handleClose}
-                onSelectHotel={handlePanelSelectHotel}
-                onCloseHotel={handleCloseHotel}
+                onSelectHotel={(id, lat, lng) => handlePanelSelect(id, lat, lng, 'hotel')}
                 hasMore={listPlaces !== null && listPlaces.current_page < listPlaces.last_page}
                 onLoadMore={() => listPlaces && fetchList(listPlaces.current_page + 1)}
                 onSelectGuide={selectGuide}
@@ -392,10 +374,9 @@ export default function Index() {
                 loading={listLoading}
                 selectedId={selectedId}
                 selectedType={selectedType}
-                onSelect={handlePanelSelect}
+                onSelect={(id, lat, lng) => handlePanelSelect(id, lat, lng, 'place')}
                 onClose={handleClose}
-                onSelectHotel={handlePanelSelectHotel}
-                onCloseHotel={handleCloseHotel}
+                onSelectHotel={(id, lat, lng) => handlePanelSelect(id, lat, lng, 'hotel')}
                 hasMore={listPlaces !== null && listPlaces.current_page < listPlaces.last_page}
                 onLoadMore={() => listPlaces && fetchList(listPlaces.current_page + 1)}
                 onSelectGuide={selectGuide}

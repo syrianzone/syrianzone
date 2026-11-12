@@ -31,7 +31,6 @@ interface PhonebookEntry {
 
 interface PhonebookProps {
     initialData: PhonebookEntry[];
-    categories?: any[];
 }
 
 export default function Index({ initialData }: PhonebookProps) {

@@ -52,7 +52,7 @@ export function findAyahAt(timings: AyahTiming[], positionMs: number): AyahTimin
 
 // --- Word-level karaoke ------------------------------------------------------
 
-/** Marker token shape, duplicated from AyahMark to keep this module pure. */
+/** Ornate-bracket marker token as stored in the skill database text. */
 const MARKER_RE = /﴿([٠-٩]{1,3})﴾/g;
 
 export type PartToken =

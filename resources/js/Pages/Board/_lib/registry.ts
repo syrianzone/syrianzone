@@ -42,7 +42,7 @@ export const WIDGETS: WidgetDefinition<any>[] = [
   recipeWidget,
 ];
 
-export const WIDGETS_BY_ID: Record<string, WidgetDefinition<any>> = Object.fromEntries(
+const WIDGETS_BY_ID: Record<string, WidgetDefinition<any>> = Object.fromEntries(
   WIDGETS.map((w) => [w.id, w]),
 );
 

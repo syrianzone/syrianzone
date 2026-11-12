@@ -1,5 +1,3 @@
-'use client'
-
 import { useState, useEffect, useContext, useRef } from 'react'
 import maplibregl from 'maplibre-gl'
 import { useMap } from '@/Components/map/MapContext'

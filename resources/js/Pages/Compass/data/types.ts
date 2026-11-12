@@ -26,6 +26,39 @@ export type AlignBloc = 'west' | 'gulf' | 'turkish' | 'east' | 'neutral';
 
 export type QuizVersion = 'short' | 'standard' | 'full';
 
+/** Arabic label for each quiz length, wherever a stored result's version is shown. */
+export const VERSION_LABEL: Record<QuizVersion, string> = {
+  short: 'قصيرة',
+  standard: 'قياسية',
+  full: 'كاملة',
+};
+
+/** The length filter above the statistics: the three versions plus "all". */
+export const STATS_SCOPES: { id: string; label: string }[] = [
+  { id: 'all', label: 'الكل' },
+  { id: 'short', label: VERSION_LABEL.short },
+  { id: 'standard', label: VERSION_LABEL.standard },
+  { id: 'full', label: VERSION_LABEL.full },
+];
+
+/** Answer distribution for one question in one scope (index 0..4 ⇒ answer −2..+2). */
+export interface QuestionScope {
+  n: number;
+  counts: number[];
+}
+
+/**
+ * The anonymous-statistics payload `/compass/stats` and its admin view both
+ * render; the admin adds its own counters on top.
+ */
+export interface CompassStatsPayload {
+  total: number;
+  byVersion: Record<string, number>;
+  bySpectrum: Record<string, { id: string; count: number }[]>;
+  axisAverages: Record<string, Partial<Record<AxisId, number | null>>>;
+  questions: Record<string, Record<string, QuestionScope>>;
+}
+
 /** A single numeric axis. */
 export interface Axis {
   id: AxisId;

@@ -33,9 +33,6 @@ const UnblockSyriaNotification = () => {
     const panelRef = useRef<HTMLDivElement>(null);
 
     const dismissKey = `site_popup_dismissed_v${popup.version}`;
-    // Back-compat: users who dismissed the old hardcoded popup should see
-    // the new manageable copy at least once.
-    const legacyKey = 'unblock_syria_notif_dismissed';
 
     useEffect(() => {
         setHasMounted(true);
@@ -79,7 +76,6 @@ const UnblockSyriaNotification = () => {
         setTimeout(() => {
             setIsVisible(false);
             localStorage.setItem(dismissKey, 'true');
-            localStorage.setItem(legacyKey, 'true');
         }, 250);
     };
 

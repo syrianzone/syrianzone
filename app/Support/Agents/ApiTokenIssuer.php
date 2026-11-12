@@ -9,11 +9,10 @@ use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\NewAccessToken;
 
 /**
- * Translates the admin form shape into a TokenIssuer call.
+ * Translates the admin form state into a TokenIssuer call.
  *
- * Kept out of the controller and the page so the "flatten grouped checkboxes,
- * clamp to the owner's real permissions, refuse the wildcard" sequence is
- * testable without booting HTTP or a panel.
+ * Kept out of the controller so the "clamp to the owner's real permissions,
+ * refuse the wildcard" sequence is testable without booting HTTP.
  */
 final class ApiTokenIssuer
 {
@@ -47,14 +46,11 @@ final class ApiTokenIssuer
     }
 
     /**
-     * Translate the Filament form shape into a TokenIssuer call.
-     *
-     * Kept out of the Filament page so the "flatten grouped checkboxes, clamp to
-     * the owner's real permissions, refuse the wildcard" sequence is testable
-     * without booting a panel.
+     * Translate the admin form state into a TokenIssuer call.
      *
      * @param  array<string, mixed>  $data  Raw form state: tokenable_id, name,
-     *                                      ttl, and perm_<module> arrays.
+     *                                      ttl, and the flat abilities list the
+     *                                      form submitted.
      * @return array{token: NewAccessToken, abilities: array<int, string>, dropped: array<int, string>, owner: User}
      */
     public function issueFromFormData(array $data): array
@@ -84,29 +80,10 @@ final class ApiTokenIssuer
         $issued = $this->tokens->issue(
             owner: $owner,
             name: $name,
-            abilities: $this->collectAbilities($data),
+            abilities: array_values(is_array($data['abilities'] ?? null) ? $data['abilities'] : []),
             ttl: (string) ($data['ttl'] ?? TokenIssuer::DEFAULT_TTL),
         );
 
         return [...$issued, 'owner' => $owner];
-    }
-
-    /**
-     * Flatten the grouped checkbox state into a flat ability list.
-     *
-     * @param  array<string, mixed>  $data
-     * @return array<int, string>
-     */
-    public function collectAbilities(array $data): array
-    {
-        $abilities = [];
-
-        foreach ($data as $key => $value) {
-            if (is_string($key) && str_starts_with($key, 'perm_') && is_array($value)) {
-                $abilities = [...$abilities, ...array_values($value)];
-            }
-        }
-
-        return $abilities;
     }
 }

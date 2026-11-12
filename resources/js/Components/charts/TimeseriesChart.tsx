@@ -1,5 +1,3 @@
-"use client"
-
 import { useMemo, useState, useRef } from "react"
 import { CartesianGrid, Line, LineChart, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Components/ui/card"

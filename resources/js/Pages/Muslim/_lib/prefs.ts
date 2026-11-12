@@ -51,7 +51,6 @@ const LS = {
 
 /** LocalStorage keys (exported for the login sync engine — single source). */
 export const MUSLIM_LS_KEYS = LS;
-export const QURAN_AT_LS_KEY = LS.at;
 
 function readLS(key: string, fallback: string): string {
   if (typeof window === 'undefined') return fallback;

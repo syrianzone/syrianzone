@@ -1,6 +1,5 @@
 <?php
 
-use App\Filament\Resources\UserResource;
 use App\Models\User;
 use App\Support\Agents\AgentAuthorizer;
 use App\Support\Agents\InvalidTokenAbilities;
@@ -181,7 +180,7 @@ test('the catalogue is the single source of truth for capability ids', function 
     // The Filament form and the token issuer must agree, or a superadmin could
     // grant a capability the authorizer would then reject.
     expect(PermissionCatalogue::all())
-        ->toEqual(array_keys(collect(UserResource::permissionGroups())->collapse()->all()));
+        ->toEqual(array_keys(collect(PermissionCatalogue::groups())->collapse()->all()));
 
     expect(PermissionCatalogue::isKnown('places.approve'))->toBeTrue()
         ->and(PermissionCatalogue::isKnown('places.approv'))->toBeFalse()

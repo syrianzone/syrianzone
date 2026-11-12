@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from '@inertiajs/react';
 import { BarChart3, ExternalLink, Sparkles } from 'lucide-react';
 import MainLayout from '@/Layouts/MainLayout';
@@ -6,9 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Com
 import { Button } from '@/Components/ui/button';
 import { CompassIcon, TierlistIcon } from '@/Components/Icons/ProjectIcons';
 
-export default function Stats() {
-    const embedUrl = "https://datastudio.google.com/embed/reporting/65f1f763-c5ab-4841-bfba-bd7403d76645/page/KGHXF";
+// The only place the Data Studio report id is known.
+const ANALYTICS_REPORT_URL = "https://datastudio.google.com/embed/reporting/65f1f763-c5ab-4841-bfba-bd7403d76645/page/KGHXF";
 
+export default function Stats() {
     return (
         <MainLayout>
             
@@ -52,7 +52,7 @@ export default function Stats() {
                                     </CardDescription>
                                 </div>
                                 <Button asChild variant="outline" size="sm" className="gap-2 shrink-0">
-                                    <a href={embedUrl} target="_blank" rel="noopener noreferrer">
+                                    <a href={ANALYTICS_REPORT_URL} target="_blank" rel="noopener noreferrer">
                                         <ExternalLink className="w-4 h-4" />
                                         <span>فتح في نافذة جديدة</span>
                                     </a>
@@ -61,7 +61,7 @@ export default function Stats() {
                             <CardContent className="p-2 md:p-4">
                                 <div className="relative w-full rounded-xl overflow-hidden border border-border/60 bg-background shadow-inner">
                                     <iframe
-                                        src={embedUrl}
+                                        src={ANALYTICS_REPORT_URL}
                                         width="100%"
                                         height="750"
                                         frameBorder="0"

@@ -3,26 +3,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/Components/u
 import { Label } from "@/Components/ui/label";
 import { Input } from "@/Components/ui/input";
 import { Button } from "@/Components/ui/button";
+import type { CustomLink } from '../_lib/links';
 
-export interface CustomLink {
-    id: string;
-    name: string;
-    url: string;
-    icon?: string;
-}
-
-export interface AddLinkDialogProps {
+interface AddLinkDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onAdd: (link: CustomLink) => void;
-    language: 'ar' | 'en';
 }
 
 export default function AddLinkDialog({
     open,
     onOpenChange,
-    onAdd,
-    language
+    onAdd
 }: AddLinkDialogProps) {
     const [name, setName] = useState('');
     const [url, setUrl] = useState('');
@@ -40,7 +32,7 @@ export default function AddLinkDialog({
         const trimmedUrl = url.trim();
         if (!trimmedName || !trimmedUrl) return;
         if (!isHttpUrl(trimmedUrl)) {
-            setUrlError(language === 'ar' ? 'الرابط يجب أن يبدأ بـ http:// أو https://' : 'URL must start with http:// or https://');
+            setUrlError('الرابط يجب أن يبدأ بـ http:// أو https://');
             return;
         }
         setUrlError('');
@@ -60,22 +52,22 @@ export default function AddLinkDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent dir={language === 'ar' ? 'rtl' : 'ltr'}>
+            <DialogContent dir="rtl">
                 <DialogHeader className="text-start sm:text-start">
-                    <DialogTitle>{language === 'ar' ? 'إضافة رابط مخصص' : 'Add Custom Link'}</DialogTitle>
+                    <DialogTitle>إضافة رابط مخصص</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4 py-4 text-start">
                     <div className="space-y-2">
-                        <Label>{language === 'ar' ? 'الاسم' : 'Name'}</Label>
+                        <Label>الاسم</Label>
                         <Input
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            placeholder={language === 'ar' ? 'اسم الرابط' : 'Link name'}
+                            placeholder="اسم الرابط"
                             required
                         />
                     </div>
                     <div className="space-y-2">
-                        <Label>{language === 'ar' ? 'الرابط (URL)' : 'URL'}</Label>
+                        <Label>الرابط (URL)</Label>
                         <Input aria-label="رابط الموقع"
                             type="url"
                             value={url}
@@ -86,20 +78,20 @@ export default function AddLinkDialog({
                         {urlError && <p className="text-xs text-destructive">{urlError}</p>}
                     </div>
                     <div className="space-y-2">
-                        <Label>{language === 'ar' ? 'أيقونة أو Emoji (اختياري - اتركها فارغة لجلب أيقونة الموقع تلقائياً)' : 'Icon or Emoji (optional - leave empty for website favicon)'}</Label>
+                        <Label>أيقونة أو Emoji (اختياري - اتركها فارغة لجلب أيقونة الموقع تلقائياً)</Label>
                         <Input
                             value={icon}
                             onChange={(e) => setIcon(e.target.value)}
-                            placeholder={language === 'ar' ? 'تلقائي (Favicon)' : 'Auto (Favicon)'}
+                            placeholder="تلقائي (Favicon)"
                             maxLength={4}
                         />
                     </div>
                     <div className="flex justify-end gap-2 pt-2">
                         <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>
-                            {language === 'ar' ? 'إلغاء' : 'Cancel'}
+                            إلغاء
                         </Button>
                         <Button type="submit" size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                            {language === 'ar' ? 'حفظ' : 'Save'}
+                            حفظ
                         </Button>
                     </div>
                 </form>

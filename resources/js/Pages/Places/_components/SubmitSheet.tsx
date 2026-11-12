@@ -45,7 +45,7 @@ export function SubmitSheet(props: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   point: LatLng | null;
-  onSubmitted: (id: number) => void;
+  onSubmitted: () => void;
   onSelectExisting: (id: number) => void;
 }) {
   const { open, onOpenChange, point, onSubmitted, onSelectExisting } = props;
@@ -61,7 +61,7 @@ export function SubmitSheet(props: {
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
-  const [submittedId, setSubmittedId] = useState<number | null>(null);
+  const [submitted, setSubmitted] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   // Bumped only when a submit fails, so the focus effect runs after the errors
   // are in the DOM — never on an ordinary re-render or while the user types.
@@ -76,7 +76,7 @@ export function SubmitSheet(props: {
     setError(null);
     setFieldErrors({});
     setSubmitting(false);
-    setSubmittedId(null);
+    setSubmitted(false);
     setNearby(null);
     if (!user) {
       setStep('auth');
@@ -115,7 +115,7 @@ export function SubmitSheet(props: {
       const ok = await confirmDialog({ title: 'إغلاق دون إرسال؟', description: 'سيتم تجاهل ما أدخلته.', destructive: true, confirmText: 'تجاهل وإغلاق', cancelText: 'متابعة' });
       if (!ok) return;
     }
-    if (!next && step === 'done' && submittedId !== null) onSubmitted(submittedId);
+    if (!next && step === 'done' && submitted) onSubmitted();
     onOpenChange(next);
   };
 
@@ -157,7 +157,7 @@ export function SubmitSheet(props: {
         lng: point.lng,
         photos,
       });
-      setSubmittedId(res.id);
+      setSubmitted(true);
       setStep('done');
     } catch (e) {
       const fe = extractFieldErrors(e);

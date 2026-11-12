@@ -27,6 +27,26 @@ interface GameProps {
   };
 }
 
+/** A presence-channel member, as the room's channel broadcasts it. */
+interface PresenceMember {
+  session_id: string;
+  name?: string | null;
+}
+
+/** Payload of `GuessWhoStateEvent` (app/Events/GuessWhoStateEvent.php). */
+interface GameStateBroadcast {
+  turn: string | null;
+  status: 'lobby' | 'selecting' | 'playing' | 'finished';
+  winner: string | null;
+  guess: { by: string; characterId: number; correct: boolean } | null;
+  remaining: Record<string, number | null>;
+}
+
+/** The room subscription whose `leave` the cleanup calls; the Echo type is untyped here. */
+interface EchoSubscription {
+  leave: (channel: string) => void;
+}
+
 // 3D Flipped Card Component
 function CharacterCard({
   char,
@@ -202,7 +222,7 @@ export default function GameRoom({ game }: GameProps) {
 
   // Game actions go through the server, which relays them over Reverb. Defined
   // as a declaration so the effects above can reference it.
-  async function sendAction(action: string, payload: any) {
+  async function sendAction(action: string, payload: Record<string, unknown>) {
     try {
       await axios.post(`/guesswho/room/${game.room_code}/action`, {
         sender_session: sessionUuid,
@@ -216,7 +236,7 @@ export default function GameRoom({ game }: GameProps) {
 
   // Apply the server's authoritative state: whose turn it is, the phase, and
   // the outcome. The client no longer decides any of it locally.
-  function applyState(state: any) {
+  function applyState(state: GameStateBroadcast) {
     if (!state) return;
 
     // The opponent's remaining count rides along with every state broadcast.
@@ -228,10 +248,11 @@ export default function GameRoom({ game }: GameProps) {
     if (state.status === 'finished') {
       setMyTurn(false);
       setGameState('ended');
+      const guessedId = state.guess?.characterId;
       if (state.winner === sessionUuid) {
         setWinMessage('مبروك! لقد فزت باللعبة بتخمين شخصية الخصم بنجاح!');
-      } else if (state.guess?.characterId) {
-        const name = game.category.characters.find((c) => c.id === state.guess.characterId)?.name_ar;
+      } else if (guessedId) {
+        const name = game.category.characters.find((c) => c.id === guessedId)?.name_ar;
         setWinMessage(`لقد فاز ${opponentNameRef.current}! خمّن أن شخصيتك هي: ${name ?? ''}`);
       } else {
         setWinMessage(`لقد فاز ${opponentNameRef.current}!`);
@@ -340,13 +361,13 @@ export default function GameRoom({ game }: GameProps) {
   useEffect(() => {
     if (!isJoined) return;
 
-    let activeEcho: any = null;
+    let activeEcho: EchoSubscription | null = null;
     let isMounted = true;
     const channelName = `guesswho.${game.room_code}`;
 
     // The opponent is present: adopt them and, by the tie-break the data
     // channel used to apply, the lower session id takes the first turn.
-    const adoptPeer = (other: any) => {
+    const adoptPeer = (other: PresenceMember) => {
       setPeerUuid(other.session_id);
       setOpponentName(other.name || 'لاعب آخر');
       setPeerConnected(true);
@@ -363,21 +384,21 @@ export default function GameRoom({ game }: GameProps) {
       activeEcho = echo;
 
       echo.join(channelName)
-        .here((users: any[]) => {
+        .here((users: PresenceMember[]) => {
           const other = users.find((u) => u.session_id !== sessionUuid);
           if (other) adoptPeer(other);
         })
-        .joining((user: any) => adoptPeer(user))
-        .leaving((user: any) => {
+        .joining((user: PresenceMember) => adoptPeer(user))
+        .leaving((user: PresenceMember) => {
           if (user.session_id === peerUuidRef.current) {
             setPeerConnected(false);
             peerReconnectTimer.current = setTimeout(() => setPeerDisconnected(true), 5000);
           }
         })
-        .error((error: any) => {
+        .error((error: unknown) => {
           console.error('[GuessWho] Presence channel subscription error:', error);
         })
-        .listen('.state', (e: any) => {
+        .listen('.state', (e: GameStateBroadcast) => {
           // Authoritative: turn, phase, winner, counts. Both players get this.
           applyState(e);
         });

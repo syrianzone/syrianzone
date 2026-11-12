@@ -2,13 +2,11 @@
 // reused. The board is a plain value: every move returns a new `Deal`, which is
 // what makes undo a one-line history array in the component.
 //
-// The card value, the deck and the labels come from the shared `cards` kit;
-// this file is only the part that is specifically Klondike.
+// The card value and the deck come from the shared `cards` kit; this file is
+// only the part that is specifically Klondike.
 
 import {
   RANKS,
-  RANK_LABEL,
-  SUIT_LABEL,
   createDeck,
   isRed,
   shuffle,
@@ -78,13 +76,13 @@ export function liftable(deal: Deal, from: Source): Card[] | null {
 }
 
 /** Tableau stacks descend and alternate colour; only a King starts an empty one. */
-export function acceptsTableau(target: Card | undefined, moving: Card): boolean {
+function acceptsTableau(target: Card | undefined, moving: Card): boolean {
   if (!target) return moving.rank === RANKS;
   return target.rank === moving.rank + 1 && isRed(target) !== isRed(moving);
 }
 
 /** Foundations build up in one suit, Ace first. */
-export function acceptsFoundation(pile: Card[], moving: Card): boolean {
+function acceptsFoundation(pile: Card[], moving: Card): boolean {
   if (pile.length === 0) return moving.rank === 1;
   const first = pile[0];
   return first.suit === moving.suit && moving.rank === pile.length + 1;
@@ -151,15 +149,6 @@ export function isWon(deal: Deal): boolean {
   return deal.foundations.every((pile) => pile.length === RANKS);
 }
 
-/** How many cards are still face down in the tableau. */
-export function buriedCount(deal: Deal): number {
-  return deal.tableau.reduce((n, col) => n + col.filter((c) => !c.faceUp).length, 0);
-}
-
-export function isStockEmpty(deal: Deal): boolean {
-  return deal.stock.length === 0;
-}
-
 export interface Move {
   from: Source;
   to: Destination;
@@ -208,10 +197,6 @@ export function availableMoves(deal: Deal): Move[] {
   return moves;
 }
 
-export function hasMove(deal: Deal): boolean {
-  return canDraw(deal) || availableMoves(deal).length > 0;
-}
-
 /**
  * Whether sending a card to its foundation now can be undone without giving up
  * a turn. This is the conventional Klondike heuristic, not a proof: a card is
@@ -224,7 +209,7 @@ export function hasMove(deal: Deal): boolean {
  * The check is deliberately conservative: a false negative just means the
  * player moves the card themselves.
  */
-export function isFoundationSafe(deal: Deal, card: Card): boolean {
+function isFoundationSafe(deal: Deal, card: Card): boolean {
   if (card.rank === RANKS) return true;
 
   const height: Record<Suit, number> = { S: 0, H: 0, D: 0, C: 0 };
@@ -256,20 +241,4 @@ export function autoMove(deal: Deal): Deal {
     current = next;
   }
   return current;
-}
-
-/** Every foundation but one is full, so the rest must be the other colour. */
-export function canAutoFinish(deal: Deal): boolean {
-  if (isWon(deal)) return true;
-  return availableMoves(deal).every(
-    (m) => m.to.kind !== 'foundation' || isFoundationSafe(deal, liftable(deal, m.from)![0]),
-  );
-}
-
-/** Short label for a move, for the hint line. */
-export function describeMove(deal: Deal, move: Move): string {
-  const card = liftable(deal, move.from)?.[0];
-  if (!card) return '';
-  const name = `${RANK_LABEL[card.rank]}${SUIT_LABEL[card.suit]}`;
-  return move.to.kind === 'foundation' ? `${name} إلى الأساس` : `${name} إلى العمود ${move.to.column + 1}`;
 }

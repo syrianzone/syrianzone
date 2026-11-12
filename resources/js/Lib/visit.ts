@@ -4,7 +4,7 @@
 // there), so only in-app paths ever land here.
 const KEY = 'sz-last-page';
 
-export function normalizePath(href: string): string {
+function normalizePath(href: string): string {
     try {
         const base = typeof window !== 'undefined' ? window.location.origin : 'https://syrian.zone';
         const u = new URL(href, base);

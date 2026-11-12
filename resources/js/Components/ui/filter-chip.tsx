@@ -6,7 +6,7 @@ import { X } from 'lucide-react';
 
 type BadgeVariant = VariantProps<typeof badgeVariants>['variant'];
 
-export interface FilterChipProps
+interface FilterChipProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   /** Whether this chip is the active selection. */
   active?: boolean;

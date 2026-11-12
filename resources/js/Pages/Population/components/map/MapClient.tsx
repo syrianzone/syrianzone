@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useRef } from 'react';
 import { MapContainer, GeoJSON, ZoomControl, AttributionControl, useMap } from 'react-leaflet';
 import L from 'leaflet';

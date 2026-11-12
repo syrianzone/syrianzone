@@ -16,7 +16,7 @@ import UserNav from '@/Components/UserNav';
 import AppearanceMenu from '@/Components/AppearanceMenu';
 import { HomeInlineSearchSection } from '@/Components/GlobalSearch';
 import F3aliaEvents from '@/Components/F3aliaEvents';
-import type { CustomLink } from '@/Pages/Home/_components/AddLinkDialog';
+import type { CustomLink } from '@/Pages/Home/_lib/links';
 import { getGeo, getLocMode, useLocSignal } from '@/Pages/Muslim/_lib/location';
 import { getLastPage } from '@/Lib/visit';
 import { useMuslimNav } from '@/Pages/Muslim/_lib/nav';
@@ -793,7 +793,6 @@ export default function Home() {
                             open={addLinkOpen}
                             onOpenChange={setAddLinkOpen}
                             onAdd={addCustomLink}
-                            language="ar"
                         />
                     </React.Suspense>
                 )}
@@ -805,7 +804,6 @@ export default function Home() {
                             onOpenChange={(open) => { if (!open) setEditingLink(null); }}
                             onSave={updateCustomLink}
                             onDelete={removeCustomLink}
-                            language="ar"
                         />
                     </React.Suspense>
                 )}
@@ -815,7 +813,7 @@ export default function Home() {
 }
 
 // Hijri date (module-level so the navbar and the hero share one implementation).
-export function formatHijriArabic(date: Date | null): string {
+function formatHijriArabic(date: Date | null): string {
     if (!date) return "";
     try {
         const formatter = new Intl.DateTimeFormat('ar-SY-u-ca-islamic-umalqura', {
@@ -840,15 +838,14 @@ export function formatHijriArabic(date: Date | null): string {
     }
 }
 
-export interface NextPrayerInfo {
+interface NextPrayerInfo {
     key: string;
     label: string;
     timeStr: string;
-    timeDiffMs: number;
 }
 
 // Next-prayer computation shared by the widget (ticking) and navbar minis (static).
-export function getNextPrayerInfo(
+function getNextPrayerInfo(
     prayerTimes: Record<string, string> | null,
     now: Date | null
 ): NextPrayerInfo | null {
@@ -880,14 +877,11 @@ export function getNextPrayerInfo(
 
     if (nextEventIndex === -1) {
         const firstEvent = parsedEvents[0];
-        const tomorrowFajr = new Date(firstEvent.time);
-        tomorrowFajr.setDate(tomorrowFajr.getDate() + 1);
 
         return {
             key: firstEvent.key,
             label: firstEvent.label,
             timeStr: prayerTimes[firstEvent.key],
-            timeDiffMs: tomorrowFajr.getTime() - now.getTime()
         };
     } else {
         const nextEvent = parsedEvents[nextEventIndex];
@@ -895,7 +889,6 @@ export function getNextPrayerInfo(
             key: nextEvent.key,
             label: nextEvent.label,
             timeStr: prayerTimes[nextEvent.key],
-            timeDiffMs: nextEvent.time.getTime() - now.getTime()
         };
     }
 }

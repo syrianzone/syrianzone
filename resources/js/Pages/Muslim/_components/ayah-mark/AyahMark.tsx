@@ -15,26 +15,6 @@ const VIEW_H = 1229.38;
 // while reading clearly at rendered sizes.
 const NUM_FONT_SIZE = 350;
 
-/** Ornate-bracket marker tokens as stored in the skill database text. */
-const MARKER_RE = /﴿([٠-٩]{1,3})﴾/g;
-
-export type Segment = { kind: 'text'; value: string } | { kind: 'marker'; digits: string };
-
-/** Split a part's display text on inline marker tokens (spaces preserved). */
-export function splitMarkerTokens(text: string): Segment[] {
-  const out: Segment[] = [];
-  let last = 0;
-  MARKER_RE.lastIndex = 0;
-  let m: RegExpExecArray | null;
-  while ((m = MARKER_RE.exec(text)) !== null) {
-    if (m.index > last) out.push({ kind: 'text', value: text.slice(last, m.index) });
-    out.push({ kind: 'marker', digits: m[1] });
-    last = m.index + m[0].length;
-  }
-  if (last < text.length) out.push({ kind: 'text', value: text.slice(last) });
-  return out;
-}
-
 interface Props {
   /** Hindi digits as stored in the marker token, e.g. "٢٥٥". */
   digits: string;

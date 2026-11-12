@@ -70,11 +70,18 @@ export const GAMES: GameEntry[] = [
   },
 ];
 
-export function gameHref(slug: string): string {
-  return `/games/${slug}`;
-}
-
 /** The link a hub card points at, honouring a game's own home when it has one. */
 export function gameEntryHref(game: GameEntry): string {
-  return game.href ?? gameHref(game.slug);
+  return game.href ?? `/games/${game.slug}`;
+}
+
+/**
+ * The registry entry a game page renders its chrome from. Every `/games/<slug>`
+ * page has one; a page that forgets to register throws here rather than
+ * rendering chrome that does not match the hub.
+ */
+export function gameBySlug(slug: string): GameEntry {
+  const game = GAMES.find((entry) => entry.slug === slug);
+  if (!game) throw new Error(`Unregistered game page: ${slug}`);
+  return game;
 }

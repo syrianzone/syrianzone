@@ -1,5 +1,3 @@
-'use client'
-
 import { useEffect } from 'react'
 import maplibregl from 'maplibre-gl'
 import { useMap, useStyleVersion } from '@/Components/map/MapContext'

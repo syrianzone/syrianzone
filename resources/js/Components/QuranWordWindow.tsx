@@ -1,20 +1,13 @@
 import React, { useMemo, useRef } from 'react';
 import { useQuranPlayer } from '@/Lib/quranPlayer';
 import { useSurahWords } from '@/Lib/quranText';
+import { toArabicDigits } from '@/Lib/syrian-date';
 import { SURAH_NAMES_AR, recitationByCode } from '@/Pages/Muslim/_lib/quran';
 
 // A teleprompter-style window for the followed recitation: five words, the one
 // being recited in the middle, with ayah numbers as separators where an ayah
 // ends inside the window. Word-level only (no letter timings), and it does not
 // follow the Madina page layout.
-
-const AR_DIGITS = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
-function arabicNumber(n: number): string {
-  return String(n)
-    .split('')
-    .map((d) => AR_DIGITS[Number(d)])
-    .join('');
-}
 
 interface FlatWord {
   ayah: number;
@@ -87,7 +80,7 @@ export default function QuranWordWindow({ className = '', compact = false }: Pro
               )}
               {separatorAfter && (
                 <span className={`quran-rasm-uthmani text-muted-foreground/70 ${compact ? 'text-xs' : 'text-base'}`}>
-                  {`﴿${arabicNumber(word.ayah)}﴾`}
+                  {`﴿${toArabicDigits(word.ayah)}﴾`}
                 </span>
               )}
             </React.Fragment>

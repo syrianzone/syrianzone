@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useMemo } from 'react';
 import { Website } from './types';
 import { Search, X, Globe, List, LayoutGrid, Plus, ExternalLink } from 'lucide-react';

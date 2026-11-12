@@ -27,11 +27,15 @@ return Application::configure(basePath: dirname(__DIR__))
         // signals, so public ranges are deliberately not trusted.
         $middleware->trustProxies(at: ['127.0.0.1', '10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16']);
         
+        // Order is significant: SecurityHeaders generates the CSP nonce that
+        // the Inertia root view stamps onto its script tags, so it has to run
+        // before HandleInertiaRequests renders the response.
         $middleware->web(append: [
             \App\Http\Middleware\AutoLoginDevUser::class,
             \App\Http\Middleware\SecurityHeaders::class,
+            \App\Http\Middleware\HandleInertiaRequests::class,
         ]);
-        
+
         $middleware->api(prepend: [
             \App\Http\Middleware\AutoLoginDevUser::class,
         ]);
@@ -42,10 +46,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Auth\Middleware\Authenticate::class,
             \App\Http\Middleware\AutoLoginDevUser::class
         );
-        
-        $middleware->web(append: [
-            \App\Http\Middleware\HandleInertiaRequests::class,
-        ]);
+
         $middleware->alias([
             'transit_admin'   => \App\Http\Middleware\TransitAdmin::class,
             'syofficial_admin' => \App\Http\Middleware\SyOfficialAdmin::class,

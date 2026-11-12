@@ -16,7 +16,7 @@ export const SYRIAN_MONTHS_AR = [
   'كانون الأول',
 ];
 
-export const SYRIAN_WEEKDAYS_AR = [
+const SYRIAN_WEEKDAYS_AR = [
   'الأحد',
   'الاثنين',
   'الثلاثاء',

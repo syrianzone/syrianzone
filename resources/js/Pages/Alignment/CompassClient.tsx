@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ArrowsUpFromLine, Palette, MapPin, Download, Info, Globe, Trash2, Edit2, Plus } from 'lucide-react';
 import { Twitter } from '@/components/ui/icons';
@@ -76,9 +74,14 @@ export default function CompassClient() {
         }
     }, []);
 
-    // Save to local storage
+    // Save to local storage. Storage throws in private mode and when it is
+    // disabled entirely; the compass must keep working without persisting.
     useEffect(() => {
-        localStorage.setItem('politicalCompass', JSON.stringify({ axes, colors, dots }));
+        try {
+            localStorage.setItem('politicalCompass', JSON.stringify({ axes, colors, dots }));
+        } catch {
+            // nothing to save to
+        }
     }, [axes, colors, dots]);
 
     // Resize Canvas

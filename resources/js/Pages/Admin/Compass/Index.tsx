@@ -16,42 +16,28 @@ import {
 } from 'lucide-react';
 import AxisBars from '@/Pages/Compass/components/AxisBars';
 import AlignmentCard from '@/Pages/Compass/components/AlignmentCard';
-import QuestionAverage, { type QuestionScope } from '@/Pages/Compass/components/QuestionAverage';
-import type { AlignBloc, AxisId } from '@/Pages/Compass/data/types';
+import QuestionAverage from '@/Pages/Compass/components/QuestionAverage';
+import { STATS_SCOPES, VERSION_LABEL, type AlignBloc, type CompassStatsPayload, type QuizVersion } from '@/Pages/Compass/data/types';
 
 interface RecentRow {
     id: number;
     createdAt: string | null;
-    version: string;
+    version: QuizVersion;
     spectrum: string | null;
     consistency: number | null;
     answered: number;
     topScore: number | null;
 }
 
-interface Stats {
-    total: number;
+interface Stats extends CompassStatsPayload {
     last7: number;
     last30: number;
-    byVersion: Record<string, number>;
-    bySpectrum: Record<string, { id: string; count: number }[]>;
-    axisAverages: Record<string, Partial<Record<AxisId, number | null>>>;
-    questions: Record<string, Record<string, QuestionScope>>;
     alignTotals: Record<AlignBloc, number>;
     avgConsistency: number | null;
     avgAnswered: number | null;
     daily: { date: string; count: number }[];
     recent: RecentRow[];
 }
-
-const VERSION_LABEL: Record<string, string> = { short: 'قصيرة', standard: 'قياسية', full: 'كاملة' };
-
-const SCOPES = [
-    { id: 'all', label: 'الكل' },
-    { id: 'short', label: 'قصيرة' },
-    { id: 'standard', label: 'قياسية' },
-    { id: 'full', label: 'كاملة' },
-];
 
 const BLOC_LABEL: Record<AlignBloc, string> = {
     west: 'غربي',
@@ -114,7 +100,7 @@ export default function CompassAdminIndex({
     const maxSpectrum = Math.max(1, ...spectrum.map((s) => s.count));
     const maxDaily = Math.max(1, ...stats.daily.map((d) => d.count));
     const axisForScope = stats.axisAverages[scope] ?? stats.axisAverages.all;
-    const scopeLabel = SCOPES.find((s) => s.id === scope)?.label ?? 'الكل';
+    const scopeLabel = STATS_SCOPES.find((s) => s.id === scope)?.label ?? 'الكل';
 
     return (
         <MainLayout>
@@ -166,7 +152,7 @@ export default function CompassAdminIndex({
                 <Card>
                     <CardContent className="pt-5 flex flex-wrap items-center gap-2">
                         <span className="text-sm text-muted-foreground me-1">عرض المتوسطات حسب طول الاختبار:</span>
-                        {SCOPES.map((s) => (
+                        {STATS_SCOPES.map((s) => (
                             <button
                                 key={s.id}
                                 onClick={() => setScope(s.id)}

@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
 import { RotateCcw, Timer, Zap, Layers, ChevronLeft, ChevronRight, Check } from 'lucide-react';
-import type { AnswerMap, Figure, QuizVersion, Spectrum } from './data/types';
+import { VERSION_LABEL, type AnswerMap, type Figure, type QuizVersion, type Spectrum } from './data/types';
 import { AXES } from './data/axes';
 import { QUESTIONS } from './data/questions';
 import { ALIGN_QUESTIONS } from './data/align';
@@ -13,10 +13,10 @@ import type { CompassResult as SavedResult } from './data/types';
 import CompassResult from './CompassResult';
 import SavedResults from './components/SavedResults';
 
-const VERSIONS: { id: QuizVersion; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { id: 'short', label: 'قصيرة', icon: Zap },
-  { id: 'standard', label: 'قياسية', icon: Timer },
-  { id: 'full', label: 'كاملة', icon: Layers },
+const VERSIONS: { id: QuizVersion; icon: React.ComponentType<{ className?: string }> }[] = [
+  { id: 'short', icon: Zap },
+  { id: 'standard', icon: Timer },
+  { id: 'full', icon: Layers },
 ];
 
 interface Props {
@@ -294,7 +294,7 @@ function IntroPanel({
                 >
                   <span className="flex items-center gap-2">
                     <Icon className="w-4 h-4 text-primary" />
-                    <span className="font-medium">{v.label}</span>
+                    <span className="font-medium">{VERSION_LABEL[v.id]}</span>
                     <span className="text-xs text-muted-foreground">
                       {v.id === 'short' ? '~3 دقائق' : v.id === 'standard' ? '~7 دقائق' : '~15 دقيقة'}
                     </span>

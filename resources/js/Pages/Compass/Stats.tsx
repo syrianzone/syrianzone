@@ -5,28 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Com
 import { Button } from '@/Components/ui/button';
 import { BarChart3, Users, Compass } from 'lucide-react';
 import AxisBars from '@/Pages/Compass/components/AxisBars';
-import QuestionAverage, { type QuestionScope } from '@/Pages/Compass/components/QuestionAverage';
-import type { AxisId } from '@/Pages/Compass/data/types';
-
-interface Stats {
-    total: number;
-    byVersion: Record<string, number>;
-    bySpectrum: Record<string, { id: string; count: number }[]>;
-    axisAverages: Record<string, Partial<Record<AxisId, number | null>>>;
-    questions: Record<string, Record<string, QuestionScope>>;
-}
+import QuestionAverage from '@/Pages/Compass/components/QuestionAverage';
+import { STATS_SCOPES, type CompassStatsPayload } from '@/Pages/Compass/data/types';
 
 interface Props {
-    stats: Stats;
+    stats: CompassStatsPayload;
     personas: { id: string; name: string }[];
 }
-
-const SCOPES = [
-    { id: 'all', label: 'الكل' },
-    { id: 'short', label: 'قصيرة' },
-    { id: 'standard', label: 'قياسية' },
-    { id: 'full', label: 'كاملة' },
-];
 
 export default function CompassStats({ stats, personas }: Props) {
     const [scope, setScope] = useState('all');
@@ -37,7 +22,7 @@ export default function CompassStats({ stats, personas }: Props) {
     const spectrumTotal = spectrum.reduce((s, x) => s + x.count, 0);
     const maxSpectrum = Math.max(1, ...spectrum.map((s) => s.count));
     const axisForScope = stats.axisAverages[scope] ?? stats.axisAverages.all;
-    const scopeLabel = SCOPES.find((s) => s.id === scope)?.label ?? 'الكل';
+    const scopeLabel = STATS_SCOPES.find((s) => s.id === scope)?.label ?? 'الكل';
 
     return (
         <MainLayout>
@@ -89,7 +74,7 @@ export default function CompassStats({ stats, personas }: Props) {
                                     <Card key={v}>
                                         <CardContent className="pt-5">
                                             <p className="text-xs text-muted-foreground">
-                                                النسخة {SCOPES.find((s) => s.id === v)?.label}
+                                                النسخة {STATS_SCOPES.find((s) => s.id === v)?.label}
                                             </p>
                                             <p className="text-xl font-extrabold">{stats.byVersion[v] ?? 0}</p>
                                         </CardContent>
@@ -100,7 +85,7 @@ export default function CompassStats({ stats, personas }: Props) {
                             <Card>
                                 <CardContent className="pt-5 flex flex-wrap items-center gap-2">
                                     <span className="text-sm text-muted-foreground me-1">عرض المتوسطات حسب طول الاختبار:</span>
-                                    {SCOPES.map((s) => (
+                                    {STATS_SCOPES.map((s) => (
                                         <button
                                             key={s.id}
                                             type="button"

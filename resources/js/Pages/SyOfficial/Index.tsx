@@ -28,18 +28,6 @@ interface SyOfficialClientProps {
 type Language = 'ar' | 'en' | 'tr' | 'ku';
 type ViewMode = 'grid' | 'table';
 
-const FALLBACK_CATEGORIES = [
-    { key: 'all', label_ar: 'الكل', label_en: 'All' },
-    { key: 'governorates', label_ar: 'المحافظات', label_en: 'Governorates' },
-    { key: 'ministries', label_ar: 'الوزارات', label_en: 'Ministries' },
-    { key: 'ministers', label_ar: 'الوزراء', label_en: 'Ministers' },
-    { key: 'public_figures', label_ar: 'الشخصيات العامة', label_en: 'Public Figures' },
-    { key: 'syndicates', label_ar: 'النقابات', label_en: 'Syndicates' },
-    { key: 'universities', label_ar: 'الجامعات', label_en: 'Universities' },
-    { key: 'embassies', label_ar: 'السفارات', label_en: 'Embassies' },
-    { key: 'other', label_ar: 'أخرى', label_en: 'Other' },
-];
-
 const TRANSLATIONS = {
     ar: {
         title: 'روابط الحسابات الرسمية السورية',
@@ -201,15 +189,12 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
     }, []);
 
     const categoryList = useMemo(() => {
-        if (categories && categories.length > 0) {
-            const dynamicCats = categories.map(c => ({
-                key: c.id,
-                label_ar: c.label_ar,
-                label_en: c.label_en,
-            }));
-            return [{ key: 'all', label_ar: 'الكل', label_en: 'All' }, ...dynamicCats];
-        }
-        return FALLBACK_CATEGORIES;
+        const dynamicCats = categories.map(c => ({
+            key: c.id,
+            label_ar: c.label_ar,
+            label_en: c.label_en,
+        }));
+        return [{ key: 'all', label_ar: 'الكل', label_en: 'All' }, ...dynamicCats];
     }, [categories]);
 
     const filteredData = useMemo(() => {

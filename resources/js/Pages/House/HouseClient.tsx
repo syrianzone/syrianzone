@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect, useMemo } from 'react';
 import { useTabList } from '@/Lib/useTabList';
 import { HouseRow, PROVINCES, Mode } from './types';

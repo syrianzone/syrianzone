@@ -20,7 +20,7 @@
 // synchronous write per tick would be wasteful for no benefit.
 
 /** Nominal bitrate used for the estimate. */
-export const STREAM_BITRATE_BPS = 128_000;
+const STREAM_BITRATE_BPS = 128_000;
 
 /** What one hour of listening costs: 128 kbps * 3600 s / 8. */
 export const BYTES_PER_HOUR = (STREAM_BITRATE_BPS * 3600) / 8;
@@ -48,20 +48,6 @@ export function formatBytes(bytes: number): string {
   return `${(b / (1024 * 1024 * 1024)).toFixed(2)} غيغابايت`;
 }
 
-function readStored(key: string): UsageTotals {
-  try {
-    const raw = window.localStorage.getItem(key);
-    if (!raw) return { ...EMPTY_TOTALS };
-    const parsed = JSON.parse(raw) as Partial<UsageTotals>;
-    return {
-      bytes: Number.isFinite(parsed.bytes) ? Math.max(0, Number(parsed.bytes)) : 0,
-      seconds: Number.isFinite(parsed.seconds) ? Math.max(0, Number(parsed.seconds)) : 0,
-    };
-  } catch {
-    return { ...EMPTY_TOTALS };
-  }
-}
-
 function writeStored(key: string, totals: UsageTotals): void {
   try {
     window.localStorage.setItem(key, JSON.stringify({
@@ -76,12 +62,6 @@ function writeStored(key: string, totals: UsageTotals): void {
 let device: UsageTotals = { ...EMPTY_TOTALS };
 let pending: UsageTotals = { ...EMPTY_TOTALS };
 let session: UsageTotals = { ...EMPTY_TOTALS };
-
-/** Re-read both persisted counters, e.g. on mount. */
-export function loadUsage(): void {
-  device = readStored(DEVICE_KEY);
-  pending = readStored(PENDING_KEY);
-}
 
 export function getDeviceTotals(): UsageTotals {
   return { ...device };

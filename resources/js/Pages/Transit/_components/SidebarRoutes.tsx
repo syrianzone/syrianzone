@@ -1,5 +1,3 @@
-'use client'
-
 import { Link } from '@inertiajs/react'
 import { MapPin, ChevronRight, Plus } from 'lucide-react'
 import { useAuth } from '@/Contexts/AuthContext'

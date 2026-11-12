@@ -6,7 +6,7 @@ Repo-wide styling and coding conventions. The most detailed normative reference 
 
 - **Tailwind CSS v4** via `@tailwindcss/postcss`; entry `resources/css/app.css` uses `@import "tailwindcss"` with `@theme` tokens.
 - **shadcn-style components**: Radix primitives + `class-variance-authority` + `cn()` (`clsx` + `tailwind-merge`, in `Lib/utils.ts`). Shared primitives live in `resources/js/Components/ui/` — reuse them before writing new ones.
-- **Theming**: HSL token set (`--background`, `--primary`, `--chart-1..5`, `--sidebar-*`) mapped through `@theme`. The theme is an attribute (`data-theme="dark"`), not a class. The registry in `Lib/theme.ts` ships light, dark, dark-blue, dark-purple, dark-green, high-contrast, damascus-rose, and jasmine; users switch it from `Components/AppearanceMenu` (the navbar control).
+- **Theming**: HSL token set (`--background`, `--primary`, `--muted`, `--border`, …) mapped through `@theme`. The theme is an attribute (`data-theme="dark"`), not a class. The registry in `Lib/theme.ts` ships light, dark, dark-blue, dark-purple, dark-green, high-contrast, damascus-rose, and jasmine; users switch it from `Components/AppearanceMenu` (the navbar control).
 - **Fonts**: IBM Plex Sans Arabic from npm (`@ibm/plex-sans-arabic`), `font-display: swap`; `--font-sans` falls back to `var(--site-font)`.
 - **RTL is the default direction** — `<DirectionProvider dir="rtl">` wraps both client (`app.tsx`) and SSR entry (`ssr.tsx`). Never hardcode left/right without checking RTL semantics.
 - Map labels use `@mapbox/mapbox-gl-rtl-text`; map font glyphs generated with fontnik (`scripts/build-map-glyphs.mjs`).

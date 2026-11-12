@@ -10,7 +10,7 @@ import {
 } from './radioUsage';
 
 // Listening-time accounting, global. The player is a singleton, so accrual must
-// be too: it runs once (useUsageTracker, mounted by GlobalRuntime) and writes
+// be too: it runs once (useUsageTracker, called by MainLayout) and writes
 // into this store, which every usage readout subscribes to.
 
 const TICK_MS = 1_000;

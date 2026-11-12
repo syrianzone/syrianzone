@@ -1,4 +1,4 @@
-export const CANONICAL_NAMES: { [key: string]: string } = {
+const CANONICAL_NAMES: { [key: string]: string } = {
     'SY01': 'دمشق',
     'damascus': 'دمشق',
     'دمشق': 'دمشق',
@@ -112,7 +112,7 @@ export function getCanonicalCityName(cityName: string): string {
     return cityName;
 }
 
-export const GOVERNORATE_SORT_ORDER: { [key: string]: number } = {
+const GOVERNORATE_SORT_ORDER: { [key: string]: number } = {
     'دمشق': 1,
     'حلب': 2,
     'ريف دمشق': 3,

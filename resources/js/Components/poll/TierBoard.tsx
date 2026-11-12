@@ -1,4 +1,3 @@
-"use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTabList } from '@/Lib/useTabList';
 import { Card } from "@/components/ui/card";
@@ -35,7 +34,6 @@ type Props = {
     pollId: string;
     voteDay: string;
     submitApiPath?: string; // e.g., "/api/jolani/submit"
-    minSelections?: number; // default 3; use 1 for Jolani
     pollSlug?: string; // optional; used only in payload for compatibility
 };
 
@@ -74,13 +72,15 @@ const tierDescriptions: Record<TierKey, string> = {
 
 const BASE_PATH = import.meta.env.VITE_BASE_PATH ?? "";
 
+/** The board submits a ranking, so it always asks for at least three picks. */
+const MIN_SELECTIONS = 3;
+
 export default function TierBoard({
     initialCandidates,
     groups,
     pollId,
     voteDay,
     submitApiPath,
-    minSelections = 3,
     pollSlug,
 }: Props) {
     const [tiers, setTiers] = useState<Record<TierKey, Candidate[]>>({
@@ -284,13 +284,11 @@ export default function TierBoard({
     // Single-select tier modal disabled — clicks toggle multi-select instead
     async function submit() {
         const totalAssigned = tierKeys.reduce((acc, k) => acc + tiers[k].length, 0);
-        if (totalAssigned < (minSelections || 3)) {
-            const min = minSelections || 3;
-            const minMsg =
-                min === 1
-                    ? "الحد الأدنى للاختيار هو ١. الرجاء اختيار عنصر واحد على الأقل."
-                    : `الحد الأدنى للاختيار هو ${min}. الرجاء اختيار ${min} على الأقل.`;
-            setSubmitStatus({ ok: false, message: minMsg });
+        if (totalAssigned < MIN_SELECTIONS) {
+            setSubmitStatus({
+                ok: false,
+                message: `الحد الأدنى للاختيار هو ${MIN_SELECTIONS}. الرجاء اختيار ${MIN_SELECTIONS} على الأقل.`,
+            });
             return;
         }
         if (nextSubmitAt && Date.now() < nextSubmitAt) {

@@ -490,12 +490,12 @@ export function SubmitSheet(props: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   point: LatLng | null;                 // the point picked in add-mode; null renders nothing
-  onSubmitted: (id: number) => void;
+  onSubmitted: () => void;             // the new place is pending, so there is nothing to select yet
   onSelectExisting: (id: number) => void; // user picked a duplicate suggestion; parent opens its detail
 }): JSX.Element;
 ```
 
-Uses `Sheet` with `side="bottom"` on mobile and `side="left"` on desktop (panel is on the right), `dir="rtl"`. Internal step state: `'auth' | 'duplicates' | 'form' | 'done'`. Step auth: if `!user` (from `useAuth()`), show the Google login link and stop. Step duplicates: on open, call `api.nearby({ lat, lng, radius_km: 0.25, include_pending: true })`; if any results render `DuplicateSuggestions`, else skip to form. Step form: name Input, category Select from `CATEGORIES`, description Textarea (counter, min 20 max 1000), read-only coordinates line (`dir="ltr"`), `PhotoPicker`. Client validation before `api.submitPlace`; errors via `extractError` in a destructive `Alert`. Step done: success message + close button. Calls `onSubmitted(id)` then `onOpenChange(false)` on close.
+Uses `Sheet` with `side="bottom"` on mobile and `side="left"` on desktop (panel is on the right), `dir="rtl"`. Internal step state: `'auth' | 'duplicates' | 'form' | 'done'`. Step auth: if `!user` (from `useAuth()`), show the Google login link and stop. Step duplicates: on open, call `api.nearby({ lat, lng, radius_km: 0.25, include_pending: true })`; if any results render `DuplicateSuggestions`, else skip to form. Step form: name Input, category Select from `CATEGORIES`, description Textarea (counter, min 20 max 1000), read-only coordinates line (`dir="ltr"`), `PhotoPicker`. Client validation before `api.submitPlace`; errors via `extractError` in a destructive `Alert`. Step done: success message + close button. Calls `onSubmitted()` then `onOpenChange(false)` on close.
 
 **`DuplicateSuggestions`**:
 

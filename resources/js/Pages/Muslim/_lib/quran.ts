@@ -21,16 +21,6 @@ export interface Part {
   s: number;
 }
 
-/** Shard record: [0-based Surah, 0-based internal Ayah, 1-based Page, parts].
- *  Internal Ayah 0 = Surah Title Frame, 1 = Basmalah slot, real Ayah A = A+1. */
-export type ShardRecord = [number, number, number, Part[]];
-
-export interface JuzShard {
-  /** 0-based Juz index (0..29) */
-  j: number;
-  d: ShardRecord[];
-}
-
 export interface MushafManifest {
   title: string;
   published: number;
@@ -425,10 +415,6 @@ export async function renderMushafPage(page: number, fontSize: number, signal?: 
   };
 }
 
-export function juzOfPageEstimate(page: number): number {
-  return Math.min(30, Math.max(1, Math.ceil((page / 604) * 30)));
-}
-
 // --- Recitations (MP3Quran v4 codes; EveryAyah per-Ayah MP3s for playback) ---
 //
 // A v4 "recitation" is one recording set: one reciter, one riwayah, one style,
@@ -516,7 +502,6 @@ export function ayahAudioUrl(recitation: Recitation, surah: number, ayah: number
 }
 
 export const TOTAL_PAGES = 604;
-export const TOTAL_JUZ = 30;
 
 /** 1-based Surah names for labels (audio player, headers). */
 export const SURAH_NAMES_AR = ['', 'الفاتحة', 'البقرة', 'آل عمران', 'النساء', 'المائدة', 'الأنعام', 'الأعراف', 'الأنفال', 'التوبة', 'يونس', 'هود', 'يوسف', 'الرعد', 'إبراهيم', 'الحجر', 'النحل', 'الإسراء', 'الكهف', 'مريم', 'طه', 'الأنبياء', 'الحج', 'المؤمنون', 'النور', 'الفرقان', 'الشعراء', 'النمل', 'القصص', 'العنكبوت', 'الروم', 'لقمان', 'السجدة', 'الأحزاب', 'سبأ', 'فاطر', 'يس', 'الصافات', 'ص', 'الزمر', 'غافر', 'فصلت', 'الشورى', 'الزخرف', 'الدخان', 'الجاثية', 'الأحقاف', 'محمد', 'الفتح', 'الحجرات', 'ق', 'الذاريات', 'الطور', 'النجم', 'القمر', 'الرحمن', 'الواقعة', 'الحديد', 'المجادلة', 'الحشر', 'الممتحنة', 'الصف', 'الجمعة', 'المنافقون', 'التغابن', 'الطلاق', 'التحريم', 'الملك', 'القلم', 'الحاقة', 'المعارج', 'نوح', 'الجن', 'المزمل', 'المدثر', 'القيامة', 'الإنسان', 'المرسلات', 'النبأ', 'النازعات', 'عبس', 'التكوير', 'الانفطار', 'المطففين', 'الانشقاق', 'البروج', 'الطارق', 'الأعلى', 'الغاشية', 'الفجر', 'البلد', 'الشمس', 'الليل', 'الضحى', 'الشرح', 'التين', 'العلق', 'القدر', 'البينة', 'الزلزلة', 'العاديات', 'القارعة', 'التكاثر', 'العصر', 'الهمزة', 'الفيل', 'قريش', 'الماعون', 'الكوثر', 'الكافرون', 'النصر', 'المسد', 'الإخلاص', 'الفلق', 'الناس'];

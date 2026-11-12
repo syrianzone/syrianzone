@@ -6,6 +6,7 @@ use App\Models\Route;
 use App\Models\RouteDraft;
 use App\Models\TransitRouteLog;
 use App\Models\User;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -454,9 +455,9 @@ test('splitPermissionFormData maps stored permissions and scope to form state', 
 });
 
 test('every permission group has a project icon and matching capability prefix', function () {
-    $meta = UserResource::permissionGroupMeta();
+    $meta = PermissionCatalogue::groupMeta();
 
-    foreach (UserResource::permissionGroups() as $group => $options) {
+    foreach (PermissionCatalogue::groups() as $group => $options) {
         expect($meta)->toHaveKey($group)
             ->and(array_keys($options))->not->toBeEmpty();
 

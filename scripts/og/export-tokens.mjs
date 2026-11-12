@@ -32,7 +32,7 @@ const WANTED = {
 
 /** Colours that live in the logo artwork rather than in a theme token. */
 const BRAND = {
-  gold: '#988561', // public/eagle-logo.svg and public/pattern-light.svg
+  gold: '#988561', // public/syid-assets/materials/logo.ai.svg and pattern.svg
 }
 
 function hslToHex(h, s, l) {

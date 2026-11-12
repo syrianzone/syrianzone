@@ -7,7 +7,7 @@ import { RotateCcw, Download, Trash2, ShieldCheck, AlertTriangle, Save, LogIn, B
 import type { AnswerMap, AlignBloc, CompassResult as Result, Figure, QuizVersion, Spectrum } from './data/types';
 import { AXES } from './data/axes';
 import { computeScores, computeConsistency, matchFigures, matchSpectrum, versionTotals } from './lib/engine';
-import { addResult, setLastResultId, clearLocal, saveResultToAccount, updateLocalResult, setPendingAccountSave, deleteAccountResults, deleteAccountResult, submitStats, removeStats } from './lib/storage';
+import { addResult, clearLocal, saveResultToAccount, updateLocalResult, setPendingAccountSave, deleteAccountResults, deleteAccountResult, submitStats, removeStats } from './lib/storage';
 import FigureAvatar from './components/FigureAvatar';
 import SpectrumIcon from './components/SpectrumIcon';
 import { COMPASS_FLAGS } from './flags';
@@ -90,7 +90,6 @@ export default function CompassResult({
   const persistLocal = (extra: Partial<Result> = {}) => {
     const r = { ...buildResult(), id: crypto.randomUUID?.() ?? Date.now(), ...extra };
     addResult(r);
-    setLastResultId(r.id as string);
     return r;
   };
 

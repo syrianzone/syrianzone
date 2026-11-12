@@ -1,4 +1,3 @@
-"use client";
 import React from 'react';
 import { GovApp } from './types';
 import { Card, CardContent } from "@/components/ui/card";

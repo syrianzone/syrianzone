@@ -200,7 +200,7 @@ export default function PromiseEditor({ promise: initial, options, queueCount }:
         setFormVersion(next.version);
     };
 
-    const restatableList = options.restatablePromises ?? options.restatable ?? [];
+    const restatableList = options.restatable;
 
     const toggleGovernorate = (id: string) =>
         set('governorates', form.governorates.includes(id) ? form.governorates.filter((g) => g !== id) : [...form.governorates, id]);

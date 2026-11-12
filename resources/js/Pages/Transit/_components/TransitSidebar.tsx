@@ -1,5 +1,3 @@
-'use client'
-
 import { useMemo, useEffect, useRef } from 'react'
 import { usePage } from '@inertiajs/react'
 import citiesData from '../_data/cities.json'

@@ -1,4 +1,3 @@
-'use client'
 import { useState, useEffect } from 'react'
 import { usePage } from '@inertiajs/react'
 import { TransitSidebar } from './_components/TransitSidebar'

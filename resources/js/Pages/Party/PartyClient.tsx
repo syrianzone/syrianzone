@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useMemo } from 'react';
 import { formatSocialUrl, getLanguageName } from './data';
 import { Organization } from './types';

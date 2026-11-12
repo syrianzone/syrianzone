@@ -3,7 +3,7 @@ import { Toaster as Sonner, toast } from "sonner"
 
 type ToasterProps = React.ComponentProps<typeof Sonner>
 
-const Toaster = ({ theme: themeProp, ...props }: ToasterProps) => {
+const Toaster = (props: ToasterProps) => {
   const [theme, setTheme] = React.useState<"light" | "dark" | "system">("system")
 
   React.useEffect(() => {
@@ -27,7 +27,7 @@ const Toaster = ({ theme: themeProp, ...props }: ToasterProps) => {
     <Sonner
       dir="rtl"
       position="bottom-left"
-      theme={themeProp || theme}
+      theme={theme}
       richColors
       closeButton
       className="toaster group font-sans"

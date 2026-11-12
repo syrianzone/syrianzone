@@ -1,5 +1,3 @@
-'use client'
-
 import { createContext, useContext, useState, useEffect, useLayoutEffect, useCallback } from 'react'
 import { THEME_REGISTRY, getThemePreference, resolveTheme } from '@/Lib/theme'
 

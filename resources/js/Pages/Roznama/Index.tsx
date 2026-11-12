@@ -147,6 +147,33 @@ interface ActiveHoliday {
     isNew?: boolean;
 }
 
+// Fixed national holidays + the variable (lunar/Easter) ones we have dates for.
+function holidaysForYear(year: number): ActiveHoliday[] {
+    const list: ActiveHoliday[] = [
+        { nameAr: 'رأس السنة الميلادية', nameEn: "New Year's Day", date: new Date(year, 0, 1), description: 'بداية العام الميلادي الجديد' },
+        { nameAr: 'عيد الثورة السورية', nameEn: 'Syrian Revolution Day', date: new Date(year, 2, 18), description: 'ذكرى انطلاق الثورة السورية عام 2011، اعتمد كعيد وطني رسمي بموجب المرسوم 188 لعام 2025.', isNew: true },
+        { nameAr: 'عيد الأم', nameEn: "Mother's Day", date: new Date(year, 2, 21), description: 'تكريم للأم ودورها في المجتمع.' },
+        { nameAr: 'عيد الجلاء', nameEn: 'Evacuation Day', date: new Date(year, 3, 17), description: 'ذكرى جلاء آخر جندي فرنسي عن الأراضي السورية عام 1946.' },
+        { nameAr: 'عيد العمال العالمي', nameEn: "International Workers' Day", date: new Date(year, 4, 1), description: 'تكريم للعمال وجهودهم.' },
+        { nameAr: 'عيد التحرير الوطني', nameEn: 'National Liberation Day', date: new Date(year, 11, 8), description: 'العيد الوطني الجديد المعتمد بموجب المرسوم 188 لعام 2025 احتفاءً بسقوط الاستبداد عام 2024.', isNew: true },
+        { nameAr: 'عيد الميلاد المجيد', nameEn: 'Christmas Day', date: new Date(year, 11, 25), description: 'ذكرى ميلاد السيد المسيح عليه السلام.' }
+    ];
+
+    const vars = VARIABLE_HOLIDAYS_MAP[year];
+    if (vars) {
+        list.push(
+            { nameAr: 'عيد الفطر السعيد', nameEn: 'Eid al-Fitr', date: new Date(year, vars['eid-fitr'].month - 1, vars['eid-fitr'].day), description: 'عطلة عيد الفطر السعيد (3 أيام).' },
+            { nameAr: 'عيد الأضحى المبارك', nameEn: 'Eid al-Adha', date: new Date(year, vars['eid-adha'].month - 1, vars['eid-adha'].day), description: 'عطلة عيد الأضحى المبارك (4 أيام).' },
+            { nameAr: 'رأس السنة الهجرية', nameEn: 'Islamic New Year', date: new Date(year, vars['hijri-new-year'].month - 1, vars['hijri-new-year'].day), description: 'رأس السنة الهجرية الجديدة.' },
+            { nameAr: 'المولد النبوي الشريف', nameEn: 'Prophet\'s Birthday', date: new Date(year, vars['mawlid'].month - 1, vars['mawlid'].day), description: 'ذكرى المولد النبوي الشريف.' },
+            { nameAr: 'عيد الفصح المجيد (غربي)', nameEn: 'Western Easter', date: new Date(year, vars['western-easter'].month - 1, vars['western-easter'].day), description: 'عيد الفصح المجيد (التقويم الغربي).' },
+            { nameAr: 'عيد الفصح المجيد (شرقي)', nameEn: 'Eastern Easter', date: new Date(year, vars['eastern-easter'].month - 1, vars['eastern-easter'].day), description: 'عيد الفصح المجيد (التقويم الشرقي).' }
+        );
+    }
+
+    return list.sort((a, b) => a.date.getTime() - b.date.getTime());
+}
+
 const getPrayerIcon = (key: string, className?: string) => {
     switch (key) {
         case 'Fajr': return <MoonStar className={className} />;
@@ -646,65 +673,14 @@ export default function Index() {
         return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
     };
 
-    // Resolve Syrian Holidays for current year
-    const holidays = useMemo(() => {
-        const year = currentTime.getFullYear();
-        const list: ActiveHoliday[] = [
-            { nameAr: 'رأس السنة الميلادية', nameEn: "New Year's Day", date: new Date(year, 0, 1), description: 'بداية العام الميلادي الجديد' },
-            { nameAr: 'عيد الثورة السورية', nameEn: 'Syrian Revolution Day', date: new Date(year, 2, 18), description: 'ذكرى انطلاق الثورة السورية عام 2011، اعتمد كعيد وطني رسمي بموجب المرسوم 188 لعام 2025.', isNew: true },
-            { nameAr: 'عيد الأم', nameEn: "Mother's Day", date: new Date(year, 2, 21), description: 'تكريم للأم ودورها في المجتمع.' },
-            { nameAr: 'عيد الجلاء', nameEn: 'Evacuation Day', date: new Date(year, 3, 17), description: 'ذكرى جلاء آخر جندي فرنسي عن الأراضي السورية عام 1946.' },
-            { nameAr: 'عيد العمال العالمي', nameEn: "International Workers' Day", date: new Date(year, 4, 1), description: 'تكريم للعمال وجهودهم.' },
-            { nameAr: 'عيد التحرير الوطني', nameEn: 'National Liberation Day', date: new Date(year, 11, 8), description: 'العيد الوطني الجديد المعتمد بموجب المرسوم 188 لعام 2025 احتفاءً بسقوط الاستبداد عام 2024.', isNew: true },
-            { nameAr: 'عيد الميلاد المجيد', nameEn: 'Christmas Day', date: new Date(year, 11, 25), description: 'ذكرى ميلاد السيد المسيح عليه السلام.' }
-        ];
-
-        const vars = VARIABLE_HOLIDAYS_MAP[year];
-        if (vars) {
-            list.push(
-                { nameAr: 'عيد الفطر السعيد', nameEn: 'Eid al-Fitr', date: new Date(year, vars['eid-fitr'].month - 1, vars['eid-fitr'].day), description: 'عطلة عيد الفطر السعيد (3 أيام).' },
-                { nameAr: 'عيد الأضحى المبارك', nameEn: 'Eid al-Adha', date: new Date(year, vars['eid-adha'].month - 1, vars['eid-adha'].day), description: 'عطلة عيد الأضحى المبارك (4 أيام).' },
-                { nameAr: 'رأس السنة الهجرية', nameEn: 'Islamic New Year', date: new Date(year, vars['hijri-new-year'].month - 1, vars['hijri-new-year'].day), description: 'رأس السنة الهجرية الجديدة.' },
-                { nameAr: 'المولد النبوي الشريف', nameEn: 'Prophet\'s Birthday', date: new Date(year, vars['mawlid'].month - 1, vars['mawlid'].day), description: 'ذكرى المولد النبوي الشريف.' },
-                { nameAr: 'عيد الفصح المجيد (غربي)', nameEn: 'Western Easter', date: new Date(year, vars['western-easter'].month - 1, vars['western-easter'].day), description: 'عيد الفصح المجيد (التقويم الغربي).' },
-                { nameAr: 'عيد الفصح المجيد (شرقي)', nameEn: 'Eastern Easter', date: new Date(year, vars['eastern-easter'].month - 1, vars['eastern-easter'].day), description: 'عيد الفصح المجيد (التقويم الشرقي).' }
-            );
-        }
-
-        return list.sort((a, b) => a.date.getTime() - b.date.getTime());
-    }, [currentTime]);
+    // Resolve Syrian Holidays for the current year
+    const holidays = useMemo(() => holidaysForYear(currentTime.getFullYear()), [currentTime]);
 
     // Next upcoming holiday
     const nextHoliday = useMemo(() => {
         const startOfToday = new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate());
-        let next = holidays.find(h => h.date >= startOfToday);
-
-        if (!next) {
-            const nextYear = currentTime.getFullYear() + 1;
-            const nextYearHolidays = [
-                { nameAr: 'رأس السنة الميلادية', nameEn: "New Year's Day", date: new Date(nextYear, 0, 1), description: 'بداية العام الميلادي الجديد' },
-                { nameAr: 'عيد الثورة السورية', nameEn: 'Syrian Revolution Day', date: new Date(nextYear, 2, 18), description: 'ذكرى انطلاق الثورة السورية عام 2011، اعتمد كعيد وطني رسمي بموجب المرسوم 188 لعام 2025.', isNew: true },
-                { nameAr: 'عيد الأم', nameEn: "Mother's Day", date: new Date(nextYear, 2, 21), description: 'تكريم للأم ودورها في المجتمع.' },
-                { nameAr: 'عيد الجلاء', nameEn: 'Evacuation Day', date: new Date(nextYear, 3, 17), description: 'ذكرى جلاء آخر جندي فرنسي عن الأراضي السورية عام 1946.' },
-                { nameAr: 'عيد العمال العالمي', nameEn: "International Workers' Day", date: new Date(nextYear, 4, 1), description: 'تكريم للعمال وجهودهم.' },
-                { nameAr: 'عيد التحرير الوطني', nameEn: 'National Liberation Day', date: new Date(nextYear, 11, 8), description: 'العيد الوطني الجديد المعتمد بموجب المرسوم 188 لعام 2025 احتفاءً بسقوط الاستبداد عام 2024.', isNew: true },
-                { nameAr: 'عيد الميلاد المجيد', nameEn: 'Christmas Day', date: new Date(nextYear, 11, 25), description: 'ذكرى ميلاد السيد المسيح عليه السلام.' }
-            ];
-            
-            const nextYearVars = VARIABLE_HOLIDAYS_MAP[nextYear];
-            if (nextYearVars) {
-                nextYearHolidays.push(
-                    { nameAr: 'عيد الفطر السعيد', nameEn: 'Eid al-Fitr', date: new Date(nextYear, nextYearVars['eid-fitr'].month - 1, nextYearVars['eid-fitr'].day), description: 'عطلة عيد الفطر السعيد (3 أيام).' },
-                    { nameAr: 'عيد الأضحى المبارك', nameEn: 'Eid al-Adha', date: new Date(nextYear, nextYearVars['eid-adha'].month - 1, nextYearVars['eid-adha'].day), description: 'عطلة عيد الأضحى المبارك (4 أيام).' },
-                    { nameAr: 'رأس السنة الهجرية', nameEn: 'Islamic New Year', date: new Date(nextYear, nextYearVars['hijri-new-year'].month - 1, nextYearVars['hijri-new-year'].day), description: 'رأس السنة الهجرية الجديدة.' },
-                    { nameAr: 'المولد النبوي الشريف', nameEn: 'Prophet\'s Birthday', date: new Date(nextYear, nextYearVars['mawlid'].month - 1, nextYearVars['mawlid'].day), description: 'ذكرى المولد النبوي الشريف.' },
-                    { nameAr: 'عيد الفصح المجيد (غربي)', nameEn: 'Western Easter', date: new Date(nextYear, nextYearVars['western-easter'].month - 1, nextYearVars['western-easter'].day), description: 'عيد الفصح المجيد (التقويم الغربي).' },
-                    { nameAr: 'عيد الفصح المجيد (شرقي)', nameEn: 'Eastern Easter', date: new Date(nextYear, nextYearVars['eastern-easter'].month - 1, nextYearVars['eastern-easter'].day), description: 'عيد الفصح المجيد (التقويم الشرقي).' }
-                );
-            }
-            nextYearHolidays.sort((a, b) => a.date.getTime() - b.date.getTime());
-            next = nextYearHolidays[0];
-        }
+        // after the last holiday of the year, the next one is next year's first
+        const next = holidays.find(h => h.date >= startOfToday) ?? holidaysForYear(currentTime.getFullYear() + 1)[0];
 
         const daysLeft = Math.ceil((next.date.getTime() - startOfToday.getTime()) / (1000 * 60 * 60 * 24));
         return { ...next, daysLeft };

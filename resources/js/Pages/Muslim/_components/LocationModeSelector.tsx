@@ -6,14 +6,13 @@ import { resolveGps, resolveIp, setGeo, type LocMode } from '../_lib/location';
 interface Props {
   mode: LocMode;
   onChange: (mode: LocMode) => void;
-  cityHint?: string;
 }
 
 // Shared location-source selector (Muslim prayer modal, homepage settings,
 // Roznama settings): GPS first, IP second, manual city last. Selecting GPS
 // or IP resolves immediately (the radio IS the button); the city option
 // just switches mode. Failures keep the previous mode and show the reason.
-export default function LocationModeSelector({ mode, onChange, cityHint }: Props) {
+export default function LocationModeSelector({ mode, onChange }: Props) {
   const [busy, setBusy] = useState<'gps' | 'ip' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,7 +44,7 @@ export default function LocationModeSelector({ mode, onChange, cityHint }: Props
       {([
         { id: 'gps', title: 'موقع الجهاز (GPS)', desc: 'الأدق — يطلب إذن المتصفح لمرة واحدة' },
         { id: 'ip', title: 'التعرف عبر الإنترنت', desc: 'تقريبي لمدينتك عبر عنوان IP — بلا أذونات' },
-        { id: 'city', title: 'مدينة يدوية', desc: cityHint ?? 'اختر من قائمة المحافظات' },
+        { id: 'city', title: 'مدينة يدوية', desc: 'اختر من قائمة المحافظات' },
         { id: 'custom', title: 'إحداثيات يدوية', desc: 'أدخل خط العرض وخط الطول بنفسك' },
       ] as Array<{ id: LocMode; title: string; desc: string }>).map((o) => {
         const activeOpt = mode === o.id;

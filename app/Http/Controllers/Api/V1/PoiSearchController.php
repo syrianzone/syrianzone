@@ -261,7 +261,7 @@ class PoiSearchController extends Controller
      * and tatweel, collapse whitespace. Real spellings (alef forms, ة, ى)
      * are left intact so upstream matching is unaffected.
      */
-    public static function normalizeQuery(string $s): string
+    private static function normalizeQuery(string $s): string
     {
         $s = mb_strtolower(trim($s));
         $s = (string) preg_replace('/[\x{064B}-\x{0652}\x{0670}\x{0640}]/u', '', $s);
@@ -279,7 +279,7 @@ class PoiSearchController extends Controller
      *
      * @return string[]
      */
-    public function expandPhotonQueries(string $q): array
+    private function expandPhotonQueries(string $q): array
     {
         $tokens = preg_split('/\s+/u', $q);
         $hits = [];

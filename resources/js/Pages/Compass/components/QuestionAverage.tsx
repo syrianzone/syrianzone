@@ -8,11 +8,7 @@ import { AXES } from '../data/axes';
 import { QUESTIONS } from '../data/questions';
 import { ALIGN_QUESTIONS } from '../data/align';
 import { axisKey, alignKey } from '../lib/engine';
-
-export interface QuestionScope {
-    n: number;
-    counts: number[]; // index 0..4 => answer -2..+2
-}
+import type { QuestionScope } from '../data/types';
 
 interface Props {
     questions: Record<string, Record<string, QuestionScope>>;

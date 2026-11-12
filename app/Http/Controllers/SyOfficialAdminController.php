@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Services\SyOfficial\SyOfficialDirectoryService;
 use App\Services\SyOfficial\SyOfficialPresenter;
-use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -43,10 +42,9 @@ class SyOfficialAdminController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        return $this->write(
-            fn () => $this->directory->createCategory($validated),
-            'تم إضافة الفئة بنجاح',
-        );
+        $this->directory->createCategory($validated);
+
+        return redirect()->back()->with('success', 'تم إضافة الفئة بنجاح');
     }
 
     public function updateCategory(Request $request, string $id): RedirectResponse
@@ -60,18 +58,16 @@ class SyOfficialAdminController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        return $this->write(
-            fn () => $this->directory->updateCategory($id, $validated),
-            'تم تحديث الفئة بنجاح',
-        );
+        $this->directory->updateCategory($id, $validated);
+
+        return redirect()->back()->with('success', 'تم تحديث الفئة بنجاح');
     }
 
     public function destroyCategory(string $id): RedirectResponse
     {
-        return $this->write(
-            fn () => $this->directory->deleteCategory($id),
-            'تم حذف الفئة بنجاح',
-        );
+        $this->directory->deleteCategory($id);
+
+        return redirect()->back()->with('success', 'تم حذف الفئة بنجاح');
     }
 
     public function storeEntity(Request $request): RedirectResponse
@@ -89,14 +85,13 @@ class SyOfficialAdminController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        return $this->write(
-            fn () => $this->directory->createEntity(
-                $validated,
-                $validated['socials'] ?? [],
-                $request->file('image_file'),
-            ),
-            'تم إضافة الجهة الرسمية بنجاح',
+        $this->directory->createEntity(
+            $validated,
+            $validated['socials'] ?? [],
+            $request->file('image_file'),
         );
+
+        return redirect()->back()->with('success', 'تم إضافة الجهة الرسمية بنجاح');
     }
 
     /**
@@ -117,27 +112,25 @@ class SyOfficialAdminController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        return $this->write(
-            fn () => $this->directory->updateEntity(
-                $id,
-                $validated,
-                // null means "leave the existing list alone". The dashboard form
-                // always submits this field, so its behaviour is unchanged; the
-                // difference only shows for a caller that omits socials entirely,
-                // which previously wiped the column.
-                $validated['socials'] ?? null,
-                $request->file('image_file'),
-            ),
-            'تم تحديث البيانات بنجاح',
+        $this->directory->updateEntity(
+            $id,
+            $validated,
+            // null means "leave the existing list alone". The dashboard form
+            // always submits this field, so its behaviour is unchanged; the
+            // difference only shows for a caller that omits socials entirely,
+            // which previously wiped the column.
+            $validated['socials'] ?? null,
+            $request->file('image_file'),
         );
+
+        return redirect()->back()->with('success', 'تم تحديث البيانات بنجاح');
     }
 
     public function destroyEntity(string $id): RedirectResponse
     {
-        return $this->write(
-            fn () => $this->directory->deleteEntity($id),
-            'تم حذف الجهة الرسمية بنجاح',
-        );
+        $this->directory->deleteEntity($id);
+
+        return redirect()->back()->with('success', 'تم حذف الجهة الرسمية بنجاح');
     }
 
     public function reorderCategories(Request $request): Response
@@ -164,12 +157,5 @@ class SyOfficialAdminController extends Controller
         $this->directory->reorderEntities($validated['orders']);
 
         return response()->json(['message' => 'تم إعادة الترتيب بنجاح']);
-    }
-
-    private function write(Closure $action, string $success): RedirectResponse
-    {
-        $action();
-
-        return redirect()->back()->with('success', $success);
     }
 }

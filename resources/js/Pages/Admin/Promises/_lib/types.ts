@@ -90,7 +90,6 @@ export interface EditorOptions {
     earliestDate: string;
     today: string;
     restatable: Array<{ id: string; number: number; title: string }>;
-    restatablePromises?: Array<{ id: string; number: number; title: string }>;
 }
 
 export interface AdminSpeaker {

@@ -4,7 +4,6 @@ import type { AnswerMap, CompassResult, QuizVersion } from '../data/types';
 
 const KEY_PROGRESS = 'sz-compass-v2-progress';
 const KEY_RESULTS = 'sz-compass-v2-results';
-const KEY_LAST = 'sz-compass-v2-last'; // last completed result id (local)
 const KEY_PENDING_SAVE = 'sz-compass-v2-pending-save'; // queued account save
 
 export interface Progress {
@@ -54,26 +53,11 @@ export function addResult(r: CompassResult) {
     localStorage.setItem(KEY_RESULTS, JSON.stringify(all.slice(0, 50)));
   } catch {}
 }
-export function setLastResultId(id: string | number) {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(KEY_LAST, String(id));
-  } catch {}
-}
-export function getLastResultId(): string | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    return localStorage.getItem(KEY_LAST);
-  } catch {
-    return null;
-  }
-}
 export function clearLocal() {
   if (typeof window === 'undefined') return;
   try {
     localStorage.removeItem(KEY_PROGRESS);
     localStorage.removeItem(KEY_RESULTS);
-    localStorage.removeItem(KEY_LAST);
   } catch {}
 }
 
@@ -181,17 +165,4 @@ export async function removeStats(token: string): Promise<void> {
     body: JSON.stringify({ token }),
   });
   if (!res.ok) throw new Error(`stats delete failed: ${res.status}`);
-}
-
-// ---- share (account-independent) ----
-export async function shareResult(payload: { version: QuizVersion; answers: AnswerMap }): Promise<string> {
-  const res = await fetch('/api/v1/compass/share', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    credentials: 'same-origin',
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) throw new Error(`share failed: ${res.status}`);
-  const json = await res.json();
-  return json.share_id as string;
 }

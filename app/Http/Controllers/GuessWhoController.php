@@ -6,6 +6,7 @@ use App\Models\GuessWhoCategory;
 use App\Models\GuessWhoCharacter;
 use App\Models\GuessWhoGame;
 use App\Events\GuessWhoStateEvent;
+use App\Support\GuessWho\RoomChannel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -118,11 +119,6 @@ class GuessWhoController extends Controller
             return $this->jsonError('البيانات غير صالحة.', 400);
         }
 
-        // Retrieve guest session ID from headers or inputs
-        $sessionId = $request->header('X-Guess-Who-Session-ID')
-            ?? $request->input('session_id')
-            ?? 'guest-' . Str::uuid();
-
         // Only guesswho room channels may be authorized through this endpoint.
         // Anything else must fall back to Laravel's standard broadcasting auth
         // (which enforces channel definitions) — signing arbitrary private/user
@@ -136,21 +132,16 @@ class GuessWhoController extends Controller
         if (!$game) {
             return $this->jsonError('الغرفة غير موجودة.', 404);
         }
-        if ($game->player_1_session !== $sessionId && $game->player_2_session !== $sessionId) {
+
+        $sessionId = RoomChannel::verifiedSession($game, RoomChannel::sessionId($request));
+        if ($sessionId === null) {
             return $this->jsonError('غير مصرح لك بالانضمام لهذه الغرفة.', 403);
         }
-
-        // Retrieve authenticated user
-        $user = $request->user();
 
         // Build the presence channel user details block
         $channelData = json_encode([
             'user_id' => $sessionId,
-            'user_info' => [
-                'id' => $sessionId,
-                'session_id' => $sessionId,
-                'name' => $user ? $user->name : 'لاعب ضيف',
-            ]
+            'user_info' => RoomChannel::member($sessionId, $request->user()),
         ]);
 
         // Generate HMAC signature using Pusher/Reverb App Secret

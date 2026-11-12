@@ -1,9 +1,4 @@
-/**
- * Converts a GeoJSON (Feature or FeatureCollection) to an SVG string.
- * It crops the SVG to the bounding box of the input.
- */
-
-export const GOVERNORATES_EN_TO_AR: Record<string, string> = {
+const GOVERNORATES_EN_TO_AR: Record<string, string> = {
     "Aleppo": "حلب",
     "Al Ḥasakah": "الحسكة",
     "Ar Raqqah": "الرقة",
@@ -46,7 +41,11 @@ export function getGovernorateNameAr(name: string): string {
     return GOVERNORATES_EN_TO_AR[standardKey] || name;
 }
 
-export function geoJsonToSVG(geojson: any): string {
+/**
+ * Converts a GeoJSON (Feature or FeatureCollection) to an SVG string.
+ * It crops the SVG to the bounding box of the input.
+ */
+export function featureToSVG(geojson: any): string {
     if (!geojson) return "";
 
     let features: any[] = [];
@@ -138,5 +137,3 @@ ${svgPaths}</svg>`;
     return svg;
 }
 
-// Deprecated alias for backwards compatibility
-export const featureToSVG = geoJsonToSVG;

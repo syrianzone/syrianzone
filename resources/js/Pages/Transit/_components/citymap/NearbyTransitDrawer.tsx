@@ -1,5 +1,3 @@
-'use client'
-
 import { useState, useEffect, useContext } from 'react'
 import { LocateFixed } from 'lucide-react'
 import { useMap } from '@/Components/map/MapContext'

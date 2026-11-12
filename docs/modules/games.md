@@ -62,8 +62,8 @@ resources/js/Pages/Games/
 ```
 
 `GameShell` is what keeps sub-games consistent: it renders the back link to
-`/games`, the title block and the icon, so a new game only has to supply its
-own board.
+`/games`, the title block and the icon (the last two read from `GAMES` by the
+page's `slug`), so a new game only has to supply its slug and its own board.
 
 `PlayingCard` and `_lib/cards.ts` are the shared **card kit**: the card value,
 the 52-card deck, the rank/suit labels and the pip geometry are game-agnostic,
@@ -229,7 +229,8 @@ browser — because the rules carry no React.
 1. Add an entry to `GAMES` in `_lib/games.ts` (slug, title, icon,
    `comingSoon` if not playable yet).
 2. Add a route in `routes/web.php` returning the new Inertia component.
-3. Add `Pages/Games/<Slug>/Index.tsx` wrapping its board in `GameShell`.
+3. Add `Pages/Games/<Slug>/Index.tsx` wrapping its board in `GameShell`, passing
+   the registry slug.
 4. Add the icon to `Components/Icons/ProjectIcons.tsx` following the house
    style (32×32 viewBox, light/dark Tailwind colour pairs, one
    `hsl(var(--primary))` accent).

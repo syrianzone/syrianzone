@@ -10,14 +10,14 @@
 // Base URL is env-configurable so staging can be swapped for production when
 // v4 ships without touching call sites.
 
-export const MP3QURAN_API_BASE: string =
+const MP3QURAN_API_BASE: string =
   import.meta.env.VITE_MP3QURAN_API ?? 'https://api-staging.mp3quran.net';
 
-export interface V4ErrorBody {
+interface V4ErrorBody {
   error: { code: string; message: string; field?: string };
 }
 
-export class Mp3QuranError extends Error {
+class Mp3QuranError extends Error {
   readonly code: string;
   readonly status: number;
   readonly field?: string;
@@ -31,8 +31,8 @@ export class Mp3QuranError extends Error {
   }
 }
 
-export type QueryValue = string | number | boolean | undefined | null;
-export type Query = Record<string, QueryValue>;
+type QueryValue = string | number | boolean | undefined | null;
+type Query = Record<string, QueryValue>;
 
 function buildUrl(path: string, query?: Query): string {
   const url = new URL(path.startsWith('/') ? path : `/${path}`, MP3QURAN_API_BASE);
@@ -75,79 +75,10 @@ async function v4Get<T>(path: string, query?: Query, signal?: AbortSignal): Prom
 
 // --- Catalogue ---------------------------------------------------------------
 
-export interface V4Reciter {
-  id: number;
-  code: string;
-  name: string;
-  name_latin?: string;
-  recitation_count?: number;
-}
-
-export interface V4Riwayah {
-  code: string;
-  qiraah?: string;
-  name?: string;
-}
-
-export interface V4Recitation {
-  id: number;
-  code: string;
-  reciter?: { id: number; name: string; code: string };
-  riwayahs?: V4Riwayah[];
-  style?: string;
-  has_ayah_timings?: boolean;
-  coverage?: { complete: boolean; surahs?: number[] };
-  audio?: { base: string; files: Record<string, string> };
-}
-
-export type RecitationStyle = 'murattal' | 'mujawwad' | 'muallim' | 'featured' | 'archival';
-
-export interface ReciterQuery extends Query {
-  q?: string;
-  has?: string;
-  riwayah?: string;
-  country?: string;
-  sort?: string;
-  limit?: number;
-  all?: boolean;
-}
-
-export interface RecitationQuery extends Query {
-  reciter?: string;
-  riwayah?: string;
-  qiraah?: string;
-  tariq?: string;
-  style?: RecitationStyle | string;
-  surah?: number;
-  has?: string;
-  updated_since?: string;
-  sort?: string;
-  limit?: number;
-  all?: boolean;
-}
-
-export function searchReciters(q: string, signal?: AbortSignal): Promise<V4Reciter[]> {
-  return v4Get<{ data: V4Reciter[] }>('/v4/reciters', { q }, signal).then((r) => r.data);
-}
-
-export function fetchReciters(query: ReciterQuery = {}, signal?: AbortSignal): Promise<V4Reciter[]> {
-  return v4Get<{ data: V4Reciter[] }>('/v4/reciters', query, signal).then((r) => r.data);
-}
-
-export function fetchRecitations(query: RecitationQuery = {}, signal?: AbortSignal): Promise<V4Recitation[]> {
-  return v4Get<{ data: V4Recitation[] }>('/v4/recitations', query, signal).then((r) => r.data);
-}
-
 // A recitation code is a two-segment path (`reciter/rN`), so encode each
 // segment but keep its slash literal to match the documented route shape.
 function recitationPath(code: string): string {
   return code.split('/').map(encodeURIComponent).join('/');
-}
-
-export function getRecitation(code: string, signal?: AbortSignal): Promise<V4Recitation> {
-  return v4Get<{ data: V4Recitation }>(`/v4/recitations/${recitationPath(code)}`, undefined, signal).then(
-    (r) => r.data,
-  );
 }
 
 export interface V4SurahSummary {
@@ -164,9 +95,9 @@ export function fetchSurahs(signal?: AbortSignal): Promise<V4SurahSummary[]> {
 
 // --- Audio files -------------------------------------------------------------
 
-export type AudioTier = 'original' | 'mp3_64' | 'opus_48';
+type AudioTier = 'original' | 'mp3_64' | 'opus_48';
 
-export interface V4SurahFile {
+interface V4SurahFile {
   url: string;
   bytes?: number;
   sha256?: string;
@@ -199,7 +130,6 @@ export function getSurah(
 //   ayah    [ayah, start_ms, end_ms]
 //   word    [ayah, word_position, start_ms, end_ms, occurrence]
 //   letter  [ayah, word_position, letter_index, start_ms, end_ms, occurrence, conf]
-//   phoneme [ayah, word_position, letter_index, phoneme_index, start_ms, end_ms, occurrence, conf]
 
 export type AyahTiming = [ayah: number, start_ms: number, end_ms: number];
 export type WordTiming = [
@@ -218,20 +148,9 @@ export type LetterTiming = [
   occurrence: number,
   conf: number | null,
 ];
-export type PhonemeTiming = [
-  ayah: number,
-  word_position: number,
-  letter_index: number,
-  phoneme_index: number,
-  start_ms: number,
-  end_ms: number,
-  occurrence: number,
-  conf: number | null,
-];
+type TimingLevel = 'ayah' | 'word' | 'letter';
 
-export type TimingLevel = 'ayah' | 'word' | 'letter' | 'phoneme';
-
-export interface TimingQuery extends Query {
+interface TimingQuery extends Query {
   ayah?: string | number;
   from_ms?: number;
   to_ms?: number;
@@ -243,7 +162,7 @@ export interface TimingQuery extends Query {
 /** `[word_position, rasm_uthmani, rasm_imlai | null]`. */
 export type TextWord = [word_position: number, rasm_uthmani: string, rasm_imlai: string | null];
 /** `[ayah, TextWord[]]`. */
-export type TextAyah = [ayah: number, words: TextWord[]];
+type TextAyah = [ayah: number, words: TextWord[]];
 
 interface RawTimings {
   surah: number;
@@ -273,7 +192,7 @@ export function getAyahTimings(
   return getTimings(recitationCode, surah, 'ayah', query, signal);
 }
 
-export interface WordTimingsData {
+interface WordTimingsData {
   surah: number;
   words?: WordTiming[];
   estimated?: number[];
@@ -289,7 +208,7 @@ export function getWordTimings(
   return getTimings<WordTimingsData>(recitationCode, surah, 'word', query, signal);
 }
 
-export interface LetterTimingsData {
+interface LetterTimingsData {
   surah: number;
   letters?: LetterTiming[];
 }
@@ -303,15 +222,6 @@ export function getLetterTimings(
   return getTimings<LetterTimingsData>(recitationCode, surah, 'letter', query, signal);
 }
 
-export function getPhonemeTimings(
-  recitationCode: string,
-  surah: number,
-  query: TimingQuery = {},
-  signal?: AbortSignal,
-): Promise<{ surah: number; phonemes?: PhonemeTiming[] }> {
-  return getTimings(recitationCode, surah, 'phoneme', query, signal);
-}
-
 /** Written text of a surah, riwayah-aware (`/v4/surahs/{n}/text`). */
 export function getSurahText(
   surah: number,
@@ -323,21 +233,4 @@ export function getSurahText(
     query,
     signal,
   ).then((r) => r.data);
-}
-
-// --- Radio -------------------------------------------------------------------
-
-export interface V4Radio {
-  id: number;
-  name: string;
-  stream_url: string;
-  category: string;
-  is_playlist?: boolean;
-  reciter?: { id: number; name: string; code: string } | null;
-  recitation?: { id: number; code: string | null } | null;
-  riwayah?: { code: string; qiraah?: string; name?: string } | null;
-}
-
-export function fetchRadios(signal?: AbortSignal): Promise<V4Radio[]> {
-  return v4Get<{ data: V4Radio[] }>('/v4/radios', { limit: 200 }, signal).then((r) => r.data);
 }

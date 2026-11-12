@@ -14,7 +14,6 @@ use App\Support\Agents\AgentContext;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
@@ -112,12 +111,5 @@ class AppServiceProvider extends ServiceProvider
                 'error' => 'Too many agent requests. Slow down and retry shortly.',
             ], 429));
         });
-
-        Gate::before(function ($user, $ability) {
-            if ($user->isSuperAdmin()) {
-                return true;
-            }
-        });
-
     }
 }

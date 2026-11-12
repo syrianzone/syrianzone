@@ -1,25 +1,13 @@
 /**
- * Image helper utility for Cloudflare R2 image display optimization & original downloads.
+ * Image helper utility for Cloudflare R2 image display and original downloads.
  */
 
 /**
- * Returns a display-optimized thumbnail URL for R2 / Cloudflare hosted images.
- * If the image is hosted on Cloudflare R2 / Custom Domain, appends image transform parameters.
+ * Returns the URL to display for an R2 / Cloudflare hosted image.
+ * The CDN serves the image as stored; there is no server-side resize to ask for.
  */
-export function getDisplayImageUrl(url?: string | null, width = 250): string {
-    if (!url) return '';
-
-    // If already a data URI or blob URL, return as is
-    if (url.startsWith('data:') || url.startsWith('blob:')) {
-        return url;
-    }
-
-    // If URL already includes Cloudflare transformation prefix, return as is
-    if (url.includes('/cdn-cgi/image/')) {
-        return url;
-    }
-
-    return url;
+export function getDisplayImageUrl(url?: string | null): string {
+    return url ?? '';
 }
 
 /**
@@ -27,7 +15,7 @@ export function getDisplayImageUrl(url?: string | null, width = 250): string {
  */
 export function getOriginalImageUrl(candidate: { originalUrl?: string; imageUrl?: string; image_url?: string }): string {
     const rawUrl = candidate.originalUrl || candidate.imageUrl || candidate.image_url || '';
-    
+
     // Strip Cloudflare transformation prefix if present to get original file
     if (rawUrl.includes('/cdn-cgi/image/')) {
         const parts = rawUrl.split('/cdn-cgi/image/');

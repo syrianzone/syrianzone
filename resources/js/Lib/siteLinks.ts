@@ -217,7 +217,7 @@ export const SITE_LINKS: SiteLink[] = [
     { id: 'news', href: 'https://news.jard.chat', text: 'أخبار سوريا', title: 'أخبار سوريا', subtitle: 'متابعة آخر أخبار سوريا من المصادر الموثوقة', type: 'external', target: 'https://news.jard.chat', icon: NewsIcon, iconKey: 'news', external: true, isInternal: false, enabled: true, showOnHome: true, showInNavbar: true },
 ];
 
-export function hydrateSiteLink(raw: SiteNavigationItemData): SiteLink {
+function hydrateSiteLink(raw: SiteNavigationItemData): SiteLink {
     const icon = raw.iconKey && SITE_ICON_MAP[raw.iconKey] ? SITE_ICON_MAP[raw.iconKey] : undefined;
     const title = raw.title || raw.text;
     const imageUrl = raw.iconUrl || raw.image || undefined;
@@ -246,7 +246,7 @@ export function hydrateSiteLink(raw: SiteNavigationItemData): SiteLink {
     };
 }
 
-export function resolveSiteNavigation(config?: SiteNavigationConfig | null) {
+function resolveSiteNavigation(config?: SiteNavigationConfig | null) {
     if (!config || !Array.isArray(config.items) || config.items.length === 0) {
         const navbarTopCount = 5;
         return {

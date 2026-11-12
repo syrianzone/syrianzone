@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useEffect } from 'react';
 import { MapContainer, GeoJSON, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -17,16 +15,17 @@ L.Icon.Default.mergeOptions({
 
 interface SyriaMapProps {
     geoJsonData: any;
-    selectedGovId?: string;
+    /** Province name to focus, or null for the whole country. */
+    selectedGovId?: string | null;
 }
 
-function MapUpdater({ geoJsonData, selectedGovId }: { geoJsonData: any; selectedGovId?: string }) {
+function MapUpdater({ geoJsonData, selectedGovId }: { geoJsonData: any; selectedGovId?: string | null }) {
     const map = useMap();
 
     useEffect(() => {
         if (geoJsonData) {
             let layer;
-            if (selectedGovId && selectedGovId !== "full") {
+            if (selectedGovId) {
                 const feature = geoJsonData.features.find((f: any) => f.properties.province_name === selectedGovId);
                 if (feature) {
                     layer = L.geoJSON(feature);
@@ -52,7 +51,7 @@ function MapUpdater({ geoJsonData, selectedGovId }: { geoJsonData: any; selected
 
 export default function SyriaMap({ geoJsonData, selectedGovId }: SyriaMapProps) {
     const filteredData = React.useMemo(() => {
-        if (!geoJsonData || !selectedGovId || selectedGovId === "full") return geoJsonData;
+        if (!geoJsonData || !selectedGovId) return geoJsonData;
         return {
             ...geoJsonData,
             features: geoJsonData.features.filter((f: any) => f.properties.province_name === selectedGovId)
@@ -143,7 +142,7 @@ export default function SyriaMap({ geoJsonData, selectedGovId }: SyriaMapProps) 
             >
                 <MapUpdater geoJsonData={geoJsonData} selectedGovId={selectedGovId} />
                 <GeoJSON
-                    key={selectedGovId || 'full'}
+                    key={selectedGovId ?? 'full'}
                     data={filteredData}
                     style={style}
                     onEachFeature={onEachFeature}

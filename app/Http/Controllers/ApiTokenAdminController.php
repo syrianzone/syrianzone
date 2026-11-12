@@ -102,14 +102,7 @@ class ApiTokenAdminController extends Controller
                 'tokenable_id' => $owner->id,
                 'name' => $validated['name'],
                 'ttl' => $validated['ttl'],
-                ...collect(PermissionCatalogue::groupMeta())
-                    ->mapWithKeys(fn (array $meta, string $group) => [
-                        'perm_'.$group => array_values(array_filter(
-                            $validated['permissions'],
-                            fn (string $permission) => str_starts_with($permission, $group.'.'),
-                        )),
-                    ])
-                    ->all(),
+                'abilities' => $validated['permissions'],
             ]);
         } catch (ValidationException $e) {
             return response()->json(['message' => $e->errors()[array_key_first($e->errors())][0] ?? 'تعذّر إصدار الرمز'], 422);

@@ -12,7 +12,7 @@ import {
 import { getGeo, getLocMode, setLocMode, useLocSignal } from '@/Pages/Muslim/_lib/location';
 import { useIsMobile } from '@/Pages/Muslim/_lib/nav';
 
-export const GOVERNORATE_LIST = [
+const GOVERNORATE_LIST = [
     { value: "damascus", nameAr: "دمشق", nameEn: "Damascus" },
     { value: "aleppo", nameAr: "حلب", nameEn: "Aleppo" },
     { value: "homs", nameAr: "حمص", nameEn: "Homs" },
@@ -29,9 +29,7 @@ export const GOVERNORATE_LIST = [
     { value: "raqqa", nameAr: "الرقة", nameEn: "Raqqa" },
 ];
 
-export interface HomeSettingsDialogProps {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
+interface HomeSettingsFields {
     governorate: string;
     setGovernorate: (gov: string) => void;
     eventsGovernorate: string;
@@ -51,7 +49,12 @@ export interface HomeSettingsDialogProps {
     saveAccountSettings: (settings: Record<string, any>) => void;
 }
 
-function HomeSettingsBody(props: HomeSettingsDialogProps) {
+interface HomeSettingsDialogProps extends HomeSettingsFields {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+}
+
+function HomeSettingsBody(props: HomeSettingsFields) {
     const { governorate,
     setGovernorate,
     eventsGovernorate,
@@ -168,7 +171,6 @@ function HomeSettingsBody(props: HomeSettingsDialogProps) {
                             <LocationModeSelector
                                 mode={locMode}
                                 onChange={selectMode}
-                                cityHint="اختر مدينتها من القائمة أدناه"
                             />
                             <div className="flex items-center gap-2.5 rounded-lg border border-border/50 bg-card/20 p-3">
                                 <span className="rounded-lg bg-primary/10 p-2 text-primary">
@@ -286,7 +288,7 @@ export default function HomeSettingsDialog({
                     <SheetHeader className="shrink-0 text-right">
                         <SheetTitle>الإعدادات</SheetTitle>
                     </SheetHeader>
-                    <HomeSettingsBody open={open} onOpenChange={onOpenChange} {...props} />
+                    <HomeSettingsBody {...props} />
                 </SheetContent>
             </Sheet>
         );
@@ -297,7 +299,7 @@ export default function HomeSettingsDialog({
                 <DialogHeader className="px-6 pt-6 pb-2 text-start sm:text-start">
                     <DialogTitle>الإعدادات</DialogTitle>
                 </DialogHeader>
-                <HomeSettingsBody open={open} onOpenChange={onOpenChange} {...props} />
+                <HomeSettingsBody {...props} />
             </DialogContent>
         </Dialog>
     );

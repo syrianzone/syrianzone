@@ -23,10 +23,7 @@ export function PlacesLayer(props: {
 
   const addSourceAndLayers = () => {
     if (map.getSource(SOURCE_ID)) return;
-    if (!map.isStyleLoaded?.()) {
-      console.warn('[PlacesLayer] addSourceAndLayers skipped: style not loaded');
-      return;
-    }
+    if (!map.isStyleLoaded?.()) return;
 
     try {
       map.addSource(SOURCE_ID, {
@@ -83,14 +80,12 @@ export function PlacesLayer(props: {
   // add source + layers on mount (re-adds after setStyle via style.load)
   useEffect(() => {
     const onStyleLoad = () => {
-      console.log('[PlacesLayer] style.load fired');
       addSourceAndLayers();
     };
     let idleFired = false;
     const onIdle = () => {
       if (idleFired) return;
       idleFired = true;
-      console.log('[PlacesLayer] idle fired, isStyleLoaded:', map.isStyleLoaded?.(), 'sourceExists:', !!map.getSource(SOURCE_ID));
       addSourceAndLayers();
       map.off('idle', onIdle);
     };
@@ -131,11 +126,9 @@ export function PlacesLayer(props: {
     try {
       let src = map.getSource(SOURCE_ID);
       if (!src && map.isStyleLoaded?.()) {
-        console.log('[PlacesLayer] setData effect: adding source because it was missing');
         addSourceAndLayers();
         src = map.getSource(SOURCE_ID);
       }
-      console.log('[PlacesLayer] setData effect, source exists:', !!src, 'dataFeatures:', props.data?.features?.length ?? 0);
       if (src) (src as maplibregl.GeoJSONSource).setData(props.data);
     } catch { /* map style may not be ready */ }
   }, [props.data, map]);

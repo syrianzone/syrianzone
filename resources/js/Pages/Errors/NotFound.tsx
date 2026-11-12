@@ -191,14 +191,12 @@ function GamesNotFound({ path, onBack }: { path: string; onBack: () => void }) {
         () => GAMES.filter((g) => !g.comingSoon && !g.external),
         [],
     );
-    const [flipped, setFlipped] = useState(true);
     const [pickedIndex, setPickedIndex] = useState(0);
 
     const pickedGame = playableGames[pickedIndex % playableGames.length] ?? GAMES[0];
     const PickedIcon = pickedGame.icon;
 
     const dealRandomGame = () => {
-        setFlipped(true);
         setPickedIndex((prev) => {
             if (playableGames.length <= 1) return 0;
             const step = 1 + Math.floor(Math.random() * (playableGames.length - 1));
@@ -226,28 +224,22 @@ function GamesNotFound({ path, onBack }: { path: string; onBack: () => void }) {
                     {/* Middle Card: Interactive 0 / Random Game Card using standard .sz-card */}
                     <button
                         type="button"
-                        onClick={() => (flipped ? dealRandomGame() : setFlipped(true))}
+                        onClick={dealRandomGame}
                         aria-label="اسحب لعبة عشوائية"
-                        className={`w-[var(--sz-card-w)] -translate-y-1.5 cursor-pointer transition-transform hover:-translate-y-2.5 ${
-                            flipped
-                                ? 'sz-card sz-card--face sz-card--picked'
-                                : 'sz-card sz-card--back'
-                        }`}
+                        className="w-[var(--sz-card-w)] -translate-y-1.5 cursor-pointer transition-transform hover:-translate-y-2.5 sz-card sz-card--face sz-card--picked"
                     >
-                        {flipped ? (
-                            <span dir="rtl" className="contents">
-                                <span className="sz-card__corner text-primary">
-                                    0
-                                    <span className="sz-card__corner-suit">★</span>
-                                </span>
-                                <span className="flex flex-col items-center justify-center gap-1.5 px-1.5 pt-2 text-center">
-                                    <PickedIcon className="h-9 w-9 shrink-0" />
-                                    <span className="text-[11px] font-extrabold leading-tight text-slate-900">
-                                        {pickedGame.title}
-                                    </span>
+                        <span dir="rtl" className="contents">
+                            <span className="sz-card__corner text-primary">
+                                0
+                                <span className="sz-card__corner-suit">★</span>
+                            </span>
+                            <span className="flex flex-col items-center justify-center gap-1.5 px-1.5 pt-2 text-center">
+                                <PickedIcon className="h-9 w-9 shrink-0" />
+                                <span className="text-[11px] font-extrabold leading-tight text-slate-900">
+                                    {pickedGame.title}
                                 </span>
                             </span>
-                        ) : null}
+                        </span>
                     </button>
 
                     <div className="w-[var(--sz-card-w)] rotate-6 transition-transform hover:-translate-y-1">

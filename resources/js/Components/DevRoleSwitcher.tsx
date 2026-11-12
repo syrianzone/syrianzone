@@ -1,5 +1,3 @@
-'use client';
-
 import * as React from 'react';
 import { usePage, router } from '@inertiajs/react';
 import { Shield, User, Bus, Settings2, ChevronDown } from 'lucide-react';

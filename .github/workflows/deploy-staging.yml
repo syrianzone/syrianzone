@@ -39,11 +39,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # deliberately NOT passing VITE_SENTRY_DSN, VITE_POSTHOG_KEY or
-      # sentry_auth_token: those are baked into the js bundle at build time, so a
-      # staging box running the production image would report browser errors and
-      # analytics into the production projects. omitting them makes both sdks
-      # no-op (they are guarded on the env var in resources/js/app.tsx).
+      # deliberately NOT passing VITE_SENTRY_DSN or sentry_auth_token: the DSN is
+      # baked into the js bundle at build time, so a staging box running the
+      # production image would report browser errors into the production
+      # project. omitting it makes the sdk no-op (it is guarded on the env var in
+      # resources/js/app.tsx).
       # GA is runtime config now, so staging just leaves GA_MEASUREMENT_ID unset.
       - name: build and push
         uses: docker/build-push-action@v6

@@ -23,10 +23,7 @@ export function HotelsLayer(props: {
 
   const addSourceAndLayers = () => {
     if (map.getSource(SOURCE_ID)) return;
-    if (!map.isStyleLoaded?.()) {
-      console.warn('[HotelsLayer] addSourceAndLayers skipped: style not loaded');
-      return;
-    }
+    if (!map.isStyleLoaded?.()) return;
 
     try {
       map.addSource(SOURCE_ID, {
@@ -74,7 +71,6 @@ export function HotelsLayer(props: {
           'circle-stroke-opacity': 0.9,
         },
       });
-      console.log('[HotelsLayer] layers added successfully');
     } catch (e) {
       console.warn('[HotelsLayer] addSource/addLayer failed:', e);
     }
@@ -82,14 +78,12 @@ export function HotelsLayer(props: {
 
   useEffect(() => {
     const onStyleLoad = () => {
-      console.log('[HotelsLayer] style.load fired');
       addSourceAndLayers();
     };
     let idleFired = false;
     const onIdle = () => {
       if (idleFired) return;
       idleFired = true;
-      console.log('[HotelsLayer] idle fired, isStyleLoaded:', map.isStyleLoaded?.(), 'sourceExists:', !!map.getSource(SOURCE_ID));
       addSourceAndLayers();
       map.off('idle', onIdle);
     };
@@ -128,11 +122,9 @@ export function HotelsLayer(props: {
     try {
       let src = map.getSource(SOURCE_ID);
       if (!src && map.isStyleLoaded?.()) {
-        console.log('[HotelsLayer] setData effect: adding source because it was missing');
         addSourceAndLayers();
         src = map.getSource(SOURCE_ID);
       }
-      console.log('[HotelsLayer] setData effect, source exists:', !!src, 'dataFeatures:', props.data?.features?.length ?? 0);
       if (src) (src as maplibregl.GeoJSONSource).setData(props.data);
     } catch (e) { console.warn('[HotelsLayer] setData failed:', e); }
   }, [props.data, map]);

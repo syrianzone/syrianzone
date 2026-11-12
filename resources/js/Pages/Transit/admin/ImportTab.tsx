@@ -1,5 +1,3 @@
-'use client'
-
 import React, { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/Components/ui/button'
 import { Badge } from '@/Components/ui/badge'

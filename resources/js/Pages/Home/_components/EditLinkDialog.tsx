@@ -4,22 +4,21 @@ import { Label } from "@/Components/ui/label";
 import { Input } from "@/Components/ui/input";
 import { Button } from "@/Components/ui/button";
 import { X } from 'lucide-react';
-import { CustomLink } from './AddLinkDialog';
+import { confirmDialog } from '@/Lib/confirm';
+import type { CustomLink } from '../_lib/links';
 
-export interface EditLinkDialogProps {
+interface EditLinkDialogProps {
     link: CustomLink | null;
     onOpenChange: (open: boolean) => void;
     onSave: (link: CustomLink) => void;
     onDelete: (id: string) => void;
-    language: 'ar' | 'en';
 }
 
 export default function EditLinkDialog({
     link,
     onOpenChange,
     onSave,
-    onDelete,
-    language
+    onDelete
 }: EditLinkDialogProps) {
     const [name, setName] = useState('');
     const [url, setUrl] = useState('');
@@ -43,7 +42,7 @@ export default function EditLinkDialog({
         const trimmedUrl = url.trim();
         if (!trimmedName || !trimmedUrl) return;
         if (!(trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://'))) {
-            setUrlError(language === 'ar' ? 'الرابط يجب أن يبدأ بـ http:// أو https://' : 'URL must start with http:// or https://');
+            setUrlError('الرابط يجب أن يبدأ بـ http:// أو https://');
             return;
         }
         setUrlError('');
@@ -58,29 +57,30 @@ export default function EditLinkDialog({
         onOpenChange(false);
     };
 
-    const handleDelete = () => {
+    const handleDelete = async () => {
+        if (!(await confirmDialog({ title: 'حذف هذا الرابط؟', destructive: true, confirmText: 'حذف', cancelText: 'إلغاء' }))) return;
         onDelete(link.id);
         onOpenChange(false);
     };
 
     return (
         <Dialog open={!!link} onOpenChange={onOpenChange}>
-            <DialogContent dir={language === 'ar' ? 'rtl' : 'ltr'}>
+            <DialogContent dir="rtl">
                 <DialogHeader className="text-start sm:text-start">
-                    <DialogTitle>{language === 'ar' ? 'تعديل الرابط المخصص' : 'Edit Custom Link'}</DialogTitle>
+                    <DialogTitle>تعديل الرابط المخصص</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4 py-4 text-start">
                     <div className="space-y-2">
-                        <Label>{language === 'ar' ? 'الاسم' : 'Name'}</Label>
+                        <Label>الاسم</Label>
                         <Input
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            placeholder={language === 'ar' ? 'اسم الرابط' : 'Link name'}
+                            placeholder="اسم الرابط"
                             required
                         />
                     </div>
                     <div className="space-y-2">
-                        <Label>{language === 'ar' ? 'الرابط (URL)' : 'URL'}</Label>
+                        <Label>الرابط (URL)</Label>
                         <Input aria-label="رابط الموقع"
                             type="url"
                             value={url}
@@ -91,25 +91,25 @@ export default function EditLinkDialog({
                         {urlError && <p className="text-xs text-destructive">{urlError}</p>}
                     </div>
                     <div className="space-y-2">
-                        <Label>{language === 'ar' ? 'أيقونة أو Emoji (اختياري - اتركها فارغة لجلب أيقونة الموقع تلقائياً)' : 'Icon or Emoji (optional - leave empty for website favicon)'}</Label>
+                        <Label>أيقونة أو Emoji (اختياري - اتركها فارغة لجلب أيقونة الموقع تلقائياً)</Label>
                         <Input
                             value={icon}
                             onChange={(e) => setIcon(e.target.value)}
-                            placeholder={language === 'ar' ? 'تلقائي (Favicon)' : 'Auto (Favicon)'}
+                            placeholder="تلقائي (Favicon)"
                             maxLength={4}
                         />
                     </div>
                     <div className="flex justify-between items-center pt-2">
-                        <Button type="button" variant="destructive" size="sm" onClick={handleDelete} className="gap-1.5">
+                        <Button type="button" variant="destructive" size="sm" onClick={() => void handleDelete()} className="gap-1.5">
                             <X className="w-4 h-4" />
-                            {language === 'ar' ? 'حذف الرابط' : 'Remove Link'}
+                            حذف الرابط
                         </Button>
                         <div className="flex gap-2">
                             <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>
-                                {language === 'ar' ? 'إلغاء' : 'Cancel'}
+                                إلغاء
                             </Button>
                             <Button type="submit" size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                                {language === 'ar' ? 'حفظ التعديلات' : 'Save Changes'}
+                                حفظ التعديلات
                             </Button>
                         </div>
                     </div>

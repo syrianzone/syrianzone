@@ -1,5 +1,3 @@
-'use client'
-
 import { Navigation, ChevronRight, Plus } from 'lucide-react'
 import { Link } from '@inertiajs/react'
 import { useMapStore } from '../_store/useMapStore'

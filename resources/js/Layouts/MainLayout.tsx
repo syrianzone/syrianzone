@@ -1,13 +1,13 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import { AuthProvider } from '@/Contexts/AuthContext';
 import ConditionalLayout from '@/Components/ConditionalLayout';
-import GlobalRuntime from '@/Components/GlobalRuntime';
 import RadioMiniPlayer from '@/Components/RadioMiniPlayer';
 import ConfirmHost from '@/Components/ConfirmHost';
 import RouteAnnouncer from '@/Components/RouteAnnouncer';
 import AnalyticsConsentBanner from '@/Components/AnalyticsConsentBanner';
 import SeoHead from '@/Components/SeoHead';
 import { Toaster } from '@/Components/ui/sonner';
+import { useUsageTracker } from '@/Lib/usageStore';
 import SettingsSync from '@/Pages/Muslim/_components/SettingsSync';
 import { useMuslimNav } from '@/Pages/Muslim/_lib/nav';
 
@@ -80,6 +80,9 @@ function DeferredCommandPalette() {
 }
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
+    // Starts the global listening-usage tracker, once per app.
+    useUsageTracker();
+
     return (
         <AuthProvider>
             <SeoHead />
@@ -88,7 +91,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             </ConditionalLayout>
             <SettingsSync />
             <DeferredCommandPalette />
-            <GlobalRuntime />
             <RadioMiniPlayer />
             {/* One feedback language for the whole app: toasts + confirmations. */}
             <Toaster />

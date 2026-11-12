@@ -131,7 +131,7 @@ Shared: `resources/js/Providers/QueryProvider.tsx` (moved out of `Pages/Transit/
 | `events-today` | community | `GET /api/events/today` (F3alia) | | yes |
 | `guides` | community | `GET /api/v1/guides` via `Places/_lib/discovery` | | yes |
 | `places-nearby` | places | `GET /api/v1/places/nearby` (radius capped at 25km) | `geo` | no |
-| `transit-cities` | transit | `GET /api/v1/cities` | | no |
+| `transit-cities` | places | `GET /api/v1/cities` | | no |
 | `recipe` | food | `GET /api/recipe-of-the-day` (food.syrian.zone) | | no |
 
 Notes on environment:

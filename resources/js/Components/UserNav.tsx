@@ -1,5 +1,3 @@
-'use client';
-
 import React from 'react';
 import axios from '@/lib/axios';
 import { Link } from '@inertiajs/react';

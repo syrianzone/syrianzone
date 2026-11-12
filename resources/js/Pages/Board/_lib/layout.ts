@@ -1,9 +1,9 @@
 import type { BoardDoc, Breakpoint, DashboardDef, WidgetDefinition, WidgetInstance, WidgetSize } from './types';
 
-export const DOC_VERSION = 1;
+const DOC_VERSION = 1;
 export const MAX_DASHBOARDS = 10;
-export const MAX_WIDGETS = 40;
-export const GRID_COLS = 12;
+const MAX_WIDGETS = 40;
+const GRID_COLS = 12;
 
 // Mirrors the container's grid-cols-2 / md:grid-cols-6 / lg:grid-cols-12.
 // One stored width renders at three breakpoints, so the document never holds
@@ -27,7 +27,7 @@ export function nowStamp(): string {
 // PHP decodes an empty JSON object as [], so a config that round-trips through
 // the server comes back as an array. Coerce it back rather than letting widgets
 // each guard against it.
-export function normalizeConfig(c: unknown): Record<string, unknown> {
+function normalizeConfig(c: unknown): Record<string, unknown> {
   if (!c || typeof c !== 'object' || Array.isArray(c)) return {};
   return c as Record<string, unknown>;
 }
@@ -57,7 +57,7 @@ function isDashboard(v: unknown): v is DashboardDef {
     && Array.isArray(d.widgets);
 }
 
-export function isBoardDoc(v: unknown): v is BoardDoc {
+function isBoardDoc(v: unknown): v is BoardDoc {
   const doc = v as BoardDoc;
   return !!doc && typeof doc === 'object'
     && Number.isInteger(doc.v) && doc.v >= 1

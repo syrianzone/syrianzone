@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useMemo, Suspense, useEffect } from 'react';
 import {
     Download, Copy, Check, ExternalLink, Map as MapIcon, FileDown, Search, Tag, Eye, Palette
@@ -941,7 +939,7 @@ export default function SyidClient() {
                                                 جاري تحميل الخريطة...
                                             </div>
                                         }>
-                                            <SyriaMap geoJsonData={geoJsonData} selectedGovId={selectedGov} />
+                                            <SyriaMap geoJsonData={geoJsonData} selectedGovId={selectedGov === 'full' ? null : selectedGov} />
                                         </Suspense>
                                     </div>
 

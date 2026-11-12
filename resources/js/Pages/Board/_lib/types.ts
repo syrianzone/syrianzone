@@ -30,7 +30,7 @@ export interface BoardDoc {
 // ***** the widget contract *****
 
 export type Breakpoint = 'sm' | 'md' | 'lg';
-export type WidgetCategory = 'places' | 'transit' | 'time' | 'personal' | 'community' | 'food';
+export type WidgetCategory = 'places' | 'time' | 'personal' | 'community' | 'food';
 export type Capability = 'auth' | 'geo';
 
 // Declarative config schema, so WidgetConfigDialog renders any widget's settings
@@ -81,6 +81,5 @@ export const CATEGORY_LABELS: Record<WidgetCategory, string> = {
   personal: 'الإنتاجية والشخصي',
   community: 'المجتمع والأخبار',
   places: 'الأماكن والمواصلات',
-  transit: 'المواصلات',
   food: 'المطبخ والمأكولات',
 };

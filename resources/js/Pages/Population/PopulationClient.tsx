@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { PopulationGroups, DATA_TYPES, DATA_TYPE_CONFIG, RainfallData, DataSource } from './types';
 import {
@@ -38,7 +36,7 @@ const getWindDirection = (degrees: number) => {
     return directions[Math.round(degrees / 45) % 8];
 };
 
-export default function PopulationClient({ masterData: initialMasterData, envData: initialEnvData }: { masterData?: any, envData?: any }) {
+export default function PopulationClient() {
     const [geoJsonData, setGeoJsonData] = useState<any>(null);
     const [currentDataType, setCurrentDataType] = useState<DataType>(DATA_TYPES.POPULATION);
     const [currentSourceId, setCurrentSourceId] = useState<number | null>(null);
@@ -52,17 +50,17 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
     const [selectedEnvProvince, setSelectedEnvProvince] = useState<{ name: string, data: any } | null>(null);
 
     // Data fetching state
-    const [rainfallData, setRainfallData] = useState<RainfallData>(initialMasterData?.rainfall_data || {});
-    const [environmentalData, setEnvironmentalData] = useState<any>(initialEnvData || null);
+    const [rainfallData, setRainfallData] = useState<RainfallData>({});
+    const [environmentalData, setEnvironmentalData] = useState<any>(null);
 
-    const [livePopulationData, setLivePopulationData] = useState<PopulationGroups>(initialMasterData?.groups || {
+    const [livePopulationData, setLivePopulationData] = useState<PopulationGroups>({
         population: [],
         idp: [],
         idp_returnees: [],
         rainfall: [],
         environmental: []
     });
-    const [isLoading, setIsLoading] = useState<boolean>(!initialMasterData || !initialEnvData);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -73,11 +71,6 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
     }, []);
 
     useEffect(() => {
-        if (initialMasterData && initialEnvData) {
-            setIsLoading(false);
-            return;
-        }
-
         const fetchData = async () => {
             try {
                 setIsLoading(true);
@@ -104,26 +97,12 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
         };
 
         fetchData();
-    }, [initialMasterData, initialEnvData]);
+    }, []);
 
+    // Rainfall is a single layer with no source rows, so it has no selected source.
     useEffect(() => {
-        if (currentDataType === DATA_TYPES.RAINFALL) {
-            setCurrentSourceId(999);
-        } else if (currentDataType === DATA_TYPES.ENVIRONMENTAL) {
-            const sources = livePopulationData[currentDataType];
-            if (sources && sources.length > 0) {
-                setCurrentSourceId(sources[0].source_id);
-            } else {
-                setCurrentSourceId(null);
-            }
-        } else {
-            const sources = livePopulationData[currentDataType];
-            if (sources && sources.length > 0) {
-                setCurrentSourceId(sources[0].source_id);
-            } else {
-                setCurrentSourceId(null);
-            }
-        }
+        const sources = currentDataType === DATA_TYPES.RAINFALL ? null : livePopulationData[currentDataType];
+        setCurrentSourceId(sources && sources.length > 0 ? sources[0].source_id : null);
     }, [currentDataType, livePopulationData]);
 
     useEffect(() => {

@@ -32,6 +32,7 @@ describe('PromiseCard component', () => {
         keptLate: false,
         resolvedAt: null,
         target: null,
+        votingOpen: true,
     };
 
     it('displays original struck-through deadline when postponedCount > 0 and originalDeadlineDate is set', () => {
@@ -59,5 +60,27 @@ describe('PromiseCard component', () => {
         const html = renderToStaticMarkup(createElement(PromiseCard, { promise: normalPromise }));
 
         expect(html).not.toContain('الموعد الأصلي:');
+    });
+
+    it('asks the question, and shows no result, before the visitor answers', () => {
+        const html = renderToStaticMarkup(createElement(PromiseCard, { promise: { ...basePromise, votes: { yes: 6, no: 2 } } }));
+        expect(html).toContain('هل سيتحقق هذا الوعد؟');
+        expect(html).toContain('aria-pressed="false"');
+        expect(html).not.toContain('75%');
+    });
+
+    it('shows the final split, and no buttons, once the promise is settled', () => {
+        const settled: PromiseCardData = { ...basePromise, status: 'fulfilled', state: 'fulfilled', votingOpen: false, votes: { yes: 6, no: 2 } };
+        const html = renderToStaticMarkup(createElement(PromiseCard, { promise: settled }));
+        expect(html).toContain('75%');
+        expect(html).toContain('8 أصوات');
+        expect(html).not.toContain('aria-pressed');
+    });
+
+    it('leaves the vote out of a settled promise with too few votes for a percentage', () => {
+        const settled: PromiseCardData = { ...basePromise, status: 'fulfilled', state: 'fulfilled', votingOpen: false, votes: { yes: 3, no: 1 } };
+        const html = renderToStaticMarkup(createElement(PromiseCard, { promise: settled }));
+        expect(html).not.toContain('75%');
+        expect(html).not.toContain('أصوات');
     });
 });

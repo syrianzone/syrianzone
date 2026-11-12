@@ -49,6 +49,12 @@ export interface PromiseCoSpeakerData {
     xHandle?: string | null;
 }
 
+/** The "will it be kept?" tally. Only aggregates ever leave the server. */
+export interface PromiseVotes {
+    yes: number;
+    no: number;
+}
+
 export interface PromiseCardData {
     id: string;
     number: number;
@@ -71,6 +77,10 @@ export interface PromiseCardData {
     keptLate: boolean;
     resolvedAt: string | null;
     target: PromiseTarget | null;
+    /** False once an editor has set a verdict. */
+    votingOpen: boolean;
+    /** Present on the list and the detail page; absent where a card is built without its tally. */
+    votes?: PromiseVotes;
     originalDeadlineDate?: string | null;
     originalDeadlineWording?: string | null;
     postponedCount?: number;
@@ -131,8 +141,7 @@ export interface PromiseDetailData extends PromiseCardData {
     restates: RelatedPromise | null;
     restatedBy: RelatedPromise | null;
     relatedPromises?: RelatedPromise[];
-    votes: { yes: number; no: number };
-    votingOpen: boolean;
+    votes: PromiseVotes;
     publishedAt: string | null;
     updatedAt: string | null;
 }

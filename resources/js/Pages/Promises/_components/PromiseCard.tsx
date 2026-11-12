@@ -2,6 +2,7 @@ import { Link, router, usePage } from '@inertiajs/react';
 import { Card, CardContent } from '@/Components/ui/card';
 import { CalendarDays } from 'lucide-react';
 import { cn } from '@/Lib/utils';
+import CardVote from './CardVote';
 import Countdown from './Countdown';
 import SpeakerAvatar from './SpeakerAvatar';
 import StateBadge from './StateBadge';
@@ -16,6 +17,7 @@ import type { PromiseCardData } from '../_lib/types';
  * card so the whole card is clickable without nesting interactive elements.
  * The `list` layout is a full-width row with the counter beside the content;
  * on phones it shrinks to the speaker, state and title so rows stay short.
+ * The vote strip is the one other control, and sits above the stretched link.
  */
 export type PromiseCardLayout = 'grid' | 'list';
 
@@ -29,6 +31,9 @@ export default function PromiseCard({ promise, returnUrl = '/promises', layout =
     const speakerTitles = allSpeakers.map((s) => s.title).filter(Boolean).join(' · ');
     const countdown = (
         <Countdown state={promise.state} counter={promise.counter} deadlineDate={promise.deadlineDate} statementDate={promise.statementDate} size={list ? 'sm' : 'md'} />
+    );
+    const vote = promise.votes && (
+        <CardVote number={promise.number} votes={promise.votes} open={promise.votingOpen} className={cn(list ? 'max-sm:hidden' : '-my-1')} />
     );
 
     return (
@@ -103,6 +108,7 @@ export default function PromiseCard({ promise, returnUrl = '/promises', layout =
                         <span className="tabular-nums" dir="ltr">#{promise.number}</span>
                     </span>
                 </div>
+                {vote}
             </CardContent>
             {list && (
                 <div className="flex w-20 shrink-0 items-center justify-center border-s border-border px-1.5 py-2 sm:w-40 sm:px-2 sm:py-4">{countdown}</div>

@@ -15,7 +15,7 @@ const card = (id: string, patch: Partial<PromiseCardData> = {}): PromiseCardData
     isNational: false, governorates: ['damascus'], tags: ['ماء & طاقة'],
     statementDate: '2025-01-01', deadlineDate: '2026-11-01', deadlineWording: null,
     status: 'pending', state: 'overdue', daysLeft: -1, daysSince: 1,
-    counter: { mode: 'overdue', value: 1 }, keptLate: false, resolvedAt: null, target: null, ...patch,
+    counter: { mode: 'overdue', value: 1 }, keptLate: false, resolvedAt: null, target: null, votingOpen: true, ...patch,
 });
 const promises = [
     card('1'),

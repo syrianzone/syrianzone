@@ -1,61 +1,21 @@
-import { useEffect, useState } from 'react';
-import axios from '@/Lib/axios';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent, CardHeader } from '@/Components/ui/card';
 import { ThumbsDown, ThumbsUp } from 'lucide-react';
-import { notify } from '@/Lib/notify';
-import { extractApiErrorMessage } from '@/Lib/apiError';
-import { getDeviceId } from '@/Lib/deviceId';
+import { usePromiseVote } from '../_lib/useVote';
+import type { PromiseVotes } from '../_lib/types';
 
 interface Props {
     number: number;
-    votes: { yes: number; no: number };
+    votes: PromiseVotes;
     open: boolean;
 }
 
-const storageKey = (n: number) => `promise-vote:${n}`;
-
 /**
- * "Will it be kept?" — a one-tap public poll. The visitor's own answer is
- * remembered in this browser only; the server stores an HMAC, never the
- * device id or IP, and returns the aggregate.
+ * "Will it be kept?" — a one-tap public poll, in full on the detail page.
+ * The list cards carry the same poll as CardVote.
  */
 export default function VotePanel({ number, votes: initial, open }: Props) {
-    const [votes, setVotes] = useState(initial);
-    const [mine, setMine] = useState<boolean | null>(null);
-    const [busy, setBusy] = useState(false);
-
-    useEffect(() => {
-        try {
-            const saved = localStorage.getItem(storageKey(number));
-            if (saved !== null) setMine(saved === '1');
-        } catch {
-            /* storage unavailable: the buttons still work, the choice is just not remembered */
-        }
-    }, [number]);
-
-    const total = votes.yes + votes.no;
-    const yesPct = total > 0 ? Math.round((votes.yes / total) * 100) : 0;
-
-    const cast = async (believes: boolean) => {
-        if (busy || mine === believes) return;
-        setBusy(true);
-        try {
-            const res = await axios.post(`/api/v1/promises/${number}/vote`, { believes, device_id: getDeviceId() });
-            setVotes(res.data.votes);
-            setMine(believes);
-            try {
-                localStorage.setItem(storageKey(number), believes ? '1' : '0');
-            } catch {
-                /* storage unavailable */
-            }
-            notify.success('سُجّل رأيك');
-        } catch (e) {
-            notify.error(extractApiErrorMessage(e, 'تعذّر تسجيل رأيك'));
-        } finally {
-            setBusy(false);
-        }
-    };
+    const { votes, total, yesPct, mine, busy, cast } = usePromiseVote(number, initial);
 
     return (
         <Card>

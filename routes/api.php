@@ -319,7 +319,7 @@ Route::prefix('v1')->group(function () {
 
     // Promises tracker (عداد الوعود): visitor input. Suggestions and reports
     // need a signed-in account and land in the review queue; the "will it be
-    // kept?" vote is open to guests and shares the tier-list `voting` limiter.
+    // kept?" vote is open to guests under its own `promise-voting` limiter.
     Route::get('/promises/speakers', [PromiseController::class, 'speakers'])
         ->middleware('throttle:public-api')
         ->name('api.v1.promises.speakers');
@@ -332,7 +332,7 @@ Route::prefix('v1')->group(function () {
             ->name('api.v1.promises.reports.store');
     });
     Route::post('/promises/{number}/vote', [PromiseController::class, 'vote'])
-        ->where('number', '[0-9]{1,9}')->middleware('throttle:voting')
+        ->where('number', '[0-9]{1,9}')->middleware('throttle:promise-voting')
         ->name('api.v1.promises.vote');
 
     // 5. Public Polls & Voting API

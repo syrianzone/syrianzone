@@ -164,7 +164,10 @@ Public reads return only aggregates.
 - Default sort by urgency: most overdue first, then soonest deadline, then
   count-ups, then resolved.
 - Card: speaker avatar + name/title, title, the big number, status badge,
-  progress bar when a target exists.
+  progress bar when a target exists, and a one-line "will it be kept?" vote
+  (`CardVote`). The line asks the question until the visitor answers, then
+  reports the split; a percentage needs at least 5 votes. Settled promises
+  show the final split only. Hidden on phone list rows.
 
 **The big number** comes from `Promise::counter()` so every surface agrees.
 Open promises count down (`left`, `today`), keep counting once late
@@ -236,8 +239,12 @@ verdicts/status), `promises.review` (moderation queue), `promises.delete`,
   becomes the source for this module (same slugs as the weather/prayer
   controllers). The frontend receives it as a prop instead of duplicating it.
 - **Votes:** `voter_key` = HMAC(app key, signed-in user id, or else the
-  device id) and `ip_hash` = HMAC(app key, IP). Unique per promise, `voting`
-  rate limiter, aggregates only in public reads.
+  device id) and `ip_hash` = HMAC(app key, IP). Unique per promise, aggregates
+  only in public reads. The device id is client-controlled, so the
+  `promise-voting` rate limiter (30/min per guest IP, 60/min per account) is
+  the flood guard. The list's tallies come from one grouped query, cached for
+  60 seconds and dropped on each vote, and are merged into the cached index
+  per request so a vote never flushes it.
 - **SEO:** `SeoMeta` gets `/promises` and `/promises/suggest` entries, and
   `PromisePreview` describes `/promises/{number}` (title, description,
   canonical, breadcrumb; unknown or unpublished numbers get a 404).

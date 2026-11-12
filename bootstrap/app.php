@@ -29,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
         
         $middleware->web(append: [
             \App\Http\Middleware\AutoLoginDevUser::class,
+            \App\Http\Middleware\SecurityHeaders::class,
         ]);
         
         $middleware->api(prepend: [
@@ -128,6 +129,12 @@ return Application::configure(basePath: dirname(__DIR__))
 
                 Inertia::share(app(\App\Http\Middleware\HandleInertiaRequests::class)->share($request));
 
+                // This page is rendered outside the middleware stack, so the
+                // nonce has to be registered before the view stamps its script
+                // tags, then the headers are applied to the finished response.
+                $securityHeaders = app(\App\Http\Middleware\SecurityHeaders::class);
+                $securityHeaders->registerNonce();
+
                 $section = match (true) {
                     $request->is('muslim', 'muslim/*') => 'muslim',
                     $request->is('games', 'games/*', 'guesswho', 'guesswho/*') => 'games',
@@ -140,11 +147,11 @@ return Application::configure(basePath: dirname(__DIR__))
                     $section = $override;
                 }
 
-                return Inertia::render('Errors/NotFound', [
+                return $securityHeaders->applyHeaders(Inertia::render('Errors/NotFound', [
                     'status' => 404,
                     'path' => '/'.ltrim($request->path(), '/'),
                     'section' => $section,
-                ])->toResponse($request)->setStatusCode(404);
+                ])->toResponse($request)->setStatusCode(404)->prepare($request));
             }
 
             return $response;

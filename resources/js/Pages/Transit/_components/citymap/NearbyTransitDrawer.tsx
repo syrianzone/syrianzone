@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useEffect, useContext } from 'react'
+import { LocateFixed } from 'lucide-react'
 import { useMap } from '@/Components/map/MapContext'
-import { LocationContext, LocationStatusContext } from './MapCanvas'
+import { Button } from '@/Components/ui/button'
+import { LocationContext, LocationStatusContext, useRequestUserLocation } from './MapCanvas'
 import { useMapStore } from '../../_store/useMapStore'
 
 interface NearbyStop {
@@ -22,6 +24,7 @@ export default function NearbyTransitDrawer() {
   const map = useMap()
   const userLocation = useContext(LocationContext)
   const locationStatus = useContext(LocationStatusContext)
+  const requestLocation = useRequestUserLocation()
   const { setSelectedRouteId } = useMapStore()
 
   useEffect(() => {
@@ -78,6 +81,20 @@ export default function NearbyTransitDrawer() {
       return (
         <div className="py-8 text-center">
           <p className="text-sm text-[var(--muted)]">يرجى السماح بالوصول إلى موقعك من إعدادات المتصفح</p>
+        </div>
+      )
+    }
+
+    if (locationStatus === 'idle') {
+      return (
+        <div className="flex flex-col items-center gap-3 py-8 text-center">
+          <p className="text-sm text-[var(--muted)]">
+            لم نحدد موقعك بعد، اضغط «أظهر موقعي» لعرض المواقف القريبة منك
+          </p>
+          <Button type="button" size="sm" onClick={requestLocation}>
+            <LocateFixed aria-hidden="true" />
+            أظهر موقعي
+          </Button>
         </div>
       )
     }
@@ -145,11 +162,14 @@ export default function NearbyTransitDrawer() {
       {/* Floating action buttons */}
       <div className="absolute bottom-[270px] sm:bottom-6 left-4 z-20 flex flex-col gap-2">
         <button
-          onClick={panToLocation}
-          disabled={locationStatus !== 'available'}
+          type="button"
+          // One control for both steps: it asks for the location first (only on
+          // this press, never on load) and pans to it once a fix is available.
+          onClick={locationStatus === 'available' ? panToLocation : requestLocation}
+          disabled={locationStatus === 'loading'}
           className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--surface)] text-[var(--text)] shadow-lg transition-transform hover:scale-105 disabled:opacity-40"
-          aria-label="موقعي الحالي"
-          title="موقعي الحالي"
+          aria-label={locationStatus === 'available' ? 'موقعي الحالي' : 'أظهر موقعي'}
+          title={locationStatus === 'available' ? 'موقعي الحالي' : 'أظهر موقعي'}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polygon points="3 11 22 2 13 21 11 13 3 11" />
@@ -180,7 +200,9 @@ export default function NearbyTransitDrawer() {
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-bold text-[var(--text)]">مواقف قريبة منك</h2>
           <button
+            type="button"
             onClick={() => setIsOpen(false)}
+            aria-label="إغلاق"
             className="rounded-full p-2 text-[var(--muted)] hover:bg-[var(--surface-2)]"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

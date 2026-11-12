@@ -18,7 +18,7 @@ export default function Privacy() {
                     </div>
                     <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">سياسة الخصوصية</h1>
                     <p className="text-muted-foreground max-w-xl mx-auto text-sm md:text-base">
-                        آخر تحديث: 12 أكتوبر 2026
+                        آخر تحديث: 12 نوفمبر 2026
                     </p>
                 </div>
 
@@ -161,6 +161,7 @@ export default function Privacy() {
                                     <li><strong>تحديد الموقع (GPS / عنوان IP عبر ipwho.is):</strong> عند اختيار التحديد التلقائي للموقع، تُستخدم إحداثيات جهازك أو مدينتك التقريبية من عنوان IP لحساب المواقيت فقط — تبقى على جهازك ولا تُرسل لخوادمنا.</li>
                                     <li><strong>خدمة الطقس (Open-Meteo وOpenWeatherMap):</strong> لجلب وعرض حالة الطقس المحلية بناءً على محافظتك أو إحداثياتك التقريبية.</li>
                                     <li><strong>محركات البحث (Google, DuckDuckGo, Bing, SearX):</strong> عند استخدام شريط البحث، يتم توجيه الاستعلام مباشرة إلى المحرك المختار دون تخزينه أو تسجيله من طرفنا.</li>
+                                    <li><strong>إحصاءات الزيارات (Google Analytics):</strong> لقياس عدد الزيارات والصفحات الأكثر استخداماً عبر إحصاءات مجمَّعة. تُرسَل مسارات الصفحات فقط دون سلاسل الاستعلام (كل ما يلي علامة «?» في العنوان). التفاصيل في <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-semibold">سياسة خصوصية Google</a>.</li>
                                 </ul>
                             </CardContent>
                         </Card>

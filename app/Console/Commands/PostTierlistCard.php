@@ -46,7 +46,7 @@ class PostTierlistCard extends Command
             $mediaId = $client->uploadMedia(file_get_contents($imagePath), basename($imagePath));
             $postId = $client->createPost($caption, [$mediaId]);
         } catch (XApiException $exception) {
-            $this->error($exception->getMessage().'.');
+            $this->error($exception->diagnosticMessage().'.');
 
             return self::FAILURE;
         }

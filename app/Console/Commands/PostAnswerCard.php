@@ -82,17 +82,15 @@ class PostAnswerCard extends Command
             // before the tweet) cannot have posted, so release the claim and
             // let the next scheduled run retry from scratch.
             $post->delete();
-            $this->error($exception->getMessage().'.');
+            $this->error($exception->diagnosticMessage().'.');
 
             return self::FAILURE;
         } catch (XApiException $exception) {
             $post->update([
                 'status' => 'failed',
-                'last_error' => $exception->statusCode === null
-                    ? $exception->getMessage()
-                    : "{$exception->getMessage()} (HTTP {$exception->statusCode})",
+                'last_error' => $exception->diagnosticMessage(),
             ]);
-            $this->error($exception->getMessage().'.');
+            $this->error($exception->diagnosticMessage().'.');
 
             return self::FAILURE;
         }

@@ -1,7 +1,7 @@
 # Tierlist X automation threat model
 
-**Version:** 0.2.0
-**Date:** 2026-08-30
+**Version:** 0.3.0
+**Date:** 2026-11-12
 **Status:** Implemented
 
 ## System description
@@ -30,6 +30,7 @@ for the architecture choice.
 | P-2 | Detect settled change | Samples snapshots and writes the outbox | Laravel command |
 | P-3 | Publish announcement | Signs and sends one stored announcement | Laravel queue job |
 | P-4 | Run application | Loads credentials and supervises scheduled work | Docker and S6 |
+| P-5 | Inspect X account | Verifies the expected account and emits safe diagnostic status | Laravel command |
 
 ### Data stores
 
@@ -48,10 +49,11 @@ for the architecture choice.
 | DF-2 | DS-1 | P-1 | Active candidates and aggregate scores | SQL | Host-local | TB-2 |
 | DF-3 | P-1 | P-2 | Grouped ranking snapshot | In-process | Host-local | None |
 | DF-4 | P-2 | DS-2, DS-3 | Snapshot and prepared announcement | SQL | Host-local | TB-2 |
-| DF-5 | DS-4 | P-3 | OAuth credentials through server config | Process env | Host-local | TB-3 |
-| DF-6 | P-3 | EU-1 | Signed authenticated-user and create-post requests | HTTPS | Yes | TB-4 |
-| DF-7 | EU-1 | P-3 | Account ID, status code, and remote post ID | HTTPS | Yes | TB-4 |
+| DF-5 | DS-4 | P-3, P-5 | OAuth credentials through server config | Process env | Host-local | TB-3 |
+| DF-6 | P-3, P-5 | EU-1 | Signed identity requests; only P-3 creates posts | HTTPS | Yes | TB-4 |
+| DF-7 | EU-1 | P-3, P-5 | Account ID, status code, and remote post ID when posting | HTTPS | Yes | TB-4 |
 | DF-8 | P-3 | DS-3 | Safe outcome and delivery identifiers | SQL | Host-local | TB-2 |
+| DF-9 | P-5 | EU-2 | Fixed local error summary and numeric HTTP status | SSH or restricted workflow log | Yes | TB-3 |
 
 ### Trust boundaries
 
@@ -104,7 +106,7 @@ ambiguous create-post outcome. A preexisting `sending` row requires review.
 
 ### TM-X-003: Delivery history manipulation or secret leakage
 
-**Element:** DS-3, DF-8
+**Element:** DS-3, DF-8, DF-9
 **Category:** Tampering, repudiation, and information disclosure
 **Description:** Missing or unsafe delivery records could hide what was sent,
 misstate whether X accepted it, or retain secret-bearing diagnostics.
@@ -114,10 +116,12 @@ after an error.
 **DREAD score:** D:6 R:4 E:4 A:5 D:3 = **22 (Medium)**
 **Mitigation:** FR-006 and NFR-003 store immutable prepared text, transition
 identity, safe response metadata, attempt counts, and the remote ID. NFR-001
-forbids raw authorization data.
+forbids raw authorization data. FR-011 keeps CLI failures actionable with the
+numeric HTTP status while excluding raw response bodies and request headers.
+The read-only account command doesn't upload media, publish, or alter outbox rows.
 **Residual score:** D:4 R:2 E:2 A:3 D:2 = **13 (Medium)**
 **Status:** Mitigated
-**Spec requirements:** FR-006, FR-007, NFR-001, NFR-003
+**Spec requirements:** FR-006, FR-007, FR-011, NFR-001, NFR-003
 **ADR:** ADR-0002
 
 ### TM-X-004: External API exhaustion or scheduler blocking
@@ -207,3 +211,4 @@ host hardening and credential rotation remain operational controls.
 |---|---|---|
 | 2026-08-30 | 0.1.0 | Initial feature threat model |
 | 2026-08-30 | 0.2.0 | Added identity verification, delivery ambiguity controls, outbox recovery, poll serialization, and posting budgets |
+| 2026-11-12 | 0.3.0 | Added operator diagnostic flow and clarified numeric-status output without raw response data; existing authentication and posting controls remain |

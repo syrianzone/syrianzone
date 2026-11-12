@@ -1,7 +1,7 @@
 # Tierlist X automation specification
 
-**Version:** 0.4.0
-**Date:** 2026-08-31
+**Version:** 0.5.0
+**Date:** 2026-11-12
 **Status:** Implemented
 
 ## Purpose
@@ -189,13 +189,52 @@ it can be reconsidered later.
 
 **Acceptance criteria:**
 
-- The default minimum interval is sixty minutes.
-- The default daily limit is four prepared or delivered announcements.
+- The default minimum interval is 720 minutes.
+- The default daily limit is two prepared or delivered announcements.
 - Budget exhaustion does not create an outbox row.
 - A delivery attempt within the minimum interval of the newest successful
   delivery returns the row to pending instead of posting.
 - `test_posting_budget_enforces_the_minimum_interval()` and
   `test_posting_budget_enforces_the_daily_limit()` cover both limits.
+
+### FR-011: Read-only X diagnostics
+
+When an operator runs `tierlist:x-status`, the system SHALL verify the expected
+account without uploading media, creating a post, or changing automation data.
+When an X operation fails, status and card commands SHALL retain the fixed local
+error summary and numeric HTTP status when available. They SHALL NOT print raw
+X response bodies or request headers. This implements ADR-0002's safe outcome
+metadata and mitigates TM-X-001 and TM-X-003.
+
+```gherkin
+Scenario: Rejected credentials remain diagnosable
+  Given X rejects account verification with HTTP 401
+  When the operator runs the account status command
+  Then the command fails with a fixed summary and HTTP 401
+  And no upload, post, or automation data change occurs
+  And X response content and credentials are absent from output
+```
+
+**Test files:** `tests/Feature/XDiagnosticsTest.php` and
+`tests/Feature/XStatusReadOnlyTest.php` cover safe errors, wrong-account rejection,
+and unchanged delivery records.
+
+### FR-012: Bounded answer discovery
+
+When discovering community answers, the renderer SHALL stop each pagination
+loop at the reported count or an empty page, subject to its configured page
+limit. An HTTP error on a requested page SHALL still fail rendering.
+
+```gherkin
+Scenario: A single question page is complete
+  Given the API returns 13 questions and a total count of 13
+  When the answer renderer discovers new answers
+  Then it doesn't request a second question page
+  And a genuine failure on a requested page still fails the run
+```
+
+**Test file:** `scripts/answers-card/render.test.mjs` covers zero, partial, exact,
+and multiple pages, empty pages with stale counts, page limits, and genuine 404s.
 
 ## Non-functional requirements
 
@@ -223,8 +262,8 @@ This mitigates TM-X-003.
 
 ### NFR-004: Deployment gate
 
-The production image build SHALL depend on the PHP test suite. A failed test
-run SHALL prevent deployment.
+The production image build SHALL depend on the PHP test suite and Node answer
+pagination tests. A failure in either suite SHALL prevent deployment.
 
 ## Configuration
 
@@ -281,6 +320,14 @@ the last day of each month, Damascus time.
 | FR-003, FR-004, FR-005 | Detector feature tests with time control and queue fakes |
 | FR-006, FR-007, FR-008 | Outbox and X job tests with stray HTTP requests blocked |
 | FR-009, FR-010 | Wrong-account, OAuth signature, interval, and daily budget tests |
+| FR-011 | `tests/Feature/XDiagnosticsTest.php`, `tests/Feature/XStatusReadOnlyTest.php` |
+| FR-012 | `scripts/answers-card/render.test.mjs` |
 | NFR-001, NFR-003 | Secret redaction assertions and outbox persistence tests |
 | NFR-002 | Schedule inspection plus overlap and transaction tests |
-| NFR-004 | CI workflow dependency and a successful workflow run |
+| NFR-004 | PHP and Node pagination tests in the deployment workflow, plus a successful workflow run |
+
+## Changelog
+
+| Date | Version | Changes |
+|---|---|---|
+| 2026-11-12 | 0.5.0 | Added bounded answer discovery and fixed-message, HTTP-status diagnostics; X authentication recovery still requires live verification |

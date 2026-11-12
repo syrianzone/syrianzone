@@ -69,28 +69,44 @@ inert. Keep a recovery copy in the matching 1Password item.
 
 When all credentials are present, each production deployment runs
 `tierlist:x-status` in the new image before it replaces the live container. The
-deployment stops and leaves the current release running if the token doesn't
-resolve to `X_EXPECTED_USER_ID`. An enabled deployment also runs the detector
-once after the swap, so a new installation records its silent baseline right
-away instead of waiting for the next five-minute scheduler tick.
+check is advisory: a failure emits a GitHub warning and deployment continues.
+An enabled deployment also runs the detector once after the swap. A successful
+deployment therefore proves neither X authentication nor public delivery.
 
 The access token must belong to `@SyrianZone`, and the developer app must have
 read and write permission. Before every post, the application asks X which user
 owns the token and compares that ID with `X_EXPECTED_USER_ID`. A delegate's
 personal token therefore fails closed instead of posting from the wrong account.
-The defaults allow no more than one new announcement activity per hour and four
+The defaults allow no more than one new announcement activity per twelve hours and two
 prepared or delivered announcements per day. Override them with
 `X_TIERLIST_MIN_POST_INTERVAL_MINUTES` and
 `X_TIERLIST_DAILY_POST_LIMIT` only after reviewing expected API spend.
 
-You can inspect the detector without sending a post:
+Check the configured account without publishing or changing automation state:
+
+    docker exec syrianzone-app php artisan tierlist:x-status
+
+The `answers ops` workflow also exposes this check through `action=x-status`.
+Failures print a fixed local summary and the numeric HTTP status when known.
+They never print X response bodies, authorization headers, or credential values.
+A 401 identifies authentication rejection; it doesn't prove which credential
+or app setting caused it. `answers:card-status` shows recorded answer outcomes.
+
+To run detection immediately:
 
     docker exec syrianzone-app php artisan tierlist:detect-rank-changes
 
-The first enabled run should say that no settled rank change was detected and
-create only the baseline row. Delivery outcomes live in
+This command writes automation state and can queue a public post. Only a new
+installation's first enabled run records a silent baseline. Delivery outcomes live in
 `tierlist_social_posts`. The scheduler relays any pending outbox row on every
 run, so a process stop between preparation and queueing does not lose it. A
 `needs_review` row means X may have accepted a request before the connection
 ended or returned an ambiguous response. Check the account before any manual
 retry.
+
+The `answers card` workflow runs every six hours and reads new answers from
+`answers.syrian.zone`. Pagination stops at the reported count or an empty page;
+an unexpected HTTP error still fails the run. Run its regression tests with
+`node --test scripts/answers-card/render.test.mjs`. Repairing discovery doesn't
+repair X authentication, and existing failed answer rows still require review
+before release.

@@ -9,7 +9,7 @@ on:
       action:
         description: what to do
         type: choice
-        options: [status, release]
+        options: [status, x-status, release]
         default: status
       answer_id:
         description: answer id (release only)
@@ -40,6 +40,8 @@ jobs:
             set -e
             if [ "$ACTION" = "release" ]; then
               docker exec syrianzone-app php artisan answers:release-card "$ANSWER_ID"
+            elif [ "$ACTION" = "x-status" ]; then
+              docker exec syrianzone-app php artisan tierlist:x-status
             else
               docker exec syrianzone-app php artisan answers:card-status
             fi

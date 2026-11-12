@@ -85,5 +85,7 @@ router.on('navigate', (event) => {
 
     window.gtag('config', GA_ID, {
         page_path: pagePath,
+        // GA4 reads the full URL from page_location, so strip it there too.
+        page_location: window.location.origin + pagePath,
     });
 });

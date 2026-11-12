@@ -170,7 +170,11 @@
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
-        gtag('config', "{{ config('services.google_analytics.id') }}");
+        // Send the URL without its query string or fragment: those carry search
+        // terms, room codes and route ids. Keep in sync with resources/js/app.tsx.
+        gtag('config', "{{ config('services.google_analytics.id') }}", {
+            page_location: window.location.origin + window.location.pathname,
+        });
     </script>
     @endif
 </body>

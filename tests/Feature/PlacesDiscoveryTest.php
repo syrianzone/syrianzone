@@ -6,15 +6,10 @@ use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 
-// UserFactory defaults role to admin; regular users must be explicit.
-function discoveryUser(array $attrs = []): User {
-  return User::factory()->create(array_merge(['role' => 'user'], $attrs));
-}
-
 // guides
 
 test('guides aggregates approved places per user with the exact shape', function () {
-  $guide = discoveryUser(['name' => 'ليلى', 'avatar_url' => null]);
+  $guide = User::factory()->create(['name' => 'ليلى', 'avatar_url' => null]);
   Place::factory()->approved()->create(['user_id' => $guide->id, 'saves_count' => 3]);
   Place::factory()->approved()->create(['user_id' => $guide->id, 'saves_count' => 4]);
   Place::factory()->create(['user_id' => $guide->id, 'saves_count' => 99]); // pending, ignored
@@ -40,7 +35,7 @@ test('guides aggregates approved places per user with the exact shape', function
 });
 
 test('guides points follow the formula: place, photos, long description, saves', function () {
-  $guide = discoveryUser();
+  $guide = User::factory()->create();
   $place = Place::factory()->approved()->create([
     'user_id' => $guide->id,
     'description' => str_repeat('م', 200), // mb 200 chars exactly hits the bonus
@@ -56,7 +51,7 @@ test('guides points follow the formula: place, photos, long description, saves',
 });
 
 test('guides description one char short of 200 misses the bonus', function () {
-  $guide = discoveryUser();
+  $guide = User::factory()->create();
   Place::factory()->approved()->create([
     'user_id' => $guide->id,
     'description' => str_repeat('م', 199),
@@ -84,8 +79,8 @@ test('level boundaries: 14 is L1, exactly 15 is L2, 74 is L2, 75 is L3', functio
   expect($levels->levelFor(999999))->toBe(10);
 
   // and through the API, crafted via saves_count on a single bare place
-  $l2 = discoveryUser();
-  $l3 = discoveryUser();
+  $l2 = User::factory()->create();
+  $l3 = User::factory()->create();
   Place::factory()->approved()->create(['user_id' => $l2->id, 'saves_count' => 59]); // 74
   Place::factory()->approved()->create(['user_id' => $l3->id, 'saves_count' => 60]); // 75
 
@@ -98,7 +93,7 @@ test('level boundaries: 14 is L1, exactly 15 is L2, 74 is L2, 75 is L3', functio
 });
 
 test('guides points ignore pending and rejected places entirely', function () {
-  $guide = discoveryUser();
+  $guide = User::factory()->create();
   Place::factory()->approved()->create(['user_id' => $guide->id, 'saves_count' => 1]);
   $pending = Place::factory()->create([
     'user_id' => $guide->id,
@@ -116,7 +111,7 @@ test('guides points ignore pending and rejected places entirely', function () {
 });
 
 test('guides points are computed inside the guides cache', function () {
-  $guide = discoveryUser();
+  $guide = User::factory()->create();
   $place = Place::factory()->approved()->create(['user_id' => $guide->id, 'saves_count' => 0]);
 
   $this->getJson('/api/v1/guides')->assertOk()->assertJsonPath('guides.0.points', 15);
@@ -130,8 +125,8 @@ test('guides points are computed inside the guides cache', function () {
 });
 
 test('guides default sort orders by points, not submission count', function () {
-  $fewPlacesManySaves = discoveryUser();
-  $manyPlaces = discoveryUser();
+  $fewPlacesManySaves = User::factory()->create();
+  $manyPlaces = User::factory()->create();
   // one place with 60 saves: 15 + 60 = 75 points, beating three bare places at 45
   Place::factory()->approved()->create(['user_id' => $fewPlacesManySaves->id, 'saves_count' => 60, 'description' => 'قصير']);
   Place::factory()->approved()->count(3)->create(['user_id' => $manyPlaces->id, 'description' => 'قصير']);
@@ -146,8 +141,8 @@ test('guides default sort orders by points, not submission count', function () {
 });
 
 test('guides still sorts by submissions when asked', function () {
-  $one = discoveryUser();
-  $three = discoveryUser();
+  $one = User::factory()->create();
+  $three = User::factory()->create();
   Place::factory()->approved()->create(['user_id' => $one->id, 'saves_count' => 60]);
   Place::factory()->approved()->count(3)->create(['user_id' => $three->id]);
 
@@ -157,8 +152,8 @@ test('guides still sorts by submissions when asked', function () {
 });
 
 test('guides sorts by saves', function () {
-  $saved = discoveryUser();
-  $prolific = discoveryUser();
+  $saved = User::factory()->create();
+  $prolific = User::factory()->create();
   Place::factory()->approved()->create(['user_id' => $saved->id, 'saves_count' => 10]);
   Place::factory()->approved()->count(2)->create(['user_id' => $prolific->id, 'saves_count' => 2]);
 
@@ -172,8 +167,8 @@ test('guides sorts by saves', function () {
 });
 
 test('guides sorts by recent activity in the last 30 days', function () {
-  $veteran = discoveryUser();
-  $active = discoveryUser();
+  $veteran = User::factory()->create();
+  $active = User::factory()->create();
   Place::factory()->count(2)->create([
     'user_id' => $veteran->id,
     'status' => 'approved',
@@ -190,9 +185,9 @@ test('guides sorts by recent activity in the last 30 days', function () {
 });
 
 test('guides excludes banned and soft deleted users', function () {
-  $banned = discoveryUser(['is_banned' => true]);
-  $deleted = discoveryUser();
-  $visible = discoveryUser();
+  $banned = User::factory()->create(['is_banned' => true]);
+  $deleted = User::factory()->create();
+  $visible = User::factory()->create();
   Place::factory()->approved()->create(['user_id' => $banned->id]);
   Place::factory()->approved()->create(['user_id' => $deleted->id]);
   Place::factory()->approved()->create(['user_id' => $visible->id]);
@@ -205,7 +200,7 @@ test('guides excludes banned and soft deleted users', function () {
 });
 
 test('guides omits users with no approved places', function () {
-  $unapproved = discoveryUser();
+  $unapproved = User::factory()->create();
   Place::factory()->create(['user_id' => $unapproved->id]);
   Place::factory()->rejected()->create(['user_id' => $unapproved->id]);
 
@@ -228,14 +223,14 @@ test('guides rejects unknown sort', function () {
 });
 
 test('guides caches per sort for five minutes', function () {
-  $guide = discoveryUser();
+  $guide = User::factory()->create();
   Place::factory()->approved()->create(['user_id' => $guide->id]);
 
   $this->getJson('/api/v1/guides')->assertOk()->assertJsonCount(1, 'guides');
   expect(Cache::has('places:guides:points'))->toBeTrue();
 
   // new data is invisible until the 5-minute cache expires
-  Place::factory()->approved()->create(['user_id' => discoveryUser()->id]);
+  Place::factory()->approved()->create(['user_id' => User::factory()->create()->id]);
   $this->getJson('/api/v1/guides')->assertOk()->assertJsonCount(1, 'guides');
 
   // a different sort has its own cache key and sees the fresh state
@@ -316,8 +311,8 @@ test('photo grid entries carry versioned urls and the place sub shape', function
 });
 
 test('photo grid filters to one guide', function () {
-  $guide = User::factory()->create(['role' => 'user']);
-  $other = User::factory()->create(['role' => 'user']);
+  $guide = User::factory()->create();
+  $other = User::factory()->create();
   $mine = Place::factory()->approved()->create(['user_id' => $guide->id]);
   $theirs = Place::factory()->approved()->create(['user_id' => $other->id]);
   PlacePhoto::factory()->create(['place_id' => $mine->id]);

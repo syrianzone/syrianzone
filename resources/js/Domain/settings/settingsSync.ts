@@ -1,5 +1,5 @@
 import axios from '@/Lib/axios';
-import { MUSLIM_GOVERNORATES } from '../prayer/governorates';
+import { getGovernorateNameAr, governorateById } from '../geography/governorates';
 import { PRAYER_METHODS } from '../prayer/methods';
 import { MUSLIM_LS_KEYS, prunePrayerLog } from './prefs';
 import { pushGuestBookmarks } from '../quran/guestBookmarks';
@@ -60,13 +60,13 @@ function lsSet(key: string, value: string): void {
 
 export function cityLabel(slug: string | null): string {
   if (!slug) return '—';
-  return MUSLIM_GOVERNORATES[slug]?.label ?? slug;
+  return governorateById(slug)?.nameAr ?? getGovernorateNameAr(slug);
 }
 
 /** Unknown slugs/ids (stale data) count as absent: the other side wins silently. */
 function sanitizeCity(v: string | null): string | null {
   if (!v) return null;
-  return MUSLIM_GOVERNORATES[v] ? v : null;
+  return governorateById(v) ? v : null;
 }
 
 function sanitizeMethod(v: string | null): string | null {

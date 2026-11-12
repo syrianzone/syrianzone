@@ -2,7 +2,6 @@
 
 use App\Models\CompassFigure;
 use App\Models\User;
-use App\Support\Permissions\PermissionCatalogue;
 use Inertia\Testing\AssertableInertia as Assert;
 
 /*
@@ -16,11 +15,6 @@ use Inertia\Testing\AssertableInertia as Assert;
 | Superadmins resolve the whole catalogue and therefore get it by default.
 |
 */
-
-function compassFigureManager(): User
-{
-    return User::factory()->create(['role' => 'user', 'permissions' => ['compass.figures']]);
-}
 
 function makeCompassFigure(array $overrides = []): CompassFigure
 {
@@ -54,12 +48,12 @@ it('gates the figures manager behind compass.figures', function () {
 it('lets a compass.figures holder and the superadmin manage the roster', function () {
     $figure = makeCompassFigure();
 
-    $this->actingAs(compassFigureManager())
+    $this->actingAs(capabilityUser('compass.figures'))
         ->getJson('/api/v1/admin/compass/figures')
         ->assertOk()
         ->assertJsonStructure(['success', 'figures']);
 
-    $this->actingAs(compassFigureManager())
+    $this->actingAs(capabilityUser('compass.figures'))
         ->postJson('/api/v1/admin/compass/figures', [
             'name' => 'شخصية جديدة',
             'category' => 'civ',
@@ -70,7 +64,7 @@ it('lets a compass.figures holder and the superadmin manage the roster', functio
         ->assertOk()
         ->assertJsonPath('figure.enabled', true);
 
-    $this->actingAs(compassFigureManager())
+    $this->actingAs(capabilityUser('compass.figures'))
         ->putJson("/api/v1/admin/compass/figures/{$figure->id}", [
             'name' => $figure->name,
             'category' => 'civ',
@@ -81,12 +75,12 @@ it('lets a compass.figures holder and the superadmin manage the roster', functio
         ->assertOk()
         ->assertJsonPath('figure.enabled', true);
 
-    $this->actingAs(compassFigureManager())
+    $this->actingAs(capabilityUser('compass.figures'))
         ->postJson("/api/v1/admin/compass/figures/{$figure->id}/toggle")
         ->assertOk()
         ->assertJsonPath('enabled', false);
 
-    $this->actingAs(compassFigureManager())
+    $this->actingAs(capabilityUser('compass.figures'))
         ->deleteJson("/api/v1/admin/compass/figures/{$figure->id}")
         ->assertOk();
 
@@ -106,7 +100,7 @@ it('only hands enabled figures to the compass page', function () {
 });
 
 it('rejects an unknown category', function () {
-    $this->actingAs(compassFigureManager())
+    $this->actingAs(capabilityUser('compass.figures'))
         ->postJson('/api/v1/admin/compass/figures', [
             'name' => 'سيئة',
             'category' => 'not-a-category',

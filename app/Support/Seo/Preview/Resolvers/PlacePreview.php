@@ -3,6 +3,7 @@
 namespace App\Support\Seo\Preview\Resolvers;
 
 use App\Models\Place;
+use App\Support\Facts;
 use App\Support\Seo\Og\CardSource;
 use App\Support\Seo\Og\RecordCard;
 use App\Support\Seo\Preview\Arabic;
@@ -20,20 +21,15 @@ final class PlacePreview implements CardSource, PreviewResolver
     use DescribesCards;
 
     /**
-     * Label and glyph per category. The labels are the ones the map uses
-     * (Domain/places/categories.ts); a test keeps them equal.
+     * Label and glyph per category, from the shared place vocabulary
+     * (resources/data/places.json) that the map's filter chips read too.
+     *
+     * @return array<string, array{0: string, 1: string}>
      */
-    public const CATEGORIES = [
-        'historical' => ['تاريخي', 'Landmark'],
-        'natural' => ['طبيعي', 'TreePine'],
-        'cultural' => ['ثقافي', 'Building2'],
-        'religious' => ['ديني', 'Landmark'],
-        'abandoned' => ['مهجور', 'Building2'],
-        'viewpoint' => ['إطلالة', 'Mountain'],
-        'market' => ['سوق', 'Store'],
-        'food' => ['مأكولات', 'Utensils'],
-        'other' => ['آخر', 'MapPin'],
-    ];
+    public static function categories(): array
+    {
+        return Facts::placeCategoryCards();
+    }
 
     public static function cardType(): string
     {
@@ -57,7 +53,7 @@ final class PlacePreview implements CardSource, PreviewResolver
             return null;
         }
 
-        [$category] = self::CATEGORIES[$place->category] ?? self::CATEGORIES['other'];
+        [$category] = self::categories()[$place->category] ?? self::categories()['other'];
 
         return new Preview(
             title: $place->name.' | مشوار',
@@ -86,7 +82,7 @@ final class PlacePreview implements CardSource, PreviewResolver
 
     private function describe(Place $place): RecordCard
     {
-        [$label, $glyph] = self::CATEGORIES[$place->category] ?? self::CATEGORIES['other'];
+        [$label, $glyph] = self::categories()[$place->category] ?? self::categories()['other'];
         $photo = $place->photos->first()?->display_url;
 
         $model = [

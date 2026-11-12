@@ -1,5 +1,7 @@
 <?php
 
+use App\Support\Facts;
+
 return [
 
     /*
@@ -96,7 +98,7 @@ return [
 
     'x_tierlist' => [
         'enabled' => env('X_TIERLIST_ENABLED', false),
-        'poll_slug' => env('X_TIERLIST_POLL_SLUG', 'best-ministers'),
+        'poll_slug' => env('X_TIERLIST_POLL_SLUG', Facts::polls()['core_slug']),
         'settle_minutes' => env('X_TIERLIST_SETTLE_MINUTES', 15),
         'min_post_interval_minutes' => env('X_TIERLIST_MIN_POST_INTERVAL_MINUTES', 720),
         'daily_post_limit' => env('X_TIERLIST_DAILY_POST_LIMIT', 2),

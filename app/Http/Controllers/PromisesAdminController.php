@@ -12,6 +12,7 @@ use App\Services\Promises\PromiseRules;
 use App\Services\Promises\PromiseSectorService;
 use App\Services\Promises\PromiseSpeakerService;
 use App\Services\Promises\SpeakerDirectory;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -363,6 +364,6 @@ class PromisesAdminController extends Controller
     /** Whether this staff member may rule on promises (verdicts, postponement). */
     private function mayRule(Request $request): bool
     {
-        return (bool) $request->user()?->hasPermission('promises.rule');
+        return (bool) $request->user()?->hasPermission(PermissionCatalogue::PROMISES_RULE);
     }
 }

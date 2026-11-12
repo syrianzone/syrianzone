@@ -206,7 +206,7 @@ $request->validate([
 ]);
 ```
 
-These rules and their Arabic messages live in `App\Services\Places\PlaceRules` (one definition per field, the Syria box and the category list as constants), used here, by the owner endpoints, by the admin editor and by the agent tools. (Duplicate detection is a client-side step; the server does not block duplicates.) Creates place with `status => 'pending'` and photos via `PlaceImageService` inside `DB::transaction`. Response 201: `{ "id": 12, "status": "pending" }`.
+These rules and their Arabic messages live in `App\Services\Places\PlaceRules` (one definition per field, reading the Syria box from `resources/data/syria.json` and the category list from `resources/data/places.json`), used here, by the owner endpoints, by the admin editor and by the agent tools. (Duplicate detection is a client-side step; the server does not block duplicates.) Creates place with `status => 'pending'` and photos via `PlaceImageService` inside `DB::transaction`. Response 201: `{ "id": 12, "status": "pending" }`.
 
 **`GET /api/v1/my/places`** -> `PlaceController@mine`. Middleware `throttle:60,1`. Own places, newest first, `->paginate(20)`, `data` items are `MY_PLACE` (includes `status` and `rejection_reason`).
 

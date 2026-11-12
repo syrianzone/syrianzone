@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Concerns;
 
 use App\Models\User;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Http\Request;
 
 trait ChecksTransitScope
@@ -64,13 +65,7 @@ trait ChecksTransitScope
     {
         return $user instanceof User
             && $user->isTransitScopeRestricted()
-            && $user->hasAnyPermission([
-                'transit.review_drafts',
-                'transit.approve',
-                'transit.reject',
-                'transit.edit_routes',
-                'transit.delete_routes',
-            ]);
+            && $user->hasAnyPermission(PermissionCatalogue::forModule('transit'));
     }
 
     /**

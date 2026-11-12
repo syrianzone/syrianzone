@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, ExternalLink } from 'lucide-react';
 import { usePage } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
+import popupFacts from '../../data/site-popup.json';
 
 export interface SitePopup {
     enabled: boolean;
@@ -13,15 +14,9 @@ export interface SitePopup {
     version: number;
 }
 
-const FALLBACK_POPUP: SitePopup = {
-    enabled: true,
-    title: "صوتك بيعمل فرق!",
-    description: "ساهم في فك الحظر عن الخدمات التقنية في سوريا. صوّت للخدمات الأكثر أهمية بالنسبة لك لتكون من أولويات العمل.",
-    buttonText: "صوّت الآن",
-    dismissText: "لاحقاً",
-    link: "https://unblocksyria.com",
-    version: 1,
-};
+// The copy ships in resources/data/site-popup.json, which SiteSetting::defaults()
+// reads too: the server prop overrides it, the file keeps the two in step.
+const FALLBACK_POPUP: SitePopup = popupFacts;
 
 const UnblockSyriaNotification = () => {
     const { props } = usePage<{ sitePopup?: SitePopup }>();

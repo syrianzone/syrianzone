@@ -14,7 +14,7 @@ import {
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
-import { MUSLIM_GOVERNORATES } from '../../../Domain/prayer/governorates';
+import { governorateById, governoratesByPickerOrder } from '@/Domain/geography/governorates';
 import { formatDuration } from '../../../Lib/format';
 import { PRAYER_KEYS, PRAYER_LABELS, PRAYER_METHODS, type PrayerKey } from '../../../Domain/prayer/methods';
 import { TRACKED_PRAYERS, todayKey, type MuslimPrefs } from '../../../Domain/settings/prefs';
@@ -74,8 +74,8 @@ function PrayerSettingsBody({ prefs, setPrefs }: {
           <Select value={prefs.city} onValueChange={(v) => setPrefs({ city: v })}>
             <SelectTrigger dir="rtl" aria-label="المدينة"><SelectValue /></SelectTrigger>
             <SelectContent dir="rtl">
-              {Object.entries(MUSLIM_GOVERNORATES).map(([v, g]) => (
-                <SelectItem key={v} value={v}>{g.label}</SelectItem>
+              {governoratesByPickerOrder().map((governorate) => (
+                <SelectItem key={governorate.id} value={governorate.id}>{governorate.nameAr}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -215,7 +215,7 @@ export default function PrayerView({ prefs, setPrefs, isLoggedIn }: Props) {
     ? prefs.geo.label
     : prefs.locMode === 'custom'
       ? 'إحداثيات مخصصة'
-      : (MUSLIM_GOVERNORATES[prefs.city]?.label ?? prefs.city);
+      : (governorateById(prefs.city)?.nameAr ?? prefs.city);
 
   const prayerSettingsOpen = useAppShell((s) => s.muslimPrayerSettingsOpen);
   const setPrayerSettingsOpen = useAppShell((s) => s.setMuslimPrayerSettingsOpen);

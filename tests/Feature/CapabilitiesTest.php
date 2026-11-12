@@ -4,7 +4,6 @@ use App\Filament\Resources\UserResource;
 use App\Http\Middleware\AutoLoginDevUser;
 use App\Models\Place;
 use App\Models\Poll;
-use App\Models\RouteDraft;
 use App\Models\User;
 use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Support\Facades\DB;
@@ -31,37 +30,6 @@ use Illuminate\Support\Facades\Schema;
 */
 
 // ─── Fixtures ──────────────────────────────────────────────────────────────
-
-/**
- * Insert a city, since route_drafts.city_id is a foreign key and there is no
- * CityFactory. Named distinctly from TransitGovernorateScopeTest's scopeCity(),
- * because Pest shares global functions across files.
- */
-function capabilitiesCity(string $id, string $nameEn = 'City'): void
-{
-    $geometry = function (array $shape) {
-        $json = json_encode($shape, JSON_THROW_ON_ERROR);
-
-        // SQLite has no spatial types, so the raw geometry is stored as text.
-        if (DB::connection()->getDriverName() === 'sqlite') {
-            return $json;
-        }
-
-        $quoted = DB::connection()->getPdo()->quote($json);
-
-        return DB::raw("ST_GeomFromGeoJSON({$quoted})");
-    };
-
-    DB::table('cities')->insert([
-        'id' => $id,
-        'name_ar' => $nameEn,
-        'name_en' => $nameEn,
-        'center' => $geometry(['type' => 'Point', 'coordinates' => [36.72, 34.73]]),
-        'bounds' => $geometry(['type' => 'Polygon', 'coordinates' => [[[36.0, 34.0], [37.0, 34.0], [37.0, 35.0], [36.0, 35.0], [36.0, 34.0]]]]),
-        'zoom' => 10,
-        'status' => 'active',
-    ]);
-}
 
 /**
  * Every role value that no longer grants anything. The six module roles stopped
@@ -455,16 +423,10 @@ it('lets an unscoped transit editor edit another users draft', function () {
     // scope — so they keep unrestricted access. Worth pinning: routing
     // capability holders into the scope branch could have denied exactly the
     // users the change was meant to empower.
-    capabilitiesCity('damascus', 'Damascus');
+    seedCity('damascus', ['name_ar' => 'Damascus', 'name_en' => 'Damascus']);
     $owner = User::factory()->create();
 
-    $draft = RouteDraft::create([
-        'user_id' => $owner->id,
-        'city_id' => 'damascus',
-        'name_ar' => 'مسودة',
-        'geojson' => ['type' => 'FeatureCollection', 'features' => []],
-        'status' => 'pending',
-    ]);
+    $draft = transitDraft('damascus', ['user_id' => $owner->id]);
 
     $editor = User::factory()->withPermissions(['transit.edit_routes'])->create();
 
@@ -472,16 +434,10 @@ it('lets an unscoped transit editor edit another users draft', function () {
 });
 
 it('keeps a scoped transit editor inside their governorates', function () {
-    capabilitiesCity('aleppo', 'Aleppo');
+    seedCity('aleppo', ['name_ar' => 'Aleppo', 'name_en' => 'Aleppo']);
     $owner = User::factory()->create();
 
-    $draft = RouteDraft::create([
-        'user_id' => $owner->id,
-        'city_id' => 'aleppo',
-        'name_ar' => 'مسودة',
-        'geojson' => ['type' => 'FeatureCollection', 'features' => []],
-        'status' => 'pending',
-    ]);
+    $draft = transitDraft('aleppo', ['user_id' => $owner->id]);
 
     $editor = User::factory()->create([
         'permissions' => ['transit.edit_routes'],
@@ -496,16 +452,10 @@ it('keeps a scoped transit editor inside their governorates', function () {
 it('does not let a transit approver edit a draft they do not own', function () {
     // transit.approve is a real capability that used to fall through the role
     // list and land on the owner check.
-    capabilitiesCity('damascus', 'Damascus');
+    seedCity('damascus', ['name_ar' => 'Damascus', 'name_en' => 'Damascus']);
     $owner = User::factory()->create();
 
-    $draft = RouteDraft::create([
-        'user_id' => $owner->id,
-        'city_id' => 'damascus',
-        'name_ar' => 'مسودة',
-        'geojson' => ['type' => 'FeatureCollection', 'features' => []],
-        'status' => 'pending',
-    ]);
+    $draft = transitDraft('damascus', ['user_id' => $owner->id]);
 
     $approver = User::factory()->withPermissions(['transit.approve'])->create();
 
@@ -515,32 +465,27 @@ it('does not let a transit approver edit a draft they do not own', function () {
 });
 
 it('still lets the owner edit their own draft without a capability', function () {
-    capabilitiesCity('damascus', 'Damascus');
+    seedCity('damascus', ['name_ar' => 'Damascus', 'name_en' => 'Damascus']);
     $owner = User::factory()->create();
 
-    $draft = RouteDraft::create([
-        'user_id' => $owner->id,
-        'city_id' => 'damascus',
-        'name_ar' => 'مسودة',
-        'geojson' => ['type' => 'FeatureCollection', 'features' => []],
-        'status' => 'pending',
-    ]);
+    $draft = transitDraft('damascus', ['user_id' => $owner->id]);
 
     $this->actingAs($owner)->getJson("/api/v1/studio/routes/{$draft->id}")->assertOk();
 });
 
-it('keeps GuessWho superadmin-only even for a full-catalogue account', function () {
-    // The one place access was narrowed rather than re-expressed: minting
-    // guesswho.* capabilities for a novelty game with one operator was not worth
-    // a fifth module in the catalogue. Pinned so it is never widened by
-    // accident, and so the migration note stays honest — an account that ran
-    // GuessWho as `admin` has to be promoted.
-    $staff = User::factory()->withPermissions(PermissionCatalogue::all())->create();
+it('gates GuessWho on guesswho.manage', function () {
+    // This used to be superadmin-only by role, because minting a guesswho.*
+    // capability for a novelty game was judged not worth a catalogue module.
+    // It is now part of the one capability vocabulary: the superadmin role
+    // resolves it through the catalogue, and anyone else needs the explicit
+    // grant, exactly like every other admin module.
+    $plain = User::factory()->create(['role' => 'user', 'permissions' => []]);
+    $this->actingAs($plain)->get('/admin/guesswho')->assertForbidden();
 
-    $this->actingAs($staff)->get('/admin/guesswho')->assertForbidden();
+    $operator = User::factory()->withPermissions([PermissionCatalogue::GUESSWHO_MANAGE])->create();
+    $this->actingAs($operator)->get('/admin/guesswho')->assertOk();
 
     $superadmin = User::factory()->create(['role' => 'superadmin']);
-
     $this->actingAs($superadmin)->get('/admin/guesswho')->assertOk();
 });
 

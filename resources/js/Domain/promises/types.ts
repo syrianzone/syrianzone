@@ -1,16 +1,22 @@
 /** Payload shapes produced by App\Services\Promises\PromisePresenter. */
 
-export type PromiseStatus =
-    | 'pending'
-    | 'in_progress'
-    | 'fulfilled'
-    | 'partially_fulfilled'
-    | 'broken'
-    | 'postponed'
-    | 'retracted';
+/**
+ * The compile-time projection of resources/data/promises.json. JSON cannot give
+ * literal types, so the keys are written once here and checked against the file
+ * in Domain/promises/status.ts.
+ */
+export const PROMISE_STATUS_KEYS = [
+    'pending', 'in_progress', 'fulfilled', 'partially_fulfilled',
+    'broken', 'postponed', 'retracted',
+] as const;
+
+/** The stored states: the editorial statuses plus the derived `overdue`. */
+export const PROMISE_STATE_KEYS = [...PROMISE_STATUS_KEYS, 'overdue'] as const;
+
+export type PromiseStatus = (typeof PROMISE_STATUS_KEYS)[number];
 
 /** The editorial status plus the derived `overdue` state. */
-export type PromiseState = PromiseStatus | 'overdue';
+export type PromiseState = (typeof PROMISE_STATE_KEYS)[number];
 
 export interface SectorOption {
     id: string;

@@ -17,7 +17,7 @@ import StateBadge from '@/Domain/promises/StateBadge';
 import { formatDate } from '@/Domain/promises/format';
 import { PENDING_SPEAKER_LABEL } from '@/Domain/promises/status';
 import AdminHeader from './_components/AdminHeader';
-import { useCan } from './_lib/useCan';
+import { useCan } from '@/Lib/useCan';
 import { ORIGIN_LABEL, REVIEW_STATUS_LABEL, type AdminPromiseRow, type ReviewStatus } from './_lib/types';
 
 interface Props {

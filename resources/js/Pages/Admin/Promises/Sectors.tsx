@@ -19,7 +19,7 @@ import { extractApiErrorMessage, extractApiFieldErrors } from '@/Lib/apiError';
 import FieldError, { fieldA11y } from '@/Components/ui/field-error';
 import { SECTOR_ICONS, SECTOR_ICON_LABELS, sectorIcon } from '@/Domain/promises/status';
 import AdminHeader from './_components/AdminHeader';
-import { useCan } from './_lib/useCan';
+import { useCan } from '@/Lib/useCan';
 
 interface AdminSector {
     id: string;

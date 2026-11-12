@@ -8,6 +8,7 @@ use App\Models\Route;
 use App\Models\Stop;
 use App\Services\Transit\GovernorateIconService;
 use App\Services\Transit\PublishedRoutes;
+use App\Support\Facts;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -177,15 +178,17 @@ class TransitController extends Controller
 
     public function getNearbyStops(Request $request)
     {
+        $transit = Facts::transit();
+
         $request->validate([
             'lat' => 'required|numeric',
             'lng' => 'required|numeric',
-            'radius' => 'nullable|numeric|min:1|max:5000',
+            'radius' => 'nullable|numeric|min:1|max:'.$transit['nearby_stops_radius_max_m'],
         ]);
 
         $lat = $request->lat;
         $lng = $request->lng;
-        $radius = min((float) ($request->radius ?? 500), 5000);
+        $radius = min((float) ($request->radius ?? $transit['nearby_stops_radius_m']), $transit['nearby_stops_radius_max_m']);
 
         // Build the comparison point through the same GeoJSON path the stops were
         // stored with (ST_GeomFromGeoJSON => SRID 4326, [lng, lat] axis order). Using

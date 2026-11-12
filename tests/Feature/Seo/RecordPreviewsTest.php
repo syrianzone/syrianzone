@@ -9,44 +9,24 @@ use App\Support\Seo\Preview\Preview;
 use App\Support\Seo\Preview\PreviewResolver;
 use App\Support\Seo\Preview\Previews;
 use App\Support\Seo\Preview\Resolvers\PromisePreview;
-use App\Support\Seo\SeoMeta;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
-function previewMeta(string $uri): array
-{
-    return SeoMeta::resolve(Request::create($uri, 'GET'));
-}
-
+/**
+ * A city plus the routes the transit previews count for it.
+ */
 function seedPreviewCity(string $id, string $name, int $published = 0, int $drafts = 0): void
 {
-    $geometry = function (array $geojson) {
-        $json = json_encode($geojson);
-
-        return DB::connection()->getDriverName() === 'sqlite'
-            ? $json
-            : DB::raw('ST_GeomFromGeoJSON('.DB::connection()->getPdo()->quote($json).')');
-    };
-
-    DB::table('cities')->insert([
-        'id' => $id,
+    seedCity($id, [
         'name_ar' => $name,
         'name_en' => ucfirst($id),
-        'center' => $geometry(['type' => 'Point', 'coordinates' => [36.72, 34.73]]),
-        'bounds' => $geometry(['type' => 'Polygon', 'coordinates' => [[[36.5, 34.5], [36.9, 34.5], [36.9, 34.9], [36.5, 34.9], [36.5, 34.5]]]]),
-        'zoom' => 12,
-        'status' => 'active',
-        'created_at' => now(),
-        'updated_at' => now(),
+        'bounds' => [[36.5, 34.5], [36.9, 34.9]],
     ]);
 
     foreach (['published' => $published, 'draft' => $drafts] as $status => $count) {
         for ($i = 0; $i < $count; $i++) {
-            DB::table('routes')->insert([
-                'id' => "{$id}-{$status}-{$i}", 'city_id' => $id, 'name_ar' => "خط {$i}", 'status' => $status,
-                'color_index' => $i, 'created_at' => now(), 'updated_at' => now(),
-            ]);
+            transitRoute("{$id}-{$status}-{$i}", $id, ['name_ar' => "خط {$i}", 'status' => $status, 'color_index' => $i]);
         }
     }
 }
@@ -59,7 +39,7 @@ test('a published promise previews as itself with a card of its own', function (
         'deadline_date' => '2027-03-14',
     ]);
 
-    $meta = previewMeta('/promises/'.$promise->number);
+    $meta = seoMetaFor('/promises/'.$promise->number);
     $card = Previews::cardSource('promise')->card((string) $promise->number);
 
     expect($meta['title'])->toBe('إعادة الكهرباء إلى حلب — الوعد رقم '.$promise->number.' | عداد الوعود')
@@ -76,7 +56,7 @@ test('a published promise previews as itself with a card of its own', function (
 test('a promise is described as a dated article under its own name', function () {
     $promise = Promise::factory()->published()->create(['title' => 'إعادة الكهرباء إلى حلب']);
 
-    $meta = previewMeta('/promises/'.$promise->number);
+    $meta = seoMetaFor('/promises/'.$promise->number);
     $graph = collect(json_decode($meta['json_ld'], true)['@graph']);
     $article = $graph->firstWhere('@type', 'Article');
 
@@ -125,20 +105,24 @@ test('a promise card follows the state the page shows and changes address with i
 });
 
 test('promise state labels on the card are the ones the page uses', function () {
-    $source = file_get_contents(resource_path('js/Domain/promises/status.ts'));
+    // Both sides read resources/data/promises.json, so this asserts the resolver
+    // serves the shared vocabulary rather than a copy of it.
+    $facts = json_decode(file_get_contents(resource_path('data/promises.json')), true, flags: JSON_THROW_ON_ERROR);
 
-    foreach (PromisePreview::STATES as $state => [$label]) {
-        expect($source)->toContain("{$state}: { label: '{$label}'");
+    expect(array_keys(PromisePreview::states()))->toBe(array_column($facts['states'], 'key'));
+
+    foreach ($facts['states'] as $state) {
+        expect(PromisePreview::states()[$state['key']])->toBe([$state['label'], $state['card_tone'], $state['glyph']]);
     }
 });
 
 test('an unpublished or unknown promise reveals nothing', function () {
     $draft = Promise::factory()->create(['title' => 'وعد لم يُنشر بعد', 'number' => 77]);
 
-    expect(previewMeta('/promises/77')['title'])->toBe(config('seo.default_title'))
+    expect(seoMetaFor('/promises/77')['title'])->toBe(config('seo.default_title'))
         ->and(Previews::cardSource('promise')->card('77'))->toBeNull()
         ->and(Previews::cardSource('promise')->card('not-a-number'))->toBeNull()
-        ->and(previewMeta('/promises/424242')['image'])->toBe('https://syrian.zone'.StaticCards::url('home'));
+        ->and(seoMetaFor('/promises/424242')['image'])->toBe('https://syrian.zone'.StaticCards::url('home'));
 });
 
 test('a poll previews with a card of its own; the tier list keeps its page card', function () {
@@ -147,19 +131,19 @@ test('a poll previews with a card of its own; the tier list keeps its page card'
 
     $card = Previews::cardSource('poll')->card('governors-2026');
 
-    expect(previewMeta('/polls/governors-2026')['image'])->toBe('https://syrian.zone/og/r/poll/governors-2026.png?v='.$card->version())
-        ->and(previewMeta('/polls/governors-2026/leaderboard')['image'])->toBe(previewMeta('/polls/governors-2026')['image'])
-        ->and(previewMeta('/polls/'.$poll->id)['canonical'])->toBe('https://syrian.zone/polls/governors-2026')
+    expect(seoMetaFor('/polls/governors-2026')['image'])->toBe('https://syrian.zone/og/r/poll/governors-2026.png?v='.$card->version())
+        ->and(seoMetaFor('/polls/governors-2026/leaderboard')['image'])->toBe(seoMetaFor('/polls/governors-2026')['image'])
+        ->and(seoMetaFor('/polls/'.$poll->id)['canonical'])->toBe('https://syrian.zone/polls/governors-2026')
         ->and($card->model['title'])->toBe('تقييم المحافظين')
         ->and($card->model['pills'][0]['label'])->toBe('استطلاع مفتوح')
-        ->and(previewMeta('/polls/best-ministers')['image'])->toBe('https://syrian.zone'.StaticCards::url('tierlist'))
-        ->and(previewMeta('/polls/best-ministers/leaderboard')['image'])->toBe('https://syrian.zone'.StaticCards::url('tierlist-leaderboard'))
+        ->and(seoMetaFor('/polls/best-ministers')['image'])->toBe('https://syrian.zone'.StaticCards::url('tierlist'))
+        ->and(seoMetaFor('/polls/best-ministers/leaderboard')['image'])->toBe('https://syrian.zone'.StaticCards::url('tierlist-leaderboard'))
         ->and(Previews::cardSource('poll')->card('best-ministers'))->toBeNull();
 
     $poll->update(['is_active' => false]);
 
     expect(Previews::cardSource('poll')->card('governors-2026')->model['pills'][0]['label'])->toBe('استطلاع مغلق')
-        ->and(previewMeta('/polls/governors-2026')['robots'])->toBe('noindex, follow');
+        ->and(seoMetaFor('/polls/governors-2026')['robots'])->toBe('noindex, follow');
 });
 
 test('a transit city card shows its live number of published routes', function () {
@@ -168,8 +152,8 @@ test('a transit city card shows its live number of published routes', function (
 
     $card = Previews::cardSource('city')->card('homs');
 
-    expect(previewMeta('/transit/city/homs')['title'])->toBe('مواصلات حمص | ترانزيت')
-        ->and(previewMeta('/transit/city/homs')['image'])->toBe('https://syrian.zone/og/r/city/homs.png?v='.$card->version())
+    expect(seoMetaFor('/transit/city/homs')['title'])->toBe('مواصلات حمص | ترانزيت')
+        ->and(seoMetaFor('/transit/city/homs')['image'])->toBe('https://syrian.zone/og/r/city/homs.png?v='.$card->version())
         ->and($card->model['art'])->toBe(['type' => 'figure', 'value' => 12, 'label' => 'خطاً'])
         ->and(Previews::cardSource('city')->card('idlib')->model['art'])->toBe(['type' => 'icon', 'icon' => 'transit'])
         ->and(Previews::cardSource('city')->card('atlantis'))->toBeNull();
@@ -180,7 +164,7 @@ test('a transit city card shows its live number of published routes', function (
 });
 
 test('a game room link previews as an invitation and is never indexed', function () {
-    $meta = previewMeta('/guesswho/room/ABCD');
+    $meta = seoMetaFor('/guesswho/room/ABCD');
 
     expect($meta['title'])->toBe('دعوة للعب «من هو؟» | Syrian Zone')
         ->and($meta['image'])->toBe('https://syrian.zone'.StaticCards::url('guesswho-invite'))
@@ -188,7 +172,7 @@ test('a game room link previews as an invitation and is never indexed', function
 });
 
 test('a shared compass result has its own card and is never indexed', function () {
-    $meta = previewMeta('/compass/s/abc123');
+    $meta = seoMetaFor('/compass/s/abc123');
 
     expect($meta['title'])->toContain('نتيجة مشتركة')
         ->and($meta['image'])->toBe('https://syrian.zone'.StaticCards::url('compass-share'))
@@ -204,7 +188,7 @@ test('a resolver that throws leaves the page with the site defaults', function (
         }
     });
 
-    expect(previewMeta('/promises/1')['title'])->toBe(config('seo.default_title'));
+    expect(seoMetaFor('/promises/1')['title'])->toBe(config('seo.default_title'));
 });
 
 test('counted nouns and dates read correctly in Arabic', function () {

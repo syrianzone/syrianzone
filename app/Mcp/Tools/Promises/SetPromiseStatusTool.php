@@ -42,7 +42,7 @@ class SetPromiseStatusTool extends PromisesTool
 
             'status' => $schema->string()
                 ->description('The new status; it must differ from the current one.')
-                ->enum(Promise::STATUSES)
+                ->enum(Promise::statuses())
                 ->required(),
 
             'happened_on' => $schema->string()

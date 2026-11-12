@@ -6,6 +6,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/Components/ui/alert";
 import { AlertCircleIcon, BarChart3Icon } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import MainLayout from '@/Layouts/MainLayout';
+import { CORE_POLL_SLUG } from '@/Domain/polls/core';
 
 interface Candidate {
     id: string;
@@ -85,7 +86,7 @@ export default function Index({ poll, candidates = [], groups = [], voteDay }: T
                         pollId={poll.id}
                         voteDay={voteDay}
                         submitApiPath="/api/submit"
-                        pollSlug="best-ministers"
+                        pollSlug={CORE_POLL_SLUG}
                     />
                 ) : (
                     <Card className="max-w-screen-lg mx-auto">

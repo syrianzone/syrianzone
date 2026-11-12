@@ -8,6 +8,8 @@ use App\Models\Route;
 use App\Models\RouteDraft;
 use App\Services\Transit\TransitAdminService;
 use App\Services\Transit\TransitRouteComposer;
+use App\Support\Facts;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
@@ -38,16 +40,16 @@ class TransitAdminController extends Controller
     public function approve(Request $request, $id): SymfonyResponse
     {
         $validated = $request->validate([
-            'color_index' => 'nullable|integer|min:0',
+            'color_index' => 'nullable|integer|min:0|max:'.Facts::transit()['color_index_max'],
         ]);
 
         $draft = RouteDraft::with('linkedRoute')->findOrFail($id);
 
-        $this->ensureTransitCityAccess($request, $draft->city_id, ['transit.approve']);
+        $this->ensureTransitCityAccess($request, $draft->city_id, [PermissionCatalogue::TRANSIT_APPROVE]);
 
         if ($draft->route_id) {
             $linkedCityId = Route::whereKey($draft->route_id)->value('city_id');
-            $this->ensureTransitCityAccess($request, $linkedCityId, ['transit.approve']);
+            $this->ensureTransitCityAccess($request, $linkedCityId, [PermissionCatalogue::TRANSIT_APPROVE]);
         }
 
         try {
@@ -76,11 +78,11 @@ class TransitAdminController extends Controller
 
         $draft = RouteDraft::findOrFail($id);
 
-        $this->ensureTransitCityAccess($request, $draft->city_id, ['transit.reject']);
+        $this->ensureTransitCityAccess($request, $draft->city_id, [PermissionCatalogue::TRANSIT_REJECT]);
 
         if ($draft->route_id) {
             $linkedCityId = Route::whereKey($draft->route_id)->value('city_id');
-            $this->ensureTransitCityAccess($request, $linkedCityId, ['transit.reject']);
+            $this->ensureTransitCityAccess($request, $linkedCityId, [PermissionCatalogue::TRANSIT_REJECT]);
         }
 
         $this->transit->rejectDraft(
@@ -110,7 +112,7 @@ class TransitAdminController extends Controller
 
         $route = Route::findOrFail($id);
 
-        $this->ensureTransitCityAccess($request, $route->city_id, ['transit.edit_routes']);
+        $this->ensureTransitCityAccess($request, $route->city_id, [PermissionCatalogue::TRANSIT_EDIT_ROUTES]);
 
         try {
             $updated = $this->transit->setRouteStatus(
@@ -148,7 +150,7 @@ class TransitAdminController extends Controller
         $this->ensureTransitCitiesAccess(
             $request,
             [$route->city_id, $validated['city_id']],
-            ['transit.edit_routes'],
+            [PermissionCatalogue::TRANSIT_EDIT_ROUTES],
         );
 
         try {
@@ -177,7 +179,7 @@ class TransitAdminController extends Controller
     {
         $route = Route::findOrFail($id);
 
-        $this->ensureTransitCityAccess($request, $route->city_id, ['transit.delete_routes']);
+        $this->ensureTransitCityAccess($request, $route->city_id, [PermissionCatalogue::TRANSIT_DELETE_ROUTES]);
 
         try {
             $this->transit->destroyRoute($route, $request->user()?->getAuthIdentifier());
@@ -197,12 +199,12 @@ class TransitAdminController extends Controller
 
         // Guard before validation here, as the original did: an out-of-scope
         // caller learns nothing about the payload.
-        $this->ensureTransitCityAccess($request, $route->city_id, ['transit.edit_routes']);
+        $this->ensureTransitCityAccess($request, $route->city_id, [PermissionCatalogue::TRANSIT_EDIT_ROUTES]);
 
         $validated = $request->validate([
             'name_ar' => 'sometimes|string|max:255',
             'name_en' => 'nullable|string|max:255',
-            'color_index' => 'nullable|integer|min:0',
+            'color_index' => 'nullable|integer|min:0|max:'.Facts::transit()['color_index_max'],
             'price_new' => 'nullable|integer',
             'price_old' => 'nullable|integer',
         ]);
@@ -252,7 +254,7 @@ class TransitAdminController extends Controller
         $routeA = Route::findOrFail($validated['route_a_id']);
         $routeB = Route::findOrFail($validated['route_b_id']);
 
-        $this->ensureTransitCitiesAccess($request, [$routeA->city_id, $routeB->city_id], ['transit.edit_routes']);
+        $this->ensureTransitCitiesAccess($request, [$routeA->city_id, $routeB->city_id], [PermissionCatalogue::TRANSIT_EDIT_ROUTES]);
 
         try {
             $result = $this->composer->combine(
@@ -289,7 +291,7 @@ class TransitAdminController extends Controller
 
         $route = Route::findOrFail($validated['route_id']);
 
-        $this->ensureTransitCityAccess($request, $route->city_id, ['transit.edit_routes']);
+        $this->ensureTransitCityAccess($request, $route->city_id, [PermissionCatalogue::TRANSIT_EDIT_ROUTES]);
 
         try {
             $result = $this->composer->split(
@@ -318,7 +320,7 @@ class TransitAdminController extends Controller
     {
         $route = Route::findOrFail($id);
 
-        $this->ensureTransitCityAccess($request, $route->city_id, ['transit.review_drafts']);
+        $this->ensureTransitCityAccess($request, $route->city_id, [PermissionCatalogue::TRANSIT_REVIEW_DRAFTS]);
 
         $formatted = $route->stopPoints()->map(function ($s) {
             $coords = json_decode((string) $s->geojson, true)['coordinates'] ?? [0, 0];
@@ -337,7 +339,7 @@ class TransitAdminController extends Controller
     {
         $route = Route::findOrFail($id);
 
-        $this->ensureTransitCityAccess($request, $route->city_id, ['transit.review_drafts']);
+        $this->ensureTransitCityAccess($request, $route->city_id, [PermissionCatalogue::TRANSIT_REVIEW_DRAFTS]);
 
         $geomJson = DB::table('route_geometries')->selectRaw('ST_AsGeoJSON(geometry) as geojson')->where('route_id', $route->id)->value('geojson');
 

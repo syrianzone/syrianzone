@@ -32,7 +32,7 @@ class ListPlacesTool extends PlacesTool
     {
         return [
             'status' => $schema->string()
-                ->enum([...PlaceRules::STATUSES, 'all'])
+                ->enum([...PlaceRules::statuses(), 'all'])
                 ->description('Moderation status to list. Defaults to "pending". Use "all" to include approved and rejected.')
                 ->default('pending'),
 

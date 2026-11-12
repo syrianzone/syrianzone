@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Facts;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 
@@ -15,17 +16,14 @@ class SiteSetting extends Model
 
     public const SITE_NAVIGATION_KEY = 'site_navigation';
 
+    /**
+     * The copy the site ships with. The row in `site_settings` overrides it;
+     * the browser falls back to the same file (resources/data/site-popup.json)
+     * when the shared prop is absent, so the two can never disagree.
+     */
     public static function defaults(): array
     {
-        return [
-            'enabled' => true,
-            'title' => 'صوتك بيعمل فرق!',
-            'description' => 'ساهم في فك الحظر عن الخدمات التقنية في سوريا. صوّت للخدمات الأكثر أهمية بالنسبة لك لتكون من أولويات العمل.',
-            'buttonText' => 'صوّت الآن',
-            'dismissText' => 'لاحقاً',
-            'link' => 'https://unblocksyria.com',
-            'version' => 1,
-        ];
+        return Facts::sitePopup();
     }
 
     public static function getPopup(): array

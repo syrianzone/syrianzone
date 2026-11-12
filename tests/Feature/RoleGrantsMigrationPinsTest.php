@@ -63,8 +63,21 @@ function roleGrantsMigrationPrefixes(): array
     return array_column($pairs, 2, 1);
 }
 
-it('pins the migration catalogue to PermissionCatalogue', function () {
-    expect(roleGrantsMigrationCatalogue())->toEqual(PermissionCatalogue::all());
+it('pins the migration catalogue to the capabilities that existed when it ran', function () {
+    // The migration is deployed and refuses to re-apply, so its list is
+    // history. A capability added to the catalogue afterwards is not backfilled
+    // by it; it is granted through the role or an explicit grant instead. The
+    // pin is therefore the historical list, with every later addition named so
+    // one cannot be slipped in unnoticed.
+    $addedAfterTheMigration = [
+        PermissionCatalogue::GUESSWHO_MANAGE,
+        PermissionCatalogue::ASSETS_MANAGE,
+        PermissionCatalogue::SITE_POPUP,
+        PermissionCatalogue::SITE_NAVIGATION,
+    ];
+
+    expect(roleGrantsMigrationCatalogue())
+        ->toEqual(array_values(array_diff(PermissionCatalogue::all(), $addedAfterTheMigration)));
 });
 
 it('pins the migration role prefixes to the ones it was written against', function () {

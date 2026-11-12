@@ -232,9 +232,10 @@ verdicts/status), `promises.review` (moderation queue), `promises.delete`,
   `promises_admin`), whose capabilities come from `PermissionCatalogue::forModule('promises')`.
   Every admin route names its capability. The dashboard sidebar link is gated by
   `canModule(perms, 'promises')`.
-- **Governorates:** the repo has no shared list, so `App\Support\Governorates`
-  becomes the source for this module (same slugs as the weather/prayer
-  controllers). The frontend receives it as a prop instead of duplicating it.
+- **Governorates:** the one table is `resources/data/governorates.json`
+  (see `resources/data/README.md`); `App\Support\Governorates` is the PHP
+  projection and `Domain/geography/governorates.ts` the TypeScript one. The
+  frontend receives the list as a prop instead of keeping a copy.
 - **Votes:** `voter_key` = HMAC(app key, signed-in user id, or else the
   device id) and `ip_hash` = HMAC(app key, IP). Unique per promise, `voting`
   rate limiter, aggregates only in public reads.

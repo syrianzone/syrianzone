@@ -1,0 +1,5 @@
+{
+  "color_index_max": 20,
+  "nearby_stops_radius_m": 500,
+  "nearby_stops_radius_max_m": 5000
+}

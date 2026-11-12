@@ -7,14 +7,15 @@ import {
   TarneebIcon,
   TrixIcon,
 } from '@/Components/Icons/ProjectIcons';
+import raw from '../../../data/games.json';
 
-// Single registry for the hub. A game becomes reachable by adding one entry
-// here and a matching route in routes/web.php — the tile grid, the sitemap
-// entry and the docs all read this list rather than restating the games.
-//
-// Most games live at `/games/<slug>`. `href` overrides that for a game that has
-// its own home already — Guess Who is the online, multiplayer one, hosted by a
-// controller at `/guesswho` rather than a static closure under `/games`.
+// Single registry for the hub. The slug, title and link flags live in
+// resources/data/games.json (PHP reads the same file for the sitemap), and the
+// icon is attached here because a React component cannot live in JSON. A game
+// becomes reachable by adding one entry there and a matching route in
+// routes/web.php — the tile grid, the sitemap and the 404 page all read this
+// list rather than restating the games.
+
 export interface GameEntry {
   /** URL segment under /games (also the React key). */
   slug: string;
@@ -30,45 +31,33 @@ export interface GameEntry {
   comingSoon?: boolean;
 }
 
-export const GAMES: GameEntry[] = [
-  {
-    slug: '2048',
-    title: '2048',
-    icon: Game2048Icon,
-  },
-  {
-    slug: 'solitare',
-    title: 'سوليتير',
-    icon: SolitaireIcon,
-  },
-  {
-    slug: 'tarneeb',
-    title: 'طرنيب',
-    icon: TarneebIcon,
-  },
-  {
-    slug: 'trix',
-    title: 'تركس',
-    icon: TrixIcon,
-  },
-  {
-    slug: 'guesswho',
-    title: 'مَنْ هُوَ؟',
-    icon: GuessWhoIcon,
-    href: '/guesswho',
-    online: true,
-    // Kept behind the "قريباً" card while the multiplayer rooms settle: the
-    // module is still routed at /guesswho, but nothing in the UI links to it.
-    comingSoon: true,
-  },
-  {
-    slug: 'president',
-    title: 'رئيس الجمهورية',
-    icon: PresidentIcon,
-    href: 'https://game.hadealahmad.com',
-    external: true,
-  },
-];
+const GAME_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  '2048': Game2048Icon,
+  solitare: SolitaireIcon,
+  tarneeb: TarneebIcon,
+  trix: TrixIcon,
+  guesswho: GuessWhoIcon,
+  president: PresidentIcon,
+};
+
+function toGameEntry(game: (typeof raw)[number]): GameEntry {
+  const icon = GAME_ICONS[game.slug];
+  if (!icon) {
+    throw new Error(`A game in resources/data/games.json has no icon: ${game.slug}`);
+  }
+
+  return {
+    slug: game.slug,
+    title: game.title,
+    icon,
+    ...('href' in game ? { href: game.href } : {}),
+    ...('online' in game ? { online: game.online } : {}),
+    ...('external' in game ? { external: game.external } : {}),
+    ...('comingSoon' in game ? { comingSoon: game.comingSoon } : {}),
+  };
+}
+
+export const GAMES: GameEntry[] = raw.map(toGameEntry);
 
 /** The link a hub card points at, honouring a game's own home when it has one. */
 export function gameEntryHref(game: GameEntry): string {

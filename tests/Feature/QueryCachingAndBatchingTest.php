@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Candidate;
-use App\Models\CompassResult;
 use App\Models\HouseMember2026;
 use App\Models\Poll;
 use App\Models\Promise;
@@ -156,27 +155,12 @@ it('keeps one vote row per voter when they change their mind', function () {
 
 // ─── Compass statistics ────────────────────────────────────────────────────
 
-function tallyRun(array $overrides = []): CompassResult
-{
-    return CompassResult::create(array_merge([
-        'user_id' => null,
-        'version' => 'short',
-        'answers' => ['auth_lib#0' => 2],
-        'scores' => ['auth_lib' => 0.5],
-        'align' => ['west' => 1],
-        'spectrum' => 'tech_reform',
-        'consistency' => 0.5,
-        'answered' => 1,
-        'stats_consent' => true,
-    ], $overrides));
-}
-
 it('adds later runs to the running compass tally', function () {
-    tallyRun(['scores' => ['auth_lib' => 1.0]]);
+    compassRun(['scores' => ['auth_lib' => 1.0]]);
     expect(inertiaProp($this->get('/compass/stats')->assertOk(), 'stats.total'))->toBe(1);
 
     // Only this run is read on the second pass; the first is already tallied.
-    tallyRun(['scores' => ['auth_lib' => 0.0], 'answers' => ['auth_lib#0' => -2]]);
+    compassRun(['scores' => ['auth_lib' => 0.0], 'answers' => ['auth_lib#0' => -2]]);
     Cache::forget(CompassStats::PUBLIC_CACHE_KEY);
 
     $stats = inertiaProp($this->get('/compass/stats')->assertOk(), 'stats');
@@ -187,8 +171,8 @@ it('adds later runs to the running compass tally', function () {
 });
 
 it('rebuilds the compass tally when a run is withdrawn', function () {
-    tallyRun(['scores' => ['auth_lib' => 1.0]]);
-    $withdrawn = tallyRun(['scores' => ['auth_lib' => 0.0]]);
+    compassRun(['scores' => ['auth_lib' => 1.0]]);
+    $withdrawn = compassRun(['scores' => ['auth_lib' => 0.0]]);
     expect(inertiaProp($this->get('/compass/stats'), 'stats.total'))->toBe(2);
 
     // Removed behind the tally's back, as a withdrawal or a manual delete does.
@@ -203,13 +187,13 @@ it('rebuilds the compass tally when a run is withdrawn', function () {
 
 it('rebuilds the compass tally a day after it was built, however many runs arrive', function () {
     $builtAt = now();
-    $corrected = tallyRun(['scores' => ['auth_lib' => 1.0]]);
+    $corrected = compassRun(['scores' => ['auth_lib' => 1.0]]);
     expect(inertiaProp($this->get('/compass/stats'), 'stats.axisAverages.all.auth_lib'))->toEqual(1.0);
 
     // A steady trickle of submissions must not push the rebuild back.
     foreach ([8, 16, 23] as $hours) {
         $this->travelTo($builtAt->copy()->addHours($hours));
-        tallyRun(['scores' => ['auth_lib' => 1.0]]);
+        compassRun(['scores' => ['auth_lib' => 1.0]]);
         Cache::forget(CompassStats::PUBLIC_CACHE_KEY);
         $this->get('/compass/stats')->assertOk();
     }
@@ -230,9 +214,9 @@ it('rebuilds the compass tally a day after it was built, however many runs arriv
 });
 
 it('never counts a signed-in or non-consenting run in the tally', function () {
-    tallyRun();
-    tallyRun(['stats_consent' => false]);
-    tallyRun(['user_id' => User::factory()->create()->id]);
+    compassRun();
+    compassRun(['stats_consent' => false]);
+    compassRun(['user_id' => User::factory()->create()->id]);
 
     expect(inertiaProp($this->get('/compass/stats'), 'stats.total'))->toBe(1);
 });

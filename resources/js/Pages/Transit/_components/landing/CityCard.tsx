@@ -2,6 +2,7 @@ import { Link } from '@inertiajs/react'
 import type { City } from '../../_types'
 import { usePreloadCity } from '../../_hooks/useMapData'
 import { GOVERNORATE_SVGS } from '../../_data/governorate_svgs'
+import { governorateByAnyName } from '@/Domain/geography/governorates'
 
 interface CityCardProps {
   city: City
@@ -17,28 +18,9 @@ function PinIcon() {
   )
 }
 
+/** The outline SVG basename for a city id; the shared governorate table owns the mapping. */
 function getGovSvgKey(cityId: string): string {
-  const mapping: Record<string, string> = {
-    'damascus': 'damascus',
-    'rif-dimashq': 'rif dimashq',
-    'aleppo': 'aleppo',
-    'homs': 'homs',
-    'hama': 'hamah',
-    'idlib': 'idlib',
-    'latakia': 'lattakia',
-    'lattakia': 'lattakia',
-    'tartus': 'tartus',
-    'tartous': 'tartus',
-    'daraa': 'dar`a',
-    'suwayda': 'as suwayda',
-    'sweida': 'as suwayda',
-    'quneitra': 'quneitra',
-    'deir-ez-zor': 'dayr az zawr',
-    'deir-ezzor': 'dayr az zawr',
-    'raqqa': 'ar raqqah',
-    'hasakah': 'al Ḥasakah',
-  }
-  return mapping[cityId] || cityId
+  return governorateByAnyName(cityId)?.transitSvg ?? cityId
 }
 
 function GovernorateIcon({ cityId }: { cityId: string }) {

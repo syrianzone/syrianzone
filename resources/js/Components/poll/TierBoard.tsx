@@ -34,7 +34,8 @@ type Props = {
     pollId: string;
     voteDay: string;
     submitApiPath?: string; // e.g., "/api/jolani/submit"
-    pollSlug?: string; // optional; used only in payload for compatibility
+    /** The poll this board votes on; both callers pass their loaded poll's slug. */
+    pollSlug: string;
 };
 
 type TierKey = "S" | "A" | "B" | "C" | "D" | "F";
@@ -306,11 +307,11 @@ export default function TierBoard({
         setIsSubmitting(true);
         const deviceId = getDeviceId() ?? crypto.randomUUID();
         const payload: {
-            pollSlug?: string;
+            pollSlug: string;
             deviceId: string;
             tiers: Record<TierKey, Array<{ candidateId: string; pos: number }>>;
         } = {
-            pollSlug: pollSlug || "best-ministers",
+            pollSlug,
             deviceId,
             tiers: tierKeys.reduce(
                 (acc, k) => {

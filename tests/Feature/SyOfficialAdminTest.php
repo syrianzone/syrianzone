@@ -39,7 +39,7 @@ it('renders the dashboard for an authorised admin', function () {
 });
 
 it('refuses the dashboard without a syofficial permission', function () {
-    $this->actingAs(User::factory()->create(['role' => 'user']))
+    $this->actingAs(User::factory()->create())
         ->get('/admin/syofficial')
         ->assertForbidden();
 });

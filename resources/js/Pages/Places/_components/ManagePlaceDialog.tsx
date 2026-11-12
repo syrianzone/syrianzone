@@ -22,14 +22,19 @@ import {
 } from '@/components/ui/select';
 import { api, extractError, extractFieldErrors } from '@/Domain/places/api';
 import { CATEGORIES } from '@/Domain/places/categories';
+import {
+  SYRIA_LAT_MAX_LABEL,
+  SYRIA_LAT_MIN_LABEL,
+  SYRIA_LNG_MAX_LABEL,
+  SYRIA_LNG_MIN_LABEL,
+  inSyriaBox,
+} from '@/Domain/geography/syria';
 import type { LatLng, MyPlace, PlaceCategory, PlaceDetail, PlacePhoto, PlaceStatus } from '@/Domain/places/types';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
 import { parseLatLng } from './FilterBar';
 import { MAX_BYTES, MAX_DIM, MIN_DIM, imageDimensions } from './PhotoPicker';
 
-// client mirror of the server's Syria bounding box
-const inSyriaBox = (p: LatLng) => p.lat >= 32.0 && p.lat <= 37.5 && p.lng >= 35.5 && p.lng <= 42.5;
 
 const STATUS_LABELS: Record<PlaceStatus, string> = {
   pending: 'قيد المراجعة',
@@ -476,7 +481,7 @@ export function ManagePlaceDialog(props: {
                 )}
                 {feedback?.kind === 'outside' && (
                   <p className="text-xs text-destructive">
-                    الإحداثيات خارج حدود سوريا (خط العرض بين 32.0 و 37.5، خط الطول بين 35.5 و 42.5)
+                    الإحداثيات خارج حدود سوريا (خط العرض بين {SYRIA_LAT_MIN_LABEL} و {SYRIA_LAT_MAX_LABEL}، خط الطول بين {SYRIA_LNG_MIN_LABEL} و {SYRIA_LNG_MAX_LABEL})
                   </p>
                 )}
                 {point && (

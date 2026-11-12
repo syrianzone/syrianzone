@@ -374,7 +374,7 @@ class PromisePresenter
             'kind' => $report->kind,
             'body' => $report->body,
             'sourceUrl' => $report->source_url,
-            'createdOn' => $report->created_at?->timezone(Promise::TIMEZONE)->format('Y-m-d'),
+            'createdOn' => $report->created_at?->timezone(Promise::timezone())->format('Y-m-d'),
             'userName' => $report->user?->name,
             'promise' => [
                 'id' => $report->promise->id,

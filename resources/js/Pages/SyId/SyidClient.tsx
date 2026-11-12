@@ -19,7 +19,8 @@ import {
     TabsList,
     TabsTrigger,
 } from "@/Components/ui/tabs";
-import { featureToSVG, getGovernorateNameAr } from '@/lib/geo-utils';
+import { featureToSVG } from '@/lib/geo-utils';
+import { GOVERNORATES, getGovernorateNameAr } from '@/Domain/geography/governorates';
 import {
     Select,
     SelectContent,
@@ -75,22 +76,28 @@ const HAYYAKUM_WEIGHTS = [
 
 
 
-const GOVERNORATE_ICONS = [
-    { name: 'دمشق', landmark: 'السيف الدمشقي', file: 'damascus-sword.svg' },
-    { name: 'ريف دمشق', landmark: 'غوطة ريف دمشق', file: 'rif-dimashq-ghouta.svg' },
-    { name: 'حلب', landmark: 'قلعة حلب', file: 'aleppo-citadel.svg' },
-    { name: 'حمص', landmark: 'ساعة حمص', file: 'homs-clock.svg' },
-    { name: 'حماة', landmark: 'نواعير حماة', file: 'hama-norias.svg' },
-    { name: 'اللاذقية', landmark: 'قوس النصر', file: 'latakia-triumph-arch.svg' },
-    { name: 'طرطوس', landmark: 'جزيرة أرواد', file: 'tartous-arwad.svg' },
-    { name: 'إدلب', landmark: 'رويحة إدلب', file: 'idlib-ruweiha.svg' },
-    { name: 'دير الزور', landmark: 'الجسر المعلق', file: 'deir-ez-zor-bridge.svg' },
-    { name: 'الرقة', landmark: 'بوابة بغداد', file: 'raqqa-baghdad-gate.svg' },
-    { name: 'الحسكة', landmark: 'جسر عين ديوار', file: 'hasakah-ain-diwar.svg' },
-    { name: 'درعا', landmark: 'المسجد العمري', file: 'daraa-omari-mosque.svg' },
-    { name: 'السويداء', landmark: 'قنوات السويداء', file: 'sweida-qanawat.svg' },
-    { name: 'القنيطرة', landmark: 'بيت صيدا', file: 'quneitra-beit-saida.svg' },
-];
+// Landmark artwork per governorate, in the shared table's display order.
+const GOVERNORATE_ARTWORK: Record<string, { landmark: string; file: string }> = {
+    damascus: { landmark: 'السيف الدمشقي', file: 'damascus-sword.svg' },
+    'rural-damascus': { landmark: 'غوطة ريف دمشق', file: 'rif-dimashq-ghouta.svg' },
+    aleppo: { landmark: 'قلعة حلب', file: 'aleppo-citadel.svg' },
+    homs: { landmark: 'ساعة حمص', file: 'homs-clock.svg' },
+    hama: { landmark: 'نواعير حماة', file: 'hama-norias.svg' },
+    latakia: { landmark: 'قوس النصر', file: 'latakia-triumph-arch.svg' },
+    tartus: { landmark: 'جزيرة أرواد', file: 'tartous-arwad.svg' },
+    idlib: { landmark: 'رويحة إدلب', file: 'idlib-ruweiha.svg' },
+    'deir-ez-zor': { landmark: 'الجسر المعلق', file: 'deir-ez-zor-bridge.svg' },
+    raqqa: { landmark: 'بوابة بغداد', file: 'raqqa-baghdad-gate.svg' },
+    hasakah: { landmark: 'جسر عين ديوار', file: 'hasakah-ain-diwar.svg' },
+    daraa: { landmark: 'المسجد العمري', file: 'daraa-omari-mosque.svg' },
+    sweida: { landmark: 'قنوات السويداء', file: 'sweida-qanawat.svg' },
+    quneitra: { landmark: 'بيت صيدا', file: 'quneitra-beit-saida.svg' },
+};
+
+const GOVERNORATE_ICONS = GOVERNORATES.flatMap((governorate) => {
+    const artwork = GOVERNORATE_ARTWORK[governorate.id];
+    return artwork ? [{ name: governorate.nameAr, ...artwork }] : [];
+});
 
 const POSTER_THEMES = [
     {

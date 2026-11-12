@@ -27,7 +27,7 @@ it('renders the dashboard for an authorised admin', function () {
 });
 
 it('refuses the dashboard without a govapps permission', function () {
-    $this->actingAs(User::factory()->create(['role' => 'user']))
+    $this->actingAs(User::factory()->create())
         ->get('/admin/govapps')
         ->assertForbidden();
 });

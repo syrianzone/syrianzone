@@ -1289,7 +1289,7 @@ html {
     background: hsl(var(--primary) / 0.2);
 }
 
-@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, [data-theme="dark-blue"], [data-theme="dark-blue"] *, [data-theme="dark-purple"], [data-theme="dark-purple"] *, [data-theme="dark-green"], [data-theme="dark-green"] *, [data-theme="high-contrast"], [data-theme="high-contrast"] *, [data-theme="damascus-rose"], [data-theme="damascus-rose"] *, .dark, .dark *));
+@custom-variant dark (&:where([data-scheme="dark"], [data-scheme="dark"] *));
 
 @theme {
     --font-sans: var(--site-font, 'IBM Plex Sans Arabic', 'IBM Plex Sans Arabic Fallback', sans-serif);
@@ -1390,13 +1390,10 @@ html {
 }
 
 
-[data-theme="dark"],
-[data-theme="dark-blue"],
-[data-theme="dark-purple"],
-[data-theme="dark-green"],
-[data-theme="high-contrast"],
-[data-theme="damascus-rose"],
-.dark {
+/* Shared dark tokens. data-scheme is set next to data-theme by the pre-paint
+   script and Lib/theme.ts, so this block and Tailwind's dark: variant never list
+   theme ids. Each dark theme's own block below overrides what it changes. */
+[data-scheme="dark"] {
     color-scheme: dark;
     --background: 203 13.3% 11.8%;
     /* #1A1F22 */
@@ -1430,8 +1427,7 @@ html {
 }
 
 
-[data-theme="dark"],
-.dark {
+[data-theme="dark"] {
     --primary: 105 28% 56%;
     /* Accessible Reseda Green (>= 6.4:1 on #1A1F22 and dark primary-foreground) */
     --primary-foreground: 203 25% 8%;

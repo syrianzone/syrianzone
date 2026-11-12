@@ -8,6 +8,8 @@ use App\Models\RouteDraft;
 use App\Models\TransitRouteLog;
 use App\Services\Transit\TransitCache;
 use App\Services\TransitKmlImportService;
+use App\Support\Facts;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -66,7 +68,7 @@ class TransitImportController extends Controller
         $override = $validated['city_id'] ?? null;
 
         if ($override !== null) {
-            $this->ensureTransitCityAccess($request, $override, ['transit.review_drafts']);
+            $this->ensureTransitCityAccess($request, $override, [PermissionCatalogue::TRANSIT_REVIEW_DRAFTS]);
         }
 
         foreach ($candidates as &$c) {
@@ -109,7 +111,7 @@ class TransitImportController extends Controller
             'name_ar' => 'required|string|max:255',
             'name_en' => 'nullable|string|max:255',
             'price' => 'nullable|integer|min:0|max:1000000',
-            'color_index' => 'nullable|integer|min:0|max:20',
+            'color_index' => 'nullable|integer|min:0|max:'.Facts::transit()['color_index_max'],
             'notes' => 'nullable|string|max:5000',
             'geojson' => 'required|array',
             'geojson.features' => 'required|array|min:1|max:500',
@@ -121,8 +123,8 @@ class TransitImportController extends Controller
         ]);
 
         $this->ensureTransitCityAccess($request, $validated['city_id'], [
-            'transit.review_drafts',
-            'transit.edit_routes',
+            PermissionCatalogue::TRANSIT_REVIEW_DRAFTS,
+            PermissionCatalogue::TRANSIT_EDIT_ROUTES,
         ]);
 
         $geojson = $request->input('geojson');

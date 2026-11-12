@@ -8,9 +8,9 @@ import { Card, CardContent } from "@/Components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/Components/ui/table";
 import { Badge } from "@/Components/ui/badge";
 import MainLayout from '@/Layouts/MainLayout';
-import { usePage } from '@inertiajs/react';
-import { canAny, canModule } from '@/Lib/permissions'
+import { useCanAny, useCanModule } from '@/Lib/useCan';
 import { formatEntityImage } from '@/Lib/entityImage';
+import { socialPlatformLabel } from '@/Domain/syofficial/social';
 
 interface CategoryData {
     id: string;
@@ -118,38 +118,6 @@ const getSocialIcon = (platform: string) => {
     }
 };
 
-const getSocialTitle = (platform: string, lang: Language) => {
-    const isAr = lang === 'ar';
-    switch (platform) {
-        case 'facebook':
-            return isAr ? 'فيسبوك' : 'Facebook';
-        case 'facebook_secondary':
-            return isAr ? 'فيسبوك (احتياطي)' : 'Facebook (Secondary)';
-        case 'instagram':
-            return isAr ? 'إنستغرام' : 'Instagram';
-        case 'instagram_secondary':
-            return isAr ? 'إنستغرام (احتياطي)' : 'Instagram (Secondary)';
-        case 'twitter':
-            return isAr ? 'تويتر / منصة إكس' : 'Twitter / X';
-        case 'twitter_secondary':
-            return isAr ? 'تويتر / منصة إكس (احتياطي)' : 'Twitter / X (Secondary)';
-        case 'telegram':
-            return isAr ? 'تلغرام' : 'Telegram';
-        case 'telegram_secondary':
-            return isAr ? 'تلغرام (احتياطي)' : 'Telegram (Secondary)';
-        case 'linkedin':
-            return isAr ? 'لينكد إن' : 'LinkedIn';
-        case 'youtube':
-            return isAr ? 'يوتيوب' : 'YouTube';
-        case 'whatsapp':
-            return isAr ? 'واتساب' : 'WhatsApp';
-        case 'website':
-            return isAr ? 'الموقع الرسمي' : 'Official Website';
-        default:
-            return platform;
-    }
-};
-
 const getSocialStyle = (platform: string) => {
     switch (platform) {
         case 'facebook':
@@ -217,16 +185,16 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
         return items;
     }, [initialData, searchTerm, currentCategory]);
 
-    const { auth } = usePage().props as any;
-    const perms = auth?.user?.effective_permissions;
+    const canModule = useCanModule();
+    const canAny = useCanAny();
     // Gated per action, matching the route each link opens. This used to test
     // three role strings including syofficial_admin — a role that stopped
     // granting anything when the role prefixes were removed, so a
     // syofficial_admin account was shown edit controls that all 403.
     //   panel link   -> syofficial_admin:any
     //   edit pencil  -> syofficial.edit (the save it leads to)
-    const canOpenPanel = canModule(perms, 'syofficial');
-    const canEditEntries = canAny(perms, 'syofficial.edit');
+    const canOpenPanel = canModule('syofficial');
+    const canEditEntries = canAny('syofficial.edit');
 
     const groupedData = useMemo(() => {
         if (currentCategory !== 'all') {
@@ -463,7 +431,7 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                                                                             target="_blank"
                                                                             rel="noopener noreferrer"
                                                                             className={`p-1.5 rounded-lg border border-border/50 bg-muted/50 text-muted-foreground transition-all duration-200 hover:scale-105 shadow-2xs ${getSocialStyle(plat)}`}
-                                                                            title={getSocialTitle(plat, language)}
+                                                                            title={socialPlatformLabel(plat, language === 'ar' ? 'ar' : 'en')}
                                                                         >
                                                                             {getSocialIcon(plat)}
                                                                         </a>
@@ -528,7 +496,7 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                                                                     target="_blank"
                                                                     rel="noopener noreferrer"
                                                                     className={`p-1.5 rounded-lg border border-border/40 bg-muted/40 text-muted-foreground transition-all duration-200 hover:scale-105 ${getSocialStyle(plat)}`}
-                                                                    title={getSocialTitle(plat, language)}
+                                                                    title={socialPlatformLabel(plat, language === 'ar' ? 'ar' : 'en')}
                                                                 >
                                                                     {getSocialIcon(plat)}
                                                                 </a>

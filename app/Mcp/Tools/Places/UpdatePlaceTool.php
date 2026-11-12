@@ -39,7 +39,7 @@ class UpdatePlaceTool extends PlacesTool
                 ->max(PlaceRules::MAX_NAME),
 
             'category' => $schema->string()
-                ->enum(PlaceRules::CATEGORIES)
+                ->enum(PlaceRules::categories())
                 ->description('One of the fixed mishwar categories.'),
 
             'description' => $schema->string()
@@ -48,14 +48,14 @@ class UpdatePlaceTool extends PlacesTool
                 ->max(PlaceRules::MAX_DESCRIPTION),
 
             'lat' => $schema->number()
-                ->description('Latitude, '.PlaceRules::LAT_MIN.' to '.PlaceRules::LAT_MAX.' (Syria).')
-                ->min((float) PlaceRules::LAT_MIN)
-                ->max((float) PlaceRules::LAT_MAX),
+                ->description('Latitude, '.PlaceRules::latMin().' to '.PlaceRules::latMax().' (Syria).')
+                ->min((float) PlaceRules::latMin())
+                ->max((float) PlaceRules::latMax()),
 
             'lng' => $schema->number()
-                ->description('Longitude, '.PlaceRules::LNG_MIN.' to '.PlaceRules::LNG_MAX.' (Syria).')
-                ->min((float) PlaceRules::LNG_MIN)
-                ->max((float) PlaceRules::LNG_MAX),
+                ->description('Longitude, '.PlaceRules::lngMin().' to '.PlaceRules::lngMax().' (Syria).')
+                ->min((float) PlaceRules::lngMin())
+                ->max((float) PlaceRules::lngMax()),
         ];
     }
 
@@ -68,8 +68,8 @@ class UpdatePlaceTool extends PlacesTool
             ...$rules->edit(),
         ], [
             'description.min' => sprintf('The description must be at least %d characters.', PlaceRules::MIN_DESCRIPTION),
-            'lat.between' => sprintf('Latitude must be between %s and %s (inside Syria).', PlaceRules::LAT_MIN, PlaceRules::LAT_MAX),
-            'lng.between' => sprintf('Longitude must be between %s and %s (inside Syria).', PlaceRules::LNG_MIN, PlaceRules::LNG_MAX),
+            'lat.between' => sprintf('Latitude must be between %s and %s (inside Syria).', PlaceRules::latMin(), PlaceRules::latMax()),
+            'lng.between' => sprintf('Longitude must be between %s and %s (inside Syria).', PlaceRules::lngMin(), PlaceRules::lngMax()),
         ]);
 
         $attributes = collect($validated)->except('place_id')->all();

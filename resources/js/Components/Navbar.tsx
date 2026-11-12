@@ -16,7 +16,7 @@ import {
 
 import { useAuth } from '@/Contexts/AuthContext';
 import { useAppShell } from '@/Lib/appShell';
-import { isDarkTheme } from '@/lib/theme';
+import { useColorScheme } from '@/lib/theme';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -281,7 +281,7 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
   const transitCityId = pathname.match(/^\/transit\/city\/([^/]+)/)?.[1] ?? null;
   const studioHref = transitCityId ? `/transit/studio?city=${transitCityId}` : '/transit/studio';
   const [isOpen, setIsOpen] = React.useState(false);
-  const [theme, setTheme] = React.useState('dark');
+  const isDark = useColorScheme() === 'dark';
   const { user } = useAuth();
   const { navbarLinks, navbarTopLinks, navbarMoreLinks } = useSiteNavigation();
 
@@ -322,21 +322,6 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
   React.useEffect(() => {
     setMoreOpen(false);
   }, [pathname]);
-
-  const isDark = isDarkTheme(theme, false);
-
-  React.useEffect(() => {
-    const savedTheme = document.documentElement.getAttribute('data-theme') || 'dark';
-    setTheme(savedTheme);
-
-    const observer = new MutationObserver(() => {
-      const newTheme = document.documentElement.getAttribute('data-theme') || 'dark';
-      setTheme(newTheme);
-    });
-
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-    return () => observer.disconnect();
-  }, []);
 
   // Navbar hidden on homepage (Startpage) on desktop; on mobile it stays fixed at the top
   const isHomepage = pathname === '/';

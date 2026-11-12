@@ -39,6 +39,10 @@ graph and fails on a violation, so run `npm run test:js` after moving code.
   store. `Layouts/MainLayout.tsx` is the single owner of the Ctrl/Cmd+K
   shortcut: a page that renders an inline search field registers its focus
   function with `registerInlineSearch`, so the shell never looks up a DOM id.
+- The one allowed shared → `Domain/` edge is a *facts* module (pure data and
+  lookups, no React, no page code): a shared component that renders a domain
+  label reads it from there rather than keeping its own copy of the table, e.g.
+  `Components/F3aliaEvents` naming a governorate.
 
 ## Accessibility
 
@@ -74,9 +78,15 @@ lives in [accessibility.md](accessibility.md); the short version:
 
 - Colour is **always** a token (`hsl(var(--…))` or a Tailwind token class).
   Literal hex/`rgb()` in a component is a bug — it escapes the nine themes.
-- The theme is `data-theme="…"`, applied at `document.documentElement`; the
-  registry is `Lib/theme.ts`. Add a theme by adding its CSS variable block in
-  `resources/css/app.css` **and** a `THEME_REGISTRY` entry, and check contrast.
+- The theme is `data-theme="…"` plus `data-scheme="light|dark"`, applied together
+  at `document.documentElement` (the pre-paint script in `resources/views/app.blade.php`
+  and `applyTheme()` in `Lib/theme.ts`). The registry, its ids, labels, storage
+  keys and dark flags live in `resources/data/themes.json`, which Blade, CSS and
+  TS all read: add a theme by adding its CSS variable block in
+  `resources/css/app.css` **and** an entry in that file, and check contrast.
+  CSS never lists dark theme ids: the shared dark token block and Tailwind's
+  `dark:` variant use `[data-scheme="dark"]`. Read the current scheme with
+  `useColorScheme()`; never compare `data-theme` to a theme id yourself.
 - Every theme must satisfy `--primary` vs `--primary-foreground` (both
   directions) and `--muted-foreground` on `--background` for small text.
 - User-chosen appearance (theme + font) is owned by `Components/AppearanceMenu`
@@ -106,7 +116,10 @@ Rules:
 - **One primitive per concern.** If you need a variant, extend the existing
   component (a `variant`/prop) rather than forking it.
 - **One source of truth for data** that several surfaces read (e.g. governorate
-  tables, project icons, permission ids). Duplicated constants drift.
+  tables, project icons, permission ids). Duplicated constants drift. A fact
+  both PHP and TypeScript need lives in `resources/data/*.json` and is read
+  through `App\Support\Facts` and a `Domain/` module — never restated on one
+  side (see `resources/data/README.md`).
 - **Extract on the second use, not the first.** A pattern copied a third time is
   a defect; a pattern used once can stay local.
 - Cross-module UI goes to `Components/`; page-private UI stays in
@@ -123,7 +136,7 @@ Rules:
 - Module capability middleware aliases (`bootstrap/app.php`): `transit_admin`, `syofficial_admin`, `phonebook_admin`, `places_admin`, `polls_admin`, `govapps_admin`, `compass_admin`, `users_admin`, and `superadmin`. The `*_admin` aliases take per-route capability params (e.g. `transit_admin:transit.approve`). There is no general `admin` alias any more.
 - Capability ids live **only** in `app/Support/Permissions/PermissionCatalogue.php` — the Filament user form and agent API tokens both read it. Never introduce a second permission vocabulary.
 - Authorisation is capability-based, not role-based. `User::hasPermission()` is: superadmin, **or** the id is in the account's `permissions` array (which may contain `*`). The module roles (`*_admin`) and the old `admin` role stopped conferring capabilities (Phases D and G, `2026_09_27`); every non-superadmin account's access is exactly its stored `permissions`. `User::effectivePermissions()` resolves the same rule against the catalogue and is shared with the frontend.
-- Capability checks in React go through `useAuth().can()` against the server-resolved `effective_permissions`. Never re-derive role implications in TypeScript — use `User::effectivePermissions()` server-side and share the result via `HandleInertiaRequests::userPayload()`.
+- Capability checks in React go through `useCan()` (`Lib/useCan.ts`) against the server-resolved `effective_permissions`. Never re-derive role implications in TypeScript — use `User::effectivePermissions()` server-side and share the result via `HandleInertiaRequests::userPayload()`.
 - Agent (MCP) tools live in `app/Mcp/`, extend `AuditedTool`, and share domain services with the dashboard controllers rather than re-implementing rules. Token minting lives at `/admin/api-tokens` like every other admin section — not in Filament. Authorisation is an AND: user permission AND token ability. See [modules/agent-mcp.md](../modules/agent-mcp.md).
 - CSRF exceptions are explicit in `bootstrap/app.php` (studio routes, poll votes, submit, guesswho broadcasting auth).
 - Public voting data must never select `voter_key` / `ip_hash` / `user_agent` / poll owner columns — keep column selection explicit.

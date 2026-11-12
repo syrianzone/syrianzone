@@ -10,7 +10,7 @@ import { Button } from "@/Components/ui/button";
 import { Card, CardContent } from "@/Components/ui/card";
 import MainLayout from '@/Layouts/MainLayout';
 import axios from '@/Lib/axios';
-import { applyTheme as persistTheme, getThemePreference, resolveTheme, SYSTEM_THEME, isDarkTheme } from '@/lib/theme';
+import { applyTheme as persistTheme, getThemePreference, SYSTEM_THEME, isDarkTheme } from '@/lib/theme';
 import { applyFont, getFontPreference } from '@/Lib/font';
 import UserNav from '@/Components/UserNav';
 import AppearanceMenu from '@/Components/AppearanceMenu';
@@ -21,29 +21,19 @@ import { getGeo, getLocMode, useLocSignal } from '@/Domain/location/location';
 import { getLastPage } from '@/Lib/visit';
 import { useAppShell } from '@/Lib/appShell';
 import { formatGregorianSyrian } from '@/Lib/syrian-date';
+import { GOVERNORATES_BY_ID } from '@/Domain/geography/governorates';
+
+/** The manual governorate's centre in the `{ lat, lon }` shape the fetchers use. */
+const governorateCentre = (id: string) => {
+    const governorate = GOVERNORATES_BY_ID[id] ?? GOVERNORATES_BY_ID['damascus'];
+    return { lat: governorate.lat, lon: governorate.lng };
+};
 
 const HomeSettingsDialog = React.lazy(() => import('@/Pages/Home/_components/HomeSettingsDialog'));
 const AddLinkDialog = React.lazy(() => import('@/Pages/Home/_components/AddLinkDialog'));
 const EditLinkDialog = React.lazy(() => import('@/Pages/Home/_components/EditLinkDialog'));
 
 import { useSiteNavigation } from '@/Lib/siteLinks';
-
-const GOVERNORATES: Record<string, { lat: number; lon: number }> = {
-    'damascus': { lat: 33.5138, lon: 36.2765 },
-    'aleppo': { lat: 36.2021, lon: 37.1343 },
-    'homs': { lat: 34.7324, lon: 36.7137 },
-    'hama': { lat: 35.1318, lon: 36.7578 },
-    'latakia': { lat: 35.5317, lon: 35.7901 },
-    'tartus': { lat: 34.8890, lon: 35.8866 },
-    'deir-ez-zor': { lat: 35.3359, lon: 40.1408 },
-    'idlib': { lat: 35.9306, lon: 36.6339 },
-    'daraa': { lat: 32.6255, lon: 36.1016 },
-    'quneitra': { lat: 33.1250, lon: 35.8250 },
-    'sweida': { lat: 32.7089, lon: 36.5695 },
-    'rural-damascus': { lat: 33.5138, lon: 36.2765 },
-    'hasakah': { lat: 36.5023, lon: 40.7382 },
-    'raqqa': { lat: 35.9520, lon: 39.0081 },
-};
 
 const getFaviconUrl = (urlStr: string) => {
     try {
@@ -228,7 +218,6 @@ export default function Home() {
             });
         }
 
-        document.documentElement.setAttribute('data-theme', resolveTheme(savedTheme));
         setMounted(true);
     }, []);
 
@@ -267,7 +256,7 @@ export default function Home() {
                 const hasCustom = useCustomCoords && customLat && customLon;
                 const coords = sharedCoords() ?? (hasCustom
                     ? { lat: parseFloat(customLat), lon: parseFloat(customLon) }
-                    : (GOVERNORATES[governorate] || GOVERNORATES['damascus']));
+                    : governorateCentre(governorate));
 
                 if (isNaN(coords.lat) || isNaN(coords.lon)) return;
 
@@ -335,7 +324,7 @@ export default function Home() {
                         lat: parseFloat(useCustomCoords && customLat ? customLat : muslimLat),
                         lon: parseFloat(useCustomCoords && customLon ? customLon : muslimLon),
                     }
-                    : (GOVERNORATES[governorate] || GOVERNORATES['damascus']));
+                    : governorateCentre(governorate));
 
                 if (isNaN(coords.lat) || isNaN(coords.lon)) return;
 

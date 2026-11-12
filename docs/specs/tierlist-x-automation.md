@@ -231,7 +231,7 @@ run SHALL prevent deployment.
 | Name | Default | Meaning |
 |---|---:|---|
 | `X_TIERLIST_ENABLED` | `false` | Enables detection and delivery |
-| `X_TIERLIST_POLL_SLUG` | `best-ministers` | Poll watched by the detector |
+| `X_TIERLIST_POLL_SLUG` | `poll` in `resources/data/polls.json` (`best-ministers`) | Poll watched by the detector |
 | `X_TIERLIST_SETTLE_MINUTES` | `15` | Stable period before publishing |
 | `X_TIERLIST_MIN_POST_INTERVAL_MINUTES` | `720` | Minimum time between prepared announcements |
 | `X_TIERLIST_DAILY_POST_LIMIT` | `2` | Maximum prepared or delivered announcements per poll and day |

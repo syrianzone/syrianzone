@@ -62,20 +62,11 @@ function pbEntry(string $categoryId, array $overrides = []): PhonebookEntry
     ], $overrides));
 }
 
-function capUser(string $capability, ?array $scopes = null): User
-{
-    return User::factory()->create([
-        'role' => 'user',
-        'permissions' => [$capability],
-        'permission_scopes' => $scopes,
-    ]);
-}
-
 it('refuses a phonebook.reorder holder from deleting an entry', function () {
     $category = pbCategory();
     $entry = pbEntry($category->id);
 
-    $this->actingAs(capUser('phonebook.reorder'))
+    $this->actingAs(capabilityUser('phonebook.reorder'))
         ->deleteJson("/api/v1/admin/phonebook/entries/{$entry->id}")
         ->assertForbidden();
 
@@ -86,7 +77,7 @@ it('refuses a phonebook.reorder holder from cascade-deleting a category', functi
     $category = pbCategory();
     pbEntry($category->id);
 
-    $this->actingAs(capUser('phonebook.reorder'))
+    $this->actingAs(capabilityUser('phonebook.reorder'))
         ->deleteJson("/api/v1/admin/phonebook/categories/{$category->id}")
         ->assertForbidden();
 
@@ -99,7 +90,7 @@ it('still lets a phonebook.reorder holder reorder', function () {
 
     // Phonebook reorder takes a positional list of ids, not an id/ordinal
     // object list like the SyOfficial one.
-    $this->actingAs(capUser('phonebook.reorder'))
+    $this->actingAs(capabilityUser('phonebook.reorder'))
         ->postJson('/api/v1/admin/phonebook/reorder/categories', [
             'order' => [$second->id, $category->id],
         ])
@@ -111,7 +102,7 @@ it('still lets a phonebook.reorder holder reorder', function () {
 it('refuses a phonebook.edit holder from toggling visibility', function () {
     $entry = pbEntry(pbCategory()->id);
 
-    $this->actingAs(capUser('phonebook.edit'))
+    $this->actingAs(capabilityUser('phonebook.edit'))
         ->postJson("/api/v1/admin/phonebook/entries/{$entry->id}/toggle")
         ->assertForbidden();
 });
@@ -119,7 +110,7 @@ it('refuses a phonebook.edit holder from toggling visibility', function () {
 it('refuses a polls.create holder from deleting a poll', function () {
     $poll = Poll::factory()->create();
 
-    $this->actingAs(capUser('polls.create'))
+    $this->actingAs(capabilityUser('polls.create'))
         ->deleteJson("/api/polls/{$poll->id}")
         ->assertForbidden();
 
@@ -130,7 +121,7 @@ it('refuses a polls.create holder from deleting a candidate', function () {
     $poll = Poll::factory()->create();
     $candidate = Candidate::factory()->create(['poll_id' => $poll->id]);
 
-    $this->actingAs(capUser('polls.create'))
+    $this->actingAs(capabilityUser('polls.create'))
         ->deleteJson("/api/candidates/{$candidate->id}")
         ->assertForbidden();
 
@@ -138,7 +129,7 @@ it('refuses a polls.create holder from deleting a candidate', function () {
 });
 
 it('refuses a polls.delete holder from creating a poll', function () {
-    $this->actingAs(capUser('polls.delete'))
+    $this->actingAs(capabilityUser('polls.delete'))
         ->postJson('/api/polls', ['title' => 'New Poll', 'type' => 'single'])
         ->assertForbidden();
 
@@ -149,7 +140,7 @@ it('refuses a syofficial.reorder holder from deleting a category and its entitie
     $category = OfficialCategory::factory()->create();
     OfficialEntity::factory()->count(2)->inCategory($category)->create();
 
-    $this->actingAs(capUser('syofficial.reorder'))
+    $this->actingAs(capabilityUser('syofficial.reorder'))
         ->deleteJson("/api/v1/admin/syofficial/categories/{$category->id}")
         ->assertForbidden();
 
@@ -160,7 +151,7 @@ it('refuses a syofficial.reorder holder from deleting a category and its entitie
 it('refuses a syofficial.create holder from deleting an entity', function () {
     $entity = OfficialEntity::factory()->create();
 
-    $this->actingAs(capUser('syofficial.create'))
+    $this->actingAs(capabilityUser('syofficial.create'))
         ->deleteJson("/api/v1/admin/syofficial/entities/{$entity->id}")
         ->assertForbidden();
 
@@ -170,7 +161,7 @@ it('refuses a syofficial.create holder from deleting an entity', function () {
 it('refuses a govapps.reorder holder from deleting an app', function () {
     $app = GovApp::factory()->create();
 
-    $this->actingAs(capUser('govapps.reorder'))
+    $this->actingAs(capabilityUser('govapps.reorder'))
         ->deleteJson("/api/v1/admin/govapps/{$app->id}")
         ->assertForbidden();
 
@@ -178,7 +169,7 @@ it('refuses a govapps.reorder holder from deleting an app', function () {
 });
 
 it('refuses a govapps.edit holder from creating an app', function () {
-    $this->actingAs(capUser('govapps.edit'))
+    $this->actingAs(capabilityUser('govapps.edit'))
         ->postJson('/api/v1/admin/govapps/', ['id' => 'new', 'name' => 'N', 'name_ar' => 'ن'])
         ->assertForbidden();
 
@@ -188,7 +179,7 @@ it('refuses a govapps.edit holder from creating an app', function () {
 it('refuses a places.review holder from deleting a place', function () {
     $place = Place::factory()->create();
 
-    $this->actingAs(capUser('places.review'))
+    $this->actingAs(capabilityUser('places.review'))
         ->deleteJson("/api/v1/admin/places/{$place->id}")
         ->assertForbidden();
 
@@ -199,7 +190,7 @@ it('refuses a places.review holder from moderating photos', function () {
     $place = Place::factory()->create();
     $photo = PlacePhoto::factory()->create(['place_id' => $place->id]);
 
-    $this->actingAs(capUser('places.review'))
+    $this->actingAs(capabilityUser('places.review'))
         ->deleteJson("/api/v1/admin/place-photos/{$photo->id}")
         ->assertForbidden();
 
@@ -209,7 +200,7 @@ it('refuses a places.review holder from moderating photos', function () {
 it('refuses a places.approve holder from editing a place', function () {
     $place = Place::factory()->create(['name' => 'Original']);
 
-    $this->actingAs(capUser('places.approve'))
+    $this->actingAs(capabilityUser('places.approve'))
         ->patchJson("/api/v1/admin/places/{$place->id}", ['name' => 'Renamed'])
         ->assertForbidden();
 
@@ -219,7 +210,7 @@ it('refuses a places.approve holder from editing a place', function () {
 it('still lets each capability reach its own action', function () {
     $place = Place::factory()->create();
 
-    $this->actingAs(capUser('places.delete'))
+    $this->actingAs(capabilityUser('places.delete'))
         ->deleteJson("/api/v1/admin/places/{$place->id}")
         ->assertNoContent();
 
@@ -228,15 +219,15 @@ it('still lets each capability reach its own action', function () {
 
 it('lets a page shell through for any single capability in the module', function () {
     // The `any` tag on a read-only page: module membership is the authorisation.
-    $this->actingAs(capUser('phonebook.reorder'))->get('/admin/phonebook')->assertOk();
-    $this->actingAs(capUser('places.review'))->get('/admin/places')->assertOk();
-    $this->actingAs(capUser('syofficial.reorder'))->get('/admin/syofficial')->assertOk();
-    $this->actingAs(capUser('govapps.reorder'))->get('/admin/govapps')->assertOk();
+    $this->actingAs(capabilityUser('phonebook.reorder'))->get('/admin/phonebook')->assertOk();
+    $this->actingAs(capabilityUser('places.review'))->get('/admin/places')->assertOk();
+    $this->actingAs(capabilityUser('syofficial.reorder'))->get('/admin/syofficial')->assertOk();
+    $this->actingAs(capabilityUser('govapps.reorder'))->get('/admin/govapps')->assertOk();
 });
 
 it('still refuses the page shell to a user with no capability in the module', function () {
-    $this->actingAs(capUser('phonebook.create'))->get('/admin/places')->assertForbidden();
-    $this->actingAs(capUser('phonebook.create'))->get('/admin/phonebook')->assertOk();
+    $this->actingAs(capabilityUser('phonebook.create'))->get('/admin/places')->assertForbidden();
+    $this->actingAs(capabilityUser('phonebook.create'))->get('/admin/phonebook')->assertOk();
 });
 
 it('lets a module-scoped account work across its whole module', function () {

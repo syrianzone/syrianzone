@@ -3,20 +3,10 @@
 use App\Models\Place;
 use App\Models\PlaceReport;
 use App\Models\User;
-use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Support\Facades\Cache;
 
-// UserFactory defaults role to admin; regular users must be explicit.
-function reporter(array $attrs = []): User {
-  return User::factory()->create(array_merge(['role' => 'user'], $attrs));
-}
-
-function reportsAdmin(): User {
-  return User::factory()->create(['role' => 'user', 'permissions' => PermissionCatalogue::forModule('places')]);
-}
-
 test('a signed-in user can report an approved place once', function () {
-  $user = reporter();
+  $user = User::factory()->create();
   $place = Place::factory()->approved()->create();
 
   $this->actingAs($user)->postJson("/api/v1/places/{$place->id}/report", ['reason' => 'inappropriate', 'details' => 'صور مسيئة'])
@@ -32,7 +22,7 @@ test('a signed-in user can report an approved place once', function () {
 });
 
 test('reports validate the reason and target only approved places', function () {
-  $user = reporter();
+  $user = User::factory()->create();
   $approved = Place::factory()->approved()->create();
   $pending = Place::factory()->create();
 
@@ -46,13 +36,13 @@ test('guests and banned users cannot report', function () {
   $place = Place::factory()->approved()->create();
 
   $this->postJson("/api/v1/places/{$place->id}/report", ['reason' => 'spam'])->assertUnauthorized();
-  $this->actingAs(reporter(['is_banned' => true]))
+  $this->actingAs(User::factory()->create(['is_banned' => true]))
     ->postJson("/api/v1/places/{$place->id}/report", ['reason' => 'spam'])
     ->assertForbidden();
 });
 
 test('report moderation endpoints require places permissions', function () {
-  $user = reporter();
+  $user = User::factory()->create();
 
   $this->actingAs($user)->getJson('/api/v1/admin/place-reports')->assertForbidden();
   $this->actingAs($user)->postJson('/api/v1/admin/place-reports/1/resolve', ['action' => 'dismiss'])->assertForbidden();
@@ -60,8 +50,8 @@ test('report moderation endpoints require places permissions', function () {
 
 test('admin lists open reports and can dismiss one', function () {
   $place = Place::factory()->approved()->create();
-  $report = PlaceReport::create(['place_id' => $place->id, 'user_id' => reporter()->id, 'reason' => 'spam']);
-  $admin = reportsAdmin();
+  $report = PlaceReport::create(['place_id' => $place->id, 'user_id' => User::factory()->create()->id, 'reason' => 'spam']);
+  $admin = moduleStaff('places');
 
   $this->actingAs($admin)->getJson('/api/v1/admin/place-reports')
     ->assertOk()
@@ -78,11 +68,11 @@ test('admin lists open reports and can dismiss one', function () {
 
 test('upholding a report unpublishes the place and closes its open reports', function () {
   $place = Place::factory()->approved()->create();
-  $first = PlaceReport::create(['place_id' => $place->id, 'user_id' => reporter()->id, 'reason' => 'inappropriate']);
-  $second = PlaceReport::create(['place_id' => $place->id, 'user_id' => reporter()->id, 'reason' => 'spam']);
+  $first = PlaceReport::create(['place_id' => $place->id, 'user_id' => User::factory()->create()->id, 'reason' => 'inappropriate']);
+  $second = PlaceReport::create(['place_id' => $place->id, 'user_id' => User::factory()->create()->id, 'reason' => 'spam']);
   Cache::put('places:map', ['stale'], 60);
 
-  $this->actingAs(reportsAdmin())
+  $this->actingAs(moduleStaff('places'))
     ->postJson("/api/v1/admin/place-reports/{$first->id}/resolve", ['action' => 'unpublish'])
     ->assertOk()
     ->assertJsonPath('status', 'resolved');
@@ -94,12 +84,12 @@ test('upholding a report unpublishes the place and closes its open reports', fun
 
 test('closed reports cannot be acted on again', function () {
   $place = Place::factory()->approved()->create();
-  $report = PlaceReport::create(['place_id' => $place->id, 'user_id' => reporter()->id, 'reason' => 'spam', 'status' => 'resolved']);
+  $report = PlaceReport::create(['place_id' => $place->id, 'user_id' => User::factory()->create()->id, 'reason' => 'spam', 'status' => 'resolved']);
 
-  $this->actingAs(reportsAdmin())
+  $this->actingAs(moduleStaff('places'))
     ->postJson("/api/v1/admin/place-reports/{$report->id}/resolve", ['action' => 'unpublish'])
     ->assertStatus(409);
-  $this->actingAs(reportsAdmin())
+  $this->actingAs(moduleStaff('places'))
     ->postJson("/api/v1/admin/place-reports/{$report->id}/resolve", ['action' => 'dismiss'])
     ->assertStatus(409);
 

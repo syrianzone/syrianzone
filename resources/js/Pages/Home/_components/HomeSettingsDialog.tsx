@@ -11,23 +11,7 @@ import {
 } from "@/Components/ui/sheet";
 import { getGeo, getLocMode, setLocMode, useLocSignal } from '@/Domain/location/location';
 import { useIsMobile } from '@/Lib/useIsMobile';
-
-const GOVERNORATE_LIST = [
-    { value: "damascus", nameAr: "دمشق", nameEn: "Damascus" },
-    { value: "aleppo", nameAr: "حلب", nameEn: "Aleppo" },
-    { value: "homs", nameAr: "حمص", nameEn: "Homs" },
-    { value: "hama", nameAr: "حماة", nameEn: "Hama" },
-    { value: "latakia", nameAr: "اللاذقية", nameEn: "Latakia" },
-    { value: "tartus", nameAr: "طرطوس", nameEn: "Tartus" },
-    { value: "deir-ez-zor", nameAr: "دير الزور", nameEn: "Deir ez-Zor" },
-    { value: "idlib", nameAr: "إدلب", nameEn: "Idlib" },
-    { value: "daraa", nameAr: "درعا", nameEn: "Daraa" },
-    { value: "quneitra", nameAr: "القنيطرة", nameEn: "Quneitra" },
-    { value: "sweida", nameAr: "السويداء", nameEn: "Sweida" },
-    { value: "rural-damascus", nameAr: "ريف دمشق", nameEn: "Rural Damascus" },
-    { value: "hasakah", nameAr: "الحسكة", nameEn: "Hasakah" },
-    { value: "raqqa", nameAr: "الرقة", nameEn: "Raqqa" },
-];
+import { GOVERNORATES, GOVERNORATES_BY_ID, getGovernorateNameAr } from '@/Domain/geography/governorates';
 
 interface HomeSettingsFields {
     governorate: string;
@@ -79,7 +63,7 @@ function HomeSettingsBody(props: HomeSettingsFields) {
     const geo = getGeo();
     const geoActive = (locMode === 'gps' || locMode === 'ip') && !!geo;
     const customActive = locMode === 'custom' || useCustomCoords;
-    const activeGovName = GOVERNORATE_LIST.find(g => g.value === governorate)?.nameAr ?? governorate;
+    const activeGovName = getGovernorateNameAr(governorate);
     const latId = useId();
     const lonId = useId();
     // Ids for the visible toggle captions: Radix Switch renders a <button>, so
@@ -200,8 +184,8 @@ function HomeSettingsBody(props: HomeSettingsFields) {
                                     }}>
                                         <SelectTrigger dir="rtl" aria-label="مدينة المواقيت والطقس"><SelectValue /></SelectTrigger>
                                         <SelectContent dir="rtl">
-                                            {GOVERNORATE_LIST.map((g) => (
-                                                <SelectItem key={g.value} value={g.value}>{g.nameAr}</SelectItem>
+                                            {GOVERNORATES.map((governorate) => (
+                                                <SelectItem key={governorate.id} value={governorate.id}>{governorate.nameAr}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
@@ -220,7 +204,7 @@ function HomeSettingsBody(props: HomeSettingsFields) {
                                                 localStorage.setItem('customLat', e.target.value);
                                                 saveAccountSettings({ customLat: e.target.value });
                                             }}
-                                            placeholder="33.5138"
+                                            placeholder={String(GOVERNORATES_BY_ID['damascus'].lat)}
                                         />
                                     </div>
                                     <div className="space-y-1 text-start">
@@ -233,7 +217,7 @@ function HomeSettingsBody(props: HomeSettingsFields) {
                                                 localStorage.setItem('customLon', e.target.value);
                                                 saveAccountSettings({ customLon: e.target.value });
                                             }}
-                                            placeholder="36.2765"
+                                            placeholder={String(GOVERNORATES_BY_ID['damascus'].lng)}
                                         />
                                     </div>
                                 </div>
@@ -262,8 +246,8 @@ function HomeSettingsBody(props: HomeSettingsFields) {
                                 <Select value={eventsGovernorate} onValueChange={setEventsGovernorate}>
                                     <SelectTrigger dir="rtl" aria-label="محافظة الفعاليات"><SelectValue /></SelectTrigger>
                                     <SelectContent dir="rtl">
-                                        {GOVERNORATE_LIST.map((g) => (
-                                            <SelectItem key={g.value} value={g.value}>{g.nameAr}</SelectItem>
+                                        {GOVERNORATES.map((governorate) => (
+                                            <SelectItem key={governorate.id} value={governorate.id}>{governorate.nameAr}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>

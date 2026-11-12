@@ -1,4 +1,4 @@
-import { getCanonicalCityName } from '@/Lib/city-name-standardizer';
+import { getCanonicalGovernorateName } from '@/Domain/geography/governorates';
 
 export function escapeHtml(v: unknown): string {
     return String(v ?? '')
@@ -10,7 +10,7 @@ export function escapeHtml(v: unknown): string {
 }
 
 export function generateRainChartHtml(name: string, data: any[]) {
-    const displayName = escapeHtml(getCanonicalCityName(name));
+    const displayName = escapeHtml(getCanonicalGovernorateName(name));
     const sorted = [...data].sort((a, b) => a.year - b.year);
     const maxVal = Math.max(...sorted.map(d => d.rainfall));
 
@@ -51,7 +51,7 @@ export function generateRainChartHtml(name: string, data: any[]) {
 }
 
 export function generatePopulationTooltipHtml(name: string, value: number, label: string) {
-    const displayName = escapeHtml(getCanonicalCityName(name));
+    const displayName = escapeHtml(getCanonicalGovernorateName(name));
     const valueStr = value ? value.toLocaleString('en-US') : 'لا توجد بيانات';
     const safeLabel = escapeHtml(label);
 
@@ -64,7 +64,7 @@ export function generatePopulationTooltipHtml(name: string, value: number, label
 }
 
 export function generateEnvironmentalTooltipHtml(name: string, data: any) {
-    const displayName = escapeHtml(getCanonicalCityName(name));
+    const displayName = escapeHtml(getCanonicalGovernorateName(name));
     const temp = data.current_conditions?.temperature_celsius || 0;
     const feelsLike = data.current_conditions?.feels_like_celsius || temp;
     const humidity = data.current_conditions?.humidity_percent || 0;

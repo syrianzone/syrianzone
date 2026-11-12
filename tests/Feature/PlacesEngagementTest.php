@@ -3,13 +3,8 @@
 use App\Models\Place;
 use App\Models\User;
 
-// UserFactory defaults role to admin; regular users must be explicit.
-function engagementUser(array $attrs = []): User {
-  return User::factory()->create(array_merge(['role' => 'user'], $attrs));
-}
-
 test('save and unsave are idempotent and track the count', function () {
-  $user = engagementUser();
+  $user = User::factory()->create();
   $place = Place::factory()->approved()->create();
 
   $this->actingAs($user)->postJson("/api/v1/places/{$place->id}/save")
@@ -32,7 +27,7 @@ test('save and unsave are idempotent and track the count', function () {
 });
 
 test('engagement targets must be approved places', function () {
-  $user = engagementUser();
+  $user = User::factory()->create();
   $pending = Place::factory()->create();
 
   $this->actingAs($user)->postJson("/api/v1/places/{$pending->id}/save")->assertNotFound();
@@ -47,7 +42,7 @@ test('guests get 401 on engagement writes', function () {
 });
 
 test('my saves lists only approved places the user saved', function () {
-  $user = engagementUser();
+  $user = User::factory()->create();
   $saved = Place::factory()->approved()->create();
   Place::factory()->approved()->create();
 
@@ -60,7 +55,7 @@ test('my saves lists only approved places the user saved', function () {
 });
 
 test('my saves orders by save time not place age', function () {
-  $user = engagementUser();
+  $user = User::factory()->create();
   $older = Place::factory()->approved()->create(['created_at' => now()->subDay()]);
   $newer = Place::factory()->approved()->create();
 
@@ -76,7 +71,7 @@ test('my saves orders by save time not place age', function () {
 });
 
 test('removed engagement endpoints are gone', function () {
-  $user = engagementUser();
+  $user = User::factory()->create();
   $place = Place::factory()->approved()->create();
 
   // Reports came back (PlacesReportsTest); likes and comments stay removed.

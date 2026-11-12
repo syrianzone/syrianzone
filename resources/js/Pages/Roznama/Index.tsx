@@ -32,38 +32,6 @@ interface F3aliaEvent {
     category: EventCategory | null;
 }
 
-const GOVERNORATE_TO_F3ALIA_PROVINCE: Record<string, string> = {
-    'damascus': 'DAMASCUS',
-    'aleppo': 'ALEPPO',
-    'homs': 'HOMS',
-    'hama': 'HAMA',
-    'latakia': 'LATTAKIA',
-    'tartus': 'TARTOUS',
-    'deir-ez-zor': 'DEIR_EZ_ZOR',
-    'idlib': 'IDLIB',
-    'daraa': 'DARAA',
-    'quneitra': 'QUNEITRA',
-    'sweida': 'AS_SUWAYDA',
-    'rural-damascus': 'DAMASCUS',
-    'hasakah': 'HASAKEH',
-    'raqqa': 'RAQQA'
-};
-
-const F3ALIA_PROVINCE_TO_ARABIC: Record<string, string> = {
-    'DAMASCUS': 'دمشق',
-    'ALEPPO': 'حلب',
-    'HOMS': 'حمص',
-    'HAMA': 'حماة',
-    'LATTAKIA': 'اللاذقية',
-    'TARTOUS': 'طرطوس',
-    'DEIR_EZ_ZOR': 'دير الزور',
-    'IDLIB': 'إدلب',
-    'DARAA': 'درعا',
-    'QUNEITRA': 'القنيطرة',
-    'AS_SUWAYDA': 'السويداء',
-    'HASAKEH': 'الحسكة',
-    'RAQQA': 'الرقة'
-};
 import { Label } from "@/Components/ui/label";
 import { Input } from "@/Components/ui/input";
 import MainLayout from '@/Layouts/MainLayout';
@@ -79,22 +47,17 @@ import { LOC_CHANGED_EVENT, effectivePrayerParams, getGeo, getLocMode, setLocMod
 import { PRAYER_METHODS } from '@/Domain/prayer/methods';
 import { useIsMobile } from '@/Lib/useIsMobile';
 import { useAppShell } from '@/Lib/appShell';
+import {
+    GOVERNORATES,
+    GOVERNORATES_BY_ID,
+    governorateNameForF3aliaProvince,
+} from '@/Domain/geography/governorates';
 
-const GOVERNORATES: Record<string, { nameAr: string; nameEn: string; lat: number; lon: number }> = {
-    'damascus': { nameAr: 'دمشق', nameEn: 'Damascus', lat: 33.5138, lon: 36.2765 },
-    'aleppo': { nameAr: 'حلب', nameEn: 'Aleppo', lat: 36.2021, lon: 37.1343 },
-    'homs': { nameAr: 'حمص', nameEn: 'Homs', lat: 34.7324, lon: 36.7137 },
-    'hama': { nameAr: 'حماة', nameEn: 'Hama', lat: 35.1318, lon: 36.7578 },
-    'latakia': { nameAr: 'اللاذقية', nameEn: 'Latakia', lat: 35.5317, lon: 35.7901 },
-    'tartus': { nameAr: 'طرطوس', nameEn: 'Tartus', lat: 34.8890, lon: 35.8866 },
-    'deir-ez-zor': { nameAr: 'دير الزور', nameEn: 'Deir ez-Zor', lat: 35.3359, lon: 40.1408 },
-    'idlib': { nameAr: 'إدلب', nameEn: 'Idlib', lat: 35.9306, lon: 36.6339 },
-    'daraa': { nameAr: 'درعا', nameEn: 'Daraa', lat: 32.6255, lon: 36.1016 },
-    'quneitra': { nameAr: 'القنيطرة', nameEn: 'Quneitra', lat: 33.1250, lon: 35.8250 },
-    'sweida': { nameAr: 'السويداء', nameEn: 'Sweida', lat: 32.7089, lon: 36.5695 },
-    'rural-damascus': { nameAr: 'ريف دمشق', nameEn: 'Rural Damascus', lat: 33.5138, lon: 36.2765 },
-    'hasakah': { nameAr: 'الحسكة', nameEn: 'Hasakah', lat: 36.5023, lon: 40.7382 },
-    'raqqa': { nameAr: 'الرقة', nameEn: 'Raqqa', lat: 35.9520, lon: 39.0081 },
+
+/** The manual governorate's centre in the `{ lat, lon }` shape the fetchers use. */
+const governorateCentre = (id: string) => {
+    const governorate = GOVERNORATES_BY_ID[id] ?? GOVERNORATES_BY_ID['damascus'];
+    return { lat: governorate.lat, lon: governorate.lng };
 };
 
 const VARIABLE_HOLIDAYS_MAP: Record<number, Record<string, { month: number; day: number }>> = {
@@ -244,9 +207,9 @@ function RoznamaSettingsBody({
                     <Select value={governorate} onValueChange={onGovChange}>
                         <SelectTrigger dir="rtl" aria-label="المدينة (للمواقيت والطقس والفعاليات)"><SelectValue /></SelectTrigger>
                         <SelectContent dir="rtl">
-                            {Object.entries(GOVERNORATES).map(([key, value]) => (
-                                <SelectItem key={key} value={key}>
-                                    {value.nameAr}
+                            {GOVERNORATES.map((governorate) => (
+                                <SelectItem key={governorate.id} value={governorate.id}>
+                                    {governorate.nameAr}
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -412,7 +375,7 @@ export default function Index() {
                 const custom = useCustomCoords && customLat && customLon
                     && Number.isFinite(Number(customLat)) && Number.isFinite(Number(customLon))
                     ? { lat: Number(customLat), lon: Number(customLon) } : null;
-                const coords = shared ?? custom ?? (GOVERNORATES[governorate] || GOVERNORATES['damascus']);
+                const coords = shared ?? custom ?? governorateCentre(governorate);
                 const response = await fetch(`/api/weather?lat=${coords.lat}&lon=${coords.lon}`);
                 if (!response.ok) throw new Error('Weather fetch failed');
                 const data = await response.json();
@@ -694,7 +657,7 @@ export default function Index() {
         return holidays.filter(h => h.date >= startOfToday);
     }, [holidays, hidePassed, currentTime]);
 
-    const activeGov = GOVERNORATES[governorate] || GOVERNORATES['damascus'];
+    const activeGov = GOVERNORATES_BY_ID[governorate] ?? GOVERNORATES_BY_ID['damascus'];
     // Labels follow the effective location: a resolved GPS/IP point wins over
     // the manual governorate while active. Read only after mount — localStorage
     // differs between the server render and the first client render.
@@ -835,7 +798,7 @@ export default function Index() {
                                                     </div>
                                                     <div className="text-[11px] text-muted-foreground flex items-center gap-2 flex-wrap">
                                                         <span className="font-semibold text-foreground/80">
-                                                            {F3ALIA_PROVINCE_TO_ARABIC[nextEvent.province] || nextEvent.provinceName}
+                                                            {governorateNameForF3aliaProvince(nextEvent.province) || nextEvent.provinceName}
                                                         </span>
                                                         <span>•</span>
                                                         <span>{formatDateGregorian(new Date(nextEvent.eventDate))}</span>
@@ -1166,7 +1129,7 @@ export default function Index() {
                                                         </div>
                                                         <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
                                                             <span className="font-semibold text-foreground/75">
-                                                                {F3ALIA_PROVINCE_TO_ARABIC[event.province] || event.provinceName}
+                                                                {governorateNameForF3aliaProvince(event.province) || event.provinceName}
                                                             </span>
                                                             <span>•</span>
                                                             <span>{formatDateGregorian(new Date(event.eventDate))}</span>

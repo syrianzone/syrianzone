@@ -4,15 +4,10 @@ use App\Models\Place;
 use App\Models\PlacePhoto;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
-use App\Support\Permissions\PermissionCatalogue;
-
-function placesAdmin(): User {
-  return User::factory()->create(['permissions' => PermissionCatalogue::forModule('places')]);
-}
 
 test('admin endpoints reject guests and non-admins', function () {
   $place = Place::factory()->create();
-  $user = User::factory()->create(['role' => 'user']);
+  $user = User::factory()->create();
 
   $this->getJson('/api/v1/admin/places')->assertUnauthorized();
 
@@ -30,11 +25,10 @@ test('admin endpoints reject guests and non-admins', function () {
 test('admin can replace a photo and the new file has fresh paths', function () {
   Storage::fake('public');
   $place = Place::factory()->approved()->create();
-  $photo = app(\App\Services\PlaceImageService::class)
-    ->store(\Illuminate\Http\UploadedFile::fake()->image('a.jpg', 800, 600), $place->id, 0);
+  $photo = placePhoto($place->id);
   $oldPaths = [$photo->original_path, $photo->display_path, $photo->thumb_path];
 
-  $this->actingAs(placesAdmin())
+  $this->actingAs(moduleStaff('places'))
     ->postJson("/api/v1/admin/place-photos/{$photo->id}/replace", [
       'photo' => \Illuminate\Http\UploadedFile::fake()->image('b.jpg', 500, 900),
     ])
@@ -55,7 +49,7 @@ test('replace rejects a non-image upload', function () {
   $place = Place::factory()->approved()->create();
   $photo = PlacePhoto::factory()->create(['place_id' => $place->id]);
 
-  $this->actingAs(placesAdmin())
+  $this->actingAs(moduleStaff('places'))
     ->postJson("/api/v1/admin/place-photos/{$photo->id}/replace", [
       'photo' => \Illuminate\Http\UploadedFile::fake()->create('doc.pdf', 100, 'application/pdf'),
     ])
@@ -67,7 +61,7 @@ test('rotate reports a missing display file instead of a server error', function
   $place = Place::factory()->approved()->create();
   $photo = PlacePhoto::factory()->create(['place_id' => $place->id]);
 
-  $this->actingAs(placesAdmin())
+  $this->actingAs(moduleStaff('places'))
     ->postJson("/api/v1/admin/place-photos/{$photo->id}/rotate")
     ->assertStatus(422)
     ->assertJsonPath('message', 'ملف الصورة مفقود على الخادم، استخدم إعادة الرفع');
@@ -89,7 +83,7 @@ test('admin can rotate a photo clockwise and gets fresh versioned urls', functio
   ]);
   Storage::disk('public')->put($photo->display_path, $displayBytes);
 
-  $response = $this->actingAs(placesAdmin())
+  $response = $this->actingAs(moduleStaff('places'))
     ->postJson("/api/v1/admin/place-photos/{$photo->id}/rotate")
     ->assertOk()
     ->assertJsonPath('id', $photo->id);
@@ -108,28 +102,28 @@ test('admin list defaults to pending and filters by status', function () {
   $approved = Place::factory()->approved()->create();
   Place::factory()->rejected()->create();
 
-  $this->actingAs(placesAdmin())->getJson('/api/v1/admin/places')
+  $this->actingAs(moduleStaff('places'))->getJson('/api/v1/admin/places')
     ->assertOk()
     ->assertJsonCount(1, 'data')
     ->assertJsonPath('data.0.id', $pending->id)
     ->assertJsonStructure(['data' => [['id', 'name', 'status', 'rejection_reason', 'photos', 'user' => ['id', 'name', 'avatar_url']]]]);
 
-  $this->actingAs(placesAdmin())->getJson('/api/v1/admin/places?status=approved')
+  $this->actingAs(moduleStaff('places'))->getJson('/api/v1/admin/places?status=approved')
     ->assertOk()
     ->assertJsonCount(1, 'data')
     ->assertJsonPath('data.0.id', $approved->id);
 
-  $this->actingAs(placesAdmin())->getJson('/api/v1/admin/places?status=all')
+  $this->actingAs(moduleStaff('places'))->getJson('/api/v1/admin/places?status=all')
     ->assertOk()
     ->assertJsonCount(3, 'data');
 
-  $this->actingAs(placesAdmin())->getJson('/api/v1/admin/places?status=bogus')->assertStatus(422);
+  $this->actingAs(moduleStaff('places'))->getJson('/api/v1/admin/places?status=bogus')->assertStatus(422);
 });
 
 test('admin can approve a pending place', function () {
   $place = Place::factory()->create();
 
-  $this->actingAs(placesAdmin())->postJson("/api/v1/admin/places/{$place->id}/approve")
+  $this->actingAs(moduleStaff('places'))->postJson("/api/v1/admin/places/{$place->id}/approve")
     ->assertOk()
     ->assertJsonPath('status', 'approved');
 
@@ -141,7 +135,7 @@ test('admin can approve a pending place', function () {
 test('approve is rejected for non-pending places', function () {
   $place = Place::factory()->approved()->create();
 
-  $this->actingAs(placesAdmin())->postJson("/api/v1/admin/places/{$place->id}/approve")
+  $this->actingAs(moduleStaff('places'))->postJson("/api/v1/admin/places/{$place->id}/approve")
     ->assertStatus(400)
     ->assertJsonPath('message', 'Place is already approved');
 });
@@ -149,7 +143,7 @@ test('approve is rejected for non-pending places', function () {
 test('admin can reject a pending place with a reason', function () {
   $place = Place::factory()->create();
 
-  $this->actingAs(placesAdmin())
+  $this->actingAs(moduleStaff('places'))
     ->postJson("/api/v1/admin/places/{$place->id}/reject", ['reason' => 'صور غير واضحة'])
     ->assertOk()
     ->assertJsonPath('status', 'rejected');
@@ -160,7 +154,7 @@ test('admin can reject a pending place with a reason', function () {
 test('reject is rejected for non-pending places', function () {
   $place = Place::factory()->rejected()->create();
 
-  $this->actingAs(placesAdmin())->postJson("/api/v1/admin/places/{$place->id}/reject")
+  $this->actingAs(moduleStaff('places'))->postJson("/api/v1/admin/places/{$place->id}/reject")
     ->assertStatus(400)
     ->assertJsonPath('message', 'Place is already rejected');
 });
@@ -171,7 +165,7 @@ test('approving a place makes it appear on the cached map', function () {
   // Prime the cache while the place is still pending.
   $this->getJson('/api/v1/places/map')->assertOk()->assertJsonCount(0, 'features');
 
-  $this->actingAs(placesAdmin())->postJson("/api/v1/admin/places/{$place->id}/approve")->assertOk();
+  $this->actingAs(moduleStaff('places'))->postJson("/api/v1/admin/places/{$place->id}/approve")->assertOk();
 
   $this->getJson('/api/v1/places/map')
     ->assertOk()
@@ -192,7 +186,7 @@ test('admin delete removes rows and photo files', function () {
     Storage::disk('public')->put($path, 'x');
   }
 
-  $this->actingAs(placesAdmin())->deleteJson("/api/v1/admin/places/{$place->id}")->assertNoContent();
+  $this->actingAs(moduleStaff('places'))->deleteJson("/api/v1/admin/places/{$place->id}")->assertNoContent();
 
   $this->assertDatabaseMissing('places', ['id' => $place->id]);
   $this->assertDatabaseMissing('place_photos', ['id' => $photo->id]);
@@ -203,7 +197,7 @@ test('admin can update all editable fields of a place', function () {
   $place = Place::factory()->approved()->create();
   PlacePhoto::factory()->create(['place_id' => $place->id]);
 
-  $this->actingAs(placesAdmin())
+  $this->actingAs(moduleStaff('places'))
     ->patchJson("/api/v1/admin/places/{$place->id}", [
       'name' => 'قلعة الحصن',
       'category' => 'historical',
@@ -228,7 +222,7 @@ test('admin can update all editable fields of a place', function () {
 test('admin update accepts a partial body and leaves other fields alone', function () {
   $place = Place::factory()->create(['name' => 'الاسم القديم']);
 
-  $this->actingAs(placesAdmin())
+  $this->actingAs(moduleStaff('places'))
     ->patchJson("/api/v1/admin/places/{$place->id}", ['name' => 'الاسم الجديد'])
     ->assertOk()
     ->assertJsonPath('name', 'الاسم الجديد');
@@ -240,7 +234,7 @@ test('admin update accepts a partial body and leaves other fields alone', functi
 
 test('admin update rejects invalid values', function () {
   $place = Place::factory()->create();
-  $admin = placesAdmin();
+  $admin = moduleStaff('places');
 
   $this->actingAs($admin)
     ->patchJson("/api/v1/admin/places/{$place->id}", ['category' => 'castle'])
@@ -264,7 +258,7 @@ test('admin update rejects invalid values', function () {
 test('admin update returns an arabic message for a blank name and a non-numeric coordinate', function () {
   $place = Place::factory()->create();
 
-  $this->actingAs(placesAdmin())
+  $this->actingAs(moduleStaff('places'))
     ->patchJson("/api/v1/admin/places/{$place->id}", ['name' => '', 'lng' => 'شرق'])
     ->assertStatus(422)
     ->assertJsonPath('errors.name.0', 'أدخل اسم المكان')
@@ -275,7 +269,7 @@ test('admin update busts the map cache', function () {
   $place = Place::factory()->approved()->create();
   \Illuminate\Support\Facades\Cache::put('places:map', ['stale'], 3600);
 
-  $this->actingAs(placesAdmin())
+  $this->actingAs(moduleStaff('places'))
     ->patchJson("/api/v1/admin/places/{$place->id}", ['name' => 'اسم محدث للخريطة'])
     ->assertOk();
 
@@ -285,10 +279,9 @@ test('admin update busts the map cache', function () {
 test('admin can add a photo and it lands after the existing ones', function () {
   Storage::fake('public');
   $place = Place::factory()->approved()->create();
-  app(\App\Services\PlaceImageService::class)
-    ->store(\Illuminate\Http\UploadedFile::fake()->image('a.jpg', 800, 600), $place->id, 0);
+  placePhoto($place->id);
 
-  $response = $this->actingAs(placesAdmin())
+  $response = $this->actingAs(moduleStaff('places'))
     ->postJson("/api/v1/admin/places/{$place->id}/photos", [
       'photo' => \Illuminate\Http\UploadedFile::fake()->image('b.jpg', 800, 600),
     ])
@@ -306,7 +299,7 @@ test('add photo is refused when the place already has ten photos', function () {
   $place = Place::factory()->approved()->create();
   PlacePhoto::factory()->count(10)->sequence(fn ($seq) => ['sort' => $seq->index])->create(['place_id' => $place->id]);
 
-  $this->actingAs(placesAdmin())
+  $this->actingAs(moduleStaff('places'))
     ->postJson("/api/v1/admin/places/{$place->id}/photos", [
       'photo' => \Illuminate\Http\UploadedFile::fake()->image('f.jpg', 800, 600),
     ])
@@ -319,16 +312,15 @@ test('add photo is refused when the place already has ten photos', function () {
 test('admin add and replace accept a 12 MB photo', function () {
   Storage::fake('public');
   $place = Place::factory()->approved()->create();
-  $photo = app(\App\Services\PlaceImageService::class)
-    ->store(\Illuminate\Http\UploadedFile::fake()->image('a.jpg', 800, 600), $place->id, 0);
+  $photo = placePhoto($place->id);
 
-  $this->actingAs(placesAdmin())
+  $this->actingAs(moduleStaff('places'))
     ->postJson("/api/v1/admin/places/{$place->id}/photos", [
       'photo' => \Illuminate\Http\UploadedFile::fake()->image('big.jpg', 800, 600)->size(10000),
     ])
     ->assertCreated();
 
-  $this->actingAs(placesAdmin())
+  $this->actingAs(moduleStaff('places'))
     ->postJson("/api/v1/admin/place-photos/{$photo->id}/replace", [
       'photo' => \Illuminate\Http\UploadedFile::fake()->image('big2.jpg', 800, 600)->size(12000),
     ])
@@ -340,14 +332,14 @@ test('admin add and replace reject a photo over 12 MB with the arabic message', 
   $place = Place::factory()->approved()->create();
   $photo = PlacePhoto::factory()->create(['place_id' => $place->id]);
 
-  $this->actingAs(placesAdmin())
+  $this->actingAs(moduleStaff('places'))
     ->postJson("/api/v1/admin/places/{$place->id}/photos", [
       'photo' => \Illuminate\Http\UploadedFile::fake()->image('big.jpg', 800, 600)->size(13000),
     ])
     ->assertStatus(422)
     ->assertJsonPath('errors.photo.0', 'حجم الصورة يجب ألا يتجاوز 12 ميغابايت');
 
-  $this->actingAs(placesAdmin())
+  $this->actingAs(moduleStaff('places'))
     ->postJson("/api/v1/admin/place-photos/{$photo->id}/replace", [
       'photo' => \Illuminate\Http\UploadedFile::fake()->image('big.jpg', 800, 600)->size(13000),
     ])
@@ -360,7 +352,7 @@ test('add photo rejects a non-image upload', function () {
   $place = Place::factory()->approved()->create();
   PlacePhoto::factory()->create(['place_id' => $place->id]);
 
-  $this->actingAs(placesAdmin())
+  $this->actingAs(moduleStaff('places'))
     ->postJson("/api/v1/admin/places/{$place->id}/photos", [
       'photo' => \Illuminate\Http\UploadedFile::fake()->create('doc.pdf', 100, 'application/pdf'),
     ])
@@ -382,7 +374,7 @@ test('admin can delete a photo along with its files', function () {
     Storage::disk('public')->put($path, 'x');
   }
 
-  $this->actingAs(placesAdmin())
+  $this->actingAs(moduleStaff('places'))
     ->deleteJson("/api/v1/admin/place-photos/{$victim->id}")
     ->assertNoContent();
 
@@ -404,7 +396,7 @@ test('delete photo refuses to remove the last photo', function () {
     Storage::disk('public')->put($path, 'x');
   }
 
-  $this->actingAs(placesAdmin())
+  $this->actingAs(moduleStaff('places'))
     ->deleteJson("/api/v1/admin/place-photos/{$photo->id}")
     ->assertStatus(422)
     ->assertJsonPath('message', 'لا يمكن حذف الصورة الأخيرة');
@@ -418,7 +410,7 @@ test('deleting an approved place busts the map cache', function () {
 
   $this->getJson('/api/v1/places/map')->assertOk()->assertJsonCount(1, 'features');
 
-  $this->actingAs(placesAdmin())->deleteJson("/api/v1/admin/places/{$place->id}")->assertNoContent();
+  $this->actingAs(moduleStaff('places'))->deleteJson("/api/v1/admin/places/{$place->id}")->assertNoContent();
 
   $this->getJson('/api/v1/places/map')->assertOk()->assertJsonCount(0, 'features');
 });

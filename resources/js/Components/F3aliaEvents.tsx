@@ -3,6 +3,7 @@ import { Calendar, ExternalLink, AlertCircle, RefreshCw } from 'lucide-react';
 import { Card, CardContent } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
 import { formatGregorianSyrianShort } from "@/Lib/syrian-date";
+import { f3aliaProvinceFor, getGovernorateNameAr, governorateNameForF3aliaProvince } from '@/Domain/geography/governorates';
 
 interface F3aliaEventsProps {
     governorate: string; // local governorate key, e.g., 'damascus'
@@ -45,56 +46,6 @@ interface F3aliaEvent {
     owner: EventOwner | null;
     attachments: EventAttachment[] | null;
 }
-
-const GOVERNORATE_TO_F3ALIA_PROVINCE: Record<string, string> = {
-    'damascus': 'DAMASCUS',
-    'aleppo': 'ALEPPO',
-    'homs': 'HOMS',
-    'hama': 'HAMA',
-    'latakia': 'LATTAKIA',
-    'tartus': 'TARTOUS',
-    'deir-ez-zor': 'DEIR_EZ_ZOR',
-    'idlib': 'IDLIB',
-    'daraa': 'DARAA',
-    'quneitra': 'QUNEITRA',
-    'sweida': 'AS_SUWAYDA',
-    'rural-damascus': 'DAMASCUS', // Fallback Rural Damascus to Damascus
-    'hasakah': 'HASAKEH',
-    'raqqa': 'RAQQA'
-};
-
-const GOVERNORATE_NAMES_AR: Record<string, string> = {
-    'damascus': 'دمشق',
-    'aleppo': 'حلب',
-    'homs': 'حمص',
-    'hama': 'حماة',
-    'latakia': 'اللاذقية',
-    'tartus': 'طرطوس',
-    'deir-ez-zor': 'دير الزور',
-    'idlib': 'إدلب',
-    'daraa': 'درعا',
-    'quneitra': 'القنيطرة',
-    'sweida': 'السويداء',
-    'rural-damascus': 'ريف دمشق',
-    'hasakah': 'الحسكة',
-    'raqqa': 'الرقة'
-};
-
-const F3ALIA_PROVINCE_TO_ARABIC: Record<string, string> = {
-    'DAMASCUS': 'دمشق',
-    'ALEPPO': 'حلب',
-    'HOMS': 'حمص',
-    'HAMA': 'حماة',
-    'LATTAKIA': 'اللاذقية',
-    'TARTOUS': 'طرطوس',
-    'DEIR_EZ_ZOR': 'دير الزور',
-    'IDLIB': 'إدلب',
-    'DARAA': 'درعا',
-    'QUNEITRA': 'القنيطرة',
-    'AS_SUWAYDA': 'السويداء',
-    'HASAKEH': 'الحسكة',
-    'RAQQA': 'الرقة'
-};
 
 export default function F3aliaEvents({ governorate }: F3aliaEventsProps) {
     const [events, setEvents] = useState<F3aliaEvent[]>([]);
@@ -185,7 +136,7 @@ export default function F3aliaEvents({ governorate }: F3aliaEventsProps) {
     };
 
     const loadEventsData = async () => {
-        const provinceEnum = GOVERNORATE_TO_F3ALIA_PROVINCE[governorate] || null;
+        const provinceEnum = f3aliaProvinceFor(governorate);
         try {
             // Step 1: Try fetching events for selected governorate (upcoming only)
             const result = await fetchEvents(provinceEnum);
@@ -216,7 +167,7 @@ export default function F3aliaEvents({ governorate }: F3aliaEventsProps) {
     // Only the very first next upcoming event is shown (homepage spotlight).
     const displayedEvents = upcomingEvents.slice(0, 1);
 
-    const currentGovName = GOVERNORATE_NAMES_AR[governorate];
+    const currentGovName = getGovernorateNameAr(governorate);
 
     return (
         <div className="w-full" dir="rtl">
@@ -280,7 +231,7 @@ export default function F3aliaEvents({ governorate }: F3aliaEventsProps) {
                         <div className="w-full text-center" dir="rtl">
                             <div className="flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1.5">
                                 <span className="text-sm font-bold text-primary">
-                                    {F3ALIA_PROVINCE_TO_ARABIC[event.province] || event.provinceName}
+                                    {governorateNameForF3aliaProvince(event.province) || event.provinceName}
                                 </span>
                                 <span className="text-base font-bold text-foreground">{event.name}</span>
                             </div>

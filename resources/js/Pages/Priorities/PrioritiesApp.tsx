@@ -39,7 +39,7 @@ import {
 import { Instagram } from '@/Components/ui/icons';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/Components/ui/card";
-import { THEME_REGISTRY, getThemeById } from '@/lib/theme';
+import { THEME_REGISTRY, getThemeById, hexToRgbString } from '@/lib/theme';
 import { Button } from "@/Components/ui/button";
 
 import {
@@ -72,7 +72,6 @@ const getShortTopicName = (id: string, fallback: string) => {
 const getStoryThemeStyles = (themeKey: string) => {
   const theme = getThemeById(themeKey) || getThemeById('dark') || THEME_REGISTRY[2];
   const priorities = theme.priorities || {
-    primaryRgb: '90, 113, 74',
     gradient: 'linear-gradient(135deg, #0b0f19 0%, #064e3b 50%, #022c22 100%)',
     accentBg: 'bg-emerald-500/20 border-emerald-500/30',
     accentText: 'text-emerald-400',
@@ -81,6 +80,9 @@ const getStoryThemeStyles = (themeKey: string) => {
     urlText: '#34d399',
   };
 
+  // The card's gradient comes from the palette, not from the scheme: jasmine is
+  // a light theme with a deliberately dark card gradient, so only `light` draws
+  // the dark-on-light text set.
   const isLight = theme.id === 'light';
   const textPrimary = isLight ? '#0f172a' : '#ffffff';
   const textSecondary = isLight ? '#475569' : '#94a3b8';
@@ -100,7 +102,7 @@ const getStoryThemeStyles = (themeKey: string) => {
     accentText: priorities.accentText,
     badgeBg: priorities.badgeBg,
     primary: theme.primary,
-    primaryRgb: priorities.primaryRgb,
+    primaryRgb: hexToRgbString(theme.primary),
     textPrimary,
     textSecondary,
     textMuted,
@@ -425,7 +427,7 @@ export default function PrioritiesApp() {
   const activeThemeConfig = getThemeById(activeTheme) || getThemeById('dark') || THEME_REGISTRY[2];
   const themeColors = useMemo(() => ({
     primary: activeThemeConfig.primary,
-    primaryRgb: activeThemeConfig.priorities?.primaryRgb || '90, 113, 74'
+    primaryRgb: hexToRgbString(activeThemeConfig.primary)
   }), [activeThemeConfig]);
 
   const chartData = useMemo(() => {
@@ -444,7 +446,7 @@ export default function PrioritiesApp() {
     }));
   }, [topics, activeComparisonKey]);
 
-  const isDark = activeTheme.includes('dark') || activeTheme === 'damascus-rose';
+  const isDark = Boolean(getThemeById(activeTheme)?.isDark);
   const labelColor = isDark ? '#ffffff' : '#475569';
 
   // Export & Sharing actions
@@ -1213,11 +1215,11 @@ export default function PrioritiesApp() {
                 {/* Decorative Background Elements for Premium Vibe */}
                 <div
                   className="story-card-bg-blur absolute top-0 right-0 w-44 h-44 rounded-full blur-[60px] pointer-events-none"
-                  style={{ backgroundColor: `rgba(${storyThemeStyles.primaryRgb || '90, 113, 74'}, 0.15)` }}
+                  style={{ backgroundColor: `rgba(${storyThemeStyles.primaryRgb}, 0.15)` }}
                 ></div>
                 <div
                   className="story-card-bg-blur absolute bottom-12 left-0 w-48 h-48 rounded-full blur-[80px] pointer-events-none"
-                  style={{ backgroundColor: `rgba(${storyThemeStyles.primaryRgb || '90, 113, 74'}, 0.05)` }}
+                  style={{ backgroundColor: `rgba(${storyThemeStyles.primaryRgb}, 0.05)` }}
                 ></div>
 
                 {/* Header */}
@@ -1240,8 +1242,8 @@ export default function PrioritiesApp() {
                         padding: '6px',
                         border: '1px solid',
                         overflow: 'hidden',
-                        backgroundColor: storyThemeStyles.isLight ? 'rgba(0, 0, 0, 0.05)' : `rgba(${storyThemeStyles.primaryRgb || '90, 113, 74'}, 0.2)`,
-                        borderColor: storyThemeStyles.isLight ? 'rgba(0, 0, 0, 0.1)' : `rgba(${storyThemeStyles.primaryRgb || '90, 113, 74'}, 0.3)`
+                        backgroundColor: storyThemeStyles.isLight ? 'rgba(0, 0, 0, 0.05)' : `rgba(${storyThemeStyles.primaryRgb}, 0.2)`,
+                        borderColor: storyThemeStyles.isLight ? 'rgba(0, 0, 0, 0.1)' : `rgba(${storyThemeStyles.primaryRgb}, 0.3)`
                       }}
                     >
                       <img src="/assets/ar.svg" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} alt="علم سوريا" />
@@ -1382,8 +1384,8 @@ export default function PrioritiesApp() {
                       className="text-[8px] font-bold px-2 py-0.5 rounded-full uppercase border"
                       style={{
                         color: storyThemeStyles.urlText,
-                        backgroundColor: storyThemeStyles.isLight ? 'rgba(0, 0, 0, 0.05)' : `rgba(${storyThemeStyles.primaryRgb || '90, 113, 74'}, 0.1)`,
-                        borderColor: storyThemeStyles.isLight ? 'rgba(0, 0, 0, 0.1)' : `rgba(${storyThemeStyles.primaryRgb || '90, 113, 74'}, 0.2)`
+                        backgroundColor: storyThemeStyles.isLight ? 'rgba(0, 0, 0, 0.05)' : `rgba(${storyThemeStyles.primaryRgb}, 0.1)`,
+                        borderColor: storyThemeStyles.isLight ? 'rgba(0, 0, 0, 0.1)' : `rgba(${storyThemeStyles.primaryRgb}, 0.2)`
                       }}
                     >
                       {persona?.tag}
@@ -1470,9 +1472,9 @@ export default function PrioritiesApp() {
                           <span
                             className="inline-block px-1 rounded-sm text-[6px] font-black shrink-0"
                             style={{
-                              backgroundColor: storyThemeStyles.isLight ? 'rgba(0, 0, 0, 0.05)' : `rgba(${storyThemeStyles.primaryRgb || '90, 113, 74'}, 0.2)`,
+                              backgroundColor: storyThemeStyles.isLight ? 'rgba(0, 0, 0, 0.05)' : `rgba(${storyThemeStyles.primaryRgb}, 0.2)`,
                               color: storyThemeStyles.urlText,
-                              border: `1px solid rgba(${storyThemeStyles.primaryRgb || '90, 113, 74'}, 0.35)`
+                              border: `1px solid rgba(${storyThemeStyles.primaryRgb}, 0.35)`
                             }}
                           >
                             {item.topicName}
@@ -1505,7 +1507,6 @@ export default function PrioritiesApp() {
                   const themeKey = theme.id;
                   const colors = {
                     primary: theme.primary,
-                    primaryRgb: theme.priorities?.primaryRgb || '90, 113, 74'
                   };
                   const isActive = storyTheme === themeKey;
                   const themeMeta = {

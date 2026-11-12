@@ -1,0 +1,280 @@
+[
+  {
+    "id": "damascus",
+    "name_ar": "دمشق",
+    "name_en": "Damascus",
+    "dataset_name_en": "Damascus",
+    "pcode": "SY01",
+    "lat": 33.5138,
+    "lng": 36.2765,
+    "option_order": 1,
+    "picker_order": 1,
+    "sort_order": 1,
+    "f3alia_province": "DAMASCUS",
+    "transit_svg": "damascus",
+    "aliases": [
+      "دمشق",
+      "dimashq",
+      "damascus"
+    ]
+  },
+  {
+    "id": "aleppo",
+    "name_ar": "حلب",
+    "name_en": "Aleppo",
+    "dataset_name_en": "Aleppo",
+    "pcode": "SY02",
+    "lat": 36.2021,
+    "lng": 37.1343,
+    "option_order": 3,
+    "picker_order": 3,
+    "sort_order": 2,
+    "f3alia_province": "ALEPPO",
+    "transit_svg": "aleppo",
+    "aliases": [
+      "حلب",
+      "aleppo"
+    ]
+  },
+  {
+    "id": "homs",
+    "name_ar": "حمص",
+    "name_en": "Homs",
+    "dataset_name_en": "Homs",
+    "pcode": "SY04",
+    "lat": 34.7324,
+    "lng": 36.7137,
+    "option_order": 4,
+    "picker_order": 4,
+    "sort_order": 4,
+    "f3alia_province": "HOMS",
+    "transit_svg": "homs",
+    "aliases": [
+      "حمص",
+      "himş",
+      "homs"
+    ]
+  },
+  {
+    "id": "hama",
+    "name_ar": "حماة",
+    "name_en": "Hama",
+    "dataset_name_en": "Hama",
+    "pcode": "SY05",
+    "lat": 35.1318,
+    "lng": 36.7578,
+    "option_order": 5,
+    "picker_order": 5,
+    "sort_order": 5,
+    "f3alia_province": "HAMA",
+    "transit_svg": "hamah",
+    "aliases": [
+      "حماة",
+      "hamah",
+      "ḩamāh",
+      "hama"
+    ]
+  },
+  {
+    "id": "latakia",
+    "name_ar": "اللاذقية",
+    "name_en": "Latakia",
+    "dataset_name_en": "Latakia",
+    "pcode": "SY06",
+    "lat": 35.5317,
+    "lng": 35.7901,
+    "option_order": 6,
+    "picker_order": 6,
+    "sort_order": 6,
+    "f3alia_province": "LATTAKIA",
+    "transit_svg": "lattakia",
+    "aliases": [
+      "اللاذقية",
+      "lattakia",
+      "latakia"
+    ]
+  },
+  {
+    "id": "tartus",
+    "name_ar": "طرطوس",
+    "name_en": "Tartus",
+    "dataset_name_en": "Tartus",
+    "pcode": "SY10",
+    "lat": 34.889,
+    "lng": 35.8866,
+    "option_order": 7,
+    "picker_order": 7,
+    "sort_order": 12,
+    "f3alia_province": "TARTOUS",
+    "transit_svg": "tartus",
+    "aliases": [
+      "طرطوس",
+      "tartous",
+      "ţarţūs",
+      "tartus"
+    ]
+  },
+  {
+    "id": "deir-ez-zor",
+    "name_ar": "دير الزور",
+    "name_en": "Deir ez-Zor",
+    "dataset_name_en": "Deir ez-Zor",
+    "pcode": "SY09",
+    "lat": 35.3359,
+    "lng": 40.1408,
+    "option_order": 9,
+    "picker_order": 8,
+    "sort_order": 9,
+    "f3alia_province": "DEIR_EZ_ZOR",
+    "transit_svg": "deir-ez-zor",
+    "aliases": [
+      "دير الزور",
+      "deir ezzor",
+      "dayr az zawr",
+      "deir-ezzor",
+      "deir ez-zor"
+    ]
+  },
+  {
+    "id": "idlib",
+    "name_ar": "إدلب",
+    "name_en": "Idlib",
+    "dataset_name_en": "Idlib",
+    "pcode": "SY07",
+    "lat": 35.9306,
+    "lng": 36.6339,
+    "option_order": 8,
+    "picker_order": 9,
+    "sort_order": 7,
+    "f3alia_province": "IDLIB",
+    "transit_svg": "idlib",
+    "aliases": [
+      "إدلب",
+      "idleb",
+      "idlib"
+    ]
+  },
+  {
+    "id": "daraa",
+    "name_ar": "درعا",
+    "name_en": "Daraa",
+    "dataset_name_en": "Daraa",
+    "pcode": "SY12",
+    "lat": 32.6255,
+    "lng": 36.1016,
+    "option_order": 12,
+    "picker_order": 10,
+    "sort_order": 11,
+    "f3alia_province": "DARAA",
+    "transit_svg": "daraa",
+    "aliases": [
+      "درعا",
+      "dara",
+      "dar'a",
+      "dar`a",
+      "daraa"
+    ]
+  },
+  {
+    "id": "quneitra",
+    "name_ar": "القنيطرة",
+    "name_en": "Quneitra",
+    "dataset_name_en": "Quneitra",
+    "pcode": "SY14",
+    "lat": 33.125,
+    "lng": 35.825,
+    "option_order": 14,
+    "picker_order": 11,
+    "sort_order": 14,
+    "f3alia_province": "QUNEITRA",
+    "transit_svg": "quneitra",
+    "aliases": [
+      "القنيطرة",
+      "al qunaytirah",
+      "qunaitra",
+      "quneitra"
+    ]
+  },
+  {
+    "id": "sweida",
+    "name_ar": "السويداء",
+    "name_en": "Sweida",
+    "dataset_name_en": "As-Suwayda",
+    "pcode": "SY13",
+    "lat": 32.7089,
+    "lng": 36.5695,
+    "option_order": 13,
+    "picker_order": 12,
+    "sort_order": 13,
+    "f3alia_province": "AS_SUWAYDA",
+    "transit_svg": "as-suwayda",
+    "aliases": [
+      "السويداء",
+      "as suwayda",
+      "as suwayda'",
+      "as suwayda`",
+      "as-suwayda",
+      "suwayda",
+      "sweida"
+    ]
+  },
+  {
+    "id": "rural-damascus",
+    "name_ar": "ريف دمشق",
+    "name_en": "Rural Damascus",
+    "dataset_name_en": "Rif Dimashq",
+    "pcode": "SY03",
+    "lat": 33.5138,
+    "lng": 36.2765,
+    "option_order": 2,
+    "picker_order": 2,
+    "sort_order": 3,
+    "f3alia_province": "DAMASCUS",
+    "transit_svg": "rif-dimashq",
+    "aliases": [
+      "ريف دمشق",
+      "rif dimashq",
+      "rif-dimashq",
+      "rural damascus"
+    ]
+  },
+  {
+    "id": "hasakah",
+    "name_ar": "الحسكة",
+    "name_en": "Hasakah",
+    "dataset_name_en": "Al-Hasakah",
+    "pcode": "SY08",
+    "lat": 36.5023,
+    "lng": 40.7382,
+    "option_order": 11,
+    "picker_order": 13,
+    "sort_order": 8,
+    "f3alia_province": "HASAKEH",
+    "transit_svg": "hasakah",
+    "aliases": [
+      "الحسكة",
+      "al hasakah",
+      "al ḥasakah",
+      "hasakah"
+    ]
+  },
+  {
+    "id": "raqqa",
+    "name_ar": "الرقة",
+    "name_en": "Raqqa",
+    "dataset_name_en": "Raqqa",
+    "pcode": "SY11",
+    "lat": 35.952,
+    "lng": 39.0081,
+    "option_order": 10,
+    "picker_order": 14,
+    "sort_order": 10,
+    "f3alia_province": "RAQQA",
+    "transit_svg": "raqqa",
+    "aliases": [
+      "الرقة",
+      "ar raqqah",
+      "raqqa"
+    ]
+  }
+]

@@ -6,19 +6,12 @@ import {
     Activity, AlertTriangle, TrendingDown, TrendingUp, Calendar, Cloud, Navigation,
     History, Users, Heart, MapPin, Clock, Compass, Thermometer, Leaf
 } from 'lucide-react';
-import { sortCitiesByOrder, getCanonicalCityName } from '@/Lib/city-name-standardizer';
+import { sortCitiesByOrder, getCanonicalGovernorateName, getGovernorateDatasetNameEn, getGovernoratePcode } from '@/Domain/geography/governorates';
 import { buildLegend } from './utils/color-calculator';
 
 type DataType = typeof DATA_TYPES[keyof typeof DATA_TYPES];
 
 const MapClient = lazy(() => import('./components/map/MapClient'));
-
-const ARABIC_TO_ENGLISH_CITY_MAP: { [key: string]: string } = {
-    'دمشق': 'Damascus', 'حلب': 'Aleppo', 'ريف دمشق': 'Rif Dimashq', 'حمص': 'Homs',
-    'حماة': 'Hama', 'اللاذقية': 'Latakia', 'إدلب': 'Idlib', 'الحسكة': 'Al-Hasakah',
-    'دير الزور': 'Deir ez-Zor', 'طرطوس': 'Tartus', 'الرقة': 'Raqqa', 'درعا': 'Daraa',
-    'السويداء': 'As-Suwayda', 'القنيطرة': 'Quneitra'
-};
 
 // Helper functions for UI
 const getWeatherIcon = (description: string) => {
@@ -230,9 +223,9 @@ export default function PopulationClient() {
                     </div>
                     <div className="p-6">
                         <div className="grid grid-cols-3 gap-4 mb-8">
-                            <div className="text-center font-bold text-lg text-primary truncate">{getCanonicalCityName(comparisonData.p1.name)}</div>
+                            <div className="text-center font-bold text-lg text-primary truncate">{getCanonicalGovernorateName(comparisonData.p1.name)}</div>
                             <div className="text-center text-muted-foreground text-sm self-center">مقابل</div>
-                            <div className="text-center font-bold text-lg text-primary truncate">{getCanonicalCityName(comparisonData.p2.name)}</div>
+                            <div className="text-center font-bold text-lg text-primary truncate">{getCanonicalGovernorateName(comparisonData.p2.name)}</div>
                         </div>
 
                         <div className="space-y-8">
@@ -299,7 +292,7 @@ export default function PopulationClient() {
                         customThresholds={dynamicThresholds}
                         onFeatureClick={(feature) => {
                             const name = feature.properties.province_name || feature.properties.ADM2_AR || feature.properties.ADM1_AR || feature.properties.Name;
-                            const nameAr = getCanonicalCityName(name);
+                            const nameAr = getCanonicalGovernorateName(name);
 
                             // --- HANDLE RAINFALL CLICK ---
                             if (currentDataType === DATA_TYPES.RAINFALL) {
@@ -318,20 +311,7 @@ export default function PopulationClient() {
                                     const nameKeys = ['province_name', 'ADM1_EN', 'ADM1_AR', 'name', 'Name', 'NAME', 'admin1Name_en'];
                                     for (const key of nameKeys) {
                                         if (props[key]) {
-                                            const normalized = props[key].trim().replace(/['`]/g, '').replace(/Ḥ/g, 'H').toLowerCase();
-                                            const PROVINCE_TO_PCODE: { [key: string]: string } = {
-                                                'damascus': 'SY01', 'aleppo': 'SY02', 'rural damascus': 'SY03', 'rif dimashq': 'SY03',
-                                                'homs': 'SY04', 'hama': 'SY05', 'lattakia': 'SY06', 'latakia': 'SY06',
-                                                'idlib': 'SY07', 'idleb': 'SY07', 'al hasakah': 'SY08', 'hasakah': 'SY08',
-                                                'deir ez-zor': 'SY09', 'deir ezzor': 'SY09', 'tartous': 'SY10', 'tartus': 'SY10',
-                                                'ar raqqah': 'SY11', 'raqqa': 'SY11', 'daraa': 'SY12', 'dar\'a': 'SY12',
-                                                'as suwayda': 'SY13', 'as suwayda\'': 'SY13', 'sweida': 'SY13',
-                                                'quneitra': 'SY14', 'al qunaytirah': 'SY14',
-                                                'دمشق': 'SY01', 'حلب': 'SY02', 'ريف دمشق': 'SY03', 'حمص': 'SY04', 'حماة': 'SY05',
-                                                'اللاذقية': 'SY06', 'إدلب': 'SY07', 'الحسكة': 'SY08', 'دير الزور': 'SY09',
-                                                'طرطوس': 'SY10', 'الرقة': 'SY11', 'درعا': 'SY12', 'السويداء': 'SY13', 'القنيطرة': 'SY14'
-                                            };
-                                            const mappedCode = PROVINCE_TO_PCODE[normalized];
+                                            const mappedCode = getGovernoratePcode(props[key]);
                                             if (mappedCode && rainfallData[mappedCode]) {
                                                 rData = rainfallData[mappedCode];
                                                 break;
@@ -349,7 +329,7 @@ export default function PopulationClient() {
                             // --- HANDLE ENVIRONMENTAL CLICK ---
                             else if (currentDataType === DATA_TYPES.ENVIRONMENTAL) {
                                 if (environmentalData && environmentalData.cities) {
-                                    const englishName = ARABIC_TO_ENGLISH_CITY_MAP[nameAr] || nameAr;
+                                    const englishName = getGovernorateDatasetNameEn(nameAr);
                                     const data = environmentalData.cities[nameAr] || environmentalData.cities[englishName] || environmentalData.cities[name];
 
                                     if (data) {
@@ -948,7 +928,7 @@ export default function PopulationClient() {
                                                                             type="button"
                                                                             role="checkbox"
                                                                             aria-checked={isSelected}
-                                                                            aria-label={`تحديد ${getCanonicalCityName(city)} للمقارنة`}
+                                                                            aria-label={`تحديد ${getCanonicalGovernorateName(city)} للمقارنة`}
                                                                             onClick={() => toggleProvinceSelection(city)}
                                                                             className="flex w-full justify-center rounded p-1 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                                                         >
@@ -964,7 +944,7 @@ export default function PopulationClient() {
                                                                             onClick={() => toggleProvinceSelection(city)}
                                                                             className="w-full text-right"
                                                                         >
-                                                                            {getCanonicalCityName(city)}
+                                                                            {getCanonicalGovernorateName(city)}
                                                                         </button>
                                                                     </td>
                                                                     <td className="py-1.5 px-2 text-left font-mono text-muted-foreground">

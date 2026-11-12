@@ -2,7 +2,7 @@ import { CloudSun } from 'lucide-react';
 import { WidgetShell } from '../../_components/WidgetShell';
 import { useWidgetQuery } from '../../_lib/query';
 import { sources } from '../../_lib/sources';
-import { GOVERNORATES } from '../../_lib/governorates';
+import { GOVERNORATES_BY_ID } from '@/Domain/geography/governorates';
 import type { WidgetProps } from '../../_lib/types';
 import { weatherWidget, type WeatherConfig } from './index';
 
@@ -73,7 +73,7 @@ export default function WeatherView({ config }: WidgetProps<WeatherConfig>) {
 
   return (
     <WidgetShell
-      title={`الطقس · ${GOVERNORATES[governorate]?.label ?? ''}`}
+      title={`الطقس · ${GOVERNORATES_BY_ID[governorate]?.nameAr ?? ''}`}
       icon={CloudSun}
       loading={query.isPending}
       refreshing={query.isFetching && !query.isPending}

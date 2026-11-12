@@ -26,7 +26,7 @@ import RescheduleDialog from './_components/RescheduleDialog';
 import SourcesEditor, { emptySource, sourceKey, type SourceForm } from './_components/SourcesEditor';
 import StatusDialog from './_components/StatusDialog';
 import UpdatesPanel from './_components/UpdatesPanel';
-import { useCan } from './_lib/useCan';
+import { useCan } from '@/Lib/useCan';
 import { ORIGIN_LABEL, REVIEW_STATUS_LABEL, type AdminPromiseDetail, type EditorOptions } from './_lib/types';
 
 interface Props {

@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\Route;
 use App\Models\User;
 use App\Services\TransitKmlImportService;
 use Illuminate\Http\UploadedFile;
@@ -10,34 +9,6 @@ use Illuminate\Support\Facades\Http;
 function transitAdmin(): User
 {
     return moduleStaff('transit');
-}
-
-function seedTransitCity(string $id = 'homs'): void
-{
-    $geometry = function (array $shape) {
-        $json = json_encode($shape, JSON_THROW_ON_ERROR);
-        if (DB::connection()->getDriverName() === 'sqlite') {
-            return $json;
-        }
-        $quoted = DB::connection()->getPdo()->quote($json);
-
-        return DB::raw("ST_GeomFromGeoJSON({$quoted})");
-    };
-
-    DB::table('cities')->insert([
-        'id' => $id,
-        'name_ar' => 'حمص',
-        'name_en' => 'Homs',
-        'center' => $geometry(['type' => 'Point', 'coordinates' => [36.72, 34.73]]),
-        'bounds' => $geometry([
-            'type' => 'Polygon',
-            'coordinates' => [[[36.5, 34.55], [36.95, 34.55], [36.95, 34.95], [36.5, 34.95], [36.5, 34.55]]],
-        ]),
-        'zoom' => 12,
-        'status' => 'active',
-        'created_at' => now(),
-        'updated_at' => now(),
-    ]);
 }
 
 function singleKml(): string
@@ -104,7 +75,7 @@ test('parsePrice handles arabic-indic digits', function () {
 // ─── Preview endpoint ───────────────────────────────────────────────────
 
 test('import-preview rejects guests and non-admins', function () {
-    $user = User::factory()->create(['role' => 'user']);
+    $user = User::factory()->create();
 
     $this->postJson('/api/v1/admin/routes/import-preview', ['url' => 'https://www.google.com/maps/d/?mid=abc'])
         ->assertUnauthorized();
@@ -128,7 +99,7 @@ test('import-preview rejects an invalid maps url', function () {
 });
 
 test('import-preview parses a faked google kml response', function () {
-    seedTransitCity();
+    seedCity('homs', ['name_ar' => 'حمص', 'name_en' => 'Homs']);
     Http::fake(['https://www.google.com/maps/d/kml*' => Http::response(singleKml(), 200)]);
 
     $this->actingAs(transitAdmin())
@@ -153,7 +124,7 @@ test('import-preview surfaces a private-map error as 422', function () {
 });
 
 test('import-preview accepts a kml file upload', function () {
-    seedTransitCity();
+    seedCity('homs', ['name_ar' => 'حمص', 'name_en' => 'Homs']);
     $file = new UploadedFile(
         base_path('tests/Fixtures/transit-single.kml'),
         'homs-line.kml',
@@ -171,7 +142,7 @@ test('import-preview accepts a kml file upload', function () {
 // ─── Publish endpoint ───────────────────────────────────────────────────
 
 test('import-publish rejects guests and non-admins', function () {
-    $user = User::factory()->create(['role' => 'user']);
+    $user = User::factory()->create();
     $payload = ['city_id' => 'homs', 'name_ar' => 'x', 'geojson' => ['type' => 'FeatureCollection', 'features' => []]];
 
     $this->postJson('/api/v1/admin/routes/import-publish', $payload)->assertUnauthorized();
@@ -179,7 +150,7 @@ test('import-publish rejects guests and non-admins', function () {
 });
 
 test('import-publish creates a pending draft reusing the studio contract', function () {
-    seedTransitCity();
+    seedCity('homs', ['name_ar' => 'حمص', 'name_en' => 'Homs']);
 
     $geojson = [
         'type' => 'FeatureCollection',
@@ -212,7 +183,7 @@ test('import-publish creates a pending draft reusing the studio contract', funct
 });
 
 test('import-publish rejects degenerate geometry', function () {
-    seedTransitCity();
+    seedCity('homs', ['name_ar' => 'حمص', 'name_en' => 'Homs']);
 
     $this->actingAs(transitAdmin())
         ->postJson('/api/v1/admin/routes/import-publish', [
@@ -229,14 +200,9 @@ test('import-publish rejects degenerate geometry', function () {
 });
 
 test('a studio edit submission busts the public cities cache as well as the map caches', function () {
-    seedTransitCity();
+    seedCity('homs', ['name_ar' => 'حمص', 'name_en' => 'Homs']);
 
-    $route = Route::create([
-        'id' => 'route-homs-1',
-        'city_id' => 'homs',
-        'name_ar' => 'خط منشور',
-        'status' => 'published',
-    ]);
+    $route = transitRoute('route-homs-1', 'homs', ['name_ar' => 'خط منشور']);
 
     // transit:cities:api is a separate key from transit:cities: the studio used
     // to forget only the latter, leaving the public API stale for an hour.
@@ -245,7 +211,7 @@ test('a studio edit submission busts the public cities cache as well as the map 
     Cache::put('transit:map-data:homs', 'stale', 600);
     Cache::put('transit:routes:homs', 'stale', 600);
 
-    $this->actingAs(User::factory()->create(['role' => 'user']))
+    $this->actingAs(User::factory()->create())
         ->postJson('/api/v1/studio/routes', [
             'city_id' => 'homs',
             'name_ar' => 'تعديل مقترح على الخط المنشور',

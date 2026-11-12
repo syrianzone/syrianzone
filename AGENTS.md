@@ -58,7 +58,7 @@ them without being asked.
 - **Do not run Pint on `routes/web.php` or `bootstrap/app.php`** — its fixers
   rewrite FQCNs/aliases and break the file. See design-and-conventions §Testing.
 - **Do not add a second `<main>`, a second Toaster, or a second theme switcher.**
-- **Do not re-derive permissions in TypeScript** — use `useAuth().can()` against
+- **Do not re-derive permissions in TypeScript** — use `useCan()` (`Lib/useCan.ts`) against
   the server-resolved `effective_permissions`.
 - When you finish a UI change, run the axe sweep and `tsc`; don't claim it works
   without them.

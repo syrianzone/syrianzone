@@ -1,47 +1,13 @@
 <?php
 
-use App\Models\Route;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 
-function seedRoutesCity(string $id = 'homs'): void
-{
-    $geometry = function (array $shape) {
-        $json = json_encode($shape, JSON_THROW_ON_ERROR);
-        if (DB::connection()->getDriverName() === 'sqlite') {
-            return $json;
-        }
-        $quoted = DB::connection()->getPdo()->quote($json);
-
-        return DB::raw("ST_GeomFromGeoJSON({$quoted})");
-    };
-
-    DB::table('cities')->insert([
-        'id' => $id,
-        'name_ar' => 'حمص',
-        'name_en' => 'Homs',
-        'center' => $geometry(['type' => 'Point', 'coordinates' => [36.72, 34.73]]),
-        'bounds' => $geometry([
-            'type' => 'Polygon',
-            'coordinates' => [[[36.5, 34.55], [36.95, 34.55], [36.95, 34.95], [36.5, 34.95], [36.5, 34.55]]],
-        ]),
-        'zoom' => 12,
-        'status' => 'active',
-        'created_at' => now(),
-        'updated_at' => now(),
-    ]);
-}
-
 test('city routes list reports integer stop counts, never null', function () {
-    seedRoutesCity();
+    seedCity('homs', ['name_ar' => 'حمص', 'name_en' => 'Homs']);
     Cache::forget('transit:routes:homs');
 
-    $route = Route::create([
-        'id' => 'route-homs-test',
-        'city_id' => 'homs',
-        'name_ar' => 'خط اختبار',
-        'status' => 'published',
-    ]);
+    $route = transitRoute('route-homs-test', 'homs', ['name_ar' => 'خط اختبار']);
 
     $this->getJson('/api/v1/cities/homs/routes')
         ->assertOk()
@@ -73,14 +39,14 @@ test('city routes list reports integer stop counts, never null', function () {
 });
 
 test('cities list exposes name, route count and governorate icon', function () {
-    // seedRoutesCity stores geometry as JSON text on SQLite; the endpoint reads
+    // seedCity stores geometry as JSON text on SQLite; the endpoint reads
     // it back through ST_AsGeoJSON, which MySQL has and SQLite does not. Shim it
     // as an identity function so the payload can be asserted without MySQL.
     if (DB::connection()->getDriverName() === 'sqlite') {
         DB::connection()->getPdo()->sqliteCreateFunction('ST_AsGeoJSON', fn ($value) => $value, 1);
     }
 
-    seedRoutesCity();
+    seedCity('homs', ['name_ar' => 'حمص', 'name_en' => 'Homs']);
     Cache::forget('transit:cities:api');
 
     $cities = $this->getJson('/api/v1/cities')->assertOk()->json();
@@ -120,21 +86,11 @@ test('signed-in studio submitters are not held to the guest rate', function () {
 });
 
 test('the city page carries the same route list as the api', function () {
-    seedRoutesCity();
+    seedCity('homs', ['name_ar' => 'حمص', 'name_en' => 'Homs']);
     Cache::forget('transit:routes:homs');
 
-    Route::create([
-        'id' => 'route-homs-page',
-        'city_id' => 'homs',
-        'name_ar' => 'خط الصفحة',
-        'status' => 'published',
-    ]);
-    Route::create([
-        'id' => 'route-homs-draft',
-        'city_id' => 'homs',
-        'name_ar' => 'مسودة',
-        'status' => 'draft',
-    ]);
+    transitRoute('route-homs-page', 'homs', ['name_ar' => 'خط الصفحة']);
+    transitRoute('route-homs-draft', 'homs', ['name_ar' => 'مسودة', 'status' => 'draft']);
 
     $this->get('/transit/city/homs')
         ->assertOk()

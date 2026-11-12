@@ -4,6 +4,7 @@ import { useMap } from '@/Components/map/MapContext'
 import { Button } from '@/Components/ui/button'
 import { LocationContext, LocationStatusContext, useRequestUserLocation } from './MapCanvas'
 import { useMapStore } from '../../_store/useMapStore'
+import { NEARBY_STOPS_RADIUS_M } from '@/Domain/transit/limits';
 
 interface NearbyStop {
   id: string
@@ -34,7 +35,7 @@ export default function NearbyTransitDrawer() {
       try {
         const apiUrl = '/api'
         const res = await fetch(
-          `${apiUrl}/v1/stops/nearby?lat=${userLocation.lat}&lng=${userLocation.lng}&radius=500`
+          `${apiUrl}/v1/stops/nearby?lat=${userLocation.lat}&lng=${userLocation.lng}&radius=${NEARBY_STOPS_RADIUS_M}`
         )
         if (res.ok) {
           setStops(await res.json())

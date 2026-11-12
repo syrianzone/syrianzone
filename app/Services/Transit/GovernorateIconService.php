@@ -2,6 +2,8 @@
 
 namespace App\Services\Transit;
 
+use App\Support\Facts;
+
 /**
  * Governorate outline icons for the public transit API.
  *
@@ -15,31 +17,6 @@ namespace App\Services\Transit;
  */
 class GovernorateIconService
 {
-    /**
-     * cities.id (and the spellings the importer and admin UI use) to the SVG
-     * basename. Mirrors getGovSvgKey() in CityCard.tsx.
-     */
-    private const FILE_BY_CITY = [
-        'damascus' => 'damascus',
-        'rif-dimashq' => 'rif-dimashq',
-        'aleppo' => 'aleppo',
-        'homs' => 'homs',
-        'hama' => 'hamah',
-        'idlib' => 'idlib',
-        'latakia' => 'lattakia',
-        'lattakia' => 'lattakia',
-        'tartus' => 'tartus',
-        'tartous' => 'tartus',
-        'daraa' => 'daraa',
-        'suwayda' => 'as-suwayda',
-        'sweida' => 'as-suwayda',
-        'quneitra' => 'quneitra',
-        'deir-ez-zor' => 'deir-ez-zor',
-        'deir-ezzor' => 'deir-ez-zor',
-        'raqqa' => 'raqqa',
-        'hasakah' => 'hasakah',
-    ];
-
     /** @var array<string, array{viewBox: string, path: string}|null> */
     private array $resolved = [];
 
@@ -52,7 +29,11 @@ class GovernorateIconService
             return $this->resolved[$cityId];
         }
 
-        $file = self::FILE_BY_CITY[$cityId] ?? $cityId;
+        // City ids, the spellings the importer and admin UI use, and the SVG
+        // basename all come from the shared governorate table; CityCard.tsx
+        // resolves the browser side of the same mapping from it.
+        $row = Facts::governorateByAnyName($cityId);
+        $file = $row['transit_svg'] ?? $cityId;
         $absolute = resource_path("js/Pages/Transit/_data/governorates/{$file}.svg");
 
         if (! is_file($absolute)) {

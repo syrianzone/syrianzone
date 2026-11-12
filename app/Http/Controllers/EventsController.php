@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\Facts;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -13,30 +14,29 @@ class EventsController extends Controller
   // called from the browser. Fetching here also gives us caching, a stable
   // normalized shape, and one place to do the "today" filtering.
   //
-  // The governorate key is validated against a fixed list rather than passed
-  // through, so this cannot become an open GraphQL proxy and the cache stays
-  // bounded.
-  private const PROVINCES = [
-    'damascus' => 'DAMASCUS',
-    // f3alia has no rural damascus province; the existing client folds it into
-    // damascus and we keep that behaviour
-    'rural-damascus' => 'DAMASCUS',
-    'aleppo' => 'ALEPPO',
-    'homs' => 'HOMS',
-    'hama' => 'HAMA',
-    'latakia' => 'LATTAKIA',
-    'tartus' => 'TARTOUS',
-    'deir-ez-zor' => 'DEIR_EZ_ZOR',
-    'idlib' => 'IDLIB',
-    'daraa' => 'DARAA',
-    'quneitra' => 'QUNEITRA',
-    'sweida' => 'AS_SUWAYDA',
-    'hasakah' => 'HASAKEH',
-    'raqqa' => 'RAQQA',
-  ];
+  // The governorate key is validated against the shared governorate table
+  // rather than passed through, so this cannot become an open GraphQL proxy and
+  // the cache stays bounded. The F3alia province id per governorate comes from
+  // that table too (rural Damascus folds into Damascus upstream, which is the
+  // behaviour the client had before this moved).
 
   // the all-syria option: no province filter upstream
   private const ALL = 'all';
+
+  /**
+   * Governorate id => the F3alia province enum upstream uses.
+   *
+   * @return array<string, string>
+   */
+  private static function provinces(): array
+  {
+    $out = [];
+    foreach (Facts::governorates() as $row) {
+      $out[$row['id']] = $row['f3alia_province'];
+    }
+
+    return $out;
+  }
 
   private const TTL = 600;
 
@@ -73,7 +73,8 @@ class EventsController extends Controller
 
   public function today(Request $request)
   {
-    $keys = array_merge(array_keys(self::PROVINCES), [self::ALL]);
+    $provinces = self::provinces();
+    $keys = array_merge(array_keys($provinces), [self::ALL]);
 
     $validated = $request->validate([
       'governorate' => 'required|string|in:'.implode(',', $keys),
@@ -93,7 +94,7 @@ class EventsController extends Controller
       return response()->json($cached)->header('Cache-Control', 'public, max-age=300');
     }
 
-    $province = self::PROVINCES[$governorate] ?? null;
+    $province = self::provinces()[$governorate] ?? null;
 
     $events = $this->fetch($province, $today);
     if ($events === null) {

@@ -14,40 +14,12 @@ use Illuminate\Support\Facades\Http;
 | methods and the Atlas adapters).
 */
 
-function seedTransitTestCity(string $id = 'homs'): void
-{
-    $geometry = function (array $shape) {
-        $json = json_encode($shape, JSON_THROW_ON_ERROR);
-        if (DB::connection()->getDriverName() === 'sqlite') {
-            return $json;
-        }
-        $quoted = DB::connection()->getPdo()->quote($json);
-
-        return DB::raw("ST_GeomFromGeoJSON({$quoted})");
-    };
-
-    DB::table('cities')->insert([
-        'id' => $id,
-        'name_ar' => 'حمص',
-        'name_en' => 'Homs',
-        'center' => $geometry(['type' => 'Point', 'coordinates' => [36.72, 34.73]]),
-        'bounds' => $geometry([
-            'type' => 'Polygon',
-            'coordinates' => [[[36.5, 34.55], [36.95, 34.55], [36.95, 34.95], [36.5, 34.95], [36.5, 34.55]]],
-        ]),
-        'zoom' => 12,
-        'status' => 'active',
-        'created_at' => now(),
-        'updated_at' => now(),
-    ]);
-}
-
 test('canonical /api/v1/transit/* routes return identical payloads to legacy /api/v1/* aliases', function () {
     if (DB::connection()->getDriverName() === 'sqlite') {
         DB::connection()->getPdo()->sqliteCreateFunction('ST_AsGeoJSON', fn ($value) => $value, 1);
     }
 
-    seedTransitTestCity('homs');
+    seedCity('homs', ['name_ar' => 'حمص', 'name_en' => 'Homs']);
     Cache::forget('transit:cities:api');
     Cache::forget('transit:routes:homs');
     Cache::forget('transit:map-data:homs');
@@ -75,10 +47,7 @@ test('canonical /api/v1/transit/* routes return identical payloads to legacy /ap
 test('canonical /api/v1/transit/pois and legacy /api/v1/geo/poi both validate and serve POI search', function () {
     Http::fake([
         'photon.komoot.io/*' => Http::response([
-            'features' => [[
-                'geometry' => ['coordinates' => [36.71, 34.73]],
-                'properties' => ['name' => 'جامع خالد بن الوليد', 'osm_value' => 'place_of_worship'],
-            ]],
+            'features' => [photonFeature('جامع خالد بن الوليد', 'place_of_worship', 36.71, 34.73)],
         ], 200),
     ]);
 

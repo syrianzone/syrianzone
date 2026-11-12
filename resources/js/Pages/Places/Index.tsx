@@ -10,6 +10,7 @@ import { BottomSheet } from '@/Components/BottomSheet';
 import { api, extractError } from '@/Domain/places/api';
 import { discovery, type GridPhoto } from '@/Domain/places/discovery';
 import type { GeoSuggestion, HotelFeatureCollection, LatLng, Paginated, PlaceCategory, PlaceFeatureCollection, PlaceListItem } from '@/Domain/places/types';
+import { inSyriaBox } from '@/Domain/geography/syria';
 
 const PlacesMap = lazy(() => import('./_components/PlacesMap').then(m => ({ default: m.PlacesMap })));
 
@@ -204,8 +205,8 @@ export default function Index() {
       setSelectedType(null);
       return;
     }
-    // mirror the server's Syria bounding box so users learn before filling the form
-    if (point.lat < 32.0 || point.lat > 37.5 || point.lng < 35.5 || point.lng > 42.5) {
+    // the same Syria bounding box the server enforces, so users learn before filling the form
+    if (!inSyriaBox(point)) {
       setNotice({ text: 'النقطة خارج حدود سوريا', destructive: true });
       return;
     }

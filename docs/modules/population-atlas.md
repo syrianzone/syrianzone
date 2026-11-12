@@ -42,5 +42,5 @@ The hourly `population:update-climate` job only refreshes existing environmental
 ## Notes
 
 - Aggregation scripts live in `scripts/syria_environmental_data_aggregator.py` and `scripts/optimize_geojson_floats.py` (geojson precision trimming before upload to R2).
-- Map UI: zoom locked to 6–11 (`MapClient.tsx`); province table / comparison headers render canonical Arabic governorate names (`city-name-standardizer.ts`, hyphens treated as spaces for matching); legend bands are generated from the same dynamic thresholds used for map colors.
+- Map UI: zoom locked to 6–11 (`MapClient.tsx`); province table / comparison headers render canonical Arabic governorate names (`Domain/geography/governorates.ts`, which reads `resources/data/governorates.json`; hyphens are treated as spaces for matching); legend bands are generated from the same dynamic thresholds used for map colors.
 - Community contributions credited in root README (SourceM7 — data collection; Golan boundary improvements).

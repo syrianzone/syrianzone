@@ -1,17 +1,22 @@
-import type { PlaceCategory } from './types';
+import raw from '../../../data/places.json';
+import { PLACE_CATEGORY_KEYS, type PlaceCategory } from './types';
 
-export const CATEGORIES: { key: PlaceCategory; label: string }[] = [
-  { key: 'historical', label: 'تاريخي' },
-  { key: 'natural', label: 'طبيعي' },
-  { key: 'cultural', label: 'ثقافي' },
-  { key: 'religious', label: 'ديني' },
-  { key: 'abandoned', label: 'مهجور' },
-  { key: 'viewpoint', label: 'إطلالة' },
-  { key: 'market', label: 'سوق' },
-  { key: 'food', label: 'مأكولات' },
-  { key: 'other', label: 'آخر' },
-];
+/**
+ * The place vocabulary — categories and moderation statuses — from
+ * `resources/data/places.json`, which `App\Services\Places\PlaceRules` and the
+ * share-card resolver read on the server too.
+ */
+function isPlaceCategory(value: string): value is PlaceCategory {
+  return (PLACE_CATEGORY_KEYS as readonly string[]).includes(value);
+}
 
-export const CATEGORY_LABELS: Record<PlaceCategory, string> = Object.fromEntries(
-  CATEGORIES.map((c) => [c.key, c.label]),
+export const CATEGORIES: { key: PlaceCategory; label: string; glyph: string }[] = raw.categories.map((category) => {
+  if (!isPlaceCategory(category.key)) {
+    throw new Error(`Unknown place category in resources/data/places.json: ${category.key}`);
+  }
+  return { key: category.key, label: category.label, glyph: category.glyph };
+});
+
+export const CATEGORY_LABELS = Object.fromEntries(
+  CATEGORIES.map((category) => [category.key, category.label]),
 ) as Record<PlaceCategory, string>;

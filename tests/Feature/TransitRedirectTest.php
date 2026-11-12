@@ -19,7 +19,7 @@ test('legacy transit route shim redirects to the query form', function () {
 });
 
 test('transit admin page redirects unauthorized users to the dashboard', function () {
-    $user = \App\Models\User::factory()->create(['role' => 'user']);
+    $user = \App\Models\User::factory()->create();
 
     $this->actingAs($user)->get('/transit/admin')->assertRedirect('/dashboard');
 });

@@ -5,6 +5,7 @@ use App\Support\Agents\AgentContext;
 use App\Support\Agents\TokenIssuer;
 use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Collection;
 use Laravel\Mcp\Request as McpRequest;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
@@ -31,6 +32,24 @@ pest()->extend(TestCase::class)
 function agentUser(array $attributes = []): User
 {
     return User::factory()->create($attributes + ['role' => 'user']);
+}
+
+/**
+ * An account holding exactly the given capabilities, optionally narrowed to the
+ * governorates it may act in (transit is the only scoped module).
+ *
+ * Access is the capability list and nothing else, so a fixture that grants
+ * access says which capabilities it grants: `role` stays `user` unless a test
+ * is specifically about a role string.
+ *
+ * @param  string|array<int, string>  $capabilities
+ * @param  array<int, string>|null  $transitCities
+ */
+function capabilityUser(string|array $capabilities, ?array $transitCities = null): User
+{
+    return User::factory()->withPermissions((array) $capabilities)->create([
+        'permission_scopes' => $transitCities === null ? null : ['transit' => $transitCities],
+    ]);
 }
 
 /**
@@ -115,3 +134,100 @@ function toolText(Response|ResponseFactory $response): string
         ->map(fn (Response $item) => (string) $item->content())
         ->implode(' ');
 }
+
+/**
+ * The JSON-RPC surface itself, for the two things a direct handle() call cannot
+ * reach: what shouldRegister() offers an agent, and the catalogue two-hop
+ * (search_tools, then execute_tools) the write tools live behind.
+ */
+function mcpCall(string $plainTextToken, array $payload)
+{
+    return test()
+        ->withHeader('Authorization', 'Bearer '.$plainTextToken)
+        ->postJson('/mcp/admin', array_merge(['jsonrpc' => '2.0', 'id' => 1], $payload));
+}
+
+/** @return Collection<int, string> */
+function mcpToolNames(string $plainTextToken): Collection
+{
+    return collect(
+        mcpCall($plainTextToken, ['method' => 'tools/list'])
+            ->assertOk()
+            ->json('result.tools')
+    )->pluck('name');
+}
+
+/** @return array<int, string> */
+function mcpSearchToolNames(string $plainTextToken, string $query): array
+{
+    $response = mcpCall($plainTextToken, [
+        'method' => 'tools/call',
+        'params' => [
+            'name' => 'search_tools',
+            'arguments' => ['query' => $query, 'limit' => 50],
+        ],
+    ])->assertOk();
+
+    // search_tools replies with Response::text(), so the catalogue is JSON
+    // inside a text block rather than in structuredContent.
+    $text = $response->json('result.content.0.text') ?? '';
+    $payload = json_decode($text, true);
+
+    return collect($payload['tools'] ?? [])
+        ->pluck('name')
+        ->all();
+}
+
+/**
+ * Run one catalogue write tool through execute_tools and return the decoded
+ * payload it produced.
+ *
+ * execute_tools answers as an SSE stream (text/event-stream, one `data:` line
+ * per message) rather than a JSON body, so the payload has to be pulled out of
+ * the stream. This is the only write path an agent has, so it is worth
+ * exercising for real rather than calling handle() directly.
+ *
+ * @param  array<string, mixed>  $arguments
+ * @return array<string, mixed>
+ */
+function mcpExecuteTool(string $plainTextToken, string $toolName, array $arguments): array
+{
+    $response = mcpCall($plainTextToken, [
+        'method' => 'tools/call',
+        'params' => [
+            'name' => 'execute_tools',
+            'arguments' => [
+                'calls' => [
+                    ['name' => $toolName, 'arguments' => $arguments],
+                ],
+            ],
+        ],
+    ])->assertOk();
+
+    $stream = (string) $response->streamedContent();
+
+    // Keep the last data line: execute_tools emits a notification per tool
+    // first, then the final envelope.
+    $lines = array_values(array_filter(
+        array_map('trim', explode("\n", $stream)),
+        fn (string $line) => str_starts_with($line, 'data:'),
+    ));
+
+    $envelope = null;
+    foreach ($lines as $line) {
+        $decoded = json_decode(substr($line, strlen('data:')), true);
+
+        if (is_array($decoded)) {
+            $envelope = $decoded;
+        }
+    }
+
+    // The stream carries the JSON-RPC envelope, whose result is itself a single
+    // text block holding the catalogue's JSON.
+    $text = $envelope['result']['content'][0]['text'] ?? null;
+    $payload = is_string($text) ? json_decode($text, true) : null;
+
+    return is_array($payload) ? $payload : ['raw' => $stream];
+}
+
+require_once __DIR__.'/Support/Fixtures.php';

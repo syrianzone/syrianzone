@@ -27,6 +27,7 @@ import TransitLayout from '../layout'
 import { useTransitTheme } from '../_components/TransitThemeContext'
 import { THEME_REGISTRY } from '@/Lib/theme'
 import { useAuth } from '@/Contexts/AuthContext'
+import { canModule } from '@/Lib/capabilities'
 import { ROUTE_PALETTE, getRouteColor, buildColorMatch } from '../_lib/mapColors'
 import { BottomSheet } from '@/Components/BottomSheet'
 import {
@@ -231,7 +232,7 @@ function TransitStudioPageContent() {
     reset, loadDraft
   } = useStudioStore()
   const { theme } = useTransitTheme()
-  const { user, can, allowedTransitCities } = useAuth()
+  const { user, allowedTransitCities } = useAuth()
 
   const { url: pageUrl } = usePage()
   const pageSearch = new URLSearchParams(pageUrl.split('?')[1] ?? '')
@@ -255,10 +256,7 @@ function TransitStudioPageContent() {
 
   // ─── Governorate scope for transit staff ────────────────────────────────────
   const allowedCities = allowedTransitCities()
-  const isScopedStaff = allowedCities !== null && [
-    'transit.review_drafts', 'transit.approve', 'transit.reject',
-    'transit.edit_routes', 'transit.delete_routes',
-  ].some(c => can(c))
+  const isScopedStaff = allowedCities !== null && canModule(user?.effective_permissions, 'transit')
   const cityInScope = (id?: string | null) => !isScopedStaff || (!!id && allowedCities!.includes(id))
   const studioCities = isScopedStaff ? activeCities.filter(c => allowedCities!.includes(c.id)) : activeCities
 

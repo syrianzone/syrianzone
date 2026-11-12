@@ -1,6 +1,6 @@
 import { lazy } from 'react';
 import { Moon } from 'lucide-react';
-import { GOVERNORATE_OPTIONS } from '../../_lib/governorates';
+import { governorateOptions } from '@/Domain/geography/governorates';
 import type { WidgetDefinition } from '../../_lib/types';
 
 export interface PrayerConfig {
@@ -19,7 +19,7 @@ export const prayerWidget: WidgetDefinition<PrayerConfig> = {
   minSize: { w: 3, h: 1 },
   maxSize: { w: 6, h: 4 },
   fields: [
-    { key: 'governorate', type: 'select', label: 'المحافظة', default: 'damascus', options: GOVERNORATE_OPTIONS },
+    { key: 'governorate', type: 'select', label: 'المحافظة', default: 'damascus', options: governorateOptions() },
     {
       key: 'method',
       type: 'select',

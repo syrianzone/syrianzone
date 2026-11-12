@@ -66,7 +66,7 @@ syrianzone/
 │   ├── Providers/               # AppServiceProvider (rate limiters, gates), Filament panel provider
 │   ├── Services/                # Isolated business logic (PlaceImageService, HalaSyriaService, WeatherService…)
 │   │   └── Places/               # Places moderation domain, shared by the dashboard and MCP tools
-│   ├── Support/                  # PermissionCatalogue + agent auth (ceiling authorizer, token issuer, audit)
+│   ├── Support/                  # PermissionCatalogue + agent auth, Facts (the reader for resources/data/*.json), Governorates, SEO supports
 │   └── Exceptions/               # Domain refusals extending DomainActionException (Places, Directories, Transit, Users)
 ├── bootstrap/app.php            # Middleware config, aliases, CSRF exceptions, DomainActionException rendering, AutoLoginDevUser
 ├── config/                      # Standard Laravel config + reverb/scout/sentry/backup/inertia
@@ -76,9 +76,11 @@ syrianzone/
 ├── public/                      # Static files, flag-replacer extension, .well-known assetlinks
 ├── resources/
 │   ├── css/                     # Tailwind v4 entry (@theme tokens, themes, fonts)
+│   ├── data/                    # Shared facts both languages read (governorates, syria box, …) — see its README
 │   ├── js/
 │   │   ├── Components/          # Shared UI: ui/ (shadcn), admin/, poll/, charts/, map/, Icons/
 │   │   ├── Contexts/            # AuthContext
+│   │   ├── Domain/              # Modules more than one page needs (geography, places, prayer, …)
 │   │   ├── Layouts/MainLayout.tsx
 │   │   ├── Lib/                 # axios client, apiError.ts, cn(), theme/font utils, geo-utils, exportImage…
 │   │   ├── Pages/               # One folder per route/module (Inertia pages)

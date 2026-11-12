@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { router, usePage } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import {
     Plus, Edit, Trash2, Eye, EyeOff, Search, ArrowUp, ArrowDown, Settings, Check, X, Phone, MessageSquare, ExternalLink, ArrowRight
 } from 'lucide-react';
@@ -12,7 +12,7 @@ import { Label } from "@/Components/ui/label";
 import { Switch } from "@/Components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/Components/ui/table";
 import MainLayout from '@/Layouts/MainLayout';
-import { canAny } from '@/Lib/permissions'
+import { useCan } from '@/Lib/useCan';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
 
@@ -49,15 +49,7 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
     // Gated per capability, matching the route tags. The panel used to render
     // every control for any phonebook.* holder, so a phonebook.reorder-only
     // account was offered delete and toggle buttons it cannot use.
-    // AuthProvider is mounted *inside* MainLayout, so this component's body runs
-    // above it and useAuth() throws here — the page renders blank. Read the
-    // server-resolved capability list off the Inertia props instead. It needs no
-    // superadmin special case: User::effectivePermissions() already returns the
-    // whole catalogue for superadmin, which is what AuthContext.can() was
-    // re-deriving on the client.
-    const { auth } = usePage().props as any;
-    const can = (capability: string): boolean =>
-        canAny(auth?.user?.effective_permissions, capability);
+    const can = useCan();
     const canCreate = can('phonebook.create');
     const canEdit = can('phonebook.edit');
     const canToggle = can('phonebook.toggle');

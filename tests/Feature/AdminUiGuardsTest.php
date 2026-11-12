@@ -81,13 +81,15 @@ it('gates every module admin control on a capability', function () {
 });
 
 it('derives no module admin gate from a role string', function () {
-    // resources/js/Lib/permissions.ts documents why: a module role holds its
-    // whole module with an empty permissions array, and a plain user can hold
-    // explicit grants, so a role check hides the panel from both.
+    // resources/js/Lib/capabilities.ts documents why: an account's access is
+    // exactly its stored grants, so a role check hides the panel from a plain
+    // user who was granted a capability explicitly.
     //
-    // The dashboard is deliberately excluded. It still gates the Filament link,
-    // the asset manager, the site popup and the token page by role, because
-    // those are superadmin-only surfaces with no capability of their own.
+    // The dashboard is deliberately excluded. It still gates the Filament
+    // panel link and the route-submissions tab by role — those are the
+    // account kind, not a module capability. Its admin tabs are gated on
+    // capabilities, including the modules that used to be superadmin-only
+    // (guesswho.manage, assets.manage, site.popup, site.navigation).
     foreach (array_keys(adminUiGateCases()) as $file) {
         $source = file_get_contents(base_path($file));
 
@@ -135,8 +137,8 @@ it('gates the import publish buttons on the capability the route requires', func
 });
 
 it('keeps the superadmin-only asset upload out of reach of poll managers', function () {
-    // Candidate images post to /api/v1/admin/assets/upload, in the
-    // ['auth','superadmin'] group. The drop zone is now inert for everyone else.
+    // Candidate images post to /api/v1/admin/assets/upload, which is guarded by
+    // assets.manage. The drop zone is now inert for anyone without it.
     $source = file_get_contents(base_path('resources/js/Components/admin/AdminPollManager.tsx'));
 
     expect($source)

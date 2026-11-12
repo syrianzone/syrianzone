@@ -14,6 +14,7 @@ use App\Models\Poll;
 use App\Models\Promise;
 use App\Models\Route as TransitRoute;
 use App\Services\ExternalData\ExternalSheetCache;
+use App\Support\Facts;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -23,14 +24,6 @@ use Illuminate\Support\Facades\DB;
  */
 class SitemapBuilder
 {
-    /**
-     * /tierlist and /polls/best-ministers render the same poll from the same
-     * records, and their leaderboards are the same data behind different
-     * components. Only the /tierlist pair is listed — that is the pair the
-     * homepage and navbar link to.
-     */
-    private const TIER_LIST_POLL_SLUG = 'best-ministers';
-
     /**
      * Public pages served from fixed routes, as [path, priority, changefreq].
      *
@@ -75,10 +68,6 @@ class SitemapBuilder
         ['/syrian-contributors', 0.8, 'weekly'],
         ['/board', 0.7, 'monthly'],
         ['/guesswho', 0.7, 'monthly'],
-        ['/games/2048', 0.6, 'monthly'],
-        ['/games/solitare', 0.6, 'monthly'],
-        ['/games/tarneeb', 0.6, 'monthly'],
-        ['/games/trix', 0.6, 'monthly'],
 
         // Sub-pages and utilities.
         ['/tierlist/leaderboard', 0.6, 'daily'],
@@ -136,8 +125,28 @@ class SitemapBuilder
 
         return array_map(
             fn ($page) => new SitemapUrl($page[0], $page[1], $page[2], $lastmod[$page[0]] ?? null),
-            self::STATIC_PAGES
+            [...self::STATIC_PAGES, ...$this->gamePaths()],
         );
+    }
+
+    /**
+     * One entry per game the hub routes under /games/<slug>. The registry is
+     * resources/data/games.json (the hub and the 404 page read it through
+     * Domain/games/games.ts), so a new game is not a sitemap edit.
+     *
+     * @return array<int, array{0: string, 1: float, 2: string}>
+     */
+    private function gamePaths(): array
+    {
+        $paths = [];
+        foreach (Facts::games() as $game) {
+            if (isset($game['href']) || ($game['external'] ?? false)) {
+                continue;
+            }
+            $paths[] = ['/games/'.$game['slug'], 0.6, 'monthly'];
+        }
+
+        return $paths;
     }
 
     /**
@@ -149,7 +158,7 @@ class SitemapBuilder
      */
     private function contentLastmod(): array
     {
-        $tierListPoll = Poll::where('slug', self::TIER_LIST_POLL_SLUG)->first();
+        $tierListPoll = Poll::where('slug', Poll::coreSlug())->first();
 
         return array_filter([
             '/govapps' => $this->latestOf([GovApp::max('updated_at')]),
@@ -199,7 +208,7 @@ class SitemapBuilder
     {
         $polls = Poll::where('is_active', true)
             ->whereNotNull('slug')
-            ->where('slug', '!=', self::TIER_LIST_POLL_SLUG)
+            ->where('slug', '!=', Poll::coreSlug())
             ->get();
 
         $urls = [];

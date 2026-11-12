@@ -2,16 +2,9 @@ import { DATA_TYPES } from '../../types';
 import { getColor } from '../../utils/color-calculator';
 import { findPopulation, findRainData } from '../../utils/data-finder';
 import { CityData, RainfallData } from '../../types';
-import { getCanonicalCityName } from '@/Lib/city-name-standardizer';
+import { getCanonicalGovernorateName, getGovernorateDatasetNameEn } from '@/Domain/geography/governorates';
 
 type DataType = typeof DATA_TYPES[keyof typeof DATA_TYPES];
-
-const ARABIC_TO_ENGLISH_CITY_MAP: { [key: string]: string } = {
-    'دمشق': 'Damascus', 'حلب': 'Aleppo', 'ريف دمشق': 'Rif Dimashq', 'حمص': 'Homs',
-    'حماة': 'Hama', 'اللاذقية': 'Latakia', 'إدلب': 'Idlib', 'الحسكة': 'Al-Hasakah',
-    'دير الزور': 'Deir ez-Zor', 'طرطوس': 'Tartus', 'الرقة': 'Raqqa', 'درعا': 'Daraa',
-    'السويداء': 'As-Suwayda', 'القنيطرة': 'Quneitra'
-};
 
 function getTemperatureColor(temp: number): string {
     // Must match the ENVIRONMENTAL legend in data-config.ts
@@ -45,8 +38,8 @@ export function getFeatureStyle(
         }
 
         const name = feature.properties.province_name || feature.properties.ADM2_AR || feature.properties.ADM1_AR || feature.properties.Name;
-        const nameAr = getCanonicalCityName(name);
-        const englishName = ARABIC_TO_ENGLISH_CITY_MAP[nameAr] || nameAr;
+        const nameAr = getCanonicalGovernorateName(name);
+        const englishName = getGovernorateDatasetNameEn(nameAr);
         const envData = environmentalData.cities?.[nameAr] || environmentalData.cities?.[englishName] || environmentalData.cities?.[name];
 
         if (envData) {

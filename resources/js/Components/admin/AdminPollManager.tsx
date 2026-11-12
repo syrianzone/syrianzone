@@ -79,14 +79,14 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
     // Each control is gated on the capability its route requires (routes/web.php).
     // The whole editor used to render for anyone holding any polls.* grant, so a
     // polls.create-only user saw delete buttons they could not use and vice versa.
-    const { can, user } = useAuth();
+    const { can } = useAuth();
     const canCreate = can("polls.create");
     const canEdit = can("polls.edit");
     const canDelete = can("polls.delete");
     // Candidate images are uploaded through /api/v1/admin/assets/upload, which
-    // sits in the superadmin-only group. Hiding the drop zone for everyone else
-    // turns a guaranteed 403 into a control that simply is not offered.
-    const canUploadImages = user?.role === "superadmin";
+    // is guarded by assets.manage. Hiding the drop zone without it turns a
+    // guaranteed 403 into a control that simply is not offered.
+    const canUploadImages = can("assets.manage");
     const [groups, setGroups] = useState<Group[]>(initialData.groups || []);
     const [candidates, setCandidates] = useState<Candidate[]>(initialData.candidates || []);
     const [activeTab, setActiveTab] = useState<string>("all");

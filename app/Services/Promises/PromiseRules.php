@@ -130,7 +130,7 @@ final class PromiseRules
     public function status(Promise $promise): array
     {
         return [
-            'status' => ['required', Rule::in(Promise::STATUSES), Rule::notIn([$promise->status])],
+            'status' => ['required', Rule::in(Promise::statuses()), Rule::notIn([$promise->status])],
             'happened_on' => ['required', 'date_format:Y-m-d', 'before_or_equal:'.Promise::today()->format('Y-m-d')],
             'body' => ['nullable', 'string', 'max:2000'],
             'source_url' => ['required', 'url:http,https', 'max:2048'],

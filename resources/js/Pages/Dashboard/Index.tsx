@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { DEFAULT_POLL_TIMEZONE, isCorePollSlug } from '@/Domain/polls/core';
 import { Link, router } from '@inertiajs/react';
 import axios from 'axios';
 import {
@@ -38,7 +39,8 @@ import {
 } from '@/Components/Icons/ProjectIcons';
 import MainLayout from '@/Layouts/MainLayout';
 import { useAuth } from '@/Contexts/AuthContext';
-import { canAny, canModule } from '@/Lib/permissions';
+import { CAPABILITIES } from '@/Lib/capabilities';
+import { useCan, useCanModule } from '@/Lib/useCan';
 import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
@@ -117,10 +119,10 @@ interface PollGroup {
 }
 
 const pollPublicUrl = (slug: string) =>
-  slug === 'best-ministers' ? '/tierlist' : `/polls/${slug}`;
+  isCorePollSlug(slug) ? '/tierlist' : `/polls/${slug}`;
 
 const pollLeaderboardUrl = (slug: string) =>
-  slug === 'best-ministers' ? '/tierlist/leaderboard' : `/polls/${slug}/leaderboard`;
+  isCorePollSlug(slug) ? '/tierlist/leaderboard' : `/polls/${slug}/leaderboard`;
 
 interface DashboardProps {
   auth: {
@@ -245,13 +247,17 @@ export default function Dashboard({
   myDrafts = [],
   polls = []
 }: DashboardProps) {
-  // Read from the Inertia prop, NOT useAuth(): this component renders
-  // <MainLayout> (and therefore AuthProvider) itself, so its body runs above
-  // the provider. The list is already resolved server-side, so this file never
-  // re-derives which role implies what.
-  const perms = auth.user.effective_permissions ?? [];
-  const canManagePolls = canModule(perms, 'polls');
-  const canTransitReview = perms.includes('transit.review_drafts');
+  // useCan() reads usePage() props, not the AuthProvider context, so it works
+  // here even though this component renders <MainLayout> (and therefore
+  // AuthProvider) itself. The list is already resolved server-side, so this
+  // file never re-derives which role implies what.
+  const can = useCan();
+  const canModule = useCanModule();
+  // The token page is open to any capability holder; a superadmin resolves the
+  // whole catalogue, so this also covers the superadmin case.
+  const hasAnyCapability = CAPABILITIES.some((capability) => can(capability));
+  const canManagePolls = canModule('polls');
+  const canTransitReview = can('transit.review_drafts');
 
   // Declared above the tab state because the default tab is chosen with the
   // same gates the sidebar renders with, so the landing tab is always one whose
@@ -273,15 +279,15 @@ export default function Dashboard({
   // Module access is decided by capability, not by role string. Every panel
   // below is gated on a capability, so a `user` holding an explicit grant and a
   // staff account holding a whole module are served by the same check.
-  const canManagePlaces = canModule(perms, 'places');
-  const canManageSyOfficial = canModule(perms, 'syofficial');
-  const canManageGovApps = canModule(perms, 'govapps');
+  const canManagePlaces = canModule('places');
+  const canManageSyOfficial = canModule('syofficial');
+  const canManageGovApps = canModule('govapps');
   // Per-action poll capabilities. The tab itself opens for any polls.* holder,
   // so without these a polls.delete-only account is offered create and edit
   // buttons whose routes are tagged polls.create / polls.edit.
-  const canCreatePolls = canAny(perms, 'polls.create');
-  const canEditPolls = canAny(perms, 'polls.edit');
-  const canDeletePolls = canAny(perms, 'polls.delete');
+  const canCreatePolls = can('polls.create');
+  const canEditPolls = can('polls.edit');
+  const canDeletePolls = can('polls.delete');
 
   // Profile Form States
   const [profileName, setProfileName] = useState(auth.user.name);
@@ -491,7 +497,7 @@ export default function Dashboard({
 
   // Delete Poll
   const handleDeletePoll = async (id: string, slug: string) => {
-    if (slug === 'best-ministers') {
+    if (isCorePollSlug(slug)) {
         notify.info('لا يمكن حذف استبيان تقييم الوزراء الرئيسي.');
         return;
     }
@@ -516,7 +522,7 @@ export default function Dashboard({
       const res = await axios.post('/api/polls', {
         title: createTitle.trim(),
         slug: createSlug.trim(),
-        timezone: 'Europe/Amsterdam',
+        timezone: DEFAULT_POLL_TIMEZONE,
         is_active: createActive,
       });
       const created: Poll = res.data;
@@ -592,6 +598,7 @@ export default function Dashboard({
 
           {role === 'superadmin' && (
             <div className="flex justify-end mb-8">
+              {/* Filament panel access is the panel's own rule (User::canAccessPanel), not a module capability. */}
               <a
                 href="/superadmin"
                 className="px-5 py-2.5 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-lg font-bold flex items-center gap-2 transition-colors shadow-lg"
@@ -666,11 +673,8 @@ export default function Dashboard({
                   </Link>
                 )}
 
-                {/* GuessWho Admin Tab. Superadmin only: the module has no capability
-                    vocabulary of its own, and the route group is gated on the
-                    `superadmin` middleware rather than a capability. Narrowed from
-                    `admin || superadmin` — see routes/web.php. */}
-                {role === 'superadmin' && (
+                {/* GuessWho Admin Tab — guesswho.manage (routes/web.php). */}
+                {can('guesswho.manage') && (
                   <Link
                     href="/admin/guesswho"
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
@@ -681,7 +685,7 @@ export default function Dashboard({
                 )}
 
                 {/* Phonebook Admin Tab */}
-                {canModule(perms, 'phonebook') && (
+                {canModule('phonebook') && (
                   <Link
                     href="/admin/phonebook"
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
@@ -692,7 +696,7 @@ export default function Dashboard({
                 )}
 
                 {/* Compass Admin Tab — anonymous statistics, gated on compass.stats. */}
-                {canModule(perms, 'compass') && (
+                {canModule('compass') && (
                   <Link
                     href="/admin/compass"
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
@@ -703,7 +707,7 @@ export default function Dashboard({
                 )}
 
                 {/* Promises Tracker Admin Tab */}
-                {canModule(perms, 'promises') && (
+                {canModule('promises') && (
                   <Link
                     href="/admin/promises"
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
@@ -713,8 +717,8 @@ export default function Dashboard({
                   </Link>
                 )}
 
-                {/* R2 Asset Manager Tab (Superadmin only) */}
-                {role === 'superadmin' && (
+                {/* Hosted-file manager — assets.manage (routes/web.php). */}
+                {can('assets.manage') && (
                   <Link
                     href="/admin/assets"
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
@@ -724,8 +728,8 @@ export default function Dashboard({
                   </Link>
                 )}
 
-                {/* Site Popup Tab (Superadmin only) */}
-                {role === 'superadmin' && (
+                {/* Site Popup Tab — site.popup (routes/web.php). */}
+                {can('site.popup') && (
                   <Link
                     href="/admin/site-popup"
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
@@ -735,8 +739,8 @@ export default function Dashboard({
                   </Link>
                 )}
 
-                {/* Site Navigation & Icons Catalog Tab (Superadmin only) */}
-                {role === 'superadmin' && (
+                {/* Site Navigation & Icons Catalog Tab — site.navigation (routes/web.php). */}
+                {can('site.navigation') && (
                   <Link
                     href="/admin/navigation"
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
@@ -749,7 +753,7 @@ export default function Dashboard({
                 {/* Agent API tokens. Any account holding a capability can mint
                     tokens for itself, clamped to what it holds (a token is a
                     ceiling, never a grant); superadmins manage everyone's. */}
-                {(role === 'superadmin' || perms.length > 0) && (
+                {hasAnyCapability && (
                   <Link
                     href="/admin/api-tokens"
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
@@ -931,7 +935,7 @@ export default function Dashboard({
                                   >
                                     {isEditing ? <X className="h-4 w-4" /> : <Edit className="h-4 w-4" />}
                                   </button>
-                                  {poll.slug !== 'best-ministers' ? (
+                                  {!isCorePollSlug(poll.slug) ? (
                                     <button aria-label={canDeletePolls ? 'حذف' : 'يحتاج صلاحية polls.delete'}
                                       onClick={() => handleDeletePoll(poll.id, poll.slug)}
                                       className="p-1.5 bg-muted hover:bg-destructive/15 text-muted-foreground hover:text-destructive rounded border border-border hover:border-destructive/40 transition-colors"

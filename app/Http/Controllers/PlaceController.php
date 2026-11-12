@@ -9,6 +9,8 @@ use App\Services\PlaceImageService;
 use App\Services\Places\PlaceModerationService;
 use App\Services\Places\PlacePresenter;
 use App\Services\Places\PlaceRules;
+use App\Support\Facts;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -132,10 +134,10 @@ class PlaceController extends Controller
           ->post('https://places.googleapis.com/v1/places:searchText', [
             'textQuery' => $validated['q'],
             'languageCode' => 'ar',
-            'regionCode' => 'SY',
+            'regionCode' => Facts::syria()['country_code'],
             'locationBias' => ['rectangle' => [
-              'low' => ['latitude' => (float) PlaceRules::LAT_MIN, 'longitude' => (float) PlaceRules::LNG_MIN],
-              'high' => ['latitude' => (float) PlaceRules::LAT_MAX, 'longitude' => (float) PlaceRules::LNG_MAX],
+              'low' => ['latitude' => (float) PlaceRules::latMin(), 'longitude' => (float) PlaceRules::lngMin()],
+              'high' => ['latitude' => (float) PlaceRules::latMax(), 'longitude' => (float) PlaceRules::lngMax()],
             ]],
             'maxResultCount' => 5,
           ]);
@@ -168,7 +170,7 @@ class PlaceController extends Controller
 
     $lat = (float) $validated['lat'];
     $lng = (float) $validated['lng'];
-    $radiusKm = (float) ($validated['radius_km'] ?? 2);
+    $radiusKm = (float) ($validated['radius_km'] ?? Facts::places()['nearby']['radius_km_default']);
     $user = $request->user() ?? Auth::guard('sanctum')->user();
     // Only the requester's own pending places are included, or any account could
     // enumerate other users' unmoderated submissions that show deliberately 404s.
@@ -217,7 +219,7 @@ class PlaceController extends Controller
       // superadmin and the `admin` alias, and they hid the capability path from
       // anyone holding one without also holding those roles.
       $canSee = $user && ($user->id === $place->user_id
-          || $user->hasAnyPermission(['places.review', 'places.edit', 'places.delete']));
+          || $user->hasAnyPermission(PermissionCatalogue::forModule('places')));
       if (!$canSee) {
         return response()->json(['message' => 'Not found'], 404);
       }

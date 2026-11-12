@@ -4,6 +4,7 @@ import axios from '@/Lib/axios';
 import { DEFAULT_PRAYER_METHOD } from '../prayer/methods';
 import { DEFAULT_RECITATION_CODE, normalizeRecitationCode } from '../quran/quran';
 import { effectivePrayerParams, getGeo, getLocMode, setGeo, setLocMode, clearGeo, LOC_CHANGED_EVENT, type GeoPoint, type LocMode } from '../location/location';
+import { SYRIA_TIMEZONE } from '@/Domain/geography/syria';
 
 // Single source of truth for everything the prayer widgets share.
 // /muslim is the writer; Home, Board and Roznama are readers.
@@ -59,10 +60,10 @@ function readLS(key: string, fallback: string): string {
 
 export const TRACKED_PRAYERS = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'] as const;
 
-/** Asia/Damascus calendar day (same boundary the timings API uses). */
+/** The national calendar day (same boundary the timings API uses). */
 export function todayKey(now = new Date()): string {
   return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Damascus',
+    timeZone: SYRIA_TIMEZONE,
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',

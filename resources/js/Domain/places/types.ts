@@ -1,5 +1,14 @@
-export type PlaceCategory = 'historical' | 'natural' | 'cultural' | 'religious' | 'abandoned' | 'viewpoint' | 'market' | 'food' | 'other';
-export type PlaceStatus = 'pending' | 'approved' | 'rejected';
+// The compile-time projection of resources/data/places.json. The JSON cannot
+// give literal types, so the keys are written once here and checked against the
+// file in Domain/places/categories.ts: a value added to one side only throws.
+export const PLACE_CATEGORY_KEYS = [
+  'historical', 'natural', 'cultural', 'religious', 'abandoned', 'viewpoint', 'market', 'food', 'other',
+] as const;
+
+export const PLACE_STATUS_KEYS = ['pending', 'approved', 'rejected'] as const;
+
+export type PlaceCategory = (typeof PLACE_CATEGORY_KEYS)[number];
+export type PlaceStatus = (typeof PLACE_STATUS_KEYS)[number];
 
 export interface LatLng { lat: number; lng: number; }
 

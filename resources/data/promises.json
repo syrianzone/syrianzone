@@ -1,0 +1,69 @@
+{
+  "statuses": ["pending", "in_progress", "fulfilled", "partially_fulfilled", "broken", "postponed", "retracted"],
+  "states": [
+    {
+      "key": "pending",
+      "label": "قيد الانتظار",
+      "glyph": "Hourglass",
+      "card_tone": "outline",
+      "badge_variant": "outline",
+      "tone": "text-foreground"
+    },
+    {
+      "key": "in_progress",
+      "label": "قيد التنفيذ",
+      "glyph": "Wrench",
+      "card_tone": "outline",
+      "badge_variant": "outline",
+      "tone": "text-foreground"
+    },
+    {
+      "key": "overdue",
+      "label": "متأخر",
+      "glyph": "AlarmClock",
+      "card_tone": "destructive",
+      "badge_variant": "destructive",
+      "tone": "text-destructive"
+    },
+    {
+      "key": "fulfilled",
+      "label": "تحقق",
+      "glyph": "BadgeCheck",
+      "card_tone": "primary",
+      "badge_variant": "default",
+      "tone": "text-primary"
+    },
+    {
+      "key": "partially_fulfilled",
+      "label": "تحقق جزئياً",
+      "glyph": "CircleDashed",
+      "card_tone": "soft",
+      "badge_variant": "secondary",
+      "tone": "text-primary"
+    },
+    {
+      "key": "broken",
+      "label": "لم يتحقق",
+      "glyph": "XCircle",
+      "card_tone": "destructive",
+      "badge_variant": "destructive",
+      "tone": "text-destructive"
+    },
+    {
+      "key": "postponed",
+      "label": "أُجّل",
+      "glyph": "CalendarClock",
+      "card_tone": "soft",
+      "badge_variant": "secondary",
+      "tone": "text-muted-foreground"
+    },
+    {
+      "key": "retracted",
+      "label": "سُحب",
+      "glyph": "Undo2",
+      "card_tone": "soft",
+      "badge_variant": "secondary",
+      "tone": "text-muted-foreground"
+    }
+  ]
+}

@@ -22,7 +22,7 @@ import SpeakerPicker from '@/Domain/promises/SpeakerPicker';
 import { PENDING_SPEAKER_LABEL, SPEAKER_SOURCE_LABEL } from '@/Domain/promises/status';
 import type { SpeakerOption } from '@/Domain/promises/types';
 import AdminHeader from './_components/AdminHeader';
-import { useCan } from './_lib/useCan';
+import { useCan } from '@/Lib/useCan';
 import type { AdminSpeaker } from './_lib/types';
 
 interface Props {

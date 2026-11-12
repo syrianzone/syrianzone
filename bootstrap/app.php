@@ -47,22 +47,31 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\AutoLoginDevUser::class
         );
 
+        // Every module guard alias resolves to the one parameterised guard; the
+        // module comes from the alias table on the class and the capability from
+        // the route tag. ModuleCapabilityRoutesTest asserts these names.
         $middleware->alias([
-            'transit_admin'   => \App\Http\Middleware\TransitAdmin::class,
-            'syofficial_admin' => \App\Http\Middleware\SyOfficialAdmin::class,
-            'phonebook_admin'  => \App\Http\Middleware\PhonebookAdmin::class,
-            'places_admin'    => \App\Http\Middleware\PlacesAdmin::class,
-            'polls_admin'     => \App\Http\Middleware\PollsAdmin::class,
+            'transit_admin'   => \App\Http\Middleware\ModuleCapabilityGuard::class,
+            'syofficial_admin' => \App\Http\Middleware\ModuleCapabilityGuard::class,
+            'phonebook_admin'  => \App\Http\Middleware\ModuleCapabilityGuard::class,
+            'places_admin'    => \App\Http\Middleware\ModuleCapabilityGuard::class,
+            'polls_admin'     => \App\Http\Middleware\ModuleCapabilityGuard::class,
             // Compass admin: read-only anonymous statistics for the compass test.
-            'compass_admin'   => \App\Http\Middleware\CompassAdmin::class,
+            'compass_admin'   => \App\Http\Middleware\ModuleCapabilityGuard::class,
             // Promises tracker: promises, review queue, speakers and sectors.
-            'promises_admin'  => \App\Http\Middleware\PromisesAdmin::class,
-            // Previously the Gov Apps admin group referenced the class directly,
-            // which left it with no alias to pass a per-route capability through.
-            'govapps_admin'   => \App\Http\Middleware\GovAppsAdmin::class,
+            'promises_admin'  => \App\Http\Middleware\ModuleCapabilityGuard::class,
+            // Gov Apps admin group. ModuleCapabilityGuard needs the alias so a
+            // per-route capability can be passed through.
+            'govapps_admin'   => \App\Http\Middleware\ModuleCapabilityGuard::class,
             // General user moderation (banning). Not a content module: this is
             // application-wide, so it is authorised by its own capability.
-            'users_admin'     => \App\Http\Middleware\UsersAdmin::class,
+            'users_admin'     => \App\Http\Middleware\ModuleCapabilityGuard::class,
+            // Superadmin-only modules that used to have no capability of their
+            // own: the game content, the hosted-file manager and the site-wide
+            // settings surfaces.
+            'guesswho_admin'  => \App\Http\Middleware\ModuleCapabilityGuard::class,
+            'assets_admin'    => \App\Http\Middleware\ModuleCapabilityGuard::class,
+            'site_admin'      => \App\Http\Middleware\ModuleCapabilityGuard::class,
             'superadmin'      => \App\Http\Middleware\SuperAdmin::class,
             // Agent API tokens: any capability holder, for their own tokens.
             'agent_tokens'    => \App\Http\Middleware\AgentTokensAccess::class,

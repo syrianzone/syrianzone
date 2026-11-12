@@ -10,11 +10,6 @@ use App\Models\User;
 | must not reshape what the map, the web app and the mobile client read.
 */
 
-function publicShapeUser(): User
-{
-    return User::factory()->create(['role' => 'user']);
-}
-
 test('list rows expose exactly the public list keys', function () {
     Place::factory()->approved()->create();
 
@@ -26,7 +21,7 @@ test('list rows expose exactly the public list keys', function () {
 });
 
 test('detail exposes exactly the public detail keys', function () {
-    $owner = publicShapeUser();
+    $owner = User::factory()->create();
     $place = Place::factory()->approved()->create(['user_id' => $owner->id]);
     PlacePhoto::factory()->create(['place_id' => $place->id]);
 
@@ -41,7 +36,7 @@ test('detail exposes exactly the public detail keys', function () {
 });
 
 test('owner rows expose exactly the my-places keys', function () {
-    $owner = publicShapeUser();
+    $owner = User::factory()->create();
     Place::factory()->approved()->create(['user_id' => $owner->id]);
 
     $response = $this->actingAs($owner)->getJson('/api/v1/my/places')->assertOk();

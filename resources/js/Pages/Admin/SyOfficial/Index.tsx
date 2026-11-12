@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { router, usePage } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
@@ -12,7 +12,7 @@ import CategoryDialog, { CategoryData } from './_components/CategoryDialog';
 import EntityDialog, { EntityData } from './_components/EntityDialog';
 import SortableList from './_components/SortableList';
 import { formatEntityImage } from '@/Lib/entityImage';
-import { canAny } from '@/Lib/permissions'
+import { useCan } from '@/Lib/useCan';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
 
@@ -26,15 +26,7 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
     // Each control is gated on the capability its route requires (routes/web.php).
     // The whole panel used to render for any syofficial.* holder, so a
     // syofficial.reorder-only account was offered create and delete buttons.
-    // AuthProvider is mounted *inside* MainLayout, so this component's body runs
-    // above it and useAuth() throws here — the page renders blank. Read the
-    // server-resolved capability list off the Inertia props instead. It needs no
-    // superadmin special case: User::effectivePermissions() already returns the
-    // whole catalogue for superadmin, which is what AuthContext.can() was
-    // re-deriving on the client.
-    const { auth } = usePage().props as any;
-    const can = (capability: string): boolean =>
-        canAny(auth?.user?.effective_permissions, capability);
+    const can = useCan();
     const canCreate = can('syofficial.create');
     const canEdit = can('syofficial.edit');
     const canDelete = can('syofficial.delete');

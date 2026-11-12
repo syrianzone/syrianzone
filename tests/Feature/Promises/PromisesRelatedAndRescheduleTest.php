@@ -133,7 +133,7 @@ test('relatedPublishedPromises returns published promises in statement date and 
 
 test('rescheduleDeadline preserves original deadline, increments postponed_count, and logs change', function () {
     $editor = app(PromiseEditor::class);
-    $actor = User::factory()->create(['role' => 'user']);
+    $actor = User::factory()->create();
 
     $promise = Promise::factory()->published()->create([
         'statement_date' => '2025-06-01',

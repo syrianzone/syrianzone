@@ -6,6 +6,7 @@ use App\Models\CompassFigure;
 use App\Models\CompassPersona;
 use App\Models\CompassResult;
 use App\Support\Compass\CompassStats;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -39,8 +40,8 @@ class CompassAdminController extends Controller
                 ->get(['slug', 'name'])
                 ->map(fn ($p) => ['id' => $p->slug, 'name' => $p->name])
                 ->all(),
-            'canManageFigures' => (bool) $request->user()?->hasPermission('compass.figures'),
-            'canManagePersonas' => (bool) $request->user()?->hasPermission('compass.personas'),
+            'canManageFigures' => (bool) $request->user()?->hasPermission(PermissionCatalogue::COMPASS_FIGURES),
+            'canManagePersonas' => (bool) $request->user()?->hasPermission(PermissionCatalogue::COMPASS_PERSONAS),
         ]);
     }
 
@@ -51,7 +52,7 @@ class CompassAdminController extends Controller
             'figures' => $this->allFigures(),
             'categories' => CompassFigure::CATEGORIES,
             'axes' => CompassStats::AXIS_IDS,
-            'canViewStats' => (bool) $request->user()?->hasPermission('compass.stats'),
+            'canViewStats' => (bool) $request->user()?->hasPermission(PermissionCatalogue::COMPASS_STATS),
         ]);
     }
 
@@ -211,7 +212,7 @@ class CompassAdminController extends Controller
             'personas' => $this->allPersonas(),
             'axes' => CompassStats::AXIS_IDS,
             'icons' => self::PERSONA_ICONS,
-            'canViewStats' => (bool) $request->user()?->hasPermission('compass.stats'),
+            'canViewStats' => (bool) $request->user()?->hasPermission(PermissionCatalogue::COMPASS_STATS),
         ]);
     }
 

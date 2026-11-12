@@ -3,14 +3,7 @@ import type { AxisId, Spectrum } from '@/Domain/compass/types';
 import { AXES } from '@/Domain/compass/axes';
 import { axisDisplay } from '@/Domain/compass/axisDisplay';
 import SpectrumIcon from '@/Domain/compass/SpectrumIcon';
-import { getThemeById, THEME_REGISTRY } from '@/lib/theme';
-
-const hexToRgb = (hex: string): string => {
-  const h = hex.replace('#', '');
-  const full = h.length === 3 ? h.split('').map((c) => c + c).join('') : h;
-  const n = parseInt(full, 16);
-  return `${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}`;
-};
+import { getThemeById, THEME_REGISTRY, hexToRgbString, readThemeColor, readThemeRgb } from '@/lib/theme';
 
 const fmt = (v: number) => `${v > 0 ? '+' : ''}${v.toFixed(2)}`;
 
@@ -20,18 +13,22 @@ interface Props {
   themeKey: string;
 }
 
-/** 360×640 story card used for the "share as image" download. Colours are
- *  driven entirely by the active theme's palette (explicit hex/rgb) so
- *  html2canvas-pro needs no colour conversion. */
+/** 360×640 story card used for the "share as image" download. The colours of
+ *  the applied theme are read from its CSS tokens, so the card shows what the
+ *  page shows; the palette in themes.json covers a theme that is not applied
+ *  yet and the renderers that compose rgba() themselves. */
 const CompassShareCard = forwardRef<HTMLDivElement, Props>(function CompassShareCard(
   { spectrum, axes, themeKey },
   ref
 ) {
   const theme = getThemeById(themeKey) || THEME_REGISTRY[2];
+  // The card's gradient comes from the palette, not from the scheme: jasmine is
+  // a light theme with a deliberately dark card gradient, so only `light` draws
+  // the dark-on-light text set.
   const isLight = theme.id === 'light';
   const pri = theme.priorities;
-  const primary = theme.primary || '#5a714a';
-  const primaryRgb = pri?.primaryRgb || hexToRgb(primary);
+  const primary = readThemeColor('--primary', themeKey) || theme.primary;
+  const primaryRgb = readThemeRgb('--primary', themeKey) || hexToRgbString(theme.primary);
   const urlText = pri?.urlText || primary;
   const gradient =
     pri?.gradient ||

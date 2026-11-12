@@ -204,7 +204,7 @@ test('voting closes once a verdict is set', function () {
 });
 
 test('public speaker search offers approved speakers and publicly listed officials only', function () {
-    $tierList = Poll::factory()->create(['slug' => Poll::CORE_POLL_SLUG]);
+    $tierList = Poll::factory()->create(['slug' => Poll::coreSlug()]);
     $draftPoll = Poll::factory()->create(['is_active' => false]);
     PromiseSpeaker::factory()->create(['name' => 'سامر المعتمد']);
     PromiseSpeaker::factory()->pending()->create(['name' => 'سامر المقترح']);

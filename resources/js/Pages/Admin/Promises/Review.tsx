@@ -13,7 +13,7 @@ import SpeakerAvatar from '@/Domain/promises/SpeakerAvatar';
 import { formatDate, safeHref } from '@/Domain/promises/format';
 import { PENDING_SPEAKER_LABEL } from '@/Domain/promises/status';
 import AdminHeader from './_components/AdminHeader';
-import { useCan } from './_lib/useCan';
+import { useCan } from '@/Lib/useCan';
 import { ORIGIN_LABEL, type AdminPromiseRow, type AdminSpeaker } from './_lib/types';
 
 interface ReportRow {

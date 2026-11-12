@@ -1,7 +1,7 @@
 import { Link } from '@inertiajs/react';
 import { Badge } from '@/Components/ui/badge';
 import { cn } from '@/Lib/utils';
-import { useCan } from '../_lib/useCan';
+import { useCan } from '@/Lib/useCan';
 
 /**
  * Section links for the promises admin. Each link appears only for staff who

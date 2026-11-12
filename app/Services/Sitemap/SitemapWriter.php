@@ -2,20 +2,26 @@
 
 namespace App\Services\Sitemap;
 
+use App\Support\Facts;
+
 /**
  * Renders SitemapUrl objects into a sitemaps.org urlset document. Holds no
  * domain knowledge and touches no database, so it is testable on its own.
  */
 class SitemapWriter
 {
+    private readonly string $baseUrl;
+
     /**
      * The base URL is a constructor argument so tests can pin it, but defaults
      * to the canonical host: staging answers on a different hostname, and a
      * sitemap built from the request host would advertise a duplicate site.
+     * The host itself is a shared fact (resources/data/site.json).
      */
-    public function __construct(
-        private readonly string $baseUrl = 'https://syrian.zone',
-    ) {}
+    public function __construct(?string $baseUrl = null)
+    {
+        $this->baseUrl = $baseUrl ?? Facts::site()['base_url'];
+    }
 
     /**
      * @param  SitemapUrl[]  $urls

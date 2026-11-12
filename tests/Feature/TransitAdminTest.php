@@ -1,10 +1,7 @@
 <?php
 
-use App\Models\Route;
-use App\Models\RouteDraft;
 use App\Models\User;
 use App\Support\Permissions\PermissionCatalogue;
-use Illuminate\Support\Facades\DB;
 
 /*
 |--------------------------------------------------------------------------
@@ -35,68 +32,6 @@ use Illuminate\Support\Facades\DB;
 |
 */
 
-// ─── Fixtures ──────────────────────────────────────────────────────────────
-//
-// Deliberately local rather than reusing TransitAdminServiceTest's transitCity /
-// transitDraft / transitRoute. Pest only loads the file under test, so depending
-// on globals declared in a sibling file means the suite passes and
-// `php artisan test tests/Feature/TransitAdminTest.php` dies with an undefined
-// function. Distinct names for the same reason — two files cannot both declare
-// the same global.
-
-function taCity(string $id, string $nameEn = 'City'): void
-{
-    $wrap = static function (array $shape) {
-        if (DB::connection()->getDriverName() === 'sqlite') {
-            return json_encode($shape, JSON_THROW_ON_ERROR);
-        }
-
-        return DB::raw('ST_GeomFromGeoJSON('.DB::connection()->getPdo()->quote(json_encode($shape, JSON_THROW_ON_ERROR)).')');
-    };
-
-    DB::table('cities')->insert([
-        'id' => $id,
-        'name_ar' => $nameEn,
-        'name_en' => $nameEn,
-        'center' => $wrap(['type' => 'Point', 'coordinates' => [36.72, 34.73]]),
-        'bounds' => $wrap(['type' => 'Polygon', 'coordinates' => [[[36.5, 34.55], [36.95, 34.55], [36.95, 34.95], [36.5, 34.95], [36.5, 34.55]]]]),
-        'zoom' => 12,
-        'status' => 'active',
-        'created_at' => now(),
-        'updated_at' => now(),
-    ]);
-}
-
-function taDraft(string $cityId, array $overrides = []): RouteDraft
-{
-    return RouteDraft::create(array_merge([
-        'user_id' => null,
-        'city_id' => $cityId,
-        'name_ar' => 'مسودة',
-        'geojson' => ['type' => 'FeatureCollection', 'features' => []],
-        'status' => 'pending',
-    ], $overrides));
-}
-
-function taRoute(string $id, string $cityId, array $overrides = []): Route
-{
-    return Route::create(array_merge([
-        'id' => $id,
-        'city_id' => $cityId,
-        'name_ar' => 'خط',
-        'status' => 'published',
-    ], $overrides));
-}
-
-/** A transit-scoped staff account, optionally narrowed to some governorates. */
-function taStaff(?array $permissions = null, ?array $cities = null): User
-{
-    return User::factory()->create(array_filter([
-        'permissions' => $permissions ?? PermissionCatalogue::forModule('transit'),
-        'permission_scopes' => $cities === null ? null : ['transit' => $cities],
-    ], static fn ($v) => $v !== null));
-}
-
 // ─── The linked-route guard ────────────────────────────────────────────────
 //
 // approve() and reject() each check the draft's own city and then, if the draft
@@ -107,16 +42,16 @@ function taStaff(?array $permissions = null, ?array $cities = null): User
 // path; this is the HTTP one.
 
 it('refuses to approve a linked edit whose target route is in another governorate', function () {
-    taCity('homs');
-    taCity('aleppo');
+    seedCity('homs');
+    seedCity('aleppo');
 
-    $route = taRoute('route-aleppo-1', 'aleppo');
+    $route = transitRoute('route-aleppo-1', 'aleppo');
 
     // The draft sits in the reviewer's own governorate...
-    $draft = taDraft('homs', ['route_id' => $route->id]);
+    $draft = transitDraft('homs', ['route_id' => $route->id]);
 
     // ...but approving it would unpublish and republish a route in aleppo.
-    $reviewer = taStaff(null, ['homs']);
+    $reviewer = capabilityUser(PermissionCatalogue::forModule('transit'), ['homs']);
 
     $this->actingAs($reviewer)
         ->postJson("/api/v1/admin/route-drafts/{$draft->id}/approve")
@@ -128,13 +63,13 @@ it('refuses to approve a linked edit whose target route is in another governorat
 });
 
 it('refuses to reject a linked edit whose target route is in another governorate', function () {
-    taCity('homs');
-    taCity('aleppo');
+    seedCity('homs');
+    seedCity('aleppo');
 
-    $route = taRoute('route-aleppo-1', 'aleppo');
-    $draft = taDraft('homs', ['route_id' => $route->id]);
+    $route = transitRoute('route-aleppo-1', 'aleppo');
+    $draft = transitDraft('homs', ['route_id' => $route->id]);
 
-    $reviewer = taStaff(null, ['homs']);
+    $reviewer = capabilityUser(PermissionCatalogue::forModule('transit'), ['homs']);
 
     $this->actingAs($reviewer)
         ->postJson("/api/v1/admin/route-drafts/{$draft->id}/reject", ['reason' => 'لا'])
@@ -146,12 +81,12 @@ it('refuses to reject a linked edit whose target route is in another governorate
 it('approves a linked edit when the draft and its route are both in scope', function () {
     // The control for the two above: the refusal must come from the second check,
     // not from the first, or these would pass for the wrong reason.
-    taCity('homs');
+    seedCity('homs');
 
-    $route = taRoute('route-homs-1', 'homs');
-    $draft = taDraft('homs', ['route_id' => $route->id]);
+    $route = transitRoute('route-homs-1', 'homs');
+    $draft = transitDraft('homs', ['route_id' => $route->id]);
 
-    $reviewer = taStaff(null, ['homs']);
+    $reviewer = capabilityUser(PermissionCatalogue::forModule('transit'), ['homs']);
 
     $this->actingAs($reviewer)
         ->postJson("/api/v1/admin/route-drafts/{$draft->id}/approve")
@@ -168,12 +103,12 @@ it('approves a linked edit when the draft and its route are both in scope', func
 // delete capability is required; this covers the other three.
 
 it('separates the moderation capabilities from one another', function (string $action, string $path, array $granted) {
-    taCity('homs');
+    seedCity('homs');
 
-    $reviewer = taStaff(array_values(array_diff(PermissionCatalogue::forModule('transit'), $granted)));
+    $reviewer = capabilityUser(array_values(array_diff(PermissionCatalogue::forModule('transit'), $granted)));
 
     $this->actingAs($reviewer)
-        ->postJson("/api/v1/admin/route-drafts/{taDraft('homs')->id}/{$path}")
+        ->postJson("/api/v1/admin/route-drafts/{transitDraft('homs')->id}/{$path}")
         ->assertForbidden();
 })->with([
     // Without transit.approve, but holding reject and the rest.
@@ -182,10 +117,10 @@ it('separates the moderation capabilities from one another', function (string $a
 ]);
 
 it('refuses a route edit to a reviewer holding only the moderation capabilities', function () {
-    taCity('homs');
-    $route = taRoute('route-homs-1', 'homs');
+    seedCity('homs');
+    $route = transitRoute('route-homs-1', 'homs');
 
-    $reviewer = taStaff(['transit.review_drafts', 'transit.approve', 'transit.reject']);
+    $reviewer = capabilityUser(['transit.review_drafts', 'transit.approve', 'transit.reject']);
 
     $this->actingAs($reviewer)
         ->putJson("/api/v1/admin/routes/{$route->id}", ['name_ar' => 'مخطط'])
@@ -195,11 +130,11 @@ it('refuses a route edit to a reviewer holding only the moderation capabilities'
 });
 
 it('refuses a route move to a reviewer who cannot edit routes', function () {
-    taCity('homs');
-    taCity('aleppo');
-    $route = taRoute('route-homs-1', 'homs');
+    seedCity('homs');
+    seedCity('aleppo');
+    $route = transitRoute('route-homs-1', 'homs');
 
-    $reviewer = taStaff(['transit.review_drafts', 'transit.approve', 'transit.reject']);
+    $reviewer = capabilityUser(['transit.review_drafts', 'transit.approve', 'transit.reject']);
 
     $this->actingAs($reviewer)
         ->postJson("/api/v1/admin/routes/{$route->id}/move", ['city_id' => 'aleppo'])
@@ -217,29 +152,29 @@ it('refuses a route move to a reviewer who cannot edit routes', function () {
 // breaks the dashboard's edit flow with no test objecting.
 
 it('answers 200 when a route status is already what was asked for', function () {
-    taCity('homs');
-    $route = taRoute('route-homs-1', 'homs', ['status' => 'published']);
+    seedCity('homs');
+    $route = transitRoute('route-homs-1', 'homs', ['status' => 'published']);
 
-    $this->actingAs(taStaff())
+    $this->actingAs(moduleStaff('transit'))
         ->postJson("/api/v1/admin/routes/{$route->id}/status", ['status' => 'published'])
         ->assertOk()
         ->assertJsonPath('message', 'Route route-homs-1 is already published.');
 });
 
 it('still answers 200 for a no-op on a hidden route', function () {
-    taCity('homs');
-    $route = taRoute('route-homs-1', 'homs', ['status' => 'hidden']);
+    seedCity('homs');
+    $route = transitRoute('route-homs-1', 'homs', ['status' => 'hidden']);
 
-    $this->actingAs(taStaff())
+    $this->actingAs(moduleStaff('transit'))
         ->postJson("/api/v1/admin/routes/{$route->id}/status", ['status' => 'hidden'])
         ->assertOk();
 });
 
 it('applies a real status change and echoes the route', function () {
-    taCity('homs');
-    $route = taRoute('route-homs-1', 'homs', ['status' => 'published']);
+    seedCity('homs');
+    $route = transitRoute('route-homs-1', 'homs', ['status' => 'published']);
 
-    $this->actingAs(taStaff())
+    $this->actingAs(moduleStaff('transit'))
         ->postJson("/api/v1/admin/routes/{$route->id}/status", ['status' => 'hidden'])
         ->assertOk()
         ->assertJsonPath('route.status', 'hidden')
@@ -249,10 +184,10 @@ it('applies a real status change and echoes the route', function () {
 });
 
 it('rejects a status outside the allowed vocabulary', function () {
-    taCity('homs');
-    $route = taRoute('route-homs-1', 'homs');
+    seedCity('homs');
+    $route = transitRoute('route-homs-1', 'homs');
 
-    $this->actingAs(taStaff())
+    $this->actingAs(moduleStaff('transit'))
         ->postJson("/api/v1/admin/routes/{$route->id}/status", ['status' => 'deleted'])
         ->assertStatus(422)
         ->assertJsonValidationErrors('status');
@@ -270,11 +205,11 @@ it('rejects a status outside the allowed vocabulary', function () {
 // were never allowed to make.
 
 it('refuses an out-of-scope route edit before looking at the payload', function () {
-    taCity('homs');
-    taCity('aleppo');
-    $route = taRoute('route-aleppo-1', 'aleppo');
+    seedCity('homs');
+    seedCity('aleppo');
+    $route = transitRoute('route-aleppo-1', 'aleppo');
 
-    $reviewer = taStaff(null, ['homs']);
+    $reviewer = capabilityUser(PermissionCatalogue::forModule('transit'), ['homs']);
 
     // Deliberately invalid on two counts: a non-existent field and a name that is
     // too long. A 422 here would mean validation ran first.
@@ -291,10 +226,10 @@ it('refuses an out-of-scope route edit before looking at the payload', function 
 it('validates an in-scope route edit normally', function () {
     // The control for the ordering above: the same payload from an authorised
     // caller must produce a validation error, not a permission error.
-    taCity('homs');
-    $route = taRoute('route-homs-1', 'homs');
+    seedCity('homs');
+    $route = transitRoute('route-homs-1', 'homs');
 
-    $reviewer = taStaff(null, ['homs']);
+    $reviewer = capabilityUser(PermissionCatalogue::forModule('transit'), ['homs']);
 
     $this->actingAs($reviewer)
         ->putJson("/api/v1/admin/routes/{$route->id}", ['name_ar' => str_repeat('ط', 300)])
@@ -310,14 +245,14 @@ it('validates an in-scope route edit normally', function () {
 // since that is a property of the request, not the service.
 
 it('ignores an absent field but clears one explicitly set to null', function () {
-    taCity('homs');
-    $route = taRoute('route-homs-1', 'homs', [
+    seedCity('homs');
+    $route = transitRoute('route-homs-1', 'homs', [
         'name_ar' => 'خط',
         'name_en' => 'Line',
         'price_old' => 1000,
     ]);
 
-    $editor = taStaff(null, ['homs']);
+    $editor = capabilityUser(PermissionCatalogue::forModule('transit'), ['homs']);
 
     // name_en absent, price_old explicitly null.
     $this->actingAs($editor)
@@ -337,10 +272,10 @@ it('ignores an absent field but clears one explicitly set to null', function () 
 });
 
 it('answers 400 when a route update carries nothing updatable', function () {
-    taCity('homs');
-    $route = taRoute('route-homs-1', 'homs');
+    seedCity('homs');
+    $route = transitRoute('route-homs-1', 'homs');
 
-    $editor = taStaff(null, ['homs']);
+    $editor = capabilityUser(PermissionCatalogue::forModule('transit'), ['homs']);
 
     $this->actingAs($editor)
         ->putJson("/api/v1/admin/routes/{$route->id}", ['nonsense' => 'x'])
@@ -351,10 +286,10 @@ it('answers 400 when a route update carries nothing updatable', function () {
 // ─── Move validation ───────────────────────────────────────────────────────
 
 it('refuses a move to a governorate that does not exist', function () {
-    taCity('homs');
-    $route = taRoute('route-homs-1', 'homs');
+    seedCity('homs');
+    $route = transitRoute('route-homs-1', 'homs');
 
-    $editor = taStaff(null, ['homs']);
+    $editor = capabilityUser(PermissionCatalogue::forModule('transit'), ['homs']);
 
     $this->actingAs($editor)
         ->postJson("/api/v1/admin/routes/{$route->id}/move", ['city_id' => 'atlantis'])
@@ -365,11 +300,11 @@ it('refuses a move to a governorate that does not exist', function () {
 });
 
 it('refuses a move a scoped editor has no access to', function () {
-    taCity('homs');
-    taCity('aleppo');
-    $route = taRoute('route-homs-1', 'homs');
+    seedCity('homs');
+    seedCity('aleppo');
+    $route = transitRoute('route-homs-1', 'homs');
 
-    $editor = taStaff(null, ['homs']);
+    $editor = capabilityUser(PermissionCatalogue::forModule('transit'), ['homs']);
 
     // Scope has to cover the destination too, or a reviewer could relocate a route
     // out of their own governorate into one they cannot write.
@@ -381,9 +316,9 @@ it('refuses a move a scoped editor has no access to', function () {
 });
 
 it('moves a route between two governorates the editor both holds', function () {
-    taCity('homs');
-    taCity('rif-dimashq');
-    $route = taRoute('route-homs-1', 'homs');
+    seedCity('homs');
+    seedCity('rif-dimashq');
+    $route = transitRoute('route-homs-1', 'homs');
 
     $editor = moduleStaff('transit', [
         'permission_scopes' => ['transit' => ['homs', 'rif-dimashq']],
@@ -400,10 +335,10 @@ it('moves a route between two governorates the editor both holds', function () {
 // ─── Listings respect the scope ────────────────────────────────────────────
 
 it('filters the route log by the governorates the caller holds', function () {
-    taCity('homs');
-    taCity('aleppo');
+    seedCity('homs');
+    seedCity('aleppo');
 
-    $scoped = taStaff(null, ['homs']);
+    $scoped = capabilityUser(PermissionCatalogue::forModule('transit'), ['homs']);
 
     $logs = $this->actingAs($scoped)
         ->getJson('/api/v1/admin/routes/logs')
@@ -419,9 +354,9 @@ it('filters the route log by the governorates the caller holds', function () {
 });
 
 it('refuses the moderation routes to a caller with no transit capability', function (string $method, string $uri) {
-    taCity('homs');
-    $draft = taDraft('homs');
-    $route = taRoute('route-homs-1', 'homs');
+    seedCity('homs');
+    $draft = transitDraft('homs');
+    $route = transitRoute('route-homs-1', 'homs');
 
     $outsider = User::factory()->module('places')->create();
 

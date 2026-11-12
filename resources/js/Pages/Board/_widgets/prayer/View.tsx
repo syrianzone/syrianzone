@@ -3,7 +3,7 @@ import { Moon } from 'lucide-react';
 import { WidgetShell } from '../../_components/WidgetShell';
 import { useWidgetQuery } from '../../_lib/query';
 import { sources, type PrayerTimes } from '../../_lib/sources';
-import { GOVERNORATES } from '../../_lib/governorates';
+import { GOVERNORATES_BY_ID } from '@/Domain/geography/governorates';
 import type { WidgetProps } from '../../_lib/types';
 import { prayerWidget, type PrayerConfig } from './index';
 import { effectivePrayerParams, getGeo, getLocMode, useLocSignal } from '@/Domain/location/location';
@@ -68,7 +68,7 @@ export default function PrayerView({ config }: WidgetProps<PrayerConfig>) {
 
   return (
     <WidgetShell
-      title={`مواقيت الصلاة · ${GOVERNORATES[governorate]?.label ?? ''}`}
+      title={`مواقيت الصلاة · ${GOVERNORATES_BY_ID[governorate]?.nameAr ?? ''}`}
       icon={Moon}
       loading={query.isPending}
       refreshing={query.isFetching && !query.isPending}

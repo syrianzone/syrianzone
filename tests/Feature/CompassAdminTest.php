@@ -1,8 +1,6 @@
 <?php
 
-use App\Models\CompassResult;
 use App\Models\User;
-use App\Support\Permissions\PermissionCatalogue;
 use Inertia\Testing\AssertableInertia as Assert;
 
 /*
@@ -20,29 +18,6 @@ use Inertia\Testing\AssertableInertia as Assert;
 |
 */
 
-function compassStatsHolder(): User
-{
-    return User::factory()->create([
-        'role' => 'user',
-        'permissions' => PermissionCatalogue::forModule('compass'),
-    ]);
-}
-
-function anonymousCompassRun(array $overrides = []): CompassResult
-{
-    return CompassResult::create(array_merge([
-        'user_id' => null,
-        'version' => 'short',
-        'answers' => ['auth_lib#0' => 2],
-        'scores' => ['auth_lib' => 0.5],
-        'align' => ['west' => 2],
-        'spectrum' => 'tech_reform',
-        'consistency' => 0.5,
-        'answered' => 1,
-        'stats_consent' => true,
-    ], $overrides));
-}
-
 it('redirects guests and forbids accounts without the capability', function () {
     $this->get('/admin/compass')->assertRedirect();
 
@@ -51,9 +26,9 @@ it('redirects guests and forbids accounts without the capability', function () {
 });
 
 it('lets a capability holder and the superadmin in, and renders the stats', function () {
-    anonymousCompassRun();
+    compassRun();
 
-    $this->actingAs(compassStatsHolder())
+    $this->actingAs(moduleStaff('compass'))
         ->get('/admin/compass')
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
@@ -75,13 +50,13 @@ it('lets a capability holder and the superadmin in, and renders the stats', func
 });
 
 it('counts only anonymous rows that consented', function () {
-    anonymousCompassRun();                            // counted
-    anonymousCompassRun(['stats_consent' => false]);  // withdrawn on purpose
+    compassRun();                            // counted
+    compassRun(['stats_consent' => false]);  // withdrawn on purpose
 
     $owner = User::factory()->create();
-    anonymousCompassRun(['user_id' => $owner->id]);   // saved to an account, not stats
+    compassRun(['user_id' => $owner->id]);   // saved to an account, not stats
 
-    $this->actingAs(compassStatsHolder())
+    $this->actingAs(moduleStaff('compass'))
         ->get('/admin/compass')
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page

@@ -6,6 +6,8 @@ use App\Http\Controllers\Concerns\ChecksTransitScope;
 use App\Models\RouteDraft;
 use App\Models\User;
 use App\Services\Transit\TransitCache;
+use App\Support\Facts;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -72,7 +74,7 @@ class TransitStudioController extends Controller
             'name_ar' => 'required|string|max:255',
             'name_en' => 'nullable|string|max:255',
             'price' => 'nullable|integer',
-            'color_index' => 'nullable|integer|min:0|max:20',
+            'color_index' => 'nullable|integer|min:0|max:'.Facts::transit()['color_index_max'],
             'notes' => 'nullable|string',
             'geojson' => 'required|array',
             'geojson.features' => 'required|array|min:1|max:500',
@@ -202,7 +204,7 @@ class TransitStudioController extends Controller
             'name_ar' => 'sometimes|string|max:255',
             'name_en' => 'nullable|string|max:255',
             'price' => 'nullable|integer',
-            'color_index' => 'nullable|integer|min:0|max:20',
+            'color_index' => 'nullable|integer|min:0|max:'.Facts::transit()['color_index_max'],
             'notes' => 'nullable|string',
             'geojson' => 'sometimes|array',
             'geojson.features' => 'required_with:geojson|array|min:1|max:500',
@@ -307,7 +309,7 @@ class TransitStudioController extends Controller
         // scope when they have one. This was a role list, so a user granted
         // transit.edit_routes without also holding the transit_admin role could
         // not edit a draft they were responsible for.
-        if ($user->hasPermission('transit.edit_routes')) {
+        if ($user->hasPermission(PermissionCatalogue::TRANSIT_EDIT_ROUTES)) {
             return $user->isSuperAdmin() || $scopeAllowsCity;
         }
 

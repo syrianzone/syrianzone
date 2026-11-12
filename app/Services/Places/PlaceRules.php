@@ -2,6 +2,7 @@
 
 namespace App\Services\Places;
 
+use App\Support\Facts;
 use Illuminate\Validation\Rule;
 
 /**
@@ -13,23 +14,12 @@ use Illuminate\Validation\Rule;
  * mean a new limit or a reworded refusal cannot reach only one surface.
  *
  * Bounds and lengths are constants rather than inline numbers so the rule text
- * and the message that quotes it stay in step.
+ * and the message that quotes it stay in step. The geography and the category
+ * vocabulary are not owned here: they are shared facts
+ * (resources/data/syria.json, places.json) that the browser reads too.
  */
 final class PlaceRules
 {
-    /**
-     * The Syrian box every coordinate must fall inside. Held as strings
-     * because the Arabic message prints them the way the forms show them
-     * ("32.0", not "32").
-     */
-    public const LAT_MIN = '32.0';
-
-    public const LAT_MAX = '37.5';
-
-    public const LNG_MIN = '35.5';
-
-    public const LNG_MAX = '42.5';
-
     public const MAX_NAME = 160;
 
     public const MIN_DESCRIPTION = 20;
@@ -43,12 +33,47 @@ final class PlaceRules
 
     public const MAX_PHOTO_EDGE = 6000;
 
-    public const STATUSES = ['pending', 'approved', 'rejected'];
+    /**
+     * The Syrian box every coordinate must fall inside, as the strings the
+     * Arabic message prints (the forms show "32.0", not "32"). The bounds
+     * themselves live in resources/data/syria.json, next to the box the client
+     * and the POI search use.
+     */
+    public static function latMin(): string
+    {
+        return self::bound('lat_min');
+    }
 
-    public const CATEGORIES = [
-        'historical', 'natural', 'cultural', 'religious',
-        'abandoned', 'viewpoint', 'market', 'food', 'other',
-    ];
+    public static function latMax(): string
+    {
+        return self::bound('lat_max');
+    }
+
+    public static function lngMin(): string
+    {
+        return self::bound('lng_min');
+    }
+
+    public static function lngMax(): string
+    {
+        return self::bound('lng_max');
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function statuses(): array
+    {
+        return Facts::placeStatuses();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function categories(): array
+    {
+        return Facts::placeCategories();
+    }
 
     /**
      * The box as [minLng, minLat, maxLng, maxLat].
@@ -57,10 +82,15 @@ final class PlaceRules
      */
     public static function syriaBox(): array
     {
-        return [
-            (float) self::LNG_MIN, (float) self::LAT_MIN,
-            (float) self::LNG_MAX, (float) self::LAT_MAX,
-        ];
+        return Facts::syriaBox();
+    }
+
+    /**
+     * One box boundary, printed the way the forms show it ("32.0", not "32").
+     */
+    private static function bound(string $edge): string
+    {
+        return number_format((float) Facts::syria()['bbox'][$edge], 1, '.', '');
     }
 
     /**
@@ -127,7 +157,7 @@ final class PlaceRules
     public function listFilters(): array
     {
         return [
-            'category' => ['sometimes', 'string', Rule::in(self::CATEGORIES)],
+            'category' => ['sometimes', 'string', Rule::in(self::categories())],
             'q' => ['sometimes', 'string', 'max:100'],
             'sort' => ['sometimes', Rule::in(['newest', 'popular'])],
             'user_id' => ['sometimes', 'integer', 'min:1'],
@@ -153,10 +183,12 @@ final class PlaceRules
      */
     public function nearby(): array
     {
+        $radius = Facts::places()['nearby'];
+
         return [
             'lat' => ['required', 'numeric', 'between:-90,90'],
             'lng' => ['required', 'numeric', 'between:-180,180'],
-            'radius_km' => ['sometimes', 'numeric', 'between:0.05,25'],
+            'radius_km' => ['sometimes', 'numeric', 'between:'.$radius['radius_km_min'].','.$radius['radius_km_max']],
             // Strict boolean rule rejects the "true"/"false" strings axios puts in query params.
             'include_pending' => ['sometimes', 'in:0,1,true,false'],
         ];
@@ -194,7 +226,7 @@ final class PlaceRules
     {
         return [
             ...($partial ? ['sometimes'] : []),
-            Rule::in([...self::STATUSES, 'all']),
+            Rule::in([...self::statuses(), 'all']),
         ];
     }
 
@@ -211,7 +243,7 @@ final class PlaceRules
      */
     public function category(bool $partial = false): array
     {
-        return [...($partial ? ['sometimes', 'required'] : ['required']), 'string', Rule::in(self::CATEGORIES)];
+        return [...($partial ? ['sometimes', 'required'] : ['required']), 'string', Rule::in(self::categories())];
     }
 
     /**
@@ -230,7 +262,7 @@ final class PlaceRules
      */
     public function lat(bool $partial = false): array
     {
-        return [...($partial ? ['sometimes', 'required'] : ['required']), 'numeric', 'between:'.self::LAT_MIN.','.self::LAT_MAX];
+        return [...($partial ? ['sometimes', 'required'] : ['required']), 'numeric', 'between:'.self::latMin().','.self::latMax()];
     }
 
     /**
@@ -238,7 +270,7 @@ final class PlaceRules
      */
     public function lng(bool $partial = false): array
     {
-        return [...($partial ? ['sometimes', 'required'] : ['required']), 'numeric', 'between:'.self::LNG_MIN.','.self::LNG_MAX];
+        return [...($partial ? ['sometimes', 'required'] : ['required']), 'numeric', 'between:'.self::lngMin().','.self::lngMax()];
     }
 
     /**
@@ -277,8 +309,8 @@ final class PlaceRules
         $pinRequired = 'حدد موقع المكان على الخريطة';
         $latNumber = 'خط العرض يجب أن يكون رقماً';
         $lngNumber = 'خط الطول يجب أن يكون رقماً';
-        $latBetween = sprintf('خط العرض يجب أن يكون بين %s و %s (داخل سوريا)', self::LAT_MIN, self::LAT_MAX);
-        $lngBetween = sprintf('خط الطول يجب أن يكون بين %s و %s (داخل سوريا)', self::LNG_MIN, self::LNG_MAX);
+        $latBetween = sprintf('خط العرض يجب أن يكون بين %s و %s (داخل سوريا)', self::latMin(), self::latMax());
+        $lngBetween = sprintf('خط الطول يجب أن يكون بين %s و %s (داخل سوريا)', self::lngMin(), self::lngMax());
         $photosRequired = 'أضف صورة واحدة على الأقل';
         $photosInvalid = 'صيغة الصور المرسلة غير صالحة';
         $photosMax = sprintf('الحد الأقصى %d صور', PlaceModerationService::MAX_PHOTOS_PER_PLACE);

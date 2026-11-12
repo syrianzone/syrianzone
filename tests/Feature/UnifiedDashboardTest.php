@@ -1,10 +1,8 @@
 <?php
 
 use App\Models\Poll;
-use App\Models\Route;
 use App\Models\User;
 use App\Support\Permissions\PermissionCatalogue;
-use Illuminate\Support\Facades\DB;
 
 test('cannot delete best-ministers poll', function () {
     $poll = Poll::factory()->create(['slug' => 'best-ministers']);
@@ -43,38 +41,11 @@ test('deleting user account soft deletes user and delegates polls and routes to 
 
     // Satisfy the routes.city_id foreign key; sqlite pragmas cannot be
     // toggled inside the test transaction, so insert a real city instead.
-    $geometry = function (array $shape) {
-        $json = json_encode($shape, JSON_THROW_ON_ERROR);
-        if (DB::connection()->getDriverName() === 'sqlite') {
-            return $json;
-        }
-
-        $quoted = DB::connection()->getPdo()->quote($json);
-
-        return DB::raw("ST_GeomFromGeoJSON({$quoted})");
-    };
-
-    DB::table('cities')->insert([
-        'id' => 'damascus',
-        'name_ar' => 'دمشق',
-        'name_en' => 'Damascus',
-        'center' => $geometry(['type' => 'Point', 'coordinates' => [36.29, 33.51]]),
-        'bounds' => $geometry([
-            'type' => 'Polygon',
-            'coordinates' => [[[35.8, 33.3], [36.8, 33.3], [36.8, 33.7], [35.8, 33.3]]],
-        ]),
-        'zoom' => 12,
-        'status' => 'active',
-        'created_at' => now(),
-        'updated_at' => now(),
-    ]);
+    seedCity('damascus', ['name_ar' => 'دمشق', 'name_en' => 'Damascus']);
 
     // Create a route owned by the deleting admin
-    $route = Route::create([
-        'id' => 'route-damascus-test',
-        'city_id' => 'damascus',
+    $route = transitRoute('route-damascus-test', 'damascus', [
         'name_ar' => 'مسار اختبار',
-        'status' => 'published',
         'user_id' => $admin->id,
     ]);
 

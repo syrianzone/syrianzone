@@ -4,12 +4,35 @@ import {
     HeartPulse, Hourglass, House, Landmark, Scale, ShoppingCart, Undo2, Users, Wallet, Wifi, Wrench,
     XCircle, Zap,
 } from 'lucide-react';
-import type { PromiseState, PromiseStatus } from './types';
+import raw from '../../../data/promises.json';
+import { PROMISE_STATE_KEYS, PROMISE_STATUS_KEYS, type PromiseState, type PromiseStatus } from './types';
 
 type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline';
 
+const BADGE_VARIANTS = ['default', 'secondary', 'destructive', 'outline'] as const;
+
+function isPromiseStateKey(value: string): value is PromiseState {
+    return (PROMISE_STATE_KEYS as readonly string[]).includes(value);
+}
+
+function isBadgeVariant(value: string): value is BadgeVariant {
+    return (BADGE_VARIANTS as readonly string[]).includes(value);
+}
+
+const STATE_ICONS: Record<PromiseState, LucideIcon> = {
+    pending: Hourglass,
+    in_progress: Wrench,
+    overdue: AlarmClock,
+    fulfilled: BadgeCheck,
+    partially_fulfilled: CircleDashed,
+    broken: XCircle,
+    postponed: CalendarClock,
+    retracted: Undo2,
+};
+
 /**
- * Display metadata per state. Colour is carried by badge variants and
+ * Display metadata per state, from resources/data/promises.json (the share-card
+ * resolver reads the same labels). Colour is carried by badge variants and
  * semantic tokens only (`text-destructive`, `text-primary`, …) so every theme,
  * including high-contrast, renders the states correctly.
  */
@@ -19,20 +42,24 @@ export const STATE_META: Record<PromiseState, {
     icon: LucideIcon;
     /** Token class for the big countdown number. */
     tone: string;
-}> = {
-    pending: { label: 'قيد الانتظار', variant: 'outline', icon: Hourglass, tone: 'text-foreground' },
-    in_progress: { label: 'قيد التنفيذ', variant: 'outline', icon: Wrench, tone: 'text-foreground' },
-    overdue: { label: 'متأخر', variant: 'destructive', icon: AlarmClock, tone: 'text-destructive' },
-    fulfilled: { label: 'تحقق', variant: 'default', icon: BadgeCheck, tone: 'text-primary' },
-    partially_fulfilled: { label: 'تحقق جزئياً', variant: 'secondary', icon: CircleDashed, tone: 'text-primary' },
-    broken: { label: 'لم يتحقق', variant: 'destructive', icon: XCircle, tone: 'text-destructive' },
-    postponed: { label: 'أُجّل', variant: 'secondary', icon: CalendarClock, tone: 'text-muted-foreground' },
-    retracted: { label: 'سُحب', variant: 'secondary', icon: Undo2, tone: 'text-muted-foreground' },
-};
+}> = Object.fromEntries(
+    raw.states.map((state): [PromiseState, { label: string; variant: BadgeVariant; icon: LucideIcon; tone: string }] => {
+        if (!isPromiseStateKey(state.key)) {
+            throw new Error(`Unknown promise state in resources/data/promises.json: ${state.key}`);
+        }
+        if (!isBadgeVariant(state.badge_variant)) {
+            throw new Error(`Unknown badge variant in resources/data/promises.json: ${state.badge_variant}`);
+        }
+        return [state.key, {
+            label: state.label,
+            variant: state.badge_variant,
+            icon: STATE_ICONS[state.key],
+            tone: state.tone,
+        }];
+    }),
+) as Record<PromiseState, { label: string; variant: BadgeVariant; icon: LucideIcon; tone: string }>;
 
-export const STATUS_ORDER: PromiseStatus[] = [
-    'pending', 'in_progress', 'fulfilled', 'partially_fulfilled', 'broken', 'postponed', 'retracted',
-];
+export const STATUS_ORDER: PromiseStatus[] = [...PROMISE_STATUS_KEYS];
 
 export const VENUE_LABEL: Record<string, string> = {
     x_post: 'منشور على إكس',

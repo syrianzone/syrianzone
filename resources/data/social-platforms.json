@@ -1,0 +1,14 @@
+[
+  { "key": "facebook", "label_ar": "فيسبوك", "label_en": "Facebook" },
+  { "key": "facebook_secondary", "label_ar": "فيسبوك (احتياطي)", "label_en": "Facebook (Secondary)" },
+  { "key": "instagram", "label_ar": "إنستغرام", "label_en": "Instagram" },
+  { "key": "instagram_secondary", "label_ar": "إنستغرام (احتياطي)", "label_en": "Instagram (Secondary)" },
+  { "key": "twitter", "label_ar": "تويتر / منصة إكس", "label_en": "Twitter / X" },
+  { "key": "twitter_secondary", "label_ar": "تويتر / منصة إكس (احتياطي)", "label_en": "Twitter / X (Secondary)" },
+  { "key": "telegram", "label_ar": "تلغرام", "label_en": "Telegram" },
+  { "key": "telegram_secondary", "label_ar": "تلغرام (احتياطي)", "label_en": "Telegram (Secondary)" },
+  { "key": "linkedin", "label_ar": "لينكد إن", "label_en": "LinkedIn" },
+  { "key": "youtube", "label_ar": "يوتيوب", "label_en": "YouTube" },
+  { "key": "whatsapp", "label_ar": "واتساب", "label_en": "WhatsApp" },
+  { "key": "website", "label_ar": "الموقع الرسمي", "label_en": "Official Website" }
+]

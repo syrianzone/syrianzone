@@ -20,8 +20,6 @@ final class PollPreview implements CardSource, PreviewResolver
      * The government tier list is this poll under its own address. Both URLs
      * render the same records, so the poll URLs point at /tierlist.
      */
-    private const TIER_LIST_SLUG = 'best-ministers';
-
     private const PARENT = ['/polls', 'الاستبيانات واستطلاعات الرأي'];
 
     public static function cardType(): string
@@ -48,7 +46,7 @@ final class PollPreview implements CardSource, PreviewResolver
 
         $leaderboard = isset($m[2]);
 
-        if ($poll->slug === self::TIER_LIST_SLUG) {
+        if ($poll->slug === Poll::coreSlug()) {
             $page = SeoMeta::fixedPage($leaderboard ? '/tierlist/leaderboard' : '/tierlist');
 
             return new Preview(
@@ -83,7 +81,7 @@ final class PollPreview implements CardSource, PreviewResolver
     {
         $poll = Poll::where('slug', $key)->first();
 
-        return $poll === null || $poll->slug === self::TIER_LIST_SLUG ? null : $this->describe($poll);
+        return $poll === null || $poll->slug === Poll::coreSlug() ? null : $this->describe($poll);
     }
 
     private function describe(Poll $poll): RecordCard

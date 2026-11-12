@@ -7,7 +7,7 @@ test('guests cannot write user settings', function () {
 });
 
 test('user settings accept the sync keys', function () {
-  $user = User::factory()->create(['role' => 'user']);
+  $user = User::factory()->create();
 
   $this->actingAs($user)->postJson('/api/user/settings', ['settings' => [
     'governorate' => 'aleppo',
@@ -34,7 +34,7 @@ test('user settings merge instead of replacing', function () {
 });
 
 test('user settings reject oversized or invalid sync payloads', function () {
-  $user = User::factory()->create(['role' => 'user']);
+  $user = User::factory()->create();
 
   // unknown method + out-of-range page
   $this->actingAs($user)->postJson('/api/user/settings', ['settings' => ['muslimMethod' => 6]])->assertStatus(422);

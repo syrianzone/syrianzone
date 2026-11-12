@@ -310,7 +310,7 @@ events.
 - The **SANA source link appears three times** (`:1106-1114`, `:1244-1252`,
   `:1264-1266`); the bottom notes card restates the holiday card.
 - **Three related governorate maps** in one file (`:35-66`, `:82-97`), the last
-  duplicating `MUSLIM_GOVERNORATES`.
+  duplicating the shared governorate table (`Domain/geography/governorates.ts`).
 - Local `formatDuration` copy (`:637-645`) duplicates `Muslim/_lib/format.ts`.
 
 **Small details / bugs.**
@@ -324,7 +324,7 @@ events.
 
 **Proposals (P1).** One settings entry; remove the duplicate next-event block;
 one notes/source location; **render the selected method's name/detail** from
-`PRAYER_METHODS`; import `MUSLIM_GOVERNORATES`; persist + rename the events
+`PRAYER_METHODS`; import `GOVERNORATES` from `Domain/geography/governorates`; persist + rename the events
 toggle; render a shell instead of `null`.
 
 ---

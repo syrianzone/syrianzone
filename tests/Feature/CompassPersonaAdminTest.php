@@ -15,11 +15,6 @@ use Inertia\Testing\AssertableInertia as Assert;
 |
 */
 
-function compassPersonaManager(): User
-{
-    return User::factory()->create(['role' => 'user', 'permissions' => ['compass.personas']]);
-}
-
 it('gates the personas manager behind compass.personas', function () {
     $this->get('/admin/compass/personas')->assertRedirect();
     $this->getJson('/api/v1/admin/compass/personas')->assertUnauthorized();
@@ -37,12 +32,12 @@ it('seeds personas enabled by default', function () {
 });
 
 it('lets a compass.personas holder and the superadmin manage personas', function () {
-    $this->actingAs(compassPersonaManager())
+    $this->actingAs(capabilityUser('compass.personas'))
         ->get('/admin/compass/personas')
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page->component('Admin/Compass/Personas')->has('personas'));
 
-    $created = $this->actingAs(compassPersonaManager())
+    $created = $this->actingAs(capabilityUser('compass.personas'))
         ->postJson('/api/v1/admin/compass/personas', [
             'name' => 'نمط جديد',
             'icon' => 'Flag',
@@ -57,7 +52,7 @@ it('lets a compass.personas holder and the superadmin manage personas', function
         ->assertJsonPath('persona.slug', 'nmt-gdyd')
         ->json('persona');
 
-    $this->actingAs(compassPersonaManager())
+    $this->actingAs(capabilityUser('compass.personas'))
         ->putJson("/api/v1/admin/compass/personas/{$created['id']}", [
             'name' => 'نمط معدّل',
             'enabled' => false,
@@ -66,12 +61,12 @@ it('lets a compass.personas holder and the superadmin manage personas', function
         ->assertOk()
         ->assertJsonPath('persona.enabled', false);
 
-    $this->actingAs(compassPersonaManager())
+    $this->actingAs(capabilityUser('compass.personas'))
         ->postJson("/api/v1/admin/compass/personas/{$created['id']}/toggle")
         ->assertOk()
         ->assertJsonPath('enabled', true);
 
-    $this->actingAs(compassPersonaManager())
+    $this->actingAs(capabilityUser('compass.personas'))
         ->deleteJson("/api/v1/admin/compass/personas/{$created['id']}")
         ->assertOk();
 
@@ -80,7 +75,7 @@ it('lets a compass.personas holder and the superadmin manage personas', function
 });
 
 it('drops blank range rows rather than storing them', function () {
-    $created = $this->actingAs(compassPersonaManager())
+    $created = $this->actingAs(capabilityUser('compass.personas'))
         ->postJson('/api/v1/admin/compass/personas', [
             'name' => 'نطاقات',
             'center' => [],

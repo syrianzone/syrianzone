@@ -16,6 +16,7 @@ import {
     TableRow,
 } from "@/Components/ui/table";
 import MainLayout from '@/Layouts/MainLayout';
+import { useCanAny } from '@/Lib/useCan';
 
 interface PhonebookEntry {
     id: string;
@@ -35,16 +36,10 @@ interface PhonebookProps {
 
 export default function Index({ initialData }: PhonebookProps) {
     const page = usePage();
-    const { auth } = page.props as any;
-    const user = auth?.user;
     // Server-resolved capabilities (role implications already applied), not the
-    // raw permissions array: a phonebook_admin holds phonebook.* implicitly
-    // with an empty array, and the old check hid the admin UI from them even
-    // though the phonebook_admin middleware lets them through.
-    const effective: string[] = Array.isArray(user?.effective_permissions)
-        ? user.effective_permissions
-        : [];
-    const canManage = effective.includes('phonebook.edit') || effective.includes('phonebook.create');
+    // raw permissions array. The old role check hid the admin UI from a plain
+    // account that had been granted phonebook.* explicitly.
+    const canManage = useCanAny()('phonebook.edit', 'phonebook.create');
 
     // A shared search link carries `?q=`. It is read from the page URL, which
     // the server and the browser both have, so the list is filtered in the

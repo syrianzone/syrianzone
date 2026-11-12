@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { inSyriaBox } from '@/Domain/geography/syria';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -63,7 +64,7 @@ export function EditPlaceDialog(props: {
   async function save() {
     const latNum = Number(lat);
     const lngNum = Number(lng);
-    if (Number.isNaN(latNum) || Number.isNaN(lngNum) || latNum < 32.0 || latNum > 37.5 || lngNum < 35.5 || lngNum > 42.5) {
+    if (Number.isNaN(latNum) || Number.isNaN(lngNum) || !inSyriaBox({ lat: latNum, lng: lngNum })) {
       setError('الإحداثيات خارج حدود سوريا');
       return;
     }

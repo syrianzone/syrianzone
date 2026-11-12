@@ -89,6 +89,15 @@ export default function AppearanceMenu({ className }: { className?: string }) {
                             <div className="flex items-center gap-2 mb-3">
                                 {heritageThemes.map((t) => {
                                     const isActive = currentTheme === t.id;
+                                    const swatch = (
+                                        <span
+                                            aria-hidden="true"
+                                            className="w-4 h-4 rounded-full shrink-0 overflow-hidden shadow-sm"
+                                            style={{ background: t.bg, border: `2px solid ${t.primary}` }}
+                                        >
+                                            <span className="block" style={{ background: t.primary, height: '50%', marginTop: '50%' }} />
+                                        </span>
+                                    );
                                     return (
                                         <button
                                             key={t.id}
@@ -97,25 +106,9 @@ export default function AppearanceMenu({ className }: { className?: string }) {
                                             onClick={() => handleThemeChange(t.id)}
                                             className={`flex flex-1 items-center justify-center gap-1.5 rounded-md border px-2 py-1.5 text-xs font-medium transition-colors ${isActive ? 'border-primary bg-accent text-accent-foreground' : 'border-border text-foreground hover:border-primary'}`}
                                         >
-                                            {t.id !== 'damascus-rose' && (
-                                                <span
-                                                    aria-hidden="true"
-                                                    className="w-4 h-4 rounded-full shrink-0 overflow-hidden shadow-sm"
-                                                    style={{ background: t.bg, border: `2px solid ${t.primary}` }}
-                                                >
-                                                    <span className="block" style={{ background: t.primary, height: '50%', marginTop: '50%' }} />
-                                                </span>
-                                            )}
+                                            {t.id !== 'damascus-rose' && swatch}
                                             <span>{t.shortNameAr ?? t.nameAr}</span>
-                                            {t.id === 'damascus-rose' && (
-                                                <span
-                                                    aria-hidden="true"
-                                                    className="w-4 h-4 rounded-full shrink-0 overflow-hidden shadow-sm"
-                                                    style={{ background: t.bg, border: `2px solid ${t.primary}` }}
-                                                >
-                                                    <span className="block" style={{ background: t.primary, height: '50%', marginTop: '50%' }} />
-                                                </span>
-                                            )}
+                                            {t.id === 'damascus-rose' && swatch}
                                             {isActive && <Check aria-hidden="true" className="h-3.5 w-3.5 text-primary" />}
                                         </button>
                                     );

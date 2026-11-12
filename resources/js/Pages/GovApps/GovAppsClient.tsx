@@ -2,8 +2,7 @@ import React from 'react';
 import { GovApp } from './types';
 import { Card, CardContent } from "@/components/ui/card";
 import { Smartphone, Globe, Pencil, Settings } from "lucide-react";
-import { usePage } from '@inertiajs/react';
-import { canAny, canModule } from '@/Lib/permissions'
+import { useCanAny, useCanModule } from '@/Lib/useCan';
 import SmartFilterSearch from '@/Components/SmartFilterSearch';
 import { matchesFilterText, type SmartFilterFacet, type SmartFilterValue } from '@/Lib/smartFilterSearch';
 
@@ -89,16 +88,16 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
             && (!platforms.length || PLATFORMS.some(({ value: key }) => platforms.includes(key) && app.links?.[key]?.trim()))
         ));
     }, [initialData, value]);
-    const { auth } = usePage().props as any;
-    const perms = auth?.user?.effective_permissions;
+    const canModule = useCanModule();
+    const canAny = useCanAny();
     // Gated per action, matching the route each link opens. This used to test
     // three role strings including govapps_admin — a role that stopped granting
     // anything when the role prefixes were removed, so a govapps_admin account
     // was offered an edit control that 403s.
     //   panel link  -> govapps_admin:any
     //   edit pencil -> govapps.edit (the save it leads to)
-    const canOpenPanel = canModule(perms, 'govapps');
-    const canEditEntries = canAny(perms, 'govapps.edit');
+    const canOpenPanel = canModule('govapps');
+    const canEditEntries = canAny('govapps.edit');
 
     return (
         <div className="min-h-screen bg-background" dir="rtl">

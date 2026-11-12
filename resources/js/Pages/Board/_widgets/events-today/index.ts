@@ -1,6 +1,6 @@
 import { lazy } from 'react';
 import { CalendarDays } from 'lucide-react';
-import { GOVERNORATE_OPTIONS } from '../../_lib/governorates';
+import { governorateOptions } from '@/Domain/geography/governorates';
 import type { WidgetDefinition } from '../../_lib/types';
 
 export interface EventsTodayConfig {
@@ -26,7 +26,7 @@ export const eventsTodayWidget: WidgetDefinition<EventsTodayConfig> = {
       type: 'select',
       label: 'المحافظة',
       default: 'damascus',
-      options: [...GOVERNORATE_OPTIONS, { value: ALL_SYRIA, label: 'كل سوريا' }],
+      options: [...governorateOptions(), { value: ALL_SYRIA, label: 'كل سوريا' }],
     },
   ],
   requires: [],

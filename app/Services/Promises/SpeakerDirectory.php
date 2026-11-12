@@ -378,7 +378,7 @@ class SpeakerDirectory
     private function candidates(bool $forStaff): Builder
     {
         return Candidate::query()->when(! $forStaff, fn ($q) => $q
-            ->whereHas('poll', fn ($p) => $p->where('slug', Poll::CORE_POLL_SLUG))
+            ->whereHas('poll', fn ($p) => $p->where('slug', Poll::coreSlug()))
             ->where(fn ($g) => $g
                 ->whereNull('candidate_group_id')
                 ->orWhereHas('group', fn ($c) => $c->where('is_active', true))));

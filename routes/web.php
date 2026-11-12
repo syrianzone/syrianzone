@@ -288,8 +288,6 @@ Route::middleware('auth:web,sanctum')->group(function () {
     });
 
     Route::middleware(['auth:web,sanctum', 'superadmin'])->group(function () {
-        Route::get('/admin/assets', [AssetUploadController::class, 'index']);
-
         // Staff CRUD: one definition, mounted under the canonical
         // /api/v1/admin prefix (which owns the route names) and the older /api
         // prefix.
@@ -304,42 +302,6 @@ Route::middleware('auth:web,sanctum')->group(function () {
         Route::prefix('api/v1/admin')->group(fn () => $adminUserRoutes('api.v1.admin.'));
         Route::prefix('api')->group(fn () => $adminUserRoutes(null));
 
-        // Asset manager: one definition, mounted under the RESTful paths
-        // (/api/v1/admin/assets) and the older RPC paths
-        // (/api/v1/admin/assets/list…). Only the RESTful mount has the manifest
-        // route and the route names.
-        $adminAssetRoutes = function (bool $rpc): void {
-            $name = fn (string $suffix): ?string => $rpc ? null : 'api.v1.admin.assets.'.$suffix;
-
-            Route::get($rpc ? '/assets/list' : '/assets', [AssetUploadController::class, 'list'])
-                ->name($name('index'));
-            if (! $rpc) {
-                Route::get('/assets/manifest', [AssetUploadController::class, 'manifest'])
-                    ->name($name('manifest'));
-            }
-            Route::post($rpc ? '/assets/upload' : '/assets', [AssetUploadController::class, 'store'])
-                ->name($name('store'));
-            Route::delete($rpc ? '/assets/delete' : '/assets', [AssetUploadController::class, 'destroy'])
-                ->name($name('destroy'));
-        };
-
-        Route::prefix('api/v1/admin')->group(function () use ($adminAssetRoutes) {
-            $adminAssetRoutes(false);
-            $adminAssetRoutes(true);
-        });
-
-        Route::get('/admin/site-popup', [SitePopupAdminController::class, 'renderIndex']);
-        Route::get('/api/v1/admin/site-popup', [SitePopupAdminController::class, 'show'])
-            ->name('api.v1.admin.site-popup.show');
-        Route::put('/api/v1/admin/site-popup', [SitePopupAdminController::class, 'update'])
-            ->name('api.v1.admin.site-popup.update');
-
-        Route::get('/admin/navigation', [SiteNavigationAdminController::class, 'renderIndex']);
-        Route::get('/api/v1/admin/navigation', [SiteNavigationAdminController::class, 'show'])
-            ->name('api.v1.admin.navigation.show');
-        Route::put('/api/v1/admin/navigation', [SiteNavigationAdminController::class, 'update'])
-            ->name('api.v1.admin.navigation.update');
-
         // Revoking every token of a user is superadmin-only: it also ends that
         // user's mobile sessions, so it is a leak response, not self-service.
         // The page, minting and single revocation are in the agent_tokens
@@ -351,6 +313,63 @@ Route::middleware('auth:web,sanctum')->group(function () {
         Route::post('/api/v1/admin/api-tokens/revoke-all/{userId}', [ApiTokenAdminController::class, 'revokeAllForUser'])
             ->whereNumber('userId')
             ->middleware('agent_tokens');
+    });
+
+    // Hosted-file manager. Was superadmin-only because the group had no
+    // capability; `assets.manage` is granted to the superadmin role through
+    // User::effectivePermissions(), so the default audience is unchanged.
+    Route::middleware('assets_admin')->group(function () {
+        Route::get('/admin/assets', [AssetUploadController::class, 'index'])
+            ->middleware('assets_admin:assets.manage');
+
+        // Asset manager: one definition, mounted under the RESTful paths
+        // (/api/v1/admin/assets) and the older RPC paths
+        // (/api/v1/admin/assets/list…). Only the RESTful mount has the manifest
+        // route and the route names.
+        $adminAssetRoutes = function (bool $rpc): void {
+            $name = fn (string $suffix): ?string => $rpc ? null : 'api.v1.admin.assets.'.$suffix;
+
+            Route::get($rpc ? '/assets/list' : '/assets', [AssetUploadController::class, 'list'])
+                ->middleware('assets_admin:assets.manage')
+                ->name($name('index'));
+            if (! $rpc) {
+                Route::get('/assets/manifest', [AssetUploadController::class, 'manifest'])
+                    ->middleware('assets_admin:assets.manage')
+                    ->name($name('manifest'));
+            }
+            Route::post($rpc ? '/assets/upload' : '/assets', [AssetUploadController::class, 'store'])
+                ->middleware('assets_admin:assets.manage')
+                ->name($name('store'));
+            Route::delete($rpc ? '/assets/delete' : '/assets', [AssetUploadController::class, 'destroy'])
+                ->middleware('assets_admin:assets.manage')
+                ->name($name('destroy'));
+        };
+
+        Route::prefix('api/v1/admin')->group(function () use ($adminAssetRoutes) {
+            $adminAssetRoutes(false);
+            $adminAssetRoutes(true);
+        });
+    });
+
+    // Site-wide settings: the homepage popup and the navigation/icon catalogue.
+    Route::middleware('site_admin')->group(function () {
+        Route::get('/admin/site-popup', [SitePopupAdminController::class, 'renderIndex'])
+            ->middleware('site_admin:site.popup');
+        Route::get('/api/v1/admin/site-popup', [SitePopupAdminController::class, 'show'])
+            ->middleware('site_admin:site.popup')
+            ->name('api.v1.admin.site-popup.show');
+        Route::put('/api/v1/admin/site-popup', [SitePopupAdminController::class, 'update'])
+            ->middleware('site_admin:site.popup')
+            ->name('api.v1.admin.site-popup.update');
+
+        Route::get('/admin/navigation', [SiteNavigationAdminController::class, 'renderIndex'])
+            ->middleware('site_admin:site.navigation');
+        Route::get('/api/v1/admin/navigation', [SiteNavigationAdminController::class, 'show'])
+            ->middleware('site_admin:site.navigation')
+            ->name('api.v1.admin.navigation.show');
+        Route::put('/api/v1/admin/navigation', [SiteNavigationAdminController::class, 'update'])
+            ->middleware('site_admin:site.navigation')
+            ->name('api.v1.admin.navigation.update');
     });
 
     // Agent API tokens (see docs/modules/agent-mcp.md). Open to any account
@@ -457,34 +476,43 @@ Route::middleware('auth:web,sanctum')->group(function () {
 
     // Guess Who content management (migrated from Filament).
     //
-    // Superadmin only. This was `middleware('admin')`, and with the `admin` role
-    // on its way out the choice was between minting a `guesswho.*` capability for
-    // a novelty game with one operator, and narrowing to superadmin. Narrowing
-    // was the decision, so this is the one place Phase C removes access rather
-    // than re-expresses it: anyone who was operating Guess Who as `admin` needs
-    // promoting to superadmin.
-    Route::middleware('superadmin')->group(function () {
-        Route::get('/admin/guesswho', [GuessWhoAdminController::class, 'renderIndex']);
+    // Was gated on the `superadmin` role because the novelty game had no
+    // capability ids. It now has `guesswho.manage`, which only the superadmin
+    // role holds by default (User::effectivePermissions() resolves the whole
+    // catalogue), so the audience is unchanged.
+    Route::middleware('guesswho_admin')->group(function () {
+        Route::get('/admin/guesswho', [GuessWhoAdminController::class, 'renderIndex'])
+            ->middleware('guesswho_admin:guesswho.manage');
 
         Route::prefix('api/v1/admin/guesswho')->group(function () {
             Route::post('/categories', [GuessWhoAdminController::class, 'storeCategory'])
+                ->middleware('guesswho_admin:guesswho.manage')
                 ->name('api.v1.admin.guesswho.categories.store');
-            Route::post('/categories/{id}', [GuessWhoAdminController::class, 'updateCategory'])->whereNumber('id');
+            Route::post('/categories/{id}', [GuessWhoAdminController::class, 'updateCategory'])
+                ->whereNumber('id')
+                ->middleware('guesswho_admin:guesswho.manage');
             Route::put('/categories/{id}', [GuessWhoAdminController::class, 'updateCategory'])
                 ->whereNumber('id')
+                ->middleware('guesswho_admin:guesswho.manage')
                 ->name('api.v1.admin.guesswho.categories.update');
             Route::delete('/categories/{id}', [GuessWhoAdminController::class, 'destroyCategory'])
                 ->whereNumber('id')
+                ->middleware('guesswho_admin:guesswho.manage')
                 ->name('api.v1.admin.guesswho.categories.destroy');
 
             Route::post('/characters', [GuessWhoAdminController::class, 'storeCharacter'])
+                ->middleware('guesswho_admin:guesswho.manage')
                 ->name('api.v1.admin.guesswho.characters.store');
-            Route::post('/characters/{id}', [GuessWhoAdminController::class, 'updateCharacter'])->whereNumber('id');
+            Route::post('/characters/{id}', [GuessWhoAdminController::class, 'updateCharacter'])
+                ->whereNumber('id')
+                ->middleware('guesswho_admin:guesswho.manage');
             Route::put('/characters/{id}', [GuessWhoAdminController::class, 'updateCharacter'])
                 ->whereNumber('id')
+                ->middleware('guesswho_admin:guesswho.manage')
                 ->name('api.v1.admin.guesswho.characters.update');
             Route::delete('/characters/{id}', [GuessWhoAdminController::class, 'destroyCharacter'])
                 ->whereNumber('id')
+                ->middleware('guesswho_admin:guesswho.manage')
                 ->name('api.v1.admin.guesswho.characters.destroy');
         });
     });

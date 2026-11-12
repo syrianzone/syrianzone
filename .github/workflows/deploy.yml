@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   tests:
-    name: run PHP tests
+    name: run tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -38,6 +38,11 @@ jobs:
         run: |
           bun install --frozen-lockfile
           bun run build
+
+      - name: type-check and run frontend tests
+        run: |
+          bunx tsc --noEmit
+          bun run test:js
 
       - name: run test suite
         run: php artisan test

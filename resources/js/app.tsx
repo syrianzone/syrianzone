@@ -1,7 +1,7 @@
 import './bootstrap';
 import '../css/app.css';
 
-import React, { Suspense } from 'react';
+import React, { Suspense, type ComponentType } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createInertiaApp, router } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
@@ -35,7 +35,7 @@ watchSystemTheme();
 
 const appName = import.meta.env.VITE_APP_NAME || 'Syrian Zone';
 
-const pages = import.meta.glob('./Pages/**/*.tsx');
+const pages = import.meta.glob<{ default: ComponentType }>('./Pages/**/*.tsx');
 
 createInertiaApp({
     // SeoHead supplies the full title (already carrying the brand), so the
@@ -48,9 +48,7 @@ createInertiaApp({
 
         if (name.startsWith('Transit/admin')) {
             return {
-                default: React.lazy(() =>
-                    typeof page === 'function' ? page() : Promise.resolve(page)
-                ),
+                default: React.lazy(page),
             };
         }
 

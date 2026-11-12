@@ -56,10 +56,10 @@ export default function PlayingCard({
   } ${extra ?? ''}`;
 
   const SUIT_AR: Record<Card["suit"], string> = {
-    spades: "بستوني",
-    hearts: "كبة",
-    diamonds: "ديناري",
-    clubs: "سباتي",
+    S: "بستوني",
+    H: "كبة",
+    D: "ديناري",
+    C: "سباتي",
   };
   const accessibleLabel = `${RANK_LABEL[card.rank]} ${SUIT_AR[card.suit]} (${SUIT_LABEL[card.suit]})${
     picked ? " — محددة" : ""

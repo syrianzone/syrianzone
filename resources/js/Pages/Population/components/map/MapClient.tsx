@@ -97,7 +97,7 @@ export default function MapClient({
                 nothing can detach it from the cursor. */}
             <div ref={tipRef} className="atlas-cursor-tooltip" style={{ display: 'none' }} />
 
-            <style jsx global>{`
+            <style>{`
                 /* --- ANIMATIONS --- */
                 @keyframes pulse-glow {
                     0%, 100% { filter: drop-shadow(0 0 2px rgba(34, 211, 238, 0.3)); }

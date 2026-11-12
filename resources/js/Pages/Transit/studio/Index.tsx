@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { router, Link, usePage } from '@inertiajs/react';
-import type { FeatureCollection, Position } from 'geojson'
+import type { Feature, FeatureCollection, Position } from 'geojson'
 import {
   Route,
   MapPin,
@@ -218,7 +218,7 @@ function TransitStudioPageContent() {
   const mapRef       = useRef<maplibregl.Map | null>(null)
   const currentStyleRef = useRef<string | null>(null)
   const modeRef      = useRef<DrawMode>('idle')
-  const activeLine   = useRef<Position[]>([])
+  const activeLine   = useRef<[number, number][]>([])
   const isMobileRef  = useRef(false)
   const vertexMarkersRef = useRef<maplibregl.Marker[]>([])
   const stopMarkersRef = useRef<maplibregl.Marker[]>([])
@@ -1059,20 +1059,21 @@ function TransitStudioPageContent() {
 
     setSubmitting(true)
 
+    const features: Feature[] = [
+      {
+        type: 'Feature',
+        properties: { colorIndex, color_index: colorIndex },
+        geometry: { type: 'LineString', coordinates: drawnLine },
+      },
+      ...stops.map((s): Feature => ({
+        type: 'Feature',
+        properties: { nameAr: s.nameAr },
+        geometry: { type: 'Point', coordinates: s.coordinates },
+      })),
+    ]
     const geojson: FeatureCollection = {
       type: 'FeatureCollection',
-      features: [
-        {
-          type: 'Feature',
-          properties: { colorIndex, color_index: colorIndex },
-          geometry: { type: 'LineString', coordinates: drawnLine },
-        },
-        ...stops.map((s) => ({
-          type: 'Feature',
-          properties: { nameAr: s.nameAr },
-          geometry: { type: 'Point' as const, coordinates: s.coordinates },
-        })),
-      ],
+      features,
     }
 
     const payload = {
@@ -1168,7 +1169,7 @@ function TransitStudioPageContent() {
           isAnonymous={lastSubmittedIsAnon}
           onReset={handleReset}
           onEdit={() => { setSubmittedDraftId(null); setAccordionValue('details') }}
-          onExit={() => router.push(cityId ? `/transit/city/${cityId}` : '/transit')}
+          onExit={() => router.visit(cityId ? `/transit/city/${cityId}` : '/transit')}
         />
       ) : (
         <>

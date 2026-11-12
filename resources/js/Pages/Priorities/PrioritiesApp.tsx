@@ -286,7 +286,7 @@ export default function PrioritiesApp() {
     const alerts: Array<{
       subId: string;
       subName: string;
-      parentEmoji: string;
+      parentId: string;
       parentName: string;
       isFulfilled: boolean;
       warningText: string;
@@ -1009,9 +1009,9 @@ export default function PrioritiesApp() {
                     axisLine={false}
                   />
                   <RechartsTooltip
-                    formatter={(value: number, name: string) => {
+                    formatter={(value, name) => {
                       const label = name === 'current' ? 'نقاط موازنتك الحالية' : COMPARISONS[activeComparisonKey]?.title || '';
-                      return [`%${value}`, label];
+                      return [`%${String(value ?? '')}`, label];
                     }}
                   />
                   <Legend

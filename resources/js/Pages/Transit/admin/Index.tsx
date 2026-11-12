@@ -266,7 +266,7 @@ function TransitAdminPageContent() {
   const { data: drafts = [], isLoading, error: draftsError } = useAdminDrafts(canReviewDrafts)
 
   const activeCityId = adminTab === 'drafts' ? selectedDraft?.city_id : adminTab === 'import' ? importCityId : selectedRoute?.city_id
-  const { data: refData, refetch: refetchRefData } = useMapData(activeCityId)
+  const { data: refData } = useMapData(activeCityId)
 
   const showToast = useCallback((msg: string, ok = true, href?: string, linkLabel?: string) => {
     if (!ok) {
@@ -638,10 +638,9 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
 
       queryClient.invalidateQueries({ queryKey: ['mapData'] })
       queryClient.invalidateQueries({ queryKey: ['routes'] })
-      try { refetchRefData?.() } catch { /* */ }
       try { fetchRoutes() } catch { /* */ }
     }
-  }, [selectedRoute, editRouteNameAr, editRouteNameEn, editRouteColorIndex, editRoutePrice, fetchRoutes, showToast, queryClient, refetchRefData])
+  }, [selectedRoute, editRouteNameAr, editRouteNameEn, editRouteColorIndex, editRoutePrice, fetchRoutes, showToast, queryClient])
 
   const handleQuickUpdateColor = useCallback(async (newColorIndex: number) => {
     if (!selectedRoute) return
@@ -693,10 +692,9 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
 
       queryClient.invalidateQueries({ queryKey: ['mapData'] })
       queryClient.invalidateQueries({ queryKey: ['routes'] })
-      try { refetchRefData?.() } catch { /* */ }
       try { fetchRoutes() } catch { /* */ }
     }
-  }, [selectedRoute, fetchRoutes, showToast, queryClient, refetchRefData])
+  }, [selectedRoute, fetchRoutes, showToast, queryClient])
 
   const handleDeleteRoute = useCallback(async () => {
     if (!selectedRoute) return
@@ -857,7 +855,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
                   <div className="text-center py-8 text-destructive text-sm">تعذّر تحميل البيانات</div>
                 ) : filteredDrafts.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground text-sm">لا توجد نتائج</div>
-                ) : filteredDrafts.map(draft => (
+                ) : filteredDrafts.map((draft: Draft) => (
                   <div key={draft.id}
                     className={`w-full text-right p-3 rounded-lg border transition-colors ${selectedDraft?.id === draft.id ? 'border-primary bg-primary/5' : 'border-border bg-background hover:border-primary/50'}`}>
                     <div className="flex items-start justify-between gap-2">

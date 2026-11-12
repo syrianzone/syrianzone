@@ -38,10 +38,10 @@ import { Badge } from '@/Components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useSiteNavigation } from '@/Lib/siteLinks';
 import { normalizeArabic } from '@/Lib/arabic';
-import { GAMES } from '@/Pages/Games/_lib/games';
-import { TOOLS as MUSLIM_TOOLS } from '@/Pages/Muslim/_lib/tools';
+import { GAMES, gameEntryHref } from '@/Pages/Games/_lib/games';
+import { TOOLS as MUSLIM_TOOLS, toolHref } from '@/Pages/Muslim/_lib/tools';
 import { useMuslimNav } from '@/Pages/Muslim/_lib/nav';
-import { crossings, statusOf, syriaMinutes } from '@/Pages/Crossings/_lib/crossings';
+import { STATUS_TEXT, crossings, statusOf, syriaMinutes } from '@/Pages/Crossings/_lib/crossings';
 import citiesData from '@/Pages/Transit/_data/cities.json';
 
 interface TransitCityItem {
@@ -321,7 +321,7 @@ export function useGlobalSearchData(query: string, scope: FilterScope, enabled =
     const matchedMuslimTools = useMemo(() => {
         if (scope !== 'all' && scope !== 'muslim') return [];
         return MUSLIM_TOOLS.filter((t) =>
-            matchesSearch(trimmedQuery, t.title, t.subtitle, t.description, 'صلاة قرآن اذاعة قبلة'),
+            matchesSearch(trimmedQuery, t.title, t.slug, 'صلاة قرآن اذاعة قبلة'),
         );
     }, [trimmedQuery, scope]);
 
@@ -337,7 +337,7 @@ export function useGlobalSearchData(query: string, scope: FilterScope, enabled =
     const matchedGames = useMemo(() => {
         if (scope !== 'all' && scope !== 'games') return [];
         return GAMES.filter((g) =>
-            matchesSearch(trimmedQuery, g.title, g.subtitle, g.description, 'لعبة العاب شدة ورق'),
+            matchesSearch(trimmedQuery, g.title, g.slug, 'لعبة العاب شدة ورق'),
         );
     }, [trimmedQuery, scope]);
 
@@ -710,9 +710,9 @@ export function SearchResultsContent({
                         const Icon = tool.icon;
                         return (
                             <ItemRow
-                                key={`muslim-${tool.id}`}
-                                value={`muslim-${tool.id}-${tool.title}`}
-                                onSelect={() => navigateTo(tool.href)}
+                                key={`muslim-${tool.slug}`}
+                                value={`muslim-${tool.slug}-${tool.title}`}
+                                onSelect={() => navigateTo(toolHref(tool.slug))}
                                 className="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 cursor-pointer"
                             >
                                 <div className="flex items-center gap-3 min-w-0">
@@ -722,9 +722,6 @@ export function SearchResultsContent({
                                     <div className="min-w-0">
                                         <span className="font-semibold text-sm text-foreground block truncate">
                                             {tool.title}
-                                        </span>
-                                        <span className="text-xs text-muted-foreground block truncate">
-                                            {tool.subtitle}
                                         </span>
                                     </div>
                                 </div>
@@ -771,9 +768,9 @@ export function SearchResultsContent({
                         const Icon = game.icon;
                         return (
                             <ItemRow
-                                key={`game-${game.id}`}
-                                value={`game-${game.id}-${game.title}`}
-                                onSelect={() => navigateTo(game.href, game.external)}
+                                key={`game-${game.slug}`}
+                                value={`game-${game.slug}-${game.title}`}
+                                onSelect={() => navigateTo(gameEntryHref(game), game.external)}
                                 className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-pointer"
                             >
                                 <div className="flex items-center gap-3 min-w-0">
@@ -783,9 +780,6 @@ export function SearchResultsContent({
                                     <div className="min-w-0">
                                         <span className="font-semibold text-sm text-foreground">
                                             {game.title}
-                                        </span>
-                                        <span className="ms-2 text-xs text-muted-foreground">
-                                            · {game.subtitle}
                                         </span>
                                     </div>
                                 </div>
@@ -800,7 +794,7 @@ export function SearchResultsContent({
             {matchedCrossings.length > 0 && (
                 <GroupWrapper heading="المنافذ والمعابر الحدودية">
                     {matchedCrossings.map((crossing) => {
-                        const isOpen = crossing.liveStatus.status === 'open';
+                        const isOpen = crossing.liveStatus === 'open';
                         return (
                             <ItemRow
                                 key={`crossing-${crossing.n}`}
@@ -829,7 +823,7 @@ export function SearchResultsContent({
                                             : 'border-border text-muted-foreground'
                                     }`}
                                 >
-                                    {crossing.liveStatus.headline}
+                                    {STATUS_TEXT[crossing.liveStatus]}
                                 </Badge>
                             </ItemRow>
                         );

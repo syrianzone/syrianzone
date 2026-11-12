@@ -261,7 +261,7 @@ export default function SiteNavigationAdminIndex({ navigation }: Props) {
             description: `هل أنت متأكد من حذف «${item.title || item.text}» من القائمة؟`,
             confirmText: 'حذف',
             cancelText: 'إلغاء',
-            variant: 'destructive',
+            destructive: true,
         });
         if (!confirmed) return;
 
@@ -305,7 +305,7 @@ export default function SiteNavigationAdminIndex({ navigation }: Props) {
                 'سيتم إرجاع جميع الأيقونات والأقسام والترتيب إلى الوضع الافتراضي للمنصة. هل تود المتابعة؟',
             confirmText: 'استعادة الافتراضي',
             cancelText: 'إلغاء',
-            variant: 'destructive',
+            destructive: true,
         });
         if (!confirmed) return;
 

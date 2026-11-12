@@ -217,7 +217,7 @@ function GamesNotFound({ path, onBack }: { path: string; onBack: () => void }) {
                 >
                     <div className="w-[var(--sz-card-w)] -rotate-6 transition-transform hover:-translate-y-1">
                         <PlayingCard
-                            card={{ id: '4s', suit: 'spades', rank: 4, faceUp: true }}
+                            card={{ id: 'S4', suit: 'S', rank: 4, faceUp: true }}
                             decorative
                             large
                         />
@@ -252,7 +252,7 @@ function GamesNotFound({ path, onBack }: { path: string; onBack: () => void }) {
 
                     <div className="w-[var(--sz-card-w)] rotate-6 transition-transform hover:-translate-y-1">
                         <PlayingCard
-                            card={{ id: '4h', suit: 'hearts', rank: 4, faceUp: true }}
+                            card={{ id: 'H4', suit: 'H', rank: 4, faceUp: true }}
                             decorative
                             large
                         />

@@ -12,7 +12,7 @@ import { getDeviceId } from "@/Lib/deviceId";
 import axios from "@/lib/axios";
 import JSZip from "jszip";
 
-type Candidate = {
+export type Candidate = {
     id: string;
     candidate_group_id?: string | null;
     name: string;
@@ -22,10 +22,11 @@ type Candidate = {
     category?: string | null; // Keep for legacy fallback if needed
 };
 
-type CandidateGroup = {
+export type CandidateGroup = {
     id: string;
     name: string;
     key?: string | null;
+    is_default?: boolean;
 };
 
 type Props = {
@@ -124,7 +125,7 @@ export default function TierBoard({
 
     // Initial selected category: default group or first group or "all"
     const [selectedGroupId, setSelectedGroupId] = useState<string>(
-        groups.find(g => (g as any).is_default)?.id || groups[0]?.id || "all"
+        groups.find(g => g.is_default)?.id || groups[0]?.id || "all"
     );
 
     const [bank, setBank] = useState<Candidate[]>([]);
@@ -447,8 +448,17 @@ export default function TierBoard({
         return extFromUrlPath(url) || extFromMime(blob.type) || 'png';
     }
 
+    // getOriginalImageUrl takes string URLs; a candidate's image fields are
+    // nullable because the API omits them when it has no image.
+    function originalImageUrl(candidate: Candidate): string {
+        return getOriginalImageUrl({
+            originalUrl: candidate.originalUrl ?? undefined,
+            imageUrl: candidate.imageUrl ?? undefined,
+        });
+    }
+
     async function downloadSingleCandidateImage(candidate: Candidate) {
-        const url = getOriginalImageUrl(candidate);
+        const url = originalImageUrl(candidate);
         if (!url) return;
         try {
             const res = await fetch(url);
@@ -474,7 +484,7 @@ export default function TierBoard({
         try {
             const zip = new JSZip();
             for (const c of candidates) {
-                const url = getOriginalImageUrl(c);
+                const url = originalImageUrl(c);
                 if (!url) continue;
                 const res = await fetch(url);
                 const blob = await res.blob();

@@ -109,7 +109,7 @@ export default function SyriaMap({ geoJsonData, selectedGovId }: SyriaMapProps) 
 
     return (
         <div className="w-full h-full relative rounded-xl overflow-hidden border-2 border-border shadow-lg">
-            <style jsx global>{`
+            <style>{`
                 .leaflet-container {
                     -webkit-tap-highlight-color: transparent;
                     outline: none;

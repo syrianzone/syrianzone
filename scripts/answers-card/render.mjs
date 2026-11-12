@@ -85,7 +85,7 @@ async function fetchNewAnswers() {
   const cutoff = Date.now() - LOOKBACK_HOURS * 3600e3
   const found = []
   for (let page = 1; page <= PAGES; page++) {
-    const { list } = await fetchApi(`/answer/api/v1/question/page?page=${page}&page_size=20&order=active`)
+    const { list, count } = await fetchApi(`/answer/api/v1/question/page?page=${page}&page_size=20&order=active`)
     for (const question of list || []) {
       if (!question.answer_count) continue
       // order=default ranks accepted/upvoted first, so a fresh answer on a
@@ -106,9 +106,10 @@ async function fetchNewAnswers() {
           }
           found.push({ question, answer })
         }
-        if (answerPage * 20 >= (answers.count || 0)) break
+        if (!answers.list?.length || answerPage * 20 >= (answers.count || 0)) break
       }
     }
+    if (!list?.length || page * 20 >= count) break
   }
   // Oldest first so the timeline reads in posting order.
   found.sort((a, b) => a.answer.create_time - b.answer.create_time)

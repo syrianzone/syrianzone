@@ -39,6 +39,9 @@ jobs:
           bun install --frozen-lockfile
           bun run build
 
+      - name: run answer renderer tests
+        run: node --test scripts/answers-card/render.test.mjs
+
       - name: run test suite
         run: php artisan test
 

@@ -10,4 +10,9 @@ class XApiException extends RuntimeException
     {
         parent::__construct($message);
     }
+
+    public function diagnosticMessage(): string
+    {
+        return $this->getMessage().($this->statusCode === null ? '' : " (HTTP {$this->statusCode})");
+    }
 }

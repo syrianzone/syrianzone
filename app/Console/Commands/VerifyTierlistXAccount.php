@@ -23,7 +23,7 @@ class VerifyTierlistXAccount extends Command
         try {
             $userId = $client->verifyExpectedUser();
         } catch (XApiException $exception) {
-            $this->error($exception->getMessage().'.');
+            $this->error($exception->diagnosticMessage().'.');
 
             return self::FAILURE;
         }

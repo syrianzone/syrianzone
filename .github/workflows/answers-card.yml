@@ -29,6 +29,9 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
+      - name: test answer pagination
+        run: node --test scripts/answers-card/render.test.mjs
+
       - name: render cards
         env:
           # Through env, not inline, so a crafted dispatch input cannot

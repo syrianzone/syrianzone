@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { SmartFilterValue } from '@/Lib/smartFilterSearch';
 import type { PromiseCardData } from './types';
-import { activeScoreboardState, canReturnToPromiseList, filterPromises, matchesState, promiseFilterFacets, promiseListUrl, promiseReturnUrl, readPromiseFilters, selectScoreboardState, visiblePromises } from './filters';
+import { activeScoreboardState, canReturnToPromiseList, filterPromises, matchesState, narrowFromChart, promiseFilterFacets, promiseListUrl, promiseReturnUrl, readPromiseFilters, selectScoreboardState, visiblePromises } from './filters';
 
 const facets = promiseFilterFacets({
     sectors: [{ id: 'energy', label: 'الكهرباء والطاقة', icon: null }, { id: 'health', label: 'الصحة', icon: null }],
@@ -125,5 +125,31 @@ describe('scoreboard tiles', () => {
         expect(selectScoreboardState(overdue, 'overdue')).toEqual({ ...empty, sort: 'newest' });
         expect(selectScoreboardState(overdue, null)).toEqual({ ...empty, sort: 'newest' });
         expect(selectScoreboardState(overdue, 'fulfilled').filters).toEqual({ state: ['fulfilled'] });
+    });
+});
+
+describe('narrowing from the charts view', () => {
+    const shown = (value: SmartFilterValue) => visiblePromises(filterPromises(promises, value), value, 30);
+    const withFilters = (filters: SmartFilterValue['filters']): SmartFilterValue => ({ ...empty, sort: 'newest', filters });
+
+    it('replaces the picked filter and keeps the others and the sort', () => {
+        expect(narrowFromChart(withFilters({ sector: ['energy', 'health'], tag: ['ماء & طاقة'] }), 'sector', 'health'))
+            .toEqual(withFilters({ sector: ['health'], tag: ['ماء & طاقة'] }));
+        expect(narrowFromChart(withFilters({ state: ['fulfilled', 'overdue'] }), 'state', 'overdue')).toEqual(withFilters({ state: ['overdue'] }));
+    });
+
+    it('keeps "due soon" when its promises are picked as open, instead of widening to every open promise', () => {
+        const dueSoon = withFilters({ state: ['due_soon'] });
+        const far = [...promises, card('4', { state: 'pending', daysLeft: 400 })];
+        const next = narrowFromChart(dueSoon, 'state', 'open')!;
+        expect(next.filters.state).toEqual(['due_soon']);
+        expect(visiblePromises(filterPromises(far, next), next, 30).map((p) => p.id)).toEqual(['3']);
+        expect(narrowFromChart(withFilters({ state: ['open', 'due_soon'] }), 'state', 'open')!.filters.state).toEqual(['open']);
+    });
+
+    it('refuses a co-speaker outside the selected officials, whose other promises are not shown', () => {
+        expect(narrowFromChart(withFilters({ speaker: ['speaker'] }), 'speaker', 'other')).toBeNull();
+        expect(narrowFromChart(withFilters({ speaker: ['speaker', 'other'] }), 'speaker', 'other')!.filters.speaker).toEqual(['other']);
+        expect(shown(narrowFromChart(empty, 'speaker', 'speaker')!)).toHaveLength(3);
     });
 });

@@ -8,6 +8,7 @@ import {
     sectorBreakdown, speakerBreakdown, type BreakdownRow, type ChartGroup, type GroupCounts, type Lifeline,
     type LifelineChart, type TrendPoint,
 } from '../_lib/charts';
+import type { ChartFilterKey } from '../_lib/filters';
 import { formatDate } from '../_lib/format';
 import type { PromiseCardData } from '../_lib/types';
 import SpeakerAvatar from './SpeakerAvatar';
@@ -44,18 +45,18 @@ const fill = (group: ChartGroup): CSSProperties => GROUP_PAINT[group].hatched ? 
 const BUTTON = 'cursor-pointer rounded-md transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 const MORE = 'mt-2 cursor-pointer rounded-md px-1.5 py-1 text-xs font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
-type ListFilter = 'state' | 'sector' | 'speaker';
-
 /**
  * The third view of the list, next to the card grid and the rows: the promises
  * the filters currently show, drawn as charts. Legend entries, sectors and
  * officials narrow the filters further, so the charts redraw around the
- * selection; timeline rows open the promise.
+ * selection; timeline rows open the promise. `canFilter` is false for a mark
+ * whose promises no filter can single out, which is then not a button.
  */
-export default function PromiseCharts({ promises, returnUrl = '/promises', onFilter }: {
+export default function PromiseCharts({ promises, returnUrl = '/promises', canFilter, onFilter }: {
     promises: PromiseCardData[];
     returnUrl?: string;
-    onFilter: (key: ListFilter, value: string) => void;
+    canFilter: (key: ChartFilterKey, value: string) => boolean;
+    onFilter: (key: ChartFilterKey, value: string) => void;
 }) {
     const today = useMemo(() => chartToday(promises), [promises]);
     const counts = useMemo(() => countGroups(promises), [promises]);
@@ -105,7 +106,7 @@ export default function PromiseCharts({ promises, returnUrl = '/promises', onFil
                 </Chart>
 
                 <Chart title="الوعود حسب المسؤول">
-                    <SpeakerRings rows={speakers} onSelect={(id) => onFilter('speaker', id)} />
+                    <SpeakerRings rows={speakers} canSelect={(id) => canFilter('speaker', id)} onSelect={(id) => onFilter('speaker', id)} />
                 </Chart>
             </CardContent>
         </Card>
@@ -196,8 +197,11 @@ function TrendChart({ points }: { points: TrendPoint[] }) {
     // The SVG is stretched to the box, so x is mirrored here for RTL.
     const x = (i: number) => 100 - along(i);
     const y = (value: number) => 100 - up(value);
-    const steps = (key: 'made' | 'settled') => points.map((p, i) => (i === 0 ? `M${x(0)},${y(p[key])}` : `H${x(i)}V${y(p[key])}`)).join('');
-    const area = (key: 'made' | 'settled') => `${steps(key)}V100H${x(0)}Z`;
+    // A single month has no run to step through, so its totals span the plot.
+    const steps = (key: 'made' | 'settled') => (last === 0
+        ? `M100,${y(point[key])}H0`
+        : points.map((p, i) => (i === 0 ? `M100,${y(p[key])}` : `H${x(i)}V${y(p[key])}`)).join(''));
+    const area = (key: 'made' | 'settled') => `${steps(key)}V100H100Z`;
 
     function pick(event: PointerEvent<HTMLDivElement>) {
         const box = event.currentTarget.getBoundingClientRect();
@@ -436,26 +440,38 @@ function SectorBars({ rows, onSelect }: { rows: BreakdownRow[]; onSelect: (id: s
 }
 
 /** Each official's portrait inside a ring of how their promises stand. */
-function SpeakerRings({ rows, onSelect }: { rows: BreakdownRow[]; onSelect: (id: string) => void }) {
+function SpeakerRings({ rows, canSelect, onSelect }: { rows: BreakdownRow[]; canSelect: (id: string) => boolean; onSelect: (id: string) => void }) {
     const [expanded, setExpanded] = useState(false);
     const shown = expanded ? rows : rows.slice(0, SPEAKER_LIMIT);
 
     return (
         <>
             <ul className="grid grid-cols-3 gap-x-2 gap-y-3 sm:grid-cols-4">
-                {shown.map((row) => (
-                    <li key={row.id} className="min-w-0">
-                        <button type="button" onClick={() => onSelect(row.id)} title={`${row.label}: ${describeCounts(row.counts)}`}
-                            aria-label={`${row.label}: ${row.total}، ${describeCounts(row.counts)}، تصفية الوعود به`}
-                            className={cn(BUTTON, 'flex w-full flex-col items-center gap-1.5 p-1.5 text-center')}>
+                {shown.map((row) => {
+                    const ring = (
+                        <>
                             <Donut counts={row.counts} size={68} thickness={9} label="">
                                 <SpeakerAvatar name={row.label} image={row.image ?? null} size={48} className="border-0" />
                             </Donut>
                             <span className="line-clamp-2 text-xs leading-snug text-muted-foreground">{row.label}</span>
                             <span className="text-sm font-semibold leading-none tabular-nums text-foreground">{row.total}</span>
-                        </button>
-                    </li>
-                ))}
+                        </>
+                    );
+                    const layout = 'flex w-full flex-col items-center gap-1.5 p-1.5 text-center';
+                    return (
+                        <li key={row.id} className="min-w-0" title={`${row.label}: ${describeCounts(row.counts)}`}>
+                            {canSelect(row.id) ? (
+                                <button type="button" onClick={() => onSelect(row.id)}
+                                    aria-label={`${row.label}: ${row.total}، ${describeCounts(row.counts)}، تصفية الوعود به`}
+                                    className={cn(BUTTON, layout)}>
+                                    {ring}
+                                </button>
+                            ) : (
+                                <div className={layout}>{ring}<span className="sr-only">{describeCounts(row.counts)}</span></div>
+                            )}
+                        </li>
+                    );
+                })}
             </ul>
             {rows.length > SPEAKER_LIMIT && (
                 <button type="button" aria-expanded={expanded} onClick={() => setExpanded(!expanded)} className={MORE}>

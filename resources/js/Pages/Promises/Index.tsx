@@ -14,7 +14,7 @@ import { cn } from '@/Lib/utils';
 import PromiseCard, { type PromiseCardLayout } from './_components/PromiseCard';
 import PromiseCharts from './_components/PromiseCharts';
 import Scoreboard from './_components/Scoreboard';
-import { activeScoreboardState, filterPromises, matchesState, promiseFilterFacets, promiseListUrl, readPromiseFilters, selectScoreboardState, SORT_OPTIONS, visiblePromises, type PromiseFilterOptions } from './_lib/filters';
+import { activeScoreboardState, filterPromises, matchesState, narrowFromChart, promiseFilterFacets, promiseListUrl, readPromiseFilters, selectScoreboardState, SORT_OPTIONS, visiblePromises, type PromiseFilterOptions } from './_lib/filters';
 import type { PromiseCardData, PromiseStats } from './_lib/types';
 
 const LAYOUT_KEY = 'promises-layout';
@@ -188,7 +188,8 @@ export default function PromisesIndex({ promises, stats, filters, dueSoonDays }:
                 {visible.length > 0 ? (
                     layout === 'charts' ? (
                         <PromiseCharts promises={visible} returnUrl={listUrl}
-                            onFilter={(key, id) => changeFilters({ ...value, filters: { ...value.filters, [key]: [id] } })} />
+                            canFilter={(key, id) => narrowFromChart(value, key, id) !== null}
+                            onFilter={(key, id) => changeFilters(narrowFromChart(value, key, id) ?? value)} />
                     ) : (
                         <div className={layout === 'list' ? 'flex flex-col gap-2 sm:gap-3' : 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3'}>
                             {visible.map((p) => <PromiseCard key={p.id} promise={p} returnUrl={listUrl} layout={layout} />)}

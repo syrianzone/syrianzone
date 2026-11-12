@@ -7,20 +7,25 @@ import { FilterChip } from '@/Components/ui/filter-chip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
 import SmartFilterSearch from '@/Components/SmartFilterSearch';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/Components/ui/accordion';
-import { LayoutGrid, List, Plus, SearchX } from 'lucide-react';
+import { ChartColumn, LayoutGrid, List, Plus, SearchX } from 'lucide-react';
 import { PromisesIcon } from '@/Components/Icons/ProjectIcons';
 import { toggleFilterValue, type SmartFilterValue } from '@/Lib/smartFilterSearch';
 import { cn } from '@/Lib/utils';
 import PromiseCard, { type PromiseCardLayout } from './_components/PromiseCard';
+import PromiseCharts from './_components/PromiseCharts';
 import Scoreboard from './_components/Scoreboard';
-import { activeScoreboardState, filterPromises, matchesState, promiseFilterFacets, promiseListUrl, readPromiseFilters, selectScoreboardState, SORT_OPTIONS, visiblePromises, type PromiseFilterOptions } from './_lib/filters';
+import { activeScoreboardState, filterPromises, matchesState, narrowFromChart, promiseFilterFacets, promiseListUrl, readPromiseFilters, selectScoreboardState, SORT_OPTIONS, visiblePromises, type PromiseFilterOptions } from './_lib/filters';
 import type { PromiseCardData, PromiseStats } from './_lib/types';
 
 const LAYOUT_KEY = 'promises-layout';
 const LAYOUT_OPTIONS = [
     { value: 'grid', label: 'عرض كبطاقات', icon: LayoutGrid },
     { value: 'list', label: 'عرض كقائمة', icon: List },
+    { value: 'charts', label: 'عرض كرسوم بيانية', icon: ChartColumn },
 ] as const;
+
+/** Two card layouts, plus the same filtered promises drawn as charts. */
+type PromiseView = PromiseCardLayout | 'charts';
 
 interface Props {
     promises: PromiseCardData[];
@@ -47,17 +52,18 @@ export default function PromisesIndex({ promises, stats, filters, dueSoonDays }:
     const listUrl = promiseListUrl(value);
     const filtersRef = useRef<HTMLDivElement>(null);
     // Read after mount (localStorage) so the server render and first client render match.
-    const [layout, setLayout] = useState<PromiseCardLayout>('grid');
+    const [layout, setLayout] = useState<PromiseView>('grid');
 
     useEffect(() => {
         try {
-            if (localStorage.getItem(LAYOUT_KEY) === 'list') setLayout('list');
+            const saved = localStorage.getItem(LAYOUT_KEY);
+            if (saved === 'list' || saved === 'charts') setLayout(saved);
         } catch {
             /* storage unavailable: the grid stays the default */
         }
     }, []);
 
-    function changeLayout(next: PromiseCardLayout) {
+    function changeLayout(next: PromiseView) {
         setLayout(next);
         try {
             localStorage.setItem(LAYOUT_KEY, next);
@@ -180,9 +186,15 @@ export default function PromisesIndex({ promises, stats, filters, dueSoonDays }:
                 </div>
 
                 {visible.length > 0 ? (
-                    <div className={layout === 'list' ? 'flex flex-col gap-2 sm:gap-3' : 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3'}>
-                        {visible.map((p) => <PromiseCard key={p.id} promise={p} returnUrl={listUrl} layout={layout} />)}
-                    </div>
+                    layout === 'charts' ? (
+                        <PromiseCharts promises={visible} returnUrl={listUrl}
+                            canFilter={(key, id) => narrowFromChart(value, key, id) !== null}
+                            onFilter={(key, id) => changeFilters(narrowFromChart(value, key, id) ?? value)} />
+                    ) : (
+                        <div className={layout === 'list' ? 'flex flex-col gap-2 sm:gap-3' : 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3'}>
+                            {visible.map((p) => <PromiseCard key={p.id} promise={p} returnUrl={listUrl} layout={layout} />)}
+                        </div>
+                    )
                 ) : (
                     <Card>
                         <CardContent className="flex flex-col items-center gap-3 py-14 text-center">

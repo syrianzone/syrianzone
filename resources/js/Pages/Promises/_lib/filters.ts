@@ -115,6 +115,27 @@ export function selectScoreboardState(value: SmartFilterValue, state: string | n
     return { search: '', sort: value.sort, filters: shown ? {} : { state: [state] } };
 }
 
+export type ChartFilterKey = 'state' | 'sector' | 'speaker';
+
+/**
+ * The filters after picking a mark in the charts view, which draws the list
+ * as filtered: the result must be exactly the promises that mark counted.
+ * Values of one filter are alternatives, so a pick replaces them, except
+ * where that would widen the list. Then the narrower filter is kept, or the
+ * pick is refused (`null`) when no filter can express it.
+ */
+export function narrowFromChart(value: SmartFilterValue, key: ChartFilterKey, id: string): SmartFilterValue | null {
+    const current = value.filters[key] ?? [];
+    let next = id;
+    if (current.length && !current.includes(id)) {
+        // "Open" counted only the due-soon promises on screen.
+        if (key === 'state' && id === 'open' && current.includes('due_soon')) next = 'due_soon';
+        // A co-speaker of the selected officials: their other promises are not on screen.
+        else if (key === 'speaker') return null;
+    }
+    return { ...value, filters: { ...value.filters, [key]: [next] } };
+}
+
 /** Leave state filtering to visiblePromises so status counts use this full set. */
 export function filterPromises(promises: PromiseCardData[], value: SmartFilterValue): PromiseCardData[] {
     const needle = normalizeArabic(value.search);

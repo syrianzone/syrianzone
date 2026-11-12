@@ -32,7 +32,7 @@ import { Separator } from '@/components/ui/separator';
 
 import UserNav from './UserNav';
 import AppearanceMenu from './AppearanceMenu';
-import { DesktopSearchTrigger, MobileMenuSearchSection } from './GlobalCommandPalette';
+import { DesktopSearchTrigger, MobileMenuSearchSection } from './GlobalSearch';
 import { useSiteNavigation, type SiteLink } from '@/Lib/siteLinks';
 
 /** Columns for the desktop mega menu, matching the homepage's tile grid. */

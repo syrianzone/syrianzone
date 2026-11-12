@@ -5,6 +5,8 @@ Generated from `routes/web.php` and `routes/api.php`. Grouped by feature area, m
 > [!TIP]
 > For detailed request/response schemas, query parameters, rate limits, error envelopes, and the full canonical-to-legacy alias map, see the **[Central API Reference (`docs/reference/api.md`)](api.md)**.
 
+Modules served under more than one prefix (transit admin, polls admin, asset manager, Guess Who, transit API/studio, Compass shares, the public widgets) are written **once** in the route files as a closure and mounted at each prefix, with the mount carrying the prefix, the route-name prefix and any per-prefix difference (an extra route, a different segment, a legacy-only throttle). Adding a route to either URL therefore means editing one place.
+
 ## Public web pages (`web.php`)
 
 ### Core / meta

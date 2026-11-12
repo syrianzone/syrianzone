@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Category } from '../data/types';
+import type { Category } from '@/Domain/compass/types';
 import { Landmark, Scale, BookOpen, Building2, Flag, Users, Star, type LucideIcon } from 'lucide-react';
 
 // Symbolic, theme-aware avatar for a figure. Uses a real image when available,

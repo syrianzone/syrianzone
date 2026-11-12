@@ -11,9 +11,6 @@ use Inertia\Inertia;
 
 class CompassController extends Controller
 {
-    /** Cache key for the public aggregate; busted whenever a run is added/removed. */
-    public const PUBLIC_STATS_CACHE_KEY = 'compass-public-stats-v2';
-
     /** The compass test page. */
     public function index()
     {
@@ -103,7 +100,7 @@ class CompassController extends Controller
     private function publicStats(): array
     {
         return Cache::remember(
-            self::PUBLIC_STATS_CACHE_KEY,
+            CompassStats::PUBLIC_CACHE_KEY,
             now()->addMinutes(10),
             fn () => CompassStats::aggregateAnonymous()
         );

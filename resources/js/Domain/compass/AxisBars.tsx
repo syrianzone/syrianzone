@@ -1,7 +1,7 @@
 import React from 'react';
-import type { AxisId } from '../data/types';
-import { AXES } from '../data/axes';
-import { axisDisplay } from '../lib/axisDisplay';
+import type { AxisId } from './types';
+import { AXES } from './axes';
+import { axisDisplay } from './axisDisplay';
 
 const fmt = (v: number) => `${v > 0 ? '+' : ''}${v.toFixed(2)}`;
 

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { discovery, type Guide, type GuidesSort } from '../_lib/discovery';
+import { discovery, type Guide, type GuidesSort } from '@/Domain/places/discovery';
 import { GuideProfileCard } from './GuideProfileCard';
 import { LevelBadge } from './LevelBadge';
 import { MilestonesSheet } from './MilestonesSheet';

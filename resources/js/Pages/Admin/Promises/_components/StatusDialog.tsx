@@ -12,8 +12,8 @@ import { Loader2 } from 'lucide-react';
 import { notify } from '@/Lib/notify';
 import { extractApiErrorMessage, extractApiFieldErrors } from '@/Lib/apiError';
 import FieldError, { fieldA11y } from '@/Components/ui/field-error';
-import { STATE_META, STATUS_ORDER } from '@/Pages/Promises/_lib/status';
-import type { PromiseStatus } from '@/Pages/Promises/_lib/types';
+import { STATE_META, STATUS_ORDER } from '@/Domain/promises/status';
+import type { PromiseStatus } from '@/Domain/promises/types';
 import type { AdminPromiseDetail } from '../_lib/types';
 
 /**

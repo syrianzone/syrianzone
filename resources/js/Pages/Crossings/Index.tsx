@@ -17,7 +17,7 @@ import {
     syriaMinutes,
     syriaNow,
     toFeatureCollection,
-} from './_lib/crossings';
+} from '@/Domain/crossings/crossings';
 
 // maplibre and the basemap style are a large chunk, and the table answers the
 // common question on its own, so the map arrives after the first paint.

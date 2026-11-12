@@ -3,13 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
 import { RotateCcw, Timer, Zap, Layers, ChevronLeft, ChevronRight, Check } from 'lucide-react';
-import { VERSION_LABEL, type AnswerMap, type Figure, type QuizVersion, type Spectrum } from './data/types';
-import { AXES } from './data/axes';
-import { QUESTIONS } from './data/questions';
-import { ALIGN_QUESTIONS } from './data/align';
-import { activeQuestions, activeAlignQuestions, versionTotals, axisKey, alignKey } from './lib/engine';
+import { VERSION_LABEL, type AnswerMap, type Figure, type QuizVersion, type Spectrum } from '@/Domain/compass/types';
+import { AXES } from '@/Domain/compass/axes';
+import { QUESTIONS } from '@/Domain/compass/questions';
+import { ALIGN_QUESTIONS } from '@/Domain/compass/align';
+import { activeQuestions, activeAlignQuestions, versionTotals, axisKey, alignKey } from '@/Domain/compass/engine';
 import { loadProgress, saveProgress, clearProgress, fetchAccountResults, saveResultToAccount, takePendingAccountSave, setPendingAccountSave, updateLocalResult } from './lib/storage';
-import type { CompassResult as SavedResult } from './data/types';
+import type { CompassResult as SavedResult } from '@/Domain/compass/types';
 import CompassResult from './CompassResult';
 import SavedResults from './components/SavedResults';
 

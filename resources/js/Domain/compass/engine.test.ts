@@ -7,8 +7,8 @@ import {
   computeConsistency,
   matchFigures,
 } from './engine';
-import { QUESTIONS } from '../data/questions';
-import { FIGURES } from '../data/figures';
+import { QUESTIONS } from './questions';
+import { FIGURES } from './figures';
 import { axisKey } from './engine';
 
 /** Fill answers that reproduce a figure's axis score as closely as possible. */

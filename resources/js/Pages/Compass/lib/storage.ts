@@ -1,6 +1,6 @@
 // Local persistence + optional account sync for the compass.
 // Progress and results are stored locally always; logged-in users also sync to the account.
-import type { AnswerMap, CompassResult, QuizVersion } from '../data/types';
+import type { AnswerMap, CompassResult, QuizVersion } from '@/Domain/compass/types';
 
 const KEY_PROGRESS = 'sz-compass-v2-progress';
 const KEY_RESULTS = 'sz-compass-v2-results';

@@ -1,6 +1,6 @@
 <?php
 
-// Generated from resources/js/Pages/Compass/data/spectra.ts.
+// Generated from resources/js/Domain/compass/spectra.ts.
 // Seed for the compass_personas table. Personas are the umbrella label shown on
 // the result page and the share image; they are ENABLED by default. The matching
 // centre is a partial axis vector; an axis window may be added per persona.

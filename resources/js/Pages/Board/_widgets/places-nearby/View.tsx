@@ -1,5 +1,5 @@
 import { MapPin } from 'lucide-react';
-import { api } from '@/Pages/Places/_lib/api';
+import { api } from '@/Domain/places/api';
 import { WidgetShell } from '../../_components/WidgetShell';
 import { useGeo } from '../../_components/GeoProvider';
 import { useWidgetQuery } from '../../_lib/query';

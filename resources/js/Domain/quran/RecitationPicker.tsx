@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, ChevronsUpDown, Mic } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
-import { QURAN_RECITATIONS, recitationByCode, styleLabelAr } from '../../../Domain/quran/quran';
+import { QURAN_RECITATIONS, recitationByCode, styleLabelAr } from './quran';
 
 interface Props {
   /** v4 recitation code (reciter/rN). */

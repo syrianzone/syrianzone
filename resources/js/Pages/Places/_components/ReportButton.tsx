@@ -21,9 +21,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { notify } from '@/Lib/notify';
-import { api, extractError } from '../_lib/api';
-import { REPORT_REASONS } from '../_lib/reports';
-import type { PlaceReportReason } from '../_lib/types';
+import { api, extractError } from '@/Domain/places/api';
+import { REPORT_REASONS } from '@/Domain/places/reports';
+import type { PlaceReportReason } from '@/Domain/places/types';
 
 export function ReportButton(props: { placeId: number }) {
   const { placeId } = props;

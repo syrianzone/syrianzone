@@ -4,8 +4,8 @@ import { Card } from '@/Components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge, badgeVariants } from '@/Components/ui/badge';
 import { cn } from '@/Lib/utils';
-import { CATEGORIES, CATEGORY_LABELS } from '../_lib/categories';
-import type { GeoSuggestion, LatLng, PlaceCategory, PlaceListItem } from '../_lib/types';
+import { CATEGORIES, CATEGORY_LABELS } from '@/Domain/places/categories';
+import type { GeoSuggestion, LatLng, PlaceCategory, PlaceListItem } from '@/Domain/places/types';
 
 // token: optional hemisphere letter, signed number (dot or comma decimal), optional °, optional letter
 const COORD_TOKEN = String.raw`([NSEW])?\s*([+-]?\d{1,3}(?:[.,]\d+)?)\s*°?\s*([NSEW])?`;

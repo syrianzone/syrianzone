@@ -1,4 +1,4 @@
-import data from '../_data/crossings.json';
+import data from './crossings.json';
 
 export type WorkWindow = { label?: string; start?: string; end?: string; h24?: boolean };
 

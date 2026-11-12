@@ -2,7 +2,7 @@ import React from 'react';
 
 import CompassResult from './CompassResult';
 import MainLayout from '@/Layouts/MainLayout';
-import type { AnswerMap, Figure, QuizVersion, Spectrum } from './data/types';
+import type { AnswerMap, Figure, QuizVersion, Spectrum } from '@/Domain/compass/types';
 
 interface Props {
     version: QuizVersion;

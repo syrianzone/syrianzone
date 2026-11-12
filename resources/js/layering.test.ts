@@ -153,20 +153,8 @@ function assertMatches(rule: string, actual: string[], allowed: string[]): void 
   throw new Error(lines.join('\n'));
 }
 
-/**
- * Shared code and Domain modules may not reach into a page folder. Both
- * remaining edges read a data file that PHP also reads by path, so the file
- * cannot move until the PHP side does:
- *   - `app/Http/Controllers/DashboardController.php:57` and
- *     `app/Console/Commands/ImportTransitGeoJson.php:21` read cities.json;
- *   - `app/Support/Seo/Preview/Resolvers/CrossingPreview.php:70` reads
- *     crossings.json.
- * Delete the matching line once the data file has one home both languages read.
- */
-const SHARED_TO_PAGES_ALLOWED = [
-  'Components/GlobalSearch.tsx -> Pages/Crossings/_lib/crossings.ts',
-  'Components/GlobalSearch.tsx -> Pages/Transit/_data/cities.json',
-];
+/** Shared code and Domain modules may not reach into a page folder. */
+const SHARED_TO_PAGES_ALLOWED: string[] = [];
 
 /** `Lib/` stays free of higher-level components; it may use `Components/ui`. */
 const LIB_TO_COMPONENTS_ALLOWED = [
@@ -175,65 +163,17 @@ const LIB_TO_COMPONENTS_ALLOWED = [
 ];
 
 /**
- * Today's `Pages/<A>` → `Pages/<B>` edges, one per line: an admin screen that
- * reads a public module, and the error page borrowing feature visuals. Nothing
- * new may be added; deleting one means deleting its line.
+ * The `Pages/<A>` → `Pages/<B>` edges that remain, one per line. Nothing new
+ * may be added; deleting one means deleting its line. Both survivors have a
+ * reason outside the frontend, written next to them.
  */
 const CROSS_FEATURE_ALLOWED = [
-  // Admin → public module (Compass, Places, Promises): scheduled for the
-  // domain extraction of those features, not part of this step.
-  'Pages/Admin/Compass/Figures.tsx -> Pages/Compass/data/axes.ts',
-  'Pages/Admin/Compass/Figures.tsx -> Pages/Compass/data/types.ts',
-  'Pages/Admin/Compass/Index.tsx -> Pages/Compass/components/AlignmentCard.tsx',
-  'Pages/Admin/Compass/Index.tsx -> Pages/Compass/components/AxisBars.tsx',
-  'Pages/Admin/Compass/Index.tsx -> Pages/Compass/components/QuestionAverage.tsx',
-  'Pages/Admin/Compass/Index.tsx -> Pages/Compass/data/types.ts',
-  'Pages/Admin/Compass/Personas.tsx -> Pages/Compass/components/SpectrumIcon.tsx',
-  'Pages/Admin/Compass/Personas.tsx -> Pages/Compass/data/axes.ts',
-  'Pages/Admin/Compass/Personas.tsx -> Pages/Compass/data/types.ts',
-  'Pages/Admin/Places/EditPlaceDialog.tsx -> Pages/Places/_lib/api.ts',
-  'Pages/Admin/Places/EditPlaceDialog.tsx -> Pages/Places/_lib/categories.ts',
-  'Pages/Admin/Places/EditPlaceDialog.tsx -> Pages/Places/_lib/types.ts',
-  'Pages/Admin/Places/Index.tsx -> Pages/Places/_lib/api.ts',
-  'Pages/Admin/Places/Index.tsx -> Pages/Places/_lib/types.ts',
-  'Pages/Admin/Places/PlaceReviewCard.tsx -> Pages/Places/_lib/api.ts',
-  'Pages/Admin/Places/PlaceReviewCard.tsx -> Pages/Places/_lib/categories.ts',
-  'Pages/Admin/Places/PlaceReviewCard.tsx -> Pages/Places/_lib/types.ts',
-  'Pages/Admin/Places/ReportsTab.tsx -> Pages/Places/_lib/api.ts',
-  'Pages/Admin/Places/ReportsTab.tsx -> Pages/Places/_lib/reports.ts',
-  'Pages/Admin/Places/ReportsTab.tsx -> Pages/Places/_lib/types.ts',
-  'Pages/Admin/Promises/Edit.tsx -> Pages/Promises/_components/SpeakerPicker.tsx',
-  'Pages/Admin/Promises/Edit.tsx -> Pages/Promises/_components/StateBadge.tsx',
-  'Pages/Admin/Promises/Edit.tsx -> Pages/Promises/_lib/status.ts',
-  'Pages/Admin/Promises/Edit.tsx -> Pages/Promises/_lib/types.ts',
-  'Pages/Admin/Promises/Index.tsx -> Pages/Promises/_components/StateBadge.tsx',
-  'Pages/Admin/Promises/Index.tsx -> Pages/Promises/_lib/format.ts',
-  'Pages/Admin/Promises/Index.tsx -> Pages/Promises/_lib/status.ts',
-  'Pages/Admin/Promises/Review.tsx -> Pages/Promises/_components/SpeakerAvatar.tsx',
-  'Pages/Admin/Promises/Review.tsx -> Pages/Promises/_lib/format.ts',
-  'Pages/Admin/Promises/Review.tsx -> Pages/Promises/_lib/status.ts',
-  'Pages/Admin/Promises/Sectors.tsx -> Pages/Promises/_lib/status.ts',
-  'Pages/Admin/Promises/Speakers.tsx -> Pages/Promises/_components/SpeakerAvatar.tsx',
-  'Pages/Admin/Promises/Speakers.tsx -> Pages/Promises/_components/SpeakerPicker.tsx',
-  'Pages/Admin/Promises/Speakers.tsx -> Pages/Promises/_lib/status.ts',
-  'Pages/Admin/Promises/Speakers.tsx -> Pages/Promises/_lib/types.ts',
-  'Pages/Admin/Promises/_components/SourcesEditor.tsx -> Pages/Promises/_lib/status.ts',
-  'Pages/Admin/Promises/_components/StatusDialog.tsx -> Pages/Promises/_lib/status.ts',
-  'Pages/Admin/Promises/_components/StatusDialog.tsx -> Pages/Promises/_lib/types.ts',
-  'Pages/Admin/Promises/_components/UpdatesPanel.tsx -> Pages/Promises/_components/Timeline.tsx',
-  'Pages/Admin/Promises/_components/UpdatesPanel.tsx -> Pages/Promises/_lib/types.ts',
-  'Pages/Admin/Promises/_lib/types.ts -> Pages/Promises/_lib/types.ts',
-  // Board widgets and shared surfaces borrowing feature internals.
-  'Pages/Board/_widgets/guides/View.tsx -> Pages/Places/_lib/discovery.ts',
-  'Pages/Board/_widgets/places-nearby/View.tsx -> Pages/Places/_lib/api.ts',
-  'Pages/Board/_widgets/quran/View.tsx -> Pages/Muslim/_components/RecitationPicker.tsx',
-  'Pages/Errors/NotFound.tsx -> Pages/Games/_components/PlayingCard.tsx',
-  'Pages/Errors/NotFound.tsx -> Pages/Muslim/_components/ayah-mark/AyahMark.tsx',
+  // The 404 page shows the transit landing's city grid. `CityGrid` pulls in
+  // `CityCard`, the map-data preload hook and the governorate icons (which PHP
+  // reads by path in `GovernorateIconService`), so it stays with the feature.
   'Pages/Errors/NotFound.tsx -> Pages/Transit/_components/landing/CityGrid.tsx',
-  'Pages/Home/_components/HomeSettingsDialog.tsx -> Pages/Muslim/_components/LocationModeSelector.tsx',
-  'Pages/Places/Index.tsx -> Pages/Transit/_components/BottomSheet.tsx',
-  'Pages/Roznama/Index.tsx -> Pages/Muslim/_components/LocationModeSelector.tsx',
-  // The tier-list leaderboard is the same table at both URLs (/tierlist).
+  // The tier-list leaderboard is the same table at both URLs (/tierlist and
+  // /polls/<slug>): both page names are server contracts, so the alias stays.
   'Pages/TierList/Leaderboard.tsx -> Pages/Polls/Leaderboard.tsx',
 ];
 

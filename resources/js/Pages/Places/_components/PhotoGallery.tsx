@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { PlacePhoto } from '../_lib/types';
+import type { PlacePhoto } from '@/Domain/places/types';
 import { Lightbox } from './Lightbox';
 
 export function PhotoGallery(props: { photos: PlacePhoto[]; name: string }) {

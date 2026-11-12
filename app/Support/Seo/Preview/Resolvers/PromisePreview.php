@@ -19,7 +19,7 @@ final class PromisePreview implements CardSource, PreviewResolver
 
     /**
      * Label, pill tone and glyph per display state. The labels are the ones the
-     * page itself shows (Pages/Promises/_lib/status.ts); a test keeps them equal.
+     * page itself shows (Domain/promises/status.ts); a test keeps them equal.
      */
     public const STATES = [
         'pending' => ['قيد الانتظار', 'outline', 'Hourglass'],

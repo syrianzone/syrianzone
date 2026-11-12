@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\DailyScore;
 use App\Models\Poll;
+use App\Services\Polls\PollRules;
 use App\Services\TierlistLeaderboard;
 use App\Services\VotingService;
 use App\Support\Seo\SeoMeta;
@@ -82,12 +83,10 @@ class PollController extends Controller
 
     public function renderLeaderboard(Request $request, $slug)
     {
-        $validated = $request->validate([
-            'status' => 'sometimes|string|in:active,archived,former,all',
-        ]);
+        $validated = $request->validate(['status' => app(PollRules::class)->statusFilter()]);
         $poll = Poll::idOrSlug($slug)->firstOrFail();
         SeoMeta::remember($request, 'poll', $poll);
-        $status = TierlistLeaderboard::normalizeStatus($validated['status'] ?? 'active');
+        $status = PollRules::normalizeStatus($validated['status'] ?? 'active');
 
         return Inertia::render('Polls/Leaderboard', $this->leaderboardPayload($poll, $status));
     }
@@ -137,25 +136,14 @@ class PollController extends Controller
             ? $groups->where('is_active', false)->pluck('id')
             : $poll->groups()->disabled()->pluck('id');
 
-        if ($disabledGroupIds->isNotEmpty()) {
-            // Null-group candidates predate the grouping model; a plain
-            // whereNotIn would drop them too, because NULL NOT IN (…) is NULL.
-            $query->where(function ($nested) use ($disabledGroupIds) {
-                $nested->whereNull('candidate_group_id')
-                    ->orWhereNotIn('candidate_group_id', $disabledGroupIds);
-            });
-        }
-
-        return $query;
+        return $query->outsideDisabledGroups($disabledGroupIds);
     }
 
     public function renderTierListLeaderboard(Request $request)
     {
-        $validated = $request->validate([
-            'status' => 'sometimes|string|in:active,archived,former,all',
-        ]);
+        $validated = $request->validate(['status' => app(PollRules::class)->statusFilter()]);
         $poll = Poll::where('slug', Poll::CORE_POLL_SLUG)->firstOrFail();
-        $status = TierlistLeaderboard::normalizeStatus($validated['status'] ?? 'active');
+        $status = PollRules::normalizeStatus($validated['status'] ?? 'active');
 
         return Inertia::render('TierList/Leaderboard', $this->leaderboardPayload($poll, $status));
     }
@@ -256,11 +244,9 @@ class PollController extends Controller
         // Resolve by UUID or slug (matches show()); canonical vocabulary is
         // active | former | all, with 'archived' accepted as an alias of
         // 'former'. Anything else is a 422, not a silent fallback to 'active'.
-        $validated = $request->validate([
-            'status' => 'sometimes|string|in:active,archived,former,all',
-        ]);
+        $validated = $request->validate(['status' => app(PollRules::class)->statusFilter()]);
         $poll = Poll::idOrSlug($slug)->firstOrFail();
-        $status = TierlistLeaderboard::normalizeStatus($validated['status'] ?? 'active');
+        $status = PollRules::normalizeStatus($validated['status'] ?? 'active');
         $results = $this->leaderboardPayload($poll, $status);
 
         $response = response()->json($results);

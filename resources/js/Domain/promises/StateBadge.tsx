@@ -1,7 +1,7 @@
 import { Badge } from '@/Components/ui/badge';
 import { cn } from '@/Lib/utils';
-import { STATE_META } from '../_lib/status';
-import type { PromiseState } from '../_lib/types';
+import { STATE_META } from './status';
+import type { PromiseState } from './types';
 
 /** The promise's state as a badge with its icon. Never clickable. */
 export default function StateBadge({ state, keptLate = false, className }: {

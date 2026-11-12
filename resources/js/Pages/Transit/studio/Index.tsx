@@ -22,13 +22,13 @@ import {
 } from 'lucide-react'
 import { useStudioStore, type StopFeature } from '../_store/useStudioStore'
 import { useMapData } from '../_hooks/useMapData'
-import cities from '../_data/cities.json'
+import cities from '@/Domain/transit/cities.json'
 import TransitLayout from '../layout'
 import { useTransitTheme } from '../_components/TransitThemeContext'
 import { THEME_REGISTRY } from '@/Lib/theme'
 import { useAuth } from '@/Contexts/AuthContext'
 import { ROUTE_PALETTE, getRouteColor, buildColorMatch } from '../_lib/mapColors'
-import { BottomSheet } from '../_components/BottomSheet'
+import { BottomSheet } from '@/Components/BottomSheet'
 import {
   Accordion,
   AccordionItem,

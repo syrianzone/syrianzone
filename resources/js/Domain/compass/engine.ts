@@ -5,11 +5,11 @@
 //  1) Axis scoring is WEIGHTED and VERSION-AWARE: score = Σ(answer·effect·weight) / (2·Σweight).
 //  2) Matching uses WHITENED (Mahalanobis) distance so correlated axes don't triple-count the
 //     same belief. A presentation scale maps distance → 0..1 similarity.
-import { AXES } from '../data/axes';
-import { QUESTIONS } from '../data/questions';
-import { ALIGN_QUESTIONS } from '../data/align';
-import { FIGURES } from '../data/figures';
-import { SPECTRA } from '../data/spectra';
+import { AXES } from './axes';
+import { QUESTIONS } from './questions';
+import { ALIGN_QUESTIONS } from './align';
+import { FIGURES } from './figures';
+import { SPECTRA } from './spectra';
 import type {
   AnswerMap,
   AxisId,
@@ -19,7 +19,7 @@ import type {
   MatchedFigure,
   QuizVersion,
   Spectrum,
-} from '../data/types';
+} from './types';
 
 export const AXIS_IDS = AXES.map((a) => a.id);
 const BLOCS: AlignBloc[] = ['west', 'gulf', 'turkish', 'east', 'neutral'];

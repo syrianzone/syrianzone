@@ -5,12 +5,15 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\ChecksTransitScope;
 use App\Models\RouteDraft;
 use App\Models\User;
+use App\Services\Transit\TransitCache;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class TransitStudioController extends Controller
 {
     use ChecksTransitScope;
+
+    public function __construct(private readonly TransitCache $cache) {}
 
     private function resolveUser(Request $request): ?User
     {
@@ -367,20 +370,6 @@ class TransitStudioController extends Controller
             'user_id' => $userId ?? auth()->id(),
         ]);
 
-        $this->clearCityMapCache($route->city_id);
-    }
-
-    private function clearCityMapCache(string $cityId): void
-    {
-        \Illuminate\Support\Facades\Cache::forget("transit:map-data:{$cityId}");
-        \Illuminate\Support\Facades\Cache::forget("transit:routes:{$cityId}");
-        if ($cityId === 'damascus' || $cityId === 'rif-dimashq') {
-            \Illuminate\Support\Facades\Cache::forget('transit:map-data:damascus');
-            \Illuminate\Support\Facades\Cache::forget('transit:map-data:rif-dimashq');
-            \Illuminate\Support\Facades\Cache::forget('transit:routes:damascus');
-            \Illuminate\Support\Facades\Cache::forget('transit:routes:rif-dimashq');
-            \Illuminate\Support\Facades\Cache::forget('transit:routes:damascus+rif-dimashq');
-        }
-        \Illuminate\Support\Facades\Cache::forget('transit:cities');
+        $this->cache->forgetCity($route->city_id);
     }
 }

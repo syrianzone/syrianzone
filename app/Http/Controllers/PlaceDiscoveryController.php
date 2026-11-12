@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Place;
 use App\Models\PlacePhoto;
 use App\Services\GuideLevelService;
+use App\Services\Places\PlacePresenter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
@@ -61,7 +62,7 @@ class PlaceDiscoveryController extends Controller
       ->header('Cache-Control', 'public, max-age=60');
   }
 
-  public function photos(Request $request)
+  public function photos(Request $request, PlacePresenter $presenter)
   {
     $validated = $request->validate(['user_id' => 'sometimes|integer|min:1']);
 
@@ -79,19 +80,7 @@ class PlaceDiscoveryController extends Controller
       ->orderByDesc('place_photos.id')
       ->paginate(24);
 
-    $page->through(fn ($photo) => [
-      'id' => $photo->id,
-      'thumb_url' => $photo->thumb_url,
-      'display_url' => $photo->display_url,
-      'place' => [
-        'id' => (int) $photo->place_id,
-        'name' => $photo->place_name,
-        'category' => $photo->place_category,
-        // lat/lng ride along so the grid can fly to the place without a second fetch
-        'lat' => (float) $photo->place_lat,
-        'lng' => (float) $photo->place_lng,
-      ],
-    ]);
+    $page->through(fn ($photo) => $presenter->photoWallItem($photo));
 
     return response()->json($page)->header('Cache-Control', 'public, max-age=60');
   }

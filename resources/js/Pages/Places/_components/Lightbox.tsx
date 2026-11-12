@@ -3,7 +3,7 @@ import { zipSync } from 'fflate';
 import { ChevronLeft, ChevronRight, Download, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import type { PlacePhoto } from '../_lib/types';
+import type { PlacePhoto } from '@/Domain/places/types';
 
 // media-query hook instead of sm: utilities: the code-split css chunks each emit
 // their own tailwind layer, so responsive show/hide classes lose cascade order here

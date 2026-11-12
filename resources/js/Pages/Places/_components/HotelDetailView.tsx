@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight, ExternalLink, Star } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { api, extractError } from '../_lib/api';
-import type { HotelDetail } from '../_lib/types';
+import { api, extractError } from '@/Domain/places/api';
+import type { HotelDetail } from '@/Domain/places/types';
 
 export function HotelDetailView(props: { hotelId: number; onClose: () => void }) {
   const { hotelId, onClose } = props;

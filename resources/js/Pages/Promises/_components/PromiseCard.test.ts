@@ -2,7 +2,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import PromiseCard from './PromiseCard';
-import type { PromiseCardData } from '../_lib/types';
+import type { PromiseCardData } from '@/Domain/promises/types';
 
 vi.mock('@inertiajs/react', () => ({
     Link: ({ children, href, ...props }: any) => createElement('a', { href, ...props }, children),

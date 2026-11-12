@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { cn } from '@/Lib/utils';
-import { calendarCounterCaption, dayWord, daysPhrase, hoursPhrase, minutesPhrase } from '../_lib/format';
-import { STATE_META, isOpenState } from '../_lib/status';
-import type { PromiseCounter, PromiseState } from '../_lib/types';
+import { calendarCounterCaption, dayWord, daysPhrase, hoursPhrase, minutesPhrase } from '@/Domain/promises/format';
+import { STATE_META, isOpenState } from '@/Domain/promises/status';
+import type { PromiseCounter, PromiseState } from '@/Domain/promises/types';
 
 interface Props {
     state: PromiseState;

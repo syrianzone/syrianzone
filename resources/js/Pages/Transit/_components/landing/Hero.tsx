@@ -1,4 +1,4 @@
-import citiesData from '../../_data/cities.json'
+import citiesData from '@/Domain/transit/cities.json'
 import type { City } from '../../_types'
 
 interface HeroProps {

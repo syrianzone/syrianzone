@@ -2,7 +2,6 @@
 
 namespace App\Providers;
 
-use App\Http\Controllers\ExternalDataController;
 use App\Models\HouseMember2026;
 use App\Models\Promise;
 use App\Models\PromiseSector;
@@ -13,7 +12,6 @@ use App\Support\Agents\AgentAuthorizer;
 use App\Support\Agents\AgentContext;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
@@ -52,8 +50,8 @@ class AppServiceProvider extends ServiceProvider
         }
 
         // The cached /house roster follows edits made through the model.
-        HouseMember2026::saved(fn () => Cache::forget(ExternalDataController::HOUSE_MEMBERS_CACHE_KEY));
-        HouseMember2026::deleted(fn () => Cache::forget(ExternalDataController::HOUSE_MEMBERS_CACHE_KEY));
+        HouseMember2026::saved(fn () => HouseMember2026::forgetRosterCache());
+        HouseMember2026::deleted(fn () => HouseMember2026::forgetRosterCache());
 
         if (config('app.env') === 'production') {
             URL::forceScheme('https');

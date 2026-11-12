@@ -6,8 +6,8 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Badge } from '@/Components/ui/badge';
 import { ChevronsUpDown, Loader2 } from 'lucide-react';
 import SpeakerAvatar from './SpeakerAvatar';
-import { PENDING_SPEAKER_LABEL, SPEAKER_SOURCE_LABEL } from '../_lib/status';
-import type { SpeakerOption } from '../_lib/types';
+import { PENDING_SPEAKER_LABEL, SPEAKER_SOURCE_LABEL } from './status';
+import type { SpeakerOption } from './types';
 
 interface Props {
     /** `/api/v1/promises/speakers` (public) or the admin search endpoint. */

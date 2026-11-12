@@ -21,7 +21,7 @@ final class PlacePreview implements CardSource, PreviewResolver
 
     /**
      * Label and glyph per category. The labels are the ones the map uses
-     * (Pages/Places/_lib/categories.ts); a test keeps them equal.
+     * (Domain/places/categories.ts); a test keeps them equal.
      */
     public const CATEGORIES = [
         'historical' => ['تاريخي', 'Landmark'],

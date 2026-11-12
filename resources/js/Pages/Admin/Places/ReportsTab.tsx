@@ -12,9 +12,9 @@ import {
 } from '@/components/ui/select';
 import { confirmDialog } from '@/Lib/confirm';
 import { notify } from '@/Lib/notify';
-import { api, extractError } from '../../Places/_lib/api';
-import { REPORT_REASON_LABELS } from '../../Places/_lib/reports';
-import type { AdminPlaceReport, Paginated, PlaceReportStatus } from '../../Places/_lib/types';
+import { api, extractError } from '@/Domain/places/api';
+import { REPORT_REASON_LABELS } from '@/Domain/places/reports';
+import type { AdminPlaceReport, Paginated, PlaceReportStatus } from '@/Domain/places/types';
 
 type StatusFilter = PlaceReportStatus | 'all';
 

@@ -2,7 +2,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import Timeline from './Timeline';
-import type { PromiseUpdateData } from '../_lib/types';
+import type { PromiseUpdateData } from './types';
 
 describe('Timeline component', () => {
     const baseUpdates: PromiseUpdateData[] = [

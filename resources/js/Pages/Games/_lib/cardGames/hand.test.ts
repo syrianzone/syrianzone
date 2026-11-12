@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Card, Suit } from '../cards';
+import type { Card, Suit } from '@/Domain/games/cards';
 import { groupBySuit, highest, lowest, power, topSequence } from './hand';
 
 const card = (rank: number, suit: Suit): Card => ({ id: `${suit}${rank}`, rank, suit, faceUp: true });

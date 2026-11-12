@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Poll;
-use App\Services\TierlistLeaderboard;
+use App\Services\Polls\PollRules;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -61,14 +61,11 @@ class VotingDataController extends Controller
     {
         $poll = $this->findPoll($idOrSlug);
 
-        // Same vocabulary as the legacy leaderboard (see
-        // TierlistLeaderboard::STATUSES): active | former | all, with
-        // 'archived' accepted as an alias of 'former'. Invalid values are
-        // a 422, not a silent default.
-        $validated = $request->validate([
-            'status' => 'sometimes|string|in:active,former,all,archived',
-        ]);
-        $status = TierlistLeaderboard::normalizeStatus($validated['status'] ?? 'all');
+        // Same vocabulary as the legacy leaderboard (see PollRules::STATUSES):
+        // active | former | all, with 'archived' accepted as an alias of
+        // 'former'. Invalid values are a 422, not a silent default.
+        $validated = $request->validate(['status' => app(PollRules::class)->statusFilter()]);
+        $status = PollRules::normalizeStatus($validated['status'] ?? 'all');
 
         $query = $poll->candidates()->orderBy('sort');
         if ($status !== 'all') {

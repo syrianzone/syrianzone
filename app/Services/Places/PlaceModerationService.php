@@ -25,6 +25,11 @@ use Illuminate\Support\Facades\DB;
  *  - Both photo-count guards run under a row lock on the place, so concurrent
  *    writers cannot both read 9 and end at 11 (or both pass min-1 and leave 0).
  *  - Any change that can alter the map payload forgets the `places:map` cache.
+ *
+ * The owner endpoints and the moderation endpoints share the photo workflow but
+ * not its after-effect: an owner's photo change sends the place back to review
+ * (`reentersModeration: true`), while a moderator's does not. That difference is
+ * a parameter of the one implementation, not a second copy of it.
  */
 class PlaceModerationService
 {
@@ -45,7 +50,7 @@ class PlaceModerationService
 
         $place->update($attributes + ['status' => 'approved', 'approved_at' => now()]);
 
-        $this->bustMapCache();
+        self::forgetMapCache();
 
         return $place;
     }
@@ -76,7 +81,7 @@ class PlaceModerationService
 
         $place->update(['status' => 'pending', 'approved_at' => null]);
 
-        $this->bustMapCache();
+        self::forgetMapCache();
 
         return $place;
     }
@@ -91,7 +96,7 @@ class PlaceModerationService
         $place->update($attributes);
 
         // name/category/coords are embedded in the map payload
-        $this->bustMapCache();
+        self::forgetMapCache();
 
         return $place;
     }
@@ -111,26 +116,37 @@ class PlaceModerationService
             $this->images->deleteFiles($photo);
         }
 
-        $this->bustMapCache();
+        self::forgetMapCache();
     }
 
     /**
      * Append a photo at the end of the place's ordering.
+     *
+     * `$reentersModeration` is what the owner surface has always done: a new
+     * photo puts the place back in the review queue with any prior verdict
+     * cleared. The dashboard and the agent tools do not, because a moderator
+     * adding material is not a new submission.
      */
-    public function addPhoto(int $placeId, UploadedFile $file): PlacePhoto
+    public function addPhoto(int $placeId, UploadedFile $file, bool $reentersModeration = false): PlacePhoto
     {
         $place = $this->findOrFail($placeId);
 
         // guard + store under a lock on the place row so two concurrent adds
         // cannot both read count 9 and end at 11
-        $photo = DB::transaction(function () use ($place, $file) {
+        $photo = DB::transaction(function () use ($place, $file, $reentersModeration) {
             Place::whereKey($place->id)->lockForUpdate()->first();
 
             if ($place->photos()->count() >= self::MAX_PHOTOS_PER_PLACE) {
                 return null;
             }
 
-            return $this->images->store($file, $place->id, (int) $place->photos()->max('sort') + 1);
+            $photo = $this->images->store($file, $place->id, (int) $place->photos()->max('sort') + 1);
+
+            if ($reentersModeration) {
+                $this->markPending($place);
+            }
+
+            return $photo;
         });
 
         if ($photo === null) {
@@ -138,7 +154,7 @@ class PlaceModerationService
         }
 
         // a first-position thumb can change the map thumb_url; forget unconditionally
-        $this->bustMapCache();
+        self::forgetMapCache();
 
         return $photo;
     }
@@ -149,12 +165,19 @@ class PlaceModerationService
 
         $this->images->replace($photo, $file);
 
-        $this->bustMapCache();
+        self::forgetMapCache();
 
         return $photo;
     }
 
-    public function rotatePhoto(int $photoId): PlacePhoto
+    /**
+     * Rotate the photo's pixels. Approval status is deliberately kept.
+     *
+     * `$withRecoveryHint` carries the one wording difference between the two
+     * surfaces that can hit a missing file: the dashboard/agent refusal says
+     * what to do next, the owner endpoint has never included that sentence.
+     */
+    public function rotatePhoto(int $photoId, bool $withRecoveryHint = true): PlacePhoto
     {
         $photo = PlacePhoto::findOrFail($photoId);
 
@@ -163,29 +186,37 @@ class PlaceModerationService
         } catch (\RuntimeException) {
             // the file is gone from disk (cdn may still show a ghost copy):
             // only a re-upload helps
-            throw PlaceActionException::photoFileMissing();
+            throw PlaceActionException::photoFileMissing($withRecoveryHint);
         }
 
         // the map cache embeds versioned thumb urls
-        $this->bustMapCache();
+        self::forgetMapCache();
 
         return $photo;
     }
 
-    public function deletePhoto(int $photoId): void
+    /**
+     * @param  bool  $reentersModeration  See addPhoto(): the owner surface sends
+     *                                    the place back to review, moderation does not.
+     */
+    public function deletePhoto(int $photoId, bool $reentersModeration = false): void
     {
         $photo = PlacePhoto::findOrFail($photoId);
 
         // same lock as addPhoto: two concurrent deletes on a 2-photo place must
         // not both pass the min-1 guard and leave the place with zero photos
-        $deleted = DB::transaction(function () use ($photo) {
-            Place::whereKey($photo->place_id)->lockForUpdate()->first();
+        $deleted = DB::transaction(function () use ($photo, $reentersModeration) {
+            $place = Place::whereKey($photo->place_id)->lockForUpdate()->first();
 
             if (PlacePhoto::where('place_id', $photo->place_id)->count() <= 1) {
                 return false;
             }
 
             $photo->delete();
+
+            if ($reentersModeration) {
+                $this->markPending($place);
+            }
 
             return true;
         });
@@ -197,7 +228,7 @@ class PlaceModerationService
         // files go after the row commit so a rollback cannot orphan the photo row
         $this->images->deleteFiles($photo);
 
-        $this->bustMapCache();
+        self::forgetMapCache();
     }
 
     public function findOrFail(int $id): Place
@@ -218,7 +249,36 @@ class PlaceModerationService
         }
     }
 
-    private function bustMapCache(): void
+    /**
+     * Edited content re-enters moderation: any prior rejection reason and
+     * approval are cleared, and the (possibly approved) pin leaves the public map.
+     *
+     * The cache forget stays outside the caller's transaction (see the note on
+     * PlaceReportController::resolve); a concurrent map read must not re-cache a
+     * status change that has not committed yet.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    public function returnToModeration(Place $place, array $attributes = []): void
+    {
+        $this->markPending($place, $attributes);
+
+        self::forgetMapCache();
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    private function markPending(Place $place, array $attributes = []): void
+    {
+        $place->update($attributes + ['status' => 'pending', 'rejection_reason' => null, 'approved_at' => null]);
+    }
+
+    /**
+     * The one way to drop the cached map payload. Anything that changes a pin,
+     * its photos or its moderation state calls this.
+     */
+    public static function forgetMapCache(): void
     {
         Cache::forget(self::MAP_CACHE_KEY);
     }

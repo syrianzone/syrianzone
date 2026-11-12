@@ -1,5 +1,5 @@
 import React, { Suspense, useMemo, useEffect, useRef, lazy } from 'react'
-import citiesData from '../../_data/cities.json'
+import citiesData from '@/Domain/transit/cities.json'
 import { useMapData } from '../../_hooks/useMapData'
 import { useMapStore } from '../../_store/useMapStore'
 import type { City, FeatureCollection, RouteProperties, StopProperties } from '../../_types'

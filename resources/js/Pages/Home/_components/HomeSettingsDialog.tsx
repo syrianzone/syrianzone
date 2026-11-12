@@ -5,7 +5,7 @@ import { Input } from "@/Components/ui/input";
 import { Switch } from "@/Components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/Components/ui/select";
 import { MapPin } from 'lucide-react';
-import LocationModeSelector from '@/Pages/Muslim/_components/LocationModeSelector';
+import LocationModeSelector from '@/Domain/location/LocationModeSelector';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/Components/ui/sheet";

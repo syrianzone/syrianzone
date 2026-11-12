@@ -1,7 +1,7 @@
 import axios from '@/Lib/axios';
 
 // Board-specific read clients. Places-backed widgets reuse the typed clients
-// that already live in Pages/Places/_lib rather than restating them here.
+// that already live in Domain/places rather than restating them here.
 
 // The endpoint returns camelCase keys, not the underlying column names.
 export interface TransitCity {

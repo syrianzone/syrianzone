@@ -13,6 +13,7 @@ use App\Models\Place;
 use App\Models\Poll;
 use App\Models\Promise;
 use App\Models\Route as TransitRoute;
+use App\Services\ExternalData\ExternalSheetCache;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -172,16 +173,17 @@ class SitemapBuilder
             '/tierlist' => $tierListPoll ? $this->pollLastmod($tierListPoll) : null,
             '/tierlist/leaderboard' => $tierListPoll ? $this->leaderboardLastmod($tierListPoll->id) : null,
             // Sheet-backed pages: last successful fetch time, not a deploy stamp.
-            '/party' => $this->cacheTime('external_party_data_fetched_at'),
-            '/sites' => $this->cacheTime('external_sites_data_fetched_at'),
+            '/party' => $this->sheetTime(ExternalSheetCache::PARTY),
+            '/sites' => $this->sheetTime(ExternalSheetCache::SITES),
         ]);
     }
 
-    private function cacheTime(string $key): ?Carbon
+    private function sheetTime(string $sheet): ?Carbon
     {
         try {
-            $v = \Illuminate\Support\Facades\Cache::get($key);
-            return $v ? Carbon::parse($v) : null;
+            $fetchedAt = ExternalSheetCache::fetchedAt($sheet);
+
+            return $fetchedAt ? Carbon::parse($fetchedAt) : null;
         } catch (\Throwable) {
             return null;
         }

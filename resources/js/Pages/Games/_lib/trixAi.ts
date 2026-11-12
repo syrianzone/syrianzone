@@ -6,7 +6,7 @@
 // `teams` (the فريقين mode) is what the partner-awareness is for: a partner who
 // is already winning the trick is spared rather than fed a penalty card.
 
-import { SUITS, type Card } from './cards';
+import { SUITS, type Card } from '@/Domain/games/cards';
 import { groupBySuit, highest, lowest, power } from './cardGames/hand';
 import { hasSuit, trickWinner, type Seat } from './cardGames/trick';
 import { legalPlays, TRIX_PLAYERS, type Contract, type TrixDeal, type TrixOptions } from './trix';

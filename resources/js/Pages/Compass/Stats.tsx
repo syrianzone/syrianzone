@@ -4,9 +4,9 @@ import MainLayout from '@/Layouts/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/card';
 import { Button } from '@/Components/ui/button';
 import { BarChart3, Users, Compass } from 'lucide-react';
-import AxisBars from '@/Pages/Compass/components/AxisBars';
-import QuestionAverage from '@/Pages/Compass/components/QuestionAverage';
-import { STATS_SCOPES, type CompassStatsPayload } from '@/Pages/Compass/data/types';
+import AxisBars from '@/Domain/compass/AxisBars';
+import QuestionAverage from '@/Domain/compass/QuestionAverage';
+import { STATS_SCOPES, type CompassStatsPayload } from '@/Domain/compass/types';
 
 interface Props {
     stats: CompassStatsPayload;

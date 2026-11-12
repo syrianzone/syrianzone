@@ -11,8 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { api, extractError } from '../../Places/_lib/api';
-import type { AdminPlace, Paginated } from '../../Places/_lib/types';
+import { api, extractError } from '@/Domain/places/api';
+import type { AdminPlace, Paginated } from '@/Domain/places/types';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
 import { PlaceReviewCard } from './PlaceReviewCard';

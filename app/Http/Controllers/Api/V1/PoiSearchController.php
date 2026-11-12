@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\City;
+use App\Services\Places\PlaceRules;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -31,9 +32,6 @@ class PoiSearchController extends Controller
     private const LIMIT = 8;
 
     private const CACHE_TTL = 86400;
-
-    // Whole-Syria fallback box (same box the Mishwar submit form enforces).
-    private const SYRIA_BOX = [35.5, 32.0, 42.5, 37.5]; // minLng, minLat, maxLng, maxLat
 
     // Place-type synonym groups (Photon matches tokens literally, so without
     // expansion "جامع السلام" never finds a node named "مسجد السلام").
@@ -147,7 +145,8 @@ class PoiSearchController extends Controller
             }
         }
 
-        return self::SYRIA_BOX;
+        // Whole-Syria fallback box: the same box the Mishwar submit form enforces.
+        return PlaceRules::syriaBox();
     }
 
     private function bboxOfGeometry(?array $geo): ?array

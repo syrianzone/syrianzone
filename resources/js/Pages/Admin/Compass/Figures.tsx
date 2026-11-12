@@ -20,8 +20,8 @@ import {
 import { Compass, Plus, Pencil, Trash2, Upload, Loader2, ImageOff } from 'lucide-react';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
-import { AXES } from '@/Pages/Compass/data/axes';
-import type { AxisId } from '@/Pages/Compass/data/types';
+import { AXES } from '@/Domain/compass/axes';
+import type { AxisId } from '@/Domain/compass/types';
 
 interface AdminFigure {
     id: number;

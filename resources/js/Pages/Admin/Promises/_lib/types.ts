@@ -6,7 +6,7 @@ import type {
     PromiseUpdateType,
     SectorOption,
     SpeakerOption,
-} from '@/Pages/Promises/_lib/types';
+} from '@/Domain/promises/types';
 
 export type { PromiseUpdateType };
 

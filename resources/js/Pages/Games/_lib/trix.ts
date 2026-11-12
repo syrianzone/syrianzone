@@ -13,7 +13,7 @@
 // direction the kingdoms pass is seat order. Values that a table is likely to
 // change (partnerships) are options.
 
-import { createDeck, shuffle, type Card, type Suit } from './cards';
+import { createDeck, shuffle, type Card, type Suit } from '@/Domain/games/cards';
 import { createAvoidanceRound, isComplete as avoidanceComplete, legalPlays as avoidanceLegal, playCard as avoidancePlay, type AvoidanceRound } from './cardGames/avoidance';
 import { emptyLayout, lay, legalCards, type ShedLayout } from './cardGames/shedding';
 import { nextSeat, type Seat } from './cardGames/trick';

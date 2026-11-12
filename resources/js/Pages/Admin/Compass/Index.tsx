@@ -14,10 +14,10 @@ import {
     Activity,
     TrendingUp,
 } from 'lucide-react';
-import AxisBars from '@/Pages/Compass/components/AxisBars';
-import AlignmentCard from '@/Pages/Compass/components/AlignmentCard';
-import QuestionAverage from '@/Pages/Compass/components/QuestionAverage';
-import { STATS_SCOPES, VERSION_LABEL, type AlignBloc, type CompassStatsPayload, type QuizVersion } from '@/Pages/Compass/data/types';
+import AxisBars from '@/Domain/compass/AxisBars';
+import AlignmentCard from '@/Domain/compass/AlignmentCard';
+import QuestionAverage from '@/Domain/compass/QuestionAverage';
+import { STATS_SCOPES, VERSION_LABEL, type AlignBloc, type CompassStatsPayload, type QuizVersion } from '@/Domain/compass/types';
 
 interface RecentRow {
     id: number;

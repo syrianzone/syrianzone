@@ -1,7 +1,7 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { Bookmark, BookmarkCheck } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
-import AyahMark from './ayah-mark/AyahMark';
+import AyahMark from '@/Domain/quran/AyahMark';
 import { BASMALAH_LIGATURE, ensureRtlBidi, type QuranPage } from '../../../Domain/quran/quran';
 import { splitPartTokens } from '../../../Domain/quran/quranAudio';
 

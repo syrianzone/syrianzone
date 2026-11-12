@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\CompassController;
 use App\Models\Candidate;
 use App\Models\CompassResult;
 use App\Models\HouseMember2026;
@@ -9,6 +8,7 @@ use App\Models\Promise;
 use App\Models\PromiseSector;
 use App\Models\User;
 use App\Services\Promises\PromiseSectorService;
+use App\Support\Compass\CompassStats;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -177,7 +177,7 @@ it('adds later runs to the running compass tally', function () {
 
     // Only this run is read on the second pass; the first is already tallied.
     tallyRun(['scores' => ['auth_lib' => 0.0], 'answers' => ['auth_lib#0' => -2]]);
-    Cache::forget(CompassController::PUBLIC_STATS_CACHE_KEY);
+    Cache::forget(CompassStats::PUBLIC_CACHE_KEY);
 
     $stats = inertiaProp($this->get('/compass/stats')->assertOk(), 'stats');
 
@@ -193,7 +193,7 @@ it('rebuilds the compass tally when a run is withdrawn', function () {
 
     // Removed behind the tally's back, as a withdrawal or a manual delete does.
     $withdrawn->delete();
-    Cache::forget(CompassController::PUBLIC_STATS_CACHE_KEY);
+    Cache::forget(CompassStats::PUBLIC_CACHE_KEY);
 
     $stats = inertiaProp($this->get('/compass/stats'), 'stats');
 
@@ -210,7 +210,7 @@ it('rebuilds the compass tally a day after it was built, however many runs arriv
     foreach ([8, 16, 23] as $hours) {
         $this->travelTo($builtAt->copy()->addHours($hours));
         tallyRun(['scores' => ['auth_lib' => 1.0]]);
-        Cache::forget(CompassController::PUBLIC_STATS_CACHE_KEY);
+        Cache::forget(CompassStats::PUBLIC_CACHE_KEY);
         $this->get('/compass/stats')->assertOk();
     }
 
@@ -218,12 +218,12 @@ it('rebuilds the compass tally a day after it was built, however many runs arriv
     // the deadline can pick it up.
     DB::table('compass_results')->where('id', $corrected->id)->update(['scores' => json_encode(['auth_lib' => -1.0])]);
 
-    Cache::forget(CompassController::PUBLIC_STATS_CACHE_KEY);
+    Cache::forget(CompassStats::PUBLIC_CACHE_KEY);
     expect(inertiaProp($this->get('/compass/stats'), 'stats.axisAverages.all.auth_lib'))->toEqual(1.0);
 
     // 25 hours after the tally was first built.
     $this->travelTo($builtAt->copy()->addHours(25));
-    Cache::forget(CompassController::PUBLIC_STATS_CACHE_KEY);
+    Cache::forget(CompassStats::PUBLIC_CACHE_KEY);
 
     // (-1 + 1 + 1 + 1) / 4
     expect(inertiaProp($this->get('/compass/stats'), 'stats.axisAverages.all.auth_lib'))->toEqual(0.5);

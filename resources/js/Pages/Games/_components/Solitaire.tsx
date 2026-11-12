@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Hash, Lightbulb, RefreshCw, Undo2 } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
-import { SUIT_LABEL, type Card, type Suit } from '../_lib/cards';
+import { SUIT_LABEL, type Card, type Suit } from '@/Domain/games/cards';
 import {
   autoMove,
   availableMoves,
@@ -19,7 +19,7 @@ import {
 } from '../_lib/solitaire';
 import { readRecord, recordResult } from '../_lib/scores';
 import { readLargeCards, writeLargeCards } from '../_lib/cardDisplay';
-import PlayingCard from './PlayingCard';
+import PlayingCard from '@/Domain/games/PlayingCard';
 import HeaderButton from './HeaderButton';
 import HeaderPortal from './HeaderPortal';
 

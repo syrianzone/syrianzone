@@ -36,18 +36,73 @@ use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
+| Shared Definitions
+|--------------------------------------------------------------------------
+| Modules served under more than one prefix are defined once below and
+| mounted at every prefix they answer on, so an endpoint, a throttle or a
+| capability cannot land on one URL and not its twin.
+*/
+
+// Ballot submission answers on /api/v1/polls/{idOrSlug}/ballots, the
+// versioned alias /api/v1/polls/ballots and the older /api/submit. Only the
+// first is named.
+$pollBallotRoutes = function (string $path, ?string $name): void {
+    Route::post($path, [PollController::class, 'submit'])->name($name);
+};
+
+// The public poll leaderboard answers on the versioned path (throttled by its
+// mount) and on the older unthrottled /api path.
+$pollLeaderboardRoutes = function (?string $name): void {
+    Route::get('/polls/{idOrSlug}/leaderboard', [PollController::class, 'leaderboard'])->name($name);
+};
+
+// Public read-only widgets answer on /api/v1/* and on the older /api/* paths.
+// The versioned mount owns the route names, and /recipes/today is
+// versioned-only.
+$publicWidgetRoutes = function (?string $namePrefix): void {
+    $name = fn (string $suffix): ?string => $namePrefix === null ? null : $namePrefix.$suffix;
+
+    Route::middleware('throttle:60,1')->group(function () use ($name, $namePrefix) {
+        Route::get('/contributors', [ContributorController::class, 'index'])->name($name('contributors.index'));
+        Route::get('/contributors/{contributor}', [ContributorController::class, 'show'])->name($name('contributors.show'));
+        Route::get('/population/master', [PopulationAtlasController::class, 'getData']);
+        Route::get('/population/env-report', [PopulationAtlasController::class, 'getEnvironmentalDetails']);
+        Route::get('/weather', [WeatherController::class, 'show'])->name($name('weather.show'));
+        Route::get('/answers', [AnswersController::class, 'index'])->name($name('answers.index'));
+        if ($namePrefix !== null) {
+            Route::get('/recipes/today', [RecipeController::class, 'ofTheDay'])->name($name('recipes.today'));
+        }
+        Route::get('/recipe-of-the-day', [RecipeController::class, 'ofTheDay']);
+        Route::get('/events/today', [EventsController::class, 'today'])->name($name('events.today'));
+        Route::get('/feed', [FeedController::class, 'show'])->name($name('feed.show'));
+        Route::get('/prayer-times', [PrayerController::class, 'show'])->name($name('prayer-times.show'));
+        Route::get('/app-icon', [AppIconController::class, 'show'])->name($name('app-icon.show'));
+    });
+
+    Route::get('/metrics', [MetricsController::class, 'index'])
+        ->middleware('throttle:10,1')
+        ->name($name('metrics.index'));
+};
+
+/*
+|--------------------------------------------------------------------------
 | Canonical Versioned API Routes (/api/v1/*)
 |--------------------------------------------------------------------------
 */
 
-Route::prefix('v1')->group(function () {
+Route::prefix('v1')->group(function () use ($pollBallotRoutes, $pollLeaderboardRoutes, $publicWidgetRoutes) {
     // 0. Cross-Platform Authentication, Account, User Preferences & Dynamic Navigation Catalog
     Route::prefix('auth')->group(function () {
-        Route::post('/google/token', [AuthController::class, 'googleToken'])
-            ->middleware('throttle:20,1')
-            ->name('api.v1.auth.google.token');
-        Route::post('/google', [AuthController::class, 'googleToken'])
-            ->middleware('throttle:20,1');
+        // The token endpoint answers on the canonical path and on the older
+        // /google alias; one definition, only the canonical one is named.
+        $googleTokenRoutes = function (string $path, ?string $name): void {
+            Route::post($path, [AuthController::class, 'googleToken'])
+                ->middleware('throttle:20,1')
+                ->name($name);
+        };
+
+        $googleTokenRoutes('/google/token', 'api.v1.auth.google.token');
+        $googleTokenRoutes('/google', null);
         Route::get('/user', [AuthController::class, 'user'])
             ->middleware('throttle:60,1')
             ->name('api.v1.auth.user');
@@ -120,89 +175,92 @@ Route::prefix('v1')->group(function () {
         ->middleware('throttle:60,1')
         ->name('api.v1.navigation.show');
 
-    // 1. Cross-module global search
-    Route::middleware('throttle:60,1')->group(function () {
-        Route::get('/search/global', [GlobalSearchController::class, 'search'])
-            ->name('api.v1.search.global');
+    // 1. Cross-module global search. One definition, mounted on the canonical
+    // path (named) and on the older /global-search alias.
+    $globalSearchRoutes = function (string $path, ?string $name): void {
+        Route::get($path, [GlobalSearchController::class, 'search'])->name($name);
+    };
 
-        // Legacy alias for global search
-        Route::get('/global-search', [GlobalSearchController::class, 'search']);
+    Route::middleware('throttle:60,1')->group(function () use ($globalSearchRoutes) {
+        $globalSearchRoutes('/search/global', 'api.v1.search.global');
+        $globalSearchRoutes('/global-search', null);
     });
 
-    // 2. Transit API (nested under /api/v1/transit/*)
-    Route::prefix('transit')->group(function () {
-        Route::middleware('throttle:60,1')->group(function () {
-            Route::get('/cities', [TransitController::class, 'cities'])
-                ->name('api.v1.transit.cities.index');
-            Route::get('/cities/{id}/routes', [TransitController::class, 'routes'])
-                ->name('api.v1.transit.cities.routes.index');
-            Route::get('/cities/{id}/map-data', [TransitController::class, 'mapData'])
-                ->name('api.v1.transit.cities.map-data');
-            Route::get('/cities/{id}/map', [TransitController::class, 'mapData'])
-                ->name('api.v1.transit.cities.map');
-            Route::get('/stops/nearby', [TransitController::class, 'nearbyStops'])
-                ->name('api.v1.transit.stops.nearby');
-            Route::get('/search', [TransitController::class, 'search'])
-                ->name('api.v1.transit.search');
-            Route::get('/pois', [PoiSearchController::class, 'search'])
-                ->name('api.v1.transit.pois.index');
-        });
+    // 2. Transit API. One definition of the public reads, mounted under the
+    // canonical /api/v1/transit prefix and at the root of /api/v1. The
+    // canonical mount keeps the pass-through actions, owns the route names and
+    // adds the /map alias; the older aliases call the get* methods and use
+    // /geo/poi.
+    $transitPublicRoutes = function (bool $canonical): void {
+        $name = fn (string $suffix): ?string => $canonical ? 'api.v1.transit.'.$suffix : null;
 
-        // Transit Studio: open for community contributions (supports optional session or Bearer token)
+        Route::middleware('throttle:60,1')->group(function () use ($canonical, $name) {
+            Route::get('/cities', [TransitController::class, $canonical ? 'cities' : 'getCities'])
+                ->name($name('cities.index'));
+            Route::get('/cities/{id}/routes', [TransitController::class, $canonical ? 'routes' : 'getRoutes'])
+                ->name($name('cities.routes.index'));
+            Route::get('/cities/{id}/map-data', [TransitController::class, $canonical ? 'mapData' : 'getMapData'])
+                ->name($name('cities.map-data'));
+            if ($canonical) {
+                Route::get('/cities/{id}/map', [TransitController::class, 'mapData'])
+                    ->name($name('cities.map'));
+            }
+            Route::get('/stops/nearby', [TransitController::class, $canonical ? 'nearbyStops' : 'getNearbyStops'])
+                ->name($name('stops.nearby'));
+            Route::get('/search', [TransitController::class, 'search'])
+                ->name($name('search'));
+            // POI search (mosques, cafes…) for the transit map: Photon first,
+            // Google Places fallback on thin results. Static path, no conflicts.
+            Route::get($canonical ? '/pois' : '/geo/poi', [PoiSearchController::class, 'search'])
+                ->name($name('pois.index'));
+        });
+    };
+
+    // Transit Studio. One definition, mounted under /api/v1/transit/studio/*
+    // (canonical, named, with the PATCH alias) and the older /api/v1/studio/*
+    // (unnamed, PUT only).
+    $transitStudioRoutes = function (?string $namePrefix, bool $withPatchAlias): void {
+        $name = fn (string $suffix): ?string => $namePrefix === null ? null : $namePrefix.$suffix;
+
+        // Transit Studio is open for community contributions (supports optional
+        // session or Bearer token).
         Route::post('/studio/routes', [TransitStudioController::class, 'store'])
             ->middleware('throttle:studio-submit')
-            ->name('api.v1.transit.studio.routes.store');
+            ->name($name('studio.routes.store'));
 
-        // Transit Studio: list & manage existing drafts (requires auth via web session or Sanctum Bearer token)
-        Route::middleware('auth:sanctum')->group(function () {
+        // Authenticated iterative editing (admin geometry fixes, owner
+        // resubmits): 10/min blocks legitimate rapid saving, so the studio
+        // allows the same coarse rate as the other authed read/write endpoints.
+        // The anonymous create stays at 5/min as the spam backstop.
+        Route::middleware('auth:sanctum')->group(function () use ($name, $withPatchAlias) {
             Route::get('/studio/routes', [TransitStudioController::class, 'index'])
                 ->middleware('throttle:60,1')
-                ->name('api.v1.transit.studio.routes.index');
+                ->name($name('studio.routes.index'));
             Route::get('/studio/routes/{id}', [TransitStudioController::class, 'show'])
-                ->name('api.v1.transit.studio.routes.show');
+                ->name($name('studio.routes.show'));
             Route::put('/studio/routes/{id}', [TransitStudioController::class, 'update'])
                 ->middleware('throttle:60,1')
-                ->name('api.v1.transit.studio.routes.update');
-            Route::patch('/studio/routes/{id}', [TransitStudioController::class, 'update'])
-                ->middleware('throttle:60,1');
+                ->name($name('studio.routes.update'));
+            if ($withPatchAlias) {
+                Route::patch('/studio/routes/{id}', [TransitStudioController::class, 'update'])
+                    ->middleware('throttle:60,1');
+            }
             Route::delete('/studio/routes/{id}', [TransitStudioController::class, 'destroy'])
                 ->middleware('throttle:10,1')
-                ->name('api.v1.transit.studio.routes.destroy');
+                ->name($name('studio.routes.destroy'));
             Route::get('/studio/routes/{id}/from-route', [TransitStudioController::class, 'showForEdit'])
-                ->name('api.v1.transit.studio.routes.from-route');
+                ->name($name('studio.routes.from-route'));
         });
+    };
+
+    Route::prefix('transit')->group(function () use ($transitPublicRoutes, $transitStudioRoutes) {
+        $transitPublicRoutes(true);
+        $transitStudioRoutes('api.v1.transit.', true);
     });
 
-    // Legacy Transit & Geo aliases at root /api/v1/* (kept for backwards compatibility)
-    Route::middleware('throttle:60,1')->group(function () {
-        Route::get('/cities', [TransitController::class, 'getCities']);
-        Route::get('/cities/{id}/routes', [TransitController::class, 'getRoutes']);
-        Route::get('/cities/{id}/map-data', [TransitController::class, 'getMapData']);
-        Route::get('/stops/nearby', [TransitController::class, 'getNearbyStops']);
-        Route::get('/search', [TransitController::class, 'search']);
-        // POI search (mosques, cafes…) for the transit map: Photon first,
-        // Google Places fallback on thin results. Static path, no conflicts.
-        Route::get('/geo/poi', [PoiSearchController::class, 'search']);
-    });
-
-    // Legacy Transit Studio aliases at /api/v1/studio/*
-    Route::post('/studio/routes', [TransitStudioController::class, 'store'])
-        ->middleware('throttle:studio-submit');
-
-    Route::middleware('auth:sanctum')->group(function () {
-        Route::get('/studio/routes', [TransitStudioController::class, 'index'])
-            ->middleware('throttle:60,1');
-        Route::get('/studio/routes/{id}', [TransitStudioController::class, 'show']);
-        // Authenticated iterative editing (admin geometry fixes, owner
-        // resubmits): 10/min blocks legitimate rapid saving, so allow the
-        // same coarse rate as the other authed read/write endpoints. The
-        // anonymous create above stays at 5/min as the spam backstop.
-        Route::put('/studio/routes/{id}', [TransitStudioController::class, 'update'])
-            ->middleware('throttle:60,1');
-        Route::delete('/studio/routes/{id}', [TransitStudioController::class, 'destroy'])
-            ->middleware('throttle:10,1');
-        Route::get('/studio/routes/{id}/from-route', [TransitStudioController::class, 'showForEdit']);
-    });
+    // The older aliases at the root of /api/v1.
+    $transitPublicRoutes(false);
+    $transitStudioRoutes(null, false);
 
     // 3. Syrian Compass: account results (auth:sanctum) + account-independent share & stats
     Route::prefix('compass')->group(function () {
@@ -218,14 +276,18 @@ Route::prefix('v1')->group(function () {
                 ->name('api.v1.compass.results.destroy');
         });
         // Share is account-independent: anyone can create/read a share key.
-        Route::middleware('throttle:30,1')->group(function () {
-            Route::post('/shares', [CompassShareController::class, 'store'])
-                ->name('api.v1.compass.shares.store');
-            Route::get('/shares/{shareId}', [CompassShareController::class, 'show'])
-                ->name('api.v1.compass.shares.show');
-            // Legacy singular /share aliases
-            Route::post('/share', [CompassShareController::class, 'store']);
-            Route::get('/share/{shareId}', [CompassShareController::class, 'show']);
+        // One definition, mounted on the canonical /shares path (named) and the
+        // older singular /share alias.
+        $compassShareRoutes = function (string $path, bool $named): void {
+            Route::post($path, [CompassShareController::class, 'store'])
+                ->name($named ? 'api.v1.compass.shares.store' : null);
+            Route::get($path.'/{shareId}', [CompassShareController::class, 'show'])
+                ->name($named ? 'api.v1.compass.shares.show' : null);
+        };
+
+        Route::middleware('throttle:30,1')->group(function () use ($compassShareRoutes) {
+            $compassShareRoutes('/shares', true);
+            $compassShareRoutes('/share', false);
 
             // Anonymous stats submission (opt-in), open to guests and users.
             Route::post('/stats', [CompassStatsController::class, 'store'])
@@ -337,7 +399,7 @@ Route::prefix('v1')->group(function () {
 
     // 5. Public Polls & Voting API
     // Never exposes voter identifiers (voter_key, ip_hash, user_agent) or polls.user_id.
-    Route::middleware('throttle:public-api')->group(function () {
+    Route::middleware('throttle:public-api')->group(function () use ($pollLeaderboardRoutes) {
         Route::get('/polls', [VotingDataController::class, 'index'])
             ->name('api.v1.polls.index');
         Route::get('/polls/{idOrSlug}', [VotingDataController::class, 'show'])
@@ -348,50 +410,23 @@ Route::prefix('v1')->group(function () {
             ->name('api.v1.polls.scores.index');
         Route::get('/polls/{idOrSlug}/ballots', [VotingDataController::class, 'ballots'])
             ->name('api.v1.polls.ballots.index');
-        Route::get('/polls/{idOrSlug}/leaderboard', [PollController::class, 'leaderboard'])
-            ->name('api.v1.polls.leaderboard');
+        $pollLeaderboardRoutes('api.v1.polls.leaderboard');
     });
 
-    Route::middleware('throttle:voting')->group(function () {
-        Route::post('/polls/{idOrSlug}/ballots', [PollController::class, 'submit'])
-            ->name('api.v1.polls.ballots.store');
-        Route::post('/polls/ballots', [PollController::class, 'submit']);
+    Route::middleware('throttle:voting')->group(function () use ($pollBallotRoutes) {
+        $pollBallotRoutes('/polls/{idOrSlug}/ballots', 'api.v1.polls.ballots.store');
+        $pollBallotRoutes('/polls/ballots', null);
     });
 
     // 6. Contributors, Population Atlas, Widgets & Utilities (versioned under /api/v1/*)
-    Route::middleware('throttle:60,1')->group(function () {
-        Route::get('/contributors', [ContributorController::class, 'index'])
-            ->name('api.v1.contributors.index');
-        Route::get('/contributors/{contributor}', [ContributorController::class, 'show'])
-            ->name('api.v1.contributors.show');
+    $publicWidgetRoutes('api.v1.');
 
+    Route::middleware('throttle:60,1')->group(function () {
         Route::get('/atlas', [PopulationAtlasController::class, 'index'])
             ->name('api.v1.atlas.index');
         Route::get('/atlas/environment', [PopulationAtlasController::class, 'environment'])
             ->name('api.v1.atlas.environment');
-        Route::get('/population/master', [PopulationAtlasController::class, 'getData']);
-        Route::get('/population/env-report', [PopulationAtlasController::class, 'getEnvironmentalDetails']);
-
-        Route::get('/weather', [WeatherController::class, 'show'])
-            ->name('api.v1.weather.show');
-        Route::get('/answers', [AnswersController::class, 'index'])
-            ->name('api.v1.answers.index');
-        Route::get('/recipes/today', [RecipeController::class, 'ofTheDay'])
-            ->name('api.v1.recipes.today');
-        Route::get('/recipe-of-the-day', [RecipeController::class, 'ofTheDay']);
-        Route::get('/events/today', [EventsController::class, 'today'])
-            ->name('api.v1.events.today');
-        Route::get('/feed', [FeedController::class, 'show'])
-            ->name('api.v1.feed.show');
-        Route::get('/prayer-times', [PrayerController::class, 'show'])
-            ->name('api.v1.prayer-times.show');
-        Route::get('/app-icon', [AppIconController::class, 'show'])
-            ->name('api.v1.app-icon.show');
     });
-
-    Route::get('/metrics', [MetricsController::class, 'index'])
-        ->middleware('throttle:10,1')
-        ->name('api.v1.metrics.index');
 });
 
 /*
@@ -403,23 +438,8 @@ Route::prefix('v1')->group(function () {
 
 Route::get('/polls', [PollController::class, 'index']);
 Route::get('/polls/{idOrSlug}', [PollController::class, 'show']);
-Route::get('/polls/{idOrSlug}/leaderboard', [PollController::class, 'leaderboard']);
+$pollLeaderboardRoutes(null);
 
-Route::middleware('throttle:voting')->group(function () {
-    Route::post('/submit', [PollController::class, 'submit']);
-});
+Route::middleware('throttle:voting')->group(fn () => $pollBallotRoutes('/submit', null));
 
-Route::get('/contributors', [ContributorController::class, 'index'])->middleware('throttle:60,1');
-Route::get('/contributors/{contributor}', [ContributorController::class, 'show'])->middleware('throttle:60,1');
-
-Route::get('/population/master', [PopulationAtlasController::class, 'getData'])->middleware('throttle:60,1');
-Route::get('/population/env-report', [PopulationAtlasController::class, 'getEnvironmentalDetails'])->middleware('throttle:60,1');
-
-Route::get('/weather', [WeatherController::class, 'show'])->middleware('throttle:60,1');
-Route::get('/answers', [AnswersController::class, 'index'])->middleware('throttle:60,1');
-Route::get('/recipe-of-the-day', [RecipeController::class, 'ofTheDay'])->middleware('throttle:60,1');
-Route::get('/events/today', [EventsController::class, 'today'])->middleware('throttle:60,1');
-Route::get('/feed', [FeedController::class, 'show'])->middleware('throttle:60,1');
-Route::get('/prayer-times', [PrayerController::class, 'show'])->middleware('throttle:60,1');
-Route::get('/metrics', [MetricsController::class, 'index'])->middleware('throttle:10,1');
-Route::get('/app-icon', [AppIconController::class, 'show'])->middleware('throttle:60,1');
+$publicWidgetRoutes(null);

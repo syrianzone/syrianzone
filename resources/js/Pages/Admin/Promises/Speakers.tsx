@@ -16,11 +16,11 @@ import { ImageUp, Loader2, Pencil, Search, Trash2, UserPlus } from 'lucide-react
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
 import { extractApiErrorMessage, extractApiFieldErrors } from '@/Lib/apiError';
-import SpeakerAvatar from '@/Pages/Promises/_components/SpeakerAvatar';
+import SpeakerAvatar from '@/Domain/promises/SpeakerAvatar';
 import FieldError, { fieldA11y } from '@/Components/ui/field-error';
-import SpeakerPicker from '@/Pages/Promises/_components/SpeakerPicker';
-import { PENDING_SPEAKER_LABEL, SPEAKER_SOURCE_LABEL } from '@/Pages/Promises/_lib/status';
-import type { SpeakerOption } from '@/Pages/Promises/_lib/types';
+import SpeakerPicker from '@/Domain/promises/SpeakerPicker';
+import { PENDING_SPEAKER_LABEL, SPEAKER_SOURCE_LABEL } from '@/Domain/promises/status';
+import type { SpeakerOption } from '@/Domain/promises/types';
 import AdminHeader from './_components/AdminHeader';
 import { useCan } from './_lib/useCan';
 import type { AdminSpeaker } from './_lib/types';

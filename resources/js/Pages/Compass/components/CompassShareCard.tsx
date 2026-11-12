@@ -1,8 +1,8 @@
 import React, { forwardRef } from 'react';
-import type { AxisId, Spectrum } from '../data/types';
-import { AXES } from '../data/axes';
-import { axisDisplay } from '../lib/axisDisplay';
-import SpectrumIcon from './SpectrumIcon';
+import type { AxisId, Spectrum } from '@/Domain/compass/types';
+import { AXES } from '@/Domain/compass/axes';
+import { axisDisplay } from '@/Domain/compass/axisDisplay';
+import SpectrumIcon from '@/Domain/compass/SpectrumIcon';
 import { getThemeById, THEME_REGISTRY } from '@/lib/theme';
 
 const hexToRgb = (hex: string): string => {

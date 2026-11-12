@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\OfficialCategory;
 use App\Models\OfficialEntity;
+use App\Services\SyOfficial\SyOfficialDirectoryService;
+use App\Services\SyOfficial\SyOfficialPresenter;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 
@@ -12,9 +14,9 @@ class SyOfficialController extends Controller
     /**
      * Display the official accounts page.
      */
-    public function index()
+    public function index(SyOfficialPresenter $presenter)
     {
-        $categories = Cache::remember('syofficial:db_categories_v2', 600, function () {
+        $categories = Cache::remember(SyOfficialDirectoryService::CATEGORIES_CACHE_KEY, 600, function () {
             // Seed an empty directory on first use. Checked here, inside the
             // cached read, so a warm page does not count the table on every hit.
             if (OfficialCategory::count() === 0) {
@@ -30,32 +32,16 @@ class SyOfficialController extends Controller
                 ->get();
         });
 
-        $entities = Cache::remember('syofficial:db_entities_v2', 600, function () {
-            return OfficialEntity::with('category')
-                ->where('is_active', true)
-                ->whereHas('category', function ($q) {
-                    $q->where('is_active', true);
-                })
-                ->orderBy('order_column')
-                ->get()
-                ->map(function ($item) {
-                    $image = $item->image;
-                    if ($image && !str_starts_with($image, 'http') && !str_starts_with($image, '/')) {
-                        $r2Url = env('R2_PUBLIC_URL') ?: (config('filesystems.disks.r2.url') ?: 'https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev');
-                        $image = rtrim($r2Url, '/') . '/syofficial/entities/' . basename($image);
-                    }
-                    return [
-                        'id' => $item->id,
-                        'name' => $item->name,
-                        'name_ar' => $item->name_ar,
-                        'description' => $item->description ?? '',
-                        'description_ar' => $item->description_ar ?? '',
-                        'image' => $image,
-                        'category' => $item->category_id,
-                        'socials' => (object)($item->socials ?? []),
-                    ];
-                })
-                ->toArray();
+        $entities = Cache::remember(SyOfficialDirectoryService::ENTITIES_CACHE_KEY, 600, function () use ($presenter) {
+            return $presenter->publicEntities(
+                OfficialEntity::with('category')
+                    ->where('is_active', true)
+                    ->whereHas('category', function ($q) {
+                        $q->where('is_active', true);
+                    })
+                    ->orderBy('order_column')
+                    ->get()
+            );
         });
 
         return Inertia::render('SyOfficial/Index', [

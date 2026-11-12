@@ -1,6 +1,6 @@
 import { Users } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/Components/ui/avatar';
-import { discovery } from '@/Pages/Places/_lib/discovery';
+import { discovery } from '@/Domain/places/discovery';
 import { WidgetShell } from '../../_components/WidgetShell';
 import { useWidgetQuery } from '../../_lib/query';
 import type { WidgetProps } from '../../_lib/types';

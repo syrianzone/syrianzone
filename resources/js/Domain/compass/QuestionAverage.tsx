@@ -4,11 +4,11 @@ import {
     Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue,
 } from '@/Components/ui/select';
 import { ListChecks } from 'lucide-react';
-import { AXES } from '../data/axes';
-import { QUESTIONS } from '../data/questions';
-import { ALIGN_QUESTIONS } from '../data/align';
-import { axisKey, alignKey } from '../lib/engine';
-import type { QuestionScope } from '../data/types';
+import { AXES } from './axes';
+import { QUESTIONS } from './questions';
+import { ALIGN_QUESTIONS } from './align';
+import { axisKey, alignKey } from './engine';
+import type { QuestionScope } from './types';
 
 interface Props {
     questions: Record<string, Record<string, QuestionScope>>;

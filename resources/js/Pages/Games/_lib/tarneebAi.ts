@@ -6,7 +6,7 @@
 // the same functions run a single opponent or all four seats in a simulation.
 // The generic reads (power, grouping, top sequences) come from cardGames/hand.
 
-import { SUITS, type Card, type Suit } from './cards';
+import { SUITS, type Card, type Suit } from '@/Domain/games/cards';
 import { groupBySuit, lowest, power, topSequence } from './cardGames/hand';
 import { beats, trickWinner, type Seat } from './cardGames/trick';
 import { TARNEEB_HAND, TARNEEB_PLAYERS, legalBids, legalPlays, type TarneebRound } from './tarneeb';

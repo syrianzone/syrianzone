@@ -20,9 +20,9 @@ import {
 import { Compass, Plus, Pencil, Trash2, Loader2, X } from 'lucide-react';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
-import { AXES } from '@/Pages/Compass/data/axes';
-import SpectrumIcon from '@/Pages/Compass/components/SpectrumIcon';
-import type { AxisId } from '@/Pages/Compass/data/types';
+import { AXES } from '@/Domain/compass/axes';
+import SpectrumIcon from '@/Domain/compass/SpectrumIcon';
+import type { AxisId } from '@/Domain/compass/types';
 
 interface AdminPersona {
     id: number;

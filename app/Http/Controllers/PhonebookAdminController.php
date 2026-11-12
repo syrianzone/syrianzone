@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\PhonebookCategory;
 use App\Models\PhonebookEntry;
+use App\Services\Phonebook\PhonebookCache;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 
 class PhonebookAdminController extends Controller
 {
@@ -203,7 +203,6 @@ class PhonebookAdminController extends Controller
 
     private function flushCache(): void
     {
-        Cache::forget('phonebook:db_categories_v1');
-        Cache::forget('phonebook:db_entries_v1');
+        PhonebookCache::forget();
     }
 }

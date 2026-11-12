@@ -1,6 +1,6 @@
 import { useMemo, useEffect, useRef } from 'react'
 import { usePage } from '@inertiajs/react'
-import citiesData from '../_data/cities.json'
+import citiesData from '@/Domain/transit/cities.json'
 import { useRoutes, useMapData } from '../_hooks/useMapData'
 import { useMapStore } from '../_store/useMapStore'
 import type { City, RouteProperties } from '../_types'

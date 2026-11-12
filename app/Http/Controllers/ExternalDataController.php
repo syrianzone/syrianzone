@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\ExternalData\ExternalSheetCache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
@@ -10,8 +11,6 @@ use Inertia\Inertia;
 
 class ExternalDataController extends Controller
 {
-    public const HOUSE_MEMBERS_CACHE_KEY = 'house:members_2026_v1';
-
     /**
      * Render Syrian ID page.
      */
@@ -63,7 +62,7 @@ class ExternalDataController extends Controller
         // Schema::hasTable() probe that is itself an information_schema query.
         // A failed or empty read is not cached, so a table that appears later
         // (a deploy mid-flight) shows up on the next request.
-        $members = Cache::get(self::HOUSE_MEMBERS_CACHE_KEY);
+        $members = Cache::get(\App\Models\HouseMember2026::CACHE_KEY);
         if (! is_array($members)) {
             $members = [];
             try {
@@ -71,7 +70,7 @@ class ExternalDataController extends Controller
                     ->orderBy('governorate_ar')->orderBy('name_ar')
                     ->get()->toArray();
                 if ($members !== []) {
-                    Cache::put(self::HOUSE_MEMBERS_CACHE_KEY, $members, 600);
+                    Cache::put(\App\Models\HouseMember2026::CACHE_KEY, $members, 600);
                 }
             } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::warning('house_members_2026 read failed', ['error' => $e->getMessage()]);
@@ -90,8 +89,7 @@ class ExternalDataController extends Controller
     {
         $url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTxa48kbdV2X5Umd3WGDeU7xX5qFVRpyA3uDFhI9w2FAOuxSiGebSpKrVpjU-13XswnNgxHvfWw-sbJ/pub?output=csv';
 
-        $cached = Cache::get('external_party_data');
-        $fetchedAt = Cache::get('external_party_data_fetched_at');
+        [$cached, $fetchedAt] = ExternalSheetCache::read(ExternalSheetCache::PARTY);
         if ($cached !== null) {
             return Inertia::render('Party/Index', [
                 'initialOrganizations' => $cached,
@@ -104,9 +102,7 @@ class ExternalDataController extends Controller
         // this request only, so the next visitor retries instead of reading a
         // 10-minute blank page.
         if ($data !== []) {
-            Cache::put('external_party_data', $data, 600);
-            $fetchedAt = now()->toIso8601String();
-            Cache::put('external_party_data_fetched_at', $fetchedAt, 600);
+            $fetchedAt = ExternalSheetCache::write(ExternalSheetCache::PARTY, $data);
         }
 
         return Inertia::render('Party/Index', [
@@ -196,8 +192,7 @@ class ExternalDataController extends Controller
     {
         $url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTCrz7GpfTDmtgKipQd3IqyMPle1ehoG77VO2SQRDqKC9zRRKO3FDI60VoYhA_XqlzoKQ6gZDrIuIjL/pub?output=csv';
 
-        $cached = Cache::get('external_sites_data');
-        $fetchedAt = Cache::get('external_sites_data_fetched_at');
+        [$cached, $fetchedAt] = ExternalSheetCache::read(ExternalSheetCache::SITES);
         if ($cached !== null) {
             return Inertia::render('Sites/Index', [
                 'initialWebsites' => $cached,
@@ -207,9 +202,7 @@ class ExternalDataController extends Controller
 
         $data = $this->fetchSites($url);
         if ($data !== []) {
-            Cache::put('external_sites_data', $data, 600);
-            $fetchedAt = now()->toIso8601String();
-            Cache::put('external_sites_data_fetched_at', $fetchedAt, 600);
+            $fetchedAt = ExternalSheetCache::write(ExternalSheetCache::SITES, $data);
         }
 
         return Inertia::render('Sites/Index', [

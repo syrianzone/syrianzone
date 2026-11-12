@@ -18,11 +18,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { api, extractError, extractFieldErrors } from '../../Places/_lib/api';
+import { api, extractError, extractFieldErrors } from '@/Domain/places/api';
 import { extractApiFieldErrors } from '@/Lib/apiError';
 import FieldError, { fieldA11y } from '@/Components/ui/field-error';
-import { CATEGORIES } from '../../Places/_lib/categories';
-import type { AdminPlace, PlaceCategory } from '../../Places/_lib/types';
+import { CATEGORIES } from '@/Domain/places/categories';
+import type { AdminPlace, PlaceCategory } from '@/Domain/places/types';
 
 export function EditPlaceDialog(props: {
   open: boolean;

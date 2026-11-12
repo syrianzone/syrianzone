@@ -109,7 +109,7 @@ test('a place that is not approved, unknown or malformed previews as the map and
 });
 
 test('place category labels on the card are the ones the map uses', function () {
-    $source = file_get_contents(resource_path('js/Pages/Places/_lib/categories.ts'));
+    $source = file_get_contents(resource_path('js/Domain/places/categories.ts'));
 
     foreach (PlacePreview::CATEGORIES as $key => [$label]) {
         expect($source)->toContain("{ key: '{$key}', label: '{$label}' }");

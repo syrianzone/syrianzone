@@ -74,7 +74,7 @@ import {
 import {
     Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle,
 } from '@/Components/ui/sheet';
-import LocationModeSelector from '@/Pages/Muslim/_components/LocationModeSelector';
+import LocationModeSelector from '@/Domain/location/LocationModeSelector';
 import { LOC_CHANGED_EVENT, effectivePrayerParams, getGeo, getLocMode, setLocMode, useLocSignal, type GeoPoint, type LocMode } from '@/Domain/location/location';
 import { PRAYER_METHODS } from '@/Domain/prayer/methods';
 import { useIsMobile } from '@/Lib/useIsMobile';

@@ -1,8 +1,10 @@
 <?php
 
+use App\Models\Route;
 use App\Models\User;
 use App\Services\TransitKmlImportService;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 function transitAdmin(): User
@@ -224,4 +226,42 @@ test('import-publish rejects degenerate geometry', function () {
             ],
         ])
         ->assertStatus(422);
+});
+
+test('a studio edit submission busts the public cities cache as well as the map caches', function () {
+    seedTransitCity();
+
+    $route = Route::create([
+        'id' => 'route-homs-1',
+        'city_id' => 'homs',
+        'name_ar' => 'خط منشور',
+        'status' => 'published',
+    ]);
+
+    // transit:cities:api is a separate key from transit:cities: the studio used
+    // to forget only the latter, leaving the public API stale for an hour.
+    Cache::put('transit:cities', 'stale', 600);
+    Cache::put('transit:cities:api', 'stale', 600);
+    Cache::put('transit:map-data:homs', 'stale', 600);
+    Cache::put('transit:routes:homs', 'stale', 600);
+
+    $this->actingAs(User::factory()->create(['role' => 'user']))
+        ->postJson('/api/v1/studio/routes', [
+            'city_id' => 'homs',
+            'name_ar' => 'تعديل مقترح على الخط المنشور',
+            'route_id' => $route->id,
+            'geojson' => [
+                'type' => 'FeatureCollection',
+                'features' => [
+                    ['type' => 'Feature', 'properties' => [], 'geometry' => ['type' => 'LineString', 'coordinates' => [[36.66, 34.73], [36.68, 34.735]]]],
+                ],
+            ],
+        ])
+        ->assertCreated();
+
+    expect($route->fresh()->status)->toBe('disapproved')
+        ->and(Cache::has('transit:cities'))->toBeFalse()
+        ->and(Cache::has('transit:cities:api'))->toBeFalse()
+        ->and(Cache::has('transit:map-data:homs'))->toBeFalse()
+        ->and(Cache::has('transit:routes:homs'))->toBeFalse();
 });

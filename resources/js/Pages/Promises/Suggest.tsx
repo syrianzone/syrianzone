@@ -12,9 +12,9 @@ import { ArrowRight, CheckCircle2, Loader2, LogIn, Plus, Trash2 } from 'lucide-r
 import { notify } from '@/Lib/notify';
 import { extractApiErrorMessage, extractApiFieldErrors } from '@/Lib/apiError';
 import FieldError, { fieldA11y } from '@/Components/ui/field-error';
-import SpeakerPicker from './_components/SpeakerPicker';
-import { VENUE_LABEL } from './_lib/status';
-import type { SpeakerOption } from './_lib/types';
+import SpeakerPicker from '@/Domain/promises/SpeakerPicker';
+import { VENUE_LABEL } from '@/Domain/promises/status';
+import type { SpeakerOption } from '@/Domain/promises/types';
 
 interface Props {
     venues: string[];

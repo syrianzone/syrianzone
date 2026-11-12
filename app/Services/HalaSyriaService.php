@@ -26,6 +26,13 @@ class HalaSyriaService
   // spin this loop forever.
   private const MAX_PAGES = 50;
 
+  /**
+   * The public hotel map payload. This service owns the hotel rows, so it owns
+   * the cache key and the one way to drop it; the map endpoint reads under the
+   * same constant.
+   */
+  public const MAP_CACHE_KEY = 'hotels:map';
+
   public function fetchAll(): array
   {
     if (!$this->isConfigured()) {
@@ -140,8 +147,16 @@ class HalaSyriaService
     // touched this run (its last_synced_at predates it), so remove it.
     Hotel::where('last_synced_at', '<', $now)->delete();
 
-    \Illuminate\Support\Facades\Cache::forget('hotels:map');
+    self::forgetMapCache();
 
     return $synced;
+  }
+
+  /**
+   * Drop the cached map payload after the roster changed.
+   */
+  public static function forgetMapCache(): void
+  {
+    \Illuminate\Support\Facades\Cache::forget(self::MAP_CACHE_KEY);
   }
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { SmartFilterValue } from '@/Lib/smartFilterSearch';
-import type { PromiseCardData } from './types';
+import type { PromiseCardData } from '@/Domain/promises/types';
 import { activeScoreboardState, canReturnToPromiseList, filterPromises, matchesState, promiseFilterFacets, promiseListUrl, promiseReturnUrl, readPromiseFilters, selectScoreboardState, visiblePromises } from './filters';
 
 const facets = promiseFilterFacets({

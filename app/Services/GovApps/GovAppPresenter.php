@@ -13,6 +13,37 @@ use Illuminate\Database\Eloquent\Collection;
 class GovAppPresenter
 {
     /**
+     * The public directory page: Arabic-first, with the links shape the page
+     * expects even for an app that has none stored.
+     *
+     * @param  Collection<int, GovApp>  $apps
+     * @return array<int, array<string, mixed>>
+     */
+    public function publicItems(Collection $apps): array
+    {
+        return $apps->map(fn (GovApp $app) => $this->publicItem($app))->values()->all();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function publicItem(GovApp $app): array
+    {
+        return [
+            'id' => $app->id,
+            'name' => $app->name_ar ?: $app->name,
+            'description' => $app->description_ar ?: $app->description,
+            'icon' => $app->icon,
+            'images' => $app->images ?? [],
+            'links' => $app->links ?? [
+                'official' => null,
+                'android' => null,
+                'apple' => null,
+            ],
+        ];
+    }
+
+    /**
      * @param  Collection<int, GovApp>  $apps
      * @return array<int, array<string, mixed>>
      */

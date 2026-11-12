@@ -38,13 +38,11 @@ resources/js/Pages/Games/
 ├── Tarneeb/Index.tsx            # page shell
 ├── _components/
 │   ├── GameShell.tsx            # shared sub-page chrome: back link + title
-│   ├── PlayingCard.tsx          # shared card face/back, no game rules
 │   ├── Game2048.tsx             # the board: state, input, rendering
 │   ├── Solitaire.tsx            # clock, selection, undo, drag plumbing
 │   └── Tarneeb.tsx              # the table: seats, trick, bidding, hand
 └── _lib/
     ├── games.ts                 # GAMES registry — the single source of truth
-    ├── cards.ts                 # shared deck, labels and pip geometry
     ├── cardGames/
     │   ├── trick.ts             # shared trick-taking primitives
     │   ├── bidding.ts           # shared ascending auction
@@ -65,13 +63,18 @@ resources/js/Pages/Games/
 `/games`, the title block and the icon (the last two read from `GAMES` by the
 page's `slug`), so a new game only has to supply its slug and its own board.
 
-`PlayingCard` and `_lib/cards.ts` are the shared **card kit**: the card value,
+`Domain/games/PlayingCard.tsx` and `Domain/games/cards.ts` are the shared **card kit**: the card value,
 the 52-card deck, the rank/suit labels and the pip geometry are game-agnostic,
 and the component draws any card face or back from them. They are styled
 entirely by the generic `.sz-card*` classes in `app.css`; a board supplies the
 sizing context (`--sz-card-w`, `--sz-card-h-ratio`, `--sz-card-radius`) and
 lays out its own piles. Solitaire is the first consumer; the trick-taking games
 (tarneeb, trix) will reuse it rather than restate a card.
+
+Outside the page folder, `resources/js/Domain/games/` holds what the hub, the
+three boards and the 404 page all draw from: `cards.ts` (the card value, the
+deck, the labels and the pip geometry) and `PlayingCard.tsx` (the card face and
+back).
 
 `_lib/cardGames/` is the shared **engine kit** for trick-taking games: the
 follow-suit and trick-winner rules (`trick.ts`), the ascending auction

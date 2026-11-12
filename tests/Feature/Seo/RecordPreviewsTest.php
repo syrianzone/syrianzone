@@ -125,7 +125,7 @@ test('a promise card follows the state the page shows and changes address with i
 });
 
 test('promise state labels on the card are the ones the page uses', function () {
-    $source = file_get_contents(resource_path('js/Pages/Promises/_lib/status.ts'));
+    $source = file_get_contents(resource_path('js/Domain/promises/status.ts'));
 
     foreach (PromisePreview::STATES as $state => [$label]) {
         expect($source)->toContain("{$state}: { label: '{$label}'");

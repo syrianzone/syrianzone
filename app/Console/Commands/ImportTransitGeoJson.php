@@ -18,7 +18,7 @@ class ImportTransitGeoJson extends Command
     public function handle()
     {
         $this->info('Importing cities...');
-        $citiesPath = resource_path('js/Pages/Transit/_data/cities.json');
+        $citiesPath = resource_path('js/Domain/transit/cities.json');
 
         if (!File::exists($citiesPath)) {
             $this->error("cities.json not found at {$citiesPath}");

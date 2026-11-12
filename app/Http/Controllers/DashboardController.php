@@ -54,7 +54,7 @@ class DashboardController extends Controller
         ];
 
         // 1. All roles can view cities for submissions/management
-        $citiesPath = resource_path('js/Pages/Transit/_data/cities.json');
+        $citiesPath = resource_path('js/Domain/transit/cities.json');
         $cities = file_exists($citiesPath) ? json_decode(file_get_contents($citiesPath), true) : [];
         $data['cities'] = $cities;
 

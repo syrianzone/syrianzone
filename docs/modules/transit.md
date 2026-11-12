@@ -263,7 +263,7 @@ action `imported`). Draft mode is the default and should stay so.
   (`transit.edit_routes`, throttle 30/min). Publish re-validates the full
   studio GeoJSON contract plus deep `[lng, lat]` range checks, then either
   creates a pending `RouteDraft` (with `mid` provenance appended to notes)
-  or runs the direct-publish transaction + `clearCityMapCache()`.
+  or runs the direct-publish transaction + `TransitCache::forgetCity()`.
 * City is auto-suggested by testing the candidate centroid against city
   bounds; the admin can always override.
 

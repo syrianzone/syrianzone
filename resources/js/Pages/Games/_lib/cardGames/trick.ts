@@ -7,7 +7,7 @@
 // Everything here is a pure function of plain values, so it can be unit-tested
 // without a table and reused by a future online engine.
 
-import type { Card, Suit } from '../cards';
+import type { Card, Suit } from '@/Domain/games/cards';
 import { power } from './hand';
 
 export type Seat = number;

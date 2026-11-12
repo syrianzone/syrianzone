@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Place;
 use App\Models\PlaceSave;
+use App\Services\Places\PlacePresenter;
 use Illuminate\Http\Request;
 
 class PlaceEngagementController extends Controller
@@ -38,7 +39,7 @@ class PlaceEngagementController extends Controller
     return response()->json(['saved' => false, 'saves_count' => $place->saves_count]);
   }
 
-  public function mySaves(Request $request)
+  public function mySaves(Request $request, PlacePresenter $presenter)
   {
     // Join instead of whereHas so the list orders by when the user saved, not by place age.
     $places = Place::query()
@@ -49,7 +50,7 @@ class PlaceEngagementController extends Controller
       ->select('places.*')
       ->with(PlaceController::thumbPhotos())
       ->paginate(20)
-      ->through(fn ($p) => $this->listItem($p));
+      ->through(fn ($p) => $presenter->publicListItem($p));
 
     return response()->json($places);
   }
@@ -57,19 +58,5 @@ class PlaceEngagementController extends Controller
   private function approvedPlace(int $id): ?Place
   {
     return Place::where('status', 'approved')->find($id);
-  }
-
-  private function listItem(Place $p): array
-  {
-    return [
-      'id' => $p->id,
-      'name' => $p->name,
-      'category' => $p->category,
-      'description' => $p->description,
-      'lat' => $p->lat,
-      'lng' => $p->lng,
-      'thumb_url' => $p->photos->first()?->thumb_url,
-      'saves_count' => $p->saves_count,
-    ];
   }
 }

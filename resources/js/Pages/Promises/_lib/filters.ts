@@ -1,6 +1,6 @@
 import { normalizeArabic } from '@/Lib/arabic';
 import type { SmartFilterFacet, SmartFilterOption, SmartFilterValue } from '@/Lib/smartFilterSearch';
-import type { Option, PromiseCardData, SectorOption } from './types';
+import type { Option, PromiseCardData, SectorOption } from '@/Domain/promises/types';
 
 export interface PromiseFilterOptions {
     sectors: SectorOption[];

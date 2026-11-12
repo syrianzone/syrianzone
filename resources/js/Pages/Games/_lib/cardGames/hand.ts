@@ -2,7 +2,7 @@
 // about a particular game — only how to read a hand — so a bidding or playing
 // policy for tarneeb, trix or anything else can build on the same primitives.
 
-import { SUITS, type Card, type Suit } from '../cards';
+import { SUITS, type Card, type Suit } from '@/Domain/games/cards';
 
 /**
  * A card's playing power — ace high, so 14, king 13 … and the 2 is 2. Ranks are

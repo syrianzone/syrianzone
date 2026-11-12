@@ -2,7 +2,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import Countdown from './Countdown';
-import type { CounterMode, PromiseState } from '../_lib/types';
+import type { CounterMode, PromiseState } from '@/Domain/promises/types';
 
 describe('Countdown caption rendering', () => {
     it('changes only the long caption while retaining the exact numeral and spoken days', () => {

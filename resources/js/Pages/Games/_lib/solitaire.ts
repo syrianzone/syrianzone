@@ -12,7 +12,7 @@ import {
   shuffle,
   type Card,
   type Suit,
-} from './cards';
+} from '@/Domain/games/cards';
 
 export interface Deal {
   stock: Card[];

@@ -3,7 +3,7 @@ import { Button } from '@/Components/ui/button';
 import { cn } from '@/lib/utils';
 import { StatusPill } from './StatusPill';
 import { WhatsAppIcon } from './WhatsAppIcon';
-import { formatIntl, isWindowOpen, shareCrossing, statusOf, windowLabel, type Crossing } from '../_lib/crossings';
+import { formatIntl, isWindowOpen, shareCrossing, statusOf, windowLabel, type Crossing } from '@/Domain/crossings/crossings';
 
 /**
  * The card that opens over the map once a crossing is picked, from either view.

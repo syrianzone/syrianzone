@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import maplibregl from 'maplibre-gl';
 import { useMap } from '@/Components/map/MapContext';
-import type { LatLng } from '../_lib/types';
+import type { LatLng } from '@/Domain/places/types';
 
 export function HighlightMarker(props: { point: LatLng | null }) {
   const map = useMap();

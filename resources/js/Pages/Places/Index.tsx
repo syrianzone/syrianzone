@@ -6,10 +6,10 @@ import { PhotoGrid } from './_components/PhotoGrid';
 import { PlacesPanel } from './_components/PlacesPanel';
 import { SubmitSheet } from './_components/SubmitSheet';
 import { ViewToggle } from './_components/ViewToggle';
-import { BottomSheet } from '../Transit/_components/BottomSheet';
-import { api, extractError } from './_lib/api';
-import { discovery, type GridPhoto } from './_lib/discovery';
-import type { GeoSuggestion, HotelFeatureCollection, LatLng, Paginated, PlaceCategory, PlaceFeatureCollection, PlaceListItem } from './_lib/types';
+import { BottomSheet } from '@/Components/BottomSheet';
+import { api, extractError } from '@/Domain/places/api';
+import { discovery, type GridPhoto } from '@/Domain/places/discovery';
+import type { GeoSuggestion, HotelFeatureCollection, LatLng, Paginated, PlaceCategory, PlaceFeatureCollection, PlaceListItem } from '@/Domain/places/types';
 
 const PlacesMap = lazy(() => import('./_components/PlacesMap').then(m => ({ default: m.PlacesMap })));
 

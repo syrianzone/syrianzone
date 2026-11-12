@@ -4,7 +4,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
-import RecitationPicker from './RecitationPicker';
+import RecitationPicker from '@/Domain/quran/RecitationPicker';
 import QuranWordWindow from '@/Components/QuranWordWindow';
 import QuranUsageCard from '@/Components/QuranUsageCard';
 import { QuranRadioIcon } from '@/Components/Icons/ProjectIcons';

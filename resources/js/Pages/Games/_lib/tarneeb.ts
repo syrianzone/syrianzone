@@ -15,7 +15,7 @@
 // whole hand) is scored as in `tarneebScore`. The doubles some tables allow are
 // still not modelled.
 
-import { createDeck, shuffle, type Card, type Suit } from './cards';
+import { createDeck, shuffle, type Card, type Suit } from '@/Domain/games/cards';
 import {
   createAuction,
   currentSeat,

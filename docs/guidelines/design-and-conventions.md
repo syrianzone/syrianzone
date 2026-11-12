@@ -28,7 +28,7 @@ graph and fails on a violation, so run `npm run test:js` after moving code.
 | Layer | Holds | May import |
 |---|---|---|
 | `Pages/<Feature>/` | the page and its private `_components`/`_lib`/`_data` | `Domain/`, the shared layer, its own folder |
-| `Domain/<module>/` | anything more than one page — or the shell — needs (`quran`, `settings`, `location`, `prayer`, `games`, `muslim`) | the shared layer, other `Domain/` modules |
+| `Domain/<module>/` | anything more than one page — or the shell — needs (`quran`, `settings`, `location`, `prayer`, `games`, `muslim`, `places`, `promises`, `compass`) | the shared layer, other `Domain/` modules |
 | `Components/`, `Lib/`, `Layouts/`, `Contexts/`, `Providers/` | the shell and generic primitives | itself; `Lib/` only uses `Components/ui` |
 
 - Never import `Pages/**` from `Domain/` or the shared layer, and never import

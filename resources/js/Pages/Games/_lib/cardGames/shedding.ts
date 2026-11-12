@@ -3,7 +3,7 @@
 // Fan Tan and Sevens use the seven. Ranks are compared by playing power, since
 // the ace is stored as rank 1 but sits above the king.
 
-import type { Card, Suit } from '../cards';
+import type { Card, Suit } from '@/Domain/games/cards';
 import { power } from './hand';
 
 export interface ShedRun {

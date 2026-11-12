@@ -3,7 +3,7 @@ import { WidgetShell } from '../../_components/WidgetShell';
 import type { WidgetProps } from '../../_lib/types';
 import type { QuranConfig } from './index';
 import QuranNowReading from '@/Components/QuranNowReading';
-import RecitationPicker from '@/Pages/Muslim/_components/RecitationPicker';
+import RecitationPicker from '@/Domain/quran/RecitationPicker';
 import { useQuranPlayer } from '@/Domain/quran/quranPlayer';
 
 /**

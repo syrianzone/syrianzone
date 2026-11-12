@@ -8,7 +8,7 @@ import { ImageUp, Loader2, Plus, Star, Trash2 } from 'lucide-react';
 import { notify } from '@/Lib/notify';
 import { extractApiErrorMessage } from '@/Lib/apiError';
 import FieldError, { fieldA11y } from '@/Components/ui/field-error';
-import { SOURCE_TYPE_LABEL } from '@/Pages/Promises/_lib/status';
+import { SOURCE_TYPE_LABEL } from '@/Domain/promises/status';
 
 export interface SourceForm {
     /** Client-only identity for React keys and upload tracking; never sent. */

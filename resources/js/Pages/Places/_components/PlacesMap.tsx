@@ -4,7 +4,7 @@ import { PlacesLayer } from './PlacesLayer';
 import { HotelsLayer } from './HotelsLayer';
 import { MapInteractions } from './MapInteractions';
 import { HighlightMarker } from './HighlightMarker';
-import type { HotelFeatureCollection, LatLng, PlaceFeatureCollection } from '../_lib/types';
+import type { HotelFeatureCollection, LatLng, PlaceFeatureCollection } from '@/Domain/places/types';
 
 export function PlacesMap(props: {
   features: PlaceFeatureCollection;

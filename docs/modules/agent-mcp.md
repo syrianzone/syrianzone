@@ -213,10 +213,14 @@ session + CSRF dance) and they do **not** re-implement the rules. The domain
 logic lives in transport-free services that both the dashboard controller and
 the tools call:
 
+- `app/Services/Places/PlaceRules.php` — the field rules and Arabic refusal
+  messages, shared with the public and admin forms
 - `app/Services/Places/PlaceModerationService.php` — approve/reject/update/delete
-  plus the photo rules
+  plus the photo workflow (the owner endpoints call the same methods with
+  `reentersModeration: true`)
 - `app/Services/Places/PlacePresenter.php` — the one serialisation shape, so an
-  agent and a human never see different fields
+  agent and a human never see different fields (the narrower public shapes are
+  named methods on the same class)
 - `app/Exceptions/DomainActionException.php` (subclassed by
   `app/Exceptions/Places/PlaceActionException.php`) — refusals carry a `kind`, so
   `bootstrap/app.php` renders them centrally to `{ "message": $e->getMessage() }`
@@ -235,8 +239,9 @@ The same pattern, same three-part shape, now covers three more modules:
 
 Invariants preserved in the shared layer: only `pending` places can be
 moderated; at most 10 photos and at least 1; both photo-count guards run under
-a row lock on the place; every change that can alter the map payload forgets the
-`places:map` cache.
+a row lock on the place; every change that can alter the map payload calls
+`PlaceModerationService::forgetMapCache()`, the only way the `places:map` entry
+is dropped.
 
 Each of the admin controllers (`PlaceAdminController`, `GovAppsAdminController`,
 `SyOfficialAdminController`, `DashboardController`, `TransitAdminController`,

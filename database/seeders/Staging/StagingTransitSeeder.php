@@ -238,7 +238,7 @@ class StagingTransitSeeder extends StagingSeed
    *
    * INSERT-ONLY, unlike every other write in this file. 'damascus', 'aleppo'
    * and 'homs' are the REAL production city ids: they are the ids in
-   * resources/js/Pages/Transit/_data/cities.json and the ids
+   * resources/js/Domain/transit/cities.json and the ids
    * App\Console\Commands\ImportTransitGeoJson writes. They are the one set of
    * keys this module cannot namespace, because /transit/city/{id}/route/{...}
    * looks the city up in cities.json by that exact id, so a 'staging-damascus'

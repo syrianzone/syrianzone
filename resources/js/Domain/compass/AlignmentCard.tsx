@@ -1,6 +1,6 @@
 import React from 'react';
 import { Globe, Sun, MoonStar, Compass, Minus, type LucideIcon } from 'lucide-react';
-import type { AlignBloc } from '../data/types';
+import type { AlignBloc } from './types';
 
 const BLOCS: { id: AlignBloc; icon: LucideIcon; powers: string }[] = [
   { id: 'west', icon: Globe, powers: 'أمريكا · أوروبا' },

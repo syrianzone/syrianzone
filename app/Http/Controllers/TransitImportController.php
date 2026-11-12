@@ -6,6 +6,7 @@ use App\Http\Controllers\Concerns\ChecksTransitScope;
 use App\Models\Route;
 use App\Models\RouteDraft;
 use App\Models\TransitRouteLog;
+use App\Services\Transit\TransitCache;
 use App\Services\TransitKmlImportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -15,6 +16,8 @@ use Illuminate\Support\Str;
 class TransitImportController extends Controller
 {
     use ChecksTransitScope;
+
+    public function __construct(private readonly TransitCache $cache) {}
 
     /**
      * Preview a Google My Maps share (or uploaded KML/KMZ/GeoJSON) without
@@ -309,7 +312,7 @@ class TransitImportController extends Controller
 
             DB::commit();
 
-            $this->clearCityMapCache($validated['city_id']);
+            $this->cache->forgetCity($validated['city_id']);
 
             return response()->json([
                 'message' => 'تم نشر الخط المستورد',
@@ -361,19 +364,5 @@ class TransitImportController extends Controller
         }
 
         return null;
-    }
-
-    private function clearCityMapCache(string $cityId): void
-    {
-        Cache::forget("transit:map-data:{$cityId}");
-        Cache::forget("transit:routes:{$cityId}");
-        if ($cityId === 'damascus' || $cityId === 'rif-dimashq') {
-            Cache::forget('transit:map-data:damascus');
-            Cache::forget('transit:map-data:rif-dimashq');
-            Cache::forget('transit:routes:damascus');
-            Cache::forget('transit:routes:rif-dimashq');
-            Cache::forget('transit:routes:damascus+rif-dimashq');
-        }
-        Cache::forget('transit:cities');
     }
 }

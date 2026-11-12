@@ -10,8 +10,8 @@ import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
 import { extractApiErrorMessage, extractApiFieldErrors } from '@/Lib/apiError';
 import FieldError, { fieldA11y } from '@/Components/ui/field-error';
-import Timeline from '@/Pages/Promises/_components/Timeline';
-import type { PromiseUpdateData } from '@/Pages/Promises/_lib/types';
+import Timeline from '@/Domain/promises/Timeline';
+import type { PromiseUpdateData } from '@/Domain/promises/types';
 import type { AdminPromiseDetail } from '../_lib/types';
 
 type EntryType = 'progress' | 'official_response' | 'note';

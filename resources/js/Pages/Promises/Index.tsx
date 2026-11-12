@@ -14,7 +14,7 @@ import { cn } from '@/Lib/utils';
 import PromiseCard, { type PromiseCardLayout } from './_components/PromiseCard';
 import Scoreboard from './_components/Scoreboard';
 import { activeScoreboardState, filterPromises, matchesState, promiseFilterFacets, promiseListUrl, readPromiseFilters, selectScoreboardState, SORT_OPTIONS, visiblePromises, type PromiseFilterOptions } from './_lib/filters';
-import type { PromiseCardData, PromiseStats } from './_lib/types';
+import type { PromiseCardData, PromiseStats } from '@/Domain/promises/types';
 
 const LAYOUT_KEY = 'promises-layout';
 const LAYOUT_OPTIONS = [

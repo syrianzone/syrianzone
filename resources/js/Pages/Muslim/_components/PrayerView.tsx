@@ -21,7 +21,7 @@ import { TRACKED_PRAYERS, todayKey, type MuslimPrefs } from '../../../Domain/set
 import {
   effectivePrayerParams,
 } from '../../../Domain/location/location';
-import LocationModeSelector from './LocationModeSelector';
+import LocationModeSelector from '@/Domain/location/LocationModeSelector';
 import { useIsMobile } from '@/Lib/useIsMobile';
 import { useAppShell } from '@/Lib/appShell';
 

@@ -6,6 +6,9 @@ use App\Models\Place;
 use App\Models\PlacePhoto;
 use App\Services\GuideLevelService;
 use App\Services\PlaceImageService;
+use App\Services\Places\PlaceModerationService;
+use App\Services\Places\PlacePresenter;
+use App\Services\Places\PlaceRules;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -33,7 +36,7 @@ class PlaceController extends Controller
 
   public function mapData()
   {
-    $geojson = Cache::remember('places:map', 300, function () {
+    $geojson = Cache::remember(PlaceModerationService::MAP_CACHE_KEY, 300, function () {
       // Every approved place is a pin, so this is the largest read in the
       // module and it is rebuilt after any moderation or photo change. Plain
       // rows instead of a model per place and per photo, with only the pin's
@@ -81,14 +84,9 @@ class PlaceController extends Controller
     return response()->json($geojson)->header('Cache-Control', 'public, max-age=60');
   }
 
-  public function index(Request $request)
+  public function index(Request $request, PlacePresenter $presenter, PlaceRules $rules)
   {
-    $validated = $request->validate([
-      'category' => 'sometimes|string|in:historical,natural,cultural,religious,abandoned,viewpoint,market,food,other',
-      'q' => 'sometimes|string|max:100',
-      'sort' => 'sometimes|in:newest,popular',
-      'user_id' => 'sometimes|integer|min:1',
-    ]);
+    $validated = $request->validate($rules->listFilters());
 
     $query = Place::where('status', 'approved')->with(self::thumbPhotos());
 
@@ -109,14 +107,14 @@ class PlaceController extends Controller
       $query->latest();
     }
 
-    return response()->json($query->paginate(20)->through(fn ($p) => $this->listItem($p)));
+    return response()->json($query->paginate(20)->through(fn ($p) => $presenter->publicListItem($p)));
   }
 
   // Google Places text search, proxied so the key stays server side. Results are
   // biased to the same Syria box the submit form enforces and cached per query.
-  public function geocode(Request $request)
+  public function geocode(Request $request, PlaceRules $rules)
   {
-    $validated = $request->validate(['q' => 'required|string|min:2|max:100']);
+    $validated = $request->validate($rules->geocode());
     $key = config('services.google_places.key');
     if (!$key) {
       return response()->json(['suggestions' => []]);
@@ -136,8 +134,8 @@ class PlaceController extends Controller
             'languageCode' => 'ar',
             'regionCode' => 'SY',
             'locationBias' => ['rectangle' => [
-              'low' => ['latitude' => 32.0, 'longitude' => 35.5],
-              'high' => ['latitude' => 37.5, 'longitude' => 42.5],
+              'low' => ['latitude' => (float) PlaceRules::LAT_MIN, 'longitude' => (float) PlaceRules::LNG_MIN],
+              'high' => ['latitude' => (float) PlaceRules::LAT_MAX, 'longitude' => (float) PlaceRules::LNG_MAX],
             ]],
             'maxResultCount' => 5,
           ]);
@@ -164,15 +162,9 @@ class PlaceController extends Controller
     return response()->json(['suggestions' => $suggestions])->header('Cache-Control', 'public, max-age=3600');
   }
 
-  public function nearby(Request $request)
+  public function nearby(Request $request, PlacePresenter $presenter, PlaceRules $rules)
   {
-    $validated = $request->validate([
-      'lat' => 'required|numeric|between:-90,90',
-      'lng' => 'required|numeric|between:-180,180',
-      'radius_km' => 'sometimes|numeric|between:0.05,25',
-      // Strict boolean rule rejects the "true"/"false" strings axios puts in query params.
-      'include_pending' => 'sometimes|in:0,1,true,false',
-    ]);
+    $validated = $request->validate($rules->nearby());
 
     $lat = (float) $validated['lat'];
     $lng = (float) $validated['lng'];
@@ -209,12 +201,12 @@ class PlaceController extends Controller
       ->sortBy('distance_m')
       ->take(20)
       ->values()
-      ->map(fn ($p) => $this->listItem($p) + ['distance_m' => $p->distance_m]);
+      ->map(fn ($p) => $presenter->publicListItem($p) + ['distance_m' => $p->distance_m]);
 
     return response()->json(['places' => $places]);
   }
 
-  public function show(Request $request, GuideLevelService $levels, int $id)
+  public function show(Request $request, GuideLevelService $levels, PlacePresenter $presenter, int $id)
   {
     $place = Place::with(['user', 'photos'])->findOrFail($id);
     $user = $request->user() ?? Auth::guard('sanctum')->user();
@@ -232,71 +224,18 @@ class PlaceController extends Controller
     }
 
     $guide = $levels->forUser($place->user_id);
+    $savedByMe = $user ? $place->saves()->where('user_id', $user->id)->exists() : false;
 
-    return response()->json($this->listItem($place) + [
-      'status' => $place->status,
-      'user' => [
-        'id' => $place->user->id,
-        'name' => $place->user->name,
-        'avatar_url' => $place->user->avatar_url,
-        'level' => $guide['level'],
-        'points' => $guide['points'],
-      ],
-      'photos' => $place->photos->map(fn ($photo) => [
-        'id' => $photo->id,
-        'thumb_url' => $photo->thumb_url,
-        'display_url' => $photo->display_url,
-        'sort' => $photo->sort,
-      ])->values(),
-      'saved_by_me' => $user ? $place->saves()->where('user_id', $user->id)->exists() : false,
-      'created_at' => $place->created_at,
-    ]);
+    return response()->json($presenter->publicDetail($place, $guide, $savedByMe));
   }
 
-  public function store(Request $request, PlaceImageService $images)
+  public function store(Request $request, PlaceImageService $images, PlaceRules $rules)
   {
     if ($request->user()->is_banned) {
       return response()->json(['message' => 'تم حظر حسابك من المساهمة'], 403);
     }
 
-    $validated = $request->validate([
-      'name' => 'required|string|max:160',
-      'category' => 'required|string|in:historical,natural,cultural,religious,abandoned,viewpoint,market,food,other',
-      'description' => 'required|string|min:20|max:1000',
-      'lat' => 'required|numeric|between:32.0,37.5',
-      'lng' => 'required|numeric|between:35.5,42.5',
-      'photos' => 'required|array|min:1|max:10',
-      // max_width/max_height cap decompression bombs before GD allocates the bitmap
-      'photos.*' => 'required|image|mimes:jpg,jpeg,png,webp|max:12288|dimensions:min_width=200,min_height=200,max_width=6000,max_height=6000',
-    ], [
-      'name.required' => 'أدخل اسم المكان',
-      'name.string' => 'اسم المكان يجب أن يكون نصاً',
-      'name.max' => 'اسم المكان يجب ألا يتجاوز 160 حرفاً',
-      'category.required' => 'اختر التصنيف',
-      'category.string' => 'التصنيف المختار غير صالح',
-      'category.in' => 'التصنيف المختار غير صالح',
-      'description.required' => 'أدخل وصف المكان',
-      'description.string' => 'الوصف يجب أن يكون نصاً',
-      'description.min' => 'الوصف يجب ألا يقل عن 20 حرفاً',
-      'description.max' => 'الوصف يجب ألا يتجاوز 1000 حرف',
-      'lat.required' => 'حدد موقع المكان على الخريطة',
-      'lat.numeric' => 'خط العرض يجب أن يكون رقماً',
-      'lat.between' => 'خط العرض يجب أن يكون بين 32.0 و 37.5 (داخل سوريا)',
-      'lng.required' => 'حدد موقع المكان على الخريطة',
-      'lng.numeric' => 'خط الطول يجب أن يكون رقماً',
-      'lng.between' => 'خط الطول يجب أن يكون بين 35.5 و 42.5 (داخل سوريا)',
-      'photos.required' => 'أضف صورة واحدة على الأقل',
-      'photos.array' => 'صيغة الصور المرسلة غير صالحة',
-      'photos.min' => 'أضف صورة واحدة على الأقل',
-      'photos.max' => 'الحد الأقصى 10 صور',
-      // implicit rule when PHP itself rejects the upload (e.g. over upload_max_filesize)
-      'photos.*.uploaded' => 'تعذر رفع الصورة، تأكد أن حجمها لا يتجاوز 12 ميغابايت',
-      'photos.*.required' => 'تعذر قراءة إحدى الصور، أعد اختيارها',
-      'photos.*.image' => 'الملف يجب أن يكون صورة',
-      'photos.*.mimes' => 'الصورة يجب أن تكون بصيغة JPG أو PNG أو WebP',
-      'photos.*.max' => 'حجم الصورة يجب ألا يتجاوز 12 ميغابايت',
-      'photos.*.dimensions' => 'أبعاد الصورة يجب أن تكون بين 200x200 و 6000x6000 بكسل',
-    ]);
+    $validated = $request->validate($rules->store(), $rules->messages());
 
     $stored = [];
     try {
@@ -326,40 +265,26 @@ class PlaceController extends Controller
     return response()->json(['id' => $place->id, 'status' => 'pending'], 201);
   }
 
-  public function mine(Request $request)
+  public function mine(Request $request, PlacePresenter $presenter)
   {
     $places = Place::where('user_id', $request->user()->id)
       ->with(self::thumbPhotos())
       ->latest()
       ->paginate(20)
-      ->through(fn ($p) => $this->listItem($p) + [
-        'status' => $p->status,
-        'rejection_reason' => $p->rejection_reason,
-        'created_at' => $p->created_at,
-      ]);
+      ->through(fn ($p) => $presenter->ownerListItem($p));
 
     return response()->json($places);
   }
 
-  public function updateLocation(Request $request, int $id)
+  public function updateLocation(Request $request, PlaceRules $rules, PlaceModerationService $places, int $id)
   {
     // Ownership scoping: strangers and unknown ids both get 404, no existence leak.
     $place = Place::where('user_id', $request->user()->id)->findOrFail($id);
 
-    $validated = $request->validate([
-      'lat' => 'required|numeric|between:32.0,37.5',
-      'lng' => 'required|numeric|between:35.5,42.5',
-    ], [
-      'lat.required' => 'أدخل الإحداثيات',
-      'lat.numeric' => 'خط العرض يجب أن يكون رقماً',
-      'lat.between' => 'خط العرض يجب أن يكون بين 32.0 و 37.5 (داخل سوريا)',
-      'lng.required' => 'أدخل الإحداثيات',
-      'lng.numeric' => 'خط الطول يجب أن يكون رقماً',
-      'lng.between' => 'خط الطول يجب أن يكون بين 35.5 و 42.5 (داخل سوريا)',
-    ]);
+    $validated = $request->validate($rules->location(), $rules->locationMessages());
 
     // Any moved pin re-enters the moderation queue, whatever its prior status.
-    $this->backToPending($place, ['lat' => $validated['lat'], 'lng' => $validated['lng']]);
+    $places->returnToModeration($place, ['lat' => $validated['lat'], 'lng' => $validated['lng']]);
 
     return response()->json([
       'id' => $place->id,
@@ -369,33 +294,18 @@ class PlaceController extends Controller
     ]);
   }
 
-  public function updateDetails(Request $request, int $id)
+  public function updateDetails(Request $request, PlaceRules $rules, PlaceModerationService $places, int $id)
   {
     $place = Place::where('user_id', $request->user()->id)->findOrFail($id);
 
-    $validated = $request->validate([
-      'name' => 'sometimes|required|string|max:160',
-      'category' => 'sometimes|required|string|in:historical,natural,cultural,religious,abandoned,viewpoint,market,food,other',
-      'description' => 'sometimes|required|string|min:20|max:1000',
-    ], [
-      'name.required' => 'أدخل اسم المكان',
-      'name.string' => 'اسم المكان يجب أن يكون نصاً',
-      'name.max' => 'اسم المكان يجب ألا يتجاوز 160 حرفاً',
-      'category.required' => 'اختر التصنيف',
-      'category.string' => 'التصنيف المختار غير صالح',
-      'category.in' => 'التصنيف المختار غير صالح',
-      'description.required' => 'أدخل وصف المكان',
-      'description.string' => 'الوصف يجب أن يكون نصاً',
-      'description.min' => 'الوصف يجب ألا يقل عن 20 حرفاً',
-      'description.max' => 'الوصف يجب ألا يتجاوز 1000 حرف',
-    ]);
+    $validated = $request->validate($rules->details(), $rules->messages());
 
     if ($validated === []) {
       return response()->json(['message' => 'لا توجد تعديلات'], 422);
     }
 
     // Edited content re-enters the moderation queue with any prior verdict cleared.
-    $this->backToPending($place, $validated);
+    $places->returnToModeration($place, $validated);
 
     return response()->json([
       'id' => $place->id,
@@ -406,103 +316,47 @@ class PlaceController extends Controller
     ]);
   }
 
-  public function addPhoto(Request $request, int $id, PlaceImageService $images)
+  public function addPhoto(Request $request, PlaceRules $rules, PlaceModerationService $places, PlacePresenter $presenter, int $id)
   {
     $place = Place::where('user_id', $request->user()->id)->findOrFail($id);
 
-    $request->validate([
-      'photo' => 'required|image|mimes:jpg,jpeg,png,webp|max:12288|dimensions:min_width=200,min_height=200,max_width=6000,max_height=6000',
-    ], $this->photoMessages());
+    $request->validate($rules->photo(), $rules->messages());
 
-    // guard + store under a lock on the place row so two concurrent adds cannot
-    // both read count 9 and end at 11 (sqlite ignores FOR UPDATE but serializes writes)
-    $photo = DB::transaction(function () use ($place, $request, $images) {
-      Place::whereKey($place->id)->lockForUpdate()->first();
-      if ($place->photos()->count() >= 10) {
-        return null;
-      }
-      $photo = $images->store($request->file('photo'), $place->id, (int) $place->photos()->max('sort') + 1);
-      $place->update(['status' => 'pending', 'rejection_reason' => null, 'approved_at' => null]);
-      return $photo;
-    });
-    if ($photo === null) {
-      return response()->json(['message' => 'لا يمكن إضافة أكثر من 10 صور'], 422);
-    }
-    Cache::forget('places:map');
+    // The owner surface is the one that sends the place back to review.
+    $photo = $places->addPhoto($place->id, $request->file('photo'), reentersModeration: true);
 
-    return response()->json([
-      'id' => $photo->id,
-      'thumb_url' => $photo->thumb_url,
-      'display_url' => $photo->display_url,
-      'sort' => $photo->sort,
-      'place_status' => 'pending',
-    ], 201);
+    return response()->json($presenter->photo($photo) + ['place_status' => 'pending'], 201);
   }
 
-  public function deletePhoto(Request $request, int $id, PlaceImageService $images)
+  public function deletePhoto(Request $request, PlaceModerationService $places, int $id)
   {
     $photo = PlacePhoto::whereHas('place', fn ($q) => $q->where('user_id', $request->user()->id))->findOrFail($id);
 
-    // same lock as addPhoto: two concurrent deletes on a 2-photo place must not
-    // both pass the min-1 guard and leave the place with zero photos
-    $deleted = DB::transaction(function () use ($photo) {
-      $place = Place::whereKey($photo->place_id)->lockForUpdate()->first();
-      if (PlacePhoto::where('place_id', $photo->place_id)->count() <= 1) {
-        return false;
-      }
-      $photo->delete();
-      $place->update(['status' => 'pending', 'rejection_reason' => null, 'approved_at' => null]);
-      return true;
-    });
-    if (!$deleted) {
-      return response()->json(['message' => 'لا يمكن حذف الصورة الأخيرة'], 422);
-    }
-
-    // files go after the row commit so a rollback cannot orphan the photo row
-    $images->deleteFiles($photo);
-    Cache::forget('places:map');
+    $places->deletePhoto($photo->id, reentersModeration: true);
 
     return response()->json(['id' => $photo->id, 'place_status' => 'pending']);
   }
 
-  public function rotatePhoto(Request $request, int $id, PlaceImageService $images)
+  public function rotatePhoto(Request $request, PlaceModerationService $places, PlacePresenter $presenter, int $id)
   {
     $photo = PlacePhoto::whereHas('place', fn ($q) => $q->where('user_id', $request->user()->id))->findOrFail($id);
 
-    try {
-      $images->rotateClockwise($photo);
-    } catch (\RuntimeException $e) {
-      return response()->json(['message' => 'ملف الصورة مفقود على الخادم'], 422);
-    }
-    // pixels only: approval status is deliberately KEPT, but the map cache embeds
-    // versioned thumb urls so it must still be forgotten
-    Cache::forget('places:map');
+    // pixels only: approval status is deliberately KEPT
+    $photo = $places->rotatePhoto($photo->id, withRecoveryHint: false);
 
-    return response()->json([
-      'id' => $photo->id,
-      'thumb_url' => $photo->thumb_url,
-      'display_url' => $photo->display_url,
-    ]);
+    return response()->json($presenter->photoUrls($photo));
   }
 
-  public function destroy(Request $request, int $id, PlaceImageService $images)
+  public function destroy(Request $request, PlaceModerationService $places, int $id)
   {
-    $place = Place::where('user_id', $request->user()->id)->with('photos')->findOrFail($id);
+    $place = Place::where('user_id', $request->user()->id)->findOrFail($id);
 
-    // Delete the row first, then the files: if the DB delete throws, the
-    // files are still intact and the photo URLs keep working (same pattern
-    // as deletePhoto()).
-    $photos = $place->photos->all();
-    $place->delete();
-    foreach ($photos as $photo) {
-      $images->deleteFiles($photo);
-    }
-    Cache::forget('places:map');
+    $places->delete($place->id);
 
     return response()->json(null, 204);
   }
 
-  public function resubmit(Request $request, int $id)
+  public function resubmit(Request $request, PlaceModerationService $places, int $id)
   {
     $place = Place::where('user_id', $request->user()->id)->findOrFail($id);
 
@@ -511,42 +365,8 @@ class PlaceController extends Controller
     }
 
     // nothing but the moderation state changes; photos and fields stay as-is
-    $this->backToPending($place);
+    $places->returnToModeration($place);
 
     return response()->json(['id' => $place->id, 'status' => 'pending']);
-  }
-
-  // Owner content mutations re-enter moderation: any prior rejection reason and
-  // approval are cleared, and the (possibly approved) pin leaves the public map.
-  private function backToPending(Place $place, array $extra = []): void
-  {
-    $place->update($extra + ['status' => 'pending', 'rejection_reason' => null, 'approved_at' => null]);
-    Cache::forget('places:map');
-  }
-
-  private function photoMessages(): array
-  {
-    return [
-      'photo.required' => 'أضف صورة',
-      'photo.image' => 'الملف يجب أن يكون صورة',
-      'photo.mimes' => 'الصورة يجب أن تكون بصيغة JPG أو PNG أو WebP',
-      'photo.max' => 'حجم الصورة يجب ألا يتجاوز 12 ميغابايت',
-      'photo.uploaded' => 'تعذر رفع الصورة، تأكد أن حجمها لا يتجاوز 12 ميغابايت',
-      'photo.dimensions' => 'أبعاد الصورة يجب أن تكون بين 200x200 و 6000x6000 بكسل',
-    ];
-  }
-
-  private function listItem(Place $p): array
-  {
-    return [
-      'id' => $p->id,
-      'name' => $p->name,
-      'category' => $p->category,
-      'description' => $p->description,
-      'lat' => $p->lat,
-      'lng' => $p->lng,
-      'thumb_url' => $p->photos->first()?->thumb_url,
-      'saves_count' => $p->saves_count,
-    ];
   }
 }

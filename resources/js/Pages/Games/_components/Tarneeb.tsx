@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
-import { SUIT_LABEL, type Card, type Suit } from '../_lib/cards';
+import { SUIT_LABEL, type Card, type Suit } from '@/Domain/games/cards';
 import { applyRound, createMatch, isMatchOver, type MatchState } from '../_lib/cardGames/match';
 import { power } from '../_lib/cardGames/hand';
 import { readStats, recordMatch, type MatchStats } from '../_lib/scores';
@@ -25,7 +25,7 @@ import {
 } from '../_lib/tarneeb';
 import { chooseBid, choosePlay, chooseTrump } from '../_lib/tarneebAi';
 import { DialogClose } from '@/Components/ui/dialog';
-import PlayingCard from './PlayingCard';
+import PlayingCard from '@/Domain/games/PlayingCard';
 import CardStyleToggle from './CardStyleToggle';
 import GameMenu from './GameMenu';
 

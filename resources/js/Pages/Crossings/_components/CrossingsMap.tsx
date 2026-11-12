@@ -1,7 +1,7 @@
 import { MapCanvas } from '@/Components/map/MapCanvas';
 import { FlyTo } from '@/Components/map/FlyTo';
 import { CrossingsLayer } from './CrossingsLayer';
-import { DEFAULT_CENTER, DEFAULT_ZOOM } from '../_lib/crossings';
+import { DEFAULT_CENTER, DEFAULT_ZOOM } from '@/Domain/crossings/crossings';
 
 export function CrossingsMap(props: {
     data: GeoJSON.FeatureCollection;

@@ -1,5 +1,5 @@
 import { cn } from '@/Lib/utils';
-import { nameInitial, speakerImage } from '../_lib/format';
+import { nameInitial, speakerImage } from './format';
 
 /**
  * A speaker's portrait, or the first letter of their name on a muted disc.

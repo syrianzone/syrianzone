@@ -1,5 +1,5 @@
 import React from 'react';
-import type { AxisId } from '../data/types';
+import type { AxisId } from '@/Domain/compass/types';
 
 // A 1:1 square compass: central_federal (X) × auth_lib (Y), with the user plotted.
 // Mobile-first: fills its container's width and stays square via aspect-ratio.

@@ -838,6 +838,8 @@ group and candidate, including disabled and archived ones.
 
 All legacy endpoints below remain **100% functional** and invoke the exact same controller logic as their canonical `/api/v1/*` counterparts. New features, mobile clients, and documentation should use the canonical paths.
 
+Where both rows describe the same module (auth token, global search, transit reads and studio, Compass shares, poll ballots/leaderboard, and the public widgets), the route is defined **once** in `routes/*.php` and mounted under both paths, so an alias cannot drift from its canonical URL. The remaining alias pairs are older controller entry points that still exist on purpose.
+
 | Legacy Path | Canonical `/api/v1/*` Path |
 |---|---|
 | `POST /api/v1/auth/google` | `POST /api/v1/auth/google/token` |

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
-import { SUIT_LABEL, type Card, type Suit } from '../_lib/cards';
+import { SUIT_LABEL, type Card, type Suit } from '@/Domain/games/cards';
 import { power } from '../_lib/cardGames/hand';
 import type { Play } from '../_lib/cardGames/trick';
 import { readLargeCards, writeLargeCards } from '../_lib/cardDisplay';
@@ -27,7 +27,7 @@ import {
 } from '../_lib/trix';
 import { chooseContractFor, choosePlay } from '../_lib/trixAi';
 import { DialogClose } from '@/Components/ui/dialog';
-import PlayingCard from './PlayingCard';
+import PlayingCard from '@/Domain/games/PlayingCard';
 import CardStyleToggle from './CardStyleToggle';
 import GameMenu from './GameMenu';
 

@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
 import { ArrowLeft, Archive, CalendarClock, ExternalLink, Flag } from 'lucide-react';
 import StateBadge from './StateBadge';
-import { formatDate, formatNumber, safeHref } from '../_lib/format';
-import { UPDATE_TYPE_LABEL, VENUE_LABEL } from '../_lib/status';
-import type { PromiseUpdateData } from '../_lib/types';
+import { formatDate, formatNumber, safeHref } from './format';
+import { UPDATE_TYPE_LABEL, VENUE_LABEL } from './status';
+import type { PromiseUpdateData } from './types';
 
 interface Props {
     statementDate: string | null;

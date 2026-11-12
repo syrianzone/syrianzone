@@ -8,10 +8,10 @@ import { Download, Loader2, Share2 } from 'lucide-react';
 import { notify } from '@/Lib/notify';
 import { isShareCancelled, useCanShare } from '@/Lib/webShare';
 import Countdown from './Countdown';
-import SpeakerAvatar from './SpeakerAvatar';
-import StateBadge from './StateBadge';
-import { formatDate } from '../_lib/format';
-import type { PromiseDetailData } from '../_lib/types';
+import SpeakerAvatar from '@/Domain/promises/SpeakerAvatar';
+import StateBadge from '@/Domain/promises/StateBadge';
+import { formatDate } from '@/Domain/promises/format';
+import type { PromiseDetailData } from '@/Domain/promises/types';
 
 /**
  * A square card with today's count, rendered in the browser so it is never

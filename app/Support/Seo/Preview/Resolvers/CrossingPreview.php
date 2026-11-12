@@ -67,7 +67,7 @@ final class CrossingPreview implements CardSource, PreviewResolver
     /** @return array<string, mixed>|null */
     private function find(int $number): ?array
     {
-        $file = resource_path('js/Pages/Crossings/_data/crossings.json');
+        $file = resource_path('js/Domain/crossings/crossings.json');
         $data = is_file($file) ? json_decode((string) file_get_contents($file), true) : null;
 
         foreach ($data['crossings'] ?? [] as $crossing) {

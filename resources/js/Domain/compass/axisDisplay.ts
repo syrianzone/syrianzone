@@ -1,4 +1,4 @@
-import type { Axis, AxisId } from '../data/types';
+import type { Axis, AxisId } from './types';
 
 /**
  * Visual orientation of each numeric axis (purely presentational — scoring and

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { usePage } from '@inertiajs/react'
 import { TransitSidebar } from './_components/TransitSidebar'
-import { BottomSheet } from './_components/BottomSheet'
+import { BottomSheet } from '@/Components/BottomSheet'
 
 export default function TransitSidebarLayout({ children }: { children: React.ReactNode }) {
   const { url } = usePage()

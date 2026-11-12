@@ -20,9 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { api, extractError, extractFieldErrors } from '../_lib/api';
-import { CATEGORIES } from '../_lib/categories';
-import type { LatLng, MyPlace, PlaceCategory, PlaceDetail, PlacePhoto, PlaceStatus } from '../_lib/types';
+import { api, extractError, extractFieldErrors } from '@/Domain/places/api';
+import { CATEGORIES } from '@/Domain/places/categories';
+import type { LatLng, MyPlace, PlaceCategory, PlaceDetail, PlacePhoto, PlaceStatus } from '@/Domain/places/types';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
 import { parseLatLng } from './FilterBar';

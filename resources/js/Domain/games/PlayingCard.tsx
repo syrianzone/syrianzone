@@ -1,5 +1,5 @@
 import React from 'react';
-import { PIP_LAYOUTS, RANK_LABEL, SUIT_LABEL, isCourt, isRed, type Card } from '../_lib/cards';
+import { PIP_LAYOUTS, RANK_LABEL, SUIT_LABEL, isCourt, isRed, type Card } from './cards';
 
 export interface PlayingCardProps {
   card: Card;

@@ -13,15 +13,15 @@ import Countdown from './_components/Countdown';
 import ReportDialog, { type ReportKind } from './_components/ReportDialog';
 import ShareCardDialog from './_components/ShareCardDialog';
 import SourceList from './_components/SourceList';
-import SpeakerAvatar from './_components/SpeakerAvatar';
-import StateBadge from './_components/StateBadge';
+import SpeakerAvatar from '@/Domain/promises/SpeakerAvatar';
+import StateBadge from '@/Domain/promises/StateBadge';
 import TargetProgress from './_components/TargetProgress';
-import Timeline from './_components/Timeline';
+import Timeline from '@/Domain/promises/Timeline';
 import VotePanel from './_components/VotePanel';
-import { formatDate } from './_lib/format';
-import { STATE_META, VENUE_LABEL, sectorIcon } from './_lib/status';
+import { formatDate } from '@/Domain/promises/format';
+import { STATE_META, VENUE_LABEL, sectorIcon } from '@/Domain/promises/status';
 import { canReturnToPromiseList, PROMISE_LIST_VISIT_KEY, promiseReturnUrl } from './_lib/filters';
-import type { PromiseDetailData } from './_lib/types';
+import type { PromiseDetailData } from '@/Domain/promises/types';
 
 interface Props {
     promise: PromiseDetailData;

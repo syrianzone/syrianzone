@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\HouseMember2026;
+use App\Services\ExternalData\ExternalSheetCache;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Testing\TestResponse;
@@ -128,7 +129,7 @@ it('does not cache an outage, so the next visitor retries', function () {
     $this->get('/party')->assertOk()
         ->assertInertia(fn ($page) => $page->where('initialOrganizations', []));
 
-    expect(Cache::get('external_party_data'))->toBeNull();
+    expect(Cache::get(ExternalSheetCache::PARTY))->toBeNull();
 
     // The second request has to reach upstream, which it could not do if the
     // failure had been cached.
@@ -148,7 +149,7 @@ it('does not cache a sheet that failed its header check', function () {
 
     $this->get('/party')->assertOk();
 
-    expect(Cache::get('external_party_data'))->toBeNull();
+    expect(Cache::get(ExternalSheetCache::PARTY))->toBeNull();
 
     expect(prop($this->get('/party')->assertOk(), 'initialOrganizations'))->toHaveCount(2);
 });
@@ -260,7 +261,7 @@ it('refuses a sites sheet missing either required column', function (array $head
     $this->get('/sites')->assertOk()
         ->assertInertia(fn ($page) => $page->where('initialWebsites', []));
 
-    expect(Cache::get('external_sites_data'))->toBeNull();
+    expect(Cache::get(ExternalSheetCache::SITES))->toBeNull();
 })->with([
     'only the name' => [['اسم الموقع', 'نوع الموقع']],
     'only the url' => [['رابط الموقع', 'نوع الموقع']],
@@ -284,7 +285,7 @@ it('does not cache a sites outage', function () {
     $this->get('/sites')->assertOk()
         ->assertInertia(fn ($page) => $page->where('initialWebsites', []));
 
-    expect(Cache::get('external_sites_data'))->toBeNull();
+    expect(Cache::get(ExternalSheetCache::SITES))->toBeNull();
 
     expect(prop($this->get('/sites')->assertOk(), 'initialWebsites'))->toHaveCount(2);
 });

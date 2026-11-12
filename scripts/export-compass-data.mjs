@@ -4,7 +4,7 @@
  * Run: node scripts/export-compass-data.mjs
  *
  * Source of truth: study/compass-update/axes-render.html (prototype data arrays).
- * Output: resources/js/Pages/Compass/data/{axes,questions,figures,align,spectra}.ts
+ * Output: resources/js/Domain/compass/{axes,questions,figures,align,spectra}.ts
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const SRC = path.join(ROOT, 'study/compass-update/axes-render.html');
-const OUT = path.join(ROOT, 'resources/js/Pages/Compass/data');
+const OUT = path.join(ROOT, 'resources/js/Domain/compass');
 
 const html = fs.readFileSync(SRC, 'utf8');
 const grab = (re, label) => {

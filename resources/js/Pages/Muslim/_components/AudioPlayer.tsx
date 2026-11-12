@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Loader2, Pause, Play, SkipBack, SkipForward, Volume1, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
-import RecitationPicker from './RecitationPicker';
+import RecitationPicker from '@/Domain/quran/RecitationPicker';
 import { type Ayah } from '../../../Domain/quran/quran';
 import { useQuranPlayer } from '@/Domain/quran/quranPlayer';
 

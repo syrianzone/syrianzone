@@ -3,7 +3,7 @@
 namespace App\Mcp\Tools\Places;
 
 use App\Services\Places\PlaceModerationService;
-use App\Services\Places\PlacePresenter;
+use App\Services\Places\PlaceRules;
 use App\Support\Agents\AgentContext;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -36,42 +36,40 @@ class UpdatePlaceTool extends PlacesTool
 
             'name' => $schema->string()
                 ->description('Display name. Max 160 characters.')
-                ->max(160),
+                ->max(PlaceRules::MAX_NAME),
 
             'category' => $schema->string()
-                ->enum(PlacePresenter::CATEGORIES)
+                ->enum(PlaceRules::CATEGORIES)
                 ->description('One of the fixed mishwar categories.'),
 
             'description' => $schema->string()
                 ->description('Full description, 20-1000 characters.')
-                ->min(20)
-                ->max(1000),
+                ->min(PlaceRules::MIN_DESCRIPTION)
+                ->max(PlaceRules::MAX_DESCRIPTION),
 
             'lat' => $schema->number()
-                ->description('Latitude, 32.0 to 37.5 (Syria).')
-                ->min(32.0)
-                ->max(37.5),
+                ->description('Latitude, '.PlaceRules::LAT_MIN.' to '.PlaceRules::LAT_MAX.' (Syria).')
+                ->min((float) PlaceRules::LAT_MIN)
+                ->max((float) PlaceRules::LAT_MAX),
 
             'lng' => $schema->number()
-                ->description('Longitude, 35.5 to 42.5 (Syria).')
-                ->min(35.5)
-                ->max(42.5),
+                ->description('Longitude, '.PlaceRules::LNG_MIN.' to '.PlaceRules::LNG_MAX.' (Syria).')
+                ->min((float) PlaceRules::LNG_MIN)
+                ->max((float) PlaceRules::LNG_MAX),
         ];
     }
 
     protected function run(Request $request, AgentContext $context): Response|ResponseFactory
     {
+        $rules = app(PlaceRules::class);
+
         $validated = $request->validate([
-            'place_id' => 'required|integer|min:1',
-            'name' => 'sometimes|required|string|max:160',
-            'category' => 'sometimes|required|string|in:'.implode(',', PlacePresenter::CATEGORIES),
-            'description' => 'sometimes|required|string|min:20|max:1000',
-            'lat' => 'sometimes|required|numeric|between:32.0,37.5',
-            'lng' => 'sometimes|required|numeric|between:35.5,42.5',
+            'place_id' => ['required', 'integer', 'min:1'],
+            ...$rules->edit(),
         ], [
-            'description.min' => 'The description must be at least 20 characters.',
-            'lat.between' => 'Latitude must be between 32.0 and 37.5 (inside Syria).',
-            'lng.between' => 'Longitude must be between 35.5 and 42.5 (inside Syria).',
+            'description.min' => sprintf('The description must be at least %d characters.', PlaceRules::MIN_DESCRIPTION),
+            'lat.between' => sprintf('Latitude must be between %s and %s (inside Syria).', PlaceRules::LAT_MIN, PlaceRules::LAT_MAX),
+            'lng.between' => sprintf('Longitude must be between %s and %s (inside Syria).', PlaceRules::LNG_MIN, PlaceRules::LNG_MAX),
         ]);
 
         $attributes = collect($validated)->except('place_id')->all();

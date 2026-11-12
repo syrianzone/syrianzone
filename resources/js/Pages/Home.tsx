@@ -14,7 +14,7 @@ import { applyTheme as persistTheme, getThemePreference, resolveTheme, SYSTEM_TH
 import { applyFont, getFontPreference } from '@/Lib/font';
 import UserNav from '@/Components/UserNav';
 import AppearanceMenu from '@/Components/AppearanceMenu';
-import { HomeInlineSearchSection } from '@/Components/GlobalCommandPalette';
+import { HomeInlineSearchSection } from '@/Components/GlobalSearch';
 import F3aliaEvents from '@/Components/F3aliaEvents';
 import type { CustomLink } from '@/Pages/Home/_components/AddLinkDialog';
 import { getGeo, getLocMode, useLocSignal } from '@/Pages/Muslim/_lib/location';

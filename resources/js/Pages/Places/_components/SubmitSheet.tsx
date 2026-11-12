@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/Contexts/AuthContext';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -62,6 +62,10 @@ export function SubmitSheet(props: {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submittedId, setSubmittedId] = useState<number | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  // Bumped only when a submit fails, so the focus effect runs after the errors
+  // are in the DOM — never on an ordinary re-render or while the user types.
+  const [failedSubmit, setFailedSubmit] = useState(0);
 
   useEffect(() => {
     if (!open || !point) return;
@@ -95,6 +99,13 @@ export function SubmitSheet(props: {
     };
   }, [open, point, user]);
 
+  // After a failed submit, land on the first control marked invalid instead of
+  // leaving focus on the submit button.
+  useEffect(() => {
+    if (!failedSubmit) return;
+    formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+  }, [failedSubmit]);
+
   const dirty =
     name.trim() !== '' || category !== null || description.trim() !== '' || photos.length > 0;
 
@@ -114,20 +125,26 @@ export function SubmitSheet(props: {
     setFieldErrors({});
     const trimmedName = name.trim();
     const trimmedDesc = description.trim();
+    // a client-side failure belongs to its field: mark it invalid, show the
+    // message under it, and let the effect above move focus there
+    const fail = (field: string, message: string) => {
+      setFieldErrors({ [field]: message });
+      setFailedSubmit((n) => n + 1);
+    };
     if (!trimmedName || trimmedName.length > 160) {
-      setError('أدخل اسم المكان (160 حرفاً كحد أقصى)');
+      fail('name', 'أدخل اسم المكان (160 حرفاً كحد أقصى)');
       return;
     }
     if (!category) {
-      setError('اختر التصنيف');
+      fail('category', 'اختر التصنيف');
       return;
     }
     if (trimmedDesc.length < 20 || trimmedDesc.length > 1000) {
-      setError('الوصف يجب أن يكون بين 20 و 1000 حرف');
+      fail('description', 'الوصف يجب أن يكون بين 20 و 1000 حرف');
       return;
     }
     if (photos.length < 1 || photos.length > 10) {
-      setError('أضف من صورة واحدة إلى 10 صور');
+      fail('photos', 'أضف من صورة واحدة إلى 10 صور');
       return;
     }
     setSubmitting(true);
@@ -151,6 +168,7 @@ export function SubmitSheet(props: {
         setFieldErrors({});
         setError(extractError(e));
       }
+      setFailedSubmit((n) => n + 1);
     } finally {
       setSubmitting(false);
     }
@@ -202,6 +220,7 @@ export function SubmitSheet(props: {
 
           {step === 'form' && (
             <form
+              ref={formRef}
               className="space-y-4"
               onSubmit={(e) => {
                 e.preventDefault();
@@ -284,10 +303,21 @@ export function SubmitSheet(props: {
                 {fieldErrors.lat && <p role="alert" className="text-xs text-destructive">{fieldErrors.lat}</p>}
                 {fieldErrors.lng && <p role="alert" className="text-xs text-destructive">{fieldErrors.lng}</p>}
               </div>
-              <div className="space-y-1.5">
+              <div
+                className="space-y-1.5"
+                role="group"
+                aria-label="الصور"
+                tabIndex={-1}
+                aria-invalid={!!fieldErrors.photos}
+                aria-describedby={fieldErrors.photos ? 'place-photos-error' : undefined}
+              >
                 <Label>الصور</Label>
                 <PhotoPicker files={photos} onChange={setPhotos} />
-                {fieldErrors.photos && <p role="alert" className="text-xs text-destructive">{fieldErrors.photos}</p>}
+                {fieldErrors.photos && (
+                  <p id="place-photos-error" role="alert" className="text-xs text-destructive">
+                    {fieldErrors.photos}
+                  </p>
+                )}
               </div>
               <Button type="submit" className="w-full" disabled={submitting}>
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" />}

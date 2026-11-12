@@ -235,9 +235,22 @@ export function resolveTheme(pref: string): string {
   return pref === SYSTEM_THEME ? (darkQuery().matches ? 'dark' : 'light') : pref;
 }
 
+// Keep <meta name="color-scheme"> in step with the applied theme so native UI
+// and the canvas match it. The blade inline script does the same before first
+// paint; this covers switches after load. No-ops without a document (SSR) or
+// without the meta.
+function syncColorSchemeMeta(themeId: string) {
+  if (typeof document === 'undefined') return;
+  const meta = document.querySelector('meta[name="color-scheme"]');
+  if (!meta) return;
+  meta.setAttribute('content', getThemeById(themeId)?.isDark ? 'dark' : 'light');
+}
+
 export function applyTheme(pref: string) {
   try { localStorage.setItem(THEME_KEY, pref); } catch {}
-  document.documentElement.setAttribute('data-theme', resolveTheme(pref));
+  const theme = resolveTheme(pref);
+  document.documentElement.setAttribute('data-theme', theme);
+  syncColorSchemeMeta(theme);
 }
 
 // Follow the device scheme while the preference is 'system'. Call once at boot.
@@ -245,7 +258,9 @@ export function watchSystemTheme(): () => void {
   const query = darkQuery();
   const onChange = () => {
     if (getThemePreference() === SYSTEM_THEME) {
-      document.documentElement.setAttribute('data-theme', resolveTheme(SYSTEM_THEME));
+      const theme = resolveTheme(SYSTEM_THEME);
+      document.documentElement.setAttribute('data-theme', theme);
+      syncColorSchemeMeta(theme);
     }
   };
   query.addEventListener('change', onChange);

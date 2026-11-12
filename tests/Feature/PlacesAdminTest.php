@@ -245,17 +245,30 @@ test('admin update rejects invalid values', function () {
   $this->actingAs($admin)
     ->patchJson("/api/v1/admin/places/{$place->id}", ['category' => 'castle'])
     ->assertStatus(422)
-    ->assertJsonValidationErrors(['category']);
+    ->assertJsonValidationErrors(['category'])
+    ->assertJsonPath('errors.category.0', 'التصنيف المختار غير صالح');
 
   $this->actingAs($admin)
     ->patchJson("/api/v1/admin/places/{$place->id}", ['lat' => 31.9])
     ->assertStatus(422)
-    ->assertJsonValidationErrors(['lat']);
+    ->assertJsonValidationErrors(['lat'])
+    ->assertJsonPath('errors.lat.0', 'خط العرض يجب أن يكون بين 32.0 و 37.5 (داخل سوريا)');
 
   $this->actingAs($admin)
     ->patchJson("/api/v1/admin/places/{$place->id}", ['description' => 'قصير'])
     ->assertStatus(422)
-    ->assertJsonValidationErrors(['description']);
+    ->assertJsonValidationErrors(['description'])
+    ->assertJsonPath('errors.description.0', 'الوصف يجب ألا يقل عن 20 حرفاً');
+});
+
+test('admin update returns an arabic message for a blank name and a non-numeric coordinate', function () {
+  $place = Place::factory()->create();
+
+  $this->actingAs(placesAdmin())
+    ->patchJson("/api/v1/admin/places/{$place->id}", ['name' => '', 'lng' => 'شرق'])
+    ->assertStatus(422)
+    ->assertJsonPath('errors.name.0', 'أدخل اسم المكان')
+    ->assertJsonPath('errors.lng.0', 'خط الطول يجب أن يكون رقماً');
 });
 
 test('admin update busts the map cache', function () {

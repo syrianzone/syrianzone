@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useId, useMemo, useRef } from 'react';
 import { usePage } from '@inertiajs/react';
 import {
     Calendar, Clock, MapPin, Sparkles, AlertCircle, Info,
@@ -195,6 +195,8 @@ function RoznamaSettingsBody({
     geo: GeoPoint | null;
 }) {
     const geoActive = (locMode === 'gps' || locMode === 'ip') && !!geo;
+    const latId = useId();
+    const lonId = useId();
     return (
         <div className="space-y-4">
             <LocationModeSelector mode={locMode} onChange={onLocMode} />
@@ -212,7 +214,7 @@ function RoznamaSettingsBody({
                         <MapPin className="h-4 w-4 text-primary" /> المدينة (للمواقيت والطقس والفعاليات)
                     </Label>
                     <Select value={governorate} onValueChange={onGovChange}>
-                        <SelectTrigger dir="rtl"><SelectValue /></SelectTrigger>
+                        <SelectTrigger dir="rtl" aria-label="المدينة (للمواقيت والطقس والفعاليات)"><SelectValue /></SelectTrigger>
                         <SelectContent dir="rtl">
                             {Object.entries(GOVERNORATES).map(([key, value]) => (
                                 <SelectItem key={key} value={key}>
@@ -227,16 +229,16 @@ function RoznamaSettingsBody({
             {locMode === 'custom' && (
                 <div className="grid grid-cols-2 gap-3 rounded-lg border border-border/50 bg-card/10 p-3">
                     <div className="space-y-1">
-                        <Label className="text-xs">خط العرض (Lat)</Label>
-                        <Input aria-label="33.51"
+                        <Label htmlFor={latId} className="text-xs">خط العرض (Lat)</Label>
+                        <Input id={latId}
                             dir="ltr" inputMode="decimal" placeholder="33.51"
                             value={customLat}
                             onChange={(e) => onCustom({ lat: e.target.value })}
                         />
                     </div>
                     <div className="space-y-1">
-                        <Label className="text-xs">خط الطول (Lon)</Label>
-                        <Input aria-label="36.27"
+                        <Label htmlFor={lonId} className="text-xs">خط الطول (Lon)</Label>
+                        <Input id={lonId}
                             dir="ltr" inputMode="decimal" placeholder="36.27"
                             value={customLon}
                             onChange={(e) => onCustom({ lon: e.target.value })}
@@ -248,7 +250,7 @@ function RoznamaSettingsBody({
             <div className="space-y-2">
                 <Label className="text-sm font-semibold">طريقة الحساب</Label>
                 <Select value={String(method)} onValueChange={onMethodChange}>
-                    <SelectTrigger dir="rtl"><SelectValue /></SelectTrigger>
+                    <SelectTrigger dir="rtl" aria-label="طريقة الحساب"><SelectValue /></SelectTrigger>
                     <SelectContent dir="rtl">
                         {PRAYER_METHODS.map((m) => (
                             <SelectItem key={m.id} value={String(m.id)}>{m.nameAr}</SelectItem>

@@ -148,6 +148,8 @@ export function FilterBar(props: {
       e.preventDefault();
       setActiveIndex((i) => Math.max(i - 1, 0));
     } else if (e.key === 'Enter') {
+      // Enter that confirms an IME candidate must not pick a result.
+      if (e.nativeEvent.isComposing || e.keyCode === 229) return;
       e.preventDefault();
       activate(activeIndex);
     }

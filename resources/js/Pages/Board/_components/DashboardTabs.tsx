@@ -37,7 +37,11 @@ export function DashboardTabs(props: {
                 maxLength={40}
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') commit();
+                  if (e.key === 'Enter') {
+                    // Enter that confirms an IME candidate must not rename.
+                    if (e.nativeEvent.isComposing || e.keyCode === 229) return;
+                    commit();
+                  }
                   if (e.key === 'Escape') setRenaming(null);
                 }}
                 onBlur={commit}

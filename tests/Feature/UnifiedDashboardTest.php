@@ -97,3 +97,29 @@ test('deleting user account soft deletes user and delegates polls and routes to 
         'user_id' => $superadmin->id,
     ]);
 });
+
+test('account update rejects a blank name and a malformed email in arabic', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->postJson('/api/account/update', [
+            'name' => '',
+            'email' => 'not-an-email',
+        ])
+        ->assertStatus(422)
+        ->assertJsonPath('errors.name.0', 'اكتب الاسم')
+        ->assertJsonPath('errors.email.0', 'أدخل بريداً إلكترونياً صالحاً');
+});
+
+test('account update rejects an email another account already uses in arabic', function () {
+    User::factory()->create(['email' => 'taken@example.com']);
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->postJson('/api/account/update', [
+            'name' => 'اسم جديد',
+            'email' => 'taken@example.com',
+        ])
+        ->assertStatus(422)
+        ->assertJsonPath('errors.email.0', 'هذا البريد الإلكتروني مستخدم');
+});

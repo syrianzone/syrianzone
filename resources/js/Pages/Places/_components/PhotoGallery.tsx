@@ -22,7 +22,8 @@ export function PhotoGallery(props: { photos: PlacePhoto[]; name: string }) {
         <img
           src={current.display_url}
           alt={name}
-          loading="lazy"
+          loading={active === 0 ? 'eager' : 'lazy'}
+          fetchPriority={active === 0 ? 'high' : 'auto'}
           decoding="async"
           className="h-52 w-full rounded-md object-cover"
         />

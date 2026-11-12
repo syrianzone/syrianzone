@@ -18,7 +18,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { api, extractError } from '../../Places/_lib/api';
+import { api, extractError, extractFieldErrors } from '../../Places/_lib/api';
+import { extractApiFieldErrors } from '@/Lib/apiError';
+import FieldError, { fieldA11y } from '@/Components/ui/field-error';
 import { CATEGORIES } from '../../Places/_lib/categories';
 import type { AdminPlace, PlaceCategory } from '../../Places/_lib/types';
 
@@ -36,6 +38,7 @@ export function EditPlaceDialog(props: {
   const [lng, setLng] = useState(String(place.lng));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!open) return;
@@ -45,6 +48,7 @@ export function EditPlaceDialog(props: {
     setLat(String(place.lat));
     setLng(String(place.lng));
     setError(null);
+    setFieldErrors({});
   }, [open, place]);
 
   // unsaved edits: block accidental dismissal (overlay click, Escape); the
@@ -75,12 +79,27 @@ export function EditPlaceDialog(props: {
     }
     setBusy(true);
     setError(null);
+    setFieldErrors({});
     try {
       await api.adminUpdatePlace(place.id, changed);
       onSaved();
       onOpenChange(false);
     } catch (e) {
-      setError(extractError(e));
+      // axios 422 body: { message, errors: { name: [...], lat: [...] } }
+      // extractFieldErrors() keeps only Arabic messages (Laravel's defaults are
+      // English and this endpoint passes none), so fall back to the field keys
+      // the 422 named and mark them with a neutral Arabic note.
+      const arabic = extractFieldErrors(e);
+      if (arabic) {
+        setFieldErrors(arabic);
+      } else {
+        const fields = Object.keys(extractApiFieldErrors(e));
+        if (fields.length > 0) {
+          setFieldErrors(Object.fromEntries(fields.map((field) => [field, 'تحقق من هذه القيمة'])));
+        } else {
+          setError(extractError(e));
+        }
+      }
     } finally {
       setBusy(false);
     }
@@ -109,13 +128,18 @@ export function EditPlaceDialog(props: {
               value={name}
               maxLength={160}
               onChange={(e) => setName(e.target.value)}
+              {...fieldA11y(`edit-name-${place.id}-error`, fieldErrors.name)}
             />
+            <FieldError id={`edit-name-${place.id}-error`} message={fieldErrors.name} />
           </div>
 
           <div className="space-y-1.5">
             <Label>التصنيف</Label>
             <Select value={category} onValueChange={(v) => setCategory(v as PlaceCategory)}>
-              <SelectTrigger>
+              <SelectTrigger
+                aria-label="التصنيف"
+                {...fieldA11y(`edit-category-${place.id}-error`, fieldErrors.category)}
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -126,6 +150,7 @@ export function EditPlaceDialog(props: {
                 ))}
               </SelectContent>
             </Select>
+            <FieldError id={`edit-category-${place.id}-error`} message={fieldErrors.category} />
           </div>
 
           <div className="space-y-1.5">
@@ -136,7 +161,9 @@ export function EditPlaceDialog(props: {
               rows={4}
               maxLength={1000}
               onChange={(e) => setDescription(e.target.value)}
+              {...fieldA11y(`edit-desc-${place.id}-error`, fieldErrors.description)}
             />
+            <FieldError id={`edit-desc-${place.id}-error`} message={fieldErrors.description} />
             <p className="text-xs text-muted-foreground">
               <span dir="ltr">{description.length} / 1000</span>
             </p>
@@ -152,7 +179,9 @@ export function EditPlaceDialog(props: {
                 step="any"
                 value={lat}
                 onChange={(e) => setLat(e.target.value)}
+                {...fieldA11y(`edit-lat-${place.id}-error`, fieldErrors.lat)}
               />
+              <FieldError id={`edit-lat-${place.id}-error`} message={fieldErrors.lat} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor={`edit-lng-${place.id}`}>خط الطول</Label>
@@ -163,11 +192,13 @@ export function EditPlaceDialog(props: {
                 step="any"
                 value={lng}
                 onChange={(e) => setLng(e.target.value)}
+                {...fieldA11y(`edit-lng-${place.id}-error`, fieldErrors.lng)}
               />
+              <FieldError id={`edit-lng-${place.id}-error`} message={fieldErrors.lng} />
             </div>
           </div>
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
         </div>
 
         <DialogFooter className="gap-2">

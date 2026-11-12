@@ -87,6 +87,8 @@ export default function TodoView({ config, onConfigChange }: WidgetProps<TodoCon
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
+                // Enter that confirms an IME candidate must not submit the task.
+                if (e.nativeEvent.isComposing || e.keyCode === 229) return;
                 e.preventDefault();
                 add();
               }

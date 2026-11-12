@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ImageUp, Loader2, Plus, Star, Trash2 } from 'lucide-react';
 import { notify } from '@/Lib/notify';
 import { extractApiErrorMessage } from '@/Lib/apiError';
-import FieldError, { fieldA11y } from '@/Pages/Promises/_components/FieldError';
+import FieldError, { fieldA11y } from '@/Components/ui/field-error';
 import { SOURCE_TYPE_LABEL } from '@/Pages/Promises/_lib/status';
 
 export interface SourceForm {

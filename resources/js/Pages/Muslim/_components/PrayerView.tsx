@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useId, useMemo, useState } from 'react';
 import {
   AlertCircle, Check, Clock, MapPin, Moon, MoonStar, Settings, Sun, SunDim, Sunrise, Sunset,
 } from 'lucide-react';
@@ -47,6 +47,8 @@ function PrayerSettingsBody({ prefs, setPrefs }: {
   prefs: MuslimPrefs;
   setPrefs: (p: Partial<MuslimPrefs>) => void;
 }) {
+  const latId = useId();
+  const lonId = useId();
   return (
     <div className="space-y-4">
       <LocationModeSelector
@@ -69,7 +71,7 @@ function PrayerSettingsBody({ prefs, setPrefs }: {
             <MapPin className="h-4 w-4 text-primary" /> المدينة
           </Label>
           <Select value={prefs.city} onValueChange={(v) => setPrefs({ city: v })}>
-            <SelectTrigger dir="rtl"><SelectValue /></SelectTrigger>
+            <SelectTrigger dir="rtl" aria-label="المدينة"><SelectValue /></SelectTrigger>
             <SelectContent dir="rtl">
               {Object.entries(MUSLIM_GOVERNORATES).map(([v, g]) => (
                 <SelectItem key={v} value={v}>{g.label}</SelectItem>
@@ -82,13 +84,13 @@ function PrayerSettingsBody({ prefs, setPrefs }: {
       {prefs.locMode === 'custom' && (
         <div className="grid grid-cols-2 gap-3 rounded-lg border border-border/50 bg-card/10 p-3">
           <div className="space-y-1">
-            <Label className="text-xs">خط العرض (Lat)</Label>
-            <Input aria-label="33.51" dir="ltr" inputMode="decimal" placeholder="33.51" value={prefs.customLat}
+            <Label htmlFor={latId} className="text-xs">خط العرض (Lat)</Label>
+            <Input id={latId} dir="ltr" inputMode="decimal" placeholder="33.51" value={prefs.customLat}
               onChange={(e) => setPrefs({ customLat: e.target.value })} />
           </div>
           <div className="space-y-1">
-            <Label className="text-xs">خط الطول (Lon)</Label>
-            <Input aria-label="36.27" dir="ltr" inputMode="decimal" placeholder="36.27" value={prefs.customLon}
+            <Label htmlFor={lonId} className="text-xs">خط الطول (Lon)</Label>
+            <Input id={lonId} dir="ltr" inputMode="decimal" placeholder="36.27" value={prefs.customLon}
               onChange={(e) => setPrefs({ customLon: e.target.value })} />
           </div>
         </div>
@@ -97,7 +99,7 @@ function PrayerSettingsBody({ prefs, setPrefs }: {
       <div className="space-y-2">
         <Label className="text-sm font-semibold">طريقة الحساب</Label>
         <Select value={String(prefs.method)} onValueChange={(v) => setPrefs({ method: Number(v) })}>
-          <SelectTrigger dir="rtl"><SelectValue /></SelectTrigger>
+          <SelectTrigger dir="rtl" aria-label="طريقة الحساب"><SelectValue /></SelectTrigger>
           <SelectContent dir="rtl">
             {PRAYER_METHODS.map((m) => (
               <SelectItem key={m.id} value={String(m.id)}>{m.nameAr}</SelectItem>

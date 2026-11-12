@@ -80,7 +80,12 @@ createInertiaApp({
 router.on('navigate', (event) => {
     if (!GA_ID || typeof window.gtag !== 'function') return;
 
+    // Path only: query strings carry search terms, room codes and route ids.
+    const pagePath = event.detail.page.url.split(/[?#]/)[0];
+
     window.gtag('config', GA_ID, {
-        page_path: event.detail.page.url,
+        page_path: pagePath,
+        // GA4 reads the full URL from page_location, so strip it there too.
+        page_location: window.location.origin + pagePath,
     });
 });

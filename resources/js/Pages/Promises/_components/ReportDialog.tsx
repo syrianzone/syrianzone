@@ -10,7 +10,7 @@ import {
 import { Loader2 } from 'lucide-react';
 import { notify } from '@/Lib/notify';
 import { extractApiErrorMessage, extractApiFieldErrors } from '@/Lib/apiError';
-import FieldError, { fieldA11y } from './FieldError';
+import FieldError, { fieldA11y } from '@/Components/ui/field-error';
 
 export type ReportKind = 'progress' | 'error';
 

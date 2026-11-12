@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/Components/ui/dialog";
 import { Label } from "@/Components/ui/label";
 import { Input } from "@/Components/ui/input";
@@ -77,6 +77,13 @@ function HomeSettingsBody(props: HomeSettingsDialogProps) {
     const geoActive = (locMode === 'gps' || locMode === 'ip') && !!geo;
     const customActive = locMode === 'custom' || useCustomCoords;
     const activeGovName = GOVERNORATE_LIST.find(g => g.value === governorate)?.nameAr ?? governorate;
+    const latId = useId();
+    const lonId = useId();
+    // Ids for the visible toggle captions: Radix Switch renders a <button>, so
+    // the caption names it through aria-labelledby rather than <Label htmlFor>.
+    const weatherLabelId = useId();
+    const prayerLabelId = useId();
+    const eventsLabelId = useId();
     void locSig;
 
     // Mode radio doubles as the custom-coords switch (mutually exclusive).
@@ -106,8 +113,9 @@ function HomeSettingsBody(props: HomeSettingsDialogProps) {
                             <div className="grid grid-cols-3 gap-2">
                                 {/* Toggle Weather */}
                                 <div className="flex flex-col items-center gap-2 rounded-lg border border-border/50 p-2 bg-card/20">
-                                    <span className="text-[11px] font-medium text-foreground">الطقس</span>
+                                    <span id={weatherLabelId} className="text-[11px] font-medium text-foreground">الطقس</span>
                                     <Switch
+                                        aria-labelledby={weatherLabelId}
                                         checked={showWeather}
                                         onCheckedChange={(checked) => {
                                             setShowWeather(checked);
@@ -118,8 +126,9 @@ function HomeSettingsBody(props: HomeSettingsDialogProps) {
                                 </div>
                                 {/* Toggle Prayer Times */}
                                 <div className="flex flex-col items-center gap-2 rounded-lg border border-border/50 p-2 bg-card/20">
-                                    <span className="text-[11px] font-medium text-foreground">الصلاة</span>
+                                    <span id={prayerLabelId} className="text-[11px] font-medium text-foreground">الصلاة</span>
                                     <Switch
+                                        aria-labelledby={prayerLabelId}
                                         checked={showPrayerTimes}
                                         onCheckedChange={(checked) => {
                                             setShowPrayerTimes(checked);
@@ -130,8 +139,9 @@ function HomeSettingsBody(props: HomeSettingsDialogProps) {
                                 </div>
                                 {/* Toggle Events */}
                                 <div className="flex flex-col items-center gap-2 rounded-lg border border-border/50 p-2 bg-card/20">
-                                    <span className="text-[11px] font-medium text-foreground">الفعاليات</span>
+                                    <span id={eventsLabelId} className="text-[11px] font-medium text-foreground">الفعاليات</span>
                                     <Switch
+                                        aria-labelledby={eventsLabelId}
                                         checked={showEvents}
                                         onCheckedChange={(checked) => {
                                             setShowEvents(checked);
@@ -186,7 +196,7 @@ function HomeSettingsBody(props: HomeSettingsDialogProps) {
                                         localStorage.setItem('governorate', v);
                                         saveAccountSettings({ governorate: v });
                                     }}>
-                                        <SelectTrigger dir="rtl"><SelectValue /></SelectTrigger>
+                                        <SelectTrigger dir="rtl" aria-label="مدينة المواقيت والطقس"><SelectValue /></SelectTrigger>
                                         <SelectContent dir="rtl">
                                             {GOVERNORATE_LIST.map((g) => (
                                                 <SelectItem key={g.value} value={g.value}>{g.nameAr}</SelectItem>
@@ -199,8 +209,8 @@ function HomeSettingsBody(props: HomeSettingsDialogProps) {
                             {customActive && (
                                 <div className="grid grid-cols-2 gap-3 rounded-lg border border-border/50 bg-card/10 p-3">
                                     <div className="space-y-1 text-start">
-                                        <Label className="text-xs">خط العرض (Lat)</Label>
-                                        <Input aria-label="33.5138"
+                                        <Label htmlFor={latId} className="text-xs">خط العرض (Lat)</Label>
+                                        <Input id={latId}
                                             type="text"
                                             value={customLat}
                                             onChange={(e) => {
@@ -212,8 +222,8 @@ function HomeSettingsBody(props: HomeSettingsDialogProps) {
                                         />
                                     </div>
                                     <div className="space-y-1 text-start">
-                                        <Label className="text-xs">خط الطول (Lon)</Label>
-                                        <Input aria-label="36.2765"
+                                        <Label htmlFor={lonId} className="text-xs">خط الطول (Lon)</Label>
+                                        <Input id={lonId}
                                             type="text"
                                             value={customLon}
                                             onChange={(e) => {
@@ -248,7 +258,7 @@ function HomeSettingsBody(props: HomeSettingsDialogProps) {
                             </div>
                             <div className="space-y-2">
                                 <Select value={eventsGovernorate} onValueChange={setEventsGovernorate}>
-                                    <SelectTrigger dir="rtl"><SelectValue /></SelectTrigger>
+                                    <SelectTrigger dir="rtl" aria-label="محافظة الفعاليات"><SelectValue /></SelectTrigger>
                                     <SelectContent dir="rtl">
                                         {GOVERNORATE_LIST.map((g) => (
                                             <SelectItem key={g.value} value={g.value}>{g.nameAr}</SelectItem>

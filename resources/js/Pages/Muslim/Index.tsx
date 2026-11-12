@@ -17,6 +17,26 @@ interface LastBookmark {
   juz: number;
 }
 
+const QURAN_DATA_URL = '/quran-data/mushaf-unified.json';
+
+// The mushaf file is ~1.8 MB (443 KB gzipped) and most hub visitors never open
+// the reader, so warm it only when the visitor shows intent to follow a link
+// into the reader — not on every visit to the hub. Runs once per page load.
+let quranDataWarmed = false;
+
+function warmQuranData(): void {
+  if (quranDataWarmed || typeof document === 'undefined') return;
+  if ((navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData) return;
+  quranDataWarmed = true;
+  if (document.head.querySelector(`link[rel="prefetch"][href="${QURAN_DATA_URL}"]`)) return;
+  const link = document.createElement('link');
+  link.rel = 'prefetch';
+  link.as = 'fetch';
+  link.crossOrigin = 'anonymous';
+  link.href = QURAN_DATA_URL;
+  document.head.appendChild(link);
+}
+
 export default function Index() {
   const { prefs, isLoggedIn } = useMuslimPrefs();
   const setTargetAyah = useMuslimNav((s) => s.setTargetAyah);
@@ -79,6 +99,13 @@ export default function Index() {
     return cands[0] ?? null;
   }, [timings, now]);
 
+  // Warm the reader's data file as soon as the visitor aims at a link into it.
+  const quranWarmProps = {
+    onPointerEnter: warmQuranData,
+    onFocus: warmQuranData,
+    onTouchStart: warmQuranData,
+  };
+
   return (
     <MainLayout>
       <Head>
@@ -87,7 +114,6 @@ export default function Index() {
         
         
         <link rel="preload" href="/fonts/quran-hafs.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
-        <link rel="prefetch" href="/quran-data/mushaf-unified.json" as="fetch" crossOrigin="anonymous" />
       </Head>
 
       <div
@@ -127,6 +153,7 @@ export default function Index() {
             <Link
               href={toolHref('quran')}
               onClick={() => setTargetAyah(`${lastBookmark.surah}:${lastBookmark.ayah}`)}
+              {...quranWarmProps}
               className="mb-4 flex w-full items-center gap-3 rounded-xl border border-border/60 bg-card/60 px-4 py-3 text-right no-underline transition-colors hover:border-primary/40"
             >
               <span className="rounded-lg bg-primary/10 p-2 text-primary">
@@ -149,6 +176,7 @@ export default function Index() {
               <Link
                 key={t.slug}
                 href={toolHref(t.slug)}
+                {...(t.slug === 'quran' ? quranWarmProps : {})}
                 className="group flex flex-col items-center gap-2 py-1 text-center no-underline"
               >
                 <t.icon className="h-12 w-12 shrink-0 text-foreground transition-all group-hover:scale-110 group-hover:text-primary" />

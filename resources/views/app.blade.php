@@ -162,20 +162,11 @@
         }
     </script>
 
-    <!-- Google Analytics: id is runtime config, so staging omits it and loads nothing -->
+    <!-- Google Analytics: the id is runtime config, so staging omits it and
+         loads nothing. Only the id is exposed here; Lib/analyticsConsent.ts is
+         the one place that fetches gtag.js, and only after the visitor agrees. -->
     @if (config('services.google_analytics.id'))
     <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">window.GA_ID = "{{ config('services.google_analytics.id') }}";</script>
-    <script async src="https://www.googletagmanager.com/gtag/js?id={{ config('services.google_analytics.id') }}" nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}"></script>
-    <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        // Send the URL without its query string or fragment: those carry search
-        // terms, room codes and route ids. Keep in sync with resources/js/app.tsx.
-        gtag('config', "{{ config('services.google_analytics.id') }}", {
-            page_location: window.location.origin + window.location.pathname,
-        });
-    </script>
     @endif
 </body>
 </html>

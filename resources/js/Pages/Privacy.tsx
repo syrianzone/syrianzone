@@ -4,8 +4,21 @@ import { Shield, Eye, Users, MapPin, Activity, Database, Lock, Globe } from 'luc
 import MainLayout from '@/Layouts/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/card';
 import { Separator } from '@/Components/ui/separator';
+import { Label } from '@/Components/ui/label';
+import { Switch } from '@/Components/ui/switch';
+import {
+    setConsent,
+    useAnalyticsConsent,
+    useMeasurementId,
+    usePrivacySignal,
+} from '@/Lib/analyticsConsent';
 
 export default function Privacy() {
+    // Analytics controls only exist where analytics could run at all.
+    const analyticsId = useMeasurementId();
+    const analyticsConsent = useAnalyticsConsent();
+    const privacySignal = usePrivacySignal();
+
     return (
         <MainLayout>
             
@@ -161,7 +174,30 @@ export default function Privacy() {
                                     <li><strong>تحديد الموقع (GPS / عنوان IP عبر ipwho.is):</strong> عند اختيار التحديد التلقائي للموقع، تُستخدم إحداثيات جهازك أو مدينتك التقريبية من عنوان IP لحساب المواقيت فقط — تبقى على جهازك ولا تُرسل لخوادمنا.</li>
                                     <li><strong>خدمة الطقس (Open-Meteo وOpenWeatherMap):</strong> لجلب وعرض حالة الطقس المحلية بناءً على محافظتك أو إحداثياتك التقريبية.</li>
                                     <li><strong>محركات البحث (Google, DuckDuckGo, Bing, SearX):</strong> عند استخدام شريط البحث، يتم توجيه الاستعلام مباشرة إلى المحرك المختار دون تخزينه أو تسجيله من طرفنا.</li>
-                                    <li><strong>إحصاءات الزيارات (Google Analytics):</strong> لقياس عدد الزيارات وتحديد الصفحات الأكثر استخداماً عبر بيانات مجمَّعة. تُرسَل مسارات الصفحات وحدها دون سلاسل الاستعلام (أي ما يأتي بعد علامة «?» في رابط الصفحة). التفاصيل في <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-semibold">سياسة خصوصية Google</a>.</li>
+                                    <li><strong>إحصاءات الزيارات (Google Analytics):</strong> لقياس عدد الزيارات وتحديد الصفحات الأكثر استخداماً عبر بيانات مجمَّعة. لا تُحمَّل الإحصاءات ولا يُرسَل أي شيء إلى Google قبل موافقتك، ويمكنك تغيير اختيارك من هذه الصفحة. تُرسَل مسارات الصفحات وحدها دون سلاسل الاستعلام (أي ما يأتي بعد علامة «?» في رابط الصفحة). التفاصيل في <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-semibold">سياسة خصوصية Google</a>.
+                                        {analyticsId && (
+                                            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-border/60 bg-muted/20 px-3 py-2">
+                                                <Switch
+                                                    id="analytics-consent"
+                                                    checked={analyticsConsent === 'granted'}
+                                                    disabled={privacySignal}
+                                                    onCheckedChange={(checked) => setConsent(checked ? 'granted' : 'denied')}
+                                                />
+                                                <Label htmlFor="analytics-consent" className="cursor-pointer text-xs font-semibold">
+                                                    إحصاءات الزيارات
+                                                </Label>
+                                                <span className="text-xs text-muted-foreground">
+                                                    {privacySignal
+                                                        ? 'أوقفتها إشارة الخصوصية في متصفحك (Global Privacy Control).'
+                                                        : analyticsConsent === 'granted'
+                                                            ? 'مفعّلة'
+                                                            : analyticsConsent === 'denied'
+                                                                ? 'متوقفة'
+                                                                : 'لم تختر بعد'}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </li>
                                 </ul>
                             </CardContent>
                         </Card>

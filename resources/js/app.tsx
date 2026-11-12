@@ -6,6 +6,7 @@ import { createRoot } from 'react-dom/client';
 import { createInertiaApp, router } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { watchSystemTheme } from '@/lib/theme';
+import { loadAnalytics, trackPageView } from '@/Lib/analyticsConsent';
 import { QueryProvider } from '@/Providers/QueryProvider';
 import { DirectionProvider } from '@radix-ui/react-direction';
 
@@ -33,9 +34,6 @@ if (import.meta.env.VITE_SENTRY_DSN) {
 watchSystemTheme();
 
 const appName = import.meta.env.VITE_APP_NAME || 'Syrian Zone';
-// set by the gtag snippet in app.blade.php, which only renders when the id is
-// configured. undefined on staging, so the navigate handler below no-ops.
-const GA_ID = (window as unknown as { GA_ID?: string }).GA_ID;
 
 const pages = import.meta.glob('./Pages/**/*.tsx');
 
@@ -75,17 +73,13 @@ createInertiaApp({
     },
 });
 
+// Analytics. Lib/analyticsConsent.ts owns the decision and the loading:
+// loadAnalytics() is a no-op unless the visitor already agreed, and the
+// Inertia handler below sends nothing until then (the initial page view is
+// queued by the module when it loads gtag.js).
+loadAnalytics();
+
 // Track page views for every Inertia SPA navigation.
-// The initial load is already tracked by the gtag snippet in app.blade.php.
 router.on('navigate', (event) => {
-    if (!GA_ID || typeof window.gtag !== 'function') return;
-
-    // Path only: query strings carry search terms, room codes and route ids.
-    const pagePath = event.detail.page.url.split(/[?#]/)[0];
-
-    window.gtag('config', GA_ID, {
-        page_path: pagePath,
-        // GA4 reads the full URL from page_location, so strip it there too.
-        page_location: window.location.origin + pagePath,
-    });
+    trackPageView(event.detail.page.url);
 });

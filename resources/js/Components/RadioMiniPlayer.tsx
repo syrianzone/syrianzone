@@ -5,8 +5,8 @@ import { Button } from '@/Components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/Components/ui/sheet';
 import QuranWordWindow from '@/Components/QuranWordWindow';
-import { useQuranPlayer } from '@/Lib/quranPlayer';
-import { SURAH_NAMES_AR, recitationByCode } from '@/Pages/Muslim/_lib/quran';
+import { useQuranPlayer } from '@/Domain/quran/quranPlayer';
+import { SURAH_NAMES_AR, recitationByCode } from '@/Domain/quran/quran';
 
 // A persistent "now playing" for the followed recitation (إذاعة القرآن). It
 // appears once the radio owns the player and the user is elsewhere in the app;

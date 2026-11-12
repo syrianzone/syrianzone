@@ -1,9 +1,12 @@
 /**
- * The global Ctrl/Cmd+K search modal. Mounted lazily (React.lazy in
- * Layouts/MainLayout), so everything the page shells also need — the search
- * engine, the results renderer, the filter tabs, the shortcut labels — lives in
- * `./GlobalSearch`. Importing any of those from this file would make the modal
- * a static dependency of the eager graph and Rollup would drop the code-split.
+ * The global search modal. Mounted lazily (React.lazy in Layouts/MainLayout),
+ * so everything the page shells also need — the search engine, the results
+ * renderer, the filter tabs, the shortcut labels — lives in `./GlobalSearch`.
+ * Importing any of those from this file would make the modal a static
+ * dependency of the eager graph and Rollup would drop the code-split.
+ *
+ * The Ctrl/Cmd+K shortcut belongs to the shell (Layouts/MainLayout), which also
+ * mounts this modal on demand; this file only renders the dialog state.
  */
 import { useEffect, useRef, useState } from 'react';
 import { usePage } from '@inertiajs/react';
@@ -18,41 +21,21 @@ import {
     Command,
     CommandList,
 } from '@/Components/ui/command';
-import { useMuslimNav } from '@/Pages/Muslim/_lib/nav';
+import { useAppShell } from '@/Lib/appShell';
 import { FILTER_TABS, IS_MAC, SearchResultsContent, useGlobalSearchData } from './GlobalSearch';
 import type { FilterScope } from './GlobalSearch';
 
 export default function GlobalCommandPalette() {
     const { url } = usePage();
     const pathname = url.split('?')[0];
-    const open = useMuslimNav((s) => s.searchOpen);
-    const setOpen = useMuslimNav((s) => s.setSearchOpen);
+    const open = useAppShell((s) => s.searchOpen);
+    const setOpen = useAppShell((s) => s.setSearchOpen);
 
     const [query, setQuery] = useState('');
     const [scope, setScope] = useState<FilterScope>('all');
     const inputRef = useRef<HTMLInputElement | null>(null);
 
     const data = useGlobalSearchData(query, scope, open);
-
-    // Global keyboard shortcut: Ctrl+K or Cmd+K
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-                e.preventDefault();
-                if (window.location.pathname === '/') {
-                    const homeInput = document.getElementById('sz-home-inline-search') as HTMLInputElement | null;
-                    if (homeInput) {
-                        homeInput.focus();
-                        homeInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        return;
-                    }
-                }
-                setOpen(!useMuslimNav.getState().searchOpen);
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [setOpen]);
 
     // Reset state when closed
     useEffect(() => {

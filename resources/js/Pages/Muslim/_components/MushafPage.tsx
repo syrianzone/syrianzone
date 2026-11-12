@@ -2,8 +2,8 @@ import React, { useLayoutEffect, useRef, useState } from 'react';
 import { Bookmark, BookmarkCheck } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import AyahMark from './ayah-mark/AyahMark';
-import { BASMALAH_LIGATURE, ensureRtlBidi, type QuranPage } from '../_lib/quran';
-import { splitPartTokens } from '../_lib/quranAudio';
+import { BASMALAH_LIGATURE, ensureRtlBidi, type QuranPage } from '../../../Domain/quran/quran';
+import { splitPartTokens } from '../../../Domain/quran/quranAudio';
 
 interface Props {
   data: QuranPage;

@@ -10,7 +10,7 @@ import {
 } from '@/Components/ui/dialog';
 import { GameHeaderActions } from './gameHeaderActions';
 import HeaderButton from './HeaderButton';
-import { gameBySlug } from '../_lib/games';
+import { gameBySlug } from '../../../Domain/games/games';
 import { useFocusMode } from '@/Contexts/FocusModeContext';
 
 interface Props {

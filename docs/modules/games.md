@@ -226,7 +226,7 @@ browser — because the rules carry no React.
 
 ## 3. Adding a game
 
-1. Add an entry to `GAMES` in `_lib/games.ts` (slug, title, icon,
+1. Add an entry to `GAMES` in `Domain/games/games.ts` (slug, title, icon,
    `comingSoon` if not playable yet).
 2. Add a route in `routes/web.php` returning the new Inertia component.
 3. Add `Pages/Games/<Slug>/Index.tsx` wrapping its board in `GameShell`, passing

@@ -2,8 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Loader2, Pause, Play, SkipBack, SkipForward, Volume1, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import RecitationPicker from './RecitationPicker';
-import { type Ayah } from '../_lib/quran';
-import { useQuranPlayer } from '@/Lib/quranPlayer';
+import { type Ayah } from '../../../Domain/quran/quran';
+import { useQuranPlayer } from '@/Domain/quran/quranPlayer';
 
 interface Props {
   /** Ayahs on the visible page (only used to know the reader has content). */

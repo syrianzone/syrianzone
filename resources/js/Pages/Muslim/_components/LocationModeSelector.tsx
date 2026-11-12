@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Label } from '@/Components/ui/label';
-import { resolveGps, resolveIp, setGeo, type LocMode } from '../_lib/location';
+import { resolveGps, resolveIp, setGeo, type LocMode } from '../../../Domain/location/location';
 
 interface Props {
   mode: LocMode;

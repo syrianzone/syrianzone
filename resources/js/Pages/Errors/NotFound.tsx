@@ -20,9 +20,9 @@ import {
     TransitIcon,
 } from '@/Components/Icons/ProjectIcons';
 import PlayingCard from '@/Pages/Games/_components/PlayingCard';
-import { GAMES, gameEntryHref, type GameEntry } from '@/Pages/Games/_lib/games';
+import { GAMES, gameEntryHref, type GameEntry } from '@/Domain/games/games';
 import AyahMark from '@/Pages/Muslim/_components/ayah-mark/AyahMark';
-import { TOOLS, toolHref } from '@/Pages/Muslim/_lib/tools';
+import { TOOLS, toolHref } from '@/Domain/muslim/tools';
 import CityGrid from '@/Pages/Transit/_components/landing/CityGrid';
 
 export type NotFoundSection = 'general' | 'transit' | 'games' | 'muslim';

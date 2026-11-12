@@ -37,7 +37,7 @@ A hyper-optimized complete Quran reading and listening client.
 - **Uthmanic Display**: Native browser typography rendering via `quran-hafs.woff2`.
 - **Fixed 25px Font**: The Mushaf page is always rendered at 25px — the size that keeps the Madina layout proportions (line width, stretch factors) correct. No user font-size control.
 - **Fill-Viewport Scaling**: `MushafPage` uniformly scales each page (up or down) until either the slot width or the viewport height limit is hit, on both mobile single-page and desktop double-page spreads. Fitting is done purely by the `scale()` transform (never by squeezing the fixed-width layout), and the page stays centered via a flex wrapper with `items-start` so height measurement is never corrupted.
-- **Focus Mode**: `quranFocus` in the Muslim nav store (`_lib/nav.ts`) hides the navbar (`Navbar` returns `null` on `/muslim/quran`) and the reader chrome (top row, surah/juz row, pager), giving the reclaimed space to the viewport so the text enlarges; the bottom transport stays pinned so playback remains controllable. `Muslim/Quran/Index.tsx` drops the navbar-height offset to `0` in focus mode.
+- **Focus Mode**: `quranFocus` in the app-shell store (`Lib/appShell.ts`) hides the navbar (`Navbar` returns `null` on `/muslim/quran`) and the reader chrome (top row, surah/juz row, pager), giving the reclaimed space to the viewport so the text enlarges; the bottom transport stays pinned so playback remains controllable. `Muslim/Quran/Index.tsx` drops the navbar-height offset to `0` in focus mode.
 - **Double-click to play**: a single click highlights an Ayah; a double click plays its recitation, in both normal and focus mode. Double-click only starts — it never stops — and double-clicking another Ayah while one is playing switches to it (the player stops the current recitation and starts the new one).
 
 ### 2.2 Roznama (`/roznama`)
@@ -47,11 +47,11 @@ A consolidated daily dashboard combining timing and locale.
 
 ### 2.3 Quran Radio (`/muslim/radio`)
 "Followed recitation": continuous MP3Quran v4 playback (the whole mushaf, surah after surah) with the text under it. It replaces the old live streams, which had no timeline and so could never show what was being recited.
-- **Global player**: one audio element + zustand store (`Lib/quranPlayer.ts`) outside React, so playback survives view switches and is shared by the radio page, the Board `quran` widget, the reader and the floating mini player.
+- **Global player**: one audio element + zustand store (`Domain/quran/quranPlayer.ts`) outside React, so playback survives view switches and is shared by the radio page, the Board `quran` widget, the reader and the floating mini player.
 - **Floating mini player**: `Components/RadioMiniPlayer` (mounted once in `MainLayout`) keeps the recitation controllable away from the radio page — a bottom-right card on desktop, and a floating button that opens a controls sheet on mobile. It hides on `/muslim/radio` and `/muslim/quran`, and shows the rolling five-word window (`QuranWordWindow`, compact) rather than a progress bar.
 - **Text**: `QuranNowReading` renders the current ayah in the recitation's riwayah (v4 `/v4/surahs/{n}/text`) with the word/letter highlight.
 - **Continue in the reader**: maps the current `surah:ayah` to a page (`findPageForAyah`) and opens the reader there.
-- **Sleep timer + data usage**: the timer lives in the nav store; usage accrues globally (`Lib/usageStore.ts`) and is shown in both the radio tab and the reader.
+- **Sleep timer + data usage**: the timer lives in the Muslim nav store (`_lib/nav.ts`); usage accrues globally (`Domain/quran/usageStore.ts`) and is shown in both the radio tab and the reader.
 
 ---
 
@@ -70,4 +70,4 @@ All functionality is heavily front-end and statically bundled; minimal dynamic b
 - **Followed recitation**: MP3Quran v4 on-demand surah files from `cdn.mp3quran.net` (no live streams).
 - **Prayer times**: Aladhan timings API via the server proxy (`GET /api/prayer-times`), cached per day.
 - **Weather**: Open-Meteo + OpenWeatherMap via the server proxy (`GET /api/weather`), cached 15 min.
-- **Approximate geolocation**: `ipwho.is` (see `_lib/location.ts` for the GPS → IP → manual fallback order).
+- **Approximate geolocation**: `ipwho.is` (see `Domain/location/location.ts` for the GPS → IP → manual fallback order).

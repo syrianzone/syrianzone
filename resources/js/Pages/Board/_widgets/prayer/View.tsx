@@ -6,7 +6,7 @@ import { sources, type PrayerTimes } from '../../_lib/sources';
 import { GOVERNORATES } from '../../_lib/governorates';
 import type { WidgetProps } from '../../_lib/types';
 import { prayerWidget, type PrayerConfig } from './index';
-import { effectivePrayerParams, getGeo, getLocMode, useLocSignal } from '@/Pages/Muslim/_lib/location';
+import { effectivePrayerParams, getGeo, getLocMode, useLocSignal } from '@/Domain/location/location';
 
 const PRAYERS: { key: string; label: string }[] = [
   { key: 'Fajr', label: 'الفجر' },

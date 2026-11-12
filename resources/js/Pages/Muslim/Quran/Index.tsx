@@ -3,15 +3,16 @@ import { Head } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
 import BookmarksModal from '../_components/BookmarksModal';
 import QuranReader from '../_components/QuranReader';
-import { DEFAULT_RECITATION_CODE, findPageForAyah } from '../_lib/quran';
-import { useMuslimPrefs } from '../_lib/prefs';
-import { useMuslimNav } from '../_lib/nav';
+import { DEFAULT_RECITATION_CODE, findPageForAyah } from '../../../Domain/quran/quran';
+import { useMuslimPrefs } from '../../../Domain/settings/prefs';
+import { useAppShell } from '@/Lib/appShell';
+import { useQuranTarget } from '@/Domain/quran/targetAyah';
 
 export default function Index() {
   const { prefs, setPrefs, isLoggedIn } = useMuslimPrefs();
-  const targetAyah = useMuslimNav((s) => s.targetAyah);
-  const setTargetAyah = useMuslimNav((s) => s.setTargetAyah);
-  const quranFocus = useMuslimNav((s) => s.quranFocus);
+  const targetAyah = useQuranTarget((s) => s.targetAyah);
+  const setTargetAyah = useQuranTarget((s) => s.setTargetAyah);
+  const quranFocus = useAppShell((s) => s.quranFocus);
   // Sticky navbar height (h-16 + border) for the mobile 100dvh lock.
   const [navH, setNavH] = useState(65);
 

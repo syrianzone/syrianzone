@@ -1,7 +1,7 @@
 import React from 'react';
-import { useQuranPlayer } from '@/Lib/quranPlayer';
-import { useSurahWords } from '@/Lib/quranText';
-import { SURAH_NAMES_AR, recitationByCode } from '@/Pages/Muslim/_lib/quran';
+import { useQuranPlayer } from '@/Domain/quran/quranPlayer';
+import { useSurahWords } from '@/Domain/quran/quranText';
+import { SURAH_NAMES_AR, recitationByCode } from '@/Domain/quran/quran';
 
 interface Props {
   variant?: 'full' | 'compact';

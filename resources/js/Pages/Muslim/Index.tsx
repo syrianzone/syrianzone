@@ -3,12 +3,12 @@ import { Head, Link } from '@inertiajs/react';
 import { Bookmark, ChevronLeft, MoonStar } from 'lucide-react';
 import axios from '@/Lib/axios';
 import MainLayout from '@/Layouts/MainLayout';
-import { formatDuration } from './_lib/format';
-import { PRAYER_KEYS, PRAYER_LABELS, type PrayerKey } from './_lib/methods';
-import { SURAH_NAMES_AR } from './_lib/quran';
-import { prayerQueryParams, useMuslimPrefs } from './_lib/prefs';
-import { TOOLS, toolHref } from './_lib/tools';
-import { useMuslimNav } from './_lib/nav';
+import { formatDuration } from '../../Lib/format';
+import { PRAYER_KEYS, PRAYER_LABELS, type PrayerKey } from '../../Domain/prayer/methods';
+import { SURAH_NAMES_AR } from '../../Domain/quran/quran';
+import { prayerQueryParams, useMuslimPrefs } from '../../Domain/settings/prefs';
+import { TOOLS, toolHref } from '../../Domain/muslim/tools';
+import { useQuranTarget } from '@/Domain/quran/targetAyah';
 
 interface LastBookmark {
   surah: number;
@@ -39,7 +39,7 @@ function warmQuranData(): void {
 
 export default function Index() {
   const { prefs, isLoggedIn } = useMuslimPrefs();
-  const setTargetAyah = useMuslimNav((s) => s.setTargetAyah);
+  const setTargetAyah = useQuranTarget((s) => s.setTargetAyah);
 
   // Index top strip: next prayer countdown + Hijri date.
   const [now, setNow] = useState(() => new Date());

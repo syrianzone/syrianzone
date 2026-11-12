@@ -17,9 +17,9 @@ import AppearanceMenu from '@/Components/AppearanceMenu';
 import { HomeInlineSearchSection } from '@/Components/GlobalSearch';
 import F3aliaEvents from '@/Components/F3aliaEvents';
 import type { CustomLink } from '@/Pages/Home/_lib/links';
-import { getGeo, getLocMode, useLocSignal } from '@/Pages/Muslim/_lib/location';
+import { getGeo, getLocMode, useLocSignal } from '@/Domain/location/location';
 import { getLastPage } from '@/Lib/visit';
-import { useMuslimNav } from '@/Pages/Muslim/_lib/nav';
+import { useAppShell } from '@/Lib/appShell';
 import { formatGregorianSyrian } from '@/Lib/syrian-date';
 
 const HomeSettingsDialog = React.lazy(() => import('@/Pages/Home/_components/HomeSettingsDialog'));
@@ -81,7 +81,7 @@ export default function Home() {
     const [systemDark, setSystemDark] = useState(false);
     const [customLinks, setCustomLinks] = useState<CustomLink[]>([]);
     const [editingLink, setEditingLink] = useState<CustomLink | null>(null);
-    const [settingsOpen, setSettingsOpen] = [useMuslimNav((s) => s.homeSettingsOpen), useMuslimNav((s) => s.setHomeSettingsOpen)] as const;
+    const [settingsOpen, setSettingsOpen] = [useAppShell((s) => s.homeSettingsOpen), useAppShell((s) => s.setHomeSettingsOpen)] as const;
     const [addLinkOpen, setAddLinkOpen] = useState(false);
     const [editMode, setEditMode] = useState(false);
     // Last-visited page badge. Read after mount (localStorage) so the server

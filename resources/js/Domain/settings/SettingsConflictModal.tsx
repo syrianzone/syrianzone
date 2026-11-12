@@ -4,7 +4,7 @@ import { Button } from '@/Components/ui/button';
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from '@/Components/ui/dialog';
-import type { ConflictChoices, ConflictKey, SettingConflict } from '../_lib/settingsSync';
+import type { ConflictChoices, ConflictKey, SettingConflict } from './settingsSync';
 
 interface Props {
   conflicts: SettingConflict[] | null;

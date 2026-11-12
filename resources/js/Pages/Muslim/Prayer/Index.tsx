@@ -4,7 +4,7 @@ import MainLayout from '@/Layouts/MainLayout';
 import { MuslimIcon } from '@/Components/Icons/ProjectIcons';
 import MuslimShell from '../_components/MuslimShell';
 import PrayerView from '../_components/PrayerView';
-import { useMuslimPrefs } from '../_lib/prefs';
+import { useMuslimPrefs } from '../../../Domain/settings/prefs';
 
 export default function Index() {
   const { prefs, setPrefs, isLoggedIn } = useMuslimPrefs();

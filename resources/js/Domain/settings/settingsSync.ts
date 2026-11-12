@@ -1,8 +1,8 @@
 import axios from '@/Lib/axios';
-import { MUSLIM_GOVERNORATES } from './governorates';
-import { PRAYER_METHODS } from './methods';
+import { MUSLIM_GOVERNORATES } from '../prayer/governorates';
+import { PRAYER_METHODS } from '../prayer/methods';
 import { MUSLIM_LS_KEYS, prunePrayerLog } from './prefs';
-import { pushGuestBookmarks } from './guestBookmarks';
+import { pushGuestBookmarks } from '../quran/guestBookmarks';
 
 // Login settings sync for Muslim Corner + Roznama + Homepage.
 // Layers: device localStorage (guests + offline) vs users.settings (account).

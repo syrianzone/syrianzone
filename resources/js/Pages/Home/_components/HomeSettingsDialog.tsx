@@ -9,8 +9,8 @@ import LocationModeSelector from '@/Pages/Muslim/_components/LocationModeSelecto
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/Components/ui/sheet";
-import { getGeo, getLocMode, setLocMode, useLocSignal } from '@/Pages/Muslim/_lib/location';
-import { useIsMobile } from '@/Pages/Muslim/_lib/nav';
+import { getGeo, getLocMode, setLocMode, useLocSignal } from '@/Domain/location/location';
+import { useIsMobile } from '@/Lib/useIsMobile';
 
 const GOVERNORATE_LIST = [
     { value: "damascus", nameAr: "دمشق", nameEn: "Damascus" },

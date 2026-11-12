@@ -122,7 +122,7 @@ Shared: `resources/js/Providers/QueryProvider.tsx` (moved out of `Pages/Transit/
 | `clock` | time | local | | yes |
 | `weather` | time | Cloudflare worker (cross-origin) | | yes |
 | `prayer` | time | `api.aladhan.com`, method 3 (Muslim World League) | | no |
-| `quran` | time | the global player (`Lib/quranPlayer`); follows the recitation | | yes |
+| `quran` | time | the global player (`Domain/quran/quranPlayer`); follows the recitation | | yes |
 | `pomodoro` | personal | local timer | | no |
 | `todo` | personal | text lives in `c` | | yes |
 | `notes` | personal | text lives in `c` | | yes |

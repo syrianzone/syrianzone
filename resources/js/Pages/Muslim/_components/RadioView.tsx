@@ -8,8 +8,8 @@ import RecitationPicker from './RecitationPicker';
 import QuranWordWindow from '@/Components/QuranWordWindow';
 import QuranUsageCard from '@/Components/QuranUsageCard';
 import { QuranRadioIcon } from '@/Components/Icons/ProjectIcons';
-import { useQuranPlayer } from '@/Lib/quranPlayer';
-import { formatDuration } from '../_lib/format';
+import { useQuranPlayer } from '@/Domain/quran/quranPlayer';
+import { formatDuration } from '../../../Lib/format';
 import { useMuslimNav } from '../_lib/nav';
 
 /** Sleep-timer presets in minutes. Endless (null) is the default. */

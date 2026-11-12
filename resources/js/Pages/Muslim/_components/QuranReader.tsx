@@ -12,13 +12,14 @@ import QuranUsageCard from '@/Components/QuranUsageCard';
 import { ChevronDown, Check } from 'lucide-react';
 
 import { Link } from '@inertiajs/react';
-import { guestBookmarkKeys, toggleGuestBookmark } from '../_lib/guestBookmarks';
-import { useMuslimNav } from '../_lib/nav';
+import { guestBookmarkKeys, toggleGuestBookmark } from '../../../Domain/quran/guestBookmarks';
+import { useAppShell } from '@/Lib/appShell';
+import { useQuranTarget } from '@/Domain/quran/targetAyah';
 import {
   SURAH_NAMES_AR, TOTAL_PAGES, findPageForAyah, renderMushafPage, type Ayah, type QuranPage,
-} from '../_lib/quran';
-import { alignWordIndexes, wordsOfText } from '../_lib/quranAudio';
-import { useQuranPlayer } from '@/Lib/quranPlayer';
+} from '../../../Domain/quran/quran';
+import { alignWordIndexes, wordsOfText } from '../../../Domain/quran/quranAudio';
+import { useQuranPlayer } from '@/Domain/quran/quranPlayer';
 
 interface Props {
   page: number;
@@ -50,8 +51,8 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
   // Desktop spread (RTL: right = page, left = page+1); mobile single page.
   const visiblePages = isDesktop ? [page, page + 1].filter((p) => p <= TOTAL_PAGES) : [page];
 
-  const isFocused = useMuslimNav((s) => s.quranFocus);
-  const setIsFocused = useMuslimNav((s) => s.setQuranFocus);
+  const isFocused = useAppShell((s) => s.quranFocus);
+  const setIsFocused = useAppShell((s) => s.setQuranFocus);
   const [pages, setPages] = useState<QuranPage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -69,9 +70,9 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
   const playerCurrent = useQuranPlayer((s) => s.current);
   const playerSource = useQuranPlayer((s) => s.source);
   const activeWord = useQuranPlayer((s) => s.activeWord);
-  const setBookmarksOpen = useMuslimNav((s) => s.setBookmarksOpen);
-  const targetAyah = useMuslimNav((s) => s.targetAyah);
-  const setTargetAyah = useMuslimNav((s) => s.setTargetAyah);
+  const setBookmarksOpen = useAppShell((s) => s.setBookmarksOpen);
+  const targetAyah = useQuranTarget((s) => s.targetAyah);
+  const setTargetAyah = useQuranTarget((s) => s.setTargetAyah);
 
   // Mobile 100vh layout refs (the parent locks the exact remaining height).
   const viewportRef = useRef<HTMLDivElement | null>(null);

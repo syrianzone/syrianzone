@@ -37,6 +37,11 @@ them without being asked.
 5. **No overlapping abstractions** — search `Components/` and `Components/ui/`
    before writing anything. One primitive per concern; extend it with a prop
    instead of forking. → [docs/guidelines/design-and-conventions.md](docs/guidelines/design-and-conventions.md)
+6. **Layering** — dependencies run `Pages/<Feature>` → `Domain/<module>` →
+   `Components/`+`Lib/`+`Layouts/`+`Contexts/`+`Providers/`. The shared layer and
+   `Domain/` never import `Pages/**`, and no feature imports another feature.
+   `resources/js/layering.test.ts` enforces it (`npm run test:js`).
+   → [docs/guidelines/design-and-conventions.md §Layering](docs/guidelines/design-and-conventions.md#layering-pages--domain--shared)
 
 ## Where the rules live
 

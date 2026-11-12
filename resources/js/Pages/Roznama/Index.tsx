@@ -75,9 +75,10 @@ import {
     Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle,
 } from '@/Components/ui/sheet';
 import LocationModeSelector from '@/Pages/Muslim/_components/LocationModeSelector';
-import { LOC_CHANGED_EVENT, effectivePrayerParams, getGeo, getLocMode, setLocMode, useLocSignal, type GeoPoint, type LocMode } from '@/Pages/Muslim/_lib/location';
-import { PRAYER_METHODS } from '@/Pages/Muslim/_lib/methods';
-import { useIsMobile, useMuslimNav } from '@/Pages/Muslim/_lib/nav';
+import { LOC_CHANGED_EVENT, effectivePrayerParams, getGeo, getLocMode, setLocMode, useLocSignal, type GeoPoint, type LocMode } from '@/Domain/location/location';
+import { PRAYER_METHODS } from '@/Domain/prayer/methods';
+import { useIsMobile } from '@/Lib/useIsMobile';
+import { useAppShell } from '@/Lib/appShell';
 
 const GOVERNORATES: Record<string, { nameAr: string; nameEn: string; lat: number; lon: number }> = {
     'damascus': { nameAr: 'دمشق', nameEn: 'Damascus', lat: 33.5138, lon: 36.2765 },
@@ -309,8 +310,8 @@ export default function Index() {
         if (typeof window === 'undefined') return 3;
         return Number(window.localStorage.getItem('sz-muslim-method') || '3') || 3;
     });
-    const roznamaSettingsOpen = useMuslimNav((s) => s.roznamaSettingsOpen);
-    const setRoznamaSettingsOpen = useMuslimNav((s) => s.setRoznamaSettingsOpen);
+    const roznamaSettingsOpen = useAppShell((s) => s.roznamaSettingsOpen);
+    const setRoznamaSettingsOpen = useAppShell((s) => s.setRoznamaSettingsOpen);
 
     const handleMethodChange = (v: string) => {
         const m = Number(v) || 3;

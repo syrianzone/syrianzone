@@ -12,7 +12,7 @@ Rules, in order:
 4. **Both set + differ → explicit-choice modal** (4 curated keys only, §3).
 5. **Append-ish data merges silently, never modals** (§4).
 
-The engine is `resources/js/Pages/Muslim/_lib/settingsSync.ts`. It runs once per session per user from `SettingsSync.tsx` (mounted once inside `MainLayout`'s `AuthProvider`), guarded by `sessionStorage['sz-sync-v1-<userId>']`. It never blocks rendering; every network call is best-effort.
+The engine is `resources/js/Domain/settings/settingsSync.ts`. It runs once per session per user from `Domain/settings/SettingsSync.tsx` (mounted once inside `MainLayout`'s `AuthProvider`), guarded by `sessionStorage['sz-sync-v1-<userId>']`. It never blocks rendering; every network call is best-effort.
 
 ## 2. KEY INVENTORY (normative)
 
@@ -49,7 +49,7 @@ Mount-time code must **never overwrite an existing device key with the server va
 
 - `Home.tsx`: `governorate` is set-if-absent; all other keys keep server-wins.
 - `Roznama/Index.tsx`: `governorate` + `sz-roznama-governorate` set-if-absent; user edits write both device keys immediately and `settings.governorate` debounced (600ms, logged-in only).
-- `Muslim/_lib/prefs.ts`: device-first base, server overlaid in memory only; user edits write through (city fan-out to both legacy keys preserved).
+- `Domain/settings/prefs.ts`: device-first base, server overlaid in memory only; user edits write through (city fan-out to both legacy keys preserved).
 
 ## 5. LABELS FOLLOW THE EFFECTIVE LOCATION
 

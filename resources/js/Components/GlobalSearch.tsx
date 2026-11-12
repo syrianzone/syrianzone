@@ -38,9 +38,10 @@ import { Badge } from '@/Components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useSiteNavigation } from '@/Lib/siteLinks';
 import { normalizeArabic } from '@/Lib/arabic';
-import { GAMES, gameEntryHref } from '@/Pages/Games/_lib/games';
-import { TOOLS as MUSLIM_TOOLS, toolHref } from '@/Pages/Muslim/_lib/tools';
-import { useMuslimNav } from '@/Pages/Muslim/_lib/nav';
+import { useAppShell } from '@/Lib/appShell';
+import { useQuranTarget } from '@/Domain/quran/targetAyah';
+import { GAMES, gameEntryHref } from '@/Domain/games/games';
+import { TOOLS as MUSLIM_TOOLS, toolHref } from '@/Domain/muslim/tools';
 import { STATUS_TEXT, crossings, statusOf, syriaMinutes } from '@/Pages/Crossings/_lib/crossings';
 import citiesData from '@/Pages/Transit/_data/cities.json';
 
@@ -399,7 +400,7 @@ const SHORTCUT_LABEL = IS_MAC ? '⌘ K' : 'Ctrl K';
 const SHORTCUT_ARIA = `بحث سريع في المنصة (${SHORTCUT_LABEL})`;
 
 export function DesktopSearchTrigger({ className = '' }: { className?: string }) {
-    const setSearchOpen = useMuslimNav((s) => s.setSearchOpen);
+    const setSearchOpen = useAppShell((s) => s.setSearchOpen);
     return (
         <Button
             type="button"
@@ -440,7 +441,7 @@ export function SearchResultsContent({
     gridColsClass?: string;
     useCmdkPrimitives?: boolean;
 }) {
-    const setTargetAyah = useMuslimNav((s) => s.setTargetAyah);
+    const setTargetAyah = useQuranTarget((s) => s.setTargetAyah);
 
     const navigateTo = (url: string, external = false) => {
         onClose();
@@ -1059,6 +1060,20 @@ export function HomeInlineSearchSection({
     const [query, setQuery] = useState('');
     const [scope, setScope] = useState<FilterScope>('all');
     const inputRef = useRef<HTMLInputElement | null>(null);
+    const registerInlineSearch = useAppShell((s) => s.registerInlineSearch);
+
+    // The shell's Ctrl/Cmd+K handler focuses this field instead of opening the
+    // palette while the homepage is mounted. Registering the focus function is
+    // the contract; the shell never looks up an element id.
+    useEffect(() => {
+        registerInlineSearch(() => {
+            const input = inputRef.current;
+            if (!input) return;
+            input.focus();
+            input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+        return () => registerInlineSearch(null);
+    }, [registerInlineSearch]);
 
     const isSearching = query.trim().length > 0 || scope !== 'all';
     const data = useGlobalSearchData(query, scope, isSearching);

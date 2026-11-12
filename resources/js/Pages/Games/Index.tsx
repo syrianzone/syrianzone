@@ -3,7 +3,7 @@ import { Link } from '@inertiajs/react';
 import { ExternalLink, Lock, Users } from 'lucide-react';
 import MainLayout from '@/Layouts/MainLayout';
 import { GamesIcon } from '@/Components/Icons/ProjectIcons';
-import { GAMES, gameEntryHref, type GameEntry } from './_lib/games';
+import { GAMES, gameEntryHref, type GameEntry } from '../../Domain/games/games';
 
 // A game tile: icon over title, no box — the homepage's app-tile shape. Status
 // badges sit under the title.

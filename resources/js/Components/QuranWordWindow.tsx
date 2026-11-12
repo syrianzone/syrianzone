@@ -1,8 +1,8 @@
 import React, { useMemo, useRef } from 'react';
-import { useQuranPlayer } from '@/Lib/quranPlayer';
-import { useSurahWords } from '@/Lib/quranText';
+import { useQuranPlayer } from '@/Domain/quran/quranPlayer';
+import { useSurahWords } from '@/Domain/quran/quranText';
 import { toArabicDigits } from '@/Lib/syrian-date';
-import { SURAH_NAMES_AR, recitationByCode } from '@/Pages/Muslim/_lib/quran';
+import { SURAH_NAMES_AR, recitationByCode } from '@/Domain/quran/quran';
 
 // A teleprompter-style window for the followed recitation: five words, the one
 // being recited in the middle, with ayah numbers as separators where an ayah

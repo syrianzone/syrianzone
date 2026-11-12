@@ -5,9 +5,9 @@ import { Button } from '@/Components/ui/button';
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from '@/Components/ui/dialog';
-import { SURAH_NAMES_AR } from '../_lib/quran';
-import { readGuestBookmarks, toggleGuestBookmark } from '../_lib/guestBookmarks';
-import { useMuslimNav } from '../_lib/nav';
+import { SURAH_NAMES_AR } from '../../../Domain/quran/quran';
+import { readGuestBookmarks, toggleGuestBookmark } from '../../../Domain/quran/guestBookmarks';
+import { useAppShell } from '@/Lib/appShell';
 
 interface SavedAyah {
   surah: number;
@@ -23,10 +23,10 @@ interface Props {
 }
 
 // Saved Ayahs: open, jump back into reading, or remove. Opened from the
-// navbar (mobile) or the reader top row (PC) via the shared nav store.
+// navbar (mobile) or the reader top row (PC) via the app-shell store.
 export default function BookmarksModal({ isLoggedIn, onJump }: Props) {
-  const open = useMuslimNav((s) => s.bookmarksOpen);
-  const setOpen = useMuslimNav((s) => s.setBookmarksOpen);
+  const open = useAppShell((s) => s.bookmarksOpen);
+  const setOpen = useAppShell((s) => s.setBookmarksOpen);
   const [items, setItems] = useState<SavedAyah[]>([]);
   const [loading, setLoading] = useState(false);
   const [removing, setRemoving] = useState<string | null>(null);

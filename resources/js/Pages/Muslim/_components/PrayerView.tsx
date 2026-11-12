@@ -14,15 +14,16 @@ import {
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
-import { MUSLIM_GOVERNORATES } from '../_lib/governorates';
-import { formatDuration } from '../_lib/format';
-import { PRAYER_KEYS, PRAYER_LABELS, PRAYER_METHODS, type PrayerKey } from '../_lib/methods';
-import { TRACKED_PRAYERS, todayKey, type MuslimPrefs } from '../_lib/prefs';
+import { MUSLIM_GOVERNORATES } from '../../../Domain/prayer/governorates';
+import { formatDuration } from '../../../Lib/format';
+import { PRAYER_KEYS, PRAYER_LABELS, PRAYER_METHODS, type PrayerKey } from '../../../Domain/prayer/methods';
+import { TRACKED_PRAYERS, todayKey, type MuslimPrefs } from '../../../Domain/settings/prefs';
 import {
   effectivePrayerParams,
-} from '../_lib/location';
+} from '../../../Domain/location/location';
 import LocationModeSelector from './LocationModeSelector';
-import { useIsMobile, useMuslimNav } from '../_lib/nav';
+import { useIsMobile } from '@/Lib/useIsMobile';
+import { useAppShell } from '@/Lib/appShell';
 
 function prayerIcon(key: string, className?: string) {
   switch (key) {
@@ -216,8 +217,8 @@ export default function PrayerView({ prefs, setPrefs, isLoggedIn }: Props) {
       ? 'إحداثيات مخصصة'
       : (MUSLIM_GOVERNORATES[prefs.city]?.label ?? prefs.city);
 
-  const prayerSettingsOpen = useMuslimNav((s) => s.muslimPrayerSettingsOpen);
-  const setPrayerSettingsOpen = useMuslimNav((s) => s.setMuslimPrayerSettingsOpen);
+  const prayerSettingsOpen = useAppShell((s) => s.muslimPrayerSettingsOpen);
+  const setPrayerSettingsOpen = useAppShell((s) => s.setMuslimPrayerSettingsOpen);
   const isMobile = useIsMobile();
 
   return (

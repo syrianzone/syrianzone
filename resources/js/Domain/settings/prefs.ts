@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePage } from '@inertiajs/react';
 import axios from '@/Lib/axios';
-import { DEFAULT_PRAYER_METHOD } from './methods';
-import { DEFAULT_RECITATION_CODE, normalizeRecitationCode } from './quran';
-import { effectivePrayerParams, getGeo, getLocMode, setGeo, setLocMode, clearGeo, LOC_CHANGED_EVENT, type GeoPoint, type LocMode } from './location';
+import { DEFAULT_PRAYER_METHOD } from '../prayer/methods';
+import { DEFAULT_RECITATION_CODE, normalizeRecitationCode } from '../quran/quran';
+import { effectivePrayerParams, getGeo, getLocMode, setGeo, setLocMode, clearGeo, LOC_CHANGED_EVENT, type GeoPoint, type LocMode } from '../location/location';
 
 // Single source of truth for everything the prayer widgets share.
 // /muslim is the writer; Home, Board and Roznama are readers.

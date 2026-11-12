@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 
 import { useAuth } from '@/Contexts/AuthContext';
-import { useMuslimNav } from '@/Pages/Muslim/_lib/nav';
+import { useAppShell } from '@/Lib/appShell';
 import { isDarkTheme } from '@/lib/theme';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -343,12 +343,12 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
 
   // Quran reader (mobile): bookmarks shortcut opens the saved-ayahs modal.
   // The reader's own top row carries back + bookmarks on PC.
-  const setBookmarksOpen = useMuslimNav((s) => s.setBookmarksOpen);
-  const setRoznamaSettingsOpen = useMuslimNav((s) => s.setRoznamaSettingsOpen);
-  const setMuslimPrayerSettingsOpen = useMuslimNav((s) => s.setMuslimPrayerSettingsOpen);
-  const setHomeSettingsOpen = useMuslimNav((s) => s.setHomeSettingsOpen);
+  const setBookmarksOpen = useAppShell((s) => s.setBookmarksOpen);
+  const setRoznamaSettingsOpen = useAppShell((s) => s.setRoznamaSettingsOpen);
+  const setMuslimPrayerSettingsOpen = useAppShell((s) => s.setMuslimPrayerSettingsOpen);
+  const setHomeSettingsOpen = useAppShell((s) => s.setHomeSettingsOpen);
   const showQuranBookmarks = pathname === '/muslim/quran';
-  const quranFocus = useMuslimNav((s) => s.quranFocus);
+  const quranFocus = useAppShell((s) => s.quranFocus);
   const showRoznamaSettings = pathname === '/roznama';
   const showMuslimPrayerSettings = pathname === '/muslim/prayer';
 

@@ -2,14 +2,14 @@ import { create } from 'zustand';
 import {
   fetchSurahs, getAyahTimings, getLetterTimings, getSurah, getWordTimings,
   type AyahTiming, type LetterTiming, type V4SurahSummary, type WordTiming,
-} from '@/Pages/Muslim/_lib/mp3quran';
+} from '@/Domain/quran/mp3quran';
 import {
   DEFAULT_RECITATION_CODE, SURAH_NAMES_AR, ayahAudioUrl, normalizeRecitationCode,
   recitationByCode,
-} from '@/Pages/Muslim/_lib/quran';
+} from '@/Domain/quran/quran';
 import {
   ayahTimingMap, findAyahAt, findLetterAt, findWordAt, pickAudioTier, wordOccurrenceKey,
-} from '@/Pages/Muslim/_lib/quranAudio';
+} from '@/Domain/quran/quranAudio';
 
 // One audio element for the whole app, driven by a zustand store. It lives
 // outside React so playback survives route changes: the radio/followed view,

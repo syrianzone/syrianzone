@@ -2,9 +2,9 @@ import React from 'react';
 import { HardDrive } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
-import { formatBytes } from '@/Lib/radioUsage';
-import { clearAllUsage, useUsageStore } from '@/Lib/usageStore';
-import { formatDuration } from '@/Pages/Muslim/_lib/format';
+import { formatBytes } from '@/Domain/quran/radioUsage';
+import { clearAllUsage, useUsageStore } from '@/Domain/quran/usageStore';
+import { formatDuration } from '@/Lib/format';
 
 /** Listening data-usage readout, shared by the radio tab and the reader. */
 export default function QuranUsageCard() {

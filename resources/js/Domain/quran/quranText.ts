@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getSurahText, type TextWord } from '@/Pages/Muslim/_lib/mp3quran';
+import { getSurahText, type TextWord } from '@/Domain/quran/mp3quran';
 
 // Written words of a surah, by ayah, in the recitation's riwayah. Cached per
 // (riwayah, surah) so the followed-recitation text does not refetch as it walks

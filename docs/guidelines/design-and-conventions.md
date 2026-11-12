@@ -14,10 +14,31 @@ Repo-wide styling and coding conventions. The most detailed normative reference 
 ## Frontend conventions
 
 - **Inertia for page loads**, react-query (`Providers/QueryProvider`, staleTime 5 min, offlineFirst) for API data, custom axios instance in `Lib/axios.ts`.
-- **Zustand stores colocated per page** (e.g. `Pages/Transit/_store/useMapStore.ts`) — no global state store.
-- Page-scoped folders under `Pages/<Module>/` with `_components`, `_lib`, `_widgets` subfolders for private code; shared cross-module UI goes to `Components/`.
+- **Zustand stores are colocated per page** (e.g. `Pages/Transit/_store/useMapStore.ts`); the only app-wide store is `Lib/appShell.ts` (`useAppShell`: global search, the dialogs the navbar opens).
+- Page-scoped folders under `Pages/<Module>/` with `_components`, `_lib`, `_widgets` subfolders for private code; code a second page or the shell needs goes to `Domain/<module>/`; shared cross-module UI goes to `Components/` (see [Layering](#layering-pages--domain--shared)).
 - Grid layouts on the Board use inline styles instead of Tailwind responsive classes (CSS chunk cascade trap — see board spec).
 - TypeScript strict mode; path aliases `@`, `@/lib`, `@/components`, `@/context`.
+
+## Layering: Pages → Domain → shared
+
+Dependencies run one way: a page depends on a domain module, a domain module
+depends on the shared layer. `resources/js/layering.test.ts` reads the import
+graph and fails on a violation, so run `npm run test:js` after moving code.
+
+| Layer | Holds | May import |
+|---|---|---|
+| `Pages/<Feature>/` | the page and its private `_components`/`_lib`/`_data` | `Domain/`, the shared layer, its own folder |
+| `Domain/<module>/` | anything more than one page — or the shell — needs (`quran`, `settings`, `location`, `prayer`, `games`, `muslim`) | the shared layer, other `Domain/` modules |
+| `Components/`, `Lib/`, `Layouts/`, `Contexts/`, `Providers/` | the shell and generic primitives | itself; `Lib/` only uses `Components/ui` |
+
+- Never import `Pages/**` from `Domain/` or the shared layer, and never import
+  another feature's `Pages/<Other>/`. When a page module gets a second consumer,
+  move it into `Domain/<module>/` verbatim — do not import across folders.
+- `Domain/` folders are per domain and cohesive; do not add a grab-bag folder.
+- App-wide UI state lives in `Lib/appShell.ts`; page state stays in the page
+  store. `Layouts/MainLayout.tsx` is the single owner of the Ctrl/Cmd+K
+  shortcut: a page that renders an inline search field registers its focus
+  function with `registerInlineSearch`, so the shell never looks up a DOM id.
 
 ## Accessibility
 

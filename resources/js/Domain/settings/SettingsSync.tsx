@@ -4,7 +4,7 @@ import SettingsConflictModal from './SettingsConflictModal';
 import {
   applyConflictChoices, pullServerValues, runLoginSync,
   type ConflictChoices, type SettingConflict,
-} from '../_lib/settingsSync';
+} from './settingsSync';
 
 // Global login sync: runs once per session per user (mount + login).
 // Silent merges (empty-side fills, prayer-log union, quran newer-wins,

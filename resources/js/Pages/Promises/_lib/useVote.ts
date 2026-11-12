@@ -7,19 +7,33 @@ import type { PromiseVotes } from './types';
 
 const storageKey = (n: number) => `promise-vote:${n}`;
 
+const snapshot = (votes: PromiseVotes) => `${votes.yes}:${votes.no}`;
+
 /**
  * Tallies returned by this visitor's own votes, kept for the session. Going
- * Back to the list restores the page props from history, which predate the
- * vote; the card would then show the visitor's answer against a count that
- * leaves it out. Written only from the click handler, so it is never shared
- * between server-rendered requests.
+ * Back restores a page's props from history, which predate the vote; the
+ * card would then show the visitor's answer against a count that leaves it
+ * out. Each entry remembers which prop values it replaced, so it overrides
+ * only those: props it has not seen came from the server after the vote and
+ * win, even when the total is unchanged (another voter changed their answer).
+ * Written only from the click handler, so it is never shared between
+ * server-rendered requests.
  */
-const seen = new Map<number, PromiseVotes>();
+const seen = new Map<number, { votes: PromiseVotes; replaced: Set<string> }>();
 
-/** A promise's total only grows (answers change, they are not withdrawn), so the larger total is the newer one. */
-function newest(number: number, fromProps: PromiseVotes): PromiseVotes {
+/** The tally to show: the visitor's own latest one if `fromProps` is a value it replaced. */
+export function newestVotes(number: number, fromProps: PromiseVotes): PromiseVotes {
     const mine = seen.get(number);
-    return mine && mine.yes + mine.no >= fromProps.yes + fromProps.no ? mine : fromProps;
+    return mine?.replaced.has(snapshot(fromProps)) ? mine.votes : fromProps;
+}
+
+/** Record the tally a vote returned, and the prop values it makes stale. */
+export function rememberVotes(number: number, votes: PromiseVotes, fromProps: PromiseVotes): void {
+    const replaced = seen.get(number)?.replaced ?? new Set<string>();
+    replaced.add(snapshot(fromProps));
+    // A fresh page may legitimately carry the tally this vote returned.
+    replaced.delete(snapshot(votes));
+    seen.set(number, { votes, replaced });
 }
 
 /**
@@ -29,7 +43,7 @@ function newest(number: number, fromProps: PromiseVotes): PromiseVotes {
  * the aggregate.
  */
 export function usePromiseVote(number: number, initial: PromiseVotes) {
-    const [votes, setVotes] = useState(() => newest(number, initial));
+    const [votes, setVotes] = useState(() => newestVotes(number, initial));
     const [mine, setMine] = useState<boolean | null>(null);
     const [busy, setBusy] = useState(false);
 
@@ -48,7 +62,7 @@ export function usePromiseVote(number: number, initial: PromiseVotes) {
         setBusy(true);
         try {
             const res = await axios.post(`/api/v1/promises/${number}/vote`, { believes, device_id: getDeviceId() });
-            seen.set(number, res.data.votes);
+            rememberVotes(number, res.data.votes, initial);
             setVotes(res.data.votes);
             setMine(believes);
             try {

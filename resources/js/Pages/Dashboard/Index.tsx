@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
+import { extractApiFieldErrors } from '@/Lib/apiError';
 import {
   TierlistIcon,
   PromisesIcon,
@@ -54,7 +55,13 @@ import {
   DialogTitle,
 } from '@/Components/ui/dialog';
 import AdminPollManager from '@/Components/admin/AdminPollManager';
+import FieldError, { fieldA11y } from '@/Components/ui/field-error';
 import { cn } from '@/lib/utils';
+
+// The account controller sends Arabic validation messages; keep a server
+// message when it is already Arabic and otherwise fall back to a neutral
+// Arabic note rather than showing an English rule message.
+const isArabicMessage = (text: string) => /[\u0600-\u06FF]/.test(text);
 
 interface City {
   id: string;
@@ -281,6 +288,18 @@ export default function Dashboard({
   const [profileEmail, setProfileEmail] = useState(auth.user.email);
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileMessage, setProfileMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [profileErrors, setProfileErrors] = useState<Record<string, string>>({});
+  const profileFormRef = useRef<HTMLFormElement>(null);
+  // Bumped only when a save fails, so the effect below runs after the errors
+  // are in the DOM — never on an ordinary re-render or while the user types.
+  const [profileFailedSubmit, setProfileFailedSubmit] = useState(0);
+
+  // After a rejected save, land on the first control marked invalid instead of
+  // leaving focus on the submit button.
+  useEffect(() => {
+    if (!profileFailedSubmit) return;
+    profileFormRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+  }, [profileFailedSubmit]);
 
   // Account Deletion States
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -393,6 +412,7 @@ export default function Dashboard({
     e.preventDefault();
     setProfileLoading(true);
     setProfileMessage(null);
+    setProfileErrors({});
     try {
       await axios.post('/api/account/update', {
         name: profileName,
@@ -400,8 +420,19 @@ export default function Dashboard({
       });
       setProfileMessage({ type: 'success', text: 'تم تحديث معلومات الحساب بنجاح.' });
     } catch (err: any) {
-      const msg = err.response?.data?.message ?? 'تعذر تحديث الحساب.';
-      setProfileMessage({ type: 'error', text: msg });
+      // 422 from the account endpoint: { message, errors: { name: [...], email: [...] } }
+      const fieldErrors = Object.fromEntries(
+        Object.entries(extractApiFieldErrors(err)).map(([field, message]) => [
+          field,
+          isArabicMessage(message) ? message : 'تحقق من هذه القيمة',
+        ])
+      );
+      if (Object.keys(fieldErrors).length > 0) {
+        setProfileErrors(fieldErrors);
+        setProfileFailedSubmit((n) => n + 1);
+      } else {
+        setProfileMessage({ type: 'error', text: err.response?.data?.message ?? 'تعذر تحديث الحساب.' });
+      }
     } finally {
       setProfileLoading(false);
     }
@@ -1082,14 +1113,17 @@ export default function Dashboard({
                     إعدادات الحساب الشخصي
                   </h2>
 
-                  <form onSubmit={handleUpdateProfile} className="space-y-4 max-w-lg mb-8 pb-8 border-b border-border">
+                  <form ref={profileFormRef} onSubmit={handleUpdateProfile} className="space-y-4 max-w-lg mb-8 pb-8 border-b border-border" noValidate>
                     <AvatarUploader user={auth.user} />
 
                     {profileMessage && (
-                      <div className={cn(
-                        'p-4 rounded-lg text-sm',
-                        profileMessage.type === 'success' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-destructive/15 text-destructive'
-                      )}>
+                      <div
+                        role={profileMessage.type === 'error' ? 'alert' : 'status'}
+                        className={cn(
+                          'p-4 rounded-lg text-sm',
+                          profileMessage.type === 'success' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-destructive/15 text-destructive'
+                        )}
+                      >
                         {profileMessage.text}
                       </div>
                     )}
@@ -1103,7 +1137,9 @@ export default function Dashboard({
                         value={profileName}
                         onChange={e => setProfileName(e.target.value)}
                         required
+                        {...fieldA11y('profile-name-error', profileErrors.name)}
                       />
+                      <FieldError id="profile-name-error" message={profileErrors.name} />
                     </div>
 
                     <div className="flex flex-col gap-2">
@@ -1115,7 +1151,9 @@ export default function Dashboard({
                         value={profileEmail}
                         onChange={e => setProfileEmail(e.target.value)}
                         required
+                        {...fieldA11y('profile-email-error', profileErrors.email)}
                       />
+                      <FieldError id="profile-email-error" message={profileErrors.email} />
                     </div>
 
                     <Button type="submit" disabled={profileLoading}>

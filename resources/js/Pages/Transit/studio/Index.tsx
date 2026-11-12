@@ -197,7 +197,11 @@ function StopNamePopup({ stop, pixel, onConfirm, onDismiss }: {
         onChange={e => setName(e.target.value)}
         placeholder="اسم المحطة…"
         onKeyDown={e => {
-          if (e.key === 'Enter') { e.preventDefault(); onConfirm(name) }
+          if (e.key === 'Enter') {
+            // Enter that confirms an IME candidate must not confirm the name.
+            if (e.nativeEvent.isComposing || e.keyCode === 229) return
+            e.preventDefault(); onConfirm(name)
+          }
           if (e.key === 'Escape') onDismiss()
         }}
       />

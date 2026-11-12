@@ -17,7 +17,7 @@ import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
 import { extractApiErrorMessage, extractApiFieldErrors } from '@/Lib/apiError';
 import SpeakerAvatar from '@/Pages/Promises/_components/SpeakerAvatar';
-import FieldError, { fieldA11y } from '@/Pages/Promises/_components/FieldError';
+import FieldError, { fieldA11y } from '@/Components/ui/field-error';
 import SpeakerPicker from '@/Pages/Promises/_components/SpeakerPicker';
 import { PENDING_SPEAKER_LABEL, SPEAKER_SOURCE_LABEL } from '@/Pages/Promises/_lib/status';
 import type { SpeakerOption } from '@/Pages/Promises/_lib/types';

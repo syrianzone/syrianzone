@@ -878,7 +878,7 @@ export default function PrioritiesApp() {
                         step="1"
                         value={topic.points}
                         onChange={(e) => onSliderInput(topic.id, parseInt(e.target.value, 10))}
-                        className="w-full h-2 rounded-lg appearance-none cursor-pointer focus:outline-none"
+                        className="w-full h-2 rounded-lg appearance-none cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                         style={{ background: sliderGradient }}
                       />
                     </div>
@@ -909,10 +909,10 @@ export default function PrioritiesApp() {
                                   type="checkbox"
                                   checked={isChecked}
                                   onChange={() => toggleSubFile(sub.id, topic.id)}
-                                  className="sr-only"
+                                  className="peer sr-only"
                                 />
                                 <div
-                                  className={`w-4 h-4 shrink-0 rounded-sm border mt-0.5 flex items-center justify-center transition-all ${isChecked
+                                  className={`w-4 h-4 shrink-0 rounded-sm border mt-0.5 flex items-center justify-center transition-all peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ring ${isChecked
                                     ? 'bg-primary border-primary text-primary-foreground'
                                     : 'border-input bg-background group-hover:border-primary/50'
                                     }`}

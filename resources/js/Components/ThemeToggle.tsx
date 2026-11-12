@@ -73,7 +73,7 @@ export function ThemeToggle() {
         return (
             <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-accent/50">
                 <Sun className="h-[1.2rem] w-[1.2rem]" />
-                <span className="sr-only">Toggle theme</span>
+                <span className="sr-only">تبديل المظهر</span>
             </Button>
         );
     }
@@ -92,7 +92,7 @@ export function ThemeToggle() {
                     title={isAr ? `المظهر والخط` : `Theme & Font`}
                 >
                     <ThemeIcon className="h-[1.2rem] w-[1.2rem] transition-all" />
-                    <span className="sr-only">Toggle theme & font</span>
+                    <span className="sr-only">تبديل المظهر والخط</span>
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-52 max-h-[80vh] overflow-y-auto">

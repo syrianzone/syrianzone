@@ -516,16 +516,20 @@ export default function HouseClient({ initialData, initialHeaders, initialMode }
                                 {displayColumns.map(col => (
                                     <th
                                         key={col}
-                                        aria-sort={sortColumn === col ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
-                                        className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer hover:bg-accent transition select-none"
-                                        onClick={() => handleSort(col)}
+                                        scope="col"
+                                        aria-sort={sortColumn === col ? (sortDirection === 'asc' ? 'ascending' : 'descending') : undefined}
+                                        className="p-0 text-xs font-medium text-muted-foreground uppercase tracking-wider transition select-none"
                                     >
-                                        <div className="flex items-center gap-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleSort(col)}
+                                            className="flex w-full items-center gap-1 px-6 py-3 text-start hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                                        >
                                             {col}
                                             {sortColumn === col && (
-                                                <span className="text-primary">{sortDirection === 'asc' ? '▲' : '▼'}</span>
+                                                <span aria-hidden="true" className="text-primary">{sortDirection === 'asc' ? '▲' : '▼'}</span>
                                             )}
-                                        </div>
+                                        </button>
                                     </th>
                                 ))}
                             </tr>

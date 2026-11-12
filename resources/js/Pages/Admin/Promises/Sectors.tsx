@@ -16,7 +16,7 @@ import { ArrowDown, ArrowUp, Loader2, Pencil, Plus, Trash2 } from 'lucide-react'
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
 import { extractApiErrorMessage, extractApiFieldErrors } from '@/Lib/apiError';
-import FieldError, { fieldA11y } from '@/Pages/Promises/_components/FieldError';
+import FieldError, { fieldA11y } from '@/Components/ui/field-error';
 import { SECTOR_ICONS, SECTOR_ICON_LABELS, sectorIcon } from '@/Pages/Promises/_lib/status';
 import AdminHeader from './_components/AdminHeader';
 import { useCan } from './_lib/useCan';

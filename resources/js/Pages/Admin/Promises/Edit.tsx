@@ -16,7 +16,7 @@ import { ArrowRight, CalendarClock, ExternalLink, EyeOff, Gavel, Loader2, Plus, 
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
 import { extractApiErrorMessage, extractApiFieldErrors } from '@/Lib/apiError';
-import FieldError, { fieldA11y } from '@/Pages/Promises/_components/FieldError';
+import FieldError, { fieldA11y } from '@/Components/ui/field-error';
 import SpeakerPicker from '@/Pages/Promises/_components/SpeakerPicker';
 import StateBadge from '@/Pages/Promises/_components/StateBadge';
 import { VENUE_LABEL } from '@/Pages/Promises/_lib/status';

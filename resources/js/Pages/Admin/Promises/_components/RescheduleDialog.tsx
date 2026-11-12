@@ -10,7 +10,7 @@ import {
 import { CalendarClock, Loader2 } from 'lucide-react';
 import { notify } from '@/Lib/notify';
 import { extractApiErrorMessage, extractApiFieldErrors } from '@/Lib/apiError';
-import FieldError, { fieldA11y } from '@/Pages/Promises/_components/FieldError';
+import FieldError, { fieldA11y } from '@/Components/ui/field-error';
 import type { AdminPromiseDetail } from '../_lib/types';
 
 interface Props {

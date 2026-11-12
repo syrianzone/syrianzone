@@ -42,7 +42,7 @@ class PlaceAdminController extends Controller
             'description' => 'sometimes|required|string|min:20|max:1000',
             'lat' => 'sometimes|required|numeric|between:32.0,37.5',
             'lng' => 'sometimes|required|numeric|between:35.5,42.5',
-        ]);
+        ], $this->updateMessages());
 
         $places->update($id, $validated);
 
@@ -121,6 +121,34 @@ class PlaceAdminController extends Controller
             'thumb_url' => $photo->thumb_url,
             'display_url' => $photo->display_url,
         ]);
+    }
+
+    /**
+     * Arabic messages for the admin edit form. The wording matches the
+     * submission form in PlaceController so both surfaces read the same.
+     *
+     * @return array<string, string>
+     */
+    private function updateMessages(): array
+    {
+        return [
+            'name.required' => 'أدخل اسم المكان',
+            'name.string' => 'اسم المكان يجب أن يكون نصاً',
+            'name.max' => 'اسم المكان يجب ألا يتجاوز 160 حرفاً',
+            'category.required' => 'اختر التصنيف',
+            'category.string' => 'التصنيف المختار غير صالح',
+            'category.in' => 'التصنيف المختار غير صالح',
+            'description.required' => 'أدخل وصف المكان',
+            'description.string' => 'الوصف يجب أن يكون نصاً',
+            'description.min' => 'الوصف يجب ألا يقل عن 20 حرفاً',
+            'description.max' => 'الوصف يجب ألا يتجاوز 1000 حرف',
+            'lat.required' => 'حدد موقع المكان على الخريطة',
+            'lat.numeric' => 'خط العرض يجب أن يكون رقماً',
+            'lat.between' => 'خط العرض يجب أن يكون بين 32.0 و 37.5 (داخل سوريا)',
+            'lng.required' => 'حدد موقع المكان على الخريطة',
+            'lng.numeric' => 'خط الطول يجب أن يكون رقماً',
+            'lng.between' => 'خط الطول يجب أن يكون بين 35.5 و 42.5 (داخل سوريا)',
+        ];
     }
 
     private function photoMessages(): array

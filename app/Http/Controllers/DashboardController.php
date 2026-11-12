@@ -98,6 +98,14 @@ class DashboardController extends Controller
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email,'.$user->id,
+        ], [
+            'name.required' => 'اكتب الاسم',
+            'name.string' => 'الاسم يجب أن يكون نصاً',
+            'name.max' => 'الاسم يجب ألا يتجاوز 255 حرفاً',
+            'email.required' => 'اكتب البريد الإلكتروني',
+            'email.email' => 'أدخل بريداً إلكترونياً صالحاً',
+            'email.max' => 'البريد الإلكتروني يجب ألا يتجاوز 255 حرفاً',
+            'email.unique' => 'هذا البريد الإلكتروني مستخدم',
         ]);
 
         $user->update($data);

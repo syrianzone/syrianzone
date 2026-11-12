@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ArrowRight, CheckCircle2, Loader2, LogIn, Plus, Trash2 } from 'lucide-react';
 import { notify } from '@/Lib/notify';
 import { extractApiErrorMessage, extractApiFieldErrors } from '@/Lib/apiError';
-import FieldError, { fieldA11y } from './_components/FieldError';
+import FieldError, { fieldA11y } from '@/Components/ui/field-error';
 import SpeakerPicker from './_components/SpeakerPicker';
 import { VENUE_LABEL } from './_lib/status';
 import type { SpeakerOption } from './_lib/types';
@@ -65,6 +65,10 @@ export default function PromisesSuggest({ venues, earliestDate, today }: Props) 
     const [saving, setSaving] = useState(false);
     const [done, setDone] = useState(false);
     const doneRef = useRef<HTMLDivElement>(null);
+    const formRef = useRef<HTMLFormElement>(null);
+    // Bumped only when a submit fails, so the effect below runs after the errors
+    // are in the DOM — never on an ordinary re-render or while the user types.
+    const [failedSubmit, setFailedSubmit] = useState(0);
 
     const set = <K extends keyof FormState>(key: K, value: FormState[K]) => setForm((f) => ({ ...f, [key]: value }));
     const sourceError = (i: number) => errors[`source_urls.${i}`];
@@ -74,6 +78,13 @@ export default function PromisesSuggest({ venues, earliestDate, today }: Props) 
     useEffect(() => {
         if (done) doneRef.current?.focus();
     }, [done]);
+
+    // After a failed submit, land on the first control marked invalid instead
+    // of leaving focus on the submit button.
+    useEffect(() => {
+        if (!failedSubmit) return;
+        formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+    }, [failedSubmit]);
 
     const submit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -95,6 +106,7 @@ export default function PromisesSuggest({ venues, earliestDate, today }: Props) 
             setDone(true);
         } catch (err) {
             setErrors(extractApiFieldErrors(err));
+            setFailedSubmit((n) => n + 1);
             notify.error(extractApiErrorMessage(err, 'تعذّر إرسال الاقتراح'));
         } finally {
             setSaving(false);
@@ -152,7 +164,7 @@ export default function PromisesSuggest({ venues, earliestDate, today }: Props) 
                         </CardContent>
                     </Card>
                 ) : (
-                    <form onSubmit={submit} className="space-y-6" noValidate>
+                    <form ref={formRef} onSubmit={submit} className="space-y-6" noValidate>
                         <Card>
                             <CardHeader>
                                 <SectionTitle>من قطع الوعد؟</SectionTitle>

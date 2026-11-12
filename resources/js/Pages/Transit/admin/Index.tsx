@@ -921,7 +921,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
 
             {/* Filters */}
             <div className="px-4 pt-3 space-y-2">
-              <Input aria-label="بحث باسم الخط..." placeholder="بحث باسم الخط..." value={routeSearchQuery} onChange={e => setRouteSearchQuery(e.target.value)} className="h-8 text-xs" />
+              <Input aria-label="بحث باسم الخط" placeholder="بحث باسم الخط..." value={routeSearchQuery} onChange={e => setRouteSearchQuery(e.target.value)} className="h-8 text-xs" />
               <div className="flex gap-1.5">
                 {(['all', 'published', 'disapproved', 'hidden'] as const).map(s => (
                   <FilterChip key={s} active={routeStatusFilter === s} className="text-[10px] px-2" onClick={() => setRouteStatusFilter(s)}>
@@ -1295,7 +1295,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-medium">الاسم بالإنجليزية</label>
-                <Input aria-label="e.g. Southern Ring" value={combineNameEn} onChange={e => setCombineNameEn(e.target.value)} placeholder="e.g. Southern Ring" className="h-9 text-xs" dir="ltr" />
+                <Input aria-label="الاسم بالإنجليزية للخط المدموج" value={combineNameEn} onChange={e => setCombineNameEn(e.target.value)} placeholder="e.g. Southern Ring" className="h-9 text-xs" dir="ltr" />
               </div>
             </div>
             <div className="space-y-1.5">

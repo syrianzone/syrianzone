@@ -9,7 +9,7 @@ import { Loader2, Plus, Trash2, Undo2 } from 'lucide-react';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
 import { extractApiErrorMessage, extractApiFieldErrors } from '@/Lib/apiError';
-import FieldError, { fieldA11y } from '@/Pages/Promises/_components/FieldError';
+import FieldError, { fieldA11y } from '@/Components/ui/field-error';
 import Timeline from '@/Pages/Promises/_components/Timeline';
 import type { PromiseUpdateData } from '@/Pages/Promises/_lib/types';
 import type { AdminPromiseDetail } from '../_lib/types';

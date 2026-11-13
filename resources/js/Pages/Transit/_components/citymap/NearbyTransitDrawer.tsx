@@ -5,14 +5,7 @@ import { Button } from '@/Components/ui/button'
 import { LocationContext, LocationStatusContext, useRequestUserLocation } from './MapCanvas'
 import { useMapStore } from '../../_store/useMapStore'
 import { NEARBY_STOPS_RADIUS_M } from '@/Domain/transit/limits';
-
-interface NearbyStop {
-  id: string
-  nameAr: string
-  cityId: string
-  coordinates: [number, number]
-  routes: Array<{ id: string; name_ar: string }>
-}
+import { transitApi, type NearbyStop } from '../../_lib/api'
 
 export default function NearbyTransitDrawer() {
   const [stops, setStops] = useState<NearbyStop[]>([])
@@ -33,15 +26,8 @@ export default function NearbyTransitDrawer() {
       setLoading(true)
       setFetchError(false)
       try {
-        const apiUrl = '/api'
-        const res = await fetch(
-          `${apiUrl}/v1/stops/nearby?lat=${userLocation.lat}&lng=${userLocation.lng}&radius=${NEARBY_STOPS_RADIUS_M}`
-        )
-        if (res.ok) {
-          setStops(await res.json())
-        } else {
-          setFetchError(true)
-        }
+        const rows = await transitApi.nearbyStops(userLocation.lat, userLocation.lng, NEARBY_STOPS_RADIUS_M)
+        setStops(rows)
       } catch {
         setFetchError(true)
       } finally {

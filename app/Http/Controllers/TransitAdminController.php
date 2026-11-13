@@ -10,6 +10,7 @@ use App\Services\Transit\TransitAdminService;
 use App\Services\Transit\TransitRouteComposer;
 use App\Support\Facts;
 use App\Support\Permissions\PermissionCatalogue;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
@@ -61,10 +62,7 @@ class TransitAdminController extends Controller
         } catch (TransitActionException $e) {
             throw $e;
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to approve draft',
-                'error' => $e->getMessage(),
-            ], 500);
+            return $this->failure('Failed to approve draft', $e);
         }
 
         $message = $draft->route_id ? 'Draft approved and route updated' : 'Draft approved';
@@ -130,10 +128,7 @@ class TransitAdminController extends Controller
 
             throw $e;
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to update route status',
-                'error' => $e->getMessage(),
-            ], 500);
+            return $this->failure('Failed to update route status', $e);
         }
 
         return response()->json(['message' => 'Route status updated successfully', 'route' => $updated]);
@@ -162,10 +157,7 @@ class TransitAdminController extends Controller
         } catch (TransitActionException $e) {
             throw $e;
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to move route',
-                'error' => $e->getMessage(),
-            ], 500);
+            return $this->failure('Failed to move route', $e);
         }
 
         return response()->json(['message' => 'Route moved successfully', 'route' => $moved]);
@@ -184,10 +176,7 @@ class TransitAdminController extends Controller
         try {
             $this->transit->destroyRoute($route, $request->user()?->getAuthIdentifier());
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to delete route',
-                'error' => $e->getMessage(),
-            ], 500);
+            return $this->failure('Failed to delete route', $e);
         }
 
         return response()->json(['message' => 'Route deleted']);
@@ -266,10 +255,7 @@ class TransitAdminController extends Controller
         } catch (TransitActionException $e) {
             throw $e;
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to combine routes',
-                'error' => $e->getMessage(),
-            ], 500);
+            return $this->failure('Failed to combine routes', $e);
         }
 
         return response()->json(['message' => 'Routes combined successfully', 'route' => $result->route]);
@@ -303,10 +289,7 @@ class TransitAdminController extends Controller
         } catch (TransitActionException $e) {
             throw $e;
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to split route',
-                'error' => $e->getMessage(),
-            ], 500);
+            return $this->failure('Failed to split route', $e);
         }
 
         return response()->json([
@@ -378,5 +361,19 @@ class TransitAdminController extends Controller
             'type' => 'FeatureCollection',
             'features' => $features,
         ]);
+    }
+
+    /**
+     * The legacy `{message, error}` envelope for an unexpected failure.
+     *
+     * The shape is a released contract (mobile clients read `<message>` and
+     * legacy callers read `<error>`), so it is produced in one place here.
+     */
+    private function failure(string $message, \Exception $e): JsonResponse
+    {
+        return response()->json([
+            'message' => $message,
+            'error' => $e->getMessage(),
+        ], 500);
     }
 }

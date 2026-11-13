@@ -11,7 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { api, extractError } from '@/Domain/places/api';
+import { api } from '@/Domain/places/api';
+import { apiErrorMessage } from '@/Lib/api';
 import type { AdminPlace, Paginated } from '@/Domain/places/types';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
@@ -56,7 +57,7 @@ export default function Index() {
       }
       setPlaces(res);
     } catch (e) {
-      setError(extractError(e));
+      setError(apiErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -76,7 +77,7 @@ export default function Index() {
       await api.adminApprove(id);
       await refetch();
     } catch (e) {
-      setError(extractError(e));
+      setError(apiErrorMessage(e));
     }
   };
 
@@ -89,7 +90,7 @@ export default function Index() {
       await refetch();
     } catch (e) {
       setRejectId(null);
-      setError(extractError(e));
+      setError(apiErrorMessage(e));
     }
   };
 
@@ -100,7 +101,7 @@ export default function Index() {
       await api.adminDeletePlace(id);
       await refetch();
     } catch (e) {
-      setError(extractError(e));
+      setError(apiErrorMessage(e));
     }
   };
 

@@ -5,6 +5,7 @@ namespace App\Mcp\Tools\Users;
 use App\Models\User;
 use App\Services\Users\UserModerationService;
 use App\Support\Agents\AgentContext;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -37,7 +38,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
 #[IsIdempotent]
 class SetUserBanTool extends UsersTool
 {
-    protected array $permissions = ['users.ban'];
+    protected array $permissions = [PermissionCatalogue::USERS_BAN];
 
     public function schema(JsonSchema $schema): array
     {

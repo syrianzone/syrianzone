@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePage } from '@inertiajs/react';
-import axios from '@/Lib/axios';
+import { api } from '@/Lib/api';
 import { SYRIA_TIMEZONE } from '@/Domain/geography/syria';
 import { DEFAULT_PRAYER_METHOD } from '../prayer/methods';
 import { DEFAULT_RECITATION_CODE, normalizeRecitationCode } from '../quran/quran';
@@ -151,7 +151,7 @@ export function useMuslimPrefs() {
     pending.current = {};
     if (Object.keys(payload).length === 0) return;
     try {
-      await axios.post('/api/user/settings', { settings: payload });
+      await api.post('/api/user/settings', { settings: payload });
     } catch {
       // localStorage already holds the value; server sync is best-effort
     }

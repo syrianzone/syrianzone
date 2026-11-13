@@ -8,7 +8,8 @@ import { CheckCircle2Icon, AlertCircleIcon, Download } from "lucide-react";
 import { exportTierListFromData } from "@/lib/exportImage";
 import { getOriginalImageUrl } from "@/Lib/imageUtils";
 import { getDeviceId } from "@/Lib/deviceId";
-import axios from "@/lib/axios";
+import { api, apiErrorMessage } from '@/Lib/api';
+import { notify } from '@/Lib/notify';
 import JSZip from "jszip";
 
 export type Candidate = {
@@ -334,20 +335,14 @@ export default function TierBoard({
         // If providedPath is relative, axios uses baseURL.
 
         try {
-            await axios.post(providedPath, payload);
+            await api.post(providedPath, payload);
             setSubmitStatus({ ok: true, message: "تم تسجيل التصويت" });
             const ts = Date.now() + 1 * 60 * 1000;
             setNextSubmitAt(ts);
             localStorage.setItem(cooldownKey, String(ts));
             setIsSubmitting(false);
-        } catch (error: any) {
-            let errorMsg = "حدث خطأ أو تم التصويت اليوم";
-            if (error.response && error.response.data) {
-                const errData = error.response.data;
-                if (errData.error) errorMsg = errData.error;
-                else if (errData.message) errorMsg = errData.message;
-            }
-            setSubmitStatus({ ok: false, message: errorMsg });
+        } catch (error) {
+            setSubmitStatus({ ok: false, message: apiErrorMessage(error, "حدث خطأ أو تم التصويت اليوم") });
             setIsSubmitting(false);
         }
     }
@@ -472,7 +467,7 @@ export default function TierBoard({
             document.body.removeChild(a);
             URL.revokeObjectURL(blobUrl);
         } catch (err) {
-            console.error('Download failed:', err);
+            notify.error(apiErrorMessage(err, 'تعذّر تنزيل الصورة'));
         }
     }
 
@@ -500,7 +495,7 @@ export default function TierBoard({
             document.body.removeChild(a);
             URL.revokeObjectURL(blobUrl);
         } catch (err) {
-            console.error('Download all failed:', err);
+            notify.error(apiErrorMessage(err, 'تعذّر تنزيل صور المرشحين'));
         } finally {
             setIsDownloadingAll(false);
         }

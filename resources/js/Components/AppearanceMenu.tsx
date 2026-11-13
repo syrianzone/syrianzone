@@ -1,5 +1,5 @@
 import React from 'react';
-import axios from 'axios';
+import { api } from '@/Lib/api';
 import { Check, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -39,7 +39,9 @@ export default function AppearanceMenu({ className }: { className?: string }) {
 
     const saveSetting = (settings: Record<string, string>) => {
         if (!user) return;
-        axios.post('/api/user/settings', { settings }).catch(() => {});
+        // Background mirror of the appearance choice, which is already applied
+        // and stored on this device.
+        api.post('/api/user/settings', { settings }).catch(() => {});
     };
 
     const handleThemeChange = (themeId: string) => {

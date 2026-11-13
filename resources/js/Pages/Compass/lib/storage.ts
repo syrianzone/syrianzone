@@ -1,5 +1,6 @@
 // Local persistence + optional account sync for the compass.
 // Progress and results are stored locally always; logged-in users also sync to the account.
+import { api as client, API_V1 } from '@/Lib/api';
 import type { AnswerMap, CompassResult, QuizVersion } from '@/Domain/compass/types';
 
 const KEY_PROGRESS = 'sz-compass-v2-progress';
@@ -103,66 +104,32 @@ export function takePendingAccountSave(): CompassResult | null {
 
 // ---- account sync ----
 export async function fetchAccountResults(): Promise<CompassResult[]> {
-  const res = await fetch('/api/v1/compass/results', {
-    headers: { Accept: 'application/json' },
-    credentials: 'same-origin',
-  });
-  if (!res.ok) throw new Error(`fetch failed: ${res.status}`);
-  const json = await res.json();
-  return (json.data ?? json) as CompassResult[];
+  const json = await client.get<{ data?: CompassResult[] } | CompassResult[]>(`${API_V1}/compass/results`);
+  return Array.isArray(json) ? json : (json.data ?? []);
 }
 
 export async function saveResultToAccount(result: CompassResult): Promise<CompassResult | null> {
-  const res = await fetch('/api/v1/compass/results', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    credentials: 'same-origin',
-    body: JSON.stringify(result),
-  });
-  if (!res.ok) throw new Error(`save failed: ${res.status}`);
-  const json = await res.json();
-  return (json.data ?? json) as CompassResult;
+  type SavedBody = { data?: CompassResult };
+  const json = await client.post<CompassResult | SavedBody>(`${API_V1}/compass/results`, result);
+  return 'version' in json ? json : (json.data ?? null);
 }
 
-export async function deleteAccountResults(): Promise<void> {
-  const res = await fetch('/api/v1/compass/results', {
-    method: 'DELETE',
-    headers: { Accept: 'application/json' },
-    credentials: 'same-origin',
-  });
-  if (!res.ok) throw new Error(`delete failed: ${res.status}`);
+export function deleteAccountResults(): Promise<void> {
+  return client.delete(`${API_V1}/compass/results`);
 }
 
-export async function deleteAccountResult(id: number | string): Promise<void> {
-  const res = await fetch(`/api/v1/compass/results/${id}`, {
-    method: 'DELETE',
-    headers: { Accept: 'application/json' },
-    credentials: 'same-origin',
-  });
-  if (!res.ok) throw new Error(`delete failed: ${res.status}`);
+export function deleteAccountResult(id: number | string): Promise<void> {
+  return client.delete(`${API_V1}/compass/results/${id}`);
 }
 
 /** Submit a run anonymously for statistics (works for guests and users).
  *  Returns an opaque delete token for opting back out. */
 export async function submitStats(result: CompassResult): Promise<string | null> {
-  const res = await fetch('/api/v1/compass/stats', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    credentials: 'same-origin',
-    body: JSON.stringify(result),
-  });
-  if (!res.ok) throw new Error(`stats failed: ${res.status}`);
-  const json = await res.json();
+  const json = await client.post<{ token?: string | null }>(`${API_V1}/compass/stats`, result);
   return json.token ?? null;
 }
 
 /** Remove an anonymous stats row via its token. */
-export async function removeStats(token: string): Promise<void> {
-  const res = await fetch('/api/v1/compass/stats', {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    credentials: 'same-origin',
-    body: JSON.stringify({ token }),
-  });
-  if (!res.ok) throw new Error(`stats delete failed: ${res.status}`);
+export function removeStats(token: string): Promise<void> {
+  return client.delete(`${API_V1}/compass/stats`, { token });
 }

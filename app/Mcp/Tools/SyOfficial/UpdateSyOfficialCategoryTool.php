@@ -5,6 +5,7 @@ namespace App\Mcp\Tools\SyOfficial;
 use App\Services\SyOfficial\SyOfficialDirectoryService;
 use App\Services\SyOfficial\SyOfficialPresenter;
 use App\Support\Agents\AgentContext;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -26,7 +27,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
 #[IsIdempotent]
 class UpdateSyOfficialCategoryTool extends SyOfficialTool
 {
-    protected array $permissions = ['syofficial.edit'];
+    protected array $permissions = [PermissionCatalogue::SYOFFICIAL_EDIT];
 
     public function schema(JsonSchema $schema): array
     {

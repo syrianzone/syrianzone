@@ -3,7 +3,8 @@ import { Calendar, ExternalLink, AlertCircle, RefreshCw } from 'lucide-react';
 import { Card, CardContent } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
 import { formatGregorianSyrianShort } from "@/Lib/syrian-date";
-import { f3aliaProvinceFor, getGovernorateNameAr, governorateNameForF3aliaProvince } from '@/Domain/geography/governorates';
+import { api, API_ROOT, apiErrorMessage } from '@/Lib/api';
+import { getGovernorateNameAr, governorateNameForF3aliaProvince } from '@/Domain/geography/governorates';
 
 interface F3aliaEventsProps {
     governorate: string; // local governorate key, e.g., 'damascus'
@@ -12,145 +13,50 @@ interface F3aliaEventsProps {
     variant?: 'single';
 }
 
-interface EventAttachment {
-    fileUrl: string;
-    fileType: string;
-}
-
-interface EventCategory {
-    nameAr: string;
-    nameEn: string;
-}
-
-interface EventOwner {
-    organizerName: string;
-    logoImage: string | null;
-}
-
-interface F3aliaEvent {
+/** One event exactly as the server proxy (`/api/events/today`) normalizes it. */
+interface ProxiedEvent {
     id: string;
     name: string;
     description: string;
+    url: string;
     address: string;
-    isOnline: boolean;
-    eventLink: string;
+    is_online: boolean;
+    is_free: boolean;
+    ticket_price: number | null;
+    event_date: string;
+    event_time: string | null;
     province: string;
     provinceName: string;
-    isFree: boolean;
-    ticketPrice: number;
-    eventDate: string;
-    eventTime: string | null;
-    endDate: string | null;
-    endTime: string | null;
-    category: EventCategory | null;
-    owner: EventOwner | null;
-    attachments: EventAttachment[] | null;
+    category: string | null;
+    organizer: string | null;
+}
+
+interface EventsPayload {
+    governorate: string;
+    is_fallback: boolean;
+    events: ProxiedEvent[];
 }
 
 export default function F3aliaEvents({ governorate }: F3aliaEventsProps) {
-    const [events, setEvents] = useState<F3aliaEvent[]>([]);
+    const [events, setEvents] = useState<ProxiedEvent[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isShowingFallbackEvents, setIsShowingFallbackEvents] = useState(false);
 
-    // Get today's date in YYYY-MM-DD format
-    const getTodayDateString = () => {
-        const d = new Date();
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    };
-
-    const fetchEvents = async (selectedProvince: string | null) => {
+    const loadEventsData = async () => {
         setLoading(true);
         setError(null);
         try {
-            const query = `
-                query GetEvents($province: Province, $fromDate: Date, $size: Int!) {
-                    getAllEventsForVisitor(page: 0, size: $size, province: $province, fromDate: $fromDate) {
-                        content {
-                            id
-                            name
-                            description
-                            address
-                            isOnline
-                            eventLink
-                            province
-                            provinceName
-                            isFree
-                            ticketPrice
-                            eventDate
-                            eventTime
-                            endDate
-                            endTime
-                            category {
-                                nameAr
-                                nameEn
-                            }
-                            owner {
-                                organizerName
-                                logoImage
-                            }
-                            attachments {
-                                fileUrl
-                                fileType
-                            }
-                        }
-                    }
-                }
-            `;
-
-            // Only the next upcoming event is shown, so a couple of rows are
-            // enough even after the local past-date filter.
-            const response = await fetch('https://event-backend-production-18c4.up.railway.app/graphql', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    query,
-                    variables: {
-                        province: selectedProvince,
-                        fromDate: getTodayDateString(),
-                        size: 3
-                    }
-                })
+            // `upcoming`, not the default `today`: the homepage spotlight shows
+            // the next event. The query, the province map and the all-Syria
+            // fallback live in EventsController, never in the browser.
+            const payload = await api.get<EventsPayload>(`${API_ROOT}/events/today`, {
+                params: { governorate, scope: 'upcoming' },
             });
-
-            if (!response.ok) {
-                throw new Error('GraphQL request failed');
-            }
-
-            const resData = await response.json();
-            if (resData.errors && resData.errors.length > 0) {
-                throw new Error(resData.errors[0].message);
-            }
-
-            const data = resData.data?.getAllEventsForVisitor;
-            return (data?.content || []) as F3aliaEvent[];
-        } catch (err: any) {
-            console.error('F3alia fetch error:', err);
-            throw err;
-        }
-    };
-
-    const loadEventsData = async () => {
-        const provinceEnum = f3aliaProvinceFor(governorate);
-        try {
-            // Step 1: Try fetching events for selected governorate (upcoming only)
-            const result = await fetchEvents(provinceEnum);
-
-            if (result.length === 0 && provinceEnum !== null) {
-                // Step 2: Fallback to all upcoming events if none found for selected governorate
-                setEvents(await fetchEvents(null));
-                setIsShowingFallbackEvents(true);
-            } else {
-                setEvents(result);
-                setIsShowingFallbackEvents(false);
-            }
-        } catch (err: any) {
-            setError('فشل تحميل الفعاليات حالياً');
+            setEvents(payload.events ?? []);
+            setIsShowingFallbackEvents(Boolean(payload.is_fallback));
+        } catch (err) {
+            setError(apiErrorMessage(err, 'فشل تحميل الفعاليات حالياً'));
         } finally {
             setLoading(false);
         }
@@ -160,12 +66,8 @@ export default function F3aliaEvents({ governorate }: F3aliaEventsProps) {
         loadEventsData();
     }, [governorate]);
 
-    // Filter events locally just in case (to guarantee no past events ever slip through)
-    const todayStr = getTodayDateString();
-    const upcomingEvents = events.filter(e => e.eventDate >= todayStr);
-
     // Only the very first next upcoming event is shown (homepage spotlight).
-    const displayedEvents = upcomingEvents.slice(0, 1);
+    const displayedEvents = events.slice(0, 1);
 
     const currentGovName = getGovernorateNameAr(governorate);
 
@@ -236,16 +138,16 @@ export default function F3aliaEvents({ governorate }: F3aliaEventsProps) {
                                 <span className="text-base font-bold text-foreground">{event.name}</span>
                             </div>
                             <div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-                                <span>{formatGregorianSyrianShort(event.eventDate)}</span>
-                                {event.eventTime && (
+                                <span>{formatGregorianSyrianShort(event.event_date)}</span>
+                                {event.event_time && (
                                     <>
                                         <span>•</span>
-                                        <span className="font-mono">{event.eventTime}</span>
+                                        <span className="font-mono">{event.event_time}</span>
                                     </>
                                 )}
                                 <span>•</span>
                                 <a
-                                    href={event.eventLink || `https://app.f3alia.com/?event_id=${event.id}`}
+                                    href={event.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="font-bold text-primary hover:underline inline-flex items-center gap-1"

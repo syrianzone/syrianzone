@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { apiErrorMessage } from '@/Lib/api';
+import { notify } from '@/Lib/notify';
 import { api } from './api';
 import { migrate } from './layout';
 import { defaultDoc } from './registry';
@@ -8,11 +10,6 @@ import type { BoardDoc } from './types';
 const SAVE_DEBOUNCE_MS = 1500;
 
 export type SyncStatus = 'idle' | 'saving' | 'error';
-
-function xsrfToken(): string {
-  const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
-  return match ? decodeURIComponent(match[1]) : '';
-}
 
 // Last write wins on the whole document. No CRDT, no field-level merge: the
 // mitigation for a simultaneous edit on two devices is the one-click restore
@@ -36,6 +33,8 @@ export function useBoardSync(opts: {
   const dirty = useRef(false);
   const timer = useRef<number | null>(null);
   const reqRef = useRef(0);
+  // one toast per failure burst, not one per debounced save
+  const notifiedFailure = useRef(false);
   // the document adopted from the server, which must not be echoed straight back
   const lastSynced = useRef<BoardDoc | null>(null);
 
@@ -57,10 +56,18 @@ export function useBoardSync(opts: {
     setStatus('saving');
     try {
       await api.putBoard(docRef.current);
+      notifiedFailure.current = false;
       if (id === reqRef.current) setStatus('idle');
-    } catch {
-      // non-fatal: localStorage already holds the document
-      if (id === reqRef.current) setStatus('error');
+    } catch (e) {
+      // non-fatal: localStorage already holds the document. The status is shown
+      // in the shell; the toast only names the first failure of a burst.
+      if (id === reqRef.current) {
+        setStatus('error');
+        if (!notifiedFailure.current) {
+          notifiedFailure.current = true;
+          notify.error(apiErrorMessage(e, 'تعذّر حفظ لوحتك على الخادم، محفوظة على هذا الجهاز'));
+        }
+      }
     } finally {
       inFlight.current = false;
       if (dirty.current) {
@@ -131,8 +138,8 @@ export function useBoardSync(opts: {
     };
   }, [opts.doc, opts.enabled, save]);
 
-  // flush a pending save when the tab goes away. sendBeacon cannot carry the
-  // CSRF header, so this uses fetch with keepalive.
+  // flush a pending save when the tab goes away. The request outlives the page
+  // (keepalive); nothing can be shown to the user at that point.
   useEffect(() => {
     if (!opts.enabled) return;
 
@@ -140,18 +147,7 @@ export function useBoardSync(opts: {
       if (document.visibilityState !== 'hidden' || !timer.current) return;
       window.clearTimeout(timer.current);
       timer.current = null;
-      void fetch('/api/v1/board', {
-        method: 'PUT',
-        keepalive: true,
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-          'X-XSRF-TOKEN': xsrfToken(),
-        },
-        body: JSON.stringify({ document: docRef.current }),
-      }).catch(() => undefined);
+      void api.putBoard(docRef.current, { keepalive: true }).catch(() => undefined);
     }
 
     document.addEventListener('visibilitychange', onVisibility);

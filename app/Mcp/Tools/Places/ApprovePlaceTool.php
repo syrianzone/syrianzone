@@ -4,6 +4,7 @@ namespace App\Mcp\Tools\Places;
 
 use App\Services\Places\PlaceModerationService;
 use App\Support\Agents\AgentContext;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -26,7 +27,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
 #[IsIdempotent]
 class ApprovePlaceTool extends PlacesTool
 {
-    protected array $permissions = ['places.approve'];
+    protected array $permissions = [PermissionCatalogue::PLACES_APPROVE];
 
     public function schema(JsonSchema $schema): array
     {

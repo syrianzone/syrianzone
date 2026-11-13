@@ -19,8 +19,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { api, extractError, extractFieldErrors } from '@/Domain/places/api';
-import { extractApiFieldErrors } from '@/Lib/apiError';
+import { api } from '@/Domain/places/api';
+import { apiErrorMessage, apiFieldErrors } from '@/Lib/api';
 import FieldError, { fieldA11y } from '@/Components/ui/field-error';
 import { CATEGORIES } from '@/Domain/places/categories';
 import type { AdminPlace, PlaceCategory } from '@/Domain/places/types';
@@ -86,19 +86,19 @@ export function EditPlaceDialog(props: {
       onSaved();
       onOpenChange(false);
     } catch (e) {
-      // axios 422 body: { message, errors: { name: [...], lat: [...] } }
-      // extractFieldErrors() keeps only Arabic messages (Laravel's defaults are
-      // English and this endpoint passes none), so fall back to the field keys
-      // the 422 named and mark them with a neutral Arabic note.
-      const arabic = extractFieldErrors(e);
-      if (arabic) {
+      // A 422 body carries { message, errors: { name: [...], lat: [...] } }.
+      // Only Arabic messages may reach the form; when Laravel's English
+      // defaults are all there is, mark the field names the 422 sent with a
+      // neutral Arabic note instead.
+      const arabic = apiFieldErrors(e, { arabicOnly: true });
+      if (Object.keys(arabic).length) {
         setFieldErrors(arabic);
       } else {
-        const fields = Object.keys(extractApiFieldErrors(e));
+        const fields = Object.keys(apiFieldErrors(e));
         if (fields.length > 0) {
           setFieldErrors(Object.fromEntries(fields.map((field) => [field, 'تحقق من هذه القيمة'])));
         } else {
-          setError(extractError(e));
+          setError(apiErrorMessage(e));
         }
       }
     } finally {

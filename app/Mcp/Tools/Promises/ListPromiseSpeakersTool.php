@@ -5,6 +5,7 @@ namespace App\Mcp\Tools\Promises;
 use App\Models\PromiseSpeaker;
 use App\Services\Promises\PromiseSpeakerService;
 use App\Support\Agents\AgentContext;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Validation\Rule;
 use Laravel\Mcp\Request;
@@ -28,7 +29,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 #[IsIdempotent]
 class ListPromiseSpeakersTool extends PromisesTool
 {
-    protected array $permissions = ['promises.speakers'];
+    protected array $permissions = [PermissionCatalogue::PROMISES_SPEAKERS];
 
     public function schema(JsonSchema $schema): array
     {

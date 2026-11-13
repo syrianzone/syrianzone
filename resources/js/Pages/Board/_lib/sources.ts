@@ -1,4 +1,4 @@
-import axios from '@/Lib/axios';
+import { api as client, API_ROOT, API_V1 } from '@/Lib/api';
 import { api } from '@/Domain/places/api';
 import { discovery, type Guide, type GuidesSort } from '@/Domain/places/discovery';
 import type { NearbyPlace } from '@/Domain/places/types';
@@ -97,38 +97,35 @@ export interface Feed {
 
 export const sources = {
   async transitCities(): Promise<TransitCity[]> {
-    const { data } = await axios.get('/api/v1/cities');
+    const data = await client.get<TransitCity[] | { cities?: TransitCity[]; data?: TransitCity[] }>(`${API_V1}/cities`);
     return Array.isArray(data) ? data : (data.cities ?? data.data ?? []);
   },
 
   // proxied through the app: the upstream worker only sends CORS headers for the
   // production origin, so calling it from the browser fails everywhere else
-  async weather(governorate: string): Promise<Weather> {
-    const { data } = await axios.get('/api/weather', { params: { governorate } });
-    return data;
+  weather(governorate: string): Promise<Weather> {
+    return client.get(`${API_ROOT}/weather`, { params: { governorate } });
   },
 
   // every method below is proxied through the app for the same reason as the
   // weather worker: the browser never talks to a third-party host directly
   async answers(limit: number): Promise<AnswerQuestion[]> {
-    const { data } = await axios.get('/api/answers', { params: { limit } });
+    const data = await client.get<{ items?: AnswerQuestion[] }>(`${API_ROOT}/answers`, { params: { limit } });
     return data.items ?? [];
   },
 
   async recipeOfTheDay(): Promise<Recipe> {
-    const { data } = await axios.get('/api/recipe-of-the-day');
+    const data = await client.get<{ recipe: Recipe }>(`${API_ROOT}/recipe-of-the-day`);
     return data.recipe;
   },
 
   // plus the "happening today" filter, which the upstream graphql query cannot express
-  async eventsToday(governorate: string): Promise<TodayEvents> {
-    const { data } = await axios.get('/api/events/today', { params: { governorate } });
-    return data;
+  eventsToday(governorate: string): Promise<TodayEvents> {
+    return client.get(`${API_ROOT}/events/today`, { params: { governorate } });
   },
 
-  async feed(source: string): Promise<Feed> {
-    const { data } = await axios.get('/api/feed', { params: { source } });
-    return data;
+  feed(source: string): Promise<Feed> {
+    return client.get(`${API_ROOT}/feed`, { params: { source } });
   },
 
   // The one client for the endpoint; the widget's react-query supplies caching.

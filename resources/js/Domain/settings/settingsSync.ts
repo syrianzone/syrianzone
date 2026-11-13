@@ -1,4 +1,5 @@
-import axios from '@/Lib/axios';
+import { api } from '@/Lib/api';
+import { addBookmark } from '@/Domain/quran/bookmarksApi';
 import { getGovernorateNameAr, governorateById } from '../geography/governorates';
 import { PRAYER_METHODS } from '../prayer/methods';
 import { MUSLIM_LS_KEYS, prunePrayerLog } from './prefs';
@@ -197,9 +198,7 @@ export async function runLoginSync(userId: number, rawSettings: Record<string, u
 
   // --- quran bookmarks: union push, silent (leftovers stay on device) ---
   try {
-    await pushGuestBookmarks((b) =>
-      axios.post('/api/v1/quran-bookmarks', { surah: b.surah, ayah: b.ayah, page: b.page, juz: b.juz }),
-    );
+    await pushGuestBookmarks((b) => addBookmark(b));
   } catch {
     // best-effort; leftovers retry next login
   }
@@ -288,7 +287,7 @@ export async function runLoginSync(userId: number, rawSettings: Record<string, u
 
   if (!patchEmpty) {
     try {
-      await axios.post('/api/user/settings', { settings: serverPatch });
+      await api.post('/api/user/settings', { settings: serverPatch });
     } catch {
       // best-effort; conflicts (if any) still surface for explicit choice
     }
@@ -352,7 +351,7 @@ export async function applyConflictChoices(
     }
   }
   if (Object.keys(serverPatch).length > 0) {
-    await axios.post('/api/user/settings', { settings: serverPatch });
+    await api.post('/api/user/settings', { settings: serverPatch });
   }
 }
 

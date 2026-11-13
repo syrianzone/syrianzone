@@ -12,7 +12,8 @@ import {
 } from '@/components/ui/select';
 import { confirmDialog } from '@/Lib/confirm';
 import { notify } from '@/Lib/notify';
-import { api, extractError } from '@/Domain/places/api';
+import { api } from '@/Domain/places/api';
+import { apiErrorMessage } from '@/Lib/api';
 import { REPORT_REASON_LABELS } from '@/Domain/places/reports';
 import type { AdminPlaceReport, Paginated, PlaceReportStatus } from '@/Domain/places/types';
 
@@ -56,7 +57,7 @@ export function ReportsTab() {
       }
       setReports(res);
     } catch (e) {
-      setError(extractError(e));
+      setError(apiErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -84,7 +85,7 @@ export function ReportsTab() {
       notify.success(action === 'dismiss' ? 'تم رفض البلاغ' : published ? 'تم إخفاء المكان' : 'تم إغلاق البلاغ');
       await fetchReports(status, page);
     } catch (e) {
-      notify.error(extractError(e));
+      notify.error(apiErrorMessage(e));
       // e.g. 409 when another moderator already handled it: show the current state
       await fetchReports(status, page);
     } finally {

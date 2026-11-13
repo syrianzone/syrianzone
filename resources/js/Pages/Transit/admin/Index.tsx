@@ -23,6 +23,9 @@ import { Textarea } from '@/Components/ui/textarea'
 import { ScrollArea } from '@/Components/ui/scroll-area'
 import { FilterChip } from '@/Components/ui/filter-chip'
 import { notify } from '@/Lib/notify'
+import { apiErrorMessage } from '@/Lib/api'
+import { transitApi } from '../_lib/api'
+import { transitAdminApi } from '@/Domain/transit/api'
 import { Separator } from '@/Components/ui/separator'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
@@ -78,11 +81,6 @@ const LOG_ACTION_LABELS: Record<string, string> = {
   created: 'إنشاء',
   updated: 'تحديث',
   deleted: 'حذف خط',
-}
-
-function getCsrfToken(): string {
-  const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/)
-  return match ? decodeURIComponent(match[1]) : ''
 }
 
 function stopCount(draft: Draft): number {
@@ -212,28 +210,30 @@ function TransitAdminPageContent() {
   }, [])
 
   useEffect(() => {
-    fetch('/api/v1/cities').then(r => r.json() as Promise<City[]>).then(setCities).catch(() => {})
+    transitApi.cities()
+      .then(setCities)
+      .catch((e) => notify.error(apiErrorMessage(e)))
   }, [])
 
   const fetchRoutes = useCallback(async (): Promise<PublishedRoute[]> => {
     setLoadingRoutes(true)
     try {
-      const res = await fetch('/api/v1/admin/routes')
-      if (res.ok) {
-        const rows = await res.json() as PublishedRoute[]
-        setPublishedRoutes(rows)
-        return rows
-      }
-    } catch { /* */ } finally { setLoadingRoutes(false) }
-    return []
+      const rows = await transitApi.adminRoutes()
+      setPublishedRoutes(rows)
+      return rows
+    } catch (e) {
+      notify.error(apiErrorMessage(e))
+      return []
+    } finally { setLoadingRoutes(false) }
   }, [])
 
   const fetchLogs = useCallback(async () => {
     setLoadingLogs(true)
     try {
-      const res = await fetch('/api/v1/admin/routes/logs')
-      if (res.ok) setLogs(await res.json() as ActivityLog[])
-    } catch { /* */ } finally { setLoadingLogs(false) }
+      setLogs(await transitApi.adminRouteLogs())
+    } catch (e) {
+      notify.error(apiErrorMessage(e))
+    } finally { setLoadingLogs(false) }
   }, [])
 
   // ─── Map init ───────────────────────────────────────────────────────────────
@@ -363,51 +363,34 @@ function TransitAdminPageContent() {
     setActionLoading(true)
     const selectedColor = colorIndex ?? approveColorIndex
     try {
-      const res = await fetch(`/api/v1/admin/route-drafts/${id}/approve`, {
-        method: 'POST',
-        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
-        credentials: 'include',
-        body: JSON.stringify({ color_index: selectedColor }),
-      })
-      if (res.ok) {
-        const data = await res.json().catch(() => ({}))
-        const route = data?.route
-        showToast(
-          'تمت الموافقة على المسار ونشره',
-          true,
-          route?.id && route?.city_id ? `/transit/city/${route.city_id}?route=${route.id}` : undefined,
-          'عرض الخط',
-        )
-        setSelectedDraft(pickNextPendingDraft(drafts, statusFilter, cityFilter, id))
-        queryClient.invalidateQueries({ queryKey: ['admin-drafts'] })
-        queryClient.invalidateQueries({ queryKey: ['mapData'] })
-        queryClient.invalidateQueries({ queryKey: ['routes'] })
-      }
-      else { const e = await res.json().catch(() => ({})); showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false) }
-    } catch { showToast('تعذّر الاتصال بالخادم', false) } finally { setActionLoading(false) }
+      const data = await transitAdminApi.approveDraft(id, selectedColor)
+      const route = data?.route
+      showToast(
+        'تمت الموافقة على المسار ونشره',
+        true,
+        route?.id && route?.city_id ? `/transit/city/${route.city_id}?route=${route.id}` : undefined,
+        'عرض الخط',
+      )
+      setSelectedDraft(pickNextPendingDraft(drafts, statusFilter, cityFilter, id))
+      queryClient.invalidateQueries({ queryKey: ['admin-drafts'] })
+      queryClient.invalidateQueries({ queryKey: ['mapData'] })
+      queryClient.invalidateQueries({ queryKey: ['routes'] })
+    } catch (e) { showToast(apiErrorMessage(e), false) } finally { setActionLoading(false) }
   }, [approveColorIndex, showToast, queryClient, drafts, statusFilter, cityFilter])
 
   const handleRejectConfirm = useCallback(async () => {
     if (!selectedDraft) return
     setActionLoading(true)
     try {
-      const res = await fetch(`/api/v1/admin/route-drafts/${selectedDraft.id}/reject`, {
-        method: 'POST',
-        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
-        credentials: 'include',
-        body: JSON.stringify({ reason: rejectReason.trim() || null }),
-      })
-      if (res.ok) {
-        showToast('تم رفض المسار');
-        setSelectedDraft(pickNextPendingDraft(drafts, statusFilter, cityFilter, selectedDraft.id));
-        setRejectOpen(false);
-        setRejectReason('');
-        queryClient.invalidateQueries({ queryKey: ['admin-drafts'] });
-        queryClient.invalidateQueries({ queryKey: ['mapData'] });
-        queryClient.invalidateQueries({ queryKey: ['routes'] });
-      }
-      else { const e = await res.json().catch(() => ({})); showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false) }
-    } catch { showToast('تعذّر الاتصال بالخادم', false) } finally { setActionLoading(false) }
+      await transitAdminApi.rejectDraft(selectedDraft.id, rejectReason.trim() || null)
+      showToast('تم رفض المسار');
+      setSelectedDraft(pickNextPendingDraft(drafts, statusFilter, cityFilter, selectedDraft.id));
+      setRejectOpen(false);
+      setRejectReason('');
+      queryClient.invalidateQueries({ queryKey: ['admin-drafts'] });
+      queryClient.invalidateQueries({ queryKey: ['mapData'] });
+      queryClient.invalidateQueries({ queryKey: ['routes'] });
+    } catch (e) { showToast(apiErrorMessage(e), false) } finally { setActionLoading(false) }
   }, [selectedDraft, rejectReason, showToast, queryClient, drafts, statusFilter, cityFilter])
 
   const handleSelectRoute = useCallback(async (route: PublishedRoute) => {
@@ -427,74 +410,63 @@ function TransitAdminPageContent() {
 
     // 2. Fetch full GeoJSON (with stops) from server
     try {
-      const res = await fetch(`/api/v1/admin/routes/${route.id}/geojson`)
-      if (res.ok) {
-        const fullGeojson = normalizeFeatureCollection(await res.json())
-        setSelectedRouteGeoJson(fullGeojson)
-        if (mapRef.current) {
-          const bounds = featureCollectionBounds(fullGeojson)
-          if (bounds) mapRef.current.fitBounds(bounds, { padding: 80, maxZoom: 15, duration: 800 })
-        }
+      const full = await transitApi.routeGeoJson(route.id)
+      const fullGeojson = normalizeFeatureCollection(full)
+      setSelectedRouteGeoJson(fullGeojson)
+      if (mapRef.current) {
+        const bounds = featureCollectionBounds(fullGeojson)
+        if (bounds) mapRef.current.fitBounds(bounds, { padding: 80, maxZoom: 15, duration: 800 })
       }
-    } catch { /* */ }
+    } catch { /* the memory geometry above is already drawn */ }
   }, [refData])
 
   const handleUpdateStatus = useCallback(async (routeId: string, newStatus: string) => {
     setActionLoading(true)
     try {
-      const res = await fetch(`/api/v1/admin/routes/${routeId}/status`, {
-        method: 'POST',
-        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
-        credentials: 'include',
-        body: JSON.stringify({ status: newStatus }),
-      })
-      if (res.ok) { showToast('تم تحديث حالة الخط'); fetchRoutes(); if (selectedRoute?.id === routeId) setSelectedRoute(p => p ? { ...p, status: newStatus as PublishedRoute['status'] } : null) }
-      else { const e = await res.json().catch(() => ({})); showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false) }
-    } catch { showToast('تعذّر الاتصال بالخادم', false) } finally { setActionLoading(false) }
+      await transitApi.updateRouteStatus(routeId, newStatus)
+      showToast('تم تحديث حالة الخط')
+      fetchRoutes()
+      if (selectedRoute?.id === routeId) setSelectedRoute(p => p ? { ...p, status: newStatus as PublishedRoute['status'] } : null)
+    } catch (e) { showToast(apiErrorMessage(e), false) } finally { setActionLoading(false) }
   }, [fetchRoutes, selectedRoute, showToast])
 
   const handleMoveRoute = useCallback(async () => {
     if (!selectedRoute) return
     setActionLoading(true)
     try {
-      const res = await fetch(`/api/v1/admin/routes/${selectedRoute.id}/move`, {
-        method: 'POST',
-        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
-        credentials: 'include',
-        body: JSON.stringify({ city_id: targetCityId }),
-      })
-      if (res.ok) { showToast('تم نقل الخط'); setIsMoveModalOpen(false); setSelectedRoute(null); setSelectedRouteGeoJson(null); fetchRoutes() }
-      else { const e = await res.json().catch(() => ({})); showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false) }
-    } catch { showToast('تعذّر الاتصال بالخادم', false) } finally { setActionLoading(false) }
+      await transitApi.moveRoute(selectedRoute.id, targetCityId)
+      showToast('تم نقل الخط'); setIsMoveModalOpen(false); setSelectedRoute(null); setSelectedRouteGeoJson(null); fetchRoutes()
+    } catch (e) { showToast(apiErrorMessage(e), false) } finally { setActionLoading(false) }
   }, [selectedRoute, targetCityId, fetchRoutes, showToast])
 
   const handleCombineRoutes = useCallback(async () => {
     setActionLoading(true)
     try {
-      const res = await fetch('/api/v1/admin/routes/combine', {
-        method: 'POST',
-        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
-        credentials: 'include',
-        body: JSON.stringify({ route_a_id: combineRouteAId, route_b_id: combineRouteBId, name_ar: combineNameAr.trim(), name_en: combineNameEn.trim() || null, price: combinePrice ? parseInt(combinePrice) : null }),
+      await transitApi.combineRoutes({
+        route_a_id: combineRouteAId,
+        route_b_id: combineRouteBId,
+        name_ar: combineNameAr.trim(),
+        name_en: combineNameEn.trim() || null,
+        price: combinePrice ? parseInt(combinePrice) : null,
       })
-      if (res.ok) { showToast('تم دمج الخطين'); setIsCombineModalOpen(false); setCombineRouteAId(''); setCombineRouteBId(''); setCombineNameAr(''); setCombineNameEn(''); setCombinePrice(''); fetchRoutes() }
-      else { const e = await res.json().catch(() => ({})); showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false) }
-    } catch { showToast('تعذّر الاتصال بالخادم', false) } finally { setActionLoading(false) }
+      showToast('تم دمج الخطين'); setIsCombineModalOpen(false); setCombineRouteAId(''); setCombineRouteBId(''); setCombineNameAr(''); setCombineNameEn(''); setCombinePrice(''); fetchRoutes()
+    } catch (e) { showToast(apiErrorMessage(e), false) } finally { setActionLoading(false) }
   }, [combineRouteAId, combineRouteBId, combineNameAr, combineNameEn, combinePrice, fetchRoutes, showToast])
 
   const handleSplitRoute = useCallback(async () => {
     if (!selectedRoute) return
     setActionLoading(true)
     try {
-      const res = await fetch('/api/v1/admin/routes/split', {
-        method: 'POST',
-        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
-        credentials: 'include',
-        body: JSON.stringify({ route_id: selectedRoute.id, split_stop_id: splitAtStopId, name_a_ar: splitNameAAr.trim(), name_a_en: splitNameAEn.trim() || null, name_b_ar: splitNameBAr.trim(), name_b_en: splitNameBEn.trim() || null }),
+      await transitApi.splitRoute({
+        route_id: selectedRoute.id,
+        split_stop_id: splitAtStopId,
+        name_a_ar: splitNameAAr.trim(),
+        name_a_en: splitNameAEn.trim() || null,
+        name_b_ar: splitNameBAr.trim(),
+        name_b_en: splitNameBEn.trim() || null,
       })
-      if (res.ok) { showToast('تم تقسيم الخط'); setIsSplitModalOpen(false); setSelectedRoute(null); setSelectedRouteGeoJson(null); fetchRoutes() }
-      else { const e = await res.json().catch(() => ({})); showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false) }
-    } catch { showToast('تعذّر الاتصال بالخادم', false) } finally { setActionLoading(false) }
+      showToast('تم تقسيم الخط'); setIsSplitModalOpen(false); setSelectedRoute(null); setSelectedRouteGeoJson(null); fetchRoutes()
+    } catch (e) { showToast(apiErrorMessage(e), false) } finally { setActionLoading(false) }
   }, [selectedRoute, splitAtStopId, splitNameAAr, splitNameAEn, splitNameBAr, splitNameBEn, fetchRoutes, showToast])
 
   const handleUpdateRoute = useCallback(async () => {
@@ -502,25 +474,15 @@ function TransitAdminPageContent() {
     setActionLoading(true)
     let success = false
     try {
-      const res = await fetch(`/api/v1/admin/routes/${selectedRoute.id}`, {
-        method: 'PUT',
-        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
-        credentials: 'include',
-        body: JSON.stringify({
-          name_ar: editRouteNameAr.trim() || undefined,
-          name_en: editRouteNameEn.trim() || null,
-          color_index: editRouteColorIndex,
-          price_new: editRoutePrice ? parseInt(editRoutePrice) : null,
-        }),
+      await transitApi.updateRoute(selectedRoute.id, {
+        name_ar: editRouteNameAr.trim() || undefined,
+        name_en: editRouteNameEn.trim() || null,
+        color_index: editRouteColorIndex,
+        price_new: editRoutePrice ? parseInt(editRoutePrice) : null,
       })
-      if (res.ok) {
-        success = true
-      } else {
-        const e = await res.json().catch(() => ({}))
-        showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false)
-      }
-    } catch {
-      showToast('تعذّر الاتصال بالخادم', false)
+      success = true
+    } catch (e) {
+      showToast(apiErrorMessage(e), false)
     } finally {
       setActionLoading(false)
     }
@@ -539,9 +501,8 @@ function TransitAdminPageContent() {
       setPublishedRoutes(prev => prev.map(r => r.id === selectedRoute.id ? { ...r, color_index: editRouteColorIndex, name_ar: editRouteNameAr.trim() || r.name_ar } : r))
 
       try {
-        const resGeo = await fetch(`/api/v1/admin/routes/${selectedRoute.id}/geojson`)
-        if (resGeo.ok) setSelectedRouteGeoJson(normalizeFeatureCollection(await resGeo.json()))
-      } catch { /* */ }
+        setSelectedRouteGeoJson(normalizeFeatureCollection(await transitApi.routeGeoJson(selectedRoute.id)))
+      } catch { /* the previously drawn geometry stays on the map */ }
 
       queryClient.invalidateQueries({ queryKey: ['mapData'] })
       queryClient.invalidateQueries({ queryKey: ['routes'] })
@@ -554,20 +515,10 @@ function TransitAdminPageContent() {
     setActionLoading(true)
     let success = false
     try {
-      const res = await fetch(`/api/v1/admin/routes/${selectedRoute.id}`, {
-        method: 'PUT',
-        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
-        credentials: 'include',
-        body: JSON.stringify({ color_index: newColorIndex }),
-      })
-      if (res.ok) {
-        success = true
-      } else {
-        const e = await res.json().catch(() => ({}))
-        showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false)
-      }
-    } catch {
-      showToast('تعذّر الاتصال بالخادم', false)
+      await transitApi.updateRoute(selectedRoute.id, { color_index: newColorIndex })
+      success = true
+    } catch (e) {
+      showToast(apiErrorMessage(e), false)
     } finally {
       setActionLoading(false)
     }
@@ -607,25 +558,16 @@ function TransitAdminPageContent() {
     if (!selectedRoute) return
     setActionLoading(true)
     try {
-      const res = await fetch(`/api/v1/admin/routes/${selectedRoute.id}`, {
-        method: 'DELETE',
-        headers: { 'Accept': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
-        credentials: 'include',
-      })
-      if (res.ok) {
-        showToast('تم حذف الخط')
-        setDeleteConfirmOpen(false)
-        setSelectedRoute(null)
-        setSelectedRouteGeoJson(null)
-        fetchRoutes()
-        queryClient.invalidateQueries({ queryKey: ['mapData'] })
-        queryClient.invalidateQueries({ queryKey: ['routes'] })
-      } else {
-        const e = await res.json().catch(() => ({}))
-        showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false)
-      }
-    } catch {
-      showToast('تعذّر الاتصال بالخادم', false)
+      await transitApi.deleteRoute(selectedRoute.id)
+      showToast('تم حذف الخط')
+      setDeleteConfirmOpen(false)
+      setSelectedRoute(null)
+      setSelectedRouteGeoJson(null)
+      fetchRoutes()
+      queryClient.invalidateQueries({ queryKey: ['mapData'] })
+      queryClient.invalidateQueries({ queryKey: ['routes'] })
+    } catch (e) {
+      showToast(apiErrorMessage(e), false)
     } finally {
       setActionLoading(false)
     }
@@ -1099,17 +1041,14 @@ function TransitAdminPageContent() {
                   <Button variant="outline" size="sm" className="text-xs" disabled={actionLoading} onClick={async () => {
                     setActionLoading(true)
                     try {
-                      const res = await fetch(`/api/v1/admin/routes/${selectedRoute.id}/stops`, { headers: { 'Accept': 'application/json' }, credentials: 'include' })
-                      if (res.ok) {
-                        const sd = await res.json() as RouteStop[]; setRouteStops(sd)
-                        setSplitAtStopId(sd[1]?.id || '')
-                        setSplitNameAAr(`${selectedRoute.name_ar} (القسم الأول)`)
-                        setSplitNameBAr(`${selectedRoute.name_ar} (القسم الثاني)`)
-                        setSplitNameAEn(selectedRoute.name_en ? `${selectedRoute.name_en} (Part 1)` : '')
-                        setSplitNameBEn(selectedRoute.name_en ? `${selectedRoute.name_en} (Part 2)` : '')
-                        setIsSplitModalOpen(true)
-                      }
-                    } catch { showToast('خطأ في الاتصال', false) } finally { setActionLoading(false) }
+                      const sd = await transitApi.routeStops(selectedRoute.id); setRouteStops(sd)
+                      setSplitAtStopId(sd[1]?.id || '')
+                      setSplitNameAAr(`${selectedRoute.name_ar} (القسم الأول)`)
+                      setSplitNameBAr(`${selectedRoute.name_ar} (القسم الثاني)`)
+                      setSplitNameAEn(selectedRoute.name_en ? `${selectedRoute.name_en} (Part 1)` : '')
+                      setSplitNameBEn(selectedRoute.name_en ? `${selectedRoute.name_en} (Part 2)` : '')
+                      setIsSplitModalOpen(true)
+                    } catch (e) { showToast(apiErrorMessage(e), false) } finally { setActionLoading(false) }
                   }}>
                     <GitBranch className="h-3.5 w-3.5" /> تقسيم الخط
                   </Button>

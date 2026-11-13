@@ -1,5 +1,5 @@
+import { promisesApi } from '@/Domain/promises/api';
 import { useState } from 'react';
-import axios from '@/Lib/axios';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
@@ -9,7 +9,7 @@ import {
 } from '@/Components/ui/dialog';
 import { CalendarClock, Loader2 } from 'lucide-react';
 import { notify } from '@/Lib/notify';
-import { extractApiErrorMessage, extractApiFieldErrors } from '@/Lib/apiError';
+import { apiErrorMessage, apiFieldErrors } from '@/Lib/api';
 import FieldError, { fieldA11y } from '@/Components/ui/field-error';
 import type { AdminPromiseDetail } from '../_lib/types';
 
@@ -38,7 +38,7 @@ export default function RescheduleDialog({ promise, today, open, onOpenChange, o
         setErrors({});
 
         try {
-            const res = await axios.post(`/api/v1/admin/promises/${promise.id}/reschedule`, {
+            const res = await promisesApi.reschedule<{ promise: AdminPromiseDetail }>(promise.id, {
                 deadline_date: deadlineDate,
                 deadline_wording: deadlineWording.trim() || null,
                 deadline_reasoning: deadlineReasoning.trim() || null,
@@ -48,11 +48,11 @@ export default function RescheduleDialog({ promise, today, open, onOpenChange, o
                 body: body.trim() || null,
             });
             notify.success('تم تأجيل/تعديل الموعد وحفظ الموعد الأصلي');
-            onSaved?.(res.data.promise);
+            onSaved?.(res.promise);
             onOpenChange(false);
         } catch (err) {
-            setErrors(extractApiFieldErrors(err));
-            notify.error(extractApiErrorMessage(err, 'تعذّر تعديل الموعد'));
+            setErrors(apiFieldErrors(err));
+            notify.error(apiErrorMessage(err, 'تعذّر تعديل الموعد'));
         } finally {
             setSaving(false);
         }

@@ -1,6 +1,8 @@
+import { addBookmark, listBookmarks, removeBookmark } from '@/Domain/quran/bookmarksApi';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AlertCircle, ArrowRight, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight, HardDrive, Loader2, Maximize, Minimize } from 'lucide-react';
-import axios from '@/Lib/axios';
+import { apiErrorMessage } from '@/Lib/api';
+import { notify } from '@/Lib/notify';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import AudioPlayer from './AudioPlayer';
@@ -134,9 +136,8 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
       return;
     }
     let live = true;
-    axios.get('/api/v1/quran-bookmarks').then((r) => {
+    listBookmarks().then((list) => {
       if (!live) return;
-      const list = (r.data?.bookmarks ?? []) as { surah: number; ayah: number }[];
       setSavedKeys(new Set([...list.map((b) => `${b.surah}:${b.ayah}`), ...guestBookmarkKeys()]));
     }).catch(() => {
       if (live) setSavedKeys(guestBookmarkKeys());
@@ -200,23 +201,18 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
     setBookmarkBusy(true);
     try {
       if (savedKeys.has(key)) {
-        await axios.delete(`/api/v1/quran-bookmarks/${currentAyah.surah}/${currentAyah.ayah}`);
+        await removeBookmark(currentAyah.surah, currentAyah.ayah);
         setSavedKeys((prev) => {
           const next = new Set(prev);
           next.delete(key);
           return next;
         });
       } else {
-        await axios.post('/api/v1/quran-bookmarks', {
-          surah: currentAyah.surah,
-          ayah: currentAyah.ayah,
-          page: currentAyah.page,
-          juz: currentAyah.juz,
-        });
+        await addBookmark(currentAyah);
         setSavedKeys((prev) => new Set(prev).add(key));
       }
-    } catch {
-      // silent: button stays in previous state
+    } catch (err) {
+      notify.error(apiErrorMessage(err, 'تعذّر حفظ العلامة'));
     } finally {
       setBookmarkBusy(false);
     }

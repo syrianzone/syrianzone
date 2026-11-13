@@ -55,7 +55,8 @@ copy of a key name or a write path.
   store, so an edit on Home updates Roznama, `/muslim` and the board widgets
   without a reload (and after the sync pulls a value).
 - `updateLocationPreference(patch)` — writes the device keys and notifies them.
-- `adoptAccountLocation(...)` — the mount-time seed (rule below), implemented once.
+- `adoptAccountLocation(...)` — the mount-time seed (rule below), implemented once
+  and called from `runLoginSync` only.
 - `readDeviceCity('prayer' | 'display')`, `writeDeviceCity(...)`,
   `readDeviceCustomCoords()`, `writeDeviceCustomCoords(...)` — the per-family
   accessors this engine compares and pulls with.
@@ -79,7 +80,11 @@ one value. Stored key names and value shapes are unchanged.
 that do **not** exist from the account and leaves a present one alone — otherwise
 it would destroy the logged-out side before §3 compares them. This applies to the
 city and to the custom-coordinate group alike (Home used to overwrite the latter
-unconditionally).
+unconditionally). `runLoginSync` (`Domain/settings/settingsSync.ts`) is its **only
+caller**: the login sync is the one place that adopts the account location onto
+the device. Home and Roznama no longer copy `props.auth.user.settings` on mount —
+they read and write the shared preference store — so no page mount can race the
+sync over the same keys.
 
 Account writes are unchanged and still belong to the surfaces:
 Home debounces `governorate/useCustomCoords/customLat/customLon` at 500 ms,

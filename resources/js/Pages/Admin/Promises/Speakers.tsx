@@ -1,6 +1,6 @@
+import { promisesApi } from '@/Domain/promises/api';
 import { useMemo, useRef, useState } from 'react';
 import { router } from '@inertiajs/react';
-import axios from '@/Lib/axios';
 import MainLayout from '@/Layouts/MainLayout';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
@@ -15,7 +15,7 @@ import {
 import { ImageUp, Loader2, Pencil, Search, Trash2, UserPlus } from 'lucide-react';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
-import { extractApiErrorMessage, extractApiFieldErrors } from '@/Lib/apiError';
+import { apiErrorMessage, apiFieldErrors } from '@/Lib/api';
 import SpeakerAvatar from '@/Domain/promises/SpeakerAvatar';
 import FieldError, { fieldA11y } from '@/Components/ui/field-error';
 import SpeakerPicker from '@/Domain/promises/SpeakerPicker';
@@ -65,11 +65,11 @@ export default function PromiseSpeakers({ speakers, institutions, queueCount }: 
     const link = async (option: SpeakerOption) => {
         setLinking(option);
         try {
-            await axios.post('/api/v1/admin/promises/speakers', { ref: option.ref });
+            await promisesApi.addSpeakerByRef(option.ref);
             notify.success(`أُضيف ${option.name} إلى القائمة`);
             router.reload({ only: ['speakers'] });
         } catch (e) {
-            notify.error(extractApiErrorMessage(e, 'تعذّرت الإضافة'));
+            notify.error(apiErrorMessage(e, 'تعذّرت الإضافة'));
         } finally {
             setLinking(null);
         }
@@ -98,13 +98,10 @@ export default function PromiseSpeakers({ speakers, institutions, queueCount }: 
     const upload = async (file: File) => {
         setUploading(true);
         try {
-            const fd = new FormData();
-            fd.append('image', file);
-            fd.append('kind', 'speaker');
-            const res = await axios.post('/api/v1/admin/promises/speakers/upload-image', fd);
-            setForm((f) => ({ ...f, imageUrl: res.data.url }));
+            const res = await promisesApi.uploadImage(file, 'speaker');
+            setForm((f) => ({ ...f, imageUrl: res.url }));
         } catch (e) {
-            notify.error(extractApiErrorMessage(e, 'تعذّر رفع الصورة'));
+            notify.error(apiErrorMessage(e, 'تعذّر رفع الصورة'));
         } finally {
             setUploading(false);
             if (fileRef.current) fileRef.current.value = '';
@@ -123,14 +120,13 @@ export default function PromiseSpeakers({ speakers, institutions, queueCount }: 
             x_handle: form.xHandle.trim() || null,
         };
         try {
-            if (editing) await axios.put(`/api/v1/admin/promises/speakers/${editing.id}`, payload);
-            else await axios.post('/api/v1/admin/promises/speakers', payload);
+            await promisesApi.saveSpeaker(editing?.id ?? null, payload);
             notify.success('تم الحفظ');
             setDialogOpen(false);
             router.reload({ only: ['speakers'] });
         } catch (err) {
-            setErrors(extractApiFieldErrors(err));
-            notify.error(extractApiErrorMessage(err, 'تعذّر الحفظ'));
+            setErrors(apiFieldErrors(err));
+            notify.error(apiErrorMessage(err, 'تعذّر الحفظ'));
         } finally {
             setSaving(false);
         }
@@ -139,11 +135,11 @@ export default function PromiseSpeakers({ speakers, institutions, queueCount }: 
     const remove = async (s: AdminSpeaker) => {
         if (!(await confirmDialog({ title: `حذف «${s.name}» من القائمة؟`, destructive: true, confirmText: 'حذف' }))) return;
         try {
-            await axios.delete(`/api/v1/admin/promises/speakers/${s.id}`);
+            await promisesApi.removeSpeaker(s.id);
             notify.success('حُذف');
             router.reload({ only: ['speakers'] });
         } catch (e) {
-            notify.error(extractApiErrorMessage(e, 'تعذّر الحذف'));
+            notify.error(apiErrorMessage(e, 'تعذّر الحذف'));
         }
     };
 

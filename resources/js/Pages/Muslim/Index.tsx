@@ -1,7 +1,7 @@
+import { listBookmarks } from '@/Domain/quran/bookmarksApi';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import { Bookmark, ChevronLeft, MoonStar } from 'lucide-react';
-import axios from '@/Lib/axios';
 import MainLayout from '@/Layouts/MainLayout';
 import { formatDuration } from '../../Lib/format';
 import { SURAH_NAMES_AR } from '../../Domain/quran/quran';
@@ -62,11 +62,13 @@ export default function Index() {
       return;
     }
     let live = true;
-    axios.get('/api/v1/quran-bookmarks').then((r) => {
+    listBookmarks().then((list) => {
       if (!live) return;
-      const list = (r.data?.bookmarks ?? []) as LastBookmark[];
-      setLastBookmark(list[0] ?? null);
-    }).catch(() => {});
+      const first: LastBookmark | undefined = list[0];
+      setLastBookmark(first ?? null);
+    }).catch(() => {
+      // the hub's bookmark line is a nicety; the reader owns the real list
+    });
     return () => { live = false; };
   }, [isLoggedIn]);
 

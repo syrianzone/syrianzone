@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { api as client, apiErrorMessage } from '@/Lib/api';
 import { resolvePrayerParams, resolveWeatherPoint, type LocationPreference } from '../location/preference';
 
 /**
@@ -54,11 +55,7 @@ export async function fetchPrayerTimes(
   params: Record<string, string | number>,
   signal?: AbortSignal,
 ): Promise<PrayerTimesResponse> {
-  const search = new URLSearchParams();
-  for (const [key, value] of Object.entries(params)) search.set(key, String(value));
-  const response = await fetch(`${PRAYER_TIMES_URL}?${search.toString()}`, { signal });
-  if (!response.ok) throw new Error('فشل جلب مواقيت الصلاة');
-  const data = (await response.json()) as PrayerTimesResponse;
+  const data = await client.get<PrayerTimesResponse>(PRAYER_TIMES_URL, { params, signal });
   if (!data.timings || typeof data.timings !== 'object') {
     throw new Error('بيانات مواقيت غير صالحة');
   }
@@ -169,7 +166,7 @@ export function usePrayerTimes(
         if (superseded) return;
         // An abort is this hook's own timeout: the surface owns the copy for it.
         const aborted = timedOut || (cause instanceof Error && cause.name === 'AbortError');
-        const message = !aborted && cause instanceof Error ? cause.message : '';
+        const message = aborted ? '' : apiErrorMessage(cause, 'فشل جلب مواقيت الصلاة');
         setError({ message, timedOut: aborted });
       })
       .finally(() => {

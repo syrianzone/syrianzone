@@ -1,6 +1,6 @@
+import { listBookmarks, removeBookmark } from '@/Domain/quran/bookmarksApi';
 import React, { useEffect, useState } from 'react';
 import { Bookmark, Loader2, Trash2 } from 'lucide-react';
-import axios from '@/Lib/axios';
 import { Button } from '@/Components/ui/button';
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
@@ -40,11 +40,13 @@ export default function BookmarksModal({ isLoggedIn, onJump }: Props) {
     }
     let live = true;
     setLoading(true);
-    axios.get('/api/v1/quran-bookmarks')
-      .then((r) => {
-        if (live) setItems((r.data?.bookmarks ?? []) as SavedAyah[]);
+    listBookmarks()
+      .then((list) => {
+        if (live) setItems(list);
       })
-      .catch(() => {})
+      .catch(() => {
+        // an empty list is the honest fallback; the modal retries on next open
+      })
       .finally(() => {
         if (live) setLoading(false);
       });
@@ -60,7 +62,7 @@ export default function BookmarksModal({ isLoggedIn, onJump }: Props) {
     }
     setRemoving(key);
     try {
-      await axios.delete(`/api/v1/quran-bookmarks/${b.surah}/${b.ayah}`);
+      await removeBookmark(b.surah, b.ayah);
       setItems((prev) => prev.filter((x) => !(x.surah === b.surah && x.ayah === b.ayah)));
     } catch {
       // silent

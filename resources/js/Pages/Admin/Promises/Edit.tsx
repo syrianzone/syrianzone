@@ -1,6 +1,6 @@
+import { promisesApi } from '@/Domain/promises/api';
 import { useMemo, useState } from 'react';
 import { Link, router } from '@inertiajs/react';
-import axios from '@/Lib/axios';
 import MainLayout from '@/Layouts/MainLayout';
 import { Alert, AlertDescription } from '@/Components/ui/alert';
 import { Badge } from '@/Components/ui/badge';
@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ArrowRight, CalendarClock, ExternalLink, EyeOff, Gavel, Loader2, Plus, Save, Upload, X, XCircle } from 'lucide-react';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
-import { extractApiErrorMessage, extractApiFieldErrors } from '@/Lib/apiError';
+import { apiErrorMessage, apiFieldErrors } from '@/Lib/api';
 import FieldError, { fieldA11y } from '@/Components/ui/field-error';
 import SpeakerPicker from '@/Domain/promises/SpeakerPicker';
 import StateBadge from '@/Domain/promises/StateBadge';
@@ -213,17 +213,17 @@ export default function PromiseEditor({ promise: initial, options, queueCount }:
         setErrors({});
         try {
             if (promise) {
-                const res = await axios.put(`/api/v1/admin/promises/${promise.id}`, { ...payload(), version: formVersion });
-                adopt(res.data.promise);
+                const res = await promisesApi.save<{ promise: AdminPromiseDetail }>(promise.id, { ...payload(), version: formVersion });
+                adopt(res.promise);
                 notify.success('حُفظت التعديلات');
             } else {
-                const res = await axios.post('/api/v1/admin/promises', payload());
+                const res = await promisesApi.create<{ promise: AdminPromiseDetail }>(payload());
                 notify.success('أُضيف الوعد، وهو بانتظار النشر');
-                router.visit(`/admin/promises/${res.data.promise.id}/edit`);
+                router.visit(`/admin/promises/${res.promise.id}/edit`);
             }
         } catch (err) {
-            setErrors(extractApiFieldErrors(err));
-            notify.error(extractApiErrorMessage(err, 'تعذّر الحفظ'));
+            setErrors(apiFieldErrors(err));
+            notify.error(apiErrorMessage(err, 'تعذّر الحفظ'));
         } finally {
             setSaving(false);
         }
@@ -241,14 +241,14 @@ export default function PromiseEditor({ promise: initial, options, queueCount }:
         }
         setBusy(true);
         try {
-            const res = await axios.post(`/api/v1/admin/promises/${promise.id}/${action}`);
+            const res = await promisesApi.moderate<{ promise: AdminPromiseDetail }>(promise.id, action);
             // Publish and reject are only offered with no unsaved edits, so the
             // form can follow the server; unpublishing must not discard edits.
-            if (action === 'unpublish') setPromise(res.data.promise);
-            else adopt(res.data.promise);
+            if (action === 'unpublish') setPromise(res.promise);
+            else adopt(res.promise);
             notify.success(action === 'publish' ? 'نُشر الوعد' : action === 'unpublish' ? 'أُخفي الوعد' : 'رُفض الوعد');
         } catch (err) {
-            notify.error(extractApiErrorMessage(err, 'تعذّر تنفيذ العملية'));
+            notify.error(apiErrorMessage(err, 'تعذّر تنفيذ العملية'));
         } finally {
             setBusy(false);
         }

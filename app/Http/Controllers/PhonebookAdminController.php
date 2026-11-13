@@ -6,6 +6,7 @@ use App\Models\PhonebookCategory;
 use App\Models\PhonebookEntry;
 use App\Services\Phonebook\PhonebookCache;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class PhonebookAdminController extends Controller
 {
@@ -97,11 +98,13 @@ class PhonebookAdminController extends Controller
         ]);
 
         if (empty($validated['id'])) {
-            $validated['id'] = 'phone_' . time() . '_' . rand(100, 999);
+            // ULID keeps the prefix the seeder and client already use, and is
+            // unique per millisecond, unlike time() + a three-digit random.
+            $validated['id'] = 'phone_'.Str::ulid();
         }
 
-        $validated['source_url'] = !empty($validated['source_url']) && !empty(trim($validated['source_url'])) ? trim($validated['source_url']) : null;
-        $validated['name_en'] = !empty($validated['name_en']) && !empty(trim($validated['name_en'])) ? trim($validated['name_en']) : null;
+        $validated['source_url'] = ! empty($validated['source_url']) && ! empty(trim($validated['source_url'])) ? trim($validated['source_url']) : null;
+        $validated['name_en'] = ! empty($validated['name_en']) && ! empty(trim($validated['name_en'])) ? trim($validated['name_en']) : null;
 
         $maxOrder = PhonebookEntry::where('category_id', $validated['category_id'])->max('order_column') ?? 0;
         $validated['order_column'] = $maxOrder + 1;
@@ -131,8 +134,8 @@ class PhonebookAdminController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        $validated['source_url'] = !empty($validated['source_url']) && !empty(trim($validated['source_url'])) ? trim($validated['source_url']) : null;
-        $validated['name_en'] = !empty($validated['name_en']) && !empty(trim($validated['name_en'])) ? trim($validated['name_en']) : null;
+        $validated['source_url'] = ! empty($validated['source_url']) && ! empty(trim($validated['source_url'])) ? trim($validated['source_url']) : null;
+        $validated['name_en'] = ! empty($validated['name_en']) && ! empty(trim($validated['name_en'])) ? trim($validated['name_en']) : null;
 
         $entry->update($validated);
         $this->flushCache();
@@ -146,7 +149,7 @@ class PhonebookAdminController extends Controller
     public function toggleEntryActive(string $id)
     {
         $entry = PhonebookEntry::findOrFail($id);
-        $entry->is_active = !$entry->is_active;
+        $entry->is_active = ! $entry->is_active;
         $entry->save();
         $this->flushCache();
 
@@ -180,6 +183,7 @@ class PhonebookAdminController extends Controller
         }
 
         $this->flushCache();
+
         return response()->json(['success' => true]);
     }
 
@@ -198,6 +202,7 @@ class PhonebookAdminController extends Controller
         }
 
         $this->flushCache();
+
         return response()->json(['success' => true]);
     }
 

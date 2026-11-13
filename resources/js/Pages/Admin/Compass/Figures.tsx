@@ -1,6 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { Link, router } from '@inertiajs/react';
-import axios from 'axios';
+import { apiErrorMessage } from '@/Lib/api';
+import { compassAdminApi } from '@/Domain/compass/api';
 import MainLayout from '@/Layouts/MainLayout';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
@@ -131,12 +132,10 @@ export default function CompassFigures({ figures, categories, axes = [], canView
     const handleUpload = async (file: File) => {
         setUploading(true);
         try {
-            const fd = new FormData();
-            fd.append('image', file);
-            const res = await axios.post('/api/v1/admin/compass/figures/upload-image', fd);
-            setForm((f) => ({ ...f, imageUrl: res.data.url, imagePath: res.data.path }));
-        } catch {
-            notify.error('تعذّر رفع الصورة');
+            const res = await compassAdminApi.uploadFigureImage(file);
+            setForm((f) => ({ ...f, imageUrl: res.url, imagePath: res.path }));
+        } catch (e) {
+            notify.error(apiErrorMessage(e, 'تعذّر رفع الصورة'));
         } finally {
             setUploading(false);
             if (fileRef.current) fileRef.current.value = '';
@@ -159,24 +158,24 @@ export default function CompassFigures({ figures, categories, axes = [], canView
             image_path: form.imagePath,
             positions,
         };
-        const req = editing
-            ? axios.put(`/api/v1/admin/compass/figures/${editing.id}`, payload)
-            : axios.post('/api/v1/admin/compass/figures', payload);
+        const req = compassAdminApi.saveFigure(editing?.id ?? null, payload);
         req
             .then(() => {
                 setOpen(false);
                 router.reload({ only: ['figures'] });
             })
             .then(() => notify.success('تم الحفظ'))
-            .catch((e) => notify.error(e?.response?.data?.message ?? 'تعذّر الحفظ'))
+            .catch((e) => notify.error(apiErrorMessage(e, 'تعذّر الحفظ')))
             .finally(() => setSaving(false));
     };
 
     const toggle = async (figure: AdminFigure) => {
         setBusyId(figure.id);
         try {
-            await axios.post(`/api/v1/admin/compass/figures/${figure.id}/toggle`);
+            await compassAdminApi.toggleFigure(figure.id);
             router.reload({ only: ['figures'] });
+        } catch (e) {
+            notify.error(apiErrorMessage(e, `تعذّر تحديث حالة الشكل`));
         } finally {
             setBusyId(null);
         }
@@ -186,8 +185,10 @@ export default function CompassFigures({ figures, categories, axes = [], canView
         if (!(await confirmDialog({ title: `حذف «${figure.name}»؟`, destructive: true, confirmText: 'حذف' }))) return;
         setBusyId(figure.id);
         try {
-            await axios.delete(`/api/v1/admin/compass/figures/${figure.id}`);
+            await compassAdminApi.removeFigure(figure.id);
             router.reload({ only: ['figures'] });
+        } catch (e) {
+            notify.error(apiErrorMessage(e, `تعذّر حذف الشكل`));
         } finally {
             setBusyId(null);
         }

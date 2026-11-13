@@ -42,6 +42,11 @@ them without being asked.
    `Domain/` never import `Pages/**`, and no feature imports another feature.
    `resources/js/layering.test.ts` enforces it (`npm run test:js`).
    → [docs/guidelines/design-and-conventions.md §Layering](docs/guidelines/design-and-conventions.md#layering-pages--domain--shared)
+7. **One API client** — browser JSON calls go through `resources/js/Lib/api.ts`
+   (`api.get/post/put/patch/delete`, `apiErrorMessage`, `apiFieldErrors`), with
+   typed per-resource functions in `Domain/<module>/api.ts`. Never import
+   `axios`, spell an `/api/...` URL in a page or component, read the CSRF cookie
+   by hand, or swallow an API failure. → [docs/reference/api.md](docs/reference/api.md)
 
 ## Where the rules live
 

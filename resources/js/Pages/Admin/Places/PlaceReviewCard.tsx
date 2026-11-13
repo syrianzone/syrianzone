@@ -4,7 +4,8 @@ import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
 import { useAuth } from '@/Contexts/AuthContext';
-import { api, extractError } from '@/Domain/places/api';
+import { api } from '@/Domain/places/api';
+import { apiErrorMessage } from '@/Lib/api';
 import { CATEGORY_LABELS } from '@/Domain/places/categories';
 import type { AdminPlace, PlaceStatus } from '@/Domain/places/types';
 import { EditPlaceDialog } from './EditPlaceDialog';
@@ -59,7 +60,7 @@ export function PlaceReviewCard(props: {
       const res = await api.adminRotatePhoto(photoId);
       setPhotoUrls((prev) => ({ ...prev, [photoId]: res.thumb_url }));
     } catch (e) {
-      setPhotoError(extractError(e));
+      setPhotoError(apiErrorMessage(e));
     } finally {
       setBusyPhoto(null);
     }
@@ -79,7 +80,7 @@ export function PlaceReviewCard(props: {
       const res = await api.adminReplacePhoto(photoId, file);
       setPhotoUrls((prev) => ({ ...prev, [photoId]: res.thumb_url }));
     } catch (e) {
-      setPhotoError(extractError(e));
+      setPhotoError(apiErrorMessage(e));
     } finally {
       setBusyPhoto(null);
       replaceTargetRef.current = null;
@@ -95,7 +96,7 @@ export function PlaceReviewCard(props: {
       await api.adminAddPhoto(place.id, file);
       onChanged();
     } catch (e) {
-      setPhotoError(extractError(e));
+      setPhotoError(apiErrorMessage(e));
     } finally {
       setAddingPhoto(false);
       if (addInputRef.current) addInputRef.current.value = '';
@@ -110,7 +111,7 @@ export function PlaceReviewCard(props: {
       await api.adminDeletePhoto(photoId);
       onChanged();
     } catch (e) {
-      setPhotoError(extractError(e));
+      setPhotoError(apiErrorMessage(e));
     } finally {
       setBusyPhoto(null);
     }

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { usePage } from '@inertiajs/react';
 import { create } from 'zustand';
-import axios from '@/lib/axios';
+import { api } from '@/Lib/api';
 import { useQuranPlayer } from './quranPlayer';
 import {
   BYTES_PER_HOUR, EMPTY_TOTALS, addDeviceUsage, addPendingUsage, addSessionUsage,
@@ -44,7 +44,7 @@ export async function clearAllUsage(): Promise<void> {
   });
   if (!isLoggedIn) return;
   try {
-    await axios.post('/api/user/radio-usage/clear');
+    await api.post('/api/user/radio-usage/clear');
   } catch {
     /* local counters are already gone; the account clears next time */
   }
@@ -97,8 +97,8 @@ export function useUsageTracker(): void {
     pushing.current = true;
     persistUsage();
     try {
-      const res = await axios.post('/api/user/radio-usage', pending);
-      const totals = res.data?.totals;
+      const res = await api.post<{ totals?: { bytes: number; seconds: number } }>('/api/user/radio-usage', pending);
+      const totals = res.totals;
       if (totals) {
         useUsageStore.setState({
           account: { bytes: Number(totals.bytes) || 0, seconds: Number(totals.seconds) || 0 },

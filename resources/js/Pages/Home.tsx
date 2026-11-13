@@ -8,7 +8,7 @@ import {
 import { Button } from "@/Components/ui/button";
 import { Card, CardContent } from "@/Components/ui/card";
 import MainLayout from '@/Layouts/MainLayout';
-import axios from '@/Lib/axios';
+import { api } from '@/Lib/api';
 import { applyTheme as persistTheme, getThemePreference, SYSTEM_THEME, isDarkTheme } from '@/lib/theme';
 import { applyFont, getFontPreference } from '@/Lib/font';
 import UserNav from '@/Components/UserNav';
@@ -95,8 +95,10 @@ export default function Home() {
         pendingSettings.current = {};
         if (Object.keys(payload).length === 0) return;
         try {
-            await axios.post('/api/user/settings', { settings: payload });
+            await api.post('/api/user/settings', { settings: payload });
         } catch (e) {
+            // Background mirror of device preferences: the value is already in
+            // localStorage and the next change retries, so no toast per pause.
             console.error('Failed to save settings to account', e);
         }
     };

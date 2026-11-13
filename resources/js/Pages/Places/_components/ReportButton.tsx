@@ -21,7 +21,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { notify } from '@/Lib/notify';
-import { api, extractError } from '@/Domain/places/api';
+import { api } from '@/Domain/places/api';
+import { apiErrorMessage } from '@/Lib/api';
 import { REPORT_REASONS } from '@/Domain/places/reports';
 import type { PlaceReportReason } from '@/Domain/places/types';
 
@@ -53,7 +54,7 @@ export function ReportButton(props: { placeId: number }) {
       setOpen(false);
       notify.success(res.message);
     } catch (e) {
-      setError(extractError(e));
+      setError(apiErrorMessage(e));
     } finally {
       setSubmitting(false);
     }

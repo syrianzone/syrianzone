@@ -1,6 +1,6 @@
+import { promisesApi } from '@/Domain/promises/api';
 import { useEffect, useRef, useState } from 'react';
 import { Link, usePage } from '@inertiajs/react';
-import axios from '@/Lib/axios';
 import MainLayout from '@/Layouts/MainLayout';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader } from '@/Components/ui/card';
@@ -10,7 +10,7 @@ import { Textarea } from '@/Components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
 import { ArrowRight, CheckCircle2, Loader2, LogIn, Plus, Trash2 } from 'lucide-react';
 import { notify } from '@/Lib/notify';
-import { extractApiErrorMessage, extractApiFieldErrors } from '@/Lib/apiError';
+import { apiErrorMessage, apiFieldErrors } from '@/Lib/api';
 import FieldError, { fieldA11y } from '@/Components/ui/field-error';
 import SpeakerPicker from '@/Domain/promises/SpeakerPicker';
 import { VENUE_LABEL } from '@/Domain/promises/status';
@@ -91,7 +91,7 @@ export default function PromisesSuggest({ venues, earliestDate, today }: Props) 
         setSaving(true);
         setErrors({});
         try {
-            await axios.post('/api/v1/promises', {
+            await promisesApi.suggest({
                 speaker_ref: form.newSpeaker ? null : form.speaker?.ref ?? null,
                 speaker_name: form.newSpeaker ? form.speakerName : null,
                 speaker_title: form.newSpeaker ? form.speakerTitle || null : null,
@@ -105,9 +105,9 @@ export default function PromisesSuggest({ venues, earliestDate, today }: Props) 
             });
             setDone(true);
         } catch (err) {
-            setErrors(extractApiFieldErrors(err));
+            setErrors(apiFieldErrors(err));
             setFailedSubmit((n) => n + 1);
-            notify.error(extractApiErrorMessage(err, 'تعذّر إرسال الاقتراح'));
+            notify.error(apiErrorMessage(err, 'تعذّر إرسال الاقتراح'));
         } finally {
             setSaving(false);
         }

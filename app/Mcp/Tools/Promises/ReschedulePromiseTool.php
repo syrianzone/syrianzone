@@ -6,6 +6,7 @@ use App\Services\Promises\PromiseEditor;
 use App\Services\Promises\PromisePresenter;
 use App\Services\Promises\PromiseRules;
 use App\Support\Agents\AgentContext;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -27,7 +28,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
 #[IsIdempotent]
 class ReschedulePromiseTool extends PromisesTool
 {
-    protected array $permissions = ['promises.rule'];
+    protected array $permissions = [PermissionCatalogue::PROMISES_RULE];
 
     public function schema(JsonSchema $schema): array
     {

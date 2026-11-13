@@ -8,6 +8,7 @@ use App\Models\Promise;
 use App\Models\PromiseSource;
 use App\Services\Promises\PromiseEditor;
 use App\Support\Agents\AgentContext;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
@@ -24,12 +25,12 @@ use Laravel\Mcp\ResponseFactory;
 abstract class PromisesTool extends AuditedTool
 {
     protected const READ_PERMISSIONS = [
-        'promises.create',
-        'promises.edit',
-        'promises.rule',
-        'promises.review',
-        'promises.speakers',
-        'promises.delete',
+        PermissionCatalogue::PROMISES_CREATE,
+        PermissionCatalogue::PROMISES_EDIT,
+        PermissionCatalogue::PROMISES_RULE,
+        PermissionCatalogue::PROMISES_REVIEW,
+        PermissionCatalogue::PROMISES_SPEAKERS,
+        PermissionCatalogue::PROMISES_DELETE,
     ];
 
     /**
@@ -70,7 +71,7 @@ abstract class PromisesTool extends AuditedTool
     /** Whether this agent may rule on promises: its user AND its token. */
     protected function mayRule(AgentContext $context): bool
     {
-        return $context->can('promises.rule');
+        return $context->can(PermissionCatalogue::PROMISES_RULE);
     }
 
     /**

@@ -4,6 +4,7 @@ namespace App\Mcp\Tools\Transit;
 
 use App\Services\Transit\TransitAdminService;
 use App\Support\Agents\AgentContext;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -37,7 +38,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 #[IsIdempotent]
 class GetTransitDraftGeometryTool extends TransitTool
 {
-    protected array $permissions = ['transit.review_drafts'];
+    protected array $permissions = [PermissionCatalogue::TRANSIT_REVIEW_DRAFTS];
 
     public function schema(JsonSchema $schema): array
     {
@@ -76,7 +77,7 @@ class GetTransitDraftGeometryTool extends TransitTool
         $service = app(TransitAdminService::class);
         $draft = $service->findDraft($validated['draft_id']);
 
-        $this->guardCity($context, 'transit.review_drafts', $draft->city_id);
+        $this->guardCity($context, PermissionCatalogue::TRANSIT_REVIEW_DRAFTS, $draft->city_id);
 
         $line = null;
         $stops = [];

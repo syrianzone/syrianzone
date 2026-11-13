@@ -5,6 +5,7 @@ namespace App\Mcp\Tools\Places;
 use App\Services\Places\PlacePresenter;
 use App\Services\Places\PlaceRules;
 use App\Support\Agents\AgentContext;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -26,7 +27,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 #[IsIdempotent]
 class ListPlacesTool extends PlacesTool
 {
-    protected array $permissions = ['places.review'];
+    protected array $permissions = [PermissionCatalogue::PLACES_REVIEW];
 
     public function schema(JsonSchema $schema): array
     {

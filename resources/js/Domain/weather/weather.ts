@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { api as client } from '@/Lib/api';
 import { resolveWeatherPoint, type LocationPreference } from '../location/preference';
 
 /**
@@ -85,10 +86,8 @@ function writeCached(key: string, data: WeatherResponse): void {
   }
 }
 
-export async function fetchWeather(point: { lat: number; lon: number }): Promise<WeatherResponse> {
-  const response = await fetch(`${WEATHER_URL}?lat=${point.lat}&lon=${point.lon}`);
-  if (!response.ok) throw new Error('Weather fetch failed');
-  return (await response.json()) as WeatherResponse;
+export function fetchWeather(point: { lat: number; lon: number }): Promise<WeatherResponse> {
+  return client.get(WEATHER_URL, { params: { lat: point.lat, lon: point.lon } });
 }
 
 export interface UseWeatherOptions {
@@ -146,6 +145,8 @@ export function useWeather(
       })
       .catch(() => {
         if (superseded) return;
+        // Weather is secondary on every surface that shows it: the page renders
+        // without the strip, so a failure is not worth a toast.
         setWeather(null);
       })
       .finally(() => {

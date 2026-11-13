@@ -1,4 +1,4 @@
-import axios from '@/Lib/axios';
+import { api as client, API_V1 } from '@/Lib/api';
 import type { Paginated } from './types';
 
 export type GuidesSort = 'points' | 'submissions' | 'saves' | 'recent';
@@ -22,16 +22,12 @@ export interface GridPhoto {
   place: { id: number; name: string; category: string; lat: number; lng: number };
 }
 
-const base = '/api/v1';
-
 export const discovery = {
   async guides(sort: GuidesSort): Promise<{ sort: GuidesSort; guides: Guide[] }> {
-    const { data } = await axios.get(`${base}/guides`, { params: { sort } });
-    return data;
+    return client.get(`${API_V1}/guides`, { params: { sort } });
   },
 
   async gridPhotos(page: number, userId?: number): Promise<Paginated<GridPhoto>> {
-    const { data } = await axios.get(`${base}/places/photos`, { params: { page, user_id: userId } });
-    return data;
+    return client.get(`${API_V1}/places/photos`, { params: { page, user_id: userId } });
   },
 };

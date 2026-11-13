@@ -20,7 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { api, extractError, extractFieldErrors } from '@/Domain/places/api';
+import { api } from '@/Domain/places/api';
+import { apiErrorMessage, apiFieldErrors } from '@/Lib/api';
 import { CATEGORIES } from '@/Domain/places/categories';
 import type { LatLng, NearbyPlace, PlaceCategory } from '@/Domain/places/types';
 import { confirmDialog } from '@/Lib/confirm';
@@ -160,13 +161,13 @@ export function SubmitSheet(props: {
       setSubmitted(true);
       setStep('done');
     } catch (e) {
-      const fe = extractFieldErrors(e);
-      if (fe) {
+      const fe = apiFieldErrors(e, { arabicOnly: true });
+      if (Object.keys(fe).length) {
         setFieldErrors(fe);
         setError(null);
       } else {
         setFieldErrors({});
-        setError(extractError(e));
+        setError(apiErrorMessage(e));
       }
       setFailedSubmit((n) => n + 1);
     } finally {

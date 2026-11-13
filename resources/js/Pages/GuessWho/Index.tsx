@@ -5,7 +5,7 @@ import { Play, Plus, Users, ShieldAlert, HelpCircle, Gamepad2, Layers, Tv, X } f
 import { Button } from '@/Components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/Components/ui/card';
 import { Badge } from '@/Components/ui/badge';
-import axios from 'axios';
+import { guessWhoApi } from './_lib/api';
 import { getGuessWhoSessionId } from '@/Lib/guessWhoSession';
 import { useTabList } from '@/Lib/useTabList';
 import { notify } from '@/Lib/notify';
@@ -47,11 +47,8 @@ export default function GuessWhoIndex({ categories, total_characters }: IndexPro
     if (!selectedCat) return;
     setLoading(true);
     try {
-      const res = await axios.post('/guesswho/rooms', {
-        category_id: selectedCat,
-        player_session: getGuessWhoSessionId()
-      });
-      router.visit(`/guesswho/room/${res.data.room_code}`);
+      const res = await guessWhoApi.createRoom(selectedCat, getGuessWhoSessionId());
+      router.visit(`/guesswho/room/${res.room_code}`);
     } catch (err) {
       notify.error('تعذر إنشاء الغرفة.');
     } finally {

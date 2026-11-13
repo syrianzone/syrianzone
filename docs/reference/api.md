@@ -129,7 +129,7 @@ Every JSON error response (`HTTP >= 400`) returns a standardized JSON object wit
 | `500` / `502` | Server / Upstream Error | Unexpected server error or upstream data source failure. |
 
 - **Backwards-compatible `error` key**: Endpoints that historically returned `{ "error": "..." }` return both `message` and `error` with identical text. Central exception rendering in `bootstrap/app.php` guarantees `message` is always present.
-- **Web frontend helper**: Use `extractApiErrorMessage(err, fallback)` and `extractApiFieldErrors(err)` from [`resources/js/Lib/apiError.ts`](../../resources/js/Lib/apiError.ts).
+- **Web frontend helper**: every browser call goes through the one client in [`resources/js/Lib/api.ts`](../../resources/js/Lib/api.ts) (`api.get/post/put/patch/delete`, returning the response body). Failures go through `apiErrorMessage(err, fallback)` — one Arabic message for the `{message}`, `{error}`, `{errors}` (validation), 429-with-`Retry-After` and transport shapes, falling back when the server text is not Arabic — and `apiFieldErrors(err, { arabicOnly })` for inline form errors. Feature modules (`Domain/<module>/api.ts`) expose one typed function per resource on top of it, so pages never spell a URL.
 
 ---
 

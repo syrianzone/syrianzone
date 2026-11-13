@@ -57,15 +57,11 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
 
-        RateLimiter::for('voting', fn (Request $request) => Limit::perMinute(10)->by($request->ip())->response(fn () => response()->json([
-            'message' => 'Too many votes. Please slow down.',
-            'error' => 'Too many votes. Please slow down.',
-        ], 429)));
+        RateLimiter::for('voting', fn (Request $request) => Limit::perMinute(10)->by($request->ip())
+            ->response($this->throttled('Too many votes. Please slow down.')));
 
-        RateLimiter::for('public-api', fn (Request $request) => Limit::perMinute(60)->by($request->ip())->response(fn () => response()->json([
-            'message' => 'Too many requests. Please slow down.',
-            'error' => 'Too many requests. Please slow down.',
-        ], 429)));
+        RateLimiter::for('public-api', fn (Request $request) => Limit::perMinute(60)->by($request->ip())
+            ->response($this->throttled('Too many requests. Please slow down.')));
 
         RateLimiter::for('compass-stats', function (Request $request) {
             $message = ['message' => 'يمكنك إرسال نتيجة مجهولة واحدة كل عشر دقائق.'];
@@ -104,10 +100,22 @@ class AppServiceProvider extends ServiceProvider
                 ? 'token:'.$tokenKey->getKey()
                 : 'user:'.($request->user()?->getAuthIdentifier() ?? 'ip:'.$request->ip());
 
-            return Limit::perMinute(120)->by($key)->response(fn () => response()->json([
-                'message' => 'Too many agent requests. Slow down and retry shortly.',
-                'error' => 'Too many agent requests. Slow down and retry shortly.',
-            ], 429));
+            return Limit::perMinute(120)->by($key)
+                ->response($this->throttled('Too many agent requests. Slow down and retry shortly.'));
         });
+    }
+
+    /**
+     * The legacy `{message, error}` 429 envelope, produced in one place.
+     *
+     * The shape is a released contract (mobile clients read `message`, older
+     * web callers read `error`), so both keys carry the same text.
+     */
+    private function throttled(string $message): \Closure
+    {
+        return fn () => response()->json([
+            'message' => $message,
+            'error' => $message,
+        ], 429);
     }
 }

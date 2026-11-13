@@ -6,6 +6,7 @@ use App\Services\Promises\PromiseModerationService;
 use App\Services\Promises\PromisePresenter;
 use App\Services\Promises\PromiseRules;
 use App\Support\Agents\AgentContext;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -27,7 +28,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
 #[IsIdempotent]
 class RejectPromiseTool extends PromisesTool
 {
-    protected array $permissions = ['promises.review'];
+    protected array $permissions = [PermissionCatalogue::PROMISES_REVIEW];
 
     public function schema(JsonSchema $schema): array
     {

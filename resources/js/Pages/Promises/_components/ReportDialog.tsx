@@ -1,5 +1,5 @@
+import { promisesApi } from '@/Domain/promises/api';
 import { useState } from 'react';
-import axios from '@/Lib/axios';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
@@ -9,7 +9,7 @@ import {
 } from '@/Components/ui/dialog';
 import { Loader2 } from 'lucide-react';
 import { notify } from '@/Lib/notify';
-import { extractApiErrorMessage, extractApiFieldErrors } from '@/Lib/apiError';
+import { apiErrorMessage, apiFieldErrors } from '@/Lib/api';
 import FieldError, { fieldA11y } from '@/Components/ui/field-error';
 
 export type ReportKind = 'progress' | 'error';
@@ -46,18 +46,14 @@ export default function ReportDialog({ number, kind, open, onOpenChange }: {
         setSaving(true);
         setErrors({});
         try {
-            const res = await axios.post(`/api/v1/promises/${number}/reports`, {
-                kind,
-                body,
-                source_url: sourceUrl || null,
-            });
-            notify.success(res.data.message ?? 'شكراً لك');
+            const res = await promisesApi.report(number, { kind, body, source_url: sourceUrl || null });
+            notify.success(res.message ?? 'شكراً لك');
             setBody('');
             setSourceUrl('');
             onOpenChange(false);
         } catch (err) {
-            setErrors(extractApiFieldErrors(err));
-            notify.error(extractApiErrorMessage(err, 'تعذّر الإرسال'));
+            setErrors(apiFieldErrors(err));
+            notify.error(apiErrorMessage(err, 'تعذّر الإرسال'));
         } finally {
             setSaving(false);
         }

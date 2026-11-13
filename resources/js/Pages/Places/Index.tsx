@@ -7,7 +7,8 @@ import { PlacesPanel } from './_components/PlacesPanel';
 import { SubmitSheet } from './_components/SubmitSheet';
 import { ViewToggle } from './_components/ViewToggle';
 import { BottomSheet } from '@/Components/BottomSheet';
-import { api, extractError } from '@/Domain/places/api';
+import { api } from '@/Domain/places/api';
+import { apiErrorMessage } from '@/Lib/api';
 import { discovery, type GridPhoto } from '@/Domain/places/discovery';
 import type { GeoSuggestion, HotelFeatureCollection, LatLng, Paginated, PlaceCategory, PlaceFeatureCollection, PlaceListItem } from '@/Domain/places/types';
 import { inSyriaBox } from '@/Domain/geography/syria';
@@ -94,7 +95,7 @@ export default function Index() {
   useEffect(() => {
     api.mapData()
       .then(setFeatures)
-      .catch((e) => setNotice({ text: extractError(e), destructive: true }));
+      .catch((e) => setNotice({ text: apiErrorMessage(e), destructive: true }));
     api.hotelMapData()
       .then(setHotelFeatures)
       .catch((e) => { console.warn('[Index] hotelMapData failed:', e); });
@@ -111,7 +112,7 @@ export default function Index() {
     api.getPlace(id)
       .then((place) => flyTo(place.lng, place.lat))
       .catch((e) => {
-        setNotice({ text: extractError(e), destructive: true });
+        setNotice({ text: apiErrorMessage(e), destructive: true });
         // only clear if the deep-linked place is still selected; the user may have picked another
         setSelectedId((cur) => (cur === id ? null : cur));
       });
@@ -169,7 +170,7 @@ export default function Index() {
         page > 1 && prev ? { ...res, data: [...prev.data, ...res.data] } : res,
       );
     } catch (e) {
-      if (id === requestRef.current) setNotice({ text: extractError(e), destructive: true });
+      if (id === requestRef.current) setNotice({ text: apiErrorMessage(e), destructive: true });
     } finally {
       if (id === requestRef.current) setListLoading(false);
     }

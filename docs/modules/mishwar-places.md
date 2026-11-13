@@ -30,7 +30,7 @@ export default function Index() {
 ```
 
 - Auth in React: `const { user, isAdmin } = useAuth()` from `@/Contexts/AuthContext` (available under MainLayout). Login prompt is a plain link: `<a href="/auth/google">تسجيل الدخول عبر جوجل</a>`. No login page exists.
-- HTTP client: the shared instance `import axios from '@/lib/axios'` (withCredentials + XSRF already configured). Never use raw fetch for API calls. All Places components call the typed client in `resources/js/Domain/places/api.ts`, never axios directly (exceptions: the api.ts module itself, and the Lightbox photo downloads, which fetch static `/storage/...` files, not API endpoints).
+- HTTP client: `import { api } from '@/Lib/api'` (CSRF, cookies, JSON and one timeout already configured), and its `apiErrorMessage`/`apiFieldErrors` helpers for failures. Never use raw `fetch` or `axios` for API calls. All Places components call the typed client in `resources/js/Domain/places/api.ts`, never `Lib/api` directly (exception: the Lightbox photo downloads, which fetch static `/storage/...` files, not API endpoints).
 - UI components: import from `@/Components/ui/*` (button, card, dialog, sheet, input, textarea, select, badge, avatar, alert, separator, scroll-area, label). Do NOT import from `Components/sycn`. No toast library: feedback uses `<Alert variant="default|destructive">` inline or a transient icon/label swap.
 - Icons: lucide-react. Theme: rely on tokens (`bg-background`, `text-foreground`, `text-primary`, `bg-card`, `text-muted-foreground`, `border-border`, `bg-accent/50`, `destructive`). Never hardcode colors; dark mode is automatic via `data-theme`.
 - Map style: resolved by `Components/map/resolveStyle.ts` (`light-vector.json` / `dark-matter-vector.json` under `public/styles/styles/`, local, no API key) and applied by the shared `Components/map/MapCanvas`, which also restyles on a theme switch. MapLibre v5 is already a dependency.
@@ -228,7 +228,7 @@ These rules and their Arabic messages live in `App\Services\Places\PlaceRules` (
 
 There are no like or comment endpoints. `POST/DELETE /api/v1/places/{id}/like`, `GET/POST /api/v1/places/{id}/comments`, and `DELETE /api/v1/place-comments/{id}` were removed and now 404.
 
-### 5.3 Admin moderation (routes/web.php, inside `auth` group, nested `Route::middleware('admin')`, group throttle `60,1`)
+### 5.3 Admin moderation (routes/web.php, inside `auth` group, nested `Route::middleware('places_admin')`, group throttle `60,1`)
 
 **`GET /api/v1/admin/places?status=pending|approved|rejected|all`** -> `PlaceAdminController@index`. Validate `PlaceRules::statusFilter()`, default `pending`. Newest first, `->paginate(20)`, `data` items are `ADMIN_PLACE`.
 
@@ -245,7 +245,7 @@ There are no like or comment endpoints. `POST/DELETE /api/v1/places/{id}/like`, 
 ### 5.4 Inertia pages (routes/web.php)
 
 - `GET /mishwar` -> `PlaceController@renderIndex` (`GET /places` 301-redirects here, query preserved) -> `Inertia::render('Places/Index')`. Public. The route ignores query params; the client reads `?place={id}` on load (section 6.2, deep link).
-- `GET /admin/places` -> `PlaceAdminController@renderIndex` -> `Inertia::render('Admin/Places/Index')`. Inside `auth` + `admin` group.
+- `GET /admin/places` -> `PlaceAdminController@renderIndex` -> `Inertia::render('Admin/Places/Index')`. Inside `auth` + `places_admin` group (`places_admin:any`).
 
 ### 5.5 JSON shapes (normative)
 
@@ -385,7 +385,7 @@ export function PlacesMap(props: {
 }): JSX.Element;
 ```
 
-`PlacesMap` mounts the shared `MapCanvas` and two instances of the one layer component, `_components/PinLayer.tsx`: `PLACE_PINS` (`source places`, layers `clusters`/`cluster-count`/`place-pin`) and `HOTEL_PINS` (`source hotels`, layers `hotel-clusters`/`hotel-cluster-count`/`hotel-pin`). Each source is `cluster: true` (`clusterRadius: 25`, `clusterMaxZoom: 10`) with `promoteId: 'id'`; both collections carry a stable numeric `properties.id`, so selection is a GPU feature-state (`selected`) that grows the pin radius, not a repaint. Cluster click: `getClusterExpansionZoom` + `easeTo`. Pin click: `onPinClick(feature.properties.id)`. Plain map click (use `queryRenderedFeatures` on the pin layers; empty result means background): `onMapClick({ lng, lat })`. Feature updates via `(map.getSource(id) as maplibregl.GeoJSONSource).setData(...)`, re-added on `style.load` so a theme switch keeps the data. Colours live in the `PLACE_PINS`/`HOTEL_PINS` tables next to the layer.
+`PlacesMap` mounts the shared `MapCanvas` and two instances of the one layer component, `_components/PinLayer.tsx`: `PLACE_PINS` (`source places`, layers `clusters`/`cluster-count`/`place-pin`) and `HOTEL_PINS` (`source hotels`, layers `hotel-clusters`/`hotel-cluster-count`/`hotel-pin`). Each source is `cluster: true` (`clusterRadius: 25`, `clusterMaxZoom: 10`) with `promoteId: 'id'`; both collections carry a stable numeric `properties.id`, so selection is a GPU feature-state (`selected`) that grows the pin radius, not a repaint. Cluster click: `getClusterExpansionZoom` + `easeTo`. Pin click: `onPinClick(feature.properties.id)`. Plain map click (use `queryRenderedFeatures` on the pin layers; empty result means background): `onMapClick({ lng, lat })`. Feature updates via `(map.getSource(id) as maplibregl.GeoJSONSource).setData(...)`. The layer attaches through `Components/map/useMapLayer.ts`: `MapCanvas` bumps its style version on `style.load`, so both sources and layers are added again after every basemap swap and a theme switch keeps the data. Colours live in the `PLACE_PINS`/`HOTEL_PINS` tables next to the layer.
 
 Cursor: `addMode` is mirrored into a ref; an effect sets `map.getCanvas().style.cursor = addMode ? 'crosshair' : ''`. The pin mouseenter/mouseleave pointer handlers consult the ref so leaving a pin restores `'crosshair'` (not `''`) and hovering a pin during add-mode keeps `'crosshair'`.
 

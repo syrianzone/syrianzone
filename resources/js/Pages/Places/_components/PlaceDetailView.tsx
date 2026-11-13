@@ -5,7 +5,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { copyText } from '@/Lib/copy';
-import { api, extractError } from '@/Domain/places/api';
+import { api } from '@/Domain/places/api';
+import { apiErrorMessage } from '@/Lib/api';
 import { CATEGORY_LABELS } from '@/Domain/places/categories';
 import type { PlaceDetail } from '@/Domain/places/types';
 import { EngagementBar } from './EngagementBar';
@@ -27,7 +28,7 @@ export function PlaceDetailView(props: { placeId: number; onClose: () => void })
         if (!cancelled) setPlace(p);
       })
       .catch((e) => {
-        if (!cancelled) setError(extractError(e));
+        if (!cancelled) setError(apiErrorMessage(e));
       });
     return () => {
       cancelled = true;

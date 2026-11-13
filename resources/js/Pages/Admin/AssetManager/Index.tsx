@@ -12,7 +12,7 @@ import {
     Upload, Copy, Check, CloudUpload, FileCheck, Folder, Download, 
     Trash2, RefreshCw, Search, ExternalLink, FileText, Image as ImageIcon, Archive
 } from 'lucide-react';
-import axios from 'axios';
+import { api, apiErrorMessage } from '@/Lib/api';
 import JSZip from 'jszip';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
@@ -24,6 +24,14 @@ interface R2File {
     size: number;
     last_modified: number | null;
     url: string;
+}
+
+interface AssetListResponse {
+    success: boolean;
+    files: R2File[];
+    total_size: number;
+    next_cursor?: string | null;
+    has_more?: boolean;
 }
 
 interface UploadResult {
@@ -60,17 +68,17 @@ export default function AssetManagerIndex() {
         setHasMore(false);
         setTotalSize(0);
         try {
-            const res = await axios.get('/api/v1/admin/assets/list', {
+            const res = await api.get<AssetListResponse>('/api/v1/admin/assets/list', {
                 params: { refresh: refresh ? 1 : 0 }
             });
-            if (res.data.success) {
-                setFiles(res.data.files);
-                setTotalSize(res.data.total_size);
-                setNextCursor(res.data.next_cursor ?? null);
-                setHasMore(res.data.has_more ?? false);
+            if (res.success) {
+                setFiles(res.files);
+                setTotalSize(res.total_size);
+                setNextCursor(res.next_cursor ?? null);
+                setHasMore(res.has_more ?? false);
             }
         } catch (err) {
-            console.error('Failed to fetch R2 files:', err);
+            notify.error(apiErrorMessage(err, 'تعذّر جلب ملفات التخزين'));
         } finally {
             setLoadingFiles(false);
         }
@@ -80,17 +88,17 @@ export default function AssetManagerIndex() {
         if (!nextCursor || loadingMore) return;
         setLoadingMore(true);
         try {
-            const res = await axios.get('/api/v1/admin/assets/list', {
+            const res = await api.get<AssetListResponse>('/api/v1/admin/assets/list', {
                 params: { cursor: nextCursor }
             });
-            if (res.data.success) {
-                setFiles(prev => [...prev, ...res.data.files]);
-                setTotalSize(prev => prev + res.data.total_size);
-                setNextCursor(res.data.next_cursor ?? null);
-                setHasMore(res.data.has_more ?? false);
+            if (res.success) {
+                setFiles(prev => [...prev, ...res.files]);
+                setTotalSize(prev => prev + res.total_size);
+                setNextCursor(res.next_cursor ?? null);
+                setHasMore(res.has_more ?? false);
             }
         } catch (err) {
-            console.error('Failed to load more R2 files:', err);
+            notify.error(apiErrorMessage(err, 'تعذّر تحميل مزيد من الملفات'));
         } finally {
             setLoadingMore(false);
         }
@@ -121,12 +129,12 @@ export default function AssetManagerIndex() {
         formData.append('folder', folder);
 
         try {
-            const res = await axios.post('/api/v1/admin/assets/upload', formData);
-            setUploadResult(res.data);
+            const res = await api.post<UploadResult>('/api/v1/admin/assets/upload', formData);
+            setUploadResult(res);
             setFile(null);
             fetchFiles(true);
-        } catch (err: any) {
-            setUploadError(err.response?.data?.message || 'حدث خطأ أثناء رفع الملف إلى Cloudflare R2');
+        } catch (err) {
+            setUploadError(apiErrorMessage(err, 'حدث خطأ أثناء رفع الملف إلى Cloudflare R2'));
         } finally {
             setUploading(false);
         }
@@ -136,11 +144,11 @@ export default function AssetManagerIndex() {
         const ok = await confirmDialog({ title: 'حذف هذا الملف؟', description: path, destructive: true, confirmText: 'حذف' });
         if (!ok) return;
         try {
-            await axios.delete('/api/v1/admin/assets/delete', { data: { path } });
+            await api.delete('/api/v1/admin/assets/delete', { path });
             notify.success('تم حذف الملف');
             fetchFiles(true);
         } catch (err) {
-            notify.error('فشل حذف الملف من R2');
+            notify.error(apiErrorMessage(err, 'فشل حذف الملف من R2'));
         }
     };
 
@@ -177,6 +185,7 @@ export default function AssetManagerIndex() {
         try {
             const zip = new JSZip();
             let completed = 0;
+            const failed: string[] = [];
 
             for (const item of files) {
                 try {
@@ -184,12 +193,18 @@ export default function AssetManagerIndex() {
                     if (response.ok) {
                         const blob = await response.blob();
                         zip.file(item.path, blob);
+                    } else {
+                        failed.push(item.path);
                     }
-                } catch (err) {
-                    console.error(`Failed to download ${item.path} for zip`, err);
+                } catch {
+                    failed.push(item.path);
                 }
                 completed++;
                 setZipProgress(Math.round((completed / files.length) * 100));
+            }
+
+            if (failed.length > 0) {
+                notify.error(`تعذّر تنزيل ${failed.length} من الملفات، والملف المضغوط ناقص`);
             }
 
             const content = await zip.generateAsync({ type: 'blob' });

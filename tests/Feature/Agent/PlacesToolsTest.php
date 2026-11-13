@@ -13,6 +13,7 @@ use App\Mcp\Tools\Places\RotatePlacePhotoTool;
 use App\Mcp\Tools\Places\UpdatePlaceTool;
 use App\Models\McpToolCall;
 use App\Models\Place;
+use App\Services\Places\PlaceRules;
 use App\Support\Agents\AgentAudit;
 use App\Support\Agents\AgentContext;
 use Illuminate\Support\Facades\Storage;
@@ -161,8 +162,9 @@ test('update rejects coordinates outside syria with an actionable message', func
 
     $place = Place::factory()->create();
 
+    // The refusal is the one PlaceRules owns, not an English restatement.
     expect(toolText(callTool(UpdatePlaceTool::class, ['place_id' => $place->id, 'lat' => 48.85])))
-        ->toContain('inside Syria');
+        ->toContain(app(PlaceRules::class)->messages()['lat.between']);
 });
 
 test('update with no fields is refused rather than silently succeeding', function () {

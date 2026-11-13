@@ -6,7 +6,8 @@ import { Share2, RefreshCw, HelpCircle, ArrowRight, X, Check, Gamepad2 } from 'l
 import { Button } from '@/Components/ui/button';
 import { Card } from '@/Components/ui/card';
 import { Badge } from '@/Components/ui/badge';
-import axios from '@/Lib/axios';
+import { apiErrorMessage } from '@/Lib/api';
+import { guessWhoApi } from './_lib/api';
 import { getGuessWhoSessionId } from '@/Lib/guessWhoSession';
 import { notify } from '@/Lib/notify';
 import { initEcho } from '@/echo';
@@ -224,11 +225,7 @@ export default function GameRoom({ game }: GameProps) {
   // as a declaration so the effects above can reference it.
   async function sendAction(action: string, payload: Record<string, unknown>) {
     try {
-      await axios.post(`/guesswho/room/${game.room_code}/action`, {
-        sender_session: sessionUuid,
-        action,
-        payload: payload ?? {},
-      });
+      await guessWhoApi.sendAction(game.room_code, sessionUuid, action, payload ?? {});
     } catch (err) {
       console.error('Failed to send action:', err);
     }
@@ -274,9 +271,7 @@ export default function GameRoom({ game }: GameProps) {
     let active = true;
     const registerPlayer = async () => {
       try {
-        await axios.post(`/guesswho/room/${game.room_code}/join`, {
-          player_session: sessionUuid
-        });
+        await guessWhoApi.join(game.room_code, sessionUuid);
         if (active) {
           setIsJoined(true);
           setLoadingJoin(false);
@@ -311,9 +306,7 @@ export default function GameRoom({ game }: GameProps) {
 
     (async () => {
       try {
-        const { data } = await axios.get(`/guesswho/room/${game.room_code}/state`, {
-          params: { sender_session: sessionUuid },
-        });
+        const data = await guessWhoApi.state(game.room_code, sessionUuid);
         if (!active || !data) return;
 
         if (data.myCharacterId) {
@@ -338,7 +331,7 @@ export default function GameRoom({ game }: GameProps) {
           setGameState('selecting');
         }
       } catch (err) {
-        console.error('Failed to load game state:', err);
+        notify.error(apiErrorMessage(err, 'تعذّر استئناف حالة اللعبة'));
       }
     })();
 

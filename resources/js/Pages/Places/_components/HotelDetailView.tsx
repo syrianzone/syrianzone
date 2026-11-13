@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight, ExternalLink, Star } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { api, extractError } from '@/Domain/places/api';
+import { api } from '@/Domain/places/api';
+import { apiErrorMessage } from '@/Lib/api';
 import type { HotelDetail } from '@/Domain/places/types';
 
 export function HotelDetailView(props: { hotelId: number; onClose: () => void }) {
@@ -18,7 +19,7 @@ export function HotelDetailView(props: { hotelId: number; onClose: () => void })
     setImgIdx(0);
     api.getHotel(hotelId)
       .then((h) => { if (!cancelled) setHotel(h); })
-      .catch((e) => { if (!cancelled) setError(extractError(e)); });
+      .catch((e) => { if (!cancelled) setError(apiErrorMessage(e)); });
     return () => { cancelled = true; };
   }, [hotelId]);
 

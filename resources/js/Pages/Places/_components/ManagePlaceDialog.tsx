@@ -20,7 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { api, extractError, extractFieldErrors } from '@/Domain/places/api';
+import { api } from '@/Domain/places/api';
+import { apiErrorMessage, apiFieldErrors } from '@/Lib/api';
 import { CATEGORIES } from '@/Domain/places/categories';
 import {
   SYRIA_LAT_MAX_LABEL,
@@ -176,9 +177,9 @@ export function ManagePlaceDialog(props: {
       setDetailsDone(true);
       goPending();
     } catch (e) {
-      const fe = extractFieldErrors(e);
-      if (fe) setDetailsFieldErrors(fe);
-      else setDetailsError(extractError(e));
+      const fe = apiFieldErrors(e, { arabicOnly: true });
+      if (Object.keys(fe).length) setDetailsFieldErrors(fe);
+      else setDetailsError(apiErrorMessage(e));
     } finally {
       setDetailsSaving(false);
     }
@@ -194,7 +195,7 @@ export function ManagePlaceDialog(props: {
       setPhotos((prev) => prev.map((p) => (p.id === photoId ? { ...p, thumb_url: res.thumb_url, display_url: res.display_url } : p)));
       onUpdated();
     } catch (e) {
-      setPhotoError(extractError(e));
+      setPhotoError(apiErrorMessage(e));
     } finally {
       setBusyPhoto(null);
     }
@@ -210,7 +211,7 @@ export function ManagePlaceDialog(props: {
       setPhotos((prev) => prev.filter((p) => p.id !== photoId));
       goPending();
     } catch (e) {
-      setPhotoError(extractError(e));
+      setPhotoError(apiErrorMessage(e));
     } finally {
       setBusyPhoto(null);
     }
@@ -238,7 +239,7 @@ export function ManagePlaceDialog(props: {
       setPhotos((prev) => [...prev, { id: res.id, thumb_url: res.thumb_url, display_url: res.display_url, sort: res.sort }]);
       goPending();
     } catch (e) {
-      setPhotoError(extractError(e));
+      setPhotoError(apiErrorMessage(e));
     } finally {
       setAddingPhoto(false);
       if (addInputRef.current) addInputRef.current.value = '';
@@ -255,9 +256,8 @@ export function ManagePlaceDialog(props: {
       setLocationDone(true);
       goPending();
     } catch (e) {
-      const err = e as { response?: { data?: { errors?: Record<string, string[]> } } };
-      const errors = err.response?.data?.errors;
-      setLocationError(errors?.lat?.[0] ?? errors?.lng?.[0] ?? extractError(e));
+      const errors = apiFieldErrors(e);
+      setLocationError(errors.lat ?? errors.lng ?? apiErrorMessage(e));
     } finally {
       setLocationSaving(false);
     }
@@ -273,7 +273,7 @@ export function ManagePlaceDialog(props: {
       onOpenChange(false);
       onUpdated();
     } catch (e) {
-      setDeleteError(extractError(e));
+      setDeleteError(apiErrorMessage(e));
       setDeleting(false);
     }
   };

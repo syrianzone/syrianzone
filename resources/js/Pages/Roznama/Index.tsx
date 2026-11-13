@@ -13,6 +13,30 @@ interface EventCategory {
     nameEn: string;
 }
 
+/** The server proxy's normalized events payload. */
+interface ProxiedEvent {
+    id: string;
+    name: string;
+    description: string;
+    url: string;
+    address: string;
+    is_online: boolean;
+    is_free: boolean;
+    ticket_price: number | null;
+    event_date: string;
+    event_time: string | null;
+    province: string;
+    provinceName: string;
+    category: string | null;
+    organizer: string | null;
+}
+
+interface EventsPayload {
+    governorate: string;
+    is_fallback: boolean;
+    events: ProxiedEvent[];
+}
+
 interface F3aliaEvent {
     id: string;
     name: string;
@@ -31,7 +55,7 @@ interface F3aliaEvent {
 
 import { Label } from "@/Components/ui/label";
 import MainLayout from '@/Layouts/MainLayout';
-import axios from '@/Lib/axios';
+import { api, API_ROOT, apiErrorMessage } from '@/Lib/api';
 import {
     Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from '@/Components/ui/dialog';
@@ -195,26 +219,26 @@ export default function Index() {
             setLoadingEvents(true);
             setEventsError(null);
             try {
-                const params = new URLSearchParams({ governorate: location.city });
-                if (showOtherGovEvents) params.set('governorate', 'all');
-                const response = await fetch(`/api/events/today?${params.toString()}`, { signal: ctrl.signal });
-
-                if (!response.ok) throw new Error('فشل جلب الفعاليات');
-                const resData = await response.json();
-                const fetchedEvents = ((resData.events || []) as any[]).map((e: any) => ({
+                const payload = await api.get<EventsPayload>(`${API_ROOT}/events/today`, {
+                    params: {
+                        governorate: showOtherGovEvents ? 'all' : location.city,
+                    },
+                    signal: ctrl.signal,
+                });
+                const fetchedEvents = (payload.events ?? []).map((e) => ({
                     id: e.id,
                     name: e.name,
-                    description: e.description ?? '',
-                    address: e.address ?? '',
-                    isOnline: e.is_online ?? false,
-                    eventLink: e.url ?? '',
-                    province: e.province ?? '',
-                    provinceName: e.provinceName ?? '',
-                    isFree: e.is_free ?? false,
-                    ticketPrice: e.ticket_price ?? null,
-                    eventDate: e.event_date ?? '',
+                    description: e.description,
+                    address: e.address,
+                    isOnline: e.is_online,
+                    eventLink: e.url,
+                    province: e.province,
+                    provinceName: e.provinceName,
+                    isFree: e.is_free,
+                    ticketPrice: e.ticket_price ?? 0,
+                    eventDate: e.event_date,
                     eventTime: e.event_time ?? '',
-                    endDate: e.endDate ?? undefined,
+                    endDate: undefined,
                     category: e.category ? { nameAr: e.category, nameEn: '' } : undefined,
                 })) as F3aliaEvent[];
                 const d = new Date();
@@ -227,8 +251,8 @@ export default function Index() {
                     .sort((a, b) => a.eventDate.localeCompare(b.eventDate));
                 setEvents(upcoming);
             } catch (err) {
-                console.error(err);
-                setEventsError('فشل تحميل الفعاليات');
+                if (ctrl.signal.aborted) return;
+                setEventsError(apiErrorMessage(err, 'فشل تحميل الفعاليات'));
             } finally {
                 setLoadingEvents(false);
             }
@@ -242,7 +266,9 @@ export default function Index() {
         if (!isLoggedIn) return;
         if (saveTimer.current) clearTimeout(saveTimer.current);
         saveTimer.current = setTimeout(() => {
-            axios.post('/api/user/settings', { settings: patch }).catch(() => {});
+            // Background mirror: the choice is already in device storage and
+            // the next change retries, so a failed save is not toast-worthy.
+            api.post('/api/user/settings', { settings: patch }).catch(() => {});
         }, 600);
     };
 

@@ -9,6 +9,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/Components/ui/select'
 import { ROUTE_PALETTE } from '../_lib/mapColors'
+import { transitApi } from '../_lib/api'
+import { apiErrorMessage } from '@/Lib/api'
 import {
   Link2, Upload, Loader2, CheckCircle2, Trash2, PencilLine, FileUp, X,
 } from 'lucide-react'
@@ -44,11 +46,6 @@ interface ImportTabProps {
   onPreview: (geojson: any | null, colorIndex: number, cityId?: string) => void
   onDraftCreated: () => void
   onRoutePublished: (route: { id: string; city_id: string } | null) => void
-}
-
-function getCsrfToken(): string {
-  const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/)
-  return match ? decodeURIComponent(match[1]) : ''
 }
 
 function stopsFromGeojson(geojson: any): EditableStop[] {
@@ -154,34 +151,20 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
     setCreatedDraftId(null)
     onPreview(null, colorIndex)
     try {
-      let res: Response
+      let body: FormData | { url: string; city_id?: string }
       if (file) {
         const form = new FormData()
         form.append('file', file)
         if (url.trim()) form.append('url', url.trim())
         if (cityOverride !== 'auto') form.append('city_id', cityOverride)
-        res = await fetch('/api/v1/admin/routes/import-preview', {
-          method: 'POST',
-          headers: { 'Accept': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
-          credentials: 'include',
-          body: form,
-        })
+        body = form
       } else {
-        res = await fetch('/api/v1/admin/routes/import-preview', {
-          method: 'POST',
-          headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
-          credentials: 'include',
-          body: JSON.stringify({
-            url: url.trim(),
-            ...(cityOverride !== 'auto' ? { city_id: cityOverride } : {}),
-          }),
-        })
+        body = {
+          url: url.trim(),
+          ...(cityOverride !== 'auto' ? { city_id: cityOverride } : {}),
+        }
       }
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        setError(data.message ?? `خطأ HTTP ${res.status}`)
-        return
-      }
+      const data = await transitApi.importPreview(body)
       const routes = data.routes ?? []
       if (routes.length === 0) {
         setError('لم يتم العثور على خطوط في هذه الخريطة')
@@ -191,8 +174,8 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
       setCandidates(routes)
       setSelectedIdx(0)
       showToast(`تم جلب ${routes.length} ${routes.length === 1 ? 'خط' : 'خطوط'} للمعاينة`)
-    } catch {
-      setError('تعذّر الاتصال بالخادم')
+    } catch (e) {
+      setError(apiErrorMessage(e))
     } finally {
       setLoading(false)
     }
@@ -210,29 +193,19 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
     }
     setPublishing(mode)
     try {
-      const res = await fetch('/api/v1/admin/routes/import-publish', {
-        method: 'POST',
-        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
-        credentials: 'include',
-        body: JSON.stringify({
-          city_id: cityId,
-          name_ar: nameAr.trim(),
-          name_en: nameEn.trim() || null,
-          price: price.trim() === '' ? null : parseInt(price, 10),
-          color_index: colorIndex,
-          notes: notes.trim() || null,
-          geojson: previewGeojson,
-          mode,
-          source_mid: mid,
-        }),
+      const data = await transitApi.importPublish({
+        city_id: cityId,
+        name_ar: nameAr.trim(),
+        name_en: nameEn.trim() || null,
+        price: price.trim() === '' ? null : parseInt(price, 10),
+        color_index: colorIndex,
+        notes: notes.trim() || null,
+        geojson: previewGeojson,
+        mode,
+        source_mid: mid,
       })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        showToast('خطأ: ' + (data.message ?? `HTTP ${res.status}`), false)
-        return
-      }
       if (mode === 'draft') {
-        setCreatedDraftId(data.draft_id)
+        setCreatedDraftId(data.draft_id ?? null)
         showToast(`تم إنشاء المسودة #${data.draft_id} — راجعها في تبويب المسودات`)
       } else {
         showToast('تم نشر الخط المستورد')
@@ -241,8 +214,8 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
         onPreview(null, colorIndex)
         onRoutePublished(data?.route ?? null)
       }
-    } catch {
-      showToast('تعذّر الاتصال بالخادم', false)
+    } catch (e) {
+      showToast(apiErrorMessage(e), false)
     } finally {
       setPublishing(null)
     }

@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import axios from "@/lib/axios";
+import { pollsApi } from "@/Domain/polls/api";
+import { apiErrorMessage } from '@/Lib/api';
+import type { CandidateInput, PollCandidate as Candidate, PollGroup as Group, Poll } from "@/Domain/polls/types";
 import { useAuth } from "@/Contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,32 +32,6 @@ import {
 } from "@/components/ui/select";
 
 // Types
-interface Candidate {
-    id: string;
-    candidate_group_id?: string | null;
-    name: string;
-    title?: string | null;
-    x_handle?: string | null;
-    image_url?: string | null;
-    imageUrl?: string | null; // Frontend helper
-    category?: string | null;
-    status?: "active" | "archived";
-    term_started_at?: string | null;
-    term_ended_at?: string | null;
-    archive_reason?: string | null;
-    successor_id?: string | null;
-}
-
-interface Group {
-    id: string;
-    poll_id: string;
-    name: string;
-    key?: string | null;
-    sort_order: number;
-    is_default?: boolean;
-    /** Disabled categories keep their data but leave the public site. */
-    is_active?: boolean;
-}
 
 interface PollData {
     id: string;
@@ -106,12 +82,11 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
         if (!newGroupName.trim()) return;
         setIsAddingGroup(true);
         try {
-            await axios.post("/api/candidate-groups", { poll_id: pollId, name: newGroupName });
+            await pollsApi.createGroup({ poll_id: pollId, name: newGroupName });
             setNewGroupName("");
             onRefresh();
-        } catch (err: any) {
-            console.error(err);
-            setError(err?.response?.data?.message || "Failed to add group");
+        } catch (err) {
+            setError(apiErrorMessage(err, "تعذّر إضافة المجموعة"));
         } finally {
             setIsAddingGroup(false);
         }
@@ -120,22 +95,20 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
     const handleDeleteGroup = async (id: string) => {
         if (!(await confirmDialog({ title: "حذف هذه المجموعة؟", description: "سيتم إلغاء تعيين مرشحيها.", destructive: true, confirmText: "حذف" }))) return;
         try {
-            await axios.delete(`/api/candidate-groups/${id}`);
+            await pollsApi.removeGroup(id);
             onRefresh();
             if (activeTab === id) setActiveTab("all");
-        } catch (err: any) {
-            console.error(err);
-            setError(err?.response?.data?.message || "Failed to delete group");
+        } catch (err) {
+            setError(apiErrorMessage(err, "تعذّر حذف المجموعة"));
         }
     };
 
     const handleSetDefault = async (id: string) => {
         try {
-            await axios.post(`/api/candidate-groups/${id}/default`);
+            await pollsApi.setDefaultGroup(id);
             onRefresh();
-        } catch (err: any) {
-            console.error(err);
-            setError(err?.response?.data?.message || "فشل تعيين المجموعة الافتراضية");
+        } catch (err) {
+            setError(apiErrorMessage(err, "تعذّر تعيين المجموعة الافتراضية"));
         }
     };
 
@@ -156,12 +129,11 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
         }))) return;
 
         try {
-            await axios.patch(`/api/candidate-groups/${id}`, { is_active: nextActive });
+            await pollsApi.setGroupActive(id, nextActive);
             notify.success(nextActive ? `تم تفعيل «${label}»` : `تم تعطيل «${label}»`);
             onRefresh();
-        } catch (err: any) {
-            console.error(err);
-            const message = err?.response?.data?.message || "فشل تغيير حالة المجموعة";
+        } catch (err) {
+            const message = apiErrorMessage(err, "تعذّر تغيير حالة المجموعة");
             setError(message);
             notify.error(message);
         }
@@ -193,11 +165,10 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
         }));
 
         try {
-            await axios.post('/api/candidate-groups/reorder', { groups: orderPayload });
-            // onRefresh(); 
-        } catch (err: any) {
-            console.error(err);
-            setError(err?.response?.data?.message || "فشل إعادة الترتيب");
+            await pollsApi.reorderGroups(orderPayload);
+            // onRefresh();
+        } catch (err) {
+            setError(apiErrorMessage(err, "تعذّر إعادة الترتيب"));
             onRefresh(); // Revert
         }
     };
@@ -249,18 +220,11 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
         if (!files || files.length === 0) return;
         setIsUploading(true);
         try {
-            const formData = new FormData();
-            formData.append("file", files[0]);
-            formData.append("folder", "candidates");
-            const res = await axios.post("/api/v1/admin/assets/upload", formData, {
-                headers: { "Content-Type": "multipart/form-data" },
-            });
-            const url = res.data?.url;
-            if (url) setCImage(url);
+            const res = await pollsApi.uploadImage(files[0]);
+            if (res.url) setCImage(res.url);
             setUploadError(null);
-        } catch (err: any) {
-            console.error(err);
-            setUploadError(err.response?.data?.message || err.message || "Upload failed");
+        } catch (err) {
+            setUploadError(apiErrorMessage(err, "تعذّر رفع الصورة"));
         } finally {
             setIsUploading(false);
         }
@@ -279,7 +243,7 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
     const handleSaveCandidate = async () => {
         if (!cName.trim()) return;
 
-        const payload: any = {
+        const payload: CandidateInput = {
             name: cName,
             title: cTitle || null,
             x_handle: cHandle.trim() || null,
@@ -299,26 +263,24 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
 
         try {
             if (editingCandidate) {
-                await axios.put(`/api/candidates/${editingCandidate.id}`, payload);
+                await pollsApi.updateCandidate(editingCandidate.id, payload);
             } else {
-                await axios.post("/api/candidates", payload);
+                await pollsApi.createCandidate(payload);
             }
             setIsCandidateModalOpen(false);
             onRefresh();
-        } catch (err: any) {
-            console.error(err);
-            setError(err?.response?.data?.message || "Failed to save candidate");
+        } catch (err) {
+            setError(apiErrorMessage(err, "تعذّر حفظ المرشح"));
         }
     };
 
     const handleDeleteCandidate = async (id: string) => {
         if (!(await confirmDialog({ title: "حذف هذا المرشح؟", destructive: true, confirmText: "حذف" }))) return;
         try {
-            await axios.delete(`/api/candidates/${id}`);
+            await pollsApi.removeCandidate(id);
             onRefresh();
-        } catch (err: any) {
-            console.error(err);
-            setError(err?.response?.data?.message || "Failed to delete candidate");
+        } catch (err) {
+            setError(apiErrorMessage(err, "تعذّر حذف المرشح"));
         }
     };
 
@@ -339,27 +301,25 @@ export default function AdminPollManager({ pollId, initialData, onRefresh }: Pro
     const handleSubmitArchive = async () => {
         if (!archiveTarget) return;
         try {
-            await axios.patch(`/api/candidates/${archiveTarget.id}/archive`, {
+            await pollsApi.archiveCandidate(archiveTarget.id, {
                 term_ended_at: aTermEnd || null,
                 archive_reason: aReason || null,
                 successor_id: aSuccessorId === "none" ? null : aSuccessorId,
             });
             setArchiveTarget(null);
             onRefresh();
-        } catch (err: any) {
-            console.error(err);
-            setError(err?.response?.data?.message || "Failed to archive candidate");
+        } catch (err) {
+            setError(apiErrorMessage(err, "تعذّر أرشفة المرشح"));
         }
     };
 
     const handleRestore = async (c: Candidate) => {
         if (!(await confirmDialog({ title: `إعادة تفعيل ${c.name}؟` }))) return;
         try {
-            await axios.patch(`/api/candidates/${c.id}/restore`);
+            await pollsApi.restoreCandidate(c.id);
             onRefresh();
-        } catch (err: any) {
-            console.error(err);
-            setError(err?.response?.data?.message || "Failed to restore candidate");
+        } catch (err) {
+            setError(apiErrorMessage(err, "تعذّر إعادة تفعيل المرشح"));
         }
     };
 

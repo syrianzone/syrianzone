@@ -1,6 +1,6 @@
+import { promisesApi } from '@/Domain/promises/api';
 import { useState } from 'react';
 import { router } from '@inertiajs/react';
-import axios from '@/Lib/axios';
 import MainLayout from '@/Layouts/MainLayout';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card';
@@ -15,7 +15,7 @@ import {
 import { ArrowDown, ArrowUp, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
-import { extractApiErrorMessage, extractApiFieldErrors } from '@/Lib/apiError';
+import { apiErrorMessage, apiFieldErrors } from '@/Lib/api';
 import FieldError, { fieldA11y } from '@/Components/ui/field-error';
 import { SECTOR_ICONS, SECTOR_ICON_LABELS, sectorIcon } from '@/Domain/promises/status';
 import AdminHeader from './_components/AdminHeader';
@@ -66,14 +66,13 @@ export default function PromiseSectors({ sectors, queueCount }: Props) {
         setSaving(true);
         setErrors({});
         try {
-            if (editing) await axios.put(`/api/v1/admin/promises/sectors/${editing.id}`, { label: form.label, icon: form.icon });
-            else await axios.post('/api/v1/admin/promises/sectors', form);
+            await promisesApi.saveSector(editing?.id ?? null, { label: form.label, icon: form.icon ?? null });
             notify.success('تم الحفظ');
             setOpen(false);
             reload();
         } catch (err) {
-            setErrors(extractApiFieldErrors(err));
-            notify.error(extractApiErrorMessage(err, 'تعذّر الحفظ'));
+            setErrors(apiFieldErrors(err));
+            notify.error(apiErrorMessage(err, 'تعذّر الحفظ'));
         } finally {
             setSaving(false);
         }
@@ -82,10 +81,10 @@ export default function PromiseSectors({ sectors, queueCount }: Props) {
     const toggle = async (s: AdminSector) => {
         setBusy(s.id);
         try {
-            await axios.patch(`/api/v1/admin/promises/sectors/${s.id}/toggle`);
+            await promisesApi.toggleSector(s.id);
             reload();
         } catch (e) {
-            notify.error(extractApiErrorMessage(e, 'تعذّر التحديث'));
+            notify.error(apiErrorMessage(e, 'تعذّر التحديث'));
         } finally {
             setBusy(null);
         }
@@ -97,21 +96,21 @@ export default function PromiseSectors({ sectors, queueCount }: Props) {
         if (target < 0 || target >= ids.length) return;
         [ids[index], ids[target]] = [ids[target], ids[index]];
         try {
-            await axios.post('/api/v1/admin/promises/sectors/reorder', { ids });
+            await promisesApi.reorderSectors(ids);
             reload();
         } catch (e) {
-            notify.error(extractApiErrorMessage(e, 'تعذّر الترتيب'));
+            notify.error(apiErrorMessage(e, 'تعذّر الترتيب'));
         }
     };
 
     const remove = async (s: AdminSector) => {
         if (!(await confirmDialog({ title: `حذف قطاع «${s.label}»؟`, destructive: true, confirmText: 'حذف' }))) return;
         try {
-            await axios.delete(`/api/v1/admin/promises/sectors/${s.id}`);
+            await promisesApi.removeSector(s.id);
             notify.success('حُذف القطاع');
             reload();
         } catch (e) {
-            notify.error(extractApiErrorMessage(e, 'تعذّر الحذف'));
+            notify.error(apiErrorMessage(e, 'تعذّر الحذف'));
         }
     };
 

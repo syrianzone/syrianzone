@@ -5,6 +5,7 @@ namespace App\Mcp\Tools\Transit;
 use App\Models\Route;
 use App\Services\Transit\TransitAdminService;
 use App\Support\Agents\AgentContext;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -27,7 +28,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
 #[IsIdempotent]
 class RejectTransitDraftTool extends TransitTool
 {
-    protected array $permissions = ['transit.reject'];
+    protected array $permissions = [PermissionCatalogue::TRANSIT_REJECT];
 
     public function schema(JsonSchema $schema): array
     {
@@ -53,11 +54,11 @@ class RejectTransitDraftTool extends TransitTool
             $service = app(TransitAdminService::class);
             $draft = $service->findDraft($validated['draft_id']);
 
-            $this->guardCity($context, 'transit.reject', $draft->city_id);
+            $this->guardCity($context, PermissionCatalogue::TRANSIT_REJECT, $draft->city_id);
 
             if ($draft->route_id !== null) {
                 $linkedCityId = Route::whereKey($draft->route_id)->value('city_id');
-                $this->guardCity($context, 'transit.reject', $linkedCityId);
+                $this->guardCity($context, PermissionCatalogue::TRANSIT_REJECT, $linkedCityId);
             }
 
             $service->rejectDraft($draft, $validated['reason'] ?? null, $context->id());

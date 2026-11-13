@@ -51,6 +51,8 @@ test('normalizes a realistic upstream payload', function () {
     ->assertJsonPath('events.0.event_time', '09:00:00')
     ->assertJsonPath('events.0.category', 'رياضية و صحية')
     ->assertJsonPath('events.0.organizer', 'المركز الثقافي')
+    ->assertJsonPath('events.0.province', 'DAMASCUS')
+    ->assertJsonPath('events.0.provinceName', 'دمشق')
     ->assertJsonPath('events.0.is_free', true)
     // a free event carries no price, so the widget never renders "0 ل.س"
     ->assertJsonPath('events.0.ticket_price', null)
@@ -98,6 +100,46 @@ test('includes a multi day event spanning today and excludes a future one', func
     ->json('events.*.id');
 
   expect($ids)->toBe(['spanning', 'today-only', 'ends-today', 'open-ended-today']);
+});
+
+// The homepage spotlight asks scope=upcoming: the next event, not only today's.
+test('scope=upcoming returns future events that the default today scope drops', function () {
+  $future = eventRow([
+    'id' => 'next-week',
+    'eventDate' => now()->addWeek()->toDateString(),
+    'endDate' => now()->addWeek()->toDateString(),
+  ]);
+
+  Http::fake(['*' => Http::response(eventsPayload([$future]), 200)]);
+  $this->getJson('/api/events/today?governorate=damascus&scope=upcoming')
+    ->assertOk()
+    ->assertJsonPath('events.0.id', 'next-week');
+
+  Http::fake(['*' => Http::response(eventsPayload([$future]), 200)]);
+  $this->getJson('/api/events/today?governorate=damascus')
+    ->assertOk()
+    ->assertJsonCount(0, 'events');
+});
+
+test('scope=upcoming keeps the all-syria fallback', function () {
+  Http::fakeSequence()
+    ->push(eventsPayload([]), 200)
+    ->push(eventsPayload([eventRow([
+      'id' => 'elsewhere-later',
+      'eventDate' => now()->addWeek()->toDateString(),
+      'endDate' => now()->addWeek()->toDateString(),
+    ])]), 200);
+
+  $this->getJson('/api/events/today?governorate=quneitra&scope=upcoming')
+    ->assertOk()
+    ->assertJsonPath('is_fallback', true)
+    ->assertJsonPath('events.0.id', 'elsewhere-later');
+});
+
+test('rejects an unknown scope', function () {
+  Http::fake();
+
+  $this->getJson('/api/events/today?governorate=damascus&scope=weekend')->assertStatus(422);
 });
 
 test('caps the list at ten events', function () {

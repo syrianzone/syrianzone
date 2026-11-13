@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { DEFAULT_POLL_TIMEZONE, isCorePollSlug } from '@/Domain/polls/core';
 import { Link, router } from '@inertiajs/react';
-import axios from 'axios';
+import { apiErrorMessage } from '@/Lib/api';
+import { accountApi } from './_lib/api';
 import {
   User as UserIcon,
   Settings,
@@ -27,7 +28,7 @@ import {
 } from 'lucide-react';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
-import { extractApiFieldErrors } from '@/Lib/apiError';
+import { apiFieldErrors } from '@/Lib/api';
 import {
   TierlistIcon,
   PromisesIcon,
@@ -57,13 +58,11 @@ import {
   DialogTitle,
 } from '@/Components/ui/dialog';
 import AdminPollManager from '@/Components/admin/AdminPollManager';
+import { pollsApi } from '@/Domain/polls/api';
+import { transitAdminApi } from '@/Domain/transit/api';
+import type { Poll, PollCandidate, PollGroup } from '@/Domain/polls/types';
 import FieldError, { fieldA11y } from '@/Components/ui/field-error';
 import { cn } from '@/lib/utils';
-
-// The account controller sends Arabic validation messages; keep a server
-// message when it is already Arabic and otherwise fall back to a neutral
-// Arabic note rather than showing an English rule message.
-const isArabicMessage = (text: string) => /[\u0600-\u06FF]/.test(text);
 
 interface City {
   id: string;
@@ -86,36 +85,6 @@ interface Draft {
   rejection_reason: string | null;
   route_id: string | null;
   created_at: string;
-}
-
-interface Poll {
-  id: string;
-  title: string;
-  slug: string;
-  timezone?: string;
-  is_active: boolean;
-  candidates_count: number;
-}
-
-interface PollCandidate {
-  id: string;
-  candidate_group_id?: string | null;
-  name: string;
-  title?: string | null;
-  image_url?: string | null;
-  imageUrl?: string | null;
-  category?: string | null;
-  status?: 'active' | 'archived';
-  [key: string]: any;
-}
-
-interface PollGroup {
-  id: string;
-  poll_id: string;
-  name: string;
-  sort_order: number;
-  is_default?: boolean;
-  [key: string]: any;
 }
 
 const pollPublicUrl = (slug: string) =>
@@ -162,19 +131,13 @@ function AvatarUploader({ user }: { user: { name: string; avatar_url: string | n
     setAvatarLoading(true);
     setAvatarMessage(null);
     try {
-      const form = new FormData();
-      form.append('avatar', file);
-      const res = await axios.post('/api/account/avatar', form);
-      setAvatarUrl(res.data.avatar_url);
+      const res = await accountApi.uploadAvatar(file);
+      setAvatarUrl(res.avatar_url);
       setAvatarBroken(false);
       setAvatarMessage({ type: 'success', text: 'تم تحديث الصورة الشخصية' });
       await refreshUser();
-    } catch (err: any) {
-      const msg = err.response?.data?.message;
-      setAvatarMessage({
-        type: 'error',
-        text: msg && /[\u0600-\u06FF]/.test(msg) ? msg : 'تعذر رفع الصورة'
-      });
+    } catch (err) {
+      setAvatarMessage({ type: 'error', text: apiErrorMessage(err, 'تعذر رفع الصورة') });
     } finally {
       if (avatarInputRef.current) avatarInputRef.current.value = '';
       setAvatarLoading(false);
@@ -356,16 +319,16 @@ export default function Dashboard({
   const fetchPollDetails = async (id: string) => {
     setEditingLoading(true);
     try {
-      const res = await axios.get(`/api/polls/${id}`, { params: { include_archived: 1 } });
-      const data = res.data ?? {};
-      if (data.poll) {
-        setEditingPoll(data.poll);
-        setLocalPolls(prev => prev.map(p => p.id === data.poll.id ? { ...p, ...data.poll, candidates_count: data.candidates?.length ?? p.candidates_count } : p));
+      const data = await pollsApi.details(id);
+      const poll = data.poll;
+      if (poll) {
+        setEditingPoll(poll);
+        setLocalPolls(prev => prev.map(p => p.id === poll.id ? { ...p, ...poll, candidates_count: data.candidates?.length ?? p.candidates_count } : p));
       }
       if (data.candidates) setEditingCandidates(data.candidates);
       if (data.groups) setEditingGroups(data.groups);
-    } catch (err: any) {
-      notify.error('تعذر تحميل بيانات الاستبيان: ' + (err.response?.data?.message ?? err.message));
+    } catch (err) {
+      notify.error(apiErrorMessage(err, 'تعذر تحميل بيانات الاستبيان'));
       setEditingId(null);
       setEditingPoll(null);
     } finally {
@@ -435,24 +398,19 @@ export default function Dashboard({
     setProfileMessage(null);
     setProfileErrors({});
     try {
-      await axios.post('/api/account/update', {
-        name: profileName,
-        email: profileEmail
-      });
+      await accountApi.updateProfile({ name: profileName, email: profileEmail });
       setProfileMessage({ type: 'success', text: 'تم تحديث معلومات الحساب بنجاح.' });
-    } catch (err: any) {
+    } catch (err) {
       // 422 from the account endpoint: { message, errors: { name: [...], email: [...] } }
+      const fields = apiFieldErrors(err, { arabicOnly: true });
       const fieldErrors = Object.fromEntries(
-        Object.entries(extractApiFieldErrors(err)).map(([field, message]) => [
-          field,
-          isArabicMessage(message) ? message : 'تحقق من هذه القيمة',
-        ])
+        Object.keys(apiFieldErrors(err)).map((field) => [field, fields[field] ?? 'تحقق من هذه القيمة'])
       );
       if (Object.keys(fieldErrors).length > 0) {
         setProfileErrors(fieldErrors);
         setProfileFailedSubmit((n) => n + 1);
       } else {
-        setProfileMessage({ type: 'error', text: err.response?.data?.message ?? 'تعذر تحديث الحساب.' });
+        setProfileMessage({ type: 'error', text: apiErrorMessage(err, 'تعذر تحديث الحساب.') });
       }
     } finally {
       setProfileLoading(false);
@@ -463,10 +421,10 @@ export default function Dashboard({
   const handleDeleteAccount = async () => {
     setDeleteLoading(true);
     try {
-      await axios.post('/api/account/delete');
+      await accountApi.deleteAccount();
       window.location.href = '/';
     } catch (err) {
-      notify.error('تعذر حذف الحساب حالياً.');
+      notify.error(apiErrorMessage(err, 'تعذر حذف الحساب حالياً.'));
       setDeleteLoading(false);
     }
   };
@@ -475,11 +433,10 @@ export default function Dashboard({
   const handleApproveDraft = async (id: number) => {
     setApiLoading(id);
     try {
-      const res = await axios.post(`/api/v1/admin/route-drafts/${id}/approve`);
+      await transitAdminApi.approveDraft(id);
       notify.success('تمت الموافقة على المسار ونشره.');
-      // Update local state status
-    } catch (err: any) {
-      notify.error('خطأ أثناء الموافقة: ' + (err.response?.data?.message ?? err.message));
+    } catch (err) {
+      notify.error(apiErrorMessage(err, 'خطأ أثناء الموافقة'));
     } finally {
       setApiLoading(null);
     }
@@ -497,13 +454,11 @@ export default function Dashboard({
     if (!rejectDraftId) return;
     setRejectLoading(true);
     try {
-      await axios.post(`/api/v1/admin/route-drafts/${rejectDraftId}/reject`, {
-        reason: rejectReason.trim() || null
-      });
+      await transitAdminApi.rejectDraft(rejectDraftId, rejectReason.trim() || null);
       setRejectOpen(false);
       notify.success('تم رفض المسار.');
-    } catch (err: any) {
-      notify.error('خطأ أثناء الرفض: ' + (err.response?.data?.message ?? err.message));
+    } catch (err) {
+      notify.error(apiErrorMessage(err, 'خطأ أثناء الرفض'));
     } finally {
       setRejectLoading(false);
       setRejectDraftId(null);
@@ -520,12 +475,12 @@ export default function Dashboard({
     if (!okDelete) return;
 
     try {
-      await axios.delete(`/api/polls/${id}`);
+      await pollsApi.remove(id);
       setLocalPolls(prev => prev.filter(p => p.id !== id));
       if (editingId === id) closePollEditor();
       notify.success('تم حذف الاستبيان.');
-    } catch (err: any) {
-      notify.error('خطأ: ' + (err.response?.data?.message ?? 'تعذر الحذف.'));
+    } catch (err) {
+      notify.error(apiErrorMessage(err, 'تعذر الحذف.'));
     }
   };
 
@@ -534,13 +489,12 @@ export default function Dashboard({
     if (!createTitle.trim() || !createSlug.trim()) return;
     setCreating(true);
     try {
-      const res = await axios.post('/api/polls', {
+      const created = await pollsApi.create({
         title: createTitle.trim(),
         slug: createSlug.trim(),
         timezone: DEFAULT_POLL_TIMEZONE,
         is_active: createActive,
       });
-      const created: Poll = res.data;
       setLocalPolls(prev => [...prev, { ...created, candidates_count: 0 }]);
       setCreateOpen(false);
       setCreateTitle('');
@@ -551,8 +505,8 @@ export default function Dashboard({
       url.searchParams.delete('create');
       window.history.replaceState({}, '', url.pathname + (url.searchParams.toString() ? `?${url.searchParams.toString()}` : ''));
       openPollEditor({ ...created, candidates_count: 0 });
-    } catch (err: any) {
-      notify.error('تعذر إنشاء الاستبيان: ' + (err.response?.data?.message ?? err.message));
+    } catch (err) {
+      notify.error(apiErrorMessage(err, 'تعذر إنشاء الاستبيان'));
     } finally {
       setCreating(false);
     }
@@ -562,16 +516,15 @@ export default function Dashboard({
     if (!editingId || !editingPoll) return;
     setEditingSaving(true);
     try {
-      const res = await axios.put(`/api/polls/${editingId}`, {
+      const updated = await pollsApi.update(editingId, {
         title: editingPoll.title,
         slug: editingPoll.slug,
         is_active: editingPoll.is_active,
       });
-      const updated: Poll = res.data;
       setEditingPoll(prev => prev ? { ...prev, ...updated } : prev);
       setLocalPolls(prev => prev.map(p => p.id === editingId ? { ...p, ...updated } : p));
-    } catch (err: any) {
-      notify.error('حدث خطأ أثناء حفظ الإعدادات: ' + (err.response?.data?.message ?? err.message));
+    } catch (err) {
+      notify.error(apiErrorMessage(err, 'حدث خطأ أثناء حفظ الإعدادات'));
     } finally {
       setEditingSaving(false);
     }
@@ -581,11 +534,11 @@ export default function Dashboard({
   const handleCancelMySubmission = async (id: number) => {
     if (!(await confirmDialog({ title: 'سحب هذا الاقتراح؟', description: 'سيتم إلغاء الاقتراح ولا يمكن التراجع.', destructive: true, confirmText: 'سحب' }))) return;
     try {
-      await axios.delete(`/api/v1/transit/studio/routes/${id}`);
+      await transitAdminApi.deleteStudioRoute(id);
       setLocalMyDrafts(prev => prev.filter(d => d.id !== id));
       notify.success('تم سحب الاقتراح');
-    } catch (err: any) {
-      notify.error('تعذر سحب الاقتراح: ' + (err.response?.data?.message ?? err.message));
+    } catch (err) {
+      notify.error(apiErrorMessage(err, 'تعذر سحب الاقتراح'));
     }
   };
 

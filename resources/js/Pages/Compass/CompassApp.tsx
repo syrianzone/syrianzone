@@ -1,3 +1,5 @@
+import { apiErrorMessage } from '@/Lib/api';
+import { notify } from '@/Lib/notify';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/Components/ui/card';
 import { Button } from '@/Components/ui/button';
@@ -43,7 +45,10 @@ export default function CompassApp({ isLoggedIn, figures, personas }: Props) {
     }
     fetchAccountResults()
       .then(setAccountResults)
-      .catch(() => setAccountResults([]));
+      .catch((e) => {
+        setAccountResults([]);
+        notify.error(apiErrorMessage(e, 'تعذّر جلب نتائجك المحفوظة'));
+      });
   }, [isLoggedIn]);
 
   useEffect(() => {
@@ -61,9 +66,10 @@ export default function CompassApp({ isLoggedIn, figures, personas }: Props) {
         updateLocalResult(pending.id, { id: saved?.id ?? pending.id, savedToAccount: true });
         refreshAccount();
       })
-      .catch(() => {
+      .catch((e) => {
         // Put it back so a later visit can retry.
         setPendingAccountSave(pending);
+        notify.error(apiErrorMessage(e, 'تعذّر حفظ نتيجتك في حسابك، حاول لاحقاً'));
       });
   }, [isLoggedIn, refreshAccount]);
 

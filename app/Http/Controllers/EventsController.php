@@ -23,6 +23,10 @@ class EventsController extends Controller
   // the all-syria option: no province filter upstream
   private const ALL = 'all';
 
+  // `today` is the "happening now" list the widgets show; `upcoming` is the next
+  // event the homepage spotlight shows. Both are answered from the same query.
+  private const SCOPES = ['today', 'upcoming'];
+
   /**
    * Governorate id => the F3alia province enum upstream uses.
    *
@@ -78,17 +82,20 @@ class EventsController extends Controller
 
     $validated = $request->validate([
       'governorate' => 'required|string|in:'.implode(',', $keys),
+      'scope' => 'sometimes|in:'.implode(',', self::SCOPES),
     ], [
       'governorate.required' => 'المحافظة مطلوبة',
       'governorate.in' => 'محافظة غير معروفة',
+      'scope.in' => 'نطاق غير معروف',
     ]);
 
     $governorate = $validated['governorate'];
+    $scope = $validated['scope'] ?? 'today';
     $today = now()->toDateString();
 
     // the date is part of the key so a cached payload cannot outlive the day it
     // describes: at midnight every key rolls over instead of serving yesterday
-    $cacheKey = "events:today:{$governorate}:{$today}";
+    $cacheKey = "events:{$scope}:{$governorate}:{$today}";
     $cached = Cache::get($cacheKey);
     if ($cached !== null) {
       return response()->json($cached)->header('Cache-Control', 'public, max-age=300');
@@ -96,7 +103,7 @@ class EventsController extends Controller
 
     $province = self::provinces()[$governorate] ?? null;
 
-    $events = $this->fetch($province, $today);
+    $events = $this->fetch($province, $today, $scope);
     if ($events === null) {
       return $this->failed();
     }
@@ -105,7 +112,7 @@ class EventsController extends Controller
     // all of syria rather than showing nothing, and says so in the payload.
     $isFallback = false;
     if ($events === [] && $province !== null) {
-      $all = $this->fetch(null, $today);
+      $all = $this->fetch(null, $today, $scope);
       if ($all === null) {
         return $this->failed();
       }
@@ -126,10 +133,10 @@ class EventsController extends Controller
     return response()->json($payload)->header('Cache-Control', 'public, max-age=300');
   }
 
-  // Returns the normalized events happening today, or null on any upstream
+  // Returns the normalized events for the scope, or null on any upstream
   // problem. Null is never cached: a transient failure must not stick for the
   // whole ttl.
-  private function fetch(?string $province, string $today): ?array
+  private function fetch(?string $province, string $today, string $scope): ?array
   {
     try {
       $response = Http::timeout(8)
@@ -166,7 +173,10 @@ class EventsController extends Controller
       if (! is_array($raw) || ! isset($raw['id'])) {
         continue;
       }
-      if (! $this->happeningToday($raw, $today)) {
+      $matches = $scope === 'upcoming'
+        ? $this->happeningFrom($raw, $today)
+        : $this->happeningToday($raw, $today);
+      if (! $matches) {
         continue;
       }
       $events[] = $this->normalize($raw);
@@ -193,6 +203,18 @@ class EventsController extends Controller
     return $start <= $today && $end >= $today;
   }
 
+  // Anything that has not finished yet: the homepage spotlight asks for the
+  // next event, not only today's.
+  private function happeningFrom(array $raw, string $today): bool
+  {
+    $start = $raw['eventDate'] ?? null;
+    if (! is_string($start) || $start === '') {
+      return false;
+    }
+
+    return $start >= $today;
+  }
+
   private function normalize(array $raw): array
   {
     $id = (string) $raw['id'];
@@ -204,6 +226,7 @@ class EventsController extends Controller
     return [
       'id' => $id,
       'name' => (string) ($raw['name'] ?? ''),
+      'description' => (string) ($raw['description'] ?? ''),
       // some rows come back without a link; the platform resolves an event by id
       'url' => ! empty($raw['eventLink'])
         ? (string) $raw['eventLink']
@@ -215,6 +238,9 @@ class EventsController extends Controller
       'ticket_price' => $isFree || $price === null ? null : (float) $price,
       'event_date' => (string) ($raw['eventDate'] ?? ''),
       'event_time' => ! empty($raw['eventTime']) ? (string) $raw['eventTime'] : null,
+      // the event's own province, for the "showing all of Syria" fallback label
+      'province' => (string) ($raw['province'] ?? ''),
+      'provinceName' => (string) ($raw['provinceName'] ?? ''),
       'category' => ! empty($category['nameAr']) ? (string) $category['nameAr'] : null,
       'organizer' => ! empty($owner['organizerName']) ? (string) $owner['organizerName'] : null,
     ];

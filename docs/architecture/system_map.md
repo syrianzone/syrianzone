@@ -38,7 +38,7 @@ graph TD
 | Admin panels | Filament v5 (`/superadmin`, Users only) + custom Inertia admin pages per module (`/admin/*`, `/dashboard` polls tab, `/transit/admin`) |
 | Frontend bridge | Inertia.js v3 (Laravel ↔ React page props), SSR enabled (`ssr.tsx`) |
 | View layer | React 19.2, TypeScript (strict), Tailwind CSS v4, shadcn-style components (Radix + CVA), Lucide icons |
-| State/data | Zustand for map/studio stores; TanStack react-query (staleTime 5 min) for API data; custom axios client in `resources/js/Lib` |
+| State/data | Zustand for map/studio stores; TanStack react-query (staleTime 5 min) for API data; the one API client in `resources/js/Lib/api.ts` |
 | Mapping | MapLibre GL JS (shared canvas, RTL plugin and basemap styles in `Components/map/`) and Leaflet/react-leaflet (shared Leaflet bits in `Components/map/leaflet/`) |
 | Realtime | Laravel Reverb (websockets) — Guess Who state relay, echo client in `resources/js/echo.js` |
 | Database | MySQL/MariaDB with spatial geometry columns (production); sqlite in tests (no spatial) |
@@ -82,7 +82,7 @@ syrianzone/
 │   │   ├── Contexts/            # AuthContext
 │   │   ├── Domain/              # Modules more than one page needs (geography, places, prayer, …)
 │   │   ├── Layouts/MainLayout.tsx
-│   │   ├── Lib/                 # axios client, apiError.ts, cn(), theme/font utils, geo-utils, exportImage…
+│   │   ├── Lib/                 # api.ts (the one client + error extractor), cn(), theme/font utils, geo-utils, exportImage…
 │   │   ├── Pages/               # One folder per route/module (Inertia pages)
 │   │   └── app.tsx / ssr.tsx    # Client + SSR entry points
 │   └── views/app.blade.php      # Inertia root view
@@ -101,7 +101,7 @@ syrianzone/
 Browser → Nginx → Laravel controller → returns `Inertia::render('Page/Name', props)` → React 19 page component hydrates. Subsequent navigation is XHR-based SPA navigation.
 
 ### API data flow
-React pages fetch JSON from `/api/v1/*` (and legacy `/api/*` aliases) using the shared axios client (`Lib/axios.ts`) wrapped in react-query (offlineFirst). Rate limits defined in `AppServiceProvider` + route middleware: `voting` 10/min, `public-api` 120/min per IP, `mcp` 120/min per API token (agent surface); contributors + `app-icon` + transit v1 reads + places reads throttle 60/min; Guess Who room create 10/min, join 30/min. See [reference/api.md](../reference/api.md).
+React pages fetch JSON from `/api/v1/*` (and legacy `/api/*` aliases) through the typed per-resource clients in `Domain/<module>/api.ts`, which sit on the one client in `Lib/api.ts` (CSRF, JSON, one timeout) and are wrapped in react-query (offlineFirst). Rate limits defined in `AppServiceProvider` + route middleware: `voting` 10/min, `public-api` 120/min per IP, `mcp` 120/min per API token (agent surface); contributors + `app-icon` + transit v1 reads + places reads throttle 60/min; Guess Who room create 10/min, join 30/min. See [reference/api.md](../reference/api.md).
 
 ### Spatial query flow (transit/places)
 Controllers issue raw spatial SQL (`ST_AsGeoJSON`, `ST_Distance_Sphere`) against MySQL/MariaDB geometry columns; results cached (e.g. city geojson 1h) and large static datasets served from R2 CDN.

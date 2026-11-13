@@ -1,3 +1,5 @@
+import { apiErrorMessage } from '@/Lib/api';
+import { notify } from '@/Lib/notify';
 import React, { useMemo, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/card';
 import { Button } from '@/Components/ui/button';
@@ -115,8 +117,8 @@ export default function CompassResult({
       setSavedToAccount(true);
       setSavedId(r?.id ?? null);
       onSavedToAccount?.();
-    } catch {
-      // keep local only
+    } catch (e) {
+      notify.error(apiErrorMessage(e, 'تعذّر الحفظ في الحساب، بقيت نتيجتك على هذا الجهاز'));
     } finally {
       setSaving(false);
     }
@@ -130,7 +132,8 @@ export default function CompassResult({
       setSavedToAccount(false);
       setSavedId(null);
       onSavedToAccount?.();
-    } catch {
+    } catch (e) {
+      notify.error(apiErrorMessage(e, 'تعذّر حذف النتيجة من حسابك'));
     } finally {
       setSaving(false);
     }
@@ -152,8 +155,8 @@ export default function CompassResult({
       } else {
         setStatsShared(false);
       }
-    } catch {
-      // keep current state on failure
+    } catch (e) {
+      notify.error(apiErrorMessage(e, 'تعذّر تحديث المشاركة في الإحصاءات المجهولة'));
     } finally {
       setStatsBusy(false);
     }
@@ -164,7 +167,9 @@ export default function CompassResult({
     if (isLoggedIn) {
       try {
         await deleteAccountResults();
-      } catch {}
+      } catch (e) {
+        notify.error(apiErrorMessage(e, 'تعذّر حذف نتائجك المحفوظة'));
+      }
     }
     setConfirmDelete(false);
     onRestart();

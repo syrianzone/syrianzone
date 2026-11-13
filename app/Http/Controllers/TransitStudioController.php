@@ -3,13 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\ChecksTransitScope;
+use App\Models\Route;
 use App\Models\RouteDraft;
+use App\Models\TransitRouteLog;
 use App\Models\User;
 use App\Services\Transit\TransitCache;
 use App\Support\Facts;
 use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class TransitStudioController extends Controller
 {
@@ -89,7 +92,7 @@ class TransitStudioController extends Controller
         // A linked edit must target a route in the same city, otherwise the
         // draft would unpublish an unrelated live route on approve.
         if (! empty($validated['route_id'])) {
-            $linked = \App\Models\Route::find($validated['route_id']);
+            $linked = Route::find($validated['route_id']);
             if (! $linked || $linked->city_id !== $validated['city_id']) {
                 return response()->json(['message' => 'Linked route must belong to the same city.'], 422);
             }
@@ -139,12 +142,12 @@ class TransitStudioController extends Controller
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
-        $route = \App\Models\Route::with(['city:id,name_ar,name_en'])->findOrFail($routeId);
+        $route = Route::with(['city:id,name_ar,name_en'])->findOrFail($routeId);
 
         $this->ensureStudioTransitCityAccess($request, $route->city_id);
 
         // Get geometry
-        $geomJson = \Illuminate\Support\Facades\DB::table('route_geometries')
+        $geomJson = DB::table('route_geometries')
             ->selectRaw('ST_AsGeoJSON(geometry) as geojson')
             ->where('route_id', $route->id)
             ->value('geojson');
@@ -296,14 +299,9 @@ class TransitStudioController extends Controller
         }
 
         // Governorate scope only kicks in for scoped transit staff; everyone
-        // else keeps the existing behavior.
-        $scopeAllowsCity = true;
-        if ($this->isScopedTransitStaff($user)) {
-            $allowed = $user->allowedTransitCities();
-            $scopeAllowsCity = $allowed !== null
-                && $draft->city_id !== null
-                && in_array($draft->city_id, $allowed, true);
-        }
+        // else keeps the existing behavior. The rule itself lives in
+        // ChecksTransitScope, next to the studio submit guard.
+        $scopeAllowsCity = $this->canActInTransitCity($user, $draft->city_id);
 
         // Transit editors can edit anyone's draft, within their governorate
         // scope when they have one. This was a role list, so a user granted
@@ -357,7 +355,7 @@ class TransitStudioController extends Controller
             return;
         }
 
-        $route = \App\Models\Route::find($routeId);
+        $route = Route::find($routeId);
         if (! $route || $route->status !== 'published') {
             return;
         }
@@ -365,7 +363,7 @@ class TransitStudioController extends Controller
         $route->status = 'disapproved';
         $route->save();
 
-        \App\Models\TransitRouteLog::create([
+        TransitRouteLog::create([
             'route_id' => $route->id,
             'action' => 'unpublished_for_edit',
             'description' => "سحب الخط '{$route->name_ar}' مؤقتاً من الخريطة بانتظار مراجعة التعديلات (مساهمة #{$draftId})",

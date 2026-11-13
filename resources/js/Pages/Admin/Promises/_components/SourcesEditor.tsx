@@ -1,12 +1,12 @@
+import { promisesApi } from '@/Domain/promises/api';
 import { useRef, useState } from 'react';
-import axios from '@/Lib/axios';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
 import { ImageUp, Loader2, Plus, Star, Trash2 } from 'lucide-react';
 import { notify } from '@/Lib/notify';
-import { extractApiErrorMessage } from '@/Lib/apiError';
+import { apiErrorMessage } from '@/Lib/api';
 import FieldError, { fieldA11y } from '@/Components/ui/field-error';
 import { SOURCE_TYPE_LABEL } from '@/Domain/promises/status';
 
@@ -62,10 +62,10 @@ export default function SourcesEditor({ sources, onChange, sourceTypes, errors }
             const fd = new FormData();
             fd.append('image', file);
             fd.append('kind', 'source');
-            const res = await axios.post('/api/v1/admin/promises/upload-image', fd);
-            update(key, { screenshotUrl: res.data.url });
+            const res = await promisesApi.uploadImage(file, 'source');
+            update(key, { screenshotUrl: res.url });
         } catch (e) {
-            notify.error(extractApiErrorMessage(e, 'تعذّر رفع لقطة الشاشة'));
+            notify.error(apiErrorMessage(e, 'تعذّر رفع لقطة الشاشة'));
         } finally {
             setUploading(null);
             const input = fileRefs.current[key];

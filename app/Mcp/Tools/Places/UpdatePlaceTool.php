@@ -5,6 +5,7 @@ namespace App\Mcp\Tools\Places;
 use App\Services\Places\PlaceModerationService;
 use App\Services\Places\PlaceRules;
 use App\Support\Agents\AgentContext;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -25,7 +26,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
 #[IsIdempotent]
 class UpdatePlaceTool extends PlacesTool
 {
-    protected array $permissions = ['places.edit'];
+    protected array $permissions = [PermissionCatalogue::PLACES_EDIT];
 
     public function schema(JsonSchema $schema): array
     {
@@ -66,11 +67,7 @@ class UpdatePlaceTool extends PlacesTool
         $validated = $request->validate([
             'place_id' => ['required', 'integer', 'min:1'],
             ...$rules->edit(),
-        ], [
-            'description.min' => sprintf('The description must be at least %d characters.', PlaceRules::MIN_DESCRIPTION),
-            'lat.between' => sprintf('Latitude must be between %s and %s (inside Syria).', PlaceRules::latMin(), PlaceRules::latMax()),
-            'lng.between' => sprintf('Longitude must be between %s and %s (inside Syria).', PlaceRules::lngMin(), PlaceRules::lngMax()),
-        ]);
+        ], $rules->messages());
 
         $attributes = collect($validated)->except('place_id')->all();
 

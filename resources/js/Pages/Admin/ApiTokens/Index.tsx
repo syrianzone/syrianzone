@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { router } from '@inertiajs/react';
-import axios from 'axios';
+import { api, apiErrorMessage } from '@/Lib/api';
 import MainLayout from '@/Layouts/MainLayout';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
@@ -125,18 +125,18 @@ export default function ApiTokensIndex(props: ApiTokensData) {
         }
         setSaving(true);
         try {
-            const res = await axios.post('/api/v1/admin/api-tokens', {
+            const res = await api.post<{ plain_text_token: string; message: string }>('/api/v1/admin/api-tokens', {
                 user_id: Number(ownerId),
                 name: name.trim(),
                 ttl,
                 permissions: selected,
             });
-            setIssued({ token: res.data.plain_text_token, message: res.data.message });
+            setIssued({ token: res.plain_text_token, message: res.message });
             setName('');
             setSelected([]);
             router.reload({ only: ['tokens'] });
-        } catch (e: any) {
-            notify(e.response?.data?.message ?? 'تعذّر إنشاء الرمز.', false);
+        } catch (e) {
+            notify(apiErrorMessage(e, 'تعذّر إنشاء الرمز.'), false);
         } finally {
             setSaving(false);
         }
@@ -144,21 +144,21 @@ export default function ApiTokensIndex(props: ApiTokensData) {
 
     const revoke = async (id: number) => {
         try {
-            const res = await axios.delete(`/api/v1/admin/api-tokens/${id}`);
-            notify(res.data.message);
+            const res = await api.delete<{ message: string }>(`/api/v1/admin/api-tokens/${id}`);
+            notify(res.message);
             router.reload({ only: ['tokens'] });
-        } catch {
-            notify('تعذّر إبطال الرمز.', false);
+        } catch (e) {
+            notify(apiErrorMessage(e, 'تعذّر إبطال الرمز.'), false);
         }
     };
 
     const revokeAll = async (userId: number) => {
         try {
-            const res = await axios.post(`/api/v1/admin/api-tokens/revoke-all/${userId}`);
-            notify(res.data.message);
+            const res = await api.post<{ message: string }>(`/api/v1/admin/api-tokens/revoke-all/${userId}`);
+            notify(res.message);
             router.reload({ only: ['tokens'] });
-        } catch {
-            notify('تعذّر إبطال الرموز.', false);
+        } catch (e) {
+            notify(apiErrorMessage(e, 'تعذّر إبطال الرموز.'), false);
         }
     };
 

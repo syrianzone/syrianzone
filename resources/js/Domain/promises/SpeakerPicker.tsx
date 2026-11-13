@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import axios from '@/Lib/axios';
+import { api } from '@/Lib/api';
 import { Button } from '@/Components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/Components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/Components/ui/command';
@@ -39,8 +39,8 @@ export default function SpeakerPicker({ endpoint, value, onChange, id, invalid, 
             setLoading(true);
             setFailed(false);
             try {
-                const res = await axios.get(endpoint, { params: { q: query } });
-                if (!cancelled) setOptions(res.data.speakers ?? []);
+                const res = await api.get<{ speakers?: SpeakerOption[] }>(endpoint, { params: { q: query } });
+                if (!cancelled) setOptions(res.speakers ?? []);
             } catch {
                 if (!cancelled) {
                     setOptions([]);

@@ -1,5 +1,5 @@
 import React from 'react';
-import axios from '@/lib/axios';
+import { api } from '@/Lib/api';
 import { Link } from '@inertiajs/react';
 import {
     DropdownMenu,
@@ -13,14 +13,20 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { LogOut, User as UserIcon, LayoutDashboard } from "lucide-react";
 import { useAuth } from '@/Contexts/AuthContext';
+import { apiErrorMessage } from '@/Lib/api';
+import { notify } from '@/Lib/notify';
 
 export default function UserNav() {
     const { user } = useAuth();
 
     const logout = () => {
-        axios.post('/logout').then(() => {
-            window.location.reload();
-        });
+        api.post('/logout')
+            .then(() => {
+                window.location.reload();
+            })
+            .catch((err) => {
+                notify.error(apiErrorMessage(err, 'تعذّر تسجيل الخروج'));
+            });
     };
 
     if (!user) {

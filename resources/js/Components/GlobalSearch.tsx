@@ -11,6 +11,7 @@
  * the code-split entirely). The modal itself imports the shared pieces from
  * here.
  */
+import { api, API_V1 } from '@/Lib/api';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, router } from '@inertiajs/react';
 import {
@@ -126,12 +127,11 @@ export function useGlobalSearchData(query: string, scope: FilterScope, enabled =
         setLoadingRemote(true);
 
         const timer = setTimeout(() => {
-            fetch(`/api/v1/global-search?q=${encodeURIComponent(trimmed)}`, {
+            api.get<RemoteSearchResults>(`${API_V1}/global-search`, {
+                params: { q: trimmed },
                 signal: controller.signal,
-                headers: { Accept: 'application/json' },
             })
-                .then((res) => (res.ok ? res.json() : EMPTY_REMOTE))
-                .then((data: RemoteSearchResults) => {
+                .then((data) => {
                     setRemote({
                         routes: Array.isArray(data.routes) ? data.routes : [],
                         places: Array.isArray(data.places) ? data.places : [],
@@ -141,7 +141,8 @@ export function useGlobalSearchData(query: string, scope: FilterScope, enabled =
                     });
                 })
                 .catch(() => {
-                    // Offline or aborted: keep client-side results working smoothly
+                    // Type-ahead: a failed keystroke request keeps the local
+                    // matches working instead of raising a toast per keystroke.
                 })
                 .finally(() => {
                     if (!controller.signal.aborted) {

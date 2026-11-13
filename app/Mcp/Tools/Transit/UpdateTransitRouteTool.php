@@ -5,6 +5,7 @@ namespace App\Mcp\Tools\Transit;
 use App\Services\Transit\TransitAdminService;
 use App\Services\Transit\TransitPresenter;
 use App\Support\Agents\AgentContext;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -45,7 +46,7 @@ final class RouteFields
 #[IsIdempotent]
 class UpdateTransitRouteTool extends TransitTool
 {
-    protected array $permissions = ['transit.edit_routes'];
+    protected array $permissions = [PermissionCatalogue::TRANSIT_EDIT_ROUTES];
 
     public function schema(JsonSchema $schema): array
     {
@@ -87,7 +88,7 @@ class UpdateTransitRouteTool extends TransitTool
             $service = app(TransitAdminService::class);
             $route = $service->findRoute($validated['route_id']);
 
-            $this->guardCity($context, 'transit.edit_routes', $route->city_id);
+            $this->guardCity($context, PermissionCatalogue::TRANSIT_EDIT_ROUTES, $route->city_id);
 
             // $request->has() semantics: an explicit null is an instruction to
             // clear the column, so only wholly-absent keys are dropped.

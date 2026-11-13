@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/Components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/Lib/utils';
-import { api, extractError } from '@/Domain/places/api';
+import { api } from '@/Domain/places/api';
+import { apiErrorMessage } from '@/Lib/api';
 import type { HotelListItem, MyPlace, Paginated, PlaceListItem, PlaceStatus } from '@/Domain/places/types';
 import { GuidesTab } from './GuidesTab';
 import { HotelCard } from './HotelCard';
@@ -147,7 +148,7 @@ function MineTab(props: { onSelect: (id: number, lat: number, lng: number) => vo
       setResubmitted((prev) => new Set(prev).add(id));
       reload();
     } catch (e) {
-      setResubmitErrors((prev) => ({ ...prev, [id]: extractError(e) }));
+      setResubmitErrors((prev) => ({ ...prev, [id]: apiErrorMessage(e) }));
     } finally {
       setResubmitting(null);
     }

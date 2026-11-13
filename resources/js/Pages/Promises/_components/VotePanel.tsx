@@ -1,10 +1,10 @@
+import { promisesApi } from '@/Domain/promises/api';
 import { useEffect, useState } from 'react';
-import axios from '@/Lib/axios';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent, CardHeader } from '@/Components/ui/card';
 import { ThumbsDown, ThumbsUp } from 'lucide-react';
 import { notify } from '@/Lib/notify';
-import { extractApiErrorMessage } from '@/Lib/apiError';
+import { apiErrorMessage } from '@/Lib/api';
 import { getDeviceId } from '@/Lib/deviceId';
 
 interface Props {
@@ -41,8 +41,8 @@ export default function VotePanel({ number, votes: initial, open }: Props) {
         if (busy || mine === believes) return;
         setBusy(true);
         try {
-            const res = await axios.post(`/api/v1/promises/${number}/vote`, { believes, device_id: getDeviceId() });
-            setVotes(res.data.votes);
+            const res = await promisesApi.vote(number, believes, getDeviceId());
+            setVotes(res.votes);
             setMine(believes);
             try {
                 localStorage.setItem(storageKey(number), believes ? '1' : '0');
@@ -51,7 +51,7 @@ export default function VotePanel({ number, votes: initial, open }: Props) {
             }
             notify.success('سُجّل رأيك');
         } catch (e) {
-            notify.error(extractApiErrorMessage(e, 'تعذّر تسجيل رأيك'));
+            notify.error(apiErrorMessage(e, 'تعذّر تسجيل رأيك'));
         } finally {
             setBusy(false);
         }

@@ -1,3 +1,5 @@
+import { apiErrorMessage } from '@/Lib/api';
+import { notify } from '@/Lib/notify';
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/card';
 import { Button } from '@/Components/ui/button';
@@ -43,7 +45,9 @@ export default function SavedResults({
     if (row.source === 'account' && row.id != null) {
       try {
         await deleteAccountResult(row.id);
-      } catch {}
+      } catch (e) {
+        notify.error(apiErrorMessage(e, 'تعذّر حذف النتيجة من حسابك'));
+      }
       onChanged();
     } else {
       // local-only: rewrite localStorage without this row

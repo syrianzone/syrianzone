@@ -49,7 +49,7 @@ Two invariants, both covered by tests or manual checks:
 
 - Position is array index. Reordering is a splice. There is no `x`/`y`, no compaction pass.
 - Columns: `sm` 2, `md` 6, `lg` 12, from `colsAt()`. A widget renders at `Math.min(w, cols)`, so one stored width covers all three breakpoints.
-- `grid-template-columns` and spans are **inline styles** driven by the `useBreakpoint()` media-query hook, not `md:`/`lg:` utilities: code-split CSS chunks each emit their own Tailwind layer, so responsive classes lose cascade order in a page chunk (`Places/Lightbox.tsx` documents the same trap).
+- `grid-template-columns` and spans are **inline styles** driven by the `useBreakpoint()` media-query hook, not `md:`/`lg:` utilities: code-split CSS chunks each emit their own Tailwind layer, so responsive classes lose cascade order in a page chunk (`Pages/Places/_components/Lightbox.tsx` documents the same trap).
 - Row height 76px, gap 12px, `grid-auto-flow: dense`.
 - Reorder uses `@dnd-kit/sortable` with `rectSortingStrategy`, an 8px pointer activation distance, and the keyboard sensor. dnd-kit is transform-based, so RTL needs no mirroring. The drag surface is the header handle only, so scrolling a list widget on touch never starts a drag.
 - **Resize is discrete**, chosen from `SizeMenu` and bounded by each widget's
@@ -127,7 +127,7 @@ Backend:
 - `tests/Feature/BoardTest.php`
 
 Frontend, `resources/js/Pages/Board/`:
-- `Index.tsx` owns the document and passes it down, matching `Places/Index.tsx`. No zustand.
+- `Index.tsx` owns the document and passes it down, matching `Pages/Places/Index.tsx`. No zustand.
 - `_lib/`: `types.ts`, `doc.ts`, `layout.ts`, `registry.ts`, `storage.ts`, `api.ts`, `sync.ts`, `query.ts`, `sources.ts`
 - `_components/`: `BoardGrid`, `BoardTile`, `BoardToolbar`, `DashboardTabs`, `WidgetShell`, `TileChrome`, `SizeMenu`, `MissingWidget`, `WidgetGallery`, `WidgetConfigDialog`, `GeoProvider`
 - `_widgets/<id>/{index.ts,View.tsx}`: `clock`, `weather`, `prayer`, `quran`, `pomodoro`, `todo`, `notes`, `rss`, `answers`, `events-today`, `guides`, `places-nearby`, `transit-cities`, `recipe`

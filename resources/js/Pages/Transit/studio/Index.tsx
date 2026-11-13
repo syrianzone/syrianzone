@@ -32,6 +32,9 @@ import { useMapColors } from '@/Components/map/mapColors'
 import { firstSymbolLayerId } from '@/Components/map/layers'
 import { useAuth } from '@/Contexts/AuthContext'
 import { canModule } from '@/Lib/capabilities'
+import { apiErrorMessage } from '@/Lib/api'
+import type { StudioDraftPayload } from '../_types/admin'
+import { transitApi } from '../_lib/api'
 import { ROUTE_PALETTE, TRANSIT_MAP_COLORS, getRouteColor, buildColorMatch } from '../_lib/mapColors'
 import { BottomSheet } from '@/Components/BottomSheet'
 import {
@@ -118,13 +121,6 @@ function findNearestSegment(coords: [number, number][], px: number, py: number, 
     }
   }
   return { insertIdx, distance: minDist, nearest: bestNearest }
-}
-
-function formatWait(seconds: number) {
-  if (seconds <= 1) return 'ثانية واحدة'
-  if (seconds === 2) return 'ثانيتان'
-  if (seconds <= 10) return `${seconds} ثوانٍ`
-  return `${seconds} ثانية`
 }
 
 function SuccessPanel({ draftId, isEditMode, isPublishedRouteEdit, isAnonymous, onReset, onEdit, onExit }: {
@@ -484,34 +480,42 @@ function TransitStudioPageContent() {
     // Already showing this entity — the store survives SPA navigations, so a bare
     // isEditMode check would skip loading a different ?edit= target (wrong draft/city)
     if ((editingDraftId != null && String(editingDraftId) === editParam) || editingRouteId === editParam) return
-    fetch(`/api/v1/studio/routes/${editParam}`, { credentials: 'include' })
-      .then(r => {
-        if (r.ok) return r.json().then(draft => ({ draft, isRoute: false }))
-        return fetch(`/api/v1/studio/routes/${editParam}/from-route`, { credentials: 'include' })
-          .then(r2 => r2.ok ? r2.json().then(d => ({ draft: d, isRoute: true })) : null)
-      })
-      .then(result => {
-        if (result) {
-          if (!cityInScope(result.draft?.city_id)) {
-            addToast('هذا المسار يقع خارج نطاق المحافظات المسموح لك', 'destructive')
-            return
-          }
-          const draftCity = result.draft?.city_id
-          const knownCity = !!draftCity && cities.some(c => c.id === draftCity)
-          if (knownCity) {
-            loadDraft(result.draft)
-          } else {
-            // Never bind to a city the UI cannot represent: the header would show
-            // one city while the submit sends another (or null).
-            addToast('تعذّر تحديد مدينة هذا المسار — تم اختيار مدينة افتراضية، تحقق من المدينة قبل الحفظ', 'warning')
-            loadDraft({ ...result.draft, city_id: useStudioStore.getState().cityId || studioCities[0]?.id || '' })
-          }
-          addToast(result.isRoute ? 'تم تحميل الخط المنشور للتعديل' : 'تم تحميل المسار للتعديل', 'success')
-        } else {
-          addToast('تعذّر تحميل المسار للتعديل', 'destructive')
+
+    ;(async () => {
+      let result: { draft: StudioDraftPayload; isRoute: boolean } | null = null
+      try {
+        const draft = await transitApi.studioRoute(editParam)
+        result = { draft, isRoute: false }
+      } catch {
+        try {
+          const draft = await transitApi.studioRouteFromRoute(editParam)
+          result = { draft, isRoute: true }
+        } catch {
+          result = null
         }
-      })
-      .catch(() => addToast('تعذّر تحميل المسار للتعديل', 'destructive'))
+      }
+
+      if (!result) {
+        addToast('تعذّر تحميل المسار للتعديل', 'destructive')
+        return
+      }
+
+      const draftCity = result.draft?.city_id
+      if (!cityInScope(draftCity)) {
+        addToast('هذا المسار يقع خارج نطاق المحافظات المسموح لك', 'destructive')
+        return
+      }
+      const knownCity = !!draftCity && cities.some(c => c.id === draftCity)
+      if (knownCity) {
+        loadDraft(result.draft)
+      } else {
+        // Never bind to a city the UI cannot represent: the header would show
+        // one city while the submit sends another (or null).
+        addToast('تعذّر تحديد مدينة هذا المسار — تم اختيار مدينة افتراضية، تحقق من المدينة قبل الحفظ', 'warning')
+        loadDraft({ ...result.draft, city_id: useStudioStore.getState().cityId || studioCities[0]?.id || '' })
+      }
+      addToast(result.isRoute ? 'تم تحميل الخط المنشور للتعديل' : 'تم تحميل المسار للتعديل', 'success')
+    })()
   }, [editParam]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Constrain (and optionally zoom) the map to a city's boundaries
@@ -1046,40 +1050,22 @@ function TransitStudioPageContent() {
 
     try {
       const isUpdating = isEditMode && editingDraftId
-      const url = isUpdating ? `/api/v1/studio/routes/${editingDraftId}` : '/api/v1/studio/routes'
-      const method = isUpdating ? 'PUT' : 'POST'
+      const data = await transitApi.saveStudioRoute(isUpdating ? editingDraftId : null, payload)
 
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify(payload),
-        credentials: 'include',
-      })
-
-      const data = await res.json()
-
-      if (res.ok) {
-        setLastSubmittedIsAnon(!user)
-        setSubmittedDraftId(data.id ?? 1)
-        addToast(
-          !user
-            ? 'تم إرسال المسودة بنجاح كزائر (مجهول)'
-            : isUpdating
-            ? editingRouteId
-              ? 'تم إرسال التعديلات للمراجعة'
-              : 'تم تحديث المسودة بنجاح'
-            : 'تم إرسال المسودة للمراجعة باسمك',
-          'success'
-        )
-      } else if (res.status === 429) {
-        const retryAfter = Number(res.headers.get('Retry-After')) || 60
-        addToast(`تم تجاوز حد المحاولات المسموح. يرجى الانتظار ${formatWait(retryAfter)} ثم إعادة المحاولة.`, 'destructive')
-      } else {
-        const msg = data.message || (data.errors ? Object.values(data.errors).flat().join(' • ') : 'حدث خطأ أثناء الإرسال')
-        addToast(msg, 'destructive')
-      }
-    } catch {
-      addToast('تعذّر الاتصال بالخادم. يرجى المحاولة لاحقاً.', 'destructive')
+      setLastSubmittedIsAnon(!user)
+      setSubmittedDraftId(data.id ?? 1)
+      addToast(
+        !user
+          ? 'تم إرسال المسودة بنجاح كزائر (مجهول)'
+          : isUpdating
+          ? editingRouteId
+            ? 'تم إرسال التعديلات للمراجعة'
+            : 'تم تحديث المسودة بنجاح'
+          : 'تم إرسال المسودة للمراجعة باسمك',
+        'success'
+      )
+    } catch (e) {
+      addToast(apiErrorMessage(e), 'destructive')
     } finally {
       setSubmitting(false)
     }

@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from '@inertiajs/react';
-import axios from 'axios';
+import { apiErrorMessage } from '@/Lib/api';
+import { pollsApi } from '@/Domain/polls/api';
+import { notify } from '@/Lib/notify';
 import { Card, CardContent } from "@/Components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/Components/ui/alert";
 import { AlertCircleIcon, Vote } from "lucide-react";
@@ -270,14 +272,13 @@ export default function Leaderboard(initialProps: LeaderboardProps) {
             if (status === initialStatusRef.current) return;
         }
         setLoading(true);
-        axios
-            .get(`/api/polls/${initialProps.poll.slug}/leaderboard`, { params: { status } })
-            .then((response) => {
-                setData(response.data);
+        pollsApi.leaderboard<LeaderboardData>(initialProps.poll.slug ?? '', status)
+            .then((next) => {
+                setData(next);
                 setLoading(false);
             })
             .catch((err) => {
-                console.error("Error fetching leaderboard:", err);
+                notify.error(apiErrorMessage(err, 'تعذّر تحميل الترتيب'));
                 setLoading(false);
             });
     }, [status]);

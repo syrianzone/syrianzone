@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { usePage } from '@inertiajs/react';
-import axios from 'axios';
+import { api } from '@/Lib/api';
 import { hasCapability, type Capability } from '@/Lib/capabilities';
 import type { AuthProps, AuthUser } from '@/types/auth';
 
@@ -33,8 +33,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const refreshUser = async () => {
         setLoading(true);
         try {
-            const res = await axios.get('/user');
-            setUser(res.data);
+            const res = await api.get<AuthUser>('/user');
+            setUser(res);
         } catch (error) {
             setUser(null);
         } finally {

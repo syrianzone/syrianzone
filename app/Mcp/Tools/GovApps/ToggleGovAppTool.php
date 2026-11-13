@@ -5,6 +5,7 @@ namespace App\Mcp\Tools\GovApps;
 use App\Services\GovApps\GovAppPresenter;
 use App\Services\GovApps\GovAppService;
 use App\Support\Agents\AgentContext;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -25,7 +26,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
 #[IsIdempotent]
 class ToggleGovAppTool extends GovAppsTool
 {
-    protected array $permissions = ['govapps.toggle'];
+    protected array $permissions = [PermissionCatalogue::GOVAPPS_TOGGLE];
 
     public function schema(JsonSchema $schema): array
     {

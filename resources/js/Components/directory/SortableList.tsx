@@ -6,8 +6,9 @@ import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, v
 import { CSS } from '@dnd-kit/utilities';
 import { ArrowDown, ArrowUp, GripVertical } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
-import axios from '@/Lib/axios';
+import { api } from '@/Lib/api';
 import { notify } from '@/Lib/notify';
+import { apiErrorMessage } from '@/Lib/api';
 
 export interface SortableListItem {
     id: string;
@@ -67,17 +68,17 @@ export default function SortableList({ items: initialItems, endpoint, canReorder
         if (!canReorder) return;
         setSaving(true);
         try {
-            await axios.post(endpoint, {
+            await api.post(endpoint, {
                 orders: items.map((item, index) => ({ id: item.id, order_column: index + 1 })),
             });
             setSavedItems(items);
             setHasChanges(false);
             notify.success('تم حفظ الترتيب الجديد');
             onSaved?.();
-        } catch {
+        } catch (err) {
             setItems(savedItems);
             setHasChanges(false);
-            notify.error('تعذّر حفظ الترتيب');
+            notify.error(apiErrorMessage(err, 'تعذّر حفظ الترتيب'));
         } finally {
             setSaving(false);
         }

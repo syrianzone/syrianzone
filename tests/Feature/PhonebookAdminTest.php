@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AutoLoginDevUser;
 use App\Models\PhonebookCategory;
 use App\Models\PhonebookEntry;
 use App\Models\User;
@@ -18,7 +19,7 @@ test('phonebook page auto seeds database when empty and displays entries', funct
 test('unauthorized users cannot access phonebook admin panel', function () {
     $user = User::factory()->create(['role' => 'user', 'permissions' => []]);
 
-    $response = $this->withoutMiddleware(\App\Http\Middleware\AutoLoginDevUser::class)
+    $response = $this->withoutMiddleware(AutoLoginDevUser::class)
         ->actingAs($user)
         ->get('/admin/phonebook');
     $response->assertStatus(403);
@@ -27,7 +28,7 @@ test('unauthorized users cannot access phonebook admin panel', function () {
 test('users with phonebook permissions or superadmin role can access admin panel', function () {
     $superadmin = User::factory()->create(['role' => 'superadmin']);
 
-    $response = $this->withoutMiddleware(\App\Http\Middleware\AutoLoginDevUser::class)
+    $response = $this->withoutMiddleware(AutoLoginDevUser::class)
         ->actingAs($superadmin)
         ->get('/admin/phonebook');
     $response->assertStatus(200);
@@ -37,7 +38,7 @@ test('users with phonebook permissions or superadmin role can access admin panel
         'permissions' => ['phonebook.edit', 'phonebook.create'],
     ]);
 
-    $response2 = $this->withoutMiddleware(\App\Http\Middleware\AutoLoginDevUser::class)
+    $response2 = $this->withoutMiddleware(AutoLoginDevUser::class)
         ->actingAs($permittedUser)
         ->get('/admin/phonebook');
     $response2->assertStatus(200);
@@ -54,7 +55,7 @@ test('admin can create, toggle active state, and delete phonebook entries', func
         'is_active' => true,
     ]);
 
-    $response = $this->withoutMiddleware(\App\Http\Middleware\AutoLoginDevUser::class)
+    $response = $this->withoutMiddleware(AutoLoginDevUser::class)
         ->actingAs($superadmin)
         ->post('/api/v1/admin/phonebook/entries', [
             'id' => 'test_entry_123',
@@ -74,7 +75,7 @@ test('admin can create, toggle active state, and delete phonebook entries', func
     ]);
 
     // Toggle active state
-    $toggleResponse = $this->withoutMiddleware(\App\Http\Middleware\AutoLoginDevUser::class)
+    $toggleResponse = $this->withoutMiddleware(AutoLoginDevUser::class)
         ->actingAs($superadmin)
         ->post('/api/v1/admin/phonebook/entries/test_entry_123/toggle');
     $toggleResponse->assertRedirect();
@@ -83,4 +84,41 @@ test('admin can create, toggle active state, and delete phonebook entries', func
         'id' => 'test_entry_123',
         'is_active' => false,
     ]);
+});
+
+test('two entries created without an id get distinct generated ids', function () {
+    $superadmin = User::factory()->create(['role' => 'superadmin']);
+
+    PhonebookCategory::create([
+        'id' => 'test_cat',
+        'label_ar' => 'فئة تجريبية',
+        'label_en' => 'Test Category',
+        'order_column' => 1,
+        'is_active' => true,
+    ]);
+
+    $payload = [
+        'category_id' => 'test_cat',
+        'name_ar' => 'رقم اختبار',
+        'number' => '123456',
+        'is_active' => true,
+    ];
+
+    for ($attempt = 0; $attempt < 2; $attempt++) {
+        $this->withoutMiddleware(AutoLoginDevUser::class)
+            ->actingAs($superadmin)
+            ->post('/api/v1/admin/phonebook/entries', $payload)
+            ->assertRedirect();
+    }
+
+    $ids = PhonebookEntry::query()->pluck('id');
+
+    expect($ids)->toHaveCount(2)
+        ->and($ids->unique())->toHaveCount(2);
+
+    foreach ($ids as $id) {
+        // `phone_` plus a 26-character ULID, which cannot repeat within a
+        // millisecond the way `time()` plus three random digits could.
+        expect($id)->toMatch('/^phone_[0-9A-HJKMNP-TV-Z]{26}$/');
+    }
 });

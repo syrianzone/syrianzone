@@ -8,15 +8,7 @@ import { Badge } from '@/Components/ui/badge'
 import { Button } from '@/Components/ui/button'
 import { Search, Loader2, X, Bus, MapPin, Landmark } from 'lucide-react'
 import { cn } from '@/lib/utils'
-
-interface SearchResult {
-  type: 'route' | 'stop'
-  id: string
-  nameAr: string
-  nameEn?: string
-  cityId: string
-  coordinates?: [number, number]
-}
+import { transitApi, type TransitSearchResult } from '../../_lib/api'
 
 interface PoiResult {
   type: 'place'
@@ -56,7 +48,7 @@ interface GlobalSearchBoxProps {
 
 export default function GlobalSearchBox({ cityId, className }: GlobalSearchBoxProps) {
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<{ routes: SearchResult[]; stops: SearchResult[] }>({ routes: [], stops: [] })
+  const [results, setResults] = useState<{ routes: TransitSearchResult[]; stops: TransitSearchResult[] }>({ routes: [], stops: [] })
   const [places, setPlaces] = useState<PoiResult[]>([])
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -66,7 +58,7 @@ export default function GlobalSearchBox({ cityId, className }: GlobalSearchBoxPr
   const inputRef = useRef<HTMLInputElement>(null)
   const poiMarkerRef = useRef<maplibregl.Marker | null>(null)
 
-  const allItems: (SearchResult | PoiResult)[] = [...results.routes, ...results.stops, ...places]
+  const allItems: (TransitSearchResult | PoiResult)[] = [...results.routes, ...results.stops, ...places]
 
   const clearPoiMarker = () => {
     poiMarkerRef.current?.remove()
@@ -91,26 +83,18 @@ export default function GlobalSearchBox({ cityId, className }: GlobalSearchBoxPr
     const timer = setTimeout(async () => {
       setLoading(true)
       try {
-        const apiUrl = '/api'
-        const params = new URLSearchParams({ q, city_id: cityId })
         // Routes/stops from our DB plus POIs (mosques, cafes…) from the
         // geocoder proxy. POI needs 3+ chars (backend min) — shorter queries
         // skip it instead of 422ing on every keystroke.
-        const [localRes, poiRes] = await Promise.all([
-          fetch(`${apiUrl}/v1/search?${params}`, { signal: ctrl.signal }),
-          q.length >= 3
-            ? fetch(`${apiUrl}/v1/geo/poi?${params}`, { signal: ctrl.signal })
-            : Promise.resolve(null),
+        const [local, pois] = await Promise.all([
+          transitApi.search(q, cityId, ctrl.signal),
+          q.length >= 3 ? transitApi.geocoderPois(q, cityId, ctrl.signal) : null,
         ])
         if (ctrl.signal.aborted) return
-        if (localRes.ok) {
-          const data = await localRes.json()
-          setResults({ routes: data.routes ?? [], stops: data.stops ?? [] })
-        }
-        if (poiRes && poiRes.ok) {
-          const data = await poiRes.json()
+        setResults({ routes: local.routes ?? [], stops: local.stops ?? [] })
+        if (pois) {
           setPlaces(
-            ((data.places ?? []) as any[]).map((p, i) => ({
+            (pois.places ?? []).map((p, i) => ({
               type: 'place' as const,
               id: `poi-${i}-${p.lat}-${p.lng}`,
               nameAr: p.name,
@@ -119,16 +103,18 @@ export default function GlobalSearchBox({ cityId, className }: GlobalSearchBoxPr
               city: p.city ?? null,
               address: p.address ?? null,
               cityId,
-              coordinates: [p.lng, p.lat] as [number, number],
+              coordinates: [p.lng, p.lat],
             }))
           )
-        } else if (!poiRes) {
+        } else {
           setPlaces([])
         }
         setIsOpen(true)
         setActiveIndex(0)
       } catch (err) {
-        if ((err as Error)?.name !== 'AbortError') console.error('Search error:', err)
+        // Type-ahead: a failed keystroke request is transient and the empty
+        // panel already says so; a toast per keystroke would be noise.
+        if ((err as Error)?.name !== 'CanceledError') console.error('Search error:', err)
       } finally {
         if (!ctrl.signal.aborted) setLoading(false)
       }
@@ -140,7 +126,7 @@ export default function GlobalSearchBox({ cityId, className }: GlobalSearchBoxPr
     }
   }, [query, cityId])
 
-  const handleSelect = (item: SearchResult | PoiResult) => {
+  const handleSelect = (item: TransitSearchResult | PoiResult) => {
     setIsOpen(false)
     setQuery('')
 

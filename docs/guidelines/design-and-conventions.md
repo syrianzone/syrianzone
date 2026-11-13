@@ -13,7 +13,8 @@ Repo-wide styling and coding conventions. The most detailed normative reference 
 
 ## Frontend conventions
 
-- **Inertia for page loads**, react-query (`Providers/QueryProvider`, staleTime 5 min, offlineFirst) for API data, custom axios instance in `Lib/axios.ts`.
+- **Inertia for page loads**, react-query (`Providers/QueryProvider`, staleTime 5 min, offlineFirst) for API data, and the one API client in `Lib/api.ts`. Features build typed functions per resource on top of it (`Domain/<module>/api.ts`); pages never import axios, spell an `/api/...` URL or unwrap a response.
+- **API failures are Arabic and visible**: pass the error to `apiErrorMessage()` and show it (`notify.error`, an inline `<Alert>`, a field error). A non-Arabic server message is a framework default and is replaced by the fallback. Silent catches are only for background work (device storage, unload saves) and say so in a comment.
 - **Zustand stores are colocated per page** (e.g. `Pages/Transit/_store/useMapStore.ts`); the only app-wide store is `Lib/appShell.ts` (`useAppShell`: global search, the dialogs the navbar opens).
 - Page-scoped folders under `Pages/<Module>/` with `_components`, `_lib`, `_widgets` subfolders for private code; code a second page or the shell needs goes to `Domain/<module>/`; shared cross-module UI goes to `Components/` (see [Layering](#layering-pages--domain--shared)).
 - Grid layouts on the Board use inline styles instead of Tailwind responsive classes (CSS chunk cascade trap — see board spec).
@@ -68,6 +69,14 @@ lives in [accessibility.md](accessibility.md); the short version:
 - **Do not hardcode user-facing strings where a translation map exists.** The
   directories (SyOfficial, Phonebook, GovApps) and the Muslim section carry
   `TRANSLATIONS`/label maps — add to those rather than inlining strings.
+- **Framework messages are Arabic in `lang/ar/`.** `lang/ar/validation.php` is
+  the home of every Laravel validation rule message: the same keys and
+  placeholders as the framework's English file, plus an `attributes` map that
+  supplies the Arabic `:attribute` name. A resource adds its own message map
+  (`PlaceRules::messages()`, `PromiseRules`, a controller's inline array) only
+  where it says something more specific than the generic rule — never to
+  restate a limit the rule already covers. Locale and fallback are both `ar`,
+  so a missing key prints the raw `validation.*` key on the product surface.
 - **Quran-related names follow the terminology standard** enforced by the
   `quranic-terminology-lint` pre-commit hook (`.terminology.json`). This is the
   model for any future naming standard: a machine-checkable rule, not prose.
@@ -104,7 +113,7 @@ already exists. Before writing a component, search `Components/` and
 |---|---|
 | Toast / feedback | `Lib/notify.ts` + `Components/ui/sonner` |
 | Confirm dialog | `Lib/confirm.ts` + `Components/ConfirmHost` |
-| API error extraction | `Lib/apiError.ts` (`extractApiErrorMessage`, `extractApiFieldErrors`) |
+| API client + error extraction | `Lib/api.ts` (`api`, `apiErrorMessage`, `apiFieldErrors`); typed per-resource wrappers in `Domain/<module>/api.ts` |
 | Alert (inline) | `Components/ui/alert.tsx` |
 | Tabs / segmented switcher | `Lib/useTabList.ts` (custom) or `Components/ui/tabs` |
 | Filter chips | `Components/ui/filter-chip.tsx` |
@@ -181,9 +190,10 @@ capability per route**:
 - `ModuleCapabilityRoutesTest` asserts the route table matches all of the above,
   so a typo fails the build instead of producing a route nobody can reach. Run
   it after touching any admin group.
-- Role bypasses are resolved in `User::hasPermission()` (superadmin, the general
-  `admin` role, the per-module `*_admin` roles, and the `*` wildcard). The
-  middleware must not re-implement them.
+- Role bypasses are resolved in `User::hasPermission()` (superadmin, and the `*`
+  wildcard in the account's `permissions` array). The module roles (`*_admin`)
+  and the old general `admin` role stopped conferring capabilities (Phases D and
+  G, `2026_09_27`); the middleware must not re-implement them.
 - A new action that is **application-wide rather than module-specific** (banning
   a user, for example) gets its own capability and its own group — do not file it
   inside a content module's group just because the UI that calls it lives on that

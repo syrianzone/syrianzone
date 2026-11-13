@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import { api as client, apiErrorMessage, API_ROOT } from '@/Lib/api';
 import { PopulationGroups, DATA_TYPES, DATA_TYPE_CONFIG, RainfallData, DataSource } from './types';
 import {
     Layers, Info, ChevronLeft, ChevronRight, X, BarChart3, CheckSquare, Square, ExternalLink,
@@ -69,21 +70,16 @@ export default function PopulationClient() {
                 setIsLoading(true);
                 setError(null);
 
-                const masterResponse = await fetch('/api/population/master');
-                if (!masterResponse.ok) throw new Error('Failed to fetch master data');
-                const masterData = await masterResponse.json();
+                const masterData = await client.get<{ groups: PopulationGroups; rainfall_data: RainfallData }>(
+                    `${API_ROOT}/population/master`
+                );
 
                 setLivePopulationData(masterData.groups);
                 setRainfallData(masterData.rainfall_data);
 
-                const envResponse = await fetch('/api/population/env-report');
-                if (!envResponse.ok) throw new Error('Failed to fetch environmental data');
-                const envData = await envResponse.json();
-                setEnvironmentalData(envData);
-
+                setEnvironmentalData(await client.get(`${API_ROOT}/population/env-report`));
             } catch (err) {
-                console.error('Failed to fetch population data:', err);
-                setError('Failed to load population atlas data. Please try again later.');
+                setError(apiErrorMessage(err, 'تعذّر تحميل بيانات الأطلس السكاني، حاول مجدداً لاحقاً.'));
             } finally {
                 setIsLoading(false);
             }

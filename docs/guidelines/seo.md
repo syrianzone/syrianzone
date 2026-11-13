@@ -233,8 +233,8 @@ without it.
 
 Node must be on the `PATH` of the PHP process (`OG_NODE_BINARY` overrides the
 binary). The production image already has it for the Inertia SSR server, and
-`docker/10-startup.sh` runs `og:doctor` so a broken renderer shows in the deploy
-log.
+the `post-boot` s6 service (`docker/s6/post-boot-run`) runs `og:doctor` once per
+container, so a broken renderer shows in the container log.
 
 ## Non-indexed routes
 

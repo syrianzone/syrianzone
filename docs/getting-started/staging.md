@@ -119,3 +119,8 @@ Start over from an empty database:
 Caddy routes `staging.syrian.zone` to `syrianzone-staging-app:8080` with basic
 auth and `X-Robots-Tag: noindex`. The block is at the bottom of
 `/opt/caddy/Caddyfile`.
+
+Staging keeps the single-container layout, so a staging deploy is still briefly
+offline while the new container boots. Production is blue/green
+([ADR-0003](../adr/0003-zero-downtime-deploys.md)). The image is the same, so
+staging also runs the slim startup and the `post-boot` service.

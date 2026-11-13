@@ -66,8 +66,50 @@ To run an artisan command in production:
 
     ssh root@<vps> /opt/syrianzone/deploy.sh <previous-sha>
 
-`deploy.log` holds the sha history. Migrations are not rolled back: keep them
-backward-compatible for one release.
+A rollback is an ordinary deploy of an older image, so it is also
+zero-downtime. `deploy.log` holds the sha history and the colour each release
+went to. Migrations are not rolled back: keep them backward-compatible for one
+release.
+
+## Operating the blue/green pair
+
+Which container is serving, and which image each colour holds:
+
+    cat /opt/syrianzone/active-container
+    docker ps -a --format '{{.Names}} {{.Image}} {{.Status}}' | grep syrianzone-app
+    grep '^IMAGE_TAG_' /opt/syrianzone/.env
+
+The stopped colour shows `Exited (137)`: s6 takes longer than Docker's 10 s
+stop timeout, so the container is killed after the drain. That is expected;
+the drain has already moved its traffic.
+
+What a deploy printed, and the boot of the serving container (startup, then
+the `post-boot:` lines from `docker/s6/post-boot-run`):
+
+    tail /opt/syrianzone/deploy.log
+    docker logs --timestamps "$(cat /opt/syrianzone/active-container)" | grep -E 'startup|post-boot|ready'
+
+If a deploy fails, `deploy.sh` prints the last 80 log lines of the new colour
+and leaves the old one serving; fix the release and push again.
+
+Caddy logs failed health checks for the stopped colour's name (it does not
+resolve while the container is stopped). They are noise, not an outage.
+
+Changing the compose file, `deploy.sh` or the Caddy block: edit
+`deploy/production/`, then copy the file to the server. For the Caddy block,
+replace the `syrian.zone { … }` block in `/opt/caddy/Caddyfile` (the file
+serves other sites too), then
+
+    docker exec caddy-caddy-1 caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+    docker exec caddy-caddy-1 caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
+
+A reload is atomic: an invalid file is rejected and the running config stays.
+
+What the switch relies on, so it is not removed by accident: the
+`/healthcheck` route and its `storage/framework/draining` branch
+(`routes/web.php`, `tests/Feature/HealthcheckTest.php`), nginx starting only
+after `docker/10-startup.sh`, and database-backed sessions, cache, queue and
+locks. The decision and its trade-offs: [ADR-0003](../adr/0003-zero-downtime-deploys.md).
 
 ## Backups
 

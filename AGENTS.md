@@ -73,6 +73,12 @@ them without being asked.
   the server-resolved `effective_permissions`.
 - When you finish a UI change, run the axe sweep and `tsc`; don't claim it works
   without them.
+- **Production deploys overlap two releases for a few seconds** (blue/green,
+  [ADR-0003](docs/adr/0003-zero-downtime-deploys.md)). A migration must not
+  break the previous release: add first, drop in a later release. Keep
+  `docker/10-startup.sh` to what a request needs; anything else goes in
+  `docker/s6/post-boot-run`. There is no `syrianzone-app` container any more:
+  run artisan with `docker exec "$(cat /opt/syrianzone/active-container)" …`.
 
 <!--
 This file is the vendor-neutral entry point read by Codex, Cursor, opencode,

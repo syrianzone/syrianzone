@@ -10,12 +10,13 @@ The docs folder mirrors the project structure: `getting-started/` for running th
 |---|---|
 | **Getting started** | |
 | [getting-started/development.md](getting-started/development.md) | Prereqs, quickstart, seeders, dev commands, useful artisan commands |
-| [getting-started/deployment.md](getting-started/deployment.md) | Production Docker stack on the VPS, CI → ghcr.io flow, backups, rollback |
+| [getting-started/deployment.md](getting-started/deployment.md) | Production Docker stack on the VPS, CI → ghcr.io flow, zero-downtime blue/green switch, backups, rollback |
 | [getting-started/staging.md](getting-started/staging.md) | staging.syrian.zone sibling stack and its traps |
 | **Architecture** | |
 | [architecture/system_map.md](architecture/system_map.md) | High-level architecture diagram, tech stack, directory map, module index, request flows |
 | [adr/0001-architecture-decision-records.md](adr/0001-architecture-decision-records.md) | Architecture decision record policy |
 | [adr/0002-durable-tierlist-social-outbox.md](adr/0002-durable-tierlist-social-outbox.md) | Tierlist X delivery architecture |
+| [adr/0003-zero-downtime-deploys.md](adr/0003-zero-downtime-deploys.md) | Blue/green deploys behind Caddy health checks, and the slimmer boot |
 | [specs/tierlist-x-automation.md](specs/tierlist-x-automation.md) | Requirements and acceptance criteria for tierlist announcements |
 | [specs/promises.md](specs/promises.md) | The promises tracker (`/promises`) design spec: data model, pages, admin, wiring |
 | [threat-models/tierlist-x-automation.md](threat-models/tierlist-x-automation.md) | Security analysis for tierlist announcements |

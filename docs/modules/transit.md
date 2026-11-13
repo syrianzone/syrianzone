@@ -86,6 +86,9 @@ erDiagram
 
 The backend performs advanced PostGIS spatial queries to handle search, geo-decoding, and distance lookups:
 
+### A. Arabic name search
+`GET /api/v1/transit/search?q=…` matches `routes.name_ar_fold` / `stops.name_ar_fold` with the folded query (`App\Support\ArabicSearch::fold()`), so «احمد» finds «أحمد» and «صلاه» finds «صلاة»; ids, `city_id` and `name_en` are compared with the raw query. The fold is stored on write by `App\Models\Concerns\FoldsSearchColumns` (`App\Support\SearchFold::COLUMNS`), never computed in SQL.
+
 ### A. Distance Calculation (Nearby Stops)
 Finds all bus stops within $R$ meters (default: 500m) of the user's location coordinates.
 *   **API**: `GET /v1/stops/nearby?lat=33.513&lng=36.291`

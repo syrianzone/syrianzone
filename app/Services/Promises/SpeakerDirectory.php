@@ -8,6 +8,7 @@ use App\Models\HouseMember2026;
 use App\Models\OfficialEntity;
 use App\Models\Poll;
 use App\Models\PromiseSpeaker;
+use App\Support\ArabicSearch;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
@@ -286,14 +287,10 @@ class SpeakerDirectory
     /** Strip honorifics, spaces and spelling variants so names compare. */
     public static function normalizeName(string $name): string
     {
-        $name = self::cleanName($name);
-        $name = preg_replace('/[\x{064B}-\x{065F}\x{0670}\x{0640}]/u', '', $name) ?? $name;
-
-        return str_replace(
-            ['أ', 'إ', 'آ', 'ٱ', 'ة', 'ى', ' ', '.', '-'],
-            ['ا', 'ا', 'ا', 'ا', 'ه', 'ي', '', '', ''],
-            trim($name),
-        );
+        // The letter table is the shared Arabic fold; spaces and dots are
+        // removed because a person's name is typed with either (a dash is
+        // already a separator in the fold).
+        return str_replace([' ', '.'], '', ArabicSearch::fold(self::cleanName($name)));
     }
 
     /**
@@ -322,17 +319,14 @@ class SpeakerDirectory
 
     private static function firstAndLastNormalized(string $name): ?string
     {
-        $clean = self::cleanName($name);
-        $clean = preg_replace('/[\x{064B}-\x{065F}\x{0670}\x{0640}]/u', '', $clean) ?? $clean;
-        $rawWords = array_values(array_filter(preg_split('/[\s.\-]+/u', trim($clean)) ?: []));
+        $rawWords = array_values(array_filter(preg_split('/[\s.\-]+/u', trim(self::cleanName($name))) ?: []));
 
         $compounds = ['عبد', 'ابو', 'ابي', 'نور', 'علاء', 'محي', 'تقي', 'بهاء', 'ضياء', 'سيف', 'صلاح', 'جمال', 'كمال', 'شمس', 'عز', 'سعد', 'فخر', 'زين'];
         $tokens = [];
         for ($i = 0; $i < count($rawWords); $i++) {
-            $w = str_replace(['أ', 'إ', 'آ', 'ٱ', 'ة', 'ى'], ['ا', 'ا', 'ا', 'ا', 'ه', 'ي'], $rawWords[$i]);
+            $w = ArabicSearch::fold($rawWords[$i]);
             if (in_array($w, $compounds, true) && isset($rawWords[$i + 1])) {
-                $next = str_replace(['أ', 'إ', 'آ', 'ٱ', 'ة', 'ى'], ['ا', 'ا', 'ا', 'ا', 'ه', 'ي'], $rawWords[$i + 1]);
-                $tokens[] = $w.$next;
+                $tokens[] = $w.ArabicSearch::fold($rawWords[$i + 1]);
                 $i++;
             } else {
                 $tokens[] = $w;

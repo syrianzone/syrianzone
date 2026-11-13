@@ -6,6 +6,7 @@ use App\Exceptions\Transit\TransitActionException;
 use App\Models\Route;
 use App\Models\RouteDraft;
 use App\Models\TransitRouteLog;
+use App\Support\ArabicSearch;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -365,8 +366,8 @@ class TransitAdminService
                     ->value('geojson');
 
                 DB::statement(
-                    'INSERT INTO stops (id, city_id, name_ar, geometry, created_at, updated_at) VALUES (?, ?, ?, ST_GeomFromGeoJSON(?), ?, ?)',
-                    [$newStopId, $targetCityId, $stop->name_ar, $geometry, now(), now()]
+                    'INSERT INTO stops (id, city_id, name_ar, name_ar_fold, geometry, created_at, updated_at) VALUES (?, ?, ?, ?, ST_GeomFromGeoJSON(?), ?, ?)',
+                    [$newStopId, $targetCityId, $stop->name_ar, ArabicSearch::fold((string) $stop->name_ar), $geometry, now(), now()]
                 );
 
                 DB::table('route_stop')

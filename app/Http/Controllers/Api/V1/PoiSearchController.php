@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\City;
 use App\Services\Places\PlaceRules;
+use App\Support\ArabicSearch;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -102,9 +103,8 @@ class PoiSearchController extends Controller
         ]);
 
         $box = $this->bboxForCity($validated['city_id'] ?? null);
-        // Light normalization (diacritics/tatweel only — real spellings stay
-        // intact for the upstream). Expansion below is deterministic, so the
-        // key covers all variants of the same query.
+        // The shared Arabic fold: «مقهى» and «مقهي» are one query, and the
+        // variants below are derived from it, so the key covers all of them.
         $q = self::normalizeQuery($validated['q']);
         $cacheKey = 'poi:search:'.md5($q.'|'.implode(',', $box));
 
@@ -256,17 +256,13 @@ class PoiSearchController extends Controller
     }
 
     /**
-     * Light Arabic normalization for matching + cache keys: strip diacritics
-     * and tatweel, collapse whitespace. Real spellings (alef forms, ة, ى)
-     * are left intact so upstream matching is unaffected.
+     * The query both the cache key and the upstreams see: the shared Arabic
+     * fold, so two spellings of one place («مقهى»/«مقهي») share a cache entry
+     * and expand to the same synonym variants.
      */
     private static function normalizeQuery(string $s): string
     {
-        $s = mb_strtolower(trim($s));
-        $s = (string) preg_replace('/[\x{064B}-\x{0652}\x{0670}\x{0640}]/u', '', $s);
-        $s = (string) preg_replace('/\s+/u', ' ', $s);
-
-        return trim($s);
+        return ArabicSearch::fold($s);
     }
 
     /**
@@ -283,8 +279,11 @@ class PoiSearchController extends Controller
         $tokens = preg_split('/\s+/u', $q);
         $hits = [];
         foreach ($tokens as $i => $t) {
+            // The query is folded (`normalizeQuery`), the groups are authored:
+            // fold both sides or «مقهى» stops matching its own synonym list.
+            $word = ArabicSearch::fold(self::stripArticle($t));
             foreach (self::SYNONYM_GROUPS as $g) {
-                if (in_array(self::stripArticle($t), $g, true)) {
+                if (in_array($word, array_map(ArabicSearch::fold(...), $g), true)) {
                     $hits[$i] = $g;
                     break;
                 }
@@ -297,15 +296,19 @@ class PoiSearchController extends Controller
 
         $i = array_key_first($hits);
         $hadArticle = self::stripArticle($tokens[$i]) !== $tokens[$i];
+        $base = ArabicSearch::fold($q);
         $out = [$q];
         foreach ($hits[$i] as $member) {
             $rep = $hadArticle ? 'ال'.$member : $member;
-            if ($rep === $tokens[$i]) {
-                continue;
-            }
             $variant = $tokens;
             $variant[$i] = $rep;
-            $out[] = implode(' ', $variant);
+            $variantQuery = implode(' ', $variant);
+            // A swap that folds back to the query itself is the same upstream
+            // search: «مقهى» and the synonym «مقهي» are one request.
+            if (ArabicSearch::fold($variantQuery) === $base) {
+                continue;
+            }
+            $out[] = $variantQuery;
             if (count($out) >= self::MAX_VARIANTS) {
                 break;
             }

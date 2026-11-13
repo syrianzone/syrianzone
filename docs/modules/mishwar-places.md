@@ -71,6 +71,8 @@ $table->index(['lat', 'lng']);
 $table->index(['status', 'category']);
 ```
 
+`places.name_fold` and `places.description_fold` (added with the other tables' fold columns in `2026_11_13_120000_add_search_fold_columns`) hold `App\Support\ArabicSearch::fold()` of the two searched Arabic columns, written by `App\Models\Concerns\FoldsSearchColumns` on save — including the backfill the migration runs for rows that predate it. `PlaceController::index` folds `q` and compares against them, so «صلاه» finds «صلاة»; no query re-folds a column at read time.
+
 **`place_photos`**
 
 ```php
@@ -99,7 +101,7 @@ $table->unique(['place_id', 'user_id']);
 
 ```php
 class Place extends Model {
-  use HasFactory;
+  use FoldsSearchColumns, HasFactory;
   protected $fillable = ['user_id', 'name', 'category', 'description', 'lat', 'lng', 'status', 'rejection_reason', 'approved_at'];
   protected $casts = ['lat' => 'float', 'lng' => 'float', 'approved_at' => 'datetime'];
   public function user() { return $this->belongsTo(User::class)->withTrashed(); }
@@ -598,7 +600,7 @@ Tests:
 - No user profile pages or follower systems (the guides leaderboard is the only ranking surface).
 - No admin map view, no bulk moderation, no audit log.
 - No uploadthing or bespoke upload services: media goes to the `MEDIA_DISK` filesystem disk (`public` locally, `r2` on Cloudflare R2 in production via the S3 driver).
-- No spatial DB features, no Scout search indexing (LIKE is enough at this scale).
+- No spatial DB features, no Scout search indexing: `LIKE` over the stored `*_fold` columns is enough at this scale (see §3.1).
 - No changes to `public/sw.js`, `bootstrap/app.php`, or middleware aliases.
 
 ## 11. CATEGORIES (fixed, ordered; keys are stable ascii, stored verbatim in `places.category`)

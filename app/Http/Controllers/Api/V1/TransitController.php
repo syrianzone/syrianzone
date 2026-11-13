@@ -10,6 +10,7 @@ use App\Services\Transit\PublishedRoutes;
 use App\Services\Transit\TransitCache;
 use App\Services\Transit\TransitCities;
 use App\Services\Transit\TransitPresenter;
+use App\Support\ArabicSearch;
 use App\Support\Facts;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -189,16 +190,21 @@ class TransitController extends Controller
         // Scout, whose default `collection` engine loads every route and every
         // stop (geometry included) into PHP and filters there, on each
         // keystroke, with no limit on what comes back. The columns matched are
-        // the same ones the models expose to Scout.
-        $like = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], (string) $query).'%';
-        $matching = fn (array $columns) => function ($q) use ($columns, $like) {
-            foreach ($columns as $column) {
-                $q->orWhere($column, 'like', $like);
-            }
-        };
+        // the same ones the models expose to Scout, except that the Arabic
+        // name is compared folded to folded (`*_fold`); ids, city ids and
+        // English names keep the raw pattern.
+        $raw = (string) $query;
+        $like = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $raw).'%';
+        $folded = ArabicSearch::fold($raw);
+        $foldLike = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $folded === '' ? $raw : $folded).'%';
 
         $routes = Route::query()
-            ->where($matching(['id', 'name_ar', 'name_en', 'city_id']))
+            ->where(function ($q) use ($like, $foldLike) {
+                $q->where('id', 'like', $like)
+                    ->orWhere('name_ar_fold', 'like', $foldLike)
+                    ->orWhere('name_en', 'like', $like)
+                    ->orWhere('city_id', 'like', $like);
+            })
             ->when($cityIds, fn ($q) => $q->whereIn('city_id', $cityIds))
             ->orderBy('name_ar')
             ->limit(self::SEARCH_LIMIT)
@@ -214,7 +220,11 @@ class TransitController extends Controller
             });
 
         $stopResults = Stop::query()
-            ->where($matching(['id', 'name_ar', 'city_id']))
+            ->where(function ($q) use ($like, $foldLike) {
+                $q->where('id', 'like', $like)
+                    ->orWhere('name_ar_fold', 'like', $foldLike)
+                    ->orWhere('city_id', 'like', $like);
+            })
             ->when($cityIds, fn ($q) => $q->whereIn('city_id', $cityIds))
             ->orderBy('name_ar')
             ->limit(self::SEARCH_LIMIT)

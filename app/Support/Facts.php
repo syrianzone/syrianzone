@@ -87,35 +87,14 @@ final class Facts
     }
 
     /**
-     * Fold a governorate spelling to its comparison key. Mirrors
-     * `normalizeGovernorateName()` in `Domain/geography/governorates.ts`: both
-     * sides must agree or a name matches on one side of the wire only.
+     * Fold a governorate spelling to its comparison key. The rules are
+     * `ArabicSearch::fold()`'s, and `normalizeGovernorateName()` in
+     * `Domain/geography/governorates.ts` mirrors them: both sides must agree or
+     * a name matches on one side of the wire only.
      */
     public static function normalizeName(string $name): string
     {
-        $folded = mb_strtolower(trim($name));
-        if ($folded === '') {
-            return '';
-        }
-
-        // Arabic diacritics and tatweel carry no identity here.
-        $folded = (string) preg_replace('/[\x{064B}-\x{0652}\x{0670}\x{0640}]/u', '', $folded);
-        // Same letter, typed with a different hamza/ta-marbuta/alef-maqsura.
-        $folded = str_replace(
-            ['أ', 'إ', 'آ', 'ٱ', 'ة', 'ى'],
-            ['ا', 'ا', 'ا', 'ا', 'ه', 'ي'],
-            $folded,
-        );
-        // Latin transliteration: the apostrophe and the dash are separators.
-        $folded = str_replace(["'", '`', '’', '‘'], '', $folded);
-        $folded = (string) preg_replace('/[\-‐‑‒–—―]/u', ' ', $folded);
-        $folded = str_replace(
-            ['ḥ', 'ẖ', 'ḫ', 'ḩ', 'ş', 'ṣ', 'ţ', 'ṭ', 'ā', 'ū', 'ī'],
-            ['h', 'h', 'h', 'h', 's', 's', 't', 't', 'a', 'u', 'i'],
-            $folded,
-        );
-
-        return (string) preg_replace('/\s+/u', ' ', $folded);
+        return ArabicSearch::fold($name);
     }
 
     /**

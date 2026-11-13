@@ -1,3 +1,4 @@
+import { normalizeArabic } from '@/Lib/arabic';
 import raw from '../../../data/governorates.json';
 
 /**
@@ -56,35 +57,9 @@ export const GOVERNORATES_BY_ID: Record<string, Governorate> = Object.fromEntrie
   GOVERNORATES.map((governorate) => [governorate.id, governorate]),
 );
 
-/**
- * Fold a governorate spelling to its comparison key. Mirrors
- * `Facts::normalizeName()` in PHP: both sides must agree or a name matches on
- * one side of the wire only.
- */
+/** A governorate spelling's comparison key: the shared Arabic fold (`Lib/arabic.ts`, the same table as `ArabicSearch::fold()` in PHP). */
 export function normalizeGovernorateName(name: string): string {
-  if (!name) return '';
-
-  return name
-    .trim()
-    .toLowerCase()
-    .replace(/[\u064B-\u0652\u0670\u0640]/g, '')
-    .replace(/[أإآٱ]/g, 'ا')
-    .replace(/ة/g, 'ه')
-    .replace(/ى/g, 'ي')
-    .replace(/['`’‘]/g, '')
-    .replace(/[-‐‑‒–—―]/g, ' ')
-    .replace(/ḥ/g, 'h')
-    .replace(/ẖ/g, 'h')
-    .replace(/ḫ/g, 'h')
-    .replace(/ḩ/g, 'h')
-    .replace(/ş/g, 's')
-    .replace(/ṣ/g, 's')
-    .replace(/ţ/g, 't')
-    .replace(/ṭ/g, 't')
-    .replace(/ā/g, 'a')
-    .replace(/ū/g, 'u')
-    .replace(/ī/g, 'i')
-    .replace(/\s+/g, ' ');
+  return normalizeArabic(name);
 }
 
 /** The population atlas normalises arbitrary province names with it. */

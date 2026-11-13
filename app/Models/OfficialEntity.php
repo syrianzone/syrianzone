@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\FoldsSearchColumns;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OfficialEntity extends Model
 {
-    use HasFactory;
+    use FoldsSearchColumns, HasFactory;
 
     protected $table = 'official_entities';
     public $incrementing = false;

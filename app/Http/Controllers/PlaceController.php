@@ -9,6 +9,7 @@ use App\Services\PlaceImageService;
 use App\Services\Places\PlaceModerationService;
 use App\Services\Places\PlacePresenter;
 use App\Services\Places\PlaceRules;
+use App\Support\ArabicSearch;
 use App\Support\Facts;
 use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Http\Request;
@@ -100,7 +101,13 @@ class PlaceController extends Controller
     }
     if (!empty($validated['q'])) {
       $q = $validated['q'];
-      $query->where(fn ($w) => $w->where('name', 'LIKE', "%{$q}%")->orWhere('description', 'LIKE', "%{$q}%"));
+      // Places are named and described in Arabic: both sides fold, so «احمد»
+      // finds «أحمد» and «صلاه» finds «صلاة».
+      $needle = ArabicSearch::fold($q);
+      if ($needle === '') {
+        $needle = $q;
+      }
+      $query->where(fn ($w) => $w->where('name_fold', 'LIKE', "%{$needle}%")->orWhere('description_fold', 'LIKE', "%{$needle}%"));
     }
     if (($validated['sort'] ?? 'newest') === 'popular') {
       $query->orderByDesc('saves_count')->latest();

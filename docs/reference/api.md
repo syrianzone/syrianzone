@@ -238,6 +238,20 @@ Managed visually from the dashboard at `/admin/navigation`.
 
 All search endpoints live under `/api/v1` and accept `q` as the primary search query parameter.
 
+**Arabic spelling.** Every Arabic text match on the server is folded on both
+sides (`App\Support\ArabicSearch::fold()`): «احمد» finds «أحمد», «صلاه» finds
+«صلاة», «موسسه» finds «مؤسسة», and diacritics or tatweel never hide a row. The
+fold is stored per searched column (`routes.name_ar_fold`,
+`stops.name_ar_fold`, `places.name_fold`/`description_fold`,
+`phonebook_entries.name_ar_fold`,
+`official_entities.name_ar_fold`/`description_ar_fold`,
+`gov_apps.name_ar_fold`/`description_ar_fold`) and kept in step by
+`App\Models\Concerns\FoldsSearchColumns` on save, so a search never re-folds a
+column at query time. English and numeric columns (`name_en`, `name`,
+`number`, ids) are matched with the raw query, and `%`/`_` are escaped so a
+literal wildcard stays literal. The browser folds with the same rules
+(`Lib/arabic.ts`), pinned by `resources/data/search-fold.json`.
+
 | Scope | Canonical Endpoint | Route Name | Legacy Alias | Query Params | Rate Limit |
 |---|---|---|---|---|---|
 | **Global Search** (Cross-Module) | `GET /api/v1/search/global` | `api.v1.search.global` | `GET /api/v1/global-search` | `q` (`2..80` chars, required) | `60/min` |
@@ -247,7 +261,7 @@ All search endpoints live under `/api/v1` and accept `q` as the primary search q
 | **Places Geocode** (Nominatim Proxy) | `GET /api/v1/places/geocode` | `api.v1.places.geocode` | — | `q` (`2..120` chars, required) | `60/min` |
 
 ### `GET /api/v1/search/global`
-Cross-module search returning up to 5 matches per module across Transit routes, Mishwar places, Phonebook entries, SyOfficial entities, and GovApps.
+Cross-module search returning up to 5 matches per module across Transit routes, Mishwar places, Phonebook entries, SyOfficial entities, and GovApps. Arabic columns (route/place/entity/app names and the place/entity/app descriptions) are matched folded; `name_en`, `name` and `number` are matched raw.
 ```json
 {
   "routes": [
@@ -394,7 +408,7 @@ Query parameters: `lat` (required, numeric), `lng` (required, numeric), `radius`
 ```
 
 ### `GET /api/v1/transit/search`
-Query parameters: `q` (search text), `city_id` (optional city filter). Empty `q` returns `{ "routes": [], "stops": [] }`.
+Query parameters: `q` (search text), `city_id` (optional city filter). Empty `q` returns `{ "routes": [], "stops": [] }`. Route and stop names are matched folded («احمد» finds «أحمد»); route ids and city ids keep the raw pattern.
 ```json
 {
   "routes": [
@@ -407,7 +421,7 @@ Query parameters: `q` (search text), `city_id` (optional city filter). Empty `q`
 ```
 
 ### `GET /api/v1/transit/pois`
-Query parameters: `q` (`3..100` chars, required), `city_id` (optional, biases search to city bounds). Backed by Photon (OSM) with automatic Google Places fallback when results are thin; expands common Arabic POI category synonyms (`جامع`/`مسجد`, `مشفى`/`مستشفى`, `صيدلية`, etc.). Cached 24h (`Cache-Control: public, max-age=3600`). Never returns `500` on upstream failure.
+Query parameters: `q` (`3..100` chars, required), `city_id` (optional, biases search to city bounds). Backed by Photon (OSM) with automatic Google Places fallback when results are thin; expands common Arabic POI category synonyms (`جامع`/`مسجد`, `مشفى`/`مستشفى`, `صيدلية`, etc.). The query is folded with the shared Arabic fold first (diacritics, tatweel and spelling variants), so «مقهى» and «مقهي» are one cached query and one set of variants. Cached 24h (`Cache-Control: public, max-age=3600`). Never returns `500` on upstream failure.
 ```json
 {
   "places": [
@@ -647,7 +661,7 @@ rather than after the 60s TTL.
 
 | Method & Canonical Path | Route Name | Query / Path Parameters | Description |
 |---|---|---|---|
-| `GET /api/v1/places` | `api.v1.places.index` | `q`, `gov`, `category`, `subcategory`, `tags`, `sort` (`featured\|newest\|saves`), `page` | Paginated approved places directory |
+| `GET /api/v1/places` | `api.v1.places.index` | `q`, `gov`, `category`, `subcategory`, `tags`, `sort` (`featured\|newest\|saves`), `page` | Paginated approved places directory (`q` matches name and description folded, so «صلاه» finds «صلاة») |
 | `GET /api/v1/places/map` | `api.v1.places.map` | `gov`, `category`, `subcategory`, `tags` | Lightweight pin coordinates & summary properties for the map |
 | `GET /api/v1/places/nearby` | `api.v1.places.nearby` | `lat`, `lng`, `radius_km` (`0.5..100`, default `25`), `exclude`, `limit` | Approved places near a coordinate |
 | `GET /api/v1/places/geocode` | `api.v1.places.geocode` | `q` (`2..120` chars, required) | Syria-bounded Nominatim geocoding proxy (24h cache) |

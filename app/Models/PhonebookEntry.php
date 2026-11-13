@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\FoldsSearchColumns;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class PhonebookEntry extends Model
 {
-    use HasFactory;
+    use FoldsSearchColumns, HasFactory;
 
     protected $table = 'phonebook_entries';
     public $incrementing = false;

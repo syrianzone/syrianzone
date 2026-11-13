@@ -196,7 +196,9 @@ test('poi search expansion keeps the definite article on variants', function () 
         ->values()
         ->all();
 
-    expect($qs)->toEqualCanonicalizing(['الجامع الأموي', 'المسجد الأموي', 'المصلى الأموي', 'المصلي الأموي']);
+    // The shared Arabic fold runs first, so the upstream spelling is
+    // «…الاموي»; the article survives on every variant.
+    expect($qs)->toEqualCanonicalizing(['الجامع الاموي', 'المسجد الاموي', 'المصلى الاموي', 'المصلي الاموي']);
 });
 
 test('poi search does not expand queries without (or with several) type words', function () {
@@ -214,7 +216,8 @@ test('poi search does not expand queries without (or with several) type words', 
 test('poi search strips diacritics before querying upstream', function () {
     Http::fake(['photon.komoot.io*' => Http::response(['features' => []], 200)]);
 
-    // 'مقهى السّلام' carries a shadda on س; upstream must see 'مقهى السلام'.
+    // 'مقهى السّلام' carries a shadda on س; upstream must see the folded
+    // query 'مقهي السلام'.
     $this->getJson('/api/v1/geo/poi?q='.urlencode('مقهى السّلام'))->assertOk();
 
     $qs = collect(Http::recorded())->map(function ($r) {
@@ -225,7 +228,7 @@ test('poi search strips diacritics before querying upstream', function () {
     foreach ($qs as $sent) {
         expect($sent)->not->toContain('ّ');
     }
-    expect($qs)->toContain('مقهى السلام');
+    expect($qs)->toContain('مقهي السلام');
 });
 
 test('poi search merges variant hits original-first and keeps districts', function () {

@@ -1,20 +1,22 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription } from '@/Components/ui/alert';
 import { Badge } from '@/Components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/Components/ui/button';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@/Components/ui/select';
 import { confirmDialog } from '@/Lib/confirm';
 import { notify } from '@/Lib/notify';
-import { api, extractError } from '../../Places/_lib/api';
-import { REPORT_REASON_LABELS } from '../../Places/_lib/reports';
-import type { AdminPlaceReport, Paginated, PlaceReportStatus } from '../../Places/_lib/types';
+import { api } from '@/Domain/places/api';
+import { apiErrorMessage } from '@/Lib/api';
+import { formatGregorianSyrianShort } from '@/Lib/syrian-date';
+import { REPORT_REASON_LABELS } from '@/Domain/places/reports';
+import type { AdminPlaceReport, Paginated, PlaceReportStatus } from '@/Domain/places/types';
 
 type StatusFilter = PlaceReportStatus | 'all';
 
@@ -56,7 +58,7 @@ export function ReportsTab() {
       }
       setReports(res);
     } catch (e) {
-      setError(extractError(e));
+      setError(apiErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -67,7 +69,6 @@ export function ReportsTab() {
   }, [status, page, fetchReports]);
 
   const resolve = async (report: AdminPlaceReport, action: 'dismiss' | 'unpublish') => {
-    // A place that is no longer published only needs its reports closed.
     const published = report.place.status === 'approved';
     if (action === 'unpublish' && published) {
       const ok = await confirmDialog({
@@ -84,7 +85,7 @@ export function ReportsTab() {
       notify.success(action === 'dismiss' ? 'تم رفض البلاغ' : published ? 'تم إخفاء المكان' : 'تم إغلاق البلاغ');
       await fetchReports(status, page);
     } catch (e) {
-      notify.error(extractError(e));
+      notify.error(apiErrorMessage(e));
       // e.g. 409 when another moderator already handled it: show the current state
       await fetchReports(status, page);
     } finally {
@@ -160,7 +161,7 @@ export function ReportsTab() {
               <p className="text-xs text-muted-foreground">
                 أبلغ عنه {report.user.name} ·{' '}
                 <time dateTime={report.created_at}>
-                  {new Date(report.created_at).toLocaleDateString('ar-SY')}
+                  {formatGregorianSyrianShort(report.created_at)}
                 </time>
               </p>
               {report.status === 'open' && (

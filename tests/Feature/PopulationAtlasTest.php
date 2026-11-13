@@ -1,10 +1,9 @@
 <?php
 
-use App\Http\Controllers\Api\PopulationAtlasController;
 use App\Models\Population\PopulationDemographic;
 use App\Models\Population\PopulationEnvironmentalLog;
 use App\Models\Population\PopulationRainfall;
-use Illuminate\Support\Facades\Cache;
+use App\Services\Population\PopulationCache;
 
 /*
 |--------------------------------------------------------------------------
@@ -42,8 +41,6 @@ function envLog(string $city, float $lat, float $lon, array $overrides = []): Po
         'last_updated_at' => now(),
     ], $overrides));
 }
-
-// ─── Master data: grouping ─────────────────────────────────────────────────
 
 it('groups demographics by type then source, with cities keyed by name', function () {
     PopulationDemographic::create([
@@ -111,8 +108,6 @@ it('groups rainfall by district code in year order', function () {
         ->and($rainfall['SY-DI'][0]['rainfall'])->toBe(250);
 });
 
-// ─── Master data: the synthesised environmental group ──────────────────────
-
 it('synthesises an environmental group from the log when demographics lack one', function () {
     envLog('Damascus', 33.51, 36.29);
     envLog('Aleppo', 36.20, 37.13);
@@ -158,8 +153,6 @@ it('omits the environmental group entirely when there are no logs', function () 
 
     expect($groups)->not->toHaveKey('environmental');
 });
-
-// ─── Environmental report ─────────────────────────────────────────────────
 
 it('maps a log row into the report shape, renaming the coordinates', function () {
     envLog('Damascus', 33.51, 36.29, ['population_ref' => 2_500_000]);
@@ -235,8 +228,6 @@ it('keeps the country-level reference data and the fixed recommendations', funct
         ->and($report->json('summary.key_findings'))->toHaveCount(3);
 });
 
-// ─── Caching ───────────────────────────────────────────────────────────────
-
 it('caches the master payload and serves the second read from it', function () {
     PopulationDemographic::create([
         'data_type' => 'population', 'source_id' => 1, 'city_name' => 'Damascus', 'value' => 1,
@@ -244,10 +235,8 @@ it('caches the master payload and serves the second read from it', function () {
 
     $this->getJson('/api/population/master')->assertOk();
 
-    expect(Cache::has(PopulationAtlasController::MASTER_CACHE_KEY))->toBeTrue();
-
-    // A row added after the first read must not appear until the key is flushed,
-    // which is the whole point of the hour-long cache.
+    // A row added after the first read must not appear until the cache is
+    // flushed, which is the whole point of the hour-long stale window.
     PopulationDemographic::create([
         'data_type' => 'population', 'source_id' => 1, 'city_name' => 'Aleppo', 'value' => 2,
     ]);
@@ -256,29 +245,27 @@ it('caches the master payload and serves the second read from it', function () {
 
     expect($cached)->toBe(['Damascus' => 1]);
 
-    PopulationAtlasController::flushCache();
+    PopulationCache::forget();
 
     $fresh = $this->getJson('/api/population/master')->assertOk()->json('groups.population.0.cities');
 
     expect($fresh)->toBe(['Damascus' => 1, 'Aleppo' => 2]);
 });
 
-it('caches the environmental report under its own key', function () {
+it('caches the environmental report and refreshes it on demand', function () {
     envLog('Damascus', 33.51, 36.29);
 
-    $this->getJson('/api/population/env-report')->assertOk();
+    expect($this->getJson('/api/population/env-report')->assertOk()->json('metadata.cities_analyzed'))->toBe(1);
 
-    expect(Cache::has(PopulationAtlasController::ENV_CACHE_KEY))->toBeTrue();
+    // A log added after the first read is invisible until the report is rebuilt.
+    envLog('Aleppo', 36.20, 37.13);
 
-    // Independent of the master key: flushing both is one call, but a refresh of
-    // one must not silently drop the other.
-    Cache::forget(PopulationAtlasController::MASTER_CACHE_KEY);
-    PopulationAtlasController::flushCache();
+    expect($this->getJson('/api/population/env-report')->assertOk()->json('metadata.cities_analyzed'))->toBe(1);
 
-    expect(Cache::has(PopulationAtlasController::ENV_CACHE_KEY))->toBeFalse();
+    PopulationCache::forget();
+
+    expect($this->getJson('/api/population/env-report')->assertOk()->json('metadata.cities_analyzed'))->toBe(2);
 });
-
-// ─── The page shell ────────────────────────────────────────────────────────
 
 it('renders the atlas page without inlining the payload', function () {
     envLog('Damascus', 33.51, 36.29);

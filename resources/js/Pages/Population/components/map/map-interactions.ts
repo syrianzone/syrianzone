@@ -1,18 +1,11 @@
 import L from 'leaflet';
 import { DATA_TYPES, DATA_TYPE_CONFIG, CityData, RainfallData } from '../../types';
-import { getCanonicalCityName } from '@/Lib/city-name-standardizer';
+import { getCanonicalGovernorateName, getGovernorateDatasetNameEn } from '@/Domain/geography/governorates';
 import { findPopulation, findRainData } from '../../utils/data-finder';
 import { generateRainChartHtml, generatePopulationTooltipHtml, generateEnvironmentalTooltipHtml, escapeHtml } from './tooltip-generators';
 import { getHighlightStyle, getFeatureStyle } from './map-styles';
 
 type DataType = typeof DATA_TYPES[keyof typeof DATA_TYPES];
-
-const ARABIC_TO_ENGLISH_CITY_MAP: { [key: string]: string } = {
-    'دمشق': 'Damascus', 'حلب': 'Aleppo', 'ريف دمشق': 'Rif Dimashq', 'حمص': 'Homs',
-    'حماة': 'Hama', 'اللاذقية': 'Latakia', 'إدلب': 'Idlib', 'الحسكة': 'Al-Hasakah',
-    'دير الزور': 'Deir ez-Zor', 'طرطوس': 'Tartus', 'الرقة': 'Raqqa', 'درعا': 'Daraa',
-    'السويداء': 'As-Suwayda', 'القنيطرة': 'Quneitra'
-};
 
 export interface CursorTooltipControls {
     /** Returns the absolutely-positioned tooltip div owned by MapClient (or null). */
@@ -30,7 +23,7 @@ function buildTooltipHtml(
     environmentalData: any | undefined,
 ): { wrapperClass: string; content: string } | null {
     const name = feature.properties.province_name || feature.properties.ADM2_AR || feature.properties.ADM1_AR || feature.properties.Name;
-    const nameAr = getCanonicalCityName(name);
+    const nameAr = getCanonicalGovernorateName(name);
 
     if (currentDataType === DATA_TYPES.RAINFALL) {
         const rData = findRainData(feature, rainfallData);
@@ -43,7 +36,7 @@ function buildTooltipHtml(
 
     if (currentDataType === DATA_TYPES.ENVIRONMENTAL) {
         if (!environmentalData) return null;
-        const englishName = ARABIC_TO_ENGLISH_CITY_MAP[nameAr] || nameAr;
+        const englishName = getGovernorateDatasetNameEn(nameAr);
         const envData = environmentalData.cities?.[nameAr] || environmentalData.cities?.[englishName] || environmentalData.cities?.[name];
         const safeName = escapeHtml(nameAr);
         const content = envData
@@ -92,7 +85,6 @@ export function setupFeatureInteractions(
 ) {
     const { getTip, getWrap, onFeatureClick } = controls;
 
-    // Mouse events
     const l = layer as L.Path; // Cast to access setStyle/bringToFront
 
     l.on({

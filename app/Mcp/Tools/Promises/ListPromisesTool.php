@@ -40,7 +40,7 @@ class ListPromisesTool extends PromisesTool
 
             'status' => $schema->string()
                 ->description('Filter by verdict status (e.g. "pending", "in_progress", "fulfilled", "broken", or "all"). Defaults to "all".')
-                ->enum([...Promise::STATUSES, 'all'])
+                ->enum([...Promise::statuses(), 'all'])
                 ->default('all'),
 
             'search' => $schema->string()
@@ -59,7 +59,7 @@ class ListPromisesTool extends PromisesTool
     {
         $validated = $request->validate([
             'review_status' => ['sometimes', Rule::in([...Promise::REVIEW_STATUSES, 'all'])],
-            'status' => ['sometimes', Rule::in([...Promise::STATUSES, 'all'])],
+            'status' => ['sometimes', Rule::in([...Promise::statuses(), 'all'])],
             'search' => ['sometimes', 'nullable', 'string', 'max:100'],
             'limit' => ['sometimes', 'integer', 'between:1,200'],
         ]);

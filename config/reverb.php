@@ -15,35 +15,17 @@ $reverbAppHost = parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_
 
 return [
 
-    /*
-    |--------------------------------------------------------------------------
-    | Default Reverb Server
-    |--------------------------------------------------------------------------
-    |
-    | This option controls the default server used by Reverb to handle
-    | incoming messages as well as broadcasting message to all your
-    | connected clients. At this time only "reverb" is supported.
-    |
-    */
-
     'default' => env('REVERB_SERVER', 'reverb'),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Reverb Servers
-    |--------------------------------------------------------------------------
-    |
-    | Here you may define details for each of the supported Reverb servers.
-    | Each server has its own configuration options that are defined in
-    | the array below. You should ensure all the options are present.
-    |
-    */
 
     'servers' => [
 
         'reverb' => [
+            // The container's nginx proxies /app/ to 127.0.0.1:6001
+            // (docker/server-opts.d/app-websocket.conf), so 6001 is the default
+            // and the s6 run script listens on this same value. Changing the
+            // port means changing both.
             'host' => env('REVERB_SERVER_HOST', '0.0.0.0'),
-            'port' => env('REVERB_SERVER_PORT', 8080),
+            'port' => env('REVERB_SERVER_PORT', 6001),
             'path' => env('REVERB_SERVER_PATH', ''),
             'hostname' => env('REVERB_HOST'),
             'options' => [
@@ -68,17 +50,6 @@ return [
         ],
 
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Reverb Applications
-    |--------------------------------------------------------------------------
-    |
-    | Here you may define how Reverb applications are managed. If you choose
-    | to use the "config" provider, you may define an array of apps which
-    | your server will support, including their connection credentials.
-    |
-    */
 
     'apps' => [
 

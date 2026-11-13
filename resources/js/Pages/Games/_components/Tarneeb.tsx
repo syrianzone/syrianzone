@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
-import { SUIT_LABEL, type Card, type Suit } from '../_lib/cards';
+import { SUIT_LABEL, type Card, type Suit } from '@/Domain/games/cards';
 import { applyRound, createMatch, isMatchOver, type MatchState } from '../_lib/cardGames/match';
 import { power } from '../_lib/cardGames/hand';
 import { readStats, recordMatch, type MatchStats } from '../_lib/scores';
@@ -25,9 +25,11 @@ import {
 } from '../_lib/tarneeb';
 import { chooseBid, choosePlay, chooseTrump } from '../_lib/tarneebAi';
 import { DialogClose } from '@/Components/ui/dialog';
-import PlayingCard from './PlayingCard';
+import PlayingCard from '@/Domain/games/PlayingCard';
 import CardStyleToggle from './CardStyleToggle';
 import GameMenu from './GameMenu';
+import { useCardDrag } from '../_lib/useCardDrag';
+import './table.css';
 
 /** Seat 0 is the player; 1 on the left, 2 opposite (the partner), 3 on the right. */
 const HUMAN = 0;
@@ -50,26 +52,13 @@ export default function Tarneeb() {
   const [stats, setStats] = useState<MatchStats>(EMPTY_STATS);
   /** A completed trick stays on the table until the player says continue. */
   const [paused, setPaused] = useState(false);
-  /** The card under the finger/mouse while dragging it out to play. */
-  const [ghost, setGhost] = useState<{ card: Card; x: number; y: number; w: number } | null>(null);
   /** Draw every card as one big rank instead of pips. */
   const [large, setLarge] = useState(false);
   /** The card picked on a touch screen, waiting for a second tap to play it. */
   const [selected, setSelected] = useState<string | null>(null);
-  /** The last pointer kind: a touch picks first, a mouse plays at once. */
-  const lastPointerType = useRef('');
 
   const recorded = useRef<MatchState | null>(null);
   const seenHistory = useRef(0);
-  const drag = useRef<{
-    card: Card;
-    startX: number;
-    startY: number;
-    grabX: number;
-    grabY: number;
-    w: number;
-    active: boolean;
-  } | null>(null);
 
   useEffect(() => {
     const fresh = createFreshMatch();
@@ -107,7 +96,6 @@ export default function Tarneeb() {
     return () => window.clearTimeout(timer);
   }, [round, paused]);
 
-  // A new trick or turn drops any picked card.
   useEffect(() => {
     setSelected(null);
   }, [round]);
@@ -125,6 +113,15 @@ export default function Tarneeb() {
     );
   }, [round]);
 
+  // Hooks run before the loading return below; the drop handler reaches the
+  // current render's `play` through a ref.
+  const playRef = useRef<(card: Card) => void>(() => {});
+  const { drag, startDrag, isTouchPick } = useCardDrag<Card>({
+    onDrop: (element, card) => {
+      if (element?.closest('.sz-tbl')) playRef.current(card);
+    },
+  });
+
   if (!match || !round) {
     return <div className="py-16 text-center text-sm text-muted-foreground">جاري التوزيع…</div>;
   }
@@ -139,11 +136,12 @@ export default function Tarneeb() {
     setSelected(null);
     setRound((current) => (current ? playCard(current, HUMAN, card) : current));
   };
+  playRef.current = play;
   // On a touch screen a tap only picks the card — raised and ringed — and a
   // second tap on it plays. A mouse click plays at once, and a drag plays out.
   const tapCard = (card: Card) => {
     if (!legalIds.has(card.id)) return;
-    if (lastPointerType.current === 'touch' && selected !== card.id) {
+    if (isTouchPick(selected === card.id)) {
       setSelected(card.id);
       return;
     }
@@ -177,55 +175,6 @@ export default function Tarneeb() {
       writeLargeCards(!value);
       return !value;
     });
-
-  // Card drag: a legal card can be pulled out and dropped on the table to play,
-  // or tapped. Only a real drag swallows the following click.
-  const startDrag = (card: Card, e: React.PointerEvent) => {
-    lastPointerType.current = e.pointerType;
-    if (!legalIds.has(card.id)) return;
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    drag.current = {
-      card,
-      startX: e.clientX,
-      startY: e.clientY,
-      grabX: e.clientX - rect.left,
-      grabY: e.clientY - rect.top,
-      w: rect.width,
-      active: false,
-    };
-    const move = (ev: PointerEvent) => {
-      const d = drag.current;
-      if (!d) return;
-      if (!d.active) {
-        if (Math.hypot(ev.clientX - d.startX, ev.clientY - d.startY) < 8) return;
-        d.active = true;
-      }
-      if (ev.cancelable) ev.preventDefault();
-      setGhost({ card: d.card, x: ev.clientX - d.grabX, y: ev.clientY - d.grabY, w: d.w });
-    };
-    const up = (ev: PointerEvent) => {
-      window.removeEventListener('pointermove', move);
-      window.removeEventListener('pointerup', up);
-      window.removeEventListener('pointercancel', up);
-      const d = drag.current;
-      drag.current = null;
-      setGhost(null);
-      if (!d?.active) return; // a tap falls through to onClick
-      const under = document.elementFromPoint(ev.clientX, ev.clientY);
-      const onTable = under instanceof Element && under.closest('.sz-tbl') !== null;
-      const swallow = (ce: Event) => {
-        ce.stopPropagation();
-        ce.preventDefault();
-        window.removeEventListener('click', swallow, true);
-      };
-      window.addEventListener('click', swallow, true);
-      window.setTimeout(() => window.removeEventListener('click', swallow, true), 500);
-      if (onTable) play(d.card);
-    };
-    window.addEventListener('pointermove', move, { passive: false });
-    window.addEventListener('pointerup', up);
-    window.addEventListener('pointercancel', up);
-  };
 
   const trick = paused && round.history.length > 0 ? round.history[round.history.length - 1].plays : round.trick;
   const trickWinnerSeat = paused && round.history.length > 0 ? round.history[round.history.length - 1].winner : null;
@@ -323,7 +272,7 @@ export default function Tarneeb() {
               interactive={legalIds.has(card.id)}
               picked={selected === card.id}
               className={legalIds.has(card.id) ? 'sz-tbl__playable' : ''}
-              onPointerDown={(e) => startDrag(card, e)}
+              onPointerDown={(e) => { if (legalIds.has(card.id)) startDrag(e, card); }}
               onClick={() => tapCard(card)}
             />
           ))}
@@ -395,20 +344,20 @@ export default function Tarneeb() {
       </div>
 
       {/* The card following the finger while it is dragged out to play. */}
-      {ghost && (
+      {drag && (
         <div
           className="sz-tbl__ghost"
           style={
             {
-              left: ghost.x,
-              top: ghost.y,
-              width: ghost.w,
-              '--sz-card-w': `${ghost.w}px`,
+              left: drag.x,
+              top: drag.y,
+              width: drag.w,
+              '--sz-card-w': `${drag.w}px`,
               '--sz-card-h-ratio': 1.4286,
             } as React.CSSProperties
           }
         >
-          <PlayingCard card={ghost.card} decorative large={large} />
+          <PlayingCard card={drag.payload} decorative large={large} />
         </div>
       )}
     </div>

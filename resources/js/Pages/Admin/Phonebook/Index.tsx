@@ -1,73 +1,60 @@
 import React, { useState, useMemo } from 'react';
-import { router, usePage } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import {
-    Plus, Edit, Trash2, Eye, EyeOff, Search, ArrowUp, ArrowDown, Settings, Check, X, Phone, MessageSquare, ExternalLink, ArrowRight
+    Plus, Edit, Trash2, Eye, EyeOff, ArrowUp, ArrowDown, Settings, Check, X, Phone, MessageSquare, ExternalLink, ArrowRight
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import { Badge } from "@/Components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/Components/ui/dialog";
+import CategoryDialog from '@/Components/directory/CategoryDialog';
+import DirectoryResultCount from '@/Components/directory/DirectoryResultCount';
+import { DirectorySearch } from '@/Components/directory/DirectorySearch';
+import { useDirectory, type DirectoryFacet } from '@/Components/directory/useDirectory';
 import { Label } from "@/Components/ui/label";
 import { Switch } from "@/Components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/Components/ui/table";
 import MainLayout from '@/Layouts/MainLayout';
-import { canAny } from '@/Lib/permissions'
+import { useCan } from '@/Lib/useCan';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
-
-interface PhonebookCategory {
-    id: string;
-    label_ar: string;
-    label_en: string;
-    icon?: string;
-    order_column: number;
-    is_active: boolean;
-}
-
-interface PhonebookEntry {
-    id: string;
-    category_id: string;
-    name_ar: string;
-    name_en?: string;
-    number: string;
-    is_whatsapp: boolean;
-    source_url?: string;
-    order_column: number;
-    is_active: boolean;
-    category?: PhonebookCategory;
-}
+import type { PhonebookCategory, PhonebookEntry } from '@/Domain/phonebook/types';
 
 interface AdminPhonebookProps {
     categories: PhonebookCategory[];
     entries: PhonebookEntry[];
 }
 
-export default function PhonebookAdminIndex({ categories, entries }: AdminPhonebookProps) {
-    const [searchTerm, setSearchTerm] = useState('');
+const entrySearchText = (entry: PhonebookEntry) =>
+    `${entry.name_ar} ${entry.name_en ?? ''} ${entry.number}`;
 
-    // Gated per capability, matching the route tags. The panel used to render
-    // every control for any phonebook.* holder, so a phonebook.reorder-only
-    // account was offered delete and toggle buttons it cannot use.
-    // AuthProvider is mounted *inside* MainLayout, so this component's body runs
-    // above it and useAuth() throws here — the page renders blank. Read the
-    // server-resolved capability list off the Inertia props instead. It needs no
-    // superadmin special case: User::effectivePermissions() already returns the
-    // whole catalogue for superadmin, which is what AuthContext.can() was
-    // re-deriving on the client.
-    const { auth } = usePage().props as any;
-    const can = (capability: string): boolean =>
-        canAny(auth?.user?.effective_permissions, capability);
+export default function PhonebookAdminIndex({ categories, entries }: AdminPhonebookProps) {
+    // Each control is gated on the capability its route requires (routes/web.php).
+    const can = useCan();
     const canCreate = can('phonebook.create');
     const canEdit = can('phonebook.edit');
     const canToggle = can('phonebook.toggle');
     const canDelete = can('phonebook.delete');
-    const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
-    // Dialog States
+    // The same search and category filter the public directory runs on, so a
+    // spelling that matches there matches here.
+    const categoryFacet = useMemo<DirectoryFacet<PhonebookEntry>>(() => ({
+        key: 'category',
+        label: 'الفئة',
+        options: categories.map((cat) => ({ value: cat.id, label: cat.label_ar })),
+        valueOf: (entry) => entry.category_id,
+    }), [categories]);
+    const directory = useDirectory<PhonebookEntry>({
+        items: entries,
+        searchText: entrySearchText,
+        facets: [categoryFacet],
+    });
+    const selectedCategory = directory.filters.category?.[0] ?? 'all';
+    const filteredEntries = directory.results;
+
     const [categoryModalOpen, setCategoryModalOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<PhonebookCategory | null>(null);
-    const [catForm, setCatForm] = useState({ id: '', label_ar: '', label_en: '', is_active: true });
 
     const [entryModalOpen, setEntryModalOpen] = useState(false);
     const [editingEntry, setEditingEntry] = useState<PhonebookEntry | null>(null);
@@ -82,59 +69,29 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
         is_active: true,
     });
 
-    const filteredEntries = useMemo(() => {
-        return entries.filter(item => {
-            const matchesCat = selectedCategory === 'all' || item.category_id === selectedCategory;
-            const term = searchTerm.toLowerCase();
-            const matchesSearch = !searchTerm || (
-                item.name_ar.toLowerCase().includes(term) ||
-                (item.name_en && item.name_en.toLowerCase().includes(term)) ||
-                item.number.includes(term)
-            );
-            return matchesCat && matchesSearch;
-        });
-    }, [entries, selectedCategory, searchTerm]);
-
-    // Category Handlers
     const openCreateCategory = () => {
         setEditingCategory(null);
-        setCatForm({ id: '', label_ar: '', label_en: '', is_active: true });
         setCategoryModalOpen(true);
     };
 
     const openEditCategory = (cat: PhonebookCategory) => {
         setEditingCategory(cat);
-        setCatForm({
-            id: cat.id,
-            label_ar: cat.label_ar,
-            label_en: cat.label_en,
-            is_active: cat.is_active,
-        });
         setCategoryModalOpen(true);
-    };
-
-    const handleSaveCategory = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (editingCategory) {
-            router.put(`/api/v1/admin/phonebook/categories/${editingCategory.id}`, catForm, {
-                onSuccess: () => setCategoryModalOpen(false),
-            });
-        } else {
-            router.post('/api/v1/admin/phonebook/categories', catForm, {
-                onSuccess: () => setCategoryModalOpen(false),
-            });
-        }
     };
 
     const handleDeleteCategory = async (id: string) => {
         const ok = await confirmDialog({ title: 'حذف هذه الفئة بالكامل؟', destructive: true, confirmText: 'حذف' });
-        if (ok) {
-            router.delete(`/api/v1/admin/phonebook/categories/${id}`);
-            notify.success('تم حذف الفئة');
-        }
+        if (!ok) return;
+        router.delete(`/api/v1/admin/phonebook/categories/${id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                notify.success('تم حذف الفئة');
+                setCategoryModalOpen(false);
+            },
+            onError: () => notify.error('تعذر حذف الفئة'),
+        });
     };
 
-    // Entry Handlers
     const openCreateEntry = () => {
         setEditingEntry(null);
         setEntryForm({
@@ -154,40 +111,45 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
         setEditingEntry(entry);
         setEntryForm({
             id: entry.id,
-            category_id: entry.category_id,
+            category_id: entry.category_id ?? categories[0]?.id ?? 'emergency',
             name_ar: entry.name_ar,
             name_en: entry.name_en || '',
             number: entry.number,
             is_whatsapp: entry.is_whatsapp,
             source_url: entry.source_url || '',
-            is_active: entry.is_active,
+            is_active: entry.is_active ?? true,
         });
         setEntryModalOpen(true);
     };
 
     const handleSaveEntry = (e: React.FormEvent) => {
         e.preventDefault();
+        const options = {
+            onSuccess: () => setEntryModalOpen(false),
+            onError: (errors: Record<string, string>) =>
+                notify.error(Object.values(errors)[0] ?? 'تعذر حفظ البيانات'),
+        };
         if (editingEntry) {
-            router.post(`/api/v1/admin/phonebook/entries/${editingEntry.id}`, entryForm, {
-                onSuccess: () => setEntryModalOpen(false),
-            });
+            router.post(`/api/v1/admin/phonebook/entries/${editingEntry.id}`, entryForm, options);
         } else {
-            router.post('/api/v1/admin/phonebook/entries', entryForm, {
-                onSuccess: () => setEntryModalOpen(false),
-            });
+            router.post('/api/v1/admin/phonebook/entries', entryForm, options);
         }
     };
 
     const handleToggleActive = (id: string) => {
-        router.post(`/api/v1/admin/phonebook/entries/${id}/toggle`);
+        router.post(`/api/v1/admin/phonebook/entries/${id}/toggle`, {}, {
+            onError: () => notify.error('تعذر تغيير حالة الرقم'),
+        });
     };
 
     const handleDeleteEntry = async (id: string) => {
         const ok = await confirmDialog({ title: 'حذف هذا الرقم؟', destructive: true, confirmText: 'حذف' });
-        if (ok) {
-            router.delete(`/api/v1/admin/phonebook/entries/${id}`);
-            notify.success('تم حذف الرقم');
-        }
+        if (!ok) return;
+        router.delete(`/api/v1/admin/phonebook/entries/${id}`, {
+            preserveScroll: true,
+            onSuccess: () => notify.success('تم حذف الرقم'),
+            onError: () => notify.error('تعذر حذف الرقم'),
+        });
     };
 
     return (
@@ -197,7 +159,6 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
             <div className="min-h-screen bg-background py-8" dir="rtl">
                 <div className="container mx-auto px-4 max-w-7xl space-y-6">
 
-                    {/* Top Breadcrumb & Controls */}
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-card p-6 rounded-2xl border border-border shadow-xs">
                         <div className="flex items-center gap-3">
                             <Button variant="outline" size="icon" asChild className="rounded-xl">
@@ -227,11 +188,10 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
                         </div>
                     </div>
 
-                    {/* Category Selector Cards */}
                     <div className="flex items-center gap-2 overflow-x-auto pb-2">
                         <Button
                             variant={selectedCategory === 'all' ? 'default' : 'outline'}
-                            onClick={() => setSelectedCategory('all')}
+                            onClick={() => directory.setFilters({ ...directory.filters, category: [] })}
                             className="rounded-full text-xs font-semibold shrink-0"
                         >
                             الكل ({entries.length})
@@ -242,7 +202,7 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
                                 <div key={cat.id} className="flex items-center gap-1 shrink-0">
                                     <Button
                                         variant={selectedCategory === cat.id ? 'default' : 'outline'}
-                                        onClick={() => setSelectedCategory(cat.id)}
+                                        onClick={() => directory.setFilters({ ...directory.filters, category: [cat.id] })}
                                         className="rounded-full text-xs font-semibold gap-1.5"
                                     >
                                         <span>{cat.label_ar}</span>
@@ -266,23 +226,19 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
                         })}
                     </div>
 
-                    {/* Filter & Search Bar */}
                     <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-card p-4 rounded-xl border border-border">
-                        <div className="relative w-full sm:w-80">
-                            <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input aria-label="ابحث بالاسم أو الرقم..."
-                                placeholder="ابحث بالاسم أو الرقم..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="ps-9 h-10 text-sm"
-                            />
-                        </div>
-                        <div className="text-xs text-muted-foreground">
+                        <DirectorySearch
+                            className="w-full sm:w-80"
+                            value={directory.query}
+                            onChange={directory.setQuery}
+                            placeholder="ابحث بالاسم أو الرقم..."
+                            ariaLabel="ابحث بالاسم أو الرقم..."
+                        />
+                        <DirectoryResultCount className="text-xs">
                             عرض <span className="font-bold text-foreground">{filteredEntries.length}</span> من أصل {entries.length} رقم
-                        </div>
+                        </DirectoryResultCount>
                     </div>
 
-                    {/* Entries Table */}
                     <div className="bg-card rounded-2xl border border-border shadow-xs overflow-hidden">
                         <Table>
                             <TableHeader className="bg-muted/50">
@@ -296,6 +252,13 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
+                                {filteredEntries.length === 0 && (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
+                                            لا توجد أرقام مطابقة للبحث.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
                                 {filteredEntries.map((item) => (
                                     <TableRow key={item.id} className={`hover:bg-muted/40 transition-colors ${!item.is_active ? 'opacity-60 bg-muted/20' : ''}`}>
                                         <TableCell>
@@ -394,7 +357,6 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
                         </Table>
                     </div>
 
-                    {/* Entry Create/Edit Modal */}
                     <Dialog open={entryModalOpen} onOpenChange={setEntryModalOpen}>
                         <DialogContent className="max-w-lg" dir="rtl">
                             <DialogHeader>
@@ -487,75 +449,17 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
                         </DialogContent>
                     </Dialog>
 
-                    {/* Category Create/Edit Modal */}
-                    <Dialog open={categoryModalOpen} onOpenChange={setCategoryModalOpen}>
-                        <DialogContent className="max-w-md" dir="rtl">
-                            <DialogHeader>
-                                <DialogTitle>{editingCategory ? 'تعديل بيانات الفئة' : 'إضافة فئة جديدة'}</DialogTitle>
-                            </DialogHeader>
-                            <form onSubmit={handleSaveCategory} className="space-y-4 py-2">
-                                {!editingCategory && (
-                                    <div className="space-y-1">
-                                        <Label>معرف الفئة (Slug)</Label>
-                                        <Input aria-label="الوسوم (مفصولة بفواصل)"
-                                            required
-                                            value={catForm.id}
-                                            onChange={(e) => setCatForm({ ...catForm, id: e.target.value })}
-                                            placeholder="emergency, governorates, hospitals..."
-                                            className="font-mono text-sm"
-                                        />
-                                    </div>
-                                )}
-
-                                <div className="space-y-1">
-                                    <Label>اسم الفئة (بالعربية)</Label>
-                                    <Input aria-label="الفئة بالعربية"
-                                        required
-                                        value={catForm.label_ar}
-                                        onChange={(e) => setCatForm({ ...catForm, label_ar: e.target.value })}
-                                        placeholder="مثال: المستشفيات والمراكز الصحية"
-                                    />
-                                </div>
-
-                                <div className="space-y-1">
-                                    <Label>اسم الفئة (بالإنكليزية)</Label>
-                                    <Input aria-label="الفئة بالإنجليزية"
-                                        required
-                                        value={catForm.label_en}
-                                        onChange={(e) => setCatForm({ ...catForm, label_en: e.target.value })}
-                                        placeholder="Example: Hospitals & Health Centers"
-                                    />
-                                </div>
-
-                                <div className="flex items-center gap-2 pt-2 border-t border-border">
-                                    <Switch
-                                        checked={catForm.is_active}
-                                        onCheckedChange={(val) => setCatForm({ ...catForm, is_active: val })}
-                                    />
-                                    <Label className="cursor-pointer text-sm">الفئة مفعّلة في الواجهة العامة</Label>
-                                </div>
-
-                                <DialogFooter className="gap-2 pt-4">
-                                    {editingCategory && canDelete && (
-                                        <Button
-                                            type="button"
-                                            variant="destructive"
-                                            onClick={() => handleDeleteCategory(editingCategory.id)}
-                                            className="me-auto"
-                                        >
-                                            حذف الفئة
-                                        </Button>
-                                    )}
-                                    <Button type="button" variant="outline" onClick={() => setCategoryModalOpen(false)}>
-                                        إلغاء
-                                    </Button>
-                                    <Button type="submit">
-                                        حفظ الفئة
-                                    </Button>
-                                </DialogFooter>
-                            </form>
-                        </DialogContent>
-                    </Dialog>
+                    <CategoryDialog
+                        open={categoryModalOpen}
+                        onOpenChange={setCategoryModalOpen}
+                        category={editingCategory}
+                        endpoint="/api/v1/admin/phonebook/categories"
+                        title={{ create: 'إضافة فئة جديدة', edit: 'تعديل بيانات الفئة' }}
+                        submit={{ create: 'حفظ الفئة', edit: 'حفظ الفئة' }}
+                        slug={{ label: 'معرف الفئة (Slug)', placeholder: 'emergency, governorates, hospitals...', maxLength: 64 }}
+                        activeLabel="الفئة مفعّلة في الواجهة العامة"
+                        onDelete={canDelete && editingCategory ? () => handleDeleteCategory(editingCategory.id) : undefined}
+                    />
 
                 </div>
             </div>

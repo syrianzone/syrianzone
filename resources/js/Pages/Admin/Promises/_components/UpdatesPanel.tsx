@@ -1,5 +1,5 @@
+import { promisesApi } from '@/Domain/promises/api';
 import { useState } from 'react';
-import axios from '@/Lib/axios';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
@@ -8,10 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, Plus, Trash2, Undo2 } from 'lucide-react';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
-import { extractApiErrorMessage, extractApiFieldErrors } from '@/Lib/apiError';
+import { apiErrorMessage, apiFieldErrors } from '@/Lib/api';
 import FieldError, { fieldA11y } from '@/Components/ui/field-error';
-import Timeline from '@/Pages/Promises/_components/Timeline';
-import type { PromiseUpdateData } from '@/Pages/Promises/_lib/types';
+import Timeline from '@/Domain/promises/Timeline';
+import type { PromiseUpdateData } from '@/Domain/promises/types';
 import type { AdminPromiseDetail } from '../_lib/types';
 
 type EntryType = 'progress' | 'official_response' | 'note';
@@ -47,7 +47,7 @@ export default function UpdatesPanel({ promise, today, canEdit, canRule, onSaved
         setSaving(true);
         setErrors({});
         try {
-            const res = await axios.post(`/api/v1/admin/promises/${promise.id}/updates`, {
+            const res = await promisesApi.addUpdate<{ promise: AdminPromiseDetail }>(promise.id, {
                 type,
                 happened_on: happenedOn,
                 value: type === 'progress' && value !== '' ? Number(value) : null,
@@ -55,15 +55,15 @@ export default function UpdatesPanel({ promise, today, canEdit, canRule, onSaved
                 source_url: sourceUrl || null,
                 archive_url: archiveUrl || null,
             });
-            onSaved(res.data.promise);
+            onSaved(res.promise);
             setValue('');
             setBody('');
             setSourceUrl('');
             setArchiveUrl('');
             notify.success('أُضيف إلى السجل');
         } catch (err) {
-            setErrors(extractApiFieldErrors(err));
-            notify.error(extractApiErrorMessage(err, 'تعذّرت الإضافة'));
+            setErrors(apiFieldErrors(err));
+            notify.error(apiErrorMessage(err, 'تعذّرت الإضافة'));
         } finally {
             setSaving(false);
         }
@@ -76,12 +76,12 @@ export default function UpdatesPanel({ promise, today, canEdit, canRule, onSaved
             : { title: 'حذف هذا البند من السجل؟', destructive: true, confirmText: 'حذف' });
         if (!ok) return;
         try {
-            const res = await axios.delete(undo
-                ? `/api/v1/admin/promises/${promise.id}/status/${update.id}`
-                : `/api/v1/admin/promises/${promise.id}/updates/${update.id}`);
-            onSaved(res.data.promise);
+            const res = await (undo
+                ? promisesApi.undoStatusChange<{ promise: AdminPromiseDetail }>(promise.id, update.id)
+                : promisesApi.removeUpdate<{ promise: AdminPromiseDetail }>(promise.id, update.id));
+            onSaved(res.promise);
         } catch (err) {
-            notify.error(extractApiErrorMessage(err, 'تعذّر الحذف'));
+            notify.error(apiErrorMessage(err, 'تعذّر الحذف'));
         }
     };
 

@@ -4,6 +4,7 @@ namespace App\Mcp\Tools\Transit;
 
 use App\Services\Transit\TransitAdminService;
 use App\Support\Agents\AgentContext;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -32,7 +33,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
 #[IsIdempotent]
 class MoveTransitRouteTool extends TransitTool
 {
-    protected array $permissions = ['transit.edit_routes'];
+    protected array $permissions = [PermissionCatalogue::TRANSIT_EDIT_ROUTES];
 
     public function schema(JsonSchema $schema): array
     {
@@ -64,8 +65,8 @@ class MoveTransitRouteTool extends TransitTool
             // Both ends of the move are checked: an agent allowed to work in the
             // source but not the target must not be able to relocate data out of
             // its scope, and vice versa.
-            $this->guardCity($context, 'transit.edit_routes', $from);
-            $this->guardCity($context, 'transit.edit_routes', $to);
+            $this->guardCity($context, PermissionCatalogue::TRANSIT_EDIT_ROUTES, $from);
+            $this->guardCity($context, PermissionCatalogue::TRANSIT_EDIT_ROUTES, $to);
 
             $moved = $service->moveRoute($route, $to, $context->id());
 

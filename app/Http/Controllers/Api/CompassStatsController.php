@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\CompassResult;
+use App\Support\Compass\CompassStats;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 
 class CompassStatsController extends Controller
 {
@@ -41,19 +41,18 @@ class CompassStatsController extends Controller
 
         // Return an opaque delete token so the client can remove exactly this row
         // if the user opts back out (the client never sees the numeric id).
-        Cache::forget(\App\Http\Controllers\CompassController::PUBLIC_STATS_CACHE_KEY);
+        CompassStats::forgetPublicCache();
 
         return response()->json(['ok' => true, 'token' => $this->tokenFor($row)]);
     }
 
-    /** Remove a previously-submitted anonymous row via its token. */
     public function destroy(Request $request)
     {
         $data = $request->validate(['token' => 'required|string|max:128']);
         $id = $this->idFromToken($data['token']);
         if ($id) {
             CompassResult::where('id', $id)->whereNull('user_id')->where('stats_consent', true)->delete();
-            Cache::forget(\App\Http\Controllers\CompassController::PUBLIC_STATS_CACHE_KEY);
+            CompassStats::forgetPublicCache();
         }
         return response()->json(['ok' => true]);
     }

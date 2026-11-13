@@ -1,6 +1,6 @@
 import type { PromiseStateFilter } from './filters';
-import { isOpenState } from './status';
-import type { PromiseCardData, PromiseState } from './types';
+import { isOpenState } from '@/Domain/promises/status';
+import type { PromiseCardData, PromiseState } from '@/Domain/promises/types';
 
 /**
  * Aggregations behind the charts view on /promises. They run over the cards

@@ -24,8 +24,8 @@ export const GAMES_MATCH_KEYS = {
   trix: `${MATCH_PREFIX}trix`,
 } as const;
 
-export type GameSlug = keyof typeof GAMES_RECORD_KEYS;
-export type MatchSlug = keyof typeof GAMES_MATCH_KEYS;
+type GameSlug = keyof typeof GAMES_RECORD_KEYS;
+type MatchSlug = keyof typeof GAMES_MATCH_KEYS;
 
 /** 2048 wants the biggest score; solitaire wants the shortest time. */
 export type Compare = 'higher' | 'lower';
@@ -98,7 +98,6 @@ export function readStats(slug: MatchSlug): MatchStats {
   }
 }
 
-/** Record one finished match and return the updated tally. */
 export function recordMatch(slug: MatchSlug, result: 'win' | 'loss' | 'draw'): MatchStats {
   const next = readStats(slug);
   next.played += 1;

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import html2canvas from 'html2canvas-pro';
 import { notify } from '@/Lib/notify';
+import { copyText } from '@/Lib/copy';
+import type { PngDeclarations } from '@/Lib/exportElementAsPng';
 import {
   RadarChart,
   Radar,
@@ -39,7 +40,7 @@ import {
 import { Instagram } from '@/Components/ui/icons';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/Components/ui/card";
-import { THEME_REGISTRY, getThemeById } from '@/lib/theme';
+import { THEME_REGISTRY, getThemeById, hexToRgbString, shareCardPalette, useThemeId } from '@/Lib/theme';
 import { Button } from "@/Components/ui/button";
 
 import {
@@ -72,7 +73,6 @@ const getShortTopicName = (id: string, fallback: string) => {
 const getStoryThemeStyles = (themeKey: string) => {
   const theme = getThemeById(themeKey) || getThemeById('dark') || THEME_REGISTRY[2];
   const priorities = theme.priorities || {
-    primaryRgb: '90, 113, 74',
     gradient: 'linear-gradient(135deg, #0b0f19 0%, #064e3b 50%, #022c22 100%)',
     accentBg: 'bg-emerald-500/20 border-emerald-500/30',
     accentText: 'text-emerald-400',
@@ -81,15 +81,18 @@ const getStoryThemeStyles = (themeKey: string) => {
     urlText: '#34d399',
   };
 
-  const isLight = theme.id === 'light';
-  const textPrimary = isLight ? '#0f172a' : '#ffffff';
-  const textSecondary = isLight ? '#475569' : '#94a3b8';
-  const textMuted = isLight ? '#64748b' : 'rgba(255, 255, 255, 0.45)';
-  const cardBg = isLight ? 'rgba(255, 255, 255, 0.75)' : 'rgba(15, 23, 42, 0.5)';
-  const cardBorder = isLight ? 'rgba(203, 213, 225, 0.8)' : 'rgba(30, 41, 59, 0.6)';
+  // The card's gradient comes from the palette, not from the scheme: jasmine is
+  // a light theme with a deliberately dark card gradient, so only `light` draws
+  // the dark-on-light text set.
+  const palette = shareCardPalette(theme.id);
+  const isLight = palette.isLight;
+  const textPrimary = palette.textPrimary;
+  const textSecondary = palette.textSecondary;
+  const textMuted = palette.textMuted;
+  const cardBg = palette.cardBg;
+  const cardBorder = palette.cardBorder;
 
-  // Contrast configurations for the header text and URL
-  const headerTitle = isLight ? '#0f172a' : '#ffffff';
+  const headerTitle = palette.textPrimary;
   const headerSubtitle = priorities.headerSubtitle;
   const urlLabel = isLight ? '#64748b' : '#cbd5e1';
   const urlText = priorities.urlText;
@@ -100,7 +103,7 @@ const getStoryThemeStyles = (themeKey: string) => {
     accentText: priorities.accentText,
     badgeBg: priorities.badgeBg,
     primary: theme.primary,
-    primaryRgb: priorities.primaryRgb,
+    primaryRgb: hexToRgbString(theme.primary),
     textPrimary,
     textSecondary,
     textMuted,
@@ -117,44 +120,107 @@ const getStoryThemeStyles = (themeKey: string) => {
 const BUDGET_LIMIT = 100;
 const MAX_SUBFILES_CHECKED = 5;
 
+/** The story card draws its own fixed palette, so the exporter's generic slate
+ *  fallback would flatten it; this is the card's own modern-colour mapping. */
+const STORY_CARD_PNG_OPTIONS = {
+  scale: 3,
+  backgroundColor: null,
+  removeSelectors: ['.story-card-bg-blur'],
+  rootStyle: { color: '#ffffff', 'border-color': 'transparent' },
+  colorPolicy: (node: HTMLElement, style: CSSStyleDeclaration): PngDeclarations => {
+    const className = typeof node.className === 'string' ? node.className : '';
+    const modern = (value: string | undefined): value is string =>
+      !!value && (value.includes('oklch') || value.includes('oklab') || value.includes('color-mix'));
+    const declarations: PngDeclarations = {};
+
+    if (modern(style.backgroundColor)) {
+      if (className.includes('bg-emerald-500/20')) declarations['background-color'] = 'rgba(16, 185, 129, 0.2)';
+      else if (className.includes('bg-slate-900/60')) declarations['background-color'] = 'rgba(15, 23, 42, 0.6)';
+      else if (className.includes('bg-emerald-500/10')) declarations['background-color'] = 'rgba(16, 185, 129, 0.1)';
+      else if (className.includes('bg-slate-900/50')) declarations['background-color'] = 'rgba(15, 23, 42, 0.5)';
+      else if (className.includes('bg-slate-950/60')) declarations['background-color'] = 'rgba(2, 6, 23, 0.6)';
+      else if (className.includes('bg-emerald-400')) declarations['background-color'] = '#34d399';
+      else if (className.includes('bg-emerald-600')) declarations['background-color'] = '#059669';
+      else declarations['background-color'] = cleanStoryColor(style.backgroundColor);
+    }
+
+    if (modern(style.backgroundImage)) {
+      declarations['background-image'] = 'none';
+      declarations['background-color'] = '#10b981'; // solid fallback for the gradient progress bars
+    }
+
+    if (modern(style.background)) {
+      declarations.background = 'none';
+      declarations['background-color'] = '#022c22';
+    }
+
+    if (modern(style.color)) {
+      if (className.includes('text-emerald-400')) declarations.color = '#34d399';
+      else if (className.includes('text-emerald-300')) declarations.color = '#6ee7b7';
+      else if (className.includes('text-amber-400')) declarations.color = '#fbbf24';
+      else declarations.color = cleanStoryColor(style.color);
+    }
+
+    if (modern(style.borderColor)) {
+      if (className.includes('border-emerald-500/30')) declarations['border-color'] = 'rgba(16, 185, 129, 0.3)';
+      else if (className.includes('border-slate-700')) declarations['border-color'] = '#334155';
+      else if (className.includes('border-emerald-500/20')) declarations['border-color'] = 'rgba(16, 185, 129, 0.2)';
+      else if (className.includes('border-slate-800/60')) declarations['border-color'] = 'rgba(30, 41, 59, 0.6)';
+      else if (className.includes('border-slate-800/80')) declarations['border-color'] = 'rgba(30, 41, 59, 0.8)';
+      else declarations['border-color'] = cleanStoryColor(style.borderColor);
+    }
+
+    return declarations;
+  },
+};
+
+/** html2canvas cannot parse oklch/oklab/color-mix; map the card palette to hex. */
+function cleanStoryColor(color: string): string {
+  if (!color) return color;
+  if (!color.includes('oklch') && !color.includes('oklab') && !color.includes('color-mix')) return color;
+
+  if (color.includes('transparent')) {
+    if (color.includes('emerald') || color.includes('16, 185, 129') || color.includes('52, 211, 153')) return 'rgba(16, 185, 129, 0.15)';
+    if (color.includes('red') || color.includes('220, 38, 38')) return 'rgba(220, 38, 38, 0.05)';
+    return 'rgba(15, 23, 42, 0.5)';
+  }
+
+  if (color.includes('emerald-400') || color.includes('34d399') || color.includes('52, 211, 153')) return '#34d399';
+  if (color.includes('emerald-500') || color.includes('10b981') || color.includes('16, 185, 129')) return '#10b981';
+  if (color.includes('emerald-600') || color.includes('059669') || color.includes('5, 150, 105')) return '#059669';
+  if (color.includes('emerald-300') || color.includes('6ee7b7') || color.includes('110, 231, 183')) return '#6ee7b7';
+  if (color.includes('amber') || color.includes('fbbf24') || color.includes('251, 191, 36')) return '#fbbf24';
+  if (color.includes('red') || color.includes('dc2626') || color.includes('220, 38, 38')) return '#dc2626';
+  if (color.includes('slate-400') || color.includes('94a3b8') || color.includes('148, 163, 184')) return '#94a3b8';
+  if (color.includes('slate-700') || color.includes('334155') || color.includes('51, 65, 85')) return '#334155';
+  if (color.includes('slate-800') || color.includes('1e293b') || color.includes('30, 41, 59')) return '#1e293b';
+  if (color.includes('slate-900') || color.includes('0f172a') || color.includes('15, 23, 42')) return '#0f172a';
+  if (color.includes('slate-950') || color.includes('020617') || color.includes('2, 6, 23')) return '#020617';
+  return '#34d399';
+}
+
 export default function PrioritiesApp() {
   const [topics, setTopics] = useState<Topic[]>(INITIAL_TOPICS.map(t => ({ ...t })));
   const [selectedSubFiles, setSelectedSubFiles] = useState<Set<string>>(new Set());
   const [activeComparisonKey, setActiveComparisonKey] = useState<string>('average');
   const [showBanner, setShowBanner] = useState<boolean>(true);
-  const [activeTheme, setActiveTheme] = useState<string>('dark');
+  const activeTheme = useThemeId();
   const [isStoryModalOpen, setIsStoryModalOpen] = useState<boolean>(false);
-  const [storyTheme, setStoryTheme] = useState<string>('dark');
+  const [storyTheme, setStoryTheme] = useState<string>(activeTheme);
   const storyThemeStyles = getStoryThemeStyles(storyTheme);
   const [expandedTopics, setExpandedTopics] = useState<Set<string>>(new Set(['economy', 'justice', 'housing', 'security', 'politics', 'digital']));
 
-  // Budget violations warning
   const [showWarning, setShowWarning] = useState<boolean>(false);
   const warningTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Image export target ref
   const storyCardRef = useRef<HTMLDivElement>(null);
 
-  // Load banner preference, query state, and observe theme
   useEffect(() => {
-    // Banner preference
     const bannerDismissed = localStorage.getItem('sz-priorities-banner-dismissed');
     if (bannerDismissed === 'true') {
       setShowBanner(false);
     }
 
-    // Active theme observation
-    const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
-    setActiveTheme(currentTheme);
-
-    const observer = new MutationObserver(() => {
-      const newTheme = document.documentElement.getAttribute('data-theme') || 'dark';
-      setActiveTheme(newTheme);
-    });
-
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-
-    // Load state from URL parameters if present
     const params = new URLSearchParams(window.location.search);
     const stateParam = params.get('state');
     if (stateParam) {
@@ -181,10 +247,6 @@ export default function PrioritiesApp() {
         console.error('Failed to parse URL state', e);
       }
     }
-
-    return () => {
-      observer.disconnect();
-    };
   }, []);
 
   const totalAllocated = useMemo(() => {
@@ -192,11 +254,6 @@ export default function PrioritiesApp() {
   }, [topics]);
 
   const remainingPoints = BUDGET_LIMIT - totalAllocated;
-
-  const showToast = (message: string, isWarning = false) => {
-    if (isWarning) notify.warning(message);
-    else notify.success(message);
-  };
 
   const triggerWarning = () => {
     setShowWarning(true);
@@ -238,7 +295,7 @@ export default function PrioritiesApp() {
         next.delete(subId);
       } else {
         if (next.size >= MAX_SUBFILES_CHECKED) {
-          showToast("⚠️ تم بلوغ الحد الأقصى! يرجى إلغاء تفعيل أحد الملفات الفرعية النشطة أولاً لضمان التركيز الوطني.", true);
+          notify.warning("⚠️ تم بلوغ الحد الأقصى! يرجى إلغاء تفعيل أحد الملفات الفرعية النشطة أولاً لضمان التركيز الوطني.");
           return prev;
         }
         next.add(subId);
@@ -250,7 +307,7 @@ export default function PrioritiesApp() {
   const resetPoints = () => {
     setTopics(INITIAL_TOPICS.map(t => ({ ...t, points: 0 })));
     setSelectedSubFiles(new Set());
-    showToast("🔄 تم إعادة تعيين كافة النقاط والخيارات بنجاح.");
+    notify.success("🔄 تم إعادة تعيين كافة النقاط والخيارات بنجاح.");
   };
 
   const toggleTopicDetails = (id: string) => {
@@ -270,7 +327,6 @@ export default function PrioritiesApp() {
     localStorage.setItem('sz-priorities-banner-dismissed', 'true');
   };
 
-  // Interdependency Logic
   const interdependencyInfo = useMemo(() => {
     if (selectedSubFiles.size === 0) {
       return {
@@ -286,7 +342,7 @@ export default function PrioritiesApp() {
     const alerts: Array<{
       subId: string;
       subName: string;
-      parentEmoji: string;
+      parentId: string;
       parentName: string;
       isFulfilled: boolean;
       warningText: string;
@@ -365,7 +421,6 @@ export default function PrioritiesApp() {
     };
   }, [selectedSubFiles, topics]);
 
-  // Persona Logic
   const persona = useMemo(() => {
     if (totalAllocated < 100) return null;
 
@@ -421,11 +476,10 @@ export default function PrioritiesApp() {
     return { ...result, id: highest.id };
   }, [totalAllocated, topics]);
 
-  // Theme-sensitive chart colors
   const activeThemeConfig = getThemeById(activeTheme) || getThemeById('dark') || THEME_REGISTRY[2];
   const themeColors = useMemo(() => ({
     primary: activeThemeConfig.primary,
-    primaryRgb: activeThemeConfig.priorities?.primaryRgb || '90, 113, 74'
+    primaryRgb: hexToRgbString(activeThemeConfig.primary)
   }), [activeThemeConfig]);
 
   const chartData = useMemo(() => {
@@ -444,13 +498,12 @@ export default function PrioritiesApp() {
     }));
   }, [topics, activeComparisonKey]);
 
-  const isDark = activeTheme.includes('dark') || activeTheme === 'damascus-rose';
+  const isDark = Boolean(getThemeById(activeTheme)?.isDark);
   const labelColor = isDark ? '#ffffff' : '#475569';
 
-  // Export & Sharing actions
   const handleCopyText = () => {
     if (totalAllocated < 100) {
-      showToast("⚠️ يرجى إتمام موازنة الـ 100 نقطة كاملة قبل النسخ!", true);
+      notify.warning("⚠️ يرجى إتمام موازنة الـ 100 نقطة كاملة قبل النسخ!");
       return;
     }
 
@@ -477,17 +530,15 @@ export default function PrioritiesApp() {
     textToCopy += `\n📊 *مقياس تداخل وتعقيد رؤيتي التخطيطية:* ${interdependencyInfo.label}\n`;
     textToCopy += `\n🔗 قم بموازنة أولوياتك وفك شفرة تداخل الملفات السيادية والتنموية معنا!`;
 
-    navigator.clipboard.writeText(textToCopy).then(() => {
-      showToast("✅ تم نسخ النص الإحصائي بنجاح! يمكنك الآن لصقه ومشاركته فوراً على مجموعات فيسبوك أو تيليغرام لنشر النقاش العقلاني.");
-    }).catch(err => {
-      console.error(err);
-      showToast("⚠️ فشل في نسخ النص.", true);
+    void copyText(textToCopy, {
+      successMessage: "✅ تم نسخ النص الإحصائي بنجاح! يمكنك الآن لصقه ومشاركته فوراً على مجموعات فيسبوك أو تيليغرام لنشر النقاش العقلاني.",
+      failureMessage: "⚠️ فشل في نسخ النص.",
     });
   };
 
   const handleCopyLink = () => {
     if (totalAllocated < 100) {
-      showToast("⚠️ يرجى توزيع كافة النقاط وتجاوز الـ 100 نقطة أولاً لنسخ رابطك!", true);
+      notify.warning("⚠️ يرجى توزيع كافة النقاط وتجاوز الـ 100 نقطة أولاً لنسخ رابطك!");
       return;
     }
 
@@ -496,17 +547,15 @@ export default function PrioritiesApp() {
     const encoded = btoa(unescape(encodeURIComponent(`${statePoints}|${stateSubs}`)));
     const shareUrl = `${window.location.origin}${window.location.pathname}?state=${encoded}`;
 
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      showToast("🔗 تم نسخ رابط بروفايلك الخاص المشفّر بنجاح! يمكن لزوار الرابط تصفح ومقارنة اختياراتك بدقة.");
-    }).catch(err => {
-      console.error(err);
-      showToast("⚠️ فشل في نسخ الرابط.", true);
+    void copyText(shareUrl, {
+      successMessage: "🔗 تم نسخ رابط بروفايلك الخاص المشفّر بنجاح! يمكن لزوار الرابط تصفح ومقارنة اختياراتك بدقة.",
+      failureMessage: "⚠️ فشل في نسخ الرابط.",
     });
   };
 
   const openStoryModal = () => {
     if (totalAllocated < 100) {
-      showToast("⚠️ الرجاء موازنة الـ 100 نقطة كاملة أولاً لتتمكن من إنشاء بطاقة قصة إنستغرام جميلة ومكتملة!", true);
+      notify.warning("⚠️ الرجاء موازنة الـ 100 نقطة كاملة أولاً لتتمكن من إنشاء بطاقة قصة إنستغرام جميلة ومكتملة!");
       return;
     }
     setStoryTheme(activeTheme);
@@ -514,208 +563,20 @@ export default function PrioritiesApp() {
   };
 
   const downloadStoryAsImage = async () => {
-    if (!storyCardRef.current) return;
+    const card = storyCardRef.current;
+    if (!card) return;
 
-    showToast("⏳ يجري الآن تجميع وتوليد بطاقتك التخطيطية بجودة عالية الاستثنائية... الرجاء الانتظار.");
+    notify.success("⏳ يجري الآن تجميع وتوليد بطاقتك التخطيطية بجودة عالية الاستثنائية... الرجاء الانتظار.");
 
     try {
-      if (document.fonts) {
-        await document.fonts.ready;
-      }
-    } catch (e) {
-      console.warn("Fonts ready check failed", e);
-    }
-
-    html2canvas(storyCardRef.current, {
-      scale: 3,
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: null,
-      logging: false,
-      onclone: (clonedDoc: Document) => {
-        const win = clonedDoc.defaultView || window;
-        const clonedTarget = clonedDoc.getElementById('story-card-canvas') as HTMLElement | null;
-
-        if (!clonedTarget) return;
-
-        // 1. Remove all elements outside the canvas container from body to avoid style pollution
-        const bodyChildren = Array.from(clonedDoc.body.children);
-        bodyChildren.forEach(child => {
-          if (!child.contains(clonedTarget) && child !== clonedTarget) {
-            child.remove();
-          }
-        });
-
-        // 2. Hide/remove background blur elements from cloned card to avoid rendering them as ugly solid shapes
-        clonedTarget.querySelectorAll<HTMLElement>('.story-card-bg-blur').forEach(el => el.remove());
-
-        // 3. Helper to clean modern color functions (oklch, oklab, color-mix) and replace with fallback hex/rgb values
-        const cleanColor = (colorStr: string): string => {
-          if (!colorStr) return colorStr;
-
-          if (colorStr.includes('oklch') || colorStr.includes('oklab') || colorStr.includes('color-mix')) {
-            if (colorStr.includes('transparent')) {
-              if (colorStr.includes('emerald') || colorStr.includes('16, 185, 129') || colorStr.includes('52, 211, 153')) {
-                return 'rgba(16, 185, 129, 0.15)';
-              }
-              if (colorStr.includes('red') || colorStr.includes('220, 38, 38')) {
-                return 'rgba(220, 38, 38, 0.05)';
-              }
-              return 'rgba(15, 23, 42, 0.5)';
-            }
-
-            if (colorStr.includes('emerald-400') || colorStr.includes('34d399') || colorStr.includes('52, 211, 153')) {
-              return '#34d399';
-            }
-            if (colorStr.includes('emerald-500') || colorStr.includes('10b981') || colorStr.includes('16, 185, 129')) {
-              return '#10b981';
-            }
-            if (colorStr.includes('emerald-600') || colorStr.includes('059669') || colorStr.includes('5, 150, 105')) {
-              return '#059669';
-            }
-            if (colorStr.includes('emerald-300') || colorStr.includes('6ee7b7') || colorStr.includes('110, 231, 183')) {
-              return '#6ee7b7';
-            }
-            if (colorStr.includes('amber') || colorStr.includes('fbbf24') || colorStr.includes('251, 191, 36')) {
-              return '#fbbf24';
-            }
-            if (colorStr.includes('red') || colorStr.includes('dc2626') || colorStr.includes('220, 38, 38')) {
-              return '#dc2626';
-            }
-            if (colorStr.includes('slate-400') || colorStr.includes('94a3b8') || colorStr.includes('148, 163, 184')) {
-              return '#94a3b8';
-            }
-            if (colorStr.includes('slate-700') || colorStr.includes('334155') || colorStr.includes('51, 65, 85')) {
-              return '#334155';
-            }
-            if (colorStr.includes('slate-800') || colorStr.includes('1e293b') || colorStr.includes('30, 41, 59')) {
-              return '#1e293b';
-            }
-            if (colorStr.includes('slate-900') || colorStr.includes('0f172a') || colorStr.includes('15, 23, 42')) {
-              return '#0f172a';
-            }
-            if (colorStr.includes('slate-950') || colorStr.includes('020617') || colorStr.includes('2, 6, 23')) {
-              return '#020617';
-            }
-            return '#34d399';
-          }
-          return colorStr;
-        };
-
-        const cleanElement = (el: HTMLElement) => {
-          try {
-            const isRootOrBody = el.tagName === 'HTML' || el.tagName === 'BODY';
-            if (isRootOrBody) {
-              el.style.setProperty('background', '#0b0f19', 'important');
-              el.style.setProperty('background-color', '#0b0f19', 'important');
-              el.style.setProperty('background-image', 'none', 'important');
-              el.style.setProperty('color', '#ffffff', 'important');
-              el.style.setProperty('border-color', 'transparent', 'important');
-              el.style.setProperty('letter-spacing', 'normal', 'important');
-              el.style.setProperty('font-family', 'IBM Plex Sans Arabic, sans-serif', 'important');
-              return;
-            }
-
-            const style = win.getComputedStyle(el);
-
-            // Force letter-spacing & font-family to fix Arabic cursive connections & font consistency
-            el.style.setProperty('letter-spacing', 'normal', 'important');
-            el.style.setProperty('font-family', 'IBM Plex Sans Arabic, sans-serif', 'important');
-
-            const bg = style.backgroundColor;
-            if (bg && (bg.includes('oklch') || bg.includes('oklab') || bg.includes('color-mix'))) {
-              if (el.className.includes('bg-emerald-500/20')) {
-                el.style.setProperty('background-color', 'rgba(16, 185, 129, 0.2)', 'important');
-              } else if (el.className.includes('bg-slate-900/60')) {
-                el.style.setProperty('background-color', 'rgba(15, 23, 42, 0.6)', 'important');
-              } else if (el.className.includes('bg-emerald-500/10')) {
-                el.style.setProperty('background-color', 'rgba(16, 185, 129, 0.1)', 'important');
-              } else if (el.className.includes('bg-slate-900/50')) {
-                el.style.setProperty('background-color', 'rgba(15, 23, 42, 0.5)', 'important');
-              } else if (el.className.includes('bg-slate-950/60')) {
-                el.style.setProperty('background-color', 'rgba(2, 6, 23, 0.6)', 'important');
-              } else if (el.className.includes('bg-emerald-400')) {
-                el.style.setProperty('background-color', '#34d399', 'important');
-              } else if (el.className.includes('bg-emerald-600')) {
-                el.style.setProperty('background-color', '#059669', 'important');
-              } else {
-                el.style.setProperty('background-color', cleanColor(bg), 'important');
-              }
-            }
-
-            const bgImg = style.backgroundImage;
-            if (bgImg && (bgImg.includes('oklch') || bgImg.includes('oklab') || bgImg.includes('color-mix'))) {
-              el.style.setProperty('background-image', 'none', 'important');
-              el.style.setProperty('background-color', '#10b981', 'important'); // Solid green fallback for gradient progress bars
-            }
-
-            const b = style.background;
-            if (b && (b.includes('oklch') || b.includes('oklab') || b.includes('color-mix'))) {
-              el.style.setProperty('background', 'none', 'important');
-              el.style.setProperty('background-color', '#022c22', 'important');
-            }
-
-            const co = style.color;
-            if (co && (co.includes('oklch') || co.includes('oklab') || co.includes('color-mix'))) {
-              if (el.className.includes('text-emerald-400')) {
-                el.style.setProperty('color', '#34d399', 'important');
-              } else if (el.className.includes('text-emerald-300')) {
-                el.style.setProperty('color', '#6ee7b7', 'important');
-              } else if (el.className.includes('text-amber-400')) {
-                el.style.setProperty('color', '#fbbf24', 'important');
-              } else {
-                el.style.setProperty('color', cleanColor(co), 'important');
-              }
-            }
-
-            const bc = style.borderColor;
-            if (bc && (bc.includes('oklch') || bc.includes('oklab') || bc.includes('color-mix'))) {
-              if (el.className.includes('border-emerald-500/30')) {
-                el.style.setProperty('border-color', 'rgba(16, 185, 129, 0.3)', 'important');
-              } else if (el.className.includes('border-slate-700')) {
-                el.style.setProperty('border-color', '#334155', 'important');
-              } else if (el.className.includes('border-emerald-500/20')) {
-                el.style.setProperty('border-color', 'rgba(16, 185, 129, 0.2)', 'important');
-              } else if (el.className.includes('border-slate-800/60')) {
-                el.style.setProperty('border-color', 'rgba(30, 41, 59, 0.6)', 'important');
-              } else if (el.className.includes('border-slate-800/80')) {
-                el.style.setProperty('border-color', 'rgba(30, 41, 59, 0.8)', 'important');
-              } else {
-                el.style.setProperty('border-color', cleanColor(bc), 'important');
-              }
-            }
-          } catch (e) {
-            // style access error
-          }
-        };
-
-        // Clean documentElement, body, and all nested elements in cloned tree
-        cleanElement(clonedDoc.documentElement);
-        if (clonedDoc.body) cleanElement(clonedDoc.body);
-
-        const allElements = clonedDoc.querySelectorAll('*');
-        allElements.forEach(el => {
-          const htmlEl = el as HTMLElement;
-          if (htmlEl.style) {
-            cleanElement(htmlEl);
-          }
-        });
-      }
-    }).then(canvas => {
-      const dataUrl = canvas.toDataURL("image/png");
-      const downloadLink = document.createElement("a");
-      downloadLink.download = `Syrian-Consensus-Story-${Date.now()}.png`;
-      downloadLink.href = dataUrl;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
-
-      showToast("🎉 تم تحميل صورتك بنجاح! افتح قصتك في إنستغرام أو سناب شات وأضفها الآن لإشعال التوافق البنّاء.");
+      // Imported on demand: html2canvas is heavy and only this button needs it.
+      const { exportElementAsPng } = await import('@/Lib/exportElementAsPng');
+      await exportElementAsPng(card, `Syrian-Consensus-Story-${Date.now()}.png`, STORY_CARD_PNG_OPTIONS);
+      notify.success("🎉 تم تحميل صورتك بنجاح! افتح قصتك في إنستغرام أو سناب شات وأضفها الآن لإشعال التوافق البنّاء.");
       setIsStoryModalOpen(false);
-    }).catch(err => {
-      console.error("Canvas export failure: ", err);
-      showToast("⚠️ حدث خطأ ما أثناء معالجة الصورة. يرجى محاولة التنزيل مرة أخرى.", true);
-    });
+    } catch {
+      notify.warning("⚠️ حدث خطأ ما أثناء معالجة الصورة. يرجى محاولة التنزيل مرة أخرى.");
+    }
   };
 
   const sortedTopicsForCard = useMemo(() => {
@@ -752,7 +613,6 @@ export default function PrioritiesApp() {
 
   return (
     <div className="space-y-6">
-      {/* Welcome & Education Banner */}
       <div className="relative overflow-hidden bg-card text-card-foreground border border-border p-6 rounded-2xl shadow-sm transition-all duration-300">
         <div className="absolute top-0 start-0 w-32 h-32 bg-primary/5 rounded-full -ms-16 -mt-16 -z-10 opacity-60"></div>
         <div className="absolute bottom-0 end-0 w-48 h-48 bg-muted/20 rounded-full -me-24 -mb-24 -z-10 opacity-60"></div>
@@ -770,7 +630,6 @@ export default function PrioritiesApp() {
         </div>
       </div>
 
-      {/* Warning Box */}
       {showWarning && (
         <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-600 dark:text-amber-400 text-xs flex items-center gap-2 animate-pulse">
           <AlertTriangle className="w-4 h-4 flex-shrink-0 text-amber-500" />
@@ -778,10 +637,8 @@ export default function PrioritiesApp() {
         </div>
       )}
 
-      {/* App Workspace */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-        {/* Right Panel: Sliders & Sub-files (7 columns) */}
         <Card className="lg:col-span-7 bg-card text-card-foreground border-border border shadow-sm p-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 mb-6 border-b border-border">
             <div>
@@ -792,7 +649,6 @@ export default function PrioritiesApp() {
               <p className="text-xs text-muted-foreground mt-1">وزّع النقاط بحكمة واكتشف الملفات المتشعبة بداخلها</p>
             </div>
 
-            {/* Global Budget Counter */}
             <div
               className={`border rounded-xl px-4 py-3 text-center flex flex-col justify-center items-center min-w-[140px] transition-all ${remainingPoints === 0
                 ? 'bg-primary/10 border-primary text-primary animate-pulse font-bold'
@@ -813,12 +669,10 @@ export default function PrioritiesApp() {
             </div>
           </div>
 
-          {/* Interactive Topics List */}
           <div className="space-y-4">
             {topics.map(topic => {
               const isExpanded = expandedTopics.has(topic.id);
               const percentage = topic.points;
-              // Dynamic gradient background for input range
               const sliderGradient = `linear-gradient(to left, ${themeColors.primary} ${percentage}%, hsl(var(--muted)) ${percentage}%)`;
 
               return (
@@ -826,7 +680,6 @@ export default function PrioritiesApp() {
                   key={topic.id}
                   className="p-4 sm:p-5 rounded-2xl border border-border bg-muted/20 hover:bg-muted/30 transition-all duration-200"
                 >
-                  {/* Top Header of Card */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
                     <div className="flex items-center gap-3">
                       <span className="bg-card w-10 h-10 rounded-xl flex items-center justify-center shadow-sm border border-border p-2">
@@ -844,7 +697,6 @@ export default function PrioritiesApp() {
                       </div>
                     </div>
 
-                    {/* Topic Points Controller Badge */}
                     <div className="flex items-center gap-1 bg-card border border-border rounded-lg p-1 self-start sm:self-auto shadow-sm">
                       <button aria-label="تقليل بمقدار 1 نقطة"
                         onClick={() => changePoints(topic.id, -1)}
@@ -866,7 +718,6 @@ export default function PrioritiesApp() {
                     </div>
                   </div>
 
-                  {/* Main Slider */}
                   <div className="flex items-center gap-3 mt-2">
                     <span className="text-[10px] text-muted-foreground font-medium">0%</span>
                     <div className="flex-grow relative flex items-center">
@@ -885,7 +736,6 @@ export default function PrioritiesApp() {
                     <span className="text-[10px] text-muted-foreground font-bold">100%</span>
                   </div>
 
-                  {/* Expandable Sub-priorities & Connections Drawer */}
                   {isExpanded && (
                     <div className="mt-4 pt-4 border-t border-border/60 animate-in fade-in slide-in-from-top-1 duration-200">
                       <p className="text-xs text-muted-foreground mb-3 leading-relaxed bg-card p-3 rounded-xl border border-border shadow-sm">
@@ -935,7 +785,6 @@ export default function PrioritiesApp() {
             })}
           </div>
 
-          {/* Reset Options */}
           <div className="mt-6 pt-4 border-t border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <Button
               variant="outline"
@@ -952,12 +801,9 @@ export default function PrioritiesApp() {
           </div>
         </Card>
 
-        {/* Left Panel: Live Analysis, Chart, Interdependency Map & Share (5 columns) */}
         <div className="lg:col-span-5 space-y-6">
 
-          {/* Section 2: Decisional Interdependency Engine & Insights */}
           <Card className="bg-card text-card-foreground border-border border shadow-sm p-6">
-            {/* Title / Header */}
             <div className="mb-4">
               <h3 className="font-bold text-base sm:text-lg text-foreground flex items-center gap-2">
                 <GitFork className="w-5 h-5 text-primary" />
@@ -966,7 +812,6 @@ export default function PrioritiesApp() {
               <p className="text-xs text-muted-foreground mt-1">تتبع كيف تؤثر خياراتك الفرعية على الملفات السيادية والأمنية الأخرى</p>
             </div>
 
-            {/* Comparison Selector Tab */}
             <div className="mb-4 border-t border-border/60 pt-4">
               <label className="text-xs font-bold text-foreground block mb-2 font-sans">مقارنة بروفايلك الخاص مع:</label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 p-1 bg-muted rounded-xl text-[10px] sm:text-xs font-medium border border-border">
@@ -988,7 +833,6 @@ export default function PrioritiesApp() {
               </div>
             </div>
 
-            {/* Interactive Chart Container */}
             <div className="relative w-full h-[260px] flex items-center justify-center bg-muted/20 rounded-xl border border-border p-2 mb-4">
               <ResponsiveContainer width="100%" height="100%">
                 <RadarChart cx="50%" cy="50%" outerRadius="70%" data={chartData}>
@@ -1009,9 +853,9 @@ export default function PrioritiesApp() {
                     axisLine={false}
                   />
                   <RechartsTooltip
-                    formatter={(value: number, name: string) => {
+                    formatter={(value, name) => {
                       const label = name === 'current' ? 'نقاط موازنتك الحالية' : COMPARISONS[activeComparisonKey]?.title || '';
-                      return [`%${value}`, label];
+                      return [`%${String(value ?? '')}`, label];
                     }}
                   />
                   <Legend
@@ -1040,7 +884,6 @@ export default function PrioritiesApp() {
               </ResponsiveContainer>
             </div>
 
-            {/* Persona Badge & Description */}
             <div className="p-4 bg-muted/40 rounded-xl border border-border flex items-start gap-3.5 mb-5">
               <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 p-2.5">
                 {persona && TOPIC_ICONS[persona.id] ? (
@@ -1063,7 +906,6 @@ export default function PrioritiesApp() {
               </div>
             </div>
 
-            {/* Complexity & Implementation Score Meter */}
             <div className="p-3.5 bg-muted/50 rounded-xl border border-border mb-4">
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-xs font-bold text-foreground">مقياس تداخل وتعقيد رؤيتك:</span>
@@ -1080,7 +922,6 @@ export default function PrioritiesApp() {
               </p>
             </div>
 
-            {/* Dynamic Interconnection Output Box (Non-scrollable) */}
             <div className="space-y-3">
               {interdependencyInfo.alerts.length === 0 ? (
                 <div className="text-center py-6 text-muted-foreground text-xs italic">
@@ -1131,7 +972,6 @@ export default function PrioritiesApp() {
               )}
             </div>
 
-            {/* Section 4: Export & Sharing (Moved under everything else) */}
             <div className="border-t border-border/60 pt-5 mt-5">
               <div className="mb-4">
                 <h3 className="font-bold text-base sm:text-lg text-foreground flex items-center gap-2">
@@ -1141,7 +981,6 @@ export default function PrioritiesApp() {
                 <p className="text-xs text-muted-foreground mt-1">انشر بروفايلك الفريد بصورة مخصصة كستوري إنستغرام أو انسخ الرابط</p>
               </div>
 
-              {/* Share buttons */}
               <div className="space-y-2">
                 <Button
                   onClick={openStoryModal}
@@ -1177,7 +1016,6 @@ export default function PrioritiesApp() {
         </div>
       </div>
 
-      {/* Instagram Story Modal Overlay */}
       {isStoryModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
           <Card className="bg-card text-card-foreground border-border border shadow-2xl p-6 max-w-lg w-full flex flex-col items-center">
@@ -1195,10 +1033,8 @@ export default function PrioritiesApp() {
               </button>
             </div>
 
-            {/* Scrollable Viewport Frame for Preview */}
             <div className="w-full flex justify-center py-2 overflow-x-auto">
 
-              {/* Instagram Story Layout Canvas Template (9:16 Ratio) */}
               <div
                 ref={storyCardRef}
                 id="story-card-canvas"
@@ -1210,22 +1046,19 @@ export default function PrioritiesApp() {
                   fontFamily: 'IBM Plex Sans Arabic, sans-serif'
                 }}
               >
-                {/* Decorative Background Elements for Premium Vibe */}
                 <div
                   className="story-card-bg-blur absolute top-0 right-0 w-44 h-44 rounded-full blur-[60px] pointer-events-none"
-                  style={{ backgroundColor: `rgba(${storyThemeStyles.primaryRgb || '90, 113, 74'}, 0.15)` }}
+                  style={{ backgroundColor: `rgba(${storyThemeStyles.primaryRgb}, 0.15)` }}
                 ></div>
                 <div
                   className="story-card-bg-blur absolute bottom-12 left-0 w-48 h-48 rounded-full blur-[80px] pointer-events-none"
-                  style={{ backgroundColor: `rgba(${storyThemeStyles.primaryRgb || '90, 113, 74'}, 0.05)` }}
+                  style={{ backgroundColor: `rgba(${storyThemeStyles.primaryRgb}, 0.05)` }}
                 ></div>
 
-                {/* Header */}
                 <div
                   className="flex items-center justify-between pt-2 pb-2 border-b"
                   style={{ borderBottomColor: storyThemeStyles.cardBorder }}
                 >
-                  {/* Right: Brand Info */}
                   <div className="flex items-center gap-2">
                     <div
                       style={{
@@ -1240,8 +1073,8 @@ export default function PrioritiesApp() {
                         padding: '6px',
                         border: '1px solid',
                         overflow: 'hidden',
-                        backgroundColor: storyThemeStyles.isLight ? 'rgba(0, 0, 0, 0.05)' : `rgba(${storyThemeStyles.primaryRgb || '90, 113, 74'}, 0.2)`,
-                        borderColor: storyThemeStyles.isLight ? 'rgba(0, 0, 0, 0.1)' : `rgba(${storyThemeStyles.primaryRgb || '90, 113, 74'}, 0.3)`
+                        backgroundColor: storyThemeStyles.isLight ? 'rgba(0, 0, 0, 0.05)' : `rgba(${storyThemeStyles.primaryRgb}, 0.2)`,
+                        borderColor: storyThemeStyles.isLight ? 'rgba(0, 0, 0, 0.1)' : `rgba(${storyThemeStyles.primaryRgb}, 0.3)`
                       }}
                     >
                       <img src="/assets/ar.svg" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} alt="علم سوريا" />
@@ -1252,7 +1085,6 @@ export default function PrioritiesApp() {
                     </div>
                   </div>
 
-                  {/* Left: QR Code and URL */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', direction: 'ltr' }}>
                     <div style={{ width: '48px', height: '48px', minWidth: '48px', minHeight: '48px', borderRadius: '6px', backgroundColor: '#ffffff', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <svg style={{ width: '100%', height: '100%', display: 'block' }} viewBox="0 0 31 31" shapeRendering="crispEdges">
@@ -1266,9 +1098,7 @@ export default function PrioritiesApp() {
                   </div>
                 </div>
 
-                {/* Main Section: Dynamic Persona Badge */}
                 <div style={{ textAlign: 'center', margin: '8px 0', padding: '0 8px' }}>
-                  {/* Mini SVG Radar Chart */}
                   {(() => {
                     const RADAR_ORDER = ['economy', 'justice', 'housing', 'security', 'politics', 'digital'];
                     const SIZE = 80;
@@ -1279,7 +1109,6 @@ export default function PrioritiesApp() {
                     const accentColor = storyThemeStyles.urlText;
                     const gridColor = storyThemeStyles.isLight ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.15)';
 
-                    // Points values keyed by topic id
                     const pointsMap: Record<string, number> = {};
                     topics.forEach(t => { pointsMap[t.id] = t.points; });
                     const maxVal = 100;
@@ -1287,7 +1116,6 @@ export default function PrioritiesApp() {
                     // angle for each axis: start at top (-90°), go clockwise
                     const angle = (i: number) => (Math.PI * 2 * i) / n - Math.PI / 2;
 
-                    // grid rings at 25%, 50%, 75%, 100%
                     const rings = [0.25, 0.5, 0.75, 1.0];
 
                     const ringPath = (ratio: number) => {
@@ -1300,7 +1128,6 @@ export default function PrioritiesApp() {
                       }).join(' ') + ' Z';
                     };
 
-                    // data polygon
                     const dataPath = RADAR_ORDER.map((id, i) => {
                       const val = pointsMap[id] ?? 0;
                       const ratio = val / maxVal;
@@ -1323,7 +1150,6 @@ export default function PrioritiesApp() {
                           xmlns="http://www.w3.org/2000/svg"
                           style={{ display: 'block', overflow: 'visible' }}
                         >
-                          {/* Grid rings */}
                           {rings.map((ratio, ri) => (
                             <path
                               key={ri}
@@ -1333,7 +1159,6 @@ export default function PrioritiesApp() {
                               strokeWidth={ratio === 1.0 ? 0.8 : 0.5}
                             />
                           ))}
-                          {/* Spokes */}
                           {RADAR_ORDER.map((_, i) => {
                             const a = angle(i);
                             return (
@@ -1348,7 +1173,6 @@ export default function PrioritiesApp() {
                               />
                             );
                           })}
-                          {/* Data polygon fill */}
                           <path
                             d={dataPath}
                             fill={accentColor}
@@ -1357,7 +1181,6 @@ export default function PrioritiesApp() {
                             strokeWidth={1.5}
                             strokeLinejoin="round"
                           />
-                          {/* Data point dots */}
                           {RADAR_ORDER.map((id, i) => {
                             const val = pointsMap[id] ?? 0;
                             const ratio = val / maxVal;
@@ -1382,8 +1205,8 @@ export default function PrioritiesApp() {
                       className="text-[8px] font-bold px-2 py-0.5 rounded-full uppercase border"
                       style={{
                         color: storyThemeStyles.urlText,
-                        backgroundColor: storyThemeStyles.isLight ? 'rgba(0, 0, 0, 0.05)' : `rgba(${storyThemeStyles.primaryRgb || '90, 113, 74'}, 0.1)`,
-                        borderColor: storyThemeStyles.isLight ? 'rgba(0, 0, 0, 0.1)' : `rgba(${storyThemeStyles.primaryRgb || '90, 113, 74'}, 0.2)`
+                        backgroundColor: storyThemeStyles.isLight ? 'rgba(0, 0, 0, 0.05)' : `rgba(${storyThemeStyles.primaryRgb}, 0.1)`,
+                        borderColor: storyThemeStyles.isLight ? 'rgba(0, 0, 0, 0.1)' : `rgba(${storyThemeStyles.primaryRgb}, 0.2)`
                       }}
                     >
                       {persona?.tag}
@@ -1393,7 +1216,6 @@ export default function PrioritiesApp() {
                   <p className="text-[8px] mt-1 leading-relaxed px-1" style={{ color: storyThemeStyles.textSecondary }}>{persona?.desc}</p>
                 </div>
 
-                {/* Center Section: All 6 Priorities Visualization */}
                 <div
                   className="space-y-1 rounded-xl p-3 my-1 backdrop-blur-sm border"
                   style={{
@@ -1445,7 +1267,6 @@ export default function PrioritiesApp() {
                   </div>
                 </div>
 
-                {/* Bottom Section: Selected Sub-priorities (Files) */}
                 {selectedSubFilesData.length > 0 && (
                   <div
                     className="rounded-xl p-2 my-0.5 border text-right"
@@ -1470,9 +1291,9 @@ export default function PrioritiesApp() {
                           <span
                             className="inline-block px-1 rounded-sm text-[6px] font-black shrink-0"
                             style={{
-                              backgroundColor: storyThemeStyles.isLight ? 'rgba(0, 0, 0, 0.05)' : `rgba(${storyThemeStyles.primaryRgb || '90, 113, 74'}, 0.2)`,
+                              backgroundColor: storyThemeStyles.isLight ? 'rgba(0, 0, 0, 0.05)' : `rgba(${storyThemeStyles.primaryRgb}, 0.2)`,
                               color: storyThemeStyles.urlText,
-                              border: `1px solid rgba(${storyThemeStyles.primaryRgb || '90, 113, 74'}, 0.35)`
+                              border: `1px solid rgba(${storyThemeStyles.primaryRgb}, 0.35)`
                             }}
                           >
                             {item.topicName}
@@ -1486,7 +1307,6 @@ export default function PrioritiesApp() {
                   </div>
                 )}
 
-                {/* Clean Bottom Slogan */}
                 <div className="text-center pb-2">
                   <p className="text-[7.5px]" style={{ color: storyThemeStyles.textMuted }}>المساحة السورية - مشروع سوري مفتوح المصدر</p>
                 </div>
@@ -1495,7 +1315,6 @@ export default function PrioritiesApp() {
 
             </div>
 
-            {/* Theme Selector Section */}
             <div className="w-full mt-4 mb-2" dir="rtl">
               <label className="block text-xs font-bold text-muted-foreground text-right mb-2">
                 اختر لون المظهر للبطاقة:
@@ -1505,7 +1324,6 @@ export default function PrioritiesApp() {
                   const themeKey = theme.id;
                   const colors = {
                     primary: theme.primary,
-                    primaryRgb: theme.priorities?.primaryRgb || '90, 113, 74'
                   };
                   const isActive = storyTheme === themeKey;
                   const themeMeta = {
@@ -1533,7 +1351,6 @@ export default function PrioritiesApp() {
               </div>
             </div>
 
-            {/* Action buttons inside modal */}
             <div className="w-full grid grid-cols-2 gap-3 mt-5">
               <Button
                 onClick={() => setIsStoryModalOpen(false)}

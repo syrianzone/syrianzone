@@ -163,6 +163,7 @@ test('records a permanent failure and does not lose the claim', function () {
 test('a transient upload failure releases the claim for the next run', function () {
     Http::preventStrayRequests();
     Http::fake([
+        'api.x.test/2/users/me' => Http::response(['data' => ['id' => 'expected-account-id']], 200),
         'api.x.test/2/media/upload' => Http::response([], 500),
     ]);
     [$image, $meta] = answerCardFiles();

@@ -1,6 +1,5 @@
-import { lazy } from 'react';
 import { ListTodo } from 'lucide-react';
-import type { WidgetDefinition } from '../../_lib/types';
+import type { WidgetDeclaration } from '../../_lib/types';
 
 export interface TodoItem {
   id: string;
@@ -13,7 +12,7 @@ export interface TodoConfig {
   hideCompleted: boolean;
 }
 
-export const todoWidget: WidgetDefinition<TodoConfig> = {
+export const todoWidget: WidgetDeclaration = {
   id: 'todo',
   name: 'مهامي',
   description: 'قائمة مهام قصيرة تبقى معك',
@@ -32,5 +31,8 @@ export const todoWidget: WidgetDefinition<TodoConfig> = {
   requires: [],
   refresh: { staleMs: 0, intervalMs: null },
   multiple: true,
-  Component: lazy(() => import('./View')),
+  seed: { order: 10, w: 6, h: 3 },
+  source: null,
 };
+
+export default todoWidget;

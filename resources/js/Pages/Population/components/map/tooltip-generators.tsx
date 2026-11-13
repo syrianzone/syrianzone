@@ -1,4 +1,7 @@
-import { getCanonicalCityName } from '@/Lib/city-name-standardizer';
+import { getCanonicalGovernorateName } from '@/Domain/geography/governorates';
+import { weatherDescriptionAr } from '@/Domain/weather/weather';
+import { STATUS_COLORS } from '../../constants/data-config';
+import { getTemperatureColor } from '../../utils/color-calculator';
 
 export function escapeHtml(v: unknown): string {
     return String(v ?? '')
@@ -10,7 +13,7 @@ export function escapeHtml(v: unknown): string {
 }
 
 export function generateRainChartHtml(name: string, data: any[]) {
-    const displayName = escapeHtml(getCanonicalCityName(name));
+    const displayName = escapeHtml(getCanonicalGovernorateName(name));
     const sorted = [...data].sort((a, b) => a.year - b.year);
     const maxVal = Math.max(...sorted.map(d => d.rainfall));
 
@@ -51,7 +54,7 @@ export function generateRainChartHtml(name: string, data: any[]) {
 }
 
 export function generatePopulationTooltipHtml(name: string, value: number, label: string) {
-    const displayName = escapeHtml(getCanonicalCityName(name));
+    const displayName = escapeHtml(getCanonicalGovernorateName(name));
     const valueStr = value ? value.toLocaleString('en-US') : 'لا توجد بيانات';
     const safeLabel = escapeHtml(label);
 
@@ -64,16 +67,15 @@ export function generatePopulationTooltipHtml(name: string, value: number, label
 }
 
 export function generateEnvironmentalTooltipHtml(name: string, data: any) {
-    const displayName = escapeHtml(getCanonicalCityName(name));
+    const displayName = escapeHtml(getCanonicalGovernorateName(name));
     const temp = data.current_conditions?.temperature_celsius || 0;
     const feelsLike = data.current_conditions?.feels_like_celsius || temp;
     const humidity = data.current_conditions?.humidity_percent || 0;
     const windSpeed = data.current_conditions?.wind_speed_kmh || 0;
-    const weatherDesc = escapeHtml(data.current_conditions?.weather_description || '');
+    const weatherDesc = escapeHtml(weatherDescriptionAr(data.current_conditions?.weather_description || ''));
     const aqi = data.air_quality?.estimated_aqi || 0;
     const droughtRisk = escapeHtml(data.drought_risk?.drought_risk || 'N/A');
 
-    // Weather icon based on description
     let weatherIcon = '☀️';
     const desc = (weatherDesc || '').toLowerCase();
     if (desc.includes('rain') || desc.includes('drizzle')) weatherIcon = '🌧️';
@@ -83,25 +85,19 @@ export function generateEnvironmentalTooltipHtml(name: string, data: any) {
     else if (desc.includes('fog') || desc.includes('mist')) weatherIcon = '🌫️';
     else if (desc.includes('thunder') || desc.includes('storm')) weatherIcon = '⚡';
 
-    // Temperature color — same 4 bands as getTemperatureColor() in map-styles.ts
-    // so the tooltip number matches the polygon fill.
-    let tempColor = '#22d3ee'; // cyan
-    if (temp < 10) tempColor = '#3b82f6';
-    else if (temp <= 20) tempColor = '#22c55e';
-    else if (temp <= 30) tempColor = '#eab308';
-    else tempColor = '#ef4444';
+    // Temperature colour comes from the same band table that fills the polygon,
+    // so the tooltip number and the province colour always agree.
+    const tempColor = getTemperatureColor(temp);
 
-    // AQI color
-    let aqiColor = '#22c55e';
+    let aqiColor = STATUS_COLORS.good;
     let aqiBg = 'rgba(34, 197, 94, 0.2)';
-    if (aqi > 100) { aqiColor = '#ef4444'; aqiBg = 'rgba(239, 68, 68, 0.2)'; }
-    else if (aqi > 50) { aqiColor = '#eab308'; aqiBg = 'rgba(234, 179, 8, 0.2)'; }
+    if (aqi > 100) { aqiColor = STATUS_COLORS.critical; aqiBg = 'rgba(239, 68, 68, 0.2)'; }
+    else if (aqi > 50) { aqiColor = STATUS_COLORS.warning; aqiBg = 'rgba(234, 179, 8, 0.2)'; }
 
-    // Drought color
-    let droughtColor = '#22c55e';
-    if (droughtRisk === 'Very High') droughtColor = '#ef4444';
-    else if (droughtRisk === 'High') droughtColor = '#f97316';
-    else if (droughtRisk === 'Moderate') droughtColor = '#eab308';
+    let droughtColor = STATUS_COLORS.good;
+    if (droughtRisk === 'Very High') droughtColor = STATUS_COLORS.critical;
+    else if (droughtRisk === 'High') droughtColor = STATUS_COLORS.serious;
+    else if (droughtRisk === 'Moderate') droughtColor = STATUS_COLORS.warning;
 
     return `
         <div style="font-family: var(--site-font, inherit); min-width: 180px; direction: rtl;">

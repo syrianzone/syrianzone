@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\FoldsSearchColumns;
 use Illuminate\Database\Eloquent\Model;
 use Laravel\Scout\Searchable;
 
 class Stop extends Model
 {
-    use Searchable;
+    use FoldsSearchColumns, Searchable;
     protected $keyType = 'string';
     public $incrementing = false;
 

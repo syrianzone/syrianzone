@@ -2,76 +2,13 @@
 
 use App\Filament\Resources\UserResource;
 use App\Filament\Resources\UserResource\Pages\EditUser;
-use App\Models\Route;
-use App\Models\RouteDraft;
 use App\Models\TransitRouteLog;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
+use App\Support\Facts;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Support\Facades\Http;
 use Inertia\Testing\AssertableInertia as Assert;
 use Livewire\Livewire;
-
-// ─── Fixtures ──────────────────────────────────────────────────────────────
-
-function scopeCity(string $id, string $nameAr = 'مدينة', string $nameEn = 'City'): void
-{
-    $geometry = function (array $shape) {
-        $json = json_encode($shape, JSON_THROW_ON_ERROR);
-        if (DB::connection()->getDriverName() === 'sqlite') {
-            return $json;
-        }
-        $quoted = DB::connection()->getPdo()->quote($json);
-
-        return DB::raw("ST_GeomFromGeoJSON({$quoted})");
-    };
-
-    DB::table('cities')->insert([
-        'id' => $id,
-        'name_ar' => $nameAr,
-        'name_en' => $nameEn,
-        'center' => $geometry(['type' => 'Point', 'coordinates' => [36.72, 34.73]]),
-        'bounds' => $geometry([
-            'type' => 'Polygon',
-            'coordinates' => [[[36.5, 34.55], [36.95, 34.55], [36.95, 34.95], [36.5, 34.95], [36.5, 34.55]]],
-        ]),
-        'zoom' => 12,
-        'status' => 'active',
-        'created_at' => now(),
-        'updated_at' => now(),
-    ]);
-}
-
-function scopeUser(array $permissions, ?array $transitScope = null, string $role = 'user'): User
-{
-    return User::factory()->create([
-        'role' => $role,
-        'permissions' => $permissions,
-        'permission_scopes' => $transitScope === null ? null : ['transit' => $transitScope],
-    ]);
-}
-
-function scopeDraft(string $cityId, array $overrides = []): RouteDraft
-{
-    return RouteDraft::create(array_merge([
-        'user_id' => null,
-        'city_id' => $cityId,
-        'name_ar' => 'مسودة اختبار',
-        'geojson' => ['type' => 'FeatureCollection', 'features' => []],
-        'status' => 'pending',
-    ], $overrides));
-}
-
-function scopeRoute(string $id, string $cityId, array $overrides = []): Route
-{
-    return Route::create(array_merge([
-        'id' => $id,
-        'city_id' => $cityId,
-        'name_ar' => 'خط اختبار',
-        'status' => 'published',
-    ], $overrides));
-}
-
-// ─── Model scope semantics ─────────────────────────────────────────────────
 
 test('allowedTransitCities is null when unscoped and for superadmin', function () {
     $plain = User::factory()->create(['role' => 'user', 'permissions' => ['transit.approve']]);
@@ -91,6 +28,23 @@ test('allowedTransitCities trims and drops blank entries', function () {
     ]);
 
     expect($user->allowedTransitCities())->toBe(['homs', 'aleppo']);
+});
+
+test('the auth payload carries the resolved transit scope, not the raw scopes', function () {
+    // The browser compares against this list; the trimming and the superadmin
+    // bypass must not be re-implemented on the client.
+    $scoped = User::factory()->create([
+        'role' => 'user',
+        'permission_scopes' => ['transit' => ['homs', ' homs ']],
+    ]);
+    $super = User::factory()->create([
+        'role' => 'superadmin',
+        'permission_scopes' => ['transit' => ['homs']],
+    ]);
+
+    expect($scoped->toAuthPayload()['transit_scope'])->toBe(['homs'])
+        ->and($super->toAuthPayload()['transit_scope'])->toBeNull()
+        ->and($super->toAuthPayload()['permission_scopes'])->toBe(['transit' => ['homs']]);
 });
 
 test('hasPermissionInCity gates transit capabilities by governorate', function () {
@@ -117,15 +71,13 @@ test('transit capabilities are still restricted by governorate scope', function 
         ->and($user->hasPermissionInCity('transit.approve', 'aleppo'))->toBeFalse();
 });
 
-// ─── Admin drafts ──────────────────────────────────────────────────────────
-
 test('scoped transit admin only sees drafts in their governorates', function () {
-    scopeCity('homs');
-    scopeCity('aleppo');
-    scopeDraft('homs');
-    scopeDraft('aleppo');
+    seedCity('homs');
+    seedCity('aleppo');
+    transitDraft('homs');
+    transitDraft('aleppo');
 
-    $this->actingAs(scopeUser(['transit.review_drafts'], ['homs']))
+    $this->actingAs(capabilityUser(['transit.review_drafts'], ['homs']))
         ->getJson('/api/v1/admin/route-drafts')
         ->assertOk()
         ->assertJsonCount(1)
@@ -133,10 +85,10 @@ test('scoped transit admin only sees drafts in their governorates', function () 
 });
 
 test('unscoped transit admin sees every governorate', function () {
-    scopeCity('homs');
-    scopeCity('aleppo');
-    scopeDraft('homs');
-    scopeDraft('aleppo');
+    seedCity('homs');
+    seedCity('aleppo');
+    transitDraft('homs');
+    transitDraft('aleppo');
 
     $this->actingAs(moduleStaff('transit'))
         ->getJson('/api/v1/admin/route-drafts')
@@ -145,11 +97,11 @@ test('unscoped transit admin sees every governorate', function () {
 });
 
 test('scoped transit admin cannot approve or reject drafts outside scope', function () {
-    scopeCity('homs');
-    scopeCity('aleppo');
-    $draft = scopeDraft('aleppo');
+    seedCity('homs');
+    seedCity('aleppo');
+    $draft = transitDraft('aleppo');
 
-    $user = scopeUser(['transit.approve', 'transit.reject'], ['homs']);
+    $user = capabilityUser(['transit.approve', 'transit.reject'], ['homs']);
 
     $this->actingAs($user)->postJson("/api/v1/admin/route-drafts/{$draft->id}/approve")->assertForbidden();
     $this->actingAs($user)->postJson("/api/v1/admin/route-drafts/{$draft->id}/reject")->assertForbidden();
@@ -158,11 +110,11 @@ test('scoped transit admin cannot approve or reject drafts outside scope', funct
 });
 
 test('scoped transit admin can approve and reject inside scope', function () {
-    scopeCity('homs');
-    $approve = scopeDraft('homs');
-    $reject = scopeDraft('homs');
+    seedCity('homs');
+    $approve = transitDraft('homs', ['name_ar' => 'مسودة اختبار']);
+    $reject = transitDraft('homs');
 
-    $user = scopeUser(['transit.approve', 'transit.reject'], ['homs']);
+    $user = capabilityUser(['transit.approve', 'transit.reject'], ['homs']);
 
     $this->actingAs($user)->postJson("/api/v1/admin/route-drafts/{$approve->id}/approve")
         ->assertOk();
@@ -174,17 +126,15 @@ test('scoped transit admin can approve and reject inside scope', function () {
     $this->assertDatabaseHas('route_drafts', ['id' => $reject->id, 'status' => 'rejected']);
 });
 
-// ─── Admin routes + logs ───────────────────────────────────────────────────
-
 test('scoped transit admin route list and logs are filtered by governorate', function () {
-    scopeCity('homs');
-    scopeCity('aleppo');
-    scopeRoute('route-homs-1', 'homs');
-    scopeRoute('route-aleppo-1', 'aleppo');
+    seedCity('homs');
+    seedCity('aleppo');
+    transitRoute('route-homs-1', 'homs');
+    transitRoute('route-aleppo-1', 'aleppo');
     TransitRouteLog::create(['route_id' => 'route-homs-1', 'action' => 'approved', 'description' => 'homs']);
     TransitRouteLog::create(['route_id' => 'route-aleppo-1', 'action' => 'approved', 'description' => 'aleppo']);
 
-    $user = scopeUser(['transit.review_drafts'], ['homs']);
+    $user = capabilityUser(['transit.review_drafts'], ['homs']);
 
     $this->actingAs($user)->getJson('/api/v1/admin/routes')
         ->assertOk()
@@ -198,11 +148,11 @@ test('scoped transit admin route list and logs are filtered by governorate', fun
 });
 
 test('scoped transit admin cannot edit routes outside scope', function () {
-    scopeCity('homs');
-    scopeCity('aleppo');
-    scopeRoute('route-aleppo-1', 'aleppo');
+    seedCity('homs');
+    seedCity('aleppo');
+    transitRoute('route-aleppo-1', 'aleppo', ['name_ar' => 'خط اختبار']);
 
-    $user = scopeUser(['transit.edit_routes'], ['homs']);
+    $user = capabilityUser(['transit.edit_routes'], ['homs']);
 
     $this->actingAs($user)->putJson('/api/v1/admin/routes/route-aleppo-1', ['name_ar' => 'ممنوع'])
         ->assertForbidden();
@@ -217,10 +167,10 @@ test('scoped transit admin cannot edit routes outside scope', function () {
 });
 
 test('scoped transit admin can edit routes inside scope', function () {
-    scopeCity('homs');
-    scopeRoute('route-homs-1', 'homs');
+    seedCity('homs');
+    transitRoute('route-homs-1', 'homs');
 
-    $user = scopeUser(['transit.edit_routes'], ['homs']);
+    $user = capabilityUser(['transit.edit_routes'], ['homs']);
 
     $this->actingAs($user)->putJson('/api/v1/admin/routes/route-homs-1', ['name_ar' => 'خط محدث'])
         ->assertOk();
@@ -235,38 +185,36 @@ test('scoped transit admin can edit routes inside scope', function () {
 });
 
 test('moving a route requires access to both source and target governorates', function () {
-    scopeCity('homs');
-    scopeCity('aleppo');
-    scopeRoute('route-homs-1', 'homs');
-    scopeRoute('route-aleppo-1', 'aleppo');
+    seedCity('homs');
+    seedCity('aleppo');
+    transitRoute('route-homs-1', 'homs');
+    transitRoute('route-aleppo-1', 'aleppo');
 
     // Destination outside scope
-    $this->actingAs(scopeUser(['transit.edit_routes'], ['homs']))
+    $this->actingAs(capabilityUser(['transit.edit_routes'], ['homs']))
         ->postJson('/api/v1/admin/routes/route-homs-1/move', ['city_id' => 'aleppo'])
         ->assertForbidden();
 
     // Source outside scope
-    $this->actingAs(scopeUser(['transit.edit_routes'], ['homs']))
+    $this->actingAs(capabilityUser(['transit.edit_routes'], ['homs']))
         ->postJson('/api/v1/admin/routes/route-aleppo-1/move', ['city_id' => 'homs'])
         ->assertForbidden();
 
     // Both governorates allowed
-    $this->actingAs(scopeUser(['transit.edit_routes'], ['homs', 'aleppo']))
+    $this->actingAs(capabilityUser(['transit.edit_routes'], ['homs', 'aleppo']))
         ->postJson('/api/v1/admin/routes/route-aleppo-1/move', ['city_id' => 'homs'])
         ->assertOk();
 
     $this->assertDatabaseHas('routes', ['id' => 'route-aleppo-1', 'city_id' => 'homs']);
 });
 
-// ─── Delete endpoint ───────────────────────────────────────────────────────
-
 test('deleting a route is scoped by governorate', function () {
-    scopeCity('homs');
-    scopeCity('aleppo');
-    scopeRoute('route-homs-1', 'homs');
-    scopeRoute('route-aleppo-1', 'aleppo');
+    seedCity('homs');
+    seedCity('aleppo');
+    transitRoute('route-homs-1', 'homs');
+    transitRoute('route-aleppo-1', 'aleppo');
 
-    $user = scopeUser(['transit.delete_routes'], ['homs']);
+    $user = capabilityUser(['transit.delete_routes'], ['homs']);
 
     $this->actingAs($user)->deleteJson('/api/v1/admin/routes/route-aleppo-1')->assertForbidden();
     $this->assertDatabaseHas('routes', ['id' => 'route-aleppo-1']);
@@ -280,21 +228,19 @@ test('deleting a route is scoped by governorate', function () {
 });
 
 test('deleting a route requires the delete capability', function () {
-    scopeCity('homs');
-    scopeRoute('route-homs-1', 'homs');
+    seedCity('homs');
+    transitRoute('route-homs-1', 'homs');
 
-    $this->actingAs(scopeUser(['transit.edit_routes'], ['homs']))
+    $this->actingAs(capabilityUser(['transit.edit_routes'], ['homs']))
         ->deleteJson('/api/v1/admin/routes/route-homs-1')
         ->assertForbidden();
 
     $this->assertDatabaseHas('routes', ['id' => 'route-homs-1']);
 });
 
-// ─── Import ────────────────────────────────────────────────────────────────
-
 test('scoped staff import preview only shows candidates in their governorates', function () {
-    scopeCity('homs');
-    scopeCity('aleppo');
+    seedCity('homs');
+    seedCity('aleppo');
     Http::fake(['https://www.google.com/maps/d/kml*' => Http::response(
         file_get_contents(base_path('tests/Fixtures/transit-single.kml')),
         200
@@ -302,14 +248,14 @@ test('scoped staff import preview only shows candidates in their governorates', 
 
     $mid = '1eldQB_s9AbKbJ2-4NITj3DqkzDKQtL4';
 
-    $this->actingAs(scopeUser(['transit.review_drafts'], ['homs']))
+    $this->actingAs(capabilityUser(['transit.review_drafts'], ['homs']))
         ->postJson('/api/v1/admin/routes/import-preview', ['mid' => $mid])
         ->assertOk()
         ->assertJsonCount(1, 'routes')
         ->assertJsonPath('routes.0.suggested_city_id', 'homs')
         ->assertJsonPath('scope_filtered', 0);
 
-    $this->actingAs(scopeUser(['transit.review_drafts'], ['aleppo']))
+    $this->actingAs(capabilityUser(['transit.review_drafts'], ['aleppo']))
         ->postJson('/api/v1/admin/routes/import-preview', ['mid' => $mid])
         ->assertOk()
         ->assertJsonCount(0, 'routes')
@@ -317,14 +263,14 @@ test('scoped staff import preview only shows candidates in their governorates', 
 });
 
 test('scoped staff cannot force an out-of-scope import override', function () {
-    scopeCity('homs');
-    scopeCity('aleppo');
+    seedCity('homs');
+    seedCity('aleppo');
     Http::fake(['https://www.google.com/maps/d/kml*' => Http::response(
         file_get_contents(base_path('tests/Fixtures/transit-single.kml')),
         200
     )]);
 
-    $this->actingAs(scopeUser(['transit.review_drafts'], ['homs']))
+    $this->actingAs(capabilityUser(['transit.review_drafts'], ['homs']))
         ->postJson('/api/v1/admin/routes/import-preview', [
             'mid' => '1eldQB_s9AbKbJ2-4NITj3DqkzDKQtL4',
             'city_id' => 'aleppo',
@@ -333,10 +279,10 @@ test('scoped staff cannot force an out-of-scope import override', function () {
 });
 
 test('import publish is rejected outside the governorate scope', function () {
-    scopeCity('homs');
-    scopeCity('aleppo');
+    seedCity('homs');
+    seedCity('aleppo');
 
-    $this->actingAs(scopeUser(['transit.review_drafts'], ['homs']))
+    $this->actingAs(capabilityUser(['transit.review_drafts'], ['homs']))
         ->postJson('/api/v1/admin/routes/import-publish', [
             'city_id' => 'aleppo',
             'name_ar' => 'خط',
@@ -344,8 +290,6 @@ test('import publish is rejected outside the governorate scope', function () {
         ])
         ->assertForbidden();
 });
-
-// ─── Studio ────────────────────────────────────────────────────────────────
 
 function scopeLineGeojson(): array
 {
@@ -365,8 +309,8 @@ function scopeLineGeojson(): array
 }
 
 test('scoped staff cannot submit studio drafts outside their governorates', function () {
-    scopeCity('homs');
-    scopeCity('aleppo');
+    seedCity('homs');
+    seedCity('aleppo');
 
     $payload = [
         'city_id' => 'aleppo',
@@ -374,17 +318,17 @@ test('scoped staff cannot submit studio drafts outside their governorates', func
         'geojson' => scopeLineGeojson(),
     ];
 
-    $this->actingAs(scopeUser(['transit.review_drafts'], ['homs']))
+    $this->actingAs(capabilityUser(['transit.review_drafts'], ['homs']))
         ->postJson('/api/v1/studio/routes', $payload)
         ->assertForbidden();
 
-    $this->actingAs(scopeUser(['transit.review_drafts'], ['homs']))
+    $this->actingAs(capabilityUser(['transit.review_drafts'], ['homs']))
         ->postJson('/api/v1/studio/routes', array_merge($payload, ['city_id' => 'homs']))
         ->assertCreated();
 });
 
 test('studio submissions stay open to anonymous and regular users', function () {
-    scopeCity('aleppo');
+    seedCity('aleppo');
 
     $payload = [
         'city_id' => 'aleppo',
@@ -400,20 +344,18 @@ test('studio submissions stay open to anonymous and regular users', function () 
 });
 
 test('scoped staff cannot open out-of-scope drafts or routes in studio', function () {
-    scopeCity('homs');
-    scopeCity('aleppo');
+    seedCity('homs');
+    seedCity('aleppo');
 
-    $user = scopeUser(['transit.review_drafts'], ['homs']);
-    $ownDraft = scopeDraft('homs', ['user_id' => $user->id]);
-    $outsideDraft = scopeDraft('aleppo');
-    $outsideRoute = scopeRoute('route-aleppo-1', 'aleppo');
+    $user = capabilityUser(['transit.review_drafts'], ['homs']);
+    $ownDraft = transitDraft('homs', ['user_id' => $user->id]);
+    $outsideDraft = transitDraft('aleppo');
+    $outsideRoute = transitRoute('route-aleppo-1', 'aleppo');
 
     $this->actingAs($user)->getJson("/api/v1/studio/routes/{$ownDraft->id}")->assertOk();
     $this->actingAs($user)->getJson("/api/v1/studio/routes/{$outsideDraft->id}")->assertForbidden();
     $this->actingAs($user)->getJson("/api/v1/studio/routes/{$outsideRoute->id}/from-route")->assertForbidden();
 });
-
-// ─── Filament form data mapping ────────────────────────────────────────────
 
 test('mergePermissionFormData folds grouped checkboxes and preserves unknown capabilities', function () {
     $merged = UserResource::mergePermissionFormData([
@@ -454,9 +396,9 @@ test('splitPermissionFormData maps stored permissions and scope to form state', 
 });
 
 test('every permission group has a project icon and matching capability prefix', function () {
-    $meta = UserResource::permissionGroupMeta();
+    $meta = PermissionCatalogue::groupMeta();
 
-    foreach (UserResource::permissionGroups() as $group => $options) {
+    foreach (PermissionCatalogue::groups() as $group => $options) {
         expect($meta)->toHaveKey($group)
             ->and(array_keys($options))->not->toBeEmpty();
 
@@ -466,10 +408,8 @@ test('every permission group has a project icon and matching capability prefix',
     }
 });
 
-// ─── Inertia sharing ───────────────────────────────────────────────────────
-
 test('permission scopes are shared with the frontend', function () {
-    $user = scopeUser(['transit.approve'], ['homs']);
+    $user = capabilityUser(['transit.approve'], ['homs']);
 
     $this->actingAs($user)->get('/dashboard')
         ->assertOk()
@@ -479,8 +419,6 @@ test('permission scopes are shared with the frontend', function () {
         );
 });
 
-// ─── Filament form smoke test ──────────────────────────────────────────────
-
 test('filament user form renders grouped permissions with project icons', function () {
     $superadmin = User::factory()->create(['role' => 'superadmin']);
     $target = User::factory()->create([
@@ -489,13 +427,17 @@ test('filament user form renders grouped permissions with project icons', functi
         'permission_scopes' => ['transit' => ['homs']],
     ]);
 
+    // The drawing the panel must render is the one in the shared icon file, not
+    // a copy: its own viewBox is what tells a project icon from Filament's.
+    $projectViewBox = Facts::projectIcons()['icons']['transit']['viewBox'];
+
     Livewire::actingAs($superadmin)
         ->test(EditUser::class, ['record' => $target->getRouteKey()])
         ->assertOk()
         ->assertSee('الحسابات الرسمية')
         ->assertSee('ترانزيت')
         ->assertSee('نطاق المحافظات')
-        ->assertSee('viewBox="0 0 32 32"', false);
+        ->assertSee('viewBox="'.$projectViewBox.'"', false);
 });
 
 test('filament panel stays arabic even when the app locale is english', function () {
@@ -507,6 +449,8 @@ test('filament panel stays arabic even when the app locale is english', function
         'permissions' => ['transit.approve'],
     ]);
 
+    $projectViewBox = Facts::projectIcons()['icons']['transit']['viewBox'];
+
     $this->actingAs($superadmin)
         ->get("/superadmin/users/{$target->getRouteKey()}/edit")
         ->assertOk()
@@ -514,14 +458,14 @@ test('filament panel stays arabic even when the app locale is english', function
         ->assertSee('نطاق المحافظات')
         // Filament's own UI translations follow the forced panel locale.
         ->assertSee('حفظ التغييرات')
-        ->assertSee('viewBox="0 0 32 32"', false);
+        ->assertSee('viewBox="'.$projectViewBox.'"', false);
 });
 
 test('filament user form saves grouped permissions and governorate scope', function () {
-    scopeCity('homs');
-    scopeCity('aleppo');
+    seedCity('homs');
+    seedCity('aleppo');
     $superadmin = User::factory()->create(['role' => 'superadmin']);
-    $target = User::factory()->create(['role' => 'user']);
+    $target = User::factory()->create();
 
     Livewire::actingAs($superadmin)
         ->test(EditUser::class, ['record' => $target->getRouteKey()])
@@ -542,8 +486,8 @@ test('filament user form saves grouped permissions and governorate scope', funct
 });
 
 test('clearing the governorate scope in the form makes the user unrestricted', function () {
-    scopeCity('homs');
-    scopeCity('aleppo');
+    seedCity('homs');
+    seedCity('aleppo');
     $superadmin = User::factory()->create(['role' => 'superadmin']);
     $target = User::factory()->create([
         'role' => 'user',

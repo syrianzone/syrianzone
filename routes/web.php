@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\AboutController;
-use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\Api\PopulationAtlasController;
 use App\Http\Controllers\ApiTokenAdminController;
 use App\Http\Controllers\AssetUploadController;
@@ -39,8 +38,6 @@ use App\Http\Controllers\TransitAdminController;
 use App\Http\Controllers\TransitImportController;
 use App\Http\Controllers\UserSettingsController;
 use App\Models\City;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -171,67 +168,38 @@ Route::get('/spotify/{any}', fn () => redirect('/', 301))->where('any', '.*');
 Route::get('/guesswho', [GuessWhoController::class, 'index']);
 Route::get('/guesswho/room/{roomCode}', [GuessWhoController::class, 'showRoom']);
 
-// Canonical versioned Guess Who JSON endpoints (/api/v1/guesswho/*)
-Route::prefix('api/v1/guesswho')->group(function () {
+// Guess Who JSON endpoints: one definition, mounted under the canonical
+// /api/v1/guesswho prefix (which owns the route names) and the older /guesswho
+// paths. Only the per-room paths differ: the canonical tree says rooms/actions,
+// the legacy one says room/action.
+$guessWhoRoutes = function (string $room, string $action, ?string $namePrefix): void {
+    $name = fn (string $suffix): ?string => $namePrefix === null ? null : $namePrefix.$suffix;
+
     Route::post('/rooms', [GuessWhoController::class, 'createRoom'])
         ->middleware('throttle:10,1')
-        ->name('api.v1.guesswho.rooms.store');
-    Route::post('/rooms/{roomCode}/join', [GuessWhoController::class, 'joinRoom'])
+        ->name($name('rooms.store'));
+    Route::post("/{$room}/{roomCode}/join", [GuessWhoController::class, 'joinRoom'])
         ->middleware('throttle:30,1')
-        ->name('api.v1.guesswho.rooms.join');
-    Route::post('/rooms/{roomCode}/actions', [GuessWhoController::class, 'action'])
+        ->name($name('rooms.join'));
+    // The game's own moves go over Reverb.
+    Route::post("/{$room}/{roomCode}/{$action}", [GuessWhoController::class, 'action'])
         ->middleware('throttle:120,1')
-        ->name('api.v1.guesswho.rooms.actions.store');
-    Route::get('/rooms/{roomCode}/state', [GuessWhoController::class, 'state'])
+        ->name($name('rooms.actions.store'));
+    Route::get("/{$room}/{roomCode}/state", [GuessWhoController::class, 'state'])
         ->middleware('throttle:60,1')
-        ->name('api.v1.guesswho.rooms.state');
+        ->name($name('rooms.state'));
     Route::post('/broadcasting/auth', [GuessWhoController::class, 'authenticateBroadcasting'])
         ->middleware('throttle:30,1')
-        ->name('api.v1.guesswho.broadcasting.auth');
-});
+        ->name($name('broadcasting.auth'));
+};
 
-// Legacy Guess Who JSON endpoints (/guesswho/*)
-Route::post('/guesswho/rooms', [GuessWhoController::class, 'createRoom'])->middleware('throttle:10,1');
-Route::post('/guesswho/room/{roomCode}/join', [GuessWhoController::class, 'joinRoom'])->middleware('throttle:30,1');
-// The game's own moves go over Reverb; the WebRTC signaling path is gone.
-Route::post('/guesswho/room/{roomCode}/action', [GuessWhoController::class, 'action'])->middleware('throttle:120,1');
-Route::get('/guesswho/room/{roomCode}/state', [GuessWhoController::class, 'state'])->middleware('throttle:60,1');
-Route::post('/guesswho/broadcasting/auth', [GuessWhoController::class, 'authenticateBroadcasting'])->middleware('throttle:30,1');
+Route::prefix('api/v1/guesswho')->group(fn () => $guessWhoRoutes('rooms', 'actions', 'api.v1.guesswho.'));
+Route::prefix('guesswho')->group(fn () => $guessWhoRoutes('room', 'action', null));
 
 Route::get('/transit', function () {
-    $cities = Cache::remember('transit:cities', 3600, function () {
-        $citiesModel = City::select(
-            'id', 'name_ar', 'name_en', 'zoom', 'status',
-            DB::raw('ST_AsGeoJSON(center) as center_geojson'),
-            DB::raw('ST_AsGeoJSON(bounds) as bounds_geojson')
-        )->withCount(['routes as routeCount' => fn ($q) => $q->where('status', 'published')])->get();
-
-        return $citiesModel->map(function ($city) {
-            $centerJson = json_decode($city->center_geojson, true);
-            $boundsJson = json_decode($city->bounds_geojson, true);
-
-            $minLng = $boundsJson['coordinates'][0][0][0] ?? 0;
-            $minLat = $boundsJson['coordinates'][0][0][1] ?? 0;
-            $maxLng = $boundsJson['coordinates'][0][2][0] ?? 0;
-            $maxLat = $boundsJson['coordinates'][0][2][1] ?? 0;
-
-            return [
-                'id' => $city->id,
-                'nameAr' => $city->name_ar,
-                'nameEn' => $city->name_en,
-                'status' => $city->status,
-                'zoom' => $city->zoom,
-                'center' => $centerJson['coordinates'] ?? [0, 0],
-                'bounds' => [
-                    [$minLng, $minLat],
-                    [$maxLng, $maxLat],
-                ],
-                'routeCount' => $city->routeCount,
-            ];
-        })->toArray();
-    });
-
-    return Inertia::render('Transit/Index', ['cities' => $cities]);
+    return Inertia::render('Transit/Index', [
+        'cities' => app(\App\Services\Transit\TransitCities::class)->forPage(),
+    ]);
 });
 
 Route::get('/transit/city/{id}', function ($id) {
@@ -239,10 +207,16 @@ Route::get('/transit/city/{id}', function ($id) {
     abort_unless($city !== null, 404);
     \App\Support\Seo\SeoMeta::remember(request(), 'city', $city);
 
-    // The route list travels with the page, so the first HTML names the
-    // city's lines instead of an empty state that fills in after a fetch.
+    // The city list, the city's own payload and its route list travel with the
+    // page, so the first HTML names the city and its lines instead of an empty
+    // state that fills in after a fetch. All three come from the cached list the
+    // API serves, not from a checked-in copy of the cities table.
+    $cities = app(\App\Services\Transit\TransitCities::class)->forPage();
+
     return Inertia::render('Transit/city/[id]/Index', [
         'id' => $id,
+        'cities' => $cities,
+        'city' => collect($cities)->firstWhere('id', $id),
         'routes' => app(\App\Services\Transit\PublishedRoutes::class)->forCity($id),
     ]);
 })->where('id', '[a-z0-9\-]+');
@@ -256,7 +230,9 @@ Route::get('/transit/city/{id}/route/{routeId}', function ($id, $routeId) {
 })->where(['id' => '[a-z0-9\-]+', 'routeId' => '[a-z0-9\-]+']);
 
 Route::get('/transit/studio', function () {
-    return Inertia::render('Transit/studio/Index');
+    return Inertia::render('Transit/studio/Index', [
+        'cities' => app(\App\Services\Transit\TransitCities::class)->forPage(),
+    ]);
 });
 
 Route::get('/mishwar', [PlaceController::class, 'renderIndex']);
@@ -274,61 +250,17 @@ Route::post('/logout', [AuthController::class, 'logout']);
 Route::get('/dev/impersonate/{role}', [DevController::class, 'impersonate'])->name('dev.impersonate');
 
 Route::middleware('auth:web,sanctum')->group(function () {
-    // 1. Unified User Dashboard Views and Actions
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Legacy unversioned account & user aliases (/api/*)
     Route::post('/api/account/update', [DashboardController::class, 'updateAccount']);
     Route::post('/api/account/avatar', [DashboardController::class, 'updateAvatar'])->middleware('throttle:10,1');
     Route::post('/api/account/delete', [DashboardController::class, 'deleteAccount']);
 
     Route::prefix('api')->group(function () {
         Route::get('/user', [AuthController::class, 'user']);
-
-        Route::middleware('superadmin')->group(function () {
-            Route::get('/admins', [AdminUserController::class, 'index']);
-            Route::post('/admins', [AdminUserController::class, 'store']);
-            Route::delete('/admins/{id}', [AdminUserController::class, 'destroy']);
-        });
     });
 
     Route::middleware(['auth:web,sanctum', 'superadmin'])->group(function () {
-        Route::get('/admin/assets', [AssetUploadController::class, 'index']);
-
-        // Canonical RESTful superadmin routes (/api/v1/admin/*)
-        Route::get('/api/v1/admin/admins', [AdminUserController::class, 'index'])
-            ->name('api.v1.admin.admins.index');
-        Route::post('/api/v1/admin/admins', [AdminUserController::class, 'store'])
-            ->name('api.v1.admin.admins.store');
-        Route::delete('/api/v1/admin/admins/{id}', [AdminUserController::class, 'destroy'])
-            ->name('api.v1.admin.admins.destroy');
-
-        Route::get('/api/v1/admin/assets', [AssetUploadController::class, 'list'])
-            ->name('api.v1.admin.assets.index');
-        Route::get('/api/v1/admin/assets/manifest', [AssetUploadController::class, 'manifest'])
-            ->name('api.v1.admin.assets.manifest');
-        Route::post('/api/v1/admin/assets', [AssetUploadController::class, 'store'])
-            ->name('api.v1.admin.assets.store');
-        Route::delete('/api/v1/admin/assets', [AssetUploadController::class, 'destroy'])
-            ->name('api.v1.admin.assets.destroy');
-
-        // Legacy RPC asset routes
-        Route::get('/api/v1/admin/assets/list', [AssetUploadController::class, 'list']);
-        Route::post('/api/v1/admin/assets/upload', [AssetUploadController::class, 'store']);
-        Route::delete('/api/v1/admin/assets/delete', [AssetUploadController::class, 'destroy']);
-
-        Route::get('/admin/site-popup', [SitePopupAdminController::class, 'renderIndex']);
-        Route::get('/api/v1/admin/site-popup', [SitePopupAdminController::class, 'show'])
-            ->name('api.v1.admin.site-popup.show');
-        Route::put('/api/v1/admin/site-popup', [SitePopupAdminController::class, 'update'])
-            ->name('api.v1.admin.site-popup.update');
-
-        Route::get('/admin/navigation', [SiteNavigationAdminController::class, 'renderIndex']);
-        Route::get('/api/v1/admin/navigation', [SiteNavigationAdminController::class, 'show'])
-            ->name('api.v1.admin.navigation.show');
-        Route::put('/api/v1/admin/navigation', [SiteNavigationAdminController::class, 'update'])
-            ->name('api.v1.admin.navigation.update');
-
         // Revoking every token of a user is superadmin-only: it also ends that
         // user's mobile sessions, so it is a leak response, not self-service.
         // The page, minting and single revocation are in the agent_tokens
@@ -340,6 +272,43 @@ Route::middleware('auth:web,sanctum')->group(function () {
         Route::post('/api/v1/admin/api-tokens/revoke-all/{userId}', [ApiTokenAdminController::class, 'revokeAllForUser'])
             ->whereNumber('userId')
             ->middleware('agent_tokens');
+    });
+
+    // Hosted-file manager. `assets.manage` is granted to the superadmin role
+    // through User::effectivePermissions(), so the audience is superadmins.
+    Route::middleware('assets_admin')->group(function () {
+        Route::get('/admin/assets', [AssetUploadController::class, 'index'])
+            ->middleware('assets_admin:assets.manage');
+
+        Route::prefix('api/v1/admin/assets')->group(function () {
+            Route::get('/list', [AssetUploadController::class, 'list'])
+                ->middleware('assets_admin:assets.manage');
+            Route::post('/upload', [AssetUploadController::class, 'store'])
+                ->middleware('assets_admin:assets.manage');
+            Route::delete('/delete', [AssetUploadController::class, 'destroy'])
+                ->middleware('assets_admin:assets.manage');
+        });
+    });
+
+    // Site-wide settings: the homepage popup and the navigation/icon catalogue.
+    Route::middleware('site_admin')->group(function () {
+        Route::get('/admin/site-popup', [SitePopupAdminController::class, 'renderIndex'])
+            ->middleware('site_admin:site.popup');
+        Route::get('/api/v1/admin/site-popup', [SitePopupAdminController::class, 'show'])
+            ->middleware('site_admin:site.popup')
+            ->name('api.v1.admin.site-popup.show');
+        Route::put('/api/v1/admin/site-popup', [SitePopupAdminController::class, 'update'])
+            ->middleware('site_admin:site.popup')
+            ->name('api.v1.admin.site-popup.update');
+
+        Route::get('/admin/navigation', [SiteNavigationAdminController::class, 'renderIndex'])
+            ->middleware('site_admin:site.navigation');
+        Route::get('/api/v1/admin/navigation', [SiteNavigationAdminController::class, 'show'])
+            ->middleware('site_admin:site.navigation')
+            ->name('api.v1.admin.navigation.show');
+        Route::put('/api/v1/admin/navigation', [SiteNavigationAdminController::class, 'update'])
+            ->middleware('site_admin:site.navigation')
+            ->name('api.v1.admin.navigation.update');
     });
 
     // Agent API tokens (see docs/modules/agent-mcp.md). Open to any account
@@ -356,72 +325,17 @@ Route::middleware('auth:web,sanctum')->group(function () {
             ->name('api.v1.admin.api-tokens.destroy');
     });
 
-    // 2. Polls & General Admin Panel (accessible to core admins and superadmins)
-    // Poll management lives in the unified user dashboard (/dashboard polls tab).
+    // Polls and general admin panel (core admins and superadmins). Poll
+    // management lives in the unified user dashboard (/dashboard polls tab).
     // The legacy /admin/polls/* pages were removed to avoid a duplicate editor;
     // keep redirects so old bookmarks/links land on the dashboard editor.
     Route::redirect('/admin/polls', '/dashboard', 301);
     Route::redirect('/admin/polls/create', '/dashboard?create-poll=1', 301);
     Route::redirect('/admin/polls/{id}/edit', '/dashboard?edit-poll={id}', 301);
     Route::middleware('polls_admin')->group(function () {
-        // Canonical versioned Polls Admin routes (/api/v1/admin/*)
-        Route::prefix('api/v1/admin')->group(function () {
-            Route::post('/polls', [PollController::class, 'store'])
-                ->middleware('polls_admin:polls.create')
-                ->name('api.v1.admin.polls.store');
-            Route::put('/polls/{id}', [PollController::class, 'update'])
-                ->middleware('polls_admin:polls.edit')
-                ->name('api.v1.admin.polls.update');
-            Route::patch('/polls/{id}', [PollController::class, 'update'])
-                ->middleware('polls_admin:polls.edit');
-            Route::delete('/polls/{id}', [PollController::class, 'destroy'])
-                ->middleware('polls_admin:polls.delete')
-                ->name('api.v1.admin.polls.destroy');
-
-            Route::get('/candidate-groups', [CandidateGroupController::class, 'index'])
-                ->middleware('polls_admin:any')
-                ->name('api.v1.admin.candidate-groups.index');
-            Route::get('/candidate-groups/{id}', [CandidateGroupController::class, 'show'])
-                ->middleware('polls_admin:any')
-                ->name('api.v1.admin.candidate-groups.show');
-            Route::post('/candidate-groups', [CandidateGroupController::class, 'store'])
-                ->middleware('polls_admin:polls.create')
-                ->name('api.v1.admin.candidate-groups.store');
-            Route::put('/candidate-groups/{id}', [CandidateGroupController::class, 'update'])
-                ->middleware('polls_admin:polls.edit')
-                ->name('api.v1.admin.candidate-groups.update');
-            Route::patch('/candidate-groups/{id}', [CandidateGroupController::class, 'update'])
-                ->middleware('polls_admin:polls.edit');
-            Route::delete('/candidate-groups/{id}', [CandidateGroupController::class, 'destroy'])
-                ->middleware('polls_admin:polls.delete')
-                ->name('api.v1.admin.candidate-groups.destroy');
-            Route::post('/candidate-groups/reorder', [CandidateGroupController::class, 'reorder'])
-                ->middleware('polls_admin:polls.edit')
-                ->name('api.v1.admin.candidate-groups.reorder');
-            Route::post('/candidate-groups/{id}/default', [CandidateGroupController::class, 'setDefault'])
-                ->middleware('polls_admin:polls.edit')
-                ->name('api.v1.admin.candidate-groups.default');
-
-            Route::post('/candidates', [CandidateController::class, 'store'])
-                ->middleware('polls_admin:polls.create')
-                ->name('api.v1.admin.candidates.store');
-            Route::put('/candidates/{id}', [CandidateController::class, 'update'])
-                ->middleware('polls_admin:polls.edit')
-                ->name('api.v1.admin.candidates.update');
-            Route::patch('/candidates/{id}', [CandidateController::class, 'update'])
-                ->middleware('polls_admin:polls.edit');
-            Route::delete('/candidates/{id}', [CandidateController::class, 'destroy'])
-                ->middleware('polls_admin:polls.delete')
-                ->name('api.v1.admin.candidates.destroy');
-            Route::patch('/candidates/{id}/archive', [CandidateController::class, 'archive'])
-                ->middleware('polls_admin:polls.edit')
-                ->name('api.v1.admin.candidates.archive');
-            Route::patch('/candidates/{id}/restore', [CandidateController::class, 'restore'])
-                ->middleware('polls_admin:polls.edit')
-                ->name('api.v1.admin.candidates.restore');
-        });
-
-        // Legacy unversioned Polls Admin routes (/api/*)
+        // Polls, candidate groups and candidates are one editable surface. The
+        // dashboard editor calls the unversioned /api/* paths, so this is the
+        // only mount.
         Route::prefix('api')->group(function () {
             Route::post('/polls', [PollController::class, 'store'])
                 ->middleware('polls_admin:polls.create');
@@ -446,7 +360,6 @@ Route::middleware('auth:web,sanctum')->group(function () {
                 ->middleware('polls_admin:any');
             Route::get('/candidate-groups/{id}', [CandidateGroupController::class, 'show'])
                 ->middleware('polls_admin:any');
-
             Route::post('/candidate-groups', [CandidateGroupController::class, 'store'])
                 ->middleware('polls_admin:polls.create');
             Route::put('/candidate-groups/{id}', [CandidateGroupController::class, 'update'])
@@ -455,7 +368,6 @@ Route::middleware('auth:web,sanctum')->group(function () {
                 ->middleware('polls_admin:polls.edit');
             Route::delete('/candidate-groups/{id}', [CandidateGroupController::class, 'destroy'])
                 ->middleware('polls_admin:polls.delete');
-
             Route::post('/candidate-groups/reorder', [CandidateGroupController::class, 'reorder'])
                 ->middleware('polls_admin:polls.edit');
             Route::post('/candidate-groups/{id}/default', [CandidateGroupController::class, 'setDefault'])
@@ -469,7 +381,6 @@ Route::middleware('auth:web,sanctum')->group(function () {
                 ->middleware('polls_admin:polls.edit');
             Route::delete('/candidates/{id}', [CandidateController::class, 'destroy'])
                 ->middleware('polls_admin:polls.delete');
-
             Route::patch('/candidates/{id}/archive', [CandidateController::class, 'archive'])
                 ->middleware('polls_admin:polls.edit');
             Route::patch('/candidates/{id}/restore', [CandidateController::class, 'restore'])
@@ -477,41 +388,46 @@ Route::middleware('auth:web,sanctum')->group(function () {
         });
     });
 
-    // Guess Who content management (migrated from Filament).
-    //
-    // Superadmin only. This was `middleware('admin')`, and with the `admin` role
-    // on its way out the choice was between minting a `guesswho.*` capability for
-    // a novelty game with one operator, and narrowing to superadmin. Narrowing
-    // was the decision, so this is the one place Phase C removes access rather
-    // than re-expresses it: anyone who was operating Guess Who as `admin` needs
-    // promoting to superadmin.
-    Route::middleware('superadmin')->group(function () {
-        Route::get('/admin/guesswho', [GuessWhoAdminController::class, 'renderIndex']);
+    // Guess Who content management, gated on `guesswho.manage`, which only the
+    // superadmin role holds by default (User::effectivePermissions() resolves
+    // the whole catalogue).
+    Route::middleware('guesswho_admin')->group(function () {
+        Route::get('/admin/guesswho', [GuessWhoAdminController::class, 'renderIndex'])
+            ->middleware('guesswho_admin:guesswho.manage');
 
         Route::prefix('api/v1/admin/guesswho')->group(function () {
             Route::post('/categories', [GuessWhoAdminController::class, 'storeCategory'])
+                ->middleware('guesswho_admin:guesswho.manage')
                 ->name('api.v1.admin.guesswho.categories.store');
-            Route::post('/categories/{id}', [GuessWhoAdminController::class, 'updateCategory'])->whereNumber('id');
+            Route::post('/categories/{id}', [GuessWhoAdminController::class, 'updateCategory'])
+                ->whereNumber('id')
+                ->middleware('guesswho_admin:guesswho.manage');
             Route::put('/categories/{id}', [GuessWhoAdminController::class, 'updateCategory'])
                 ->whereNumber('id')
+                ->middleware('guesswho_admin:guesswho.manage')
                 ->name('api.v1.admin.guesswho.categories.update');
             Route::delete('/categories/{id}', [GuessWhoAdminController::class, 'destroyCategory'])
                 ->whereNumber('id')
+                ->middleware('guesswho_admin:guesswho.manage')
                 ->name('api.v1.admin.guesswho.categories.destroy');
 
             Route::post('/characters', [GuessWhoAdminController::class, 'storeCharacter'])
+                ->middleware('guesswho_admin:guesswho.manage')
                 ->name('api.v1.admin.guesswho.characters.store');
-            Route::post('/characters/{id}', [GuessWhoAdminController::class, 'updateCharacter'])->whereNumber('id');
+            Route::post('/characters/{id}', [GuessWhoAdminController::class, 'updateCharacter'])
+                ->whereNumber('id')
+                ->middleware('guesswho_admin:guesswho.manage');
             Route::put('/characters/{id}', [GuessWhoAdminController::class, 'updateCharacter'])
                 ->whereNumber('id')
+                ->middleware('guesswho_admin:guesswho.manage')
                 ->name('api.v1.admin.guesswho.characters.update');
             Route::delete('/characters/{id}', [GuessWhoAdminController::class, 'destroyCharacter'])
                 ->whereNumber('id')
+                ->middleware('guesswho_admin:guesswho.manage')
                 ->name('api.v1.admin.guesswho.characters.destroy');
         });
     });
 
-    // 2b. Hidden Places moderation (core admins, superadmins, places.* holders)
     Route::middleware('places_admin')->group(function () {
         Route::get('/admin/places', [PlaceAdminController::class, 'renderIndex'])
             ->middleware('places_admin:any');
@@ -560,120 +476,61 @@ Route::middleware('auth:web,sanctum')->group(function () {
 
     // 3. Transit Admin Panel. The page shell needs any review capability;
     // mutating endpoints require the matching granular transit.* permission.
-    // Both group-level routes below are tagged `any` explicitly because the
-    // guard denies an untagged route rather than granting the whole module.
+    // The shell is tagged `any` explicitly because the guard denies an untagged
+    // route rather than granting the whole module.
     Route::middleware('transit_admin')->group(function () {
         Route::get('/transit/admin', function () {
             return Inertia::render('Transit/admin/Index');
         })->middleware('transit_admin:any');
 
-        // Canonical Transit Admin routes under /api/v1/admin/transit/*
-        Route::prefix('api/v1/admin/transit')->group(function () {
+        // Transit admin API. The dashboard and the studio call the
+        // /api/v1/admin/* paths, so that is the only mount.
+        Route::prefix('api/v1/admin')->group(function () {
             Route::get('/route-drafts', [TransitAdminController::class, 'index'])
-                ->middleware('transit_admin:transit.review_drafts')
-                ->name('api.v1.admin.transit.route-drafts.index');
+                ->middleware('transit_admin:transit.review_drafts');
             Route::post('/route-drafts/{id}/approve', [TransitAdminController::class, 'approve'])
-                ->middleware('transit_admin:transit.approve')
-                ->name('api.v1.admin.transit.route-drafts.approve');
+                ->middleware('transit_admin:transit.approve');
             Route::post('/route-drafts/{id}/reject', [TransitAdminController::class, 'reject'])
-                ->middleware('transit_admin:transit.reject')
-                ->name('api.v1.admin.transit.route-drafts.reject');
+                ->middleware('transit_admin:transit.reject');
 
             Route::get('/routes', [TransitAdminController::class, 'getPublishedRoutes'])
-                ->middleware('transit_admin:transit.review_drafts')
-                ->name('api.v1.admin.transit.routes.index');
+                ->middleware('transit_admin:transit.review_drafts');
             Route::get('/routes/logs', [TransitAdminController::class, 'getLogs'])
-                ->middleware('transit_admin:transit.review_drafts')
-                ->name('api.v1.admin.transit.routes.logs');
+                ->middleware('transit_admin:transit.review_drafts');
             Route::get('/routes/{id}/geojson', [TransitAdminController::class, 'getRouteGeoJson'])
-                ->middleware('transit_admin:transit.review_drafts')
-                ->name('api.v1.admin.transit.routes.geojson');
+                ->middleware('transit_admin:transit.review_drafts');
             Route::patch('/routes/{id}/status', [TransitAdminController::class, 'updateRouteStatus'])
-                ->middleware('transit_admin:transit.edit_routes')
-                ->name('api.v1.admin.transit.routes.status.update');
+                ->middleware('transit_admin:transit.edit_routes');
             Route::post('/routes/{id}/status', [TransitAdminController::class, 'updateRouteStatus'])
                 ->middleware('transit_admin:transit.edit_routes');
             Route::put('/routes/{id}', [TransitAdminController::class, 'updateRoute'])
-                ->middleware('transit_admin:transit.edit_routes')
-                ->name('api.v1.admin.transit.routes.update');
+                ->middleware('transit_admin:transit.edit_routes');
             Route::delete('/routes/{id}', [TransitAdminController::class, 'destroy'])
-                ->middleware('transit_admin:transit.delete_routes')
-                ->name('api.v1.admin.transit.routes.destroy');
-            Route::post('/routes/{id}/move', [TransitAdminController::class, 'moveRoute'])
-                ->middleware('transit_admin:transit.edit_routes')
-                ->name('api.v1.admin.transit.routes.move');
-            Route::post('/routes/combine', [TransitAdminController::class, 'combineRoutes'])
-                ->middleware('transit_admin:transit.edit_routes')
-                ->name('api.v1.admin.transit.routes.combine');
-            Route::post('/routes/split', [TransitAdminController::class, 'splitRoute'])
-                ->middleware('transit_admin:transit.edit_routes')
-                ->name('api.v1.admin.transit.routes.split');
-            Route::get('/routes/{id}/stops', [TransitAdminController::class, 'getRouteStops'])
-                ->middleware('transit_admin:transit.review_drafts')
-                ->name('api.v1.admin.transit.routes.stops.index');
-            Route::post('/routes/import-preview', [TransitImportController::class, 'preview'])
-                ->middleware(['transit_admin:transit.review_drafts', 'throttle:30,1'])
-                ->name('api.v1.admin.transit.routes.import-preview');
-            Route::post('/routes/import-publish', [TransitImportController::class, 'publish'])
-                ->middleware(['transit_admin:transit.edit_routes', 'throttle:30,1'])
-                ->name('api.v1.admin.transit.routes.import-publish');
-        });
-
-        // Legacy Transit Admin routes under /api/v1/admin/*
-        Route::prefix('api/v1')->group(function () {
-            Route::get('/admin/route-drafts', [TransitAdminController::class, 'index'])
-                ->middleware('transit_admin:transit.review_drafts');
-            Route::post('/admin/route-drafts/{id}/approve', [TransitAdminController::class, 'approve'])
-                ->middleware('transit_admin:transit.approve');
-            Route::post('/admin/route-drafts/{id}/reject', [TransitAdminController::class, 'reject'])
-                ->middleware('transit_admin:transit.reject');
-
-            Route::get('/admin/routes', [TransitAdminController::class, 'getPublishedRoutes'])
-                ->middleware('transit_admin:transit.review_drafts');
-            Route::get('/admin/routes/logs', [TransitAdminController::class, 'getLogs'])
-                ->middleware('transit_admin:transit.review_drafts');
-            Route::get('/admin/routes/{id}/geojson', [TransitAdminController::class, 'getRouteGeoJson'])
-                ->middleware('transit_admin:transit.review_drafts');
-            Route::patch('/admin/routes/{id}/status', [TransitAdminController::class, 'updateRouteStatus'])
-                ->middleware('transit_admin:transit.edit_routes');
-            Route::post('/admin/routes/{id}/status', [TransitAdminController::class, 'updateRouteStatus'])
-                ->middleware('transit_admin:transit.edit_routes');
-            Route::put('/admin/routes/{id}', [TransitAdminController::class, 'updateRoute'])
-                ->middleware('transit_admin:transit.edit_routes');
-            Route::delete('/admin/routes/{id}', [TransitAdminController::class, 'destroy'])
                 ->middleware('transit_admin:transit.delete_routes');
-            Route::post('/admin/routes/{id}/move', [TransitAdminController::class, 'moveRoute'])
+            Route::post('/routes/{id}/move', [TransitAdminController::class, 'moveRoute'])
                 ->middleware('transit_admin:transit.edit_routes');
-            Route::post('/admin/routes/combine', [TransitAdminController::class, 'combineRoutes'])
+            Route::post('/routes/combine', [TransitAdminController::class, 'combineRoutes'])
                 ->middleware('transit_admin:transit.edit_routes');
-            Route::post('/admin/routes/split', [TransitAdminController::class, 'splitRoute'])
+            Route::post('/routes/split', [TransitAdminController::class, 'splitRoute'])
                 ->middleware('transit_admin:transit.edit_routes');
-            Route::get('/admin/routes/{id}/stops', [TransitAdminController::class, 'getRouteStops'])
+            Route::get('/routes/{id}/stops', [TransitAdminController::class, 'getRouteStops'])
                 ->middleware('transit_admin:transit.review_drafts');
             // Preview responses are cached per-mid for an hour, so repeated
             // reviews are cheap: allow an admin-friendly rate instead of
             // blocking legitimate retry loops with 429s.
-            Route::post('/admin/routes/import-preview', [TransitImportController::class, 'preview'])
+            Route::post('/routes/import-preview', [TransitImportController::class, 'preview'])
                 ->middleware(['transit_admin:transit.review_drafts', 'throttle:30,1']);
-            Route::post('/admin/routes/import-publish', [TransitImportController::class, 'publish'])
+            Route::post('/routes/import-publish', [TransitImportController::class, 'publish'])
                 ->middleware(['transit_admin:transit.edit_routes', 'throttle:30,1']);
         });
     });
 
     // Banning a user is a dashboard action, not a transit one: it is called from
-    // resources/js/Pages/Dashboard/Index.tsx. It used to be declared inside the
-    // transit_admin group, which was both a misfiling and a hazard — that group
-    // gates by transit capability, so a user holding only `transit.review_drafts`
-    // reached a user-moderation endpoint, and saving it required the blanket
-    // `any` tag that ModuleCapabilityRoutesTest rightly rejects on a mutating
-    // route.
-    //
-    // It is authorised by the `users.ban` capability rather than the role list
-    // the controller used to carry inline, so it can be granted to one person
+    // resources/js/Pages/Dashboard/Index.tsx. It is authorised by the `users.ban`
+    // capability rather than a role list, so it can be granted to one person
     // without granting it to everyone who shares a role.
     //
-    // No throttle added: this route had none before, and picking a limit is an
-    // operator decision rather than a side effect of moving it.
+    // No throttle: picking a limit is an operator decision.
     Route::middleware('users_admin')->group(function () {
         Route::patch('/api/v1/admin/users/{id}/ban', [DashboardController::class, 'toggleBan'])
             ->middleware('users_admin:users.ban')
@@ -682,7 +539,6 @@ Route::middleware('auth:web,sanctum')->group(function () {
             ->middleware('users_admin:users.ban');
     });
 
-    // 4. SyOfficial Admin Panel (accessible to core admins, syofficial_admin, and superadmins)
     Route::middleware('syofficial_admin')->group(function () {
         Route::get('/admin/syofficial', [SyOfficialAdminController::class, 'renderIndex'])
             ->middleware('syofficial_admin:any');
@@ -691,6 +547,9 @@ Route::middleware('auth:web,sanctum')->group(function () {
             Route::post('/categories', [SyOfficialAdminController::class, 'storeCategory'])
                 ->middleware('syofficial_admin:syofficial.create')
                 ->name('api.v1.admin.syofficial.categories.store');
+            Route::post('/categories/reorder', [SyOfficialAdminController::class, 'reorderCategories'])
+                ->middleware('syofficial_admin:syofficial.reorder')
+                ->name('api.v1.admin.syofficial.categories.reorder');
             Route::put('/categories/{id}', [SyOfficialAdminController::class, 'updateCategory'])
                 ->middleware('syofficial_admin:syofficial.edit')
                 ->name('api.v1.admin.syofficial.categories.update');
@@ -699,13 +558,15 @@ Route::middleware('auth:web,sanctum')->group(function () {
             Route::delete('/categories/{id}', [SyOfficialAdminController::class, 'destroyCategory'])
                 ->middleware('syofficial_admin:syofficial.delete')
                 ->name('api.v1.admin.syofficial.categories.destroy');
-            Route::post('/categories/reorder', [SyOfficialAdminController::class, 'reorderCategories'])
-                ->middleware('syofficial_admin:syofficial.reorder')
-                ->name('api.v1.admin.syofficial.categories.reorder');
 
             Route::post('/entities', [SyOfficialAdminController::class, 'storeEntity'])
                 ->middleware('syofficial_admin:syofficial.create')
                 ->name('api.v1.admin.syofficial.entities.store');
+            // Before {id}: a static segment must not be swallowed by the update
+            // route, which is what made this unreachable.
+            Route::post('/entities/reorder', [SyOfficialAdminController::class, 'reorderEntities'])
+                ->middleware('syofficial_admin:syofficial.reorder')
+                ->name('api.v1.admin.syofficial.entities.reorder');
             Route::post('/entities/{id}', [SyOfficialAdminController::class, 'updateEntity'])
                 ->middleware('syofficial_admin:syofficial.edit');
             Route::put('/entities/{id}', [SyOfficialAdminController::class, 'updateEntity'])
@@ -714,19 +575,9 @@ Route::middleware('auth:web,sanctum')->group(function () {
             Route::delete('/entities/{id}', [SyOfficialAdminController::class, 'destroyEntity'])
                 ->middleware('syofficial_admin:syofficial.delete')
                 ->name('api.v1.admin.syofficial.entities.destroy');
-            Route::post('/entities/reorder', [SyOfficialAdminController::class, 'reorderEntities'])
-                ->middleware('syofficial_admin:syofficial.reorder')
-                ->name('api.v1.admin.syofficial.entities.reorder');
-
-            // Legacy reorder paths
-            Route::post('/reorder/categories', [SyOfficialAdminController::class, 'reorderCategories'])
-                ->middleware('syofficial_admin:syofficial.reorder');
-            Route::post('/reorder/entities', [SyOfficialAdminController::class, 'reorderEntities'])
-                ->middleware('syofficial_admin:syofficial.reorder');
         });
     });
 
-    // 5. GovApps Admin Panel
     Route::middleware('govapps_admin')->group(function () {
         Route::get('/admin/govapps', [GovAppsAdminController::class, 'renderIndex'])
             ->middleware('govapps_admin:any');
@@ -749,7 +600,6 @@ Route::middleware('auth:web,sanctum')->group(function () {
         });
     });
 
-    // 6. Phonebook Admin Panel
     Route::middleware('phonebook_admin')->group(function () {
         Route::get('/admin/phonebook', [PhonebookAdminController::class, 'renderIndex'])
             ->middleware('phonebook_admin:any');
@@ -758,19 +608,24 @@ Route::middleware('auth:web,sanctum')->group(function () {
             Route::post('/categories', [PhonebookAdminController::class, 'storeCategory'])
                 ->middleware('phonebook_admin:phonebook.create')
                 ->name('api.v1.admin.phonebook.categories.store');
+            Route::post('/categories/reorder', [PhonebookAdminController::class, 'reorderCategories'])
+                ->middleware('phonebook_admin:phonebook.reorder')
+                ->name('api.v1.admin.phonebook.categories.reorder');
             Route::put('/categories/{id}', [PhonebookAdminController::class, 'updateCategory'])
                 ->middleware('phonebook_admin:phonebook.edit')
                 ->name('api.v1.admin.phonebook.categories.update');
             Route::delete('/categories/{id}', [PhonebookAdminController::class, 'destroyCategory'])
                 ->middleware('phonebook_admin:phonebook.delete')
                 ->name('api.v1.admin.phonebook.categories.destroy');
-            Route::post('/categories/reorder', [PhonebookAdminController::class, 'reorderCategories'])
-                ->middleware('phonebook_admin:phonebook.reorder')
-                ->name('api.v1.admin.phonebook.categories.reorder');
 
             Route::post('/entries', [PhonebookAdminController::class, 'storeEntry'])
                 ->middleware('phonebook_admin:phonebook.create')
                 ->name('api.v1.admin.phonebook.entries.store');
+            // Before {id}: a static segment must not be swallowed by the
+            // update route, which is what made this unreachable.
+            Route::post('/entries/reorder', [PhonebookAdminController::class, 'reorderEntries'])
+                ->middleware('phonebook_admin:phonebook.reorder')
+                ->name('api.v1.admin.phonebook.entries.reorder');
             Route::post('/entries/{id}', [PhonebookAdminController::class, 'updateEntry'])
                 ->middleware('phonebook_admin:phonebook.edit');
             Route::put('/entries/{id}', [PhonebookAdminController::class, 'updateEntry'])
@@ -784,15 +639,6 @@ Route::middleware('auth:web,sanctum')->group(function () {
             Route::delete('/entries/{id}', [PhonebookAdminController::class, 'destroyEntry'])
                 ->middleware('phonebook_admin:phonebook.delete')
                 ->name('api.v1.admin.phonebook.entries.destroy');
-            Route::post('/entries/reorder', [PhonebookAdminController::class, 'reorderEntries'])
-                ->middleware('phonebook_admin:phonebook.reorder')
-                ->name('api.v1.admin.phonebook.entries.reorder');
-
-            // Legacy reorder paths
-            Route::post('/reorder/categories', [PhonebookAdminController::class, 'reorderCategories'])
-                ->middleware('phonebook_admin:phonebook.reorder');
-            Route::post('/reorder/entries', [PhonebookAdminController::class, 'reorderEntries'])
-                ->middleware('phonebook_admin:phonebook.reorder');
         });
     });
 
@@ -867,12 +713,18 @@ Route::middleware('auth:web,sanctum')->group(function () {
         Route::get('/admin/promises/{id}/edit', [PromisesAdminController::class, 'renderEditor'])
             ->whereUuid('id')
             ->middleware('promises_admin:any');
-        Route::post('/admin/promises/{promise}/reschedule', [PromisesAdminController::class, 'reschedule'])
-            ->whereUuid('promise')
-            ->middleware('promises_admin:promises.rule')
-            ->name('admin.promises.reschedule');
+        // Rescheduling answers on the page path and on the API path; the
+        // action, its capability and the UUID constraint are written once here.
+        $promisesRescheduleRoutes = function (string $name): void {
+            Route::post('/{promise}/reschedule', [PromisesAdminController::class, 'reschedule'])
+                ->whereUuid('promise')
+                ->middleware('promises_admin:promises.rule')
+                ->name($name);
+        };
 
-        Route::prefix('api/v1/admin/promises')->middleware('throttle:120,1')->group(function () {
+        Route::prefix('admin/promises')->group(fn () => $promisesRescheduleRoutes('admin.promises.reschedule'));
+
+        Route::prefix('api/v1/admin/promises')->middleware('throttle:120,1')->group(function () use ($promisesRescheduleRoutes) {
             Route::get('/speakers/search', [PromisesAdminController::class, 'searchSpeakers'])
                 ->middleware('promises_admin:any')
                 ->name('api.v1.admin.promises.speakers.search');
@@ -898,9 +750,7 @@ Route::middleware('auth:web,sanctum')->group(function () {
             Route::delete('/{id}/status/{updateId}', [PromisesAdminController::class, 'undoStatusChange'])
                 ->whereUuid('id')->whereNumber('updateId')->middleware('promises_admin:promises.rule')
                 ->name('api.v1.admin.promises.status.undo');
-            Route::post('/{promise}/reschedule', [PromisesAdminController::class, 'reschedule'])
-                ->whereUuid('promise')->middleware('promises_admin:promises.rule')
-                ->name('api.v1.admin.promises.reschedule');
+            $promisesRescheduleRoutes('api.v1.admin.promises.reschedule');
             Route::post('/{id}/updates', [PromisesAdminController::class, 'addUpdate'])
                 ->whereUuid('id')->middleware('promises_admin:promises.edit')
                 ->name('api.v1.admin.promises.updates.store');
@@ -959,10 +809,9 @@ Route::middleware('auth:web,sanctum')->group(function () {
     });
 });
 
-// Legacy unversioned user settings & radio usage endpoints
 Route::post('/api/user/settings', [UserSettingsController::class, 'update'])
-    ->middleware('throttle:60,1');
+    ->middleware(['api_user', 'throttle:60,1']);
 Route::post('/api/user/radio-usage', [RadioUsageController::class, 'add'])
-    ->middleware('throttle:60,1');
+    ->middleware(['api_user', 'throttle:60,1']);
 Route::post('/api/user/radio-usage/clear', [RadioUsageController::class, 'clear'])
-    ->middleware('throttle:10,1');
+    ->middleware(['api_user', 'throttle:10,1']);

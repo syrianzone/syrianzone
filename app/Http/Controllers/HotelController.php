@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Hotel;
+use App\Services\HalaSyriaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
@@ -10,7 +11,7 @@ class HotelController extends Controller
 {
   public function mapData()
   {
-    $geojson = Cache::remember('hotels:map', 300, function () {
+    $geojson = Cache::remember(HalaSyriaService::MAP_CACHE_KEY, 300, function () {
       $hotels = Hotel::select('id', 'lat', 'lng', 'name', 'name_ar', 'city', 'city_ar', 'star_rating', 'now_show_rate', 'images', 'slug')->whereNotNull('lat')->whereNotNull('lng')->get();
       return [
         'type' => 'FeatureCollection',

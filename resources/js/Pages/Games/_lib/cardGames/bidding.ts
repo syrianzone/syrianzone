@@ -8,9 +8,9 @@
 
 import type { Seat } from './trick';
 
-export type AuctionAction = { seat: Seat; value: number } | { seat: Seat; pass: true };
+type AuctionAction = { seat: Seat; value: number } | { seat: Seat; pass: true };
 
-export interface AuctionOptions {
+interface AuctionOptions {
   /** Seats in bidding order. */
   order: Seat[];
   /** Smallest legal bid. */
@@ -43,7 +43,6 @@ export function currentSeat(auction: Auction): Seat {
   return auction.options.order[auction.turn];
 }
 
-/** Every bid the seat on turn is allowed to make. */
 export function legalBids(auction: Auction): number[] {
   if (auction.complete) return [];
   const floor = auction.highBid ?? auction.options.min - 1;

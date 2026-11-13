@@ -1,18 +1,10 @@
 import { CityData, RainfallData } from '../types';
-import { getCanonicalCityName, normalizeForMatching } from '@/Lib/city-name-standardizer';
-import { PROVINCE_TO_PCODE } from '../constants/province-mappings';
-
-// PROVINCE_TO_PCODE keys are hand-written (some with hyphens, e.g.
-// 'deir ez-zor') while normalizeForMatching() maps hyphens to spaces, so a
-// direct lookup misses. Normalize both sides once.
-const NORMALIZED_PCODE: Record<string, string> = Object.fromEntries(
-    Object.entries(PROVINCE_TO_PCODE).map(([k, v]) => [normalizeForMatching(k), v])
-);
+import { getCanonicalGovernorateName, normalizeForMatching, getGovernoratePcode } from '@/Domain/geography/governorates';
 
 export function findPopulation(provinceName: string, populationData: CityData | null): number {
     if (!populationData) return 0;
 
-    const canonicalName = getCanonicalCityName(provinceName);
+    const canonicalName = getCanonicalGovernorateName(provinceName);
     
     if (populationData[canonicalName]) {
         return populationData[canonicalName];
@@ -33,7 +25,6 @@ export function findRainData(feature: any, rainData: RainfallData | undefined) {
 
     const props = feature.properties;
 
-    // 1. Try Direct P-Code Match
     const codeKeys = ['ADM1_PCODE', 'ADM2_PCODE', 'admin1Pcode', 'admin2Pcode', 'code', 'id', 'PCODE'];
     for (const key of codeKeys) {
         if (props[key] && rainData[props[key]]) {
@@ -41,14 +32,10 @@ export function findRainData(feature: any, rainData: RainfallData | undefined) {
         }
     }
 
-    // 2. Try Name Match
     const nameKeys = ['province_name', 'ADM1_EN', 'ADM1_AR', 'name', 'Name', 'NAME', 'admin1Name_en'];
         for (const key of nameKeys) {
             if (props[key]) {
-                const rawName = props[key];
-                const normalized = normalizeForMatching(rawName);
-
-                const mappedCode = NORMALIZED_PCODE[normalized];
+                const mappedCode = getGovernoratePcode(props[key]);
                 if (mappedCode && rainData[mappedCode]) {
                     return rainData[mappedCode];
                 }

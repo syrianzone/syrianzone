@@ -27,7 +27,7 @@ it('renders the dashboard for an authorised admin', function () {
 });
 
 it('refuses the dashboard without a govapps permission', function () {
-    $this->actingAs(User::factory()->create(['role' => 'user']))
+    $this->actingAs(User::factory()->create())
         ->get('/admin/govapps')
         ->assertForbidden();
 });
@@ -92,7 +92,7 @@ it('soft deletes an app through the dashboard', function () {
         ->and(GovApp::withTrashed()->where('id', $app->id)->exists())->toBeTrue();
 });
 
-it('reorders apps and returns the Arabic JSON message', function () {
+it('reorders apps and flashes the admin toast', function () {
     $first = GovApp::factory()->create(['order_column' => 1]);
     $second = GovApp::factory()->create(['order_column' => 2]);
 
@@ -103,14 +103,17 @@ it('reorders apps and returns the Arabic JSON message', function () {
                 ['id' => $first->id, 'order_column' => 2],
             ],
         ])
-        ->assertOk()
-        ->assertJson(['message' => 'تم إعادة الترتيب بنجاح']);
+        ->assertRedirect()
+        ->assertSessionHas('success', 'تم إعادة الترتيب بنجاح');
 
     expect($first->fresh()->order_column)->toBe(2);
 });
 
 it('rejects a reorder naming an app that does not exist', function () {
+    // The sortable list posts JSON, so a bad payload comes back as the 422
+    // envelope rather than a redirect (the success path redirects).
     $this->actingAs($this->admin)
-        ->post($this->base.'/reorder', ['orders' => [['id' => 'ghost', 'order_column' => 1]]])
-        ->assertSessionHasErrors('orders.0.id');
+        ->postJson($this->base.'/reorder', ['orders' => [['id' => 'ghost', 'order_column' => 1]]])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('orders.0.id');
 });

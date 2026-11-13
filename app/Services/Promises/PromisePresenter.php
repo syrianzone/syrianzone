@@ -213,7 +213,7 @@ class PromisePresenter
             'partiallyFulfilled' => $count('partially_fulfilled'),
             'broken' => $count('broken'),
             'overdue' => $count('overdue'),
-            'open' => $count('pending') + $count('in_progress'),
+            'open' => $cards->whereIn('state', Promise::openStatuses())->count(),
             'postponed' => $count('postponed'),
             'retracted' => $count('retracted'),
         ];
@@ -384,7 +384,7 @@ class PromisePresenter
             'kind' => $report->kind,
             'body' => $report->body,
             'sourceUrl' => $report->source_url,
-            'createdOn' => $report->created_at?->timezone(Promise::TIMEZONE)->format('Y-m-d'),
+            'createdOn' => $report->created_at?->timezone(Promise::timezone())->format('Y-m-d'),
             'userName' => $report->user?->name,
             'promise' => [
                 'id' => $report->promise->id,
@@ -463,8 +463,8 @@ class PromisePresenter
 
         return match (true) {
             $card['state'] === 'overdue' => [0, $days],
-            in_array($card['state'], Promise::OPEN_STATUSES, true) && $days !== null => [1, $days],
-            in_array($card['state'], Promise::OPEN_STATUSES, true) => [2, -$card['daysSince']],
+            in_array($card['state'], Promise::openStatuses(), true) && $days !== null => [1, $days],
+            in_array($card['state'], Promise::openStatuses(), true) => [2, -$card['daysSince']],
             default => [3, -strtotime((string) ($card['resolvedAt'] ?? $card['statementDate']))],
         };
     }

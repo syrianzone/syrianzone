@@ -1,10 +1,23 @@
 import { Link } from '@inertiajs/react'
-import type { City } from '../../_types'
 import { usePreloadCity } from '../../_hooks/useMapData'
 import { GOVERNORATE_SVGS } from '../../_data/governorate_svgs'
+import { governorateByAnyName } from '@/Domain/geography/governorates'
+
+/**
+ * The city fields a card draws. The `/transit` page passes the map's full city
+ * rows and the 404 grid the card-sized listing the exception handler sends
+ * (`TransitCities::forCards()`), so the card names only what it reads.
+ */
+export interface CityCardCity {
+  id: string
+  nameAr: string
+  nameEn: string
+  status: 'active' | 'coming_soon'
+  routeCount: number
+}
 
 interface CityCardProps {
-  city: City
+  city: CityCardCity
   index: number
 }
 
@@ -17,28 +30,9 @@ function PinIcon() {
   )
 }
 
+/** The outline SVG basename for a city id; the shared governorate table owns the mapping. */
 function getGovSvgKey(cityId: string): string {
-  const mapping: Record<string, string> = {
-    'damascus': 'damascus',
-    'rif-dimashq': 'rif dimashq',
-    'aleppo': 'aleppo',
-    'homs': 'homs',
-    'hama': 'hamah',
-    'idlib': 'idlib',
-    'latakia': 'lattakia',
-    'lattakia': 'lattakia',
-    'tartus': 'tartus',
-    'tartous': 'tartus',
-    'daraa': 'dar`a',
-    'suwayda': 'as suwayda',
-    'sweida': 'as suwayda',
-    'quneitra': 'quneitra',
-    'deir-ez-zor': 'dayr az zawr',
-    'deir-ezzor': 'dayr az zawr',
-    'raqqa': 'ar raqqah',
-    'hasakah': 'al Ḥasakah',
-  }
-  return mapping[cityId] || cityId
+  return governorateByAnyName(cityId)?.transitSvg ?? cityId
 }
 
 function GovernorateIcon({ cityId }: { cityId: string }) {
@@ -65,7 +59,7 @@ function GovernorateIcon({ cityId }: { cityId: string }) {
   )
 }
 
-import { cn } from '@/lib/utils'
+import { cn } from '@/Lib/utils'
 
 export default function CityCard({ city, index }: CityCardProps) {
   const isReady = city.status === 'active' && city.routeCount > 0

@@ -38,17 +38,26 @@ class SecurityHeaders
         // Generated before rendering so @vite / @viteReactRefresh stamp it onto
         // the tags they emit; the same value goes into the CSP header below.
         // Every page load gets a fresh one.
-        Vite::useCspNonce(base64_encode(random_bytes(16)));
+        $this->beginResponse();
 
         return $this->applyHeaders($next($request));
     }
 
     /**
-     * Adds the security headers to a rendered HTML response.
+     * Start a response's nonce.
      *
-     * Also called from the exception handler in bootstrap/app.php: error pages
-     * are built after the middleware stack has unwound, so they never pass
-     * through handle() and would otherwise ship without either header.
+     * The one place a nonce is created: `handle()` calls it before the response
+     * renders, and the 404 renderer calls it because that page is built after
+     * the middleware stack has unwound. Both then apply the same headers through
+     * `applyHeaders()`.
+     */
+    public function beginResponse(): void
+    {
+        Vite::useCspNonce(base64_encode(random_bytes(16)));
+    }
+
+    /**
+     * Adds the security headers to a rendered HTML response.
      */
     public function applyHeaders(Response $response): Response
     {
@@ -76,10 +85,10 @@ class SecurityHeaders
     /**
      * The nonce for this request, registering one only if nothing has yet.
      *
-     * Public because the error handler has to call it before rendering its
-     * page: the nonce has to exist while the view stamps its script tags.
+     * `applyHeaders()` uses it so the header and the tags agree even on a path
+     * that rendered without `beginResponse()` first.
      */
-    public function registerNonce(): string
+    private function registerNonce(): string
     {
         $nonce = Vite::cspNonce();
 

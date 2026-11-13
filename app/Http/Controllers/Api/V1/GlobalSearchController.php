@@ -8,6 +8,7 @@ use App\Models\OfficialEntity;
 use App\Models\PhonebookEntry;
 use App\Models\Place;
 use App\Models\Route;
+use App\Support\ArabicSearch;
 use Illuminate\Http\Request;
 
 class GlobalSearchController extends Controller
@@ -26,12 +27,17 @@ class GlobalSearchController extends Controller
         }
 
         $q = mb_substr($q, 0, 80);
+        // Arabic text is compared folded to folded (`*_fold` columns); the
+        // English and numeric columns keep the raw pattern. Both escape the
+        // LIKE wildcards so a query containing % or _ stays a literal.
         $like = '%' . addcslashes($q, '%_\\') . '%';
+        $folded = ArabicSearch::fold($q);
+        $foldLike = '%' . addcslashes($folded === '' ? $q : $folded, '%_\\') . '%';
 
         $routes = Route::query()
             ->where('status', 'published')
-            ->where(function ($query) use ($like) {
-                $query->where('name_ar', 'like', $like)
+            ->where(function ($query) use ($like, $foldLike) {
+                $query->where('name_ar_fold', 'like', $foldLike)
                     ->orWhere('name_en', 'like', $like);
             })
             ->limit(5)
@@ -46,9 +52,9 @@ class GlobalSearchController extends Controller
 
         $places = Place::query()
             ->where('status', 'approved')
-            ->where(function ($query) use ($like) {
-                $query->where('name', 'like', $like)
-                    ->orWhere('description', 'like', $like);
+            ->where(function ($query) use ($foldLike) {
+                $query->where('name_fold', 'like', $foldLike)
+                    ->orWhere('description_fold', 'like', $foldLike);
             })
             ->limit(5)
             ->get(['id', 'name', 'category'])
@@ -61,8 +67,8 @@ class GlobalSearchController extends Controller
 
         $phonebook = PhonebookEntry::query()
             ->where('is_active', true)
-            ->where(function ($query) use ($like) {
-                $query->where('name_ar', 'like', $like)
+            ->where(function ($query) use ($like, $foldLike) {
+                $query->where('name_ar_fold', 'like', $foldLike)
                     ->orWhere('name_en', 'like', $like)
                     ->orWhere('number', 'like', $like);
             })
@@ -79,10 +85,10 @@ class GlobalSearchController extends Controller
 
         $officials = OfficialEntity::query()
             ->where('is_active', true)
-            ->where(function ($query) use ($like) {
-                $query->where('name_ar', 'like', $like)
+            ->where(function ($query) use ($like, $foldLike) {
+                $query->where('name_ar_fold', 'like', $foldLike)
                     ->orWhere('name', 'like', $like)
-                    ->orWhere('description_ar', 'like', $like);
+                    ->orWhere('description_ar_fold', 'like', $foldLike);
             })
             ->orderBy('order_column')
             ->limit(5)
@@ -97,10 +103,10 @@ class GlobalSearchController extends Controller
 
         $govapps = GovApp::query()
             ->where('is_active', true)
-            ->where(function ($query) use ($like) {
-                $query->where('name_ar', 'like', $like)
+            ->where(function ($query) use ($like, $foldLike) {
+                $query->where('name_ar_fold', 'like', $foldLike)
                     ->orWhere('name', 'like', $like)
-                    ->orWhere('description_ar', 'like', $like);
+                    ->orWhere('description_ar_fold', 'like', $foldLike);
             })
             ->orderBy('order_column')
             ->limit(4)

@@ -8,11 +8,6 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
-// UserFactory defaults role to admin; regular users must be explicit.
-function placesUser(array $attrs = []): User {
-  return User::factory()->create(array_merge(['role' => 'user'], $attrs));
-}
-
 test('map returns approved places as geojson', function () {
   $place = Place::factory()->approved()->create(['lat' => 33.5104, 'lng' => 36.2913]);
   PlacePhoto::factory()->create([
@@ -175,7 +170,7 @@ test('nearby validates params', function () {
 });
 
 test('nearby include_pending exposes only the requester own pending places', function () {
-  $owner = placesUser();
+  $owner = User::factory()->create();
   Place::factory()->create(['lat' => 33.5001, 'lng' => 36.3, 'user_id' => $owner->id]);
 
   $this->getJson('/api/v1/places/nearby?lat=33.5&lng=36.3&include_pending=1')
@@ -187,7 +182,7 @@ test('nearby include_pending exposes only the requester own pending places', fun
     ->assertOk()
     ->assertJsonCount(1, 'places');
 
-  $this->actingAs(placesUser())
+  $this->actingAs(User::factory()->create())
     ->getJson('/api/v1/places/nearby?lat=33.5&lng=36.3&include_pending=1')
     ->assertOk()
     ->assertJsonCount(0, 'places');
@@ -210,11 +205,11 @@ test('show returns detail for approved place', function () {
 });
 
 test('show hides pending place from guests and strangers but not owner or places staff', function () {
-  $owner = placesUser();
+  $owner = User::factory()->create();
   $place = Place::factory()->create(['user_id' => $owner->id]);
 
   $this->getJson("/api/v1/places/{$place->id}")->assertNotFound();
-  $this->actingAs(placesUser())->getJson("/api/v1/places/{$place->id}")->assertNotFound();
+  $this->actingAs(User::factory()->create())->getJson("/api/v1/places/{$place->id}")->assertNotFound();
   $this->actingAs($owner)->getJson("/api/v1/places/{$place->id}")->assertOk()->assertJsonPath('status', 'pending');
   // Was role 'admin'. Phase C dropped the `role === 'admin'` branch from
   // PlaceController::show() on the strength of hasPermission() short-circuiting
@@ -229,7 +224,7 @@ test('show returns 404 for missing place', function () {
 });
 
 test('show still works after the author soft-deletes their account', function () {
-  $owner = placesUser();
+  $owner = User::factory()->create();
   $place = Place::factory()->approved()->create(['user_id' => $owner->id]);
   $owner->delete();
 
@@ -240,7 +235,7 @@ test('show still works after the author soft-deletes their account', function ()
 });
 
 test('show exposes the contributor level and points', function () {
-  $owner = placesUser();
+  $owner = User::factory()->create();
   $place = Place::factory()->approved()->create([
     'user_id' => $owner->id,
     'description' => str_repeat('م', 200),
@@ -256,7 +251,7 @@ test('show exposes the contributor level and points', function () {
 });
 
 test('show on an owner-visible pending place carries level and points', function () {
-  $owner = placesUser();
+  $owner = User::factory()->create();
   $place = Place::factory()->create(['user_id' => $owner->id, 'saves_count' => 9]);
 
   // the pending place itself contributes nothing: 0 points, level 1
@@ -269,13 +264,12 @@ test('show on an owner-visible pending place carries level and points', function
 });
 
 test('show caches contributor points per user for five minutes', function () {
-  $owner = placesUser();
+  $owner = User::factory()->create();
   $place = Place::factory()->approved()->create(['user_id' => $owner->id, 'saves_count' => 0]);
 
   $this->getJson("/api/v1/places/{$place->id}")->assertOk()->assertJsonPath('user.points', 15);
-  expect(Cache::has("places:guide-points:{$owner->id}"))->toBeTrue();
 
-  // staleness accepted: fresh photos are invisible until the per-user key expires
+  // staleness accepted: fresh photos are invisible until the per-user entry expires
   PlacePhoto::factory()->create(['place_id' => $place->id]);
   $this->getJson("/api/v1/places/{$place->id}")->assertOk()->assertJsonPath('user.points', 15);
 
@@ -289,7 +283,7 @@ test('guest cannot submit a place', function () {
 
 test('can submit a place with photos', function () {
   Storage::fake('public');
-  $user = placesUser();
+  $user = User::factory()->create();
 
   $response = $this->actingAs($user)->post('/api/v1/places', [
     'name' => 'مقهى النوفرة',
@@ -310,7 +304,7 @@ test('can submit a place with photos', function () {
 
 test('submit validation rejects bad payloads', function () {
   Storage::fake('public');
-  $user = placesUser();
+  $user = User::factory()->create();
   $valid = fn () => [
     'name' => 'مكان',
     'category' => 'natural',
@@ -333,7 +327,7 @@ test('submit validation rejects bad payloads', function () {
 
 test('submit validation rejects bad photos', function () {
   Storage::fake('public');
-  $user = placesUser();
+  $user = User::factory()->create();
 
   $post = fn (array $photos) => $this->actingAs($user)->post('/api/v1/places', [
     'name' => 'مكان',
@@ -353,7 +347,7 @@ test('submit validation rejects bad photos', function () {
 });
 
 test('banned user cannot submit', function () {
-  $this->actingAs(placesUser(['is_banned' => true]))
+  $this->actingAs(User::factory()->create(['is_banned' => true]))
     ->postJson('/api/v1/places', [])
     ->assertForbidden()
     ->assertJsonPath('message', 'تم حظر حسابك من المساهمة');
@@ -406,7 +400,7 @@ test('reprocess-photos command regenerates variants from the originals', functio
 
 test('there is no per-user submission cap', function () {
   Storage::fake('public');
-  $user = placesUser();
+  $user = User::factory()->create();
   Place::factory()->count(5)->create(['user_id' => $user->id]);
 
   // a sixth place in the same hour used to 429; moderation is the real gate now
@@ -421,7 +415,7 @@ test('there is no per-user submission cap', function () {
 });
 
 test('my places lists own places with status and rejection_reason', function () {
-  $user = placesUser();
+  $user = User::factory()->create();
   $rejected = Place::factory()->rejected()->create(['user_id' => $user->id, 'rejection_reason' => 'صور غير واضحة']);
   Place::factory()->approved()->create(['user_id' => $user->id]);
   Place::factory()->approved()->create();
@@ -440,11 +434,13 @@ test('guest cannot list my places', function () {
 });
 
 test('owner moves pin of an approved place back to pending and busts the map cache', function () {
-  $user = placesUser();
+  $user = User::factory()->create();
   $place = Place::factory()->approved()->create([
     'user_id' => $user->id, 'lat' => 33.5, 'lng' => 36.3, 'approved_at' => now(),
   ]);
-  Cache::put('places:map', ['type' => 'FeatureCollection', 'features' => []], 300);
+
+  // Prime the map while the pin is still approved.
+  $this->getJson('/api/v1/places/map')->assertOk()->assertJsonCount(1, 'features');
 
   $this->actingAs($user)
     ->patchJson("/api/v1/my/places/{$place->id}/location", ['lat' => 33.51234, 'lng' => 36.29876])
@@ -460,11 +456,13 @@ test('owner moves pin of an approved place back to pending and busts the map cac
   expect($fresh->status)->toBe('pending');
   expect($fresh->rejection_reason)->toBeNull();
   expect($fresh->approved_at)->toBeNull();
-  expect(Cache::missing('places:map'))->toBeTrue();
+
+  // The cached map must not keep serving the pin that is back in review.
+  $this->getJson('/api/v1/places/map')->assertOk()->assertJsonCount(0, 'features');
 });
 
 test('owner moves pin of a rejected place and the rejection reason clears', function () {
-  $user = placesUser();
+  $user = User::factory()->create();
   $place = Place::factory()->rejected()->create([
     'user_id' => $user->id, 'rejection_reason' => 'صور غير واضحة',
   ]);
@@ -482,7 +480,7 @@ test('owner moves pin of a rejected place and the rejection reason clears', func
 test('stranger cannot move another user pin', function () {
   $place = Place::factory()->approved()->create(['lat' => 33.5, 'lng' => 36.3]);
 
-  $this->actingAs(placesUser())
+  $this->actingAs(User::factory()->create())
     ->patchJson("/api/v1/my/places/{$place->id}/location", ['lat' => 34.0, 'lng' => 36.5])
     ->assertNotFound();
 
@@ -500,7 +498,7 @@ test('guest cannot move a pin', function () {
 });
 
 test('moving a pin outside syria returns the arabic between messages', function () {
-  $user = placesUser();
+  $user = User::factory()->create();
   $place = Place::factory()->create(['user_id' => $user->id]);
 
   $this->actingAs($user)
@@ -511,7 +509,7 @@ test('moving a pin outside syria returns the arabic between messages', function 
 });
 
 test('moving a pin with missing or non-numeric coords returns the arabic messages', function () {
-  $user = placesUser();
+  $user = User::factory()->create();
   $place = Place::factory()->create(['user_id' => $user->id]);
 
   $this->actingAs($user)
@@ -529,7 +527,7 @@ test('moving a pin with missing or non-numeric coords returns the arabic message
 
 test('submit validation errors carry the exact arabic messages', function () {
   Storage::fake('public');
-  $user = placesUser();
+  $user = User::factory()->create();
 
   // name.max, description.min, lat.between, photos.max in one request
   $this->actingAs($user)->post('/api/v1/places', [
@@ -568,7 +566,7 @@ test('submit validation errors carry the exact arabic messages', function () {
 
 test('submit accepts ten photos', function () {
   Storage::fake('public');
-  $user = placesUser();
+  $user = User::factory()->create();
 
   $response = $this->actingAs($user)->post('/api/v1/places', [
     'name' => 'مكان بعشر صور',
@@ -592,11 +590,12 @@ test('guests cannot use the owner management endpoints', function () {
 });
 
 test('owner edits details and the place goes back to pending', function () {
-  $user = placesUser();
+  $user = User::factory()->create();
   $place = Place::factory()->approved()->create([
     'user_id' => $user->id, 'name' => 'الاسم القديم', 'approved_at' => now(),
   ]);
-  Cache::put('places:map', ['stale'], 300);
+
+  $this->getJson('/api/v1/places/map')->assertOk()->assertJsonCount(1, 'features');
 
   $this->actingAs($user)
     ->patchJson("/api/v1/my/places/{$place->id}", ['name' => 'الاسم الجديد'])
@@ -610,11 +609,13 @@ test('owner edits details and the place goes back to pending', function () {
   expect($fresh->status)->toBe('pending');
   expect($fresh->rejection_reason)->toBeNull();
   expect($fresh->approved_at)->toBeNull();
-  expect(Cache::missing('places:map'))->toBeTrue();
+
+  // The edited pin is back in review, so the cached map drops it.
+  $this->getJson('/api/v1/places/map')->assertOk()->assertJsonCount(0, 'features');
 });
 
 test('owner edits a rejected place and the rejection reason clears', function () {
-  $user = placesUser();
+  $user = User::factory()->create();
   $place = Place::factory()->rejected()->create([
     'user_id' => $user->id, 'rejection_reason' => 'صور غير واضحة',
   ]);
@@ -636,7 +637,7 @@ test('stranger and guest cannot edit another user place details', function () {
 
   $this->patchJson("/api/v1/my/places/{$place->id}", ['name' => 'اسم'])->assertUnauthorized();
 
-  $this->actingAs(placesUser())
+  $this->actingAs(User::factory()->create())
     ->patchJson("/api/v1/my/places/{$place->id}", ['name' => 'اسم جديد'])
     ->assertNotFound();
 
@@ -646,7 +647,7 @@ test('stranger and guest cannot edit another user place details', function () {
 });
 
 test('editing details with an empty body is a 422', function () {
-  $user = placesUser();
+  $user = User::factory()->create();
   $place = Place::factory()->approved()->create(['user_id' => $user->id]);
 
   $this->actingAs($user)
@@ -658,7 +659,7 @@ test('editing details with an empty body is a 422', function () {
 });
 
 test('details validation errors carry the exact arabic messages', function () {
-  $user = placesUser();
+  $user = User::factory()->create();
   $place = Place::factory()->create(['user_id' => $user->id]);
 
   $this->actingAs($user)
@@ -675,11 +676,11 @@ test('details validation errors carry the exact arabic messages', function () {
 
 test('owner adds a photo and the place goes back to pending', function () {
   Storage::fake('public');
-  $user = placesUser();
+  $user = User::factory()->create();
   $place = Place::factory()->approved()->create(['user_id' => $user->id, 'approved_at' => now()]);
-  app(\App\Services\PlaceImageService::class)
-    ->store(UploadedFile::fake()->image('a.jpg', 800, 600), $place->id, 0);
-  Cache::put('places:map', ['stale'], 300);
+  placePhoto($place->id);
+
+  $this->getJson('/api/v1/places/map')->assertOk()->assertJsonCount(1, 'features');
 
   $response = $this->actingAs($user)
     ->postJson("/api/v1/my/places/{$place->id}/photos", [
@@ -696,12 +697,13 @@ test('owner adds a photo and the place goes back to pending', function () {
   expect($fresh->status)->toBe('pending');
   expect($fresh->rejection_reason)->toBeNull();
   expect($fresh->approved_at)->toBeNull();
-  expect(Cache::missing('places:map'))->toBeTrue();
+
+  $this->getJson('/api/v1/places/map')->assertOk()->assertJsonCount(0, 'features');
 });
 
 test('owner add photo is refused at ten photos', function () {
   Storage::fake('public');
-  $user = placesUser();
+  $user = User::factory()->create();
   $place = Place::factory()->approved()->create(['user_id' => $user->id]);
   PlacePhoto::factory()->count(10)->sequence(fn ($seq) => ['sort' => $seq->index])->create(['place_id' => $place->id]);
 
@@ -720,7 +722,7 @@ test('stranger cannot add a photo to another user place', function () {
   Storage::fake('public');
   $place = Place::factory()->approved()->create();
 
-  $this->actingAs(placesUser())
+  $this->actingAs(User::factory()->create())
     ->postJson("/api/v1/my/places/{$place->id}/photos", [
       'photo' => UploadedFile::fake()->image('x.jpg', 800, 600),
     ])
@@ -731,7 +733,7 @@ test('stranger cannot add a photo to another user place', function () {
 
 test('owner add photo rejects an oversized file with the arabic message', function () {
   Storage::fake('public');
-  $user = placesUser();
+  $user = User::factory()->create();
   $place = Place::factory()->approved()->create(['user_id' => $user->id]);
 
   $this->actingAs($user)
@@ -746,13 +748,12 @@ test('owner add photo rejects an oversized file with the arabic message', functi
 
 test('owner deletes a photo, files go and the place goes back to pending', function () {
   Storage::fake('public');
-  $user = placesUser();
+  $user = User::factory()->create();
   $place = Place::factory()->approved()->create(['user_id' => $user->id, 'approved_at' => now()]);
-  app(\App\Services\PlaceImageService::class)
-    ->store(UploadedFile::fake()->image('a.jpg', 800, 600), $place->id, 0);
-  $victim = app(\App\Services\PlaceImageService::class)
-    ->store(UploadedFile::fake()->image('b.jpg', 800, 600), $place->id, 1);
-  Cache::put('places:map', ['stale'], 300);
+  placePhoto($place->id);
+  $victim = placePhoto($place->id, 1, 'b.jpg');
+
+  $this->getJson('/api/v1/places/map')->assertOk()->assertJsonCount(1, 'features');
 
   $this->actingAs($user)
     ->deleteJson("/api/v1/my/place-photos/{$victim->id}")
@@ -766,15 +767,15 @@ test('owner deletes a photo, files go and the place goes back to pending', funct
   expect($fresh->status)->toBe('pending');
   expect($fresh->rejection_reason)->toBeNull();
   expect($fresh->approved_at)->toBeNull();
-  expect(Cache::missing('places:map'))->toBeTrue();
+
+  $this->getJson('/api/v1/places/map')->assertOk()->assertJsonCount(0, 'features');
 });
 
 test('owner cannot delete the last photo', function () {
   Storage::fake('public');
-  $user = placesUser();
+  $user = User::factory()->create();
   $place = Place::factory()->approved()->create(['user_id' => $user->id]);
-  $photo = app(\App\Services\PlaceImageService::class)
-    ->store(UploadedFile::fake()->image('only.jpg', 800, 600), $place->id, 0);
+  $photo = placePhoto($place->id, 0, 'only.jpg');
 
   $this->actingAs($user)
     ->deleteJson("/api/v1/my/place-photos/{$photo->id}")
@@ -792,7 +793,7 @@ test('stranger cannot delete another user photo', function () {
   PlacePhoto::factory()->count(2)->sequence(fn ($seq) => ['sort' => $seq->index])->create(['place_id' => $place->id]);
   $victim = $place->photos()->first();
 
-  $this->actingAs(placesUser())
+  $this->actingAs(User::factory()->create())
     ->deleteJson("/api/v1/my/place-photos/{$victim->id}")
     ->assertNotFound();
 
@@ -801,7 +802,7 @@ test('stranger cannot delete another user photo', function () {
 
 test('owner rotate keeps approval and refreshes the versioned urls', function () {
   Storage::fake('public');
-  $user = placesUser();
+  $user = User::factory()->create();
   $place = Place::factory()->approved()->create(['user_id' => $user->id, 'approved_at' => now()]);
 
   // 400x300 landscape display; one clockwise turn must make it 300x400
@@ -835,7 +836,7 @@ test('owner rotate keeps approval and refreshes the versioned urls', function ()
 
 test('owner rotate reports a missing display file', function () {
   Storage::fake('public');
-  $user = placesUser();
+  $user = User::factory()->create();
   $place = Place::factory()->approved()->create(['user_id' => $user->id]);
   $photo = PlacePhoto::factory()->create(['place_id' => $place->id]);
 
@@ -850,41 +851,40 @@ test('stranger cannot rotate another user photo', function () {
   $place = Place::factory()->approved()->create();
   $photo = PlacePhoto::factory()->create(['place_id' => $place->id]);
 
-  $this->actingAs(placesUser())
+  $this->actingAs(User::factory()->create())
     ->postJson("/api/v1/my/place-photos/{$photo->id}/rotate")
     ->assertNotFound();
 });
 
 test('owner deletes their place along with photo rows and files', function () {
   Storage::fake('public');
-  $user = placesUser();
+  $user = User::factory()->create();
   $place = Place::factory()->approved()->create(['user_id' => $user->id]);
-  $photo = app(\App\Services\PlaceImageService::class)
-    ->store(UploadedFile::fake()->image('a.jpg', 800, 600), $place->id, 0);
-  Cache::put('places:map', ['stale'], 300);
+  $photo = placePhoto($place->id);
+
+  $this->getJson('/api/v1/places/map')->assertOk()->assertJsonCount(1, 'features');
 
   $this->actingAs($user)->deleteJson("/api/v1/my/places/{$place->id}")->assertNoContent();
 
   $this->assertDatabaseMissing('places', ['id' => $place->id]);
   $this->assertDatabaseMissing('place_photos', ['id' => $photo->id]);
   Storage::disk('public')->assertMissing([$photo->original_path, $photo->display_path, $photo->thumb_path]);
-  expect(Cache::missing('places:map'))->toBeTrue();
+  $this->getJson('/api/v1/places/map')->assertOk()->assertJsonCount(0, 'features');
 });
 
 test('stranger cannot delete another user place', function () {
   $place = Place::factory()->approved()->create();
 
-  $this->actingAs(placesUser())->deleteJson("/api/v1/my/places/{$place->id}")->assertNotFound();
+  $this->actingAs(User::factory()->create())->deleteJson("/api/v1/my/places/{$place->id}")->assertNotFound();
 
   $this->assertDatabaseHas('places', ['id' => $place->id]);
 });
 
 test('owner resubmits a rejected place without touching its files', function () {
   Storage::fake('public');
-  $user = placesUser();
+  $user = User::factory()->create();
   $place = Place::factory()->rejected()->create(['user_id' => $user->id, 'rejection_reason' => 'صور غير واضحة']);
-  $photo = app(\App\Services\PlaceImageService::class)
-    ->store(UploadedFile::fake()->image('a.jpg', 800, 600), $place->id, 0);
+  $photo = placePhoto($place->id);
   $paths = [$photo->original_path, $photo->display_path, $photo->thumb_path];
 
   $this->actingAs($user)
@@ -903,7 +903,7 @@ test('owner resubmits a rejected place without touching its files', function () 
 });
 
 test('resubmit is refused for non-rejected places', function () {
-  $user = placesUser();
+  $user = User::factory()->create();
   $pending = Place::factory()->create(['user_id' => $user->id]);
   $approved = Place::factory()->approved()->create(['user_id' => $user->id]);
 
@@ -923,7 +923,7 @@ test('resubmit is refused for non-rejected places', function () {
 test('stranger cannot resubmit another user place', function () {
   $place = Place::factory()->rejected()->create(['rejection_reason' => 'سبب']);
 
-  $this->actingAs(placesUser())
+  $this->actingAs(User::factory()->create())
     ->postJson("/api/v1/my/places/{$place->id}/resubmit")
     ->assertNotFound();
 
@@ -942,7 +942,7 @@ test('legacy places slug redirects permanently and keeps the query', function ()
 });
 
 test('list filters to one contributor and map features carry the owner', function () {
-  $guide = placesUser();
+  $guide = User::factory()->create();
   $mine = Place::factory()->approved()->create(['user_id' => $guide->id]);
   Place::factory()->approved()->create();
 

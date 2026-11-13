@@ -6,11 +6,6 @@ use Illuminate\Support\Facades\Storage;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\User as SocialiteUser;
 
-// UserFactory defaults role to admin; regular users must be explicit.
-function avatarUser(array $attrs = []): User {
-  return User::factory()->create(array_merge(['role' => 'user'], $attrs));
-}
-
 function fakeGoogleLogin(string $email): void {
   $provider = Mockery::mock(\Laravel\Socialite\Two\GoogleProvider::class);
   $provider->shouldReceive('stateless')->andReturnSelf();
@@ -33,7 +28,7 @@ test('guest cannot upload an avatar', function () {
 
 test('user can upload an avatar', function () {
   Storage::fake('public');
-  $user = avatarUser();
+  $user = User::factory()->create();
 
   $response = $this->actingAs($user)
     ->postJson('/api/account/avatar', [
@@ -59,7 +54,7 @@ test('user can upload an avatar', function () {
 
 test('a second upload deletes the previous hosted avatar file', function () {
   Storage::fake('public');
-  $user = avatarUser();
+  $user = User::factory()->create();
 
   $this->actingAs($user)->postJson('/api/account/avatar', [
     'avatar' => UploadedFile::fake()->image('a.jpg', 300, 300),
@@ -76,7 +71,7 @@ test('a second upload deletes the previous hosted avatar file', function () {
 
 test('a google-hosted old avatar url is left alone, only the row is updated', function () {
   Storage::fake('public');
-  $user = avatarUser(['avatar_url' => 'https://lh3.googleusercontent.com/a/old-avatar=s96-c']);
+  $user = User::factory()->create(['avatar_url' => 'https://lh3.googleusercontent.com/a/old-avatar=s96-c']);
 
   $response = $this->actingAs($user)->postJson('/api/account/avatar', [
     'avatar' => UploadedFile::fake()->image('a.jpg', 300, 300),
@@ -89,7 +84,7 @@ test('a google-hosted old avatar url is left alone, only the row is updated', fu
 test('rejects a non-image upload', function () {
   Storage::fake('public');
 
-  $this->actingAs(avatarUser())->postJson('/api/account/avatar', [
+  $this->actingAs(User::factory()->create())->postJson('/api/account/avatar', [
     'avatar' => UploadedFile::fake()->create('doc.pdf', 100, 'application/pdf'),
   ])->assertStatus(422)
     ->assertJsonValidationErrors('avatar')
@@ -99,7 +94,7 @@ test('rejects a non-image upload', function () {
 test('rejects an unsupported image format with the arabic mimes message', function () {
   Storage::fake('public');
 
-  $this->actingAs(avatarUser())->postJson('/api/account/avatar', [
+  $this->actingAs(User::factory()->create())->postJson('/api/account/avatar', [
     'avatar' => UploadedFile::fake()->image('a.gif', 300, 300),
   ])->assertStatus(422)
     ->assertJsonPath('errors.avatar.0', 'الصورة يجب أن تكون بصيغة JPG أو PNG أو WebP');
@@ -108,7 +103,7 @@ test('rejects an unsupported image format with the arabic mimes message', functi
 test('rejects a missing avatar with the arabic required message', function () {
   Storage::fake('public');
 
-  $this->actingAs(avatarUser())->postJson('/api/account/avatar', [])
+  $this->actingAs(User::factory()->create())->postJson('/api/account/avatar', [])
     ->assertStatus(422)
     ->assertJsonPath('errors.avatar.0', 'اختر صورة');
 });
@@ -116,7 +111,7 @@ test('rejects a missing avatar with the arabic required message', function () {
 test('rejects an upload above 4MB', function () {
   Storage::fake('public');
 
-  $this->actingAs(avatarUser())->postJson('/api/account/avatar', [
+  $this->actingAs(User::factory()->create())->postJson('/api/account/avatar', [
     'avatar' => UploadedFile::fake()->image('big.jpg')->size(5000),
   ])->assertStatus(422)
     ->assertJsonValidationErrors('avatar')
@@ -126,7 +121,7 @@ test('rejects an upload above 4MB', function () {
 test('rejects a too-small avatar with the arabic dimensions message', function () {
   Storage::fake('public');
 
-  $this->actingAs(avatarUser())->postJson('/api/account/avatar', [
+  $this->actingAs(User::factory()->create())->postJson('/api/account/avatar', [
     'avatar' => UploadedFile::fake()->image('small.png', 32, 32),
   ])->assertStatus(422)
     ->assertJsonPath('errors.avatar.0', 'أبعاد الصورة يجب أن تكون بين 64x64 و 6000x6000 بكسل');
@@ -134,7 +129,7 @@ test('rejects a too-small avatar with the arabic dimensions message', function (
 
 test('google login does not clobber a custom avatar', function () {
   Storage::fake('public');
-  $user = avatarUser();
+  $user = User::factory()->create();
 
   $this->actingAs($user)->postJson('/api/account/avatar', [
     'avatar' => UploadedFile::fake()->image('a.jpg', 300, 300),
@@ -149,7 +144,7 @@ test('google login does not clobber a custom avatar', function () {
 
 test('google login still refreshes a google-hosted avatar', function () {
   Storage::fake('public');
-  $user = avatarUser(['avatar_url' => 'https://lh3.googleusercontent.com/a/stale']);
+  $user = User::factory()->create(['avatar_url' => 'https://lh3.googleusercontent.com/a/stale']);
 
   fakeGoogleLogin($user->email);
   $this->get('/auth/google/callback')->assertRedirect();

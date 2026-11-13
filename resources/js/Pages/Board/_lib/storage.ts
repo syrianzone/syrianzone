@@ -57,10 +57,6 @@ export function writeGeo(coords: { lat: number; lng: number }): void {
 
 // The losing side of a login merge, kept so the user can undo it for the
 // session rather than silently losing a board.
-export function readPrev(): unknown {
-  return readJson(PREV_KEY);
-}
-
 export function writePrev(doc: BoardDoc): void {
   safeSet(PREV_KEY, JSON.stringify(doc));
 }

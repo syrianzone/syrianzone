@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useRef } from 'react';
 import { MapContainer, GeoJSON, ZoomControl, AttributionControl, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -7,21 +5,17 @@ import 'leaflet/dist/leaflet.css';
 import { DATA_TYPES, CityData, RainfallData } from '../../types';
 import { getFeatureStyle } from './map-styles';
 import { setupFeatureInteractions, hideCursorTooltip } from './map-interactions';
-import MapUpdater from './MapUpdater';
+import { ensureLeafletDefaultIcon } from '@/Components/map/leaflet/defaultIcon';
+import { FitBounds } from '@/Components/map/leaflet/FitBounds';
+import { useInvalidateSizeOnLayout } from '@/Components/map/leaflet/useInvalidateSizeOnLayout';
+import { featureCollectionBounds, normalizeFeatureCollection } from '@/Components/map/geo';
 
 type DataType = typeof DATA_TYPES[keyof typeof DATA_TYPES];
 
-// Fix for Leaflet icons
-// @ts-ignore
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
+ensureLeafletDefaultIcon();
 
 interface MapClientProps {
-    geoJsonData: any;
+    geoJsonData: unknown;
     populationData: CityData | null;
     rainfallData?: RainfallData;
     environmentalData?: any;
@@ -29,6 +23,13 @@ interface MapClientProps {
     currentSourceId: number | null;
     customThresholds: number[];
     onFeatureClick?: (feature: any) => void;
+}
+
+// Leaflet measures its container when it mounts only; the shared hook keeps it
+// in sync with the real size instead of guessing with a timer.
+function MapSizeSync() {
+    useInvalidateSizeOnLayout();
+    return null;
 }
 
 // Hides the cursor tooltip while the map is being dragged / zoomed so a
@@ -61,6 +62,9 @@ export default function MapClient({
     const getTip = React.useCallback(() => tipRef.current, []);
     const getWrap = React.useCallback(() => wrapRef.current, []);
 
+    const geoJson = React.useMemo(() => normalizeFeatureCollection(geoJsonData), [geoJsonData]);
+    const bounds = React.useMemo(() => featureCollectionBounds(geoJson), [geoJson]);
+
     const style = (feature: any) => {
         return getFeatureStyle(feature, currentDataType, populationData, rainfallData, environmentalData, customThresholds);
     };
@@ -78,7 +82,6 @@ export default function MapClient({
         );
     };
 
-    // Determine background class based on data type
     const getBackgroundClass = () => {
         if (currentDataType === DATA_TYPES.RAINFALL) return 'bg-rainfall';
         if (currentDataType === DATA_TYPES.ENVIRONMENTAL) return 'bg-env';
@@ -97,8 +100,7 @@ export default function MapClient({
                 nothing can detach it from the cursor. */}
             <div ref={tipRef} className="atlas-cursor-tooltip" style={{ display: 'none' }} />
 
-            <style jsx global>{`
-                /* --- ANIMATIONS --- */
+            <style>{`
                 @keyframes pulse-glow {
                     0%, 100% { filter: drop-shadow(0 0 2px rgba(34, 211, 238, 0.3)); }
                     50% { filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.6)); }
@@ -116,7 +118,6 @@ export default function MapClient({
                     100% { background-position: 0% 0%; }
                 }
 
-                /* --- DYNAMIC BACKGROUNDS --- */
                 .bg-rainfall {
                     background: radial-gradient(circle at 50% 50%, #1e293b 0%, #0f172a 100%);
                     background-image: 
@@ -152,13 +153,11 @@ export default function MapClient({
                     background: radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.6) 100%);
                 }
 
-                /* --- LEAFLET OVERRIDES --- */
                 .leaflet-container {
                     background: transparent !important;
                     font-family: var(--site-font, inherit);
                 }
 
-                /* SVG Region Styling */
                 @keyframes hover-glow {
     0%, 100% {
         filter: 
@@ -199,13 +198,11 @@ path.leaflet-interactive:hover {
     z-index: 1000;
 }
 
-                /* Active/Focus State */
                 path.leaflet-interactive:focus-visible {
                     outline: 2px solid hsl(var(--ring));
                     outline-offset: 1px;
                 }
 
-                /* --- TOOLTIPS (custom cursor-following overlay) --- */
                 .atlas-cursor-tooltip {
                     position: absolute;
                     left: 0;
@@ -269,7 +266,6 @@ path.leaflet-interactive:hover {
                     border: 1px solid rgba(148, 163, 184, 0.2);
                 }
                 
-                /* Triangle Arrow */
                 .glass-tooltip::after {
                     content: '';
                     position: absolute;
@@ -284,12 +280,10 @@ path.leaflet-interactive:hover {
                     z-index: -1;
                 }
 
-                /* Env Pulse Effect on Map Features */
                 .pulsing-region {
                     animation: pulse-glow 3s infinite ease-in-out;
                 }
 
-                /* --- ZOOM CONTROL --- */
                 .leaflet-control-zoom {
                     border: none !important;
                     box-shadow: 0 4px 20px rgba(0,0,0,0.4) !important;
@@ -329,11 +323,12 @@ path.leaflet-interactive:hover {
                 {/* Controls live on the end (left) side: the data panel docks on the start (right) side in RTL */}
                 <ZoomControl position="bottomleft" />
                 <AttributionControl position="bottomleft" />
-                <MapUpdater geoJsonData={geoJsonData} />
+                <MapSizeSync />
+                <FitBounds bounds={bounds} />
                 <DismissTooltipOnMapMove getTip={getTip} />
                 <GeoJSON
                     key={`${currentDataType}-${currentSourceId}`}
-                    data={geoJsonData}
+                    data={geoJson}
                     style={style}
                     onEachFeature={onEachFeature}
                 />

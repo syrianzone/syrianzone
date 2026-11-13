@@ -1,35 +1,41 @@
 import { useEffect, useRef, useState } from 'react';
 import { Loader2, Plus, RotateCw, Trash2 } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription } from '@/Components/ui/alert';
 import { Badge } from '@/Components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/Components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+} from '@/Components/ui/dialog';
+import { Input } from '@/Components/ui/input';
+import { Label } from '@/Components/ui/label';
+import { Textarea } from '@/Components/ui/textarea';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { api, extractError, extractFieldErrors } from '../_lib/api';
-import { CATEGORIES } from '../_lib/categories';
-import type { LatLng, MyPlace, PlaceCategory, PlaceDetail, PlacePhoto, PlaceStatus } from '../_lib/types';
+} from '@/Components/ui/select';
+import { api } from '@/Domain/places/api';
+import { apiErrorMessage, apiFieldErrors } from '@/Lib/api';
+import { CATEGORIES } from '@/Domain/places/categories';
+import {
+  SYRIA_LAT_MAX_LABEL,
+  SYRIA_LAT_MIN_LABEL,
+  SYRIA_LNG_MAX_LABEL,
+  SYRIA_LNG_MIN_LABEL,
+  inSyriaBox,
+} from '@/Domain/geography/syria';
+import type { LatLng, MyPlace, PlaceCategory, PlaceDetail, PlacePhoto, PlaceStatus } from '@/Domain/places/types';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
 import { parseLatLng } from './FilterBar';
 import { MAX_BYTES, MAX_DIM, MIN_DIM, imageDimensions } from './PhotoPicker';
 
-// client mirror of the server's Syria bounding box
-const inSyriaBox = (p: LatLng) => p.lat >= 32.0 && p.lat <= 37.5 && p.lng >= 35.5 && p.lng <= 42.5;
 
 const STATUS_LABELS: Record<PlaceStatus, string> = {
   pending: 'قيد المراجعة',
@@ -60,7 +66,6 @@ export function ManagePlaceDialog(props: {
   const [loadFailed, setLoadFailed] = useState(false);
   const [status, setStatus] = useState<PlaceStatus>('pending');
 
-  // section 1: details
   const [name, setName] = useState('');
   const [category, setCategory] = useState<PlaceCategory | null>(null);
   const [description, setDescription] = useState('');
@@ -69,21 +74,18 @@ export function ManagePlaceDialog(props: {
   const [detailsFieldErrors, setDetailsFieldErrors] = useState<Record<string, string>>({});
   const [detailsDone, setDetailsDone] = useState(false);
 
-  // section 2: photos
   const [photos, setPhotos] = useState<PlacePhoto[]>([]);
   const [busyPhoto, setBusyPhoto] = useState<number | null>(null);
   const [addingPhoto, setAddingPhoto] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const addInputRef = useRef<HTMLInputElement>(null);
 
-  // section 3: location
   const [coords, setCoords] = useState('');
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [locationSaving, setLocationSaving] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [locationDone, setLocationDone] = useState(false);
 
-  // section 4: danger
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
@@ -171,9 +173,9 @@ export function ManagePlaceDialog(props: {
       setDetailsDone(true);
       goPending();
     } catch (e) {
-      const fe = extractFieldErrors(e);
-      if (fe) setDetailsFieldErrors(fe);
-      else setDetailsError(extractError(e));
+      const fe = apiFieldErrors(e, { arabicOnly: true });
+      if (Object.keys(fe).length) setDetailsFieldErrors(fe);
+      else setDetailsError(apiErrorMessage(e));
     } finally {
       setDetailsSaving(false);
     }
@@ -189,7 +191,7 @@ export function ManagePlaceDialog(props: {
       setPhotos((prev) => prev.map((p) => (p.id === photoId ? { ...p, thumb_url: res.thumb_url, display_url: res.display_url } : p)));
       onUpdated();
     } catch (e) {
-      setPhotoError(extractError(e));
+      setPhotoError(apiErrorMessage(e));
     } finally {
       setBusyPhoto(null);
     }
@@ -205,7 +207,7 @@ export function ManagePlaceDialog(props: {
       setPhotos((prev) => prev.filter((p) => p.id !== photoId));
       goPending();
     } catch (e) {
-      setPhotoError(extractError(e));
+      setPhotoError(apiErrorMessage(e));
     } finally {
       setBusyPhoto(null);
     }
@@ -233,7 +235,7 @@ export function ManagePlaceDialog(props: {
       setPhotos((prev) => [...prev, { id: res.id, thumb_url: res.thumb_url, display_url: res.display_url, sort: res.sort }]);
       goPending();
     } catch (e) {
-      setPhotoError(extractError(e));
+      setPhotoError(apiErrorMessage(e));
     } finally {
       setAddingPhoto(false);
       if (addInputRef.current) addInputRef.current.value = '';
@@ -250,9 +252,8 @@ export function ManagePlaceDialog(props: {
       setLocationDone(true);
       goPending();
     } catch (e) {
-      const err = e as { response?: { data?: { errors?: Record<string, string[]> } } };
-      const errors = err.response?.data?.errors;
-      setLocationError(errors?.lat?.[0] ?? errors?.lng?.[0] ?? extractError(e));
+      const errors = apiFieldErrors(e);
+      setLocationError(errors.lat ?? errors.lng ?? apiErrorMessage(e));
     } finally {
       setLocationSaving(false);
     }
@@ -268,7 +269,7 @@ export function ManagePlaceDialog(props: {
       onOpenChange(false);
       onUpdated();
     } catch (e) {
-      setDeleteError(extractError(e));
+      setDeleteError(apiErrorMessage(e));
       setDeleting(false);
     }
   };
@@ -476,7 +477,7 @@ export function ManagePlaceDialog(props: {
                 )}
                 {feedback?.kind === 'outside' && (
                   <p className="text-xs text-destructive">
-                    الإحداثيات خارج حدود سوريا (خط العرض بين 32.0 و 37.5، خط الطول بين 35.5 و 42.5)
+                    الإحداثيات خارج حدود سوريا (خط العرض بين {SYRIA_LAT_MIN_LABEL} و {SYRIA_LAT_MAX_LABEL}، خط الطول بين {SYRIA_LNG_MIN_LABEL} و {SYRIA_LNG_MAX_LABEL})
                   </p>
                 )}
                 {point && (

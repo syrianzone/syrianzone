@@ -45,8 +45,6 @@ function useSeedData(array $files): void
     app()->useStoragePath($dir);
 }
 
-// ─── Tracked input ─────────────────────────────────────────────────────────
-
 it('seeds a clean checkout from the tracked population.csv', function () {
     expect(seedPopulationAtlas())->toBe(0);
 
@@ -82,8 +80,6 @@ it('is idempotent: seeding twice does not duplicate rows', function () {
         ->and(PopulationEnvironmentalLog::count())->toBe(14);
 });
 
-// ─── Missing or broken inputs ──────────────────────────────────────────────
-
 it('fails loudly when population.csv is missing instead of reporting success', function () {
     useSeedData([]);
 
@@ -116,8 +112,6 @@ it('warns and leaves rainfall empty when rainfall_yearly.json is absent', functi
         ->and(PopulationDemographic::count())->toBe(93)
         ->and(PopulationRainfall::count())->toBe(0);
 });
-
-// ─── Rainfall input ────────────────────────────────────────────────────────
 
 it('seeds rainfall per district code and year when rainfall_yearly.json is present', function () {
     useSeedData([

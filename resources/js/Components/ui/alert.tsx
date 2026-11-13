@@ -1,7 +1,7 @@
 import * as React from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/Lib/utils";
 
-export type AlertProps = React.HTMLAttributes<HTMLDivElement> & {
+type AlertProps = React.HTMLAttributes<HTMLDivElement> & {
     variant?: "default" | "destructive" | "success" | "warning";
 };
 

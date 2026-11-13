@@ -1,5 +1,3 @@
-'use client'
-
 import { Navigation, ChevronRight, Plus } from 'lucide-react'
 import { Link } from '@inertiajs/react'
 import { useMapStore } from '../_store/useMapStore'
@@ -8,11 +6,13 @@ import { Button } from '@/Components/ui/button'
 import { Card, CardContent } from '@/Components/ui/card'
 import { ScrollArea } from '@/Components/ui/scroll-area'
 import { Separator } from '@/Components/ui/separator'
-import type { City } from '../_types'
+import { getRouteColor } from '../_lib/mapColors'
+import type { RouteProperties } from '../_types'
+import type { TransitCity } from '@/Domain/transit/types'
 
 interface SidebarRouteDetailProps {
-  route: any
-  city: City | undefined
+  route: RouteProperties
+  city: TransitCity | undefined
   stops: any[]
 }
 
@@ -43,7 +43,7 @@ export function SidebarRouteDetail({ route, city, stops }: SidebarRouteDetailPro
             <div className="flex items-center gap-2">
               <span
                 className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white text-xs"
-                style={{ backgroundColor: `hsl(var(--route-${route.colorIndex}))` }}
+                style={{ backgroundColor: getRouteColor(route.colorIndex) }}
               >
                 <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <rect width="16" height="16" x="4" y="3" rx="2" />
@@ -114,9 +114,6 @@ export function SidebarRouteDetail({ route, city, stops }: SidebarRouteDetailPro
                     </span>
                     <div className="min-w-0 text-right">
                       <p className="text-sm font-medium text-foreground leading-snug break-words">{stop.properties.nameAr}</p>
-                      {stop.properties.nameEn && (
-                        <p className="text-xs text-muted-foreground leading-snug break-words">{stop.properties.nameEn}</p>
-                      )}
                     </div>
                   </div>
                   <Navigation className="h-4 w-4 text-primary shrink-0" />

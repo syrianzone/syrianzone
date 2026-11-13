@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Loader2, MapPin, Search, SlidersHorizontal } from 'lucide-react';
 import { Card } from '@/Components/ui/card';
-import { Input } from '@/components/ui/input';
+import { Input } from '@/Components/ui/input';
 import { Badge, badgeVariants } from '@/Components/ui/badge';
 import { cn } from '@/Lib/utils';
-import { CATEGORIES, CATEGORY_LABELS } from '../_lib/categories';
-import type { GeoSuggestion, LatLng, PlaceCategory, PlaceListItem } from '../_lib/types';
+import { CATEGORIES, CATEGORY_LABELS } from '@/Domain/places/categories';
+import type { GeoSuggestion, LatLng, PlaceCategory, PlaceListItem } from '@/Domain/places/types';
 
 // token: optional hemisphere letter, signed number (dot or comma decimal), optional °, optional letter
 const COORD_TOKEN = String.raw`([NSEW])?\s*([+-]?\d{1,3}(?:[.,]\d+)?)\s*°?\s*([NSEW])?`;
@@ -296,7 +296,6 @@ export function FilterBar(props: {
             id="place-filter-popover"
             className="absolute right-0 top-full z-20 mt-1 w-[min(16rem,calc(100vw-1.5rem))] rounded-lg border border-border bg-popover p-2 shadow-md"
           >
-            {/* View type filter */}
             <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">النوع</p>
             <div className="mb-3 flex flex-wrap gap-1.5">
               {([
@@ -314,7 +313,6 @@ export function FilterBar(props: {
                 </button>
               ))}
             </div>
-            {/* Category filter (only for places) */}
             {props.viewFilter !== 'hotels' && (
               <>
                 <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">الفئة</p>

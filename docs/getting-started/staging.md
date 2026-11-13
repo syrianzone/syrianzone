@@ -29,12 +29,11 @@ Rollback is the same as production, with a staging tag:
 
 ## Why it is a separate image
 
-`VITE_SENTRY_DSN` and `VITE_POSTHOG_KEY` are baked into the JS bundle at build
-time, not read at runtime. Running the production image on staging would send
-browser errors and product analytics into the production Sentry and PostHog
-projects no matter what the staging `.env` said. So the staging workflow builds
-its own image with those build-args omitted; both SDKs are guarded on the env var
-and no-op when it is empty.
+`VITE_SENTRY_DSN` is baked into the JS bundle at build time, not read at
+runtime. Running the production image on staging would send browser errors into
+the production Sentry project no matter what the staging `.env` said. So the
+staging workflow builds its own image with that build-arg omitted; the SDK is
+guarded on the env var and no-ops when it is empty.
 
 Google Analytics used to be a hardcoded measurement id in `app.blade.php`. It is
 now `GA_MEASUREMENT_ID` (`config/services.php`), read at runtime, so staging turns
@@ -51,7 +50,7 @@ the local `.env` is not `APP_ENV=staging`.
 | Database | `syrianzone_db`, own container | `syrianzone_staging`, own container and volume |
 | Uploads | R2 bucket (`MEDIA_DISK=r2`) | local public disk, R2 creds blank |
 | DB backups | local + R2 bucket, every 6h | schedule gated off entirely |
-| Sentry / PostHog | live | no DSN, backend and browser |
+| Sentry | live | no DSN, backend and browser |
 | Google Analytics | `GA_MEASUREMENT_ID` set | blank, snippet does not render |
 | Google OAuth | live client | none, login is `AUTO_LOGIN_DEV` |
 | Mail | `log` | `log` |

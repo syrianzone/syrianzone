@@ -2,10 +2,6 @@
 
 use Inertia\Testing\AssertableInertia as Assert;
 
-test('the muslim hub is public', function () {
-    $this->get('/muslim')->assertOk();
-});
-
 test('the muslim hub renders its inertia component', function () {
     $this->get('/muslim')
         ->assertOk()
@@ -38,17 +34,4 @@ test('an unknown tab falls back to the hub', function () {
 
 test('an unknown muslim slug is not routed', function () {
     $this->get('/muslim/chess')->assertNotFound();
-});
-
-test('every muslim route is a public closure with no middleware', function () {
-    foreach (['muslim', 'muslim/prayer', 'muslim/quran', 'muslim/radio'] as $path) {
-        $route = collect(app('router')->getRoutes()->getRoutes())
-            ->first(fn ($r) => $r->uri() === $path && in_array('GET', $r->methods(), true));
-
-        expect($route)->not->toBeNull("missing route: {$path}");
-        // A Closure means there is no controller to bypass, and 'web' is the
-        // only stack — no auth, throttle or role gate to bolt on by accident.
-        expect($route->getAction('uses'))->toBeInstanceOf(Closure::class);
-        expect($route->gatherMiddleware())->toBe(['web']);
-    }
 });

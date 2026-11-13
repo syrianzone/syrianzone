@@ -1,0 +1,580 @@
+{
+ "navbar": {
+  "topCount": 5
+ },
+ "modules": [
+  {
+   "id": "roznama",
+   "title": "الروزنامة",
+   "subtitle": "التقويم السوري والهجري والمناسبات ومواقيت الصلاة",
+   "href": "/roznama",
+   "type": "native",
+   "target": "roznama",
+   "iconKey": "roznama",
+   "iconUrl": null,
+   "isInternal": true,
+   "subCategories": [],
+   "description": "التقويم السوري والهجري والمناسبات ومواقيت الصلاة"
+  },
+  {
+   "id": "muslim",
+   "title": "الركن الإسلامي",
+   "subtitle": "مواقيت الصلاة، القرآن الكريم، وإذاعة القرآن",
+   "href": "/muslim",
+   "type": "native",
+   "target": "muslim_hub",
+   "iconKey": "muslim",
+   "iconUrl": null,
+   "isInternal": true,
+   "subCategories": [
+    {
+     "id": "muslim_prayer",
+     "title": "مواقيت الصلاة",
+     "subtitle": "مواقيت الصلاة اليومية والقبلة",
+     "href": "/muslim/prayer",
+     "type": "native",
+     "target": "muslim_prayer",
+     "iconKey": "muslim",
+     "iconUrl": null
+    },
+    {
+     "id": "muslim_quran",
+     "title": "القرآن الكريم",
+     "subtitle": "قارئ القرآن بالرسم العثماني والتلاوة",
+     "href": "/muslim/quran",
+     "type": "native",
+     "target": "muslim_quran",
+     "iconKey": "muslim",
+     "iconUrl": null
+    },
+    {
+     "id": "muslim_radio",
+     "title": "إذاعة القرآن",
+     "subtitle": "بث مباشر لإذاعات وتلاوات القرآن الكريم",
+     "href": "/muslim/radio",
+     "type": "native",
+     "target": "muslim_radio",
+     "iconKey": "muslim",
+     "iconUrl": null
+    }
+   ],
+   "description": "مواقيت الصلاة، القرآن الكريم، وإذاعة القرآن",
+   "navbarSticky": false
+  },
+  {
+   "id": "games",
+   "title": "الألعاب",
+   "subtitle": "ألعاب ورق وذكاء جماعية وفردية",
+   "href": "/games",
+   "type": "native",
+   "target": "games_hub",
+   "iconKey": "games",
+   "iconUrl": null,
+   "isInternal": true,
+   "subCategories": [
+    {
+     "id": "game_tarneeb",
+     "title": "طرنيب",
+     "subtitle": "لعبة الشدة السورية الشهيرة",
+     "href": "/games/tarneeb",
+     "type": "web",
+     "target": "/games/tarneeb",
+     "iconKey": "games",
+     "iconUrl": null
+    },
+    {
+     "id": "game_trix",
+     "title": "تركس",
+     "subtitle": "لعبة التركس الفردية والشراكة",
+     "href": "/games/trix",
+     "type": "web",
+     "target": "/games/trix",
+     "iconKey": "games",
+     "iconUrl": null
+    },
+    {
+     "id": "game_guesswho",
+     "title": "من هو؟",
+     "subtitle": "لعبة التخمين الجماعية المباشرة",
+     "href": "/guesswho",
+     "type": "web",
+     "target": "/guesswho",
+     "iconKey": "games",
+     "iconUrl": null
+    },
+    {
+     "id": "game_solitaire",
+     "title": "سوليتير",
+     "subtitle": "لعبة الورق الكلاسيكية",
+     "href": "/games/solitare",
+     "type": "web",
+     "target": "/games/solitare",
+     "iconKey": "games",
+     "iconUrl": null
+    },
+    {
+     "id": "game_2048",
+     "title": "2048",
+     "subtitle": "لعبة الأرقام والذكاء",
+     "href": "/games/2048",
+     "type": "web",
+     "target": "/games/2048",
+     "iconKey": "games",
+     "iconUrl": null
+    }
+   ],
+   "description": "ألعاب ورق وذكاء جماعية وفردية: تركس، طرنيب، مين، سوليتير، 2048",
+   "navbarSticky": false
+  },
+  {
+   "id": "transit",
+   "title": "ترانزيت",
+   "subtitle": "شبكة وخطوط النقل العام",
+   "href": "/transit",
+   "type": "native",
+   "target": "transit_map",
+   "iconKey": "transit",
+   "iconUrl": null,
+   "isInternal": true,
+   "subCategories": [
+    {
+     "id": "transit_studio",
+     "title": "استوديو ترانزيت",
+     "subtitle": "إضافة وتعديل مسارات النقل العام",
+     "href": "/transit/studio",
+     "type": "native",
+     "target": "transit_studio",
+     "iconKey": "transit",
+     "iconUrl": null
+    }
+   ],
+   "description": "خريطة خطوط النقل العام والسرفيس والباصات في المدن السورية",
+   "fullBleedPrefixes": [
+    "/transit/studio",
+    "/transit/admin",
+    "/transit/city"
+   ]
+  },
+  {
+   "id": "mishwar",
+   "title": "مشوار",
+   "subtitle": "دليل وخريطة الأماكن والمطاعم والمقاهي في سوريا",
+   "href": "/mishwar",
+   "type": "native",
+   "target": "mishwar_map",
+   "iconKey": "mishwar",
+   "iconUrl": null,
+   "isInternal": true,
+   "subCategories": [],
+   "description": "دليل الأماكن والمطاعم والمقاهي والفنادق في سوريا"
+  },
+  {
+   "id": "board",
+   "title": "لوح",
+   "subtitle": "لوحة أدواتك اليومية المخصصة في المساحة السورية",
+   "href": "/board",
+   "type": "web",
+   "target": "/board",
+   "iconKey": "board",
+   "iconUrl": null,
+   "isInternal": true,
+   "subCategories": [],
+   "description": "لوحة أدوات ومعلومات سورية مخصصة قابلة للترتيب"
+  },
+  {
+   "id": "compass",
+   "title": "البوصلة السياسية",
+   "subtitle": "اختبار البوصلة السياسية السورية وتحديد توجهاتك",
+   "href": "/compass",
+   "type": "web",
+   "target": "/compass",
+   "iconKey": "compass",
+   "iconUrl": null,
+   "isInternal": true,
+   "subCategories": [],
+   "description": "اختبار البوصلة السياسية السورية وتحديد توجهاتك"
+  },
+  {
+   "id": "tierlist",
+   "title": "تقييم الحكومة",
+   "subtitle": "تقييم أداء الوزراء والجهات الحكومية ومشاركة الترتيب",
+   "href": "/tierlist",
+   "type": "native",
+   "target": "tierlist_polls",
+   "iconKey": "tierlist",
+   "iconUrl": null,
+   "isInternal": true,
+   "subCategories": [
+    {
+     "id": "tierlist_leaderboard",
+     "title": "نتائج التقييم",
+     "subtitle": "ترتيب وإحصائيات تصويت الجمهور",
+     "href": "/tierlist/leaderboard",
+     "type": "native",
+     "target": "tierlist_leaderboard",
+     "iconKey": "tierlist",
+     "iconUrl": null
+    }
+   ],
+   "description": "تقييم أداء الوزراء والجهات الحكومية ومشاركة الترتيب"
+  },
+  {
+   "id": "promises",
+   "title": "عداد الوعود",
+   "subtitle": "وعود المسؤولين العلنية ومواعيدها وما تحقق منها",
+   "href": "/promises",
+   "type": "web",
+   "target": "/promises",
+   "iconKey": "promises",
+   "iconUrl": null,
+   "isInternal": true,
+   "subCategories": [],
+   "description": "وعود المسؤولين العلنية ومواعيدها وما تحقق منها"
+  },
+  {
+   "id": "priorities",
+   "title": "أولويات سوريا",
+   "subtitle": "استبيان وترتيب أولويات إعادة الإعمار والتنمية في سوريا",
+   "href": "/priorities",
+   "type": "web",
+   "target": "/priorities",
+   "iconKey": "priorities",
+   "iconUrl": null,
+   "isInternal": true,
+   "subCategories": [],
+   "description": "استبيان وترتيب أولويات إعادة الإعمار والتنمية في سوريا"
+  },
+  {
+   "id": "crossings",
+   "title": "المنافذ الحدودية",
+   "subtitle": "حالة المعابر البرية والمطارات والمرافئ السورية لحظة بلحظة",
+   "href": "/crossings",
+   "type": "native",
+   "target": "crossings_status",
+   "iconKey": "crossings",
+   "iconUrl": null,
+   "isInternal": true,
+   "subCategories": [],
+   "description": "حالة المعابر البرية والمطارات والمرافئ السورية لحظة بلحظة"
+  },
+  {
+   "id": "recipes",
+   "title": "وصفاتنا",
+   "subtitle": "موسوعة وصفات المطبخ السوري التقليدي الأصيل",
+   "href": "https://food.syrian.zone",
+   "type": "external",
+   "target": "https://food.syrian.zone",
+   "iconKey": "recipes",
+   "iconUrl": null,
+   "isInternal": true,
+   "subCategories": [],
+   "description": "موسوعة وصفات المطبخ السوري التقليدي الأصيل"
+  },
+  {
+   "id": "answers",
+   "title": "إجابات سوريا",
+   "subtitle": "منصة الأسئلة والأجوبة المجتمعية حول سوريا",
+   "href": "https://answers.syrian.zone",
+   "type": "external",
+   "target": "https://answers.syrian.zone",
+   "iconKey": "answers",
+   "iconUrl": null,
+   "isInternal": true,
+   "subCategories": [],
+   "description": "منصة الأسئلة والأجوبة المجتمعية حول سوريا"
+  },
+  {
+   "id": "syofficial",
+   "title": "الحسابات الرسمية",
+   "subtitle": "دليل الحسابات والصفحات الرسمية للوزارات والمؤسسات السورية",
+   "href": "/syofficial",
+   "type": "native",
+   "target": "syofficial_directory",
+   "iconKey": "syofficial",
+   "iconUrl": null,
+   "isInternal": true,
+   "subCategories": [],
+   "description": "دليل الحسابات والصفحات الرسمية للوزارات والمؤسسات السورية"
+  },
+  {
+   "id": "phonebook",
+   "title": "دليل الهاتف",
+   "subtitle": "أرقام الطوارئ والاستعلامات والخدمات العامة في المحافظات",
+   "href": "/phonebook",
+   "type": "native",
+   "target": "phonebook_directory",
+   "iconKey": "phonebook",
+   "iconUrl": null,
+   "isInternal": true,
+   "subCategories": [],
+   "description": "أرقام الطوارئ والاستعلامات والخدمات العامة في المحافظات"
+  },
+  {
+   "id": "sites",
+   "title": "دليل المواقع",
+   "subtitle": "دليل المواقع والمنصات والمبادرات الرقمية السورية",
+   "href": "/sites",
+   "type": "web",
+   "target": "/sites",
+   "iconKey": "sites",
+   "iconUrl": null,
+   "isInternal": true,
+   "subCategories": [],
+   "description": "دليل المواقع والمنصات والمبادرات الرقمية السورية"
+  },
+  {
+   "id": "contributors",
+   "title": "المساهمون",
+   "subtitle": "لوحة المساهمين والمطورين في المشاريع السورية مفتوحة المصدر",
+   "href": "/syrian-contributors",
+   "type": "web",
+   "target": "/syrian-contributors",
+   "iconKey": "contributors",
+   "iconUrl": null,
+   "isInternal": true,
+   "subCategories": [],
+   "description": "لوحة المساهمين والمطورين في المشاريع السورية مفتوحة المصدر"
+  },
+  {
+   "id": "govapps",
+   "title": "تطبيقات الحكومة",
+   "subtitle": "دليل التطبيقات الحكومية والخدمية الرسمية في سوريا",
+   "href": "/govapps",
+   "type": "native",
+   "target": "govapps_directory",
+   "iconKey": "govapps",
+   "iconUrl": null,
+   "isInternal": true,
+   "subCategories": [],
+   "description": "دليل التطبيقات الحكومية والخدمية الرسمية في سوريا"
+  },
+  {
+   "id": "party",
+   "title": "دليل الأحزاب",
+   "subtitle": "دليل الأحزاب والتيارات والكيانات السياسية السورية",
+   "href": "/party",
+   "type": "web",
+   "target": "/party",
+   "iconKey": "party",
+   "iconUrl": null,
+   "isInternal": true,
+   "subCategories": [],
+   "description": "دليل الأحزاب والتيارات والكيانات السياسية السورية"
+  },
+  {
+   "id": "house",
+   "title": "المجلس التشريعي",
+   "subtitle": "مرصد المجلس التشريعي وتوزيع المقاعد والأعضاء",
+   "href": "/house",
+   "type": "web",
+   "target": "/house",
+   "iconKey": "house",
+   "iconUrl": null,
+   "isInternal": true,
+   "subCategories": [],
+   "description": "مرصد المجلس التشريعي وتوزيع المقاعد والأعضاء"
+  },
+  {
+   "id": "justice",
+   "title": "العدالة الانتقالية",
+   "subtitle": "العدالة الانتقالية والتوثيق والمحاسبة",
+   "href": "/justice",
+   "type": "web",
+   "target": "/justice",
+   "iconKey": "justice",
+   "iconUrl": null,
+   "isInternal": true,
+   "subCategories": [],
+   "description": "العدالة الانتقالية والتوثيق والمحاسبة"
+  },
+  {
+   "id": "syid",
+   "title": "الهوية البصرية",
+   "subtitle": "دليل الهوية البصرية السورية الرسمية، الألوان والخطوط والشعارات",
+   "href": "/syid",
+   "type": "web",
+   "target": "/syid",
+   "iconKey": "syid",
+   "iconUrl": null,
+   "isInternal": true,
+   "subCategories": [],
+   "description": "دليل الهوية البصرية السورية الرسمية، الألوان والخطوط والشعارات"
+  },
+  {
+   "id": "atlas",
+   "title": "أطلس",
+   "subtitle": "أطلس السكان والخرائط الديمغرافية والتقسيمات الإدارية",
+   "href": "/atlas",
+   "type": "web",
+   "target": "/atlas",
+   "iconKey": "atlas",
+   "iconUrl": null,
+   "isInternal": true,
+   "subCategories": [],
+   "description": "أطلس السكان والخرائط الديمغرافية والتقسيمات الإدارية"
+  },
+  {
+   "id": "codex",
+   "title": "مجتمع كوديكس",
+   "subtitle": "مجتمع المبرمجين والمصممين السوريين على ديسكورد",
+   "href": "https://discord.gg/NqE8849VzA",
+   "type": "external",
+   "target": "https://discord.gg/NqE8849VzA",
+   "iconKey": "codex",
+   "iconUrl": null,
+   "isInternal": true,
+   "subCategories": [],
+   "description": "مجتمع المبرمجين والمصممين السوريين على ديسكورد"
+  },
+  {
+   "id": "flag_replacer",
+   "title": "مبدل العلم",
+   "subtitle": "إضافة متصفح لاستبدال العلم القديم بالعلم السوري",
+   "href": "https://chromewebstore.google.com/detail/syrian-flag-replacer/dngipobppehfhfggmbdiiiodgcibdeog",
+   "type": "external",
+   "target": "https://chromewebstore.google.com/detail/syrian-flag-replacer/dngipobppehfhfggmbdiiiodgcibdeog",
+   "iconKey": null,
+   "iconUrl": "/flag-replacer/1f1f8-1f1fe.svg",
+   "isInternal": true,
+   "subCategories": [],
+   "description": "إضافة متصفح لاستبدال العلم القديم بالعلم السوري"
+  },
+  {
+   "id": "joory",
+   "title": "جوري AI",
+   "subtitle": "مساعد ذكي باللغة العربية",
+   "href": "https://joory.chat",
+   "type": "external",
+   "target": "https://joory.chat",
+   "iconKey": null,
+   "iconUrl": "https://joory.chat/favicon.svg",
+   "isInternal": false,
+   "subCategories": [],
+   "description": "مساعد ذكي باللغة العربية"
+  },
+  {
+   "id": "jard",
+   "title": "جرد",
+   "subtitle": "منصة جرد",
+   "href": "https://jard.chat",
+   "type": "external",
+   "target": "https://jard.chat",
+   "iconKey": null,
+   "iconUrl": "https://jard.chat/images/logo-light.svg",
+   "isInternal": false,
+   "subCategories": [],
+   "description": "منصة جرد"
+  },
+  {
+   "id": "news",
+   "title": "أخبار سوريا",
+   "subtitle": "متابعة آخر أخبار سوريا من المصادر الموثوقة",
+   "href": "https://news.jard.chat",
+   "type": "external",
+   "target": "https://news.jard.chat",
+   "iconKey": "news",
+   "iconUrl": null,
+   "isInternal": false,
+   "subCategories": [],
+   "description": "متابعة آخر أخبار سوريا من المصادر الموثوقة"
+  }
+ ],
+ "adminSections": [
+  {
+   "id": "transit",
+   "label": "ترانزيت",
+   "href": "/transit/admin",
+   "gate": {
+    "capability": "transit.review_drafts"
+   }
+  },
+  {
+   "id": "places",
+   "label": "مشوار",
+   "href": "/admin/places",
+   "gate": {
+    "module": "places"
+   }
+  },
+  {
+   "id": "syofficial",
+   "label": "الحسابات الرسمية",
+   "href": "/admin/syofficial",
+   "gate": {
+    "module": "syofficial"
+   }
+  },
+  {
+   "id": "govapps",
+   "label": "التطبيقات الحكومية",
+   "href": "/admin/govapps",
+   "gate": {
+    "module": "govapps"
+   }
+  },
+  {
+   "id": "guesswho",
+   "label": "من هو",
+   "href": "/admin/guesswho",
+   "gate": {
+    "capability": "guesswho.manage"
+   }
+  },
+  {
+   "id": "phonebook",
+   "label": "دليل الهاتف",
+   "href": "/admin/phonebook",
+   "gate": {
+    "module": "phonebook"
+   }
+  },
+  {
+   "id": "compass",
+   "label": "بوصلة سوريا",
+   "href": "/admin/compass",
+   "gate": {
+    "module": "compass"
+   }
+  },
+  {
+   "id": "promises",
+   "label": "عداد الوعود",
+   "href": "/admin/promises",
+   "gate": {
+    "module": "promises"
+   }
+  },
+  {
+   "id": "assets",
+   "label": "الملفات",
+   "href": "/admin/assets",
+   "gate": {
+    "capability": "assets.manage"
+   }
+  },
+  {
+   "id": "site_popup",
+   "label": "النافذة المنبثقة",
+   "href": "/admin/site-popup",
+   "gate": {
+    "capability": "site.popup"
+   }
+  },
+  {
+   "id": "site_navigation",
+   "label": "الأيقونات والقوائم",
+   "href": "/admin/navigation",
+   "gate": {
+    "capability": "site.navigation"
+   }
+  },
+  {
+   "id": "api_tokens",
+   "label": "رموز الوكلاء",
+   "href": "/admin/api-tokens",
+   "gate": {
+    "anyCapability": true
+   }
+  }
+ ]
+}

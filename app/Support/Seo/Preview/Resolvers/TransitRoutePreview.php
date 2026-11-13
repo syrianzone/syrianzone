@@ -4,6 +4,7 @@ namespace App\Support\Seo\Preview\Resolvers;
 
 use App\Models\City;
 use App\Models\Route;
+use App\Support\Facts;
 use App\Support\Seo\Og\CardSource;
 use App\Support\Seo\Og\RecordCard;
 use App\Support\Seo\Preview\DescribesCards;
@@ -19,9 +20,6 @@ use Illuminate\Http\Request;
 final class TransitRoutePreview implements CardSource, PreviewResolver
 {
     use DescribesCards;
-
-    /** The route colours of the map (Pages/Transit/_lib/mapColors.ts); a test keeps them equal. */
-    public const PALETTE = ['#e8a838', '#c44b4b', '#4a8fa8', '#7ab87a', '#d4956a', '#9b6bb5', '#5ba08a', '#c9784a'];
 
     public static function cardType(): string
     {
@@ -88,7 +86,15 @@ final class TransitRoutePreview implements CardSource, PreviewResolver
             ],
             'title' => $route->name_ar,
             // A line in the colour this route has on the map.
-            'art' => ['type' => 'route', 'colour' => self::PALETTE[abs((int) $route->color_index) % count(self::PALETTE)]],
+            'art' => ['type' => 'route', 'colour' => self::routeColour((int) $route->color_index)],
         ]);
+    }
+
+    /** The colour the map draws this route in: the shared palette, wrapped. */
+    private static function routeColour(int $colorIndex): string
+    {
+        $palette = Facts::transit()['route_palette'];
+
+        return $palette[abs($colorIndex) % count($palette)];
     }
 }

@@ -72,11 +72,18 @@ class PlaceActionException extends DomainActionException
         );
     }
 
-    public static function photoFileMissing(): self
+    /**
+     * A photo whose file is gone from disk. The dashboard and the agent surface
+     * follow it with what to do next; the owner endpoint has never included
+     * that sentence, and both wordings are pinned by their tests.
+     */
+    public static function photoFileMissing(bool $withRecoveryHint = true): self
     {
         return new self(
             self::PHOTO_FILE_MISSING,
-            'ملف الصورة مفقود على الخادم، استخدم إعادة الرفع',
+            $withRecoveryHint
+                ? 'ملف الصورة مفقود على الخادم، استخدم إعادة الرفع'
+                : 'ملف الصورة مفقود على الخادم',
         );
     }
 

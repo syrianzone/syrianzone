@@ -6,6 +6,7 @@ use App\Models\GuessWhoCategory;
 use App\Models\GuessWhoCharacter;
 use App\Models\GuessWhoGame;
 use App\Events\GuessWhoStateEvent;
+use App\Support\GuessWho\RoomChannel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +18,6 @@ class GuessWhoController extends Controller
     /** Upper bound on a relayed game action payload (ids, counts, flags). */
     private const MAX_ACTION_BYTES = 16384;
 
-    // Render the lobby index with active categories and total characters
     public function index()
     {
         $categories = GuessWhoCategory::where('is_active', true)
@@ -38,7 +38,6 @@ class GuessWhoController extends Controller
         ]);
     }
 
-    // Create a new game room code
     public function createRoom(Request $request)
     {
         $request->validate([
@@ -52,7 +51,6 @@ class GuessWhoController extends Controller
 
         if ($request->filled('category_id') && $request->category_id !== 'random') {
             $categoryId = (int) $request->category_id;
-            // Fetch exactly 24 characters randomly from the chosen category
             $characterIds = GuessWhoCharacter::where('category_id', $categoryId)
                 ->where('is_active', true)
                 ->inRandomOrder()
@@ -83,12 +81,10 @@ class GuessWhoController extends Controller
         return response()->json(['room_code' => $roomCode]);
     }
 
-    // Show a specific game room
     public function showRoom($roomCode)
     {
         $game = GuessWhoGame::where('room_code', $roomCode)->firstOrFail();
 
-        // Load exactly the 24 characters selected for this game
         $characters = GuessWhoCharacter::whereIn('id', $game->character_ids ?? [])
             ->where('is_active', true)
             ->get();
@@ -118,11 +114,6 @@ class GuessWhoController extends Controller
             return $this->jsonError('البيانات غير صالحة.', 400);
         }
 
-        // Retrieve guest session ID from headers or inputs
-        $sessionId = $request->header('X-Guess-Who-Session-ID')
-            ?? $request->input('session_id')
-            ?? 'guest-' . Str::uuid();
-
         // Only guesswho room channels may be authorized through this endpoint.
         // Anything else must fall back to Laravel's standard broadcasting auth
         // (which enforces channel definitions) — signing arbitrary private/user
@@ -136,24 +127,17 @@ class GuessWhoController extends Controller
         if (!$game) {
             return $this->jsonError('الغرفة غير موجودة.', 404);
         }
-        if ($game->player_1_session !== $sessionId && $game->player_2_session !== $sessionId) {
+
+        $sessionId = RoomChannel::verifiedSession($game, RoomChannel::sessionId($request));
+        if ($sessionId === null) {
             return $this->jsonError('غير مصرح لك بالانضمام لهذه الغرفة.', 403);
         }
 
-        // Retrieve authenticated user
-        $user = $request->user();
-
-        // Build the presence channel user details block
         $channelData = json_encode([
             'user_id' => $sessionId,
-            'user_info' => [
-                'id' => $sessionId,
-                'session_id' => $sessionId,
-                'name' => $user ? $user->name : 'لاعب ضيف',
-            ]
+            'user_info' => RoomChannel::member($sessionId, $request->user()),
         ]);
 
-        // Generate HMAC signature using Pusher/Reverb App Secret
         $stringToSign = $socketId . ':' . $channelName . ':' . $channelData;
         $appSecret = env('REVERB_APP_SECRET') ?: env('PUSHER_APP_SECRET');
         $appKey = env('REVERB_APP_KEY') ?: env('PUSHER_APP_KEY');
@@ -170,7 +154,6 @@ class GuessWhoController extends Controller
         ]);
     }
 
-    // Join a game room and claim player slots
     public function joinRoom(Request $request, $roomCode)
     {
         $request->validate([

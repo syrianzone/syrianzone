@@ -1,0 +1,83 @@
+{
+  "default_method": 3,
+  "methods": [
+    {
+      "id": 3,
+      "name_ar": "رابطة العالم الإسلامي",
+      "name_en": "Muslim World League",
+      "detail": "فجر 18° / عشاء 17° — المعتمد في سوريا"
+    },
+    {
+      "id": 5,
+      "name_ar": "الهيئة المصرية للمساحة",
+      "name_en": "Egyptian General Authority",
+      "detail": "فجر 19.5° / عشاء 17.5°"
+    },
+    {
+      "id": 4,
+      "name_ar": "جامعة أم القرى (مكة)",
+      "name_en": "Umm al-Qura, Makkah",
+      "detail": "فجر 18.5° / عشاء 90 دقيقة بعد المغرب"
+    },
+    {
+      "id": 1,
+      "name_ar": "جامعة العلوم الإسلامية (كراتشي)",
+      "name_en": "Karachi",
+      "detail": "فجر 18° / عشاء 18°"
+    },
+    {
+      "id": 2,
+      "name_ar": "الجمعية الإسلامية لأمريكا الشمالية",
+      "name_en": "ISNA",
+      "detail": "فجر 15° / عشاء 15°"
+    },
+    {
+      "id": 8,
+      "name_ar": "الخليج",
+      "name_en": "Gulf Region",
+      "detail": "فجر 19.5° / عشاء 90 دقيقة"
+    },
+    {
+      "id": 9,
+      "name_ar": "الكويت",
+      "name_en": "Kuwait",
+      "detail": "فجر 18° / عشاء 17.5°"
+    },
+    {
+      "id": 10,
+      "name_ar": "قطر",
+      "name_en": "Qatar",
+      "detail": "فجر 18° / عشاء 90 دقيقة"
+    },
+    {
+      "id": 11,
+      "name_ar": "سنغافورة",
+      "name_en": "Singapore",
+      "detail": "فجر 20° / عشاء 18°"
+    },
+    {
+      "id": 12,
+      "name_ar": "فرنسا",
+      "name_en": "UOIF, France",
+      "detail": "فجر 12° / عشاء 12°"
+    },
+    {
+      "id": 13,
+      "name_ar": "تركيا (الديانة)",
+      "name_en": "Diyanet, Turkey",
+      "detail": "فجر 18° / عشاء 17°"
+    },
+    {
+      "id": 0,
+      "name_ar": "جعفري (شيعة)",
+      "name_en": "Shia Ithna-Ashari",
+      "detail": "فجر 16° / عشاء 14°"
+    }
+  ],
+  "unlisted_method_ids": [
+    7,
+    14,
+    15,
+    16
+  ]
+}

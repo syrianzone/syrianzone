@@ -11,6 +11,7 @@
  * the code-split entirely). The modal itself imports the shared pieces from
  * here.
  */
+import { api, API_V1 } from '@/Lib/api';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, router } from '@inertiajs/react';
 import {
@@ -35,177 +36,28 @@ import {
 } from '@/Components/ui/command';
 import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
-import { cn } from '@/lib/utils';
-import { useSiteNavigation } from '@/Lib/siteLinks';
+import { cn } from '@/Lib/utils';
+import { useSiteNavigation, type SiteLink } from '@/Lib/siteLinks';
+import { useIsMac } from '@/Lib/platform';
+import { siteModule } from '@/Lib/siteModules';
+import { isActive } from '@/Lib/routes';
 import { normalizeArabic } from '@/Lib/arabic';
-import { GAMES } from '@/Pages/Games/_lib/games';
-import { TOOLS as MUSLIM_TOOLS } from '@/Pages/Muslim/_lib/tools';
-import { useMuslimNav } from '@/Pages/Muslim/_lib/nav';
-import { crossings, statusOf, syriaMinutes } from '@/Pages/Crossings/_lib/crossings';
-import citiesData from '@/Pages/Transit/_data/cities.json';
+import { useAppShell } from '@/Lib/appShell';
+import { useQuranTarget } from '@/Domain/quran/targetAyah';
+import { SURAH_AYAH_COUNTS, SURAH_NAMES_AR } from '@/Domain/quran/quran';
+import { GAMES, gameEntryHref } from '@/Domain/games/games';
+import { TOOLS as MUSLIM_TOOLS, toolHref } from '@/Domain/muslim/tools';
+import { STATUS_TEXT, crossings, statusOf, syriaMinutes } from '@/Domain/crossings/crossings';
+import { useTransitCities } from '@/Domain/transit/cities';
 
-interface TransitCityItem {
-    id: string;
-    nameAr: string;
-    nameEn: string;
-    status: string;
-    routeCount?: number;
-}
-
-const CITIES = citiesData as TransitCityItem[];
-
-const CITY_NAME_MAP: Record<string, string> = Object.fromEntries(
-    CITIES.map((c) => [c.id, c.nameAr]),
+// All 114 Surahs (1-based index); the names and counts live in the Quran domain.
+const SURAHS: Array<{ number: number; name: string; ayahs: number }> = SURAH_NAMES_AR.slice(1).map(
+    (name, index) => ({
+        number: index + 1,
+        name: `سورة ${name}`,
+        ayahs: SURAH_AYAH_COUNTS[index + 1],
+    }),
 );
-
-// Descriptions & search keywords for SITE_LINKS items (keyed by href)
-const SITE_LINK_DESCRIPTIONS: Record<string, string> = {
-    '/roznama': 'التقويم السوري والهجري والمناسبات ومواقيت الصلاة',
-    '/muslim': 'مواقيت الصلاة، القرآن الكريم، وإذاعة القرآن',
-    '/games': 'ألعاب ورق وذكاء جماعية وفردية: تركس، طرنيب، مين، سوليتير، 2048',
-    '/transit': 'خريطة خطوط النقل العام والسرفيس والباصات في المدن السورية',
-    '/mishwar': 'دليل الأماكن والمطاعم والمقاهي والفنادق في سوريا',
-    '/board': 'لوحة أدوات ومعلومات سورية مخصصة قابلة للترتيب',
-    '/compass': 'اختبار البوصلة السياسية السورية وتحديد توجهاتك',
-    '/tierlist': 'تقييم أداء الوزراء والجهات الحكومية ومشاركة الترتيب',
-    '/priorities': 'استبيان وترتيب أولويات إعادة الإعمار والتنمية في سوريا',
-    '/crossings': 'حالة المعابر البرية والمطارات والمرافئ السورية لحظة بلحظة',
-    'https://food.syrian.zone': 'موسوعة وصفات المطبخ السوري التقليدي الأصيل',
-    'https://answers.syrian.zone': 'منصة الأسئلة والأجوبة المجتمعية حول سوريا',
-    '/syofficial': 'دليل الحسابات والصفحات الرسمية للوزارات والمؤسسات السورية',
-    '/phonebook': 'أرقام الطوارئ والاستعلامات والخدمات العامة في المحافظات',
-    '/sites': 'دليل المواقع والمنصات والمبادرات الرقمية السورية',
-    '/syrian-contributors': 'لوحة المساهمين والمطورين في المشاريع السورية مفتوحة المصدر',
-    '/govapps': 'دليل التطبيقات الحكومية والخدمية الرسمية في سوريا',
-    '/party': 'دليل الأحزاب والتيارات والكيانات السياسية السورية',
-    '/house': 'مرصد المجلس التشريعي وتوزيع المقاعد والأعضاء',
-    '/justice': 'العدالة الانتقالية والتوثيق والمحاسبة',
-    '/syid': 'دليل الهوية البصرية السورية الرسمية، الألوان والخطوط والشعارات',
-    '/atlas': 'أطلس السكان والخرائط الديمغرافية والتقسيمات الإدارية',
-    'https://discord.gg/NqE8849VzA': 'مجتمع المبرمجين والمصممين السوريين على ديسكورد',
-    'https://chromewebstore.google.com/detail/syrian-flag-replacer/dngipobppehfhfggmbdiiiodgcibdeog': 'إضافة متصفح لاستبدال العلم القديم بالعلم السوري',
-    'https://joory.chat': 'مساعد ذكي باللغة العربية',
-    'https://jard.chat': 'منصة جرد',
-    'https://news.jard.chat': 'متابعة آخر أخبار سوريا من المصادر الموثوقة',
-};
-
-// All 114 Surahs (1-based index)
-const SURAHS: Array<{ number: number; name: string; ayahs: number }> = [
-    { number: 1, name: 'سورة الفاتحة', ayahs: 7 },
-    { number: 2, name: 'سورة البقرة', ayahs: 286 },
-    { number: 3, name: 'سورة آل عمران', ayahs: 200 },
-    { number: 4, name: 'سورة النساء', ayahs: 176 },
-    { number: 5, name: 'سورة المائدة', ayahs: 120 },
-    { number: 6, name: 'سورة الأنعام', ayahs: 165 },
-    { number: 7, name: 'سورة الأعراف', ayahs: 206 },
-    { number: 8, name: 'سورة الأنفال', ayahs: 75 },
-    { number: 9, name: 'سورة التوبة', ayahs: 129 },
-    { number: 10, name: 'سورة يونس', ayahs: 109 },
-    { number: 11, name: 'سورة هود', ayahs: 123 },
-    { number: 12, name: 'سورة يوسف', ayahs: 111 },
-    { number: 13, name: 'سورة الرعد', ayahs: 43 },
-    { number: 14, name: 'سورة إبراهيم', ayahs: 52 },
-    { number: 15, name: 'سورة الحجر', ayahs: 99 },
-    { number: 16, name: 'سورة النحل', ayahs: 128 },
-    { number: 17, name: 'سورة الإسراء', ayahs: 111 },
-    { number: 18, name: 'سورة الكهف', ayahs: 110 },
-    { number: 19, name: 'سورة مريم', ayahs: 98 },
-    { number: 20, name: 'سورة طه', ayahs: 135 },
-    { number: 21, name: 'سورة الأنبياء', ayahs: 112 },
-    { number: 22, name: 'سورة الحج', ayahs: 78 },
-    { number: 23, name: 'سورة المؤمنون', ayahs: 118 },
-    { number: 24, name: 'سورة النور', ayahs: 64 },
-    { number: 25, name: 'سورة الفرقان', ayahs: 77 },
-    { number: 26, name: 'سورة الشعراء', ayahs: 227 },
-    { number: 27, name: 'سورة النمل', ayahs: 93 },
-    { number: 28, name: 'سورة القصص', ayahs: 88 },
-    { number: 29, name: 'سورة العنكبوت', ayahs: 69 },
-    { number: 30, name: 'سورة الروم', ayahs: 60 },
-    { number: 31, name: 'سورة لقمان', ayahs: 34 },
-    { number: 32, name: 'سورة السجدة', ayahs: 30 },
-    { number: 33, name: 'سورة الأحزاب', ayahs: 73 },
-    { number: 34, name: 'سورة سبأ', ayahs: 54 },
-    { number: 35, name: 'سورة فاطر', ayahs: 45 },
-    { number: 36, name: 'سورة يس', ayahs: 83 },
-    { number: 37, name: 'سورة الصافات', ayahs: 182 },
-    { number: 38, name: 'سورة ص', ayahs: 88 },
-    { number: 39, name: 'سورة الزمر', ayahs: 75 },
-    { number: 40, name: 'سورة غافر', ayahs: 85 },
-    { number: 41, name: 'سورة فصلت', ayahs: 54 },
-    { number: 42, name: 'سورة الشورى', ayahs: 53 },
-    { number: 43, name: 'سورة الزخرف', ayahs: 89 },
-    { number: 44, name: 'سورة الدخان', ayahs: 59 },
-    { number: 45, name: 'سورة الجاثية', ayahs: 37 },
-    { number: 46, name: 'سورة الأحقاف', ayahs: 35 },
-    { number: 47, name: 'سورة محمد', ayahs: 38 },
-    { number: 48, name: 'سورة الفتح', ayahs: 29 },
-    { number: 49, name: 'سورة الحجرات', ayahs: 18 },
-    { number: 50, name: 'سورة ق', ayahs: 45 },
-    { number: 51, name: 'سورة الذاريات', ayahs: 60 },
-    { number: 52, name: 'سورة الطور', ayahs: 49 },
-    { number: 53, name: 'سورة النجم', ayahs: 62 },
-    { number: 54, name: 'سورة القمر', ayahs: 55 },
-    { number: 55, name: 'سورة الرحمن', ayahs: 78 },
-    { number: 56, name: 'سورة الواقعة', ayahs: 96 },
-    { number: 57, name: 'سورة الحديد', ayahs: 29 },
-    { number: 58, name: 'سورة المجادلة', ayahs: 22 },
-    { number: 59, name: 'سورة الحشر', ayahs: 24 },
-    { number: 60, name: 'سورة الممتحنة', ayahs: 13 },
-    { number: 61, name: 'سورة الصف', ayahs: 14 },
-    { number: 62, name: 'سورة الجمعة', ayahs: 11 },
-    { number: 63, name: 'سورة المنافقون', ayahs: 11 },
-    { number: 64, name: 'سورة التغابن', ayahs: 18 },
-    { number: 65, name: 'سورة الطلاق', ayahs: 12 },
-    { number: 66, name: 'سورة التحريم', ayahs: 12 },
-    { number: 67, name: 'سورة الملك', ayahs: 30 },
-    { number: 68, name: 'سورة القلم', ayahs: 52 },
-    { number: 69, name: 'سورة الحاقة', ayahs: 52 },
-    { number: 70, name: 'سورة المعارج', ayahs: 44 },
-    { number: 71, name: 'سورة نوح', ayahs: 28 },
-    { number: 72, name: 'سورة الجن', ayahs: 28 },
-    { number: 73, name: 'سورة المزمل', ayahs: 20 },
-    { number: 74, name: 'سورة المدثر', ayahs: 56 },
-    { number: 75, name: 'سورة القيامة', ayahs: 40 },
-    { number: 76, name: 'سورة الإنسان', ayahs: 31 },
-    { number: 77, name: 'سورة المرسلات', ayahs: 50 },
-    { number: 78, name: 'سورة النبأ', ayahs: 40 },
-    { number: 79, name: 'سورة النازعات', ayahs: 46 },
-    { number: 80, name: 'سورة عبس', ayahs: 42 },
-    { number: 81, name: 'سورة التكوير', ayahs: 29 },
-    { number: 82, name: 'سورة الانفطار', ayahs: 19 },
-    { number: 83, name: 'سورة المطففين', ayahs: 36 },
-    { number: 84, name: 'سورة الانشقاق', ayahs: 25 },
-    { number: 85, name: 'سورة البروج', ayahs: 22 },
-    { number: 86, name: 'سورة الطارق', ayahs: 17 },
-    { number: 87, name: 'سورة الأعلى', ayahs: 19 },
-    { number: 88, name: 'سورة الغاشية', ayahs: 26 },
-    { number: 89, name: 'سورة الفجر', ayahs: 30 },
-    { number: 90, name: 'سورة البلد', ayahs: 20 },
-    { number: 91, name: 'سورة الشمس', ayahs: 15 },
-    { number: 92, name: 'سورة الليل', ayahs: 21 },
-    { number: 93, name: 'سورة الضحى', ayahs: 11 },
-    { number: 94, name: 'سورة الشرح', ayahs: 8 },
-    { number: 95, name: 'سورة التين', ayahs: 8 },
-    { number: 96, name: 'سورة العلق', ayahs: 19 },
-    { number: 97, name: 'سورة القدر', ayahs: 5 },
-    { number: 98, name: 'سورة البينة', ayahs: 8 },
-    { number: 99, name: 'سورة الزلزلة', ayahs: 8 },
-    { number: 100, name: 'سورة العاديات', ayahs: 11 },
-    { number: 101, name: 'سورة القارعة', ayahs: 11 },
-    { number: 102, name: 'سورة التكاثر', ayahs: 8 },
-    { number: 103, name: 'سورة العصر', ayahs: 3 },
-    { number: 104, name: 'سورة الهمزة', ayahs: 9 },
-    { number: 105, name: 'سورة الفيل', ayahs: 5 },
-    { number: 106, name: 'سورة قريش', ayahs: 4 },
-    { number: 107, name: 'سورة الماعون', ayahs: 7 },
-    { number: 108, name: 'سورة الكوثر', ayahs: 3 },
-    { number: 109, name: 'سورة الكافرون', ayahs: 6 },
-    { number: 110, name: 'سورة النصر', ayahs: 3 },
-    { number: 111, name: 'سورة المسد', ayahs: 5 },
-    { number: 112, name: 'سورة الإخلاص', ayahs: 4 },
-    { number: 113, name: 'سورة الفلق', ayahs: 5 },
-    { number: 114, name: 'سورة الناس', ayahs: 6 },
-];
 
 function matchesSearch(query: string, ...targets: Array<string | undefined | null>): boolean {
     const q = normalizeArabic(query);
@@ -249,6 +101,14 @@ export function useGlobalSearchData(query: string, scope: FilterScope, enabled =
     const [remote, setRemote] = useState<RemoteSearchResults>(EMPTY_REMOTE);
     const [loadingRemote, setLoadingRemote] = useState(false);
     const { allLinks } = useSiteNavigation();
+    // The city group is the API's list, so the badge counts the routes the city
+    // actually has and a city with none offers no dead link.
+    const { data: transitCities } = useTransitCities(enabled && (scope === 'all' || scope === 'transit'));
+    const cities = useMemo(() => transitCities ?? [], [transitCities]);
+    const cityNames = useMemo(
+        () => Object.fromEntries(cities.map((city) => [city.id, city.nameAr])),
+        [cities],
+    );
 
     useEffect(() => {
         const trimmed = query.trim();
@@ -262,12 +122,11 @@ export function useGlobalSearchData(query: string, scope: FilterScope, enabled =
         setLoadingRemote(true);
 
         const timer = setTimeout(() => {
-            fetch(`/api/v1/global-search?q=${encodeURIComponent(trimmed)}`, {
+            api.get<RemoteSearchResults>(`${API_V1}/global-search`, {
+                params: { q: trimmed },
                 signal: controller.signal,
-                headers: { Accept: 'application/json' },
             })
-                .then((res) => (res.ok ? res.json() : EMPTY_REMOTE))
-                .then((data: RemoteSearchResults) => {
+                .then((data) => {
                     setRemote({
                         routes: Array.isArray(data.routes) ? data.routes : [],
                         places: Array.isArray(data.places) ? data.places : [],
@@ -277,7 +136,8 @@ export function useGlobalSearchData(query: string, scope: FilterScope, enabled =
                     });
                 })
                 .catch(() => {
-                    // Offline or aborted: keep client-side results working smoothly
+                    // Type-ahead: a failed keystroke request keeps the local
+                    // matches working instead of raising a toast per keystroke.
                 })
                 .finally(() => {
                     if (!controller.signal.aborted) {
@@ -301,7 +161,7 @@ export function useGlobalSearchData(query: string, scope: FilterScope, enabled =
                 trimmedQuery,
                 item.text,
                 item.subtitle,
-                SITE_LINK_DESCRIPTIONS[item.href],
+                siteModule(item.id)?.description,
                 item.href,
             ),
         );
@@ -309,19 +169,19 @@ export function useGlobalSearchData(query: string, scope: FilterScope, enabled =
 
     const matchedCities = useMemo(() => {
         if (scope !== 'all' && scope !== 'transit') return [];
-        const list = CITIES.filter((c) =>
+        const list = cities.filter((c) =>
             matchesSearch(trimmedQuery, c.nameAr, c.nameEn, c.id, 'ترانزيت سرفيس باص محافظة مدينة'),
         );
         if (!trimmedQuery && scope !== 'transit') {
-            return list.filter((c) => (c.routeCount ?? 0) > 0 || c.status === 'active').slice(0, 6);
+            return list.filter((c) => c.routeCount > 0 || c.status === 'active').slice(0, 6);
         }
         return scope === 'transit' && !trimmedQuery ? list : list.slice(0, 8);
-    }, [trimmedQuery, scope]);
+    }, [trimmedQuery, scope, cities]);
 
     const matchedMuslimTools = useMemo(() => {
         if (scope !== 'all' && scope !== 'muslim') return [];
         return MUSLIM_TOOLS.filter((t) =>
-            matchesSearch(trimmedQuery, t.title, t.subtitle, t.description, 'صلاة قرآن اذاعة قبلة'),
+            matchesSearch(trimmedQuery, t.title, t.slug, 'صلاة قرآن اذاعة قبلة'),
         );
     }, [trimmedQuery, scope]);
 
@@ -337,7 +197,7 @@ export function useGlobalSearchData(query: string, scope: FilterScope, enabled =
     const matchedGames = useMemo(() => {
         if (scope !== 'all' && scope !== 'games') return [];
         return GAMES.filter((g) =>
-            matchesSearch(trimmedQuery, g.title, g.subtitle, g.description, 'لعبة العاب شدة ورق'),
+            matchesSearch(trimmedQuery, g.title, g.slug, 'لعبة العاب شدة ورق'),
         );
     }, [trimmedQuery, scope]);
 
@@ -391,21 +251,19 @@ export function useGlobalSearchData(query: string, scope: FilterScope, enabled =
         showRemoteOfficials,
         showRemoteGovApps,
         totalVisibleResults,
+        cityNames,
     };
 }
 
-export const IS_MAC = typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform || navigator.userAgent || '');
-const SHORTCUT_LABEL = IS_MAC ? '⌘ K' : 'Ctrl K';
-const SHORTCUT_ARIA = `بحث سريع في المنصة (${SHORTCUT_LABEL})`;
-
 export function DesktopSearchTrigger({ className = '' }: { className?: string }) {
-    const setSearchOpen = useMuslimNav((s) => s.setSearchOpen);
+    const setSearchOpen = useAppShell((s) => s.setSearchOpen);
+    const shortcutLabel = useIsMac() ? '⌘ K' : 'Ctrl K';
     return (
         <Button
             type="button"
             variant="outline"
             onClick={() => setSearchOpen(true)}
-            aria-label={SHORTCUT_ARIA}
+            aria-label={`بحث سريع في المنصة (${shortcutLabel})`}
             className={`hidden lg:inline-flex h-9 items-center justify-between gap-3 rounded-xl border-border/80 bg-muted/40 px-3 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors ${className}`}
         >
             <span className="flex items-center gap-2">
@@ -416,7 +274,7 @@ export function DesktopSearchTrigger({ className = '' }: { className?: string })
                 dir="ltr"
                 className="pointer-events-none inline-flex h-5 select-none items-center gap-0.5 rounded-md border border-border bg-background px-1.5 font-mono text-[10px] font-semibold text-muted-foreground shadow-2xs"
             >
-                {SHORTCUT_LABEL}
+                {shortcutLabel}
             </kbd>
         </Button>
     );
@@ -440,7 +298,7 @@ export function SearchResultsContent({
     gridColsClass?: string;
     useCmdkPrimitives?: boolean;
 }) {
-    const setTargetAyah = useMuslimNav((s) => s.setTargetAyah);
+    const setTargetAyah = useQuranTarget((s) => s.setTargetAyah);
 
     const navigateTo = (url: string, external = false) => {
         onClose();
@@ -473,7 +331,52 @@ export function SearchResultsContent({
         showRemoteOfficials,
         showRemoteGovApps,
         totalVisibleResults,
+        cityNames,
     } = data;
+
+    const tileClassName =
+        'group flex h-full select-none flex-col items-center gap-2 rounded-lg px-1 py-2 text-center no-underline outline-none hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring transition-colors';
+
+    /** One site-section tile; the palette wraps it in a cmdk item, the inline mounts in a link. */
+    const siteLinkTile = (link: SiteLink, current: boolean) => {
+        const Icon = link.icon;
+        return (
+            <>
+                {link.isFlag ? (
+                    <img
+                        src="/flag-replacer/1f1f8-1f1fe.svg"
+                        alt=""
+                        className="h-12 w-12 shrink-0 object-contain transition-transform group-hover:scale-110"
+                    />
+                ) : link.image ? (
+                    <img
+                        src={link.image}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        className="h-12 w-12 shrink-0 object-contain transition-transform group-hover:scale-110"
+                    />
+                ) : Icon ? (
+                    <Icon
+                        className={cn(
+                            'h-12 w-12 shrink-0 transition-all group-hover:scale-110',
+                            current ? 'text-primary' : 'text-foreground group-hover:text-primary',
+                        )}
+                    />
+                ) : (
+                    <Globe className="h-12 w-12 shrink-0 text-foreground transition-all group-hover:scale-110 group-hover:text-primary" />
+                )}
+                <span
+                    className={cn(
+                        'line-clamp-2 text-xs font-medium leading-tight transition-colors',
+                        current ? 'text-primary' : 'text-foreground group-hover:text-primary',
+                    )}
+                >
+                    {link.text}
+                </span>
+            </>
+        );
+    };
 
     const GroupWrapper = ({
         heading,
@@ -559,78 +462,54 @@ export function SearchResultsContent({
 
             {/* 1. Site Sections & Tools — Grid matching Home & Mobile Menu */}
             {matchedSiteLinks.length > 0 && (
-                <div className="px-1 py-2">
-                    <p className="mb-2 px-1 text-xs font-bold text-muted-foreground/80">
-                        أقسام وأدوات المنصة
-                    </p>
-                    <ul className={cn('grid gap-x-2 gap-y-4 py-1', gridColsClass)}>
-                        {matchedSiteLinks.map(({ id, href, text, icon: Icon, image, isFlag, external }) => {
-                            const isActive = pathname === href;
-                            const tileClassName =
-                                'group flex h-full select-none flex-col items-center gap-2 rounded-lg px-1 py-2 text-center no-underline outline-none hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring transition-colors';
-                            const body = (
-                                <>
-                                    {isFlag ? (
-                                        <img
-                                            src="/flag-replacer/1f1f8-1f1fe.svg"
-                                            alt=""
-                                            className="h-12 w-12 shrink-0 object-contain transition-transform group-hover:scale-110"
-                                        />
-                                    ) : image ? (
-                                        <img
-                                            src={image}
-                                            alt=""
-                                            loading="lazy"
-                                            decoding="async"
-                                            className="h-12 w-12 shrink-0 object-contain transition-transform group-hover:scale-110"
-                                        />
-                                    ) : Icon ? (
-                                        <Icon
-                                            className={cn(
-                                                'h-12 w-12 shrink-0 transition-all group-hover:scale-110',
-                                                isActive ? 'text-primary' : 'text-foreground group-hover:text-primary',
-                                            )}
-                                        />
-                                    ) : (
-                                        <Globe className="h-12 w-12 shrink-0 text-foreground transition-all group-hover:scale-110 group-hover:text-primary" />
-                                    )}
-                                    <span
-                                        className={cn(
-                                            'line-clamp-2 text-xs font-medium leading-tight transition-colors',
-                                            isActive ? 'text-primary' : 'text-foreground group-hover:text-primary',
-                                        )}
-                                    >
-                                        {text}
-                                    </span>
-                                </>
-                            );
-
-                            return (
-                                <li key={id || href}>
-                                    {external ? (
+                useCmdkPrimitives ? (
+                    <CommandGroup
+                        heading="أقسام وأدوات المنصة"
+                        className="px-1 py-2 [&_[cmdk-group-heading]]:mb-2 [&_[cmdk-group-heading]]:px-1 [&_[cmdk-group-heading]]:font-bold [&_[cmdk-group-items]]:grid [&_[cmdk-group-items]]:grid-cols-3 [&_[cmdk-group-items]]:gap-x-2 [&_[cmdk-group-items]]:gap-y-4 sm:[&_[cmdk-group-items]]:grid-cols-4 md:[&_[cmdk-group-items]]:grid-cols-6"
+                    >
+                        {matchedSiteLinks.map((link) => (
+                            <CommandItem
+                                key={link.id || link.href}
+                                value={`site-${link.id || link.href}-${link.text}`}
+                                onSelect={() => navigateTo(link.href, link.external)}
+                                className={cn(tileClassName, 'data-[selected=true]:text-foreground')}
+                            >
+                                {siteLinkTile(link, isActive(link.href, pathname))}
+                            </CommandItem>
+                        ))}
+                    </CommandGroup>
+                ) : (
+                    <div className="px-1 py-2">
+                        <p className="mb-2 px-1 text-xs font-bold text-muted-foreground/80">
+                            أقسام وأدوات المنصة
+                        </p>
+                        <ul className={cn('grid gap-x-2 gap-y-4 py-1', gridColsClass)}>
+                            {matchedSiteLinks.map((link) => (
+                                <li key={link.id || link.href}>
+                                    {link.external ? (
                                         <a
-                                            href={href}
+                                            href={link.href}
                                             target="_blank"
                                             rel="noreferrer"
                                             onClick={onClose}
                                             className={tileClassName}
                                         >
-                                            {body}
+                                            {siteLinkTile(link, isActive(link.href, pathname))}
                                         </a>
                                     ) : (
                                         <Link
-                                            href={href}
+                                            href={link.href}
                                             onClick={onClose}
                                             className={tileClassName}
                                         >
-                                            {body}
+                                            {siteLinkTile(link, isActive(link.href, pathname))}
                                         </Link>
                                     )}
                                 </li>
-                            );
-                        })}
-                    </ul>
-                </div>
+                            ))}
+                        </ul>
+                    </div>
+                )
             )}
 
             {/* 2. Live Transit Routes from Backend */}
@@ -654,12 +533,12 @@ export function SearchResultsContent({
                                         {route.nameAr}
                                     </span>
                                     <span className="text-xs text-muted-foreground">
-                                        خط نقل عام · {CITY_NAME_MAP[route.cityId] || route.cityId}
+                                        خط نقل عام · {cityNames[route.cityId] || route.cityId}
                                     </span>
                                 </div>
                             </div>
                             <Badge variant="outline" className="text-[10px] shrink-0">
-                                {CITY_NAME_MAP[route.cityId] || route.cityId}
+                                {cityNames[route.cityId] || route.cityId}
                             </Badge>
                         </ItemRow>
                     ))}
@@ -670,7 +549,7 @@ export function SearchResultsContent({
             {matchedCities.length > 0 && (
                 <GroupWrapper heading="مدن ومحافظات ترانزيت">
                     {matchedCities.map((city) => {
-                        const count = city.routeCount ?? 0;
+                        const count = city.routeCount;
                         return (
                             <ItemRow
                                 key={`city-${city.id}`}
@@ -710,9 +589,9 @@ export function SearchResultsContent({
                         const Icon = tool.icon;
                         return (
                             <ItemRow
-                                key={`muslim-${tool.id}`}
-                                value={`muslim-${tool.id}-${tool.title}`}
-                                onSelect={() => navigateTo(tool.href)}
+                                key={`muslim-${tool.slug}`}
+                                value={`muslim-${tool.slug}-${tool.title}`}
+                                onSelect={() => navigateTo(toolHref(tool.slug))}
                                 className="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 cursor-pointer"
                             >
                                 <div className="flex items-center gap-3 min-w-0">
@@ -722,9 +601,6 @@ export function SearchResultsContent({
                                     <div className="min-w-0">
                                         <span className="font-semibold text-sm text-foreground block truncate">
                                             {tool.title}
-                                        </span>
-                                        <span className="text-xs text-muted-foreground block truncate">
-                                            {tool.subtitle}
                                         </span>
                                     </div>
                                 </div>
@@ -771,9 +647,9 @@ export function SearchResultsContent({
                         const Icon = game.icon;
                         return (
                             <ItemRow
-                                key={`game-${game.id}`}
-                                value={`game-${game.id}-${game.title}`}
-                                onSelect={() => navigateTo(game.href, game.external)}
+                                key={`game-${game.slug}`}
+                                value={`game-${game.slug}-${game.title}`}
+                                onSelect={() => navigateTo(gameEntryHref(game), game.external)}
                                 className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 cursor-pointer"
                             >
                                 <div className="flex items-center gap-3 min-w-0">
@@ -783,9 +659,6 @@ export function SearchResultsContent({
                                     <div className="min-w-0">
                                         <span className="font-semibold text-sm text-foreground">
                                             {game.title}
-                                        </span>
-                                        <span className="ms-2 text-xs text-muted-foreground">
-                                            · {game.subtitle}
                                         </span>
                                     </div>
                                 </div>
@@ -800,7 +673,7 @@ export function SearchResultsContent({
             {matchedCrossings.length > 0 && (
                 <GroupWrapper heading="المنافذ والمعابر الحدودية">
                     {matchedCrossings.map((crossing) => {
-                        const isOpen = crossing.liveStatus.status === 'open';
+                        const isOpen = crossing.liveStatus === 'open';
                         return (
                             <ItemRow
                                 key={`crossing-${crossing.n}`}
@@ -829,7 +702,7 @@ export function SearchResultsContent({
                                             : 'border-border text-muted-foreground'
                                     }`}
                                 >
-                                    {crossing.liveStatus.headline}
+                                    {STATUS_TEXT[crossing.liveStatus]}
                                 </Badge>
                             </ItemRow>
                         );
@@ -952,11 +825,10 @@ export function SearchResultsContent({
 }
 
 /**
- * Always-on Search & Navigation Panel for the Mobile Menu Sheet.
- * - Replaces the classic static menu so search, category filter pills, the 3-column sections grid,
- *   and searchable items (cities, surahs, games, crossings, phonebook) are always available immediately.
- * - Uses native DOM buttons/links (`useCmdkPrimitives={false}`) instead of cmdk's `<Command>` wrapper
- *   so clicking the search input never triggers cmdk's `scrollIntoView()` viewport jump.
+ * Search and navigation panel for the mobile menu sheet. Uses native DOM
+ * buttons/links (`useCmdkPrimitives={false}`) instead of cmdk's `<Command>`
+ * wrapper so clicking the search input never triggers cmdk's `scrollIntoView()`
+ * viewport jump.
  */
 export function MobileMenuSearchSection({
     pathname,
@@ -1051,11 +923,9 @@ export function MobileMenuSearchSection({
 }
 
 /**
- * Homepage inline search & links section (PC & Mobile).
- * - Displays a prominent search bar and category filter pills above the homepage grid.
- * - When idle (`query === '' && scope === 'all'`), renders `children` (the classic Internal & External link grids).
- * - When the user types a query or selects a category filter pill, replaces the grids in-place with the
- *   unified search results (`SearchResultsContent` using the homepage's 3..9 column grid).
+ * Homepage inline search & links section. Renders `children` while the query is
+ * empty and the scope is 'all'; otherwise it replaces them with the unified
+ * search results.
  */
 export function HomeInlineSearchSection({
     children,
@@ -1065,6 +935,21 @@ export function HomeInlineSearchSection({
     const [query, setQuery] = useState('');
     const [scope, setScope] = useState<FilterScope>('all');
     const inputRef = useRef<HTMLInputElement | null>(null);
+    const registerInlineSearch = useAppShell((s) => s.registerInlineSearch);
+    const shortcutLabel = useIsMac() ? '⌘ K' : 'Ctrl K';
+
+    // The shell's Ctrl/Cmd+K handler focuses this field instead of opening the
+    // palette while the homepage is mounted. Registering the focus function is
+    // the contract; the shell never looks up an element id.
+    useEffect(() => {
+        registerInlineSearch(() => {
+            const input = inputRef.current;
+            if (!input) return;
+            input.focus();
+            input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+        return () => registerInlineSearch(null);
+    }, [registerInlineSearch]);
 
     const isSearching = query.trim().length > 0 || scope !== 'all';
     const data = useGlobalSearchData(query, scope, isSearching);
@@ -1137,7 +1022,7 @@ export function HomeInlineSearchSection({
                             dir="ltr"
                             className="hidden sm:inline-flex h-6 select-none items-center gap-0.5 rounded-md border border-border bg-muted/60 px-2 font-mono text-[11px] font-semibold text-muted-foreground shrink-0"
                         >
-                            {SHORTCUT_LABEL}
+                            {shortcutLabel}
                         </kbd>
                     )}
                 </div>

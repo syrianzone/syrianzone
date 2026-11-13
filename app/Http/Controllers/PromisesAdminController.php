@@ -12,6 +12,7 @@ use App\Services\Promises\PromiseRules;
 use App\Services\Promises\PromiseSectorService;
 use App\Services\Promises\PromiseSpeakerService;
 use App\Services\Promises\SpeakerDirectory;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -97,7 +98,7 @@ class PromisesAdminController extends Controller
 
         $promise = $this->editor->save(null, $data + ['origin' => 'editor'], $request->user());
 
-        return response()->json(['success' => true, 'promise' => $this->presenter->adminDetail($promise)], 201);
+        return $this->promiseResponse($promise, 201);
     }
 
     /**
@@ -118,7 +119,7 @@ class PromisesAdminController extends Controller
 
         $promise = $this->editor->saveIfUnchanged($promise, $version, $data, $request->user(), $this->mayRule($request));
 
-        return response()->json(['success' => true, 'promise' => $this->presenter->adminDetail($promise)]);
+        return $this->promiseResponse($promise);
     }
 
     public function destroy(string $id): JsonResponse
@@ -136,14 +137,14 @@ class PromisesAdminController extends Controller
 
         $promise = $this->editor->changeStatus($promise, $data['status'], $data, $request->user());
 
-        return response()->json(['success' => true, 'promise' => $this->presenter->adminDetail($promise)]);
+        return $this->promiseResponse($promise);
     }
 
     public function undoStatusChange(string $id, int $updateId): JsonResponse
     {
         $promise = $this->editor->undoStatusChange($this->findPromise($id), $updateId);
 
-        return response()->json(['success' => true, 'promise' => $this->presenter->adminDetail($promise)]);
+        return $this->promiseResponse($promise);
     }
 
     public function reschedule(Request $request, string $promise): JsonResponse
@@ -154,7 +155,7 @@ class PromisesAdminController extends Controller
 
         $updated = $this->editor->rescheduleDeadline($target, $data, $request->user());
 
-        return response()->json(['success' => true, 'promise' => $this->presenter->adminDetail($updated)]);
+        return $this->promiseResponse($updated);
     }
 
     public function addUpdate(Request $request, string $id): JsonResponse
@@ -165,7 +166,7 @@ class PromisesAdminController extends Controller
 
         $this->editor->addUpdate($promise, $data, $request->user());
 
-        return response()->json(['success' => true, 'promise' => $this->presenter->adminDetail($promise->fresh())]);
+        return $this->promiseResponse($promise->fresh());
     }
 
     public function removeUpdate(string $id, int $updateId): JsonResponse
@@ -173,21 +174,21 @@ class PromisesAdminController extends Controller
         $promise = $this->findPromise($id);
         $this->editor->removeUpdate($promise, $updateId);
 
-        return response()->json(['success' => true, 'promise' => $this->presenter->adminDetail($promise->fresh())]);
+        return $this->promiseResponse($promise->fresh());
     }
 
     public function publish(Request $request, string $id): JsonResponse
     {
         $promise = $this->moderation->publish($this->findPromise($id), $request->user(), $this->mayRule($request));
 
-        return response()->json(['success' => true, 'promise' => $this->presenter->adminDetail($promise)]);
+        return $this->promiseResponse($promise);
     }
 
     public function unpublish(Request $request, string $id): JsonResponse
     {
         $promise = $this->moderation->unpublish($this->findPromise($id), $request->user());
 
-        return response()->json(['success' => true, 'promise' => $this->presenter->adminDetail($promise)]);
+        return $this->promiseResponse($promise);
     }
 
     public function reject(Request $request, string $id): JsonResponse
@@ -195,7 +196,7 @@ class PromisesAdminController extends Controller
         $data = $request->validate($this->rules->reason(), $this->rules->messages());
         $promise = $this->moderation->reject($this->findPromise($id), $request->user(), $data['reason'] ?? null);
 
-        return response()->json(['success' => true, 'promise' => $this->presenter->adminDetail($promise)]);
+        return $this->promiseResponse($promise);
     }
 
     /**
@@ -346,6 +347,15 @@ class PromisesAdminController extends Controller
 
     // ── Helpers ────────────────────────────────────────────────────────
 
+    /**
+     * One shape for every admin write that returns a promise, so the admin UI
+     * reads `{ success, promise }` from one place.
+     */
+    private function promiseResponse(Promise $promise, int $status = 200): JsonResponse
+    {
+        return response()->json(['success' => true, 'promise' => $this->presenter->adminDetail($promise)], $status);
+    }
+
     private function findPromise(string $id): Promise
     {
         return $this->editor->find($id);
@@ -354,6 +364,6 @@ class PromisesAdminController extends Controller
     /** Whether this staff member may rule on promises (verdicts, postponement). */
     private function mayRule(Request $request): bool
     {
-        return (bool) $request->user()?->hasPermission('promises.rule');
+        return (bool) $request->user()?->hasPermission(PermissionCatalogue::PROMISES_RULE);
     }
 }

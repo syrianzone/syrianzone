@@ -85,19 +85,64 @@ test('record previews show the record name without its section suffix', function
         ->and($meta['og_title'])->toBe('تقييم المحافظين');
 });
 
-test('the head declares the card type and size, and the site account', function () {
-    $html = $this->get('/promises')->assertOk()->getContent();
+/**
+ * The tags a link scraper reads, parsed into values keyed by property/name/rel.
+ *
+ * A crawler depends on `property`/`name`/`rel` paired with their value, not on
+ * attribute order or on the marker attributes the framework adds, so the head is
+ * read as a map rather than matched against tag strings.
+ *
+ * @return array{meta: array<string, string>, links: array<string, string>, title: string}
+ */
+function staticCardHead(string $html): array
+{
+    $attributesOf = function (string $source): array {
+        preg_match_all('/([a-zA-Z:-]+)="([^"]*)"/', $source, $pairs, PREG_SET_ORDER);
 
-    expect($html)->toContain('<meta property="og:image:type" content="image/png" inertia>')
-        ->and($html)->toContain('<meta property="og:image:width" content="1200" inertia>')
-        ->and($html)->toContain('<meta property="og:image:height" content="630" inertia>')
-        ->and($html)->toContain('<meta name="twitter:site" content="@SyrianZone" inertia>')
-        ->and($html)->toContain('<meta property="og:title" content="عداد الوعود" inertia>')
-        ->and($html)->toContain('<title inertia>عداد الوعود | Syrian Zone</title>');
+        return array_column($pairs, 2, 1);
+    };
+
+    $meta = [];
+    preg_match_all('/<meta\b([^>]*)>/i', $html, $metaTags);
+    foreach ($metaTags[1] as $source) {
+        $tag = $attributesOf($source);
+        $key = $tag['property'] ?? $tag['name'] ?? null;
+        if ($key !== null) {
+            $meta[$key] = $tag['content'] ?? '';
+        }
+    }
+
+    $links = [];
+    preg_match_all('/<link\b([^>]*)>/i', $html, $linkTags);
+    foreach ($linkTags[1] as $source) {
+        $tag = $attributesOf($source);
+        if (isset($tag['rel'])) {
+            $links[$tag['rel']] = $tag['href'] ?? '';
+        }
+    }
+
+    preg_match('/<title\b[^>]*>(.*?)<\/title>/is', $html, $title);
+
+    return [
+        'meta' => $meta,
+        'links' => $links,
+        'title' => html_entity_decode($title[1] ?? '', ENT_QUOTES | ENT_HTML5),
+    ];
+}
+
+test('the head declares the card type and size, and the site account', function () {
+    $head = staticCardHead($this->get('/promises')->assertOk()->getContent());
+
+    expect($head['meta']['og:image:type'])->toBe('image/png')
+        ->and($head['meta']['og:image:width'])->toBe('1200')
+        ->and($head['meta']['og:image:height'])->toBe('630')
+        ->and($head['meta']['twitter:site'])->toBe('@SyrianZone')
+        ->and($head['meta']['og:title'])->toBe('عداد الوعود')
+        ->and($head['title'])->toBe('عداد الوعود | Syrian Zone');
 });
 
 test('a missing page previews with its own title too', function () {
-    $html = $this->get('/no-such-page')->assertNotFound()->getContent();
+    $head = staticCardHead($this->get('/no-such-page')->assertNotFound()->getContent());
 
-    expect($html)->toContain('<meta property="og:title" content="الصفحة غير موجودة (404)" inertia>');
+    expect($head['meta']['og:title'])->toBe('الصفحة غير موجودة (404)');
 });

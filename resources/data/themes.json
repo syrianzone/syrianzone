@@ -1,0 +1,185 @@
+{
+  "theme": {
+    "key": "sz-theme",
+    "system": "system"
+  },
+  "font": {
+    "key": "sz-font",
+    "defaults": {
+      "syrian": "system",
+      "other": "ibm-plex"
+    }
+  },
+  "legacySettingsKey": "startpage-settings",
+  "themes": [
+    {
+      "id": "system",
+      "nameAr": "تلقائي (حسب الجهاز)",
+      "nameEn": "System",
+      "emoji": "🌓",
+      "icon": "monitor",
+      "isDark": false,
+      "bg": "linear-gradient(90deg, #ffffff 50%, #1a1f22 50%)",
+      "primary": "#556a4e",
+      "group": "system"
+    },
+    {
+      "id": "light",
+      "nameAr": "فاتح",
+      "nameEn": "Light",
+      "emoji": "☀️",
+      "icon": "sun",
+      "isDark": false,
+      "bg": "#ffffff",
+      "primary": "#556a4e",
+      "group": "standard",
+      "priorities": {
+        "gradient": "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
+        "accentBg": "bg-slate-200 border-slate-300",
+        "accentText": "text-slate-700",
+        "badgeBg": "bg-slate-100 border-slate-200 text-slate-800",
+        "headerSubtitle": "#475569",
+        "urlText": "#5a714a"
+      }
+    },
+    {
+      "id": "dark",
+      "nameAr": "داكن",
+      "nameEn": "Dark",
+      "emoji": "🌑",
+      "icon": "moon",
+      "isDark": true,
+      "bg": "#1a1f22",
+      "primary": "#7fae6f",
+      "group": "standard",
+      "priorities": {
+        "gradient": "linear-gradient(135deg, #0b0f19 0%, #064e3b 50%, #022c22 100%)",
+        "accentBg": "bg-emerald-500/20 border-emerald-500/30",
+        "accentText": "text-emerald-400",
+        "badgeBg": "bg-emerald-500/10 border-emerald-500/20 text-emerald-300",
+        "headerSubtitle": "#a7f3d0",
+        "urlText": "#34d399"
+      }
+    },
+    {
+      "id": "dark-blue",
+      "nameAr": "داكن أزرق",
+      "nameEn": "Dark Blue",
+      "shortNameAr": "أزرق",
+      "emoji": "🔵",
+      "icon": "palette",
+      "isDark": true,
+      "bg": "#0f141f",
+      "primary": "#5593f7",
+      "group": "standard",
+      "priorities": {
+        "gradient": "linear-gradient(135deg, #090d16 0%, #0f2b5c 50%, #061124 100%)",
+        "accentBg": "bg-blue-500/20 border-blue-500/30",
+        "accentText": "text-blue-400",
+        "badgeBg": "bg-blue-500/10 border-blue-500/20 text-blue-300",
+        "headerSubtitle": "#93c5fd",
+        "urlText": "#60a5fa"
+      }
+    },
+    {
+      "id": "dark-purple",
+      "nameAr": "داكن بنفسجي",
+      "nameEn": "Dark Purple",
+      "shortNameAr": "بنفسجي",
+      "emoji": "🟣",
+      "icon": "palette",
+      "isDark": true,
+      "bg": "#140e1b",
+      "primary": "#cc70eb",
+      "group": "standard",
+      "priorities": {
+        "gradient": "linear-gradient(135deg, #0a0b14 0%, #3b1154 50%, #180526 100%)",
+        "accentBg": "bg-purple-500/20 border-purple-500/30",
+        "accentText": "text-purple-400",
+        "badgeBg": "bg-purple-500/10 border-purple-500/20 text-purple-300",
+        "headerSubtitle": "#e9d5ff",
+        "urlText": "#d8b4fe"
+      }
+    },
+    {
+      "id": "dark-green",
+      "nameAr": "داكن أخضر",
+      "nameEn": "Dark Green",
+      "shortNameAr": "أخضر",
+      "emoji": "🟢",
+      "icon": "palette",
+      "isDark": true,
+      "bg": "#0e1a11",
+      "primary": "#4abf61",
+      "group": "standard",
+      "priorities": {
+        "gradient": "linear-gradient(135deg, #080d0a 0%, #144d21 50%, #051a0b 100%)",
+        "accentBg": "bg-green-500/20 border-green-500/30",
+        "accentText": "text-green-400",
+        "badgeBg": "bg-green-500/10 border-green-500/20 text-green-300",
+        "headerSubtitle": "#86efac",
+        "urlText": "#86efac"
+      }
+    },
+    {
+      "id": "high-contrast",
+      "nameAr": "تباين عالي",
+      "nameEn": "High Contrast",
+      "shortNameAr": "تباين",
+      "emoji": "⚡",
+      "icon": "palette",
+      "isDark": true,
+      "bg": "#000000",
+      "primary": "#00ff00",
+      "group": "standard",
+      "priorities": {
+        "gradient": "linear-gradient(135deg, #000000 0%, #111111 100%)",
+        "accentBg": "bg-green-500/20 border-green-500/30",
+        "accentText": "text-green-400",
+        "badgeBg": "bg-green-500/10 border-green-500/20 text-green-300",
+        "headerSubtitle": "#00ff00",
+        "urlText": "#00ff00"
+      }
+    },
+    {
+      "id": "damascus-rose",
+      "nameAr": "الورد الدمشقي",
+      "nameEn": "Damascus Rose",
+      "shortNameAr": "دمشقي",
+      "emoji": "🌹",
+      "icon": "palette",
+      "isDark": true,
+      "bg": "#1a0f12",
+      "primary": "#e05c88",
+      "group": "heritage",
+      "priorities": {
+        "gradient": "linear-gradient(135deg, #0d0a0b 0%, #5c142e 50%, #24050f 100%)",
+        "accentBg": "bg-pink-500/20 border-pink-500/30",
+        "accentText": "text-pink-400",
+        "badgeBg": "bg-pink-500/10 border-pink-500/20 text-pink-300",
+        "headerSubtitle": "#fbcfe8",
+        "urlText": "#f472b6"
+      }
+    },
+    {
+      "id": "jasmine",
+      "nameAr": "ياسمين",
+      "nameEn": "Jasmine",
+      "shortNameAr": "ياسمين",
+      "emoji": "🌸",
+      "icon": "palette",
+      "isDark": false,
+      "bg": "#fcfaf3",
+      "primary": "#9e5e0a",
+      "group": "heritage",
+      "priorities": {
+        "gradient": "linear-gradient(135deg, #0d0c0a 0%, #523105 50%, #241402 100%)",
+        "accentBg": "bg-amber-500/20 border-amber-500/30",
+        "accentText": "text-amber-400",
+        "badgeBg": "bg-amber-500/10 border-amber-500/20 text-amber-300",
+        "headerSubtitle": "#fde68a",
+        "urlText": "#fbbf24"
+      }
+    }
+  ]
+}

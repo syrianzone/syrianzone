@@ -43,7 +43,7 @@ test('central exception handler renders DomainActionException to standard JSON m
         ->assertJsonPath('message', 'العنصر غير موجود');
 });
 
-test('poll submit under-minimum selection returns both standard message and legacy error key', function () {
+test('poll submit under-minimum selection is an Arabic validation refusal, not a legacy envelope', function () {
     $poll = Poll::create([
         'id' => '00000000-0000-0000-0000-000000000099',
         'title' => 'Error Contract Poll',
@@ -57,9 +57,11 @@ test('poll submit under-minimum selection returns both standard message and lega
         'tiers' => ['S' => ['only-one']],
         'deviceId' => 'device-standard-test-1234',
     ])
-        ->assertStatus(400)
-        ->assertJsonPath('message', 'Minimum selection is 3')
-        ->assertJsonPath('error', 'Minimum selection is 3');
+        ->assertStatus(422)
+        ->assertJsonPath('message', 'يجب اختيار 3 مرشحين على الأقل.')
+        // The rule now lives in VotingService and refuses through the standard
+        // validation envelope, so there is no second `error` copy of the text.
+        ->assertJsonMissingPath('error');
 });
 
 test('voting rate limiter returns both standard message and legacy error key on 429', function () {
@@ -85,8 +87,12 @@ test('voting rate limiter returns both standard message and legacy error key on 
         'deviceId' => 'device-rate-limit-1234',
     ])
         ->assertStatus(429)
-        ->assertJsonPath('message', 'Too many votes. Please slow down.')
-        ->assertJsonPath('error', 'Too many votes. Please slow down.');
+        ->assertJsonPath('message', 'لقد وصلت إلى حد التصويت المسموح. يرجى المحاولة بعد قليل.')
+        ->assertJsonPath('error', 'لقد وصلت إلى حد التصويت المسموح. يرجى المحاولة بعد قليل.')
+        // The framework attaches the rate-limit headers only if the response
+        // callback forwards them; the client reads Retry-After to say how long
+        // to wait.
+        ->assertHeader('Retry-After');
 });
 
 test('unauthenticated user settings and radio usage endpoints include standard message and legacy error', function () {
@@ -106,7 +112,7 @@ test('unauthenticated user settings and radio usage endpoints include standard m
         ->assertJsonPath('error', 'Unauthenticated');
 });
 
-test('user settings size cap errors include both standard message and legacy error', function () {
+test('user settings size caps are Arabic validation refusals, not the legacy envelope', function () {
     $user = User::factory()->create();
 
     $links = [];
@@ -125,8 +131,12 @@ test('user settings size cap errors include both standard message and legacy err
             ],
         ])
         ->assertStatus(422)
-        ->assertJsonPath('message', 'Too many links.')
-        ->assertJsonPath('error', 'Too many links.');
+        ->assertJsonPath('message', 'روابط الشاشة الرئيسية كبيرة جداً. احذف بعض الروابط ثم أعد المحاولة.')
+        ->assertJsonValidationErrors('settings.customLinks')
+        // Both caps are validation rules now, so the whole payload answers in
+        // the standard envelope and there is no second `error` copy of an
+        // English sentence for the client to throw away.
+        ->assertJsonMissingPath('error');
 });
 
 test('guess who endpoints include both standard message and legacy error on refusals', function () {
@@ -147,6 +157,6 @@ test('guess who endpoints include both standard message and legacy error on refu
 test('app icon endpoint includes standard message while preserving icon null on 400', function () {
     $this->getJson('/api/app-icon?store=invalid')
         ->assertStatus(400)
-        ->assertJsonPath('message', 'Unsupported store.')
+        ->assertJsonPath('message', 'المتجر غير مدعوم.')
         ->assertJsonPath('icon', null);
 });

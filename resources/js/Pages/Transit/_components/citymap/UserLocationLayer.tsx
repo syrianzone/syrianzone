@@ -1,80 +1,87 @@
-'use client'
-
-import { useEffect } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import maplibregl from 'maplibre-gl'
-import { useMap, useStyleVersion } from '@/Components/map/MapContext'
+import type { FeatureCollection } from 'geojson'
+import { useMap } from '@/Components/map/MapContext'
+import { useMapLayer } from '@/Components/map/useMapLayer'
+import { useMapColors } from '@/Components/map/mapColors'
+import { TRANSIT_MAP_COLORS } from '../../_lib/mapColors'
 import { useUserLocation } from './MapCanvas'
+
+interface Coords {
+  lng: number
+  lat: number
+}
+
+function locationCollection(location: Coords | null): FeatureCollection {
+  return {
+    type: 'FeatureCollection',
+    features: location
+      ? [
+          {
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [location.lng, location.lat] },
+            properties: {},
+          },
+        ]
+      : [],
+  }
+}
 
 export default function UserLocationLayer() {
   const map = useMap()
-  const styleVersion = useStyleVersion()
+  const colors = useMapColors(TRANSIT_MAP_COLORS)
   const location = useUserLocation()
+  const locationRef = useRef(location)
+  locationRef.current = location
+
+  // A style swap re-creates the source, so the current fix is pushed again as
+  // part of the attachment instead of being lost with the old one.
+  const attach = useCallback((target: maplibregl.Map) => {
+    target.addSource('user-location', {
+      type: 'geojson',
+      data: locationCollection(locationRef.current),
+    })
+
+    target.addLayer({
+      id: 'user-location-radius',
+      type: 'circle',
+      source: 'user-location',
+      paint: {
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 10, 18, 20],
+        'circle-color': colors.userLocationHalo,
+        'circle-stroke-width': 0,
+      },
+    })
+
+    target.addLayer({
+      id: 'user-location-dot',
+      type: 'circle',
+      source: 'user-location',
+      paint: {
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 4, 18, 8],
+        'circle-color': colors.userLocation,
+        'circle-stroke-width': 2,
+        'circle-stroke-color': colors.markerStroke,
+      },
+    })
+
+    return () => {
+      try {
+        if (target.getLayer('user-location-dot')) target.removeLayer('user-location-dot')
+        if (target.getLayer('user-location-radius')) target.removeLayer('user-location-radius')
+        if (target.getSource('user-location')) target.removeSource('user-location')
+      } catch { /* map may have been removed already */ }
+    }
+  }, [colors])
+
+  useMapLayer(attach)
 
   useEffect(() => {
     if (!map) return
 
-    if (!map.getSource('user-location')) {
-      map.addSource('user-location', {
-        type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] },
-      })
-
-      map.addLayer({
-        id: 'user-location-radius',
-        type: 'circle',
-        source: 'user-location',
-        paint: {
-          'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 10, 18, 20],
-          'circle-color': 'rgba(74, 143, 168, 0.15)',
-          'circle-stroke-width': 0,
-        },
-      })
-
-      map.addLayer({
-        id: 'user-location-dot',
-        type: 'circle',
-        source: 'user-location',
-        paint: {
-          'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 4, 18, 8],
-          'circle-color': '#4a8fa8',
-          'circle-stroke-width': 2,
-          'circle-stroke-color': '#ffffff',
-        },
-      })
-    }
-
-    return () => {
-      try {
-        if (map.getLayer('user-location-dot')) map.removeLayer('user-location-dot')
-        if (map.getLayer('user-location-radius')) map.removeLayer('user-location-radius')
-        if (map.getSource('user-location')) map.removeSource('user-location')
-      } catch { /* map may have been removed already */ }
-    }
-    // styleVersion: re-add layers after a basemap style swap (setStyle wipes them)
-  }, [map, styleVersion])
-
-  useEffect(() => {
-    if (!map || !location) return
-
     const source = map.getSource('user-location') as maplibregl.GeoJSONSource | undefined
-    if (source) {
-      source.setData({
-        type: 'FeatureCollection',
-        features: [
-          {
-            type: 'Feature',
-            geometry: {
-              type: 'Point',
-              coordinates: [location.lng, location.lat],
-            },
-            properties: {},
-          },
-        ],
-      })
-    }
-    // styleVersion: the setup effect above recreates an EMPTY source after a
-    // basemap style swap, so the current position has to be pushed again.
-  }, [map, location, styleVersion])
+    source?.setData(locationCollection(location))
+  }, [map, location])
 
   return null
 }

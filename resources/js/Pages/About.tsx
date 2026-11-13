@@ -6,6 +6,7 @@ import MainLayout from '@/Layouts/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/card';
 import { Separator } from '@/Components/ui/separator';
 import { Button } from '@/Components/ui/button';
+import { MEDIA_BASE } from '@/Domain/govapps/media';
 
 interface Contributor {
     login: string;
@@ -20,7 +21,6 @@ export default function About({ contributors = [] }: { contributors?: Contributo
             
 
             <div className="container mx-auto px-4 py-12 max-w-4xl min-h-screen text-foreground">
-                {/* Page Header */}
                 <div className="text-center mb-10 space-y-4">
                     <div className="inline-flex p-3 bg-primary/10 rounded-full text-primary mb-2">
                         <Info className="w-10 h-10" />
@@ -32,7 +32,6 @@ export default function About({ contributors = [] }: { contributors?: Contributo
                 </div>
 
                 <div className="space-y-6" dir="rtl">
-                        {/* Overview Card */}
                         <Card className="border-border bg-card/50 backdrop-blur-sm">
                             <CardHeader>
                                 <CardTitle className="text-xl font-bold flex items-center gap-2">
@@ -60,7 +59,6 @@ export default function About({ contributors = [] }: { contributors?: Contributo
                             </CardContent>
                         </Card>
 
-                        {/* Founders Card */}
                         <Card className="border-border bg-card/50 backdrop-blur-sm">
                             <CardHeader>
                                 <CardTitle className="text-xl font-bold flex items-center gap-2">
@@ -138,7 +136,6 @@ export default function About({ contributors = [] }: { contributors?: Contributo
                             </CardContent>
                         </Card>
 
-                        {/* Contributors & Credits Card */}
                         <Card className="border-border bg-card/50 backdrop-blur-sm">
                             <CardHeader>
                                 <CardTitle className="text-xl font-bold flex items-center gap-2">
@@ -203,7 +200,6 @@ export default function About({ contributors = [] }: { contributors?: Contributo
                             </CardContent>
                         </Card>
 
-                        {/* GitHub Contributors (auto-fetched, bots excluded) */}
                         {contributors.length > 0 && (
                             <Card className="border-border bg-card/50 backdrop-blur-sm">
                                 <CardHeader>
@@ -240,7 +236,6 @@ export default function About({ contributors = [] }: { contributors?: Contributo
                             </Card>
                         )}
 
-                        {/* Open Source & License Card */}
                         <Card className="border-border bg-card/50 backdrop-blur-sm">
                             <CardHeader>
                                 <CardTitle className="text-xl font-bold flex items-center gap-2">
@@ -260,7 +255,7 @@ export default function About({ contributors = [] }: { contributors?: Contributo
                                         </a>
                                     </Button>
                                     <Button variant="outline" asChild size="sm" className="gap-2">
-                                        <a href="https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/downloads/brandkit-y5sZMu.zip" target="_blank" rel="noreferrer">
+                                        <a href={`${MEDIA_BASE}/downloads/brandkit-y5sZMu.zip`} target="_blank" rel="noreferrer">
                                             <Download className="w-4 h-4" />
                                             تحميل الهوية البصرية (Brand Kit)
                                         </a>
@@ -269,7 +264,6 @@ export default function About({ contributors = [] }: { contributors?: Contributo
                             </CardContent>
                         </Card>
 
-                        {/* Resource Attributions */}
                         <Card className="border-border bg-card/50 backdrop-blur-sm">
                             <CardHeader>
                                 <CardTitle className="text-xl font-bold flex items-center gap-2">

@@ -10,35 +10,6 @@ use App\Services\Promises\SpeakerDirectory;
 use Carbon\CarbonImmutable;
 use Inertia\Testing\AssertableInertia as Assert;
 
-/*
-|--------------------------------------------------------------------------
-| Promises tracker (عداد الوعود): admin, review queue and import
-|--------------------------------------------------------------------------
-*/
-
-function promisePayload(array $overrides = []): array
-{
-    $speaker = PromiseSpeaker::factory()->create();
-
-    return array_merge([
-        'speaker_ref' => 'speaker:'.$speaker->id,
-        'title' => 'إعادة تأهيل المحطة',
-        'quote' => 'سنعيد تأهيل المحطة خلال ستة أشهر',
-        'statement_date' => '2025-07-01',
-        'statement_venue' => 'tv_interview',
-        'deadline_wording' => 'خلال ستة أشهر',
-        'deadline_date' => '2026-01-01',
-        'sector_id' => 'electricity',
-        'is_national' => false,
-        'governorates' => ['aleppo', 'homs'],
-        'tags' => ['#الكهرباء', 'محطات'],
-        'sources' => [
-            ['url' => 'https://example.com/a', 'type' => 'tv_interview', 'published_date' => '2025-07-01'],
-            ['url' => 'https://example.com/b', 'type' => 'news_article', 'published_date' => '2025-07-03'],
-        ],
-    ], $overrides);
-}
-
 test('guests and accounts without the promises module are kept out', function () {
     $promise = Promise::factory()->create();
     $outsider = moduleStaff('places');
@@ -241,7 +212,7 @@ test('a person already in the tier list becomes one linked speaker however often
 });
 
 test('free-text names match directory entries despite titles, patronymics and cross-directory overlap', function () {
-    $poll = \App\Models\Poll::factory()->create(['slug' => \App\Models\Poll::CORE_POLL_SLUG, 'is_active' => true]);
+    $poll = \App\Models\Poll::factory()->create(['slug' => \App\Models\Poll::coreSlug(), 'is_active' => true]);
     $candidate = Candidate::factory()->create(['poll_id' => $poll->id, 'name' => 'د. عبدالقادر الحصرية', 'status' => 'active']);
     $ministerCand = Candidate::factory()->create(['poll_id' => $poll->id, 'name' => 'محمد تركو', 'title' => 'وزير التربية', 'status' => 'active']);
     $category = \App\Models\OfficialCategory::create(['id' => 'ministers', 'label_ar' => 'الوزراء', 'label_en' => 'Ministers', 'is_active' => true]);

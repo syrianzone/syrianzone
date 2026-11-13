@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Concerns;
 
 use App\Models\User;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Http\Request;
 
 trait ChecksTransitScope
@@ -13,7 +14,7 @@ trait ChecksTransitScope
      * still enforced by the transit_admin middleware; this adds the
      * governorate dimension on top.
      *
-     * @param array<int, string> $permissions
+     * @param  array<int, string>  $permissions
      */
     protected function ensureTransitCityAccess(Request $request, ?string $cityId, array $permissions): void
     {
@@ -28,8 +29,8 @@ trait ChecksTransitScope
      * Same as ensureTransitCityAccess but for every city that must be in
      * scope (e.g. moving a route requires access to both source and target).
      *
-     * @param array<int, string|null> $cityIds
-     * @param array<int, string> $permissions
+     * @param  array<int, string|null>  $cityIds
+     * @param  array<int, string>  $permissions
      */
     protected function ensureTransitCitiesAccess(Request $request, array $cityIds, array $permissions): void
     {
@@ -64,13 +65,7 @@ trait ChecksTransitScope
     {
         return $user instanceof User
             && $user->isTransitScopeRestricted()
-            && $user->hasAnyPermission([
-                'transit.review_drafts',
-                'transit.approve',
-                'transit.reject',
-                'transit.edit_routes',
-                'transit.delete_routes',
-            ]);
+            && $user->hasAnyPermission(PermissionCatalogue::forModule('transit'));
     }
 
     /**
@@ -81,18 +76,26 @@ trait ChecksTransitScope
      */
     protected function ensureStudioTransitCityAccess(Request $request, ?string $cityId): void
     {
-        $user = $request->user();
-
-        if (! $this->isScopedTransitStaff($user)) {
+        if ($this->canActInTransitCity($request->user(), $cityId)) {
             return;
+        }
+
+        abort(403, 'لا تملك صلاحية العمل على هذه المحافظة.');
+    }
+
+    /**
+     * The boolean form of the studio rule above, for callers that decide
+     * between branches instead of aborting (the studio's draft editability).
+     * Unscoped users and users without transit capabilities are never limited.
+     */
+    protected function canActInTransitCity(?User $user, ?string $cityId): bool
+    {
+        if (! $user instanceof User || ! $this->isScopedTransitStaff($user)) {
+            return true;
         }
 
         $allowed = $user->allowedTransitCities();
 
-        if ($allowed !== null && $cityId !== null && in_array($cityId, $allowed, true)) {
-            return;
-        }
-
-        abort(403, 'Unauthorized for this governorate.');
+        return $allowed !== null && $cityId !== null && in_array($cityId, $allowed, true);
     }
 }

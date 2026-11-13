@@ -4,7 +4,9 @@ namespace App\Mcp\Tools\Transit;
 
 use App\Services\Transit\TransitAdminService;
 use App\Services\Transit\TransitPresenter;
+use App\Services\Transit\TransitRules;
 use App\Support\Agents\AgentContext;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -45,7 +47,7 @@ final class RouteFields
 #[IsIdempotent]
 class UpdateTransitRouteTool extends TransitTool
 {
-    protected array $permissions = ['transit.edit_routes'];
+    protected array $permissions = [PermissionCatalogue::TRANSIT_EDIT_ROUTES];
 
     public function schema(JsonSchema $schema): array
     {
@@ -62,7 +64,8 @@ class UpdateTransitRouteTool extends TransitTool
 
             'color_index' => $schema->integer()
                 ->description('New colour index, matching the palette used on the map.')
-                ->min(0),
+                ->min(0)
+                ->max(TransitRules::colorIndexMax()),
 
             'price_new' => $schema->integer()
                 ->description('Current fare. Pass null to clear it.'),
@@ -78,7 +81,7 @@ class UpdateTransitRouteTool extends TransitTool
             'route_id' => 'required|string|max:191',
             'name_ar' => 'nullable|string|max:255',
             'name_en' => 'nullable|string|max:255',
-            'color_index' => 'nullable|integer|min:0',
+            'color_index' => TransitRules::colorIndex(),
             'price_new' => 'nullable|integer',
             'price_old' => 'nullable|integer',
         ]);
@@ -87,7 +90,7 @@ class UpdateTransitRouteTool extends TransitTool
             $service = app(TransitAdminService::class);
             $route = $service->findRoute($validated['route_id']);
 
-            $this->guardCity($context, 'transit.edit_routes', $route->city_id);
+            $this->guardCity($context, PermissionCatalogue::TRANSIT_EDIT_ROUTES, $route->city_id);
 
             // $request->has() semantics: an explicit null is an instruction to
             // clear the column, so only wholly-absent keys are dropped.

@@ -5,6 +5,7 @@ namespace App\Mcp\Tools\Promises;
 use App\Services\Promises\PromiseEditor;
 use App\Services\Promises\PromisePresenter;
 use App\Support\Agents\AgentContext;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -25,7 +26,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
 #[IsIdempotent]
 class RemovePromiseUpdateTool extends PromisesTool
 {
-    protected array $permissions = ['promises.edit'];
+    protected array $permissions = [PermissionCatalogue::PROMISES_EDIT];
 
     public function schema(JsonSchema $schema): array
     {

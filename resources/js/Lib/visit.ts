@@ -2,22 +2,14 @@
 // Policy: always show the single most recent page; visiting home (/) itself
 // must never overwrite it. External sites cannot be recorded (no code runs
 // there), so only in-app paths ever land here.
-const KEY = 'sz-last-page';
+import { pathnameOf } from './routes';
 
-export function normalizePath(href: string): string {
-    try {
-        const base = typeof window !== 'undefined' ? window.location.origin : 'https://syrian.zone';
-        const u = new URL(href, base);
-        return u.pathname.replace(/\/+$/, '') || '/';
-    } catch {
-        return href.split('?')[0].split('#')[0].replace(/\/+$/, '') || '/';
-    }
-}
+const KEY = 'sz-last-page';
 
 export function recordVisit(path: string): void {
     try {
         if (typeof window === 'undefined') return;
-        const clean = normalizePath(path);
+        const clean = pathnameOf(path);
         if (clean === '/') return;
         localStorage.setItem(KEY, JSON.stringify({ href: clean, at: Date.now() }));
     } catch {}

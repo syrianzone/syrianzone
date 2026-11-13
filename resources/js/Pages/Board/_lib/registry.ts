@@ -1,88 +1,101 @@
-import { answersWidget } from '../_widgets/answers';
-import { clockWidget } from '../_widgets/clock';
-import { eventsTodayWidget } from '../_widgets/events-today';
-import { guidesWidget } from '../_widgets/guides';
-import { notesWidget } from '../_widgets/notes';
-import { placesNearbyWidget } from '../_widgets/places-nearby';
-import { pomodoroWidget } from '../_widgets/pomodoro';
-import { prayerWidget } from '../_widgets/prayer';
-import { quranWidget } from '../_widgets/quran';
-import { recipeWidget } from '../_widgets/recipe';
-import { rssWidget } from '../_widgets/rss';
-import { todoWidget } from '../_widgets/todo';
-import { transitCitiesWidget } from '../_widgets/transit-cities';
-import { weatherWidget } from '../_widgets/weather';
-import { defaultConfig, newId, nowStamp } from './layout';
-import type { BoardDoc, WidgetDefinition } from './types';
+import { lazy, type ComponentType } from 'react';
+import { clampSize, defaultConfig, newId, nowStamp } from './doc';
+import type {
+  BoardDoc,
+  WidgetDeclaration,
+  WidgetDefinition,
+  WidgetProps,
+  WidgetSource,
+} from './types';
+import { CATEGORIES } from './types';
 
-// The one manifest. Adding a widget is a new folder plus one line here, and
-// nothing else in the core changes.
-//
-// Deliberately not import.meta.glob: it kills config generic inference and
-// hides the dependency graph to save a single line.
-export const WIDGETS: WidgetDefinition<any>[] = [
-  // 1. الوقت والعبادات
-  clockWidget,
-  weatherWidget,
-  prayerWidget,
-  quranWidget,
-  // 2. الإنتاجية والشخصي
-  pomodoroWidget,
-  todoWidget,
-  notesWidget,
-  // 3. المجتمع والأخبار
-  rssWidget,
-  answersWidget,
-  eventsTodayWidget,
-  guidesWidget,
-  // 4. الأماكن والمواصلات
-  placesNearbyWidget,
-  transitCitiesWidget,
-  // 5. المطبخ والمأكولات
-  recipeWidget,
-];
+// The one registration point. Every folder under `_widgets/` that exports a
+// declaration from its `index.ts` is a widget: the gallery, the seeded board,
+// the category sections and the source table below are all derived from those
+// files, so adding a widget is one new folder and no edit here.
+const declarations = import.meta.glob<{ default: WidgetDeclaration }>('../_widgets/*/index.ts', {
+  eager: true,
+});
 
-export const WIDGETS_BY_ID: Record<string, WidgetDefinition<any>> = Object.fromEntries(
+// The declarations are eager and tiny; the Views stay behind their own chunk and
+// are loaded the first time a tile renders.
+const views = import.meta.glob<{ default: ComponentType<WidgetProps<Record<string, unknown>>> }>(
+  '../_widgets/*/View.tsx',
+);
+
+/**
+ * The registry is heterogeneous: every View declares its own config shape, while
+ * the document's `c` is the only config the grid has at runtime. Erasing the
+ * parameter here is what lets one list hold all of them; this is the one place
+ * the erasure happens.
+ */
+type RegisteredWidget = WidgetDefinition<any>;
+
+function folderOf(modulePath: string): string {
+  return modulePath.split('/').at(-2) ?? '';
+}
+
+function buildWidgets(): RegisteredWidget[] {
+  const built = Object.entries(declarations).map(([modulePath, module]) => {
+    const folder = folderOf(modulePath);
+    const declaration = module.default;
+    if (!declaration) {
+      throw new Error(`Board widget ${modulePath} has no default export.`);
+    }
+    if (declaration.id !== folder) {
+      throw new Error(`Board widget id "${declaration.id}" must match its folder "_widgets/${folder}".`);
+    }
+    const loadView = views[`../_widgets/${folder}/View.tsx`];
+    if (!loadView) {
+      throw new Error(`Board widget ${folder} has no View.tsx.`);
+    }
+    return { ...declaration, Component: lazy(loadView) };
+  });
+
+  const categoryOrder = CATEGORIES.map((category) => category.id as string);
+  const position = (def: WidgetDeclaration): number => def.seed?.order ?? Number.MAX_SAFE_INTEGER;
+
+  return built.sort((a, b) => {
+    const byCategory = categoryOrder.indexOf(a.category) - categoryOrder.indexOf(b.category);
+    if (byCategory !== 0) return byCategory;
+    // Seeded widgets keep their board order in the gallery; the rest follow
+    // alphabetically, so the list never depends on file-system order.
+    return position(a) - position(b) || a.id.localeCompare(b.id);
+  });
+}
+
+export const WIDGETS = buildWidgets();
+
+const WIDGETS_BY_ID: Record<string, RegisteredWidget> = Object.fromEntries(
   WIDGETS.map((w) => [w.id, w]),
 );
 
-export function findWidget(id: string): WidgetDefinition<any> | undefined {
+export function findWidget(id: string): RegisteredWidget | undefined {
   return WIDGETS_BY_ID[id];
 }
 
-// The default board. Array order is grid order, and in RTL the first item lands
-// on the RIGHT, so each row reads right to left: the row rendered as
-// clock | prayer | weather on screen is stored weather, prayer, clock.
-//
-// Explicit sizes rather than each widget's defaultSize, so the seeded
-// arrangement is the intended 3 / 2 / 3 / 2 grid. Unregistered ids are skipped,
-// so this list can name a widget before it ships.
-const SEED_LAYOUT: { id: string; w: number; h: number }[] = [
-  // row 1: clock, prayer, weather (screen left to right)
-  { id: 'weather', w: 4, h: 2 },
-  { id: 'prayer', w: 4, h: 2 },
-  { id: 'clock', w: 4, h: 2 },
-  // row 2: quran, pomodoro, recipe
-  { id: 'quran', w: 4, h: 2 },
-  { id: 'pomodoro', w: 4, h: 2 },
-  { id: 'recipe', w: 4, h: 3 },
-  // row 3: rss, answers
-  { id: 'rss', w: 6, h: 3 },
-  { id: 'answers', w: 6, h: 3 },
-  // row 4: todo, notes
-  { id: 'notes', w: 6, h: 3 },
-  { id: 'todo', w: 6, h: 3 },
-];
+/**
+ * Which read each widget uses, derived from its declaration. A widget with no
+ * `source` reads nothing outside the document (a clock, a note, a timer).
+ */
+export const WIDGET_SOURCES: { id: string; source: WidgetSource }[] = WIDGETS.flatMap(
+  (def) => (def.source === null ? [] : [{ id: def.id, source: def.source }]),
+);
 
+// The default board, in the order each declaration asks for. Array order is grid
+// order, and in RTL the first item lands on the RIGHT, so each row reads right to
+// left: the row rendered as clock | prayer | weather on screen is stored
+// weather, prayer, clock. Sizes are clamped to the widget's own bounds, so a
+// declaration can never seed a size it does not allow.
 export function defaultDoc(): BoardDoc {
-  const widgets = SEED_LAYOUT.flatMap((seed) => {
-    const def = findWidget(seed.id);
-    if (!def) return [];
-    // clamp to the widget's own bounds so a seed size can never violate min/max
-    const w = Math.min(Math.max(seed.w, def.minSize.w), def.maxSize.w);
-    const h = Math.min(Math.max(seed.h, def.minSize.h), def.maxSize.h);
-    return [{ i: newId('w'), d: def.id, w, h, c: defaultConfig(def) }];
-  });
+  const widgets = WIDGETS
+    .filter((def) => def.seed !== null)
+    .sort((a, b) => (a.seed?.order ?? 0) - (b.seed?.order ?? 0))
+    .map((def) => {
+      const seed = def.seed ?? { w: def.defaultSize.w, h: def.defaultSize.h };
+      const size = clampSize(seed, def);
+      return { i: newId('w'), d: def.id, w: size.w, h: size.h, c: defaultConfig(def) };
+    });
 
   return {
     v: 1,
@@ -91,3 +104,7 @@ export function defaultDoc(): BoardDoc {
     dashboards: [{ id: 'd_main', name: 'الرئيسية', widgets }],
   };
 }
+
+export const GALLERY_CATEGORIES = CATEGORIES.filter(
+  (category) => WIDGETS.some((def) => def.category === category.id),
+);

@@ -3,6 +3,7 @@
 use App\Mcp\Tools\GovApps\CreateGovAppTool;
 use App\Mcp\Tools\GovApps\RestoreGovAppTool;
 use App\Mcp\Tools\SyOfficial\CreateSyOfficialCategoryTool;
+use App\Mcp\Tools\SyOfficial\CreateSyOfficialEntityTool;
 use App\Mcp\Tools\SyOfficial\DeleteSyOfficialCategoryTool;
 use App\Mcp\Tools\SyOfficial\ListSyOfficialCategoriesTool;
 use App\Mcp\Tools\SyOfficial\ReorderSyOfficialCategoriesTool;
@@ -44,8 +45,6 @@ beforeEach(function () {
         ],
     ]);
 });
-
-// ─── Capability isolation ──────────────────────────────────────────────────
 
 it('lets a create-only token create but not delete a category', function () {
     agentToken($this->user, ['syofficial.create']);
@@ -94,8 +93,6 @@ it('refuses a reorder without the reorder capability', function () {
         ->and($category->fresh()->order_column)->toBe(1);
 });
 
-// ─── Read tools accept any of the module's five ───────────────────────────
-
 it('lets a delete-only token read the directory, since reading needs no write grant', function () {
     OfficialCategory::factory()->count(2)->create();
     agentToken($this->user, ['syofficial.delete']);
@@ -113,10 +110,24 @@ it('refuses the directory listing to a token with no capability in the module', 
     expect(toolText($response))->toContain('Permission denied');
 });
 
-// ─── Behaviour the tools must preserve ─────────────────────────────────────
+it('refuses a list-shaped socials argument from the tool', function () {
+    $category = OfficialCategory::factory()->create();
+    agentToken($this->user, ['syofficial.create']);
+
+    $response = callTool(CreateSyOfficialEntityTool::class, [
+        'id' => 'list-socials',
+        'category_id' => $category->id,
+        'name' => 'List',
+        'name_ar' => 'قائمة',
+        'socials' => ['https://example.com', 'http://example.org'],
+    ]);
+
+    expect(toolText($response))->toContain('socials must be an object keyed by platform')
+        ->and(OfficialEntity::where('id', 'list-socials')->exists())->toBeFalse();
+});
 
 it('keeps a directory entity visible when the edit omits socials', function () {
-    $entity = OfficialEntity::factory()->create(['socials' => ['https://keep.me']]);
+    $entity = OfficialEntity::factory()->create(['socials' => ['facebook' => 'https://keep.me']]);
     agentToken($this->user, ['syofficial.edit']);
 
     callTool(UpdateSyOfficialEntityTool::class, [
@@ -124,7 +135,7 @@ it('keeps a directory entity visible when the edit omits socials', function () {
         'name' => 'Renamed',
     ]);
 
-    expect($entity->fresh()->socials)->toBe(['https://keep.me'])
+    expect($entity->fresh()->socials)->toBe(['facebook' => 'https://keep.me'])
         ->and($entity->fresh()->name)->toBe('Renamed');
 });
 
@@ -179,12 +190,9 @@ it('catches a mixed-category entity reorder before it scrambles the order', func
         ->and($two->fresh()->order_column)->toBe(1);
 });
 
-// ─── Gov Apps: the soft-delete difference ──────────────────────────────────
-
 it('requires both delete and edit to restore a soft-deleted app', function () {
     $app = GovApp::factory()->create();
     agentToken($this->user, ['govapps.delete']);
-    GovAppService::class;
     app(GovAppService::class)->delete($app->id);
 
     // Delete alone is not enough to put content back in public view.

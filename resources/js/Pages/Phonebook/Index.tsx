@@ -1,11 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { usePage } from '@inertiajs/react';
 import {
-    Phone, MessageSquare, Copy, Check, ExternalLink, Search, X, LayoutGrid, Table as TableIcon, PhoneCall, Info, Settings, Pencil
+    Phone, MessageSquare, Copy, Check, ExternalLink, Search, Info, Settings
 } from 'lucide-react';
 import { Card, CardContent } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
-import { Input } from "@/Components/ui/input";
 import { Badge } from "@/Components/ui/badge";
 import {
     Table,
@@ -16,112 +15,105 @@ import {
     TableRow,
 } from "@/Components/ui/table";
 import MainLayout from '@/Layouts/MainLayout';
-
-interface PhonebookEntry {
-    id: string;
-    category_id?: string;
-    category_ar: string;
-    category_en: string;
-    name_ar: string;
-    name_en: string;
-    number: string;
-    is_whatsapp: boolean;
-    source_url: string;
-}
+import { useCanAny } from '@/Lib/useCan';
+import { copyText } from '@/Lib/copy';
+import { matchesFilterText } from '@/Lib/smartFilterSearch';
+import type { PhonebookCategory, PhonebookEntry } from '@/Domain/phonebook/types';
+import DirectoryEmptyState from '@/Components/directory/DirectoryEmptyState';
+import DirectoryFilterChips from '@/Components/directory/DirectoryFilterChips';
+import DirectoryResultCount from '@/Components/directory/DirectoryResultCount';
+import { DirectorySearch } from '@/Components/directory/DirectorySearch';
+import DirectoryViewToggle from '@/Components/directory/DirectoryViewToggle';
+import { useDirectory, type DirectoryFacet } from '@/Components/directory/useDirectory';
 
 interface PhonebookProps {
     initialData: PhonebookEntry[];
-    categories?: any[];
+    /** The server's active categories, in display order. */
+    categories?: PhonebookCategory[];
 }
 
-export default function Index({ initialData }: PhonebookProps) {
+/** `011-222 3334`, `+963 …` and `0912…` are the same number to a reader. */
+const stripNumber = (value: string) => value.replace(/[\s\-()+]/g, '');
+
+const categoryKey = (entry: PhonebookEntry) => (entry.category_en ?? '').toLowerCase().replace(/\s+/g, '_');
+
+const isShortCode = (number: string) => {
+    const clean = stripNumber(number);
+    return clean.length === 3 && /^\d+$/.test(clean);
+};
+
+const searchPhonebook = (item: PhonebookEntry, query: string) => (
+    matchesFilterText(
+        [item.name_ar, item.name_en ?? '', item.category_ar ?? '', item.category_en ?? ''].join(' '),
+        query,
+    ) || (stripNumber(query) !== '' && stripNumber(item.number).includes(stripNumber(query)))
+);
+
+/** Short service numbers (110/113…) first, otherwise the server's order. */
+const shortCodesFirst = (a: PhonebookEntry, b: PhonebookEntry) => {
+    if (isShortCode(a.number) === isShortCode(b.number)) return 0;
+    return isShortCode(a.number) ? -1 : 1;
+};
+
+export default function Index({ initialData, categories: serverCategories = [] }: PhonebookProps) {
     const page = usePage();
-    const { auth } = page.props as any;
-    const user = auth?.user;
     // Server-resolved capabilities (role implications already applied), not the
-    // raw permissions array: a phonebook_admin holds phonebook.* implicitly
-    // with an empty array, and the old check hid the admin UI from them even
-    // though the phonebook_admin middleware lets them through.
-    const effective: string[] = Array.isArray(user?.effective_permissions)
-        ? user.effective_permissions
-        : [];
-    const canManage = effective.includes('phonebook.edit') || effective.includes('phonebook.create');
+    // raw permissions array.
+    const canManage = useCanAny()('phonebook.edit', 'phonebook.create');
 
     // A shared search link carries `?q=`. It is read from the page URL, which
     // the server and the browser both have, so the list is filtered in the
     // server-rendered HTML and the first client render matches it.
-    const [searchTerm, setSearchTerm] = useState(
-        () => new URLSearchParams(page.url.split('?')[1] ?? '').get('q') ?? '',
-    );
-    const [currentCategory, setCurrentCategory] = useState('all');
+    const initialQuery = new URLSearchParams(page.url.split('?')[1] ?? '').get('q') ?? '';
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
     const [copiedId, setCopiedId] = useState<string | null>(null);
 
-    // Get dynamic categories list from data
-    const categories = useMemo(() => {
-        const cats = new Map<string, string>(); // category_en -> category_ar
+    // The chips are the server's active categories in its own order, so a chip
+    // and the admin row it edits name the same thing (`category_id`). Only a
+    // page that arrives without them (an empty cache) derives them from the rows.
+    const facets = useMemo<DirectoryFacet<PhonebookEntry>[]>(() => {
+        if (serverCategories.length > 0) {
+            return [{
+                key: 'category',
+                label: 'الفئة',
+                options: serverCategories.map(cat => ({ value: cat.id, label: cat.label_ar })),
+                valueOf: (entry) => entry.category_id,
+            }];
+        }
+
+        const derived = new Map<string, string>();
         initialData.forEach(item => {
             if (item.category_en) {
-                cats.set(item.category_en, item.category_ar);
+                derived.set(categoryKey(item), item.category_ar ?? item.category_en);
             }
         });
 
-        const list = Array.from(cats.entries()).map(([en, ar]) => ({
-            key: en.toLowerCase().replace(/\s+/g, '_'),
-            labelAr: ar,
-            labelEn: en
-        }));
+        return [{
+            key: 'category',
+            label: 'الفئة',
+            options: Array.from(derived.entries()).map(([value, label]) => ({ value, label })),
+            valueOf: categoryKey,
+        }];
+    }, [serverCategories, initialData]);
 
-        return [{ key: 'all', labelAr: 'الكل', labelEn: 'All' }, ...list];
-    }, [initialData]);
+    const directory = useDirectory<PhonebookEntry>({
+        items: initialData,
+        search: searchPhonebook,
+        facets,
+        sort: shortCodesFirst,
+        initialQuery,
+    });
 
-    // Filter data based on search and category
-    const filteredData = useMemo(() => {
-        let items = initialData;
-
-        if (currentCategory !== 'all') {
-            items = items.filter(item => 
-                item.category_en.toLowerCase().replace(/\s+/g, '_') === currentCategory
-            );
-        }
-
-        if (searchTerm) {
-            const term = searchTerm.toLowerCase();
-            items = items.filter(item => 
-                item.name_ar.toLowerCase().includes(term) ||
-                (item.name_en && item.name_en.toLowerCase().includes(term)) ||
-                item.category_ar.toLowerCase().includes(term) ||
-                item.category_en.toLowerCase().includes(term) ||
-                item.number.replace(/[\s\-\(\)\+]/g, '').includes(term.replace(/[\s\-\(\)\+]/g, ''))
-            );
-        }
-
-        // Sort so that three-digit numbers are always on top
-        return [...items].sort((a, b) => {
-            const cleanA = a.number.replace(/[\s\-\(\)\+]/g, '');
-            const cleanB = b.number.replace(/[\s\-\(\)\+]/g, '');
-            const isThreeDigitA = cleanA.length === 3 && /^\d+$/.test(cleanA);
-            const isThreeDigitB = cleanB.length === 3 && /^\d+$/.test(cleanB);
-
-            if (isThreeDigitA && !isThreeDigitB) return -1;
-            if (!isThreeDigitA && isThreeDigitB) return 1;
-            return 0; // maintain original database order otherwise
-        });
-    }, [initialData, searchTerm, currentCategory]);
-
-    // Copy to clipboard helper
-    const handleCopy = (number: string, id: string) => {
-        navigator.clipboard.writeText(number);
+    const handleCopy = async (number: string, id: string) => {
+        if (!await copyText(number)) return;
         setCopiedId(id);
         setTimeout(() => setCopiedId(null), 2000);
     };
 
-    // Clean number for tel: protocol
     const getTelUrl = (number: string) => {
         return `tel:${number.replace(/[\s\-\(\)]/g, '')}`;
     };
 
-    // Clean number for WhatsApp wa.me link
     const getWhatsAppUrl = (number: string) => {
         let cleaned = number.replace(/[\s\-\(\)]/g, '');
         if (cleaned.startsWith('00')) {
@@ -145,7 +137,6 @@ export default function Index({ initialData }: PhonebookProps) {
                 style={{ fontFamily: "var(--site-font, inherit)" }}
             >
                 
-                {/* Hero Header (Styled like SyOfficial) */}
                 <section className="bg-card py-10 shadow-sm border-b border-border">
                     <div className="container mx-auto px-4 text-center max-w-4xl">
                         {canManage && (
@@ -164,90 +155,54 @@ export default function Index({ initialData }: PhonebookProps) {
                             أرقام التواصل والشكاوى والطوارئ للجهات الرسمية والخدمية السورية.
                         </p>
 
-                        {/* Search Bar */}
                         <div className="flex flex-col md:flex-row gap-4 max-w-2xl mx-auto items-center">
-                            <div className="relative w-full">
-                                <Search className="absolute start-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                <Input aria-label="ابحث بالجهة، القسم، أو رقم الهاتف..."
-                                    type="text"
-                                    placeholder="ابحث بالجهة، القسم، أو رقم الهاتف..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full pe-4 ps-12 h-14 text-lg bg-card border-border rounded-xl shadow-sm focus:ring-2 focus:ring-primary focus:border-transparent"
-                                />
-                                {searchTerm && (
-                                    <button
-                                        onClick={() => setSearchTerm('')}
-                                        className="absolute end-4 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </button>
-                                )}
-                            </div>
+                            <DirectorySearch
+                                size="lg"
+                                value={directory.query}
+                                onChange={directory.setQuery}
+                                placeholder="ابحث بالجهة، القسم، أو رقم الهاتف..."
+                                ariaLabel="ابحث بالجهة، القسم، أو رقم الهاتف"
+                            />
                         </div>
 
-                        {/* Categories List */}
-                        <div className="mt-6 flex flex-wrap justify-center gap-2">
-                            {categories.map(cat => (
-                                <Button
-                                    key={cat.key}
-                                    variant={currentCategory === cat.key ? "default" : "outline"}
-                                    onClick={() => setCurrentCategory(cat.key)}
-                                    className="rounded-full"
-                                    size="sm"
-                                >
-                                    {cat.labelAr}
-                                </Button>
-                            ))}
-                        </div>
+                        <DirectoryFilterChips
+                            label="الفئة"
+                            className="mt-6"
+                            options={facets[0].options}
+                            value={directory.filters.category ?? []}
+                            onChange={(next) => directory.setFilters({ ...directory.filters, category: next })}
+                        />
                     </div>
                 </section>
 
-                {/* Content Section */}
                 <div className="container mx-auto px-4 py-8 max-w-7xl">
                     
-                    {/* Visual Controls */}
                     <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-                        <div role="status" aria-live="polite" className="text-sm text-muted-foreground font-medium">
-                            {filteredData.length > 0 ? (
-                                `عرض ${filteredData.length} رقم تواصل رسمي`
+                        <DirectoryResultCount>
+                            {directory.results.length > 0 ? (
+                                `عرض ${directory.results.length} رقم تواصل رسمي`
                             ) : (
                                 "لم يتم العثور على أرقام تطابق البحث"
                             )}
-                        </div>
+                        </DirectoryResultCount>
 
                         <div className="flex items-center gap-2">
                             <span className="text-sm text-muted-foreground">طريقة العرض:</span>
-                            <div className="bg-card rounded-lg p-1 shadow-sm border border-border flex">
-                                <button aria-label="عرض كجدول"
-                                    onClick={() => setViewMode('table')}
-                                    className={`p-1.5 rounded transition-all ${viewMode === 'table' ? 'bg-accent text-primary' : 'text-muted-foreground'}`}
-                                    title="عرض كجدول"
-                                >
-                                    <TableIcon className="h-4 w-4" />
-                                </button>
-                                <button aria-label="عرض كبطاقات"
-                                    onClick={() => setViewMode('grid')}
-                                    className={`p-1.5 rounded transition-all ${viewMode === 'grid' ? 'bg-accent text-primary' : 'text-muted-foreground'}`}
-                                    title="عرض كبطاقات"
-                                >
-                                    <LayoutGrid className="h-4 w-4" />
-                                </button>
-                            </div>
+                            <DirectoryViewToggle value={viewMode} onChange={setViewMode} />
                         </div>
                     </div>
 
-                    {filteredData.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-20 bg-card rounded-lg shadow-sm border border-dashed border-border">
-                            <Search className="h-16 w-16 text-muted-foreground/30 mb-4" />
-                            <h3 className="text-lg font-semibold text-foreground mb-2">لا توجد نتائج</h3>
-                            <p className="text-muted-foreground text-sm">جرب تعديل كلمات البحث أو الفلاتر.</p>
-                        </div>
+                    {directory.results.length === 0 ? (
+                        <DirectoryEmptyState
+                            icon={Search}
+                            title="لا توجد نتائج"
+                            description="جرب تعديل كلمات البحث أو الفلاتر."
+                            directory={directory}
+                        />
                     ) : viewMode === 'grid' ? (
                         
-                        // Card Grid View (5 items per row on PC)
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                            {filteredData.map(item => (
+                            {directory.results.map(item => (
                                 <Card key={item.id} className="overflow-hidden hover:shadow-md transition-all border border-border bg-card flex flex-col justify-between">
                                     <CardContent className="p-4 flex-1 flex flex-col justify-between space-y-3">
                                         <div>
@@ -262,7 +217,6 @@ export default function Index({ initialData }: PhonebookProps) {
                                         </div>
 
                                         <div className="space-y-2">
-                                            {/* Clickable Number display (copies on click) */}
                                             <button aria-label="انقر لنسخ الرقم"
                                                 onClick={() => handleCopy(item.number, item.id)}
                                                 className="w-full text-center py-2 bg-muted/50 hover:bg-muted/80 rounded-xl border border-border/60 font-mono text-base font-extrabold text-foreground tracking-wide transition-colors cursor-pointer group flex items-center justify-center gap-2"
@@ -276,9 +230,7 @@ export default function Index({ initialData }: PhonebookProps) {
                                                 )}
                                             </button>
 
-                                            {/* Action Buttons Row */}
                                             <div className="flex items-center gap-2 pt-1">
-                                                {/* Call */}
                                                 <Button aria-label="اتصال هاتفي"
                                                     variant="outline"
                                                     size="sm"
@@ -292,7 +244,6 @@ export default function Index({ initialData }: PhonebookProps) {
                                                     </a>
                                                 </Button>
 
-                                                {/* WhatsApp (shown only if available) */}
                                                 {item.is_whatsapp && (
                                                     <Button aria-label="مراسلة عبر واتساب"
                                                         variant="outline"
@@ -309,7 +260,6 @@ export default function Index({ initialData }: PhonebookProps) {
                                                 )}
                                             </div>
 
-                                            {/* Bottom Row: Category tag on one side, Source link on the opposite side */}
                                             <div className="pt-1 flex items-center justify-between text-[11px]">
                                                 <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-[10px] font-semibold py-0.5 px-2 shrink-0">
                                                     {item.category_ar}
@@ -336,7 +286,6 @@ export default function Index({ initialData }: PhonebookProps) {
                         </div>
                     ) : (
                         
-                        // Table View (Styled like SyOfficial)
                         <div className="bg-card rounded-lg shadow border border-border overflow-hidden">
                             <Table>
                                 <TableHeader className="bg-muted">
@@ -349,7 +298,7 @@ export default function Index({ initialData }: PhonebookProps) {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredData.map(item => (
+                                    {directory.results.map(item => (
                                         <TableRow key={item.id} className="hover:bg-muted/50">
                                             <TableCell className="font-medium">
                                                 <div>
@@ -387,7 +336,6 @@ export default function Index({ initialData }: PhonebookProps) {
                                             <TableCell>
                                                 <div className="flex items-center gap-1.5">
                                                     
-                                                    {/* Copy */}
                                                     <Button aria-label="نسخ الرقم"
                                                         variant="ghost"
                                                         size="icon"
@@ -402,7 +350,6 @@ export default function Index({ initialData }: PhonebookProps) {
                                                         )}
                                                     </Button>
 
-                                                    {/* Call */}
                                                     <Button aria-label="اتصال هاتفي"
                                                         variant="ghost"
                                                         size="icon"
@@ -415,7 +362,6 @@ export default function Index({ initialData }: PhonebookProps) {
                                                         </a>
                                                     </Button>
 
-                                                    {/* WhatsApp */}
                                                     {item.is_whatsapp && (
                                                         <Button aria-label="مراسلة عبر واتساب"
                                                             variant="ghost"
@@ -438,7 +384,6 @@ export default function Index({ initialData }: PhonebookProps) {
                         </div>
                     )}
 
-                    {/* Combined and Simplified Notes */}
                     <Card className="border-border bg-muted/20 shadow-sm p-5 mt-8">
                         <div className="flex gap-3.5 items-start text-xs text-muted-foreground leading-relaxed">
                             <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />

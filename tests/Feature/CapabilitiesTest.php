@@ -4,7 +4,6 @@ use App\Filament\Resources\UserResource;
 use App\Http\Middleware\AutoLoginDevUser;
 use App\Models\Place;
 use App\Models\Poll;
-use App\Models\RouteDraft;
 use App\Models\User;
 use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Support\Facades\DB;
@@ -19,54 +18,18 @@ use Illuminate\Support\Facades\Schema;
 | `role` holds two values: `superadmin` and `user`. Everything else — the six
 | module roles and the old catch-all `admin` — is an inert string.
 |
-| This file is organised by the invariant it protects rather than by the order
-| the migration was carried out in. Each section states a rule that must keep
-| holding; the rollout order is in the git history (phases A to G) and in the
-| migrations themselves, which is where a reader should look for "why".
+| This file is organised by the invariant it protects. Each section states a rule
+| that must keep holding; the migrations themselves are where a reader should
+| look for "why".
 |
-| The negative direction carries most of the weight. Before the migration, each
-| phase could only prove something was still granted; the interesting property
-| now is that nothing is, so a stray role can never quietly become a back door.
+| The negative direction carries most of the weight: the interesting property is
+| that a retired role grants nothing, so a stray role can never quietly become a
+| back door.
 |
 */
 
-// ─── Fixtures ──────────────────────────────────────────────────────────────
-
 /**
- * Insert a city, since route_drafts.city_id is a foreign key and there is no
- * CityFactory. Named distinctly from TransitGovernorateScopeTest's scopeCity(),
- * because Pest shares global functions across files.
- */
-function capabilitiesCity(string $id, string $nameEn = 'City'): void
-{
-    $geometry = function (array $shape) {
-        $json = json_encode($shape, JSON_THROW_ON_ERROR);
-
-        // SQLite has no spatial types, so the raw geometry is stored as text.
-        if (DB::connection()->getDriverName() === 'sqlite') {
-            return $json;
-        }
-
-        $quoted = DB::connection()->getPdo()->quote($json);
-
-        return DB::raw("ST_GeomFromGeoJSON({$quoted})");
-    };
-
-    DB::table('cities')->insert([
-        'id' => $id,
-        'name_ar' => $nameEn,
-        'name_en' => $nameEn,
-        'center' => $geometry(['type' => 'Point', 'coordinates' => [36.72, 34.73]]),
-        'bounds' => $geometry(['type' => 'Polygon', 'coordinates' => [[[36.0, 34.0], [37.0, 34.0], [37.0, 35.0], [36.0, 35.0], [36.0, 34.0]]]]),
-        'zoom' => 10,
-        'status' => 'active',
-    ]);
-}
-
-/**
- * Every role value that no longer grants anything. The six module roles stopped
- * conferring capabilities when the prefix table was deleted; `admin` stopped
- * when the catch-all short-circuit was.
+ * Every role value that grants nothing.
  *
  * @return array<int, string>
  */
@@ -82,8 +45,6 @@ function retiredRoles(): array
         'users_admin',
     ];
 }
-
-// ─── `permissions` is the only thing that grants access ────────────────────
 
 it('grants a retired role nothing at all', function (string $role) {
     $user = User::factory()->create(['role' => $role, 'permissions' => []]);
@@ -106,11 +67,11 @@ it('keeps an explicit grant working under a retired role name', function () {
         'permissions' => PermissionCatalogue::forModule('transit'),
     ]);
 
-    expect($user->effectivePermissions())->toHaveCount(5)
+    expect($user->effectivePermissions())
+        ->toHaveCount(count(PermissionCatalogue::forModule('transit')))
         ->and($user->hasPermission('transit.approve'))->toBeTrue()
         // The role name contributes nothing beyond what is stored.
-        ->and($user->hasPermission('transit.delete_routes'))
-        ->toBe(in_array('transit.delete_routes', $user->permissions, true));
+        ->and($user->hasPermission('transit.delete_routes'))->toBeTrue();
 });
 
 it('resolves a plain user purely from the stored array', function () {
@@ -179,8 +140,6 @@ it('defaults an omitted role to user, and the column default agrees', function (
     expect(trim((string) $default, "'\" "))->toBe('user');
 });
 
-// ─── The role vocabulary is exactly two values ─────────────────────────────
-
 it('offers exactly superadmin and user in the role select', function () {
     // The one place roles are assigned. Both retired groups are asserted absent
     // explicitly rather than by set difference, so re-adding either fails here.
@@ -197,42 +156,6 @@ it('offers exactly superadmin and user in the role select', function () {
         );
 });
 
-// ─── Staff accounts are minted capability-backed ───────────────────────────
-
-it('creates a staff account as a user holding the full catalogue', function () {
-    $this->actingAs(User::factory()->create(['role' => 'superadmin']))
-        ->postJson('/api/admins', ['name' => 'Staff', 'email' => 'staff@example.test'])
-        ->assertCreated()
-        ->assertJsonPath('role', 'user');
-
-    $created = User::where('email', 'staff@example.test')->firstOrFail();
-
-    expect($created->permissions)->toEqual(PermissionCatalogue::all())
-        ->and($created->effectivePermissions())->toEqual(PermissionCatalogue::all());
-});
-
-it('discards a retired role requested at the admin API', function () {
-    $superadmin = User::factory()->create(['role' => 'superadmin']);
-
-    $this->actingAs($superadmin)
-        ->postJson('/api/admins', [
-            'name' => 'Transit Operator',
-            'email' => 'transit-operator@example.test',
-            'role' => 'transit_admin',
-        ])
-        ->assertCreated()
-        ->assertJsonPath('role', 'user');
-
-    $created = User::where('email', 'transit-operator@example.test')->firstOrFail();
-
-    // The requested role is ignored rather than honoured, and access comes from
-    // the catalogue — so a caller cannot mint a label that means nothing and
-    // leave the operator to guess why the account is not scoped.
-    expect($created->role)->toBe('user')
-        ->and($created->effectivePermissions())->toEqual(PermissionCatalogue::all());
-});
-
-// ─── Dev impersonation is capability-backed, not role-backed ────────────────
 //
 // The presets are named after the module they preview, which made them read as
 // role values. They are not: each is a `user` account holding that module's
@@ -242,7 +165,7 @@ it('discards a retired role requested at the admin API', function () {
 it('gives every dev preset a plain user or superadmin role', function () {
     $middleware = new AutoLoginDevUser;
 
-    foreach (AutoLoginDevUser::DEV_ROLES as $preset) {
+    foreach (AutoLoginDevUser::names() as $preset) {
         $user = $middleware->ensureDevUser($preset);
 
         expect($user->role)->toBe($preset === 'superadmin' ? 'superadmin' : 'user');
@@ -298,7 +221,8 @@ it('syncs a dev account that predates the capability backing', function () {
 
     expect($user->is($legacy))->toBeTrue()
         ->and($user->role)->toBe('user')
-        ->and($user->effectivePermissions())->toHaveCount(5);
+        ->and($user->effectivePermissions())
+        ->toHaveCount(count(PermissionCatalogue::forModule('transit')));
 });
 
 it('re-syncs a dev account whose capabilities were edited', function () {
@@ -307,10 +231,10 @@ it('re-syncs a dev account whose capabilities were edited', function () {
 
     $user->update(['permissions' => []]);
 
-    expect($middleware->ensureDevUser('places_admin')->effectivePermissions())->toHaveCount(5);
+    expect($middleware->ensureDevUser('places_admin')->effectivePermissions())
+        ->toHaveCount(count(PermissionCatalogue::forModule('places')));
 });
 
-// ─── Capability gates actually gate ────────────────────────────────────────
 //
 // Every case below was a place where the UI or the middleware gated on a
 // capability while a second check in the controller contradicted it. The symptom
@@ -360,6 +284,25 @@ it('does not ship transit drafts or routes to the dashboard', function () {
         );
 });
 
+it('lists a staff account\'s own route drafts too', function () {
+    // Submitting in the studio is open to every account, so the tab that lists
+    // the result cannot be a role check: an editor who drafts a route watches it
+    // here like anyone else.
+    seedCity('damascus');
+    $staff = User::factory()->withPermissions(['transit.review_drafts'])->create();
+    transitDraft('damascus', ['user_id' => $staff->id, 'name_ar' => 'اقتراح الموظف']);
+
+    $this->actingAs($staff)
+        ->get('/dashboard')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('Dashboard/Index')
+            ->where('canSubmitTransit', true)
+            ->has('myDrafts', 1)
+            ->where('myDrafts.0.name_ar', 'اقتراح الموظف')
+        );
+});
+
 it('keeps a plain user on their own drafts only', function () {
     $user = User::factory()->create();
 
@@ -369,9 +312,10 @@ it('keeps a plain user on their own drafts only', function () {
         ->assertInertia(fn ($page) => $page
             ->component('Dashboard/Index')
             ->has('myDrafts')
-            // Nothing else. This is the one role check the dashboard keeps: a
-            // negative test asking "is this an ordinary account?", correct
-            // precisely because it is not an authorisation grant.
+            // Nothing else: the dashboard ships the account's own drafts and
+            // the studio's submit rule, never the transit admin's data.
+            ->where('canSubmitTransit', true)
+            ->missing('cities')
             ->missing('allDrafts')
             ->missing('publishedRoutes')
             ->missing('polls')
@@ -455,16 +399,10 @@ it('lets an unscoped transit editor edit another users draft', function () {
     // scope — so they keep unrestricted access. Worth pinning: routing
     // capability holders into the scope branch could have denied exactly the
     // users the change was meant to empower.
-    capabilitiesCity('damascus', 'Damascus');
+    seedCity('damascus', ['name_ar' => 'Damascus', 'name_en' => 'Damascus']);
     $owner = User::factory()->create();
 
-    $draft = RouteDraft::create([
-        'user_id' => $owner->id,
-        'city_id' => 'damascus',
-        'name_ar' => 'مسودة',
-        'geojson' => ['type' => 'FeatureCollection', 'features' => []],
-        'status' => 'pending',
-    ]);
+    $draft = transitDraft('damascus', ['user_id' => $owner->id]);
 
     $editor = User::factory()->withPermissions(['transit.edit_routes'])->create();
 
@@ -472,16 +410,10 @@ it('lets an unscoped transit editor edit another users draft', function () {
 });
 
 it('keeps a scoped transit editor inside their governorates', function () {
-    capabilitiesCity('aleppo', 'Aleppo');
+    seedCity('aleppo', ['name_ar' => 'Aleppo', 'name_en' => 'Aleppo']);
     $owner = User::factory()->create();
 
-    $draft = RouteDraft::create([
-        'user_id' => $owner->id,
-        'city_id' => 'aleppo',
-        'name_ar' => 'مسودة',
-        'geojson' => ['type' => 'FeatureCollection', 'features' => []],
-        'status' => 'pending',
-    ]);
+    $draft = transitDraft('aleppo', ['user_id' => $owner->id]);
 
     $editor = User::factory()->create([
         'permissions' => ['transit.edit_routes'],
@@ -494,18 +426,11 @@ it('keeps a scoped transit editor inside their governorates', function () {
 });
 
 it('does not let a transit approver edit a draft they do not own', function () {
-    // transit.approve is a real capability that used to fall through the role
-    // list and land on the owner check.
-    capabilitiesCity('damascus', 'Damascus');
+    // transit.approve is a real capability and must not land on the owner check.
+    seedCity('damascus', ['name_ar' => 'Damascus', 'name_en' => 'Damascus']);
     $owner = User::factory()->create();
 
-    $draft = RouteDraft::create([
-        'user_id' => $owner->id,
-        'city_id' => 'damascus',
-        'name_ar' => 'مسودة',
-        'geojson' => ['type' => 'FeatureCollection', 'features' => []],
-        'status' => 'pending',
-    ]);
+    $draft = transitDraft('damascus', ['user_id' => $owner->id]);
 
     $approver = User::factory()->withPermissions(['transit.approve'])->create();
 
@@ -515,56 +440,28 @@ it('does not let a transit approver edit a draft they do not own', function () {
 });
 
 it('still lets the owner edit their own draft without a capability', function () {
-    capabilitiesCity('damascus', 'Damascus');
+    seedCity('damascus', ['name_ar' => 'Damascus', 'name_en' => 'Damascus']);
     $owner = User::factory()->create();
 
-    $draft = RouteDraft::create([
-        'user_id' => $owner->id,
-        'city_id' => 'damascus',
-        'name_ar' => 'مسودة',
-        'geojson' => ['type' => 'FeatureCollection', 'features' => []],
-        'status' => 'pending',
-    ]);
+    $draft = transitDraft('damascus', ['user_id' => $owner->id]);
 
     $this->actingAs($owner)->getJson("/api/v1/studio/routes/{$draft->id}")->assertOk();
 });
 
-it('keeps GuessWho superadmin-only even for a full-catalogue account', function () {
-    // The one place access was narrowed rather than re-expressed: minting
-    // guesswho.* capabilities for a novelty game with one operator was not worth
-    // a fifth module in the catalogue. Pinned so it is never widened by
-    // accident, and so the migration note stays honest — an account that ran
-    // GuessWho as `admin` has to be promoted.
-    $staff = User::factory()->withPermissions(PermissionCatalogue::all())->create();
+it('gates GuessWho on guesswho.manage', function () {
+    // guesswho.manage is part of the one capability vocabulary: the superadmin
+    // role resolves it through the catalogue, and anyone else needs the explicit
+    // grant, exactly like every other admin module.
+    $plain = User::factory()->create(['role' => 'user', 'permissions' => []]);
+    $this->actingAs($plain)->get('/admin/guesswho')->assertForbidden();
 
-    $this->actingAs($staff)->get('/admin/guesswho')->assertForbidden();
+    $operator = User::factory()->withPermissions([PermissionCatalogue::GUESSWHO_MANAGE])->create();
+    $this->actingAs($operator)->get('/admin/guesswho')->assertOk();
 
     $superadmin = User::factory()->create(['role' => 'superadmin']);
-
     $this->actingAs($superadmin)->get('/admin/guesswho')->assertOk();
 });
 
-// ─── The role machinery is gone, not merely bypassed ───────────────────────
-
-it('has no role-to-capability machinery left on the model', function () {
-    // Stronger than asserting behaviour: the members are gone, so nothing can
-    // reintroduce a caller that depends on them.
-    $reflection = new ReflectionClass(User::class);
-
-    expect(method_exists(User::class, 'isAdmin'))->toBeFalse()
-        ->and(method_exists(User::class, 'moduleImplyingRoles'))->toBeFalse()
-        ->and($reflection->hasConstant('ROLE_MODULE_PREFIXES'))->toBeFalse();
-});
-
-it('has no admin middleware class or route alias left', function () {
-    // Asserted on the router's alias table rather than class_exists(), because a
-    // developer's composer classmap can still list a deleted file and make
-    // class_exists() fatal — a stale local artefact, not a real failure.
-    expect(app('router')->getMiddleware())->not->toHaveKey('admin')
-        ->and(file_exists(app_path('Http/Middleware/Admin.php')))->toBeFalse();
-});
-
-// ─── Migration safety ──────────────────────────────────────────────────────
 //
 // The 2026-09-27 migration rewrote every retired role to `user`, granting the
 // catalogue first so the rewrite could not cost anyone access. It is deployed

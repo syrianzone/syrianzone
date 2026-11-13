@@ -15,7 +15,7 @@ interface Props {
 // a new tool gets consistent navigation for free (mirrors GameShell).
 export default function MuslimShell({ title, icon: Icon, width = 'max-w-2xl', children }: Props) {
   return (
-    <div className="min-h-[calc(100svh-4rem-1px)] bg-background text-foreground" dir="rtl">
+    <div className="min-h-[calc(100svh-var(--sz-navbar-h))] bg-background text-foreground" dir="rtl">
       <div className={`container mx-auto ${width} px-4 py-6`}>
         <Link
           href="/muslim"

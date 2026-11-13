@@ -19,6 +19,9 @@ export interface SeoData {
   type: string;
   image: string;
   image_type: string;
+  /** The share card's canvas, decided by the server (`StaticCards::CARD_WIDTH`). */
+  image_width: number;
+  image_height: number;
   url: string;
   canonical: string;
   robots: string;
@@ -44,8 +47,8 @@ export default function SeoHead() {
       <meta property="og:url" content={seo.url} />
       <meta property="og:image" content={seo.image} />
       <meta property="og:image:type" content={seo.image_type} />
-      <meta property="og:image:width" content="1200" />
-      <meta property="og:image:height" content="630" />
+      <meta property="og:image:width" content={String(seo.image_width)} />
+      <meta property="og:image:height" content={String(seo.image_height)} />
       <meta property="og:image:alt" content={seo.og_title} />
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={seo.og_title} />

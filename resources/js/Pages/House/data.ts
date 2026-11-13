@@ -52,7 +52,6 @@ function ageToGroup(age: number): string {
     return '60p';
 }
 
-// Simple CSV Parser
 function parseCSVRow(line: string): string[] {
     const result: string[] = [];
     let current = '';
@@ -105,7 +104,6 @@ function parseCSVToObjects(csvText: string): HouseRow[] {
 
         const appealKey = appealKeys.find(k => obj[k]) || '';
 
-        // Compute derived fields
         const sexNorm = normalizeSex(obj['Sex'] || obj['الجنس']);
         const ageNum = computeAge(obj);
 
@@ -116,10 +114,9 @@ function parseCSVToObjects(csvText: string): HouseRow[] {
             __sexNorm: sexNorm,
             __ageGroup: ageToGroup(ageNum),
             __appealStatus: String(obj[appealKey] || '').trim(),
-            'Age': String(ageNum) // Normalize Age field
+            'Age': String(ageNum)
         };
 
-        // Filter empty rows
         if (!row.__nameNorm && !row.__placeNorm) continue;
 
         data.push(row);

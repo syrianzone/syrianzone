@@ -19,11 +19,6 @@ use Laravel\Sanctum\PersonalAccessToken;
 |
 */
 
-function superadmin(): User
-{
-    return User::factory()->create(['role' => 'superadmin', 'permissions' => []]);
-}
-
 test('the tokens page needs a capability, not a role', function () {
     $this->get('/admin/api-tokens')->assertRedirect(route('login'));
 
@@ -46,7 +41,7 @@ test('a superadmin gets the page with the data it needs', function () {
     $owner = moduleStaff('transit');
     app(TokenIssuer::class)->issue($owner, 'existing', ['transit.approve']);
 
-    $this->actingAs(superadmin())
+    $this->actingAs(User::factory()->superadmin()->create())
         ->get('/admin/api-tokens')
         ->assertOk()
         ->assertInertia(fn ($page) => $page
@@ -64,18 +59,10 @@ test('a superadmin gets the page with the data it needs', function () {
         );
 });
 
-test('the owner list only offers users who hold a capability', function () {
-    superadmin();
-
-    $this->actingAs(superadmin())
-        ->get('/admin/api-tokens')
-        ->assertInertia(fn ($page) => $page->component('Admin/ApiTokens/Index'));
-});
-
 test('a superadmin can mint a token and gets the plaintext once', function () {
     $owner = moduleStaff('places');
 
-    $this->actingAs(superadmin())
+    $this->actingAs(User::factory()->superadmin()->create())
         ->postJson('/api/v1/admin/api-tokens', [
             'user_id' => $owner->id,
             'name' => 'claude-code',
@@ -92,7 +79,7 @@ test('a superadmin can mint a token and gets the plaintext once', function () {
 test('a request for capabilities the owner lacks is clamped, not granted', function () {
     $owner = moduleStaff('places');
 
-    $response = $this->actingAs(superadmin())
+    $response = $this->actingAs(User::factory()->superadmin()->create())
         ->postJson('/api/v1/admin/api-tokens', [
             'user_id' => $owner->id,
             'name' => 'overreach',
@@ -109,7 +96,7 @@ test('a request for capabilities the owner lacks is clamped, not granted', funct
 test('a token with no usable capability is refused rather than minted inert', function () {
     $owner = User::factory()->create(['role' => 'user', 'permissions' => []]);
 
-    $this->actingAs(superadmin())
+    $this->actingAs(User::factory()->superadmin()->create())
         ->postJson('/api/v1/admin/api-tokens', [
             'user_id' => $owner->id,
             'name' => 'inert',
@@ -123,7 +110,7 @@ test('a token with no usable capability is refused rather than minted inert', fu
 });
 
 test('minting validates its input', function () {
-    $this->actingAs(superadmin())
+    $this->actingAs(User::factory()->superadmin()->create())
         ->postJson('/api/v1/admin/api-tokens', [
             'user_id' => 999999,
             'name' => 'x',
@@ -135,7 +122,7 @@ test('minting validates its input', function () {
 
     $owner = User::factory()->create(['role' => 'admin']);
 
-    $this->actingAs(superadmin())
+    $this->actingAs(User::factory()->superadmin()->create())
         ->postJson('/api/v1/admin/api-tokens', [
             'user_id' => $owner->id,
             'name' => '',
@@ -145,7 +132,7 @@ test('minting validates its input', function () {
         ->assertStatus(422)
         ->assertJsonValidationErrors('name');
 
-    $this->actingAs(superadmin())
+    $this->actingAs(User::factory()->superadmin()->create())
         ->postJson('/api/v1/admin/api-tokens', [
             'user_id' => $owner->id,
             'name' => 'x',
@@ -155,7 +142,7 @@ test('minting validates its input', function () {
         ->assertStatus(422)
         ->assertJsonValidationErrors('ttl');
 
-    $this->actingAs(superadmin())
+    $this->actingAs(User::factory()->superadmin()->create())
         ->postJson('/api/v1/admin/api-tokens', [
             'user_id' => $owner->id,
             'name' => 'x',
@@ -165,7 +152,7 @@ test('minting validates its input', function () {
         ->assertStatus(422)
         ->assertJsonValidationErrors('permissions.0');
 
-    $this->actingAs(superadmin())
+    $this->actingAs(User::factory()->superadmin()->create())
         ->postJson('/api/v1/admin/api-tokens', [
             'user_id' => $owner->id,
             'name' => 'x',
@@ -192,12 +179,6 @@ test('accounts without any capability cannot mint', function () {
 
     expect($owner->tokens()->count())->toBe(0);
 });
-
-/*
-|--------------------------------------------------------------------------
-| Self-service: a capability holder managing their own tokens
-|--------------------------------------------------------------------------
-*/
 
 test('a capability holder sees only their own tokens and their own capabilities', function () {
     $staff = moduleStaff('places');
@@ -270,6 +251,23 @@ test('a capability holder revokes only their own agent tokens', function () {
         ->and(PersonalAccessToken::find($foreign->id))->not->toBeNull();
 });
 
+test('a phone session with extra abilities is still hidden and not revocable here', function () {
+    // Membership decides "this is a phone session", not array identity: a token
+    // that ever carries `mobile` next to another ability must not appear on the
+    // agent-token page, nor be revocable through it.
+    $staff = moduleStaff('places');
+    $mobile = $staff->createToken('phone', ['mobile', 'places.review'])->accessToken;
+
+    $this->actingAs($staff)
+        ->get('/admin/api-tokens')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('tokens', []));
+
+    $this->actingAs($staff)->deleteJson("/api/v1/admin/api-tokens/{$mobile->id}")->assertNotFound();
+
+    expect(PersonalAccessToken::find($mobile->id))->not->toBeNull();
+});
+
 test('revoking every token of a user stays superadmin-only', function () {
     $staff = moduleStaff('places');
     app(TokenIssuer::class)->issue($staff, 'mine', ['places.review']);
@@ -284,7 +282,7 @@ test('revoking every token of a user stays superadmin-only', function () {
 test('an API token cannot be used to mint another token', function () {
     // Otherwise a narrow agent token could mint itself one carrying everything
     // its owner holds, escaping its own ceiling. Holds for superadmins too.
-    foreach ([moduleStaff('places'), superadmin()] as $owner) {
+    foreach ([moduleStaff('places'), User::factory()->superadmin()->create()] as $owner) {
         $plain = app(TokenIssuer::class)->issue($owner, 'narrow', ['places.review'])['token']->plainTextToken;
 
         $this->app['auth']->forgetGuards();
@@ -306,7 +304,7 @@ test('a token can be revoked', function () {
     $owner = moduleStaff('places');
     $token = app(TokenIssuer::class)->issue($owner, 'doomed', ['places.review'])['token']->accessToken;
 
-    $this->actingAs(superadmin())
+    $this->actingAs(User::factory()->superadmin()->create())
         ->deleteJson("/api/v1/admin/api-tokens/{$token->id}")
         ->assertOk()
         ->assertJsonPath('message', 'تم إبطال الرمز «doomed»');
@@ -321,7 +319,7 @@ test('every token for a user can be revoked at once', function () {
     app(TokenIssuer::class)->issue($owner, 'b', ['places.review']);
     app(TokenIssuer::class)->issue($owner, 'c', ['places.review']);
 
-    $this->actingAs(superadmin())
+    $this->actingAs(User::factory()->superadmin()->create())
         ->postJson("/api/v1/admin/api-tokens/revoke-all/{$owner->id}")
         ->assertOk()
         ->assertJsonPath('message', 'تم إبطال 3 رمز');
@@ -337,7 +335,7 @@ test('the list marks expired and banned-owner tokens', function () {
     app(TokenIssuer::class)->issue($stale, 'stale', ['places.review']);
     $stale->tokens()->update(['expires_at' => Date::now()->subDay()]);
 
-    $this->actingAs(superadmin())
+    $this->actingAs(User::factory()->superadmin()->create())
         ->get('/admin/api-tokens')
         ->assertOk()
         ->assertInertia(fn ($page) => $page
@@ -351,7 +349,7 @@ test('a minted token immediately works against the agent endpoint', function () 
     // Closes the loop: the thing the dashboard mints is the thing /mcp/admin accepts.
     $owner = moduleStaff('places');
 
-    $plain = $this->actingAs(superadmin())
+    $plain = $this->actingAs(User::factory()->superadmin()->create())
         ->postJson('/api/v1/admin/api-tokens', [
             'user_id' => $owner->id,
             'name' => 'e2e',

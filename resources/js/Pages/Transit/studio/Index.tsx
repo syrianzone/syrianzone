@@ -1,10 +1,8 @@
-'use client'
-
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { router, Link, usePage } from '@inertiajs/react';
-import type { FeatureCollection, Position } from 'geojson'
+import type { Feature, FeatureCollection, Position } from 'geojson'
 import {
   Route,
   MapPin,
@@ -22,15 +20,23 @@ import {
   UserCheck,
   UserX
 } from 'lucide-react'
-import { useStudioStore, type StopFeature } from '../_store/useStudioStore'
+import { useStudioStore, type StudioPatch, type StopFeature } from '../_store/useStudioStore'
 import { useMapData } from '../_hooks/useMapData'
-import cities from '../_data/cities.json'
+import type { TransitCity } from '@/Domain/transit/types'
 import TransitLayout from '../layout'
-import { useTransitTheme } from '../_components/TransitThemeContext'
-import { THEME_REGISTRY } from '@/Lib/theme'
+import { createBaseMap } from '@/Components/map/createMap'
+import { useMapStyle } from '@/Components/map/useMapStyle'
+import { resolveBasemapStyle } from '@/Components/map/resolveStyle'
+import { geometryPositions } from '@/Components/map/geo'
+import { useMapColors } from '@/Components/map/mapColors'
+import { firstSymbolLayerId } from '@/Components/map/layers'
 import { useAuth } from '@/Contexts/AuthContext'
-import { ROUTE_PALETTE, getRouteColor, buildColorMatch } from '../_lib/mapColors'
-import { BottomSheet } from '../_components/BottomSheet'
+import { canModule } from '@/Lib/capabilities'
+import { apiErrorMessage } from '@/Lib/api'
+import type { StudioDraftPayload } from '../_types/admin'
+import { transitApi } from '../_lib/api'
+import { ROUTE_PALETTE, TRANSIT_MAP_COLORS, getRouteColor, buildColorMatch } from '../_lib/mapColors'
+import { BottomSheet } from '@/Components/BottomSheet'
 import {
   Accordion,
   AccordionItem,
@@ -41,7 +47,7 @@ import { Button } from '@/Components/ui/button'
 import { Input } from '@/Components/ui/input'
 import { Textarea } from '@/Components/ui/textarea'
 import { Badge } from '@/Components/ui/badge'
-import { toast } from '@/Components/ui/sonner'
+import { notify } from '@/Lib/notify'
 import {
   Select,
   SelectContent,
@@ -50,36 +56,28 @@ import {
   SelectValue,
 } from '@/Components/ui/select'
 
-// RTL text shaping for Arabic labels on the vector basemap
-if (maplibregl.getRTLTextPluginStatus() === 'unavailable') {
-  maplibregl.setRTLTextPlugin('/styles/mapbox-gl-rtl-text.min.js', true)
-}
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 type DrawMode = 'idle' | 'line' | 'point'
 
-// ─── Map layer IDs ────────────────────────────────────────────────────────────
 const SRC_LINES      = 'studio-lines'
 const SRC_STOPS      = 'studio-stops'
 const SRC_ACTIVE     = 'studio-active'
 const SRC_REF_ROUTES = 'ref-routes'
 const SRC_REF_STOPS  = 'ref-stops'
 
-// ─── Conflict detection helpers ───────────────────────────────────────────────
-function getBbox(coords: [number, number][]): [number, number, number, number] {
+function getBbox(coords: readonly Position[]): [number, number, number, number] {
   const lngs = coords.map(c => c[0])
   const lats = coords.map(c => c[1])
   return [Math.min(...lngs), Math.min(...lats), Math.max(...lngs), Math.max(...lats)]
 }
 
-function checkConflict(drawnLine: [number, number][], routeFeatures: any[]): boolean {
+function checkConflict(drawnLine: [number, number][], routeFeatures: Feature[]): boolean {
   if (!routeFeatures.length) return false
   const [minX, minY, maxX, maxY] = getBbox(drawnLine)
   const drawnArea = (maxX - minX) * (maxY - minY)
   if (drawnArea === 0) return false
   for (const feat of routeFeatures) {
-    if (!feat.geometry?.coordinates) continue
-    const coords = feat.geometry.coordinates as [number, number][]
+    const coords = geometryPositions(feat.geometry)
+    if (coords.length === 0) continue
     const [bX, bY, bX2, bY2] = getBbox(coords)
     const ix1 = Math.max(minX, bX), iy1 = Math.max(minY, bY)
     const ix2 = Math.min(maxX, bX2), iy2 = Math.min(maxY, bY2)
@@ -90,7 +88,6 @@ function checkConflict(drawnLine: [number, number][], routeFeatures: any[]): boo
   return false
 }
 
-// Find nearest point on a line segment
 function nearestOnSegment(px: number, py: number, ax: number, ay: number, bx: number, by: number) {
   const dx = bx - ax, dy = by - ay
   const lenSq = dx * dx + dy * dy
@@ -100,7 +97,6 @@ function nearestOnSegment(px: number, py: number, ax: number, ay: number, bx: nu
   return { x: ax + t * dx, y: ay + t * dy, t }
 }
 
-// Find the nearest segment in a polyline
 function findNearestSegment(coords: [number, number][], px: number, py: number, map: maplibregl.Map) {
   let minDist = Infinity
   let insertIdx = 0
@@ -120,13 +116,6 @@ function findNearestSegment(coords: [number, number][], px: number, py: number, 
     }
   }
   return { insertIdx, distance: minDist, nearest: bestNearest }
-}
-
-function formatWait(seconds: number) {
-  if (seconds <= 1) return 'ثانية واحدة'
-  if (seconds === 2) return 'ثانيتان'
-  if (seconds <= 10) return `${seconds} ثوانٍ`
-  return `${seconds} ثانية`
 }
 
 function SuccessPanel({ draftId, isEditMode, isPublishedRouteEdit, isAnonymous, onReset, onEdit, onExit }: {
@@ -212,18 +201,22 @@ function StopNamePopup({ stop, pixel, onConfirm, onDismiss }: {
   )
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
 function TransitStudioPageContent() {
   const mapContainer = useRef<HTMLDivElement>(null)
   const mapRef       = useRef<maplibregl.Map | null>(null)
   const currentStyleRef = useRef<string | null>(null)
   const modeRef      = useRef<DrawMode>('idle')
-  const activeLine   = useRef<Position[]>([])
-  const isMobileRef  = useRef(false)
+  const activeLine   = useRef<[number, number][]>([])
   const vertexMarkersRef = useRef<maplibregl.Marker[]>([])
   const stopMarkersRef = useRef<maplibregl.Marker[]>([])
   const lastTouchTimeRef = useRef<number>(0)
   const restoredEditIdRef = useRef<string | null>(null)
+  const { scheme, styleUrl } = useMapStyle()
+  const schemeRef = useRef(scheme)
+  schemeRef.current = scheme
+  const mapColors = useMapColors(TRANSIT_MAP_COLORS)
+  const mapColorsRef = useRef(mapColors)
+  mapColorsRef.current = mapColors
 
   const {
     cityId, drawnLine, stops, nameAr, nameEn, price, notes, submittedDraftId,
@@ -232,10 +225,13 @@ function TransitStudioPageContent() {
     setCity, setDrawnLine, addStop, removeStop, updateStopName, updateStopCoordinates, setMeta, setSubmittedDraftId,
     reset, loadDraft
   } = useStudioStore()
-  const { theme } = useTransitTheme()
-  const { user, can, allowedTransitCities } = useAuth()
+  const { user, allowedTransitCities } = useAuth()
 
-  const { url: pageUrl } = usePage()
+  // The city list travels with the page: the studio resolves `?edit=`, `?city=`
+  // and the default city on mount, so it cannot wait for a fetch.
+  const page = usePage<{ cities: TransitCity[] }>()
+  const pageUrl = page.url
+  const cities: TransitCity[] = page.props.cities ?? []
   const pageSearch = new URLSearchParams(pageUrl.split('?')[1] ?? '')
   const editParam = pageSearch.get('edit')
   const cityParam = pageSearch.get('city')
@@ -255,39 +251,19 @@ function TransitStudioPageContent() {
   const activeCities = cities.filter(c => c.status === 'active')
   const currentCity = cities.find(c => c.id === cityId) || activeCities[0]
 
-  // ─── Governorate scope for transit staff ────────────────────────────────────
   const allowedCities = allowedTransitCities()
-  const isScopedStaff = allowedCities !== null && [
-    'transit.review_drafts', 'transit.approve', 'transit.reject',
-    'transit.edit_routes', 'transit.delete_routes',
-  ].some(c => can(c))
+  const isScopedStaff = allowedCities !== null && canModule(user?.effective_permissions, 'transit')
   const cityInScope = (id?: string | null) => !isScopedStaff || (!!id && allowedCities!.includes(id))
   const studioCities = isScopedStaff ? activeCities.filter(c => allowedCities!.includes(c.id)) : activeCities
 
-  // ─── Shadcn Sonner Toast Notification Handler ───────────────────────────────
-  const addToast = useCallback((msg: string, type: 'success' | 'destructive' | 'info' | 'warning' = 'info') => {
-    if (type === 'success') {
-      toast.success(msg)
-    } else if (type === 'destructive') {
-      toast.error(msg)
-    } else if (type === 'warning') {
-      toast.warning(msg)
-    } else {
-      toast.info(msg)
-    }
-  }, [])
-
-  // Helper to ensure MapLibre custom sources & layers exist (survives setStyle)
+  // MapLibre drops custom sources & layers on every setStyle.
   const ensureMapLayers = useCallback((map: maplibregl.Map, currentColorIndex: number) => {
     const empty: FeatureCollection = { type: 'FeatureCollection', features: [] }
     const activeColor = getRouteColor(currentColorIndex)
+    const colors = mapColorsRef.current
     // Keep transit geometry beneath the basemap's symbol layers so street and
     // place labels stay readable; call order still controls relative stacking.
-    const beforeId = (() => {
-      const layers = map.getStyle()?.layers
-      if (!Array.isArray(layers)) return undefined
-      return layers.find((l: any) => l.type === 'symbol')?.id
-    })()
+    const beforeId = firstSymbolLayerId(map)
 
     if (!map.getSource(SRC_REF_ROUTES)) {
       map.addSource(SRC_REF_ROUTES, { type: 'geojson', data: empty })
@@ -295,7 +271,7 @@ function TransitStudioPageContent() {
         id: 'ref-layer-routes',
         type: 'line',
         source: SRC_REF_ROUTES,
-        paint: { 'line-color': buildColorMatch() as any, 'line-width': 3, 'line-opacity': 0.4 },
+        paint: { 'line-color': buildColorMatch(), 'line-width': 3, 'line-opacity': 0.4 },
         layout: { 'line-cap': 'round', 'line-join': 'round' },
       }, beforeId)
     }
@@ -306,7 +282,7 @@ function TransitStudioPageContent() {
         id: 'ref-layer-stops',
         type: 'circle',
         source: SRC_REF_STOPS,
-        paint: { 'circle-radius': 4, 'circle-color': '#d4956a', 'circle-opacity': 0.4 },
+        paint: { 'circle-radius': 4, 'circle-color': colors.stop, 'circle-opacity': 0.4 },
       }, beforeId)
     }
 
@@ -336,20 +312,18 @@ function TransitStudioPageContent() {
         type: 'circle',
         source: SRC_ACTIVE,
         filter: ['==', '$type', 'Point'],
-        paint: { 'circle-radius': 6, 'circle-color': activeColor, 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2 },
+        paint: { 'circle-radius': 6, 'circle-color': activeColor, 'circle-stroke-color': colors.markerStroke, 'circle-stroke-width': 2 },
       }, beforeId)
     }
   }, [])
 
-  // Push the other published routes back while a line is being drawn/edited.
   const applyRefDim = useCallback((map: maplibregl.Map, focused: boolean) => {
     if (!map.getLayer('ref-layer-routes')) return
     map.setPaintProperty('ref-layer-routes', 'line-opacity', focused ? 0.15 : 0.4)
   }, [])
 
-  // Push reference data + the "step back" opacity in one pass. Called after
-  // every layer (re)creation, including a basemap style swap, so neither the
-  // references nor the dimming can be silently reset.
+  // Called after every layer (re)creation, including a basemap style swap, so
+  // neither the references nor the dimming can be silently reset.
   const syncRefLayers = useCallback((map: maplibregl.Map) => {
     const rSrc = map.getSource(SRC_REF_ROUTES) as maplibregl.GeoJSONSource | undefined
     const sSrc = map.getSource(SRC_REF_STOPS) as maplibregl.GeoJSONSource | undefined
@@ -364,10 +338,10 @@ function TransitStudioPageContent() {
         ? { ...refData.routes, features: refData.routes.features.filter(f => f.properties?.id !== editingId) }
         : refData.routes
       const stops = editingId
-        ? { ...refData.stops, features: refData.stops.features.filter(f => !(f.properties as any)?.routeIds?.includes(editingId)) }
+        ? { ...refData.stops, features: refData.stops.features.filter(f => !f.properties?.routeIds?.includes(editingId)) }
         : refData.stops
-      rSrc?.setData(routes as any)
-      sSrc?.setData(stops as any)
+      rSrc?.setData(routes)
+      sSrc?.setData(stops)
     } else {
       rSrc?.setData(empty)
       sSrc?.setData(empty)
@@ -376,7 +350,6 @@ function TransitStudioPageContent() {
     applyRefDim(map, !!editingId || (store.drawnLine?.length ?? 0) >= 2)
   }, [refData, applyRefDim])
 
-  // Active-line source helpers
   const flushActive = useCallback((coords: Position[], cursor?: Position) => {
     if (!mapRef.current) return
     const map = mapRef.current
@@ -384,7 +357,7 @@ function TransitStudioPageContent() {
 
     const src = map.getSource(SRC_ACTIVE) as maplibregl.GeoJSONSource | undefined
     if (!src) return
-    const features: any[] = []
+    const features: Feature[] = []
     const all = cursor && coords.length > 0 ? [...coords, cursor] : coords
     if (all.length >= 2) features.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: all } })
     coords.forEach(c => features.push({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: c } }))
@@ -399,7 +372,6 @@ function TransitStudioPageContent() {
     src?.setData({ type: 'FeatureCollection', features: [] })
   }, [])
 
-  // Mode switching
   const setMode = useCallback((mode: DrawMode) => {
     clearActive()
     modeRef.current = mode
@@ -408,7 +380,6 @@ function TransitStudioPageContent() {
     if (canvas) canvas.style.cursor = mode !== 'idle' ? 'crosshair' : ''
   }, [clearActive])
 
-  // Finish / End line editing or drawing on double-click / double-tap
   const finishLineEditing = useCallback(() => {
     if (modeRef.current !== 'line') return
 
@@ -416,7 +387,7 @@ function TransitStudioPageContent() {
       const finalLine = [...activeLine.current]
       setDrawnLine(finalLine)
       setMode('idle')
-      addToast(`اكتمل رسم المسار (${finalLine.length} نقطة)`, 'success')
+      notify.success(`اكتمل رسم المسار (${finalLine.length} نقطة)`)
 
       if (refData?.routes?.features?.length) {
         const conflict = checkConflict(finalLine, refData.routes.features)
@@ -428,15 +399,14 @@ function TransitStudioPageContent() {
       const curDrawn = useStudioStore.getState().drawnLine
       if (curDrawn && curDrawn.length >= 2) {
         setMode('idle')
-        addToast(`تم إنهاء تعديل المسار (${curDrawn.length} نقطة)`, 'success')
+        notify.success(`تم إنهاء تعديل المسار (${curDrawn.length} نقطة)`)
         setAccordionValue('stops')
       } else {
-        addToast('يجب رسم نقطتين على الأقل', 'destructive')
+        notify.error('يجب رسم نقطتين على الأقل')
       }
     }
-  }, [addToast, refData, setDrawnLine, setMode])
+  }, [refData, setDrawnLine, setMode])
 
-  // Focus station input in sidebar and scroll to it
   const handleFocusStationInput = useCallback((stopId: number) => {
     setAccordionValue('stops')
     setActiveStopId(stopId)
@@ -455,7 +425,7 @@ function TransitStudioPageContent() {
     if (pending) {
       try {
         const s = JSON.parse(pending)
-        const patch: any = {}
+        const patch: StudioPatch = {}
         if (s.cityId && cities.some(c => c.id === s.cityId)) patch.cityId = s.cityId
         if (s.drawnLine) patch.drawnLine = s.drawnLine
         if (s.stops) patch.stops = s.stops
@@ -474,13 +444,13 @@ function TransitStudioPageContent() {
           restoredEditIdRef.current = s.editingRouteId
         }
         useStudioStore.setState(patch)
-        addToast('تمت استعادة مسارك لتقديمه تحت حسابك المسجل', 'success')
+        notify.success('تمت استعادة مسارك لتقديمه تحت حسابك المسجل')
       } catch { /* */ }
       localStorage.removeItem('transit:studio:pending')
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Load draft for editing (?edit= is a route_drafts id or a published route id)
+  // ?edit= is a route_drafts id or a published route id.
   useEffect(() => {
     if (!editParam) return
     // Stashed pending work for this entity is fresher than the server copy
@@ -488,40 +458,47 @@ function TransitStudioPageContent() {
     // Already showing this entity — the store survives SPA navigations, so a bare
     // isEditMode check would skip loading a different ?edit= target (wrong draft/city)
     if ((editingDraftId != null && String(editingDraftId) === editParam) || editingRouteId === editParam) return
-    fetch(`/api/v1/studio/routes/${editParam}`, { credentials: 'include' })
-      .then(r => {
-        if (r.ok) return r.json().then(draft => ({ draft, isRoute: false }))
-        return fetch(`/api/v1/studio/routes/${editParam}/from-route`, { credentials: 'include' })
-          .then(r2 => r2.ok ? r2.json().then(d => ({ draft: d, isRoute: true })) : null)
-      })
-      .then(result => {
-        if (result) {
-          if (!cityInScope(result.draft?.city_id)) {
-            addToast('هذا المسار يقع خارج نطاق المحافظات المسموح لك', 'destructive')
-            return
-          }
-          const draftCity = result.draft?.city_id
-          const knownCity = !!draftCity && cities.some(c => c.id === draftCity)
-          if (knownCity) {
-            loadDraft(result.draft)
-          } else {
-            // Never bind to a city the UI cannot represent: the header would show
-            // one city while the submit sends another (or null).
-            addToast('تعذّر تحديد مدينة هذا المسار — تم اختيار مدينة افتراضية، تحقق من المدينة قبل الحفظ', 'warning')
-            loadDraft({ ...result.draft, city_id: useStudioStore.getState().cityId || studioCities[0]?.id || '' })
-          }
-          addToast(result.isRoute ? 'تم تحميل الخط المنشور للتعديل' : 'تم تحميل المسار للتعديل', 'success')
-        } else {
-          addToast('تعذّر تحميل المسار للتعديل', 'destructive')
+
+    ;(async () => {
+      let result: { draft: StudioDraftPayload; isRoute: boolean } | null = null
+      try {
+        const draft = await transitApi.studioRoute(editParam)
+        result = { draft, isRoute: false }
+      } catch {
+        try {
+          const draft = await transitApi.studioRouteFromRoute(editParam)
+          result = { draft, isRoute: true }
+        } catch {
+          result = null
         }
-      })
-      .catch(() => addToast('تعذّر تحميل المسار للتعديل', 'destructive'))
+      }
+
+      if (!result) {
+        notify.error('تعذّر تحميل المسار للتعديل')
+        return
+      }
+
+      const draftCity = result.draft?.city_id
+      if (!cityInScope(draftCity)) {
+        notify.error('هذا المسار يقع خارج نطاق المحافظات المسموح لك')
+        return
+      }
+      const knownCity = !!draftCity && cities.some(c => c.id === draftCity)
+      if (knownCity) {
+        loadDraft(result.draft)
+      } else {
+        // Never bind to a city the UI cannot represent: the header would show
+        // one city while the submit sends another (or null).
+        notify.warning('تعذّر تحديد مدينة هذا المسار — تم اختيار مدينة افتراضية، تحقق من المدينة قبل الحفظ')
+        loadDraft({ ...result.draft, city_id: useStudioStore.getState().cityId || studioCities[0]?.id || '' })
+      }
+      notify.success(result.isRoute ? 'تم تحميل الخط المنشور للتعديل' : 'تم تحميل المسار للتعديل')
+    })()
   }, [editParam]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Constrain (and optionally zoom) the map to a city's boundaries
   const applyCityBounds = useCallback((cId: string, opts: { fit?: boolean } = {}) => {
     const c = cities.find(x => x.id === cId)
-    if (c && mapRef.current) {
+    if (c?.bounds && mapRef.current) {
       const sw = c.bounds[0] as [number, number]
       const ne = c.bounds[1] as [number, number]
 
@@ -537,7 +514,6 @@ function TransitStudioPageContent() {
     }
   }, [])
 
-  // Center & Fit bounds on city select, bounding user to city boundaries
   const handleCitySelect = useCallback((cId: string) => {
     setCity(cId)
     applyCityBounds(cId, { fit: true })
@@ -566,7 +542,6 @@ function TransitStudioPageContent() {
     }
   }, [cityId, studioCities, handleCitySelect, isScopedStaff]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Zoom to fit route when editing
   useEffect(() => {
     if (!mapReady || !mapRef.current || !drawnLine || drawnLine.length < 2 || !isEditMode) return
     const map = mapRef.current
@@ -575,50 +550,27 @@ function TransitStudioPageContent() {
     map.fitBounds(bounds, { padding: 80, maxZoom: 15, duration: 500 })
   }, [mapReady, drawnLine, isEditMode])
 
-  // Helper to check dark mode state
-  const isDarkMode = useCallback(() => {
-    const html = document.documentElement
-    const themeConfig = THEME_REGISTRY.find((t) => t.id === theme)
-    return (
-      html.classList.contains('dark') ||
-      html.getAttribute('data-theme') === 'dark' ||
-      (themeConfig?.isDark ?? false)
-    )
-  }, [theme])
-
-  // Map initialization with User's Color Theme
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return
 
-    const dark = isDarkMode()
     const initCity = cities.find(c => c.id === cityId) || activeCities[0]
-    const initialStyle = dark ? '/styles/styles/dark-matter-vector.json' : '/styles/styles/light-vector.json'
-    currentStyleRef.current = initialStyle
+    currentStyleRef.current = resolveBasemapStyle(schemeRef.current)
 
-    const map = new maplibregl.Map({
+    const map = createBaseMap({
       container: mapContainer.current,
-      style: initialStyle,
+      scheme: schemeRef.current,
       center: initCity ? (initCity.center as [number, number]) : [36.2913, 33.5138],
       zoom: initCity ? initCity.zoom : 12,
-      attributionControl: false,
+      controls: 'bottom-right',
+      geolocate: true,
       doubleClickZoom: false,
     })
 
-    if (initCity) {
+    if (initCity?.bounds) {
       const sw = initCity.bounds[0] as [number, number]
       const ne = initCity.bounds[1] as [number, number]
       map.setMaxBounds([[sw[0] - 0.08, sw[1] - 0.08], [ne[0] + 0.08, ne[1] + 0.08]])
     }
-
-    map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right')
-    map.addControl(new maplibregl.NavigationControl(), 'bottom-right')
-    map.addControl(
-      new maplibregl.GeolocateControl({
-        positionOptions: { enableHighAccuracy: true },
-        trackUserLocation: false,
-      }),
-      'bottom-right'
-    )
 
     map.on('load', () => {
       ensureMapLayers(map, colorIndex)
@@ -626,64 +578,46 @@ function TransitStudioPageContent() {
       setMapReady(true)
     })
 
-    isMobileRef.current = window.innerWidth <= 768
-    const handleResize = () => { isMobileRef.current = window.innerWidth <= 768 }
-    window.addEventListener('resize', handleResize)
     return () => {
-      window.removeEventListener('resize', handleResize)
       map.remove()
       mapRef.current = null
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Dynamically sync Map vector style ONLY when dark/light style actually changes
+  // Follow the theme on the live canvas. setStyle wipes every runtime layer, so
+  // re-add ours on style.load — NOT styledata, which MapLibre also fires for
+  // each runtime mutation and would loop forever.
   useEffect(() => {
     if (!mapReady || !mapRef.current) return
     const map = mapRef.current
+    if (currentStyleRef.current === styleUrl) return
+    currentStyleRef.current = styleUrl
+    map.setStyle(styleUrl)
+    map.once('style.load', () => {
+      ensureMapLayers(map, colorIndex)
+      syncRefLayers(map)
 
-    const applyStyleIfNeeded = () => {
-      const dark = isDarkMode()
-      const targetStyle = dark ? '/styles/styles/dark-matter-vector.json' : '/styles/styles/light-vector.json'
-
-      if (currentStyleRef.current !== targetStyle) {
-        currentStyleRef.current = targetStyle
-        map.setStyle(targetStyle)
-        // style.load, NOT styledata: MapLibre fires styledata for every runtime
-        // mutation too, so re-adding layers there loops forever.
-        map.once('style.load', () => {
-          ensureMapLayers(map, colorIndex)
-          syncRefLayers(map)
-
-          const store = useStudioStore.getState()
-          if (store.drawnLine?.length) {
-            const lSrc = map.getSource(SRC_LINES) as maplibregl.GeoJSONSource
-            lSrc?.setData({
-              type: 'FeatureCollection',
-              features: [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: store.drawnLine } }]
-            })
-          }
-
-          const pts = activeLine.current
-          if (pts.length >= 2) {
-            const aSrc = map.getSource(SRC_ACTIVE) as maplibregl.GeoJSONSource
-            const features: any[] = [
-              { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: pts } },
-            ]
-            pts.forEach((c) => features.push({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: c } }))
-            aSrc?.setData({ type: 'FeatureCollection', features })
-          }
+      const store = useStudioStore.getState()
+      if (store.drawnLine?.length) {
+        const lSrc = map.getSource(SRC_LINES) as maplibregl.GeoJSONSource
+        lSrc?.setData({
+          type: 'FeatureCollection',
+          features: [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: store.drawnLine } }]
         })
       }
-    }
 
-    applyStyleIfNeeded()
+      const pts = activeLine.current
+      if (pts.length >= 2) {
+        const aSrc = map.getSource(SRC_ACTIVE) as maplibregl.GeoJSONSource
+        const features: Feature[] = [
+          { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: pts } },
+        ]
+        pts.forEach((c) => features.push({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: c } }))
+        aSrc?.setData({ type: 'FeatureCollection', features })
+      }
+    })
+  }, [mapReady, styleUrl, colorIndex, ensureMapLayers, syncRefLayers])
 
-    const observer = new MutationObserver(applyStyleIfNeeded)
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme'] })
-    return () => observer.disconnect()
-  }, [mapReady, theme, isDarkMode, colorIndex, ensureMapLayers, syncRefLayers])
-
-  // Sync reference routes/stops for current city
   useEffect(() => {
     if (!mapReady || !mapRef.current) return
     const map = mapRef.current
@@ -691,7 +625,6 @@ function TransitStudioPageContent() {
     syncRefLayers(map)
   }, [mapReady, colorIndex, editingRouteId, ensureMapLayers, syncRefLayers])
 
-  // Live dimming as a line is drawn or a published route is loaded for editing
   useEffect(() => {
     if (!mapReady || !mapRef.current) return
     const map = mapRef.current
@@ -699,7 +632,6 @@ function TransitStudioPageContent() {
     applyRefDim(map, !!editingRouteId || (drawnLine?.length ?? 0) >= 2)
   }, [mapReady, editingRouteId, drawnLine, colorIndex, ensureMapLayers, applyRefDim])
 
-  // Sync line color on vector map
   useEffect(() => {
     if (!mapReady || !mapRef.current) return
     const map = mapRef.current
@@ -717,7 +649,6 @@ function TransitStudioPageContent() {
     }
   }, [mapReady, colorIndex, ensureMapLayers])
 
-  // Sync drawn line to vector map layer
   useEffect(() => {
     if (!mapReady || !mapRef.current) return
     const map = mapRef.current
@@ -735,7 +666,6 @@ function TransitStudioPageContent() {
     }
   }, [mapReady, drawnLine, colorIndex, ensureMapLayers])
 
-  // Render draggable vertex markers on the drawn line with live bus stop re-snapping
   useEffect(() => {
     if (!mapReady || !mapRef.current) return
     const map = mapRef.current
@@ -757,20 +687,17 @@ function TransitStudioPageContent() {
         .setLngLat(coord as maplibregl.LngLatLike)
         .addTo(map)
 
-      // Live dragging of vertex points with real-time bus stop re-snapping
       marker.on('drag', () => {
         const newPos = marker.getLngLat()
         const curLine = [...useStudioStore.getState().drawnLine!]
         curLine[idx] = [newPos.lng, newPos.lat]
 
-        // 1. Update line vector layer live
         const src = map.getSource(SRC_LINES) as maplibregl.GeoJSONSource
         src?.setData({
           type: 'FeatureCollection',
           features: [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: curLine } }]
         })
 
-        // 2. Re-snap stop markers on the map live in real-time to the updated line
         const curStops = useStudioStore.getState().stops
         stopMarkersRef.current.forEach((stopMarker, sIdx) => {
           const stop = curStops[sIdx]
@@ -787,7 +714,6 @@ function TransitStudioPageContent() {
         updatedLine[idx] = [newPos.lng, newPos.lat]
         setDrawnLine(updatedLine)
 
-        // Commit updated snapped stop coordinates to Zustand store
         const curStops = useStudioStore.getState().stops
         if (curStops.length > 0 && updatedLine.length >= 2) {
           curStops.forEach((stop) => {
@@ -797,25 +723,22 @@ function TransitStudioPageContent() {
         }
       })
 
-      // Double click on vertex marker to finish editing
       el.addEventListener('dblclick', (ev) => {
         ev.stopPropagation()
         ev.preventDefault()
         finishLineEditing()
       })
 
-      // Right-click / context menu to remove single vertex
       el.addEventListener('contextmenu', (ev) => {
         ev.preventDefault()
         const cur = useStudioStore.getState().drawnLine!
         if (cur.length <= 2) {
-          addToast('يجب أن يحتوي المسار على نقطتين على الأقل', 'info')
+          notify.info('يجب أن يحتوي المسار على نقطتين على الأقل')
           return
         }
         const updatedLine = cur.filter((_, i) => i !== idx)
         setDrawnLine(updatedLine)
 
-        // Re-snap stops to the updated line after vertex removal
         const curStops = useStudioStore.getState().stops
         if (curStops.length > 0 && updatedLine.length >= 2) {
           curStops.forEach((stop) => {
@@ -823,14 +746,13 @@ function TransitStudioPageContent() {
             updateStopCoordinates(stop.id, [nearest.x, nearest.y])
           })
         }
-        addToast('تمت إزالة النقطة وإعادة محاذاة المحطات على المسار', 'info')
+        notify.info('تمت إزالة النقطة وإعادة محاذاة المحطات على المسار')
       })
 
       vertexMarkersRef.current.push(marker)
     })
-  }, [mapReady, drawnLine, colorIndex, setDrawnLine, updateStopCoordinates, addToast, finishLineEditing])
+  }, [mapReady, drawnLine, colorIndex, setDrawnLine, updateStopCoordinates, finishLineEditing])
 
-  // Render bus stop dots with smooth continuous line snapping during drag
   useEffect(() => {
     if (!mapReady || !mapRef.current) return
     const map = mapRef.current
@@ -851,13 +773,11 @@ function TransitStudioPageContent() {
         .setLngLat(stop.coordinates as maplibregl.LngLatLike)
         .addTo(map)
 
-      // Click dot: open sheet/sidebar, scroll to & focus option to edit station name
       el.addEventListener('click', (ev) => {
         ev.stopPropagation()
         handleFocusStationInput(stop.id)
       })
 
-      // Smooth real-time snapping during drag (WITHOUT triggering React re-renders)
       marker.on('drag', () => {
         const newPos = marker.getLngLat()
         const curLine = useStudioStore.getState().drawnLine
@@ -868,7 +788,6 @@ function TransitStudioPageContent() {
         }
       })
 
-      // Commit final snapped coordinates to store ONLY when drag finishes
       marker.on('dragend', () => {
         const finalPos = marker.getLngLat()
         const curLine = useStudioStore.getState().drawnLine
@@ -886,7 +805,6 @@ function TransitStudioPageContent() {
     })
   }, [mapReady, stops, colorIndex, updateStopCoordinates, handleFocusStationInput])
 
-  // Map Click Handler for drawing lines & adding stops snapped onto line
   useEffect(() => {
     if (!mapReady || !mapRef.current) return
     const map = mapRef.current
@@ -899,7 +817,7 @@ function TransitStudioPageContent() {
         if (curDrawn && curDrawn.length >= 2 && activeLine.current.length === 0) {
           const updated = [...curDrawn, point]
           setDrawnLine(updated)
-          addToast(`تمت إضافة نقطة جديدة للمسار (${updated.length} نقطة)`, 'info')
+          notify.info(`تمت إضافة نقطة جديدة للمسار (${updated.length} نقطة)`)
           return
         }
 
@@ -908,7 +826,7 @@ function TransitStudioPageContent() {
         setActiveVertexCount(count)
         flushActive(activeLine.current)
 
-        if (count === 1) addToast('انقر لإضافة نقاط إضافية • انقر مرتين لإنهاء الرسم والتعديل', 'info')
+        if (count === 1) notify.info('انقر لإضافة نقاط إضافية • انقر مرتين لإنهاء الرسم والتعديل')
       } else if (modeRef.current === 'point') {
         const curLine = useStudioStore.getState().drawnLine
         if (curLine && curLine.length >= 2) {
@@ -920,7 +838,7 @@ function TransitStudioPageContent() {
           if (added) {
             handleFocusStationInput(added.id)
           }
-          addToast('تمت إضافة محطة ومحاذاتها لموقعها على الخط', 'success')
+          notify.success('تمت إضافة محطة ومحاذاتها لموقعها على الخط')
           return
         }
         addStop(point)
@@ -929,7 +847,7 @@ function TransitStudioPageContent() {
         if (added) {
           handleFocusStationInput(added.id)
         }
-        addToast('تمت إضافة محطة', 'success')
+        notify.success('تمت إضافة محطة')
       }
     }
 
@@ -965,9 +883,8 @@ function TransitStudioPageContent() {
       map.off('touchend', onTouchEnd)
       map.off('mousemove', onMouseMove)
     }
-  }, [mapReady, addStop, setDrawnLine, flushActive, addToast, finishLineEditing, handleFocusStationInput])
+  }, [mapReady, addStop, setDrawnLine, flushActive, finishLineEditing, handleFocusStationInput])
 
-  // Key press shortcuts (Esc to cancel drawing)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && modeRef.current === 'line') {
@@ -978,11 +895,10 @@ function TransitStudioPageContent() {
     return () => window.removeEventListener('keydown', onKey)
   }, [finishLineEditing])
 
-  // Drawing Actions
   const handleStartDraw = () => {
     setAccordionValue('line')
     setMode('line')
-    addToast('انقر على الخريطة لبدء رسم المسار', 'info')
+    notify.info('انقر على الخريطة لبدء رسم المسار')
   }
 
   const handleRedraw = () => {
@@ -990,7 +906,7 @@ function TransitStudioPageContent() {
     setConflictWarning(false)
     setAccordionValue('line')
     setMode('line')
-    addToast('تمت إزالة الخط. انقر على الخريطة لرسم مسار جديد.', 'info')
+    notify.info('تمت إزالة الخط. انقر على الخريطة لرسم مسار جديد.')
   }
 
   const handleUndo = () => {
@@ -1002,14 +918,14 @@ function TransitStudioPageContent() {
     } else if (drawnLine && drawnLine.length > 2) {
       const updated = drawnLine.slice(0, -1)
       setDrawnLine(updated)
-      addToast('تمت إزالة النقطة الأخيرة من المسار', 'info')
+      notify.info('تمت إزالة النقطة الأخيرة من المسار')
     }
   }
 
   const handleActivatePoint = () => {
     setAccordionValue('stops')
     setMode('point')
-    addToast('انقر على الخريطة لوضع محطات الحافلات (تتحاذى وتتحرك على الخط)', 'info')
+    notify.info('انقر على الخريطة لوضع محطات الحافلات (تتحاذى وتتحرك على الخط)')
   }
 
   const handleConfirmStopName = (name: string) => {
@@ -1029,22 +945,22 @@ function TransitStudioPageContent() {
     setMode('idle')
     reset()
     setAccordionValue('line')
-    addToast('تمت إعادة ضبط الاستوديو', 'info')
+    notify.info('تمت إعادة ضبط الاستوديو')
   }
 
-  // Submit Draft to Backend API (Supports Anonymous and Authenticated mode)
+  // Supports anonymous and authenticated submission.
   const handleSubmit = async (requireLogin: boolean = false) => {
     if (!cityId) {
-      addToast('اختر المدينة أولاً', 'destructive')
+      notify.error('اختر المدينة أولاً')
       return
     }
     if (!nameAr.trim()) {
-      addToast('اسم المسار بالعربية مطلوب', 'destructive')
+      notify.error('اسم المسار بالعربية مطلوب')
       setAccordionValue('details')
       return
     }
     if (!drawnLine || drawnLine.length < 2) {
-      addToast('يجب رسم خط المسار أولاً', 'destructive')
+      notify.error('يجب رسم خط المسار أولاً')
       setAccordionValue('line')
       return
     }
@@ -1052,27 +968,28 @@ function TransitStudioPageContent() {
     if (requireLogin && !user) {
       const stateToSave = { cityId, drawnLine, stops, nameAr, nameEn, price, notes, editingRouteId, editingDraftId }
       localStorage.setItem('transit:studio:pending', JSON.stringify(stateToSave))
-      addToast('يرجى تسجيل الدخول بحساب Google لتُنسب المساهمة لك', 'info')
+      notify.info('يرجى تسجيل الدخول بحساب Google لتُنسب المساهمة لك')
       window.location.href = '/auth/google?redirect=' + encodeURIComponent(window.location.pathname + window.location.search)
       return
     }
 
     setSubmitting(true)
 
+    const features: Feature[] = [
+      {
+        type: 'Feature',
+        properties: { colorIndex },
+        geometry: { type: 'LineString', coordinates: drawnLine },
+      },
+      ...stops.map((s): Feature => ({
+        type: 'Feature',
+        properties: { nameAr: s.nameAr },
+        geometry: { type: 'Point', coordinates: s.coordinates },
+      })),
+    ]
     const geojson: FeatureCollection = {
       type: 'FeatureCollection',
-      features: [
-        {
-          type: 'Feature',
-          properties: { colorIndex, color_index: colorIndex },
-          geometry: { type: 'LineString', coordinates: drawnLine },
-        },
-        ...stops.map((s) => ({
-          type: 'Feature',
-          properties: { nameAr: s.nameAr },
-          geometry: { type: 'Point' as const, coordinates: s.coordinates },
-        })),
-      ],
+      features,
     }
 
     const payload = {
@@ -1088,40 +1005,20 @@ function TransitStudioPageContent() {
 
     try {
       const isUpdating = isEditMode && editingDraftId
-      const url = isUpdating ? `/api/v1/studio/routes/${editingDraftId}` : '/api/v1/studio/routes'
-      const method = isUpdating ? 'PUT' : 'POST'
+      const data = await transitApi.saveStudioRoute(isUpdating ? editingDraftId : null, payload)
 
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify(payload),
-        credentials: 'include',
-      })
-
-      const data = await res.json()
-
-      if (res.ok) {
-        setLastSubmittedIsAnon(!user)
-        setSubmittedDraftId(data.id ?? 1)
-        addToast(
-          !user
-            ? 'تم إرسال المسودة بنجاح كزائر (مجهول)'
-            : isUpdating
-            ? editingRouteId
-              ? 'تم إرسال التعديلات للمراجعة'
-              : 'تم تحديث المسودة بنجاح'
-            : 'تم إرسال المسودة للمراجعة باسمك',
-          'success'
-        )
-      } else if (res.status === 429) {
-        const retryAfter = Number(res.headers.get('Retry-After')) || 60
-        addToast(`تم تجاوز حد المحاولات المسموح. يرجى الانتظار ${formatWait(retryAfter)} ثم إعادة المحاولة.`, 'destructive')
-      } else {
-        const msg = data.message || (data.errors ? Object.values(data.errors).flat().join(' • ') : 'حدث خطأ أثناء الإرسال')
-        addToast(msg, 'destructive')
-      }
-    } catch {
-      addToast('تعذّر الاتصال بالخادم. يرجى المحاولة لاحقاً.', 'destructive')
+      setLastSubmittedIsAnon(!user)
+      setSubmittedDraftId(data.id ?? 1)
+      notify.success(
+        !user
+          ? 'تم إرسال المسودة بنجاح كزائر (مجهول)'
+          : isUpdating
+          ? editingRouteId
+            ? 'تم إرسال التعديلات للمراجعة'
+            : 'تم تحديث المسودة بنجاح'
+          : 'تم إرسال المسودة للمراجعة باسمك')
+    } catch (e) {
+      notify.error(apiErrorMessage(e))
     } finally {
       setSubmitting(false)
     }
@@ -1132,7 +1029,6 @@ function TransitStudioPageContent() {
   // Common inner sidebar content shared between desktop sidebar & mobile BottomSheet
   const sidebarControlsContent = (
     <div className="studio-sidebar-inner p-3.5 overflow-y-auto flex-1 space-y-3">
-      {/* Top Navigation & User Contributions in Sidebar */}
       <div className="flex items-center justify-between pb-2 border-b border-border/40">
         <Link
           href={cityId ? `/transit/city/${cityId}` : '/transit'}
@@ -1168,11 +1064,10 @@ function TransitStudioPageContent() {
           isAnonymous={lastSubmittedIsAnon}
           onReset={handleReset}
           onEdit={() => { setSubmittedDraftId(null); setAccordionValue('details') }}
-          onExit={() => router.push(cityId ? `/transit/city/${cityId}` : '/transit')}
+          onExit={() => router.visit(cityId ? `/transit/city/${cityId}` : '/transit')}
         />
       ) : (
         <>
-          {/* 1. FIRST: City Selection & Map Boundary Constraint */}
           <div className="p-3 bg-muted/40 rounded-xl border border-border/60 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
@@ -1208,14 +1103,12 @@ function TransitStudioPageContent() {
             </p>
           </div>
 
-          {/* 2. THEN: RTL Shadcn Accordions with Data & Tools */}
           <Accordion
             type="single"
             value={accordionValue}
             onValueChange={(val) => setAccordionValue(val)}
             className="w-full space-y-2.5"
           >
-            {/* Accordion 1: Line Tool */}
             <AccordionItem value="line">
               <AccordionTrigger>
                 <div className="flex items-center gap-2 min-w-0">
@@ -1304,7 +1197,6 @@ function TransitStudioPageContent() {
               </AccordionContent>
             </AccordionItem>
 
-            {/* Accordion 2: Bus Stops Tool */}
             <AccordionItem value="stops">
               <AccordionTrigger>
                 <div className="flex items-center gap-2 min-w-0">
@@ -1379,7 +1271,6 @@ function TransitStudioPageContent() {
               </AccordionContent>
             </AccordionItem>
 
-            {/* Accordion 3: Color Selection */}
             <AccordionItem value="color">
               <AccordionTrigger>
                 <div className="flex items-center gap-2 min-w-0">
@@ -1422,7 +1313,6 @@ function TransitStudioPageContent() {
               </AccordionContent>
             </AccordionItem>
 
-            {/* Accordion 4: Details */}
             <AccordionItem value="details">
               <AccordionTrigger>
                 <div className="flex items-center gap-2 min-w-0">
@@ -1500,7 +1390,6 @@ function TransitStudioPageContent() {
               </AccordionContent>
             </AccordionItem>
 
-            {/* Accordion 5: Submission & Credit Options */}
             <AccordionItem value="submission">
               <AccordionTrigger>
                 <div className="flex items-center gap-2 min-w-0">
@@ -1513,7 +1402,6 @@ function TransitStudioPageContent() {
               </AccordionTrigger>
               <AccordionContent>
                 <div className="space-y-3">
-                  {/* Summary Details Card */}
                   <div className="p-2.5 rounded-lg border border-border bg-muted/30 text-xs space-y-1">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">المدينة:</span>
@@ -1614,14 +1502,11 @@ function TransitStudioPageContent() {
       
       <h1 className="sr-only">استوديو ترانزيت</h1>
 
-      {/* Full-screen Body Container (Clean layout without top header) */}
       <div className="studio-body relative flex h-screen overflow-hidden">
-        {/* Desktop Sidebar (hidden on mobile, visible on md+) */}
         <aside className="hidden md:flex studio-sidebar w-80 md:w-96 border-e border-border bg-card shrink-0 flex-col z-20">
           {sidebarControlsContent}
         </aside>
 
-        {/* Mobile Resizable Bottom Sheet Drawer (visible on mobile, hidden on md+) */}
         <div className="block md:hidden">
           <BottomSheet
             storageKey="transit:studio:sheet-height"
@@ -1633,7 +1518,6 @@ function TransitStudioPageContent() {
           </BottomSheet>
         </div>
 
-        {/* Map Container */}
         <div className="studio-map-wrapper flex-1 relative h-full">
           {!mapReady && (
             <div className="studio-map-loader absolute inset-0 z-30 flex flex-col items-center justify-center bg-background/80 backdrop-blur-xs gap-3">

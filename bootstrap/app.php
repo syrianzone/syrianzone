@@ -6,7 +6,6 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -27,11 +26,15 @@ return Application::configure(basePath: dirname(__DIR__))
         // signals, so public ranges are deliberately not trusted.
         $middleware->trustProxies(at: ['127.0.0.1', '10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16']);
         
+        // Order is significant: SecurityHeaders generates the CSP nonce that
+        // the Inertia root view stamps onto its script tags, so it has to run
+        // before HandleInertiaRequests renders the response.
         $middleware->web(append: [
             \App\Http\Middleware\AutoLoginDevUser::class,
             \App\Http\Middleware\SecurityHeaders::class,
+            \App\Http\Middleware\HandleInertiaRequests::class,
         ]);
-        
+
         $middleware->api(prepend: [
             \App\Http\Middleware\AutoLoginDevUser::class,
         ]);
@@ -42,29 +45,37 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Auth\Middleware\Authenticate::class,
             \App\Http\Middleware\AutoLoginDevUser::class
         );
-        
-        $middleware->web(append: [
-            \App\Http\Middleware\HandleInertiaRequests::class,
-        ]);
+
+        // Every module guard alias resolves to the one parameterised guard; the
+        // module comes from the alias table on the class and the capability from
+        // the route tag. ModuleCapabilityRoutesTest asserts these names.
         $middleware->alias([
-            'transit_admin'   => \App\Http\Middleware\TransitAdmin::class,
-            'syofficial_admin' => \App\Http\Middleware\SyOfficialAdmin::class,
-            'phonebook_admin'  => \App\Http\Middleware\PhonebookAdmin::class,
-            'places_admin'    => \App\Http\Middleware\PlacesAdmin::class,
-            'polls_admin'     => \App\Http\Middleware\PollsAdmin::class,
+            'transit_admin'   => \App\Http\Middleware\ModuleCapabilityGuard::class,
+            'syofficial_admin' => \App\Http\Middleware\ModuleCapabilityGuard::class,
+            'phonebook_admin'  => \App\Http\Middleware\ModuleCapabilityGuard::class,
+            'places_admin'    => \App\Http\Middleware\ModuleCapabilityGuard::class,
+            'polls_admin'     => \App\Http\Middleware\ModuleCapabilityGuard::class,
             // Compass admin: read-only anonymous statistics for the compass test.
-            'compass_admin'   => \App\Http\Middleware\CompassAdmin::class,
+            'compass_admin'   => \App\Http\Middleware\ModuleCapabilityGuard::class,
             // Promises tracker: promises, review queue, speakers and sectors.
-            'promises_admin'  => \App\Http\Middleware\PromisesAdmin::class,
-            // Previously the Gov Apps admin group referenced the class directly,
-            // which left it with no alias to pass a per-route capability through.
-            'govapps_admin'   => \App\Http\Middleware\GovAppsAdmin::class,
+            'promises_admin'  => \App\Http\Middleware\ModuleCapabilityGuard::class,
+            // Gov Apps admin group. ModuleCapabilityGuard needs the alias so a
+            // per-route capability can be passed through.
+            'govapps_admin'   => \App\Http\Middleware\ModuleCapabilityGuard::class,
             // General user moderation (banning). Not a content module: this is
             // application-wide, so it is authorised by its own capability.
-            'users_admin'     => \App\Http\Middleware\UsersAdmin::class,
+            'users_admin'     => \App\Http\Middleware\ModuleCapabilityGuard::class,
+            // Superadmin-only modules: the game content, the hosted-file manager
+            // and the site-wide settings surfaces.
+            'guesswho_admin'  => \App\Http\Middleware\ModuleCapabilityGuard::class,
+            'assets_admin'    => \App\Http\Middleware\ModuleCapabilityGuard::class,
+            'site_admin'      => \App\Http\Middleware\ModuleCapabilityGuard::class,
             'superadmin'      => \App\Http\Middleware\SuperAdmin::class,
             // Agent API tokens: any capability holder, for their own tokens.
             'agent_tokens'    => \App\Http\Middleware\AgentTokensAccess::class,
+            // Session-or-bearer mounts: resolves a Sanctum token where the route
+            // does not require auth:sanctum, so the action reads $request->user().
+            'api_user'        => \App\Http\Middleware\ResolveApiUser::class,
         ]);
         $middleware->statefulApi();
         $middleware->validateCsrfTokens(except: [
@@ -115,43 +126,8 @@ return Application::configure(basePath: dirname(__DIR__))
                 }
             }
 
-            if (
-                $response->getStatusCode() === 404
-                && $request->isMethod('GET')
-                && ! $request->expectsJson()
-                && ! $request->is('api/*', 'superadmin*')
-            ) {
-                \App\Support\Seo\SeoMeta::override($request, [
-                    'title' => 'الصفحة غير موجودة (404) | Syrian Zone',
-                    'description' => 'الصفحة التي تبحث عنها غير موجودة أو تم نقلها — استكشف أدوات ومشاريع المساحة السورية.',
-                    'robots' => 'noindex, follow',
-                ]);
-
-                Inertia::share(app(\App\Http\Middleware\HandleInertiaRequests::class)->share($request));
-
-                // This page is rendered outside the middleware stack, so the
-                // nonce has to be registered before the view stamps its script
-                // tags, then the headers are applied to the finished response.
-                $securityHeaders = app(\App\Http\Middleware\SecurityHeaders::class);
-                $securityHeaders->registerNonce();
-
-                $section = match (true) {
-                    $request->is('muslim', 'muslim/*') => 'muslim',
-                    $request->is('games', 'games/*', 'guesswho', 'guesswho/*') => 'games',
-                    $request->is('transit', 'transit/*', 'mishwar', 'mishwar/*', 'crossings', 'crossings/*', 'places', 'places/*') => 'transit',
-                    default => 'general',
-                };
-
-                $override = $request->query('section');
-                if (in_array($override, ['general', 'transit', 'games', 'muslim'], true)) {
-                    $section = $override;
-                }
-
-                return $securityHeaders->applyHeaders(Inertia::render('Errors/NotFound', [
-                    'status' => 404,
-                    'path' => '/'.ltrim($request->path(), '/'),
-                    'section' => $section,
-                ])->toResponse($request)->setStatusCode(404)->prepare($request));
+            if (\App\Support\Errors\NotFoundPage::replaces($request, $response)) {
+                return \App\Support\Errors\NotFoundPage::render($request);
             }
 
             return $response;

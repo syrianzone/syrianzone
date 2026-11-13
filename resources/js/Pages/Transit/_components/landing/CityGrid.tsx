@@ -1,25 +1,23 @@
 import { Link } from '@inertiajs/react'
-import citiesData from '../../_data/cities.json'
-import CityCard from './CityCard'
-import type { City } from '../../_types'
+import CityCard, { type CityCardCity } from './CityCard'
 
 interface CityGridProps {
-  cities?: City[]
+  /** The server's city list: `/transit` renders it into the first HTML, the 404 sends the card listing. */
+  cities: CityCardCity[]
 }
 
-export default function CityGrid({ cities: propCities }: CityGridProps) {
-  const cities = (propCities && propCities.length > 0 ? propCities : (citiesData as City[])).filter((c) => c.status === 'active')
+export default function CityGrid({ cities: allCities }: CityGridProps) {
+  const cities = allCities.filter((c) => c.status === 'active')
   
-  // Sort cities: ready first (by routeCount desc), then pending (routeCount = 0)
   const sortedCities = [...cities].sort((a, b) => {
     const aReady = a.routeCount > 0
     const bReady = b.routeCount > 0
     if (aReady && !bReady) return -1
     if (!aReady && bReady) return 1
-    return (b.routeCount || 0) - (a.routeCount || 0)
+    return b.routeCount - a.routeCount
   })
 
-  const readyCount = cities.filter((c) => (c.routeCount || 0) > 0).length
+  const readyCount = cities.filter((c) => c.routeCount > 0).length
 
   return (
     <section className="px-4 pb-14 pt-8 sm:pt-10">
@@ -37,7 +35,6 @@ export default function CityGrid({ cities: propCities }: CityGridProps) {
           ))}
         </div>
 
-        {/* Contribute CTA */}
         <Link
           href="/transit/studio"
           className="group mt-6 flex items-center justify-between gap-3 rounded-xl border border-dashed border-border p-4 no-underline transition-colors duration-200 hover:border-primary hover:bg-card sm:p-5"

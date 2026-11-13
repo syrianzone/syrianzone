@@ -3,6 +3,7 @@
 namespace App\Support\Seo\Preview\Resolvers;
 
 use App\Models\Promise;
+use App\Support\Facts;
 use App\Support\Seo\Og\CardSource;
 use App\Support\Seo\Og\RecordCard;
 use App\Support\Seo\Preview\Arabic;
@@ -18,19 +19,16 @@ final class PromisePreview implements CardSource, PreviewResolver
     use DescribesCards;
 
     /**
-     * Label, pill tone and glyph per display state. The labels are the ones the
-     * page itself shows (Pages/Promises/_lib/status.ts); a test keeps them equal.
+     * Label, pill tone and glyph per display state, from the shared promise
+     * vocabulary (resources/data/promises.json) that the page's own badges read
+     * too — so the card and the page cannot label a state differently.
+     *
+     * @return array<string, array{0: string, 1: string, 2: string}>
      */
-    public const STATES = [
-        'pending' => ['قيد الانتظار', 'outline', 'Hourglass'],
-        'in_progress' => ['قيد التنفيذ', 'outline', 'Wrench'],
-        'overdue' => ['متأخر', 'destructive', 'AlarmClock'],
-        'fulfilled' => ['تحقق', 'primary', 'BadgeCheck'],
-        'partially_fulfilled' => ['تحقق جزئياً', 'soft', 'CircleDashed'],
-        'broken' => ['لم يتحقق', 'destructive', 'XCircle'],
-        'postponed' => ['أُجّل', 'soft', 'CalendarClock'],
-        'retracted' => ['سُحب', 'soft', 'Undo2'],
-    ];
+    public static function states(): array
+    {
+        return Facts::promiseStates();
+    }
 
     public static function cardType(): string
     {
@@ -88,7 +86,7 @@ final class PromisePreview implements CardSource, PreviewResolver
     {
         // The state shown is the one the page shows today, so the card changes
         // (and gets a new address) the day a promise becomes overdue.
-        [$label, $tone, $glyph] = self::STATES[$promise->displayState()] ?? self::STATES['pending'];
+        [$label, $tone, $glyph] = self::states()[$promise->displayState()] ?? self::states()['pending'];
         if ($promise->wasKeptLate()) {
             $label .= ' (متأخراً)';
         }

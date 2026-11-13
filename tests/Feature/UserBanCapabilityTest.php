@@ -19,11 +19,6 @@ use App\Support\Permissions\PermissionCatalogue;
 |
 */
 
-function banTarget(): User
-{
-    return User::factory()->create(['role' => 'user', 'is_banned' => false]);
-}
-
 it('refuses a transit capability holder from banning a user', function () {
     // The exact over-grant this move exists to close.
     $moderator = User::factory()->create([
@@ -31,7 +26,7 @@ it('refuses a transit capability holder from banning a user', function () {
         'permissions' => ['transit.review_drafts'],
     ]);
 
-    $target = banTarget();
+    $target = User::factory()->create();
 
     $this->actingAs($moderator)
         ->postJson("/api/v1/admin/users/{$target->id}/toggle-ban")
@@ -45,7 +40,7 @@ it('refuses a transit-scoped account from banning a user', function () {
     // say nothing about users.ban, which has to be granted in its own right.
     $staff = moduleStaff('transit');
 
-    $target = banTarget();
+    $target = User::factory()->create();
 
     $this->actingAs($staff)
         ->postJson("/api/v1/admin/users/{$target->id}/toggle-ban")
@@ -56,7 +51,7 @@ it('refuses a transit-scoped account from banning a user', function () {
 
 it('lets a users.ban holder ban and unban', function () {
     $staff = User::factory()->create(['role' => 'user', 'permissions' => ['users.ban']]);
-    $target = banTarget();
+    $target = User::factory()->create();
 
     $this->actingAs($staff)
         ->postJson("/api/v1/admin/users/{$target->id}/toggle-ban")
@@ -75,7 +70,7 @@ it('lets a users.ban holder ban and unban', function () {
 
 it('lets a users-scoped account ban and unban', function () {
     $staff = moduleStaff('users');
-    $target = banTarget();
+    $target = User::factory()->create();
 
     $this->actingAs($staff)
         ->postJson("/api/v1/admin/users/{$target->id}/toggle-ban")
@@ -89,13 +84,13 @@ it('keeps superadmin and a full-catalogue account working', function () {
     // the retired `admin` alias and superadmin. The alias is gone in phase G, so
     // the second broad shape is a `user` holding the whole catalogue — which is
     // what a formerly-`admin` account is migrated to.
-    $target = banTarget();
+    $target = User::factory()->create();
 
     $this->actingAs(User::factory()->withPermissions(PermissionCatalogue::all())->create())
         ->postJson("/api/v1/admin/users/{$target->id}/toggle-ban")
         ->assertOk();
 
-    $second = banTarget();
+    $second = User::factory()->create();
     $this->actingAs(User::factory()->create(['role' => 'superadmin']))
         ->postJson("/api/v1/admin/users/{$second->id}/toggle-ban")
         ->assertOk();
@@ -141,7 +136,7 @@ it('registers users.ban as a real, grantable capability', function () {
 
 it('is granted by the wildcard', function () {
     $staff = User::factory()->create(['role' => 'user', 'permissions' => ['*']]);
-    $target = banTarget();
+    $target = User::factory()->create();
 
     $this->actingAs($staff)
         ->postJson("/api/v1/admin/users/{$target->id}/toggle-ban")

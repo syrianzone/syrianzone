@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\FoldsSearchColumns;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Place extends Model
 {
-  use HasFactory;
+  use FoldsSearchColumns, HasFactory;
 
   protected $fillable = ['user_id', 'name', 'category', 'description', 'lat', 'lng', 'status', 'rejection_reason', 'approved_at'];
 

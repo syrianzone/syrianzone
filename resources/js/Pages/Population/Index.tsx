@@ -1,18 +1,12 @@
-import React from 'react';
 import MainLayout from '@/Layouts/MainLayout';
 import PopulationClient from './PopulationClient';
 
-interface PopulationPageProps {
-    masterData?: any;
-    envData?: any;
-}
-
-export default function PopulationPage({ masterData, envData }: PopulationPageProps) {
+export default function PopulationPage() {
     return (
         <MainLayout>
             
-            <div className="h-[calc(100vh-64px)] overflow-hidden flex flex-col bg-background">
-                <PopulationClient masterData={masterData} envData={envData} />
+            <div className="h-[calc(100vh-var(--sz-navbar-h))] overflow-hidden flex flex-col bg-background">
+                <PopulationClient />
             </div>
         </MainLayout>
     );

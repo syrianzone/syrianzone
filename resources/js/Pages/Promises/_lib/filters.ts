@@ -1,6 +1,6 @@
 import { normalizeArabic } from '@/Lib/arabic';
 import type { SmartFilterFacet, SmartFilterOption, SmartFilterValue } from '@/Lib/smartFilterSearch';
-import type { Option, PromiseCardData, SectorOption } from './types';
+import type { Option, PromiseCardData, SectorOption } from '@/Domain/promises/types';
 
 export interface PromiseFilterOptions {
     sectors: SectorOption[];
@@ -10,7 +10,7 @@ export interface PromiseFilterOptions {
     tags: string[];
 }
 
-export const STATE_FILTERS = [
+const STATE_FILTERS = [
     { value: 'overdue', label: 'متأخرة' },
     { value: 'due_soon', label: 'تقترب مواعيدها' },
     { value: 'open', label: 'لم تُحسم بعد' },

@@ -7,7 +7,7 @@
 // Everything here is a pure function of plain values, so it can be unit-tested
 // without a table and reused by a future online engine.
 
-import type { Card, Suit } from '../cards';
+import type { Card, Suit } from '@/Domain/games/cards';
 import { power } from './hand';
 
 export type Seat = number;
@@ -32,7 +32,6 @@ export function ledSuit(plays: Play[]): Suit | null {
   return plays.length > 0 ? plays[0].card.suit : null;
 }
 
-/** Whether `hand` holds at least one card of `suit`. */
 export function hasSuit(hand: Card[], suit: Suit): boolean {
   return hand.some((c) => c.suit === suit);
 }
@@ -64,7 +63,6 @@ export function beats(challenger: Card, incumbent: Card, led: Suit, trump: Suit 
   return challenger.suit === led;
 }
 
-/** The winning play of a completed trick. */
 export function trickWinner(plays: Play[], trump: Suit | null): Play {
   if (plays.length === 0) throw new Error('a trick needs at least one card');
   const led = plays[0].card.suit;

@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Support\Facts;
+
 class TierlistPostText
 {
     // X counts most text as one unit per character and emoji as two; mb_strlen
@@ -24,7 +26,7 @@ class TierlistPostText
         ));
 
         $header = 'تغيّر جديد في ترتيب تقييم الحكومة السورية 📊';
-        $footer = "صوّت الآن:\nhttps://syrian.zone/tierlist";
+        $footer = "صوّت الآن:\n".Facts::site()['base_url'].'/tierlist';
         $lines = [];
 
         foreach ([$risers[0] ?? null, $fallers[0] ?? null] as $movement) {

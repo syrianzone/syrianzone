@@ -1,55 +1,64 @@
-import React, { useState, useEffect } from 'react';
-import { router, usePage } from '@inertiajs/react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { router } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Button } from '@/Components/ui/button';
-import { Input } from '@/Components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/Components/ui/table';
 import { Badge } from '@/Components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/card';
-import { Plus, Search, Edit3, Trash2, Layers, FolderPlus, ArrowUpDown, Globe, Eye, EyeOff } from 'lucide-react';
-import CategoryDialog, { CategoryData } from './_components/CategoryDialog';
-import EntityDialog, { EntityData } from './_components/EntityDialog';
-import SortableList from './_components/SortableList';
+import { Plus, Edit3, Trash2, Layers, FolderPlus, ArrowUpDown, Globe, Eye, EyeOff } from 'lucide-react';
+import CategoryDialog from '@/Components/directory/CategoryDialog';
+import SortableList from '@/Components/directory/SortableList';
+import DirectoryResultCount from '@/Components/directory/DirectoryResultCount';
+import { DirectorySearch } from '@/Components/directory/DirectorySearch';
+import { useDirectory, type DirectoryFacet } from '@/Components/directory/useDirectory';
+import EntityDialog from './_components/EntityDialog';
+import type { AdminOfficialEntity, OfficialCategory } from '@/Domain/syofficial/types';
 import { formatEntityImage } from '@/Lib/entityImage';
-import { canAny } from '@/Lib/permissions'
+import { useCan } from '@/Lib/useCan';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
 
 interface AdminSyOfficialProps {
-    categories: CategoryData[];
-    entities: (EntityData & { category?: CategoryData })[];
+    categories: OfficialCategory[];
+    entities: AdminOfficialEntity[];
 }
+
+const entitySearchText = (entity: AdminOfficialEntity) =>
+    `${entity.name} ${entity.name_ar} ${entity.id}`;
 
 export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOfficialProps) {
 
     // Each control is gated on the capability its route requires (routes/web.php).
-    // The whole panel used to render for any syofficial.* holder, so a
-    // syofficial.reorder-only account was offered create and delete buttons.
-    // AuthProvider is mounted *inside* MainLayout, so this component's body runs
-    // above it and useAuth() throws here — the page renders blank. Read the
-    // server-resolved capability list off the Inertia props instead. It needs no
-    // superadmin special case: User::effectivePermissions() already returns the
-    // whole catalogue for superadmin, which is what AuthContext.can() was
-    // re-deriving on the client.
-    const { auth } = usePage().props as any;
-    const can = (capability: string): boolean =>
-        canAny(auth?.user?.effective_permissions, capability);
+    const can = useCan();
     const canCreate = can('syofficial.create');
     const canEdit = can('syofficial.edit');
     const canDelete = can('syofficial.delete');
     const canReorder = can('syofficial.reorder');
-    const [searchTerm, setSearchTerm] = useState('');
-    const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all');
 
-    // Dialog States
+    // The public directory's search and category filter, shared by both tabs.
+    const categoryFacet = useMemo<DirectoryFacet<AdminOfficialEntity>>(() => ({
+        key: 'category',
+        label: 'الفئة',
+        options: categories.map((cat) => ({ value: cat.id, label: cat.label_ar })),
+        valueOf: (entity) => entity.category_id,
+    }), [categories]);
+    const directory = useDirectory<AdminOfficialEntity>({
+        items: entities,
+        searchText: entitySearchText,
+        facets: [categoryFacet],
+    });
+    const selectedCategoryFilter = directory.filters.category?.[0] ?? 'all';
+    const filteredEntities = directory.results;
+    const selectCategory = (category: string) =>
+        directory.setFilters({ ...directory.filters, category: category === 'all' ? [] : [category] });
+
     const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
-    const [selectedCategory, setSelectedCategory] = useState<CategoryData | null>(null);
+    const [selectedCategory, setSelectedCategory] = useState<OfficialCategory | null>(null);
 
     const [entityDialogOpen, setEntityDialogOpen] = useState(false);
-    const [selectedEntity, setSelectedEntity] = useState<EntityData | null>(null);
+    const [selectedEntity, setSelectedEntity] = useState<AdminOfficialEntity | null>(null);
 
-    // Auto open edit dialog if URL contains ?edit={entityId}
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const editId = params.get('edit');
@@ -62,32 +71,24 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
         }
     }, [entities]);
 
-    // Filter Entities
-    const filteredEntities = entities.filter((item) => {
-        const matchesCategory = selectedCategoryFilter === 'all' || item.category_id === selectedCategoryFilter;
-        const term = searchTerm.toLowerCase();
-        const matchesSearch =
-            !searchTerm ||
-            item.name.toLowerCase().includes(term) ||
-            item.name_ar.toLowerCase().includes(term) ||
-            item.id.toLowerCase().includes(term);
-        return matchesCategory && matchesSearch;
-    });
-
     const handleDeleteCategory = async (catId: string) => {
         const ok = await confirmDialog({ title: 'حذف هذه الفئة؟', description: 'سيتم حذف جميع الحسابات التابعة لها.', destructive: true, confirmText: 'حذف' });
-        if (ok) {
-            router.delete(`/api/v1/admin/syofficial/categories/${catId}`);
-            notify.success('تم حذف الفئة');
-        }
+        if (!ok) return;
+        router.delete(`/api/v1/admin/syofficial/categories/${catId}`, {
+            preserveScroll: true,
+            onSuccess: () => notify.success('تم حذف الفئة'),
+            onError: () => notify.error('تعذر حذف الفئة'),
+        });
     };
 
     const handleDeleteEntity = async (entId: string) => {
         const ok = await confirmDialog({ title: 'حذف هذه الجهة الرسمية؟', destructive: true, confirmText: 'حذف' });
-        if (ok) {
-            router.delete(`/api/v1/admin/syofficial/entities/${entId}`);
-            notify.success('تم حذف الجهة');
-        }
+        if (!ok) return;
+        router.delete(`/api/v1/admin/syofficial/entities/${entId}`, {
+            preserveScroll: true,
+            onSuccess: () => notify.success('تم حذف الجهة'),
+            onError: () => notify.error('تعذر حذف الجهة'),
+        });
     };
 
     return (
@@ -97,7 +98,6 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
             <div className="min-h-screen py-8 bg-background" dir="rtl">
                 <div className="container mx-auto px-4 max-w-7xl">
                     
-                    {/* Page Header */}
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 pb-6 border-b border-border">
                         <div>
                             <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
@@ -144,7 +144,6 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
                         )}
                     </div>
 
-                    {/* Main Tabs */}
                     <Tabs defaultValue="entities" className="space-y-6">
                         <TabsList className="bg-card border border-border p-1 rounded-xl flex flex-wrap h-auto max-w-full">
                             <TabsTrigger value="entities" className="gap-2 text-sm">
@@ -161,7 +160,6 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
                             </TabsTrigger>
                         </TabsList>
 
-                        {/* Tab 1: Entities Catalog Table */}
                         <TabsContent value="entities" className="space-y-4">
                             <Card className="border-border">
                                 <CardHeader className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
@@ -170,22 +168,19 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
                                         <CardDescription>عرض وتصفية وتعديل الحسابات الرسمية السورية</CardDescription>
                                     </div>
 
-                                    {/* Search & Filter */}
                                     <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                                        <div className="relative w-full sm:w-64">
-                                            <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                                            <Input aria-label="بحث بالاسم أو ID..."
-                                                placeholder="بحث بالاسم أو ID..."
-                                                value={searchTerm}
-                                                onChange={(e) => setSearchTerm(e.target.value)}
-                                                className="ps-9 h-9"
-                                            />
-                                        </div>
+                                        <DirectorySearch
+                                            className="w-full sm:w-64"
+                                            value={directory.query}
+                                            onChange={directory.setQuery}
+                                            placeholder="بحث بالاسم أو ID..."
+                                            ariaLabel="بحث بالاسم أو ID..."
+                                        />
 
                                         <select
                                             aria-label="تصفية حسب الفئة"
                                             value={selectedCategoryFilter}
-                                            onChange={(e) => setSelectedCategoryFilter(e.target.value)}
+                                            onChange={(e) => selectCategory(e.target.value)}
                                             className="h-9 px-3 rounded-md border border-input bg-card text-sm text-foreground focus:ring-2 focus:ring-primary"
                                         >
                                             <option value="all">جميع الفئات</option>
@@ -199,6 +194,9 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
                                 </CardHeader>
 
                                 <CardContent>
+                                    <DirectoryResultCount className="mb-3 text-xs">
+                                        عرض {filteredEntities.length} من أصل {entities.length} جهة
+                                    </DirectoryResultCount>
                                     <div className="rounded-xl border border-border overflow-hidden">
                                         <Table>
                                             <TableHeader className="bg-muted/50">
@@ -304,7 +302,6 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
                             </Card>
                         </TabsContent>
 
-                        {/* Tab 2: Categories Management Table */}
                         <TabsContent value="categories" className="space-y-4">
                             <Card className="border-border">
                                 <CardHeader>
@@ -379,7 +376,6 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
                             </Card>
                         </TabsContent>
 
-                        {/* Tab 3: Drag & Drop Sorting */}
                         <TabsContent value="sorting" className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <Card className="border-border">
@@ -390,9 +386,10 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
                                     <CardContent>
                                         <SortableList
                                             items={categories.map((c) => ({ id: c.id, label: c.label_ar, subtitle: c.label_en }))}
-                                            endpoint="/api/v1/admin/syofficial/reorder/categories"
+                                            endpoint="/api/v1/admin/syofficial/categories/reorder"
+                                            capability="syofficial.reorder"
                                             canReorder={canReorder}
-                                            onSaveSuccess={() => router.reload()}
+                                            onSaved={() => router.reload()}
                                         />
                                     </CardContent>
                                 </Card>
@@ -406,7 +403,7 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
                                         <select
                                             aria-label="تصفية حسب الفئة"
                                             value={selectedCategoryFilter}
-                                            onChange={(e) => setSelectedCategoryFilter(e.target.value)}
+                                            onChange={(e) => selectCategory(e.target.value)}
                                             className="w-full h-9 px-3 rounded-md border border-input bg-card text-sm text-foreground mb-4"
                                         >
                                             {categories.map((c) => (
@@ -420,10 +417,11 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
                                             key={selectedCategoryFilter}
                                             items={entities
                                                 .filter((e) => selectedCategoryFilter === 'all' || e.category_id === selectedCategoryFilter)
-                                                .map((e) => ({ id: e.id, label: e.name_ar, subtitle: e.name, image: e.image }))}
-                                            endpoint="/api/v1/admin/syofficial/reorder/entities"
+                                                .map((e) => ({ id: e.id, label: e.name_ar, subtitle: e.name, image: formatEntityImage(e.image) }))}
+                                            endpoint="/api/v1/admin/syofficial/entities/reorder"
+                                            capability="syofficial.reorder"
                                             canReorder={canReorder}
-                                            onSaveSuccess={() => router.reload()}
+                                            onSaved={() => router.reload()}
                                         />
                                     </CardContent>
                                 </Card>
@@ -433,11 +431,11 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
                 </div>
             </div>
 
-            {/* Dialogs */}
             <CategoryDialog
                 open={categoryDialogOpen}
                 onOpenChange={setCategoryDialogOpen}
                 category={selectedCategory}
+                endpoint="/api/v1/admin/syofficial/categories"
             />
 
             <EntityDialog

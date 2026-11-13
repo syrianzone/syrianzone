@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\CandidateGroup;
 use App\Models\Poll;
+use App\Services\Polls\PollRules;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -11,17 +12,6 @@ use Illuminate\Validation\ValidationException;
 
 class TierlistLeaderboard
 {
-    /**
-     * Canonical status vocabulary, shared by the legacy leaderboard
-     * (/api/polls/{slug}/leaderboard) and the public API
-     * (/api/v1/polls/{id}/candidates): active | former | all.
-     * 'archived' (the candidates.status DB value) is accepted as an alias
-     * of 'former' and normalized to it.
-     */
-    public const STATUSES = ['active', 'former', 'all'];
-
-    public const DB_ALIAS = 'archived';
-
     /**
      * Cache key for one poll + status view. Defined here so every writer that
      * changes a category can invalidate exactly what the readers cached.
@@ -40,20 +30,15 @@ class TierlistLeaderboard
      */
     public function forgetCache(Poll $poll): void
     {
-        foreach (self::STATUSES as $status) {
+        foreach (PollRules::STATUSES as $status) {
             Cache::forget($this->cacheKey($poll, $status));
         }
     }
 
-    public static function normalizeStatus(string $status): string
-    {
-        return $status === self::DB_ALIAS ? 'former' : $status;
-    }
-
     public function build(Poll $poll, string $status = 'active'): array
     {
-        $status = self::normalizeStatus($status);
-        if (! in_array($status, self::STATUSES, true)) {
+        $status = PollRules::normalizeStatus($status);
+        if (! in_array($status, PollRules::STATUSES, true)) {
             throw ValidationException::withMessages([
                 'status' => 'Invalid status. Expected one of: active, former, all (archived is accepted as an alias of former).',
             ]);
@@ -70,17 +55,10 @@ class TierlistLeaderboard
         // A disabled category is unpublished: its candidates keep their rows
         // and scores but are ranked nowhere, so they must not reach the
         // rankings, the history series or the X snapshots built from here.
-        $disabledGroupIds = $poll->groups()->disabled()->pluck('id');
-        if ($disabledGroupIds->isNotEmpty()) {
-            // whereNotIn alone would also drop null-group candidates, because
-            // NULL NOT IN (…) is NULL rather than true.
-            $candidatesQuery->where(function ($nested) use ($disabledGroupIds) {
-                $nested->whereNull('candidate_group_id')
-                    ->orWhereNotIn('candidate_group_id', $disabledGroupIds);
-            });
-        }
-
-        $candidates = $candidatesQuery->get()->keyBy('id');
+        $candidates = $candidatesQuery
+            ->outsideDisabledGroups($poll->groups()->disabled()->pluck('id'))
+            ->get()
+            ->keyBy('id');
         $scores = $this->scores($poll, $candidates);
 
         // Groups are published as plain arrays so the client can render one tab

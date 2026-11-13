@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import axios from '@/Lib/axios';
+import { promisesApi } from '@/Domain/promises/api';
 import { notify } from '@/Lib/notify';
-import { extractApiErrorMessage } from '@/Lib/apiError';
+import { apiErrorMessage } from '@/Lib/api';
 import { getDeviceId } from '@/Lib/deviceId';
-import type { PromiseVotes } from './types';
+import type { PromiseVotes } from '@/Domain/promises/types';
 
 const storageKey = (n: number) => `promise-vote:${n}`;
 
@@ -61,9 +61,9 @@ export function usePromiseVote(number: number, initial: PromiseVotes) {
         if (busy || mine === believes) return;
         setBusy(true);
         try {
-            const res = await axios.post(`/api/v1/promises/${number}/vote`, { believes, device_id: getDeviceId() });
-            rememberVotes(number, res.data.votes, initial);
-            setVotes(res.data.votes);
+            const res = await promisesApi.vote(number, believes, getDeviceId());
+            rememberVotes(number, res.votes, initial);
+            setVotes(res.votes);
             setMine(believes);
             try {
                 localStorage.setItem(storageKey(number), believes ? '1' : '0');
@@ -72,7 +72,7 @@ export function usePromiseVote(number: number, initial: PromiseVotes) {
             }
             notify.success('سُجّل رأيك');
         } catch (e) {
-            notify.error(extractApiErrorMessage(e, 'تعذّر تسجيل رأيك'));
+            notify.error(apiErrorMessage(e, 'تعذّر تسجيل رأيك'));
         } finally {
             setBusy(false);
         }

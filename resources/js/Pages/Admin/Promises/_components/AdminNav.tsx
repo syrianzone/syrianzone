@@ -1,24 +1,35 @@
 import { Link } from '@inertiajs/react';
 import { Badge } from '@/Components/ui/badge';
 import { cn } from '@/Lib/utils';
-import { useCan } from '../_lib/useCan';
+import { useCan } from '@/Lib/useCan';
+import { SECTIONS, SECTION_KEYS, type SectionKey } from '../_lib/sections';
 
 /**
- * Section links for the promises admin. Each link appears only for staff who
- * hold the capability its page route requires (see routes/web.php).
+ * Section links for the promises admin. Each entry's page path and the
+ * capability its route requires are one record (`_lib/sections.ts`, from
+ * `resources/data/promises-admin-sections.json`), so the link and its guard
+ * cannot disagree.
  */
+const LABELS: Record<SectionKey, string> = {
+    promises: 'الوعود',
+    review: 'المراجعة',
+    speakers: 'أصحاب التصريحات',
+    sectors: 'القطاعات',
+};
+
 export default function AdminNav({ current, queueCount }: {
-    current: 'promises' | 'review' | 'speakers' | 'sectors';
+    current: SectionKey;
     queueCount: number;
 }) {
     const can = useCan();
 
-    const items = [
-        { key: 'promises', href: '/admin/promises', label: 'الوعود', show: true, count: 0 },
-        { key: 'review', href: '/admin/promises/review', label: 'المراجعة', show: can('promises.review'), count: queueCount },
-        { key: 'speakers', href: '/admin/promises/speakers', label: 'أصحاب التصريحات', show: can('promises.speakers'), count: 0 },
-        { key: 'sectors', href: '/admin/promises/sectors', label: 'القطاعات', show: can('promises.speakers'), count: 0 },
-    ] as const;
+    const items = SECTION_KEYS.map((key) => ({
+        key,
+        href: SECTIONS[key].page,
+        label: LABELS[key],
+        count: key === 'review' ? queueCount : 0,
+        show: SECTIONS[key].capability === 'any' || can(SECTIONS[key].capability),
+    }));
 
     return (
         <nav aria-label="أقسام إدارة عداد الوعود" className="flex flex-wrap gap-1 rounded-lg bg-muted p-1">

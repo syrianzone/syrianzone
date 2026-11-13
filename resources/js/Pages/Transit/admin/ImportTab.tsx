@@ -1,5 +1,3 @@
-'use client'
-
 import React, { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/Components/ui/button'
 import { Badge } from '@/Components/ui/badge'
@@ -11,25 +9,11 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/Components/ui/select'
 import { ROUTE_PALETTE } from '../_lib/mapColors'
+import { transitApi, type ImportCandidate } from '../_lib/api'
+import { apiErrorMessage } from '@/Lib/api'
 import {
   Link2, Upload, Loader2, CheckCircle2, Trash2, PencilLine, FileUp, X,
 } from 'lucide-react'
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-export interface ImportCandidate {
-  name_ar: string
-  name_en: string | null
-  price: number | null
-  notes: string | null
-  geojson: any
-  vertex_count: number
-  stop_count: number
-  bounds: [number, number, number, number] | null
-  warnings: string[]
-  source: { doc_name: string; doc_description: string | null }
-  suggested_city_id: string | null
-}
 
 interface EditableStop {
   coordinates: [number, number]
@@ -46,11 +30,6 @@ interface ImportTabProps {
   onPreview: (geojson: any | null, colorIndex: number, cityId?: string) => void
   onDraftCreated: () => void
   onRoutePublished: (route: { id: string; city_id: string } | null) => void
-}
-
-function getCsrfToken(): string {
-  const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/)
-  return match ? decodeURIComponent(match[1]) : ''
 }
 
 function stopsFromGeojson(geojson: any): EditableStop[] {
@@ -74,8 +53,6 @@ function lineFromGeojson(geojson: any): any | null {
   return null
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
 export default function ImportTab({ cities, canReview = true, canEdit = true, showToast, onPreview, onDraftCreated, onRoutePublished }: ImportTabProps) {
   const [url, setUrl] = useState('')
   const [file, setFile] = useState<File | null>(null)
@@ -86,7 +63,6 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
   const [candidates, setCandidates] = useState<ImportCandidate[]>([])
   const [selectedIdx, setSelectedIdx] = useState(0)
 
-  // Editable copy of the selected candidate
   const [nameAr, setNameAr] = useState('')
   const [nameEn, setNameEn] = useState('')
   const [price, setPrice] = useState('')
@@ -99,7 +75,6 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
 
   const selected = candidates[selectedIdx] ?? null
 
-  // Init / reset the edit form whenever the selection changes
   useEffect(() => {
     if (!selected) return
     setNameAr(selected.name_ar ?? '')
@@ -115,14 +90,12 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedIdx, candidates])
 
-  // City override applies to the current edit form too
   useEffect(() => {
     if (cityOverride !== 'auto') setCityId(cityOverride)
     else if (selected) setCityId(selected.suggested_city_id ?? cities[0]?.id ?? '')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cityOverride])
 
-  // Live map preview (line + edited stops, current color)
   const previewGeojson = useMemo(() => {
     if (!selected) return null
     const line = lineFromGeojson(selected.geojson)
@@ -156,34 +129,20 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
     setCreatedDraftId(null)
     onPreview(null, colorIndex)
     try {
-      let res: Response
+      let body: FormData | { url: string; city_id?: string }
       if (file) {
         const form = new FormData()
         form.append('file', file)
         if (url.trim()) form.append('url', url.trim())
         if (cityOverride !== 'auto') form.append('city_id', cityOverride)
-        res = await fetch('/api/v1/admin/routes/import-preview', {
-          method: 'POST',
-          headers: { 'Accept': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
-          credentials: 'include',
-          body: form,
-        })
+        body = form
       } else {
-        res = await fetch('/api/v1/admin/routes/import-preview', {
-          method: 'POST',
-          headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
-          credentials: 'include',
-          body: JSON.stringify({
-            url: url.trim(),
-            ...(cityOverride !== 'auto' ? { city_id: cityOverride } : {}),
-          }),
-        })
+        body = {
+          url: url.trim(),
+          ...(cityOverride !== 'auto' ? { city_id: cityOverride } : {}),
+        }
       }
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        setError(data.message ?? `خطأ HTTP ${res.status}`)
-        return
-      }
+      const data = await transitApi.importPreview(body)
       const routes = data.routes ?? []
       if (routes.length === 0) {
         setError('لم يتم العثور على خطوط في هذه الخريطة')
@@ -193,8 +152,8 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
       setCandidates(routes)
       setSelectedIdx(0)
       showToast(`تم جلب ${routes.length} ${routes.length === 1 ? 'خط' : 'خطوط'} للمعاينة`)
-    } catch {
-      setError('تعذّر الاتصال بالخادم')
+    } catch (e) {
+      setError(apiErrorMessage(e))
     } finally {
       setLoading(false)
     }
@@ -212,29 +171,19 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
     }
     setPublishing(mode)
     try {
-      const res = await fetch('/api/v1/admin/routes/import-publish', {
-        method: 'POST',
-        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
-        credentials: 'include',
-        body: JSON.stringify({
-          city_id: cityId,
-          name_ar: nameAr.trim(),
-          name_en: nameEn.trim() || null,
-          price: price.trim() === '' ? null : parseInt(price, 10),
-          color_index: colorIndex,
-          notes: notes.trim() || null,
-          geojson: previewGeojson,
-          mode,
-          source_mid: mid,
-        }),
+      const data = await transitApi.importPublish({
+        city_id: cityId,
+        name_ar: nameAr.trim(),
+        name_en: nameEn.trim() || null,
+        price: price.trim() === '' ? null : parseInt(price, 10),
+        color_index: colorIndex,
+        notes: notes.trim() || null,
+        geojson: previewGeojson,
+        mode,
+        source_mid: mid,
       })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        showToast('خطأ: ' + (data.message ?? `HTTP ${res.status}`), false)
-        return
-      }
       if (mode === 'draft') {
-        setCreatedDraftId(data.draft_id)
+        setCreatedDraftId(data.draft_id ?? null)
         showToast(`تم إنشاء المسودة #${data.draft_id} — راجعها في تبويب المسودات`)
       } else {
         showToast('تم نشر الخط المستورد')
@@ -243,8 +192,8 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
         onPreview(null, colorIndex)
         onRoutePublished(data?.route ?? null)
       }
-    } catch {
-      showToast('تعذّر الاتصال بالخادم', false)
+    } catch (e) {
+      showToast(apiErrorMessage(e), false)
     } finally {
       setPublishing(null)
     }
@@ -252,7 +201,6 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
 
   return (
     <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-3">
-      {/* ── Fetch card ─────────────────────────────────────────── */}
       <div className="p-3 bg-muted/40 rounded-xl border border-border/60 space-y-2.5">
         <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
           <Link2 className="h-3.5 w-3.5 text-primary" />
@@ -309,7 +257,6 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
         )}
       </div>
 
-      {/* ── Multi-route selector ───────────────────────────────── */}
       {candidates.length > 1 && (
         <div className="space-y-1.5">
           <span className="text-xs font-semibold text-muted-foreground">
@@ -330,7 +277,6 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
         </div>
       )}
 
-      {/* ── Edit + publish ─────────────────────────────────────── */}
       {selected && (
         <div className="space-y-3">
           <div className="p-3 bg-card rounded-xl border border-border space-y-2.5">
@@ -400,7 +346,6 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
               <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="text-xs resize-none" />
             </div>
 
-            {/* Stops */}
             <div className="space-y-1.5">
               <span className="text-xs font-semibold">المحطات ({stops.length})</span>
               {stops.length === 0 ? (
@@ -437,7 +382,6 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
             </div>
           </div>
 
-          {/* ── Publish ─────────────────────────────────────── */}
           <div className="p-3 bg-card rounded-xl border border-border space-y-2">
             <span className="text-xs font-semibold text-muted-foreground">3. النشر</span>
             {createdDraftId ? (
@@ -492,7 +436,6 @@ export default function ImportTab({ cities, canReview = true, canEdit = true, sh
         </div>
       )}
 
-      {/* ── Source attribution ─────────────────────────────────── */}
       {selected && (
         <Card className="py-2">
           <CardContent className="p-0 px-3">

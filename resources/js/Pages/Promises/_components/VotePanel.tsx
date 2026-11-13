@@ -2,7 +2,7 @@ import { Button } from '@/Components/ui/button';
 import { Card, CardContent, CardHeader } from '@/Components/ui/card';
 import { ThumbsDown, ThumbsUp } from 'lucide-react';
 import { usePromiseVote } from '../_lib/useVote';
-import type { PromiseVotes } from '../_lib/types';
+import type { PromiseVotes } from '@/Domain/promises/types';
 
 interface Props {
     number: number;

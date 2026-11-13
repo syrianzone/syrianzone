@@ -5,6 +5,11 @@ Runs axe-core (WCAG 2.0/2.1 A + AA) against the app's main routes and prints a
 per-route summary of violations, grouped by impact. Exits non-zero when any
 serious/critical violation is found, so it can gate CI.
 
+The gate fails closed: it refuses to run against a target that does not answer
+as this app, and a route that errors, answers non-2xx or cannot be reached
+fails the run instead of being skipped, so an empty or broken sweep can never
+exit 0.
+
 Usage:
     python3 scripts/a11y_axe_audit.py
     python3 scripts/a11y_axe_audit.py --base http://localhost:8000 --axe ./axe.min.js
@@ -22,20 +27,27 @@ import sys
 
 # Routes to audit. Public routes first; the dev impersonation route (if reachable)
 # is visited before admin routes so a session cookie is present.
+#
+# Every route that renders an Inertia page must appear in one of these lists:
+# tests/Feature/Tooling/A11yRouteCoverageTest.php reads this file and fails when
+# a page is missing, so "0 violations" covers every page.
 PUBLIC_ROUTES = [
     "/", "/about", "/privacy", "/terms", "/stats",
     "/syofficial", "/phonebook", "/govapps", "/party", "/house",
     "/justice", "/sites", "/syrian-contributors", "/syid", "/atlas",
     "/crossings", "/shawarma", "/roznama", "/priorities", "/alignment",
-    "/compass", "/tierlist", "/polls", "/guesswho", "/muslim",
+    "/compass", "/compass/stats", "/tierlist", "/tierlist/leaderboard",
+    "/polls", "/guesswho", "/muslim",
     "/muslim/prayer", "/muslim/quran", "/muslim/radio",
-    "/games", "/games/2048", "/games/solitare", "/board",
+    "/games", "/games/2048", "/games/solitare", "/games/tarneeb", "/games/trix", "/board",
     "/mishwar", "/transit", "/transit/studio",
     "/promises", "/promises/suggest",
 ]
 ADMIN_ROUTES = [
     "/dashboard", "/admin/govapps", "/admin/phonebook", "/admin/syofficial",
-    "/admin/guesswho", "/admin/assets",
+    "/admin/guesswho", "/admin/assets", "/admin/navigation", "/admin/places",
+    "/admin/site-popup", "/admin/api-tokens", "/transit/admin",
+    "/admin/compass", "/admin/compass/figures", "/admin/compass/personas",
     "/admin/promises", "/admin/promises/new", "/admin/promises/review",
     "/admin/promises/speakers", "/admin/promises/sectors",
 ]
@@ -43,9 +55,74 @@ ADMIN_ROUTES = [
 AXE_AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "best-practice"]
 AXE_CDN = "https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.10.2/axe.min.js"
 
+# How the app identifies itself. A dev server on the wrong port, a fresh
+# Laravel install or a proxy error page all answer 200 with plausible HTML, and
+# every finding there is noise: the sweep checks these once before it starts.
+APP_LANG = "ar"
+APP_DIRECTION = "rtl"
+APP_MAIN_ID = "main-content"
+
+
+class AuditError(RuntimeError):
+    """A route could not be audited: the run must not pass."""
+
+
+def load_axe(source_path: str | None) -> str:
+    if source_path:
+        with open(source_path, encoding="utf-8") as fh:
+            return fh.read()
+
+    import urllib.request
+    print("Downloading axe-core once...")
+    with urllib.request.urlopen(AXE_CDN, timeout=30) as resp:
+        return resp.read().decode("utf-8")
+
+
+async def assert_target_is_the_app(page, url: str) -> None:
+    """Fail unless `url` renders this app's document shell."""
+    response = await page.goto(url, wait_until="networkidle", timeout=45000)
+    status = response.status if response is not None else None
+
+    if status is None or not 200 <= status < 300:
+        raise AuditError(f"{url} answered {status or 'no response'}, not the app")
+
+    # The app may render on the client (no SSR process running), so the
+    # landmark only exists once React has mounted.
+    has_main = True
+    try:
+        await page.wait_for_selector(f"main#{APP_MAIN_ID}", timeout=15000)
+    except Exception:  # noqa: BLE001 - a missing landmark is a refusal, not a crash
+        has_main = False
+
+    document = await page.evaluate(
+        """() => ({
+            lang: document.documentElement.lang,
+            dir: document.documentElement.dir,
+        })"""
+    )
+
+    problems = []
+    if not (document["lang"] or "").startswith(APP_LANG):
+        problems.append(f'lang="{document["lang"]}" (expected "{APP_LANG}")')
+    if document["dir"] != APP_DIRECTION:
+        problems.append(f'dir="{document["dir"]}" (expected "{APP_DIRECTION}")')
+    if not has_main:
+        problems.append(f"no <main id=\"{APP_MAIN_ID}\"> landmark")
+
+    if problems:
+        raise AuditError(f"{url} is not this app: " + ", ".join(problems))
+
 
 async def audit(page, url: str, axe_source: str | None, axe_url: str) -> list[dict]:
-    await page.goto(url, wait_until="networkidle", timeout=45000)
+    response = await page.goto(url, wait_until="networkidle", timeout=45000)
+    status = response.status if response is not None else None
+    if status is None:
+        # Without a status the page may be a browser error document, and axe
+        # would happily report a clean sweep for it.
+        raise AuditError("the navigation returned no response")
+    if not 200 <= status < 300:
+        raise AuditError(f"HTTP {status}")
+
     await page.wait_for_timeout(2500)
     # Inject axe once per navigation (SPA nav keeps window.axe, but full load resets).
     if await page.evaluate("() => typeof window.axe === 'undefined'"):
@@ -98,20 +175,14 @@ async def main() -> int:
     ap.add_argument("--admin", action="store_true", help="also audit admin routes")
     args = ap.parse_args()
 
-    axe_source = None
-    if args.axe:
-        with open(args.axe, encoding="utf-8") as fh:
-            axe_source = fh.read()
-    else:
-        import urllib.request
-        print("Downloading axe-core once...")
-        with urllib.request.urlopen(AXE_CDN, timeout=30) as resp:
-            axe_source = resp.read().decode("utf-8")
-
     from playwright.async_api import async_playwright
 
     total = 0
+    audited = 0
     offenders: list[tuple[str, dict]] = []
+    # Routes the sweep could not audit at all. They fail the run: a gate that
+    # skips what it cannot read reports a clean sweep it never performed.
+    failures: list[str] = []
 
     async with async_playwright() as p:
         import glob
@@ -135,13 +206,34 @@ async def main() -> int:
         ctx = await browser.new_context(viewport={"width": 1280, "height": 900})
         page = await ctx.new_page()
 
+        try:
+            await assert_target_is_the_app(page, args.base + PUBLIC_ROUTES[0])
+        except Exception as exc:  # noqa: BLE001 - any failure here is a refusal
+            print(f"! refusing to audit {args.base}: {str(exc)[:200]}")
+            await browser.close()
+            return 1
+
+        axe_source = load_axe(args.axe)
+
         routes = list(PUBLIC_ROUTES)
         if args.admin:
+            impersonate = f"{args.base}/dev/impersonate/superadmin"
             try:
-                await page.goto(f"{args.base}/dev/impersonate/superadmin", wait_until="networkidle")
+                response = await page.goto(impersonate, wait_until="networkidle")
+                status = response.status if response is not None else None
+                if status is None or not 200 <= status < 300:
+                    raise AuditError(f"HTTP {status or 'no response'}")
+            except Exception as exc:  # noqa: BLE001
+                print(f"  !  /dev/impersonate/superadmin ERROR {str(exc)[:80]}")
+                print("! admin routes were asked for but cannot be reached as a superadmin")
+                failures.append(impersonate)
+            else:
                 routes += ADMIN_ROUTES
-            except Exception:
-                print("! could not impersonate superadmin; skipping admin routes")
+
+        if not routes:
+            print("! no routes to audit")
+            await browser.close()
+            return 1
 
         for route in routes:
             url = args.base + route
@@ -149,7 +241,9 @@ async def main() -> int:
                 violations = await audit(page, url, axe_source, AXE_CDN)
             except Exception as exc:  # noqa: BLE001
                 print(f"  !  {route:32s} ERROR {str(exc)[:80]}")
+                failures.append(route)
                 continue
+            audited += 1
             by_impact: dict[str, int] = {}
             for v in violations:
                 by_impact[v.get("impact") or "unknown"] = by_impact.get(v.get("impact") or "unknown", 0) + 1
@@ -162,7 +256,7 @@ async def main() -> int:
 
         await browser.close()
 
-    print(f"\nTotal violations: {total}")
+    print(f"\nAudited {audited} of {len(routes)} route(s). Total violations: {total}")
     if offenders:
         print("\nRules triggered:")
         seen: dict[str, set[str]] = {}
@@ -181,6 +275,13 @@ async def main() -> int:
     blocking = [v for _, v in offenders if is_blocking(v)]
     advisory = [v for _, v in offenders if not is_blocking(v)]
     print(f"Blocking (WCAG serious/critical): {len(blocking)}   Advisory (best-practice/minor): {len(advisory)}")
+
+    if audited == 0:
+        print("! the sweep audited no route at all, so it proves nothing")
+        return 1
+    if failures:
+        print(f"! {len(failures)} route(s) could not be audited: {', '.join(failures)}")
+        return 1
     return 1 if blocking else 0
 
 

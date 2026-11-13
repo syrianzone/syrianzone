@@ -1,0 +1,98 @@
+[
+  {
+    "key": "facebook",
+    "label_ar": "فيسبوك",
+    "label_en": "Facebook",
+    "form_label_ar": "فيسبوك رئيسي",
+    "input_aria_label": "رابط فيسبوك",
+    "placeholder": "https://facebook.com/..."
+  },
+  {
+    "key": "facebook_secondary",
+    "label_ar": "فيسبوك (احتياطي)",
+    "label_en": "Facebook (Secondary)",
+    "form_label_ar": "فيسبوك فرعي / إعلامي",
+    "input_aria_label": "رابط فيسبوك (ثانوي)",
+    "placeholder": "https://facebook.com/..."
+  },
+  {
+    "key": "instagram",
+    "label_ar": "إنستغرام",
+    "label_en": "Instagram",
+    "form_label_ar": "إنستغرام رئيسي",
+    "input_aria_label": "رابط إنستغرام",
+    "placeholder": "https://instagram.com/..."
+  },
+  {
+    "key": "instagram_secondary",
+    "label_ar": "إنستغرام (احتياطي)",
+    "label_en": "Instagram (Secondary)",
+    "form_label_ar": "إنستغرام فرعي / إعلامي",
+    "input_aria_label": "رابط إنستغرام (ثانوي)",
+    "placeholder": "https://instagram.com/..."
+  },
+  {
+    "key": "twitter",
+    "label_ar": "تويتر / منصة إكس",
+    "label_en": "Twitter / X",
+    "form_label_ar": "إكس / تويتر رئيسي",
+    "input_aria_label": "رابط إكس",
+    "placeholder": "https://x.com/..."
+  },
+  {
+    "key": "twitter_secondary",
+    "label_ar": "تويتر / منصة إكس (احتياطي)",
+    "label_en": "Twitter / X (Secondary)",
+    "form_label_ar": "إكس / تويتر فرعي / إعلامي",
+    "input_aria_label": "رابط إكس (ثانوي)",
+    "placeholder": "https://x.com/..."
+  },
+  {
+    "key": "telegram",
+    "label_ar": "تلغرام",
+    "label_en": "Telegram",
+    "form_label_ar": "تلغرام رئيسي",
+    "input_aria_label": "رابط تلغرام",
+    "placeholder": "https://t.me/..."
+  },
+  {
+    "key": "telegram_secondary",
+    "label_ar": "تلغرام (احتياطي)",
+    "label_en": "Telegram (Secondary)",
+    "form_label_ar": "تلغرام فرعي / إعلامي",
+    "input_aria_label": "رابط تلغرام (ثانوي)",
+    "placeholder": "https://t.me/..."
+  },
+  {
+    "key": "linkedin",
+    "label_ar": "لينكد إن",
+    "label_en": "LinkedIn",
+    "form_label_ar": "لينكد إن",
+    "input_aria_label": "رابط لينكدإن",
+    "placeholder": "https://linkedin.com/..."
+  },
+  {
+    "key": "youtube",
+    "label_ar": "يوتيوب",
+    "label_en": "YouTube",
+    "form_label_ar": "يوتيوب",
+    "input_aria_label": "رابط يوتيوب",
+    "placeholder": "https://youtube.com/..."
+  },
+  {
+    "key": "whatsapp",
+    "label_ar": "واتساب",
+    "label_en": "WhatsApp",
+    "form_label_ar": "واتساب",
+    "input_aria_label": "رابط واتساب",
+    "placeholder": "https://whatsapp.com/channel/..."
+  },
+  {
+    "key": "website",
+    "label_ar": "الموقع الرسمي",
+    "label_en": "Official Website",
+    "form_label_ar": "الموقع الرسمي",
+    "input_aria_label": "الموقع الإلكتروني",
+    "placeholder": "https://..."
+  }
+]

@@ -1,6 +1,6 @@
+import { promisesApi } from '@/Domain/promises/api';
 import { useMemo, useState } from 'react';
 import { Link, router } from '@inertiajs/react';
-import axios from '@/Lib/axios';
 import MainLayout from '@/Layouts/MainLayout';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
@@ -12,13 +12,15 @@ import { EyeOff, ExternalLink, Pencil, Plus, Search, Trash2, Upload } from 'luci
 import { normalizeArabic } from '@/Lib/arabic';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
-import { extractApiErrorMessage } from '@/Lib/apiError';
-import StateBadge from '@/Pages/Promises/_components/StateBadge';
-import { formatDate } from '@/Pages/Promises/_lib/format';
-import { PENDING_SPEAKER_LABEL } from '@/Pages/Promises/_lib/status';
+import { apiErrorMessage } from '@/Lib/api';
+import StateBadge from '@/Domain/promises/StateBadge';
+import { formatDate } from '@/Domain/promises/format';
+import { PENDING_SPEAKER_LABEL } from '@/Domain/promises/status';
 import AdminHeader from './_components/AdminHeader';
-import { useCan } from './_lib/useCan';
-import { ORIGIN_LABEL, REVIEW_STATUS_LABEL, type AdminPromiseRow, type ReviewStatus } from './_lib/types';
+import { useCan } from '@/Lib/useCan';
+import { ORIGIN_LABEL, REVIEW_STATUS_LABEL } from '@/Domain/promises/status';
+import type { ReviewStatus } from '@/Domain/promises/types';
+import type { AdminPromiseRow } from './_lib/types';
 
 interface Props {
     promises: AdminPromiseRow[];
@@ -30,7 +32,6 @@ type ReviewFilter = 'all' | ReviewStatus;
 export default function PromisesAdminIndex({ promises, queueCount }: Props) {
     const can = useCan();
     const canCreate = can('promises.create');
-    // The editor opens for anyone who edits, rules on or reviews promises.
     const canOpen = can('promises.edit') || can('promises.rule') || can('promises.review');
     const canReview = can('promises.review');
     const canDelete = can('promises.delete');
@@ -62,13 +63,13 @@ export default function PromisesAdminIndex({ promises, queueCount }: Props) {
             notify.success(success);
             router.reload({ only: ['promises', 'queueCount'] });
         } catch (e) {
-            notify.error(extractApiErrorMessage(e, 'تعذّر تنفيذ العملية'));
+            notify.error(apiErrorMessage(e, 'تعذّر تنفيذ العملية'));
         } finally {
             setBusyId(null);
         }
     };
 
-    const publish = (p: AdminPromiseRow) => run(p, () => axios.post(`/api/v1/admin/promises/${p.id}/publish`), 'نُشر الوعد');
+    const publish = (p: AdminPromiseRow) => run(p, () => promisesApi.moderate(p.id, 'publish'), 'نُشر الوعد');
 
     const unpublish = async (p: AdminPromiseRow) => {
         const ok = await confirmDialog({
@@ -76,7 +77,7 @@ export default function PromisesAdminIndex({ promises, queueCount }: Props) {
             description: 'سيختفي من الصفحة العامة ويحتفظ برقمه، ويمكن نشره من جديد لاحقاً.',
             confirmText: 'إخفاء',
         });
-        if (ok) run(p, () => axios.post(`/api/v1/admin/promises/${p.id}/unpublish`), 'أُخفي الوعد');
+        if (ok) run(p, () => promisesApi.moderate(p.id, 'unpublish'), 'أُخفي الوعد');
     };
 
     const remove = async (p: AdminPromiseRow) => {
@@ -86,7 +87,7 @@ export default function PromisesAdminIndex({ promises, queueCount }: Props) {
             destructive: true,
             confirmText: 'حذف',
         });
-        if (ok) run(p, () => axios.delete(`/api/v1/admin/promises/${p.id}`), 'حُذف الوعد');
+        if (ok) run(p, () => promisesApi.remove(p.id), 'حُذف الوعد');
     };
 
     return (

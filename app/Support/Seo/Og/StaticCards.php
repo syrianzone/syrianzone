@@ -2,10 +2,14 @@
 
 namespace App\Support\Seo\Og;
 
+use App\Support\Seo\Pages;
+
 /**
  * The pre-rendered share cards of the fixed pages.
  *
- * `resources/og/cards.json` lists them (which paths use which card) and
+ * Which page uses which card is one record per page in
+ * `resources/data/seo.json` (see Pages). `resources/og/cards.json` holds only
+ * what a card is drawn from — slug, wording, icon — and
  * `public/og/manifest.json`, written by `npm run og:build`, carries a content
  * hash per card. The hash goes into the URL as `?v=`: the files are served with
  * a year-long immutable cache, so a redrawn card needs a new address to be seen.
@@ -15,8 +19,16 @@ final class StaticCards
     /** The site's own card: the home page, and the fallback of last resort. */
     public const DEFAULT = 'home';
 
-    /** @var array<string, string>|null path => slug */
-    private static ?array $paths = null;
+    /**
+     * The share card's canvas, in pixels. The Node renderer draws exactly this
+     * size (`scripts/og/lib/engine.mjs`), a card photo covers this box
+     * (`CardImages::SLOTS`), and the `og:image:width`/`height` tags the Blade
+     * head and `<SeoHead>` print are these two numbers, sent as
+     * `seo.image_width`/`seo.image_height`.
+     */
+    public const CARD_WIDTH = 1200;
+
+    public const CARD_HEIGHT = 630;
 
     /** @var array<string, mixed>|null the decoded public/og/manifest.json */
     private static ?array $manifest = null;
@@ -24,7 +36,7 @@ final class StaticCards
     /** Site-relative URL of the card a fixed page uses, or null when the path has none. */
     public static function forPath(string $path): ?string
     {
-        $slug = self::paths()[$path] ?? null;
+        $slug = Pages::card($path);
 
         return $slug === null ? null : self::url($slug);
     }
@@ -43,19 +55,15 @@ final class StaticCards
         return public_path('og/'.$slug.'.png');
     }
 
-    /** @return array<string, string> path => slug */
+    /**
+     * The fixed-page cards, as path => slug. The path list lives in the page
+     * table; cards.json no longer repeats it.
+     *
+     * @return array<string, string>
+     */
     public static function paths(): array
     {
-        if (self::$paths === null) {
-            self::$paths = [];
-            foreach (self::read(resource_path('og/cards.json'))['cards'] ?? [] as $card) {
-                foreach ($card['paths'] ?? [] as $path) {
-                    self::$paths[$path] = $card['slug'];
-                }
-            }
-        }
-
-        return self::$paths;
+        return Pages::cardPaths();
     }
 
     /** @return array<string, string> slug => content hash */

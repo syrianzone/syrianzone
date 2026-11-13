@@ -1,11 +1,11 @@
 // Local persistence + optional account sync for the compass.
 // Progress and results are stored locally always; logged-in users also sync to the account.
-import type { AnswerMap, CompassResult, QuizVersion } from '../data/types';
+import { api as client, API_V1 } from '@/Lib/api';
+import type { AnswerMap, CompassResult, QuizVersion } from '@/Domain/compass/types';
 
 const KEY_PROGRESS = 'sz-compass-v2-progress';
 const KEY_RESULTS = 'sz-compass-v2-results';
-const KEY_LAST = 'sz-compass-v2-last'; // last completed result id (local)
-const KEY_PENDING_SAVE = 'sz-compass-v2-pending-save'; // queued account save
+const KEY_PENDING_SAVE = 'sz-compass-v2-pending-save';
 
 export interface Progress {
   version: QuizVersion;
@@ -23,7 +23,6 @@ function safeParse<T>(raw: string | null, fallback: T): T {
   }
 }
 
-// ---- progress ----
 export function loadProgress(): Progress | null {
   if (typeof window === 'undefined') return null;
   return safeParse<Progress | null>(localStorage.getItem(KEY_PROGRESS), null);
@@ -41,7 +40,6 @@ export function clearProgress() {
   } catch {}
 }
 
-// ---- results ----
 export function loadResults(): CompassResult[] {
   if (typeof window === 'undefined') return [];
   return safeParse<CompassResult[]>(localStorage.getItem(KEY_RESULTS), []);
@@ -54,26 +52,11 @@ export function addResult(r: CompassResult) {
     localStorage.setItem(KEY_RESULTS, JSON.stringify(all.slice(0, 50)));
   } catch {}
 }
-export function setLastResultId(id: string | number) {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(KEY_LAST, String(id));
-  } catch {}
-}
-export function getLastResultId(): string | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    return localStorage.getItem(KEY_LAST);
-  } catch {
-    return null;
-  }
-}
 export function clearLocal() {
   if (typeof window === 'undefined') return;
   try {
     localStorage.removeItem(KEY_PROGRESS);
     localStorage.removeItem(KEY_RESULTS);
-    localStorage.removeItem(KEY_LAST);
   } catch {}
 }
 
@@ -96,7 +79,20 @@ export function updateLocalResult(
   } catch {}
 }
 
-// ---- pending account save (survives the OAuth round-trip) ----
+/** Delete one stored local result (by id) and return what remains, or `null`
+ *  when the browser refused the write (so the caller can report it). */
+export function removeLocalResult(id: string | number | undefined | null): CompassResult[] | null {
+  const all = loadResults();
+  if (typeof window === 'undefined' || id == null) return all;
+  const kept = all.filter((r) => String(r.id) !== String(id));
+  try {
+    localStorage.setItem(KEY_RESULTS, JSON.stringify(kept));
+  } catch {
+    return null;
+  }
+  return kept;
+}
+
 /** Queue a completed result to be saved to the account once the user is
  *  logged in. Called right before redirecting to the login provider. */
 export function setPendingAccountSave(result: CompassResult) {
@@ -117,81 +113,32 @@ export function takePendingAccountSave(): CompassResult | null {
   return safeParse<CompassResult | null>(raw, null);
 }
 
-// ---- account sync ----
 export async function fetchAccountResults(): Promise<CompassResult[]> {
-  const res = await fetch('/api/v1/compass/results', {
-    headers: { Accept: 'application/json' },
-    credentials: 'same-origin',
-  });
-  if (!res.ok) throw new Error(`fetch failed: ${res.status}`);
-  const json = await res.json();
-  return (json.data ?? json) as CompassResult[];
+  const json = await client.get<{ data?: CompassResult[] } | CompassResult[]>(`${API_V1}/compass/results`);
+  return Array.isArray(json) ? json : (json.data ?? []);
 }
 
 export async function saveResultToAccount(result: CompassResult): Promise<CompassResult | null> {
-  const res = await fetch('/api/v1/compass/results', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    credentials: 'same-origin',
-    body: JSON.stringify(result),
-  });
-  if (!res.ok) throw new Error(`save failed: ${res.status}`);
-  const json = await res.json();
-  return (json.data ?? json) as CompassResult;
+  type SavedBody = { data?: CompassResult };
+  const json = await client.post<CompassResult | SavedBody>(`${API_V1}/compass/results`, result);
+  return 'version' in json ? json : (json.data ?? null);
 }
 
-export async function deleteAccountResults(): Promise<void> {
-  const res = await fetch('/api/v1/compass/results', {
-    method: 'DELETE',
-    headers: { Accept: 'application/json' },
-    credentials: 'same-origin',
-  });
-  if (!res.ok) throw new Error(`delete failed: ${res.status}`);
+export function deleteAccountResults(): Promise<void> {
+  return client.delete(`${API_V1}/compass/results`);
 }
 
-export async function deleteAccountResult(id: number | string): Promise<void> {
-  const res = await fetch(`/api/v1/compass/results/${id}`, {
-    method: 'DELETE',
-    headers: { Accept: 'application/json' },
-    credentials: 'same-origin',
-  });
-  if (!res.ok) throw new Error(`delete failed: ${res.status}`);
+export function deleteAccountResult(id: number | string): Promise<void> {
+  return client.delete(`${API_V1}/compass/results/${id}`);
 }
 
 /** Submit a run anonymously for statistics (works for guests and users).
  *  Returns an opaque delete token for opting back out. */
 export async function submitStats(result: CompassResult): Promise<string | null> {
-  const res = await fetch('/api/v1/compass/stats', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    credentials: 'same-origin',
-    body: JSON.stringify(result),
-  });
-  if (!res.ok) throw new Error(`stats failed: ${res.status}`);
-  const json = await res.json();
+  const json = await client.post<{ token?: string | null }>(`${API_V1}/compass/stats`, result);
   return json.token ?? null;
 }
 
-/** Remove an anonymous stats row via its token. */
-export async function removeStats(token: string): Promise<void> {
-  const res = await fetch('/api/v1/compass/stats', {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    credentials: 'same-origin',
-    body: JSON.stringify({ token }),
-  });
-  if (!res.ok) throw new Error(`stats delete failed: ${res.status}`);
-}
-
-// ---- share (account-independent) ----
-export async function shareResult(payload: { version: QuizVersion; answers: AnswerMap }): Promise<string> {
-  const res = await fetch('/api/v1/compass/share', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    credentials: 'same-origin',
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) throw new Error(`share failed: ${res.status}`);
-  const json = await res.json();
-  return json.share_id as string;
+export function removeStats(token: string): Promise<void> {
+  return client.delete(`${API_V1}/compass/stats`, { token });
 }

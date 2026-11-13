@@ -46,20 +46,6 @@ final class AgentAuthorizer
     }
 
     /**
-     * @param  array<int, string>  $permissions
-     */
-    public function allowsAny(?User $user, array $permissions, mixed $token = null): bool
-    {
-        foreach ($permissions as $permission) {
-            if ($this->allows($user, $permission, $token)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
      * Governorate-aware variant. The scope is read live from the user, exactly
      * as the web admin does, so narrowing `permission_scopes.transit` applies
      * to agents immediately.
@@ -72,20 +58,6 @@ final class AgentAuthorizer
 
         /** @var User $user */
         return $user->hasPermissionInCity($permission, $cityId);
-    }
-
-    /**
-     * @param  array<int, string>  $permissions
-     */
-    public function allowsAnyInCity(?User $user, array $permissions, ?string $cityId, mixed $token = null): bool
-    {
-        foreach ($permissions as $permission) {
-            if ($this->allowsInCity($user, $permission, $cityId, $token)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**

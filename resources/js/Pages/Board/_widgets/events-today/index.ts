@@ -1,7 +1,7 @@
-import { lazy } from 'react';
 import { CalendarDays } from 'lucide-react';
-import { GOVERNORATE_OPTIONS } from '../../_lib/governorates';
-import type { WidgetDefinition } from '../../_lib/types';
+import { governorateOptions } from '@/Domain/geography/governorates';
+import type { WidgetDeclaration } from '../../_lib/types';
+import { sources } from '../../_lib/sources';
 
 export interface EventsTodayConfig {
   governorate: string;
@@ -11,7 +11,7 @@ export interface EventsTodayConfig {
 // accepts alongside the fixed list.
 export const ALL_SYRIA = 'all';
 
-export const eventsTodayWidget: WidgetDefinition<EventsTodayConfig> = {
+export const eventsTodayWidget: WidgetDeclaration = {
   id: 'events-today',
   name: 'فعاليات اليوم',
   description: 'الفعاليات الجارية اليوم في محافظتك',
@@ -26,7 +26,7 @@ export const eventsTodayWidget: WidgetDefinition<EventsTodayConfig> = {
       type: 'select',
       label: 'المحافظة',
       default: 'damascus',
-      options: [...GOVERNORATE_OPTIONS, { value: ALL_SYRIA, label: 'كل سوريا' }],
+      options: [...governorateOptions(), { value: ALL_SYRIA, label: 'كل سوريا' }],
     },
   ],
   requires: [],
@@ -34,5 +34,8 @@ export const eventsTodayWidget: WidgetDefinition<EventsTodayConfig> = {
   // re-serves the same payload
   refresh: { staleMs: 10 * 60_000, intervalMs: 15 * 60_000 },
   multiple: true,
-  Component: lazy(() => import('./View')),
+  seed: null,
+  source: sources.eventsToday,
 };
+
+export default eventsTodayWidget;

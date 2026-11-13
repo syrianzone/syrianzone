@@ -3,7 +3,7 @@ import { Link, usePage } from '@inertiajs/react';
 import { BarChart3 } from 'lucide-react';
 import CompassApp from './CompassApp';
 import MainLayout from '@/Layouts/MainLayout';
-import type { Figure, Spectrum } from './data/types';
+import type { Figure, Spectrum } from '@/Domain/compass/types';
 
 export default function CompassPage() {
     const props = usePage().props as { auth?: { user?: { id: number } }; figures?: Figure[]; personas?: Spectrum[] };

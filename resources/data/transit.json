@@ -1,0 +1,15 @@
+{
+  "color_index_max": 20,
+  "nearby_stops_radius_m": 500,
+  "nearby_stops_radius_max_m": 5000,
+  "route_palette": [
+    "#e8a838",
+    "#c44b4b",
+    "#4a8fa8",
+    "#7ab87a",
+    "#d4956a",
+    "#9b6bb5",
+    "#5ba08a",
+    "#c9784a"
+  ]
+}

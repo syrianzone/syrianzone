@@ -5,6 +5,7 @@ namespace App\Mcp\Tools\GovApps;
 use App\Services\GovApps\GovAppPresenter;
 use App\Services\GovApps\GovAppService;
 use App\Support\Agents\AgentContext;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -24,7 +25,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 #[IsDestructive]
 class CreateGovAppTool extends GovAppsTool
 {
-    protected array $permissions = ['govapps.create'];
+    protected array $permissions = [PermissionCatalogue::GOVAPPS_CREATE];
 
     public function schema(JsonSchema $schema): array
     {

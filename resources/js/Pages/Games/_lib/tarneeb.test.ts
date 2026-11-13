@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Card, Suit } from './cards';
+import type { Card, Suit } from '@/Domain/games/cards';
 import { createAuction } from './cardGames/bidding';
 import {
   DEFAULT_TARNEEB,

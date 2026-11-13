@@ -6,37 +6,37 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import type { WidgetDefinition, WidgetSize } from '../_lib/types';
+} from '@/Components/ui/dropdown-menu';
+import { allowedSizes } from '../_lib/doc';
+import type { WidgetDeclaration, WidgetSize } from '../_lib/types';
 
 // Discrete sizes, not drag handles. Free resize on a flow grid buys little and
-// is where the RTL and touch bugs live; corner-drag can come later without
-// changing the stored format.
-const WIDTHS: { w: number; label: string }[] = [
-  { w: 2, label: 'سدس (2)' },
-  { w: 3, label: 'ربع (3)' },
-  { w: 4, label: 'ثلث (4)' },
-  { w: 6, label: 'نصف (6)' },
-  { w: 8, label: 'ثلثين (8)' },
-  { w: 12, label: 'كامل (12)' },
-];
+// is where the RTL and touch bugs live. The choices come from `allowedSizes()`,
+// so the menu can only offer what the widget declares and the reducer stores.
+const LABELS: Record<number, string> = {
+  1: 'صف واحد (1)',
+  2: 'صفين (2)',
+  3: '3 صفوف (3)',
+  4: '4 صفوف (4)',
+  6: '6 صفوف (6)',
+  8: '8 صفوف (8)',
+};
 
-const HEIGHTS: { h: number; label: string }[] = [
-  { h: 1, label: 'صف واحد (1)' },
-  { h: 2, label: 'صفين (2)' },
-  { h: 3, label: '3 صفوف (3)' },
-  { h: 4, label: '4 صفوف (4)' },
-  { h: 6, label: '6 صفوف (6)' },
-  { h: 8, label: '8 صفوف (8)' },
-];
+const WIDTH_LABELS: Record<number, string> = {
+  2: 'سدس (2)',
+  3: 'ربع (3)',
+  4: 'ثلث (4)',
+  6: 'نصف (6)',
+  8: 'ثلثين (8)',
+  12: 'كامل (12)',
+};
 
 export function SizeMenu(props: {
-  def: WidgetDefinition;
+  def: WidgetDeclaration;
   size: WidgetSize;
   onResize: (size: WidgetSize) => void;
 }) {
-  const widths = WIDTHS;
-  const heights = HEIGHTS;
+  const { widths, heights } = allowedSizes(props.def);
 
   return (
     <DropdownMenu>
@@ -52,24 +52,24 @@ export function SizeMenu(props: {
       {/* direction comes from the app-level DirectionProvider */}
       <DropdownMenuContent align="end" className="w-36">
         <DropdownMenuLabel>العرض</DropdownMenuLabel>
-        {widths.map((o) => (
+        {widths.map((w) => (
           <DropdownMenuItem
-            key={o.w}
-            onSelect={() => props.onResize({ w: o.w, h: props.size.h })}
-            className={props.size.w === o.w ? 'font-semibold text-foreground' : undefined}
+            key={w}
+            onSelect={() => props.onResize({ w, h: props.size.h })}
+            className={props.size.w === w ? 'font-semibold text-foreground' : undefined}
           >
-            {o.label}
+            {WIDTH_LABELS[w] ?? String(w)}
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />
         <DropdownMenuLabel>الارتفاع</DropdownMenuLabel>
-        {heights.map((o) => (
+        {heights.map((h) => (
           <DropdownMenuItem
-            key={o.h}
-            onSelect={() => props.onResize({ w: props.size.w, h: o.h })}
-            className={props.size.h === o.h ? 'font-semibold text-foreground' : undefined}
+            key={h}
+            onSelect={() => props.onResize({ w: props.size.w, h })}
+            className={props.size.h === h ? 'font-semibold text-foreground' : undefined}
           >
-            {o.label}
+            {LABELS[h] ?? String(h)}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { ArrowRight, Check, Copy } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Alert, AlertDescription } from '@/Components/ui/alert';
+import { Avatar, AvatarFallback, AvatarImage } from '@/Components/ui/avatar';
 import { Badge } from '@/Components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { api, extractError } from '../_lib/api';
-import { CATEGORY_LABELS } from '../_lib/categories';
-import type { PlaceDetail } from '../_lib/types';
+import { Button } from '@/Components/ui/button';
+import { copyText } from '@/Lib/copy';
+import { api } from '@/Domain/places/api';
+import { apiErrorMessage } from '@/Lib/api';
+import { CATEGORY_LABELS } from '@/Domain/places/categories';
+import type { PlaceDetail } from '@/Domain/places/types';
 import { EngagementBar } from './EngagementBar';
 import { LevelBadge } from './LevelBadge';
 import { PhotoGallery } from './PhotoGallery';
@@ -26,7 +28,7 @@ export function PlaceDetailView(props: { placeId: number; onClose: () => void })
         if (!cancelled) setPlace(p);
       })
       .catch((e) => {
-        if (!cancelled) setError(extractError(e));
+        if (!cancelled) setError(apiErrorMessage(e));
       });
     return () => {
       cancelled = true;
@@ -35,13 +37,9 @@ export function PlaceDetailView(props: { placeId: number; onClose: () => void })
 
   const copyCoords = async () => {
     if (!place) return;
-    try {
-      await navigator.clipboard.writeText(`${place.lat}, ${place.lng}`);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      // clipboard unavailable, nothing to recover
-    }
+    if (!await copyText(`${place.lat}, ${place.lng}`, { successMessage: 'تم نسخ الإحداثيات' })) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
   };
 
   return (

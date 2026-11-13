@@ -26,18 +26,22 @@ type Suggestion =
     | { kind: 'facet'; id: string; label: string; facet: SmartFilterFacet }
     | { kind: 'option'; id: string; label: string; facet: SmartFilterFacet; option: SmartFilterOption };
 
-function sameValue(a: SmartFilterValue, b: SmartFilterValue) {
+/** Only the fields this component edits: other filter keys belong to the caller. */
+function sameValue(a: SmartFilterValue, b: SmartFilterValue, facets: readonly SmartFilterFacet[]) {
     if (a.search !== b.search || a.sort !== b.sort) return false;
-    const keys = Object.keys(a.filters);
-    return keys.length === Object.keys(b.filters).length && keys.every((key) => (
-        a.filters[key].length === b.filters[key]?.length && a.filters[key].every((v) => b.filters[key].includes(v))
-    ));
+    return facets.every(({ key }) => {
+        const left = a.filters[key] ?? [];
+        const right = b.filters[key] ?? [];
+        return left.length === right.length && left.every((value) => right.includes(value));
+    });
 }
 
 /**
  * A search field with structured filters as chips. The caller owns the value
  * and decides how filters combine; this component only holds the draft text,
- * focus and the suggestions popup.
+ * focus and the suggestions popup. It edits `search`, `sort` and its own
+ * `facets`; a filter key outside `facets` is the caller's own and is carried
+ * through every `onChange` untouched.
  *
  * Typing `facet: value` (label or alias) opens that facet's editor; anything
  * else stays free text. Each facet shows as one chip: click a value to remove
@@ -65,20 +69,20 @@ export default function SmartFilterSearch({
     const [announcement, setAnnouncement] = useState('');
     const parsed = useMemo(() => parseFilterDraft(draft, facets), [draft, facets]);
     const editingFacet = facets.find((facet) => facet.key === editingKey);
-    const chosenCount = Object.values(value.filters).reduce((n, options) => n + options.length, 0);
+    const chosenCount = facets.reduce((n, facet) => n + (value.filters[facet.key]?.length ?? 0), 0);
     const hasChips = facets.some((facet) => facet.key === editingKey || facet.options.some((o) => value.filters[facet.key]?.includes(o.value)));
 
     // External resets/history replace the local editors. Echoes of our own
     // changes keep the active chip editor intact.
     useEffect(() => {
-        if (sameValue(lastValue.current, value)) return;
+        if (sameValue(lastValue.current, value, facets)) return;
         lastValue.current = value;
         setDraft(value.search);
         setEditingKey(null);
         setFilterQuery('');
         setOpen(false);
         setActive(-1);
-    }, [value]);
+    }, [value, facets]);
 
     useEffect(() => {
         if (editingKey) facetInputRefs.current.get(editingKey)?.focus();
@@ -239,6 +243,18 @@ export default function SmartFilterSearch({
         facetInputRefs.current.get(facet.key)?.focus();
         setOpen(true);
         setActive(-1);
+    }
+
+    function clearAll() {
+        const own = new Set(facets.map((facet) => facet.key));
+        const filters = Object.fromEntries(Object.entries(value.filters).filter(([key]) => !own.has(key)));
+        setDraft('');
+        setEditingKey(null);
+        setFilterQuery('');
+        emit({ ...value, search: '', filters });
+        setAnnouncement('مُسح البحث والتصفيات');
+        inputRef.current?.focus();
+        setOpen(false);
     }
 
     function removeFacet(facet: SmartFilterFacet) {
@@ -422,10 +438,7 @@ export default function SmartFilterSearch({
                             {(chosenCount > 0 || draft.length > 0 || editingKey) && (
                                 <Button type="button" variant="ghost" size="icon"
                                     className="h-9 w-9 text-muted-foreground hover:bg-transparent hover:text-foreground focus-visible:ring-1 focus-visible:ring-border focus-visible:ring-offset-0"
-                                    aria-label="مسح البحث والتصفيات" onClick={() => {
-                                        setDraft(''); setEditingKey(null); setFilterQuery(''); emit({ ...value, search: '', filters: {} });
-                                        setAnnouncement('مُسح البحث والتصفيات'); inputRef.current?.focus(); setOpen(false);
-                                    }}><X className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden="true" /></Button>
+                                    aria-label="مسح البحث والتصفيات" onClick={clearAll}><X className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden="true" /></Button>
                             )}
                             <Button type="button" variant="outline"
                                 className="h-9 w-9 gap-0 px-0 text-xs text-muted-foreground hover:bg-muted/30 hover:text-foreground focus-visible:ring-1 focus-visible:ring-border focus-visible:ring-offset-0 sm:w-auto sm:gap-1.5 sm:px-2.5"

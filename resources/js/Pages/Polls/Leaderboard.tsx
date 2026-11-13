@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from '@inertiajs/react';
-import axios from 'axios';
+import { apiErrorMessage } from '@/Lib/api';
+import { pollsApi } from '@/Domain/polls/api';
+import { notify } from '@/Lib/notify';
 import { Card, CardContent } from "@/Components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/Components/ui/alert";
 import { AlertCircleIcon, Vote } from "lucide-react";
-import { TierAvatar as Avatar } from "@/Components/poll/TierAvatar";
+import { TierAvatar as Avatar } from "@/Domain/polls/TierAvatar";
 import { Badge } from "@/Components/ui/badge";
 import { Button } from "@/Components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/Components/ui/tabs";
-import { TimeseriesChart } from "@/Components/charts/TimeseriesChart";
+import { TimeseriesChart } from "@/Pages/Polls/_components/TimeseriesChart";
 import MainLayout from '@/Layouts/MainLayout';
 
 type StatusFilter = "active" | "former" | "all";
@@ -85,9 +87,7 @@ function formatNumberKM(n: number): string {
 }
 
 // The tabs are the *published* categories the server sent. A disabled category
-// is not in `groups`, so it gets no tab and its rows are never read — the fix
-// belongs here rather than in the query, because the tab strip used to be a
-// hardcoded list of four keys.
+// is not in `groups`, so it gets no tab and its rows are never read.
 function publishedGroups(data: LeaderboardData): LeaderboardGroup[] {
     return Array.isArray(data.groups) ? data.groups : [];
 }
@@ -190,7 +190,6 @@ function Top3Podium({ rows, title }: { rows: LeaderboardEntry[]; title: string }
         <div className="max-w-screen-md mx-auto mb-8">
             <h2 className="font-semibold mb-4 text-center text-gray-500">{title}</h2>
             <div className="grid grid-cols-3 items-end justify-items-center gap-4">
-                {/* 2nd */}
                 <div className="flex flex-col items-center">
                     <div className="relative">
                         <Avatar src={second.imageUrl || ""} alt={second.name} size={48} />
@@ -199,7 +198,6 @@ function Top3Podium({ rows, title }: { rows: LeaderboardEntry[]; title: string }
                     <div className="text-sm mt-1 text-center leading-tight mb-2">{second.name}</div>
                     {second.title && <div className="text-xs text-gray-500 text-center">{second.title}</div>}
                 </div>
-                {/* 1st */}
                 <div className="flex flex-col items-center">
                     <div className="relative">
                         <Avatar src={first.imageUrl || ""} alt={first.name} size={64} />
@@ -208,7 +206,6 @@ function Top3Podium({ rows, title }: { rows: LeaderboardEntry[]; title: string }
                     <div className="font-medium mt-1 text-center leading-tight mb-2">{first.name}</div>
                     {first.title && <div className="text-xs text-gray-500 text-center">{first.title}</div>}
                 </div>
-                {/* 3rd */}
                 <div className="flex flex-col items-center">
                     <div className="relative">
                         <Avatar src={third.imageUrl || ""} alt={third.name} size={48} />
@@ -270,14 +267,13 @@ export default function Leaderboard(initialProps: LeaderboardProps) {
             if (status === initialStatusRef.current) return;
         }
         setLoading(true);
-        axios
-            .get(`/api/polls/${initialProps.poll.slug}/leaderboard`, { params: { status } })
-            .then((response) => {
-                setData(response.data);
+        pollsApi.leaderboard<LeaderboardData>(initialProps.poll.slug ?? '', status)
+            .then((next) => {
+                setData(next);
                 setLoading(false);
             })
             .catch((err) => {
-                console.error("Error fetching leaderboard:", err);
+                notify.error(apiErrorMessage(err, 'تعذّر تحميل الترتيب'));
                 setLoading(false);
             });
     }, [status]);
@@ -301,7 +297,6 @@ export default function Leaderboard(initialProps: LeaderboardProps) {
         <MainLayout>
             
             <div className="container mx-auto px-4 pt-6 pb-8" dir="rtl">
-                {/* Vote Link */}
                 <div className="max-w-screen-md mx-auto mb-4 flex justify-end">
                     <Link href="/tierlist">
                         <Button variant="outline" className="gap-2">

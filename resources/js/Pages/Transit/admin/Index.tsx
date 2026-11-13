@@ -1,15 +1,19 @@
-'use client'
-
 import React, { useEffect, useRef, useState, useCallback } from 'react'
-import maplibregl from 'maplibre-gl'
+import type maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { FeatureCollection } from 'geojson'
 import { useAdminDrafts, useMapData } from '../_hooks/useMapData'
 import { useQueryClient } from '@tanstack/react-query'
 import { router } from '@inertiajs/react';
-import { useTransitTheme } from '../_components/TransitThemeContext'
-import { THEME_REGISTRY } from '@/Lib/theme'
-import { ROUTE_PALETTE, getRouteColor, buildColorMatch } from '../_lib/mapColors'
+import { createBaseMap } from '@/Components/map/createMap'
+import { useMapStyle } from '@/Components/map/useMapStyle'
+import { resolveBasemapStyle } from '@/Components/map/resolveStyle'
+import { featureCollectionBounds, normalizeFeatureCollection } from '@/Components/map/geo'
+import { useMapColors } from '@/Components/map/mapColors'
+import { ROUTE_COLOR_COUNT, ROUTE_PALETTE, TRANSIT_MAP_COLORS, getRouteColor, buildColorMatch } from '../_lib/mapColors'
+import { transitCities } from '@/Domain/transit/api'
+import type { TransitCity } from '@/Domain/transit/types'
+import type { ActivityLog, Draft, PublishedRoute, RouteStop } from '../_types/admin'
 import TransitLayout from '../layout'
 import { Button } from '@/Components/ui/button'
 import { Badge } from '@/Components/ui/badge'
@@ -20,12 +24,11 @@ import { Textarea } from '@/Components/ui/textarea'
 import { ScrollArea } from '@/Components/ui/scroll-area'
 import { FilterChip } from '@/Components/ui/filter-chip'
 import { notify } from '@/Lib/notify'
+import { apiErrorMessage } from '@/Lib/api'
+import { formatGregorianSyrianShort } from '@/Lib/syrian-date'
+import { transitApi } from '../_lib/api'
+import { transitAdminApi } from '@/Domain/transit/api'
 import { Separator } from '@/Components/ui/separator'
-
-// RTL text shaping for Arabic labels on the vector basemap
-if (maplibregl.getRTLTextPluginStatus() === 'unavailable') {
-  maplibregl.setRTLTextPlugin('/styles/mapbox-gl-rtl-text.min.js', true)
-}
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/Components/ui/select'
@@ -40,52 +43,7 @@ import {
 import ImportTab from './ImportTab'
 import { useAuth } from '@/Contexts/AuthContext'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-type DraftStatus = 'pending' | 'approved' | 'rejected'
-type RouteStatus = 'published' | 'disapproved' | 'hidden'
-
-interface Draft {
-  id: number
-  user_id: number
-  user: { name: string } | null
-  route_id: string | null
-  linked_route: { name_ar: string; name_en: string } | null
-  city_id: string
-  city: { name_ar: string; name_en: string } | null
-  name_ar: string
-  name_en: string | null
-  price: number | null
-  notes: string | null
-  geojson: any
-  status: DraftStatus
-  rejection_reason: string | null
-  created_at: string
-}
-
-interface PublishedRoute {
-  id: string
-  city_id: string
-  city: { name_ar: string; name_en: string } | null
-  name_ar: string
-  name_en: string | null
-  color_index?: number
-  price_old: number | null
-  price_new: number | null
-  status: RouteStatus
-  stops_count: number
-  created_at: string
-}
-
-interface ActivityLog {
-  id: number
-  route_id: string | null
-  action: string
-  description: string
-  user: { name: string } | null
-  created_at: string
-}
-
-const STATUS_LABELS: Record<DraftStatus, string> = {
+const STATUS_LABELS: Record<Draft['status'], string> = {
   pending: 'قيد الانتظار',
   approved: 'مقبول',
   rejected: 'مرفوض',
@@ -103,7 +61,7 @@ function pickNextPendingDraft(drafts: Draft[], statusFilter: string, cityFilter:
   )
 }
 
-const ROUTE_STATUS_LABELS: Record<RouteStatus, string> = {
+const ROUTE_STATUS_LABELS: Record<PublishedRoute['status'], string> = {
   published: 'منشور',
   disapproved: 'معطل',
   hidden: 'مخفي',
@@ -125,47 +83,8 @@ const LOG_ACTION_LABELS: Record<string, string> = {
   deleted: 'حذف خط',
 }
 
-function getCsrfToken(): string {
-  const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/)
-  return match ? decodeURIComponent(match[1]) : ''
-}
-
-function normalizeGeoJson(raw: any): FeatureCollection {
-  const empty: FeatureCollection = { type: 'FeatureCollection', features: [] }
-  let geojson = raw
-  if (typeof geojson === 'string') {
-    try { geojson = JSON.parse(geojson) } catch { return empty }
-  }
-  if (!geojson || !Array.isArray(geojson.features)) return empty
-
-  return {
-    ...geojson,
-    type: 'FeatureCollection',
-    features: geojson.features.map((f: any) => {
-      if (f?.geometry?.type === 'Point' && Array.isArray(f.geometry.coordinates)) {
-        let coords = f.geometry.coordinates
-        while (Array.isArray(coords) && Array.isArray(coords[0])) {
-          coords = coords[0]
-        }
-        return {
-          ...f,
-          geometry: {
-            ...f.geometry,
-            coordinates: coords,
-          },
-        }
-      }
-      return f
-    }),
-  }
-}
-
-function stopCount(draft: Draft) {
-  let geojson = draft.geojson
-  if (typeof geojson === 'string') {
-    try { geojson = JSON.parse(geojson) } catch { /* */ }
-  }
-  return geojson?.features?.filter((f: any) => f.geometry?.type === 'Point').length ?? 0
+function stopCount(draft: Draft): number {
+  return normalizeFeatureCollection(draft.geojson).features.filter((feature) => feature.geometry.type === 'Point').length
 }
 
 function LogIcon({ action }: { action: string }) {
@@ -186,12 +105,18 @@ function LogIcon({ action }: { action: string }) {
   }
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
 function TransitAdminPageContent() {
   const mapContainer = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const [mapReady, setMapReady] = useState(false)
-  const { theme } = useTransitTheme()
+  const [styleVersion, setStyleVersion] = useState(0)
+  const styleRef = useRef('')
+  const { scheme, styleUrl } = useMapStyle()
+  const schemeRef = useRef(scheme)
+  schemeRef.current = scheme
+  const mapColors = useMapColors(TRANSIT_MAP_COLORS)
+  const mapColorsRef = useRef(mapColors)
+  mapColorsRef.current = mapColors
   const [selectedDraft, setSelectedDraft] = useState<Draft | null>(null)
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [cityFilter, setCityFilter] = useState('all')
@@ -204,27 +129,23 @@ function TransitAdminPageContent() {
   const [publishedRoutes, setPublishedRoutes] = useState<PublishedRoute[]>([])
   const [loadingRoutes, setLoadingRoutes] = useState(false)
   const [selectedRoute, setSelectedRoute] = useState<PublishedRoute | null>(null)
-  const [selectedRouteGeoJson, setSelectedRouteGeoJson] = useState<any>(null)
+  const [selectedRouteGeoJson, setSelectedRouteGeoJson] = useState<FeatureCollection | null>(null)
   const [routeSearchQuery, setRouteSearchQuery] = useState('')
   const [routeCityFilter, setRouteCityFilter] = useState('all')
   const [routeStatusFilter, setRouteStatusFilter] = useState<string>('all')
   const [logs, setLogs] = useState<ActivityLog[]>([])
   const [loadingLogs, setLoadingLogs] = useState(false)
-  const [cities, setCities] = useState<any[]>([])
+  const [cities, setCities] = useState<TransitCity[]>([])
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
 
-  // ─── Capabilities + governorate scope ───────────────────────────────────────
   const { user, can, canInCity, allowedTransitCities } = useAuth()
   const allowedCities = allowedTransitCities()
   const scopeRestricted = allowedCities !== null
   const visibleCities = scopeRestricted ? cities.filter(c => allowedCities!.includes(c.id)) : cities
   const cityLabel = (id?: string | null) => cities.find(c => c.id === id)?.nameAr ?? id ?? ''
   const cityInScope = (cityId?: string | null) => allowedCities === null || (!!cityId && allowedCities.includes(cityId))
-  // transit.edit_routes is the whole test. The role list this replaced included
-  // transit_admin, which stopped granting anything when the role prefixes were
-  // removed — so a transit_admin account was offered studio edit controls that
-  // the server refuses. Server side this is the same capability, checked by
-  // TransitStudioController::canEditDraft() plus the governorate scope.
+  // transit.edit_routes is the whole test; server side the same capability is
+  // checked by TransitStudioController::canEditDraft() plus the governorate scope.
   const canStudioEdit = (cityId?: string | null) => cityInScope(cityId) && canInCity('transit.edit_routes', cityId)
 
   const [isCombineModalOpen, setIsCombineModalOpen] = useState(false)
@@ -241,7 +162,7 @@ function TransitAdminPageContent() {
   const [splitNameAEn, setSplitNameAEn] = useState('')
   const [splitNameBAr, setSplitNameBAr] = useState('')
   const [splitNameBEn, setSplitNameBEn] = useState('')
-  const [routeStops, setRouteStops] = useState<any[]>([])
+  const [routeStops, setRouteStops] = useState<RouteStop[]>([])
 
   const [isMoveModalOpen, setIsMoveModalOpen] = useState(false)
   const [targetCityId, setTargetCityId] = useState('')
@@ -253,8 +174,7 @@ function TransitAdminPageContent() {
   const [editRouteColorIndex, setEditRouteColorIndex] = useState<number>(0)
   const [approveColorIndex, setApproveColorIndex] = useState<number>(0)
 
-  // Google My Maps import preview (rendered on the shared map via draft-source)
-  const [importPreviewGeoJson, setImportPreviewGeoJson] = useState<any>(null)
+  const [importPreviewGeoJson, setImportPreviewGeoJson] = useState<unknown>(null)
   const [importColorIndex, setImportColorIndex] = useState<number>(0)
   const [importCityId, setImportCityId] = useState<string | undefined>(undefined)
 
@@ -266,7 +186,7 @@ function TransitAdminPageContent() {
   const { data: drafts = [], isLoading, error: draftsError } = useAdminDrafts(canReviewDrafts)
 
   const activeCityId = adminTab === 'drafts' ? selectedDraft?.city_id : adminTab === 'import' ? importCityId : selectedRoute?.city_id
-  const { data: refData, refetch: refetchRefData } = useMapData(activeCityId)
+  const { data: refData } = useMapData(activeCityId)
 
   const showToast = useCallback((msg: string, ok = true, href?: string, linkLabel?: string) => {
     if (!ok) {
@@ -284,138 +204,120 @@ function TransitAdminPageContent() {
   }, [])
 
   useEffect(() => {
-    fetch('/api/v1/cities').then(r => r.json()).then(setCities).catch(() => {})
+    transitCities()
+      .then(setCities)
+      .catch((e) => notify.error(apiErrorMessage(e)))
   }, [])
 
   const fetchRoutes = useCallback(async (): Promise<PublishedRoute[]> => {
     setLoadingRoutes(true)
     try {
-      const res = await fetch('/api/v1/admin/routes')
-      if (res.ok) {
-        const rows = await res.json()
-        setPublishedRoutes(rows)
-        return rows
-      }
-    } catch { /* */ } finally { setLoadingRoutes(false) }
-    return []
+      const rows = await transitApi.adminRoutes()
+      setPublishedRoutes(rows)
+      return rows
+    } catch (e) {
+      notify.error(apiErrorMessage(e))
+      return []
+    } finally { setLoadingRoutes(false) }
   }, [])
 
   const fetchLogs = useCallback(async () => {
     setLoadingLogs(true)
     try {
-      const res = await fetch('/api/v1/admin/routes/logs')
-      if (res.ok) setLogs(await res.json())
-    } catch { /* */ } finally { setLoadingLogs(false) }
+      setLogs(await transitApi.adminRouteLogs())
+    } catch (e) {
+      notify.error(apiErrorMessage(e))
+    } finally { setLoadingLogs(false) }
   }, [])
 
-  // ─── Map init ───────────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!mapContainer.current || mapRef.current) return
-
-    const dark = THEME_REGISTRY.find((t) => t.id === theme)?.isDark ?? true
-    const map = new maplibregl.Map({
-      container: mapContainer.current,
-      style: dark ? '/styles/styles/dark-matter-vector.json' : '/styles/styles/light-vector.json',
-      center: [36.29, 33.51],
-      zoom: 7,
-      attributionControl: false,
-    })
-    map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right')
-    map.addControl(new maplibregl.NavigationControl(), 'bottom-right')
-    map.on('load', () => {
-      const empty: FeatureCollection = { type: 'FeatureCollection', features: [] }
+  // The basemap's runtime sources and layers are re-added on every `style.load`:
+  // setStyle() (a theme switch) drops them, and re-creating the map instead would
+  // throw away the camera, the loaded data and the current selection.
+  const addMapLayers = useCallback((map: maplibregl.Map) => {
+    const empty: FeatureCollection = { type: 'FeatureCollection', features: [] }
+    const colors = mapColorsRef.current
+    if (!map.getSource('ref-routes')) {
       map.addSource('ref-routes', { type: 'geojson', data: empty })
-      map.addSource('ref-stops', { type: 'geojson', data: empty })
-      map.addLayer({ id: 'ref-layer-routes', type: 'line', source: 'ref-routes', paint: { 'line-color': buildColorMatch() as any, 'line-width': 3, 'line-opacity': 0.45 } })
+      map.addLayer({ id: 'ref-layer-routes', type: 'line', source: 'ref-routes', paint: { 'line-color': buildColorMatch(), 'line-width': 3, 'line-opacity': 0.45 } })
       map.addLayer({ id: 'ref-layer-routes-hit', type: 'line', source: 'ref-routes', paint: { 'line-width': 16, 'line-opacity': 0 } })
-      map.addLayer({ id: 'ref-layer-stops', type: 'circle', source: 'ref-stops', paint: { 'circle-radius': 4, 'circle-color': '#c8963a', 'circle-opacity': 0.35 } })
-      
+    }
+    if (!map.getSource('ref-stops')) {
+      map.addSource('ref-stops', { type: 'geojson', data: empty })
+      map.addLayer({ id: 'ref-layer-stops', type: 'circle', source: 'ref-stops', paint: { 'circle-radius': 4, 'circle-color': colors.gold, 'circle-opacity': 0.35 } })
+    }
+    if (!map.getSource('draft-source')) {
       map.addSource('draft-source', { type: 'geojson', data: empty })
       map.addLayer({
         id: 'draft-line', type: 'line', source: 'draft-source',
         layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: { 'line-color': '#c8963a', 'line-width': 5, 'line-opacity': 0.9 },
+        paint: { 'line-color': colors.gold, 'line-width': 5, 'line-opacity': 0.9 },
       })
       map.addLayer({
         id: 'draft-points', type: 'circle', source: 'draft-source',
-        paint: { 'circle-radius': 5, 'circle-color': '#c44b4b', 'circle-stroke-width': 1.5, 'circle-stroke-color': '#ffffff' },
+        paint: { 'circle-radius': 5, 'circle-color': colors.pomegranate, 'circle-stroke-width': 1.5, 'circle-stroke-color': colors.markerStroke },
         filter: ['==', '$type', 'Point'],
       })
-      map.resize()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!mapContainer.current || mapRef.current) return
+
+    const map = createBaseMap({
+      container: mapContainer.current,
+      scheme: schemeRef.current,
+      center: [36.29, 33.51],
+      zoom: 7,
+      controls: 'bottom-right',
+    })
+    styleRef.current = resolveBasemapStyle(schemeRef.current)
+
+    map.on('style.load', () => {
+      addMapLayers(map)
+      setStyleVersion(v => v + 1)
+    })
+    map.on('load', () => {
       mapRef.current = map
       setMapReady(true)
     })
-    return () => { map.remove(); mapRef.current = null; setMapReady(false) }
-  }, [theme])
-
-function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
-  if (!geojson) return null
-  const coords: [number, number][] = []
-
-  const pushValidCoord = (c: any) => {
-    let cur = c
-    while (Array.isArray(cur) && Array.isArray(cur[0])) {
-      cur = cur[0]
+    return () => {
+      map.remove()
+      mapRef.current = null
+      setMapReady(false)
     }
-    if (Array.isArray(cur) && cur.length >= 2 && typeof cur[0] === 'number' && typeof cur[1] === 'number' && !Number.isNaN(cur[0]) && !Number.isNaN(cur[1])) {
-      coords.push([cur[0], cur[1]])
-    }
-  }
+  }, [addMapLayers])
 
-  const extractCoords = (geom: any) => {
-    if (!geom || !geom.coordinates) return
-    const { type, coordinates } = geom
-    if (type === 'Point') {
-      pushValidCoord(coordinates)
-    } else if (type === 'LineString' || type === 'MultiPoint') {
-      if (Array.isArray(coordinates)) coordinates.forEach((c: any) => pushValidCoord(c))
-    } else if (type === 'MultiLineString' || type === 'Polygon') {
-      if (Array.isArray(coordinates)) coordinates.forEach((line: any) => Array.isArray(line) && line.forEach((c: any) => pushValidCoord(c)))
-    } else if (type === 'MultiPolygon') {
-      if (Array.isArray(coordinates)) coordinates.forEach((poly: any) => Array.isArray(poly) && poly.forEach((line: any) => Array.isArray(line) && line.forEach((c: any) => pushValidCoord(c))))
-    }
-  }
-
-  if (geojson.type === 'FeatureCollection' && Array.isArray(geojson.features)) {
-    geojson.features.forEach((f: any) => extractCoords(f.geometry))
-  } else if (geojson.type === 'Feature') {
-    extractCoords(geojson.geometry)
-  } else {
-    extractCoords(geojson)
-  }
-
-  if (coords.length === 0) return null
-  const bounds = new maplibregl.LngLatBounds(coords[0], coords[0])
-  coords.forEach(c => bounds.extend(c as maplibregl.LngLatLike))
-  return bounds
-}
+  useEffect(() => {
+    if (!mapReady || !mapRef.current) return
+    if (styleRef.current === styleUrl) return
+    styleRef.current = styleUrl
+    mapRef.current.setStyle(styleUrl)
+  }, [mapReady, styleUrl])
 
   useEffect(() => {
     if (!mapReady || !mapRef.current) return
     const src = mapRef.current.getSource('draft-source') as maplibregl.GeoJSONSource | undefined
-    const empty: FeatureCollection = { type: 'FeatureCollection', features: [] }
-    let geojsonData: any = empty
+    let geojsonData: FeatureCollection = { type: 'FeatureCollection', features: [] }
     if (adminTab === 'drafts') {
-      geojsonData = normalizeGeoJson(selectedDraft?.geojson)
+      geojsonData = normalizeFeatureCollection(selectedDraft?.geojson)
     } else if (adminTab === 'routes') {
-      geojsonData = normalizeGeoJson(selectedRouteGeoJson)
+      geojsonData = normalizeFeatureCollection(selectedRouteGeoJson)
     } else if (adminTab === 'import') {
-      geojsonData = normalizeGeoJson(importPreviewGeoJson)
+      geojsonData = normalizeFeatureCollection(importPreviewGeoJson)
     }
     src?.setData(geojsonData)
 
-    const bounds = getGeoJsonBounds(geojsonData)
+    const bounds = featureCollectionBounds(geojsonData)
     if (bounds) {
       mapRef.current.fitBounds(bounds, { padding: 80, maxZoom: 15, duration: 800 })
     }
-  }, [mapReady, selectedDraft, selectedRouteGeoJson, importPreviewGeoJson, adminTab])
+  }, [mapReady, styleVersion, selectedDraft, selectedRouteGeoJson, importPreviewGeoJson, adminTab])
 
-  // Update line color, casing, points, and background dimming dynamically
   useEffect(() => {
     if (!mapReady || !mapRef.current) return
     const map = mapRef.current
 
-    let color = '#c8963a'
+    let color = mapColors.gold
     if (adminTab === 'drafts' && selectedDraft) {
       color = getRouteColor(approveColorIndex)
     } else if (adminTab === 'routes' && selectedRoute) {
@@ -438,156 +340,121 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
       map.setPaintProperty('ref-layer-routes', 'line-opacity', isSelected ? 0.15 : 0.45)
       map.setPaintProperty('ref-layer-routes', 'line-width', 3)
     }
-  }, [mapReady, adminTab, approveColorIndex, selectedRoute, selectedDraft, importPreviewGeoJson, importColorIndex])
+  }, [mapReady, styleVersion, adminTab, approveColorIndex, selectedRoute, selectedDraft, importPreviewGeoJson, importColorIndex, mapColors])
 
   useEffect(() => {
     if (!mapReady || !mapRef.current) return
     const empty: FeatureCollection = { type: 'FeatureCollection', features: [] }
-    ;(mapRef.current.getSource('ref-routes') as maplibregl.GeoJSONSource | undefined)?.setData((refData?.routes ?? empty) as any)
-    ;(mapRef.current.getSource('ref-stops') as maplibregl.GeoJSONSource | undefined)?.setData((refData?.stops ?? empty) as any)
-  }, [mapReady, refData])
+    ;(mapRef.current.getSource('ref-routes') as maplibregl.GeoJSONSource | undefined)?.setData(refData?.routes ?? empty)
+    ;(mapRef.current.getSource('ref-stops') as maplibregl.GeoJSONSource | undefined)?.setData(refData?.stops ?? empty)
+  }, [mapReady, styleVersion, refData])
 
-  useEffect(() => {
-    if (mobileView === 'map') setTimeout(() => mapRef.current?.resize(), 60)
-  }, [mobileView])
-
-  // ─── API Handlers ───────────────────────────────────────────────────────────
   const handleApprove = useCallback(async (id: number, colorIndex?: number) => {
     setActionLoading(true)
     const selectedColor = colorIndex ?? approveColorIndex
     try {
-      const res = await fetch(`/api/v1/admin/route-drafts/${id}/approve`, {
-        method: 'POST',
-        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
-        credentials: 'include',
-        body: JSON.stringify({ color_index: selectedColor }),
-      })
-      if (res.ok) {
-        const data = await res.json().catch(() => ({}))
-        const route = data?.route
-        showToast(
-          'تمت الموافقة على المسار ونشره',
-          true,
-          route?.id && route?.city_id ? `/transit/city/${route.city_id}?route=${route.id}` : undefined,
-          'عرض الخط',
-        )
-        setSelectedDraft(pickNextPendingDraft(drafts, statusFilter, cityFilter, id))
-        queryClient.invalidateQueries({ queryKey: ['admin-drafts'] })
-        queryClient.invalidateQueries({ queryKey: ['mapData'] })
-        queryClient.invalidateQueries({ queryKey: ['routes'] })
-      }
-      else { const e = await res.json().catch(() => ({})); showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false) }
-    } catch { showToast('تعذّر الاتصال بالخادم', false) } finally { setActionLoading(false) }
+      const data = await transitAdminApi.approveDraft(id, selectedColor)
+      const route = data?.route
+      showToast(
+        'تمت الموافقة على المسار ونشره',
+        true,
+        route?.id && route?.city_id ? `/transit/city/${route.city_id}?route=${route.id}` : undefined,
+        'عرض الخط',
+      )
+      setSelectedDraft(pickNextPendingDraft(drafts, statusFilter, cityFilter, id))
+      queryClient.invalidateQueries({ queryKey: ['admin-drafts'] })
+      queryClient.invalidateQueries({ queryKey: ['mapData'] })
+      queryClient.invalidateQueries({ queryKey: ['routes'] })
+    } catch (e) { showToast(apiErrorMessage(e), false) } finally { setActionLoading(false) }
   }, [approveColorIndex, showToast, queryClient, drafts, statusFilter, cityFilter])
 
   const handleRejectConfirm = useCallback(async () => {
     if (!selectedDraft) return
     setActionLoading(true)
     try {
-      const res = await fetch(`/api/v1/admin/route-drafts/${selectedDraft.id}/reject`, {
-        method: 'POST',
-        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
-        credentials: 'include',
-        body: JSON.stringify({ reason: rejectReason.trim() || null }),
-      })
-      if (res.ok) {
-        showToast('تم رفض المسار');
-        setSelectedDraft(pickNextPendingDraft(drafts, statusFilter, cityFilter, selectedDraft.id));
-        setRejectOpen(false);
-        setRejectReason('');
-        queryClient.invalidateQueries({ queryKey: ['admin-drafts'] });
-        queryClient.invalidateQueries({ queryKey: ['mapData'] });
-        queryClient.invalidateQueries({ queryKey: ['routes'] });
-      }
-      else { const e = await res.json().catch(() => ({})); showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false) }
-    } catch { showToast('تعذّر الاتصال بالخادم', false) } finally { setActionLoading(false) }
+      await transitAdminApi.rejectDraft(selectedDraft.id, rejectReason.trim() || null)
+      showToast('تم رفض المسار');
+      setSelectedDraft(pickNextPendingDraft(drafts, statusFilter, cityFilter, selectedDraft.id));
+      setRejectOpen(false);
+      setRejectReason('');
+      queryClient.invalidateQueries({ queryKey: ['admin-drafts'] });
+      queryClient.invalidateQueries({ queryKey: ['mapData'] });
+      queryClient.invalidateQueries({ queryKey: ['routes'] });
+    } catch (e) { showToast(apiErrorMessage(e), false) } finally { setActionLoading(false) }
   }, [selectedDraft, rejectReason, showToast, queryClient, drafts, statusFilter, cityFilter])
 
   const handleSelectRoute = useCallback(async (route: PublishedRoute) => {
     setSelectedRoute(route)
     setMobileView('map')
 
-    // 1. Zoom in immediately using memory geometry from refData if present
-    const featureFromRef = refData?.routes?.features?.find((f: any) => String(f.properties?.id) === String(route.id))
+    const featureFromRef = refData?.routes?.features?.find(f => String(f.properties?.id) === String(route.id))
     if (featureFromRef) {
-      const geojson = { type: 'FeatureCollection', features: [featureFromRef] }
+      const geojson = normalizeFeatureCollection({ type: 'FeatureCollection', features: [featureFromRef] })
       setSelectedRouteGeoJson(geojson)
       if (mapRef.current) {
-        const bounds = getGeoJsonBounds(geojson)
+        const bounds = featureCollectionBounds(geojson)
         if (bounds) mapRef.current.fitBounds(bounds, { padding: 80, maxZoom: 15, duration: 800 })
       }
     }
 
-    // 2. Fetch full GeoJSON (with stops) from server
     try {
-      const res = await fetch(`/api/v1/admin/routes/${route.id}/geojson`)
-      if (res.ok) {
-        const fullGeojson = await res.json()
-        setSelectedRouteGeoJson(fullGeojson)
-        if (mapRef.current) {
-          const bounds = getGeoJsonBounds(fullGeojson)
-          if (bounds) mapRef.current.fitBounds(bounds, { padding: 80, maxZoom: 15, duration: 800 })
-        }
+      const full = await transitApi.routeGeoJson(route.id)
+      const fullGeojson = normalizeFeatureCollection(full)
+      setSelectedRouteGeoJson(fullGeojson)
+      if (mapRef.current) {
+        const bounds = featureCollectionBounds(fullGeojson)
+        if (bounds) mapRef.current.fitBounds(bounds, { padding: 80, maxZoom: 15, duration: 800 })
       }
-    } catch { /* */ }
+    } catch { /* the memory geometry above is already drawn */ }
   }, [refData])
 
   const handleUpdateStatus = useCallback(async (routeId: string, newStatus: string) => {
     setActionLoading(true)
     try {
-      const res = await fetch(`/api/v1/admin/routes/${routeId}/status`, {
-        method: 'POST',
-        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
-        credentials: 'include',
-        body: JSON.stringify({ status: newStatus }),
-      })
-      if (res.ok) { showToast('تم تحديث حالة الخط'); fetchRoutes(); if (selectedRoute?.id === routeId) setSelectedRoute(p => p ? { ...p, status: newStatus as RouteStatus } : null) }
-      else { const e = await res.json().catch(() => ({})); showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false) }
-    } catch { showToast('تعذّر الاتصال بالخادم', false) } finally { setActionLoading(false) }
+      await transitApi.updateRouteStatus(routeId, newStatus)
+      showToast('تم تحديث حالة الخط')
+      fetchRoutes()
+      if (selectedRoute?.id === routeId) setSelectedRoute(p => p ? { ...p, status: newStatus as PublishedRoute['status'] } : null)
+    } catch (e) { showToast(apiErrorMessage(e), false) } finally { setActionLoading(false) }
   }, [fetchRoutes, selectedRoute, showToast])
 
   const handleMoveRoute = useCallback(async () => {
     if (!selectedRoute) return
     setActionLoading(true)
     try {
-      const res = await fetch(`/api/v1/admin/routes/${selectedRoute.id}/move`, {
-        method: 'POST',
-        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
-        credentials: 'include',
-        body: JSON.stringify({ city_id: targetCityId }),
-      })
-      if (res.ok) { showToast('تم نقل الخط'); setIsMoveModalOpen(false); setSelectedRoute(null); setSelectedRouteGeoJson(null); fetchRoutes() }
-      else { const e = await res.json().catch(() => ({})); showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false) }
-    } catch { showToast('تعذّر الاتصال بالخادم', false) } finally { setActionLoading(false) }
+      await transitApi.moveRoute(selectedRoute.id, targetCityId)
+      showToast('تم نقل الخط'); setIsMoveModalOpen(false); setSelectedRoute(null); setSelectedRouteGeoJson(null); fetchRoutes()
+    } catch (e) { showToast(apiErrorMessage(e), false) } finally { setActionLoading(false) }
   }, [selectedRoute, targetCityId, fetchRoutes, showToast])
 
   const handleCombineRoutes = useCallback(async () => {
     setActionLoading(true)
     try {
-      const res = await fetch('/api/v1/admin/routes/combine', {
-        method: 'POST',
-        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
-        credentials: 'include',
-        body: JSON.stringify({ route_a_id: combineRouteAId, route_b_id: combineRouteBId, name_ar: combineNameAr.trim(), name_en: combineNameEn.trim() || null, price: combinePrice ? parseInt(combinePrice) : null }),
+      await transitApi.combineRoutes({
+        route_a_id: combineRouteAId,
+        route_b_id: combineRouteBId,
+        name_ar: combineNameAr.trim(),
+        name_en: combineNameEn.trim() || null,
+        price: combinePrice ? parseInt(combinePrice) : null,
       })
-      if (res.ok) { showToast('تم دمج الخطين'); setIsCombineModalOpen(false); setCombineRouteAId(''); setCombineRouteBId(''); setCombineNameAr(''); setCombineNameEn(''); setCombinePrice(''); fetchRoutes() }
-      else { const e = await res.json().catch(() => ({})); showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false) }
-    } catch { showToast('تعذّر الاتصال بالخادم', false) } finally { setActionLoading(false) }
+      showToast('تم دمج الخطين'); setIsCombineModalOpen(false); setCombineRouteAId(''); setCombineRouteBId(''); setCombineNameAr(''); setCombineNameEn(''); setCombinePrice(''); fetchRoutes()
+    } catch (e) { showToast(apiErrorMessage(e), false) } finally { setActionLoading(false) }
   }, [combineRouteAId, combineRouteBId, combineNameAr, combineNameEn, combinePrice, fetchRoutes, showToast])
 
   const handleSplitRoute = useCallback(async () => {
     if (!selectedRoute) return
     setActionLoading(true)
     try {
-      const res = await fetch('/api/v1/admin/routes/split', {
-        method: 'POST',
-        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
-        credentials: 'include',
-        body: JSON.stringify({ route_id: selectedRoute.id, split_stop_id: splitAtStopId, name_a_ar: splitNameAAr.trim(), name_a_en: splitNameAEn.trim() || null, name_b_ar: splitNameBAr.trim(), name_b_en: splitNameBEn.trim() || null }),
+      await transitApi.splitRoute({
+        route_id: selectedRoute.id,
+        split_stop_id: splitAtStopId,
+        name_a_ar: splitNameAAr.trim(),
+        name_a_en: splitNameAEn.trim() || null,
+        name_b_ar: splitNameBAr.trim(),
+        name_b_en: splitNameBEn.trim() || null,
       })
-      if (res.ok) { showToast('تم تقسيم الخط'); setIsSplitModalOpen(false); setSelectedRoute(null); setSelectedRouteGeoJson(null); fetchRoutes() }
-      else { const e = await res.json().catch(() => ({})); showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false) }
-    } catch { showToast('تعذّر الاتصال بالخادم', false) } finally { setActionLoading(false) }
+      showToast('تم تقسيم الخط'); setIsSplitModalOpen(false); setSelectedRoute(null); setSelectedRouteGeoJson(null); fetchRoutes()
+    } catch (e) { showToast(apiErrorMessage(e), false) } finally { setActionLoading(false) }
   }, [selectedRoute, splitAtStopId, splitNameAAr, splitNameAEn, splitNameBAr, splitNameBEn, fetchRoutes, showToast])
 
   const handleUpdateRoute = useCallback(async () => {
@@ -595,25 +462,15 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
     setActionLoading(true)
     let success = false
     try {
-      const res = await fetch(`/api/v1/admin/routes/${selectedRoute.id}`, {
-        method: 'PUT',
-        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
-        credentials: 'include',
-        body: JSON.stringify({
-          name_ar: editRouteNameAr.trim() || undefined,
-          name_en: editRouteNameEn.trim() || null,
-          color_index: editRouteColorIndex,
-          price_new: editRoutePrice ? parseInt(editRoutePrice) : null,
-        }),
+      await transitApi.updateRoute(selectedRoute.id, {
+        name_ar: editRouteNameAr.trim() || undefined,
+        name_en: editRouteNameEn.trim() || null,
+        color_index: editRouteColorIndex,
+        price_new: editRoutePrice ? parseInt(editRoutePrice) : null,
       })
-      if (res.ok) {
-        success = true
-      } else {
-        const e = await res.json().catch(() => ({}))
-        showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false)
-      }
-    } catch {
-      showToast('تعذّر الاتصال بالخادم', false)
+      success = true
+    } catch (e) {
+      showToast(apiErrorMessage(e), false)
     } finally {
       setActionLoading(false)
     }
@@ -632,36 +489,24 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
       setPublishedRoutes(prev => prev.map(r => r.id === selectedRoute.id ? { ...r, color_index: editRouteColorIndex, name_ar: editRouteNameAr.trim() || r.name_ar } : r))
 
       try {
-        const resGeo = await fetch(`/api/v1/admin/routes/${selectedRoute.id}/geojson`)
-        if (resGeo.ok) setSelectedRouteGeoJson(await resGeo.json())
-      } catch { /* */ }
+        setSelectedRouteGeoJson(normalizeFeatureCollection(await transitApi.routeGeoJson(selectedRoute.id)))
+      } catch { /* the previously drawn geometry stays on the map */ }
 
       queryClient.invalidateQueries({ queryKey: ['mapData'] })
       queryClient.invalidateQueries({ queryKey: ['routes'] })
-      try { refetchRefData?.() } catch { /* */ }
-      try { fetchRoutes() } catch { /* */ }
+      await fetchRoutes()
     }
-  }, [selectedRoute, editRouteNameAr, editRouteNameEn, editRouteColorIndex, editRoutePrice, fetchRoutes, showToast, queryClient, refetchRefData])
+  }, [selectedRoute, editRouteNameAr, editRouteNameEn, editRouteColorIndex, editRoutePrice, fetchRoutes, showToast, queryClient])
 
   const handleQuickUpdateColor = useCallback(async (newColorIndex: number) => {
     if (!selectedRoute) return
     setActionLoading(true)
     let success = false
     try {
-      const res = await fetch(`/api/v1/admin/routes/${selectedRoute.id}`, {
-        method: 'PUT',
-        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
-        credentials: 'include',
-        body: JSON.stringify({ color_index: newColorIndex }),
-      })
-      if (res.ok) {
-        success = true
-      } else {
-        const e = await res.json().catch(() => ({}))
-        showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false)
-      }
-    } catch {
-      showToast('تعذّر الاتصال بالخادم', false)
+      await transitApi.updateRoute(selectedRoute.id, { color_index: newColorIndex })
+      success = true
+    } catch (e) {
+      showToast(apiErrorMessage(e), false)
     } finally {
       setActionLoading(false)
     }
@@ -672,14 +517,13 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
       setSelectedRoute(updatedRoute)
       setPublishedRoutes(prev => prev.map(r => r.id === selectedRoute.id ? { ...r, color_index: newColorIndex } : r))
 
-      // Update active geojson properties in state immediately so map reflects color
-      setSelectedRouteGeoJson((prev: any) => {
+      setSelectedRouteGeoJson((prev) => {
         if (!prev) return null
         return {
           ...prev,
-          features: (prev.features || []).map((f: any) => ({
-            ...f,
-            properties: { ...f.properties, colorIndex: newColorIndex, color_index: newColorIndex }
+          features: prev.features.map((feature) => ({
+            ...feature,
+            properties: { ...feature.properties, colorIndex: newColorIndex }
           }))
         }
       })
@@ -693,50 +537,39 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
 
       queryClient.invalidateQueries({ queryKey: ['mapData'] })
       queryClient.invalidateQueries({ queryKey: ['routes'] })
-      try { refetchRefData?.() } catch { /* */ }
-      try { fetchRoutes() } catch { /* */ }
+      await fetchRoutes()
     }
-  }, [selectedRoute, fetchRoutes, showToast, queryClient, refetchRefData])
+  }, [selectedRoute, fetchRoutes, showToast, queryClient])
 
   const handleDeleteRoute = useCallback(async () => {
     if (!selectedRoute) return
     setActionLoading(true)
     try {
-      const res = await fetch(`/api/v1/admin/routes/${selectedRoute.id}`, {
-        method: 'DELETE',
-        headers: { 'Accept': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
-        credentials: 'include',
-      })
-      if (res.ok) {
-        showToast('تم حذف الخط')
-        setDeleteConfirmOpen(false)
-        setSelectedRoute(null)
-        setSelectedRouteGeoJson(null)
-        fetchRoutes()
-        queryClient.invalidateQueries({ queryKey: ['mapData'] })
-        queryClient.invalidateQueries({ queryKey: ['routes'] })
-      } else {
-        const e = await res.json().catch(() => ({}))
-        showToast('خطأ: ' + (e.message ?? `HTTP ${res.status}`), false)
-      }
-    } catch {
-      showToast('تعذّر الاتصال بالخادم', false)
+      await transitApi.deleteRoute(selectedRoute.id)
+      showToast('تم حذف الخط')
+      setDeleteConfirmOpen(false)
+      setSelectedRoute(null)
+      setSelectedRouteGeoJson(null)
+      fetchRoutes()
+      queryClient.invalidateQueries({ queryKey: ['mapData'] })
+      queryClient.invalidateQueries({ queryKey: ['routes'] })
+    } catch (e) {
+      showToast(apiErrorMessage(e), false)
     } finally {
       setActionLoading(false)
     }
   }, [selectedRoute, fetchRoutes, showToast, queryClient])
 
-  // ─── Derived ────────────────────────────────────────────────────────────────
   const stats = {
-    pending: drafts.filter((d: Draft) => d.status === 'pending').length,
-    approved: drafts.filter((d: Draft) => d.status === 'approved').length,
-    rejected: drafts.filter((d: Draft) => d.status === 'rejected').length,
+    pending: drafts.filter((d) => d.status === 'pending').length,
+    approved: drafts.filter((d) => d.status === 'approved').length,
+    rejected: drafts.filter((d) => d.status === 'rejected').length,
   }
-  const uniqueCities: string[] = [...new Set<string>(drafts.map((d: Draft) => d.city_id as string))]
+  const uniqueCities: string[] = [...new Set<string>(drafts.map((d) => d.city_id))]
   const filteredDrafts = drafts
-    .filter((d: Draft) => statusFilter === 'all' || d.status === statusFilter)
-    .filter((d: Draft) => cityFilter === 'all' || d.city_id === cityFilter)
-    .sort((a: Draft, b: Draft) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .filter((d) => statusFilter === 'all' || d.status === statusFilter)
+    .filter((d) => cityFilter === 'all' || d.city_id === cityFilter)
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
   const filteredRoutes = publishedRoutes
     .filter(r => routeStatusFilter === 'all' || r.status === routeStatusFilter)
     .filter(r => routeCityFilter === 'all' || r.city_id === routeCityFilter)
@@ -752,7 +585,6 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
   return (
     <>
     <div className="h-full overflow-hidden flex flex-col lg:flex-row bg-background text-foreground" dir="rtl">
-      {/* Mobile View Switcher (< lg) */}
       <div className="flex lg:hidden items-center justify-between gap-2 px-4 py-2 border-b border-border bg-card shrink-0">
         <div className="flex items-center gap-1.5 flex-1">
           <Button
@@ -776,7 +608,6 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
         </div>
       </div>
 
-      {/* Sidebar */}
       <aside className={`w-full lg:w-[400px] xl:w-[440px] flex-shrink-0 flex-col border-e border-border bg-card overflow-hidden max-h-full ${mobileView === 'list' ? 'flex flex-1 lg:flex-none' : 'hidden lg:flex'}`}>
         <header className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div>
@@ -817,16 +648,13 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
             )}
           </TabsList>
 
-          {/* ── DRAFTS TAB ─────────────────────────────────────────────────── */}
           <TabsContent value="drafts" className="flex-1 flex flex-col overflow-hidden mt-0">
-            {/* Stats */}
             <div className="grid grid-cols-3 gap-2 px-4 pt-3">
               <Card className="py-2 text-center"><CardContent className="p-1"><span className="text-xl font-bold text-amber-500">{stats.pending}</span><p className="text-[10px] text-muted-foreground">بانتظار المراجعة</p></CardContent></Card>
               <Card className="py-2 text-center"><CardContent className="p-1"><span className="text-xl font-bold text-green-500">{stats.approved}</span><p className="text-[10px] text-muted-foreground">مقبول</p></CardContent></Card>
               <Card className="py-2 text-center"><CardContent className="p-1"><span className="text-xl font-bold text-red-500">{stats.rejected}</span><p className="text-[10px] text-muted-foreground">مرفوض</p></CardContent></Card>
             </div>
 
-            {/* Filters */}
             <div className="px-4 pt-3 space-y-2">
               <div className="flex gap-1.5">
                 {(['all', 'pending', 'approved', 'rejected'] as const).map(s => (
@@ -848,7 +676,6 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
 
             <Separator className="my-2" />
 
-            {/* List */}
             <ScrollArea className="flex-1 px-4">
               <div className="space-y-2 pb-4">
                 {isLoading ? (
@@ -857,7 +684,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
                   <div className="text-center py-8 text-destructive text-sm">تعذّر تحميل البيانات</div>
                 ) : filteredDrafts.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground text-sm">لا توجد نتائج</div>
-                ) : filteredDrafts.map(draft => (
+                ) : filteredDrafts.map((draft) => (
                   <div key={draft.id}
                     className={`w-full text-right p-3 rounded-lg border transition-colors ${selectedDraft?.id === draft.id ? 'border-primary bg-primary/5' : 'border-border bg-background hover:border-primary/50'}`}>
                     <div className="flex items-start justify-between gap-2">
@@ -874,7 +701,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
                           <span>·</span>
                           <span>{stopCount(draft)} محطة</span>
                           <span>·</span>
-                          <span>{new Date(draft.created_at).toLocaleDateString('ar-SY')}</span>
+                          <span>{formatGregorianSyrianShort(draft.created_at)}</span>
                         </div>
                         {draft.status === 'rejected' && draft.rejection_reason && (
                           <p className="text-[11px] text-destructive mt-1 italic">{draft.rejection_reason}</p>
@@ -908,9 +735,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
             </ScrollArea>
           </TabsContent>
 
-          {/* ── ROUTES TAB ─────────────────────────────────────────────────── */}
           <TabsContent value="routes" className="flex-1 flex flex-col overflow-hidden mt-0">
-            {/* Quick Actions */}
             {can('transit.edit_routes') && (
               <div className="px-4 pt-3">
                 <Button variant="default" size="sm" className="w-full text-xs gap-1.5" onClick={() => { setCombineCityId(''); setCombineRouteAId(''); setCombineRouteBId(''); setCombineNameAr(''); setCombineNameEn(''); setCombinePrice(''); setIsCombineModalOpen(true) }}>
@@ -919,7 +744,6 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
               </div>
             )}
 
-            {/* Filters */}
             <div className="px-4 pt-3 space-y-2">
               <Input aria-label="بحث باسم الخط" placeholder="بحث باسم الخط..." value={routeSearchQuery} onChange={e => setRouteSearchQuery(e.target.value)} className="h-8 text-xs" />
               <div className="flex gap-1.5">
@@ -953,7 +777,7 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleSelectRoute(route) }}>
                     <div className="flex items-start justify-between gap-2 min-w-0">
                       <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <span className="w-3 h-3 rounded-full shrink-0 border border-black/10 shadow-xs" style={{ backgroundColor: getRouteColor(route.color_index ?? 0) }} title={`لون المسار ${((route.color_index ?? 0) % 8) + 1}`} />
+                        <span className="w-3 h-3 rounded-full shrink-0 border border-black/10 shadow-xs" style={{ backgroundColor: getRouteColor(route.color_index ?? 0) }} title={`لون المسار ${((route.color_index ?? 0) % ROUTE_COLOR_COUNT) + 1}`} />
                         <span className="text-sm font-semibold leading-tight truncate">{route.name_ar}</span>
                       </div>
                       <Badge variant={route.status === 'published' ? 'default' : route.status === 'disapproved' ? 'destructive' : 'secondary'} className="text-[10px] shrink-0">
@@ -972,7 +796,6 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
             </ScrollArea>
           </TabsContent>
 
-          {/* ── IMPORT TAB (Google My Maps) ────────────────────────────────── */}
           <TabsContent value="import" className="flex-1 flex flex-col overflow-hidden mt-0 pt-3">
             <ImportTab
               cities={visibleCities}
@@ -993,13 +816,12 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
                 setSelectedDraft(null)
                 setAdminTab('routes')
                 const rows = await fetchRoutes()
-                const created = route && rows.find((r: PublishedRoute) => r.id === route.id)
+                const created = route && rows.find((r) => r.id === route.id)
                 if (created) handleSelectRoute(created)
               }}
             />
           </TabsContent>
 
-          {/* ── LOGS TAB ───────────────────────────────────────────────────── */}
           <TabsContent value="logs" className="flex-1 flex flex-col overflow-hidden mt-0">
             <ScrollArea className="flex-1 px-4 pt-3">
               <div className="space-y-2 pb-4">
@@ -1032,7 +854,6 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
       <div className={`relative overflow-hidden ${mobileView === 'map' ? 'flex-1' : 'h-0 opacity-0 pointer-events-none'} lg:h-auto lg:opacity-100 lg:pointer-events-auto lg:flex-1`}>
         <div ref={mapContainer} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
 
-        {/* Draft detail overlay */}
         {selectedDraft && adminTab === 'drafts' && (
           <Card className="absolute bottom-4 end-4 z-10 w-[360px] max-w-[calc(100%-2rem)] max-h-[calc(100%-2rem)] overflow-y-auto shadow-2xl bg-card/95 backdrop-blur-sm" dir="rtl">
             <CardHeader className="pb-3">
@@ -1117,7 +938,6 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
           </Card>
         )}
 
-        {/* Route detail overlay */}
         {selectedRoute && adminTab === 'routes' && (
           <Card className="absolute bottom-4 end-4 z-10 w-[360px] max-w-[calc(100%-2rem)] max-h-[calc(100%-2rem)] overflow-y-auto shadow-2xl bg-card/95 backdrop-blur-sm" dir="rtl">
             <CardHeader className="pb-3">
@@ -1194,17 +1014,14 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
                   <Button variant="outline" size="sm" className="text-xs" disabled={actionLoading} onClick={async () => {
                     setActionLoading(true)
                     try {
-                      const res = await fetch(`/api/v1/admin/routes/${selectedRoute.id}/stops`, { headers: { 'Accept': 'application/json' }, credentials: 'include' })
-                      if (res.ok) {
-                        const sd = await res.json(); setRouteStops(sd)
-                        setSplitAtStopId(sd[1]?.id || '')
-                        setSplitNameAAr(`${selectedRoute.name_ar} (القسم الأول)`)
-                        setSplitNameBAr(`${selectedRoute.name_ar} (القسم الثاني)`)
-                        setSplitNameAEn(selectedRoute.name_en ? `${selectedRoute.name_en} (Part 1)` : '')
-                        setSplitNameBEn(selectedRoute.name_en ? `${selectedRoute.name_en} (Part 2)` : '')
-                        setIsSplitModalOpen(true)
-                      }
-                    } catch { showToast('خطأ في الاتصال', false) } finally { setActionLoading(false) }
+                      const sd = await transitApi.routeStops(selectedRoute.id); setRouteStops(sd)
+                      setSplitAtStopId(sd[1]?.id || '')
+                      setSplitNameAAr(`${selectedRoute.name_ar} (القسم الأول)`)
+                      setSplitNameBAr(`${selectedRoute.name_ar} (القسم الثاني)`)
+                      setSplitNameAEn(selectedRoute.name_en ? `${selectedRoute.name_en} (Part 1)` : '')
+                      setSplitNameBEn(selectedRoute.name_en ? `${selectedRoute.name_en} (Part 2)` : '')
+                      setIsSplitModalOpen(true)
+                    } catch (e) { showToast(apiErrorMessage(e), false) } finally { setActionLoading(false) }
                   }}>
                     <GitBranch className="h-3.5 w-3.5" /> تقسيم الخط
                   </Button>
@@ -1219,7 +1036,6 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
           </Card>
         )}
 
-        {/* Empty state */}
         {!selectedDraft && adminTab === 'drafts' && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="bg-card/80 backdrop-blur-sm border border-border rounded-xl px-5 py-3 text-sm text-muted-foreground">اختر مسودة لمعاينتها على الخريطة</div>
@@ -1242,7 +1058,6 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
         )}
       </div>
 
-      {/* ── Reject Dialog ─────────────────────────────────────────────────── */}
       <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
         <DialogContent dir="rtl" className="sm:max-w-md">
           <DialogHeader>
@@ -1259,7 +1074,6 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
         </DialogContent>
       </Dialog>
 
-      {/* ── Combine Dialog ────────────────────────────────────────────────── */}
       <Dialog open={isCombineModalOpen} onOpenChange={setIsCombineModalOpen}>
         <DialogContent dir="rtl" className="sm:max-w-lg">
           <DialogHeader>
@@ -1312,7 +1126,6 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
         </DialogContent>
       </Dialog>
 
-      {/* ── Split Dialog ──────────────────────────────────────────────────── */}
       <Dialog open={isSplitModalOpen} onOpenChange={setIsSplitModalOpen}>
         <DialogContent dir="rtl" className="sm:max-w-lg">
           <DialogHeader>
@@ -1348,7 +1161,6 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
         </DialogContent>
       </Dialog>
 
-      {/* ── Move Dialog ───────────────────────────────────────────────────── */}
       <Dialog open={isMoveModalOpen} onOpenChange={setIsMoveModalOpen}>
         <DialogContent dir="rtl" className="sm:max-w-md">
           <DialogHeader>
@@ -1371,7 +1183,6 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
         </DialogContent>
       </Dialog>
 
-      {/* ── Edit Route Dialog ────────────────────────────────────────────── */}
       <Dialog open={isEditRouteModalOpen} onOpenChange={setIsEditRouteModalOpen}>
         <DialogContent dir="rtl" className="sm:max-w-md">
           <DialogHeader>
@@ -1416,7 +1227,6 @@ function getGeoJsonBounds(geojson: any): maplibregl.LngLatBounds | null {
         </DialogContent>
       </Dialog>
 
-      {/* ── Delete Route Dialog ──────────────────────────────────────────── */}
       <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <DialogContent dir="rtl" className="sm:max-w-md">
           <DialogHeader>

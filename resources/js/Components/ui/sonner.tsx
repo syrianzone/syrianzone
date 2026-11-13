@@ -1,33 +1,17 @@
 import * as React from "react"
 import { Toaster as Sonner, toast } from "sonner"
+import { useColorScheme } from "@/Lib/theme"
 
 type ToasterProps = React.ComponentProps<typeof Sonner>
 
-const Toaster = ({ theme: themeProp, ...props }: ToasterProps) => {
-  const [theme, setTheme] = React.useState<"light" | "dark" | "system">("system")
-
-  React.useEffect(() => {
-    const updateTheme = () => {
-      const isDark = document.documentElement.classList.contains("dark") ||
-        document.documentElement.getAttribute("data-theme") === "dark" ||
-        document.documentElement.getAttribute("data-transit-theme") === "damascus-rose"
-      setTheme(isDark ? "dark" : "light")
-    }
-    updateTheme()
-
-    const observer = new MutationObserver(updateTheme)
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class", "data-theme", "data-transit-theme"],
-    })
-    return () => observer.disconnect()
-  }, [])
+const Toaster = (props: ToasterProps) => {
+  const theme = useColorScheme()
 
   return (
     <Sonner
       dir="rtl"
       position="bottom-left"
-      theme={themeProp || theme}
+      theme={theme}
       richColors
       closeButton
       className="toaster group font-sans"

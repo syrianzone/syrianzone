@@ -1,6 +1,5 @@
-"use client";
-
 import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import { api as client, apiErrorMessage, API_ROOT } from '@/Lib/api';
 import { PopulationGroups, DATA_TYPES, DATA_TYPE_CONFIG, RainfallData, DataSource } from './types';
 import {
     Layers, Info, ChevronLeft, ChevronRight, X, BarChart3, CheckSquare, Square, ExternalLink,
@@ -8,28 +7,23 @@ import {
     Activity, AlertTriangle, TrendingDown, TrendingUp, Calendar, Cloud, Navigation,
     History, Users, Heart, MapPin, Clock, Compass, Thermometer, Leaf
 } from 'lucide-react';
-import { sortCitiesByOrder, getCanonicalCityName } from '@/Lib/city-name-standardizer';
+import { sortCitiesByOrder, getCanonicalGovernorateName, getGovernorateDatasetNameEn, getGovernoratePcode } from '@/Domain/geography/governorates';
 import { buildLegend } from './utils/color-calculator';
+import { useIsMobile } from '@/Lib/useIsMobile';
+import { notify } from '@/Lib/notify';
+import { weatherDescriptionAr } from '@/Domain/weather/weather';
 
 type DataType = typeof DATA_TYPES[keyof typeof DATA_TYPES];
 
 const MapClient = lazy(() => import('./components/map/MapClient'));
 
-const ARABIC_TO_ENGLISH_CITY_MAP: { [key: string]: string } = {
-    'دمشق': 'Damascus', 'حلب': 'Aleppo', 'ريف دمشق': 'Rif Dimashq', 'حمص': 'Homs',
-    'حماة': 'Hama', 'اللاذقية': 'Latakia', 'إدلب': 'Idlib', 'الحسكة': 'Al-Hasakah',
-    'دير الزور': 'Deir ez-Zor', 'طرطوس': 'Tartus', 'الرقة': 'Raqqa', 'درعا': 'Daraa',
-    'السويداء': 'As-Suwayda', 'القنيطرة': 'Quneitra'
-};
-
-// Helper functions for UI
 const getWeatherIcon = (description: string) => {
     if (!description) return <ThermometerSun size={24} />;
     const desc = description.toLowerCase();
     if (desc.includes('rain') || desc.includes('drizzle')) return <CloudRain size={24} />;
     if (desc.includes('cloud') || desc.includes('overcast')) return <Cloud size={24} />;
     if (desc.includes('clear') || desc.includes('sun') || desc.includes('main')) return <ThermometerSun size={24} />;
-    if (desc.includes('snow')) return <ThermometerSun size={24} />; // Fallback or add snow icon
+    if (desc.includes('snow')) return <ThermometerSun size={24} />;
     return <ThermometerSun size={24} />;
 };
 
@@ -38,102 +32,74 @@ const getWindDirection = (degrees: number) => {
     return directions[Math.round(degrees / 45) % 8];
 };
 
-export default function PopulationClient({ masterData: initialMasterData, envData: initialEnvData }: { masterData?: any, envData?: any }) {
-    const [geoJsonData, setGeoJsonData] = useState<any>(null);
+export default function PopulationClient() {
+    const isMobile = useIsMobile();
+    const [geoJsonData, setGeoJsonData] = useState<unknown>(null);
     const [currentDataType, setCurrentDataType] = useState<DataType>(DATA_TYPES.POPULATION);
     const [currentSourceId, setCurrentSourceId] = useState<number | null>(null);
     const [isPanelOpen, setIsPanelOpen] = useState(false);
 
-    // Comparison tool state
     const [selectedProvinces, setSelectedProvinces] = useState<string[]>([]);
 
-    // Detail States
     const [selectedRainfallProvince, setSelectedRainfallProvince] = useState<{ name: string, data: any[] } | null>(null);
     const [selectedEnvProvince, setSelectedEnvProvince] = useState<{ name: string, data: any } | null>(null);
 
-    // Data fetching state
-    const [rainfallData, setRainfallData] = useState<RainfallData>(initialMasterData?.rainfall_data || {});
-    const [environmentalData, setEnvironmentalData] = useState<any>(initialEnvData || null);
+    const [rainfallData, setRainfallData] = useState<RainfallData>({});
+    const [environmentalData, setEnvironmentalData] = useState<any>(null);
 
-    const [livePopulationData, setLivePopulationData] = useState<PopulationGroups>(initialMasterData?.groups || {
+    const [livePopulationData, setLivePopulationData] = useState<PopulationGroups>({
         population: [],
         idp: [],
         idp_returnees: [],
         rainfall: [],
         environmental: []
     });
-    const [isLoading, setIsLoading] = useState<boolean>(!initialMasterData || !initialEnvData);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         fetch('/assets/population/syr_admin1_opt.geojson')
             .then(res => res.json())
             .then(data => setGeoJsonData(data))
-            .catch(err => console.error('Failed to load GeoJSON', err));
+            // The governorate polygons are the atlas's map: without them the page
+            // renders its panels over an empty canvas, so say so instead of logging.
+            .catch(err => notify.error(apiErrorMessage(err, 'تعذّر تحميل خريطة المحافظات')));
     }, []);
 
     useEffect(() => {
-        if (initialMasterData && initialEnvData) {
-            setIsLoading(false);
-            return;
-        }
-
         const fetchData = async () => {
             try {
                 setIsLoading(true);
                 setError(null);
 
-                const masterResponse = await fetch('/api/population/master');
-                if (!masterResponse.ok) throw new Error('Failed to fetch master data');
-                const masterData = await masterResponse.json();
+                const masterData = await client.get<{ groups: PopulationGroups; rainfall_data: RainfallData }>(
+                    `${API_ROOT}/population/master`
+                );
 
                 setLivePopulationData(masterData.groups);
                 setRainfallData(masterData.rainfall_data);
 
-                const envResponse = await fetch('/api/population/env-report');
-                if (!envResponse.ok) throw new Error('Failed to fetch environmental data');
-                const envData = await envResponse.json();
-                setEnvironmentalData(envData);
-
+                setEnvironmentalData(await client.get(`${API_ROOT}/population/env-report`));
             } catch (err) {
-                console.error('Failed to fetch population data:', err);
-                setError('Failed to load population atlas data. Please try again later.');
+                setError(apiErrorMessage(err, 'تعذّر تحميل بيانات الأطلس السكاني، حاول مجدداً لاحقاً.'));
             } finally {
                 setIsLoading(false);
             }
         };
 
         fetchData();
-    }, [initialMasterData, initialEnvData]);
+    }, []);
 
+    // Rainfall is a single layer with no source rows, so it has no selected source.
     useEffect(() => {
-        if (currentDataType === DATA_TYPES.RAINFALL) {
-            setCurrentSourceId(999);
-        } else if (currentDataType === DATA_TYPES.ENVIRONMENTAL) {
-            const sources = livePopulationData[currentDataType];
-            if (sources && sources.length > 0) {
-                setCurrentSourceId(sources[0].source_id);
-            } else {
-                setCurrentSourceId(null);
-            }
-        } else {
-            const sources = livePopulationData[currentDataType];
-            if (sources && sources.length > 0) {
-                setCurrentSourceId(sources[0].source_id);
-            } else {
-                setCurrentSourceId(null);
-            }
-        }
+        const sources = currentDataType === DATA_TYPES.RAINFALL ? null : livePopulationData[currentDataType];
+        setCurrentSourceId(sources && sources.length > 0 ? sources[0].source_id : null);
     }, [currentDataType, livePopulationData]);
 
     useEffect(() => {
-        const handleResize = () => {
-            if (window.innerWidth >= 768) setIsPanelOpen(true);
-        };
-        window.addEventListener('resize', handleResize);
-        handleResize();
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
+        // The panel is open by default where it fits beside the map.
+        if (!isMobile) setIsPanelOpen(true);
+    }, [isMobile]);
 
     const currentSource = useMemo(() => {
         if (currentDataType === DATA_TYPES.RAINFALL) return null;
@@ -194,7 +160,7 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
 
     if (isLoading) {
         return (
-            <div className="flex flex-col items-center justify-center h-[calc(100vh-64px)] bg-background text-foreground gap-6">
+            <div className="flex flex-col items-center justify-center h-[calc(100vh-var(--sz-navbar-h))] bg-background text-foreground gap-6">
                 {/* The loaded view has its own heading; without this one the page
                     the server sends, which is this state, has none. */}
                 <h1 className="sr-only">أطلس سوريا التفاعلي</h1>
@@ -214,7 +180,7 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
 
     if (error) {
         return (
-            <div className="flex flex-col items-center justify-center h-[calc(100vh-64px)] bg-background text-foreground gap-6 px-4">
+            <div className="flex flex-col items-center justify-center h-[calc(100vh-var(--sz-navbar-h))] bg-background text-foreground gap-6 px-4">
                 <h1 className="sr-only">أطلس سوريا التفاعلي</h1>
                 <div className="text-center max-w-md">
                     <div className="text-red-500 mb-4">
@@ -235,9 +201,8 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
     }
 
     return (
-        <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden relative bg-background text-foreground" dir="rtl">
+        <div className="flex flex-col h-[calc(100vh-var(--sz-navbar-h))] overflow-hidden relative bg-background text-foreground" dir="rtl">
 
-            {/* Comparison Pop-up */}
             {comparisonData && currentDataType !== DATA_TYPES.RAINFALL && currentDataType !== DATA_TYPES.ENVIRONMENTAL && (
                 <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-[1100] w-[90%] max-w-2xl bg-card border-2 border-primary rounded-xl shadow-2xl animate-in zoom-in-95 duration-200">
                     <div className="flex justify-between items-center p-4 border-b border-border">
@@ -251,9 +216,9 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                     </div>
                     <div className="p-6">
                         <div className="grid grid-cols-3 gap-4 mb-8">
-                            <div className="text-center font-bold text-lg text-primary truncate">{getCanonicalCityName(comparisonData.p1.name)}</div>
+                            <div className="text-center font-bold text-lg text-primary truncate">{getCanonicalGovernorateName(comparisonData.p1.name)}</div>
                             <div className="text-center text-muted-foreground text-sm self-center">مقابل</div>
-                            <div className="text-center font-bold text-lg text-primary truncate">{getCanonicalCityName(comparisonData.p2.name)}</div>
+                            <div className="text-center font-bold text-lg text-primary truncate">{getCanonicalGovernorateName(comparisonData.p2.name)}</div>
                         </div>
 
                         <div className="space-y-8">
@@ -292,7 +257,6 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                 </div>
             )}
 
-            {/* Header Overlay */}
             <div className="absolute top-4 end-4 z-[400] pointer-events-none">
                 <div className="bg-card/90 backdrop-blur p-3 rounded-lg shadow-lg border border-border pointer-events-auto max-w-xs">
                     <h1 className="text-base font-bold text-foreground mb-0.5">أطلس سوريا</h1>
@@ -307,7 +271,6 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                 </div>
             </div>
 
-            {/* Map Area */}
             <div className="flex-grow relative z-0">
                 <Suspense fallback={<div className="h-full w-full flex items-center justify-center bg-card text-muted-foreground">جاري تحميل الخريطة...</div>}>
                     <MapClient
@@ -320,9 +283,8 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                         customThresholds={dynamicThresholds}
                         onFeatureClick={(feature) => {
                             const name = feature.properties.province_name || feature.properties.ADM2_AR || feature.properties.ADM1_AR || feature.properties.Name;
-                            const nameAr = getCanonicalCityName(name);
+                            const nameAr = getCanonicalGovernorateName(name);
 
-                            // --- HANDLE RAINFALL CLICK ---
                             if (currentDataType === DATA_TYPES.RAINFALL) {
                                 const props = feature.properties;
                                 const codeKeys = ['ADM1_PCODE', 'ADM2_PCODE', 'admin1Pcode', 'admin2Pcode', 'code', 'id', 'PCODE'];
@@ -339,20 +301,7 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                                     const nameKeys = ['province_name', 'ADM1_EN', 'ADM1_AR', 'name', 'Name', 'NAME', 'admin1Name_en'];
                                     for (const key of nameKeys) {
                                         if (props[key]) {
-                                            const normalized = props[key].trim().replace(/['`]/g, '').replace(/Ḥ/g, 'H').toLowerCase();
-                                            const PROVINCE_TO_PCODE: { [key: string]: string } = {
-                                                'damascus': 'SY01', 'aleppo': 'SY02', 'rural damascus': 'SY03', 'rif dimashq': 'SY03',
-                                                'homs': 'SY04', 'hama': 'SY05', 'lattakia': 'SY06', 'latakia': 'SY06',
-                                                'idlib': 'SY07', 'idleb': 'SY07', 'al hasakah': 'SY08', 'hasakah': 'SY08',
-                                                'deir ez-zor': 'SY09', 'deir ezzor': 'SY09', 'tartous': 'SY10', 'tartus': 'SY10',
-                                                'ar raqqah': 'SY11', 'raqqa': 'SY11', 'daraa': 'SY12', 'dar\'a': 'SY12',
-                                                'as suwayda': 'SY13', 'as suwayda\'': 'SY13', 'sweida': 'SY13',
-                                                'quneitra': 'SY14', 'al qunaytirah': 'SY14',
-                                                'دمشق': 'SY01', 'حلب': 'SY02', 'ريف دمشق': 'SY03', 'حمص': 'SY04', 'حماة': 'SY05',
-                                                'اللاذقية': 'SY06', 'إدلب': 'SY07', 'الحسكة': 'SY08', 'دير الزور': 'SY09',
-                                                'طرطوس': 'SY10', 'الرقة': 'SY11', 'درعا': 'SY12', 'السويداء': 'SY13', 'القنيطرة': 'SY14'
-                                            };
-                                            const mappedCode = PROVINCE_TO_PCODE[normalized];
+                                            const mappedCode = getGovernoratePcode(props[key]);
                                             if (mappedCode && rainfallData[mappedCode]) {
                                                 rData = rainfallData[mappedCode];
                                                 break;
@@ -363,14 +312,13 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
 
                                 if (rData) {
                                     setSelectedRainfallProvince({ name: nameAr, data: rData });
-                                    if (window.innerWidth < 768) setIsPanelOpen(true);
+                                    if (isMobile) setIsPanelOpen(true);
                                 }
                             }
 
-                            // --- HANDLE ENVIRONMENTAL CLICK ---
                             else if (currentDataType === DATA_TYPES.ENVIRONMENTAL) {
                                 if (environmentalData && environmentalData.cities) {
-                                    const englishName = ARABIC_TO_ENGLISH_CITY_MAP[nameAr] || nameAr;
+                                    const englishName = getGovernorateDatasetNameEn(nameAr);
                                     const data = environmentalData.cities[nameAr] || environmentalData.cities[englishName] || environmentalData.cities[name];
 
                                     if (data) {
@@ -383,7 +331,6 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                     />
                 </Suspense>
 
-                {/* Legend Overlay */}
                 <div className="absolute bottom-6 end-20 z-[400] bg-card/90 backdrop-blur p-3 rounded-lg shadow-lg border border-border text-sm min-w-[150px]">
                     <h2 className="font-bold mb-2 text-foreground flex items-center gap-2">
                         {currentDataType === DATA_TYPES.RAINFALL && <CloudRain size={16} className="text-primary" />}
@@ -391,10 +338,8 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                         {config.labelAr}
                     </h2>
                     <div className="space-y-1.5">
-                        {(currentDataType === DATA_TYPES.ENVIRONMENTAL
-                            ? config.legend
-                            : buildLegend(currentDataType, dynamicThresholds)
-                        ).map((item: { label: string; color: string }, idx: number) => (
+                        {buildLegend(currentDataType, dynamicThresholds)
+                            .map((item: { label: string; color: string }, idx: number) => (
                             <div key={idx} className="flex items-center gap-2">
                                 <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></span>
                                 <span className="text-muted-foreground text-xs">{item.label}</span>
@@ -404,7 +349,6 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                 </div>
             </div>
 
-            {/* Side Panel */}
             <div className={`absolute top-0 start-0 bottom-0 z-[500] w-full sm:w-80 bg-card border-e border-border shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col ${isPanelOpen ? 'translate-x-0' : '-translate-x-full rtl:translate-x-full'}`}>
                 <button aria-label={isPanelOpen ? 'إغلاق اللوحة' : 'فتح اللوحة'} onClick={() => setIsPanelOpen(!isPanelOpen)} className="absolute -end-10 top-1/2 transform -translate-y-1/2 w-10 h-16 bg-card text-primary rounded-e-lg shadow-md flex items-center justify-center hover:bg-accent border-y border-e border-border transition-colors" title={isPanelOpen ? 'إغلاق اللوحة' : 'فتح اللوحة'}>
                     {isPanelOpen ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
@@ -446,7 +390,6 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-card">
 
-                    {/* OPTION 1: RAINFALL DETAILS */}
                     {currentDataType === DATA_TYPES.RAINFALL ? (
                         <div className="flex flex-col h-full">
                             {selectedRainfallProvince ? (
@@ -484,11 +427,9 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                             )}
                         </div>
                     ) : currentDataType === DATA_TYPES.ENVIRONMENTAL ? (
-                        /* OPTION 2: ENVIRONMENTAL PANEL CONTENT */
                         <div className="flex flex-col h-full">
                             {selectedEnvProvince ? (
                                 <div className="space-y-4 animate-in fade-in slide-in-from-start-4 duration-300">
-                                    {/* Enhanced Header with Weather Icon */}
                                     <div className="relative overflow-hidden rounded-xl p-4 bg-gradient-to-br from-sky-500/20 via-cyan-500/10 to-emerald-500/20 border border-sky-500/20">
                                         <div className="absolute top-2 left-2 opacity-20">
                                             {getWeatherIcon(selectedEnvProvince.data.current_conditions?.weather_description ?? '')}
@@ -527,12 +468,13 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                                                 المحسوسة {selectedEnvProvince.data.current_conditions?.feels_like_celsius ?? '—'}°C
                                             </p>
                                             <p className="text-sm text-foreground/80 mt-1">
-                                                {selectedEnvProvince.data.current_conditions?.weather_description ?? ''}
+                                                {selectedEnvProvince.data.current_conditions?.weather_description
+                                                    ? weatherDescriptionAr(selectedEnvProvince.data.current_conditions.weather_description)
+                                                    : ''}
                                             </p>
                                         </div>
                                     </div>
 
-                                    {/* Tomorrow's Forecast Card */}
                                     <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 rounded-lg p-3 border border-indigo-500/20">
                                         <h2 className="text-sm font-bold mb-2 flex items-center gap-2 text-foreground">
                                             <Calendar size={14} className="text-indigo-400" />
@@ -566,7 +508,6 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                                         </div>
                                     </div>
 
-                                    {/* Enhanced Current Conditions */}
                                     <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
                                         <h2 className="text-sm font-bold mb-3 flex items-center gap-2 text-foreground">
                                             <Thermometer size={16} className="text-orange-500" />
@@ -626,7 +567,6 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                                         </div>
                                     </div>
 
-                                    {/* Air Quality */}
                                     <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
                                         <h2 className="text-sm font-bold mb-3 flex items-center gap-2 text-foreground">
                                             <Activity size={16} className="text-green-500" />
@@ -658,7 +598,6 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                                         </p>
                                     </div>
 
-                                    {/* Drought Risk */}
                                     {selectedEnvProvince.data.drought_risk && Object.keys(selectedEnvProvince.data.drought_risk).length > 0 && (
                                         <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
                                             <h2 className="text-sm font-bold mb-3 flex items-center gap-2 text-foreground">
@@ -691,7 +630,6 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                                         </div>
                                     )}
 
-                                    {/* Climate Trends */}
                                     {selectedEnvProvince.data.climate_trends && Object.keys(selectedEnvProvince.data.climate_trends).length > 0 && (
                                         <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
                                             <h2 className="text-sm font-bold mb-3 flex items-center gap-2 text-foreground">
@@ -737,7 +675,6 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                                         </div>
                                     )}
 
-                                    {/* Historical Summary */}
                                     {selectedEnvProvince.data.historical_summary && Object.keys(selectedEnvProvince.data.historical_summary).length > 0 && (
                                         <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
                                             <h2 className="text-sm font-bold mb-2 flex items-center gap-2 text-foreground">
@@ -784,7 +721,6 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                                         </div>
                                     )}
 
-                                    {/* Data Sources */}
                                     <div className="bg-gradient-to-r from-primary/5 to-primary/10 p-3 rounded-lg border border-primary/20">
                                         <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">مصادر البيانات</span>
                                         <div className="flex flex-wrap gap-1.5 mt-2">
@@ -797,14 +733,12 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                                     </div>
                                 </div>
                             ) : !environmentalData ? (
-                                /* No environmental data loaded yet */
                                 <div className="flex flex-col items-center justify-center text-center h-full text-muted-foreground py-10 px-4">
                                     <ThermometerSun className="opacity-50 mb-4" size={48} />
                                     <h2 className="font-bold text-foreground mb-2">البيانات البيئية</h2>
                                     <p className="text-sm leading-relaxed">لا تتوفر بيانات بيئية حالياً.</p>
                                 </div>
                             ) : (
-                                /* Country-Level Summary when no province selected */
                                 <div className="space-y-4 animate-in fade-in slide-in-from-start-4 duration-300">
                                     <div className="text-center py-4">
                                         <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 flex items-center justify-center">
@@ -816,7 +750,6 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                                         </p>
                                     </div>
 
-                                    {/* Key Findings */}
                                     <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-lg p-3 border border-amber-500/20">
                                         <h2 className="text-sm font-bold mb-2 flex items-center gap-2 text-foreground">
                                             <AlertTriangle size={16} className="text-amber-500" />
@@ -832,7 +765,6 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                                         </ul>
                                     </div>
 
-                                    {/* Climate Challenges */}
                                     <div className="bg-gradient-to-r from-red-500/10 to-rose-500/10 rounded-lg p-3 border border-red-500/20">
                                         <h2 className="text-sm font-bold mb-2 flex items-center gap-2 text-foreground">
                                             <Thermometer size={16} className="text-red-400" />
@@ -848,7 +780,6 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                                         </ul>
                                     </div>
 
-                                    {/* Key Water Basins */}
                                     <div className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 rounded-lg p-3 border border-cyan-500/20">
                                         <h2 className="text-sm font-bold mb-2 flex items-center gap-2 text-foreground">
                                             <Droplets size={16} className="text-cyan-400" />
@@ -863,7 +794,6 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                                         </div>
                                     </div>
 
-                                    {/* Recommendations */}
                                     <div className="bg-gradient-to-r from-emerald-500/10 to-green-500/10 rounded-lg p-3 border border-emerald-500/20">
                                         <h2 className="text-sm font-bold mb-2 flex items-center gap-2 text-foreground">
                                             <Leaf size={16} className="text-emerald-400" />
@@ -879,7 +809,6 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                                         </ul>
                                     </div>
 
-                                    {/* Climate Classification */}
                                     <div className="bg-muted/30 rounded-lg p-3 border border-border/50 text-center">
                                         <span className="text-[10px] text-muted-foreground uppercase tracking-wider">التصنيف المناخي</span>
                                         <p className="text-sm font-bold text-foreground mt-1">
@@ -887,7 +816,6 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                                         </p>
                                     </div>
 
-                                    {/* Data Info */}
                                     <div className="bg-primary/5 p-3 rounded-lg border border-primary/10">
                                         <div className="flex justify-between items-center text-xs text-muted-foreground">
                                             <span>المدن المحللة</span>
@@ -905,7 +833,6 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                             )}
                         </div>
                     ) : (
-                        /* OPTION 3: POPULATION LIST (Existing) */
                         livePopulationData[currentDataType]?.map((source: DataSource) => {
                             const isExpanded = currentSourceId === source.source_id;
 
@@ -969,7 +896,7 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                                                                             type="button"
                                                                             role="checkbox"
                                                                             aria-checked={isSelected}
-                                                                            aria-label={`تحديد ${getCanonicalCityName(city)} للمقارنة`}
+                                                                            aria-label={`تحديد ${getCanonicalGovernorateName(city)} للمقارنة`}
                                                                             onClick={() => toggleProvinceSelection(city)}
                                                                             className="flex w-full justify-center rounded p-1 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                                                         >
@@ -985,7 +912,7 @@ export default function PopulationClient({ masterData: initialMasterData, envDat
                                                                             onClick={() => toggleProvinceSelection(city)}
                                                                             className="w-full text-right"
                                                                         >
-                                                                            {getCanonicalCityName(city)}
+                                                                            {getCanonicalGovernorateName(city)}
                                                                         </button>
                                                                     </td>
                                                                     <td className="py-1.5 px-2 text-left font-mono text-muted-foreground">

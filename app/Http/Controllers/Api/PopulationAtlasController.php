@@ -6,44 +6,25 @@ use App\Http\Controllers\Controller;
 use App\Models\Population\PopulationDemographic;
 use App\Models\Population\PopulationEnvironmentalLog;
 use App\Models\Population\PopulationRainfall;
+use App\Services\Population\PopulationCache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 
 class PopulationAtlasController extends Controller
 {
-    public const MASTER_CACHE_KEY = 'population_master';
-
-    public const ENV_CACHE_KEY = 'population_env_report';
-
-    public static function flushCache(): void
-    {
-        Cache::forget(self::MASTER_CACHE_KEY);
-        Cache::forget(self::ENV_CACHE_KEY);
-    }
-
-    public function index(): JsonResponse
-    {
-        return $this->getData();
-    }
-
     public function getData(): JsonResponse
     {
-        $data = Cache::remember(self::MASTER_CACHE_KEY, 3600, function () {
+        $data = Cache::remember(PopulationCache::MASTER, 3600, function () {
             return $this->buildMasterData();
         });
 
         return response()->json($data);
     }
 
-    public function environment(): JsonResponse
-    {
-        return $this->getEnvironmentalDetails();
-    }
-
     public function getEnvironmentalDetails(): JsonResponse
     {
-        $data = Cache::remember(self::ENV_CACHE_KEY, 3600, function () {
+        $data = Cache::remember(PopulationCache::ENVIRONMENT, 3600, function () {
             return $this->buildEnvironmentalReport();
         });
 

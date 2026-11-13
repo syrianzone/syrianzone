@@ -4,10 +4,10 @@ import MainLayout from '@/Layouts/MainLayout';
 import { QuranRadioIcon } from '@/Components/Icons/ProjectIcons';
 import MuslimShell from '../_components/MuslimShell';
 import RadioView from '../_components/RadioView';
-import { useMuslimNav } from '../_lib/nav';
+import { useQuranTarget } from '@/Domain/quran/targetAyah';
 
 export default function Index() {
-  const setTargetAyah = useMuslimNav((s) => s.setTargetAyah);
+  const setTargetAyah = useQuranTarget((s) => s.setTargetAyah);
 
   // Continue in the reader: the player is global, so it keeps playing; we just
   // hand the reader the ayah being recited and open its route.

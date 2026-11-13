@@ -1,8 +1,8 @@
 <?php
 
 use App\Exceptions\Transit\TransitActionException;
+use App\Models\City;
 use App\Models\Route;
-use App\Models\RouteDraft;
 use App\Models\TransitRouteLog;
 use App\Models\User;
 use App\Services\Transit\TransitAdminService;
@@ -28,62 +28,8 @@ beforeEach(function () {
     $this->actor = User::factory()->create();
 });
 
-/**
- * Cities.center and .bounds are NOT NULL, and their type is spatial on MySQL.
- * Store plain JSON on SQLite, and hand the driver real geometry on MySQL so this
- * file also works against a real database.
- */
-function transitCity(string $id, string $nameAr = 'مدينة', string $nameEn = 'City'): void
-{
-    $point = ['type' => 'Point', 'coordinates' => [36.72, 34.73]];
-    $polygon = ['type' => 'Polygon', 'coordinates' => [[[36.5, 34.55], [36.95, 34.55], [36.95, 34.95], [36.5, 34.95], [36.5, 34.55]]]];
-
-    $wrap = static function (array $shape) {
-        if (DB::connection()->getDriverName() === 'sqlite') {
-            return json_encode($shape, JSON_THROW_ON_ERROR);
-        }
-
-        return DB::raw('ST_GeomFromGeoJSON('.DB::connection()->getPdo()->quote(json_encode($shape, JSON_THROW_ON_ERROR)).')');
-    };
-
-    DB::table('cities')->insert([
-        'id' => $id,
-        'name_ar' => $nameAr,
-        'name_en' => $nameEn,
-        'center' => $wrap($point),
-        'bounds' => $wrap($polygon),
-        'zoom' => 12,
-        'status' => 'active',
-        'created_at' => now(),
-        'updated_at' => now(),
-    ]);
-}
-
-function transitDraft(string $cityId, array $overrides = []): RouteDraft
-{
-    return RouteDraft::create(array_merge([
-        'user_id' => null,
-        'city_id' => $cityId,
-        'name_ar' => 'مسودة',
-        'geojson' => ['type' => 'FeatureCollection', 'features' => []],
-        'status' => 'pending',
-    ], $overrides));
-}
-
-function transitRoute(string $id, string $cityId, array $overrides = []): Route
-{
-    return Route::create(array_merge([
-        'id' => $id,
-        'city_id' => $cityId,
-        'name_ar' => 'خط',
-        'status' => 'published',
-    ], $overrides));
-}
-
-// ─── Approve ────────────────────────────────────────────────────────────────
-
 it('approves an original draft into a new published route', function () {
-    transitCity('homs', 'حمص', 'Homs');
+    seedCity('homs', ['name_ar' => 'حمص', 'name_en' => 'Homs']);
     $draft = transitDraft('homs', ['name_ar' => 'خط جديد', 'name_en' => 'New', 'price' => 500]);
 
     $route = $this->service->approveDraft($draft, null, $this->actor->id);
@@ -98,7 +44,7 @@ it('approves an original draft into a new published route', function () {
 });
 
 it('keeps the contributor colour when the reviewer does not pick one', function () {
-    transitCity('homs');
+    seedCity('homs');
     $draft = transitDraft('homs', ['color_index' => 4]);
 
     $route = $this->service->approveDraft($draft, null, $this->actor->id);
@@ -107,7 +53,7 @@ it('keeps the contributor colour when the reviewer does not pick one', function 
 });
 
 it('lets the reviewer override the contributor colour', function () {
-    transitCity('homs');
+    seedCity('homs');
     $draft = transitDraft('homs', ['color_index' => 4]);
 
     $route = $this->service->approveDraft($draft, 9, $this->actor->id);
@@ -116,7 +62,7 @@ it('lets the reviewer override the contributor colour', function () {
 });
 
 it('refuses to approve a draft that is not pending', function () {
-    transitCity('homs');
+    seedCity('homs');
     $draft = transitDraft('homs', ['status' => 'approved']);
 
     $this->service->approveDraft($draft, null, $this->actor->id);
@@ -130,7 +76,7 @@ it('refuses to approve a draft that is not pending', function () {
  * asserts approving puts it back.
  */
 it('republishes a linked route when its edit is approved', function () {
-    transitCity('homs');
+    seedCity('homs');
     $route = transitRoute('route-homs-1', 'homs', ['name_ar' => 'القديم', 'status' => 'disapproved']);
     $draft = transitDraft('homs', ['route_id' => 'route-homs-1', 'name_ar' => 'المحدث']);
 
@@ -145,10 +91,8 @@ it('republishes a linked route when its edit is approved', function () {
         ->toBeTrue();
 });
 
-// ─── Reject ─────────────────────────────────────────────────────────────────
-
 it('rejects a draft and records the reason', function () {
-    transitCity('homs');
+    seedCity('homs');
     $draft = transitDraft('homs');
 
     $this->service->rejectDraft($draft, 'الاسم غير دقيق', $this->actor->id);
@@ -158,7 +102,7 @@ it('rejects a draft and records the reason', function () {
 });
 
 it('republishes a linked route when its edit is rejected', function () {
-    transitCity('homs');
+    seedCity('homs');
     transitRoute('route-homs-1', 'homs', ['status' => 'disapproved']);
     $draft = transitDraft('homs', ['route_id' => 'route-homs-1']);
 
@@ -169,7 +113,7 @@ it('republishes a linked route when its edit is rejected', function () {
 });
 
 it('leaves a route alone on reject when it was not withdrawn for review', function () {
-    transitCity('homs');
+    seedCity('homs');
     transitRoute('route-homs-1', 'homs', ['status' => 'hidden']);
     $draft = transitDraft('homs', ['route_id' => 'route-homs-1']);
 
@@ -181,16 +125,14 @@ it('leaves a route alone on reject when it was not withdrawn for review', functi
 });
 
 it('refuses to reject a draft that is not pending', function () {
-    transitCity('homs');
+    seedCity('homs');
     $draft = transitDraft('homs', ['status' => 'rejected']);
 
     $this->service->rejectDraft($draft, null, $this->actor->id);
 })->throws(TransitActionException::class, 'is already rejected');
 
-// ─── Status ─────────────────────────────────────────────────────────────────
-
 it('changes a route status and logs the change', function () {
-    transitCity('homs');
+    seedCity('homs');
     $route = transitRoute('route-homs-1', 'homs', ['status' => 'published']);
 
     $this->service->setRouteStatus($route, 'hidden', $this->actor->id);
@@ -201,16 +143,14 @@ it('changes a route status and logs the change', function () {
 });
 
 it('refuses a status change that would change nothing', function () {
-    transitCity('homs');
+    seedCity('homs');
     $route = transitRoute('route-homs-1', 'homs', ['status' => 'published']);
 
     $this->service->setRouteStatus($route, 'published', $this->actor->id);
 })->throws(TransitActionException::class, 'is already published');
 
-// ─── Field updates ──────────────────────────────────────────────────────────
-
 it('updates only the fields it is given', function () {
-    transitCity('homs');
+    seedCity('homs');
     $route = transitRoute('route-homs-1', 'homs', [
         'name_ar' => 'قديم', 'name_en' => 'Old', 'price_new' => 100, 'price_old' => 90,
     ]);
@@ -226,7 +166,7 @@ it('updates only the fields it is given', function () {
 });
 
 it('clears a field when it is explicitly set to null', function () {
-    transitCity('homs');
+    seedCity('homs');
     $route = transitRoute('route-homs-1', 'homs', ['name_en' => 'Old', 'price_old' => 90]);
 
     $this->service->updateRoute($route, ['name_en' => null, 'price_old' => null], $this->actor->id);
@@ -236,44 +176,41 @@ it('clears a field when it is explicitly set to null', function () {
 });
 
 it('refuses an update carrying no recognised fields', function () {
-    transitCity('homs');
+    seedCity('homs');
     $route = transitRoute('route-homs-1', 'homs');
 
     $this->service->updateRoute($route, ['status' => 'hidden'], $this->actor->id);
 })->throws(TransitActionException::class, 'No fields to update');
 
-// ─── Move ───────────────────────────────────────────────────────────────────
-
 it('moves a stop-less route to another governorate and clears both caches', function () {
-    transitCity('homs', 'حمص', 'Homs');
-    transitCity('aleppo', 'حلب', 'Aleppo');
+    seedCity('homs', ['name_ar' => 'حمص', 'name_en' => 'Homs']);
+    seedCity('aleppo', ['name_ar' => 'حلب', 'name_en' => 'Aleppo']);
     $route = transitRoute('route-homs-1', 'homs');
 
-    Cache::put('transit:map-data:homs', 'stale', 600);
-    Cache::put('transit:map-data:aleppo', 'stale', 600);
-    Cache::put('transit:routes:homs', 'stale', 600);
-    Cache::put('transit:cities', 'stale', 600);
+    $cache = app(TransitCache::class);
+    Cache::put($cache->mapDataKey('homs'), 'stale', 600);
+    Cache::put($cache->mapDataKey('aleppo'), 'stale', 600);
+    Cache::put($cache->routesKey(['homs']), 'stale', 600);
+    Cache::put(TransitCache::CITIES, 'stale', 600);
 
     $this->service->moveRoute($route, 'aleppo', $this->actor->id);
 
     expect($route->fresh()->city_id)->toBe('aleppo')
-        ->and(Cache::has('transit:map-data:homs'))->toBeFalse()
-        ->and(Cache::has('transit:map-data:aleppo'))->toBeFalse()
-        ->and(Cache::has('transit:routes:homs'))->toBeFalse()
-        ->and(Cache::has('transit:cities'))->toBeFalse();
+        ->and(Cache::has($cache->mapDataKey('homs')))->toBeFalse()
+        ->and(Cache::has($cache->mapDataKey('aleppo')))->toBeFalse()
+        ->and(Cache::has($cache->routesKey(['homs'])))->toBeFalse()
+        ->and(Cache::has(TransitCache::CITIES))->toBeFalse();
 });
 
 it('refuses a move to the governorate the route is already in', function () {
-    transitCity('homs');
+    seedCity('homs');
     $route = transitRoute('route-homs-1', 'homs');
 
     $this->service->moveRoute($route, 'homs', $this->actor->id);
 })->throws(TransitActionException::class, 'already belongs to governorate homs');
 
-// ─── Delete ─────────────────────────────────────────────────────────────────
-
 it('deletes a route and prunes the stops nothing references any more', function () {
-    transitCity('homs');
+    seedCity('homs');
     $route = transitRoute('route-homs-1', 'homs', ['name_ar' => 'خط المحذوف']);
 
     DB::table('stops')->insert([
@@ -295,7 +232,7 @@ it('deletes a route and prunes the stops nothing references any more', function 
 });
 
 it('keeps a stop that another route still references', function () {
-    transitCity('homs');
+    seedCity('homs');
     transitRoute('route-homs-1', 'homs');
     transitRoute('route-homs-2', 'homs');
 
@@ -312,11 +249,9 @@ it('keeps a stop that another route still references', function () {
     expect(DB::table('stops')->where('id', 'shared')->exists())->toBeTrue();
 });
 
-// ─── Scope filtering on the listings ────────────────────────────────────────
-
 it('filters every listing by the governorates it is given', function () {
-    transitCity('homs');
-    transitCity('aleppo');
+    seedCity('homs');
+    seedCity('aleppo');
 
     transitRoute('route-homs-1', 'homs');
     transitRoute('route-aleppo-1', 'aleppo');
@@ -332,32 +267,33 @@ it('filters every listing by the governorates it is given', function () {
 });
 
 it('returns everything when the governorate filter is null', function () {
-    transitCity('homs');
-    transitCity('aleppo');
+    seedCity('homs');
+    seedCity('aleppo');
     transitRoute('route-homs-1', 'homs');
     transitRoute('route-aleppo-1', 'aleppo');
 
     expect($this->service->routes(null))->toHaveCount(2);
 });
 
-// ─── Combined Damascus / Rif Dimashq cache invalidation ─────────────────────
-
 it('invalidates the combined map when either of the paired governorates changes', function () {
-    transitCity('damascus');
-    transitCity('rif-dimashq');
+    seedCity('damascus');
+    seedCity('rif-dimashq');
 
-    Cache::put('transit:map-data:damascus', 'stale', 600);
-    Cache::put('transit:map-data:rif-dimashq', 'stale', 600);
-    Cache::put('transit:routes:damascus+rif-dimashq', 'stale', 600);
-    Cache::put('transit:routes:aleppo', 'stale', 600);
+    $cache = app(TransitCache::class);
+    $pair = City::mapGroup('damascus');
 
-    app(TransitCache::class)->forgetCity('rif-dimashq');
+    Cache::put($cache->mapDataKey('damascus'), 'stale', 600);
+    Cache::put($cache->mapDataKey('rif-dimashq'), 'stale', 600);
+    Cache::put($cache->routesKey($pair), 'stale', 600);
+    Cache::put($cache->routesKey(['aleppo']), 'stale', 600);
 
-    expect(Cache::has('transit:map-data:damascus'))->toBeFalse()
-        ->and(Cache::has('transit:map-data:rif-dimashq'))->toBeFalse()
-        ->and(Cache::has('transit:routes:damascus+rif-dimashq'))->toBeFalse()
+    $cache->forgetCity('rif-dimashq');
+
+    expect(Cache::has($cache->mapDataKey('damascus')))->toBeFalse()
+        ->and(Cache::has($cache->mapDataKey('rif-dimashq')))->toBeFalse()
+        ->and(Cache::has($cache->routesKey($pair)))->toBeFalse()
         // An unrelated governorate must be left alone.
-        ->and(Cache::has('transit:routes:aleppo'))->toBeTrue();
+        ->and(Cache::has($cache->routesKey(['aleppo'])))->toBeTrue();
 });
 
 /*
@@ -367,7 +303,7 @@ it('invalidates the combined map when either of the paired governorates changes'
  * for the rest of the request. The guard now runs before the transaction opens.
  */
 it('refuses an end-stop split without leaving a transaction open', function () {
-    transitCity('homs');
+    seedCity('homs');
     $route = transitRoute('route-homs-1', 'homs');
 
     DB::table('stops')->insert([

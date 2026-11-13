@@ -13,15 +13,15 @@
 // direction the kingdoms pass is seat order. Values that a table is likely to
 // change (partnerships) are options.
 
-import { createDeck, shuffle, type Card, type Suit } from './cards';
+import { createDeck, shuffle, type Card, type Suit } from '@/Domain/games/cards';
 import { createAvoidanceRound, isComplete as avoidanceComplete, legalPlays as avoidanceLegal, playCard as avoidancePlay, type AvoidanceRound } from './cardGames/avoidance';
 import { emptyLayout, lay, legalCards, type ShedLayout } from './cardGames/shedding';
 import { nextSeat, type Seat } from './cardGames/trick';
 
 export const TRIX_PLAYERS = 4;
-export const TRIX_HAND = 13;
+const TRIX_HAND = 13;
 /** The layout's pivot: the Jack. */
-export const TRIX_PIVOT = 11;
+const TRIX_PIVOT = 11;
 /** Jack, then up to the ace and down to the two. */
 const TRIX_POSITION = [200, 150, 100, 50];
 
@@ -44,8 +44,6 @@ export interface TrixOptions {
 
 export const DEFAULT_TRIX: TrixOptions = { teams: false };
 
-// ---- a deal -----------------------------------------------------------------
-
 interface TrixAvoidDeal {
   contract: 'queens' | 'diamonds' | 'tricks' | 'kingOfHearts';
   round: AvoidanceRound;
@@ -64,8 +62,7 @@ interface TrixShedDeal {
 
 export type TrixDeal = TrixAvoidDeal | TrixShedDeal;
 
-/** Four hands of thirteen, dealt from a full deck. */
-export function dealHands(random: () => number = Math.random): Card[][] {
+function dealHands(random: () => number = Math.random): Card[][] {
   const deck = shuffle(createDeck(), random).map((card) => ({ ...card, faceUp: true }));
   return Array.from({ length: TRIX_PLAYERS }, (_, seat) =>
     deck.slice(seat * TRIX_HAND, seat * TRIX_HAND + TRIX_HAND),
@@ -73,14 +70,13 @@ export function dealHands(random: () => number = Math.random): Card[][] {
 }
 
 /** Put a contract on already-dealt hands — the king sees the hand before choosing. */
-export function buildDeal(contract: Contract, hands: Card[][], leader: Seat): TrixDeal {
+function buildDeal(contract: Contract, hands: Card[][], leader: Seat): TrixDeal {
   if (contract === 'trix') {
     return { contract, hands, layout: emptyLayout(), turn: leader, out: [], phase: 'playing' };
   }
   return { contract, round: createAvoidanceRound(hands, leader), phase: 'playing' };
 }
 
-/** A whole deal in one call: a fresh deal plus its contract. */
 export function createDeal(contract: Contract, dealer: Seat, random: () => number = Math.random): TrixDeal {
   return buildDeal(contract, dealHands(random), dealer);
 }
@@ -136,10 +132,6 @@ function nextActive(seat: Seat, out: Seat[]): Seat {
   return next;
 }
 
-export function isDealComplete(deal: TrixDeal): boolean {
-  return deal.phase === 'complete';
-}
-
 /** Points per seat for a finished deal. */
 export function scoreDeal(deal: TrixDeal): number[] {
   if (deal.contract === 'trix') {
@@ -167,8 +159,6 @@ export function scoreDeal(deal: TrixDeal): number[] {
   }
   return points;
 }
-
-// ---- the session ------------------------------------------------------------
 
 export interface TrixGame {
   options: TrixOptions;
@@ -248,7 +238,7 @@ export function finishDeal(game: TrixGame): TrixGame {
 }
 
 /** The scoring units: partners when teams are on, otherwise every seat alone. */
-export function gameUnits(game: TrixGame): number[][] {
+function gameUnits(game: TrixGame): number[][] {
   return game.options.teams ? [[0, 2], [1, 3]] : [[0], [1], [2], [3]];
 }
 

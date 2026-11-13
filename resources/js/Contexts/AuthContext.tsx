@@ -1,34 +1,16 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { usePage } from '@inertiajs/react';
-import axios from 'axios';
-
-interface User {
-    id: number;
-    name: string;
-    email: string;
-    avatar_url: string;
-    role: string;
-    /** Raw stored grants. Used by the admin UI to render its checkboxes. */
-    permissions?: string[];
-    /**
-     * Resolved capabilities, role implications already applied server-side by
-     * User::effectivePermissions(). This — not `permissions` — is what
-     * capability checks must read.
-     */
-    effective_permissions?: string[];
-    permission_scopes?: Record<string, string[]> | null;
-    settings?: Record<string, unknown> | null;
-}
+import { api } from '@/Lib/api';
+import { hasCapability, type Capability } from '@/Lib/capabilities';
+import type { AuthProps, AuthUser } from '@/types/auth';
 
 interface AuthContextType {
-    user: User | null;
-    loading: boolean;
-    isSuperAdmin: boolean;
+    user: AuthUser | null;
     /** Reads the server-resolved capability list. */
-    can: (permission: string) => boolean;
-    /** Capability + governorate scope (transit.* only), mirrors hasPermissionInCity(). */
-    canInCity: (permission: string, cityId?: string | null) => boolean;
-    /** Allowed transit governorates, or null when unrestricted. */
+    can: (permission: Capability) => boolean;
+    /** Capability + governorate scope (transit.* only), from the server's resolved scope. */
+    canInCity: (permission: Capability, cityId?: string | null) => boolean;
+    /** Allowed transit governorates, or null when unrestricted (resolved server-side). */
     allowedTransitCities: () => string[] | null;
     refreshUser: () => Promise<void>;
 }
@@ -36,52 +18,39 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-    const { props } = usePage();
-    const sharedUser = (props.auth as any)?.user as User | null;
+    const { props } = usePage<{ auth?: AuthProps }>();
+    const sharedUser = props.auth?.user ?? null;
 
-    const [user, setUser] = useState<User | null>(sharedUser);
-    const [loading, setLoading] = useState(false);
+    const [user, setUser] = useState<AuthUser | null>(sharedUser);
 
     useEffect(() => {
         setUser(sharedUser);
     }, [sharedUser]);
 
     const refreshUser = async () => {
-        setLoading(true);
         try {
-            const res = await axios.get('/user');
-            setUser(res.data);
-        } catch (error) {
+            const res = await api.get<AuthUser>('/user');
+            setUser(res);
+        } catch {
             setUser(null);
-        } finally {
-            setLoading(false);
         }
     };
 
-    const isSuperAdmin = user?.role === 'superadmin';
+    // Role implications are resolved on the server and arrive as
+    // effective_permissions, so this delegates to the same function useCan()
+    // uses. There is deliberately no role table in this module.
+    const can = (permission: Capability): boolean =>
+        hasCapability(user?.effective_permissions, permission);
 
-    // Role implications (admin, transit_admin, places_admin, ...) are resolved
-    // on the server and arrive as effective_permissions. Re-deriving them here
-    // is what previously let this file fall behind User::hasPermission(), so
-    // there is deliberately no role table in this module.
-    const can = (permission: string): boolean => {
-        if (!user) return false;
-        if (user.role === 'superadmin') return true;
-        return (user.effective_permissions ?? []).includes(permission);
-    };
+    // The scope rule (superadmin bypass, stored scopes trimmed and emptied) is
+    // `User::allowedTransitCities()`, and it arrives resolved as `transit_scope`
+    // on the auth payload. This module only compares against it.
+    const allowedTransitCities = (): string[] | null => user?.transit_scope ?? null;
 
-    const allowedTransitCities = (): string[] | null => {
-        if (!user || user.role === 'superadmin') return null;
-
-        const scoped = user.permission_scopes?.transit;
-        if (!Array.isArray(scoped)) return null;
-
-        const cities = scoped.filter((city): city is string => typeof city === 'string' && city.length > 0);
-        return cities.length > 0 ? cities : null;
-    };
-
-    const canInCity = (permission: string, cityId?: string | null): boolean => {
+    const canInCity = (permission: Capability, cityId?: string | null): boolean => {
         if (!can(permission)) return false;
+        // Only transit.* capabilities carry a governorate scope
+        // (User::hasPermissionInCity()).
         if (!permission.startsWith('transit.')) return true;
 
         const allowed = allowedTransitCities();
@@ -91,7 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, isSuperAdmin, can, canInCity, allowedTransitCities, refreshUser }}>
+        <AuthContext.Provider value={{ user, can, canInCity, allowedTransitCities, refreshUser }}>
             {children}
         </AuthContext.Provider>
     );

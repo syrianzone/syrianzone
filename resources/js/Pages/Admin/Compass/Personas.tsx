@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Link, router } from '@inertiajs/react';
-import axios from 'axios';
+import { apiErrorMessage } from '@/Lib/api';
+import { compassAdminApi } from '@/Domain/compass/api';
 import MainLayout from '@/Layouts/MainLayout';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
@@ -20,9 +21,9 @@ import {
 import { Compass, Plus, Pencil, Trash2, Loader2, X } from 'lucide-react';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
-import { AXES } from '@/Pages/Compass/data/axes';
-import SpectrumIcon from '@/Pages/Compass/components/SpectrumIcon';
-import type { AxisId } from '@/Pages/Compass/data/types';
+import { AXES } from '@/Domain/compass/axes';
+import SpectrumIcon from '@/Domain/compass/SpectrumIcon';
+import type { AxisId } from '@/Domain/compass/types';
 
 interface AdminPersona {
     id: number;
@@ -40,7 +41,6 @@ interface AdminPersona {
 
 interface Props {
     personas: AdminPersona[];
-    axes: string[];
     icons: string[];
     canViewStats: boolean;
 }
@@ -165,24 +165,24 @@ export default function CompassPersonas({ personas, icons, canViewStats }: Props
             center,
             ranges: Object.keys(ranges).length ? ranges : null,
         };
-        const req = editing
-            ? axios.put(`/api/v1/admin/compass/personas/${editing.id}`, payload)
-            : axios.post('/api/v1/admin/compass/personas', payload);
+        const req = compassAdminApi.savePersona(editing?.id ?? null, payload);
         req
             .then(() => {
                 setOpen(false);
                 router.reload({ only: ['personas'] });
             })
             .then(() => notify.success('تم الحفظ'))
-            .catch((e) => notify.error(e?.response?.data?.message ?? 'تعذّر الحفظ'))
+            .catch((e) => notify.error(apiErrorMessage(e, 'تعذّر الحفظ')))
             .finally(() => setSaving(false));
     };
 
     const toggle = async (persona: AdminPersona) => {
         setBusyId(persona.id);
         try {
-            await axios.post(`/api/v1/admin/compass/personas/${persona.id}/toggle`);
+            await compassAdminApi.togglePersona(persona.id);
             router.reload({ only: ['personas'] });
+        } catch (e) {
+            notify.error(apiErrorMessage(e, `تعذّر تحديث حالة الشخصية`));
         } finally {
             setBusyId(null);
         }
@@ -192,8 +192,10 @@ export default function CompassPersonas({ personas, icons, canViewStats }: Props
         if (!(await confirmDialog({ title: `حذف «${persona.name}»؟`, destructive: true, confirmText: 'حذف' }))) return;
         setBusyId(persona.id);
         try {
-            await axios.delete(`/api/v1/admin/compass/personas/${persona.id}`);
+            await compassAdminApi.removePersona(persona.id);
             router.reload({ only: ['personas'] });
+        } catch (e) {
+            notify.error(apiErrorMessage(e, `تعذّر حذف الشخصية`));
         } finally {
             setBusyId(null);
         }
@@ -265,6 +267,7 @@ export default function CompassPersonas({ personas, icons, canViewStats }: Props
                                                     checked={p.enabled}
                                                     disabled={busyId === p.id}
                                                     onCheckedChange={() => toggle(p)}
+                                                    aria-label={`مفعّل في المطابقة والنتيجة: ${p.name}`}
                                                 />
                                             </TableCell>
                                             <TableCell>
@@ -310,9 +313,9 @@ export default function CompassPersonas({ personas, icons, canViewStats }: Props
                                 <Input id="p-name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
                             </div>
                             <div className="space-y-2">
-                                <Label>الأيقونة</Label>
+                                <Label id="p-icon-label">الأيقونة</Label>
                                 <Select value={form.icon} onValueChange={(v) => setForm((f) => ({ ...f, icon: v }))} dir="rtl">
-                                    <SelectTrigger>
+                                    <SelectTrigger aria-labelledby="p-icon-label">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -331,7 +334,11 @@ export default function CompassPersonas({ personas, icons, canViewStats }: Props
 
                         <div className="flex items-center justify-between rounded-lg border p-3">
                             <Label>مفعّل في المطابقة والنتيجة</Label>
-                            <Switch checked={form.enabled} onCheckedChange={(v) => setForm((f) => ({ ...f, enabled: v }))} />
+                            <Switch
+                                checked={form.enabled}
+                                onCheckedChange={(v) => setForm((f) => ({ ...f, enabled: v }))}
+                                aria-label="مفعّل في المطابقة والنتيجة"
+                            />
                         </div>
 
                         <div className="space-y-2">

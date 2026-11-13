@@ -14,12 +14,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Testing\AssertableInertia as Assert;
 
-/*
-|--------------------------------------------------------------------------
-| Promises tracker (عداد الوعود): public pages and visitor input
-|--------------------------------------------------------------------------
-*/
-
 test('the list shows only published promises, with the derived overdue state and stats', function () {
     $open = Promise::factory()->published()->create(['title' => 'وعد مفتوح']);
     $late = Promise::factory()->published()->overdue()->create(['title' => 'وعد متأخر']);
@@ -233,7 +227,7 @@ test('promise votes are rate limited per guest address', function () {
 });
 
 test('public speaker search offers approved speakers and publicly listed officials only', function () {
-    $tierList = Poll::factory()->create(['slug' => Poll::CORE_POLL_SLUG]);
+    $tierList = Poll::factory()->create(['slug' => Poll::coreSlug()]);
     $draftPoll = Poll::factory()->create(['is_active' => false]);
     PromiseSpeaker::factory()->create(['name' => 'سامر المعتمد']);
     PromiseSpeaker::factory()->pending()->create(['name' => 'سامر المقترح']);

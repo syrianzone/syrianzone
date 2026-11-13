@@ -1,12 +1,12 @@
-"use client";
 import React from 'react';
-import { GovApp } from './types';
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/Components/ui/card";
 import { Smartphone, Globe, Pencil, Settings } from "lucide-react";
-import { usePage } from '@inertiajs/react';
-import { canAny, canModule } from '@/Lib/permissions'
-import SmartFilterSearch from '@/Components/SmartFilterSearch';
-import { matchesFilterText, type SmartFilterFacet, type SmartFilterValue } from '@/Lib/smartFilterSearch';
+import { useCanAny, useCanModule } from '@/Lib/useCan';
+import type { GovApp } from '@/Domain/govapps/types';
+import { DEFAULT_GOVAPP_ICON } from '@/Domain/govapps/media';
+import DirectoryEmptyState from '@/Components/directory/DirectoryEmptyState';
+import { DirectorySmartSearch } from '@/Components/directory/DirectorySearch';
+import { useDirectory, type DirectoryFacet } from '@/Components/directory/useDirectory';
 
 const PLATFORMS = [
     { value: 'android', label: 'أندرويد' },
@@ -14,9 +14,18 @@ const PLATFORMS = [
     { value: 'official', label: 'الموقع الرسمي' },
 ] as const;
 
-const SEARCH_FACETS: SmartFilterFacet[] = [
-    { key: 'platform', label: 'متوفر على', aliases: ['المنصة'], selectionMode: 'multiple', options: PLATFORMS },
-];
+const appSearchText = (app: GovApp) => `${app.name} ${app.description ?? ''}`;
+
+const PLATFORM_FACET: DirectoryFacet<GovApp> = {
+    key: 'platform',
+    label: 'متوفر على',
+    aliases: ['المنصة'],
+    selectionMode: 'multiple',
+    options: PLATFORMS,
+    valueOf: (app) => PLATFORMS
+        .filter(({ value }) => Boolean(app.links?.[value]?.trim()))
+        .map(({ value }) => value),
+};
 
 function AndroidIcon({ className }: { className?: string }) {
     return (
@@ -37,8 +46,6 @@ function IosIcon({ className }: { className?: string }) {
 interface GovAppsClientProps {
     initialData: GovApp[];
 }
-
-const DEFAULT_GOVAPP_ICON = 'https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/govapps/mofa/icon.webp';
 
 function AppIcon({ app, className }: {
     app: GovApp;
@@ -81,25 +88,18 @@ function DescriptionText({ description }: { description: string }) {
 }
 
 export default function GovAppsClient({ initialData }: GovAppsClientProps) {
-    const [value, setValue] = React.useState<SmartFilterValue>({ search: '', filters: {}, sort: '' });
-    const visible = React.useMemo(() => {
-        const platforms = value.filters.platform ?? [];
-        if (!value.search.trim() && !platforms.length) return initialData;
-        return initialData.filter((app) => (
-            matchesFilterText(`${app.name} ${app.description ?? ''}`, value.search)
-            && (!platforms.length || PLATFORMS.some(({ value: key }) => platforms.includes(key) && app.links?.[key]?.trim()))
-        ));
-    }, [initialData, value]);
-    const { auth } = usePage().props as any;
-    const perms = auth?.user?.effective_permissions;
-    // Gated per action, matching the route each link opens. This used to test
-    // three role strings including govapps_admin — a role that stopped granting
-    // anything when the role prefixes were removed, so a govapps_admin account
-    // was offered an edit control that 403s.
+    const directory = useDirectory<GovApp>({
+        items: initialData,
+        searchText: appSearchText,
+        facets: [PLATFORM_FACET],
+    });
+    const canModule = useCanModule();
+    const canAny = useCanAny();
+    // Gated per action, matching the route each link opens:
     //   panel link  -> govapps_admin:any
     //   edit pencil -> govapps.edit (the save it leads to)
-    const canOpenPanel = canModule(perms, 'govapps');
-    const canEditEntries = canAny(perms, 'govapps.edit');
+    const canOpenPanel = canModule('govapps');
+    const canEditEntries = canAny('govapps.edit');
 
     return (
         <div className="min-h-screen bg-background" dir="rtl">
@@ -125,24 +125,22 @@ export default function GovAppsClient({ initialData }: GovAppsClientProps) {
 
             <div className="container mx-auto px-4 py-8">
                 {initialData.length > 0 && (
-                    <div className="mb-5">
-                        <SmartFilterSearch
-                            mobileFiltersScroll
-                            facets={SEARCH_FACETS} value={value} onChange={setValue}
-                            placeholder="ابحث بالاسم أو الوصف أو اختر تصفية..." ariaLabel="ابحث في التطبيقات الحكومية"
-                        />
-                    </div>
+                    <DirectorySmartSearch
+                        className="mb-5"
+                        facets={directory.searchFacets} value={directory.value} onChange={directory.setValue}
+                        placeholder="ابحث بالاسم أو الوصف أو اختر تصفية..." ariaLabel="ابحث في التطبيقات الحكومية"
+                    />
                 )}
-                {visible.length === 0 ? (
-                    <div className="text-center py-20 bg-muted/30 rounded-xl border border-dashed">
-                        <Smartphone className="h-16 w-16 mx-auto text-muted-foreground/40 mb-4" />
-                        <h2 className="text-xl font-medium text-foreground">
-                            {initialData.length === 0 ? 'لم يتم العثور على تطبيقات' : 'لا توجد تطبيقات تطابق البحث والتصفية'}
-                        </h2>
-                    </div>
+                {directory.results.length === 0 ? (
+                    <DirectoryEmptyState
+                        icon={Smartphone}
+                        title={initialData.length === 0 ? 'لم يتم العثور على تطبيقات' : 'لا توجد تطبيقات تطابق البحث والتصفية'}
+                        directory={directory}
+                        className="rounded-xl border-border bg-muted/30 shadow-none"
+                    />
                 ) : (
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3.5 sm:gap-4">
-                        {visible.map((app) => (
+                        {directory.results.map((app) => (
                             <Card
                                 key={app.id}
                                 className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card/90 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"

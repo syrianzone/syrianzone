@@ -1,0 +1,10 @@
+{
+  "bbox": {
+    "lat_min": 32.0,
+    "lat_max": 37.5,
+    "lng_min": 35.5,
+    "lng_max": 42.5
+  },
+  "country_code": "SY",
+  "timezone": "Asia/Damascus"
+}

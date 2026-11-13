@@ -2,24 +2,15 @@
 
 namespace App\Console\Commands;
 
+use App\Support\Facts;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 
 class UploadGeojsonToR2 extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
     protected $signature = 'geojson:upload-to-r2 {--dry-run : Only log actions without uploading}';
 
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
     protected $description = 'Upload original master GeoJSON files to R2 storage (/downloads/)';
 
     /**
@@ -30,9 +21,6 @@ class UploadGeojsonToR2 extends Command
         'public/assets/population/syr_admin1.geojson' => 'downloads/syr_admin1.geojson',
     ];
 
-    /**
-     * Execute the console command.
-     */
     public function handle(): int
     {
         $isDryRun = $this->option('dry-run');
@@ -72,7 +60,7 @@ class UploadGeojsonToR2 extends Command
                 continue;
             }
 
-            $cdnUrl = ($r2Url ? $r2Url : 'https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev') . '/' . $r2Path;
+            $cdnUrl = ($r2Url ?: Facts::media()['public_base']).'/'.$r2Path;
 
             if ($isDryRun) {
                 $this->line(" [DRY-RUN] Would upload: {$relPath} -> R2: {$r2Path} ({$cdnUrl})");

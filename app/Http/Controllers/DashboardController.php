@@ -43,29 +43,25 @@ class DashboardController extends Controller
         return false;
     }
 
-    /**
-     * Render the unified user dashboard index page.
-     */
     public function index(Request $request)
     {
         $user = $request->user();
         $data = [
             'role' => $user->role,
-        ];
-
-        // 1. All roles can view cities for submissions/management
-        $citiesPath = resource_path('js/Pages/Transit/_data/cities.json');
-        $cities = file_exists($citiesPath) ? json_decode(file_get_contents($citiesPath), true) : [];
-        $data['cities'] = $cities;
-
-        // 2. Normal Users see their own route submissions
-        if ($user->role === 'user') {
-            $data['myDrafts'] = RouteDraft::where('user_id', $user->id)
+            // Studio submissions are open to every account (the endpoint takes
+            // anonymous drafts too), so the rule is "not banned", not a role.
+            // The dashboard's submissions tab follows this flag instead of
+            // testing the role string, which is why a staff account that
+            // submits in the studio can now watch its own drafts.
+            'canSubmitTransit' => ! $user->is_banned,
+            // The account's own drafts, whoever it is: the tab that lists them
+            // is the account's, not a role's.
+            'myDrafts' => RouteDraft::where('user_id', $user->id)
                 ->select(self::DRAFT_LIST_COLUMNS)
                 ->with('city:id,name_ar,name_en')
                 ->orderBy('created_at', 'desc')
-                ->get();
-        }
+                ->get(),
+        ];
 
         // 3. Anyone holding a polls capability sees Polls management data.
         //
@@ -79,18 +75,13 @@ class DashboardController extends Controller
             $data['polls'] = Poll::withCount('candidates')->get();
         }
 
-        // Transit reviewers get no drafts or routes here. The dashboard used to
-        // ship up to 500 drafts and 1000 routes as `allDrafts` and
-        // `publishedRoutes`, but the page never read either: reviewing happens
-        // on the transit admin page, which fetches its own, governorate-scoped
+        // Transit reviewers get no drafts or routes here: reviewing happens on
+        // the transit admin page, which fetches its own, governorate-scoped
         // data.
 
         return Inertia::render('Dashboard/Index', $data);
     }
 
-    /**
-     * Update user account details (name and email).
-     */
     public function updateAccount(Request $request)
     {
         $user = $request->user();
@@ -114,16 +105,13 @@ class DashboardController extends Controller
             return response()->json([
                 'ok' => true,
                 'message' => 'تم تحديث الحساب بنجاح',
-                'user' => \App\Http\Middleware\HandleInertiaRequests::userPayload($user->fresh()),
+                'user' => $user->fresh()?->toAuthPayload(),
             ]);
         }
 
         return back()->with('success', 'تم تحديث الحساب بنجاح');
     }
 
-    /**
-     * Upload a new profile avatar, replacing any previously hosted one.
-     */
     public function updateAvatar(Request $request, AvatarService $avatars)
     {
         // dimensions reads the header only (getimagesize), so it cheaply blocks
@@ -150,29 +138,22 @@ class DashboardController extends Controller
         return response()->json(['avatar_url' => $url]);
     }
 
-    /**
-     * Soft delete user account and delegate owned polls/routes to superadmin.
-     */
     public function deleteAccount(Request $request, AvatarService $avatars)
     {
         $user = $request->user();
 
-        // Locate first active superadmin to delegate data to
         $superadmin = User::where('role', 'superadmin')
             ->whereNull('deleted_at')
             ->first();
 
         if ($superadmin && $superadmin->id !== $user->id) {
-            // Delegate polls
             Poll::where('user_id', $user->id)->update(['user_id' => $superadmin->id]);
-            // Delegate routes
             Route::where('user_id', $user->id)->update(['user_id' => $superadmin->id]);
         }
 
         // Remove hosted avatars so R2 does not keep avatars/{id}/* forever.
         $avatars->deleteForUser($user);
 
-        // Revoke all Sanctum tokens (mobile / API) belonging to the user.
         $user->tokens()->delete();
 
         Auth::guard('web')->logout();
@@ -193,10 +174,8 @@ class DashboardController extends Controller
     public function toggleBan(Request $request, $id, UserModerationService $moderation)
     {
         // Authorisation is the `users.ban` capability, enforced by the
-        // users_admin middleware on the route. The role list that used to be
-        // checked here is gone: a role cannot be granted to one person without
-        // granting it to everyone who shares it, and it listed transit_admin,
-        // which had no business reaching user moderation.
+        // users_admin middleware on the route: a capability can be granted to
+        // one person, a role cannot.
         //
         // The refusals themselves live in the service, shared with the agent
         // tool, so the dashboard and the MCP surface cannot diverge on who is

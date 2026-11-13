@@ -5,7 +5,7 @@
 //
 // Pure values in and out, like the rest of the kit.
 
-import type { Card, Suit } from '../cards';
+import type { Card, Suit } from '@/Domain/games/cards';
 import { legalPlays as followSuit, nextSeat, trickWinner, type Play, type Seat } from './trick';
 
 export interface CompletedTrick {

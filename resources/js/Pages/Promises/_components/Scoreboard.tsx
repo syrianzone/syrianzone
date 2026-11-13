@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Card, CardContent } from '@/Components/ui/card';
 import { cn } from '@/Lib/utils';
 import type { PromiseStateFilter } from '../_lib/filters';
-import type { PromiseStats } from '../_lib/types';
+import type { PromiseStats } from '@/Domain/promises/types';
 
 /**
  * Global totals, independent of the active list filters. Every promise falls

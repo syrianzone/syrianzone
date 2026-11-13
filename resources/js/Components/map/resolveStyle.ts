@@ -1,12 +1,15 @@
-import { THEME_REGISTRY } from '@/Lib/theme';
+import type { ColorScheme } from '@/Lib/theme';
 
-const VECTOR_STYLES = {
-  dark: '/styles/styles/dark-matter-vector.json',
+/**
+ * The two locally hosted vector basemaps (`public/styles/styles/`). Every
+ * MapLibre map resolves its style through this table, so a style file rename is
+ * one edit and no page can go on pointing at a path that does not exist.
+ */
+export const BASEMAP_STYLES: Record<ColorScheme, string> = {
   light: '/styles/styles/light-vector.json',
+  dark: '/styles/styles/dark-matter-vector.json',
 };
 
-export function resolveBasemapStyle(themeId?: string | null): string {
-  const id = themeId ?? document.documentElement.getAttribute('data-theme');
-  const dark = THEME_REGISTRY.find((t) => t.id === id)?.isDark ?? true;
-  return dark ? VECTOR_STYLES.dark : VECTOR_STYLES.light;
+export function resolveBasemapStyle(scheme: ColorScheme): string {
+  return BASEMAP_STYLES[scheme];
 }

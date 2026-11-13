@@ -1,0 +1,177 @@
+{
+  "statuses": ["pending", "in_progress", "fulfilled", "partially_fulfilled", "broken", "postponed", "retracted"],
+  "states": [
+    {
+      "key": "pending",
+      "class": "open",
+      "label": "قيد الانتظار",
+      "glyph": "Hourglass",
+      "card_tone": "outline",
+      "badge_variant": "outline",
+      "tone": "text-foreground"
+    },
+    {
+      "key": "in_progress",
+      "class": "open",
+      "label": "قيد التنفيذ",
+      "glyph": "Wrench",
+      "card_tone": "outline",
+      "badge_variant": "outline",
+      "tone": "text-foreground"
+    },
+    {
+      "key": "overdue",
+      "class": "open",
+      "label": "متأخر",
+      "glyph": "AlarmClock",
+      "card_tone": "destructive",
+      "badge_variant": "destructive",
+      "tone": "text-destructive"
+    },
+    {
+      "key": "fulfilled",
+      "class": "closed",
+      "label": "تحقق",
+      "glyph": "BadgeCheck",
+      "card_tone": "primary",
+      "badge_variant": "default",
+      "tone": "text-primary"
+    },
+    {
+      "key": "partially_fulfilled",
+      "class": "closed",
+      "label": "تحقق جزئياً",
+      "glyph": "CircleDashed",
+      "card_tone": "soft",
+      "badge_variant": "secondary",
+      "tone": "text-primary"
+    },
+    {
+      "key": "broken",
+      "class": "closed",
+      "label": "لم يتحقق",
+      "glyph": "XCircle",
+      "card_tone": "destructive",
+      "badge_variant": "destructive",
+      "tone": "text-destructive"
+    },
+    {
+      "key": "postponed",
+      "class": "closed",
+      "label": "أُجّل",
+      "glyph": "CalendarClock",
+      "card_tone": "soft",
+      "badge_variant": "secondary",
+      "tone": "text-muted-foreground"
+    },
+    {
+      "key": "retracted",
+      "class": "closed",
+      "label": "سُحب",
+      "glyph": "Undo2",
+      "card_tone": "soft",
+      "badge_variant": "secondary",
+      "tone": "text-muted-foreground"
+    }
+  ],
+  "venues": [
+    {
+      "key": "x_post",
+      "label": "منشور على إكس"
+    },
+    {
+      "key": "facebook_post",
+      "label": "منشور على فيسبوك"
+    },
+    {
+      "key": "telegram_post",
+      "label": "منشور على تلغرام"
+    },
+    {
+      "key": "tv_interview",
+      "label": "مقابلة تلفزيونية"
+    },
+    {
+      "key": "news_interview",
+      "label": "مقابلة صحفية"
+    },
+    {
+      "key": "press_conference",
+      "label": "مؤتمر صحفي"
+    },
+    {
+      "key": "official_statement",
+      "label": "بيان رسمي"
+    },
+    {
+      "key": "speech",
+      "label": "خطاب"
+    },
+    {
+      "key": "other",
+      "label": "أخرى"
+    }
+  ],
+  "source_types": [
+    {
+      "key": "x_post",
+      "label": "منشور على إكس"
+    },
+    {
+      "key": "facebook_post",
+      "label": "منشور على فيسبوك"
+    },
+    {
+      "key": "telegram_post",
+      "label": "منشور على تلغرام"
+    },
+    {
+      "key": "tv_interview",
+      "label": "مقابلة تلفزيونية"
+    },
+    {
+      "key": "press_conference",
+      "label": "مؤتمر صحفي"
+    },
+    {
+      "key": "official_statement",
+      "label": "بيان رسمي"
+    },
+    {
+      "key": "news_article",
+      "label": "خبر صحفي"
+    },
+    {
+      "key": "video",
+      "label": "فيديو"
+    }
+  ],
+  "review_statuses": [
+    {
+      "key": "pending",
+      "label": "بانتظار المراجعة"
+    },
+    {
+      "key": "published",
+      "label": "منشور"
+    },
+    {
+      "key": "rejected",
+      "label": "مرفوض"
+    }
+  ],
+  "origins": [
+    {
+      "key": "editor",
+      "label": "محرر"
+    },
+    {
+      "key": "public",
+      "label": "اقتراح عام"
+    },
+    {
+      "key": "research",
+      "label": "بحث أولي"
+    }
+  ]
+}

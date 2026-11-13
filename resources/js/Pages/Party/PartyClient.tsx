@@ -1,19 +1,21 @@
-"use client";
-
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { formatSocialUrl, getLanguageName } from './data';
 import { Organization } from './types';
 import {
     Search, MapPin, Globe, FileText, Users,
-    LayoutGrid, List, Plus, ExternalLink, Send
+    Plus, Send
 } from 'lucide-react';
-import { Twitter, Facebook, Instagram, Youtube } from '@/components/ui/icons';
-import { Button } from "@/components/ui/button";
-import SmartFilterSearch from '@/Components/SmartFilterSearch';
-import { matchesFilterText, type SmartFilterFacet, type SmartFilterValue } from '@/Lib/smartFilterSearch';
-import { Card, CardContent } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { Twitter, Facebook, Instagram, Youtube } from '@/Components/ui/icons';
+import { Button } from "@/Components/ui/button";
+import DirectoryEmptyState from '@/Components/directory/DirectoryEmptyState';
+import DirectoryLoadMore from '@/Components/directory/DirectoryLoadMore';
+import DirectoryResultCount from '@/Components/directory/DirectoryResultCount';
+import { DirectorySmartSearch } from '@/Components/directory/DirectorySearch';
+import DirectoryViewToggle from '@/Components/directory/DirectoryViewToggle';
+import { useDirectory, type DirectoryFacet } from '@/Components/directory/useDirectory';
+import { Card, CardContent } from "@/Components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/Components/ui/table";
+import { Badge } from "@/Components/ui/badge";
 
 interface PartyClientProps {
     initialOrganizations: Organization[];
@@ -21,78 +23,31 @@ interface PartyClientProps {
 
 const ITEMS_PER_PAGE = 15;
 
-export default function PartyClient({ initialOrganizations }: PartyClientProps) {
-    const [searchTerm, setSearchTerm] = useState('');
-    const [categoryFilter, setCategoryFilter] = useState('all');
-    const [countryFilter, setCountryFilter] = useState('all');
-    const [cityFilter, setCityFilter] = useState('all');
-    const [langFilter, setLangFilter] = useState('all');
-    const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
-    const [displayCount, setDisplayCount] = useState(ITEMS_PER_PAGE);
+const organizationSearchText = (org: Organization) => `${org.name} ${org.description ?? ''} ${org.formattedLocation ?? ''} ${org.type ?? ''}`;
 
-    // --- Derive Filter Options ---
+export default function PartyClient({ initialOrganizations }: PartyClientProps) {
+    const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+
     const categories = useMemo(() => Array.from(new Set(initialOrganizations.map(o => o.type).filter((v): v is string => Boolean(v)))).sort(), [initialOrganizations]);
     const countries = useMemo(() => Array.from(new Set(initialOrganizations.map(o => o.country).filter((v): v is string => Boolean(v)))).sort(), [initialOrganizations]);
     const cities = useMemo(() => Array.from(new Set(initialOrganizations.map(o => o.city).filter((v): v is string => Boolean(v)))).sort(), [initialOrganizations]);
     const languages = useMemo(() => Array.from(new Set(initialOrganizations.map(o => o.lang).filter((v): v is string => Boolean(v)))).sort(), [initialOrganizations]);
-    const facets = useMemo<SmartFilterFacet[]>(() => [
-        { key: 'category', label: 'نوع المنظمة', aliases: ['النوع'], options: categories.map(value => ({ value, label: value })) },
-        { key: 'country', label: 'البلد', options: countries.map(value => ({ value, label: value })) },
-        { key: 'city', label: 'المدينة', options: cities.map(value => ({ value, label: value })) },
-        { key: 'lang', label: 'اللغة', options: languages.map(value => ({ value, label: getLanguageName(value) })) },
+    const facets = useMemo<DirectoryFacet<Organization>[]>(() => [
+        { key: 'category', label: 'نوع المنظمة', aliases: ['النوع'], options: categories.map(value => ({ value, label: value })), valueOf: (org: Organization) => org.type },
+        { key: 'country', label: 'البلد', options: countries.map(value => ({ value, label: value })), valueOf: (org: Organization) => org.country },
+        { key: 'city', label: 'المدينة', options: cities.map(value => ({ value, label: value })), valueOf: (org: Organization) => org.city },
+        { key: 'lang', label: 'اللغة', options: languages.map(value => ({ value, label: getLanguageName(value) })), valueOf: (org: Organization) => org.lang },
     ].filter(facet => facet.options.length > 0), [categories, countries, cities, languages]);
-    const searchValue: SmartFilterValue = {
-        search: searchTerm,
-        filters: Object.fromEntries(Object.entries({ category: categoryFilter, country: countryFilter, city: cityFilter, lang: langFilter })
-            .filter(([, value]) => value !== 'all').map(([key, value]) => [key, [value]])),
-        sort: '',
-    };
 
-    function changeSearch(next: SmartFilterValue) {
-        setSearchTerm(next.search);
-        setCategoryFilter(next.filters.category?.[0] ?? 'all');
-        setCountryFilter(next.filters.country?.[0] ?? 'all');
-        setCityFilter(next.filters.city?.[0] ?? 'all');
-        setLangFilter(next.filters.lang?.[0] ?? 'all');
-    }
-
-    // --- Filter Logic ---
-    const filteredOrganizations = useMemo(() => {
-        return initialOrganizations.filter(org => {
-            const matchSearch = matchesFilterText(`${org.name} ${org.description ?? ''} ${org.formattedLocation ?? ''} ${org.type ?? ''}`, searchTerm);
-
-            const matchCategory = categoryFilter === 'all' || org.type === categoryFilter;
-            const matchCountry = countryFilter === 'all' || org.country === countryFilter;
-            const matchCity = cityFilter === 'all' || org.city === cityFilter;
-            const matchLang = langFilter === 'all' || org.lang === langFilter;
-
-            return matchSearch && matchCategory && matchCountry && matchCity && matchLang;
-        });
-    }, [initialOrganizations, searchTerm, categoryFilter, countryFilter, cityFilter, langFilter]);
-
-    const displayedOrganizations = filteredOrganizations.slice(0, displayCount);
-
-    // --- Handlers ---
-    const handleLoadMore = () => {
-        setDisplayCount(prev => prev + ITEMS_PER_PAGE);
-    };
-
-    const clearFilters = () => {
-        setCategoryFilter('all');
-        setCountryFilter('all');
-        setCityFilter('all');
-        setLangFilter('all');
-        setSearchTerm('');
-    };
-
-    // Reset display count when filters change
-    React.useEffect(() => {
-        setDisplayCount(ITEMS_PER_PAGE);
-    }, [searchTerm, categoryFilter, countryFilter, cityFilter, langFilter]);
+    const directory = useDirectory<Organization>({
+        items: initialOrganizations,
+        searchText: organizationSearchText,
+        facets,
+        pageSize: ITEMS_PER_PAGE,
+    });
 
     return (
         <div className="min-h-screen transition-colors font-sans" dir="rtl">
-            {/* Header & Hero Section */}
             <section className="bg-card py-10 shadow-xs border-b border-border">
                 <div className="container mx-auto px-4 text-center max-w-4xl space-y-6">
                     <div className="relative">
@@ -120,65 +75,41 @@ export default function PartyClient({ initialOrganizations }: PartyClientProps) 
                 </div>
             </section>
 
-            {/* Content Area */}
             <div className="container mx-auto px-4 py-8">
                 {initialOrganizations.length > 0 && (
-                    <SmartFilterSearch
-                        mobileFiltersScroll
+                    <DirectorySmartSearch
                         className="mb-5"
-                        facets={facets} value={searchValue} onChange={changeSearch}
+                        facets={directory.searchFacets} value={directory.value} onChange={directory.setValue}
                         placeholder="ابحث بالاسم أو النوع أو المكان أو اختر تصفية..." ariaLabel="ابحث في المنظمات السياسية"
                     />
                 )}
-                {/* Visual Controls */}
                 <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-                    <span role="status" aria-live="polite" className="text-sm text-muted-foreground font-medium">
-                        {filteredOrganizations.length === 0
+                    <DirectoryResultCount>
+                        {directory.results.length === 0
                             ? 'لم يتم العثور على نتائج'
-                            : `عرض ${displayedOrganizations.length} من أصل ${filteredOrganizations.length} منظمة`}
-                    </span>
+                            : `عرض ${directory.shown} من أصل ${directory.results.length} منظمة`}
+                    </DirectoryResultCount>
 
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
                             <span className="text-sm text-muted-foreground">عرض:</span>
-                            <div className="bg-card rounded-lg p-1 shadow-xs border border-border flex gap-1">
-                                <Button aria-label="عرض كجدول"
-                                    variant={viewMode === 'table' ? 'secondary' : 'ghost'}
-                                    size="icon"
-                                    onClick={() => setViewMode('table')}
-                                    className="h-8 w-8"
-                                    title="عرض كجدول"
-                                >
-                                    <List className="h-4 w-4" />
-                                </Button>
-                                <Button aria-label="عرض كبطاقات"
-                                    variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
-                                    size="icon"
-                                    onClick={() => setViewMode('grid')}
-                                    className="h-8 w-8"
-                                    title="عرض كبطاقات"
-                                >
-                                    <LayoutGrid className="h-4 w-4" />
-                                </Button>
-                            </div>
+                            <DirectoryViewToggle value={viewMode} onChange={setViewMode} className="shadow-xs" />
                         </div>
                     </div>
                 </div>
 
-                {filteredOrganizations.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 bg-card rounded-2xl border border-dashed border-border shadow-xs text-center">
-                        <Search className="h-16 w-16 text-muted-foreground/30 mb-4" />
-                        <h2 className="text-lg font-semibold text-foreground mb-2">لم يتم العثور على منظمات</h2>
-                        <p className="text-muted-foreground text-sm">جرب تغيير مصطلحات البحث أو الفلاتر</p>
-                        <Button onClick={clearFilters} variant="link" className="mt-2 text-primary">
-                            مسح جميع الفلاتر
-                        </Button>
-                    </div>
+                {directory.results.length === 0 ? (
+                    <DirectoryEmptyState
+                        icon={Search}
+                        title="لم يتم العثور على منظمات"
+                        description="جرب تغيير مصطلحات البحث أو الفلاتر"
+                        directory={directory}
+                    />
                 ) : (
                     <>
                         {viewMode === 'grid' ? (
                             <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-4">
-                                {displayedOrganizations.map(org => {
+                                {directory.visible.map(org => {
                                     const socials = [
                                         { url: org.socialFb, icon: Facebook, key: 'facebook' as const },
                                         { url: org.socialX, icon: Twitter, key: 'x' as const },
@@ -248,7 +179,6 @@ export default function PartyClient({ initialOrganizations }: PartyClientProps) 
                                                         )}
                                                     </div>
 
-                                                    {/* Social Links */}
                                                     {socials.length > 0 && (
                                                         <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-border/50">
                                                             {socials.map(s => {
@@ -286,7 +216,7 @@ export default function PartyClient({ initialOrganizations }: PartyClientProps) 
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {displayedOrganizations.map(org => (
+                                        {directory.visible.map(org => (
                                             <TableRow key={org.id} className="hover:bg-muted/50 border-border transition-colors">
                                                 <TableCell className="font-medium align-top">
                                                     <div className="text-base text-foreground font-semibold">{org.name}</div>
@@ -336,23 +266,11 @@ export default function PartyClient({ initialOrganizations }: PartyClientProps) 
                             </div>
                         )}
 
-                        {/* Load More */}
-                        {displayedOrganizations.length < filteredOrganizations.length && (
-                            <div className="flex justify-center mt-12 pb-8">
-                                <Button
-                                    onClick={handleLoadMore}
-                                    size="lg"
-                                    className="bg-primary hover:bg-primary/90 text-primary-foreground min-w-[200px] rounded-full font-bold shadow-md hover:shadow-lg transition-all"
-                                >
-                                    تحميل المزيد
-                                </Button>
-                            </div>
-                        )}
+                        {directory.hasMore && <DirectoryLoadMore onClick={directory.loadMore} />}
                     </>
                 )}
             </div>
 
-            {/* About Section */}
             <section className="bg-card border-t border-border py-16 px-4 mt-12">
                 <div className="max-w-3xl mx-auto text-center">
                     <h2 className="text-3xl font-bold mb-6 text-foreground">حول دليل المنظمات السياسية السورية</h2>

@@ -2,12 +2,9 @@ import React, { useMemo, useState } from 'react';
 import { Link, router } from '@inertiajs/react';
 import {
     ArrowRight,
-    ExternalLink,
     Home,
-    Lock,
     Search,
     Shuffle,
-    Users,
 } from 'lucide-react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Button } from '@/Components/ui/button';
@@ -19,18 +16,24 @@ import {
     RoznamaIcon,
     TransitIcon,
 } from '@/Components/Icons/ProjectIcons';
-import PlayingCard from '@/Pages/Games/_components/PlayingCard';
-import { GAMES, gameEntryHref, type GameEntry } from '@/Pages/Games/_lib/games';
-import AyahMark from '@/Pages/Muslim/_components/ayah-mark/AyahMark';
-import { TOOLS, toolHref } from '@/Pages/Muslim/_lib/tools';
+import PlayingCard from '@/Domain/games/PlayingCard';
+import { GAMES, gameEntryHref } from '@/Domain/games/games';
+import { GameTileGrid } from '@/Domain/games/GameTile';
+import AyahMark from '@/Domain/quran/AyahMark';
+import { TOOLS, toolHref } from '@/Domain/muslim/tools';
 import CityGrid from '@/Pages/Transit/_components/landing/CityGrid';
 
-export type NotFoundSection = 'general' | 'transit' | 'games' | 'muslim';
+type NotFoundSection = 'general' | 'transit' | 'games' | 'muslim';
 
 interface NotFoundProps {
     status?: number;
     path?: string;
     section?: NotFoundSection;
+    /**
+     * The transit city cards, sent by `NotFoundPage` from the cities table so
+     * the grid's counts and links are the live ones (`TransitCities::forCards()`).
+     */
+    transitCities?: React.ComponentProps<typeof CityGrid>['cities'];
 }
 
 function detectSectionFromPath(path: string): NotFoundSection {
@@ -61,38 +64,7 @@ function detectSectionFromPath(path: string): NotFoundSection {
 
 const TILE_CLASS = 'group flex flex-col items-center gap-2 py-1 text-center no-underline';
 
-function GameTile({ game }: { game: GameEntry }) {
-    const Icon = game.icon;
-    return (
-        <>
-            <Icon className="h-12 w-12 shrink-0 text-foreground transition-all group-hover:scale-110 group-hover:text-primary" />
-            <span className="text-xs font-medium text-foreground transition-colors group-hover:text-primary">
-                {game.title}
-            </span>
-            {/* Same rule as the hub: a coming-soon tile carries only "قريباً". */}
-            {game.online && !game.comingSoon && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
-                    <Users className="h-3 w-3" />
-                    لعب مع صديق
-                </span>
-            )}
-            {game.external && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
-                    <ExternalLink className="h-3 w-3" />
-                    موقع خارجي
-                </span>
-            )}
-            {game.comingSoon && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
-                    <Lock className="h-3 w-3" />
-                    قريباً
-                </span>
-            )}
-        </>
-    );
-}
-
-export default function NotFound({ path = '/404', section }: NotFoundProps) {
+export default function NotFound({ path = '/404', section, transitCities = [] }: NotFoundProps) {
     const resolvedSection: NotFoundSection = useMemo(() => {
         if (typeof window !== 'undefined') {
             const overrideSec = new URLSearchParams(window.location.search).get('section');
@@ -119,11 +91,13 @@ export default function NotFound({ path = '/404', section }: NotFoundProps) {
     return (
         <MainLayout>
             <div
-                className="min-h-[calc(100svh-4rem-1px)] bg-background text-foreground"
+                className="min-h-[calc(100svh-var(--sz-navbar-h))] bg-background text-foreground"
                 dir="rtl"
             >
                 {resolvedSection === 'muslim' && <MuslimNotFound path={path} onBack={goBack} />}
-                {resolvedSection === 'transit' && <TransitNotFound path={path} onBack={goBack} />}
+                {resolvedSection === 'transit' && (
+                    <TransitNotFound path={path} onBack={goBack} transitCities={transitCities} />
+                )}
                 {resolvedSection === 'games' && <GamesNotFound path={path} onBack={goBack} />}
                 {resolvedSection === 'general' && <GeneralNotFound path={path} onBack={goBack} />}
             </div>
@@ -131,9 +105,6 @@ export default function NotFound({ path = '/404', section }: NotFoundProps) {
     );
 }
 
-/* ============================================================================
-   1. MUSLIM CORNER (`/muslim/*`) — Option A (Ultra-Minimal)
-   ============================================================================ */
 function MuslimNotFound({ path, onBack }: { path: string; onBack: () => void }) {
     return (
         <div className="container mx-auto max-w-3xl px-4 py-10">
@@ -183,22 +154,17 @@ function MuslimNotFound({ path, onBack }: { path: string; onBack: () => void }) 
     );
 }
 
-/* ============================================================================
-   2. GAMES (`/games/*`, `/guesswho/*`) — PlayingCard 4-0-4 + Randomizer
-   ============================================================================ */
 function GamesNotFound({ path, onBack }: { path: string; onBack: () => void }) {
     const playableGames = useMemo(
         () => GAMES.filter((g) => !g.comingSoon && !g.external),
         [],
     );
-    const [flipped, setFlipped] = useState(true);
     const [pickedIndex, setPickedIndex] = useState(0);
 
     const pickedGame = playableGames[pickedIndex % playableGames.length] ?? GAMES[0];
     const PickedIcon = pickedGame.icon;
 
     const dealRandomGame = () => {
-        setFlipped(true);
         setPickedIndex((prev) => {
             if (playableGames.length <= 1) return 0;
             const step = 1 + Math.floor(Math.random() * (playableGames.length - 1));
@@ -209,7 +175,6 @@ function GamesNotFound({ path, onBack }: { path: string; onBack: () => void }) {
     return (
         <div className="container mx-auto max-w-4xl px-4 py-10">
             <div className="mb-6 flex flex-col items-center text-center">
-                {/* 3-Card Hand: 4♠ — Middle Randomizer Card (0) — 4♥ */}
                 <div
                     dir="ltr"
                     className="mb-6 flex items-center justify-center gap-3 sm:gap-5 select-none"
@@ -217,42 +182,35 @@ function GamesNotFound({ path, onBack }: { path: string; onBack: () => void }) {
                 >
                     <div className="w-[var(--sz-card-w)] -rotate-6 transition-transform hover:-translate-y-1">
                         <PlayingCard
-                            card={{ id: '4s', suit: 'spades', rank: 4, faceUp: true }}
+                            card={{ id: 'S4', suit: 'S', rank: 4, faceUp: true }}
                             decorative
                             large
                         />
                     </div>
 
-                    {/* Middle Card: Interactive 0 / Random Game Card using standard .sz-card */}
                     <button
                         type="button"
-                        onClick={() => (flipped ? dealRandomGame() : setFlipped(true))}
+                        onClick={dealRandomGame}
                         aria-label="اسحب لعبة عشوائية"
-                        className={`w-[var(--sz-card-w)] -translate-y-1.5 cursor-pointer transition-transform hover:-translate-y-2.5 ${
-                            flipped
-                                ? 'sz-card sz-card--face sz-card--picked'
-                                : 'sz-card sz-card--back'
-                        }`}
+                        className="w-[var(--sz-card-w)] -translate-y-1.5 cursor-pointer transition-transform hover:-translate-y-2.5 sz-card sz-card--face sz-card--picked"
                     >
-                        {flipped ? (
-                            <span dir="rtl" className="contents">
-                                <span className="sz-card__corner text-primary">
-                                    0
-                                    <span className="sz-card__corner-suit">★</span>
-                                </span>
-                                <span className="flex flex-col items-center justify-center gap-1.5 px-1.5 pt-2 text-center">
-                                    <PickedIcon className="h-9 w-9 shrink-0" />
-                                    <span className="text-[11px] font-extrabold leading-tight text-slate-900">
-                                        {pickedGame.title}
-                                    </span>
+                        <span dir="rtl" className="contents">
+                            <span className="sz-card__corner text-primary">
+                                0
+                                <span className="sz-card__corner-suit">★</span>
+                            </span>
+                            <span className="flex flex-col items-center justify-center gap-1.5 px-1.5 pt-2 text-center">
+                                <PickedIcon className="h-9 w-9 shrink-0" />
+                                <span className="text-[11px] font-extrabold leading-tight text-slate-900">
+                                    {pickedGame.title}
                                 </span>
                             </span>
-                        ) : null}
+                        </span>
                     </button>
 
                     <div className="w-[var(--sz-card-w)] rotate-6 transition-transform hover:-translate-y-1">
                         <PlayingCard
-                            card={{ id: '4h', suit: 'hearts', rank: 4, faceUp: true }}
+                            card={{ id: 'H4', suit: 'H', rank: 4, faceUp: true }}
                             decorative
                             large
                         />
@@ -297,44 +255,21 @@ function GamesNotFound({ path, onBack }: { path: string; onBack: () => void }) {
                 </div>
             </div>
 
-            {/* Exact borderless game tile grid from Games/Index.tsx */}
             <div className="mt-8 border-t border-border/60 pt-6">
                 <p className="mb-4 text-center text-xs font-medium text-muted-foreground">
                     الألعاب المتاحة
                 </p>
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-x-2 gap-y-5">
-                    {GAMES.map((game) =>
-                        game.comingSoon ? (
-                            <div key={game.slug} aria-disabled className={`${TILE_CLASS} opacity-60`}>
-                                <GameTile game={game} />
-                            </div>
-                        ) : game.external ? (
-                            <a
-                                key={game.slug}
-                                href={gameEntryHref(game)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className={TILE_CLASS}
-                            >
-                                <GameTile game={game} />
-                            </a>
-                        ) : (
-                            <Link key={game.slug} href={gameEntryHref(game)} className={TILE_CLASS}>
-                                <GameTile game={game} />
-                            </Link>
-                        ),
-                    )}
-                </div>
+                <GameTileGrid className="grid-cols-3 sm:grid-cols-4 md:grid-cols-7" />
             </div>
         </div>
     );
 }
 
-/* ============================================================================
-   3. TRANSIT (`/transit/*`, `/mishwar/*`, `/crossings/*`, `/places/*`)
-      Route line motif + full CityGrid list of all cities
-   ============================================================================ */
-function TransitNotFound({ path, onBack }: { path: string; onBack: () => void }) {
+function TransitNotFound({ path, onBack, transitCities }: {
+    path: string;
+    onBack: () => void;
+    transitCities: React.ComponentProps<typeof CityGrid>['cities'];
+}) {
     return (
         <div className="mx-auto max-w-7xl px-4 pt-10">
             <div className="mx-auto max-w-3xl flex flex-col items-center text-center">
@@ -364,7 +299,6 @@ function TransitNotFound({ path, onBack }: { path: string; onBack: () => void })
                     </Button>
                 </div>
 
-                {/* Route Line Motif */}
                 <div className="mt-7 w-full overflow-hidden rounded-xl border border-border bg-card p-4">
                     <svg viewBox="0 0 680 130" className="w-full h-auto" role="img" aria-label="مخطط مسار الخط 404">
                         <line
@@ -451,15 +385,11 @@ function TransitNotFound({ path, onBack }: { path: string; onBack: () => void })
                 </div>
             </div>
 
-            {/* Full list of all cities using the standard CityGrid component */}
-            <CityGrid />
+            <CityGrid cities={transitCities} />
         </div>
     );
 }
 
-/* ============================================================================
-   4. GENERAL (`/*`) — Option B (Standard Input Filter + Full Borderless App Grid)
-   ============================================================================ */
 function GeneralNotFound({ path, onBack }: { path: string; onBack: () => void }) {
     const [query, setQuery] = useState('');
 

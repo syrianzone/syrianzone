@@ -1,11 +1,10 @@
 import React from 'react'
-import { usePage } from '@inertiajs/react'
 import './transit.css'
-import { TransitThemeProvider, useTransitTheme } from './_components/TransitThemeContext'
-import { QueryProvider } from '@/Providers/QueryProvider'
 import MainLayout from '@/Layouts/MainLayout'
 import TransitSidebarLayout from './TransitSidebarLayout'
 
+// The React Query client is mounted once for the whole app (app.tsx / ssr.tsx),
+// so Transit shares the global cache instead of forking its own.
 export default function TransitLayout({
   children,
 }: {
@@ -13,13 +12,9 @@ export default function TransitLayout({
 }) {
   return (
     <MainLayout>
-      <QueryProvider>
-        <TransitThemeProvider>
-          <TransitSidebarLayout>
-            {children}
-          </TransitSidebarLayout>
-        </TransitThemeProvider>
-      </QueryProvider>
+      <TransitSidebarLayout>
+        {children}
+      </TransitSidebarLayout>
     </MainLayout>
   )
 }

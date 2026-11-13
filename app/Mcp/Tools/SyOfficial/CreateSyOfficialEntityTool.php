@@ -5,6 +5,7 @@ namespace App\Mcp\Tools\SyOfficial;
 use App\Services\SyOfficial\SyOfficialDirectoryService;
 use App\Services\SyOfficial\SyOfficialPresenter;
 use App\Support\Agents\AgentContext;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -25,7 +26,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 #[IsDestructive]
 class CreateSyOfficialEntityTool extends SyOfficialTool
 {
-    protected array $permissions = ['syofficial.create'];
+    protected array $permissions = [PermissionCatalogue::SYOFFICIAL_CREATE];
 
     public function schema(JsonSchema $schema): array
     {
@@ -46,9 +47,8 @@ class CreateSyOfficialEntityTool extends SyOfficialTool
 
             'description_ar' => $schema->string()->description('Optional Arabic description.'),
 
-            'socials' => $schema->array()
-                ->description('Optional profile links. Only http and https are kept; anything else is dropped.')
-                ->items($schema->string()->max(2048)),
+            'socials' => $schema->object($this->socialProperties($schema))
+                ->description('Optional profile links as an object keyed by platform, e.g. {"facebook": "https://facebook.com/page"}. Only http and https are kept; an empty value drops that platform. A plain list is refused because it loses the platform.'),
         ];
     }
 

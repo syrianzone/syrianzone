@@ -1,9 +1,9 @@
 import { Clock, Globe2, MapPin, Share2, X } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
-import { cn } from '@/lib/utils';
+import { cn } from '@/Lib/utils';
 import { StatusPill } from './StatusPill';
 import { WhatsAppIcon } from './WhatsAppIcon';
-import { formatIntl, isWindowOpen, shareCrossing, statusOf, windowLabel, type Crossing } from '../_lib/crossings';
+import { formatIntl, isWindowOpen, shareCrossing, statusOf, windowLabel, type Crossing } from '@/Domain/crossings/crossings';
 
 /**
  * The card that opens over the map once a crossing is picked, from either view.
@@ -109,7 +109,7 @@ export function CrossingDetail({
                         الموقع
                     </a>
                 </Button>
-                <Button variant="outline" onClick={() => shareCrossing(crossing)}>
+                <Button variant="outline" onClick={() => void shareCrossing(crossing)}>
                     <Share2 className="h-4 w-4" />
                     مشاركة
                 </Button>

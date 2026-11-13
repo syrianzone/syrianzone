@@ -4,6 +4,7 @@ namespace App\Mcp\Tools\Promises;
 
 use App\Services\Promises\PromiseEditor;
 use App\Support\Agents\AgentContext;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -23,7 +24,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 #[IsDestructive]
 class DeletePromiseTool extends PromisesTool
 {
-    protected array $permissions = ['promises.delete'];
+    protected array $permissions = [PermissionCatalogue::PROMISES_DELETE];
 
     public function schema(JsonSchema $schema): array
     {

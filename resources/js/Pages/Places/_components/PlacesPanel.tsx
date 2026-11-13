@@ -2,12 +2,13 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Loader2, Pencil, Plus, X } from 'lucide-react';
 import { useAuth } from '@/Contexts/AuthContext';
 import { Badge } from '@/Components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/Components/ui/button';
 import { ScrollArea } from '@/Components/ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import { cn } from '@/Lib/utils';
-import { api, extractError } from '../_lib/api';
-import type { HotelListItem, MyPlace, Paginated, PlaceListItem, PlaceStatus } from '../_lib/types';
+import { api } from '@/Domain/places/api';
+import { apiErrorMessage } from '@/Lib/api';
+import type { HotelListItem, MyPlace, Paginated, PlaceListItem, PlaceStatus } from '@/Domain/places/types';
 import { GuidesTab } from './GuidesTab';
 import { HotelCard } from './HotelCard';
 import { HotelDetailView } from './HotelDetailView';
@@ -147,7 +148,7 @@ function MineTab(props: { onSelect: (id: number, lat: number, lng: number) => vo
       setResubmitted((prev) => new Set(prev).add(id));
       reload();
     } catch (e) {
-      setResubmitErrors((prev) => ({ ...prev, [id]: extractError(e) }));
+      setResubmitErrors((prev) => ({ ...prev, [id]: apiErrorMessage(e) }));
     } finally {
       setResubmitting(null);
     }
@@ -214,7 +215,6 @@ export function PlacesPanel(props: {
   onSelect: (id: number, lat: number, lng: number) => void;
   onClose: () => void;
   onSelectHotel: (id: number, lat: number, lng: number) => void;
-  onCloseHotel: () => void;
   hasMore: boolean;
   onLoadMore: () => void;
   onSelectGuide: (guide: { id: number; name: string }) => void;
@@ -223,7 +223,7 @@ export function PlacesPanel(props: {
   className?: string;
 }) {
   const {
-    places, loading, selectedId, selectedType, onSelect, onClose, onSelectHotel, onCloseHotel,
+    places, loading, selectedId, selectedType, onSelect, onClose, onSelectHotel,
     hasMore, onLoadMore, onSelectGuide, addMode, onAddToggle, className,
   } = props;
   // controlled so picking a guide drops the user on the filtered places list
@@ -235,7 +235,7 @@ export function PlacesPanel(props: {
     if (selectedType === 'hotel') {
       return (
         <div dir="rtl" className={cn('flex flex-col overflow-hidden bg-background', className)}>
-          <HotelDetailView hotelId={selectedId} onClose={onCloseHotel} />
+          <HotelDetailView hotelId={selectedId} onClose={onClose} />
         </div>
       );
     }
@@ -281,7 +281,7 @@ export function PlacesPanel(props: {
           {mainList}
         </TabsContent>
         <TabsContent value="hotels" className="mt-0 flex min-h-0 flex-1 flex-col">
-          <HotelsTab onSelectHotel={(id, lat, lng) => onSelectHotel(id, lat, lng)} />
+          <HotelsTab onSelectHotel={onSelectHotel} />
         </TabsContent>
         {user && (
           <TabsContent value="saves" className="mt-0 flex min-h-0 flex-1 flex-col">

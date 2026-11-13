@@ -38,8 +38,8 @@ graph TD
 | Admin panels | Filament v5 (`/superadmin`, Users only) + custom Inertia admin pages per module (`/admin/*`, `/dashboard` polls tab, `/transit/admin`) |
 | Frontend bridge | Inertia.js v3 (Laravel ↔ React page props), SSR enabled (`ssr.tsx`) |
 | View layer | React 19.2, TypeScript (strict), Tailwind CSS v4, shadcn-style components (Radix + CVA), Lucide icons |
-| State/data | Zustand for map/studio stores; TanStack react-query (staleTime 5 min) for API data; custom axios client in `resources/js/Lib` |
-| Mapping | MapLibre GL JS (+ `@mapbox/mapbox-gl-rtl-text`) and Leaflet/react-leaflet |
+| State/data | Zustand for map/studio stores; TanStack react-query (staleTime 5 min) for API data; the one API client in `resources/js/Lib/api.ts` |
+| Mapping | MapLibre GL JS (shared canvas, RTL plugin and basemap styles in `Components/map/`) and Leaflet/react-leaflet (shared Leaflet bits in `Components/map/leaflet/`) |
 | Realtime | Laravel Reverb (websockets) — Guess Who state relay, echo client in `resources/js/echo.js` |
 | Database | MySQL/MariaDB with spatial geometry columns (production); sqlite in tests (no spatial) |
 | Search | Laravel Scout, `collection` driver by default (`SCOUT_DRIVER`) |
@@ -66,7 +66,7 @@ syrianzone/
 │   ├── Providers/               # AppServiceProvider (rate limiters, gates), Filament panel provider
 │   ├── Services/                # Isolated business logic (PlaceImageService, HalaSyriaService, WeatherService…)
 │   │   └── Places/               # Places moderation domain, shared by the dashboard and MCP tools
-│   ├── Support/                  # PermissionCatalogue + agent auth (ceiling authorizer, token issuer, audit)
+│   ├── Support/                  # PermissionCatalogue + agent auth, Facts (the reader for resources/data/*.json), Governorates, SEO supports
 │   └── Exceptions/               # Domain refusals extending DomainActionException (Places, Directories, Transit, Users)
 ├── bootstrap/app.php            # Middleware config, aliases, CSRF exceptions, DomainActionException rendering, AutoLoginDevUser
 ├── config/                      # Standard Laravel config + reverb/scout/sentry/backup/inertia
@@ -76,16 +76,18 @@ syrianzone/
 ├── public/                      # Static files, flag-replacer extension, .well-known assetlinks
 ├── resources/
 │   ├── css/                     # Tailwind v4 entry (@theme tokens, themes, fonts)
+│   ├── data/                    # Shared facts both languages read (governorates, syria box, …) — see its README
 │   ├── js/
 │   │   ├── Components/          # Shared UI: ui/ (shadcn), admin/, poll/, charts/, map/, Icons/
 │   │   ├── Contexts/            # AuthContext
+│   │   ├── Domain/              # Modules more than one page needs (geography, places, prayer, …)
 │   │   ├── Layouts/MainLayout.tsx
-│   │   ├── Lib/                 # axios client, apiError.ts, cn(), theme/font utils, geo-utils, exportImage…
+│   │   ├── Lib/                 # api.ts (the one client + error extractor), cn(), theme/font utils, routes, geo-utils…
 │   │   ├── Pages/               # One folder per route/module (Inertia pages)
-│   │   └── app.tsx / ssr.tsx    # Client + SSR entry points
+│   │   └── app.tsx / ssr.tsx    # Client + SSR entry points (both resolve pages through Lib/pages.ts)
 │   └── views/app.blade.php      # Inertia root view
 ├── routes/                      # web.php, api.php, channels.php, console.php, ai.php (MCP servers)
-├── scripts/                     # build-map-glyphs.mjs (fontnik), optimize_geojson_floats.py…
+├── scripts/                     # gate.sh (the CI gate), a11y_axe_audit.py, build-map-glyphs.mjs, optimize_geojson_floats.py…
 ├── tests/                       # Pest (Feature + Unit suites) and Vitest (*.test.ts, `bun run test:js`)
 ├── Dockerfile                   # Multi-stage: bun build → serversideup php:8.4-fpm-nginx + s6
 └── android/                     # Bubblewrap TWA wrapper for the PWA (see platform/android-twa.md)
@@ -99,7 +101,7 @@ syrianzone/
 Browser → Nginx → Laravel controller → returns `Inertia::render('Page/Name', props)` → React 19 page component hydrates. Subsequent navigation is XHR-based SPA navigation.
 
 ### API data flow
-React pages fetch JSON from `/api/v1/*` (and legacy `/api/*` aliases) using the shared axios client (`Lib/axios.ts`) wrapped in react-query (offlineFirst). Rate limits defined in `AppServiceProvider` + route middleware: `voting` 10/min, `public-api` 120/min per IP, `mcp` 120/min per API token (agent surface); contributors + `app-icon` + transit v1 reads + places reads throttle 60/min; Guess Who room create 10/min, join 30/min. See [reference/api.md](../reference/api.md).
+React pages fetch JSON from `/api/v1/*` (and legacy `/api/*` aliases) through the typed per-resource clients in `Domain/<module>/api.ts`, which sit on the one client in `Lib/api.ts` (CSRF, JSON, one timeout) and are wrapped in react-query (offlineFirst). Rate limits defined in `AppServiceProvider` + route middleware: `voting` 10/min, `public-api` 120/min per IP, `mcp` 120/min per API token (agent surface); contributors + `app-icon` + transit v1 reads + places reads throttle 60/min; Guess Who room create 10/min, join 30/min. See [reference/api.md](../reference/api.md).
 
 ### Spatial query flow (transit/places)
 Controllers issue raw spatial SQL (`ST_AsGeoJSON`, `ST_Distance_Sphere`) against MySQL/MariaDB geometry columns; results cached (e.g. city geojson 1h) and large static datasets served from R2 CDN.
@@ -129,7 +131,7 @@ Controllers issue raw spatial SQL (`ST_AsGeoJSON`, `ST_Distance_Sphere`) against
 | Quizzes | `/compass`, `/compass/stats`, `/compass/s/{shareId}`, `/priorities` | CompassController; `/priorities` is a closure | Compass/, Priorities/ | — |
 | Legal & info | `/about`, `/stats`, `/privacy`, `/terms` | AboutController; the rest are closures | About.tsx, Stats.tsx, Privacy.tsx, Terms.tsx | — |
 | Standalone pages | `/roznama`, `/shawarma`, `/justice`, `/crossings` | (Inertia closures) | Roznama/, Shawarma/, Justice/, Crossings/ | — |
-| Dashboard/auth | `/dashboard` (incl. polls-tab admin), `/auth/google*`, `/api/v1/user` | AuthController, DashboardController, AdminUserController | Dashboard/ | — |
+| Dashboard/auth | `/dashboard` (incl. polls-tab admin), `/auth/google*`, `/api/v1/user` | AuthController, DashboardController | Dashboard/ | — |
 | Assets admin | `/admin/assets`, `/api/v1/admin/assets*` | AssetUploadController | Admin/AssetManager | [reference/asset-storage.md](../reference/asset-storage.md) |
 | Agent / MCP | `/mcp/admin` (bearer token; `MCP_ENABLED` flag), `/admin/api-tokens` | MCP tools in `app/Mcp/`, `ApiTokenAdminController`, `RequireApiToken` | Admin/ApiTokens/ | [modules/agent-mcp.md](../modules/agent-mcp.md) |
 | Site popup | `/admin/site-popup`, `/api/v1/admin/site-popup` (superadmin; shared as `sitePopup` prop, versioned dismiss) | SitePopupAdminController | Admin/SitePopup | — |

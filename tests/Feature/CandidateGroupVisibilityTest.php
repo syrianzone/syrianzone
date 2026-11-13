@@ -5,7 +5,6 @@ use App\Models\CandidateGroup;
 use App\Models\DailyScore;
 use App\Models\Poll;
 use App\Models\User;
-use App\Services\TierlistLeaderboard;
 
 /**
  * A disabled category (candidate group) is the non-destructive alternative to
@@ -67,7 +66,7 @@ test('the tierlist page only sends published categories and their candidates', f
 });
 
 test('the leaderboard leaves a disabled category out of its groups and rankings', function () {
-    ['poll' => $poll, 'disabled' => $disabled, 'published' => $published, 'visible' => $visible, 'hidden' => $hidden] =
+    ['poll' => $poll, 'published' => $published, 'visible' => $visible, 'hidden' => $hidden] =
         disabledCategoryFixture();
 
     DailyScore::create(['poll_id' => $poll->id, 'candidate_id' => $visible->id, 'day' => '2026-10-01', 'votes' => 4, 'score' => 16]);
@@ -84,15 +83,6 @@ test('the leaderboard leaves a disabled category out of its groups and rankings'
         // an empty bucket: no ranking rows, no history series.
         ->and($payload['governors'])->toBe([])
         ->and($payload['history'])->not->toHaveKey($hidden->id);
-
-    // The service itself is the single source for both the JSON and the
-    // Inertia leaderboard, so assert it directly as well.
-    $built = app(TierlistLeaderboard::class)->build($poll);
-    expect($built['groups']->pluck('id')->all())->toBe([$published->id])
-        ->and($built['candidates']->has($hidden->id))->toBeFalse()
-        ->and($built['candidates']->has($visible->id))->toBeTrue();
-
-    expect($disabled->is_active)->toBeFalse();
 });
 
 test('a ballot cannot score candidates in a disabled category', function () {

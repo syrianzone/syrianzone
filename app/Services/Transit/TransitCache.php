@@ -2,41 +2,60 @@
 
 namespace App\Services\Transit;
 
+use App\Models\City;
 use Illuminate\Support\Facades\Cache;
 
 /**
- * Invalidation for the per-governorate transit map caches.
+ * The transit cache keys, and the invalidation that keeps them together.
  *
- * Extracted because the same block was copy-pasted into three places
- * (TransitAdminController, TransitStudioController) and had to stay in lockstep:
- * forgetting one key and not its sibling serves a map that is internally
- * inconsistent, which is much harder to diagnose than a missing cache.
+ * Every key is composed here so a writer and a forgetter cannot disagree: the
+ * route and map keys are derived from `City::mapGroup()`, which is the only
+ * definition of "these cities share one map". Adding a city to that group, or
+ * reordering it, changes the composed key and the invalidation with it.
  */
 class TransitCache
 {
+    /** The `/transit` page's city list. */
+    public const CITIES = 'transit:cities';
+
+    /** The same rows plus governorate icons (the public API's own copy). */
+    public const CITIES_API = 'transit:cities:api';
+
+    /**
+     * The published route list of a map group.
+     *
+     * @param  array<int, string>  $cityIds
+     */
+    public function routesKey(array $cityIds): string
+    {
+        return 'transit:routes:'.implode('+', $cityIds);
+    }
+
+    /** One city's map payload, as requested by its own page or the API. */
+    public function mapDataKey(string $cityId): string
+    {
+        return "transit:map-data:{$cityId}";
+    }
+
     /**
      * Forget everything derived from one governorate's transit data.
      *
-     * Damascus and Rif Dimashq are rendered as a single combined map, so a
-     * change in either invalidates the shared keys as well as the per-city ones.
+     * A city is always drawn with the rest of its map group, so the group is
+     * what gets forgotten: a change in either Damascus or Rif Dimashq has to
+     * reach the combined map's keys, and a third shared city would be covered
+     * without editing this method.
      */
     public function forgetCity(string $cityId): void
     {
-        Cache::forget("transit:map-data:{$cityId}");
-        Cache::forget("transit:routes:{$cityId}");
-
-        if ($cityId === 'damascus' || $cityId === 'rif-dimashq') {
-            Cache::forget('transit:map-data:damascus');
-            Cache::forget('transit:map-data:rif-dimashq');
-            Cache::forget('transit:routes:damascus');
-            Cache::forget('transit:routes:rif-dimashq');
-            Cache::forget('transit:routes:damascus+rif-dimashq');
+        foreach (City::mapGroup($cityId) as $groupMember) {
+            Cache::forget($this->mapDataKey($groupMember));
+            Cache::forget($this->routesKey(City::mapGroup($groupMember)));
         }
 
-        Cache::forget('transit:cities');
+        Cache::forget(self::CITIES);
         // Public API variant: same rows plus governorate icons, so a route
         // count change must not leave it stale for an hour.
-        Cache::forget('transit:cities:api');
+        Cache::forget(self::CITIES_API);
     }
 
     /**

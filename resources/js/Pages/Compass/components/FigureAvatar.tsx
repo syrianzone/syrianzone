@@ -1,6 +1,7 @@
 import React from 'react';
-import type { Category } from '../data/types';
+import type { Category } from '@/Domain/compass/types';
 import { Landmark, Scale, BookOpen, Building2, Flag, Users, Star, type LucideIcon } from 'lucide-react';
+import '../compass.css';
 
 // Symbolic, theme-aware avatar for a figure. Uses a real image when available,
 // otherwise a category-coloured circle with a role icon or the first letter.
@@ -42,7 +43,7 @@ export default function FigureAvatar({ name, category, image, size = 72 }: Props
 
   return (
     <div
-      className="rounded-full overflow-hidden border-2 flex items-center justify-center shrink-0"
+      className="sz-figure-avatar rounded-full overflow-hidden border-2 flex items-center justify-center shrink-0"
       style={style}
       aria-label={name}
     >

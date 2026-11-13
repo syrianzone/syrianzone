@@ -5,6 +5,7 @@ namespace App\Mcp\Tools\SyOfficial;
 use App\Services\SyOfficial\SyOfficialDirectoryService;
 use App\Services\SyOfficial\SyOfficialPresenter;
 use App\Support\Agents\AgentContext;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -34,11 +35,11 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 class ListSyOfficialCategoriesTool extends SyOfficialTool
 {
     protected array $anyPermissions = [
-        'syofficial.create',
-        'syofficial.edit',
-        'syofficial.toggle',
-        'syofficial.delete',
-        'syofficial.reorder',
+        PermissionCatalogue::SYOFFICIAL_CREATE,
+        PermissionCatalogue::SYOFFICIAL_EDIT,
+        PermissionCatalogue::SYOFFICIAL_TOGGLE,
+        PermissionCatalogue::SYOFFICIAL_DELETE,
+        PermissionCatalogue::SYOFFICIAL_REORDER,
     ];
 
     public function outputSchema(JsonSchema $schema): array

@@ -20,13 +20,8 @@ use App\Services\Users\UserModerationService;
 |
 */
 
-function banActor(array $abilities = ['users.ban']): User
-{
-    return User::factory()->create(['role' => 'user', 'permissions' => $abilities]);
-}
-
 it('bans a user when told to', function () {
-    agentToken(banActor(), ['users.ban']);
+    agentToken(capabilityUser(['users.ban']), ['users.ban']);
     $target = User::factory()->create(['role' => 'user', 'is_banned' => false]);
 
     $payload = toolPayload(callTool(SetUserBanTool::class, [
@@ -40,7 +35,7 @@ it('bans a user when told to', function () {
 });
 
 it('is idempotent, so a retry cannot un-ban the user', function () {
-    agentToken(banActor(), ['users.ban']);
+    agentToken(capabilityUser(['users.ban']), ['users.ban']);
     $target = User::factory()->create(['is_banned' => false]);
 
     // Twice with the same intent. A toggle-based tool would have flipped back.
@@ -53,7 +48,7 @@ it('is idempotent, so a retry cannot un-ban the user', function () {
 });
 
 it('unbans a user', function () {
-    agentToken(banActor(), ['users.ban']);
+    agentToken(capabilityUser(['users.ban']), ['users.ban']);
     $target = User::factory()->create(['is_banned' => true]);
 
     $payload = toolPayload(callTool(SetUserBanTool::class, [
@@ -68,7 +63,7 @@ it('unbans a user', function () {
 it('refuses to ban the agent\'s own owner', function () {
     // The important guard: a ban applies on the target's next request, so
     // self-banning would revoke the token mid-call and leave nobody to undo it.
-    $owner = banActor();
+    $owner = capabilityUser(['users.ban']);
     agentToken($owner, ['users.ban']);
 
     $response = callTool(SetUserBanTool::class, [
@@ -81,7 +76,7 @@ it('refuses to ban the agent\'s own owner', function () {
 });
 
 it('still allows unban on yourself, so a self-ban is recoverable', function () {
-    $owner = banActor();
+    $owner = capabilityUser(['users.ban']);
     $owner->update(['is_banned' => true]);
     agentToken($owner, ['users.ban']);
 
@@ -94,7 +89,7 @@ it('still allows unban on yourself, so a self-ban is recoverable', function () {
 });
 
 it('refuses to ban a superadmin', function () {
-    agentToken(banActor(), ['users.ban']);
+    agentToken(capabilityUser(['users.ban']), ['users.ban']);
     $target = User::factory()->create(['role' => 'superadmin']);
 
     $response = callTool(SetUserBanTool::class, [
@@ -108,7 +103,7 @@ it('refuses to ban a superadmin', function () {
 
 it('refuses a token without the users.ban capability', function () {
     // A transit capability must not carry user moderation.
-    agentToken(banActor(['transit.review_drafts']), ['transit.review_drafts']);
+    agentToken(capabilityUser(['transit.review_drafts']), ['transit.review_drafts']);
     $target = User::factory()->create();
 
     $response = callTool(SetUserBanTool::class, [
@@ -131,7 +126,7 @@ it('is hidden from a token that cannot call it', function () {
 });
 
 it('reports a missing user without guessing at ids', function () {
-    agentToken(banActor(), ['users.ban']);
+    agentToken(capabilityUser(['users.ban']), ['users.ban']);
 
     $response = callTool(SetUserBanTool::class, [
         'user_id' => 999999,
@@ -143,7 +138,7 @@ it('reports a missing user without guessing at ids', function () {
 });
 
 it('does not leak the target\'s authorisation configuration', function () {
-    agentToken(banActor(), ['users.ban']);
+    agentToken(capabilityUser(['users.ban']), ['users.ban']);
     $target = User::factory()->create([
         'role' => 'user',
         // Deliberately a hand-picked subset plus a scope, not the whole module:
@@ -169,7 +164,7 @@ it('does not leak the target\'s authorisation configuration', function () {
 });
 
 it('requires the state to be stated, not inferred', function () {
-    agentToken(banActor(), ['users.ban']);
+    agentToken(capabilityUser(['users.ban']), ['users.ban']);
     $target = User::factory()->create(['is_banned' => false]);
 
     $response = callTool(SetUserBanTool::class, ['user_id' => $target->id]);
@@ -179,7 +174,7 @@ it('requires the state to be stated, not inferred', function () {
 });
 
 it('does not move updated_at when nothing changed', function () {
-    agentToken(banActor(), ['users.ban']);
+    agentToken(capabilityUser(['users.ban']), ['users.ban']);
     $target = User::factory()->create(['is_banned' => true]);
     $before = $target->updated_at;
 
@@ -187,8 +182,6 @@ it('does not move updated_at when nothing changed', function () {
 
     expect($target->fresh()->updated_at->timestamp)->toBe($before->timestamp);
 });
-
-// ─── The shared service, which the dashboard also uses ─────────────────────
 
 it('refuses a superadmin at the service layer, not just in the tool', function () {
     $service = app(UserModerationService::class);

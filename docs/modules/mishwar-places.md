@@ -30,10 +30,10 @@ export default function Index() {
 ```
 
 - Auth in React: `const { user, isAdmin } = useAuth()` from `@/Contexts/AuthContext` (available under MainLayout). Login prompt is a plain link: `<a href="/auth/google">تسجيل الدخول عبر جوجل</a>`. No login page exists.
-- HTTP client: the shared instance `import axios from '@/lib/axios'` (withCredentials + XSRF already configured). Never use raw fetch for API calls. All Places components call the typed client in `resources/js/Pages/Places/_lib/api.ts`, never axios directly (exceptions: the api.ts module itself, and the Lightbox photo downloads, which fetch static `/storage/...` files, not API endpoints).
+- HTTP client: `import { api } from '@/Lib/api'` (CSRF, cookies, JSON and one timeout already configured), and its `apiErrorMessage`/`apiFieldErrors` helpers for failures. Never use raw `fetch` or `axios` for API calls. All Places components call the typed client in `resources/js/Domain/places/api.ts`, never `Lib/api` directly (exception: the Lightbox photo downloads, which fetch static `/storage/...` files, not API endpoints).
 - UI components: import from `@/Components/ui/*` (button, card, dialog, sheet, input, textarea, select, badge, avatar, alert, separator, scroll-area, label). Do NOT import from `Components/sycn`. No toast library: feedback uses `<Alert variant="default|destructive">` inline or a transient icon/label swap.
 - Icons: lucide-react. Theme: rely on tokens (`bg-background`, `text-foreground`, `text-primary`, `bg-card`, `text-muted-foreground`, `border-border`, `bg-accent/50`, `destructive`). Never hardcode colors; dark mode is automatic via `data-theme`.
-- Map style: `'/styles/styles/dark-matter.json'` (local, no API key). MapLibre v5 is already a dependency.
+- Map style: resolved by `Components/map/resolveStyle.ts` (`light-vector.json` / `dark-matter-vector.json` under `public/styles/styles/`, local, no API key) and applied by the shared `Components/map/MapCanvas`, which also restyles on a theme switch. MapLibre v5 is already a dependency.
 - Backend validation: inline `$request->validate(['field' => 'required|string|max:255'])` pipe-string rules in controllers. No FormRequest classes, no Policies, no API Resources: match the codebase. Guard checks return early JSON: `return response()->json(['message' => '...'], 403);`.
 - Response codes: 201 create, 204 delete (`response()->json(null, 204)`), 400 invalid transition, 403 forbidden, 404 missing, 422 validation (automatic), 429 throttled. Error key is `message`.
 - Models: explicit `$fillable`, sparse `$casts`, one-line relation methods, `HasFactory`.
@@ -71,6 +71,8 @@ $table->index(['lat', 'lng']);
 $table->index(['status', 'category']);
 ```
 
+`places.name_fold` and `places.description_fold` (added with the other tables' fold columns in `2026_11_13_120000_add_search_fold_columns`) hold `App\Support\ArabicSearch::fold()` of the two searched Arabic columns, written by `App\Models\Concerns\FoldsSearchColumns` on save — including the backfill the migration runs for rows that predate it. `PlaceController::index` folds `q` and compares against them, so «صلاه» finds «صلاة»; no query re-folds a column at read time.
+
 **`place_photos`**
 
 ```php
@@ -99,7 +101,7 @@ $table->unique(['place_id', 'user_id']);
 
 ```php
 class Place extends Model {
-  use HasFactory;
+  use FoldsSearchColumns, HasFactory;
   protected $fillable = ['user_id', 'name', 'category', 'description', 'lat', 'lng', 'status', 'rejection_reason', 'approved_at'];
   protected $casts = ['lat' => 'float', 'lng' => 'float', 'approved_at' => 'datetime'];
   public function user() { return $this->belongsTo(User::class)->withTrashed(); }
@@ -186,7 +188,7 @@ Haversine (meters): `6371000 * 2 * asin(sqrt(sin²(Δlat/2) + cos(lat1)cos(lat2)
 
 **`GET /api/v1/places/photos`** -> `PlaceDiscoveryController@photos`. Photo grid feed: photos of approved places only, newest photo first, `paginate(24)`. Each entry: `{ "id", "thumb_url", "display_url", "place": { "id", "name", "category", "lat", "lng" } }` (lat/lng included so the grid can fly to the place without a second fetch). `Cache-Control: public, max-age=60`. Registered before `/places/{id}`.
 
-**`GET /api/v1/guides`** -> `PlaceDiscoveryController@guides`. Local guides leaderboard. `'sort' => 'sometimes|in:submissions,saves,recent'` (default `submissions`). Single aggregate over approved places joined to non-banned, non-deleted users; top 20; cached per sort with `Cache::remember("places:guides:{$sort}", 300, ...)` (no forget hooks, 5-minute staleness is accepted). Response: `{ "sort", "guides": [ { "rank", "user_id", "name", "avatar_url", "approved_count", "saves_total", "recent_count" } ] }` (rank 1-based). `Cache-Control: public, max-age=60`.
+**`GET /api/v1/guides`** -> `PlaceDiscoveryController@guides`. Local guides leaderboard. `'sort' => 'sometimes|in:points,submissions,saves,recent'` (default `points`). Single aggregate over approved places joined to non-banned, non-deleted users; top 20; cached per sort with `Cache::remember("places:guides:{$sort}", 300, ...)` (no forget hooks, 5-minute staleness is accepted). Response: `{ "sort", "guides": [ { "rank", "user_id", "name", "avatar_url", "approved_count", "saves_total", "recent_count" } ] }` (rank 1-based). `Cache-Control: public, max-age=60`.
 
 Future guide-ranking criteria (documented only, deliberately NOT built): category specialists (top contributor per category), governorate coverage (distinct governorates contributed to, needs a governorate resolver), streaks (consecutive weeks with an approved place).
 
@@ -206,11 +208,11 @@ $request->validate([
 ]);
 ```
 
-(lat/lng bounds roughly box Syria; duplicate suggestion is a client-side step, the server does not block duplicates.) Creates place with `status => 'pending'` and photos via `PlaceImageService` inside `DB::transaction`. Response 201: `{ "id": 12, "status": "pending" }`.
+These rules and their Arabic messages live in `App\Services\Places\PlaceRules` (one definition per field, reading the Syria box from `resources/data/syria.json` and the category list from `resources/data/places.json`), used here, by the owner endpoints, by the admin editor and by the agent tools. (Duplicate detection is a client-side step; the server does not block duplicates.) Creates place with `status => 'pending'` and photos via `PlaceImageService` inside `DB::transaction`. Response 201: `{ "id": 12, "status": "pending" }`.
 
 **`GET /api/v1/my/places`** -> `PlaceController@mine`. Middleware `throttle:60,1`. Own places, newest first, `->paginate(20)`, `data` items are `MY_PLACE` (includes `status` and `rejection_reason`).
 
-**Owner management** (all `throttle:20,60`, all `whereNumber('id')`). Scoping: `Place::where('user_id', $user->id)->findOrFail($id)` and `PlacePhoto::whereHas('place', ...)->findOrFail($id)`, so strangers and unknown ids both get 404 (no existence leak). Every content mutation EXCEPT rotate and place delete sends the place back to moderation: `status => 'pending'`, `rejection_reason => null`, `approved_at => null`, plus `Cache::forget('places:map')` (the `backToPending` helper in `PlaceController`).
+**Owner management** (all `throttle:20,60`, all `whereNumber('id')`). Scoping: `Place::where('user_id', $user->id)->findOrFail($id)` and `PlacePhoto::whereHas('place', ...)->findOrFail($id)`, so strangers and unknown ids both get 404 (no existence leak). Every content mutation EXCEPT rotate and place delete sends the place back to moderation: `status => 'pending'`, `rejection_reason => null`, `approved_at => null`, plus a map-cache bust — `PlaceModerationService::returnToModeration()`. The photo workflow itself lives in `PlaceModerationService` too; the owner endpoints pass `reentersModeration: true` and the admin/agent photo endpoints do not, because a moderator adding material is not a new submission.
 
 - **`PATCH /api/v1/my/places/{id}`** -> `updateDetails`. Fields `name`/`category`/`description`, each `sometimes|required` with the same rules and Arabic messages as store. Empty validated payload: 422 `{ "message": "لا توجد تعديلات" }`. 200: `{ "id", "name", "category", "description", "status": "pending" }`.
 - **`PATCH /api/v1/my/places/{id}/location`** -> `updateLocation`. Coords only, Syria box, back to pending. 200: `{ "id", "lat", "lng", "status": "pending" }`.
@@ -228,15 +230,15 @@ $request->validate([
 
 There are no like or comment endpoints. `POST/DELETE /api/v1/places/{id}/like`, `GET/POST /api/v1/places/{id}/comments`, and `DELETE /api/v1/place-comments/{id}` were removed and now 404.
 
-### 5.3 Admin moderation (routes/web.php, inside `auth` group, nested `Route::middleware('admin')`, group throttle `60,1`)
+### 5.3 Admin moderation (routes/web.php, inside `auth` group, nested `Route::middleware('places_admin')`, group throttle `60,1`)
 
-**`GET /api/v1/admin/places?status=pending|approved|rejected|all`** -> `PlaceAdminController@index`. Validate `'status' => 'sometimes|in:pending,approved,rejected,all'`, default `pending`. Newest first, `->paginate(20)`, `data` items are `ADMIN_PLACE`.
+**`GET /api/v1/admin/places?status=pending|approved|rejected|all`** -> `PlaceAdminController@index`. Validate `PlaceRules::statusFilter()`, default `pending`. Newest first, `->paginate(20)`, `data` items are `ADMIN_PLACE`.
 
-**`POST /api/v1/admin/places/{id}/approve`** -> `PlaceAdminController@approve` -> `PlaceModerationService::approve`. Guard: only `pending` may be moderated, else `PlaceActionException::notPending` -> 400 `"Place is already {$place->status}"`. Sets `status => 'approved'`, `approved_at => now()`, `Cache::forget('places:map')`. 200: `{ "id": 12, "status": "approved" }`. The same service backs the agent tool `approve-place` — see [agent-mcp.md](agent-mcp.md).
+**`POST /api/v1/admin/places/{id}/approve`** -> `PlaceAdminController@approve` -> `PlaceModerationService::approve`. Guard: only `pending` may be moderated, else `PlaceActionException::notPending` -> 400 `"Place is already {$place->status}"`. Sets `status => 'approved'`, `approved_at => now()`, and drops the map cache (`PlaceModerationService::forgetMapCache()`). 200: `{ "id": 12, "status": "approved" }`. The same service backs the agent tool `approve-place` — see [agent-mcp.md](agent-mcp.md).
 
 **`POST /api/v1/admin/places/{id}/reject`** -> `PlaceAdminController@reject` -> `PlaceModerationService::reject`. Same pending-only guard. Validation `'reason' => 'nullable|string|max:1000'`. Sets `status => 'rejected'`, `rejection_reason`. 200: `{ "id": 12, "status": "rejected" }`.
 
-**`DELETE /api/v1/admin/places/{id}`** -> `PlaceAdminController@destroy`. Takedown of any place: deletes photo files via `PlaceImageService::deleteFiles`, deletes row (cascades), `Cache::forget('places:map')`. 204.
+**`DELETE /api/v1/admin/places/{id}`** -> `PlaceAdminController@destroy`. Takedown of any place: deletes photo files via `PlaceImageService::deleteFiles`, deletes row (cascades), drops the map cache. 204.
 
 **Moderation edit endpoints**: `PATCH /api/v1/admin/places/{id}` (partial field update), `POST /api/v1/admin/places/{id}/photos` (add, count guard `>= 10` -> 422 `لا يمكن إضافة أكثر من 10 صور`), `POST /api/v1/admin/place-photos/{id}/replace`, `POST /api/v1/admin/place-photos/{id}/rotate`, `DELETE /api/v1/admin/place-photos/{id}` (min-1 guard). Photo rule everywhere: `required|image|mimes:jpg,jpeg,png,webp|max:12288|dimensions:min_width=200,min_height=200,max_width=6000,max_height=6000` with the same Arabic messages as the owner endpoints.
 
@@ -245,7 +247,7 @@ There are no like or comment endpoints. `POST/DELETE /api/v1/places/{id}/like`, 
 ### 5.4 Inertia pages (routes/web.php)
 
 - `GET /mishwar` -> `PlaceController@renderIndex` (`GET /places` 301-redirects here, query preserved) -> `Inertia::render('Places/Index')`. Public. The route ignores query params; the client reads `?place={id}` on load (section 6.2, deep link).
-- `GET /admin/places` -> `PlaceAdminController@renderIndex` -> `Inertia::render('Admin/Places/Index')`. Inside `auth` + `admin` group.
+- `GET /admin/places` -> `PlaceAdminController@renderIndex` -> `Inertia::render('Admin/Places/Index')`. Inside `auth` + `places_admin` group (`places_admin:any`).
 
 ### 5.5 JSON shapes (normative)
 
@@ -268,15 +270,15 @@ There are no like or comment endpoints. `POST/DELETE /api/v1/places/{id}/like`, 
 { "rejection_reason": null }
 ```
 
-Shaping is done inline with `->map(fn($p) => [...])` in controllers (no API Resources). `thumb_url`/`display_url` are built with `Storage::url()`.
+Shaping lives in `App\Services\Places\PlacePresenter` (no API Resources): `item()` is `ADMIN_PLACE`, `publicListItem()`/`publicDetail()`/`ownerListItem()` are the public and owner shapes above, and `photo()`/`photoUrls()`/`photoWallItem()` are the photo payloads. `thumb_url`/`display_url` are built with `Storage::url()`.
 
 ## 6. FRONTEND
 
-Stack: MapLibre GL (imperative init, Transit "Pattern B"), style `'/styles/styles/dark-matter.json'`, built-in GeoJSON clustering (`cluster: true`). No TanStack Query for this feature: plain typed api client + useState/useEffect (matches most Pages). Zustand not needed; `Index.tsx` owns state and passes props.
+Stack: MapLibre GL through the shared `Components/map/MapCanvas` (which owns the basemap style, the RTL plugin and the standard controls), built-in GeoJSON clustering (`cluster: true`). No TanStack Query for this feature: plain typed api client + useState/useEffect (matches most Pages). Zustand not needed; `Index.tsx` owns state and passes props.
 
 ### 6.1 Shared modules (every component imports from these, exactly these)
 
-**`resources/js/Pages/Places/_lib/types.ts`** exports:
+**`resources/js/Domain/places/types.ts`** exports:
 
 ```ts
 export type PlaceCategory = 'historical' | 'natural' | 'cultural' | 'religious' | 'abandoned' | 'viewpoint' | 'market' | 'food' | 'other';
@@ -306,7 +308,7 @@ export interface PlaceFeatureCollection { type: 'FeatureCollection'; features: P
 export interface Paginated<T> { data: T[]; current_page: number; last_page: number; total: number; }
 ```
 
-**`resources/js/Pages/Places/_lib/categories.ts`** exports:
+**`resources/js/Domain/places/categories.ts`** exports:
 
 ```ts
 import type { PlaceCategory } from './types';
@@ -314,7 +316,7 @@ export const CATEGORIES: { key: PlaceCategory; label: string }[] = [ /* section 
 export const CATEGORY_LABELS: Record<PlaceCategory, string>; // derived map
 ```
 
-**`resources/js/Pages/Places/_lib/api.ts`** (uses `@/lib/axios`) exports exactly:
+**`resources/js/Domain/places/api.ts`** (uses `@/lib/axios`) exports exactly:
 
 ```ts
 export const api = {
@@ -385,7 +387,7 @@ export function PlacesMap(props: {
 }): JSX.Element;
 ```
 
-Init (mirror Transit admin Index): `useRef` container + map guard, `new maplibregl.Map({ container, style: '/styles/styles/dark-matter.json', center: [38.0, 35.0], zoom: 6.2, attributionControl: false })`, add `AttributionControl({ compact: true })` + `NavigationControl` + `GeolocateControl` bottom-left (RTL page, keep controls off the panel side). On `'load'`: `map.addSource('places', { type: 'geojson', data, cluster: true, clusterRadius: 50, clusterMaxZoom: 14 })` then three layers: `clusters` (circle, paint `circle-color` step by `point_count`: `hsl(105 15% 36%)` base, larger radius steps 15/20/25 at counts 10/30), `cluster-count` (symbol, `text-field: '{point_count_abbreviated}'`, glyphs come with the style), `place-pin` (circle, filter `['!', ['has', 'point_count']]`, `circle-radius` 7 (10 when `['==', ['get', 'id'], selectedId]` via `setPaintProperty` on selection change), `circle-color '#7d8a5c'`, `circle-stroke-width 2`, `circle-stroke-color '#ffffff'`). Cluster click: `getClusterExpansionZoom` + `easeTo`. Pin click: `onPinClick(feature.properties.id)`. Plain map click (use `queryRenderedFeatures` on the three layers; empty result means background): `onMapClick({ lng, lat })`. Feature updates via `(map.getSource('places') as maplibregl.GeoJSONSource).setData(...)`. Cleanup with guarded removeLayer/removeSource in try/catch, `map.remove()` on unmount.
+`PlacesMap` mounts the shared `MapCanvas` and two instances of the one layer component, `_components/PinLayer.tsx`: `PLACE_PINS` (`source places`, layers `clusters`/`cluster-count`/`place-pin`) and `HOTEL_PINS` (`source hotels`, layers `hotel-clusters`/`hotel-cluster-count`/`hotel-pin`). Each source is `cluster: true` (`clusterRadius: 25`, `clusterMaxZoom: 10`) with `promoteId: 'id'`; both collections carry a stable numeric `properties.id`, so selection is a GPU feature-state (`selected`) that grows the pin radius, not a repaint. Cluster click: `getClusterExpansionZoom` + `easeTo`. Pin click: `onPinClick(feature.properties.id)`. Plain map click (use `queryRenderedFeatures` on the pin layers; empty result means background): `onMapClick({ lng, lat })`. Feature updates via `(map.getSource(id) as maplibregl.GeoJSONSource).setData(...)`. The layer attaches through `Components/map/useMapLayer.ts`: `MapCanvas` bumps its style version on `style.load`, so both sources and layers are added again after every basemap swap and a theme switch keeps the data. Colours live in the `PLACE_PINS`/`HOTEL_PINS` tables next to the layer.
 
 Cursor: `addMode` is mirrored into a ref; an effect sets `map.getCanvas().style.cursor = addMode ? 'crosshair' : ''`. The pin mouseenter/mouseleave pointer handlers consult the ref so leaving a pin restores `'crosshair'` (not `''`) and hovering a pin during add-mode keeps `'crosshair'`.
 
@@ -490,12 +492,12 @@ export function SubmitSheet(props: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   point: LatLng | null;                 // the point picked in add-mode; null renders nothing
-  onSubmitted: (id: number) => void;
+  onSubmitted: () => void;             // the new place is pending, so there is nothing to select yet
   onSelectExisting: (id: number) => void; // user picked a duplicate suggestion; parent opens its detail
 }): JSX.Element;
 ```
 
-Uses `Sheet` with `side="bottom"` on mobile and `side="left"` on desktop (panel is on the right), `dir="rtl"`. Internal step state: `'auth' | 'duplicates' | 'form' | 'done'`. Step auth: if `!user` (from `useAuth()`), show the Google login link and stop. Step duplicates: on open, call `api.nearby({ lat, lng, radius_km: 0.25, include_pending: true })`; if any results render `DuplicateSuggestions`, else skip to form. Step form: name Input, category Select from `CATEGORIES`, description Textarea (counter, min 20 max 1000), read-only coordinates line (`dir="ltr"`), `PhotoPicker`. Client validation before `api.submitPlace`; errors via `extractError` in a destructive `Alert`. Step done: success message + close button. Calls `onSubmitted(id)` then `onOpenChange(false)` on close.
+Uses `Sheet` with `side="bottom"` on mobile and `side="left"` on desktop (panel is on the right), `dir="rtl"`. Internal step state: `'auth' | 'duplicates' | 'form' | 'done'`. Step auth: if `!user` (from `useAuth()`), show the Google login link and stop. Step duplicates: on open, call `api.nearby({ lat, lng, radius_km: 0.25, include_pending: true })`; if any results render `DuplicateSuggestions`, else skip to form. Step form: name Input, category Select from `CATEGORIES`, description Textarea (counter, min 20 max 1000), read-only coordinates line (`dir="ltr"`), `PhotoPicker`. Client validation before `api.submitPlace`; errors via `extractError` in a destructive `Alert`. Step done: success message + close button. Calls `onSubmitted()` then `onOpenChange(false)` on close.
 
 **`DuplicateSuggestions`**:
 
@@ -563,7 +565,7 @@ Backend:
 - Routes: the places block in `routes/api.php` (public reads) and `routes/web.php` (page routes, authed writes, admin moderation)
 
 Frontend:
-- `resources/js/Pages/Places/_lib/types.ts`, `_lib/categories.ts`, `_lib/api.ts`
+- `resources/js/Domain/places/types.ts`, `categories.ts`, `api.ts`, `reports.ts`
 - `resources/js/Pages/Places/Index.tsx`
 - `resources/js/Pages/Places/_components/`: PlacesMap, FilterBar, PlacesPanel, PlaceCard, PlaceDetailView, PhotoGallery, Lightbox, EngagementBar, SubmitSheet, DuplicateSuggestions, PhotoPicker
 - `resources/js/Pages/Admin/Places/`: Index.tsx, PlaceReviewCard.tsx, RejectDialog.tsx
@@ -578,8 +580,8 @@ Tests:
 - Public URL: `/mishwar` (legacy `/places` redirects). Share/deep-link URL: `/mishwar?place={id}`. Admin URL: `/admin/places`. API namespace: `/api/v1/places`, `/api/v1/my/*`, `/api/v1/admin/places`.
 - Arabic section title: أماكن خفية. Page `<title>`: أماكن خفية (template appends "- Syrian Zone").
 - Page dirs: `resources/js/Pages/Places/`, `resources/js/Pages/Admin/Places/`.
-- Controllers: `PlaceController`, `PlaceEngagementController`, `PlaceAdminController`. Models: `Place`, `PlacePhoto`, `PlaceSave`. Services: `PlaceImageService`, `Places/PlaceModerationService`, `Places/PlacePresenter`.
-- Cache key: `places:map`. Storage dir: `places/{place_id}/`.
+- Controllers: `PlaceController`, `PlaceEngagementController`, `PlaceAdminController`. Models: `Place`, `PlacePhoto`, `PlaceSave`. Services: `PlaceImageService`, `Places/PlaceRules` (rules + Arabic messages, shared with the agent tools), `Places/PlaceModerationService`, `Places/PlacePresenter` (admin/agent shape and the narrower public shapes).
+- Cache key: `PlaceModerationService::MAP_CACHE_KEY` (`places:map`), forgotten only through `PlaceModerationService::forgetMapCache()`. Storage dir: `places/{place_id}/`.
 
 ## 10. NON-GOALS (do not build these)
 
@@ -598,7 +600,7 @@ Tests:
 - No user profile pages or follower systems (the guides leaderboard is the only ranking surface).
 - No admin map view, no bulk moderation, no audit log.
 - No uploadthing or bespoke upload services: media goes to the `MEDIA_DISK` filesystem disk (`public` locally, `r2` on Cloudflare R2 in production via the S3 driver).
-- No spatial DB features, no Scout search indexing (LIKE is enough at this scale).
+- No spatial DB features, no Scout search indexing: `LIKE` over the stored `*_fold` columns is enough at this scale (see §3.1).
 - No changes to `public/sw.js`, `bootstrap/app.php`, or middleware aliases.
 
 ## 11. CATEGORIES (fixed, ordered; keys are stable ascii, stored verbatim in `places.category`)

@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { DEFAULT_POLL_TIMEZONE, isCorePollSlug } from '@/Domain/polls/core';
 import { Link, router } from '@inertiajs/react';
-import axios from 'axios';
+import { apiErrorMessage } from '@/Lib/api';
+import { accountApi } from './_lib/api';
 import {
   User as UserIcon,
   Settings,
@@ -26,7 +28,7 @@ import {
 } from 'lucide-react';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
-import { extractApiFieldErrors } from '@/Lib/apiError';
+import { apiFieldErrors } from '@/Lib/api';
 import {
   TierlistIcon,
   PromisesIcon,
@@ -36,9 +38,10 @@ import {
   GovAppsIcon,
   PhonebookIcon,
 } from '@/Components/Icons/ProjectIcons';
+import { ADMIN_SECTIONS, adminSectionAllowed } from '@/Lib/siteModules';
 import MainLayout from '@/Layouts/MainLayout';
 import { useAuth } from '@/Contexts/AuthContext';
-import { canAny, canModule } from '@/Lib/permissions';
+import { useCan, useCanModule } from '@/Lib/useCan';
 import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
@@ -54,73 +57,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/Components/ui/dialog';
-import AdminPollManager from '@/Components/admin/AdminPollManager';
+import AdminPollManager from '@/Domain/polls/AdminPollManager';
+import { pollsApi } from '@/Domain/polls/api';
+import { transitAdminApi } from '@/Domain/transit/api';
+import type { DraftStatus, RouteDraftRow } from '@/Domain/transit/types';
+import type { Poll, PollCandidate, PollGroup } from '@/Domain/polls/types';
 import FieldError, { fieldA11y } from '@/Components/ui/field-error';
-import { cn } from '@/lib/utils';
-
-// The account controller sends Arabic validation messages; keep a server
-// message when it is already Arabic and otherwise fall back to a neutral
-// Arabic note rather than showing an English rule message.
-const isArabicMessage = (text: string) => /[\u0600-\u06FF]/.test(text);
-
-interface City {
-  id: string;
-  name_ar: string;
-  name_en: string;
-}
-
-interface Draft {
-  id: number;
-  user_id: number | null;
-  user: { id: number; name: string; email: string } | null;
-  city_id: string;
-  city: City | null;
-  name_ar: string;
-  name_en: string | null;
-  price: number | null;
-  notes: string | null;
-  geojson: any;
-  status: 'pending' | 'approved' | 'rejected';
-  rejection_reason: string | null;
-  route_id: string | null;
-  created_at: string;
-}
-
-interface Poll {
-  id: string;
-  title: string;
-  slug: string;
-  timezone?: string;
-  is_active: boolean;
-  candidates_count: number;
-}
-
-interface PollCandidate {
-  id: string;
-  candidate_group_id?: string | null;
-  name: string;
-  title?: string | null;
-  image_url?: string | null;
-  imageUrl?: string | null;
-  category?: string | null;
-  status?: 'active' | 'archived';
-  [key: string]: any;
-}
-
-interface PollGroup {
-  id: string;
-  poll_id: string;
-  name: string;
-  sort_order: number;
-  is_default?: boolean;
-  [key: string]: any;
-}
+import { cn } from '@/Lib/utils';
+import { formatGregorianSyrianShort } from '@/Lib/syrian-date';
 
 const pollPublicUrl = (slug: string) =>
-  slug === 'best-ministers' ? '/tierlist' : `/polls/${slug}`;
+  isCorePollSlug(slug) ? '/tierlist' : `/polls/${slug}`;
 
 const pollLeaderboardUrl = (slug: string) =>
-  slug === 'best-ministers' ? '/tierlist/leaderboard' : `/polls/${slug}/leaderboard`;
+  isCorePollSlug(slug) ? '/tierlist/leaderboard' : `/polls/${slug}/leaderboard`;
 
 interface DashboardProps {
   auth: {
@@ -136,8 +86,9 @@ interface DashboardProps {
     };
   };
   role: string;
-  cities: City[];
-  myDrafts?: Draft[];
+  /** The studio's own rule, resolved server-side: any account that is not banned may submit. */
+  canSubmitTransit: boolean;
+  myDrafts?: RouteDraftRow[];
   polls?: Poll[];
 }
 
@@ -153,26 +104,19 @@ function AvatarUploader({ user }: { user: { name: string; avatar_url: string | n
   // a dead avatar_url (lost file, stale Google url) falls back to the initial circle
   const [avatarBroken, setAvatarBroken] = useState(false);
 
-  // Upload a new avatar as soon as a file is picked
   const handleAvatarPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setAvatarLoading(true);
     setAvatarMessage(null);
     try {
-      const form = new FormData();
-      form.append('avatar', file);
-      const res = await axios.post('/api/account/avatar', form);
-      setAvatarUrl(res.data.avatar_url);
+      const res = await accountApi.uploadAvatar(file);
+      setAvatarUrl(res.avatar_url);
       setAvatarBroken(false);
       setAvatarMessage({ type: 'success', text: 'تم تحديث الصورة الشخصية' });
       await refreshUser();
-    } catch (err: any) {
-      const msg = err.response?.data?.message;
-      setAvatarMessage({
-        type: 'error',
-        text: msg && /[\u0600-\u06FF]/.test(msg) ? msg : 'تعذر رفع الصورة'
-      });
+    } catch (err) {
+      setAvatarMessage({ type: 'error', text: apiErrorMessage(err, 'تعذر رفع الصورة') });
     } finally {
       if (avatarInputRef.current) avatarInputRef.current.value = '';
       setAvatarLoading(false);
@@ -230,7 +174,27 @@ function AvatarUploader({ user }: { user: { name: string; avatar_url: string | n
   );
 }
 
-const statusBadge = (status: Draft['status']) => {
+/**
+ * The drawing on each admin card. The catalogue owns the card's label, route
+ * and gate; which picture sits on it is a React concern, so keys are mapped
+ * here and fall back to the grid glyph rather than rendering nothing.
+ */
+const ADMIN_SECTION_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  transit: TransitIcon,
+  places: MishwarIcon,
+  syofficial: SyOfficialIcon,
+  govapps: GovAppsIcon,
+  guesswho: Gamepad2,
+  phonebook: PhonebookIcon,
+  compass: Compass,
+  promises: PromisesIcon,
+  assets: CloudUpload,
+  site_popup: Megaphone,
+  site_navigation: LayoutGrid,
+  api_tokens: KeyRound,
+};
+
+const statusBadge = (status: DraftStatus) => {
   if (status === 'approved')
     return <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20">تم القبول والنشر</Badge>;
   if (status === 'rejected')
@@ -241,17 +205,22 @@ const statusBadge = (status: Draft['status']) => {
 export default function Dashboard({
   auth,
   role,
-  cities,
+  canSubmitTransit,
   myDrafts = [],
   polls = []
 }: DashboardProps) {
-  // Read from the Inertia prop, NOT useAuth(): this component renders
-  // <MainLayout> (and therefore AuthProvider) itself, so its body runs above
-  // the provider. The list is already resolved server-side, so this file never
-  // re-derives which role implies what.
-  const perms = auth.user.effective_permissions ?? [];
-  const canManagePolls = canModule(perms, 'polls');
-  const canTransitReview = perms.includes('transit.review_drafts');
+  // useCan() reads usePage() props, not the AuthProvider context, so it works
+  // here even though this component renders <MainLayout> (and therefore
+  // AuthProvider) itself. The list is already resolved server-side, so this
+  // file never re-derives which role implies what.
+  const can = useCan();
+  const canModule = useCanModule();
+  const canManagePolls = canModule('polls');
+  // The admin cards, in catalogue order, filtered by the gate each one carries.
+  // A module gate is satisfied by any capability in that module; a `user`
+  // holding an explicit grant and a staff account holding the whole module are
+  // served by the same check.
+  const adminSections = ADMIN_SECTIONS.filter((section) => adminSectionAllowed(section, can, canModule));
 
   // Declared above the tab state because the default tab is chosen with the
   // same gates the sidebar renders with, so the landing tab is always one whose
@@ -261,29 +230,27 @@ export default function Dashboard({
     // every account has, so it is always a safe landing place.
     if (new URLSearchParams(window.location.search).get('tab') === 'profile') return 'profile';
 
-    // Check canManagePolls first so poll managers and full-catalogue admins
-    // (whose role is also 'user') land on the Polls tab rather than an empty
-    // route-submissions tab.
+    // Check canManagePolls first so a poll manager who may also submit routes
+    // lands on the Polls tab rather than on their (possibly empty) route
+    // submissions.
     if (canManagePolls) return 'polls';
-    if (role === 'user') return 'submissions';
+    if (canSubmitTransit) return 'submissions';
 
     return 'profile';
   });
 
-  // Module access is decided by capability, not by role string. Every panel
-  // below is gated on a capability, so a `user` holding an explicit grant and a
-  // staff account holding a whole module are served by the same check.
-  const canManagePlaces = canModule(perms, 'places');
-  const canManageSyOfficial = canModule(perms, 'syofficial');
-  const canManageGovApps = canModule(perms, 'govapps');
+  // The submissions tab belongs to the account, not to a role: anyone who may
+  // submit sees it, and an account that already has drafts keeps them even
+  // after a ban stops it submitting.
+  const showTransitSubmissions = canSubmitTransit || myDrafts.length > 0;
+
   // Per-action poll capabilities. The tab itself opens for any polls.* holder,
   // so without these a polls.delete-only account is offered create and edit
   // buttons whose routes are tagged polls.create / polls.edit.
-  const canCreatePolls = canAny(perms, 'polls.create');
-  const canEditPolls = canAny(perms, 'polls.edit');
-  const canDeletePolls = canAny(perms, 'polls.delete');
+  const canCreatePolls = can('polls.create');
+  const canEditPolls = can('polls.edit');
+  const canDeletePolls = can('polls.delete');
 
-  // Profile Form States
   const [profileName, setProfileName] = useState(auth.user.name);
   const [profileEmail, setProfileEmail] = useState(auth.user.email);
   const [profileLoading, setProfileLoading] = useState(false);
@@ -301,30 +268,25 @@ export default function Dashboard({
     profileFormRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
   }, [profileFailedSubmit]);
 
-  // Account Deletion States
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  // Rejection Dialog States
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectDraftId, setRejectDraftId] = useState<number | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [rejectLoading, setRejectLoading] = useState(false);
 
-  // Ban Status states for dynamic list updates
   const [localPolls, setLocalPolls] = useState<Poll[]>(polls);
-  const [localMyDrafts, setLocalMyDrafts] = useState<Draft[]>(myDrafts);
+  const [localMyDrafts, setLocalMyDrafts] = useState<RouteDraftRow[]>(myDrafts);
 
   const [apiLoading, setApiLoading] = useState<number | null>(null); // maps draft ID to loading state
 
-  // Inline poll create states (replaces /admin/polls/create page)
   const [createOpen, setCreateOpen] = useState(false);
   const [createTitle, setCreateTitle] = useState('');
   const [createSlug, setCreateSlug] = useState('');
   const [createActive, setCreateActive] = useState(true);
   const [creating, setCreating] = useState(false);
 
-  // Inline poll edit states (replaces /admin/polls/{id}/edit page)
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingPoll, setEditingPoll] = useState<Poll | null>(null);
   const [editingCandidates, setEditingCandidates] = useState<PollCandidate[]>([]);
@@ -335,16 +297,16 @@ export default function Dashboard({
   const fetchPollDetails = async (id: string) => {
     setEditingLoading(true);
     try {
-      const res = await axios.get(`/api/polls/${id}`, { params: { include_archived: 1 } });
-      const data = res.data ?? {};
-      if (data.poll) {
-        setEditingPoll(data.poll);
-        setLocalPolls(prev => prev.map(p => p.id === data.poll.id ? { ...p, ...data.poll, candidates_count: data.candidates?.length ?? p.candidates_count } : p));
+      const data = await pollsApi.details(id);
+      const poll = data.poll;
+      if (poll) {
+        setEditingPoll(poll);
+        setLocalPolls(prev => prev.map(p => p.id === poll.id ? { ...p, ...poll, candidates_count: data.candidates?.length ?? p.candidates_count } : p));
       }
       if (data.candidates) setEditingCandidates(data.candidates);
       if (data.groups) setEditingGroups(data.groups);
-    } catch (err: any) {
-      notify.error('تعذر تحميل بيانات الاستبيان: ' + (err.response?.data?.message ?? err.message));
+    } catch (err) {
+      notify.error(apiErrorMessage(err, 'تعذر تحميل بيانات الاستبيان'));
       setEditingId(null);
       setEditingPoll(null);
     } finally {
@@ -407,91 +369,86 @@ export default function Dashboard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Update Account details
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setProfileLoading(true);
     setProfileMessage(null);
     setProfileErrors({});
     try {
-      await axios.post('/api/account/update', {
-        name: profileName,
-        email: profileEmail
-      });
+      await accountApi.updateProfile({ name: profileName, email: profileEmail });
       setProfileMessage({ type: 'success', text: 'تم تحديث معلومات الحساب بنجاح.' });
-    } catch (err: any) {
+    } catch (err) {
       // 422 from the account endpoint: { message, errors: { name: [...], email: [...] } }
+      const fields = apiFieldErrors(err, { arabicOnly: true });
       const fieldErrors = Object.fromEntries(
-        Object.entries(extractApiFieldErrors(err)).map(([field, message]) => [
-          field,
-          isArabicMessage(message) ? message : 'تحقق من هذه القيمة',
-        ])
+        Object.keys(apiFieldErrors(err)).map((field) => [field, fields[field] ?? 'تحقق من هذه القيمة'])
       );
       if (Object.keys(fieldErrors).length > 0) {
         setProfileErrors(fieldErrors);
         setProfileFailedSubmit((n) => n + 1);
       } else {
-        setProfileMessage({ type: 'error', text: err.response?.data?.message ?? 'تعذر تحديث الحساب.' });
+        setProfileMessage({ type: 'error', text: apiErrorMessage(err, 'تعذر تحديث الحساب.') });
       }
     } finally {
       setProfileLoading(false);
     }
   };
 
-  // Soft Delete Account
   const handleDeleteAccount = async () => {
     setDeleteLoading(true);
     try {
-      await axios.post('/api/account/delete');
+      await accountApi.deleteAccount();
       window.location.href = '/';
     } catch (err) {
-      notify.error('تعذر حذف الحساب حالياً.');
+      notify.error(apiErrorMessage(err, 'تعذر حذف الحساب حالياً.'));
       setDeleteLoading(false);
     }
   };
 
-  // Approve Transit Draft
   const handleApproveDraft = async (id: number) => {
     setApiLoading(id);
     try {
-      const res = await axios.post(`/api/v1/admin/route-drafts/${id}/approve`);
+      const res = await transitAdminApi.approveDraft(id);
+      // The submission list is the page's own copy of the draft rows: without
+      // this the badge keeps reading «قيد المراجعة» until a reload.
+      setLocalMyDrafts(prev => prev.map(d => d.id === id
+        ? { ...d, status: 'approved', rejection_reason: null, route_id: res.route?.id ?? d.route_id }
+        : d));
       notify.success('تمت الموافقة على المسار ونشره.');
-      // Update local state status
-    } catch (err: any) {
-      notify.error('خطأ أثناء الموافقة: ' + (err.response?.data?.message ?? err.message));
+    } catch (err) {
+      notify.error(apiErrorMessage(err, 'خطأ أثناء الموافقة'));
     } finally {
       setApiLoading(null);
     }
   };
 
-  // Reject Transit Draft (Open Modal)
   const openRejectDialog = (id: number) => {
     setRejectDraftId(id);
     setRejectReason('');
     setRejectOpen(true);
   };
 
-  // Confirm Reject
   const handleConfirmReject = async () => {
     if (!rejectDraftId) return;
+    const reason = rejectReason.trim() || null;
     setRejectLoading(true);
     try {
-      await axios.post(`/api/v1/admin/route-drafts/${rejectDraftId}/reject`, {
-        reason: rejectReason.trim() || null
-      });
+      await transitAdminApi.rejectDraft(rejectDraftId, reason);
+      setLocalMyDrafts(prev => prev.map(d => d.id === rejectDraftId
+        ? { ...d, status: 'rejected', rejection_reason: reason }
+        : d));
       setRejectOpen(false);
       notify.success('تم رفض المسار.');
-    } catch (err: any) {
-      notify.error('خطأ أثناء الرفض: ' + (err.response?.data?.message ?? err.message));
+    } catch (err) {
+      notify.error(apiErrorMessage(err, 'خطأ أثناء الرفض'));
     } finally {
       setRejectLoading(false);
       setRejectDraftId(null);
     }
   };
 
-  // Delete Poll
   const handleDeletePoll = async (id: string, slug: string) => {
-    if (slug === 'best-ministers') {
+    if (isCorePollSlug(slug)) {
         notify.info('لا يمكن حذف استبيان تقييم الوزراء الرئيسي.');
         return;
     }
@@ -499,12 +456,12 @@ export default function Dashboard({
     if (!okDelete) return;
 
     try {
-      await axios.delete(`/api/polls/${id}`);
+      await pollsApi.remove(id);
       setLocalPolls(prev => prev.filter(p => p.id !== id));
       if (editingId === id) closePollEditor();
       notify.success('تم حذف الاستبيان.');
-    } catch (err: any) {
-      notify.error('خطأ: ' + (err.response?.data?.message ?? 'تعذر الحذف.'));
+    } catch (err) {
+      notify.error(apiErrorMessage(err, 'تعذر الحذف.'));
     }
   };
 
@@ -513,13 +470,12 @@ export default function Dashboard({
     if (!createTitle.trim() || !createSlug.trim()) return;
     setCreating(true);
     try {
-      const res = await axios.post('/api/polls', {
+      const created = await pollsApi.create({
         title: createTitle.trim(),
         slug: createSlug.trim(),
-        timezone: 'Europe/Amsterdam',
+        timezone: DEFAULT_POLL_TIMEZONE,
         is_active: createActive,
       });
-      const created: Poll = res.data;
       setLocalPolls(prev => [...prev, { ...created, candidates_count: 0 }]);
       setCreateOpen(false);
       setCreateTitle('');
@@ -530,8 +486,8 @@ export default function Dashboard({
       url.searchParams.delete('create');
       window.history.replaceState({}, '', url.pathname + (url.searchParams.toString() ? `?${url.searchParams.toString()}` : ''));
       openPollEditor({ ...created, candidates_count: 0 });
-    } catch (err: any) {
-      notify.error('تعذر إنشاء الاستبيان: ' + (err.response?.data?.message ?? err.message));
+    } catch (err) {
+      notify.error(apiErrorMessage(err, 'تعذر إنشاء الاستبيان'));
     } finally {
       setCreating(false);
     }
@@ -541,30 +497,28 @@ export default function Dashboard({
     if (!editingId || !editingPoll) return;
     setEditingSaving(true);
     try {
-      const res = await axios.put(`/api/polls/${editingId}`, {
+      const updated = await pollsApi.update(editingId, {
         title: editingPoll.title,
         slug: editingPoll.slug,
         is_active: editingPoll.is_active,
       });
-      const updated: Poll = res.data;
       setEditingPoll(prev => prev ? { ...prev, ...updated } : prev);
       setLocalPolls(prev => prev.map(p => p.id === editingId ? { ...p, ...updated } : p));
-    } catch (err: any) {
-      notify.error('حدث خطأ أثناء حفظ الإعدادات: ' + (err.response?.data?.message ?? err.message));
+    } catch (err) {
+      notify.error(apiErrorMessage(err, 'حدث خطأ أثناء حفظ الإعدادات'));
     } finally {
       setEditingSaving(false);
     }
   };
 
-  // Cancel/Delete own submission (Normal user)
   const handleCancelMySubmission = async (id: number) => {
     if (!(await confirmDialog({ title: 'سحب هذا الاقتراح؟', description: 'سيتم إلغاء الاقتراح ولا يمكن التراجع.', destructive: true, confirmText: 'سحب' }))) return;
     try {
-      await axios.delete(`/api/v1/transit/studio/routes/${id}`);
+      await transitAdminApi.deleteStudioRoute(id);
       setLocalMyDrafts(prev => prev.filter(d => d.id !== id));
       notify.success('تم سحب الاقتراح');
-    } catch (err: any) {
-      notify.error('تعذر سحب الاقتراح: ' + (err.response?.data?.message ?? err.message));
+    } catch (err) {
+      notify.error(apiErrorMessage(err, 'تعذر سحب الاقتراح'));
     }
   };
 
@@ -592,6 +546,7 @@ export default function Dashboard({
 
           {role === 'superadmin' && (
             <div className="flex justify-end mb-8">
+              {/* Filament panel access is the panel's own rule (User::canAccessPanel), not a module capability. */}
               <a
                 href="/superadmin"
                 className="px-5 py-2.5 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-lg font-bold flex items-center gap-2 transition-colors shadow-lg"
@@ -603,18 +558,15 @@ export default function Dashboard({
           )}
 
           <div className="flex flex-col lg:flex-row gap-8">
-            {/* Sidebar / Tabs list */}
             <aside className="w-full lg:w-64 shrink-0">
               <nav aria-label="أقسام لوحة التحكم" className="flex flex-row lg:flex-col gap-1.5 overflow-x-auto lg:overflow-x-visible pb-3 lg:pb-0">
-                {/* Conditional Submissions Tab (Normal Users) */}
-                {role === 'user' && (
+                {showTransitSubmissions && (
                   <button type="button" aria-pressed={activeTab === 'submissions'} onClick={() => setActiveTab('submissions')} className={navItemClass(activeTab === 'submissions')}>
                     <TransitIcon className="h-5 w-5" />
                     اقتراحاتي للخطوط
                   </button>
                 )}
 
-                {/* Polls Tab */}
                 {canManagePolls && (
                   <button type="button" aria-pressed={activeTab === 'polls'} onClick={() => setActiveTab('polls')} className={navItemClass(activeTab === 'polls')}>
                     <TierlistIcon className="h-5 w-5" />
@@ -622,144 +574,20 @@ export default function Dashboard({
                   </button>
                 )}
 
-                {/* Transit review Tab (role admins or any explicit transit.* grant) */}
-                {canTransitReview && (
-                  <Link
-                    href="/transit/admin"
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  >
-                    <TransitIcon className="h-5 w-5" />
-                    ترانزيت
-                  </Link>
-                )}
+                {adminSections.map((section) => {
+                  const Icon = ADMIN_SECTION_ICONS[section.id] ?? LayoutGrid;
+                  return (
+                    <Link
+                      key={section.id}
+                      href={section.href}
+                      className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                    >
+                      <Icon className="h-5 w-5" />
+                      {section.label}
+                    </Link>
+                  );
+                })}
 
-                {/* Places moderation Tab */}
-                {canManagePlaces && (
-                  <Link
-                    href="/admin/places"
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  >
-                    <MishwarIcon className="h-5 w-5" />
-                    مشوار
-                  </Link>
-                )}
-
-                {/* SyOfficial Admin Tab */}
-                {canManageSyOfficial && (
-                  <Link
-                    href="/admin/syofficial"
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  >
-                    <SyOfficialIcon className="h-5 w-5" />
-                    الحسابات الرسمية
-                  </Link>
-                )}
-
-                {/* GovApps Admin Tab */}
-                {canManageGovApps && (
-                  <Link
-                    href="/admin/govapps"
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  >
-                    <GovAppsIcon className="h-5 w-5" />
-                    التطبيقات الحكومية
-                  </Link>
-                )}
-
-                {/* GuessWho Admin Tab. Superadmin only: the module has no capability
-                    vocabulary of its own, and the route group is gated on the
-                    `superadmin` middleware rather than a capability. Narrowed from
-                    `admin || superadmin` — see routes/web.php. */}
-                {role === 'superadmin' && (
-                  <Link
-                    href="/admin/guesswho"
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  >
-                    <Gamepad2 className="h-5 w-5" />
-                    من هو
-                  </Link>
-                )}
-
-                {/* Phonebook Admin Tab */}
-                {canModule(perms, 'phonebook') && (
-                  <Link
-                    href="/admin/phonebook"
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  >
-                    <PhonebookIcon className="h-5 w-5" />
-                    دليل الهاتف
-                  </Link>
-                )}
-
-                {/* Compass Admin Tab — anonymous statistics, gated on compass.stats. */}
-                {canModule(perms, 'compass') && (
-                  <Link
-                    href="/admin/compass"
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  >
-                    <Compass className="h-5 w-5" />
-                    بوصلة سوريا
-                  </Link>
-                )}
-
-                {/* Promises Tracker Admin Tab */}
-                {canModule(perms, 'promises') && (
-                  <Link
-                    href="/admin/promises"
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  >
-                    <PromisesIcon className="h-5 w-5" />
-                    عداد الوعود
-                  </Link>
-                )}
-
-                {/* R2 Asset Manager Tab (Superadmin only) */}
-                {role === 'superadmin' && (
-                  <Link
-                    href="/admin/assets"
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  >
-                    <CloudUpload className="h-5 w-5" />
-                    الملفات
-                  </Link>
-                )}
-
-                {/* Site Popup Tab (Superadmin only) */}
-                {role === 'superadmin' && (
-                  <Link
-                    href="/admin/site-popup"
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  >
-                    <Megaphone className="h-5 w-5" />
-                    النافذة المنبثقة
-                  </Link>
-                )}
-
-                {/* Site Navigation & Icons Catalog Tab (Superadmin only) */}
-                {role === 'superadmin' && (
-                  <Link
-                    href="/admin/navigation"
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  >
-                    <LayoutGrid className="h-5 w-5" />
-                    الأيقونات والقوائم
-                  </Link>
-                )}
-
-                {/* Agent API tokens. Any account holding a capability can mint
-                    tokens for itself, clamped to what it holds (a token is a
-                    ceiling, never a grant); superadmins manage everyone's. */}
-                {(role === 'superadmin' || perms.length > 0) && (
-                  <Link
-                    href="/admin/api-tokens"
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-colors duration-150 w-full whitespace-nowrap lg:whitespace-normal bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  >
-                    <KeyRound className="h-5 w-5" />
-                    رموز الوكلاء
-                  </Link>
-                )}
-
-                {/* Profile/Settings Tab (All users) */}
                 <button type="button" aria-pressed={activeTab === 'profile'} onClick={() => setActiveTab('profile')} className={navItemClass(activeTab === 'profile')}>
                   <Settings className="h-5 w-5" />
                   الحساب
@@ -767,10 +595,8 @@ export default function Dashboard({
               </nav>
             </aside>
 
-            {/* Tab Content Box */}
             <div className="flex-1 bg-card border border-border rounded-xl p-6 shadow-sm min-h-[480px]">
-              {/* SUBMISSIONS TAB */}
-              {activeTab === 'submissions' && role === 'user' && (
+              {activeTab === 'submissions' && showTransitSubmissions && (
                 <div>
                   <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
                     <TransitIcon className="h-6 w-6" />
@@ -799,7 +625,7 @@ export default function Dashboard({
                               )}
                             </div>
                             <p className="text-muted-foreground text-xs mt-1">
-                              المدينة: {draft.city?.name_ar ?? draft.city_id} · تاريخ التقديم: {new Date(draft.created_at).toLocaleDateString('ar-SY')}
+                              المدينة: {draft.city?.name_ar ?? draft.city_id} · تاريخ التقديم: {formatGregorianSyrianShort(draft.created_at)}
                             </p>
                             {draft.status === 'rejected' && draft.rejection_reason && (
                               <div className="mt-2 p-2 bg-destructive/10 border border-destructive/30 rounded text-destructive text-xs">
@@ -838,7 +664,6 @@ export default function Dashboard({
                 </div>
               )}
 
-              {/* POLLS TAB — single place for tierlist/poll management (replaces /admin/polls*) */}
               {activeTab === 'polls' && canManagePolls && (
                 <div>
                   <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
@@ -931,7 +756,7 @@ export default function Dashboard({
                                   >
                                     {isEditing ? <X className="h-4 w-4" /> : <Edit className="h-4 w-4" />}
                                   </button>
-                                  {poll.slug !== 'best-ministers' ? (
+                                  {!isCorePollSlug(poll.slug) ? (
                                     <button aria-label={canDeletePolls ? 'حذف' : 'يحتاج صلاحية polls.delete'}
                                       onClick={() => handleDeletePoll(poll.id, poll.slug)}
                                       className="p-1.5 bg-muted hover:bg-destructive/15 text-muted-foreground hover:text-destructive rounded border border-border hover:border-destructive/40 transition-colors"
@@ -954,7 +779,6 @@ export default function Dashboard({
                     </div>
                   )}
 
-                  {/* Inline editor (replaces /admin/polls/{id}/edit page) */}
                   {editingId && (
                     <Card className="mt-6 border-primary/30">
                       <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
@@ -1044,7 +868,6 @@ export default function Dashboard({
                     </Card>
                   )}
 
-                  {/* Inline create dialog (replaces /admin/polls/create page) */}
                   <Dialog open={createOpen} onOpenChange={(open) => {
                     setCreateOpen(open);
                     if (!open) {
@@ -1105,7 +928,6 @@ export default function Dashboard({
                 </div>
               )}
 
-              {/* PROFILE TAB */}
               {activeTab === 'profile' && (
                 <div>
                   <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
@@ -1161,7 +983,6 @@ export default function Dashboard({
                     </Button>
                   </form>
 
-                  {/* Scary Red Delete Section */}
                   <div className="bg-destructive/10 border border-destructive/40 rounded-xl p-6">
                     <h3 className="text-lg font-bold text-destructive mb-2">منطقة الخطر - حذف الحساب نهائياً</h3>
                     <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
@@ -1178,7 +999,6 @@ export default function Dashboard({
           </div>
         </div>
 
-        {/* Rejection Reason Modal */}
         <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
           <DialogContent dir="rtl" className="sm:max-w-md">
             <DialogHeader>
@@ -1202,7 +1022,6 @@ export default function Dashboard({
           </DialogContent>
         </Dialog>
 
-        {/* Delete Account Confirmation Modal */}
         <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
           <DialogContent dir="rtl" className="sm:max-w-md">
             <DialogHeader>

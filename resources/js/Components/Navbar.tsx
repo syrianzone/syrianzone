@@ -15,11 +15,10 @@ import {
 } from 'lucide-react';
 
 import { useAuth } from '@/Contexts/AuthContext';
-import { useMuslimNav } from '@/Pages/Muslim/_lib/nav';
-import { isDarkTheme } from '@/lib/theme';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { navigationMenuTriggerStyle } from '@/components/ui/navigation-menu';
+import { useAppShell } from '@/Lib/appShell';
+import { useColorScheme } from '@/Lib/theme';
+import { cn } from '@/Lib/utils';
+import { Button } from '@/Components/ui/button';
 import {
   Sheet,
   SheetClose,
@@ -27,16 +26,37 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from '@/components/ui/sheet';
-import { Separator } from '@/components/ui/separator';
+} from '@/Components/ui/sheet';
+import { Separator } from '@/Components/ui/separator';
 
 import UserNav from './UserNav';
 import AppearanceMenu from './AppearanceMenu';
 import { DesktopSearchTrigger, MobileMenuSearchSection } from './GlobalSearch';
 import { useSiteNavigation, type SiteLink } from '@/Lib/siteLinks';
+import { isActive, pathnameOf, routeFamily, routeSegment } from '@/Lib/routes';
+import { siteModule } from '@/Lib/siteModules';
 
 /** Columns for the desktop mega menu, matching the homepage's tile grid. */
 const MEGA_GRID = 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-9';
+
+/**
+ * The page links the navbar shows twice — in the "more" panel and in the mobile
+ * sheet. They are not site modules (`about: true` marks the two the transit
+ * variant of the panel leaves out).
+ */
+const FOOTER_LINKS = [
+  { href: '/about', label: 'عن المنصة', icon: Info, about: true },
+  { href: '/stats', label: 'الإحصائيات', icon: BarChart3, about: true },
+  { href: '/privacy', label: 'سياسة الخصوصية', icon: Shield, about: false },
+  { href: '/terms', label: 'الشروط والأحكام', icon: FileText, about: false },
+] as const;
+
+/**
+ * The desktop top-level trigger look, shared by the nav links and the "more"
+ * button.
+ */
+const NAV_TRIGGER_CLASS =
+  'group inline-flex h-9 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[state=open]:text-accent-foreground data-[state=open]:bg-accent/50 data-[state=open]:hover:bg-accent data-[state=open]:focus:bg-accent';
 
 
 /**
@@ -51,11 +71,11 @@ const NavTile = React.forwardRef<
     icon?: React.ComponentType<{ className?: string }>;
     image?: string;
     isFlag?: boolean;
-    isActive?: boolean;
+    current?: boolean;
     external?: boolean;
     onNavigate?: () => void;
   }
->(function NavTile({ href, text, icon: Icon, image, isFlag, isActive, external, onNavigate, ...rest }, ref) {
+>(function NavTile({ href, text, icon: Icon, image, isFlag, current, external, onNavigate, ...rest }, ref) {
   const className =
     'group flex h-full select-none flex-col items-center gap-2 rounded-lg px-1 py-2 text-center no-underline outline-none focus-visible:ring-2 focus-visible:ring-ring';
   const body = (
@@ -80,14 +100,14 @@ const NavTile = React.forwardRef<
         <Icon
           className={cn(
             'h-12 w-12 shrink-0 transition-all group-hover:scale-110',
-            isActive ? 'text-primary' : 'text-foreground group-hover:text-primary',
+            current ? 'text-primary' : 'text-foreground group-hover:text-primary',
           )}
         />
       ) : null}
       <span
         className={cn(
           'line-clamp-2 text-xs font-medium leading-tight transition-colors',
-          isActive ? 'text-primary' : 'text-foreground group-hover:text-primary',
+          current ? 'text-primary' : 'text-foreground group-hover:text-primary',
         )}
       >
         {text}
@@ -96,13 +116,28 @@ const NavTile = React.forwardRef<
   );
   if (external) {
     return (
-      <a ref={ref} href={href} target="_blank" rel="noreferrer" className={className} {...rest}>
+      <a
+        ref={ref}
+        href={href}
+        target="_blank"
+        rel="noreferrer"
+        aria-current={current ? 'page' : undefined}
+        className={className}
+        {...rest}
+      >
         {body}
       </a>
     );
   }
   return (
-    <Link ref={ref} href={href} onClick={onNavigate} className={className} {...rest}>
+    <Link
+      ref={ref}
+      href={href}
+      onClick={onNavigate}
+      aria-current={current ? 'page' : undefined}
+      className={className}
+      {...rest}
+    >
       {body}
     </Link>
   );
@@ -121,7 +156,7 @@ function TileGrid({ links, pathname, onNavigate, className }: { links: SiteLink[
             image={image}
             isFlag={isFlag}
             external={external}
-            isActive={pathname === href}
+            current={isActive(href, pathname)}
             onNavigate={onNavigate}
           />
         </li>
@@ -161,29 +196,17 @@ function MorePanel({
 
         <Separator className="my-4" />
         <div className="flex flex-wrap justify-center gap-4 py-1 text-xs text-muted-foreground">
-          {showAboutLinks && (
-            <>
-              <Link href="/about" className="flex items-center gap-1 transition-colors hover:text-primary">
-                <Info className="h-3.5 w-3.5" />
-                عن المنصة
-              </Link>
-              <span>•</span>
-              <Link href="/stats" className="flex items-center gap-1 transition-colors hover:text-primary">
-                <BarChart3 className="h-3.5 w-3.5" />
-                الإحصائيات
-              </Link>
-              <span>•</span>
-            </>
+          {FOOTER_LINKS.filter((link) => showAboutLinks || !link.about).map(
+            (link, index) => (
+              <React.Fragment key={link.href}>
+                {index > 0 && <span>•</span>}
+                <Link href={link.href} className="flex items-center gap-1 transition-colors hover:text-primary">
+                  <link.icon className="h-3.5 w-3.5" />
+                  {link.label}
+                </Link>
+              </React.Fragment>
+            ),
           )}
-          <Link href="/privacy" className="flex items-center gap-1 transition-colors hover:text-primary">
-            <Shield className="h-3.5 w-3.5" />
-            سياسة الخصوصية
-          </Link>
-          <span>•</span>
-          <Link href="/terms" className="flex items-center gap-1 transition-colors hover:text-primary">
-            <FileText className="h-3.5 w-3.5" />
-            الشروط والأحكام
-          </Link>
         </div>
       </div>
     </div>
@@ -198,7 +221,6 @@ function NavTopLink({
   image,
   external,
   active,
-  gold,
 }: {
   href: string;
   label: string;
@@ -206,10 +228,9 @@ function NavTopLink({
   image?: string;
   external?: boolean;
   active?: boolean;
-  gold?: boolean;
 }) {
   const cls = cn(
-    navigationMenuTriggerStyle(),
+    NAV_TRIGGER_CLASS,
     'bg-transparent hover:bg-accent/50',
     active && 'text-primary bg-accent/50',
   );
@@ -218,7 +239,7 @@ function NavTopLink({
       {image ? (
         <img src={image} alt="" className="h-4 w-4 me-2 object-contain" />
       ) : Icon ? (
-        <Icon className={cn('h-4 w-4 me-2', gold && 'text-[var(--gold)]')} />
+        <Icon className="h-4 w-4 me-2" />
       ) : null}
       {label}
     </>
@@ -226,14 +247,14 @@ function NavTopLink({
 
   if (external) {
     return (
-      <a href={href} target="_blank" rel="noreferrer" className={cls}>
+      <a href={href} target="_blank" rel="noreferrer" aria-current={active ? 'page' : undefined} className={cls}>
         {content}
       </a>
     );
   }
 
   return (
-    <Link href={href} className={cls}>
+    <Link href={href} aria-current={active ? 'page' : undefined} className={cls}>
       {content}
     </Link>
   );
@@ -255,7 +276,7 @@ const MoreTrigger = React.forwardRef<
       aria-expanded={open}
       aria-controls="sz-more-panel"
       className={cn(
-        navigationMenuTriggerStyle(),
+        NAV_TRIGGER_CLASS,
         'bg-transparent hover:bg-accent/50',
         open && 'text-accent-foreground bg-accent/50',
       )}
@@ -269,12 +290,17 @@ const MoreTrigger = React.forwardRef<
 
 export default function Navbar({ sticky = true }: { sticky?: boolean }) {
   const { url } = usePage();
-  const pathname = url.split('?')[0];
-  const isTransitPage = pathname.startsWith('/transit');
-  const transitCityId = pathname.match(/^\/transit\/city\/([^/]+)/)?.[1] ?? null;
-  const studioHref = transitCityId ? `/transit/studio?city=${transitCityId}` : '/transit/studio';
+  const pathname = pathnameOf(url);
+  const isTransitPage = routeFamily(pathname) === 'transit';
+  // The transit section keeps its own two links in the top bar; their paths are
+  // the catalogue's, so renaming the route is one edit.
+  const transitModule = siteModule('transit');
+  const transitHref = transitModule?.href ?? '/transit';
+  const studioPath = transitModule?.subCategories.find((sub) => sub.id === 'transit_studio')?.href ?? '/transit/studio';
+  const transitCityId = routeSegment(pathname, `${transitHref}/city`);
+  const studioHref = transitCityId ? `${studioPath}?city=${transitCityId}` : studioPath;
   const [isOpen, setIsOpen] = React.useState(false);
-  const [theme, setTheme] = React.useState('dark');
+  const isDark = useColorScheme() === 'dark';
   const { user } = useAuth();
   const { navbarLinks, navbarTopLinks, navbarMoreLinks } = useSiteNavigation();
 
@@ -316,38 +342,45 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
     setMoreOpen(false);
   }, [pathname]);
 
-  const isDark = isDarkTheme(theme, false);
-
-  React.useEffect(() => {
-    const savedTheme = document.documentElement.getAttribute('data-theme') || 'dark';
-    setTheme(savedTheme);
-
-    const observer = new MutationObserver(() => {
-      const newTheme = document.documentElement.getAttribute('data-theme') || 'dark';
-      setTheme(newTheme);
-    });
-
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-    return () => observer.disconnect();
-  }, []);
-
   // Navbar hidden on homepage (Startpage) on desktop; on mobile it stays fixed at the top
   const isHomepage = pathname === '/';
 
-  // Quran reader (mobile): bookmarks shortcut opens the saved-ayahs modal.
-  // The reader's own top row carries back + bookmarks on PC.
-  const setBookmarksOpen = useMuslimNav((s) => s.setBookmarksOpen);
-  const setRoznamaSettingsOpen = useMuslimNav((s) => s.setRoznamaSettingsOpen);
-  const setMuslimPrayerSettingsOpen = useMuslimNav((s) => s.setMuslimPrayerSettingsOpen);
-  const setHomeSettingsOpen = useMuslimNav((s) => s.setHomeSettingsOpen);
-  const showQuranBookmarks = pathname === '/muslim/quran';
-  const quranFocus = useMuslimNav((s) => s.quranFocus);
-  const showRoznamaSettings = pathname === '/roznama';
-  const showMuslimPrayerSettings = pathname === '/muslim/prayer';
+  // The buttons the navbar carries for one page's own dialog. The page owns the
+  // dialog; the shell only knows which route shows which trigger.
+  const setBookmarksOpen = useAppShell((s) => s.setBookmarksOpen);
+  const openPageDialog = useAppShell((s) => s.openPageDialog);
+  const quranFocus = useAppShell((s) => s.quranFocus);
+  const pageActions = [
+    // Quran reader (mobile): bookmark access. The reader's own top row
+    // carries back + bookmarks on PC.
+    {
+      href: '/muslim/quran',
+      label: 'علامات الآيات',
+      icon: Bookmark,
+      className: 'lg:hidden h-9 w-9 sm:h-10 sm:w-10',
+      open: () => setBookmarksOpen(true),
+    },
+    {
+      href: '/roznama',
+      label: 'إعدادات الروزنامة',
+      icon: Settings,
+      className: 'h-9 w-9 sm:h-10 sm:w-10',
+      open: () => openPageDialog('roznama-settings'),
+    },
+    {
+      href: '/muslim/prayer',
+      label: 'إعدادات المواقيت',
+      icon: Settings,
+      className: 'h-9 w-9 sm:h-10 sm:w-10',
+      open: () => openPageDialog('muslim-prayer-settings'),
+    },
+  ].filter((action) => isActive(action.href, pathname));
 
   return (
-    quranFocus && pathname === '/muslim/quran' ? null :
+    quranFocus && isActive('/muslim/quran', pathname) ? null :
     <header className={`${sticky ? 'sticky top-0' : 'relative'} z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ${isHomepage ? 'lg:hidden' : ''}`}>
+      {/* This row plus the border of the header is `--sz-navbar-h`
+          (resources/css/app.css), which the full-viewport pages subtract. */}
       <div className="container relative flex h-16 max-w-7xl mx-auto items-center px-4 md:px-8 lg:px-6 xl:px-8 justify-between lg:justify-normal" dir="rtl">
         {/* Mobile Menu / Settings */}
         <div className="flex items-center lg:hidden">
@@ -356,7 +389,7 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
               variant="ghost"
               size="icon"
               className="h-9 w-9 sm:h-10 sm:w-10"
-              onClick={() => setHomeSettingsOpen(true)}
+              onClick={() => openPageDialog('home-settings')}
               title="الإعدادات"
             >
               <Settings className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -410,11 +443,11 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
                   {isTransitPage && (
                     <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border/60 bg-muted/20 px-3 py-2">
                       <Link
-                        href="/transit"
+                        href={transitHref}
                         onClick={() => setIsOpen(false)}
                         className={cn(
                           "flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary",
-                          pathname === '/transit' ? "text-primary" : "text-muted-foreground"
+                          isActive(transitHref, pathname) ? "text-primary" : "text-muted-foreground"
                         )}
                       >
                         <Bus className="h-4 w-4" />
@@ -426,10 +459,10 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
                         onClick={() => setIsOpen(false)}
                         className={cn(
                           "flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary",
-                          pathname === '/transit/studio' ? "text-primary" : "text-muted-foreground"
+                          isActive(studioPath, pathname) ? "text-primary" : "text-muted-foreground"
                         )}
                       >
-                        <Sparkles className="h-4 w-4 text-[var(--gold)]" />
+                        <Sparkles className="h-4 w-4 text-primary" />
                         إضافة خط / الاستوديو
                       </Link>
                     </div>
@@ -446,38 +479,17 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
                 <div>
                   <Separator className="my-2" />
                   <div className="grid grid-cols-2 gap-x-4 gap-y-3 px-2 pt-2 pb-2 text-xs text-muted-foreground">
-                    <Link
-                      href="/about"
-                      onClick={() => setIsOpen(false)}
-                      className="flex items-center gap-1.5 hover:text-primary transition-colors"
-                    >
-                      <Info className="h-3.5 w-3.5" />
-                      عن المنصة
-                    </Link>
-                    <Link
-                      href="/stats"
-                      onClick={() => setIsOpen(false)}
-                      className="flex items-center gap-1.5 hover:text-primary transition-colors"
-                    >
-                      <BarChart3 className="h-3.5 w-3.5" />
-                      الإحصائيات
-                    </Link>
-                    <Link
-                      href="/privacy"
-                      onClick={() => setIsOpen(false)}
-                      className="flex items-center gap-1.5 hover:text-primary transition-colors"
-                    >
-                      <Shield className="h-3.5 w-3.5" />
-                      سياسة الخصوصية
-                    </Link>
-                    <Link
-                      href="/terms"
-                      onClick={() => setIsOpen(false)}
-                      className="flex items-center gap-1.5 hover:text-primary transition-colors"
-                    >
-                      <FileText className="h-3.5 w-3.5" />
-                      الشروط والأحكام
-                    </Link>
+                    {FOOTER_LINKS.map((link) => (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        onClick={() => setIsOpen(false)}
+                        className="flex items-center gap-1.5 hover:text-primary transition-colors"
+                      >
+                        <link.icon className="h-3.5 w-3.5" />
+                        {link.label}
+                      </Link>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -501,8 +513,8 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
         <nav aria-label="التنقل الرئيسي" className="hidden lg:flex items-center gap-1" dir="rtl">
           {isTransitPage ? (
             <>
-              <NavTopLink href="/transit" icon={Bus} label="الرئيسية" active={pathname === '/transit'} />
-              <NavTopLink href={studioHref} icon={Sparkles} label="إضافة خط / الاستوديو" active={pathname === '/transit/studio'} gold />
+              <NavTopLink href={transitHref} icon={Bus} label="الرئيسية" active={isActive(transitHref, pathname)} />
+              <NavTopLink href={studioHref} icon={Sparkles} label="إضافة خط / الاستوديو" active={isActive(studioPath, pathname)} />
               <MoreTrigger ref={moreBtnRef} label="أقسام الموقع" open={moreOpen} onToggle={() => setMoreOpen((o) => !o)} />
             </>
           ) : (
@@ -515,7 +527,7 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
                   image={image}
                   external={external}
                   label={text}
-                  active={pathname === href}
+                  active={isActive(href, pathname)}
                 />
               ))}
               {navbarMoreLinks.length > 0 && (
@@ -542,11 +554,11 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
                 header={
                   <div className="space-y-1 border-b border-border p-3">
                     <Link
-                      href="/transit"
+                      href={transitHref}
                       onClick={() => setMoreOpen(false)}
                       className={cn(
                         'flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent',
-                        pathname === '/transit' ? 'text-primary' : 'text-muted-foreground'
+                        isActive(transitHref, pathname) ? 'text-primary' : 'text-muted-foreground'
                       )}
                     >
                       <Bus className="h-4 w-4" />
@@ -557,10 +569,10 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
                       onClick={() => setMoreOpen(false)}
                       className={cn(
                         'flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent',
-                        pathname === '/transit/studio' ? 'text-primary' : 'text-muted-foreground'
+                        isActive(studioPath, pathname) ? 'text-primary' : 'text-muted-foreground'
                       )}
                     >
-                      <Sparkles className="h-4 w-4 text-[var(--gold)]" />
+                      <Sparkles className="h-4 w-4 text-primary" />
                       إضافة خط / الاستوديو
                     </Link>
                     <p className="px-3 pt-1 text-xs font-bold text-muted-foreground/60">أقسام الموقع الأخرى</p>
@@ -577,39 +589,19 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
         <div className="flex flex-1 items-center justify-end gap-1.5 sm:gap-2">
           <DesktopSearchTrigger />
           <AppearanceMenu />
-          {showQuranBookmarks && (
-            <Button aria-label="علامات الآيات"
+          {pageActions.map((action) => (
+            <Button
+              key={action.href}
+              aria-label={action.label}
               variant="ghost"
               size="icon"
-              className="lg:hidden h-9 w-9 sm:h-10 sm:w-10"
-              onClick={() => setBookmarksOpen(true)}
-              title="علامات الآيات"
+              className={action.className}
+              onClick={action.open}
+              title={action.label}
             >
-              <Bookmark className="h-5 w-5" />
+              <action.icon className="h-5 w-5" />
             </Button>
-          )}
-          {showRoznamaSettings && (
-            <Button aria-label="إعدادات الروزنامة"
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 sm:h-10 sm:w-10"
-              onClick={() => setRoznamaSettingsOpen(true)}
-              title="إعدادات الروزنامة"
-            >
-              <Settings className="h-5 w-5" />
-            </Button>
-          )}
-          {showMuslimPrayerSettings && (
-            <Button aria-label="إعدادات المواقيت"
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 sm:h-10 sm:w-10"
-              onClick={() => setMuslimPrayerSettingsOpen(true)}
-              title="إعدادات المواقيت"
-            >
-              <Settings className="h-5 w-5" />
-            </Button>
-          )}
+          ))}
           <div className="w-px h-6 bg-border shrink-0" />
           {user ? (
             <UserNav />

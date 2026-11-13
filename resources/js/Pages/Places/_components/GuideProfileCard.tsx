@@ -1,11 +1,10 @@
 import { MapPin } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import type { Guide } from '../_lib/discovery';
+import { Avatar, AvatarFallback, AvatarImage } from '@/Components/ui/avatar';
+import { Button } from '@/Components/ui/button';
+import { Dialog, DialogContent, DialogTitle } from '@/Components/ui/dialog';
+import type { Guide } from '@/Domain/places/types';
 import { LevelBadge, RANK_NAMES, rankName } from './LevelBadge';
 
-// next threshold above the guide's points, or null at the top rank
 function nextRank(points: number): { level: number; points: number } | null {
   const thresholds: [number, number][] = [
     [2, 15], [3, 75], [4, 250], [5, 500], [6, 1500],

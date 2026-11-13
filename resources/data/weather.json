@@ -1,0 +1,40 @@
+{
+  "codes": [
+    { "code": 0, "en": "Clear sky", "label": "سماء صافية", "short": "صافية" },
+    { "code": 1, "en": "Mainly clear", "label": "صافية غالباً", "short": "صافية غالباً" },
+    { "code": 2, "en": "Partly cloudy", "label": "غيوم متفرقة", "short": "غيوم متفرقة" },
+    { "code": 3, "en": "Overcast", "label": "غائم", "short": "غائم" },
+    { "code": 45, "en": "Fog", "label": "ضباب كثيف", "short": "ضباب" },
+    { "code": 48, "en": "Depositing rime fog", "label": "ضباب متجمد", "short": "ضباب" },
+    { "code": 51, "en": "Light drizzle", "label": "رذاذ", "short": "رذاذ" },
+    { "code": 53, "en": "Moderate drizzle", "label": "رذاذ", "short": "رذاذ" },
+    { "code": 55, "en": "Dense drizzle", "label": "رذاذ كثيف", "short": "رذاذ كثيف" },
+    { "code": 61, "en": "Slight rain", "label": "مطر خفيف", "short": "مطر خفيف" },
+    { "code": 63, "en": "Moderate rain", "label": "مطر متوسط", "short": "مطر" },
+    { "code": 65, "en": "Heavy rain", "label": "مطر غزير", "short": "مطر غزير" },
+    { "code": 71, "en": "Slight snow fall", "label": "ثلج خفيف", "short": "ثلج خفيف" },
+    { "code": 73, "en": "Moderate snow fall", "label": "ثلج", "short": "ثلج" },
+    { "code": 75, "en": "Heavy snow fall", "label": "ثلج كثيف", "short": "ثلج كثيف" },
+    { "code": 80, "en": "Slight rain showers", "label": "زخات", "short": "زخات" },
+    { "code": 81, "en": "Moderate rain showers", "label": "زخات", "short": "زخات" },
+    { "code": 82, "en": "Violent rain showers", "label": "زخات غزيرة", "short": "زخات غزيرة" },
+    { "code": 95, "en": "Thunderstorm", "label": "عاصفة رعدية", "short": "عاصفة رعدية" },
+    { "code": 96, "en": "Thunderstorm with slight hail", "label": "عاصفة رعدية", "short": "عاصفة رعدية" },
+    { "code": 99, "en": "Thunderstorm with heavy hail", "label": "عاصفة رعدية", "short": "عاصفة رعدية" }
+  ],
+  "descriptions": [
+    { "en": "few clouds", "label": "غيوم قليلة" },
+    { "en": "scattered clouds", "label": "غيوم متفرقة" },
+    { "en": "broken clouds", "label": "غيوم جزئية" },
+    { "en": "shower rain", "label": "مطر غزير" },
+    { "en": "rain", "label": "ممطر" },
+    { "en": "snow", "label": "مثلج" },
+    { "en": "mist", "label": "ضباب" },
+    { "en": "overcast clouds", "label": "غيوم ملبدة" },
+    { "en": "light rain", "label": "مطر خفيف" },
+    { "en": "heavy intensity rain", "label": "مطر غزير" },
+    { "en": "haze", "label": "ضباب خفيف" },
+    { "en": "dust", "label": "غبار" },
+    { "en": "sand", "label": "عواصف رملية" }
+  ]
+}

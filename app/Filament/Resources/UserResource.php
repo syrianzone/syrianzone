@@ -34,58 +34,18 @@ class UserResource extends Resource
     protected static ?string $pluralModelLabel = 'المستخدمون';
 
     /**
-     * Assignable roles and their Arabic labels.
-     *
-     * Kept as a method rather than an inline array so a test can assert it holds
-     * exactly the roles User still gives meaning to. It once had to stay in step
-     * with a role-prefix table on the model, and a role that existed there but was
-     * missing here became unassignable — which is how phonebook_admin went missing
-     * from the form. That table is gone and this list is now the whole vocabulary.
+     * Assignable roles and their Arabic labels. Kept as a method rather than an
+     * inline array so a test can assert it holds exactly the roles User still
+     * gives meaning to.
      *
      * @return array<string, string>
      */
     public static function roleOptions(): array
     {
-        // The whole vocabulary, and it is two values.
-        //
-        // Phase B dropped the six per-module roles, which implied a fixed bundle
-        // of capabilities and made a role inseparable from that bundle. Phase D
-        // deleted the table they were resolved through. Phase G dropped `admin`,
-        // the catch-all that short-circuited every permission check. What is left
-        // distinguishes unbounded authority from a community member; everything
-        // in between is a capability ticked below.
         return [
             'superadmin' => 'مدير عام (وصول كامل غير مقيد)',
             'user' => 'مستخدم عادي',
         ];
-    }
-
-    /**
-     * Permission capabilities grouped by module. Keys are the capability ids
-     * stored in users.permissions; labels are shown inside each project group
-     * (the module name is the group heading, so it is not repeated here).
-     *
-     * The list itself lives in PermissionCatalogue, which the agent token
-     * issuer and the MCP authorizer also read. Keeping it here as a thin
-     * delegate preserves the existing call sites.
-     *
-     * @return array<string, array<string, string>>
-     */
-    public static function permissionGroups(): array
-    {
-        return PermissionCatalogue::groups();
-    }
-
-    /**
-     * Display metadata per module group: heading label and the project icon
-     * (see resources/views/components/project-icon.blade.php, ported from the
-     * homepage ProjectIcons.tsx).
-     *
-     * @return array<string, array{label: string, icon: string}>
-     */
-    public static function permissionGroupMeta(): array
-    {
-        return PermissionCatalogue::groupMeta();
     }
 
     /**
@@ -100,7 +60,7 @@ class UserResource extends Resource
     {
         $permissions = is_array($data['permissions'] ?? null) ? $data['permissions'] : [];
 
-        foreach (static::permissionGroups() as $group => $options) {
+        foreach (PermissionCatalogue::groups() as $group => $options) {
             $data["perm_{$group}"] = array_values(array_intersect(array_keys($options), $permissions));
         }
 
@@ -122,12 +82,12 @@ class UserResource extends Resource
     public static function mergePermissionFormData(array $data, array $existingScopes = []): array
     {
         $known = [];
-        foreach (static::permissionGroups() as $options) {
+        foreach (PermissionCatalogue::groups() as $options) {
             $known = array_merge($known, array_keys($options));
         }
 
         $selected = [];
-        foreach (static::permissionGroups() as $group => $options) {
+        foreach (PermissionCatalogue::groups() as $group => $options) {
             $groupState = $data["perm_{$group}"] ?? [];
             unset($data["perm_{$group}"]);
 
@@ -199,15 +159,13 @@ class UserResource extends Resource
                 Section::make('الصلاحيات التفصيلية')
                     ->description('منح صلاحيات مخصصة لكل وحدة للمستخدمين من غير المدير العام')
                     ->schema(
-                        collect(static::permissionGroupMeta())
+                        collect(PermissionCatalogue::groupMeta())
                             ->map(function (array $meta, string $group): Section {
                                 $children = [
                                     Forms\Components\CheckboxList::make("perm_{$group}")
                                         ->hiddenLabel()
-                                        ->options(static::permissionGroups()[$group])
+                                        ->options(PermissionCatalogue::groups()[$group])
                                         ->columns(2)
-                                        // Only the transit group drives the reactive
-                                        // governorate-scope selector below.
                                         ->live($group === 'transit'),
                                 ];
 
@@ -248,7 +206,6 @@ class UserResource extends Resource
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'superadmin' => 'danger',
-                        'admin' => 'warning',
                         'user' => 'info',
                         default => 'gray',
                     })
@@ -289,7 +246,6 @@ class UserResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
         ];
     }
 

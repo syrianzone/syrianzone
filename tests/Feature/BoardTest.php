@@ -3,11 +3,6 @@
 use App\Models\Board;
 use App\Models\User;
 
-// UserFactory defaults role to admin; regular users must be explicit.
-function boardUser(array $attrs = []): User {
-  return User::factory()->create(array_merge(['role' => 'user'], $attrs));
-}
-
 function boardDoc(array $widgets = [], array $overrides = []): array {
   return array_merge([
     'v' => 1,
@@ -31,14 +26,14 @@ test('the board page is public', function () {
 });
 
 test('a user with no board reads a null document', function () {
-  $this->actingAs(boardUser())->getJson('/api/v1/board')
+  $this->actingAs(User::factory()->create())->getJson('/api/v1/board')
     ->assertOk()
     ->assertJsonPath('document', null)
     ->assertJsonPath('updated_at', null);
 });
 
 test('put creates then updates a single row', function () {
-  $user = boardUser();
+  $user = User::factory()->create();
 
   $this->actingAs($user)->putJson('/api/v1/board', ['document' => boardDoc()])->assertOk();
   $this->assertDatabaseCount('boards', 1);
@@ -56,7 +51,7 @@ test('put creates then updates a single row', function () {
 // Forward compatibility: a widget added on a newer client must survive a
 // round-trip through an older one instead of being silently dropped.
 test('an unknown widget id round-trips verbatim', function () {
-  $user = boardUser();
+  $user = User::factory()->create();
 
   $this->actingAs($user)->putJson('/api/v1/board', ['document' => boardDoc([
     ['i' => 'w_future', 'd' => 'not-a-real-widget', 'w' => 6, 'h' => 2, 'c' => ['weird' => true]],
@@ -68,15 +63,15 @@ test('an unknown widget id round-trips verbatim', function () {
 });
 
 test('boards are scoped to their owner', function () {
-  $mine = boardUser();
-  $theirs = boardUser();
+  $mine = User::factory()->create();
+  $theirs = User::factory()->create();
   Board::factory()->create(['user_id' => $theirs->id]);
 
   $this->actingAs($mine)->getJson('/api/v1/board')->assertJsonPath('document', null);
 });
 
 test('rejects a document over the size cap', function () {
-  $this->actingAs(boardUser())->putJson('/api/v1/board', ['document' => boardDoc([
+  $this->actingAs(User::factory()->create())->putJson('/api/v1/board', ['document' => boardDoc([
     ['i' => 'w_big', 'd' => 'notes', 'w' => 12, 'h' => 2, 'c' => ['text' => str_repeat('ا', 70000)]],
   ])])->assertStatus(422)->assertJsonPath('message', 'حجم اللوحة كبير جداً');
 
@@ -84,7 +79,7 @@ test('rejects a document over the size cap', function () {
 });
 
 test('rejects malformed documents', function () {
-  $user = boardUser();
+  $user = User::factory()->create();
 
   $cases = [
     'missing version' => boardDoc([], ['v' => null]),
@@ -115,7 +110,7 @@ test('rejects malformed documents', function () {
 });
 
 test('deleting a user deletes their board', function () {
-  $user = boardUser();
+  $user = User::factory()->create();
   Board::factory()->create(['user_id' => $user->id]);
 
   $user->forceDelete();

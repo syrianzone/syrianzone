@@ -1,15 +1,16 @@
 import { Users } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/Components/ui/avatar';
-import { discovery } from '@/Pages/Places/_lib/discovery';
 import { WidgetShell } from '../../_components/WidgetShell';
 import { useWidgetQuery } from '../../_lib/query';
+import { sources } from '../../_lib/sources';
 import type { WidgetProps } from '../../_lib/types';
 import { guidesWidget, type GuidesConfig } from './index';
 
-// Reuses the Places discovery client rather than restating the endpoint.
+// Reuses the Places discovery client (through the board's source table) rather
+// than restating the endpoint.
 export default function GuidesView({ config }: WidgetProps<GuidesConfig>) {
   const sort = config.sort ?? 'submissions';
-  const query = useWidgetQuery(guidesWidget, sort, () => discovery.guides(sort));
+  const query = useWidgetQuery(guidesWidget, sort, () => sources.guides(sort));
   const guides = query.data?.guides ?? [];
 
   return (

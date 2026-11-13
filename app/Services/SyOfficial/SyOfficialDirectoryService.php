@@ -132,7 +132,7 @@ class SyOfficialDirectoryService
 
     /**
      * @param  array<string, mixed>  $attributes
-     * @param  array<int, string>  $socials
+     * @param  array<string, string>  $socials  Platform key => URL.
      */
     public function createEntity(array $attributes, array $socials = [], ?UploadedFile $image = null): OfficialEntity
     {
@@ -148,7 +148,7 @@ class SyOfficialDirectoryService
         $entity->name_ar = $attributes['name_ar'];
         $entity->description = $attributes['description'] ?? null;
         $entity->description_ar = $attributes['description_ar'] ?? null;
-        $entity->socials = $this->filterUrls($socials);
+        $entity->socials = $this->filterSocialMap($socials);
         $entity->is_active = $attributes['is_active'] ?? true;
         $entity->order_column = (int) (OfficialEntity::where('category_id', $categoryId)->max('order_column') ?? 0) + 1;
         $entity->image = $image !== null
@@ -172,7 +172,7 @@ class SyOfficialDirectoryService
 
     /**
      * @param  array<string, mixed>  $attributes
-     * @param  array<int, string>|null  $socials  Null leaves the existing list alone.
+     * @param  array<string, string>|null  $socials  Null leaves the existing map alone.
      */
     public function updateEntity(string $id, array $attributes, ?array $socials = null, ?UploadedFile $image = null): OfficialEntity
     {
@@ -192,7 +192,7 @@ class SyOfficialDirectoryService
             $entity->description_ar = $attributes['description_ar'];
         }
         if ($socials !== null) {
-            $entity->socials = $this->filterUrls($socials);
+            $entity->socials = $this->filterSocialMap($socials);
         }
         if ($image !== null) {
             // The previous file is intentionally left in place: the column only
@@ -270,36 +270,56 @@ class SyOfficialDirectoryService
     }
 
     /**
-     * Keep only http(s) links, and reindex.
-     *
-     * Two deliberate differences from the controller code this replaced:
-     *
-     *  - It used array_filter() without array_values(), so dropping a blank or
-     *    non-http entry left gaps in the key sequence. That column is cast to
-     *    'array', and a JSON object like {"1":"https://..."} decodes to a PHP
-     *    array with non-sequential keys, which breaks a plain .map() in the
-     *    Inertia components. Reindexing keeps it a real list.
-     *  - It rejected on scheme but not on emptiness after trim, so a value of
-     *    exactly "http://" survived. Callers validate; this is the backstop.
-     *
-     * @param  array<int, mixed>  $urls
-     * @return array<int, string>
+     * The backstop for a URL that reaches a column: callers validate, but an
+     * empty string, a bare "http://" or a `javascript:` URL must never be
+     * stored.
      */
-    protected function filterUrls(array $urls): array
+    private static function isHttpUrl(mixed $url): bool
     {
-        return array_values(array_filter(
-            $urls,
-            static function ($url): bool {
-                if (! is_string($url)) {
-                    return false;
-                }
+        if (! is_string($url)) {
+            return false;
+        }
 
-                $url = trim($url);
+        $url = trim($url);
 
-                return $url !== ''
-                    && (str_starts_with($url, 'http://') || str_starts_with($url, 'https://'));
-            },
-        ));
+        return $url !== ''
+            && (str_starts_with($url, 'http://') || str_starts_with($url, 'https://'));
+    }
+
+    /**
+     * The filter for `official_entities.socials`, which is an object keyed by
+     * platform (`{"facebook": "https://…"}`) — the readers resolve the icon and
+     * the label from that key, so the keys are the data, not decoration. Empty
+     * values and non-http links drop out; the platform keys stay.
+     *
+     * A list is refused rather than stored: it cannot say which platform each
+     * link belongs to, and the next edit of that entity (whose form reads the
+     * map by key) would submit an empty map and lose every link.
+     *
+     * This is deliberately *not* the list helper GovAppService keeps for
+     * `gov_apps.links`, where a list is the right shape: copying that one here
+     * is what flattened the column in the first place.
+     *
+     * @param  array<array-key, mixed>  $socials
+     * @return array<string, string>
+     */
+    protected function filterSocialMap(array $socials): array
+    {
+        if ($socials !== [] && array_is_list($socials)) {
+            throw DirectoryActionException::socialsNotKeyed();
+        }
+
+        $filtered = [];
+
+        foreach ($socials as $platform => $url) {
+            if (! is_string($platform) || $platform === '' || ! self::isHttpUrl($url)) {
+                continue;
+            }
+
+            $filtered[$platform] = trim((string) $url);
+        }
+
+        return $filtered;
     }
 
     /**

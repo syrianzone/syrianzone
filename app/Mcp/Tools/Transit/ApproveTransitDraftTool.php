@@ -5,7 +5,9 @@ namespace App\Mcp\Tools\Transit;
 use App\Models\Route;
 use App\Services\Transit\TransitAdminService;
 use App\Services\Transit\TransitPresenter;
+use App\Services\Transit\TransitRules;
 use App\Support\Agents\AgentContext;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -33,7 +35,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
 #[IsIdempotent]
 class ApproveTransitDraftTool extends TransitTool
 {
-    protected array $permissions = ['transit.approve'];
+    protected array $permissions = [PermissionCatalogue::TRANSIT_APPROVE];
 
     public function schema(JsonSchema $schema): array
     {
@@ -44,7 +46,8 @@ class ApproveTransitDraftTool extends TransitTool
 
             'color_index' => $schema->integer()
                 ->description('Colour to publish with. Optional — omit to keep the colour the contributor chose.')
-                ->min(0),
+                ->min(0)
+                ->max(TransitRules::colorIndexMax()),
         ];
     }
 
@@ -52,7 +55,7 @@ class ApproveTransitDraftTool extends TransitTool
     {
         $validated = $request->validate([
             'draft_id' => 'required|integer|min:1',
-            'color_index' => 'nullable|integer|min:0',
+            'color_index' => TransitRules::colorIndex(),
         ]);
 
         return $this->attempt(function () use ($validated, $context) {
@@ -62,13 +65,13 @@ class ApproveTransitDraftTool extends TransitTool
             // Scope is checked against the governorate the draft actually sits
             // in, not against anything the caller supplied — there is no city
             // argument to trust here.
-            $this->guardCity($context, 'transit.approve', $draft->city_id);
+            $this->guardCity($context, PermissionCatalogue::TRANSIT_APPROVE, $draft->city_id);
 
             // A linked edit touches a second governorate's route, so that one is
             // checked too. Same rule the dashboard applies.
             if ($draft->route_id !== null) {
                 $linkedCityId = Route::whereKey($draft->route_id)->value('city_id');
-                $this->guardCity($context, 'transit.approve', $linkedCityId);
+                $this->guardCity($context, PermissionCatalogue::TRANSIT_APPROVE, $linkedCityId);
             }
 
             $route = $service->approveDraft(

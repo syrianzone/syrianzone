@@ -1,55 +1,37 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, ExternalLink } from 'lucide-react';
 import { usePage } from '@inertiajs/react';
-import { Button } from '@/components/ui/button';
-
-export interface SitePopup {
-    enabled: boolean;
-    title: string;
-    description: string;
-    buttonText: string;
-    dismissText: string;
-    link: string;
-    version: number;
-}
-
-const FALLBACK_POPUP: SitePopup = {
-    enabled: true,
-    title: "صوتك بيعمل فرق!",
-    description: "ساهم في فك الحظر عن الخدمات التقنية في سوريا. صوّت للخدمات الأكثر أهمية بالنسبة لك لتكون من أولويات العمل.",
-    buttonText: "صوّت الآن",
-    dismissText: "لاحقاً",
-    link: "https://unblocksyria.com",
-    version: 1,
-};
+import { Button } from '@/Components/ui/button';
+import { useConsentBannerPending } from '@/Lib/analyticsConsent';
+import { SITE_POPUP_DEFAULTS, type SitePopup } from '@/Domain/settings/popup';
 
 const UnblockSyriaNotification = () => {
     const { props } = usePage<{ sitePopup?: SitePopup }>();
-    const popup: SitePopup = { ...FALLBACK_POPUP, ...(props.sitePopup ?? {}) };
+    const popup: SitePopup = { ...SITE_POPUP_DEFAULTS, ...(props.sitePopup ?? {}) };
 
     const [isVisible, setIsVisible] = useState(false);
     const [isDismissing, setIsDismissing] = useState(false);
     const [hasMounted, setHasMounted] = useState(false);
     const panelRef = useRef<HTMLDivElement>(null);
+    // One first-visit overlay at a time: the analytics consent card owns the
+    // bottom of the screen until the visitor answers it.
+    const consentBannerPending = useConsentBannerPending();
 
     const dismissKey = `site_popup_dismissed_v${popup.version}`;
-    // Back-compat: users who dismissed the old hardcoded popup should see
-    // the new manageable copy at least once.
-    const legacyKey = 'unblock_syria_notif_dismissed';
 
     useEffect(() => {
         setHasMounted(true);
         if (!popup.enabled) return;
+        if (consentBannerPending) return;
         const isDismissed = localStorage.getItem(dismissKey);
 
-        // Show after a short delay for better UX
         if (!isDismissed) {
             const timer = setTimeout(() => {
                 setIsVisible(true);
             }, 2000);
             return () => clearTimeout(timer);
         }
-    }, [dismissKey, popup.enabled]);
+    }, [dismissKey, popup.enabled, consentBannerPending]);
 
     // The panel is fixed in a corner and can sit over page controls (e.g. the
     // promises filter button). Once the user interacts with anything else on
@@ -79,7 +61,6 @@ const UnblockSyriaNotification = () => {
         setTimeout(() => {
             setIsVisible(false);
             localStorage.setItem(dismissKey, 'true');
-            localStorage.setItem(legacyKey, 'true');
         }, 250);
     };
 

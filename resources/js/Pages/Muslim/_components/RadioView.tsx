@@ -4,13 +4,12 @@ import {
 } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
-import RecitationPicker from './RecitationPicker';
-import QuranWordWindow from '@/Components/QuranWordWindow';
-import QuranUsageCard from '@/Components/QuranUsageCard';
+import RecitationPicker from '@/Domain/quran/RecitationPicker';
+import QuranWordWindow from '@/Domain/quran/QuranWordWindow';
+import QuranUsageCard from '@/Domain/quran/QuranUsageCard';
 import { QuranRadioIcon } from '@/Components/Icons/ProjectIcons';
-import { useQuranPlayer } from '@/Lib/quranPlayer';
-import { formatDuration } from '../_lib/format';
-import { useMuslimNav } from '../_lib/nav';
+import { useQuranPlayer } from '@/Domain/quran/quranPlayer';
+import { formatDuration } from '../../../Lib/format';
 
 /** Sleep-timer presets in minutes. Endless (null) is the default. */
 const SLEEP_OPTIONS: Array<{ minutes: number | null; label: string }> = [
@@ -29,12 +28,12 @@ interface Props {
 
 /**
  * Followed recitation: continuous MP3Quran v4 playback (the whole mushaf) with
- * the text under it, replacing the old live streams. The player is global, so
- * listening continues if the user opens the Quran tab.
+ * the text under it. The player is global, so listening continues if the user
+ * opens the Quran tab.
  */
 export default function RadioView({ onContinue }: Props) {
-  const sleepUntil = useMuslimNav((s) => s.radioSleepUntil);
-  const setSleepUntil = useMuslimNav((s) => s.setRadioSleepUntil);
+  const sleepUntil = useQuranPlayer((s) => s.sleepUntil);
+  const setSleepUntil = useQuranPlayer((s) => s.setSleepUntil);
 
   const playing = useQuranPlayer((s) => s.playing);
   const loading = useQuranPlayer((s) => s.loading);
@@ -53,14 +52,9 @@ export default function RadioView({ onContinue }: Props) {
     return () => window.clearInterval(id);
   }, []);
 
-  // Sleep timer lives in the nav store, so it keeps running across views.
+  // The countdown is display only: the player stops the audio at the deadline,
+  // whether or not this page is still mounted (the visitor may be in the reader).
   const sleepRemaining = sleepUntil === null ? null : sleepUntil - now;
-  React.useEffect(() => {
-    if (sleepRemaining === null || sleepRemaining > 0) return;
-    const p = useQuranPlayer.getState();
-    if (p.playing) p.toggle();
-    setSleepUntil(null);
-  }, [sleepRemaining, setSleepUntil]);
 
   const selectSleep = (minutes: number | null) => {
     setSleepUntil(minutes === null ? null : Date.now() + minutes * 60_000);
@@ -75,7 +69,6 @@ export default function RadioView({ onContinue }: Props) {
 
   return (
     <div className="space-y-5">
-      {/* Now playing + text */}
       <Card>
         <CardContent className="flex flex-col items-center gap-4 p-6">
           <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
@@ -91,7 +84,6 @@ export default function RadioView({ onContinue }: Props) {
             </div>
           )}
 
-          {/* Transport */}
           <div className="flex items-center gap-4">
             <button
               type="button"
@@ -133,7 +125,6 @@ export default function RadioView({ onContinue }: Props) {
             </button>
           </div>
 
-          {/* Reciter + continue in reader */}
           <div className="flex w-full flex-wrap items-center justify-between gap-3">
             <RecitationPicker value={recitationCode} onChange={setRecitation} />
             <Button
@@ -149,7 +140,6 @@ export default function RadioView({ onContinue }: Props) {
         </CardContent>
       </Card>
 
-      {/* Sleep timer */}
       <Card>
         <CardContent className="space-y-3 p-4">
           <div className="flex items-center justify-between gap-2">
@@ -186,7 +176,6 @@ export default function RadioView({ onContinue }: Props) {
         </CardContent>
       </Card>
 
-      {/* Data usage */}
       <QuranUsageCard />
     </div>
   );

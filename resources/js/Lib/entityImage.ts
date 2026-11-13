@@ -1,4 +1,6 @@
-const R2_BASE = 'https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/syofficial/entities/';
+import { MEDIA_BASE } from '@/Domain/govapps/media';
+
+const R2_BASE = `${MEDIA_BASE}/syofficial/entities/`;
 
 /**
  * Resolve an officials-directory image to a URL. Entries may store a full URL,

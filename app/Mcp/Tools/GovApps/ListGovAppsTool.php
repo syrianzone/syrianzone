@@ -5,6 +5,7 @@ namespace App\Mcp\Tools\GovApps;
 use App\Services\GovApps\GovAppPresenter;
 use App\Services\GovApps\GovAppService;
 use App\Support\Agents\AgentContext;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -32,11 +33,11 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 class ListGovAppsTool extends GovAppsTool
 {
     protected array $anyPermissions = [
-        'govapps.create',
-        'govapps.edit',
-        'govapps.toggle',
-        'govapps.delete',
-        'govapps.reorder',
+        PermissionCatalogue::GOVAPPS_CREATE,
+        PermissionCatalogue::GOVAPPS_EDIT,
+        PermissionCatalogue::GOVAPPS_TOGGLE,
+        PermissionCatalogue::GOVAPPS_DELETE,
+        PermissionCatalogue::GOVAPPS_REORDER,
     ];
 
     public function schema(JsonSchema $schema): array

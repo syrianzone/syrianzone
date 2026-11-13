@@ -1,12 +1,12 @@
-import { lazy } from 'react';
 import { Users } from 'lucide-react';
-import type { WidgetDefinition } from '../../_lib/types';
+import type { WidgetDeclaration } from '../../_lib/types';
+import { sources } from '../../_lib/sources';
 
 export interface GuidesConfig {
   sort: 'submissions' | 'saves' | 'recent';
 }
 
-export const guidesWidget: WidgetDefinition<GuidesConfig> = {
+export const guidesWidget: WidgetDeclaration = {
   id: 'guides',
   name: 'المرشدون',
   description: 'أكثر المساهمين في مشوار',
@@ -32,5 +32,8 @@ export const guidesWidget: WidgetDefinition<GuidesConfig> = {
   // the endpoint caches for 5 minutes server-side
   refresh: { staleMs: 5 * 60_000, intervalMs: null },
   multiple: true,
-  Component: lazy(() => import('./View')),
+  seed: null,
+  source: sources.guides,
 };
+
+export default guidesWidget;

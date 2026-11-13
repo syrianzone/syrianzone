@@ -4,6 +4,7 @@ namespace App\Mcp\Tools\Places;
 
 use App\Services\Places\PlaceModerationService;
 use App\Support\Agents\AgentContext;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -23,7 +24,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 #[IsDestructive]
 class DeletePlaceTool extends PlacesTool
 {
-    protected array $permissions = ['places.delete'];
+    protected array $permissions = [PermissionCatalogue::PLACES_DELETE];
 
     public function schema(JsonSchema $schema): array
     {

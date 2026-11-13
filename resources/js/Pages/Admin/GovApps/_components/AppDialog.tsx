@@ -6,29 +6,14 @@ import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import { Textarea } from '@/Components/ui/textarea';
 import { Switch } from '@/Components/ui/switch';
-import { Smartphone, Globe, Upload } from 'lucide-react';
-
-export interface GovAppData {
-    id: string;
-    name: string;
-    name_ar?: string;
-    description?: string;
-    description_ar?: string;
-    icon?: string;
-    images?: string[];
-    links?: {
-        official?: string | null;
-        android?: string | null;
-        apple?: string | null;
-    };
-    order_column?: number;
-    is_active?: boolean;
-}
+import { Smartphone, Upload } from 'lucide-react';
+import { notify } from '@/Lib/notify';
+import type { GovApp } from '@/Domain/govapps/types';
 
 interface AppDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    app: GovAppData | null;
+    app: GovApp | null;
 }
 
 export default function AppDialog({ open, onOpenChange, app }: AppDialogProps) {
@@ -84,6 +69,11 @@ export default function AppDialog({ open, onOpenChange, app }: AppDialogProps) {
         }
     };
 
+    const handleError = (errors: Record<string, string>) => {
+        setProcessing(false);
+        notify.error(Object.values(errors)[0] ?? 'تعذر حفظ بيانات التطبيق');
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setProcessing(true);
@@ -113,7 +103,7 @@ export default function AppDialog({ open, onOpenChange, app }: AppDialogProps) {
                     setProcessing(false);
                     onOpenChange(false);
                 },
-                onError: () => setProcessing(false),
+                onError: handleError,
             });
         } else {
             router.post('/api/v1/admin/govapps', formData, {
@@ -121,7 +111,7 @@ export default function AppDialog({ open, onOpenChange, app }: AppDialogProps) {
                     setProcessing(false);
                     onOpenChange(false);
                 },
-                onError: () => setProcessing(false),
+                onError: handleError,
             });
         }
     };

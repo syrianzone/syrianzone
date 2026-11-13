@@ -1,12 +1,11 @@
-import { lazy } from 'react';
 import { StickyNote } from 'lucide-react';
-import type { WidgetDefinition } from '../../_lib/types';
+import type { WidgetDeclaration } from '../../_lib/types';
 
 export interface NotesConfig {
   text: string;
 }
 
-export const notesWidget: WidgetDefinition<NotesConfig> = {
+export const notesWidget: WidgetDeclaration = {
   id: 'notes',
   name: 'ملاحظات',
   description: 'ملاحظات سريعة تبقى معك',
@@ -20,5 +19,8 @@ export const notesWidget: WidgetDefinition<NotesConfig> = {
   requires: [],
   refresh: { staleMs: 0, intervalMs: null },
   multiple: true,
-  Component: lazy(() => import('./View')),
+  seed: { order: 9, w: 6, h: 3 },
+  source: null,
 };
+
+export default notesWidget;

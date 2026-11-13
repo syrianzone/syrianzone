@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Support\Agents\ApiTokenIssuer;
 use App\Support\Agents\InvalidTokenAbilities;
+use App\Support\Agents\TokenAbilities;
 use App\Support\Agents\TokenIssuer;
 use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Http\Request;
@@ -17,9 +18,7 @@ use Laravel\Sanctum\PersonalAccessToken;
  * HTTP adapter for agent API tokens, for the Inertia dashboard.
  *
  * Lives beside the other /admin/* sections rather than in Filament, so token
- * management sits with the rest of the admin UI. The Filament resource that used
- * to own this was removed: two UIs for one job drift, and this is the one people
- * actually visit.
+ * management sits with the rest of the admin UI: two UIs for one job drift.
  *
  * Two modes, chosen by who is asking (the `agent_tokens` middleware decides
  * who may ask at all):
@@ -102,14 +101,7 @@ class ApiTokenAdminController extends Controller
                 'tokenable_id' => $owner->id,
                 'name' => $validated['name'],
                 'ttl' => $validated['ttl'],
-                ...collect(PermissionCatalogue::groupMeta())
-                    ->mapWithKeys(fn (array $meta, string $group) => [
-                        'perm_'.$group => array_values(array_filter(
-                            $validated['permissions'],
-                            fn (string $permission) => str_starts_with($permission, $group.'.'),
-                        )),
-                    ])
-                    ->all(),
+                'abilities' => $validated['permissions'],
             ]);
         } catch (ValidationException $e) {
             return response()->json(['message' => $e->errors()[array_key_first($e->errors())][0] ?? 'تعذّر إصدار الرمز'], 422);
@@ -151,7 +143,7 @@ class ApiTokenAdminController extends Controller
 
         // This page manages agent tokens. A mobile app session is not listed
         // here, so it is not revocable from here either (except by superadmins).
-        if (! $actor->isSuperAdmin() && $token->abilities === ['mobile']) {
+        if (! $actor->isSuperAdmin() && TokenAbilities::isMobileToken($token)) {
             abort(404);
         }
 
@@ -186,7 +178,7 @@ class ApiTokenAdminController extends Controller
             ->latest('id')
             ->limit(200)
             ->get()
-            ->reject(fn (PersonalAccessToken $token) => $token->abilities === ['mobile'])
+            ->reject(fn (PersonalAccessToken $token) => TokenAbilities::isMobileToken($token))
             ->map(fn (PersonalAccessToken $token) => [
                 'id' => $token->id,
                 'name' => $token->name,

@@ -2,7 +2,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import PromiseCard from './PromiseCard';
-import type { PromiseCardData } from '../_lib/types';
+import type { PromiseCardData } from '@/Domain/promises/types';
 
 vi.mock('@inertiajs/react', () => ({
     Link: ({ children, href, ...props }: any) => createElement('a', { href, ...props }, children),
@@ -35,7 +35,7 @@ describe('PromiseCard component', () => {
         votingOpen: true,
     };
 
-    it('displays original struck-through deadline when postponedCount > 0 and originalDeadlineDate is set', () => {
+    it('shows the original deadline next to the current one once a promise has been postponed', () => {
         const promiseWithPostponed: PromiseCardData = {
             ...basePromise,
             originalDeadlineDate: '2025-06-30',
@@ -45,8 +45,9 @@ describe('PromiseCard component', () => {
 
         const html = renderToStaticMarkup(createElement(PromiseCard, { promise: promiseWithPostponed }));
 
+        // The reader sees both dates, the old one labelled as the original.
+        expect(html).toContain('الموعد 31 كانون الأول 2026');
         expect(html).toContain('الموعد الأصلي:');
-        expect(html).toContain('line-through');
         expect(html).toContain('30 حزيران 2025');
     });
 

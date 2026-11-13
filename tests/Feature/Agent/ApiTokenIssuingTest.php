@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\User;
 use App\Support\Agents\ApiTokenIssuer;
 use App\Support\Agents\InvalidTokenAbilities;
 use App\Support\Agents\TokenIssuer;
@@ -8,29 +9,14 @@ use Illuminate\Validation\ValidationException;
 
 /*
 |--------------------------------------------------------------------------
-| Token issuance from the panel form
+| Token issuance from the admin form
 |--------------------------------------------------------------------------
 |
-| The Filament form is the only way a token comes into existence, so its
-| shape-handling is security-relevant: the grouped checkboxes are the only
-| thing standing between a superadmin's intent and the ability list.
+| The admin page is the only way a token comes into existence, so its
+| shape-handling is security-relevant: the ability list is the only
+| thing standing between a superadmin's intent and the credential.
 |
 */
-
-test('grouped checkbox state is flattened into an ability list', function () {
-    $form = [
-        'tokenable_id' => 1,
-        'name' => 'claude',
-        'ttl' => '30d',
-        'perm_places' => ['places.review', 'places.approve'],
-        'perm_transit' => ['transit.approve'],
-        'perm_polls' => [],
-        'unrelated' => 'ignored',
-    ];
-
-    expect(app(ApiTokenIssuer::class)->collectAbilities($form))
-        ->toBe(['places.review', 'places.approve', 'transit.approve']);
-});
 
 test('a form issues a token clamped to what the owner holds', function () {
     $user = agentUser(['permissions' => ['places.review']]);
@@ -39,7 +25,7 @@ test('a form issues a token clamped to what the owner holds', function () {
         'tokenable_id' => $user->id,
         'name' => 'claude-code',
         'ttl' => '30d',
-        'perm_places' => ['places.review', 'places.delete'],
+        'abilities' => ['places.review', 'places.delete'],
     ]);
 
     expect($issued['abilities'])->toBe(['places.review'])
@@ -54,7 +40,7 @@ test('a token cannot be issued for a banned user', function () {
     expect(fn () => app(ApiTokenIssuer::class)->issueFromFormData([
         'tokenable_id' => $user->id,
         'name' => 'x',
-        'perm_places' => ['places.review'],
+        'abilities' => ['places.review'],
     ]))->toThrow(ValidationException::class);
 });
 
@@ -71,7 +57,7 @@ test('a token needs a name', function () {
     expect(fn () => app(ApiTokenIssuer::class)->issueFromFormData([
         'tokenable_id' => $user->id,
         'name' => '   ',
-        'perm_places' => ['places.review'],
+        'abilities' => ['places.review'],
     ]))->toThrow(ValidationException::class);
 });
 
@@ -83,7 +69,7 @@ test('a wildcard smuggled through the form is refused', function () {
         'name' => 'god',
         // Not reachable through the rendered checkboxes, but the service must
         // not depend on the UI being the only caller.
-        'perm_places' => ['*'],
+        'abilities' => ['*'],
     ]))->toThrow(InvalidTokenAbilities::class);
 });
 
@@ -126,12 +112,16 @@ test('the eligible-owner list excludes users holding no capability', function ()
 });
 
 test('the token ttl options are the ones the issuer understands', function () {
-    $options = collect(TokenIssuer::TTL_OPTIONS)
-        ->map(fn (int $days) => ['value' => $days.'d', 'label' => $days.' يوم'])
-        ->values();
-
-    expect($options->pluck('value')->all())->toBe(array_keys(TokenIssuer::TTL_OPTIONS))
-        ->and($options)->toHaveCount(4);
+    // The form's values and the issuer's table must agree, or a token is minted
+    // with the fallback TTL while the UI shows the chosen one.
+    $this->actingAs(User::factory()->superadmin()->create())
+        ->get('/admin/api-tokens')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('ttlOptions', fn ($options) => collect($options)->count() > 0
+                && collect($options)->every(fn ($option) => array_key_exists($option['value'], TokenIssuer::TTL_OPTIONS)
+                    && $option['label'] !== ''))
+        );
 });
 
 test('every catalogue capability can be granted to a superadmin token', function () {

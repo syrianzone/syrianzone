@@ -3,7 +3,9 @@
 namespace App\Mcp\Tools\Places;
 
 use App\Services\Places\PlacePresenter;
+use App\Services\Places\PlaceRules;
 use App\Support\Agents\AgentContext;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -25,13 +27,13 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 #[IsIdempotent]
 class ListPlacesTool extends PlacesTool
 {
-    protected array $permissions = ['places.review'];
+    protected array $permissions = [PermissionCatalogue::PLACES_REVIEW];
 
     public function schema(JsonSchema $schema): array
     {
         return [
             'status' => $schema->string()
-                ->enum([...PlacePresenter::STATUSES, 'all'])
+                ->enum([...PlaceRules::statuses(), 'all'])
                 ->description('Moderation status to list. Defaults to "pending". Use "all" to include approved and rejected.')
                 ->default('pending'),
 
@@ -71,7 +73,7 @@ class ListPlacesTool extends PlacesTool
     protected function run(Request $request, AgentContext $context): Response|ResponseFactory
     {
         $validated = $request->validate([
-            'status' => 'sometimes|in:pending,approved,rejected,all',
+            'status' => app(PlaceRules::class)->statusFilter(),
             'page' => 'sometimes|integer|min:1',
             'per_page' => 'sometimes|integer|min:1|max:100',
         ]);

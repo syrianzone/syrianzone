@@ -2,7 +2,6 @@
 
 namespace App\Providers;
 
-use App\Http\Controllers\ExternalDataController;
 use App\Models\HouseMember2026;
 use App\Models\Promise;
 use App\Models\PromiseSector;
@@ -13,8 +12,6 @@ use App\Support\Agents\AgentAuthorizer;
 use App\Support\Agents\AgentContext;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
@@ -53,17 +50,15 @@ class AppServiceProvider extends ServiceProvider
         }
 
         // The cached /house roster follows edits made through the model.
-        HouseMember2026::saved(fn () => Cache::forget(ExternalDataController::HOUSE_MEMBERS_CACHE_KEY));
-        HouseMember2026::deleted(fn () => Cache::forget(ExternalDataController::HOUSE_MEMBERS_CACHE_KEY));
+        HouseMember2026::saved(fn () => HouseMember2026::forgetRosterCache());
+        HouseMember2026::deleted(fn () => HouseMember2026::forgetRosterCache());
 
         if (config('app.env') === 'production') {
             URL::forceScheme('https');
         }
 
-        RateLimiter::for('voting', fn (Request $request) => Limit::perMinute(10)->by($request->ip())->response(fn () => response()->json([
-            'message' => 'Too many votes. Please slow down.',
-            'error' => 'Too many votes. Please slow down.',
-        ], 429)));
+        RateLimiter::for('voting', fn (Request $request) => Limit::perMinute(10)->by($request->ip())
+            ->response($this->throttled('لقد وصلت إلى حد التصويت المسموح. يرجى المحاولة بعد قليل.')));
 
         // "Will it be kept?" votes can be cast straight from the /promises
         // cards, so one visitor may answer many in a row; the tier-list limit
@@ -74,40 +69,36 @@ class AppServiceProvider extends ServiceProvider
                 ? Limit::perMinute(60)->by('user:'.$request->user()->id)
                 : Limit::perMinute(30)->by('ip:'.$request->ip());
 
-            return $limit->response(fn ($request, $headers) => response()->json([
-                'message' => 'صوّتَ كثيراً في وقت قصير، انتظر دقيقة ثم حاول مجدداً',
-            ], 429, $headers));
+            return $limit->response($this->throttled('صوّتَ كثيراً في وقت قصير، انتظر دقيقة ثم حاول مجدداً'));
         });
 
-        RateLimiter::for('public-api', fn (Request $request) => Limit::perMinute(60)->by($request->ip())->response(fn () => response()->json([
-            'message' => 'Too many requests. Please slow down.',
-            'error' => 'Too many requests. Please slow down.',
-        ], 429)));
+        RateLimiter::for('public-api', fn (Request $request) => Limit::perMinute(60)->by($request->ip())
+            ->response($this->throttled('تم تجاوز حد الطلبات المسموح. يرجى المحاولة بعد قليل.')));
 
         RateLimiter::for('compass-stats', function (Request $request) {
-            $message = ['message' => 'يمكنك إرسال نتيجة مجهولة واحدة كل عشر دقائق.'];
+            $response = $this->throttled('يمكنك إرسال نتيجة مجهولة واحدة كل عشر دقائق.');
 
             // Anonymous (guest) submissions: one per 10 minutes per IP.
             // Logged-in users: a bit more headroom, still capped.
             if ($request->user()) {
                 return Limit::perMinutes(10, 5)->by('user:'.$request->user()->id)
-                    ->response(fn ($request, $headers) => response()->json($message, 429, $headers));
+                    ->response($response);
             }
 
             return Limit::perMinutes(10, 1)->by('ip:'.$request->ip())
-                ->response(fn ($request, $headers) => response()->json($message, 429, $headers));
+                ->response($response);
         });
 
         RateLimiter::for('studio-submit', function (Request $request) {
-            $message = ['message' => 'تم تجاوز حد المحاولات المسموح، يرجى الانتظار قليلاً قبل إعادة المحاولة.'];
+            $response = $this->throttled('تم تجاوز حد المحاولات المسموح، يرجى الانتظار قليلاً قبل إعادة المحاولة.');
 
             if ($request->user()) {
                 return Limit::perMinute(30)->by('user:'.$request->user()->id)
-                    ->response(fn ($request, $headers) => response()->json($message, 429, $headers));
+                    ->response($response);
             }
 
             return Limit::perMinute(5)->by('ip:'.$request->ip())
-                ->response(fn ($request, $headers) => response()->json($message, 429, $headers));
+                ->response($response);
         });
 
         // Agent/MCP traffic. Keyed by API token so one runaway agent cannot
@@ -121,17 +112,27 @@ class AppServiceProvider extends ServiceProvider
                 ? 'token:'.$tokenKey->getKey()
                 : 'user:'.($request->user()?->getAuthIdentifier() ?? 'ip:'.$request->ip());
 
-            return Limit::perMinute(120)->by($key)->response(fn () => response()->json([
-                'message' => 'Too many agent requests. Slow down and retry shortly.',
-                'error' => 'Too many agent requests. Slow down and retry shortly.',
-            ], 429));
+            return Limit::perMinute(120)->by($key)
+                ->response($this->throttled('تم تجاوز حد طلبات الوكيل. يرجى الانتظار قليلاً ثم إعادة المحاولة.'));
         });
+    }
 
-        Gate::before(function ($user, $ability) {
-            if ($user->isSuperAdmin()) {
-                return true;
-            }
-        });
-
+    /**
+     * The legacy `{message, error}` 429 envelope, produced in one place.
+     *
+     * The shape is a released contract (mobile clients read `message`, older
+     * web callers read `error`), so both keys carry the same text.
+     *
+     * The framework passes the rate-limit headers to this callback and attaches
+     * only what the response carries; `Lib/api.ts` reads `Retry-After` to tell
+     * the visitor how long to wait, so dropping them left the busiest limiters
+     * with no wait time in the body either.
+     */
+    private function throttled(string $message): \Closure
+    {
+        return fn ($request, array $headers) => response()->json([
+            'message' => $message,
+            'error' => $message,
+        ], 429, $headers);
     }
 }

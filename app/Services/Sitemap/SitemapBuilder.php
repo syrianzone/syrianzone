@@ -13,6 +13,8 @@ use App\Models\Place;
 use App\Models\Poll;
 use App\Models\Promise;
 use App\Models\Route as TransitRoute;
+use App\Services\ExternalData\ExternalSheetCache;
+use App\Support\Seo\Pages;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -22,75 +24,6 @@ use Illuminate\Support\Facades\DB;
  */
 class SitemapBuilder
 {
-    /**
-     * /tierlist and /polls/best-ministers render the same poll from the same
-     * records, and their leaderboards are the same data behind different
-     * components. Only the /tierlist pair is listed — that is the pair the
-     * homepage and navbar link to.
-     */
-    private const TIER_LIST_POLL_SLUG = 'best-ministers';
-
-    /**
-     * Public pages served from fixed routes, as [path, priority, changefreq].
-     *
-     * Deliberately absent: auth-gated pages (/dashboard, /admin/*), redirect
-     * shims (/places, /transit/city/{id}/map, /transit/city/{id}/route/{id}),
-     * ephemeral game rooms (/guesswho/room/{code}), shared result snapshots
-     * (/compass/s/{shareId}), and infrastructure routes (/healthcheck, /auth/*,
-     * /dev/*). Google ignores priority outright and changefreq nearly so; both
-     * are kept for the crawlers that still read them.
-     */
-    private const STATIC_PAGES = [
-        ['/', 1.0, 'daily'],
-
-        // Flagship tools — the pages worth ranking for.
-        ['/tierlist', 0.9, 'daily'],
-        ['/mishwar', 0.9, 'daily'],
-        ['/transit', 0.9, 'weekly'],
-        ['/syofficial', 0.9, 'weekly'],
-        ['/atlas', 0.9, 'monthly'],
-        ['/phonebook', 0.9, 'weekly'],
-        ['/govapps', 0.9, 'weekly'],
-        ['/promises', 0.9, 'daily'],
-        ['/sites', 0.9, 'weekly'],
-        ['/syid', 0.9, 'monthly'],
-        ['/muslim', 0.9, 'daily'],
-        ['/muslim/prayer', 0.8, 'daily'],
-        ['/muslim/quran', 0.8, 'weekly'],
-        ['/muslim/radio', 0.7, 'weekly'],
-
-        // Secondary tools and directories.
-        ['/party', 0.8, 'weekly'],
-        ['/house', 0.8, 'weekly'],
-        ['/games', 0.8, 'weekly'],
-        ['/justice', 0.8, 'monthly'],
-        ['/crossings', 0.8, 'monthly'],
-        ['/roznama', 0.8, 'daily'],
-        ['/priorities', 0.8, 'monthly'],
-        ['/compass', 0.8, 'monthly'],
-        ['/compass/stats', 0.6, 'daily'],
-        ['/alignment', 0.8, 'monthly'],
-        ['/polls', 0.8, 'weekly'],
-        ['/syrian-contributors', 0.8, 'weekly'],
-        ['/board', 0.7, 'monthly'],
-        ['/guesswho', 0.7, 'monthly'],
-        ['/games/2048', 0.6, 'monthly'],
-        ['/games/solitare', 0.6, 'monthly'],
-        ['/games/tarneeb', 0.6, 'monthly'],
-        ['/games/trix', 0.6, 'monthly'],
-
-        // Sub-pages and utilities.
-        ['/tierlist/leaderboard', 0.6, 'daily'],
-        ['/shawarma', 0.6, 'monthly'],
-        ['/transit/studio', 0.5, 'monthly'],
-        ['/stats', 0.5, 'daily'],
-
-        // Institutional pages.
-        ['/about', 0.5, 'monthly'],
-        ['/privacy', 0.3, 'yearly'],
-        ['/terms', 0.3, 'yearly'],
-    ];
-
     /**
      * @return SitemapUrl[]
      */
@@ -121,11 +54,19 @@ class SitemapBuilder
     }
 
     /**
-     * The fixed pages, carrying a lastmod only where one can be derived from the
-     * content itself. Google discards lastmod site-wide once it catches a
-     * sitemap reporting dates that do not match the page, so pages whose
-     * freshness we cannot answer for ship without the tag rather than with a
-     * deploy timestamp standing in for one.
+     * The fixed pages, from the SEO page table (`resources/data/seo.json`): the
+     * same records that give every page its <head>, minus the ones that opt out
+     * with `"sitemap": false`. Auth-gated pages (/dashboard, /admin/*), redirect
+     * shims (/places, /transit/city/{id}/map, /transit/city/{id}/route/{id}),
+     * ephemeral game rooms (/guesswho/room/{code}), shared result snapshots
+     * (/compass/s/{shareId}) and infrastructure routes (/healthcheck, /auth/*,
+     * /dev/*) have no record there, so they never reach the sitemap.
+     *
+     * Carries a lastmod only where one can be derived from the content itself.
+     * Google discards lastmod site-wide once it catches a sitemap reporting
+     * dates that do not match the page, so pages whose freshness we cannot
+     * answer for ship without the tag rather than with a deploy timestamp
+     * standing in for one.
      *
      * @return SitemapUrl[]
      */
@@ -134,8 +75,8 @@ class SitemapBuilder
         $lastmod = $this->contentLastmod();
 
         return array_map(
-            fn ($page) => new SitemapUrl($page[0], $page[1], $page[2], $lastmod[$page[0]] ?? null),
-            self::STATIC_PAGES
+            fn (array $page) => new SitemapUrl($page[0], $page[1], $page[2], $lastmod[$page[0]] ?? null),
+            Pages::sitemapPages(),
         );
     }
 
@@ -148,7 +89,7 @@ class SitemapBuilder
      */
     private function contentLastmod(): array
     {
-        $tierListPoll = Poll::where('slug', self::TIER_LIST_POLL_SLUG)->first();
+        $tierListPoll = Poll::where('slug', Poll::coreSlug())->first();
 
         return array_filter([
             '/govapps' => $this->latestOf([GovApp::max('updated_at')]),
@@ -172,16 +113,17 @@ class SitemapBuilder
             '/tierlist' => $tierListPoll ? $this->pollLastmod($tierListPoll) : null,
             '/tierlist/leaderboard' => $tierListPoll ? $this->leaderboardLastmod($tierListPoll->id) : null,
             // Sheet-backed pages: last successful fetch time, not a deploy stamp.
-            '/party' => $this->cacheTime('external_party_data_fetched_at'),
-            '/sites' => $this->cacheTime('external_sites_data_fetched_at'),
+            '/party' => $this->sheetTime(ExternalSheetCache::PARTY),
+            '/sites' => $this->sheetTime(ExternalSheetCache::SITES),
         ]);
     }
 
-    private function cacheTime(string $key): ?Carbon
+    private function sheetTime(string $sheet): ?Carbon
     {
         try {
-            $v = \Illuminate\Support\Facades\Cache::get($key);
-            return $v ? Carbon::parse($v) : null;
+            $fetchedAt = ExternalSheetCache::fetchedAt($sheet);
+
+            return $fetchedAt ? Carbon::parse($fetchedAt) : null;
         } catch (\Throwable) {
             return null;
         }
@@ -197,7 +139,7 @@ class SitemapBuilder
     {
         $polls = Poll::where('is_active', true)
             ->whereNotNull('slug')
-            ->where('slug', '!=', self::TIER_LIST_POLL_SLUG)
+            ->where('slug', '!=', Poll::coreSlug())
             ->get();
 
         $urls = [];

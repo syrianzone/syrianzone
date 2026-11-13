@@ -9,7 +9,7 @@ import { inspectCard } from './lib/cards.mjs';
 // @ts-expect-error plain ES modules, shared with the Node renderer
 import { init, renderPng, ROOT } from './lib/engine.mjs';
 // @ts-expect-error plain ES modules, shared with the Node renderer
-import { pageModel, readCards } from './lib/pages.mjs';
+import { pageModel, readCards, readPages } from './lib/pages.mjs';
 // @ts-expect-error plain ES modules, shared with the Node renderer
 import { clean, fitText, measureLine } from './lib/text.mjs';
 
@@ -96,12 +96,16 @@ describe('share cards', () => {
         }
     });
 
-    it('gives every fixed-page card a slug of its own and an icon the renderer knows', () => {
+    it('gives every fixed-page card a slug of its own, and every card exactly one path', () => {
         const cards = readCards();
         const slugs = cards.map((card: { slug: string }) => card.slug);
         expect(new Set(slugs).size).toBe(slugs.length);
-        const paths = cards.flatMap((card: { paths: string[] }) => card.paths);
+
+        const paths = readPages().map((page: { path: string }) => page.path);
         expect(new Set(paths).size).toBe(paths.length);
+        // One record per page means one card per page, never a shared one.
+        const used = readPages().map((page: { card: string }) => page.card);
+        expect(new Set(used).size).toBe(used.length);
     });
 
     it('renders a card to a 1200x630 PNG in both colourways', () => {

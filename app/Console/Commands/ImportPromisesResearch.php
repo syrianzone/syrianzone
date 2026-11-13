@@ -249,7 +249,7 @@ class ImportPromisesResearch extends Command
             ->values();
 
         $status = (string) ($item['status_assessment'] ?? 'pending');
-        $settable = in_array($status, Promise::STATUSES, true) && $status !== 'pending';
+        $settable = in_array($status, Promise::statuses(), true) && $status !== 'pending';
         $verdict = $settable ? $evidence->first(fn ($e) => (bool) ($e['supports_verdict'] ?? false)) : null;
         $today = Promise::today()->format('Y-m-d');
 

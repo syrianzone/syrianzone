@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -22,10 +21,9 @@ class RadioUsageController extends Controller
     private const BYTES_KEY = 'quranRadioBytes';
     private const SECONDS_KEY = 'quranRadioSeconds';
 
-    /** Add a listening delta to the user's running totals. */
     public function add(Request $request): JsonResponse
     {
-        $user = $request->user() ?? Auth::guard('sanctum')->user();
+        $user = $request->user();
         if (! $user) {
             return response()->json(['message' => 'Unauthenticated.', 'error' => 'Unauthenticated'], 401);
         }
@@ -60,7 +58,7 @@ class RadioUsageController extends Controller
     /** Zero the user's totals. The client clears its own counters alongside. */
     public function clear(Request $request): JsonResponse
     {
-        $user = $request->user() ?? Auth::guard('sanctum')->user();
+        $user = $request->user();
         if (! $user) {
             return response()->json(['message' => 'Unauthenticated.', 'error' => 'Unauthenticated'], 401);
         }

@@ -37,21 +37,61 @@ A hyper-optimized complete Quran reading and listening client.
 - **Uthmanic Display**: Native browser typography rendering via `quran-hafs.woff2`.
 - **Fixed 25px Font**: The Mushaf page is always rendered at 25px — the size that keeps the Madina layout proportions (line width, stretch factors) correct. No user font-size control.
 - **Fill-Viewport Scaling**: `MushafPage` uniformly scales each page (up or down) until either the slot width or the viewport height limit is hit, on both mobile single-page and desktop double-page spreads. Fitting is done purely by the `scale()` transform (never by squeezing the fixed-width layout), and the page stays centered via a flex wrapper with `items-start` so height measurement is never corrupted.
-- **Focus Mode**: `quranFocus` in the Muslim nav store (`_lib/nav.ts`) hides the navbar (`Navbar` returns `null` on `/muslim/quran`) and the reader chrome (top row, surah/juz row, pager), giving the reclaimed space to the viewport so the text enlarges; the bottom transport stays pinned so playback remains controllable. `Muslim/Quran/Index.tsx` drops the navbar-height offset to `0` in focus mode.
+- **Focus Mode**: `quranFocus` in the app-shell store (`Lib/appShell.ts`) hides the navbar (`Navbar` returns `null` on `/muslim/quran`) and the reader chrome (top row, surah/juz row, pager), giving the reclaimed space to the viewport so the text enlarges; the bottom transport stays pinned so playback remains controllable. `Muslim/Quran/Index.tsx` gives the reader the full viewport height in focus mode (it drops the `--sz-navbar-h` offset).
 - **Double-click to play**: a single click highlights an Ayah; a double click plays its recitation, in both normal and focus mode. Double-click only starts — it never stops — and double-clicking another Ayah while one is playing switches to it (the player stops the current recitation and starts the new one).
 
 ### 2.2 Roznama (`/roznama`)
 A consolidated daily dashboard combining timing and locale.
-- **Prayer Times**: Location-based adhan calculation (Fajr, Sunrise, Dhuhr, Asr, Maghrib, Isha).
+- **Prayer Times**: Location-based adhan calculation (Fajr, Sunrise, Dhuhr, Asr, Maghrib, Isha), read through `Domain/prayer/times.ts`.
 - **Syrian Civic Calendar**: Native rendering using `syrian-date.ts`, blending Hijri and Syrian naming conventions seamlessly contextually.
 
-### 2.3 Quran Radio (`/muslim/radio`)
+### 2.3 Prayer times, location and the shared settings panel
+
+One module owns each fact, so `/muslim/prayer`, `/roznama`, Home and the board's
+`prayer` widget cannot drift apart:
+
+- **Location** — `Domain/location/preference.ts`: the city, the manual
+  coordinates, the location mode (manual city / GPS / IP / manual numbers), the
+  resolved point, the one reactive store every surface reads, and the
+  "preference → request parameters / place label" resolvers. It is the only
+  writer of the `sz-muslim-*` and Home/Roznama location keys; see
+  [settings-sync.md](settings-sync.md) §4 for the read precedence between the two
+  key families. Device geolocation itself (GPS/IP requests) stays in
+  `Domain/location/location.ts`; `LocationModeSelector` is its control.
+- **Timings** — `Domain/prayer/times.ts`: the typed `GET /api/prayer-times`
+  response (`{ governorate, latitude, longitude, method, timings, hijri }`), one
+  fetch, and `usePrayerTimes(location, method, options)` for the plain-effect
+  surfaces. The board widget keeps react-query and calls the same fetch through
+  `sources.prayerTimes`.
+- **Next/active prayer** — `Domain/prayer/nextPrayer.ts`: `prayerSchedule`,
+  `nextPrayer` and `activePrayer`. A prayer starting exactly now is already
+  active; after Isha the next prayer is tomorrow's Fajr (`rollover: false` is the
+  named option a small tile uses to say "today's prayers are over");
+  `includeSunrise: false` is the named option for a surface that lists only the
+  five prayers. Sunrise is an event, never a prayer (`isPrayer: false`).
+- **Hijri date** — `Domain/prayer/hijri.ts`: `hijriDateLabel(response.hijri)` for
+  the endpoint's Umm al-Qura date and `formatHijriDate(date)` for the client-side
+  fallback.
+- **Calculation methods** — `Domain/prayer/methods.ts` projects
+  `resources/data/prayer.json`, which `PrayerController` validates against: the
+  picker offers `methods` (the twelve, in display order) and the endpoint also
+  accepts `unlisted_method_ids` (7, 14, 15, 16) so a stored method is kept rather
+  than silently reset. `default_method` is the Syrian standard (Muslim World
+  League) and is not restated in TS or PHP.
+- **Settings panel** — `Domain/prayer/PrayerSettingsFields`: location source,
+  city, manual coordinates and (optionally) the calculation method, inside
+  `Domain/prayer/ResponsiveSettingsDialog` (a bottom sheet on a phone, a centred
+  dialog above `md`), rendered by `/muslim`, Roznama and Home's settings dialog.
+  Each surface passes only its own copy (city label, whether the method select
+  appears) and mirrors `onLocationChange` to its account-settings call.
+
+### 2.4 Quran Radio (`/muslim/radio`)
 "Followed recitation": continuous MP3Quran v4 playback (the whole mushaf, surah after surah) with the text under it. It replaces the old live streams, which had no timeline and so could never show what was being recited.
-- **Global player**: one audio element + zustand store (`Lib/quranPlayer.ts`) outside React, so playback survives view switches and is shared by the radio page, the Board `quran` widget, the reader and the floating mini player.
-- **Floating mini player**: `Components/RadioMiniPlayer` (mounted once in `MainLayout`) keeps the recitation controllable away from the radio page — a bottom-right card on desktop, and a floating button that opens a controls sheet on mobile. It hides on `/muslim/radio` and `/muslim/quran`, and shows the rolling five-word window (`QuranWordWindow`, compact) rather than a progress bar.
+- **Global player**: one audio element + zustand store (`Domain/quran/quranPlayer.ts`) outside React, so playback survives view switches and is shared by the radio page, the Board `quran` widget, the reader and the floating mini player.
+- **Floating mini player**: `Domain/quran/RadioMiniPlayer` (mounted once in `MainLayout`) keeps the recitation controllable away from the radio page — a bottom-right card on desktop, and a floating button that opens a controls sheet on mobile. It hides on `/muslim/radio` and `/muslim/quran`, and shows the rolling five-word window (`QuranWordWindow`, compact) rather than a progress bar.
 - **Text**: `QuranNowReading` renders the current ayah in the recitation's riwayah (v4 `/v4/surahs/{n}/text`) with the word/letter highlight.
 - **Continue in the reader**: maps the current `surah:ayah` to a page (`findPageForAyah`) and opens the reader there.
-- **Sleep timer + data usage**: the timer lives in the nav store; usage accrues globally (`Lib/usageStore.ts`) and is shown in both the radio tab and the reader.
+- **Sleep timer + data usage**: the timer lives in the Muslim nav store (`_lib/nav.ts`); usage accrues globally (`Domain/quran/usageStore.ts`) and is shown in both the radio tab and the reader.
 
 ---
 
@@ -69,5 +109,5 @@ All functionality is heavily front-end and statically bundled; minimal dynamic b
 - **Recitation audio**: MP3Quran v4 (`https://api-staging.mp3quran.net/v4`, base set by `VITE_MP3QURAN_API`), streamed per surah from `cdn.mp3quran.net` with ayah/word/letter timings (excluded from the offline cache). EveryAyah per-Ayah files remain as a fallback.
 - **Followed recitation**: MP3Quran v4 on-demand surah files from `cdn.mp3quran.net` (no live streams).
 - **Prayer times**: Aladhan timings API via the server proxy (`GET /api/prayer-times`), cached per day.
-- **Weather**: Open-Meteo + OpenWeatherMap via the server proxy (`GET /api/weather`), cached 15 min.
-- **Approximate geolocation**: `ipwho.is` (see `_lib/location.ts` for the GPS → IP → manual fallback order).
+- **Weather**: Open-Meteo + OpenWeatherMap via the server proxy (`GET /api/weather`), cached 10 min server-side and 15 min in the browser; Home and Roznama read the user's point through `Domain/weather/weather.ts` (`useWeather`).
+- **Approximate geolocation**: `ipwho.is` (see `Domain/location/location.ts` for the GPS/IP requests and `Domain/location/preference.ts` for the GPS → IP → manual coordinates → city order).

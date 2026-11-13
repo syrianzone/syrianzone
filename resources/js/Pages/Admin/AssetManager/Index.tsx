@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
 import MainLayout from '@/Layouts/MainLayout';
 import { Button } from '@/Components/ui/button';
@@ -10,45 +10,31 @@ import { Badge } from '@/Components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import { 
     Upload, Copy, Check, CloudUpload, FileCheck, Folder, Download, 
-    Trash2, RefreshCw, Search, ExternalLink, FileText, Image as ImageIcon, Archive
+    Trash2, RefreshCw, ExternalLink, FileText, Image as ImageIcon, Archive
 } from 'lucide-react';
-import axios from 'axios';
+import { apiErrorMessage } from '@/Lib/api';
+import { assetsApi, type R2File, type UploadResult } from './_lib/api';
 import JSZip from 'jszip';
 import { notify } from '@/Lib/notify';
+import { copyText } from '@/Lib/copy';
 import { confirmDialog } from '@/Lib/confirm';
-
-interface R2File {
-    path: string;
-    filename: string;
-    folder: string;
-    size: number;
-    last_modified: number | null;
-    url: string;
-}
-
-interface UploadResult {
-    url: string;
-    filename: string;
-    size: number;
-}
+import DirectoryResultCount from '@/Components/directory/DirectoryResultCount';
+import { DirectorySearch } from '@/Components/directory/DirectorySearch';
+import { useDirectory, type DirectoryFacet } from '@/Components/directory/useDirectory';
 
 export default function AssetManagerIndex() {
-    // Upload state
     const [file, setFile] = useState<File | null>(null);
     const [folder, setFolder] = useState<string>('downloads');
     const [uploading, setUploading] = useState<boolean>(false);
     const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
     const [uploadError, setUploadError] = useState<string | null>(null);
 
-    // Browser state
     const [files, setFiles] = useState<R2File[]>([]);
     const [totalSize, setTotalSize] = useState<number>(0);
     const [loadingFiles, setLoadingFiles] = useState<boolean>(true);
     const [loadingMore, setLoadingMore] = useState<boolean>(false);
     const [nextCursor, setNextCursor] = useState<string | null>(null);
     const [hasMore, setHasMore] = useState<boolean>(false);
-    const [searchQuery, setSearchQuery] = useState<string>('');
-    const [selectedFolder, setSelectedFolder] = useState<string>('all');
     const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
     const [downloadingZip, setDownloadingZip] = useState<boolean>(false);
     const [zipProgress, setZipProgress] = useState<number>(0);
@@ -60,17 +46,15 @@ export default function AssetManagerIndex() {
         setHasMore(false);
         setTotalSize(0);
         try {
-            const res = await axios.get('/api/v1/admin/assets/list', {
-                params: { refresh: refresh ? 1 : 0 }
-            });
-            if (res.data.success) {
-                setFiles(res.data.files);
-                setTotalSize(res.data.total_size);
-                setNextCursor(res.data.next_cursor ?? null);
-                setHasMore(res.data.has_more ?? false);
+            const res = await assetsApi.list({ refresh: refresh ? 1 : 0 });
+            if (res.success) {
+                setFiles(res.files);
+                setTotalSize(res.total_size);
+                setNextCursor(res.next_cursor ?? null);
+                setHasMore(res.has_more ?? false);
             }
         } catch (err) {
-            console.error('Failed to fetch R2 files:', err);
+            notify.error(apiErrorMessage(err, 'تعذّر جلب ملفات التخزين'));
         } finally {
             setLoadingFiles(false);
         }
@@ -80,17 +64,15 @@ export default function AssetManagerIndex() {
         if (!nextCursor || loadingMore) return;
         setLoadingMore(true);
         try {
-            const res = await axios.get('/api/v1/admin/assets/list', {
-                params: { cursor: nextCursor }
-            });
-            if (res.data.success) {
-                setFiles(prev => [...prev, ...res.data.files]);
-                setTotalSize(prev => prev + res.data.total_size);
-                setNextCursor(res.data.next_cursor ?? null);
-                setHasMore(res.data.has_more ?? false);
+            const res = await assetsApi.list({ cursor: nextCursor });
+            if (res.success) {
+                setFiles(prev => [...prev, ...res.files]);
+                setTotalSize(prev => prev + res.total_size);
+                setNextCursor(res.next_cursor ?? null);
+                setHasMore(res.has_more ?? false);
             }
         } catch (err) {
-            console.error('Failed to load more R2 files:', err);
+            notify.error(apiErrorMessage(err, 'تعذّر تحميل مزيد من الملفات'));
         } finally {
             setLoadingMore(false);
         }
@@ -116,17 +98,13 @@ export default function AssetManagerIndex() {
         setUploadError(null);
         setUploadResult(null);
 
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('folder', folder);
-
         try {
-            const res = await axios.post('/api/v1/admin/assets/upload', formData);
-            setUploadResult(res.data);
+            const res = await assetsApi.upload(file, folder);
+            setUploadResult(res);
             setFile(null);
             fetchFiles(true);
-        } catch (err: any) {
-            setUploadError(err.response?.data?.message || 'حدث خطأ أثناء رفع الملف إلى Cloudflare R2');
+        } catch (err) {
+            setUploadError(apiErrorMessage(err, 'حدث خطأ أثناء رفع الملف إلى Cloudflare R2'));
         } finally {
             setUploading(false);
         }
@@ -136,16 +114,16 @@ export default function AssetManagerIndex() {
         const ok = await confirmDialog({ title: 'حذف هذا الملف؟', description: path, destructive: true, confirmText: 'حذف' });
         if (!ok) return;
         try {
-            await axios.delete('/api/v1/admin/assets/delete', { data: { path } });
+            await assetsApi.remove(path);
             notify.success('تم حذف الملف');
             fetchFiles(true);
         } catch (err) {
-            notify.error('فشل حذف الملف من R2');
+            notify.error(apiErrorMessage(err, 'فشل حذف الملف من R2'));
         }
     };
 
-    const copyToClipboard = (url: string) => {
-        navigator.clipboard.writeText(url);
+    const copyToClipboard = async (url: string) => {
+        if (!(await copyText(url))) return;
         setCopiedUrl(url);
         setTimeout(() => setCopiedUrl(null), 2000);
     };
@@ -158,17 +136,24 @@ export default function AssetManagerIndex() {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     };
 
-    // Filter files
-    const foldersList = Array.from(new Set(files.map(f => f.folder)));
+    const foldersList = useMemo(() => Array.from(new Set(files.map(f => f.folder))), [files]);
 
-    const filteredFiles = files.filter(f => {
-        const matchesFolder = selectedFolder === 'all' || f.folder === selectedFolder;
-        const matchesSearch = f.filename.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                              f.path.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesFolder && matchesSearch;
+    const folderFacet = useMemo<DirectoryFacet<R2File>>(() => ({
+        key: 'folder',
+        label: 'المجلد',
+        options: foldersList.map(folderName => ({ value: folderName, label: folderName })),
+        valueOf: (file) => file.folder,
+    }), [foldersList]);
+    const directory = useDirectory<R2File>({
+        items: files,
+        searchText: (file) => `${file.filename} ${file.path}`,
+        facets: [folderFacet],
     });
+    const selectedFolder = directory.filters.folder?.[0] ?? 'all';
+    const filteredFiles = directory.results;
+    const selectFolder = (folderName: string) =>
+        directory.setFilters({ ...directory.filters, folder: folderName === 'all' ? [] : [folderName] });
 
-    // Bulk download all files as ZIP
     const handleDownloadAll = async () => {
         if (files.length === 0) return;
         setDownloadingZip(true);
@@ -177,6 +162,7 @@ export default function AssetManagerIndex() {
         try {
             const zip = new JSZip();
             let completed = 0;
+            const failed: string[] = [];
 
             for (const item of files) {
                 try {
@@ -184,12 +170,18 @@ export default function AssetManagerIndex() {
                     if (response.ok) {
                         const blob = await response.blob();
                         zip.file(item.path, blob);
+                    } else {
+                        failed.push(item.path);
                     }
-                } catch (err) {
-                    console.error(`Failed to download ${item.path} for zip`, err);
+                } catch {
+                    failed.push(item.path);
                 }
                 completed++;
                 setZipProgress(Math.round((completed / files.length) * 100));
+            }
+
+            if (failed.length > 0) {
+                notify.error(`تعذّر تنزيل ${failed.length} من الملفات، والملف المضغوط ناقص`);
             }
 
             const content = await zip.generateAsync({ type: 'blob' });
@@ -216,7 +208,6 @@ export default function AssetManagerIndex() {
             
             <div className="max-w-6xl mx-auto py-8 px-4 space-y-8">
                 
-                {/* Header Stats */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-card border border-border p-6 rounded-2xl shadow-sm">
                     <div>
                         <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -261,7 +252,6 @@ export default function AssetManagerIndex() {
                         </TabsTrigger>
                     </TabsList>
 
-                    {/* TAB 1: FILE BROWSER */}
                     <TabsContent value="browser" className="space-y-4">
                         <Card className="shadow-md border-border">
                             <CardHeader className="pb-4">
@@ -273,26 +263,20 @@ export default function AssetManagerIndex() {
                                         </CardDescription>
                                     </div>
 
-                                    {/* Search & Folder Filters */}
-                                    <div className="flex flex-wrap gap-2 w-full md:w-auto">
-                                        <div className="relative flex-1 min-w-[200px]">
-                                            <Search className="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                                            <Input aria-label="بحث باسم الملف..."
-                                                placeholder="بحث باسم الملف..."
-                                                value={searchQuery}
-                                                onChange={(e) => setSearchQuery(e.target.value)}
-                                                className="ps-9"
-                                            />
-                                        </div>
-                                    </div>
+                                    <DirectorySearch
+                                        className="w-full md:w-auto md:min-w-[200px]"
+                                        value={directory.query}
+                                        onChange={directory.setQuery}
+                                        placeholder="بحث باسم الملف..."
+                                        ariaLabel="بحث باسم الملف..."
+                                    />
                                 </div>
 
-                                {/* Folder Pills */}
                                 {foldersList.length > 0 && (
                                     <div className="flex flex-wrap gap-2 pt-3">
                                         <FilterChip
                                             active={selectedFolder === 'all'}
-                                            onClick={() => setSelectedFolder('all')}
+                                            onClick={() => selectFolder('all')}
                                         >
                                             الكل ({files.length})
                                         </FilterChip>
@@ -302,7 +286,7 @@ export default function AssetManagerIndex() {
                                                 <FilterChip
                                                     key={folderName}
                                                     active={selectedFolder === folderName}
-                                                    onClick={() => setSelectedFolder(folderName)}
+                                                    onClick={() => selectFolder(folderName)}
                                                 >
                                                     <Folder className="h-3 w-3 me-1" />
                                                     {folderName} ({count})
@@ -313,6 +297,9 @@ export default function AssetManagerIndex() {
                                 )}
                             </CardHeader>
                             <CardContent>
+                                <DirectoryResultCount className="mb-3 text-xs">
+                                    عرض {filteredFiles.length} من أصل {files.length} ملف
+                                </DirectoryResultCount>
                                 {loadingFiles ? (
                                     <div className="py-12 text-center text-muted-foreground space-y-2">
                                         <RefreshCw className="h-8 w-8 animate-spin mx-auto text-primary" />
@@ -370,7 +357,7 @@ export default function AssetManagerIndex() {
                                                             variant="ghost"
                                                             className="h-8 w-8"
                                                             title="نسخ الرابط المباشر"
-                                                            onClick={() => copyToClipboard(item.url)}
+                                                            onClick={() => void copyToClipboard(item.url)}
                                                         >
                                                             {copiedUrl === item.url ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
                                                         </Button>
@@ -397,7 +384,6 @@ export default function AssetManagerIndex() {
                                     </div>
                                 )}
 
-                                {/* Load More */}
                                 {hasMore && !loadingFiles && (
                                     <div className="mt-6 text-center">
                                         <Button
@@ -424,7 +410,6 @@ export default function AssetManagerIndex() {
                         </Card>
                     </TabsContent>
 
-                    {/* TAB 2: FILE UPLOAD */}
                     <TabsContent value="upload">
                         <Card className="shadow-md border-border">
                             <CardHeader>
@@ -497,7 +482,7 @@ export default function AssetManagerIndex() {
                                                 <Button
                                                     type="button"
                                                     variant="outline"
-                                                    onClick={() => copyToClipboard(uploadResult.url)}
+                                                    onClick={() => void copyToClipboard(uploadResult.url)}
                                                     className="shrink-0"
                                                 >
                                                     {copiedUrl === uploadResult.url ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}

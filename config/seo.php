@@ -1,5 +1,7 @@
 <?php
 
+use App\Support\Facts;
+
 return [
 
     /*
@@ -13,7 +15,7 @@ return [
     |
     */
 
-    'base_url' => env('SEO_BASE_URL', 'https://syrian.zone'),
+    'base_url' => env('SEO_BASE_URL', Facts::site()['base_url']),
 
     'site_name' => 'Syrian Zone',
 

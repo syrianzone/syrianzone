@@ -5,7 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/** Where a promise was said or reported. One statement may have many. */
+/**
+ * Where a promise was said or reported. One statement may have many.
+ *
+ * The types are the record's: `resources/data/promises.json` holds them with
+ * their Arabic labels, read through `Facts::promiseSourceTypes()`. This constant
+ * is the validation mirror the importer and the MCP tools call;
+ * `tests/Feature/PromiseVocabularyTest.php` fails when the two disagree.
+ */
 class PromiseSource extends Model
 {
     public const TYPES = [

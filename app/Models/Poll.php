@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Facts;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,9 +13,20 @@ class Poll extends Model
 
     /**
      * The poll behind /tierlist. Deleting or renaming this slug 404s the
-     * tierlist pages, so store/update/destroy guard it explicitly.
+     * tierlist pages, so store/update/destroy guard it explicitly. The slug is
+     * a shared fact (resources/data/polls.json) because the dashboard and the
+     * tier-list page compare against it in TypeScript too.
      */
-    public const CORE_POLL_SLUG = 'best-ministers';
+    public static function coreSlug(): string
+    {
+        return Facts::polls()['core_slug'];
+    }
+
+    /** The timezone a new poll starts with; the editor never exposes it. */
+    public static function defaultTimezone(): string
+    {
+        return Facts::polls()['default_timezone'];
+    }
 
     protected $fillable = ['slug', 'title', 'timezone', 'is_active', 'user_id'];
 

@@ -12,7 +12,7 @@ Rules, in order:
 4. **Both set + differ → explicit-choice modal** (4 curated keys only, §3).
 5. **Append-ish data merges silently, never modals** (§4).
 
-The engine is `resources/js/Pages/Muslim/_lib/settingsSync.ts`. It runs once per session per user from `SettingsSync.tsx` (mounted once inside `MainLayout`'s `AuthProvider`), guarded by `sessionStorage['sz-sync-v1-<userId>']`. It never blocks rendering; every network call is best-effort.
+The engine is `resources/js/Domain/settings/settingsSync.ts`. It runs once per session per user from `Domain/settings/SettingsSync.tsx` (mounted once inside `MainLayout`'s `AuthProvider`), guarded by `sessionStorage['sz-sync-v1-<userId>']`. It never blocks rendering; every network call is best-effort.
 
 ## 2. KEY INVENTORY (normative)
 
@@ -35,27 +35,83 @@ Silently merged (never modal):
 
 Deliberately device-local (never synced, never modal): GPS/IP `locMode` + resolved `geo` point — a phone and a laptop are rarely in one place.
 
-Deliberately untouched by sync: `theme`, `fontFamily`, `clockFormat`, toggles, links, `eventsGovernorate` (homepage events city — server-wins on mount like the other display prefs). They keep their existing server-wins-on-mount behavior. The `settings.language` whitelist is vestigial (the bilingual pages are gone) and nothing reads it.
+Deliberately untouched by sync: `theme`, `fontFamily`, toggles, links, `eventsGovernorate` (homepage events city — server-wins on mount like the other display prefs). They keep their existing server-wins-on-mount behavior, and each is written to the device and the account through `accountSettings.ts` (the homepage's display toggles and events city through `Pages/Home/_lib/homePrefs.ts`).
+
+`clockFormat`, `showClock`, `searchEngine`, `customSearchUrl`, `showSearch` and `language` are gone from the account contract too: they belonged to the home clock and the site-search box, both removed, and nothing read them.
 
 ## 3. CONFLICT MODAL
 
 `SettingsConflictModal.tsx`: one card per conflicting key, two options each — «هذا الجهاز: X» vs «الحساب: Y» with human-readable values (governorate Arabic names, method Arabic names). Apply requires an explicit choice per key (no defaults); winners are written to **both** sides plus one batched `POST /api/user/settings`, so the next login is quiet. Closing via X snoozes for the session without writing anything (asks again next session).
 
-Stale/unknown values (city slugs or method IDs outside the allowlists) count as **absent**: the other side wins silently instead of surfacing a meaningless choice. Non-finite coordinates are dropped before any batch so one bad value can never fail the whole batch (the endpoint 422s the entire payload otherwise).
+Stale/unknown values (city slugs or method IDs outside the allowlists) count as **absent**: the other side wins silently instead of surfacing a meaningless choice. The method allowlist is `resources/data/prayer.json` — the offered `methods` **plus** `unlisted_method_ids`, so an account holding an id the picker does not offer (7, 14, 15, 16) is a real value, not absent data. Non-finite coordinates are dropped before any batch so one bad value can never fail the whole batch (the endpoint 422s the entire payload otherwise).
 
 ## 4. WRITE-THROUGH DISCIPLINE (load-bearing)
 
-Mount-time code must **never overwrite an existing device key with the server value** for conflict-tracked keys — that would destroy the logged-out side before sync compares. Rule: set-if-absent only.
+**`resources/js/Domain/location/preference.ts` is the only reader and writer of the
+location keys.** Home (`governorate`, `useCustomCoords`, `customLat`, `customLon`),
+Roznama, `/muslim` (`sz-muslim-city`, `sz-muslim-use-custom`, `sz-muslim-lat/lon`),
+the board widgets and this sync engine all go through it; no surface keeps its own
+copy of a key name or a write path.
 
-- `Home.tsx`: `governorate` is set-if-absent; all other keys keep server-wins.
-- `Roznama/Index.tsx`: `governorate` + `sz-roznama-governorate` set-if-absent; user edits write both device keys immediately and `settings.governorate` debounced (600ms, logged-in only).
-- `Muslim/_lib/prefs.ts`: device-first base, server overlaid in memory only; user edits write through (city fan-out to both legacy keys preserved).
+- `readLocationPreference()` / `useLocationPreference()` — the reactive read. One
+  store, so an edit on Home updates Roznama, `/muslim` and the board widgets
+  without a reload (and after the sync pulls a value).
+- `updateLocationPreference(patch)` — writes the device keys and notifies them.
+- `adoptAccountLocation(...)` — the mount-time seed (rule below), implemented once
+  and called from `runLoginSync` only.
+- `readDeviceCity('prayer' | 'display')`, `writeDeviceCity(...)`,
+  `readDeviceCustomCoords()`, `writeDeviceCustomCoords(...)` — the per-family
+  accessors this engine compares and pulls with.
+
+**Two key families hold the same fact.** The *prayer family*
+(`sz-muslim-city`, `sz-muslim-use-custom`, `sz-muslim-lat`, `sz-muslim-lon`) is
+canonical, because it is the conflict-tracked one (`muslimCity`, `customLoc`); the
+*display family* (`governorate`, `sz-roznama-governorate`, `useCustomCoords`,
+`customLat`, `customLon`) is the older mirror Home and Roznama used to read alone.
+Read precedence, implemented and pinned by
+`Domain/location/preference.test.ts`:
+
+1. city: `sz-muslim-city` → `governorate` → `sz-roznama-governorate` → `damascus`;
+2. custom group: `sz-muslim-use-custom/lat/lon` → `useCustomCoords/customLat/customLon`;
+3. an unknown city slug counts as absent (the other side wins, §3).
+
+Every write lands in both families, so the surfaces and this engine keep seeing
+one value. Stored key names and value shapes are unchanged.
+
+**Mount-time seeding never overwrites.** `adoptAccountLocation()` fills device keys
+that do **not** exist from the account and leaves a present one alone — otherwise
+it would destroy the logged-out side before §3 compares them. This applies to the
+city and to the custom-coordinate group alike (Home used to overwrite the latter
+unconditionally). `runLoginSync` (`Domain/settings/settingsSync.ts`) is its **only
+caller**: the login sync is the one place that adopts the account location onto
+the device. Home and Roznama no longer copy `props.auth.user.settings` on mount —
+they read and write the shared preference store — so no page mount can race the
+sync over the same keys.
+
+**One writer owns the account PATCH.** `Domain/settings/accountSettings.ts` is the
+only module that spells `POST /api/user/settings`, the `{ settings }` envelope,
+the debounce (500 ms), the flush on `visibilitychange`/`pagehide` and the failure
+policy (one `notify.error`; silent only while the page is unloading). Home,
+Roznama, `useMuslimPrefs`, the appearance menu and this sync engine call
+`saveAccountSettings(patch)`; the sync engine's own batches and the conflict
+modal's use `postAccountSettings(patch)`, which sends immediately and can be
+awaited. A key set by two surfaces in one burst is merged and sent once, last
+write wins.
+
+The prayer-settings surfaces render one component
+(`Domain/prayer/PrayerSettingsFields`) inside one container
+(`Domain/prayer/ResponsiveSettingsDialog`, sheet on a phone and dialog above it),
+and mirror its `onLocationChange` patch to their own account call.
 
 ## 5. LABELS FOLLOW THE EFFECTIVE LOCATION
 
-`Roznama/Index.tsx` computes `placeLabel`: the resolved GPS/IP label while a device location is active (with a «موقع تلقائي» badge), else the governorate Arabic name. Weather badge and prayer header both render `placeLabel` — never a stale city while auto-location drives the numbers.
+`resolvePlaceLabel()` in `Domain/location/preference.ts` is the one rule: the
+resolved GPS/IP label while a device location is active (Roznama adds a «موقع
+تلقائي» badge), else «إحداثيات مخصصة» for manual coordinates, else the governorate
+Arabic name. Weather badge and prayer header both render it — never a stale city
+while auto-location drives the numbers.
 
 ## 6. ENDPOINT CONTRACTS
 
-- `POST /api/user/settings { settings: {...} }` — throttled `60,1`; whitelisted keys only (see `routes/web.php`); merges into `users.settings`; rejects >40KB merged and `prayerLog` >31 days. Covered by `tests/Feature/UserSettingsTest.php`.
+- `POST /api/user/settings { settings: {...} }` — throttled `60,1`; whitelisted keys only (`UserSettingsController::rules()`, the server side of `AccountSettingsPatch`); merges into `users.settings`; rejects >40KB merged, `customLinks` >20KB and `prayerLog` >31 days, all as Arabic validation refusals. `tests/Feature/UserSettingsTest.php` posts every key of the patch, so a key added on one side only fails the build.
 - `GET/POST/DELETE /api/v1/quran-bookmarks` — session + CSRF, throttled `60,1`. Covered by `tests/Feature/QuranBookmarkTest.php`.

@@ -1,13 +1,11 @@
-"use client";
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ArrowsUpFromLine, Palette, MapPin, Download, Info, Globe, Trash2, Edit2, Plus } from 'lucide-react';
-import { Twitter } from '@/components/ui/icons';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Twitter } from '@/Components/ui/icons';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/Components/ui/card";
+import { Input } from "@/Components/ui/input";
+import { Button } from "@/Components/ui/button";
+import { Label } from "@/Components/ui/label";
+import { ScrollArea } from "@/Components/ui/scroll-area";
 import { confirmDialog } from '@/Lib/confirm';
 
 interface Dot {
@@ -50,18 +48,15 @@ export default function CompassClient() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
-    // State
     const [axes, setAxes] = useState<Axes>(DEFAULT_AXES);
     const [colors, setColors] = useState<Colors>(DEFAULT_COLORS);
     const [dots, setDots] = useState<Dot[]>([]);
     const [selectedDotId, setSelectedDotId] = useState<number | null>(null);
     const [exportFormat, setExportFormat] = useState<'png' | 'jpg' | 'svg'>('png');
 
-    // Internal state for dragging
     const [isDragging, setIsDragging] = useState(false);
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
-    // Load from local storage
     useEffect(() => {
         try {
             const savedData = localStorage.getItem('politicalCompass');
@@ -76,12 +71,16 @@ export default function CompassClient() {
         }
     }, []);
 
-    // Save to local storage
+    // Save to local storage. Storage throws in private mode and when it is
+    // disabled entirely; the compass must keep working without persisting.
     useEffect(() => {
-        localStorage.setItem('politicalCompass', JSON.stringify({ axes, colors, dots }));
+        try {
+            localStorage.setItem('politicalCompass', JSON.stringify({ axes, colors, dots }));
+        } catch {
+            // nothing to save to
+        }
     }, [axes, colors, dots]);
 
-    // Resize Canvas
     const resizeCanvas = useCallback(() => {
         const canvas = canvasRef.current;
         const container = containerRef.current;
@@ -91,17 +90,14 @@ export default function CompassClient() {
         canvas.width = size;
         canvas.height = size;
         drawCompass();
-    }, [axes, colors, dots]); // Redraw when these change
+    }, [axes, colors, dots]);
 
-    // Listen to resize
     useEffect(() => {
         window.addEventListener('resize', resizeCanvas);
-        // Initial resize
         resizeCanvas();
         return () => window.removeEventListener('resize', resizeCanvas);
     }, [resizeCanvas]);
 
-    // Draw Function
     const drawCompass = useCallback(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
@@ -114,7 +110,6 @@ export default function CompassClient() {
 
         ctx.clearRect(0, 0, width, height);
 
-        // Draw Quadrants
         const drawQuad = (color: string, x: number, y: number, w: number, h: number) => {
             ctx.fillStyle = color;
             ctx.fillRect(x, y, w, h);
@@ -125,7 +120,6 @@ export default function CompassClient() {
         drawQuad(colors.bottomLeft, 0, centerY, centerX, centerY);
         drawQuad(colors.bottomRight, centerX, centerY, centerX, centerY);
 
-        // Grid Lines
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 2;
         ctx.beginPath();
@@ -135,18 +129,15 @@ export default function CompassClient() {
         ctx.lineTo(width, centerY);
         ctx.stroke();
 
-        // Labels
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 14px "IBM Plex Sans Arabic", sans-serif'; // Reduced font size slightly
+        ctx.font = 'bold 14px "IBM Plex Sans Arabic", sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        // Axis Labels
         const padding = 20;
         ctx.fillText(axes.left, padding + 20, centerY - padding);
         ctx.fillText(axes.right, width - padding - 20, centerY - padding);
 
-        // Rotate for top/bottom
         ctx.save();
         ctx.translate(centerX + padding, padding + 10);
         ctx.rotate(Math.PI / 2);
@@ -159,18 +150,16 @@ export default function CompassClient() {
         ctx.fillText(axes.bottom, 0, 0);
         ctx.restore();
 
-        // Dots
         dots.forEach(dot => {
             ctx.fillStyle = dot.color;
             ctx.beginPath();
-            ctx.arc(dot.x, dot.y, 8, 0, 2 * Math.PI); // Slightly smaller dots
+            ctx.arc(dot.x, dot.y, 8, 0, 2 * Math.PI);
             ctx.fill();
 
             ctx.strokeStyle = '#ffffff';
             ctx.lineWidth = 2;
             ctx.stroke();
 
-            // Label
             if (dot.name) {
                 ctx.fillStyle = '#ffffff';
                 ctx.font = '12px "IBM Plex Sans Arabic", sans-serif';
@@ -182,13 +171,11 @@ export default function CompassClient() {
         });
     }, [axes, colors, dots]);
 
-    // Redraw whenever state changes
     useEffect(() => {
         drawCompass();
     }, [drawCompass]);
 
 
-    // Canvas Event Handlers
     const getCanvasCoords = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
         const canvas = canvasRef.current;
         if (!canvas) return { x: 0, y: 0 };
@@ -215,13 +202,11 @@ export default function CompassClient() {
     };
 
     const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
-        // e.preventDefault(); // Prevent scrolling on touch? Maybe.
         const { x, y } = getCanvasCoords(e);
 
-        // Check for existing dot
         const clickedDot = dots.slice().reverse().find(dot => {
             const dist = Math.sqrt((dot.x - x) ** 2 + (dot.y - y) ** 2);
-            return dist <= 15; // Hit radius
+            return dist <= 15;
         });
 
         if (clickedDot) {
@@ -229,7 +214,6 @@ export default function CompassClient() {
             setIsDragging(true);
             setDragOffset({ x: x - clickedDot.x, y: y - clickedDot.y });
         } else {
-            // Add new dot
             const colors = ['#f44336', '#4caf50', '#2196f3', '#ffeb3b', '#e91e63', '#00bcd4', '#ff9800', '#9c27b0'];
             const newDot: Dot = {
                 id: Date.now(),
@@ -240,13 +224,11 @@ export default function CompassClient() {
             };
             setDots([...dots, newDot]);
             setSelectedDotId(newDot.id);
-            // Optional: immediately prompt for name editor?
         }
     };
 
     const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
         if (!isDragging || selectedDotId === null) return;
-        // e.preventDefault();
 
         const { x, y } = getCanvasCoords(e);
         setDots(prev => prev.map(d => {
@@ -282,13 +264,11 @@ export default function CompassClient() {
             const centerY = height / 2;
             let svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">`;
 
-            // Backgrounds
             svg += `<rect x="0" y="0" width="${centerX}" height="${centerY}" fill="${colors.topLeft}"/>`;
             svg += `<rect x="${centerX}" y="0" width="${centerX}" height="${centerY}" fill="${colors.topRight}"/>`;
             svg += `<rect x="0" y="${centerY}" width="${centerX}" height="${centerY}" fill="${colors.bottomLeft}"/>`;
             svg += `<rect x="${centerX}" y="${centerY}" width="${centerX}" height="${centerY}" fill="${colors.bottomRight}"/>`;
 
-            // Axes
             svg += `<line x1="${centerX}" y1="0" x2="${centerX}" y2="${height}" stroke="#fff" stroke-width="2"/>`;
             svg += `<line x1="0" y1="${centerY}" x2="${width}" y2="${centerY}" stroke="#fff" stroke-width="2"/>`;
 
@@ -299,7 +279,6 @@ export default function CompassClient() {
             svg += `<text x="${centerX + 15}" y="${centerY - 100}" ${txtStyle} transform="rotate(90, ${centerX + 15}, ${centerY - 100})">${axes.top}</text>`;
             svg += `<text x="${centerX + 15}" y="${centerY + 100}" ${txtStyle} transform="rotate(90, ${centerX + 15}, ${centerY + 100})">${axes.bottom}</text>`;
 
-            // Dots
             dots.forEach(dot => {
                 svg += `<circle cx="${dot.x}" cy="${dot.y}" r="8" fill="${dot.color}" stroke="#fff" stroke-width="2"/>`;
                 if (dot.name) {
@@ -325,7 +304,6 @@ export default function CompassClient() {
 
     return (
         <div className="flex flex-col min-h-screen bg-background font-sans" dir="rtl">
-            {/* Hero Section */}
             <section className="bg-card border-b border-border py-10 shadow-sm">
                 <div className="container mx-auto px-4 text-center max-w-3xl">
                     <h1 className="text-3xl md:text-5xl font-bold mb-4 text-foreground">مولد البوصلة السياسية المخصص</h1>
@@ -336,7 +314,6 @@ export default function CompassClient() {
             <div className="container mx-auto px-4 py-8 flex-1">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
-                    {/* Controls Sidebar - Desktop: Left col, Mobile: Top */}
                     <div className="lg:col-span-4 space-y-6 order-2 lg:order-1">
                         <Card>
                             <CardHeader>
@@ -459,7 +436,6 @@ export default function CompassClient() {
                         </Card>
                     </div>
 
-                    {/* Canvas Area */}
                     <div className="lg:col-span-8 order-1 lg:order-2">
                         <div ref={containerRef} className="bg-card rounded-xl shadow border border-border p-4 flex flex-col items-center justify-center min-h-[400px]">
                             <canvas
@@ -483,7 +459,6 @@ export default function CompassClient() {
                 </div>
             </div>
 
-            {/* Footer */}
             <footer className="bg-card border-t border-border py-8 mt-auto">
                 <div className="container mx-auto px-4 text-center">
                     <p className="text-muted-foreground">&copy; 2025 syrian.zone</p>

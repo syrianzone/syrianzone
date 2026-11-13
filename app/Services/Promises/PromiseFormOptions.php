@@ -24,7 +24,7 @@ class PromiseFormOptions
             'institutions' => $this->institutions(),
             'venues' => Promise::VENUES,
             'sourceTypes' => PromiseSource::TYPES,
-            'statuses' => Promise::STATUSES,
+            'statuses' => Promise::statuses(),
             'earliestDate' => Promise::EARLIEST_STATEMENT_DATE,
             'today' => Promise::today()->format('Y-m-d'),
             // Candidates for "this restates promise #N": published, not itself.

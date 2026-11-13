@@ -47,7 +47,7 @@ Used by native mobile clients (Flutter iOS/Android):
    Accept: application/json
    ```
    No cookies or CSRF tokens are required when authenticating with `Authorization: Bearer <token>`.
-4. **Scope Isolation**: Mobile login tokens are minted with `abilities: ["mobile"]`. They authenticate all user-facing endpoints (`auth:sanctum` / `auth:web,sanctum`), are **rejected (`403`)** on the automated `/mcp/admin` agent endpoint, and are excluded from the MCP agent token table (`/admin/api-tokens`).
+4. **Scope Isolation**: Mobile login tokens are minted with the `mobile` ability. Any token whose abilities include `mobile` authenticates every user-facing endpoint (`auth:sanctum` / `auth:web,sanctum`), is **rejected (`403`)** on the automated `/mcp/admin` agent endpoint, and is excluded from the MCP agent token table (`/admin/api-tokens`). Membership decides it, not array identity (`App\Support\Agents\TokenAbilities`).
 
 #### Auth Endpoints Summary
 
@@ -94,7 +94,7 @@ Used by native mobile clients (Flutter iOS/Android):
 ```
 - **Errors**:
   - `401 Unauthorized`: Invalid/expired Google token, unverified Google email, or `aud` not in `GOOGLE_ALLOWED_CLIENT_IDS`.
-  - `403 Forbidden`: `{ "message": "Your account has been banned." }`.
+  - `403 Forbidden`: `{ "message": "تم حظر حسابك." }`.
   - `422 Unprocessable Entity`: Neither `id_token` nor `access_token` was provided.
 
 #### `POST /api/v1/auth/logout` & `POST /api/v1/auth/logout-devices`
@@ -129,7 +129,7 @@ Every JSON error response (`HTTP >= 400`) returns a standardized JSON object wit
 | `500` / `502` | Server / Upstream Error | Unexpected server error or upstream data source failure. |
 
 - **Backwards-compatible `error` key**: Endpoints that historically returned `{ "error": "..." }` return both `message` and `error` with identical text. Central exception rendering in `bootstrap/app.php` guarantees `message` is always present.
-- **Web frontend helper**: Use `extractApiErrorMessage(err, fallback)` and `extractApiFieldErrors(err)` from [`resources/js/Lib/apiError.ts`](../../resources/js/Lib/apiError.ts).
+- **Web frontend helper**: every browser call goes through the one client in [`resources/js/Lib/api.ts`](../../resources/js/Lib/api.ts) (`api.get/post/put/patch/delete`, returning the response body). Failures go through `apiErrorMessage(err, fallback)` — one Arabic message for the `{message}`, `{error}`, `{errors}` (validation), 429-with-`Retry-After` and transport shapes, falling back when the server text is not Arabic — and `apiFieldErrors(err, { arabicOnly })` for inline form errors. Feature modules (`Domain/<module>/api.ts`) expose one typed function per resource on top of it, so pages never spell a URL.
 
 ---
 
@@ -238,6 +238,20 @@ Managed visually from the dashboard at `/admin/navigation`.
 
 All search endpoints live under `/api/v1` and accept `q` as the primary search query parameter.
 
+**Arabic spelling.** Every Arabic text match on the server is folded on both
+sides (`App\Support\ArabicSearch::fold()`): «احمد» finds «أحمد», «صلاه» finds
+«صلاة», «موسسه» finds «مؤسسة», and diacritics or tatweel never hide a row. The
+fold is stored per searched column (`routes.name_ar_fold`,
+`stops.name_ar_fold`, `places.name_fold`/`description_fold`,
+`phonebook_entries.name_ar_fold`,
+`official_entities.name_ar_fold`/`description_ar_fold`,
+`gov_apps.name_ar_fold`/`description_ar_fold`) and kept in step by
+`App\Models\Concerns\FoldsSearchColumns` on save, so a search never re-folds a
+column at query time. English and numeric columns (`name_en`, `name`,
+`number`, ids) are matched with the raw query, and `%`/`_` are escaped so a
+literal wildcard stays literal. The browser folds with the same rules
+(`Lib/arabic.ts`), pinned by `resources/data/search-fold.json`.
+
 | Scope | Canonical Endpoint | Route Name | Legacy Alias | Query Params | Rate Limit |
 |---|---|---|---|---|---|
 | **Global Search** (Cross-Module) | `GET /api/v1/search/global` | `api.v1.search.global` | `GET /api/v1/global-search` | `q` (`2..80` chars, required) | `60/min` |
@@ -247,7 +261,7 @@ All search endpoints live under `/api/v1` and accept `q` as the primary search q
 | **Places Geocode** (Nominatim Proxy) | `GET /api/v1/places/geocode` | `api.v1.places.geocode` | — | `q` (`2..120` chars, required) | `60/min` |
 
 ### `GET /api/v1/search/global`
-Cross-module search returning up to 5 matches per module across Transit routes, Mishwar places, Phonebook entries, SyOfficial entities, and GovApps.
+Cross-module search returning up to 5 matches per module across Transit routes, Mishwar places, Phonebook entries, SyOfficial entities, and GovApps. Arabic columns (route/place/entity/app names and the place/entity/app descriptions) are matched folded; `name_en`, `name` and `number` are matched raw.
 ```json
 {
   "routes": [
@@ -276,7 +290,7 @@ Public, unauthenticated read API over published transit data (cities, routes, st
 
 - **Combined Damascus metro network**: `damascus` and `rif-dimashq` are served as one unified network because transit lines cross the boundary. Requesting either ID returns both.
 - **Unknown city ID**: Returns `404` `{ "message": "City not found." }` (never a cached empty `200`).
-- **Map Vector Tiles**: The Transit map frontend uses MapLibre GL with `/styles/styles/dark-matter-vector.json` and `/styles/styles/light-vector.json`, which load vector tiles from `https://tiles.basemaps.cartocdn.com/vector/carto.streets/v1/tiles.json` (`openmaptiles` schema).
+- **Map Vector Tiles**: Every MapLibre map in the frontend resolves its basemap from `Components/map/resolveStyle.ts` to `/styles/styles/dark-matter-vector.json` (dark scheme) or `/styles/styles/light-vector.json` (light scheme), which load vector tiles from `https://tiles.basemaps.cartocdn.com/vector/carto.streets/v1/tiles.json` (`openmaptiles` schema).
 
 ### Transit Endpoints Summary
 
@@ -309,10 +323,17 @@ Cached for 1 hour (`transit:cities:api`). Coordinates use GeoJSON `[lng, lat]` o
     "center": [36.2765, 33.5138],
     "bounds": [[35.8, 33.3], [36.8, 33.7]],
     "routeCount": 4,
+    "mapGroup": ["damascus", "rif-dimashq"],
+    "mapGroupLabel": "دمشق الكبرى",
     "icon": { "viewBox": "0 0 0.174653 0.124551", "path": "M0.160,0.058 L..." }
   }
 ]
 ```
+
+`mapGroup` lists the city ids drawn on one shared map (the city itself included)
+and `mapGroupLabel` is that map's Arabic name; for a city with a map of its own
+`mapGroup` is `[id]` and the label is `null`. `icon` is the governorate outline
+`forApi()` adds; `forPage()` omits it.
 
 ### `GET /api/v1/transit/cities/{id}/routes`
 Cached for 10 minutes. Returns published routes for `{id}`:
@@ -349,7 +370,6 @@ Cached for 10 minutes (`Cache-Control: public, max-age=600`). Returns two GeoJSO
           "nameAr": "المزة - باب توما",
           "nameEn": "Mezzeh - Bab Touma",
           "colorIndex": 1,
-          "color_index": 1,
           "priceOld": 2000,
           "priceNew": 3000
         }
@@ -388,7 +408,7 @@ Query parameters: `lat` (required, numeric), `lng` (required, numeric), `radius`
 ```
 
 ### `GET /api/v1/transit/search`
-Query parameters: `q` (search text), `city_id` (optional city filter). Empty `q` returns `{ "routes": [], "stops": [] }`.
+Query parameters: `q` (search text), `city_id` (optional city filter). Empty `q` returns `{ "routes": [], "stops": [] }`. Route and stop names are matched folded («احمد» finds «أحمد»); route ids and city ids keep the raw pattern.
 ```json
 {
   "routes": [
@@ -401,7 +421,7 @@ Query parameters: `q` (search text), `city_id` (optional city filter). Empty `q`
 ```
 
 ### `GET /api/v1/transit/pois`
-Query parameters: `q` (`3..100` chars, required), `city_id` (optional, biases search to city bounds). Backed by Photon (OSM) with automatic Google Places fallback when results are thin; expands common Arabic POI category synonyms (`جامع`/`مسجد`, `مشفى`/`مستشفى`, `صيدلية`, etc.). Cached 24h (`Cache-Control: public, max-age=3600`). Never returns `500` on upstream failure.
+Query parameters: `q` (`3..100` chars, required), `city_id` (optional, biases search to city bounds). Backed by Photon (OSM) with automatic Google Places fallback when results are thin; expands common Arabic POI category synonyms (`جامع`/`مسجد`, `مشفى`/`مستشفى`, `صيدلية`, etc.). The query is folded with the shared Arabic fold first (diacritics, tatweel and spelling variants), so «مقهى» and «مقهي» are one cached query and one set of variants. Cached 24h (`Cache-Control: public, max-age=3600`). Never returns `500` on upstream failure.
 ```json
 {
   "places": [
@@ -443,7 +463,7 @@ Transit Studio allows community members and transit moderators to draw new bus/m
 - **Auth**: Required (Session cookie or `Authorization: Bearer <token>`).
 - **Query Parameters**:
   - `status` *(optional)*: Filter by `pending`, `approved`, or `rejected`.
-- **Response (`200 OK`)**: Returns the user's drafts ordered newest first (`created_at DESC`) under both `data` and `drafts` keys:
+- **Response (`200 OK`)**: Returns the user's drafts ordered newest first (`created_at DESC`) under `data`:
 ```json
 {
   "data": [
@@ -479,9 +499,6 @@ Transit Studio allows community members and transit moderators to draw new bus/m
       "created_at": "2026-04-15T10:00:00.000000Z",
       "updated_at": "2026-04-15T10:00:00.000000Z"
     }
-  ],
-  "drafts": [
-    { "...same items..." }
   ]
 }
 ```
@@ -585,7 +602,7 @@ Transit Studio allows community members and transit moderators to draw new bus/m
 #### 6. Withdraw a Pending Draft — `DELETE /api/v1/transit/studio/routes/{id}`
 - **Legacy Alias**: `DELETE /api/v1/studio/routes/{id}`
 - **Auth**: Required (owner or `transit.edit_routes`).
-- **Response (`200 OK`)**: `{ "ok": true }` (or `422` `{ "message": "Only pending drafts can be withdrawn." }` if already reviewed).
+- **Response (`200 OK`)**: `{ "ok": true }` (or `422` `{ "message": "لا يمكن سحب إلا المسودة التي ما زالت قيد المراجعة." }` if already reviewed).
 
 ---
 
@@ -644,7 +661,7 @@ rather than after the 60s TTL.
 
 | Method & Canonical Path | Route Name | Query / Path Parameters | Description |
 |---|---|---|---|
-| `GET /api/v1/places` | `api.v1.places.index` | `q`, `gov`, `category`, `subcategory`, `tags`, `sort` (`featured\|newest\|saves`), `page` | Paginated approved places directory |
+| `GET /api/v1/places` | `api.v1.places.index` | `q`, `gov`, `category`, `subcategory`, `tags`, `sort` (`featured\|newest\|saves`), `page` | Paginated approved places directory (`q` matches name and description folded, so «صلاه» finds «صلاة») |
 | `GET /api/v1/places/map` | `api.v1.places.map` | `gov`, `category`, `subcategory`, `tags` | Lightweight pin coordinates & summary properties for the map |
 | `GET /api/v1/places/nearby` | `api.v1.places.nearby` | `lat`, `lng`, `radius_km` (`0.5..100`, default `25`), `exclude`, `limit` | Approved places near a coordinate |
 | `GET /api/v1/places/geocode` | `api.v1.places.geocode` | `q` (`2..120` chars, required) | Syria-bounded Nominatim geocoding proxy (24h cache) |
@@ -722,7 +739,7 @@ These endpoints accept either a stateful Web session cookie + CSRF token (`web` 
 | `PATCH\|PUT /api/v1/account` | `api.v1.account.update` | `POST /api/account/update` | Session or Bearer | — | Update account `name` and `email` (returns JSON for Bearer requests, Inertia redirect for Web) |
 | `POST /api/v1/account/avatar` | `api.v1.account.avatar.store` | `POST /api/account/avatar` | Session or Bearer | `10/min` | Upload profile avatar (`max 2MB`; returns `{ ok, avatar_url, user }` for Bearer requests) |
 | `DELETE /api/v1/account` | `api.v1.account.destroy` | `POST /api/account/delete` | Session or Bearer | — | Soft-delete user account & revoke tokens |
-| `PATCH\|PUT\|POST /api/v1/user/settings` | `api.v1.user.settings.update` | `POST /api/user/settings` | Session or Bearer | `60/min` | Merge whitelisted user preferences (`theme`, `language`, `governorate`, `customLinks`, etc.) |
+| `PATCH\|PUT\|POST /api/v1/user/settings` | `api.v1.user.settings.update` | `POST /api/user/settings` | Session or Bearer | `60/min` | Merge whitelisted user preferences (`theme`, `fontFamily`, `governorate`, `customLinks`, the prayer/Quran keys, etc.) |
 | `POST /api/v1/user/radio-usage` | `api.v1.user.radio-usage.store` | `POST /api/user/radio-usage` | Session or Bearer | `60/min` | Add Quran radio streaming delta (`bytes`, `seconds`) under row lock |
 | `DELETE /api/v1/user/radio-usage` | `api.v1.user.radio-usage.destroy` | `POST /api/user/radio-usage/clear` | Session or Bearer | `10/min` | Reset Quran radio usage counters |
 | `GET /api/v1/board` | `api.v1.board.show` | — | Session or Bearer | `60/min` | Fetch user's synced `/board` widget layout |
@@ -748,23 +765,27 @@ These endpoints accept either a stateful Web session cookie + CSRF token (`web` 
 Every admin endpoint is protected by `auth:web,sanctum` and a per-route capability middleware (`<module>_admin:<capability>`) enforced by `ModuleCapabilityGuard` and verified at test time by `ModuleCapabilityRoutesTest`. Only `superadmin` bypasses individual capability checks.
 
 ### 10.1 Polls Admin (`polls_admin`)
-| Method & Canonical Path | Legacy Alias | Required Capability |
-|---|---|---|
-| `POST /api/v1/admin/polls` | `POST /api/polls` | `polls.create` |
-| `PUT\|PATCH /api/v1/admin/polls/{id}` | `PUT /api/polls/{id}` | `polls.edit` |
-| `DELETE /api/v1/admin/polls/{id}` | `DELETE /api/polls/{id}` | `polls.delete` |
-| `GET /api/v1/admin/candidate-groups` | `GET /api/candidate-groups` | `any` (`polls.*`) |
-| `GET /api/v1/admin/candidate-groups/{id}` | `GET /api/candidate-groups/{id}` | `any` (`polls.*`) |
-| `POST /api/v1/admin/candidate-groups` | `POST /api/candidate-groups` | `polls.create` |
-| `PUT\|PATCH /api/v1/admin/candidate-groups/{id}` | `PUT\|PATCH /api/candidate-groups/{id}` | `polls.edit` |
-| `DELETE /api/v1/admin/candidate-groups/{id}` | `DELETE /api/candidate-groups/{id}` | `polls.delete` |
-| `POST /api/v1/admin/candidate-groups/reorder` | `POST /api/candidate-groups/reorder` | `polls.edit` |
-| `POST /api/v1/admin/candidate-groups/{id}/default` | `POST /api/candidate-groups/{id}/default` | `polls.edit` |
-| `POST /api/v1/admin/candidates` | `POST /api/candidates` | `polls.create` |
-| `PUT\|PATCH /api/v1/admin/candidates/{id}` | `PUT\|PATCH /api/candidates/{id}` | `polls.edit` |
-| `DELETE /api/v1/admin/candidates/{id}` | `DELETE /api/candidates/{id}` | `polls.delete` |
-| `PATCH /api/v1/admin/candidates/{id}/archive` | `PATCH /api/candidates/{id}/archive` | `polls.edit` |
-| `PATCH /api/v1/admin/candidates/{id}/restore` | `PATCH /api/candidates/{id}/restore` | `polls.edit` |
+The dashboard's poll editor calls these paths unversioned (`/api/*`), like the
+account and settings endpoints. The `/api/v1/admin/polls|candidate-groups|candidates`
+twins that no client requested are gone: one route tree per module.
+
+| Method & Path | Required Capability |
+|---|---|
+| `POST /api/polls` | `polls.create` |
+| `PUT /api/polls/{id}` | `polls.edit` |
+| `DELETE /api/polls/{id}` | `polls.delete` |
+| `GET /api/candidate-groups` | `any` (`polls.*`) |
+| `GET /api/candidate-groups/{id}` | `any` (`polls.*`) |
+| `POST /api/candidate-groups` | `polls.create` |
+| `PUT\|PATCH /api/candidate-groups/{id}` | `polls.edit` |
+| `DELETE /api/candidate-groups/{id}` | `polls.delete` |
+| `POST /api/candidate-groups/reorder` | `polls.edit` |
+| `POST /api/candidate-groups/{id}/default` | `polls.edit` |
+| `POST /api/candidates` | `polls.create` |
+| `PUT\|PATCH /api/candidates/{id}` | `polls.edit` |
+| `DELETE /api/candidates/{id}` | `polls.delete` |
+| `PATCH /api/candidates/{id}/archive` | `polls.edit` |
+| `PATCH /api/candidates/{id}/restore` | `polls.edit` |
 
 `PUT|PATCH /candidate-groups/{id}` also accepts `is_active` (boolean). Setting it
 to `false` disables the category without deleting it: the row, its candidates,
@@ -792,41 +813,48 @@ group and candidate, including disabled and archived ones.
 | `DELETE /api/v1/admin/place-photos/{id}` | `places.moderate_photos` |
 
 ### 10.3 Transit Admin (`transit_admin`, Governorate-Scoped)
-| Method & Canonical Path | Legacy Alias | Required Capability |
-|---|---|---|
-| `GET /api/v1/admin/transit/route-drafts` | `GET /api/v1/admin/route-drafts` | `transit.review_drafts` |
-| `POST /api/v1/admin/transit/route-drafts/{id}/approve` | `POST /api/v1/admin/route-drafts/{id}/approve` | `transit.approve` |
-| `POST /api/v1/admin/transit/route-drafts/{id}/reject` | `POST /api/v1/admin/route-drafts/{id}/reject` | `transit.reject` |
-| `GET /api/v1/admin/transit/routes` | `GET /api/v1/admin/routes` | `transit.review_drafts` |
-| `GET /api/v1/admin/transit/routes/logs` | `GET /api/v1/admin/routes/logs` | `transit.review_drafts` |
-| `GET /api/v1/admin/transit/routes/{id}/geojson` | `GET /api/v1/admin/routes/{id}/geojson` | `transit.review_drafts` |
-| `GET /api/v1/admin/transit/routes/{id}/stops` | `GET /api/v1/admin/routes/{id}/stops` | `transit.review_drafts` |
-| `PATCH\|POST /api/v1/admin/transit/routes/{id}/status` | `POST /api/v1/admin/routes/{id}/status` | `transit.edit_routes` |
-| `PUT /api/v1/admin/transit/routes/{id}` | `PUT /api/v1/admin/routes/{id}` | `transit.edit_routes` |
-| `DELETE /api/v1/admin/transit/routes/{id}` | `DELETE /api/v1/admin/routes/{id}` | `transit.delete_routes` |
-| `POST /api/v1/admin/transit/routes/{id}/move` | `POST /api/v1/admin/routes/{id}/move` | `transit.edit_routes` |
-| `POST /api/v1/admin/transit/routes/combine` | `POST /api/v1/admin/routes/combine` | `transit.edit_routes` |
-| `POST /api/v1/admin/transit/routes/split` | `POST /api/v1/admin/routes/split` | `transit.edit_routes` |
-| `POST /api/v1/admin/transit/routes/import-preview` | `POST /api/v1/admin/routes/import-preview` | `transit.review_drafts` (`30/min`) |
-| `POST /api/v1/admin/transit/routes/import-publish` | `POST /api/v1/admin/routes/import-publish` | `transit.edit_routes` (`30/min`) |
+The dashboard and the studio call these paths; the `/api/v1/admin/transit/*`
+twin that no client requested is gone: one route tree per module.
+
+| Method & Path | Required Capability |
+|---|---|
+| `GET /api/v1/admin/route-drafts` | `transit.review_drafts` |
+| `POST /api/v1/admin/route-drafts/{id}/approve` | `transit.approve` |
+| `POST /api/v1/admin/route-drafts/{id}/reject` | `transit.reject` |
+| `GET /api/v1/admin/routes` | `transit.review_drafts` |
+| `GET /api/v1/admin/routes/logs` | `transit.review_drafts` |
+| `GET /api/v1/admin/routes/{id}/geojson` | `transit.review_drafts` |
+| `GET /api/v1/admin/routes/{id}/stops` | `transit.review_drafts` |
+| `PATCH`/`POST /api/v1/admin/routes/{id}/status` | `transit.edit_routes` |
+| `PUT /api/v1/admin/routes/{id}` | `transit.edit_routes` |
+| `DELETE /api/v1/admin/routes/{id}` | `transit.delete_routes` |
+| `POST /api/v1/admin/routes/{id}/move` | `transit.edit_routes` |
+| `POST /api/v1/admin/routes/combine` | `transit.edit_routes` |
+| `POST /api/v1/admin/routes/split` | `transit.edit_routes` |
+| `POST /api/v1/admin/routes/import-preview` | `transit.review_drafts` (`30/min`) |
+| `POST /api/v1/admin/routes/import-publish` | `transit.edit_routes` (`30/min`) |
 
 ### 10.4 Directory & Module Admin Panels
+These three panels are driven by their Inertia pages, so every write answers the
+same way: validate, write, `redirect()->back()` with an Arabic `success` flash.
+They are not JSON endpoints — an over-long field comes back as the standard
+`422` envelope in §1.2, and the page reloads from the redirect.
+
 - **SyOfficial (`syofficial_admin`, `/api/v1/admin/syofficial/*`)**:
-  - `POST /categories` (`syofficial.create`), `PUT /categories/{id}` (`syofficial.edit`), `DELETE /categories/{id}` (`syofficial.delete`), `POST /categories/reorder` (`syofficial.reorder`, alias `/reorder/categories`).
-  - `POST /entities` (`syofficial.create`), `PUT|POST /entities/{id}` (`syofficial.edit`), `DELETE /entities/{id}` (`syofficial.delete`), `POST /entities/reorder` (`syofficial.reorder`, alias `/reorder/entities`).
+  - `POST /categories` (`syofficial.create`), `PUT /categories/{id}` (`syofficial.edit`), `DELETE /categories/{id}` (`syofficial.delete`), `POST /categories/reorder` (`syofficial.reorder`).
+  - `POST /entities` (`syofficial.create`), `PUT|POST /entities/{id}` (`syofficial.edit`), `DELETE /entities/{id}` (`syofficial.delete`), `POST /entities/reorder` (`syofficial.reorder`).
 - **GovApps (`govapps_admin`, `/api/v1/admin/govapps/*`)**:
   - `POST /` (`govapps.create`), `PUT|POST /{id}` (`govapps.edit`), `DELETE /{id}` (`govapps.delete`), `POST /reorder` (`govapps.reorder`).
 - **Phonebook (`phonebook_admin`, `/api/v1/admin/phonebook/*`)**:
-  - `POST /categories` (`phonebook.create`), `PUT /categories/{id}` (`phonebook.edit`), `DELETE /categories/{id}` (`phonebook.delete`), `POST /categories/reorder` (`phonebook.reorder`, alias `/reorder/categories`).
-  - `POST /entries` (`phonebook.create`), `PUT|POST /entries/{id}` (`phonebook.edit`), `PATCH|POST /entries/{id}/toggle` (`phonebook.toggle`), `DELETE /entries/{id}` (`phonebook.delete`), `POST /entries/reorder` (`phonebook.reorder`, alias `/reorder/entries`).
+  - `POST /categories` (`phonebook.create`), `PUT /categories/{id}` (`phonebook.edit`), `DELETE /categories/{id}` (`phonebook.delete`), `POST /categories/reorder` (`phonebook.reorder`).
+  - `POST /entries` (`phonebook.create`), `PUT|POST /entries/{id}` (`phonebook.edit`), `PATCH|POST /entries/{id}/toggle` (`phonebook.toggle`), `DELETE /entries/{id}` (`phonebook.delete`), `POST /entries/reorder` (`phonebook.reorder`).
 - **Compass (`compass_admin`, `/api/v1/admin/compass/*`)**:
   - Figures (`compass.figures`): `GET /figures`, `POST /figures`, `POST /figures/upload-image`, `PUT /figures/{id}`, `DELETE /figures/{id}`, `PATCH|POST /figures/{id}/toggle`.
   - Personas (`compass.personas`): `GET /personas`, `POST /personas`, `PUT /personas/{id}`, `DELETE /personas/{id}`, `PATCH|POST /personas/{id}/toggle`.
 - **User Moderation (`users_admin`)**:
   - `PATCH /api/v1/admin/users/{id}/ban` (legacy alias `POST /api/v1/admin/users/{id}/toggle-ban`) — requires `users.ban`.
 - **Superadmin (`superadmin`)**:
-  - Staff & permissions: `GET|POST /api/v1/admin/admins`, `DELETE /api/v1/admin/admins/{id}` (legacy `/api/admins*`).
-  - Asset Storage (Cloudflare R2): `GET /api/v1/admin/assets`, `GET /api/v1/admin/assets/manifest`, `POST /api/v1/admin/assets`, `DELETE /api/v1/admin/assets` (legacy `/api/v1/admin/assets/list|upload|delete`).
+  - Asset Storage (Cloudflare R2): `GET /api/v1/admin/assets/list`, `POST /api/v1/admin/assets/upload`, `DELETE /api/v1/admin/assets/delete` (the paths the asset page and the poll editor's image upload call).
   - Site Navigation & Icon Catalog: `GET /admin/navigation`, `GET|PUT /api/v1/admin/navigation`.
   - Site Popup: `GET /admin/site-popup`, `GET|PUT /api/v1/admin/site-popup`.
   - Guess Who Roster: `POST|PUT|DELETE /api/v1/admin/guesswho/categories[/{id}]`, `POST|PUT|DELETE /api/v1/admin/guesswho/characters[/{id}]`.
@@ -836,7 +864,11 @@ group and candidate, including disabled and archived ones.
 
 ## 11. Legacy & Deprecated Endpoint Aliases
 
+> **To be replaced.** Every pair below is two URLs for one endpoint. They are kept for now only because released mobile builds and external integrators may call either spelling; nothing else needs both. The plan: pick one path per endpoint, move the web client and the next mobile release onto it, watch the access logs until the other spelling has no traffic, then delete the alias route and its row here. Do not add new aliases.
+
 All legacy endpoints below remain **100% functional** and invoke the exact same controller logic as their canonical `/api/v1/*` counterparts. New features, mobile clients, and documentation should use the canonical paths.
+
+Where both rows describe the same module (auth token, global search, transit reads and studio, Compass shares, poll ballots/leaderboard, and the public widgets), the route is defined **once** in `routes/*.php` and mounted under both paths, so an alias cannot drift from its canonical URL. The remaining alias pairs are older controller entry points that still exist on purpose.
 
 | Legacy Path | Canonical `/api/v1/*` Path |
 |---|---|
@@ -877,11 +909,5 @@ All legacy endpoints below remain **100% functional** and invoke the exact same 
 | `POST /api/user/settings` | `PATCH /api/v1/user/settings` |
 | `POST /api/user/radio-usage` | `POST /api/v1/user/radio-usage` |
 | `POST /api/user/radio-usage/clear` | `DELETE /api/v1/user/radio-usage` |
-| `POST\|PUT\|DELETE /api/polls*` | `POST\|PUT\|PATCH\|DELETE /api/v1/admin/polls*` |
-| `GET\|POST\|PUT\|PATCH\|DELETE /api/candidate-groups*` | `GET\|POST\|PUT\|PATCH\|DELETE /api/v1/admin/candidate-groups*` |
-| `POST\|PUT\|PATCH\|DELETE /api/candidates*` | `POST\|PUT\|PATCH\|DELETE /api/v1/admin/candidates*` |
-| `GET\|POST\|DELETE /api/admins*` | `GET\|POST\|DELETE /api/v1/admin/admins*` |
-| `GET\|POST\|DELETE /api/v1/admin/assets/(list\|upload\|delete)` | `GET\|POST\|DELETE /api/v1/admin/assets` |
 | `POST /api/v1/admin/api-tokens/revoke-all/{userId}` | `DELETE /api/v1/admin/users/{userId}/api-tokens` |
 | `POST /api/v1/admin/users/{id}/toggle-ban` | `PATCH /api/v1/admin/users/{id}/ban` |
-| `GET\|POST\|PUT\|DELETE /api/v1/admin/route(s\|-drafts)*` | `GET\|POST\|PUT\|PATCH\|DELETE /api/v1/admin/transit/route(s\|-drafts)*` |

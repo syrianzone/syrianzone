@@ -4,6 +4,7 @@ namespace App\Services\SyOfficial;
 
 use App\Models\OfficialCategory;
 use App\Models\OfficialEntity;
+use App\Support\Facts;
 use Illuminate\Database\Eloquent\Collection;
 
 /**
@@ -19,6 +20,52 @@ use Illuminate\Database\Eloquent\Collection;
  */
 class SyOfficialPresenter
 {
+    /**
+     * The public directory page. Its rows are narrower than the admin ones and
+     * carry the client's own field names; the image is expanded to the public
+     * asset host here so no controller builds an asset URL.
+     *
+     * @param  Collection<int, OfficialEntity>  $entities
+     * @return array<int, array<string, mixed>>
+     */
+    public function publicEntities(Collection $entities): array
+    {
+        return $entities->map(fn (OfficialEntity $e) => $this->publicEntity($e))->values()->all();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function publicEntity(OfficialEntity $entity): array
+    {
+        return [
+            'id' => $entity->id,
+            'name' => $entity->name,
+            'name_ar' => $entity->name_ar,
+            'description' => $entity->description ?? '',
+            'description_ar' => $entity->description_ar ?? '',
+            'image' => $this->publicImage($entity->image),
+            'category' => $entity->category_id,
+            'socials' => (object) ($entity->socials ?? []),
+        ];
+    }
+
+    /**
+     * A stored file name is served from the public asset host; an absolute URL
+     * or a site path is already usable as it is.
+     */
+    private function publicImage(?string $image): ?string
+    {
+        if ($image !== null && $image !== '' && ! str_starts_with($image, 'http') && ! str_starts_with($image, '/')) {
+            $r2Url = env('R2_PUBLIC_URL')
+                ?: (config('filesystems.disks.r2.url') ?: Facts::media()['public_base']);
+
+            return rtrim($r2Url, '/').'/'.SyOfficialDirectoryService::IMAGE_DIR.'/'.basename($image);
+        }
+
+        return $image;
+    }
+
     /**
      * @param  Collection<int, OfficialCategory>  $categories
      * @return array<int, array<string, mixed>>

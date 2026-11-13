@@ -1,9 +1,9 @@
 import { Button } from '@/Components/ui/button';
 import { ThumbsDown, ThumbsUp } from 'lucide-react';
 import { cn } from '@/Lib/utils';
-import { voteCount } from '../_lib/format';
+import { voteCount } from '@/Domain/promises/format';
 import { usePromiseVote } from '../_lib/useVote';
-import type { PromiseVotes } from '../_lib/types';
+import type { PromiseVotes } from '@/Domain/promises/types';
 
 interface Props {
     number: number;

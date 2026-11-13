@@ -4,24 +4,21 @@ namespace App\Http\Controllers;
 
 use App\Models\PhonebookCategory;
 use App\Models\PhonebookEntry;
+use App\Services\Phonebook\PhonebookCache;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 
 class PhonebookController extends Controller
 {
-    /**
-     * Display the official phonebook page.
-     */
     public function index()
     {
-        $categories = Cache::remember('phonebook:db_categories_v1', 600, function () {
+        $categories = Cache::remember(PhonebookCache::CATEGORIES_KEY, 600, function () {
             // Seed an empty directory on first use. Checked here, inside the
             // cached read, so a warm page does not count the table on every hit.
             if (PhonebookCategory::count() === 0) {
                 try {
                     (new \Database\Seeders\PhonebookSeeder())->run();
                 } catch (\Exception $e) {
-                    // Fail gracefully
                 }
             }
 
@@ -30,7 +27,7 @@ class PhonebookController extends Controller
                 ->get();
         });
 
-        $entries = Cache::remember('phonebook:db_entries_v1', 600, function () {
+        $entries = Cache::remember(PhonebookCache::ENTRIES_KEY, 600, function () {
             return PhonebookEntry::with('category')
                 ->where('is_active', true)
                 ->whereHas('category', function ($q) {

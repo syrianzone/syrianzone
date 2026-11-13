@@ -1,10 +1,12 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, type ComponentType } from 'react';
 import ReactDOMServer from 'react-dom/server';
 import { createInertiaApp } from '@inertiajs/react';
 import createServer from '@inertiajs/react/server';
-import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
+import { pageResolver } from '@/Lib/pages';
 import { QueryProvider } from '@/Providers/QueryProvider';
 import { DirectionProvider } from '@radix-ui/react-direction';
+
+const pages = import.meta.glob<{ default: ComponentType }>('./Pages/**/*.tsx');
 
 createServer((page) =>
     createInertiaApp({
@@ -14,11 +16,7 @@ createServer((page) =>
         // given (and nothing for an empty one) keeps the SSR head from adding
         // a second, generic <title> next to it.
         title: (title) => title,
-        resolve: (name) =>
-            resolvePageComponent(
-                `./Pages/${name}.tsx`,
-                import.meta.glob('./Pages/**/*.tsx')
-            ),
+        resolve: pageResolver(pages, { deferred: false }),
         setup: ({ App, props }) => (
             <DirectionProvider dir="rtl">
                 <QueryProvider>

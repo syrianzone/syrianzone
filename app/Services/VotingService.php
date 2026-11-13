@@ -6,6 +6,7 @@ use App\Models\Ballot;
 use App\Models\BallotItem;
 use App\Models\Candidate;
 use App\Models\Poll;
+use App\Support\Facts;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -28,6 +29,7 @@ class VotingService
     {
         $voteDay = Carbon::now($poll->safeTimezone())->startOfDay();
 
+        $this->rejectIncompleteBallot($tiers);
         $this->rejectIneligibleCandidates($poll, $tiers);
 
         // One ballot per device per poll per day. The DB unique index
@@ -36,7 +38,7 @@ class VotingService
         // instead of a 500, while the unique index wins races.
         if (Ballot::where('poll_id', $poll->id)->where('vote_day', $voteDay)->where('voter_key', $voterKey)->exists()) {
             throw ValidationException::withMessages([
-                'tiers' => 'You have already voted today.',
+                'tiers' => 'لقد صوّتت اليوم بالفعل.',
             ]);
         }
 
@@ -56,7 +58,7 @@ class VotingService
                 // ballot that counts as "voted" but scores nothing.
                 if (empty($scoreDelta)) {
                     throw ValidationException::withMessages([
-                        'tiers' => 'Ballot contains no valid candidates.',
+                        'tiers' => 'لم يتضمّن التصويت أي مرشح صالح.',
                     ]);
                 }
 
@@ -67,10 +69,26 @@ class VotingService
             // index rejected the second. Report as already-voted, not 500.
             if (str_contains($e->getMessage(), 'ballots_poll_day_voter_unique') || ($e->errorInfo[1] ?? null) === 1062) {
                 throw ValidationException::withMessages([
-                    'tiers' => 'You have already voted today.',
+                    'tiers' => 'لقد صوّتت اليوم بالفعل.',
                 ]);
             }
             throw $e;
+        }
+    }
+
+    /**
+     * A ballot must score at least MIN_SELECTIONS candidates. An under-filled
+     * ballot is refused before anything is written, so it is a validation error
+     * of the same field the client fills (`tiers`).
+     *
+     * @param  array<string, mixed>  $tiers
+     */
+    private function rejectIncompleteBallot(array $tiers): void
+    {
+        if (collect($tiers)->flatten(1)->count() < Facts::polls()['min_selections']) {
+            throw ValidationException::withMessages([
+                'tiers' => 'يجب اختيار '.Facts::polls()['min_selections'].' مرشحين على الأقل.',
+            ]);
         }
     }
 
@@ -126,7 +144,6 @@ class VotingService
 
     private function calculateScores(Ballot $ballot, array $tiers): array
     {
-        // Guard: ensure no candidate appears in more than one tier
         $allCandidateIds = collect($tiers)->flatten(1)->pluck('candidateId')->filter();
         if ($allCandidateIds->count() !== $allCandidateIds->unique()->count()) {
             throw ValidationException::withMessages([
@@ -175,11 +192,9 @@ class VotingService
     }
 
     /**
-     * Add this ballot's points to the day's totals in a single upsert.
-     *
-     * It used to be an UPDATE per candidate (plus an INSERT and a second UPDATE
-     * for the first vote of the day). Rows are written in candidate order so two
-     * concurrent ballots take their row locks in the same sequence.
+     * Add this ballot's points to the day's totals in a single upsert. Rows are
+     * written in candidate order so two concurrent ballots take their row locks
+     * in the same sequence.
      */
     private function updateDailyScores(Poll $poll, Carbon $voteDay, array $scoreDelta): void
     {

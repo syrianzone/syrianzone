@@ -1,7 +1,6 @@
 import type { ComponentType, LazyExoticComponent } from 'react';
 import type { LucideIcon } from 'lucide-react';
 
-// ***** the persisted layout format *****
 // These five key names (`v`, `i`, `d`, `w`, `h`, `c`) and every widget definition
 // id are permanent once a user has saved a board. Nothing derived is stored:
 // no titles, no icons, no cached data, no per-breakpoint copies.
@@ -27,11 +26,24 @@ export interface BoardDoc {
   dashboards: DashboardDef[];
 }
 
-// ***** the widget contract *****
+// The grid caps, as a stored width and height may not exceed them.
+export const GRID_COLS = 12;
+export const GRID_ROWS = 8;
 
 export type Breakpoint = 'sm' | 'md' | 'lg';
-export type WidgetCategory = 'places' | 'transit' | 'time' | 'personal' | 'community' | 'food';
 export type Capability = 'auth' | 'geo';
+
+// The gallery's sections, in display order. This is the only place a category
+// exists, so a widget cannot declare one the gallery would not render.
+export const CATEGORIES = [
+  { id: 'time', label: 'الوقت والعبادات' },
+  { id: 'personal', label: 'الإنتاجية والشخصي' },
+  { id: 'community', label: 'المجتمع والأخبار' },
+  { id: 'places', label: 'الأماكن والمواصلات' },
+  { id: 'food', label: 'المطبخ والمأكولات' },
+] as const;
+
+export type WidgetCategory = (typeof CATEGORIES)[number]['id'];
 
 // Declarative config schema, so WidgetConfigDialog renders any widget's settings
 // generically and adding a configurable widget needs zero core changes.
@@ -52,8 +64,28 @@ export interface WidgetProps<C = Record<string, unknown>> {
   onConfigChange: (patch: Partial<C>) => void;
 }
 
-export interface WidgetDefinition<C = Record<string, unknown>> {
-  id: string;                      // stable ascii, written into the document, never renamed
+/**
+ * Where a widget sits in the board a new visitor starts with, and how big it is
+ * there. The order is the document's array order: in RTL the first item lands on
+ * the right, so one order is one visual row.
+ */
+export interface SeedPlacement {
+  order: number;
+  w: number;
+  h: number;
+}
+
+/**
+ * Everything the board needs to know about a widget, declared by the widget's
+ * own `_widgets/<id>/index.ts`. The registry reads these declarations, so adding
+ * a widget is a new folder and nothing else.
+ *
+ * The View is attached by the registry, from the folder's `View.tsx`, so this
+ * file stays free of the widget's code and the declaration never imports the
+ * View it describes.
+ */
+export interface WidgetDeclaration {
+  id: string;                      // stable ascii, equals the folder name, written into the document
   name: string;
   description: string;
   icon: LucideIcon;
@@ -65,22 +97,13 @@ export interface WidgetDefinition<C = Record<string, unknown>> {
   requires: Capability[];          // enforced by BoardTile, never inside a widget
   refresh: { staleMs: number; intervalMs: number | null };
   multiple: boolean;               // may appear more than once on one board
-  Component: LazyExoticComponent<ComponentType<WidgetProps<C>>>;
+  seed: SeedPlacement | null;      // null: in the gallery, not on the seeded board
+  source: WidgetSource | null;     // null: reads nothing outside the document
 }
 
-export const CATEGORY_ORDER: WidgetCategory[] = [
-  'time',
-  'personal',
-  'community',
-  'places',
-  'food',
-];
+/** A read in `_lib/sources.ts`: the fetcher a widget's queries go through. */
+export type WidgetSource = (...args: never[]) => Promise<unknown>;
 
-export const CATEGORY_LABELS: Record<WidgetCategory, string> = {
-  time: 'الوقت والعبادات',
-  personal: 'الإنتاجية والشخصي',
-  community: 'المجتمع والأخبار',
-  places: 'الأماكن والمواصلات',
-  transit: 'المواصلات',
-  food: 'المطبخ والمأكولات',
-};
+export interface WidgetDefinition<C = Record<string, unknown>> extends WidgetDeclaration {
+  Component: LazyExoticComponent<ComponentType<WidgetProps<C>>>;
+}

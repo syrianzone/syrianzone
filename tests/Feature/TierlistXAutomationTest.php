@@ -582,6 +582,16 @@ test('X client classifies retryable and permanent responses', function (int $sta
     'bad request' => [400, XPermanentException::class],
 ]);
 
+test('creating a post is one request, not a verification plus a post', function () {
+    Http::preventStrayRequests();
+    Http::fake(['api.x.test/2/tweets' => Http::response(['data' => ['id' => 'post-1']], 201)]);
+
+    expect(app(XApiClient::class)->createPost('اختبار'))->toBe('post-1');
+
+    // A stray /2/users/me call would have thrown under preventStrayRequests.
+    Http::assertSentCount(1);
+});
+
 test('X client uploads media and attaches it to the post', function () {
     Http::preventStrayRequests();
     Http::fake(function ($request) {
@@ -703,7 +713,7 @@ test('X client refuses credentials for another account', function () {
         'api.x.test/2/users/me' => Http::response(['data' => ['id' => 'wrong-account-id']], 200),
     ]);
 
-    expect(fn () => app(XApiClient::class)->createPost('اختبار'))
+    expect(fn () => app(XApiClient::class)->verifyExpectedUser())
         ->toThrow(XPermanentException::class, 'X credentials belong to an unexpected account');
     Http::assertSentCount(1);
 });
@@ -775,7 +785,9 @@ test('X job leaves a transition pending when configuration disappears', function
     (new PostTierlistChangeToX($post->id, $post->poll_id))->handle(app(XApiClient::class));
 
     expect($post->fresh()->status)->toBe('pending')
-        ->and($post->fresh()->last_error)->toBe('X automation credentials are incomplete');
+        // The job verifies the account before posting, so the refusal now comes
+        // from the verification step rather than from createPost().
+        ->and($post->fresh()->last_error)->toBe('X credentials are incomplete');
     Http::assertNothingSent();
     Exceptions::assertReported(XConfigurationException::class);
 });

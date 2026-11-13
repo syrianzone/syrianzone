@@ -48,7 +48,6 @@ export function createMatch(options: MatchOptions): MatchState {
   };
 }
 
-/** The unit a seat scores for. */
 export function unitOf(match: MatchState, seat: Seat): number {
   return match.options.units.findIndex((unit) => unit.includes(seat));
 }

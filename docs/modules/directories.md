@@ -1,13 +1,22 @@
 # Directory Modules — SyOfficial, Phonebook, Gov Apps, Hotels
 
-Four read-mostly directory modules sharing the same pattern: string-ID keyset tables with bilingual labels, `order_column` manual reordering, `is_active` toggles, and a capability-gated Inertia admin page backed by `/api/v1/admin/*` CRUD endpoints.
+Four read-mostly directory modules sharing the same pattern: string-ID keyset tables with bilingual labels, `order_column` manual reordering, `is_active` toggles, and a capability-gated Inertia admin page backed by `/api/v1/admin/*` write routes.
+
+The three admin panels above are Inertia pages, so their write routes answer one way: validate, write, `redirect()->back()` with an Arabic `success` flash. A validation failure is the standard `422` envelope, which the Inertia form renders on its field.
+
+All three validate in the controller and delegate to a transport-free service
+(`SyOfficialDirectoryService`, `PhonebookDirectoryService`, `GovAppService`)
+that owns ids, per-category ordering, cache invalidation and the
+`{orders: [{id, order_column}]}` reorder payload the shared `SortableList`
+posts — the same rule cannot diverge between the dashboard and the agent tools.
 
 ## SyOfficial (الحسابات الرسمية السورية)
 
 Route `/syofficial` · Pages/SyOfficial · Controllers: `SyOfficialController`, `SyOfficialAdminController`
 
 - **official_categories** — string id (`governorates`, …), label_ar/en, icon, order_column, is_active
-- **official_entities** — string id (`gov-damascus`, …), category_id FK, name/name_ar, descriptions, image, socials JSON, order_column, is_active
+- **official_entities** — string id (`gov-damascus`, …), category_id FK, name/name_ar, descriptions, image, order_column, is_active
+- `socials` is a **platform-keyed map** (`{"facebook": "https://…", "telegram_secondary": "…"}`), never a list: the public tile resolves the icon and label from the key, and the admin form reads it back by key. The vocabulary is `resources/data/social-platforms.json` (`Facts::socialPlatforms()` / `Domain/syofficial/social.ts`); a list-shaped payload is refused, and `php artisan syofficial:repair-socials` rewrites rows an older write path flattened.
 - Entity images hosted on R2 under `syofficial/entities/` (see [reference/asset-storage.md](../reference/asset-storage.md))
 - Kurdish translation of the page contributed by haiueida
 - Admin: categories/entities CRUD + reorder under `/api/v1/admin/syofficial/*`; capability middleware alias `syofficial_admin`

@@ -3,7 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\SiteSetting;
-use App\Models\User;
+use App\Support\Seo\SeoMeta;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -17,48 +17,6 @@ class HandleInertiaRequests extends Middleware
      * @var string
      */
     protected $rootView = 'app';
-
-    /**
-     * Determines the current asset version.
-     *
-     * @see https://inertiajs.com/asset-versioning
-     */
-    public function version(Request $request): ?string
-    {
-        return parent::version($request);
-    }
-
-    /**
-     * The auth payload shared with every Inertia response.
-     *
-     * `effective_permissions` is the resolved list — role implications already
-     * applied by User::effectivePermissions(). The frontend uses it as the
-     * single source of truth for capability checks instead of re-deriving which
-     * modules a role implies, which is how the TS mirror drifted out of sync
-     * with the PHP rules. `permissions` is still sent for the admin UI, which
-     * needs the raw stored values to render its checkboxes.
-     *
-     * @return array<string, mixed>
-     */
-    public static function userPayload(?User $user): ?array
-    {
-        if ($user === null) {
-            return null;
-        }
-
-        return [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'role' => $user->role,
-            'is_banned' => (bool) $user->is_banned,
-            'avatar_url' => $user->avatar_url,
-            'permissions' => $user->permissions ?? [],
-            'effective_permissions' => $user->effectivePermissions(),
-            'permission_scopes' => $user->permission_scopes ?? [],
-            'settings' => $user->settings ?? null,
-        ];
-    }
 
     /**
      * Define the props that are shared by default.
@@ -76,16 +34,19 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => self::userPayload($request->user()),
+                'user' => $request->user()?->toAuthPayload(),
             ],
             'dev' => [
                 'enabled' => $devMode,
-                'roles' => $devMode ? AutoLoginDevUser::DEV_ROLES : [],
+                'roles' => $devMode ? AutoLoginDevUser::presets() : [],
                 'currentRole' => $devMode
                     ? (new AutoLoginDevUser)->resolveRole($request)
                     : null,
             ],
             'sitePopup' => $site['popup'],
+            // The site-module catalogue merged with the admin's stored override
+            // row: `resources/data/site-modules.json` is the default, so the
+            // browser never falls back to a second, hand-written list.
             'siteNavigation' => $site['navigation'],
             // One resolved SEO object per request, rendered by the single
             // <SeoHead> component. The root view renders the same values
@@ -93,7 +54,7 @@ class HandleInertiaRequests extends Middleware
             // Lazy, so it runs after the controller: a page that already loaded its
             // record (SeoMeta::remember) is not queried for it a second time, and
             // JSON responses on the web stack never resolve it at all.
-            'seo' => fn () => \App\Support\Seo\SeoMeta::resolve($request),
+            'seo' => fn () => SeoMeta::resolve($request),
         ];
     }
 

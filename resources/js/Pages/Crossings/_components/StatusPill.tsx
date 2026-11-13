@@ -1,5 +1,5 @@
-import { cn } from '@/lib/utils';
-import { STATUS_TEXT, type Status } from '../_lib/crossings';
+import { cn } from '@/Lib/utils';
+import { STATUS_TEXT, type Status } from '@/Domain/crossings/crossings';
 
 const STYLES: Record<Status, string> = {
     open: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30',

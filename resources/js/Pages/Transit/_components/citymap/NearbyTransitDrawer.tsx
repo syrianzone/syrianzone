@@ -1,19 +1,11 @@
-'use client'
-
 import { useState, useEffect, useContext } from 'react'
 import { LocateFixed } from 'lucide-react'
 import { useMap } from '@/Components/map/MapContext'
 import { Button } from '@/Components/ui/button'
 import { LocationContext, LocationStatusContext, useRequestUserLocation } from './MapCanvas'
 import { useMapStore } from '../../_store/useMapStore'
-
-interface NearbyStop {
-  id: string
-  nameAr: string
-  cityId: string
-  coordinates: [number, number]
-  routes: Array<{ id: string; name_ar: string }>
-}
+import { NEARBY_STOPS_RADIUS_M } from '@/Domain/transit/limits';
+import { transitApi, type NearbyStop } from '../../_lib/api'
 
 export default function NearbyTransitDrawer() {
   const [stops, setStops] = useState<NearbyStop[]>([])
@@ -34,15 +26,8 @@ export default function NearbyTransitDrawer() {
       setLoading(true)
       setFetchError(false)
       try {
-        const apiUrl = '/api'
-        const res = await fetch(
-          `${apiUrl}/v1/stops/nearby?lat=${userLocation.lat}&lng=${userLocation.lng}&radius=500`
-        )
-        if (res.ok) {
-          setStops(await res.json())
-        } else {
-          setFetchError(true)
-        }
+        const rows = await transitApi.nearbyStops(userLocation.lat, userLocation.lng, NEARBY_STOPS_RADIUS_M)
+        setStops(rows)
       } catch {
         setFetchError(true)
       } finally {
@@ -68,7 +53,7 @@ export default function NearbyTransitDrawer() {
     if (locationStatus === 'loading') {
       return (
         <div className="flex flex-col items-center justify-center gap-2 py-8 text-[var(--muted)]">
-          <svg className="h-6 w-6 animate-spin text-[var(--gold)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <svg className="h-6 w-6 animate-spin text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
           </svg>
@@ -102,7 +87,7 @@ export default function NearbyTransitDrawer() {
     if (loading) {
       return (
         <div className="flex justify-center py-8">
-          <svg className="h-6 w-6 animate-spin text-[var(--gold)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <svg className="h-6 w-6 animate-spin text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
           </svg>
@@ -121,7 +106,7 @@ export default function NearbyTransitDrawer() {
     if (stops.length === 0) {
       return (
         <div className="py-8 text-center text-sm text-[var(--muted)]">
-          لا توجد مواقف في نطاق 500 متر
+          لا توجد مواقف في نطاق {NEARBY_STOPS_RADIUS_M} متر
         </div>
       )
     }
@@ -131,7 +116,7 @@ export default function NearbyTransitDrawer() {
         {stops.map((stop) => (
           <div key={stop.id} className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3">
             <div className="mb-2 flex items-center gap-2">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-[var(--gold)]">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-primary">
                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                 <circle cx="12" cy="10" r="3" />
               </svg>
@@ -145,7 +130,7 @@ export default function NearbyTransitDrawer() {
                     setSelectedRouteId(route.id)
                     setIsOpen(false)
                   }}
-                  className="rounded-full bg-[var(--surface-2)] px-3 py-1 text-xs font-medium text-[var(--text)] transition-colors hover:bg-[var(--gold)] hover:text-white"
+                  className="rounded-full bg-[var(--surface-2)] px-3 py-1 text-xs font-medium text-[var(--text)] transition-colors hover:bg-primary hover:text-white"
                 >
                   {route.name_ar}
                 </button>
@@ -159,8 +144,10 @@ export default function NearbyTransitDrawer() {
 
   return (
     <>
-      {/* Floating action buttons */}
-      <div className="absolute bottom-[270px] sm:bottom-6 left-4 z-20 flex flex-col gap-2">
+      {/* Floating action buttons — the bottom-left corner, the one the map's
+          own zoom/attribution controls leave free (the city map puts them at
+          bottom-right; see Components/map/createMap). */}
+      <div className="absolute bottom-[270px] end-4 z-20 flex flex-col gap-2 sm:bottom-6">
         <button
           type="button"
           // One control for both steps: it asks for the location first (only on
@@ -178,7 +165,7 @@ export default function NearbyTransitDrawer() {
 
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--gold)] text-white shadow-lg transition-transform hover:scale-105"
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white shadow-lg transition-transform hover:scale-105"
           aria-label="المحطات القريبة"
           title="المحطات القريبة"
         >
@@ -189,9 +176,8 @@ export default function NearbyTransitDrawer() {
         </button>
       </div>
 
-      {/* Bottom sheet drawer */}
       <div
-        className={`absolute bottom-0 left-0 right-0 z-30 transform rounded-t-2xl bg-[var(--surface)] p-4 shadow-2xl transition-transform duration-300 ease-in-out ${
+        className={`absolute inset-x-0 bottom-0 z-30 transform rounded-t-2xl bg-[var(--surface)] p-4 shadow-2xl transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-y-0' : 'translate-y-full'
         }`}
         dir="rtl"

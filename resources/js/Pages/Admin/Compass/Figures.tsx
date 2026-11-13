@@ -1,6 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { Link, router } from '@inertiajs/react';
-import axios from 'axios';
+import { apiErrorMessage } from '@/Lib/api';
+import { compassAdminApi } from '@/Domain/compass/api';
 import MainLayout from '@/Layouts/MainLayout';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
@@ -20,8 +21,8 @@ import {
 import { Compass, Plus, Pencil, Trash2, Upload, Loader2, ImageOff } from 'lucide-react';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
-import { AXES } from '@/Pages/Compass/data/axes';
-import type { AxisId } from '@/Pages/Compass/data/types';
+import { AXES } from '@/Domain/compass/axes';
+import type { AxisId } from '@/Domain/compass/types';
 
 interface AdminFigure {
     id: number;
@@ -38,7 +39,6 @@ interface AdminFigure {
 interface Props {
     figures: AdminFigure[];
     categories: string[];
-    axes: string[];
     canViewStats: boolean;
 }
 
@@ -89,7 +89,7 @@ function emptyForm(categories: string[]): FormState {
     };
 }
 
-export default function CompassFigures({ figures, categories, axes = [], canViewStats }: Props) {
+export default function CompassFigures({ figures, categories, canViewStats }: Props) {
     const [open, setOpen] = useState(false);
     const [editing, setEditing] = useState<AdminFigure | null>(null);
     const [form, setForm] = useState<FormState>(() => emptyForm(categories));
@@ -99,9 +99,7 @@ export default function CompassFigures({ figures, categories, axes = [], canView
     const fileRef = useRef<HTMLInputElement>(null);
 
     // The axis rows come from the same AXES catalogue the editor labels use, so
-    // a value can never be written to a key the form did not render. The `axes`
-    // prop is accepted only so a server-side axis list can be reconciled later.
-    void axes;
+    // a value can never be written to a key the form did not render.
 
     const enabledCount = useMemo(() => figures.filter((f) => f.enabled).length, [figures]);
 
@@ -131,12 +129,10 @@ export default function CompassFigures({ figures, categories, axes = [], canView
     const handleUpload = async (file: File) => {
         setUploading(true);
         try {
-            const fd = new FormData();
-            fd.append('image', file);
-            const res = await axios.post('/api/v1/admin/compass/figures/upload-image', fd);
-            setForm((f) => ({ ...f, imageUrl: res.data.url, imagePath: res.data.path }));
-        } catch {
-            notify.error('تعذّر رفع الصورة');
+            const res = await compassAdminApi.uploadFigureImage(file);
+            setForm((f) => ({ ...f, imageUrl: res.url, imagePath: res.path }));
+        } catch (e) {
+            notify.error(apiErrorMessage(e, 'تعذّر رفع الصورة'));
         } finally {
             setUploading(false);
             if (fileRef.current) fileRef.current.value = '';
@@ -159,24 +155,24 @@ export default function CompassFigures({ figures, categories, axes = [], canView
             image_path: form.imagePath,
             positions,
         };
-        const req = editing
-            ? axios.put(`/api/v1/admin/compass/figures/${editing.id}`, payload)
-            : axios.post('/api/v1/admin/compass/figures', payload);
+        const req = compassAdminApi.saveFigure(editing?.id ?? null, payload);
         req
             .then(() => {
                 setOpen(false);
                 router.reload({ only: ['figures'] });
             })
             .then(() => notify.success('تم الحفظ'))
-            .catch((e) => notify.error(e?.response?.data?.message ?? 'تعذّر الحفظ'))
+            .catch((e) => notify.error(apiErrorMessage(e, 'تعذّر الحفظ')))
             .finally(() => setSaving(false));
     };
 
     const toggle = async (figure: AdminFigure) => {
         setBusyId(figure.id);
         try {
-            await axios.post(`/api/v1/admin/compass/figures/${figure.id}/toggle`);
+            await compassAdminApi.toggleFigure(figure.id);
             router.reload({ only: ['figures'] });
+        } catch (e) {
+            notify.error(apiErrorMessage(e, `تعذّر تحديث حالة الشكل`));
         } finally {
             setBusyId(null);
         }
@@ -186,8 +182,10 @@ export default function CompassFigures({ figures, categories, axes = [], canView
         if (!(await confirmDialog({ title: `حذف «${figure.name}»؟`, destructive: true, confirmText: 'حذف' }))) return;
         setBusyId(figure.id);
         try {
-            await axios.delete(`/api/v1/admin/compass/figures/${figure.id}`);
+            await compassAdminApi.removeFigure(figure.id);
             router.reload({ only: ['figures'] });
+        } catch (e) {
+            notify.error(apiErrorMessage(e, `تعذّر حذف الشكل`));
         } finally {
             setBusyId(null);
         }
@@ -263,6 +261,7 @@ export default function CompassFigures({ figures, categories, axes = [], canView
                                                     checked={f.enabled}
                                                     disabled={busyId === f.id}
                                                     onCheckedChange={() => toggle(f)}
+                                                    aria-label={`مفعّلة في المطابقة: ${f.name}`}
                                                 />
                                             </TableCell>
                                             <TableCell>
@@ -310,9 +309,9 @@ export default function CompassFigures({ figures, categories, axes = [], canView
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label>الفئة</Label>
+                                <Label id="fig-category-label">الفئة</Label>
                                 <Select value={form.category} onValueChange={(v) => setForm((f) => ({ ...f, category: v }))} dir="rtl">
-                                    <SelectTrigger>
+                                    <SelectTrigger aria-labelledby="fig-category-label">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -336,6 +335,7 @@ export default function CompassFigures({ figures, categories, axes = [], canView
                                 <Switch
                                     checked={form.enabled}
                                     onCheckedChange={(v) => setForm((f) => ({ ...f, enabled: v }))}
+                                    aria-label="مفعّلة في المطابقة"
                                 />
                             </div>
                         </div>

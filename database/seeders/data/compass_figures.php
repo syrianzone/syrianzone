@@ -1,6 +1,6 @@
 <?php
 
-// Generated from resources/js/Pages/Compass/data/figures.ts.
+// Generated from resources/js/Domain/compass/figures.ts.
 // Seed for the compass_figures table: every row starts disabled so an operator
 // enables the roster deliberately. Images point at the shipped public portraits
 // until an R2 upload replaces them. Every axis key is present; an explicit null

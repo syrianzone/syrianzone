@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { discovery, type GridPhoto } from '../_lib/discovery';
+import { Button } from '@/Components/ui/button';
+import { useIsMobile } from '@/Lib/useIsMobile';
+import { api as placesApi } from '@/Domain/places/api';
+import type { GridPhoto } from '@/Domain/places/types';
 
-// media-query hook instead of md: utilities: the code-split css chunks each emit
-// their own tailwind layer, so responsive classes lose cascade order here (see Lightbox)
+// media-query hook instead of the hover: utility: the code-split css chunks each
+// emit their own tailwind layer, so responsive classes lose cascade order here (see Lightbox)
 function useMedia(query: string): boolean {
   const [matches, setMatches] = useState(() =>
     typeof window === 'undefined' ? false : window.matchMedia(query).matches,
@@ -31,7 +33,7 @@ export function PhotoGrid(props: {
   const [lastPage, setLastPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
-  const columns = useMedia('(min-width: 768px)') ? 4 : 2;
+  const columns = useIsMobile('md') ? 2 : 4;
   // captions hide-until-hover only where hover exists: a wide iPad has no hover,
   // and tapping a tile opens the lightbox, so a width branch would never reveal them
   const hoverable = useMedia('(hover: hover) and (pointer: fine)');
@@ -42,7 +44,7 @@ export function PhotoGrid(props: {
     const id = ++requestRef.current;
     setLoading(true);
     setError(false);
-    discovery.gridPhotos(p, guideId ?? undefined)
+    placesApi.gridPhotos(p, guideId ?? undefined)
       .then((res) => {
         if (id !== requestRef.current) return;
         setPhotos((prev) => (p === 1 ? res.data : [...prev, ...res.data]));
@@ -90,7 +92,7 @@ export function PhotoGrid(props: {
 
   return (
     <div dir="rtl" className="absolute inset-0 z-10 overflow-y-auto bg-background">
-      {/* pt-16 clears the slim top row; a guide/notice banner stacks ~34px more below it */}
+      {/* pt-16 clears the slim top row; the guide banner stacks ~34px more below it */}
       <div className={'mx-auto max-w-5xl px-3 pb-8 ' + (bannerActive ? 'pt-28' : 'pt-16')}>
         {photos.length > 0 && (
           <div style={{ columnCount: columns, columnGap: '0.75rem' }}>

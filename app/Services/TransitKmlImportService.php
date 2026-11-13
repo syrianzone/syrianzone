@@ -161,9 +161,6 @@ class TransitKmlImportService
         return $this->buildCandidates($lines, $points, $docName, $docDesc, $ignored);
     }
 
-    /**
-     * Parse an uploaded file (kml / kmz / geojson) into candidates.
-     */
     public function parseUploadedFile(UploadedFile $file): array
     {
         if (($file->getSize() ?? 0) > self::MAX_KML_BYTES) {
@@ -197,9 +194,6 @@ class TransitKmlImportService
         return $this->parseKml($contents);
     }
 
-    /**
-     * Normalize an already-GeoJSON document (manual export fallback) into candidates.
-     */
     public function parseGeoJsonDocument(array $doc, string $sourceName = ''): array
     {
         $features = $doc['features'] ?? ($doc['type'] === 'Feature' ? [$doc] : []);

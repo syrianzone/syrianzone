@@ -1,18 +1,18 @@
 import type {
+    PromiseOrigin,
     PromiseSourceData,
     PromiseState,
     PromiseStatus,
     PromiseUpdateData,
     PromiseUpdateType,
+    ReviewStatus,
     SectorOption,
     SpeakerOption,
-} from '@/Pages/Promises/_lib/types';
+} from '@/Domain/promises/types';
 
 export type { PromiseUpdateType };
 
 /** Shapes produced by PromisePresenter::adminRow / adminDetail. */
-
-export type ReviewStatus = 'pending' | 'published' | 'rejected';
 
 export interface AdminPromiseRow {
     id: string;
@@ -23,7 +23,7 @@ export interface AdminPromiseRow {
     status: PromiseStatus;
     state: PromiseState;
     reviewStatus: ReviewStatus;
-    origin: 'editor' | 'public' | 'research';
+    origin: PromiseOrigin;
     statementDate: string | null;
     deadlineDate: string | null;
     sourcesCount: number;
@@ -90,7 +90,6 @@ export interface EditorOptions {
     earliestDate: string;
     today: string;
     restatable: Array<{ id: string; number: number; title: string }>;
-    restatablePromises?: Array<{ id: string; number: number; title: string }>;
 }
 
 export interface AdminSpeaker {
@@ -107,15 +106,3 @@ export interface AdminSpeaker {
     promisesCount: number;
     rejectionReason: string | null;
 }
-
-export const REVIEW_STATUS_LABEL: Record<ReviewStatus, string> = {
-    pending: 'بانتظار المراجعة',
-    published: 'منشور',
-    rejected: 'مرفوض',
-};
-
-export const ORIGIN_LABEL: Record<string, string> = {
-    editor: 'محرر',
-    public: 'اقتراح عام',
-    research: 'بحث أولي',
-};

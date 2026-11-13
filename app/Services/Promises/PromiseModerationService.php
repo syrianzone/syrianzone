@@ -175,7 +175,7 @@ class PromiseModerationService
             if ($report->kind === 'progress') {
                 $this->editor->addUpdate($promise, [
                     'type' => $report->source_url ? 'progress' : 'note',
-                    'happened_on' => $report->created_at->timezone(Promise::TIMEZONE)->format('Y-m-d'),
+                    'happened_on' => $report->created_at->timezone(Promise::timezone())->format('Y-m-d'),
                     'body' => $note ?: $report->body,
                     'source_url' => $report->source_url,
                 ], $reviewer);

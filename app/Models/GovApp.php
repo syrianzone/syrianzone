@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\FoldsSearchColumns;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class GovApp extends Model
 {
-    use HasFactory, SoftDeletes;
+    use FoldsSearchColumns, HasFactory, SoftDeletes;
 
     protected $table = 'gov_apps';
     public $incrementing = false;

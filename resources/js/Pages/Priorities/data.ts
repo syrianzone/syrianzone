@@ -13,12 +13,12 @@ export interface Topic {
     subFiles: SubFile[];
 }
 
-export interface Comparison {
+interface Comparison {
     title: string;
     points: Record<string, number>;
 }
 
-export interface Dependency {
+interface Dependency {
     requires: string[];
     warning: string;
 }

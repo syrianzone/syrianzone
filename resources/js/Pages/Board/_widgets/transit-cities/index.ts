@@ -1,8 +1,8 @@
-import { lazy } from 'react';
 import { Bus } from 'lucide-react';
-import type { WidgetDefinition } from '../../_lib/types';
+import type { WidgetDeclaration } from '../../_lib/types';
+import { sources } from '../../_lib/sources';
 
-export const transitCitiesWidget: WidgetDefinition<Record<string, never>> = {
+export const transitCitiesWidget: WidgetDeclaration = {
   id: 'transit-cities',
   name: 'المواصلات',
   description: 'المدن وعدد الخطوط المنشورة',
@@ -16,5 +16,8 @@ export const transitCitiesWidget: WidgetDefinition<Record<string, never>> = {
   // the endpoint caches for an hour server-side
   refresh: { staleMs: 30 * 60_000, intervalMs: null },
   multiple: false,
-  Component: lazy(() => import('./View')),
+  seed: null,
+  source: sources.transitCities,
 };
+
+export default transitCitiesWidget;

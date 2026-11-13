@@ -10,11 +10,15 @@ import {
 } from '@/Components/ui/dialog';
 import { GameHeaderActions } from './gameHeaderActions';
 import HeaderButton from './HeaderButton';
+import { gameBySlug } from '../../../Domain/games/games';
 import { useFocusMode } from '@/Contexts/FocusModeContext';
 
 interface Props {
-  title: string;
-  icon: React.ComponentType<{ className?: string }>;
+  /**
+   * The game's slug in `Domain/games/games.ts`. Its title and icon come from the
+   * registry, so renaming a game is one edit rather than one per page.
+   */
+  slug: string;
   /**
    * Tailwind max-width for the page column. A single square board is happy in
    * `max-w-3xl`, but Solitaire has to fit seven columns *and* a fan lane beside
@@ -37,21 +41,21 @@ interface Props {
 // and the game itself. Keeping this out of each game means a new subgame gets
 // consistent navigation for free.
 export default function GameShell({
-  title,
-  icon: Icon,
+  slug,
   width = 'max-w-3xl',
   rules,
   fit,
   children,
 }: Props) {
+  const { title, icon: Icon } = gameBySlug(slug);
   // Filled once the header slot mounts; a game portals its own buttons into it.
   const [actions, setActions] = useState<HTMLDivElement | null>(null);
   const { focus, setFocus } = useFocusMode();
 
   // The navbar is non-sticky on games and hidden in focus mode, so the viewport
   // is 4rem taller then. The class strings are literal so Tailwind keeps them.
-  const fillHeight = focus ? 'h-[100svh]' : 'h-[calc(100svh-4rem-1px)]';
-  const minHeight = focus ? 'min-h-[100svh]' : 'min-h-[calc(100svh-4rem-1px)]';
+  const fillHeight = focus ? 'h-[100svh]' : 'h-[calc(100svh-var(--sz-navbar-h))]';
+  const minHeight = focus ? 'min-h-[100svh]' : 'min-h-[calc(100svh-var(--sz-navbar-h))]';
 
   return (
     <div

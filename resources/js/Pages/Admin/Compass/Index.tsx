@@ -14,52 +14,31 @@ import {
     Activity,
     TrendingUp,
 } from 'lucide-react';
-import AxisBars from '@/Pages/Compass/components/AxisBars';
-import AlignmentCard from '@/Pages/Compass/components/AlignmentCard';
-import QuestionAverage, { type QuestionScope } from '@/Pages/Compass/components/QuestionAverage';
-import type { AlignBloc, AxisId } from '@/Pages/Compass/data/types';
+import AxisBars from '@/Domain/compass/AxisBars';
+import AlignmentCard from '@/Domain/compass/AlignmentCard';
+import QuestionAverage from '@/Domain/compass/QuestionAverage';
+import { STATS_SCOPES, VERSION_LABEL, type AlignBloc, type CompassStatsPayload, type QuizVersion } from '@/Domain/compass/types';
+import { formatSyrianDateTime } from '@/Lib/syrian-date';
 
 interface RecentRow {
     id: number;
     createdAt: string | null;
-    version: string;
+    version: QuizVersion;
     spectrum: string | null;
     consistency: number | null;
     answered: number;
     topScore: number | null;
 }
 
-interface Stats {
-    total: number;
+interface Stats extends CompassStatsPayload {
     last7: number;
     last30: number;
-    byVersion: Record<string, number>;
-    bySpectrum: Record<string, { id: string; count: number }[]>;
-    axisAverages: Record<string, Partial<Record<AxisId, number | null>>>;
-    questions: Record<string, Record<string, QuestionScope>>;
     alignTotals: Record<AlignBloc, number>;
     avgConsistency: number | null;
     avgAnswered: number | null;
     daily: { date: string; count: number }[];
     recent: RecentRow[];
 }
-
-const VERSION_LABEL: Record<string, string> = { short: 'قصيرة', standard: 'قياسية', full: 'كاملة' };
-
-const SCOPES = [
-    { id: 'all', label: 'الكل' },
-    { id: 'short', label: 'قصيرة' },
-    { id: 'standard', label: 'قياسية' },
-    { id: 'full', label: 'كاملة' },
-];
-
-const BLOC_LABEL: Record<AlignBloc, string> = {
-    west: 'غربي',
-    gulf: 'خليجي',
-    turkish: 'تركي',
-    east: 'شرقي',
-    neutral: 'حياد',
-};
 
 const spectrumNameFrom = (personas: { id: string; name: string }[], id: string | null) =>
     personas.find((s) => s.id === id)?.name ?? '—';
@@ -114,7 +93,7 @@ export default function CompassAdminIndex({
     const maxSpectrum = Math.max(1, ...spectrum.map((s) => s.count));
     const maxDaily = Math.max(1, ...stats.daily.map((d) => d.count));
     const axisForScope = stats.axisAverages[scope] ?? stats.axisAverages.all;
-    const scopeLabel = SCOPES.find((s) => s.id === scope)?.label ?? 'الكل';
+    const scopeLabel = STATS_SCOPES.find((s) => s.id === scope)?.label ?? 'الكل';
 
     return (
         <MainLayout>
@@ -166,7 +145,7 @@ export default function CompassAdminIndex({
                 <Card>
                     <CardContent className="pt-5 flex flex-wrap items-center gap-2">
                         <span className="text-sm text-muted-foreground me-1">عرض المتوسطات حسب طول الاختبار:</span>
-                        {SCOPES.map((s) => (
+                        {STATS_SCOPES.map((s) => (
                             <button
                                 key={s.id}
                                 onClick={() => setScope(s.id)}
@@ -183,7 +162,6 @@ export default function CompassAdminIndex({
                 </Card>
 
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                    {/* Spectrum distribution */}
                     <Card>
                         <CardHeader className="pb-3">
                             <CardTitle className="text-base">توزّع الأطياف</CardTitle>
@@ -214,7 +192,6 @@ export default function CompassAdminIndex({
                         </CardContent>
                     </Card>
 
-                    {/* Version + averages */}
                     <Card>
                         <CardHeader className="pb-3">
                             <CardTitle className="text-base">توزّع النسخ والمتوسطات</CardTitle>
@@ -246,7 +223,6 @@ export default function CompassAdminIndex({
                     </Card>
                 </div>
 
-                {/* Axis averages */}
                 <Card>
                     <CardHeader className="pb-2">
                         <CardTitle className="text-base">المتوسط على المحاور</CardTitle>
@@ -264,10 +240,8 @@ export default function CompassAdminIndex({
                     </CardContent>
                 </Card>
 
-                {/* Question average */}
                 <QuestionAverage questions={stats.questions} scope={scope} scopeLabel={scopeLabel} />
 
-                {/* Alignment */}
                 <Card>
                     <CardHeader className="pb-2">
                         <CardTitle className="text-base">التوجّه الخارجي</CardTitle>
@@ -275,14 +249,13 @@ export default function CompassAdminIndex({
                     </CardHeader>
                     <CardContent>
                         {stats.total > 0 ? (
-                            <AlignmentCard align={stats.alignTotals} label={BLOC_LABEL} />
+                            <AlignmentCard align={stats.alignTotals} />
                         ) : (
                             <p className="text-sm text-muted-foreground">لا توجد بيانات بعد.</p>
                         )}
                     </CardContent>
                 </Card>
 
-                {/* Daily chart */}
                 <Card>
                     <CardHeader className="pb-3">
                         <CardTitle className="flex items-center gap-2 text-base">
@@ -307,7 +280,6 @@ export default function CompassAdminIndex({
                     </CardContent>
                 </Card>
 
-                {/* Recent */}
                 <Card>
                     <CardHeader className="pb-3">
                         <CardTitle className="text-base">أحدث المشاركات المجهولة</CardTitle>
@@ -332,7 +304,7 @@ export default function CompassAdminIndex({
                                         {stats.recent.map((r) => (
                                             <tr key={r.id} className="border-b border-border/50">
                                                 <td className="px-2 py-2 text-xs text-muted-foreground">
-                                                    {r.createdAt ? new Date(r.createdAt).toLocaleString('ar') : '—'}
+                                                    {r.createdAt ? formatSyrianDateTime(r.createdAt) : '—'}
                                                 </td>
                                                 <td className="px-2 py-2">{VERSION_LABEL[r.version] ?? r.version}</td>
                                                 <td className="px-2 py-2">{spectrumName(r.spectrum)}</td>

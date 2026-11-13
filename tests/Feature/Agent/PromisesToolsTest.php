@@ -8,38 +8,8 @@ use App\Mcp\Tools\Promises\RemovePromiseUpdateTool;
 use App\Mcp\Tools\Promises\UpdatePromiseTool;
 use App\Models\McpToolCall;
 use App\Models\Promise;
-use App\Models\PromiseSpeaker;
 use App\Services\Promises\PromiseEditor;
 use Illuminate\Support\Str;
-
-/*
-|--------------------------------------------------------------------------
-| Promises tracker agent tools
-|--------------------------------------------------------------------------
-*/
-
-function agentPromisePayload(array $overrides = []): array
-{
-    $speaker = PromiseSpeaker::factory()->create();
-
-    return array_merge([
-        'speaker_ref' => 'speaker:'.$speaker->id,
-        'title' => 'إعادة تأهيل المحطة الكهربائية',
-        'quote' => 'سنعيد تأهيل المحطة خلال ستة أشهر',
-        'statement_date' => '2025-07-01',
-        'statement_venue' => 'tv_interview',
-        'deadline_wording' => 'خلال ستة أشهر',
-        'deadline_date' => '2026-01-01',
-        'sector_id' => 'electricity',
-        'is_national' => false,
-        'governorates' => ['aleppo', 'homs'],
-        'tags' => ['الكهرباء', 'محطات'],
-        'sources' => [
-            ['url' => 'https://example.com/a', 'type' => 'tv_interview', 'published_date' => '2025-07-01'],
-            ['url' => 'https://example.com/b', 'type' => 'news_article', 'published_date' => '2025-07-03'],
-        ],
-    ], $overrides);
-}
 
 test('a token with only promises.review can call list-promises and get-promise (any-of read gate)', function () {
     $user = agentUser(['permissions' => ['promises.review']]);
@@ -54,7 +24,6 @@ test('a token with only promises.review can call list-promises and get-promise (
     $get = toolPayload(callTool(GetPromiseTool::class, ['id' => $promise->id]));
     expect($get['promise']['title'])->toBe('وعد للاختبار');
 
-    // An unprivileged token cannot call read tools
     $other = agentUser(['permissions' => ['places.review']]);
     agentToken($other, ['places.review']);
 
@@ -66,7 +35,7 @@ test('create-promise with promises.create creates a promise with review_status p
     $user = agentUser(['permissions' => ['promises.create']]);
     agentToken($user, ['promises.create']);
 
-    $payload = agentPromisePayload();
+    $payload = promisePayload();
     $response = callTool(CreatePromiseTool::class, $payload);
     $result = toolPayload($response);
 
@@ -87,7 +56,7 @@ test('a token with only promises.edit is denied create-promise and nothing is cr
     $user = agentUser(['permissions' => ['promises.edit']]);
     agentToken($user, ['promises.edit']);
 
-    $response = callTool(CreatePromiseTool::class, agentPromisePayload());
+    $response = callTool(CreatePromiseTool::class, promisePayload());
 
     expect($response->isError())->toBeTrue()
         ->and(toolText($response))->toContain('Permission denied')
@@ -99,7 +68,7 @@ test('update-promise edits drafts and published promises alike, given the versio
     agentToken($user, ['promises.edit']);
 
     $draft = Promise::factory()->create(['title' => 'العنوان الأصلي']);
-    $res = callTool(UpdatePromiseTool::class, agentPromisePayload([
+    $res = callTool(UpdatePromiseTool::class, promisePayload([
         'id' => $draft->id,
         'expected_version' => 0,
         'title' => 'العنوان المحدث',
@@ -110,7 +79,7 @@ test('update-promise edits drafts and published promises alike, given the versio
 
     $published = Promise::factory()->published()->create(['title' => 'عنوان منشور']);
     $read = toolPayload(callTool(GetPromiseTool::class, ['id' => $published->id]))['promise'];
-    $res = callTool(UpdatePromiseTool::class, agentPromisePayload([
+    $res = callTool(UpdatePromiseTool::class, promisePayload([
         'id' => $published->id,
         'expected_version' => $read['version'],
         'title' => 'عنوان منشور مصحح',
@@ -128,9 +97,9 @@ test('update-promise refuses a stale read, even one from the same second, so it 
     $promise = Promise::factory()->create(['title' => 'العنوان الأصلي']);
     $read = toolPayload(callTool(GetPromiseTool::class, ['id' => $promise->id]))['promise'];
 
-    app(PromiseEditor::class)->save($promise, agentPromisePayload(['title' => 'تعديل محرر آخر']));
+    app(PromiseEditor::class)->save($promise, promisePayload(['title' => 'تعديل محرر آخر']));
 
-    $res = callTool(UpdatePromiseTool::class, agentPromisePayload([
+    $res = callTool(UpdatePromiseTool::class, promisePayload([
         'id' => $promise->id,
         'expected_version' => $read['version'],
         'title' => 'تعديل الوكيل',
@@ -140,7 +109,7 @@ test('update-promise refuses a stale read, even one from the same second, so it 
         ->and(toolText($res))->toContain('version 1')
         ->and($promise->fresh()->title)->toBe('تعديل محرر آخر');
 
-    $missing = callTool(UpdatePromiseTool::class, agentPromisePayload(['id' => $promise->id]));
+    $missing = callTool(UpdatePromiseTool::class, promisePayload(['id' => $promise->id]));
     expect($missing->isError())->toBeTrue()
         ->and($promise->fresh()->title)->toBe('تعديل محرر آخر');
 });
@@ -151,7 +120,6 @@ test('add-promise-update adds a progress entry with a source; a progress entry w
 
     $promise = Promise::factory()->create(['statement_date' => '2025-06-01']);
 
-    // Progress update with source_url succeeds
     $addRes = callTool(AddPromiseUpdateTool::class, [
         'id' => $promise->id,
         'type' => 'progress',
@@ -165,7 +133,6 @@ test('add-promise-update adds a progress entry with a source; a progress entry w
     expect($update)->not->toBeNull()
         ->and((float) $update->value)->toBe(50.0);
 
-    // Progress update without source_url is refused
     $failRes = callTool(AddPromiseUpdateTool::class, [
         'id' => $promise->id,
         'type' => 'progress',
@@ -174,7 +141,6 @@ test('add-promise-update adds a progress entry with a source; a progress entry w
     ]);
     expect($failRes->isError())->toBeTrue();
 
-    // Remove update succeeds
     $remRes = callTool(RemovePromiseUpdateTool::class, [
         'id' => $promise->id,
         'update_id' => $update->id,
@@ -249,7 +215,7 @@ test('create-promise with a bogus speaker_ref returns an error mentioning search
     $user = agentUser(['permissions' => ['promises.create']]);
     agentToken($user, ['promises.create']);
 
-    $res = callTool(CreatePromiseTool::class, agentPromisePayload([
+    $res = callTool(CreatePromiseTool::class, promisePayload([
         'speaker_ref' => 'speaker:00000000-0000-0000-0000-000000000000',
     ]));
 

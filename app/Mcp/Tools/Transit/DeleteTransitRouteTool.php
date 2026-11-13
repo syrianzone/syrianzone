@@ -4,6 +4,7 @@ namespace App\Mcp\Tools\Transit;
 
 use App\Services\Transit\TransitAdminService;
 use App\Support\Agents\AgentContext;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -24,7 +25,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 #[IsDestructive]
 class DeleteTransitRouteTool extends TransitTool
 {
-    protected array $permissions = ['transit.delete_routes'];
+    protected array $permissions = [PermissionCatalogue::TRANSIT_DELETE_ROUTES];
 
     public function schema(JsonSchema $schema): array
     {
@@ -45,7 +46,7 @@ class DeleteTransitRouteTool extends TransitTool
             $service = app(TransitAdminService::class);
             $route = $service->findRoute($validated['route_id']);
 
-            $this->guardCity($context, 'transit.delete_routes', $route->city_id);
+            $this->guardCity($context, PermissionCatalogue::TRANSIT_DELETE_ROUTES, $route->city_id);
 
             $stopsRemoved = $service->destroyRoute($route, $context->id());
 

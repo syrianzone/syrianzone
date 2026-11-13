@@ -69,8 +69,8 @@ All UUID PKs.
 Spatial (geometry point/linestring columns):
 
 - **cities** — string id, name_ar/en, point center geometry, polygon bounds, zoom, status
-- **routes** — city_id, names, color_index, price_old/new, status draft|published, user_id
-- **stops** — point geometry
+- **routes** — city_id, names, color_index, price_old/new, status draft|published, user_id, `name_ar_fold`
+- **stops** — point geometry, `name_ar_fold`
 - **route_stop** — pivot with order column
 - **route_geometries** — LINESTRING/MULTILINESTRING per route
 - **route_drafts** — user_id nullable, city_id, names, price, notes, geojson JSON, status pending|approved|rejected, rejection_reason, route_id link to published route
@@ -78,7 +78,7 @@ Spatial (geometry point/linestring columns):
 
 ## Mishwar (places)
 
-- **places** — user_id, name, category (indexed, fixed enum), description, lat/lng decimal, status pending|approved|rejected, rejection_reason, approved_at
+- **places** — user_id, name, category (indexed, fixed enum), description, lat/lng decimal, status pending|approved|rejected, rejection_reason, approved_at, `name_fold`/`description_fold`
 - **place_photos** — place_id, original/display/thumb paths, sort
 - **place_saves** — unique (place_id, user_id)
 - Likes/comments/reports tables and denormalized counters were created and later **dropped** (2026_07_16) — only saves remain
@@ -98,11 +98,15 @@ Full contract: [modules/mishwar-places.md](../modules/mishwar-places.md).
 ## Directories
 
 - **official_categories** — string id key (`governorates`, …), label_ar/en, icon, order_column, is_active
-- **official_entities** — string id (`gov-damascus`…), category_id FK, name/name_ar, descriptions, image, socials JSON, order_column, is_active
-- **gov_apps** — string id, name/name_ar, descriptions, icon, images JSON, links JSON, order_column, is_active, soft deletes
+- **official_entities** — string id (`gov-damascus`…), category_id FK, name/name_ar, descriptions, image, socials JSON, order_column, is_active, `name_ar_fold`/`description_ar_fold`
+- **gov_apps** — string id, name/name_ar, descriptions, icon, images JSON, links JSON, order_column, is_active, soft deletes, `name_ar_fold`/`description_ar_fold`
 - **phonebook_categories** — id key (emergency, embassies…), label_ar/en, icon, order_column, is_active
-- **phonebook_entries** — category_id, name_ar/en, number, is_whatsapp, source_url, order_column, is_active
+- **phonebook_entries** — category_id, name_ar/en, number, is_whatsapp, source_url, order_column, is_active, `name_ar_fold`
 - **hotels** — hala_syria_id UUID unique, bilingual names/city, slug, lat/lng indexed, star_rating, rating, review_count, now_show_rate, address, phone/email, images JSON, amenity booleans, source_url, last_synced_at (synced from HalaSyria every 2 days)
+
+## Search fold columns
+
+`routes`, `stops`, `places`, `phonebook_entries`, `official_entities` and `gov_apps` each carry one `*_fold` column per searched Arabic text column (marked in the bullets above): `App\Support\ArabicSearch::fold()` of the source column, written by `App\Models\Concerns\FoldsSearchColumns` on save. The one list of what is folded is `App\Support\SearchFold::COLUMNS`. `2026_11_13_120000_add_search_fold_columns` added the columns and backfilled the existing rows; `php artisan search:backfill-fold` re-folds every table after a rule change. English and numeric search columns (`name_en`, `name`, `number`, ids) are compared with the raw query.
 
 ## Promises tracker (عداد الوعود)
 

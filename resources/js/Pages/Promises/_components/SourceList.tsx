@@ -1,8 +1,8 @@
 import { Badge } from '@/Components/ui/badge';
 import { Archive, ExternalLink, Image as ImageIcon } from 'lucide-react';
-import { formatDate, safeHref } from '../_lib/format';
-import { SOURCE_TYPE_LABEL } from '../_lib/status';
-import type { PromiseSourceData } from '../_lib/types';
+import { formatDate, safeHref } from '@/Domain/promises/format';
+import { SOURCE_TYPE_LABEL } from '@/Domain/promises/status';
+import type { PromiseSourceData } from '@/Domain/promises/types';
 
 function hostOf(url: string): string {
     try {

@@ -7,7 +7,6 @@
          theme script below rewrites it to the resolved theme's scheme. --}}
     <meta name="color-scheme" content="light dark">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    {{-- links the browser pageload trace to the backend request that rendered it --}}
     {!! \Sentry\Laravel\Integration::sentryMeta() !!}
 
     {{-- Per-page SEO and share-preview tags, printed here on every response.
@@ -30,8 +29,8 @@
     <meta property="og:url" content="{{ $meta['url'] }}" inertia>
     <meta property="og:image" content="{{ $meta['image'] }}" inertia>
     <meta property="og:image:type" content="{{ $meta['image_type'] }}" inertia>
-    <meta property="og:image:width" content="1200" inertia>
-    <meta property="og:image:height" content="630" inertia>
+    <meta property="og:image:width" content="{{ $meta['image_width'] }}" inertia>
+    <meta property="og:image:height" content="{{ $meta['image_height'] }}" inertia>
     <meta property="og:image:alt" content="{{ $meta['og_title'] }}" inertia>
     <meta name="twitter:card" content="summary_large_image" inertia>
     <meta name="twitter:title" content="{{ $meta['og_title'] }}" inertia>
@@ -54,67 +53,82 @@
             ?: (request()->server('HTTP_CF_IPCOUNTRY')
             ?: ''));
         $isSyrianIp = strtoupper($country) === 'SY';
+
+        // The theme record shared with Lib/theme.ts and Lib/font.ts. Everything
+        // the pre-paint script may name (storage keys, the system preference id,
+        // the font defaults, which theme ids are dark) comes from this one file.
+        $themeFacts = \App\Support\Facts::themes();
+        $themeKey = $themeFacts['theme']['key'];
+        $systemTheme = $themeFacts['theme']['system'];
+        $fontKey = $themeFacts['font']['key'];
+        $legacySettingsKey = $themeFacts['legacySettingsKey'];
+        $syrianDefaultFont = $themeFacts['font']['defaults']['syrian'];
+        $otherDefaultFont = $themeFacts['font']['defaults']['other'];
+        $darkThemeIds = array_values(array_map(
+            static fn (array $theme): string => $theme['id'],
+            array_filter($themeFacts['themes'], static fn (array $theme): bool => $theme['isDark']),
+        ));
     @endphp
 
     {{-- Fonts. IBM Plex Sans Arabic is self-hosted (public/fonts, declared in
          app.css): the Google Fonts stylesheet was render-blocking and cost two
          preconnects and a second origin. The family itself is picked at runtime
-         from localStorage ('sz-font', see Lib/font.ts), so the server only knows
-         the *default* cohort, from IS_SYRIAN_IP below. Preload the one weight
-         nearly all text uses (400) only for the cohort whose default is the
-         webfont: visitors defaulted to the system stack must not download a file
-         they will never render with. A repeat visitor on a non-Syrian IP who
-         explicitly chose the system stack still fetches this one file. --}}
+         from localStorage (the key in resources/data/themes.json, see
+         Lib/font.ts), so the server only knows the *default* cohort, from
+         IS_SYRIAN_IP below. Preload the one weight nearly all text uses (400)
+         only for the cohort whose default is the webfont: visitors defaulted to
+         the system stack must not download a file they will never render with. A
+         repeat visitor on a non-Syrian IP who explicitly chose the system stack
+         still fetches this one file. --}}
     @unless ($isSyrianIp)
     <link rel="preload" as="font" type="font/woff2" crossorigin href="/fonts/ibm-plex-sans-arabic/ibm-plex-sans-arabic-regular.woff2">
     @endunless
 
-    <!-- Meta/Icons -->
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" type="image/png" href="/assets/favicon.png" />
     <link rel="apple-touch-icon" href="/assets/favicon.png" />
 
-    <!-- Theme & Font Flash Prevention -->
+    <!-- Theme & Font Flash Prevention: the minimum that must settle before the
+         first paint. Ids, storage keys and defaults come from
+         resources/data/themes.json (Lib/theme.ts and Lib/font.ts read the same
+         file); this script only resolves and applies them. -->
     <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">
         window.IS_SYRIAN_IP = {{ $isSyrianIp ? 'true' : 'false' }};
         (function(){
             try {
-                var s = localStorage.getItem('sz-theme');
-                if(!s) {
-                    var sp = localStorage.getItem('startpage-settings');
-                    if(sp) {
-                        s = (JSON.parse(sp)||{}).theme;
+                function legacySetting(name) {
+                    try {
+                        var blob = localStorage.getItem(@json($legacySettingsKey));
+                        return blob ? (JSON.parse(blob) || {})[name] : null;
+                    } catch (e) {
+                        return null;
                     }
                 }
-                if(!s || s === 'system') {
-                    s = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
-                }
-                document.documentElement.setAttribute('data-theme', s);
+                var root = document.documentElement;
 
-                // Theme ids whose isDark is true in resources/js/Lib/theme.ts
-                // (the source of truth). Keep this list in step with it.
-                var darkThemes = ['dark', 'dark-blue', 'dark-purple', 'dark-green', 'high-contrast', 'damascus-rose'];
+                var theme = localStorage.getItem(@json($themeKey)) || legacySetting('theme');
+                if (!theme || theme === @json($systemTheme)) {
+                    theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+                }
+                var scheme = @json($darkThemeIds).indexOf(theme) !== -1 ? 'dark' : 'light';
+                root.setAttribute('data-theme', theme);
+                root.setAttribute('data-scheme', scheme);
                 var schemeMeta = document.querySelector('meta[name="color-scheme"]');
-                if(schemeMeta) {
-                    schemeMeta.setAttribute('content', darkThemes.indexOf(s) !== -1 ? 'dark' : 'light');
+                if (schemeMeta) {
+                    schemeMeta.setAttribute('content', scheme);
                 }
 
-                var f = localStorage.getItem('sz-font');
-                if(!f) {
-                    var spFont = localStorage.getItem('startpage-settings');
-                    if(spFont) {
-                        f = (JSON.parse(spFont)||{}).fontFamily;
-                    }
+                var syrianFont = @json($syrianDefaultFont);
+                var otherFont = @json($otherDefaultFont);
+                var font = localStorage.getItem(@json($fontKey)) || legacySetting('fontFamily');
+                if (font !== syrianFont && font !== otherFont) {
+                    font = window.IS_SYRIAN_IP ? syrianFont : otherFont;
                 }
-                if(!f || (f !== 'system' && f !== 'ibm-plex')) {
-                    f = window.IS_SYRIAN_IP ? 'system' : 'ibm-plex';
-                }
-                document.documentElement.setAttribute('data-font', f);
+                root.setAttribute('data-font', font);
             } catch(e) {}
         })();
     </script>
     
-    <!-- Runtime Reverb Config -->
     <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">
         window.REVERB_CONFIG = window.REVERB_CONFIG || {
             host: "{{ config('broadcasting.connections.reverb.client.host') }}",
@@ -124,7 +138,6 @@
         };
     </script>
     
-    <!-- Scripts & Styles -->
     @viteReactRefresh
     @vite(['resources/js/app.tsx'])
     @inertiaHead
@@ -147,7 +160,6 @@
         });
     </script>
 
-    <!-- Service Worker Registration -->
     <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
@@ -162,20 +174,11 @@
         }
     </script>
 
-    <!-- Google Analytics: id is runtime config, so staging omits it and loads nothing -->
+    <!-- Google Analytics: the id is runtime config, so staging omits it and
+         loads nothing. Only the id is exposed here; Lib/analyticsConsent.ts is
+         the one place that fetches gtag.js, and only after the visitor agrees. -->
     @if (config('services.google_analytics.id'))
     <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">window.GA_ID = "{{ config('services.google_analytics.id') }}";</script>
-    <script async src="https://www.googletagmanager.com/gtag/js?id={{ config('services.google_analytics.id') }}" nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}"></script>
-    <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        // Send the URL without its query string or fragment: those carry search
-        // terms, room codes and route ids. Keep in sync with resources/js/app.tsx.
-        gtag('config', "{{ config('services.google_analytics.id') }}", {
-            page_location: window.location.origin + window.location.pathname,
-        });
-    </script>
     @endif
 </body>
 </html>

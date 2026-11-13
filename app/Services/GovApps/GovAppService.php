@@ -185,8 +185,10 @@ class GovAppService
 
     /**
      * Keep only http(s) links and reindex, so the JSON column stays a list
-     * rather than becoming an object with gaps. See the equivalent note in
-     * SyOfficialDirectoryService::filterUrls().
+     * rather than becoming an object with gaps. `gov_apps.links` *is* a list;
+     * the entities' `socials` column is a platform-keyed map and uses its own
+     * filter in SyOfficialDirectoryService — copying this one there is what
+     * flattened the platform keys.
      *
      * @param  array<int, mixed>  $urls
      * @return array<int, string>

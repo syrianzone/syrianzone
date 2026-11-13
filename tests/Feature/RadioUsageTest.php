@@ -7,7 +7,7 @@ test('guests cannot report radio usage', function () {
 });
 
 test('radio usage deltas accumulate rather than overwrite', function () {
-  $user = User::factory()->create(['role' => 'user']);
+  $user = User::factory()->create();
 
   // The client sends a delta because the counter spans devices: a total would
   // be last-write-wins, so a second phone reporting would erase the first.
@@ -24,7 +24,7 @@ test('radio usage deltas accumulate rather than overwrite', function () {
 });
 
 test('radio usage rejects fractional, negative and missing counters', function () {
-  $user = User::factory()->create(['role' => 'user']);
+  $user = User::factory()->create();
 
   // Fractional seconds come from wall-clock accrual; the client rounds, and a
   // value that slips through must not silently corrupt the total.
@@ -52,7 +52,7 @@ test('clearing radio usage zeroes the counters', function () {
 });
 
 test('the settings endpoint also accepts the radio usage keys', function () {
-  $user = User::factory()->create(['role' => 'user']);
+  $user = User::factory()->create();
 
   $this->actingAs($user)->postJson('/api/user/settings', ['settings' => [
     'quranRadioBytes' => 1200,

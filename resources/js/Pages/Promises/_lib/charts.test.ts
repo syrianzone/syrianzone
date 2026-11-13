@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CHART_GROUPS, chartToday, countGroups, cumulativeTrend, dayNumber, lifelines, LIFELINE_LOOKAHEAD_DAYS, percentOf, sectorBreakdown, speakerBreakdown } from './charts';
 import { matchesState } from './filters';
-import type { PromiseCardData, PromiseState } from './types';
+import type { PromiseCardData, PromiseState } from '@/Domain/promises/types';
 
 const card = (id: string, patch: Partial<PromiseCardData> = {}): PromiseCardData => ({
     id, number: Number(id), title: 'تحسين الكهرباء', speaker: { id: 'a', name: 'أحمد', title: null, image: null },

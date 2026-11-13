@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight, ExternalLink, Star } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { api, extractError } from '../_lib/api';
-import type { HotelDetail } from '../_lib/types';
+import { Alert, AlertDescription } from '@/Components/ui/alert';
+import { Button } from '@/Components/ui/button';
+import { api } from '@/Domain/places/api';
+import { apiErrorMessage } from '@/Lib/api';
+import type { HotelDetail } from '@/Domain/places/types';
 
 export function HotelDetailView(props: { hotelId: number; onClose: () => void }) {
   const { hotelId, onClose } = props;
@@ -18,7 +19,7 @@ export function HotelDetailView(props: { hotelId: number; onClose: () => void })
     setImgIdx(0);
     api.getHotel(hotelId)
       .then((h) => { if (!cancelled) setHotel(h); })
-      .catch((e) => { if (!cancelled) setError(extractError(e)); });
+      .catch((e) => { if (!cancelled) setError(apiErrorMessage(e)); });
     return () => { cancelled = true; };
   }, [hotelId]);
 
@@ -50,7 +51,6 @@ export function HotelDetailView(props: { hotelId: number; onClose: () => void })
         )}
         {hotel && (
           <>
-            {/* Image carousel */}
             {images.length > 0 && (
               <div className="relative overflow-hidden rounded-md">
                 <img
@@ -84,13 +84,11 @@ export function HotelDetailView(props: { hotelId: number; onClose: () => void })
               </div>
             )}
 
-            {/* Name + stars */}
             <div>
               <h2 className="text-lg font-semibold text-foreground">{hotel.name_ar ?? hotel.name}</h2>
               {hotel.name_ar && <p className="text-sm text-muted-foreground">{hotel.name}</p>}
             </div>
 
-            {/* Star rating */}
             {hotel.star_rating && (
               <div className="flex items-center gap-1" aria-label={`تصنيف ${hotel.star_rating} نجوم`}>
                 {Array.from({ length: hotel.star_rating }).map((_, i) => (
@@ -100,7 +98,6 @@ export function HotelDetailView(props: { hotelId: number; onClose: () => void })
               </div>
             )}
 
-            {/* Description (truncated) */}
             {rawDescription && (
               <div className="space-y-1">
                 <p className="whitespace-pre-wrap break-words text-sm text-foreground">
@@ -120,7 +117,6 @@ export function HotelDetailView(props: { hotelId: number; onClose: () => void })
         )}
       </div>
 
-      {/* Footer */}
       {hotel && (
         <div className="border-t border-border p-3">
           <a

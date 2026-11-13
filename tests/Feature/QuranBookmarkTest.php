@@ -2,11 +2,6 @@
 
 use App\Models\User;
 
-function muslimUser(array $attrs = []): User
-{
-  return User::factory()->create(array_merge(['role' => 'user'], $attrs));
-}
-
 test('guests cannot manage quran bookmarks', function () {
   $this->postJson('/api/v1/quran-bookmarks', ['surah' => 2, 'ayah' => 255, 'page' => 42, 'juz' => 3])->assertUnauthorized();
   $this->getJson('/api/v1/quran-bookmarks')->assertUnauthorized();
@@ -14,7 +9,7 @@ test('guests cannot manage quran bookmarks', function () {
 });
 
 test('user can bookmark an ayah and list it', function () {
-  $user = muslimUser();
+  $user = User::factory()->create();
 
   $this->actingAs($user)
     ->postJson('/api/v1/quran-bookmarks', ['surah' => 112, 'ayah' => 1, 'page' => 604, 'juz' => 30])
@@ -30,7 +25,7 @@ test('user can bookmark an ayah and list it', function () {
 });
 
 test('bookmarking the same ayah twice stays a single row', function () {
-  $user = muslimUser();
+  $user = User::factory()->create();
 
   $payload = ['surah' => 2, 'ayah' => 6, 'page' => 3, 'juz' => 1];
   $this->actingAs($user)->postJson('/api/v1/quran-bookmarks', $payload)->assertOk();
@@ -40,7 +35,7 @@ test('bookmarking the same ayah twice stays a single row', function () {
 });
 
 test('user can remove a bookmark', function () {
-  $user = muslimUser();
+  $user = User::factory()->create();
 
   $this->actingAs($user)->postJson('/api/v1/quran-bookmarks', ['surah' => 2, 'ayah' => 100, 'page' => 15, 'juz' => 1])->assertOk();
   $this->actingAs($user)->deleteJson('/api/v1/quran-bookmarks/2/100')->assertOk()->assertJson(['saved' => false]);
@@ -49,7 +44,7 @@ test('user can remove a bookmark', function () {
 });
 
 test('surah and ayah bounds are validated', function () {
-  $user = muslimUser();
+  $user = User::factory()->create();
 
   $this->actingAs($user)->postJson('/api/v1/quran-bookmarks', ['surah' => 0, 'ayah' => 1, 'page' => 1, 'juz' => 1])->assertStatus(422);
   $this->actingAs($user)->postJson('/api/v1/quran-bookmarks', ['surah' => 115, 'ayah' => 1, 'page' => 1, 'juz' => 1])->assertStatus(422);
@@ -58,8 +53,8 @@ test('surah and ayah bounds are validated', function () {
 });
 
 test('bookmarks are scoped per user', function () {
-  $a = muslimUser();
-  $b = muslimUser();
+  $a = User::factory()->create();
+  $b = User::factory()->create();
 
   $this->actingAs($a)->postJson('/api/v1/quran-bookmarks', ['surah' => 2, 'ayah' => 20, 'page' => 4, 'juz' => 1])->assertOk();
   $this->actingAs($b)->getJson('/api/v1/quran-bookmarks')->assertJson(['bookmarks' => []]);

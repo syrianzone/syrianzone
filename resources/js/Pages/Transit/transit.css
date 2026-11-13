@@ -6,14 +6,12 @@
   --surface-2: hsl(var(--muted));
   --border: var(--color-border);
   --border-hover: hsl(var(--primary));
-  --gold: hsl(var(--primary));
   --pomegranate: hsl(var(--destructive));
   --tile-blue: #4a8fa8;
   --terracotta: #d4956a;
   --text: hsl(var(--foreground));
   --muted: hsl(var(--muted-foreground));
 
-  /* Banner / warning semantic tokens */
   --banner-bg: hsl(var(--muted));
   --banner-text: hsl(var(--primary));
   --banner-border: hsl(var(--border));
@@ -34,14 +32,13 @@
   position: relative;
   animation: cardReveal 400ms ease backwards;
 }
-/* Leading gold accent bar (RTL-aware) that grows on hover for ready cities */
 .transit-root .city-card.is-ready::before {
   content: '';
   position: absolute;
   inset-block: 0;
   inset-inline-start: 0;
   width: 3px;
-  background: var(--gold);
+  background: hsl(var(--primary));
   transform: scaleY(0);
   transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -50,7 +47,7 @@
   transform: scaleY(1);
 }
 .transit-root .city-card.is-ready:hover {
-  box-shadow: 0 14px 34px -16px color-mix(in srgb, var(--gold) 36%, transparent);
+  box-shadow: 0 14px 34px -16px color-mix(in srgb, hsl(var(--primary)) 36%, transparent);
 }
 
 @keyframes cardReveal {
@@ -65,7 +62,6 @@
   .transit-root .city-card.is-ready:hover { transform: none; }
 }
 
-/* Loading spinner */
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
@@ -80,7 +76,6 @@
   font-size: 1.125rem;
 }
 
-/* MapLibre popup/dark overrides */
 .transit-root .maplibregl-popup-content {
   background: var(--surface);
   color: var(--text);
@@ -119,7 +114,6 @@
   contain-intrinsic-size: auto 80px;
 }
 
-/* ─── Sidebar transitions ─────────────────────────────────────────────────── */
 .transit-sidebar {
   transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -128,7 +122,6 @@
   height: 100%;
 }
 
-/* Map full height inside main */
 .transit-shell main > .flex-1 {
   height: 100%;
 }

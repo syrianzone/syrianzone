@@ -1,0 +1,152 @@
+/* Imported by this game's Index.tsx, so the board's CSS ships with the game. */
+/* ---------------------------------------------------------------------------
+   2048 board.
+
+   Tiles are placed with `transform`, never `left`/`top`: a surviving tile keeps
+   its DOM node across moves (keyed by id), so a move is a transform change the
+   browser can transition. Positioning by left/top would jump instead.
+
+   The face is a child element because the slide and the pop both need the
+   transform axis — the pop has to be a second element so it cannot clobber the
+   translate that is doing the sliding.
+
+   Timings live in custom properties so the component can retune them, and the
+   pop/die are delayed by the slide length so they fire on landing rather than
+   at the start of the movement. */
+
+.sz-2048-cell {
+    /* One grid cell, for both the empty slots and the tiles.
+
+       An absolutely positioned element is laid out against the containing
+       block's PADDING box, so `left: 0` would sit on the border and ignore the
+       board's p-2 — the grid would butt against the top-left and leave the
+       padding stranded on the bottom and right. Offsetting by the pad here is
+       what makes the inset even on all four sides.
+
+       A percentage in `width` resolves against that same padding box (the whole
+       board), so `25%` is a quarter of the board rather than of its content
+       box. Four cells plus three gaps have to fill the content box exactly,
+       which is why each cell gives up its share of the padding and of the three
+       gaps that follow it:
+
+           4·cell + 3·gap = 100% − 2·pad
+           cell = 25% − (2·pad + 3·gap) / 4
+
+       The pitch (distance to the next cell) is then cell + gap, which is what
+       --sz-2048-pitch spells out for the transform below. Keep --sz-2048-pad
+       in step with the board's p-2 utility. */
+    --sz-2048-gap: 0.5rem;
+    --sz-2048-pad: 0.5rem;
+    --sz-2048-pitch: calc(100% + var(--sz-2048-gap));
+    position: absolute;
+    left: var(--sz-2048-pad);
+    top: var(--sz-2048-pad);
+    width: calc(25% - (2 * var(--sz-2048-pad) + 3 * var(--sz-2048-gap)) / 4);
+    height: calc(25% - (2 * var(--sz-2048-pad) + 3 * var(--sz-2048-gap)) / 4);
+}
+
+.sz-2048-tile {
+    transition-property: transform;
+    transition-duration: var(--sz-2048-slide, 140ms);
+    transition-timing-function: cubic-bezier(0.2, 0, 0.2, 1);
+    will-change: transform;
+}
+
+/* The tile a merge ate: slides into its killer, then fades out on arrival.
+   --sz-2048-fx/--fy/--tz are unitless cell coordinates, multiplied by the
+   pitch here so the ghost lands on exactly the same grid as a live tile. */
+.sz-2048-ghost {
+    position: absolute;
+    animation: sz-2048-slide-into var(--sz-2048-slide, 140ms) cubic-bezier(0.2, 0, 0.2, 1) both;
+}
+
+@keyframes sz-2048-slide-into {
+    from {
+        transform: translate(calc(var(--sz-2048-fx) * var(--sz-2048-pitch)), calc(var(--sz-2048-fy) * var(--sz-2048-pitch)));
+    }
+
+    to {
+        transform: translate(calc(var(--sz-2048-tx) * var(--sz-2048-pitch)), calc(var(--sz-2048-ty) * var(--sz-2048-pitch)));
+    }
+}
+
+.sz-2048-face {
+    display: flex;
+    height: 100%;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.75rem;
+    font-weight: 900;
+}
+
+.sz-2048-face-appear {
+    animation: sz-2048-appear var(--sz-2048-appear, 160ms) cubic-bezier(0.2, 0, 0.2, 1) both;
+}
+
+.sz-2048-face-pop {
+    animation: sz-2048-pop var(--sz-2048-pop, 200ms) cubic-bezier(0.2, 0, 0.2, 1)
+        var(--sz-2048-slide, 140ms) both;
+}
+
+/* A merge that did not travel has nothing to wait for, so it pops at once. */
+.sz-2048-face-pop-now {
+    animation: sz-2048-pop var(--sz-2048-pop, 200ms) cubic-bezier(0.2, 0, 0.2, 1) both;
+}
+
+.sz-2048-face-die {
+    animation: sz-2048-die var(--sz-2048-die, 160ms) ease-in var(--sz-2048-slide, 140ms) both;
+}
+
+@keyframes sz-2048-appear {
+    from {
+        transform: scale(0.2);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes sz-2048-pop {
+    0% {
+        transform: scale(1);
+    }
+
+    40% {
+        transform: scale(1.22);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes sz-2048-die {
+    from {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    to {
+        transform: scale(0.35);
+        opacity: 0;
+    }
+}
+
+/* A board is a grid of transforms, not of page flow — no reason to animate
+   any of it for someone who asked the OS not to. */
+@media (prefers-reduced-motion: reduce) {
+    .sz-2048-cell,
+    .sz-2048-tile,
+    .sz-2048-ghost,
+    .sz-2048-face-appear,
+    .sz-2048-face-pop,
+    .sz-2048-face-pop-now,
+    .sz-2048-face-die {
+        animation: none;
+        transition: none;
+    }
+}

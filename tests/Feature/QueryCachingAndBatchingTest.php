@@ -1,14 +1,13 @@
 <?php
 
-use App\Http\Controllers\CompassController;
 use App\Models\Candidate;
-use App\Models\CompassResult;
 use App\Models\HouseMember2026;
 use App\Models\Poll;
 use App\Models\Promise;
 use App\Models\PromiseSector;
 use App\Models\User;
 use App\Services\Promises\PromiseSectorService;
+use App\Support\Compass\CompassStats;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -30,8 +29,6 @@ function inertiaProp($response, string $key)
 {
     return data_get($response->viewData('page'), 'props.'.$key);
 }
-
-// ─── /promises ─────────────────────────────────────────────────────────────
 
 it('shows a newly published promise on the cached list at once', function () {
     Promise::factory()->published()->create(['title' => 'الأول']);
@@ -67,8 +64,6 @@ it('follows a sector reorder on the cached list at once', function () {
     expect(array_column(inertiaProp($this->get('/promises'), 'filters.sectors'), 'id'))->toBe(['beta', 'alpha']);
 });
 
-// ─── /house ────────────────────────────────────────────────────────────────
-
 it('follows a new house member on the cached roster at once', function () {
     HouseMember2026::create(['name_ar' => 'Adel', 'governorate_ar' => 'Damascus']);
     expect(inertiaProp($this->get('/house')->assertOk(), 'members2026'))->toHaveCount(1);
@@ -77,8 +72,6 @@ it('follows a new house member on the cached roster at once', function () {
 
     expect(inertiaProp($this->get('/house')->assertOk(), 'members2026'))->toHaveCount(2);
 });
-
-// ─── Ballots ───────────────────────────────────────────────────────────────
 
 it('writes one item per ranked candidate and adds each ballot to the day totals', function () {
     $poll = Poll::factory()->create(['slug' => 'batch']);
@@ -136,8 +129,6 @@ it('leaves nothing behind when a ballot is rejected', function () {
         ->and(DB::table('daily_scores')->count())->toBe(0);
 });
 
-// ─── Promise votes ─────────────────────────────────────────────────────────
-
 it('keeps one vote row per voter when they change their mind', function () {
     $promise = Promise::factory()->published()->create();
     $url = "/api/v1/promises/{$promise->number}/vote";
@@ -154,30 +145,13 @@ it('keeps one vote row per voter when they change their mind', function () {
         ->and($rows[0]->created_at)->not->toBeNull();
 });
 
-// ─── Compass statistics ────────────────────────────────────────────────────
-
-function tallyRun(array $overrides = []): CompassResult
-{
-    return CompassResult::create(array_merge([
-        'user_id' => null,
-        'version' => 'short',
-        'answers' => ['auth_lib#0' => 2],
-        'scores' => ['auth_lib' => 0.5],
-        'align' => ['west' => 1],
-        'spectrum' => 'tech_reform',
-        'consistency' => 0.5,
-        'answered' => 1,
-        'stats_consent' => true,
-    ], $overrides));
-}
-
 it('adds later runs to the running compass tally', function () {
-    tallyRun(['scores' => ['auth_lib' => 1.0]]);
+    compassRun(['scores' => ['auth_lib' => 1.0]]);
     expect(inertiaProp($this->get('/compass/stats')->assertOk(), 'stats.total'))->toBe(1);
 
     // Only this run is read on the second pass; the first is already tallied.
-    tallyRun(['scores' => ['auth_lib' => 0.0], 'answers' => ['auth_lib#0' => -2]]);
-    Cache::forget(CompassController::PUBLIC_STATS_CACHE_KEY);
+    compassRun(['scores' => ['auth_lib' => 0.0], 'answers' => ['auth_lib#0' => -2]]);
+    Cache::forget(CompassStats::PUBLIC_CACHE_KEY);
 
     $stats = inertiaProp($this->get('/compass/stats')->assertOk(), 'stats');
 
@@ -187,13 +161,13 @@ it('adds later runs to the running compass tally', function () {
 });
 
 it('rebuilds the compass tally when a run is withdrawn', function () {
-    tallyRun(['scores' => ['auth_lib' => 1.0]]);
-    $withdrawn = tallyRun(['scores' => ['auth_lib' => 0.0]]);
+    compassRun(['scores' => ['auth_lib' => 1.0]]);
+    $withdrawn = compassRun(['scores' => ['auth_lib' => 0.0]]);
     expect(inertiaProp($this->get('/compass/stats'), 'stats.total'))->toBe(2);
 
     // Removed behind the tally's back, as a withdrawal or a manual delete does.
     $withdrawn->delete();
-    Cache::forget(CompassController::PUBLIC_STATS_CACHE_KEY);
+    Cache::forget(CompassStats::PUBLIC_CACHE_KEY);
 
     $stats = inertiaProp($this->get('/compass/stats'), 'stats');
 
@@ -203,14 +177,14 @@ it('rebuilds the compass tally when a run is withdrawn', function () {
 
 it('rebuilds the compass tally a day after it was built, however many runs arrive', function () {
     $builtAt = now();
-    $corrected = tallyRun(['scores' => ['auth_lib' => 1.0]]);
+    $corrected = compassRun(['scores' => ['auth_lib' => 1.0]]);
     expect(inertiaProp($this->get('/compass/stats'), 'stats.axisAverages.all.auth_lib'))->toEqual(1.0);
 
     // A steady trickle of submissions must not push the rebuild back.
     foreach ([8, 16, 23] as $hours) {
         $this->travelTo($builtAt->copy()->addHours($hours));
-        tallyRun(['scores' => ['auth_lib' => 1.0]]);
-        Cache::forget(CompassController::PUBLIC_STATS_CACHE_KEY);
+        compassRun(['scores' => ['auth_lib' => 1.0]]);
+        Cache::forget(CompassStats::PUBLIC_CACHE_KEY);
         $this->get('/compass/stats')->assertOk();
     }
 
@@ -218,21 +192,21 @@ it('rebuilds the compass tally a day after it was built, however many runs arriv
     // the deadline can pick it up.
     DB::table('compass_results')->where('id', $corrected->id)->update(['scores' => json_encode(['auth_lib' => -1.0])]);
 
-    Cache::forget(CompassController::PUBLIC_STATS_CACHE_KEY);
+    Cache::forget(CompassStats::PUBLIC_CACHE_KEY);
     expect(inertiaProp($this->get('/compass/stats'), 'stats.axisAverages.all.auth_lib'))->toEqual(1.0);
 
     // 25 hours after the tally was first built.
     $this->travelTo($builtAt->copy()->addHours(25));
-    Cache::forget(CompassController::PUBLIC_STATS_CACHE_KEY);
+    Cache::forget(CompassStats::PUBLIC_CACHE_KEY);
 
     // (-1 + 1 + 1 + 1) / 4
     expect(inertiaProp($this->get('/compass/stats'), 'stats.axisAverages.all.auth_lib'))->toEqual(0.5);
 });
 
 it('never counts a signed-in or non-consenting run in the tally', function () {
-    tallyRun();
-    tallyRun(['stats_consent' => false]);
-    tallyRun(['user_id' => User::factory()->create()->id]);
+    compassRun();
+    compassRun(['stats_consent' => false]);
+    compassRun(['user_id' => User::factory()->create()->id]);
 
     expect(inertiaProp($this->get('/compass/stats'), 'stats.total'))->toBe(1);
 });

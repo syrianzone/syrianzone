@@ -1,12 +1,15 @@
 import React, { useMemo, useState } from 'react';
 import { router } from '@inertiajs/react';
-import axios from 'axios';
+import { apiErrorMessage } from '@/Lib/api';
+import { apiTokensApi } from './_lib/api';
 import MainLayout from '@/Layouts/MainLayout';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card';
 import { notify as toastNotify } from '@/Lib/notify';
+import { copyText } from '@/Lib/copy';
+import { formatGregorianSyrianShort } from '@/Lib/syrian-date';
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/Components/ui/select';
@@ -18,7 +21,7 @@ import {
     KeyRound, Plus, Copy, Check, Trash2, ShieldAlert, AlertTriangle,
 } from 'lucide-react';
 
-export interface TokenRow {
+interface TokenRow {
     id: number;
     name: string;
     abilities: string[];
@@ -33,7 +36,7 @@ export interface TokenRow {
 interface Owner { id: number; name: string; role: string }
 interface TtlOption { value: string; label: string }
 
-export interface ApiTokensData {
+interface ApiTokensData {
     /**
      * True for anyone but a superadmin: the page manages only the viewer's own
      * tokens, `owners` is just them, and `capabilities` is narrowed server-side
@@ -61,8 +64,7 @@ const ROLE_LABELS: Record<string, string> = {
 
 function formatDate(iso: string | null): string {
     if (!iso) return '—';
-    const d = new Date(iso);
-    return d.toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' });
+    return formatGregorianSyrianShort(iso);
 }
 
 export default function ApiTokensIndex(props: ApiTokensData) {
@@ -71,7 +73,6 @@ export default function ApiTokensIndex(props: ApiTokensData) {
     const [showForm, setShowForm] = useState(false);
     const [saving, setSaving] = useState(false);
 
-    // Mint form state
     // Self-service tokens always belong to the viewer, the only owner offered.
     const [ownerId, setOwnerId] = useState<string>(
         selfService && owners[0] ? String(owners[0].id) : '',
@@ -80,7 +81,6 @@ export default function ApiTokensIndex(props: ApiTokensData) {
     const [ttl, setTtl] = useState<string>(ttlOptions[1]?.value ?? '30d');
     const [selected, setSelected] = useState<string[]>([]);
 
-    // One-time plaintext reveal
     const [issued, setIssued] = useState<{ token: string; message: string } | null>(null);
     const [copied, setCopied] = useState(false);
 
@@ -125,18 +125,18 @@ export default function ApiTokensIndex(props: ApiTokensData) {
         }
         setSaving(true);
         try {
-            const res = await axios.post('/api/v1/admin/api-tokens', {
+            const res = await apiTokensApi.issue({
                 user_id: Number(ownerId),
                 name: name.trim(),
                 ttl,
                 permissions: selected,
             });
-            setIssued({ token: res.data.plain_text_token, message: res.data.message });
+            setIssued({ token: res.plain_text_token, message: res.message });
             setName('');
             setSelected([]);
             router.reload({ only: ['tokens'] });
-        } catch (e: any) {
-            notify(e.response?.data?.message ?? 'تعذّر إنشاء الرمز.', false);
+        } catch (e) {
+            notify(apiErrorMessage(e, 'تعذّر إنشاء الرمز.'), false);
         } finally {
             setSaving(false);
         }
@@ -144,32 +144,34 @@ export default function ApiTokensIndex(props: ApiTokensData) {
 
     const revoke = async (id: number) => {
         try {
-            const res = await axios.delete(`/api/v1/admin/api-tokens/${id}`);
-            notify(res.data.message);
+            const res = await apiTokensApi.revoke(id);
+            notify(res.message);
             router.reload({ only: ['tokens'] });
-        } catch {
-            notify('تعذّر إبطال الرمز.', false);
+        } catch (e) {
+            notify(apiErrorMessage(e, 'تعذّر إبطال الرمز.'), false);
         }
     };
 
     const revokeAll = async (userId: number) => {
         try {
-            const res = await axios.post(`/api/v1/admin/api-tokens/revoke-all/${userId}`);
-            notify(res.data.message);
+            const res = await apiTokensApi.revokeAllForUser(userId);
+            notify(res.message);
             router.reload({ only: ['tokens'] });
-        } catch {
-            notify('تعذّر إبطال الرموز.', false);
+        } catch (e) {
+            notify(apiErrorMessage(e, 'تعذّر إبطال الرموز.'), false);
         }
     };
 
     const copyToken = async () => {
         if (!issued) return;
-        try {
-            await navigator.clipboard.writeText(issued.token);
+        // The local check mark is this panel's own confirmation; the copy helper
+        // still owns the failure message when the browser refuses.
+        if (await copyText(issued.token, {
+            successMessage: 'نُسخ رمز الوصول',
+            failureMessage: 'تعذّر النسخ، انسخ الرمز يدوياً.',
+        })) {
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
-        } catch {
-            notify('تعذّر النسخ، انسخ الرمز يدوياً.', false);
         }
     };
 
@@ -195,7 +197,6 @@ export default function ApiTokensIndex(props: ApiTokensData) {
                     </Button>
                 </div>
 
-                {/* Endpoint help — an agent cannot be connected without this. */}
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-base">كيف يتصل الوكيل</CardTitle>
@@ -217,7 +218,6 @@ export default function ApiTokensIndex(props: ApiTokensData) {
                     </CardContent>
                 </Card>
 
-                {/* One-time plaintext reveal */}
                 {issued && (
                     <Card className="border-green-500/50 bg-green-500/5">
                         <CardHeader>
@@ -232,7 +232,7 @@ export default function ApiTokensIndex(props: ApiTokensData) {
                                 <code dir="ltr" className="flex-1 bg-muted rounded-md p-3 text-xs break-all text-left select-all">
                                     {issued.token}
                                 </code>
-                                <Button size="sm" variant="outline" onClick={copyToken}>
+                                <Button size="sm" variant="outline" onClick={() => void copyToken()}>
                                     {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                                     {copied ? 'تم النسخ' : 'نسخ'}
                                 </Button>
@@ -251,7 +251,6 @@ export default function ApiTokensIndex(props: ApiTokensData) {
                     </Card>
                 )}
 
-                {/* Mint form */}
                 {showForm && (
                     <Card>
                         <CardHeader>
@@ -367,7 +366,6 @@ export default function ApiTokensIndex(props: ApiTokensData) {
                     </Card>
                 )}
 
-                {/* Token list */}
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-base">
@@ -388,61 +386,66 @@ export default function ApiTokensIndex(props: ApiTokensData) {
                                         <TableHead className="text-right">الصلاحيات</TableHead>
                                         <TableHead className="text-right">آخر استخدام</TableHead>
                                         <TableHead className="text-right">ينتهي</TableHead>
-                                        <TableHead />
+                                        <TableHead className="text-right">
+                                            <span className="sr-only">إجراءات</span>
+                                        </TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {tokens.map((t) => (
-                                        <TableRow key={t.id}>
-                                            <TableCell className="font-medium" dir="ltr">{t.name}</TableCell>
-                                            {!selfService && (
-                                            <TableCell>
-                                                <div className="flex items-center gap-1.5">
-                                                    {t.owner?.name ?? '—'}
-                                                    {t.owner_banned && (
-                                                        <ShieldAlert className="w-4 h-4 text-destructive" aria-label="حساب محظور" />
-                                                    )}
-                                                </div>
-                                            </TableCell>
-                                            )}
-                                            <TableCell>
-                                                <div className="flex flex-wrap gap-1">
-                                                    {(t.abilities ?? []).map((a) => (
-                                                        <Badge key={a} variant="secondary" className="text-[10px]" dir="ltr">
-                                                            {a}
-                                                        </Badge>
-                                                    ))}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="text-muted-foreground text-xs">
-                                                {t.last_used_at ? formatDate(t.last_used_at) : 'لم يُستخدم'}
-                                            </TableCell>
-                                            <TableCell className="text-xs">
-                                                <span className={t.is_expired ? 'text-destructive font-bold' : 'text-muted-foreground'}>
-                                                    {t.is_expired ? 'منتهٍ' : formatDate(t.expires_at)}
-                                                </span>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center gap-1">
-                                                    {/* Revoke-all also ends the user's mobile sessions,
-                                                        so it stays a superadmin leak response. */}
-                                                    {!selfService && t.owner && (
-                                                        <Button aria-label="إبطال كل رموز هذا المستخدم"
-                                                            size="sm"
-                                                            variant="ghost"
-                                                            title="إبطال كل رموز هذا المستخدم"
-                                                            onClick={() => revokeAll(t.owner!.id)}
-                                                        >
-                                                            <AlertTriangle className="w-4 h-4 text-amber-600" />
+                                    {tokens.map((t) => {
+                                        const owner = t.owner;
+                                        return (
+                                            <TableRow key={t.id}>
+                                                <TableCell className="font-medium" dir="ltr">{t.name}</TableCell>
+                                                {!selfService && (
+                                                <TableCell>
+                                                    <div className="flex items-center gap-1.5">
+                                                        {owner?.name ?? '—'}
+                                                        {t.owner_banned && (
+                                                            <ShieldAlert className="w-4 h-4 text-destructive" aria-label="حساب محظور" />
+                                                        )}
+                                                    </div>
+                                                </TableCell>
+                                                )}
+                                                <TableCell>
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {(t.abilities ?? []).map((a) => (
+                                                            <Badge key={a} variant="secondary" className="text-[10px]" dir="ltr">
+                                                                {a}
+                                                            </Badge>
+                                                        ))}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="text-muted-foreground text-xs">
+                                                    {t.last_used_at ? formatDate(t.last_used_at) : 'لم يُستخدم'}
+                                                </TableCell>
+                                                <TableCell className="text-xs">
+                                                    <span className={t.is_expired ? 'text-destructive font-bold' : 'text-muted-foreground'}>
+                                                        {t.is_expired ? 'منتهٍ' : formatDate(t.expires_at)}
+                                                    </span>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex items-center gap-1">
+                                                        {/* Revoke-all also ends the user's mobile sessions,
+                                                            so it stays a superadmin leak response. */}
+                                                        {!selfService && owner && (
+                                                            <Button aria-label="إبطال كل رموز هذا المستخدم"
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                title="إبطال كل رموز هذا المستخدم"
+                                                                onClick={() => revokeAll(owner.id)}
+                                                            >
+                                                                <AlertTriangle className="w-4 h-4 text-amber-600" />
+                                                            </Button>
+                                                        )}
+                                                        <Button aria-label="إبطال" size="sm" variant="ghost" title="إبطال" onClick={() => revoke(t.id)}>
+                                                            <Trash2 className="w-4 h-4 text-destructive" />
                                                         </Button>
-                                                    )}
-                                                    <Button aria-label="إبطال" size="sm" variant="ghost" title="إبطال" onClick={() => revoke(t.id)}>
-                                                        <Trash2 className="w-4 h-4 text-destructive" />
-                                                    </Button>
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        );
+                                    })}
                                 </TableBody>
                             </Table>
                         )}

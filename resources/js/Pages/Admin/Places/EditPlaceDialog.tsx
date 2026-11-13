@@ -1,28 +1,29 @@
 import { useEffect, useState } from 'react';
+import { inSyriaBox } from '@/Domain/geography/syria';
 import { Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/Components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from '@/Components/ui/dialog';
+import { Input } from '@/Components/ui/input';
+import { Label } from '@/Components/ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { api, extractError, extractFieldErrors } from '../../Places/_lib/api';
-import { extractApiFieldErrors } from '@/Lib/apiError';
+} from '@/Components/ui/select';
+import { Textarea } from '@/Components/ui/textarea';
+import { api } from '@/Domain/places/api';
+import { apiErrorMessage, apiFieldErrors } from '@/Lib/api';
 import FieldError, { fieldA11y } from '@/Components/ui/field-error';
-import { CATEGORIES } from '../../Places/_lib/categories';
-import type { AdminPlace, PlaceCategory } from '../../Places/_lib/types';
+import { CATEGORIES } from '@/Domain/places/categories';
+import type { AdminPlace, PlaceCategory } from '@/Domain/places/types';
 
 export function EditPlaceDialog(props: {
   open: boolean;
@@ -63,7 +64,7 @@ export function EditPlaceDialog(props: {
   async function save() {
     const latNum = Number(lat);
     const lngNum = Number(lng);
-    if (Number.isNaN(latNum) || Number.isNaN(lngNum) || latNum < 32.0 || latNum > 37.5 || lngNum < 35.5 || lngNum > 42.5) {
+    if (Number.isNaN(latNum) || Number.isNaN(lngNum) || !inSyriaBox({ lat: latNum, lng: lngNum })) {
       setError('الإحداثيات خارج حدود سوريا');
       return;
     }
@@ -85,19 +86,19 @@ export function EditPlaceDialog(props: {
       onSaved();
       onOpenChange(false);
     } catch (e) {
-      // axios 422 body: { message, errors: { name: [...], lat: [...] } }
-      // extractFieldErrors() keeps only Arabic messages (Laravel's defaults are
-      // English and this endpoint passes none), so fall back to the field keys
-      // the 422 named and mark them with a neutral Arabic note.
-      const arabic = extractFieldErrors(e);
-      if (arabic) {
+      // A 422 body carries { message, errors: { name: [...], lat: [...] } }.
+      // Only Arabic messages may reach the form; when Laravel's English
+      // defaults are all there is, mark the field names the 422 sent with a
+      // neutral Arabic note instead.
+      const arabic = apiFieldErrors(e, { arabicOnly: true });
+      if (Object.keys(arabic).length) {
         setFieldErrors(arabic);
       } else {
-        const fields = Object.keys(extractApiFieldErrors(e));
+        const fields = Object.keys(apiFieldErrors(e));
         if (fields.length > 0) {
           setFieldErrors(Object.fromEntries(fields.map((field) => [field, 'تحقق من هذه القيمة'])));
         } else {
-          setError(extractError(e));
+          setError(apiErrorMessage(e));
         }
       }
     } finally {

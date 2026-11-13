@@ -4,13 +4,13 @@ import { CalendarDays } from 'lucide-react';
 import { cn } from '@/Lib/utils';
 import CardVote from './CardVote';
 import Countdown from './Countdown';
-import SpeakerAvatar from './SpeakerAvatar';
-import StateBadge from './StateBadge';
+import SpeakerAvatar from '@/Domain/promises/SpeakerAvatar';
+import StateBadge from '@/Domain/promises/StateBadge';
 import TargetProgress from './TargetProgress';
-import { formatDate } from '../_lib/format';
+import { formatDate } from '@/Domain/promises/format';
 import { PROMISE_LIST_VISIT_KEY, promiseReturnUrl } from '../_lib/filters';
-import { sectorIcon } from '../_lib/status';
-import type { PromiseCardData } from '../_lib/types';
+import { sectorIcon } from '@/Domain/promises/status';
+import type { PromiseCardData } from '@/Domain/promises/types';
 
 /**
  * One promise in the list. The title is the only link; it stretches over the

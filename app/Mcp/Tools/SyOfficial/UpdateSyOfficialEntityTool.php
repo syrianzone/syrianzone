@@ -5,6 +5,7 @@ namespace App\Mcp\Tools\SyOfficial;
 use App\Services\SyOfficial\SyOfficialDirectoryService;
 use App\Services\SyOfficial\SyOfficialPresenter;
 use App\Support\Agents\AgentContext;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -26,7 +27,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
 #[IsIdempotent]
 class UpdateSyOfficialEntityTool extends SyOfficialTool
 {
-    protected array $permissions = ['syofficial.edit'];
+    protected array $permissions = [PermissionCatalogue::SYOFFICIAL_EDIT];
 
     public function schema(JsonSchema $schema): array
     {
@@ -46,9 +47,8 @@ class UpdateSyOfficialEntityTool extends SyOfficialTool
 
             'description_ar' => $schema->string()->description('New Arabic description. Pass null to clear it.'),
 
-            'socials' => $schema->array()
-                ->description('Replace the link list. Omit to leave it alone; pass an empty array to clear every link. Only http and https survive.')
-                ->items($schema->string()->max(2048)),
+            'socials' => $schema->object($this->socialProperties($schema))
+                ->description('Replace the link map. Omit to leave it alone; pass an empty object to clear every link. Keys are the platforms in the schema; a value set to an empty string is dropped. A plain list is refused because it loses the platform.'),
         ];
     }
 

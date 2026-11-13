@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\Facts;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -20,23 +21,6 @@ class WeatherController extends Controller
   // the route is throttled, so the key space and upstream spend stay bounded
   // without a geographic allowlist.
 
-  private const COORDS = [
-    'damascus' => [33.5138, 36.2765],
-    'rural-damascus' => [33.5138, 36.2765],
-    'aleppo' => [36.2021, 37.1343],
-    'homs' => [34.7324, 36.7137],
-    'hama' => [35.1318, 36.7578],
-    'latakia' => [35.5317, 35.7901],
-    'tartus' => [34.8890, 35.8866],
-    'deir-ez-zor' => [35.3359, 40.1408],
-    'idlib' => [35.9306, 36.6339],
-    'daraa' => [32.6255, 36.1016],
-    'quneitra' => [33.1250, 35.8250],
-    'sweida' => [32.7089, 36.5695],
-    'hasakah' => [36.5023, 40.7382],
-    'raqqa' => [35.9520, 39.0081],
-  ];
-
   private const TTL = 600;
 
   // The forecast is a separate upstream with a much flatter curve: a daily
@@ -52,8 +36,10 @@ class WeatherController extends Controller
     $lat = $request->query('lat');
     $lon = $request->query('lon');
 
-    if ($governorate && isset(self::COORDS[$governorate])) {
-      [$lat, $lon] = self::COORDS[$governorate];
+    $governorateRow = is_string($governorate) ? Facts::governorate($governorate) : null;
+
+    if ($governorateRow !== null) {
+      [$lat, $lon] = [(float) $governorateRow['lat'], (float) $governorateRow['lng']];
       $cacheKey = "weather:{$governorate}";
     } elseif ($lat !== null && $lon !== null && is_numeric($lat) && is_numeric($lon)) {
       $lat = (float) $lat;
@@ -67,7 +53,7 @@ class WeatherController extends Controller
         return response()->json(['message' => 'إحداثيات غير صالحة'], 422);
       }
 
-      $governorate = $governorate ?: 'custom';
+      $governorate = is_string($governorate) && $governorate !== '' ? $governorate : 'custom';
       $cacheKey = "weather:{$governorate}:{$lat}:{$lon}";
     } else {
       return response()->json(['message' => 'المحافظة مطلوبة أو إحداثيات صالحة'], 422);
@@ -121,9 +107,11 @@ class WeatherController extends Controller
   // series the widget needs. Every failure path returns [] rather than throwing,
   // because this runs inside a request whose primary job is current conditions.
   //
-  // The WMO code is passed through raw. The arabic labels live in the widget,
-  // next to the arabic mapping it already owns for `description`, so display
-  // vocabulary stays in one place instead of being split across the boundary.
+  // The WMO code is passed through raw. Its Arabic label, and the Arabic of the
+  // `description` above, live in resources/data/weather.json (`Domain/weather`),
+  // the same table SyriaClimateService and the environmental aggregator read, so
+  // display vocabulary stays in one place instead of being split across the
+  // boundary.
   private function forecast(string $governorate, float $lat, float $lon): array
   {
     $key = "weather:forecast:{$governorate}";

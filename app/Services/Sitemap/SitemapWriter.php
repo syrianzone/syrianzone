@@ -8,14 +8,18 @@ namespace App\Services\Sitemap;
  */
 class SitemapWriter
 {
+    private readonly string $baseUrl;
+
     /**
      * The base URL is a constructor argument so tests can pin it, but defaults
-     * to the canonical host: staging answers on a different hostname, and a
-     * sitemap built from the request host would advertise a duplicate site.
+     * to the canonical host every other SEO surface reads (`config('seo.base_url')`,
+     * overridable with SEO_BASE_URL): staging answers on a different hostname,
+     * and a sitemap built from the request host would advertise a duplicate site.
      */
-    public function __construct(
-        private readonly string $baseUrl = 'https://syrian.zone',
-    ) {}
+    public function __construct(?string $baseUrl = null)
+    {
+        $this->baseUrl = $baseUrl ?? (string) config('seo.base_url');
+    }
 
     /**
      * @param  SitemapUrl[]  $urls

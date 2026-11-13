@@ -1,19 +1,39 @@
-import React, { useState, useEffect, useId, useMemo, useRef } from 'react';
-import { usePage } from '@inertiajs/react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
-    Calendar, Clock, MapPin, Sparkles, AlertCircle, Info,
-    Sun, Sunset, Timer, Check, ShieldAlert, Heart, CalendarDays,
-    ExternalLink, MoonStar, Sunrise, SunDim, Moon, Settings,
-    Cloud, CloudRain, CloudLightning, Snowflake, Wind
+    Calendar, Clock, MapPin, Sparkles, AlertCircle, Info, CalendarDays,
+    ExternalLink, Settings,
 } from 'lucide-react';
 import { Card, CardContent } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/Components/ui/select";
 import { Badge } from "@/Components/ui/badge";
 import { Switch } from "@/Components/ui/switch";
 interface EventCategory {
     nameAr: string;
     nameEn: string;
+}
+
+/** The server proxy's normalized events payload. */
+interface ProxiedEvent {
+    id: string;
+    name: string;
+    description: string;
+    url: string;
+    address: string;
+    is_online: boolean;
+    is_free: boolean;
+    ticket_price: number | null;
+    event_date: string;
+    event_time: string | null;
+    province: string;
+    provinceName: string;
+    category: string | null;
+    organizer: string | null;
+}
+
+interface EventsPayload {
+    governorate: string;
+    is_fallback: boolean;
+    events: ProxiedEvent[];
 }
 
 interface F3aliaEvent {
@@ -32,69 +52,34 @@ interface F3aliaEvent {
     category: EventCategory | null;
 }
 
-const GOVERNORATE_TO_F3ALIA_PROVINCE: Record<string, string> = {
-    'damascus': 'DAMASCUS',
-    'aleppo': 'ALEPPO',
-    'homs': 'HOMS',
-    'hama': 'HAMA',
-    'latakia': 'LATTAKIA',
-    'tartus': 'TARTOUS',
-    'deir-ez-zor': 'DEIR_EZ_ZOR',
-    'idlib': 'IDLIB',
-    'daraa': 'DARAA',
-    'quneitra': 'QUNEITRA',
-    'sweida': 'AS_SUWAYDA',
-    'rural-damascus': 'DAMASCUS',
-    'hasakah': 'HASAKEH',
-    'raqqa': 'RAQQA'
-};
-
-const F3ALIA_PROVINCE_TO_ARABIC: Record<string, string> = {
-    'DAMASCUS': 'دمشق',
-    'ALEPPO': 'حلب',
-    'HOMS': 'حمص',
-    'HAMA': 'حماة',
-    'LATTAKIA': 'اللاذقية',
-    'TARTOUS': 'طرطوس',
-    'DEIR_EZ_ZOR': 'دير الزور',
-    'IDLIB': 'إدلب',
-    'DARAA': 'درعا',
-    'QUNEITRA': 'القنيطرة',
-    'AS_SUWAYDA': 'السويداء',
-    'HASAKEH': 'الحسكة',
-    'RAQQA': 'الرقة'
-};
 import { Label } from "@/Components/ui/label";
-import { Input } from "@/Components/ui/input";
 import MainLayout from '@/Layouts/MainLayout';
-import axios from '@/Lib/axios';
+import { api, API_ROOT, apiErrorMessage } from '@/Lib/api';
 import {
-    Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
-} from '@/Components/ui/dialog';
+    accountPatchForLocation,
+    isDeviceLocation,
+    resolvePlaceLabel,
+    useLocationPreference,
+    type LocationPatch,
+} from '@/Domain/location/preference';
+import { PRAYER_KEYS, PRAYER_LABELS } from '@/Domain/prayer/methods';
+import { formatHijriDate, hijriDateLabel } from '@/Domain/prayer/hijri';
+import { prayerSchedule } from '@/Domain/prayer/nextPrayer';
+import { usePrayerTimes } from '@/Domain/prayer/times';
+import { PrayerIcon } from '@/Domain/prayer/PrayerIcon';
+import PrayerSettingsFields from '@/Domain/prayer/PrayerSettingsFields';
+import ResponsiveSettingsDialog from '@/Domain/prayer/ResponsiveSettingsDialog';
+import { todayInSyria, todayKey, useMuslimPrefs } from '@/Domain/settings/prefs';
+import { saveAccountSettings } from '@/Domain/settings/accountSettings';
+import { useWeather } from '@/Domain/weather/weather';
+import { WeatherIcon } from '@/Domain/weather/WeatherIcon';
+import { formatDuration } from '@/Lib/format';
+import { formatGregorianSyrian, formatGregorianSyrianShort } from '@/Lib/syrian-date';
+import { usePageDialog } from '@/Lib/appShell';
 import {
-    Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle,
-} from '@/Components/ui/sheet';
-import LocationModeSelector from '@/Pages/Muslim/_components/LocationModeSelector';
-import { LOC_CHANGED_EVENT, effectivePrayerParams, getGeo, getLocMode, setLocMode, useLocSignal, type GeoPoint, type LocMode } from '@/Pages/Muslim/_lib/location';
-import { PRAYER_METHODS } from '@/Pages/Muslim/_lib/methods';
-import { useIsMobile, useMuslimNav } from '@/Pages/Muslim/_lib/nav';
-
-const GOVERNORATES: Record<string, { nameAr: string; nameEn: string; lat: number; lon: number }> = {
-    'damascus': { nameAr: 'دمشق', nameEn: 'Damascus', lat: 33.5138, lon: 36.2765 },
-    'aleppo': { nameAr: 'حلب', nameEn: 'Aleppo', lat: 36.2021, lon: 37.1343 },
-    'homs': { nameAr: 'حمص', nameEn: 'Homs', lat: 34.7324, lon: 36.7137 },
-    'hama': { nameAr: 'حماة', nameEn: 'Hama', lat: 35.1318, lon: 36.7578 },
-    'latakia': { nameAr: 'اللاذقية', nameEn: 'Latakia', lat: 35.5317, lon: 35.7901 },
-    'tartus': { nameAr: 'طرطوس', nameEn: 'Tartus', lat: 34.8890, lon: 35.8866 },
-    'deir-ez-zor': { nameAr: 'دير الزور', nameEn: 'Deir ez-Zor', lat: 35.3359, lon: 40.1408 },
-    'idlib': { nameAr: 'إدلب', nameEn: 'Idlib', lat: 35.9306, lon: 36.6339 },
-    'daraa': { nameAr: 'درعا', nameEn: 'Daraa', lat: 32.6255, lon: 36.1016 },
-    'quneitra': { nameAr: 'القنيطرة', nameEn: 'Quneitra', lat: 33.1250, lon: 35.8250 },
-    'sweida': { nameAr: 'السويداء', nameEn: 'Sweida', lat: 32.7089, lon: 36.5695 },
-    'rural-damascus': { nameAr: 'ريف دمشق', nameEn: 'Rural Damascus', lat: 33.5138, lon: 36.2765 },
-    'hasakah': { nameAr: 'الحسكة', nameEn: 'Hasakah', lat: 36.5023, lon: 40.7382 },
-    'raqqa': { nameAr: 'الرقة', nameEn: 'Raqqa', lat: 35.9520, lon: 39.0081 },
-};
+    GOVERNORATES_BY_ID,
+    governorateNameForF3aliaProvince,
+} from '@/Domain/geography/governorates';
 
 const VARIABLE_HOLIDAYS_MAP: Record<number, Record<string, { month: number; day: number }>> = {
     2026: {
@@ -115,29 +100,8 @@ const VARIABLE_HOLIDAYS_MAP: Record<number, Record<string, { month: number; day:
     }
 };
 
-const PRAYER_EVENTS = [
-    { key: 'Fajr', label: 'الفجر', isPrayer: true },
-    { key: 'Sunrise', label: 'الشروق', isPrayer: false },
-    { key: 'Dhuhr', label: 'الظهر', isPrayer: true },
-    { key: 'Asr', label: 'العصر', isPrayer: true },
-    { key: 'Maghrib', label: 'المغرب', isPrayer: true },
-    { key: 'Isha', label: 'العشاء', isPrayer: true }
-];
-
-const WEATHER_TRANSLATIONS: Record<string, string> = {
-    "clear sky": "سماء صافية",
-    "few clouds": "غيوم قليلة",
-    "scattered clouds": "غيوم متفرقة",
-    "broken clouds": "غيوم جزئية",
-    "shower rain": "مطر غزير",
-    "rain": "ممطر",
-    "thunderstorm": "عاصفة رعدية",
-    "snow": "مثلج",
-    "mist": "ضباب",
-    "overcast clouds": "غيوم ملبدة",
-    "light rain": "مطر خفيف",
-    "moderate rain": "مطر متوسط",
-};
+// The six rows the card lists, in clock-of-day order.
+const PRAYER_EVENTS = PRAYER_KEYS.map((key) => ({ key, label: PRAYER_LABELS[key] }));
 
 interface ActiveHoliday {
     nameAr: string;
@@ -147,163 +111,60 @@ interface ActiveHoliday {
     isNew?: boolean;
 }
 
-const getPrayerIcon = (key: string, className?: string) => {
-    switch (key) {
-        case 'Fajr': return <MoonStar className={className} />;
-        case 'Sunrise': return <Sunrise className={className} />;
-        case 'Dhuhr': return <Sun className={className} />;
-        case 'Asr': return <SunDim className={className} />;
-        case 'Maghrib': return <Sunset className={className} />;
-        case 'Isha': return <Moon className={className} />;
-        default: return <Clock className={className} />;
+// Fixed national holidays + the variable (lunar/Easter) ones we have dates for.
+function holidaysForYear(year: number): ActiveHoliday[] {
+    const list: ActiveHoliday[] = [
+        { nameAr: 'رأس السنة الميلادية', nameEn: "New Year's Day", date: new Date(year, 0, 1), description: 'بداية العام الميلادي الجديد' },
+        { nameAr: 'عيد الثورة السورية', nameEn: 'Syrian Revolution Day', date: new Date(year, 2, 18), description: 'ذكرى انطلاق الثورة السورية عام 2011، اعتمد كعيد وطني رسمي بموجب المرسوم 188 لعام 2025.', isNew: true },
+        { nameAr: 'عيد الأم', nameEn: "Mother's Day", date: new Date(year, 2, 21), description: 'تكريم للأم ودورها في المجتمع.' },
+        { nameAr: 'عيد الجلاء', nameEn: 'Evacuation Day', date: new Date(year, 3, 17), description: 'ذكرى جلاء آخر جندي فرنسي عن الأراضي السورية عام 1946.' },
+        { nameAr: 'عيد العمال العالمي', nameEn: "International Workers' Day", date: new Date(year, 4, 1), description: 'تكريم للعمال وجهودهم.' },
+        { nameAr: 'عيد التحرير الوطني', nameEn: 'National Liberation Day', date: new Date(year, 11, 8), description: 'العيد الوطني الجديد المعتمد بموجب المرسوم 188 لعام 2025 احتفاءً بسقوط الاستبداد عام 2024.', isNew: true },
+        { nameAr: 'عيد الميلاد المجيد', nameEn: 'Christmas Day', date: new Date(year, 11, 25), description: 'ذكرى ميلاد السيد المسيح عليه السلام.' }
+    ];
+
+    const vars = VARIABLE_HOLIDAYS_MAP[year];
+    if (vars) {
+        list.push(
+            { nameAr: 'عيد الفطر السعيد', nameEn: 'Eid al-Fitr', date: new Date(year, vars['eid-fitr'].month - 1, vars['eid-fitr'].day), description: 'عطلة عيد الفطر السعيد (3 أيام).' },
+            { nameAr: 'عيد الأضحى المبارك', nameEn: 'Eid al-Adha', date: new Date(year, vars['eid-adha'].month - 1, vars['eid-adha'].day), description: 'عطلة عيد الأضحى المبارك (4 أيام).' },
+            { nameAr: 'رأس السنة الهجرية', nameEn: 'Islamic New Year', date: new Date(year, vars['hijri-new-year'].month - 1, vars['hijri-new-year'].day), description: 'رأس السنة الهجرية الجديدة.' },
+            { nameAr: 'المولد النبوي الشريف', nameEn: 'Prophet\'s Birthday', date: new Date(year, vars['mawlid'].month - 1, vars['mawlid'].day), description: 'ذكرى المولد النبوي الشريف.' },
+            { nameAr: 'عيد الفصح المجيد (غربي)', nameEn: 'Western Easter', date: new Date(year, vars['western-easter'].month - 1, vars['western-easter'].day), description: 'عيد الفصح المجيد (التقويم الغربي).' },
+            { nameAr: 'عيد الفصح المجيد (شرقي)', nameEn: 'Eastern Easter', date: new Date(year, vars['eastern-easter'].month - 1, vars['eastern-easter'].day), description: 'عيد الفصح المجيد (التقويم الشرقي).' }
+        );
     }
-};
 
-const getWeatherIcon = (iconCode: string) => {
-    if (iconCode.startsWith('01')) return <Sun className="w-6 h-6 text-yellow-500" />;
-    if (iconCode.startsWith('02')) return <Sun className="w-6 h-6 text-orange-400" />;
-    if (iconCode.startsWith('03') || iconCode.startsWith('04')) return <Cloud className="w-6 h-6 text-gray-400" />;
-    if (iconCode.startsWith('09') || iconCode.startsWith('10')) return <CloudRain className="w-6 h-6 text-blue-400" />;
-    if (iconCode.startsWith('11')) return <CloudLightning className="w-6 h-6 text-purple-500" />;
-    if (iconCode.startsWith('13')) return <Snowflake className="w-6 h-6 text-white" />;
-    if (iconCode.startsWith('50')) return <Wind className="w-6 h-6 text-gray-300" />;
-    return <Sun className="w-6 h-6 text-yellow-500" />;
-};
-
-// Settings body shared by the desktop Dialog and the mobile bottom Sheet.
-function RoznamaSettingsBody({
-    governorate,
-    onGovChange,
-    method,
-    onMethodChange,
-    customLat,
-    customLon,
-    onCustom,
-    locMode,
-    onLocMode,
-    geo,
-}: {
-    governorate: string;
-    onGovChange: (v: string) => void;
-    method: number;
-    onMethodChange: (v: string) => void;
-    customLat: string;
-    customLon: string;
-    onCustom: (patch: { on?: boolean; lat?: string; lon?: string }) => void;
-    locMode: LocMode;
-    onLocMode: (m: LocMode) => void;
-    geo: GeoPoint | null;
-}) {
-    const geoActive = (locMode === 'gps' || locMode === 'ip') && !!geo;
-    const latId = useId();
-    const lonId = useId();
-    return (
-        <div className="space-y-4">
-            <LocationModeSelector mode={locMode} onChange={onLocMode} />
-
-            {geoActive && geo && (
-                <p className="text-[11px] leading-relaxed text-muted-foreground">
-                    الموقع الحالي: <span className="font-semibold text-foreground">{geo.label}</span>
-                    <span dir="ltr" className="tabular-nums"> ({geo.lat}، {geo.lon})</span>
-                </p>
-            )}
-
-            {locMode === 'city' && (
-                <div className="space-y-2">
-                    <Label className="flex items-center gap-2 text-sm font-semibold">
-                        <MapPin className="h-4 w-4 text-primary" /> المدينة (للمواقيت والطقس والفعاليات)
-                    </Label>
-                    <Select value={governorate} onValueChange={onGovChange}>
-                        <SelectTrigger dir="rtl" aria-label="المدينة (للمواقيت والطقس والفعاليات)"><SelectValue /></SelectTrigger>
-                        <SelectContent dir="rtl">
-                            {Object.entries(GOVERNORATES).map(([key, value]) => (
-                                <SelectItem key={key} value={key}>
-                                    {value.nameAr}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-            )}
-
-            {locMode === 'custom' && (
-                <div className="grid grid-cols-2 gap-3 rounded-lg border border-border/50 bg-card/10 p-3">
-                    <div className="space-y-1">
-                        <Label htmlFor={latId} className="text-xs">خط العرض (Lat)</Label>
-                        <Input id={latId}
-                            dir="ltr" inputMode="decimal" placeholder="33.51"
-                            value={customLat}
-                            onChange={(e) => onCustom({ lat: e.target.value })}
-                        />
-                    </div>
-                    <div className="space-y-1">
-                        <Label htmlFor={lonId} className="text-xs">خط الطول (Lon)</Label>
-                        <Input id={lonId}
-                            dir="ltr" inputMode="decimal" placeholder="36.27"
-                            value={customLon}
-                            onChange={(e) => onCustom({ lon: e.target.value })}
-                        />
-                    </div>
-                </div>
-            )}
-
-            <div className="space-y-2">
-                <Label className="text-sm font-semibold">طريقة الحساب</Label>
-                <Select value={String(method)} onValueChange={onMethodChange}>
-                    <SelectTrigger dir="rtl" aria-label="طريقة الحساب"><SelectValue /></SelectTrigger>
-                    <SelectContent dir="rtl">
-                        {PRAYER_METHODS.map((m) => (
-                            <SelectItem key={m.id} value={String(m.id)}>{m.nameAr}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-                <p className="text-[11px] leading-relaxed text-muted-foreground">
-                    {PRAYER_METHODS.find((m) => m.id === method)?.detail}
-                </p>
-            </div>
-        </div>
-    );
+    return list.sort((a, b) => a.date.getTime() - b.date.getTime());
 }
 
 export default function Index() {
-    const { props } = usePage<{ auth?: { user?: { id: number; settings?: Record<string, unknown> | null } | null } }>();
-    const isMobile = useIsMobile();
-    const serverGovernorate = (props.auth?.user?.settings as Record<string, string> | undefined)?.governorate;
-    const isLoggedIn = Boolean(props.auth?.user?.id);
-    const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // One location preference, shared with Home, /muslim and the board.
+    const location = useLocationPreference();
+    // The calculation method is part of `Domain/settings/prefs`: the choice is
+    // stored on this device and mirrored to the account, the same as /muslim.
+    const { prefs, setPrefs, isLoggedIn } = useMuslimPrefs();
+    const method = prefs.method;
+    const [roznamaSettingsOpen, setRoznamaSettingsOpen] = usePageDialog('roznama-settings');
 
-    const [governorate, setGovernorate] = useState('damascus');
-    // Manual custom coords (last resort): shared Home keys, one custom
-    // location site-wide. Initialized server-first like the governorate.
-    const [useCustomCoords, setUseCustomCoords] = useState(false);
-    const [customLat, setCustomLat] = useState('');
-    const [customLon, setCustomLon] = useState('');
-    const [method, setMethod] = useState(() => {
-        if (typeof window === 'undefined') return 3;
-        return Number(window.localStorage.getItem('sz-muslim-method') || '3') || 3;
-    });
-    const roznamaSettingsOpen = useMuslimNav((s) => s.roznamaSettingsOpen);
-    const setRoznamaSettingsOpen = useMuslimNav((s) => s.setRoznamaSettingsOpen);
-
-    const handleMethodChange = (v: string) => {
-        const m = Number(v) || 3;
-        setMethod(m);
-        try {
-            window.localStorage.setItem('sz-muslim-method', String(m));
-        } catch {
-            // private mode
-        }
-        window.dispatchEvent(new Event(LOC_CHANGED_EVENT));
+    const handleMethodChange = (next: number) => {
+        setPrefs({ method: next });
     };
     const [currentTime, setCurrentTime] = useState<Date>(new Date());
-    const [prayerTimes, setPrayerTimes] = useState<Record<string, string> | null>(null);
-    const [hijriDateFromApi, setHijriDateFromApi] = useState<string | null>(null);
-    const [weather, setWeather] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
     const [mounted, setMounted] = useState(false);
+    const { weather } = useWeather(location, { enabled: mounted });
+    const {
+        timings: prayerTimes,
+        hijri,
+        loading,
+        error: prayerError,
+    } = usePrayerTimes(location, method, { enabled: mounted });
+    const error = prayerError
+        ? prayerError.timedOut
+            ? 'انتهت مهلة جلب المواقيت. حاول مجدداً.'
+            : prayerError.message || 'حدث خطأ أثناء الاتصال بالخادم'
+        : null;
 
-    // F3alia Events States
     const [events, setEvents] = useState<F3aliaEvent[]>([]);
     const [showOtherGovEvents, setShowOtherGovEvents] = useState(false);
     const [loadingEvents, setLoadingEvents] = useState(true);
@@ -313,56 +174,21 @@ export default function Index() {
         return events.length > 0 ? events[0] : null;
     }, [events]);
     
-    // Switch state for hiding passed holidays
     const [hidePassed, setHidePassed] = useState<boolean>(() => {
         if (typeof window !== 'undefined') {
             return localStorage.getItem('sz-hide-passed-holidays') === 'true';
         }
         return false;
     });
-    // Shared device location (GPS/IP resolved in /muslim): overrides the
-    // manual governorate while active.
-    const locSig = useLocSignal();
-
-    // Save Switch preference
     useEffect(() => {
         localStorage.setItem('sz-hide-passed-holidays', String(hidePassed));
     }, [hidePassed]);
 
-    // Load governorate + manual coords: account values win when present,
-    // else the saved device values. Written back set-if-absent only, so a
-    // logged-out change is never clobbered before the login sync compares.
     useEffect(() => {
-        const settings = (props.auth?.user?.settings ?? {}) as Record<string, unknown>;
-        const lsRoznama = localStorage.getItem('sz-roznama-governorate');
-        const lsHome = localStorage.getItem('governorate');
-        const savedGov = serverGovernorate || lsRoznama || lsHome || 'damascus';
-        setGovernorate(savedGov);
-        const savedCustomOn = (settings.useCustomCoords as boolean | undefined)
-            ?? (localStorage.getItem('useCustomCoords') === 'true');
-        const savedCustomLat = (settings.customLat as string | undefined)
-            ?? (localStorage.getItem('customLat') || '');
-        const savedCustomLon = (settings.customLon as string | undefined)
-            ?? (localStorage.getItem('customLon') || '');
-        setUseCustomCoords(savedCustomOn);
-        setCustomLat(savedCustomLat);
-        setCustomLon(savedCustomLon);
-        try {
-            if (localStorage.getItem('sz-roznama-governorate') === null) {
-                localStorage.setItem('sz-roznama-governorate', savedGov);
-            }
-            if (localStorage.getItem('governorate') === null) {
-                localStorage.setItem('governorate', savedGov);
-            }
-        } catch {
-            // private mode
-        }
         setMounted(true);
         setCurrentTime(new Date());
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // Keep the clock ticking
     useEffect(() => {
         const timer = setInterval(() => {
             setCurrentTime(new Date());
@@ -370,102 +196,6 @@ export default function Index() {
         return () => clearInterval(timer);
     }, []);
 
-    // Fetch Weather
-    useEffect(() => {
-        if (!mounted) return;
-
-        const fetchWeather = async () => {
-            try {
-                const shared = (() => {
-                    const mode = getLocMode();
-                    const geo = getGeo();
-                    return (mode === 'gps' || mode === 'ip') && geo ? geo : null;
-                })();
-                const custom = useCustomCoords && customLat && customLon
-                    && Number.isFinite(Number(customLat)) && Number.isFinite(Number(customLon))
-                    ? { lat: Number(customLat), lon: Number(customLon) } : null;
-                const coords = shared ?? custom ?? (GOVERNORATES[governorate] || GOVERNORATES['damascus']);
-                const response = await fetch(`/api/weather?lat=${coords.lat}&lon=${coords.lon}`);
-                if (!response.ok) throw new Error('Weather fetch failed');
-                const data = await response.json();
-
-                let description = data.weather[0].description;
-                if (WEATHER_TRANSLATIONS[description]) {
-                    description = WEATHER_TRANSLATIONS[description];
-                }
-
-                setWeather({
-                    temp: Math.round(data.main.temp),
-                    description: description,
-                    icon: getWeatherIcon(data.weather[0].icon)
-                });
-            } catch (e) {
-                console.error(e);
-                setWeather(null);
-            }
-        };
-
-        fetchWeather();
-    }, [governorate, useCustomCoords, customLat, customLon, mounted, locSig]);
-
-    // Fetch Prayer Times via server proxy (no direct Aladhan call: CORS +
-    // caching + fixed governorate list live in PrayerController).
-    useEffect(() => {
-        if (!mounted) return;
-
-        const ctrl = new AbortController();
-        const timer = setTimeout(() => ctrl.abort(), 10000);
-
-        const fetchPrayerTimes = async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                // Unified with /muslim: the calculation method saved there
-                // drives this card (default 3 = Muslim World League), and a
-                // resolved GPS/IP location overrides the manual governorate.
-                const method = Number(localStorage.getItem('sz-muslim-method') || '3') || 3;
-                const params = new URLSearchParams();
-                for (const [k, v] of Object.entries(effectivePrayerParams({
-                    mode: getLocMode(),
-                    geo: getGeo(),
-                    manualCity: governorate,
-                    method,
-                    useCustomCoords,
-                    customLat,
-                    customLon,
-                }))) params.set(k, String(v));
-                const response = await fetch(`/api/prayer-times?${params.toString()}`, { signal: ctrl.signal });
-                if (!response.ok) throw new Error('فشل جلب مواقيت الصلاة');
-                const result = await response.json();
-
-                const timings = result.timings;
-                if (!timings || typeof timings !== 'object') {
-                    throw new Error('بيانات مواقيت غير صالحة');
-                }
-                setPrayerTimes(timings);
-
-                const hijri = result.hijri;
-                if (hijri?.day && hijri?.month && hijri?.year) {
-                    setHijriDateFromApi(`${hijri.day} ${hijri.month} ${hijri.year}`);
-                }
-            } catch (err: any) {
-                if (err?.name === 'AbortError') {
-                    setError('انتهت مهلة جلب المواقيت. حاول مجدداً.');
-                } else {
-                    console.error(err);
-                    setError(err.message || 'حدث خطأ أثناء الاتصال بالخادم');
-                }
-            } finally {
-                clearTimeout(timer);
-                setLoading(false);
-            }
-        };
-
-        fetchPrayerTimes();
-        return () => { clearTimeout(timer); ctrl.abort(); };
-    }, [governorate, useCustomCoords, customLat, customLon, mounted, locSig]);
-
-    // Fetch upcoming events via server proxy (/api/events/today).
     useEffect(() => {
         if (!mounted) return;
 
@@ -476,40 +206,36 @@ export default function Index() {
             setLoadingEvents(true);
             setEventsError(null);
             try {
-                const params = new URLSearchParams({ governorate });
-                if (showOtherGovEvents) params.set('governorate', 'all');
-                const response = await fetch(`/api/events/today?${params.toString()}`, { signal: ctrl.signal });
-
-                if (!response.ok) throw new Error('فشل جلب الفعاليات');
-                const resData = await response.json();
-                const fetchedEvents = ((resData.events || []) as any[]).map((e: any) => ({
+                const payload = await api.get<EventsPayload>(`${API_ROOT}/events/today`, {
+                    params: {
+                        governorate: showOtherGovEvents ? 'all' : location.city,
+                    },
+                    signal: ctrl.signal,
+                });
+                const fetchedEvents = (payload.events ?? []).map((e) => ({
                     id: e.id,
                     name: e.name,
-                    description: e.description ?? '',
-                    address: e.address ?? '',
-                    isOnline: e.is_online ?? false,
-                    eventLink: e.url ?? '',
-                    province: e.province ?? '',
-                    provinceName: e.provinceName ?? '',
-                    isFree: e.is_free ?? false,
-                    ticketPrice: e.ticket_price ?? null,
-                    eventDate: e.event_date ?? '',
+                    description: e.description,
+                    address: e.address,
+                    isOnline: e.is_online,
+                    eventLink: e.url,
+                    province: e.province,
+                    provinceName: e.provinceName,
+                    isFree: e.is_free,
+                    ticketPrice: e.ticket_price ?? 0,
+                    eventDate: e.event_date,
                     eventTime: e.event_time ?? '',
-                    endDate: e.endDate ?? undefined,
+                    endDate: undefined,
                     category: e.category ? { nameAr: e.category, nameEn: '' } : undefined,
                 })) as F3aliaEvent[];
-                const d = new Date();
-                const year = d.getFullYear();
-                const month = String(d.getMonth() + 1).padStart(2, '0');
-                const day = String(d.getDate()).padStart(2, '0');
-                const todayStr = `${year}-${month}-${day}`;
+                const todayStr = todayKey();
                 const upcoming = fetchedEvents
                     .filter(e => e.eventDate >= todayStr)
                     .sort((a, b) => a.eventDate.localeCompare(b.eventDate));
                 setEvents(upcoming);
             } catch (err) {
-                console.error(err);
-                setEventsError('فشل تحميل الفعاليات');
+                if (ctrl.signal.aborted) return;
+                setEventsError(apiErrorMessage(err, 'فشل تحميل الفعاليات'));
             } finally {
                 setLoadingEvents(false);
             }
@@ -517,219 +243,54 @@ export default function Index() {
 
         fetchF3aliaEvents();
         return () => { clearTimeout(timer); ctrl.abort(); };
-    }, [governorate, showOtherGovEvents, mounted]);
+    }, [location.city, showOtherGovEvents, mounted]);
 
-    // Handle governorate change: device keys immediately, account debounced.
-    // Manual custom coords share Home's keys (one custom location site-wide).
-    const savePrefs = (patch: Record<string, unknown>) => {
-        if (!isLoggedIn) return;
-        if (saveTimer.current) clearTimeout(saveTimer.current);
-        saveTimer.current = setTimeout(() => {
-            axios.post('/api/user/settings', { settings: patch }).catch(() => {});
-        }, 600);
+    /** Device storage belongs to Domain/location; the account mirror is ours. */
+    const handleLocationChange = (patch: LocationPatch) => {
+        const accountPatch = accountPatchForLocation(patch);
+        if (isLoggedIn && Object.keys(accountPatch).length > 0) saveAccountSettings(accountPatch);
     };
 
-    const handleGovChange = (val: string) => {
-        setGovernorate(val);
-        try {
-            localStorage.setItem('sz-roznama-governorate', val);
-            localStorage.setItem('governorate', val);
-        } catch {
-            // private mode
-        }
-        savePrefs({ governorate: val });
-    };
-
-    const setCustom = (patch: { on?: boolean; lat?: string; lon?: string }) => {
-        const nextOn = patch.on ?? useCustomCoords;
-        const nextLat = patch.lat ?? customLat;
-        const nextLon = patch.lon ?? customLon;
-        if (patch.on !== undefined) setUseCustomCoords(patch.on);
-        if (patch.lat !== undefined) setCustomLat(patch.lat);
-        if (patch.lon !== undefined) setCustomLon(patch.lon);
-        try {
-            localStorage.setItem('useCustomCoords', String(nextOn));
-            localStorage.setItem('customLat', nextLat);
-            localStorage.setItem('customLon', nextLon);
-        } catch {
-            // private mode
-        }
-        savePrefs({ useCustomCoords: nextOn, customLat: nextLat, customLon: nextLon });
-    };
-
-    useEffect(() => () => {
-        if (saveTimer.current) clearTimeout(saveTimer.current);
-    }, []);
-
-    // Formatter helpers
     const formatTime = (date: Date) => {
         return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
     };
 
-    const formatDateGregorian = (date: Date) => {
-        return date.toLocaleDateString('ar-SY', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-    };
+    const formatDateGregorian = (date: Date) => formatGregorianSyrian(date);
 
-    const formatHijriFallback = (date: Date) => {
-        try {
-            const formatter = new Intl.DateTimeFormat('ar-SY-u-ca-islamic-umalqura', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric'
-            });
-            const formatted = formatter.format(date);
-            return formatted.includes('هـ') ? formatted : `${formatted} هـ`;
-        } catch (e) {
-            return '';
-        }
-    };
+    // Active and next prayer, one implementation shared with /muslim, Home and
+    // the board widget.
+    const schedule = useMemo(
+        () => prayerSchedule(prayerTimes, currentTime),
+        [prayerTimes, currentTime],
+    );
+    const apiHijri = hijriDateLabel(hijri);
 
-    // Calculate Active & Next Prayer/Event
-    const activeAndNext = useMemo(() => {
-        if (!prayerTimes) return null;
+    const holidays = useMemo(() => holidaysForYear(currentTime.getFullYear()), [currentTime]);
 
-        const parsedEvents = PRAYER_EVENTS.map(ev => {
-            const timeStr = prayerTimes[ev.key];
-            if (!timeStr) return null;
-            const [hours, minutes] = timeStr.split(':').map(Number);
-            const eventTime = new Date(currentTime);
-            eventTime.setHours(hours, minutes, 0, 0);
-            return { ...ev, time: eventTime };
-        }).filter(Boolean) as Array<{ key: string; label: string; isPrayer: boolean; time: Date }>;
+    // The national calendar day, not this browser's: the same boundary the
+    // prayer log and the timings API use. One value for the holiday filter, the
+    // "days left" badge and the events filter, recomputed once per day.
+    const syriaDayKey = todayKey(currentTime);
+    const startOfToday = useMemo(() => todayInSyria(currentTime), [syriaDayKey]);
 
-        if (parsedEvents.length === 0) return null;
-
-        parsedEvents.sort((a, b) => a.time.getTime() - b.time.getTime());
-
-        let nextEventIndex = parsedEvents.findIndex(ev => ev.time > currentTime);
-        
-        if (nextEventIndex === -1) {
-            const firstEvent = parsedEvents[0];
-            const tomorrowFajr = new Date(firstEvent.time);
-            tomorrowFajr.setDate(tomorrowFajr.getDate() + 1);
-
-            return {
-                activeEvent: parsedEvents[parsedEvents.length - 1],
-                nextEvent: { ...firstEvent, time: tomorrowFajr },
-                timeDiffMs: tomorrowFajr.getTime() - currentTime.getTime()
-            };
-        } else {
-            const activeEventIndex = nextEventIndex === 0 ? parsedEvents.length - 1 : nextEventIndex - 1;
-            const activeEvent = parsedEvents[activeEventIndex];
-            const nextEvent = parsedEvents[nextEventIndex];
-
-            let adjustedActiveTime = new Date(activeEvent.time);
-            if (nextEventIndex === 0) {
-                adjustedActiveTime.setDate(adjustedActiveTime.getDate() - 1);
-            }
-
-            return {
-                activeEvent: { ...activeEvent, time: adjustedActiveTime },
-                nextEvent,
-                timeDiffMs: nextEvent.time.getTime() - currentTime.getTime()
-            };
-        }
-    }, [prayerTimes, currentTime]);
-
-    const formatDuration = (ms: number) => {
-        const totalSecs = Math.floor(ms / 1000);
-        if (totalSecs < 0) return '00:00:00';
-        const hours = Math.floor(totalSecs / 3600);
-        const minutes = Math.floor((totalSecs % 3600) / 60);
-        const seconds = totalSecs % 60;
-        const pad = (num: number) => String(num).padStart(2, '0');
-        return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
-    };
-
-    // Resolve Syrian Holidays for current year
-    const holidays = useMemo(() => {
-        const year = currentTime.getFullYear();
-        const list: ActiveHoliday[] = [
-            { nameAr: 'رأس السنة الميلادية', nameEn: "New Year's Day", date: new Date(year, 0, 1), description: 'بداية العام الميلادي الجديد' },
-            { nameAr: 'عيد الثورة السورية', nameEn: 'Syrian Revolution Day', date: new Date(year, 2, 18), description: 'ذكرى انطلاق الثورة السورية عام 2011، اعتمد كعيد وطني رسمي بموجب المرسوم 188 لعام 2025.', isNew: true },
-            { nameAr: 'عيد الأم', nameEn: "Mother's Day", date: new Date(year, 2, 21), description: 'تكريم للأم ودورها في المجتمع.' },
-            { nameAr: 'عيد الجلاء', nameEn: 'Evacuation Day', date: new Date(year, 3, 17), description: 'ذكرى جلاء آخر جندي فرنسي عن الأراضي السورية عام 1946.' },
-            { nameAr: 'عيد العمال العالمي', nameEn: "International Workers' Day", date: new Date(year, 4, 1), description: 'تكريم للعمال وجهودهم.' },
-            { nameAr: 'عيد التحرير الوطني', nameEn: 'National Liberation Day', date: new Date(year, 11, 8), description: 'العيد الوطني الجديد المعتمد بموجب المرسوم 188 لعام 2025 احتفاءً بسقوط الاستبداد عام 2024.', isNew: true },
-            { nameAr: 'عيد الميلاد المجيد', nameEn: 'Christmas Day', date: new Date(year, 11, 25), description: 'ذكرى ميلاد السيد المسيح عليه السلام.' }
-        ];
-
-        const vars = VARIABLE_HOLIDAYS_MAP[year];
-        if (vars) {
-            list.push(
-                { nameAr: 'عيد الفطر السعيد', nameEn: 'Eid al-Fitr', date: new Date(year, vars['eid-fitr'].month - 1, vars['eid-fitr'].day), description: 'عطلة عيد الفطر السعيد (3 أيام).' },
-                { nameAr: 'عيد الأضحى المبارك', nameEn: 'Eid al-Adha', date: new Date(year, vars['eid-adha'].month - 1, vars['eid-adha'].day), description: 'عطلة عيد الأضحى المبارك (4 أيام).' },
-                { nameAr: 'رأس السنة الهجرية', nameEn: 'Islamic New Year', date: new Date(year, vars['hijri-new-year'].month - 1, vars['hijri-new-year'].day), description: 'رأس السنة الهجرية الجديدة.' },
-                { nameAr: 'المولد النبوي الشريف', nameEn: 'Prophet\'s Birthday', date: new Date(year, vars['mawlid'].month - 1, vars['mawlid'].day), description: 'ذكرى المولد النبوي الشريف.' },
-                { nameAr: 'عيد الفصح المجيد (غربي)', nameEn: 'Western Easter', date: new Date(year, vars['western-easter'].month - 1, vars['western-easter'].day), description: 'عيد الفصح المجيد (التقويم الغربي).' },
-                { nameAr: 'عيد الفصح المجيد (شرقي)', nameEn: 'Eastern Easter', date: new Date(year, vars['eastern-easter'].month - 1, vars['eastern-easter'].day), description: 'عيد الفصح المجيد (التقويم الشرقي).' }
-            );
-        }
-
-        return list.sort((a, b) => a.date.getTime() - b.date.getTime());
-    }, [currentTime]);
-
-    // Next upcoming holiday
     const nextHoliday = useMemo(() => {
-        const startOfToday = new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate());
-        let next = holidays.find(h => h.date >= startOfToday);
-
-        if (!next) {
-            const nextYear = currentTime.getFullYear() + 1;
-            const nextYearHolidays = [
-                { nameAr: 'رأس السنة الميلادية', nameEn: "New Year's Day", date: new Date(nextYear, 0, 1), description: 'بداية العام الميلادي الجديد' },
-                { nameAr: 'عيد الثورة السورية', nameEn: 'Syrian Revolution Day', date: new Date(nextYear, 2, 18), description: 'ذكرى انطلاق الثورة السورية عام 2011، اعتمد كعيد وطني رسمي بموجب المرسوم 188 لعام 2025.', isNew: true },
-                { nameAr: 'عيد الأم', nameEn: "Mother's Day", date: new Date(nextYear, 2, 21), description: 'تكريم للأم ودورها في المجتمع.' },
-                { nameAr: 'عيد الجلاء', nameEn: 'Evacuation Day', date: new Date(nextYear, 3, 17), description: 'ذكرى جلاء آخر جندي فرنسي عن الأراضي السورية عام 1946.' },
-                { nameAr: 'عيد العمال العالمي', nameEn: "International Workers' Day", date: new Date(nextYear, 4, 1), description: 'تكريم للعمال وجهودهم.' },
-                { nameAr: 'عيد التحرير الوطني', nameEn: 'National Liberation Day', date: new Date(nextYear, 11, 8), description: 'العيد الوطني الجديد المعتمد بموجب المرسوم 188 لعام 2025 احتفاءً بسقوط الاستبداد عام 2024.', isNew: true },
-                { nameAr: 'عيد الميلاد المجيد', nameEn: 'Christmas Day', date: new Date(nextYear, 11, 25), description: 'ذكرى ميلاد السيد المسيح عليه السلام.' }
-            ];
-            
-            const nextYearVars = VARIABLE_HOLIDAYS_MAP[nextYear];
-            if (nextYearVars) {
-                nextYearHolidays.push(
-                    { nameAr: 'عيد الفطر السعيد', nameEn: 'Eid al-Fitr', date: new Date(nextYear, nextYearVars['eid-fitr'].month - 1, nextYearVars['eid-fitr'].day), description: 'عطلة عيد الفطر السعيد (3 أيام).' },
-                    { nameAr: 'عيد الأضحى المبارك', nameEn: 'Eid al-Adha', date: new Date(nextYear, nextYearVars['eid-adha'].month - 1, nextYearVars['eid-adha'].day), description: 'عطلة عيد الأضحى المبارك (4 أيام).' },
-                    { nameAr: 'رأس السنة الهجرية', nameEn: 'Islamic New Year', date: new Date(nextYear, nextYearVars['hijri-new-year'].month - 1, nextYearVars['hijri-new-year'].day), description: 'رأس السنة الهجرية الجديدة.' },
-                    { nameAr: 'المولد النبوي الشريف', nameEn: 'Prophet\'s Birthday', date: new Date(nextYear, nextYearVars['mawlid'].month - 1, nextYearVars['mawlid'].day), description: 'ذكرى المولد النبوي الشريف.' },
-                    { nameAr: 'عيد الفصح المجيد (غربي)', nameEn: 'Western Easter', date: new Date(nextYear, nextYearVars['western-easter'].month - 1, nextYearVars['western-easter'].day), description: 'عيد الفصح المجيد (التقويم الغربي).' },
-                    { nameAr: 'عيد الفصح المجيد (شرقي)', nameEn: 'Eastern Easter', date: new Date(nextYear, nextYearVars['eastern-easter'].month - 1, nextYearVars['eastern-easter'].day), description: 'عيد الفصح المجيد (التقويم الشرقي).' }
-                );
-            }
-            nextYearHolidays.sort((a, b) => a.date.getTime() - b.date.getTime());
-            next = nextYearHolidays[0];
-        }
+        const next = holidays.find(h => h.date >= startOfToday) ?? holidaysForYear(currentTime.getFullYear() + 1)[0];
 
         const daysLeft = Math.ceil((next.date.getTime() - startOfToday.getTime()) / (1000 * 60 * 60 * 24));
         return { ...next, daysLeft };
-    }, [holidays, currentTime]);
+    }, [holidays, currentTime, startOfToday]);
 
-    // Filter holidays to hide passed ones if requested
     const filteredHolidays = useMemo(() => {
         if (!hidePassed) return holidays;
-        const startOfToday = new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate());
         return holidays.filter(h => h.date >= startOfToday);
-    }, [holidays, hidePassed, currentTime]);
+    }, [holidays, hidePassed, startOfToday]);
 
-    const activeGov = GOVERNORATES[governorate] || GOVERNORATES['damascus'];
+    const activeGov = GOVERNORATES_BY_ID[location.city] ?? GOVERNORATES_BY_ID['damascus'];
     // Labels follow the effective location: a resolved GPS/IP point wins over
     // the manual governorate while active. Read only after mount — localStorage
     // differs between the server render and the first client render.
-    const geoActive = mounted
-        ? (() => {
-            const mode = getLocMode();
-            const geo = getGeo();
-            return (mode === 'gps' || mode === 'ip') && geo ? geo : null;
-        })()
-        : null;
-    const placeLabel = geoActive ? geoActive.label
-        : (useCustomCoords && customLat && customLon ? 'إحداثيات مخصصة' : activeGov.nameAr);
+    const geoActive = mounted && isDeviceLocation(location) ? location.geo : null;
+    const placeLabel = mounted ? resolvePlaceLabel(location) : activeGov.nameAr;
 
     return (
         <MainLayout>
@@ -741,7 +302,6 @@ export default function Index() {
                 style={{ fontFamily: "var(--site-font, inherit)" }}
             >
                 
-                {/* Hero Header */}
                 <section className="bg-card py-10 shadow-sm border-b border-border">
                     <div className="container mx-auto px-4 text-center max-w-4xl">
                         <h1 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">الروزنامة</h1>
@@ -757,13 +317,10 @@ export default function Index() {
                 {mounted && (
                 <div className="container mx-auto px-4 py-8 max-w-7xl">
                     
-                    {/* Top Section: 2 Columns Layout */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                         
-                        {/* First Column: Date, Time with City selector, Weather & Upcoming Holiday */}
                         <div className="space-y-6 flex flex-col">
                             
-                            {/* Date, Time, City Selector & Weather */}
                             <Card className="border-border bg-card/60 backdrop-blur-sm shadow-sm overflow-hidden">
                                 <CardContent className="p-6">
                                     <div className="flex justify-between items-center mb-6">
@@ -776,7 +333,6 @@ export default function Index() {
                                         </div>
                                     </div>
 
-                                    {/* Clock Display */}
                                     <div className="text-center py-4 bg-muted/30 rounded-2xl border border-border/50">
                                         <div className="text-5xl font-bold text-foreground font-mono tracking-wider mb-2">
                                             {formatTime(currentTime)}
@@ -784,17 +340,16 @@ export default function Index() {
                                         <div className="text-sm font-semibold text-foreground mt-2">
                                             {formatDateGregorian(currentTime)}
                                         </div>
-                                        <div className="text-xs text-primary/80 font-medium mt-1">
-                                            {hijriDateFromApi || formatHijriFallback(currentTime)}
+                                        <div className="text-xs text-primary font-medium mt-1">
+                                            {apiHijri || formatHijriDate(currentTime)}
                                         </div>
                                     </div>
 
-                                    {/* Weather Widget */}
                                     <div className="mt-4 p-4 bg-muted/20 rounded-2xl border border-border/40 flex items-center justify-between">
                                         <div className="flex items-center gap-3">
                                             {weather ? (
                                                 <>
-                                                    <span className="text-2xl">{weather.icon}</span>
+                                                    <span className="text-2xl"><WeatherIcon code={weather.icon} className="h-6 w-6" /></span>
                                                     <div>
                                                         <div className="font-semibold text-sm text-foreground">{weather.temp}°C</div>
                                                         <div className="text-xs text-muted-foreground">{weather.description}</div>
@@ -811,7 +366,6 @@ export default function Index() {
                                 </CardContent>
                             </Card>
 
-                            {/* Upcoming Holiday Card */}
                             {nextHoliday && (
                                 <Card className="border-primary/20 bg-gradient-to-br from-primary/5 via-card to-card shadow-sm overflow-hidden relative flex-1 flex flex-col justify-center">
                                     <div className="absolute top-0 left-0 bg-primary/10 text-primary px-3 py-1 text-xs font-semibold rounded-br-lg border-b border-r border-primary/20">
@@ -823,7 +377,7 @@ export default function Index() {
                                                 <div className="flex items-center gap-2 flex-wrap">
                                                     <h2 className="text-lg font-bold text-foreground">{nextHoliday.nameAr}</h2>
                                                     {nextHoliday.isNew && (
-                                                        <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white text-[9px] h-4 px-1">
+                                                        <Badge className="bg-emerald-700 hover:bg-emerald-800 text-white text-[9px] h-4 px-1">
                                                             جديد
                                                         </Badge>
                                                     )}
@@ -832,7 +386,7 @@ export default function Index() {
                                                 <div className="flex items-center gap-2 text-xs font-medium text-primary">
                                                     <CalendarDays className="h-4 w-4" />
                                                     <span>
-                                                        {nextHoliday.date.toLocaleDateString('ar-SY', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                                        {formatGregorianSyrian(nextHoliday.date)}
                                                     </span>
                                                 </div>
                                             </div>
@@ -848,7 +402,6 @@ export default function Index() {
                                             </div>
                                         </div>
 
-                                        {/* Next Event section inside Holiday Card */}
                                         {nextEvent && (
                                             <div className="mt-4 pt-4 border-t border-border/40 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-xs" dir="rtl">
                                                 <div className="space-y-1">
@@ -858,7 +411,7 @@ export default function Index() {
                                                     </div>
                                                     <div className="text-[11px] text-muted-foreground flex items-center gap-2 flex-wrap">
                                                         <span className="font-semibold text-foreground/80">
-                                                            {F3ALIA_PROVINCE_TO_ARABIC[nextEvent.province] || nextEvent.provinceName}
+                                                            {governorateNameForF3aliaProvince(nextEvent.province) || nextEvent.provinceName}
                                                         </span>
                                                         <span>•</span>
                                                         <span>{formatDateGregorian(new Date(nextEvent.eventDate))}</span>
@@ -887,7 +440,6 @@ export default function Index() {
 
                         </div>
 
-                        {/* Second Column: Prayer Times */}
                         <div className="space-y-6">
                             
                             <Card className="border-border bg-card/60 backdrop-blur-sm shadow-sm h-full flex flex-col justify-between">
@@ -899,9 +451,9 @@ export default function Index() {
                                                 <span className="truncate">مواقيت الصلاة في {placeLabel}</span>
                                             </h2>
                                             <div className="flex shrink-0 items-center gap-1.5">
-                                                {hijriDateFromApi && (
+                                                {apiHijri && (
                                                     <Badge variant="outline" className="hidden text-[10px] sm:inline-flex">
-                                                        {hijriDateFromApi} هـ
+                                                        {apiHijri} هـ
                                                     </Badge>
                                                 )}
                                                 <Button aria-label="إعدادات الروزنامة"
@@ -914,29 +466,27 @@ export default function Index() {
                                             </div>
                                         </div>
 
-                                        {/* Next Prayer Countdown (Simple block with dynamic icon, next prayer label, and countdown) */}
-                                        {activeAndNext && (
+                                        {schedule?.next && (
                                             <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 mb-4 flex items-center justify-between">
                                                 <div className="flex items-center gap-3">
                                                     <div className="p-2 bg-primary/10 rounded-lg text-primary">
-                                                        {getPrayerIcon(activeAndNext.nextEvent.key, "h-5 w-5")}
+                                                        <PrayerIcon prayer={schedule.next.key} className="h-5 w-5" />
                                                     </div>
                                                     <div>
                                                         <span className="font-bold text-primary text-base">
-                                                            {activeAndNext.nextEvent.isPrayer ? `صلاة ${activeAndNext.nextEvent.label}` : activeAndNext.nextEvent.label}
+                                                            {schedule.next.isPrayer ? `صلاة ${schedule.next.label}` : schedule.next.label}
                                                         </span>
                                                     </div>
                                                 </div>
                                                 <div className="text-left font-mono">
                                                     <span className="text-xs text-foreground/70 block text-right font-medium">المتبقي</span>
                                                     <span className="text-xl font-bold text-primary tracking-wider">
-                                                        {formatDuration(activeAndNext.timeDiffMs)}
+                                                        {formatDuration(schedule.next.remainingMs)}
                                                     </span>
                                                 </div>
                                             </div>
                                         )}
 
-                                        {/* Prayer Times List */}
                                         {loading ? (
                                             <div className="space-y-3 py-6">
                                                 {[1, 2, 3, 4, 5, 6].map(i => (
@@ -951,8 +501,8 @@ export default function Index() {
                                         ) : prayerTimes ? (
                                             <div className="space-y-2">
                                                 {PRAYER_EVENTS.map(ev => {
-                                                    const isActive = activeAndNext?.activeEvent?.key === ev.key;
-                                                    const isNext = activeAndNext?.nextEvent?.key === ev.key;
+                                                    const isActive = schedule?.active?.key === ev.key;
+                                                    const isNext = schedule?.next?.key === ev.key;
                                                     return (
                                                         <div
                                                             key={ev.key}
@@ -965,13 +515,13 @@ export default function Index() {
                                                             }`}
                                                         >
                                                             <div className="flex items-center gap-3">
-                                                                {getPrayerIcon(ev.key, `h-4 w-4 ${
-                                                                    isActive 
-                                                                        ? 'text-primary-foreground' 
-                                                                        : ev.key === 'Sunrise' 
-                                                                            ? 'text-orange-500' 
+                                                                <PrayerIcon prayer={ev.key} className={`h-4 w-4 ${
+                                                                    isActive
+                                                                        ? 'text-primary-foreground'
+                                                                        : ev.key === 'Sunrise'
+                                                                            ? 'text-orange-500'
                                                                             : 'text-primary'
-                                                                }`)}
+                                                                }`} />
                                                                 <span className="font-semibold text-sm">{ev.label}</span>
                                                                 {isActive && (
                                                                     <Badge className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 text-[10px] font-bold h-5 px-1.5">
@@ -999,14 +549,11 @@ export default function Index() {
 
                     </div>
 
-                    {/* Bottom Section: Two columns layout (Holidays vs Events) */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
                         
-                        {/* Holidays Card */}
                         <Card className="border-border bg-card/60 backdrop-blur-sm shadow-sm h-full flex flex-col justify-between">
                             <CardContent className="p-6 flex flex-col justify-between h-full">
                                 <div>
-                                    {/* Holidays Header */}
                                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 border-b border-border/60 pb-3">
                                         <div>
                                             <h2 className="font-bold text-lg text-foreground flex items-center gap-2">
@@ -1015,7 +562,6 @@ export default function Index() {
                                             </h2>
                                         </div>
                                         <div className="flex items-center gap-4">
-                                            {/* Toggle Passed Holidays Switch */}
                                             <div className="flex items-center gap-2 bg-muted/40 px-3 py-1.5 rounded-lg border border-border/50">
                                                 <Switch
                                                     id="hide-passed"
@@ -1030,7 +576,6 @@ export default function Index() {
                                         </div>
                                     </div>
 
-                                    {/* Holidays List */}
                                     {filteredHolidays.length === 0 ? (
                                         <div className="text-center py-12 text-sm text-muted-foreground">
                                             <Calendar className="h-8 w-8 text-muted-foreground/60 mx-auto mb-2" />
@@ -1039,26 +584,26 @@ export default function Index() {
                                     ) : (
                                         <div className="space-y-3">
                                             {filteredHolidays.map((holiday, idx) => {
-                                                const isPast = holiday.date < new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate());
-                                                const daysDiff = Math.ceil((holiday.date.getTime() - new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate()).getTime()) / (1000 * 60 * 60 * 24));
+                                                const isPast = holiday.date < startOfToday;
+                                                const daysDiff = Math.ceil((holiday.date.getTime() - startOfToday.getTime()) / (1000 * 60 * 60 * 24));
                                                 
                                                 return (
                                                     <div 
                                                         key={idx}
-                                                        className={`flex items-center justify-between p-3 rounded-xl border border-border/50 transition-colors gap-4 ${isPast ? "opacity-50 bg-muted/10" : "bg-muted/10 hover:bg-muted/30"}`}
+                                                        className={`flex items-center justify-between p-3 rounded-xl border border-border/50 transition-colors gap-4 bg-muted/10 ${isPast ? '' : 'hover:bg-muted/30'}`}
                                                     >
                                                         <div className="space-y-1 min-w-0">
                                                             <div className="flex items-center gap-1.5 flex-wrap">
-                                                                <span className="font-bold text-sm text-foreground truncate">{holiday.nameAr}</span>
+                                                                <span className={`font-bold text-sm truncate ${isPast ? 'text-muted-foreground' : 'text-foreground'}`}>{holiday.nameAr}</span>
                                                                 {holiday.isNew && (
-                                                                    <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white text-[9px] font-bold h-4 px-1">
+                                                                    <Badge className="bg-emerald-700 hover:bg-emerald-800 text-white text-[9px] font-bold h-4 px-1">
                                                                         جديد
                                                                     </Badge>
                                                                 )}
                                                             </div>
                                                             <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
-                                                                <span className="font-semibold text-foreground/75">
-                                                                    {holiday.date.toLocaleDateString('ar-SY', { day: 'numeric', month: 'long' })}
+                                                                <span className={`font-semibold ${isPast ? 'text-muted-foreground' : 'text-foreground/75'}`}>
+                                                                    {formatGregorianSyrianShort(holiday.date)}
                                                                     {holiday.date.getFullYear() !== currentTime.getFullYear() && ` (${holiday.date.getFullYear()})`}
                                                                 </span>
                                                                 {holiday.description && (
@@ -1090,7 +635,6 @@ export default function Index() {
                                     )}
                                 </div>
 
-                                {/* Source */}
                                 <div className="mt-6 pt-4 border-t border-border/60 flex flex-col sm:flex-row items-center justify-between gap-4">
                                     <div className="text-[10px] text-muted-foreground">
                                         المصدر: المرسوم رقم 188 لعام 2025
@@ -1108,11 +652,9 @@ export default function Index() {
                             </CardContent>
                         </Card>
 
-                        {/* Upcoming Events Column */}
                         <Card className="border-border bg-card/60 backdrop-blur-sm shadow-sm h-full flex flex-col justify-between">
                             <CardContent className="p-6 flex flex-col justify-between h-full">
                                 <div>
-                                    {/* Events Header */}
                                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 border-b border-border/60 pb-3">
                                         <div>
                                             <h2 className="font-bold text-lg text-foreground flex items-center gap-2">
@@ -1121,7 +663,6 @@ export default function Index() {
                                             </h2>
                                         </div>
                                         <div className="flex items-center gap-4">
-                                            {/* Toggle switch for showing other governorates */}
                                             <div className="flex items-center gap-2 bg-muted/40 px-3 py-1.5 rounded-lg border border-border/50">
                                                 <Switch
                                                     id="show-other-govs"
@@ -1136,7 +677,6 @@ export default function Index() {
                                         </div>
                                     </div>
 
-                                    {/* Events List */}
                                     {loadingEvents ? (
                                         <div className="space-y-3 py-1">
                                             {[1, 2, 3, 4, 5].map(i => (
@@ -1189,7 +729,7 @@ export default function Index() {
                                                         </div>
                                                         <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
                                                             <span className="font-semibold text-foreground/75">
-                                                                {F3ALIA_PROVINCE_TO_ARABIC[event.province] || event.provinceName}
+                                                                {governorateNameForF3aliaProvince(event.province) || event.provinceName}
                                                             </span>
                                                             <span>•</span>
                                                             <span>{formatDateGregorian(new Date(event.eventDate))}</span>
@@ -1229,7 +769,6 @@ export default function Index() {
                                     )}
                                 </div>
 
-                                {/* Source and Show More button */}
                                 <div className="mt-6 pt-4 border-t border-border/60 flex flex-col sm:flex-row items-center justify-between gap-4">
                                     <div className="text-[10px] text-muted-foreground">
                                         المصدر: منصة فعالية (F3alia) للأحداث والفعاليات
@@ -1247,7 +786,7 @@ export default function Index() {
                             </CardContent>
                         </Card>
 
-                    </div>                        {/* Combined and Simplified Notes & Canceled Holidays Box */}
+                    </div>
                         <Card className="border-border bg-muted/20 shadow-sm p-5">
                             <div className="flex gap-3.5 items-start text-xs text-muted-foreground leading-relaxed">
                                 <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
@@ -1266,62 +805,19 @@ export default function Index() {
 
                 </div>
 
-                {/* Roznama settings: bottom Sheet on mobile, Dialog on desktop */}
-                {isMobile ? (
-                    <Sheet open={roznamaSettingsOpen} onOpenChange={setRoznamaSettingsOpen}>
-                        <SheetContent side="bottom" dir="rtl" className="rounded-t-3xl border-b-0 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-                            <SheetHeader className="text-right">
-                                <SheetTitle>إعدادات الروزنامة</SheetTitle>
-                                <SheetDescription>
-                                    الموقع المستخدم لمواقيت الصلاة والطقس — GPS أو الإنترنت أو مدينة يدوية.
-                                </SheetDescription>
-                            </SheetHeader>
-                            <div className="max-h-[70dvh] overflow-y-auto sz-scroll">
-                                <RoznamaSettingsBody
-                                    governorate={governorate}
-                                    onGovChange={handleGovChange}
-                                    method={method}
-                                    onMethodChange={handleMethodChange}
-                                    customLat={customLat}
-                                    customLon={customLon}
-                                    onCustom={setCustom}
-                                    locMode={getLocMode()}
-                                    onLocMode={(m) => {
-                                        setLocMode(m);
-                                        setCustom({ on: m === 'custom' });
-                                    }}
-                                    geo={getGeo()}
-                                />
-                            </div>
-                        </SheetContent>
-                    </Sheet>
-                ) : (
-                    <Dialog open={roznamaSettingsOpen} onOpenChange={setRoznamaSettingsOpen}>
-                        <DialogContent dir="rtl" className="sm:max-w-md">
-                            <DialogHeader className="text-right">
-                                <DialogTitle>إعدادات الروزنامة</DialogTitle>
-                                <DialogDescription>
-                                    الموقع المستخدم لمواقيت الصلاة والطقس — GPS أو الإنترنت أو مدينة يدوية.
-                                </DialogDescription>
-                            </DialogHeader>
-                            <RoznamaSettingsBody
-                                governorate={governorate}
-                                onGovChange={handleGovChange}
-                                method={method}
-                                onMethodChange={handleMethodChange}
-                                customLat={customLat}
-                                customLon={customLon}
-                                onCustom={setCustom}
-                                locMode={getLocMode()}
-                                onLocMode={(m) => {
-                                    setLocMode(m);
-                                    setCustom({ on: m === 'custom' });
-                                }}
-                                geo={getGeo()}
-                            />
-                        </DialogContent>
-                    </Dialog>
-                )}
+                <ResponsiveSettingsDialog
+                    open={roznamaSettingsOpen}
+                    onOpenChange={setRoznamaSettingsOpen}
+                    title="إعدادات الروزنامة"
+                    description="الموقع المستخدم لمواقيت الصلاة والطقس — GPS أو الإنترنت أو مدينة يدوية."
+                >
+                    <PrayerSettingsFields
+                        cityLabel="المدينة (للمواقيت والطقس والفعاليات)"
+                        method={method}
+                        onMethodChange={handleMethodChange}
+                        onLocationChange={handleLocationChange}
+                    />
+                </ResponsiveSettingsDialog>
             </MainLayout>
     );
 }

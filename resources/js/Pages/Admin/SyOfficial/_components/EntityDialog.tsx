@@ -7,31 +7,23 @@ import { Label } from '@/Components/ui/label';
 import { Button } from '@/Components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
 import { Switch } from '@/Components/ui/switch';
+import FieldError, { fieldA11y } from '@/Components/ui/field-error';
 import { UploadCloud, Image as ImageIcon } from 'lucide-react';
-
-export interface CategoryOption {
-    id: string;
-    label_ar: string;
-    label_en: string;
-}
-
-export interface EntityData {
-    id: string;
-    category_id: string;
-    name: string;
-    name_ar: string;
-    description?: string;
-    description_ar?: string;
-    image?: string;
-    socials?: Record<string, string>;
-    is_active: boolean;
-}
+import type { AdminOfficialEntity, OfficialCategory, SocialLinks } from '@/Domain/syofficial/types';
+import { SOCIAL_PLATFORMS } from '@/Domain/syofficial/social';
 
 interface EntityDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    entity?: EntityData | null;
-    categories: CategoryOption[];
+    entity?: AdminOfficialEntity | null;
+    categories: OfficialCategory[];
+}
+
+/** One field per platform in the vocabulary, so a new platform needs no edit here. */
+function toSocials(socials?: SocialLinks | null): Record<string, string> {
+    return Object.fromEntries(
+        SOCIAL_PLATFORMS.map((platform) => [platform.key, socials?.[platform.key] ?? '']),
+    );
 }
 
 export default function EntityDialog({ open, onOpenChange, entity, categories }: EntityDialogProps) {
@@ -47,20 +39,7 @@ export default function EntityDialog({ open, onOpenChange, entity, categories }:
         description_ar: entity?.description_ar || '',
         image_file: null as File | null,
         is_active: entity?.is_active ?? true,
-        socials: {
-            facebook: entity?.socials?.facebook || '',
-            facebook_secondary: entity?.socials?.facebook_secondary || '',
-            instagram: entity?.socials?.instagram || '',
-            instagram_secondary: entity?.socials?.instagram_secondary || '',
-            twitter: entity?.socials?.twitter || '',
-            twitter_secondary: entity?.socials?.twitter_secondary || '',
-            telegram: entity?.socials?.telegram || '',
-            telegram_secondary: entity?.socials?.telegram_secondary || '',
-            website: entity?.socials?.website || '',
-            whatsapp: entity?.socials?.whatsapp || '',
-            youtube: entity?.socials?.youtube || '',
-            linkedin: entity?.socials?.linkedin || '',
-        },
+        socials: toSocials(entity?.socials),
     });
 
     useEffect(() => {
@@ -74,20 +53,7 @@ export default function EntityDialog({ open, onOpenChange, entity, categories }:
                 description_ar: entity.description_ar || '',
                 image_file: null,
                 is_active: entity.is_active,
-                socials: {
-                    facebook: entity.socials?.facebook || '',
-                    facebook_secondary: entity.socials?.facebook_secondary || '',
-                    instagram: entity.socials?.instagram || '',
-                    instagram_secondary: entity.socials?.instagram_secondary || '',
-                    twitter: entity.socials?.twitter || '',
-                    twitter_secondary: entity.socials?.twitter_secondary || '',
-                    telegram: entity.socials?.telegram || '',
-                    telegram_secondary: entity.socials?.telegram_secondary || '',
-                    website: entity.socials?.website || '',
-                    whatsapp: entity.socials?.whatsapp || '',
-                    youtube: entity.socials?.youtube || '',
-                    linkedin: entity.socials?.linkedin || '',
-                },
+                socials: toSocials(entity.socials),
             });
             setImagePreview(entity.image && (entity.image.startsWith('http') || entity.image.startsWith('/')) ? entity.image : null);
         } else {
@@ -134,7 +100,6 @@ export default function EntityDialog({ open, onOpenChange, entity, categories }:
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-4 py-2">
-                    {/* ID & Category */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {!isEditing ? (
                             <div className="space-y-2">
@@ -145,8 +110,9 @@ export default function EntityDialog({ open, onOpenChange, entity, categories }:
                                     value={data.id}
                                     onChange={(e) => setData('id', e.target.value)}
                                     dir="ltr" className="text-left"
+                                    {...fieldA11y('entity-id-error', errors.id)}
                                 />
-                                {errors.id && <span className="text-xs text-destructive">{errors.id}</span>}
+                                <FieldError id="entity-id-error" message={errors.id} />
                             </div>
                         ) : (
                             <div className="space-y-2">
@@ -158,7 +124,7 @@ export default function EntityDialog({ open, onOpenChange, entity, categories }:
                         <div className="space-y-2">
                             <Label htmlFor="category_id">الفئة</Label>
                             <Select value={data.category_id} onValueChange={(val) => setData('category_id', val)}>
-                                <SelectTrigger className="w-full" aria-label="اختر الفئة">
+                                <SelectTrigger className="w-full" aria-label="اختر الفئة" {...fieldA11y('entity-category-error', errors.category_id)}>
                                     <SelectValue placeholder="اختر الفئة" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -169,11 +135,10 @@ export default function EntityDialog({ open, onOpenChange, entity, categories }:
                                     ))}
                                 </SelectContent>
                             </Select>
-                            {errors.category_id && <span className="text-xs text-destructive">{errors.category_id}</span>}
+                            <FieldError id="entity-category-error" message={errors.category_id} />
                         </div>
                     </div>
 
-                    {/* Names AR / EN */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="name_ar">الاسم بالعربية</Label>
@@ -182,8 +147,9 @@ export default function EntityDialog({ open, onOpenChange, entity, categories }:
                                 placeholder="محافظة دمشق"
                                 value={data.name_ar}
                                 onChange={(e) => setData('name_ar', e.target.value)}
+                                {...fieldA11y('entity-name-ar-error', errors.name_ar)}
                             />
-                            {errors.name_ar && <span className="text-xs text-destructive">{errors.name_ar}</span>}
+                            <FieldError id="entity-name-ar-error" message={errors.name_ar} />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="name">الاسم بالإنجليزية</Label>
@@ -193,12 +159,12 @@ export default function EntityDialog({ open, onOpenChange, entity, categories }:
                                 value={data.name}
                                 onChange={(e) => setData('name', e.target.value)}
                                 dir="ltr" className="text-left"
+                                {...fieldA11y('entity-name-error', errors.name)}
                             />
-                            {errors.name && <span className="text-xs text-destructive">{errors.name}</span>}
+                            <FieldError id="entity-name-error" message={errors.name} />
                         </div>
                     </div>
 
-                    {/* Descriptions AR / EN */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="desc_ar">الوصف بالعربية (اختياري)</Label>
@@ -221,7 +187,6 @@ export default function EntityDialog({ open, onOpenChange, entity, categories }:
                         </div>
                     </div>
 
-                    {/* Image Upload (R2 / WebP) */}
                     <div className="space-y-2">
                         <Label>الشعار / الصورة (يتم تحويلها لـ WebP ورفعها لـ R2)</Label>
                         <div className="flex items-center gap-4 border border-dashed border-border rounded-xl p-4 bg-card">
@@ -247,67 +212,29 @@ export default function EntityDialog({ open, onOpenChange, entity, categories }:
                                 <p className="text-xs text-muted-foreground mt-1">يدعم PNG, JPG, WEBP (حجم أقصى 5 ميغابايت)</p>
                             </div>
                         </div>
-                        {errors.image_file && <span className="text-xs text-destructive">{errors.image_file}</span>}
+                        <FieldError id="entity-image-error" message={errors.image_file} />
                     </div>
 
-                    {/* Social Media Links */}
                     <div className="space-y-3 pt-2 border-t">
                         <h4 className="font-bold text-sm text-foreground">روابط وسائل التواصل الاجتماعي</h4>
                         
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                            <div>
-                                <Label className="text-xs">فيسبوك رئيسي</Label>
-                                <Input aria-label="رابط فيسبوك" value={data.socials.facebook} onChange={(e) => handleSocialChange('facebook', e.target.value)} placeholder="https://facebook.com/..." dir="ltr" className="text-left h-9" />
-                            </div>
-                            <div>
-                                <Label className="text-xs">فيسبوك فرعي / إعلامي</Label>
-                                <Input aria-label="رابط فيسبوك (ثانوي)" value={data.socials.facebook_secondary} onChange={(e) => handleSocialChange('facebook_secondary', e.target.value)} placeholder="https://facebook.com/..." dir="ltr" className="text-left h-9" />
-                            </div>
-
-                            <div>
-                                <Label className="text-xs">إكس / تويتر رئيسي</Label>
-                                <Input aria-label="رابط إكس" value={data.socials.twitter} onChange={(e) => handleSocialChange('twitter', e.target.value)} placeholder="https://x.com/..." dir="ltr" className="text-left h-9" />
-                            </div>
-                            <div>
-                                <Label className="text-xs">إكس / تويتر فرعي / إعلامي</Label>
-                                <Input aria-label="رابط إكس (ثانوي)" value={data.socials.twitter_secondary} onChange={(e) => handleSocialChange('twitter_secondary', e.target.value)} placeholder="https://x.com/..." dir="ltr" className="text-left h-9" />
-                            </div>
-
-                            <div>
-                                <Label className="text-xs">تلغرام رئيسي</Label>
-                                <Input aria-label="رابط تلغرام" value={data.socials.telegram} onChange={(e) => handleSocialChange('telegram', e.target.value)} placeholder="https://t.me/..." dir="ltr" className="text-left h-9" />
-                            </div>
-                            <div>
-                                <Label className="text-xs">تلغرام فرعي / إعلامي</Label>
-                                <Input aria-label="رابط تلغرام (ثانوي)" value={data.socials.telegram_secondary} onChange={(e) => handleSocialChange('telegram_secondary', e.target.value)} placeholder="https://t.me/..." dir="ltr" className="text-left h-9" />
-                            </div>
-
-                            <div>
-                                <Label className="text-xs">إنستغرام رئيسي</Label>
-                                <Input aria-label="رابط إنستغرام" value={data.socials.instagram} onChange={(e) => handleSocialChange('instagram', e.target.value)} placeholder="https://instagram.com/..." dir="ltr" className="text-left h-9" />
-                            </div>
-                            <div>
-                                <Label className="text-xs">إنستغرام فرعي / إعلامي</Label>
-                                <Input aria-label="رابط إنستغرام (ثانوي)" value={data.socials.instagram_secondary} onChange={(e) => handleSocialChange('instagram_secondary', e.target.value)} placeholder="https://instagram.com/..." dir="ltr" className="text-left h-9" />
-                            </div>
-
-                            <div>
-                                <Label className="text-xs">الموقع الرسمي</Label>
-                                <Input aria-label="الموقع الإلكتروني" value={data.socials.website} onChange={(e) => handleSocialChange('website', e.target.value)} placeholder="https://..." dir="ltr" className="text-left h-9" />
-                            </div>
-                            <div>
-                                <Label className="text-xs">واتساب</Label>
-                                <Input aria-label="رابط واتساب" value={data.socials.whatsapp} onChange={(e) => handleSocialChange('whatsapp', e.target.value)} placeholder="https://whatsapp.com/channel/..." dir="ltr" className="text-left h-9" />
-                            </div>
-
-                            <div>
-                                <Label className="text-xs">يوتيوب</Label>
-                                <Input aria-label="رابط يوتيوب" value={data.socials.youtube} onChange={(e) => handleSocialChange('youtube', e.target.value)} placeholder="https://youtube.com/..." dir="ltr" className="text-left h-9" />
-                            </div>
-                            <div>
-                                <Label className="text-xs">لينكد إن</Label>
-                                <Input aria-label="رابط لينكدإن" value={data.socials.linkedin} onChange={(e) => handleSocialChange('linkedin', e.target.value)} placeholder="https://linkedin.com/..." dir="ltr" className="text-left h-9" />
-                            </div>
+                            {SOCIAL_PLATFORMS.map((platform) => (
+                                <div key={platform.key}>
+                                    <Label className="text-xs" htmlFor={`social-${platform.key}`}>
+                                        {platform.formLabelAr}
+                                    </Label>
+                                    <Input
+                                        id={`social-${platform.key}`}
+                                        aria-label={platform.inputAriaLabel}
+                                        value={data.socials[platform.key] ?? ''}
+                                        onChange={(e) => handleSocialChange(platform.key, e.target.value)}
+                                        placeholder={platform.placeholder}
+                                        dir="ltr"
+                                        className="text-left h-9"
+                                    />
+                                </div>
+                            ))}
                         </div>
                     </div>
 

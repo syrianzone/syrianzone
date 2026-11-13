@@ -1,24 +1,26 @@
-import { DATA_TYPES } from '../../types';
-import { getColor } from '../../utils/color-calculator';
+import { DATA_TYPES, DATA_TYPE_CONFIG } from '../../types';
+import { getColor, getTemperatureColor } from '../../utils/color-calculator';
 import { findPopulation, findRainData } from '../../utils/data-finder';
 import { CityData, RainfallData } from '../../types';
-import { getCanonicalCityName } from '@/Lib/city-name-standardizer';
+import { getCanonicalGovernorateName, getGovernorateDatasetNameEn } from '@/Domain/geography/governorates';
 
 type DataType = typeof DATA_TYPES[keyof typeof DATA_TYPES];
 
-const ARABIC_TO_ENGLISH_CITY_MAP: { [key: string]: string } = {
-    'دمشق': 'Damascus', 'حلب': 'Aleppo', 'ريف دمشق': 'Rif Dimashq', 'حمص': 'Homs',
-    'حماة': 'Hama', 'اللاذقية': 'Latakia', 'إدلب': 'Idlib', 'الحسكة': 'Al-Hasakah',
-    'دير الزور': 'Deir ez-Zor', 'طرطوس': 'Tartus', 'الرقة': 'Raqqa', 'درعا': 'Daraa',
-    'السويداء': 'As-Suwayda', 'القنيطرة': 'Quneitra'
-};
+// Province with nothing to show: the same "no data" colour as the legend's
+// first entry, plus a hairline that reads on the atlas background.
+const NO_DATA_FILL = DATA_TYPE_CONFIG[DATA_TYPES.ENVIRONMENTAL].colors.none;
+const NO_DATA_STROKE = '#334155';
+const HIGHLIGHT_STROKE = '#ffffff';
 
-function getTemperatureColor(temp: number): string {
-    // Must match the ENVIRONMENTAL legend in data-config.ts
-    if (temp < 10) return '#3b82f6';      // بارد
-    if (temp <= 20) return '#22c55e';     // معتدل
-    if (temp <= 30) return '#eab308';     // دافئ
-    return '#ef4444';                     // حار
+function noDataStyle() {
+    return {
+        fillColor: NO_DATA_FILL,
+        weight: 1,
+        opacity: 0.5,
+        color: NO_DATA_STROKE,
+        fillOpacity: 0.3,
+        className: ''
+    };
 }
 
 export function getFeatureStyle(
@@ -31,57 +33,34 @@ export function getFeatureStyle(
 ) {
     let value = 0;
     
-    // Environmental Data Style (Temperature)
     if (currentDataType === DATA_TYPES.ENVIRONMENTAL) {
         if (!environmentalData) {
-             return {
-                fillColor: '#1e293b',
-                weight: 1,
-                opacity: 0.5,
-                color: '#334155',
-                fillOpacity: 0.3,
-                className: ''
-            };
+            return noDataStyle();
         }
 
         const name = feature.properties.province_name || feature.properties.ADM2_AR || feature.properties.ADM1_AR || feature.properties.Name;
-        const nameAr = getCanonicalCityName(name);
-        const englishName = ARABIC_TO_ENGLISH_CITY_MAP[nameAr] || nameAr;
+        const nameAr = getCanonicalGovernorateName(name);
+        const englishName = getGovernorateDatasetNameEn(nameAr);
         const envData = environmentalData.cities?.[nameAr] || environmentalData.cities?.[englishName] || environmentalData.cities?.[name];
 
         if (envData) {
             const temp = envData.current_conditions?.temperature_celsius;
             if (temp === null || temp === undefined || Number.isNaN(Number(temp))) {
-                return {
-                    fillColor: '#1e293b',
-                    weight: 1,
-                    opacity: 0.5,
-                    color: '#334155',
-                    fillOpacity: 0.3,
-                    className: ''
-                };
+                return noDataStyle();
             }
             return {
                 fillColor: getTemperatureColor(temp),
                 weight: 1.5,
                 opacity: 1,
-                color: 'rgba(255,255,255,0.4)', // Semi-transparent white border for glow
-                fillOpacity: 0.6, // Lower opacity for glass effect
-                className: 'pulsing-region' // CSS animation class
+                color: 'rgba(255,255,255,0.4)',
+                fillOpacity: 0.6,
+                className: 'pulsing-region'
             };
         }
 
-        return {
-            fillColor: '#1e293b',
-            weight: 1,
-            opacity: 0.5,
-            color: '#334155',
-            fillOpacity: 0.3,
-            className: ''
-        };
+        return noDataStyle();
     }
 
-    // Rainfall Data Style
     if (currentDataType === DATA_TYPES.RAINFALL) {
         const rData = findRainData(feature, rainfallData);
         if (rData && rData.length > 0) {
@@ -96,7 +75,7 @@ export function getFeatureStyle(
             fillColor: baseColor,
             weight: 1.5,
             opacity: 1,
-            color: 'rgba(14, 165, 233, 0.4)', // Cyan border
+            color: 'rgba(14, 165, 233, 0.4)',
             fillOpacity: 0.7,
             className: ''
         };
@@ -114,7 +93,7 @@ export function getFeatureStyle(
         fillColor: fillColor,
         weight: 1.5,
         opacity: 1,
-        color: 'rgba(255,255,255,0.2)', // Subtle border
+        color: 'rgba(255,255,255,0.2)',
         fillOpacity: 0.75,
         className: ''
     };
@@ -124,7 +103,7 @@ export function getHighlightStyle(currentDataType: DataType) {
     if (currentDataType === DATA_TYPES.RAINFALL) {
         return {
             weight: 3,
-            color: '#67e8f9', // Cyan-300
+            color: '#67e8f9',
             fillOpacity: 0.9,
             fillColor: '#22d3ee'
         };
@@ -133,16 +112,15 @@ export function getHighlightStyle(currentDataType: DataType) {
     if (currentDataType === DATA_TYPES.ENVIRONMENTAL) {
         return {
             weight: 3,
-            color: '#ffffff',
+            color: HIGHLIGHT_STROKE,
             fillOpacity: 0.85,
             dashArray: ''
         };
     }
 
-    // Default Highlight (Population/IDP)
     return {
         weight: 3,
-        color: '#ffffff',
+        color: HIGHLIGHT_STROKE,
         fillOpacity: 0.9
     };
 }

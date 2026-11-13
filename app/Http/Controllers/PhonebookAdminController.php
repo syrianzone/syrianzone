@@ -2,33 +2,32 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\PhonebookCategory;
-use App\Models\PhonebookEntry;
+use App\Services\Phonebook\PhonebookDirectoryService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 
+/**
+ * HTTP adapter for the phonebook admin.
+ *
+ * Every write delegates to PhonebookDirectoryService, the third directory
+ * service next to SyOfficial and Gov Apps: the rules (ids, per-category order,
+ * cache flush, the reorder payload) are the module's, not this transport's.
+ * Domain refusals (DirectoryActionException) are rendered into standardized
+ * HTTP/JSON responses by bootstrap/app.php.
+ */
 class PhonebookAdminController extends Controller
 {
-    /**
-     * Render the admin management dashboard for Phonebook.
-     */
+    public function __construct(private readonly PhonebookDirectoryService $directory) {}
+
     public function renderIndex()
     {
-        $categories = PhonebookCategory::orderBy('order_column')->get();
-        $entries = PhonebookEntry::with('category')
-            ->orderBy('order_column')
-            ->get();
-
         return inertia('Admin/Phonebook/Index', [
-            'categories' => $categories,
-            'entries' => $entries,
+            'categories' => $this->directory->categories(),
+            'entries' => $this->directory->entries(),
         ]);
     }
 
-    /**
-     * Category CRUD: Store
-     */
-    public function storeCategory(Request $request)
+    public function storeCategory(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'id' => 'required|string|max:64|unique:phonebook_categories,id|alpha_dash',
@@ -38,23 +37,13 @@ class PhonebookAdminController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        $maxOrder = PhonebookCategory::max('order_column') ?? 0;
-        $validated['order_column'] = $maxOrder + 1;
-        $validated['is_active'] = $validated['is_active'] ?? true;
-
-        PhonebookCategory::create($validated);
-        $this->flushCache();
+        $this->directory->createCategory($validated);
 
         return redirect()->back()->with('success', 'تم إضافة الفئة بنجاح');
     }
 
-    /**
-     * Category CRUD: Update
-     */
-    public function updateCategory(Request $request, string $id)
+    public function updateCategory(Request $request, string $id): RedirectResponse
     {
-        $category = PhonebookCategory::findOrFail($id);
-
         $validated = $request->validate([
             'label_ar' => 'required|string|max:255',
             'label_en' => 'required|string|max:255',
@@ -62,28 +51,19 @@ class PhonebookAdminController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        $category->update($validated);
-        $this->flushCache();
+        $this->directory->updateCategory($id, $validated);
 
         return redirect()->back()->with('success', 'تم تحديث الفئة بنجاح');
     }
 
-    /**
-     * Category CRUD: Delete
-     */
-    public function destroyCategory(string $id)
+    public function destroyCategory(string $id): RedirectResponse
     {
-        $category = PhonebookCategory::findOrFail($id);
-        $category->delete();
-        $this->flushCache();
+        $this->directory->deleteCategory($id);
 
         return redirect()->back()->with('success', 'تم حذف الفئة بنجاح');
     }
 
-    /**
-     * Entry CRUD: Store
-     */
-    public function storeEntry(Request $request)
+    public function storeEntry(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'id' => 'nullable|string|max:128|unique:phonebook_entries,id|alpha_dash',
@@ -96,31 +76,16 @@ class PhonebookAdminController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        if (empty($validated['id'])) {
-            $validated['id'] = 'phone_' . time() . '_' . rand(100, 999);
-        }
-
-        $validated['source_url'] = !empty($validated['source_url']) && !empty(trim($validated['source_url'])) ? trim($validated['source_url']) : null;
-        $validated['name_en'] = !empty($validated['name_en']) && !empty(trim($validated['name_en'])) ? trim($validated['name_en']) : null;
-
-        $maxOrder = PhonebookEntry::where('category_id', $validated['category_id'])->max('order_column') ?? 0;
-        $validated['order_column'] = $maxOrder + 1;
-        $validated['is_active'] = $validated['is_active'] ?? true;
-        $validated['is_whatsapp'] = $validated['is_whatsapp'] ?? false;
-
-        PhonebookEntry::create($validated);
-        $this->flushCache();
+        $this->directory->createEntry($validated);
 
         return redirect()->back()->with('success', 'تم إضافة الرقم بنجاح');
     }
 
     /**
-     * Entry CRUD: Update
+     * Registered for both POST and PUT, matching the other two directories.
      */
-    public function updateEntry(Request $request, string $id)
+    public function updateEntry(Request $request, string $id): RedirectResponse
     {
-        $entry = PhonebookEntry::findOrFail($id);
-
         $validated = $request->validate([
             'category_id' => 'required|exists:phonebook_categories,id',
             'name_ar' => 'required|string|max:255',
@@ -131,79 +96,48 @@ class PhonebookAdminController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        $validated['source_url'] = !empty($validated['source_url']) && !empty(trim($validated['source_url'])) ? trim($validated['source_url']) : null;
-        $validated['name_en'] = !empty($validated['name_en']) && !empty(trim($validated['name_en'])) ? trim($validated['name_en']) : null;
-
-        $entry->update($validated);
-        $this->flushCache();
+        $this->directory->updateEntry($id, $validated);
 
         return redirect()->back()->with('success', 'تم تحديث البيانات بنجاح');
     }
 
-    /**
-     * Entry CRUD: Toggle Active/Hidden State
-     */
-    public function toggleEntryActive(string $id)
+    public function toggleEntryActive(string $id): RedirectResponse
     {
-        $entry = PhonebookEntry::findOrFail($id);
-        $entry->is_active = !$entry->is_active;
-        $entry->save();
-        $this->flushCache();
+        $entry = $this->directory->toggleEntryActive($id);
 
         return redirect()->back()->with('success', $entry->is_active ? 'تم إظهار الرقم بنجاح' : 'تم إخفاء الرقم بنجاح');
     }
 
-    /**
-     * Entry CRUD: Delete
-     */
-    public function destroyEntry(string $id)
+    public function destroyEntry(string $id): RedirectResponse
     {
-        $entry = PhonebookEntry::findOrFail($id);
-        $entry->delete();
-        $this->flushCache();
+        $this->directory->deleteEntry($id);
 
         return redirect()->back()->with('success', 'تم حذف الرقم بنجاح');
     }
 
-    /**
-     * Drag-and-drop reorder categories
-     */
-    public function reorderCategories(Request $request)
+    public function reorderCategories(Request $request): RedirectResponse
     {
-        $request->validate([
-            'order' => 'required|array',
-            'order.*' => 'string|exists:phonebook_categories,id',
+        $validated = $request->validate([
+            'orders' => 'required|array',
+            'orders.*.id' => 'required|exists:phonebook_categories,id',
+            'orders.*.order_column' => 'required|integer',
         ]);
 
-        foreach ($request->order as $index => $id) {
-            PhonebookCategory::where('id', $id)->update(['order_column' => $index + 1]);
-        }
+        $this->directory->reorderCategories($validated['orders']);
 
-        $this->flushCache();
-        return response()->json(['success' => true]);
+        return redirect()->back()->with('success', 'تم إعادة الترتيب بنجاح');
     }
 
-    /**
-     * Drag-and-drop reorder entries
-     */
-    public function reorderEntries(Request $request)
+    public function reorderEntries(Request $request): RedirectResponse
     {
-        $request->validate([
-            'order' => 'required|array',
-            'order.*' => 'string|exists:phonebook_entries,id',
+        $validated = $request->validate([
+            'orders' => 'required|array',
+            'orders.*.id' => 'required|exists:phonebook_entries,id',
+            'orders.*.order_column' => 'required|integer',
         ]);
 
-        foreach ($request->order as $index => $id) {
-            PhonebookEntry::where('id', $id)->update(['order_column' => $index + 1]);
-        }
+        $this->directory->reorderEntries($validated['orders']);
 
-        $this->flushCache();
-        return response()->json(['success' => true]);
-    }
-
-    private function flushCache(): void
-    {
-        Cache::forget('phonebook:db_categories_v1');
-        Cache::forget('phonebook:db_entries_v1');
+        return redirect()->back()->with('success', 'تم إعادة الترتيب بنجاح');
     }
 }

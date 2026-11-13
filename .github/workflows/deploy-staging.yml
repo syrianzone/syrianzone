@@ -21,32 +21,39 @@ permissions:
   packages: write
 
 jobs:
+  tests:
+    name: run the gate
+    uses: ./.github/workflows/tests.yml
+    with:
+      ref: ${{ github.event.inputs.ref || github.ref }}
+
   build:
     name: build and push staging image
+    needs: tests
     if: github.repository == 'syrianzone/syrianzone'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ github.event.inputs.ref || github.ref }}
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
       - name: log in to ghcr
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # deliberately NOT passing VITE_SENTRY_DSN, VITE_POSTHOG_KEY or
-      # sentry_auth_token: those are baked into the js bundle at build time, so a
-      # staging box running the production image would report browser errors and
-      # analytics into the production projects. omitting them makes both sdks
-      # no-op (they are guarded on the env var in resources/js/app.tsx).
+      # deliberately NOT passing VITE_SENTRY_DSN or sentry_auth_token: the DSN is
+      # baked into the js bundle at build time, so a staging box running the
+      # production image would report browser errors into the production
+      # project. omitting it makes the sdk no-op (it is guarded on the env var in
+      # resources/js/app.tsx).
       # GA is runtime config now, so staging just leaves GA_MEASUREMENT_ID unset.
       - name: build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: .
           platforms: linux/amd64

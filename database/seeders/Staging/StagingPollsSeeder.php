@@ -17,8 +17,8 @@ use Illuminate\Support\Facades\DB;
  *
  * 1. The leaderboard (PollController::leaderboard) reads NOTHING but the
  *    `daily_scores` table. Ballots and ballot_items are write-only history as
- *    far as the ranking is concerned, and `daily_ranks` is not read at all.
- *    So the scores here are written directly rather than replayed through
+ *    far as the ranking is concerned. So the scores here are written directly
+ *    rather than replayed through
  *    VotingService, and they are shaped to match what that service would have
  *    produced (tier minimum 0-50 plus a small position bonus, so a per-vote
  *    average lands in roughly the 10-55 band).
@@ -211,7 +211,7 @@ class StagingPollsSeeder extends StagingSeed
    *
    * Only ever slugs this file itself created, so the delete cannot reach data
    * it did not write. Cascades handle candidate_groups, candidates, ballots,
-   * ballot_items, daily_scores and daily_ranks.
+   * ballot_items and daily_scores.
    */
   private const RETIRED_SLUGS = ['staging-cabinet'];
 
@@ -376,8 +376,7 @@ class StagingPollsSeeder extends StagingSeed
    * tester's vote from an EARLIER day with it: the day is in the past, so the
    * second-axis guard does not cover it. seedScores stamps updated_at at the
    * exact end of the row's own day, where VotingService stamps now() during the
-   * day, so matching on that leaves anything a human touched alone. daily_ranks
-   * needs no such guard, nothing outside this seeder ever writes it.
+   * day, so matching on that leaves anything a human touched alone.
    *
    * The day bounds are a contiguous range rather than a NOT IN list because
    * `day` is a timestamp column that MySQL and sqlite render differently, and
@@ -394,11 +393,6 @@ class StagingPollsSeeder extends StagingSeed
       $q->where('day', '<', $start)
         ->orWhere(fn($inner) => $inner->where('day', '>', $end)->where('day', '<', $today));
     };
-
-    DB::table('daily_ranks')
-      ->where('poll_id', $poll->id)
-      ->where($outsideWindow)
-      ->delete();
 
     $rows = DB::table('daily_scores')
       ->where('poll_id', $poll->id)
@@ -462,10 +456,10 @@ class StagingPollsSeeder extends StagingSeed
   }
 
   /**
-   * Write daily_scores (what the leaderboard sums) and daily_ranks (the
-   * per-day standings snapshot) for every candidate on every day.
+   * Write daily_scores (what the leaderboard sums) for every candidate on
+   * every day.
    *
-   * Both tables have a composite primary key and the Eloquent models fake it
+   * The table has a composite primary key and the Eloquent model fakes it
    * with a custom setKeysForSaveQuery, which updateOrCreate does not survive.
    * The query builder handles the same upsert without the drama.
    *
@@ -496,7 +490,7 @@ class StagingPollsSeeder extends StagingSeed
 
       usort($rows, fn($a, $b) => $b['score'] <=> $a['score']);
 
-      foreach ($rows as $rank => $row) {
+      foreach ($rows as $row) {
         $key = [
           'poll_id' => $poll->id,
           'candidate_id' => $row['candidate_id'],
@@ -510,13 +504,6 @@ class StagingPollsSeeder extends StagingSeed
           'votes' => $row['votes'],
           'score' => $row['score'],
           'updated_at' => $day->copy()->endOfDay(),
-        ]);
-
-        DB::table('daily_ranks')->updateOrInsert($key, [
-          'rank' => $rank + 1,
-          'votes' => $row['votes'],
-          'score' => $row['score'],
-          'created_at' => $day->copy()->endOfDay(),
         ]);
       }
     }

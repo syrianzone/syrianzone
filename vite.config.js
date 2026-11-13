@@ -58,9 +58,6 @@ export default defineConfig({
     ],
     resolve: {
         alias: {
-            '@/lib': fileURLToPath(new URL('./resources/js/Lib', import.meta.url)),
-            '@/components': fileURLToPath(new URL('./resources/js/Components', import.meta.url)),
-            '@/context': fileURLToPath(new URL('./resources/js/Contexts', import.meta.url)),
             '@': fileURLToPath(new URL('./resources/js', import.meta.url)),
         },
     },

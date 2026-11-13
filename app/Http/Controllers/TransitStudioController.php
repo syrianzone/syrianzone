@@ -3,33 +3,29 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\ChecksTransitScope;
+use App\Models\Route;
 use App\Models\RouteDraft;
-use App\Models\User;
+use App\Models\TransitRouteLog;
+use App\Services\Transit\TransitCache;
+use App\Services\Transit\TransitRules;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class TransitStudioController extends Controller
 {
     use ChecksTransitScope;
 
-    private function resolveUser(Request $request): ?User
-    {
-        $user = $request->user() ?? Auth::guard('sanctum')->user();
-        if ($user instanceof User && ! $request->user()) {
-            $request->setUserResolver(fn () => $user);
-        }
-
-        return $user instanceof User ? $user : null;
-    }
+    public function __construct(private readonly TransitCache $cache) {}
 
     /**
      * List the authenticated user's own route drafts (newest first).
      */
     public function index(Request $request)
     {
-        $user = $this->resolveUser($request);
+        $user = $request->user();
         if (! $user) {
-            return response()->json(['message' => 'Unauthenticated.'], 401);
+            abort(401, 'سجل الدخول للمتابعة');
         }
 
         $query = RouteDraft::where('user_id', $user->id)
@@ -37,7 +33,7 @@ class TransitStudioController extends Controller
             ->orderBy('created_at', 'desc');
 
         $status = $request->query('status');
-        if (is_string($status) && in_array($status, ['pending', 'approved', 'rejected'], true)) {
+        if (is_string($status) && in_array($status, TransitRules::DRAFT_STATUSES, true)) {
             $query->where('status', $status);
         }
 
@@ -45,23 +41,22 @@ class TransitStudioController extends Controller
 
         return response()->json([
             'data' => $drafts,
-            'drafts' => $drafts,
         ]);
     }
 
     public function store(Request $request)
     {
-        $user = $this->resolveUser($request);
+        $user = $request->user();
 
         if ($user && $user->is_banned) {
-            return response()->json(['message' => 'Your account has been banned from submitting route drafts.'], 403);
+            return response()->json(['message' => 'تم حظر حسابك من تقديم المسارات.'], 403);
         }
 
         // Linked-edit auth must run BEFORE creating the draft: otherwise an
         // anonymous POST with route_id leaves an orphan pending draft and no
         // unpublish, and could take routes offline at will.
         if ($request->filled('route_id') && ! $user) {
-            return response()->json(['message' => 'Authentication is required to suggest edits to published routes.'], 401);
+            abort(401, 'يلزم تسجيل الدخول لاقتراح تعديل على مسار منشور.');
         }
 
         $validated = $request->validate([
@@ -69,24 +64,19 @@ class TransitStudioController extends Controller
             'name_ar' => 'required|string|max:255',
             'name_en' => 'nullable|string|max:255',
             'price' => 'nullable|integer',
-            'color_index' => 'nullable|integer|min:0|max:20',
+            'color_index' => TransitRules::colorIndex(),
             'notes' => 'nullable|string',
-            'geojson' => 'required|array',
-            'geojson.features' => 'required|array|min:1|max:500',
-            'geojson.features.*.geometry' => 'required|array',
-            'geojson.features.*.geometry.type' => 'required|string|in:LineString,MultiLineString,Point',
-            'geojson.features.*.geometry.coordinates' => 'required|array|min:1',
             'route_id' => 'nullable|exists:routes,id',
-        ]);
+        ] + TransitRules::routeGeoJson());
 
         $this->ensureStudioTransitCityAccess($request, $validated['city_id']);
 
         // A linked edit must target a route in the same city, otherwise the
         // draft would unpublish an unrelated live route on approve.
         if (! empty($validated['route_id'])) {
-            $linked = \App\Models\Route::find($validated['route_id']);
+            $linked = Route::find($validated['route_id']);
             if (! $linked || $linked->city_id !== $validated['city_id']) {
-                return response()->json(['message' => 'Linked route must belong to the same city.'], 422);
+                abort(422, 'يجب أن ينتمي المسار المرتبط إلى المدينة نفسها.');
             }
         }
 
@@ -117,12 +107,10 @@ class TransitStudioController extends Controller
 
     public function show(Request $request, $id)
     {
-        $this->resolveUser($request);
-
         $draft = RouteDraft::with(['user:id,name', 'city:id,name_ar,name_en', 'linkedRoute:id,name_ar,name_en'])->findOrFail($id);
 
         if (! $this->canEditDraft($request, $draft)) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            abort(403, 'لا تملك صلاحية تنفيذ هذا الإجراء');
         }
 
         return response()->json($draft);
@@ -130,16 +118,15 @@ class TransitStudioController extends Controller
 
     public function showForEdit(Request $request, $routeId)
     {
-        if (! $this->resolveUser($request)) {
-            return response()->json(['message' => 'Unauthorized'], 401);
+        if (! $request->user()) {
+            abort(401, 'سجل الدخول للمتابعة');
         }
 
-        $route = \App\Models\Route::with(['city:id,name_ar,name_en'])->findOrFail($routeId);
+        $route = Route::with(['city:id,name_ar,name_en'])->findOrFail($routeId);
 
         $this->ensureStudioTransitCityAccess($request, $route->city_id);
 
-        // Get geometry
-        $geomJson = \Illuminate\Support\Facades\DB::table('route_geometries')
+        $geomJson = DB::table('route_geometries')
             ->selectRaw('ST_AsGeoJSON(geometry) as geojson')
             ->where('route_id', $route->id)
             ->value('geojson');
@@ -154,7 +141,6 @@ class TransitStudioController extends Controller
             ];
         }
 
-        // Get stops
         foreach ($route->stopPoints() as $s) {
             $stopGeom = $s->geojson;
             if ($stopGeom) {
@@ -187,11 +173,11 @@ class TransitStudioController extends Controller
 
     public function update(Request $request, $id)
     {
-        $user = $this->resolveUser($request);
+        $user = $request->user();
         $draft = RouteDraft::findOrFail($id);
 
         if (! $this->canEditDraft($request, $draft)) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            abort(403, 'لا تملك صلاحية تنفيذ هذا الإجراء');
         }
 
         $validated = $request->validate([
@@ -199,14 +185,9 @@ class TransitStudioController extends Controller
             'name_ar' => 'sometimes|string|max:255',
             'name_en' => 'nullable|string|max:255',
             'price' => 'nullable|integer',
-            'color_index' => 'nullable|integer|min:0|max:20',
+            'color_index' => TransitRules::colorIndex(),
             'notes' => 'nullable|string',
-            'geojson' => 'sometimes|array',
-            'geojson.features' => 'required_with:geojson|array|min:1|max:500',
-            'geojson.features.*.geometry' => 'required_with:geojson|array',
-            'geojson.features.*.geometry.type' => 'required_with:geojson|string|in:LineString,MultiLineString,Point',
-            'geojson.features.*.geometry.coordinates' => 'required_with:geojson|array|min:1',
-        ]);
+        ] + TransitRules::routeGeoJson(sometimes: true));
 
         $updateData = [];
         if ($request->has('city_id')) {
@@ -285,30 +266,21 @@ class TransitStudioController extends Controller
 
     private function canEditDraft(Request $request, RouteDraft $draft): bool
     {
-        $user = $this->resolveUser($request);
+        $user = $request->user();
         if (! $user) {
             return false;
         }
 
-        // Governorate scope only kicks in for scoped transit staff; everyone
-        // else keeps the existing behavior.
-        $scopeAllowsCity = true;
-        if ($this->isScopedTransitStaff($user)) {
-            $allowed = $user->allowedTransitCities();
-            $scopeAllowsCity = $allowed !== null
-                && $draft->city_id !== null
-                && in_array($draft->city_id, $allowed, true);
-        }
+        // Governorate scope only kicks in for scoped transit staff. The rule
+        // itself lives in ChecksTransitScope, next to the studio submit guard.
+        $scopeAllowsCity = $this->canActInTransitCity($user, $draft->city_id);
 
         // Transit editors can edit anyone's draft, within their governorate
-        // scope when they have one. This was a role list, so a user granted
-        // transit.edit_routes without also holding the transit_admin role could
-        // not edit a draft they were responsible for.
-        if ($user->hasPermission('transit.edit_routes')) {
+        // scope when they have one.
+        if ($user->hasPermission(PermissionCatalogue::TRANSIT_EDIT_ROUTES)) {
             return $user->isSuperAdmin() || $scopeAllowsCity;
         }
 
-        // Owner can edit their own draft
         if ($draft->user_id !== null && $draft->user_id === $user->id) {
             return $scopeAllowsCity;
         }
@@ -322,15 +294,14 @@ class TransitStudioController extends Controller
      */
     public function destroy(Request $request, $id)
     {
-        $this->resolveUser($request);
         $draft = RouteDraft::findOrFail($id);
 
         if (! $this->canEditDraft($request, $draft)) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            abort(403, 'لا تملك صلاحية تنفيذ هذا الإجراء');
         }
 
         if ($draft->status !== 'pending') {
-            return response()->json(['message' => 'Only pending drafts can be withdrawn.'], 422);
+            abort(422, 'لا يمكن سحب إلا المسودة التي ما زالت قيد المراجعة.');
         }
 
         $draft->delete();
@@ -352,7 +323,7 @@ class TransitStudioController extends Controller
             return;
         }
 
-        $route = \App\Models\Route::find($routeId);
+        $route = Route::find($routeId);
         if (! $route || $route->status !== 'published') {
             return;
         }
@@ -360,27 +331,13 @@ class TransitStudioController extends Controller
         $route->status = 'disapproved';
         $route->save();
 
-        \App\Models\TransitRouteLog::create([
+        TransitRouteLog::create([
             'route_id' => $route->id,
             'action' => 'unpublished_for_edit',
             'description' => "سحب الخط '{$route->name_ar}' مؤقتاً من الخريطة بانتظار مراجعة التعديلات (مساهمة #{$draftId})",
             'user_id' => $userId ?? auth()->id(),
         ]);
 
-        $this->clearCityMapCache($route->city_id);
-    }
-
-    private function clearCityMapCache(string $cityId): void
-    {
-        \Illuminate\Support\Facades\Cache::forget("transit:map-data:{$cityId}");
-        \Illuminate\Support\Facades\Cache::forget("transit:routes:{$cityId}");
-        if ($cityId === 'damascus' || $cityId === 'rif-dimashq') {
-            \Illuminate\Support\Facades\Cache::forget('transit:map-data:damascus');
-            \Illuminate\Support\Facades\Cache::forget('transit:map-data:rif-dimashq');
-            \Illuminate\Support\Facades\Cache::forget('transit:routes:damascus');
-            \Illuminate\Support\Facades\Cache::forget('transit:routes:rif-dimashq');
-            \Illuminate\Support\Facades\Cache::forget('transit:routes:damascus+rif-dimashq');
-        }
-        \Illuminate\Support\Facades\Cache::forget('transit:cities');
+        $this->cache->forgetCity($route->city_id);
     }
 }

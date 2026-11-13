@@ -1,32 +1,14 @@
 import React from 'react';
 import { Link } from '@inertiajs/react';
-import TierBoard from "@/Components/poll/TierBoard";
+import TierBoard from "@/Domain/polls/TierBoard";
+import type { Candidate, CandidateGroup } from "@/Domain/polls/TierBoard";
+import type { Poll } from "@/Domain/polls/types";
 import { Card, CardContent } from "@/Components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/Components/ui/alert";
 import { AlertCircleIcon, BarChart3Icon } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import MainLayout from '@/Layouts/MainLayout';
-
-interface Candidate {
-    id: string;
-    name: string;
-    title?: string | null;
-    imageUrl: string | null;
-    category?: string | null;
-    candidate_group_id?: string | null;
-}
-
-interface CandidateGroup {
-    id: string;
-    name: string;
-    key?: string | null;
-}
-
-interface Poll {
-    id: string;
-    slug: string;
-    title: string;
-}
+import { CORE_POLL_SLUG } from '@/Domain/polls/core';
 
 interface TierListPageProps {
     poll: Poll;
@@ -40,7 +22,6 @@ export default function Index({ poll, candidates = [], groups = [], voteDay }: T
         <MainLayout>
             
             <div className="container mx-auto px-4 pt-6 pb-8" dir="rtl">
-                {/* Results Link */}
                 <div className="max-w-screen-lg mx-auto mb-4 flex justify-end">
                     <Link href="/tierlist/leaderboard">
                         <Button variant="outline" className="gap-2">
@@ -84,8 +65,7 @@ export default function Index({ poll, candidates = [], groups = [], voteDay }: T
                         groups={groups}
                         pollId={poll.id}
                         voteDay={voteDay}
-                        submitApiPath="/api/submit"
-                        pollSlug="best-ministers"
+                        pollSlug={CORE_POLL_SLUG}
                     />
                 ) : (
                     <Card className="max-w-screen-lg mx-auto">

@@ -1,10 +1,9 @@
 import { MapCanvas } from '@/Components/map/MapCanvas';
 import { FlyTo } from '@/Components/map/FlyTo';
-import { PlacesLayer } from './PlacesLayer';
-import { HotelsLayer } from './HotelsLayer';
+import { HOTEL_PINS, PLACE_PINS, PinLayer } from './PinLayer';
 import { MapInteractions } from './MapInteractions';
 import { HighlightMarker } from './HighlightMarker';
-import type { HotelFeatureCollection, LatLng, PlaceFeatureCollection } from '../_lib/types';
+import type { HotelFeatureCollection, LatLng, PlaceFeatureCollection } from '@/Domain/places/types';
 
 export function PlacesMap(props: {
   features: PlaceFeatureCollection;
@@ -20,18 +19,18 @@ export function PlacesMap(props: {
   className?: string;
 }) {
   return (
-    <MapCanvas center={[38.0, 35.0]} zoom={6.2} className={props.className}>
-      <PlacesLayer
-        data={props.features as GeoJSON.FeatureCollection}
+    <MapCanvas className={props.className}>
+      <PinLayer
+        style={PLACE_PINS}
+        data={props.features}
         selectedId={props.selectedType === 'place' ? props.selectedId : null}
         onPinClick={props.onPinClick}
-        onClusterClick={(zoom, center) => {}}
       />
-      <HotelsLayer
-        data={props.hotelFeatures as GeoJSON.FeatureCollection}
+      <PinLayer
+        style={HOTEL_PINS}
+        data={props.hotelFeatures}
         selectedId={props.selectedType === 'hotel' ? props.selectedId : null}
         onPinClick={props.onHotelPinClick}
-        onClusterClick={(zoom, center) => {}}
       />
       <MapInteractions addMode={props.addMode} onMapClick={props.onMapClick} />
       <HighlightMarker point={props.highlight} />

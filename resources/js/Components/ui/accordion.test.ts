@@ -1,16 +1,17 @@
 import { createElement as h } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './accordion';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger, nextSelection } from './accordion';
 
 /**
  * The accordion is built on <details>/<summary> so collapsed content stays in
  * the DOM: the browser's find-in-page and in-page anchors reach it, and the
- * browser then opens the item itself. These tests pin that markup (the runner
- * is a server-render one — see the todos at the bottom for the click checks).
+ * browser then opens the item itself. These tests pin that behaviour — content
+ * present while closed, which item the group opens, and the native trigger
+ * carrying the state — as the runner is a server-render one.
  */
 
-type OwnProps = { type?: 'single' | 'multiple'; value?: string; defaultValue?: string };
+type OwnProps = { type?: 'single' | 'multiple'; value?: string | string[]; defaultValue?: string };
 
 function item(value: string, label: string, body: string) {
     return h(AccordionItem, {
@@ -69,28 +70,28 @@ describe('accordion', () => {
         expect(isOpen(second)).toBe(true);
     });
 
-    it('uses a native summary trigger, without duplicating its state', () => {
-        const html = render({ defaultValue: 'one' });
-        const summary = html.match(/<summary[^>]*>/)?.[0] ?? '';
+    it('keeps several panels open in multiple mode', () => {
+        const html = render({ type: 'multiple', value: ['one', 'two'] });
 
-        expect(summary).not.toBe('');
-        // <summary> exposes expanded state itself; aria-expanded would double it.
-        expect(html).not.toContain('aria-expanded');
-        // The old <button> trigger is gone.
-        expect(html).not.toContain('type="button"');
-        expect(html).toContain('الأول');
-        // Hidden native marker, logical alignment and a visible keyboard focus.
-        expect(summary).toMatch(/(^|\s)list-none(\s|")/);
-        expect(summary).toContain('-webkit-details-marker]:hidden');
-        expect(summary).toMatch(/(^|\s)text-start(\s|")/);
-        expect(summary).toContain('focus-visible:ring-2');
-        expect(summary).not.toMatch(/(^|\s)focus:outline-none/);
+        expect(openCount(html)).toBe(2);
     });
 
-    // Clicking a <summary>, and watching the group close the previous item in
-    // single mode, needs a DOM. The vitest environment is `node` and neither
-    // jsdom nor @testing-library/react is installed, so these are recorded
-    // rather than run.
-    it.todo('opens the panel when the summary is clicked');
-    it.todo('closes the previously open item when another one is clicked in single mode');
+    it('replaces the open panel in single mode and toggles in multiple', () => {
+        expect(nextSelection('single', [], 'one')).toEqual(['one']);
+        expect(nextSelection('single', ['one'], 'two')).toEqual(['two']);
+        expect(nextSelection('single', ['one'], 'one')).toEqual([]);
+        expect(nextSelection('multiple', ['one'], 'two')).toEqual(['one', 'two']);
+        expect(nextSelection('multiple', ['one', 'two'], 'one')).toEqual(['two']);
+    });
+
+    it('uses a native summary trigger, without duplicating its state', () => {
+        const html = render({ defaultValue: 'one' });
+
+        expect(html).toContain('<summary');
+        // <summary> exposes expanded state itself; aria-expanded would double it.
+        expect(html).not.toContain('aria-expanded');
+        expect(html).not.toContain('type="button"');
+        expect(html).not.toContain('<button');
+        expect(html).toContain('الأول');
+    });
 });

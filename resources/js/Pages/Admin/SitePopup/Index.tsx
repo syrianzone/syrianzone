@@ -8,27 +8,22 @@ import { Textarea } from '@/Components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/card';
 import { Switch } from '@/Components/ui/switch';
 import { Megaphone } from 'lucide-react';
+import { notify } from '@/Lib/notify';
+import type { SitePopup } from '@/Domain/settings/popup';
 
-export interface SitePopupData {
-    enabled: boolean;
-    title: string;
-    description: string;
-    buttonText: string;
-    dismissText: string;
-    link: string;
-    version: number;
-}
-
-export default function SitePopupAdminIndex({ popup }: { popup: SitePopupData }) {
-    const [form, setForm] = useState<SitePopupData>(popup);
+export default function SitePopupAdminIndex({ popup }: { popup: SitePopup }) {
+    const [form, setForm] = useState<SitePopup>(popup);
     const [saving, setSaving] = useState(false);
 
-    const set = (key: keyof SitePopupData, value: string | boolean) =>
+    const set = (key: keyof SitePopup, value: string | boolean) =>
         setForm((f) => ({ ...f, [key]: value }));
 
     const handleSave = () => {
         setSaving(true);
         router.put('/api/v1/admin/site-popup', { ...form }, {
+            preserveScroll: true,
+            onSuccess: () => notify.success('تم حفظ النافذة المنبثقة'),
+            onError: (errors) => notify.error(Object.values(errors)[0] ?? 'تعذّر حفظ النافذة المنبثقة'),
             onFinish: () => setSaving(false),
         });
     };

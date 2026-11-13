@@ -1,40 +1,14 @@
-import axios from '@/Lib/axios';
+import { api as client, API_ROOT } from '@/Lib/api';
+import { api } from '@/Domain/places/api';
+import type { Guide, GuidesSort, NearbyPlace } from '@/Domain/places/types';
+import { fetchPrayerTimes, type PrayerTimesResponse } from '@/Domain/prayer/times';
+import { transitCities } from '@/Domain/transit/api';
+import { fetchWeatherByGovernorate } from '@/Domain/weather/weather';
 
-// Board-specific read clients. Places-backed widgets reuse the typed clients
-// that already live in Pages/Places/_lib rather than restating them here.
-
-// The endpoint returns camelCase keys, not the underlying column names.
-export interface TransitCity {
-  id: string;
-  nameAr: string;
-  nameEn: string;
-  routeCount: number;
-  status: string;
-}
-
-export interface Weather {
-  governorate: string;
-  temp: number;
-  description: string;
-  icon: string;
-  // additive: an empty array is a normal answer when the forecast upstream is
-  // down, and current conditions still render
-  forecast: ForecastDay[];
-}
-
-export interface ForecastDay {
-  date: string;
-  min: number;
-  max: number;
-  // raw WMO code; the widget owns the arabic labels, as it does for description
-  code: number;
-}
-
-export interface PrayerTimes {
-  governorate: string;
-  timings: Record<string, string>;
-  hijri: { day: string; month: string; year: string } | null;
-}
+// The board's read clients: every widget names the fetcher it uses in its own
+// declaration (`source`), and the registry publishes that mapping as
+// WIDGET_SOURCES. Places, transit and weather reads reuse the typed clients and
+// payload types that already live in `Domain/` rather than restating them here.
 
 // Normalized server-side from the Apache Answer instance. `url` is an absolute
 // permalink on answers.syrian.zone, built by the backend, not by the widget.
@@ -95,50 +69,48 @@ export interface Feed {
   items: FeedItem[];
 }
 
-export interface PrayerTimes {
-  governorate: string;
-  timings: Record<string, string>;
-  hijri: { day: string; month: string; year: string } | null;
-}
-
 export const sources = {
-  async transitCities(): Promise<TransitCity[]> {
-    const { data } = await axios.get('/api/v1/cities');
-    return Array.isArray(data) ? data : (data.cities ?? data.data ?? []);
-  },
+  // The city list with its published-route counts: the same client the palette
+  // and the 404 grid read.
+  transitCities,
 
   // proxied through the app: the upstream worker only sends CORS headers for the
   // production origin, so calling it from the browser fails everywhere else
-  async weather(governorate: string): Promise<Weather> {
-    const { data } = await axios.get('/api/weather', { params: { governorate } });
-    return data;
-  },
+  weather: fetchWeatherByGovernorate,
 
   // every method below is proxied through the app for the same reason as the
   // weather worker: the browser never talks to a third-party host directly
   async answers(limit: number): Promise<AnswerQuestion[]> {
-    const { data } = await axios.get('/api/answers', { params: { limit } });
+    const data = await client.get<{ items?: AnswerQuestion[] }>(`${API_ROOT}/answers`, { params: { limit } });
     return data.items ?? [];
   },
 
   async recipeOfTheDay(): Promise<Recipe> {
-    const { data } = await axios.get('/api/recipe-of-the-day');
+    const data = await client.get<{ recipe: Recipe }>(`${API_ROOT}/recipe-of-the-day`);
     return data.recipe;
   },
 
   // plus the "happening today" filter, which the upstream graphql query cannot express
-  async eventsToday(governorate: string): Promise<TodayEvents> {
-    const { data } = await axios.get('/api/events/today', { params: { governorate } });
-    return data;
+  eventsToday(governorate: string): Promise<TodayEvents> {
+    return client.get(`${API_ROOT}/events/today`, { params: { governorate } });
   },
 
-  async feed(source: string): Promise<Feed> {
-    const { data } = await axios.get('/api/feed', { params: { source } });
-    return data;
+  feed(source: string): Promise<Feed> {
+    return client.get(`${API_ROOT}/feed`, { params: { source } });
   },
 
-  async prayerTimes(params: Record<string, string | number>): Promise<PrayerTimes> {
-    const { data } = await axios.get('/api/prayer-times', { params });
-    return data;
+  // The one client for the endpoint; the widget's react-query supplies caching.
+  prayerTimes(params: Record<string, string | number>): Promise<PrayerTimesResponse> {
+    return fetchPrayerTimes(params);
+  },
+
+  // The two Places reads a board widget needs; the widget folder declares which
+  // of these it uses, and the client itself stays with the Places domain.
+  async guides(sort: GuidesSort): Promise<{ sort: GuidesSort; guides: Guide[] }> {
+    return api.guides(sort);
+  },
+
+  async nearby(params: { lat: number; lng: number; radius_km?: number }): Promise<{ places: NearbyPlace[] }> {
+    return api.nearby(params);
   },
 };

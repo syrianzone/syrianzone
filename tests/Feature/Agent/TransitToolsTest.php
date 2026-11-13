@@ -11,10 +11,10 @@ use App\Mcp\Tools\Transit\RejectTransitDraftTool;
 use App\Mcp\Tools\Transit\SetTransitRouteStatusTool;
 use App\Mcp\Tools\Transit\UpdateTransitRouteTool;
 use App\Models\Route;
-use App\Models\RouteDraft;
 use App\Models\TransitRouteLog;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
+use App\Services\Transit\TransitRules;
+use Illuminate\JsonSchema\JsonSchemaTypeFactory;
 
 /*
 |--------------------------------------------------------------------------
@@ -32,70 +32,18 @@ use Illuminate\Support\Facades\DB;
 */
 
 beforeEach(function () {
-    $this->homs = transitToolCity('homs', 'حمص', 'Homs');
-    $this->aleppo = transitToolCity('aleppo', 'حلب', 'Aleppo');
+    $this->homs = seedCity('homs', ['name_ar' => 'حمص', 'name_en' => 'Homs']);
+    $this->aleppo = seedCity('aleppo', ['name_ar' => 'حلب', 'name_en' => 'Aleppo']);
 
-    $this->scoped = User::factory()->create([
-        'role' => 'user',
-        'permissions' => [
-            'transit.review_drafts', 'transit.approve', 'transit.reject',
-            'transit.edit_routes', 'transit.delete_routes',
-        ],
-        'permission_scopes' => ['transit' => ['homs']],
-    ]);
+    $this->scoped = capabilityUser([
+        'transit.review_drafts', 'transit.approve', 'transit.reject',
+        'transit.edit_routes', 'transit.delete_routes',
+    ], ['homs']);
 });
 
-function transitToolCity(string $id, string $nameAr, string $nameEn): string
-{
-    $wrap = static function (array $shape) {
-        if (DB::connection()->getDriverName() === 'sqlite') {
-            return json_encode($shape, JSON_THROW_ON_ERROR);
-        }
-
-        return DB::raw('ST_GeomFromGeoJSON('.DB::connection()->getPdo()->quote(json_encode($shape, JSON_THROW_ON_ERROR)).')');
-    };
-
-    DB::table('cities')->insert([
-        'id' => $id,
-        'name_ar' => $nameAr,
-        'name_en' => $nameEn,
-        'center' => $wrap(['type' => 'Point', 'coordinates' => [36.72, 34.73]]),
-        'bounds' => $wrap(['type' => 'Polygon', 'coordinates' => [[[36.5, 34.55], [36.95, 34.55], [36.95, 34.95], [36.5, 34.95], [36.5, 34.55]]]]),
-        'zoom' => 12,
-        'status' => 'active',
-        'created_at' => now(),
-        'updated_at' => now(),
-    ]);
-
-    return $id;
-}
-
-function transitToolDraft(string $cityId, array $overrides = []): RouteDraft
-{
-    return RouteDraft::create(array_merge([
-        'user_id' => null,
-        'city_id' => $cityId,
-        'name_ar' => 'مسودة',
-        'geojson' => ['type' => 'FeatureCollection', 'features' => []],
-        'status' => 'pending',
-    ], $overrides));
-}
-
-function transitToolRoute(string $id, string $cityId, array $overrides = []): Route
-{
-    return Route::create(array_merge([
-        'id' => $id,
-        'city_id' => $cityId,
-        'name_ar' => 'خط',
-        'status' => 'published',
-    ], $overrides));
-}
-
-// ─── Listings are narrowed, never widened ──────────────────────────────────
-
 it('only lists drafts inside the agent governorate scope', function () {
-    transitToolDraft('homs', ['name_ar' => 'داخل النطاق']);
-    transitToolDraft('aleppo', ['name_ar' => 'خارج النطاق']);
+    transitDraft('homs', ['name_ar' => 'داخل النطاق']);
+    transitDraft('aleppo', ['name_ar' => 'خارج النطاق']);
 
     agentToken($this->scoped, ['transit.review_drafts']);
     $payload = toolPayload(callTool(ListTransitDraftsTool::class));
@@ -108,8 +56,8 @@ it('only lists drafts inside the agent governorate scope', function () {
 });
 
 it('only lists routes inside the agent governorate scope', function () {
-    transitToolRoute('route-homs-1', 'homs');
-    transitToolRoute('route-aleppo-1', 'aleppo');
+    transitRoute('route-homs-1', 'homs');
+    transitRoute('route-aleppo-1', 'aleppo');
 
     agentToken($this->scoped, ['transit.review_drafts']);
     $payload = toolPayload(callTool(ListTransitRoutesTool::class));
@@ -119,8 +67,8 @@ it('only lists routes inside the agent governorate scope', function () {
 });
 
 it('only lists history for routes inside the agent governorate scope', function () {
-    transitToolRoute('route-homs-1', 'homs');
-    transitToolRoute('route-aleppo-1', 'aleppo');
+    transitRoute('route-homs-1', 'homs');
+    transitRoute('route-aleppo-1', 'aleppo');
     TransitRouteLog::create(['route_id' => 'route-homs-1', 'action' => 'a', 'description' => 'h', 'user_id' => null]);
     TransitRouteLog::create(['route_id' => 'route-aleppo-1', 'action' => 'a', 'description' => 'a', 'user_id' => null]);
 
@@ -132,7 +80,7 @@ it('only lists history for routes inside the agent governorate scope', function 
 });
 
 it('refuses an explicit governorate filter outside the agent scope', function () {
-    transitToolDraft('aleppo');
+    transitDraft('aleppo');
 
     agentToken($this->scoped, ['transit.review_drafts']);
     $response = callTool(ListTransitDraftsTool::class, ['city_id' => 'aleppo']);
@@ -148,8 +96,8 @@ it('lists everything for an unscoped operator', function () {
         'permission_scopes' => null,
     ]);
 
-    transitToolDraft('homs');
-    transitToolDraft('aleppo');
+    transitDraft('homs');
+    transitDraft('aleppo');
 
     agentToken($unscoped, ['transit.review_drafts']);
     $payload = toolPayload(callTool(ListTransitDraftsTool::class));
@@ -158,10 +106,8 @@ it('lists everything for an unscoped operator', function () {
         ->and($payload['scope'])->toBe([]);
 });
 
-// ─── Writes guard against the resolved target, not the arguments ───────────
-
 it('refuses to approve a draft in a governorate outside the agent scope', function () {
-    $draft = transitToolDraft('aleppo');
+    $draft = transitDraft('aleppo');
 
     agentToken($this->scoped, ['transit.approve']);
     $response = callTool(ApproveTransitDraftTool::class, ['draft_id' => $draft->id]);
@@ -171,7 +117,7 @@ it('refuses to approve a draft in a governorate outside the agent scope', functi
 });
 
 it('approves a draft inside the agent scope', function () {
-    $draft = transitToolDraft('homs', ['name_ar' => 'خط جديد']);
+    $draft = transitDraft('homs', ['name_ar' => 'خط جديد']);
 
     agentToken($this->scoped, ['transit.approve']);
     $payload = toolPayload(callTool(ApproveTransitDraftTool::class, ['draft_id' => $draft->id]));
@@ -187,8 +133,8 @@ it('approves a draft inside the agent scope', function () {
  * route being rewritten is data the agent is not cleared for.
  */
 it('refuses a linked edit whose target route is in a governorate outside the agent scope', function () {
-    transitToolRoute('route-aleppo-1', 'aleppo', ['name_ar' => 'القديم', 'status' => 'disapproved']);
-    $draft = transitToolDraft('homs', ['route_id' => 'route-aleppo-1', 'name_ar' => 'المحدث']);
+    transitRoute('route-aleppo-1', 'aleppo', ['name_ar' => 'القديم', 'status' => 'disapproved']);
+    $draft = transitDraft('homs', ['route_id' => 'route-aleppo-1', 'name_ar' => 'المحدث']);
 
     agentToken($this->scoped, ['transit.approve']);
     $response = callTool(ApproveTransitDraftTool::class, ['draft_id' => $draft->id]);
@@ -200,7 +146,7 @@ it('refuses a linked edit whose target route is in a governorate outside the age
 });
 
 it('refuses to reject a draft outside the agent scope', function () {
-    $draft = transitToolDraft('aleppo');
+    $draft = transitDraft('aleppo');
 
     agentToken($this->scoped, ['transit.reject']);
     $response = callTool(RejectTransitDraftTool::class, ['draft_id' => $draft->id, 'reason' => 'لا']);
@@ -210,7 +156,7 @@ it('refuses to reject a draft outside the agent scope', function () {
 });
 
 it('refuses a status change on a route outside the agent scope', function () {
-    $route = transitToolRoute('route-aleppo-1', 'aleppo');
+    $route = transitRoute('route-aleppo-1', 'aleppo');
 
     agentToken($this->scoped, ['transit.edit_routes']);
     $response = callTool(SetTransitRouteStatusTool::class, [
@@ -223,7 +169,7 @@ it('refuses a status change on a route outside the agent scope', function () {
 });
 
 it('refuses to delete a route outside the agent scope', function () {
-    transitToolRoute('route-aleppo-1', 'aleppo');
+    transitRoute('route-aleppo-1', 'aleppo');
 
     agentToken($this->scoped, ['transit.delete_routes']);
     $response = callTool(DeleteTransitRouteTool::class, ['route_id' => 'route-aleppo-1']);
@@ -233,7 +179,7 @@ it('refuses to delete a route outside the agent scope', function () {
 });
 
 it('refuses to read a draft geometry outside the agent scope', function () {
-    $draft = transitToolDraft('aleppo');
+    $draft = transitDraft('aleppo');
 
     agentToken($this->scoped, ['transit.review_drafts']);
     $response = callTool(GetTransitDraftGeometryTool::class, ['draft_id' => $draft->id]);
@@ -247,7 +193,7 @@ it('refuses to read a draft geometry outside the agent scope', function () {
  * would also strip the source's map cache.
  */
 it('refuses to move a route out of scope into a governorate it cannot write', function () {
-    $route = transitToolRoute('route-homs-1', 'homs');
+    $route = transitRoute('route-homs-1', 'homs');
 
     agentToken($this->scoped, ['transit.edit_routes']);
     $response = callTool(MoveTransitRouteTool::class, [
@@ -259,10 +205,8 @@ it('refuses to move a route out of scope into a governorate it cannot write', fu
         ->and($route->fresh()->city_id)->toBe('homs');
 });
 
-// ─── Capability isolation ──────────────────────────────────────────────────
-
 it('refuses approving with only the review capability', function () {
-    $draft = transitToolDraft('homs');
+    $draft = transitDraft('homs');
 
     agentToken($this->scoped, ['transit.review_drafts']);
     $response = callTool(ApproveTransitDraftTool::class, ['draft_id' => $draft->id]);
@@ -272,7 +216,7 @@ it('refuses approving with only the review capability', function () {
 });
 
 it('refuses deleting with only the edit capability', function () {
-    transitToolRoute('route-homs-1', 'homs');
+    transitRoute('route-homs-1', 'homs');
 
     agentToken($this->scoped, ['transit.edit_routes']);
     $response = callTool(DeleteTransitRouteTool::class, ['route_id' => 'route-homs-1']);
@@ -281,10 +225,8 @@ it('refuses deleting with only the edit capability', function () {
         ->and(Route::find('route-homs-1'))->not->toBeNull();
 });
 
-// ─── Domain refusals reach the agent as guidance ───────────────────────────
-
 it('tells the agent a draft is already reviewed instead of failing opaquely', function () {
-    $draft = transitToolDraft('homs', ['status' => 'approved']);
+    $draft = transitDraft('homs', ['status' => 'approved']);
 
     agentToken($this->scoped, ['transit.approve']);
     $response = callTool(ApproveTransitDraftTool::class, ['draft_id' => $draft->id]);
@@ -294,7 +236,7 @@ it('tells the agent a draft is already reviewed instead of failing opaquely', fu
 });
 
 it('reports a status no-op as nothing to do', function () {
-    transitToolRoute('route-homs-1', 'homs', ['status' => 'published']);
+    transitRoute('route-homs-1', 'homs', ['status' => 'published']);
 
     agentToken($this->scoped, ['transit.edit_routes']);
     $response = callTool(SetTransitRouteStatusTool::class, [
@@ -306,7 +248,7 @@ it('reports a status no-op as nothing to do', function () {
 });
 
 it('refuses an update carrying no fields, naming the ones it accepts', function () {
-    transitToolRoute('route-homs-1', 'homs');
+    transitRoute('route-homs-1', 'homs');
 
     agentToken($this->scoped, ['transit.edit_routes']);
     $response = callTool(UpdateTransitRouteTool::class, [
@@ -317,10 +259,31 @@ it('refuses an update carrying no fields, naming the ones it accepts', function 
         ->and(toolText($response))->toContain('name_ar');
 });
 
-// ─── The geometry a reviewer needs ─────────────────────────────────────────
+it('holds the colour index to the same ceiling the admin API enforces', function () {
+    $route = transitRoute('route-homs-colour', 'homs');
+    $draft = transitDraft('homs', ['color_index' => 1]);
+    $tooHigh = TransitRules::colorIndexMax() + 1;
+
+    agentToken($this->scoped, ['transit.edit_routes', 'transit.approve']);
+
+    $update = toolText(callTool(UpdateTransitRouteTool::class, [
+        'route_id' => $route->id,
+        'color_index' => $tooHigh,
+    ]));
+
+    $approve = toolText(callTool(ApproveTransitDraftTool::class, [
+        'draft_id' => $draft->id,
+        'color_index' => $tooHigh,
+    ]));
+
+    expect($update)->toContain((string) TransitRules::colorIndexMax())
+        ->and($approve)->toContain((string) TransitRules::colorIndexMax())
+        ->and($route->fresh()->color_index)->not->toBe($tooHigh)
+        ->and($draft->fresh()->status)->toBe('pending');
+});
 
 it('returns a draft line and its stops as GeoJSON', function () {
-    $draft = transitToolDraft('homs', [
+    $draft = transitDraft('homs', [
         'geojson' => [
             'type' => 'FeatureCollection',
             'features' => [
@@ -343,7 +306,7 @@ it('returns a draft line and its stops as GeoJSON', function () {
 });
 
 it('returns an empty geometry for a draft that carries no features', function () {
-    $draft = transitToolDraft('homs');
+    $draft = transitDraft('homs');
 
     agentToken($this->scoped, ['transit.review_drafts']);
     $payload = toolPayload(callTool(GetTransitDraftGeometryTool::class, ['draft_id' => $draft->id]));
@@ -352,12 +315,10 @@ it('returns an empty geometry for a draft that carries no features', function ()
         ->and($payload['stops'])->toBe([]);
 });
 
-// ─── Filters run before the limit, not after it ────────────────────────────
-
 it('lists a pending draft even when newer drafts of other statuses fill the limit', function () {
-    transitToolDraft('homs', ['name_ar' => 'قديمة بانتظار المراجعة', 'created_at' => now()->subDays(3)]);
-    transitToolDraft('homs', ['name_ar' => 'أحدث ١', 'status' => 'approved']);
-    transitToolDraft('homs', ['name_ar' => 'أحدث ٢', 'status' => 'rejected']);
+    transitDraft('homs', ['name_ar' => 'قديمة بانتظار المراجعة', 'created_at' => now()->subDays(3)]);
+    transitDraft('homs', ['name_ar' => 'أحدث ١', 'status' => 'approved']);
+    transitDraft('homs', ['name_ar' => 'أحدث ٢', 'status' => 'rejected']);
 
     agentToken($this->scoped, ['transit.review_drafts']);
     $payload = toolPayload(callTool(ListTransitDraftsTool::class, ['limit' => 2]));
@@ -367,8 +328,8 @@ it('lists a pending draft even when newer drafts of other statuses fill the limi
 });
 
 it('lists one route history even when newer entries for other routes fill the limit', function () {
-    transitToolRoute('homs-old', 'homs');
-    transitToolRoute('homs-busy', 'homs');
+    transitRoute('homs-old', 'homs');
+    transitRoute('homs-busy', 'homs');
 
     TransitRouteLog::create(['route_id' => 'homs-old', 'action' => 'update', 'description' => 'قديم', 'created_at' => now()->subDays(3)]);
     TransitRouteLog::create(['route_id' => 'homs-busy', 'action' => 'update', 'description' => 'حديث ١']);
@@ -379,4 +340,14 @@ it('lists one route history even when newer entries for other routes fill the li
 
     expect($payload['count'])->toBe(1)
         ->and($payload['entries'][0]['description'])->toBe('قديم');
+});
+
+it('advertises every draft status the validator accepts in the list tool schema', function () {
+    $schema = app(ListTransitDraftsTool::class)->schema(new JsonSchemaTypeFactory);
+
+    // The enum an agent codes against must be the one run() validates with, or
+    // a new draft status is accepted by the server and rejected by the client
+    // schema it was built from.
+    expect($schema['status']->toArray()['enum'])
+        ->toEqualCanonicalizing([...TransitRules::DRAFT_STATUSES, 'all']);
 });

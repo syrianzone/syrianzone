@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Facts;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -25,20 +26,52 @@ class Promise extends Model
 {
     use HasFactory, HasUuids, SoftDeletes;
 
-    /** Countdowns are computed in Syrian time so "today" matches the reader. */
-    public const TIMEZONE = 'Asia/Damascus';
+    /**
+     * Countdowns are computed in Syrian time so "today" matches the reader.
+     * The timezone is the national one from resources/data/syria.json.
+     */
+    public static function timezone(): string
+    {
+        return Facts::syria()['timezone'];
+    }
 
-    public const STATUSES = [
-        'pending', 'in_progress', 'fulfilled', 'partially_fulfilled',
-        'broken', 'postponed', 'retracted',
-    ];
+    /**
+     * The editorial statuses, from resources/data/promises.json.
+     *
+     * @return array<int, string>
+     */
+    public static function statuses(): array
+    {
+        return Facts::promiseStatuses();
+    }
 
-    /** Statuses that still await a verdict, and so can become overdue. */
-    public const OPEN_STATUSES = ['pending', 'in_progress'];
+    /**
+     * Statuses that still await a verdict, and so can become overdue.
+     *
+     * @return array<int, string>
+     */
+    public static function openStatuses(): array
+    {
+        return Facts::promiseStatusClasses()['open'];
+    }
 
-    /** Verdicts that close a promise (votes freeze, `resolved_at` applies). */
-    public const CLOSED_STATUSES = ['fulfilled', 'partially_fulfilled', 'broken', 'postponed', 'retracted'];
+    /**
+     * Verdicts that close a promise (votes freeze, `resolved_at` applies).
+     *
+     * @return array<int, string>
+     */
+    public static function closedStatuses(): array
+    {
+        return Facts::promiseStatusClasses()['closed'];
+    }
 
+    /**
+     * The editorial vocabularies of a promise statement. The keys are the
+     * record's, not this model's: `resources/data/promises.json` holds them with
+     * their Arabic labels, read here through `Facts` — but these constants stay
+     * as the validation mirror the console importer and the MCP tools call, so
+     * `tests/Feature/PromiseVocabularyTest.php` fails when the two disagree.
+     */
     public const VENUES = [
         'x_post', 'facebook_post', 'telegram_post', 'tv_interview', 'news_interview',
         'press_conference', 'official_statement', 'speech', 'other',
@@ -169,20 +202,20 @@ class Promise extends Model
 
     public static function today(): CarbonImmutable
     {
-        return CarbonImmutable::now(self::TIMEZONE)->startOfDay();
+        return CarbonImmutable::now(self::timezone())->startOfDay();
     }
 
     /** The deadline as a Syrian-time date, or null when there is no timeframe. */
     public function deadline(): ?CarbonImmutable
     {
         return $this->deadline_date
-            ? CarbonImmutable::parse($this->deadline_date->format('Y-m-d'), self::TIMEZONE)->startOfDay()
+            ? CarbonImmutable::parse($this->deadline_date->format('Y-m-d'), self::timezone())->startOfDay()
             : null;
     }
 
     public function isOpen(): bool
     {
-        return in_array($this->status, self::OPEN_STATUSES, true);
+        return in_array($this->status, self::openStatuses(), true);
     }
 
     /**
@@ -202,7 +235,7 @@ class Promise extends Model
     /** Whole days since the statement was made. */
     public function daysSinceStatement(?CarbonImmutable $today = null): int
     {
-        $made = CarbonImmutable::parse($this->statement_date->format('Y-m-d'), self::TIMEZONE)->startOfDay();
+        $made = CarbonImmutable::parse($this->statement_date->format('Y-m-d'), self::timezone())->startOfDay();
 
         return max(0, (int) $made->diffInDays($today ?? self::today(), false));
     }
@@ -248,11 +281,11 @@ class Promise extends Model
             return ['mode' => 'closed', 'value' => null];
         }
 
-        $resolved = CarbonImmutable::parse($this->resolved_at->format('Y-m-d'), self::TIMEZONE);
+        $resolved = CarbonImmutable::parse($this->resolved_at->format('Y-m-d'), self::timezone());
         $deadline = $this->deadline();
 
         if ($deadline === null) {
-            $made = CarbonImmutable::parse($this->statement_date->format('Y-m-d'), self::TIMEZONE);
+            $made = CarbonImmutable::parse($this->statement_date->format('Y-m-d'), self::timezone());
 
             return ['mode' => 'took', 'value' => max(0, (int) $made->diffInDays($resolved, false))];
         }

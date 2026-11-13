@@ -6,7 +6,10 @@ use App\Http\Controllers\Concerns\ChecksTransitScope;
 use App\Models\Route;
 use App\Models\RouteDraft;
 use App\Models\TransitRouteLog;
+use App\Services\Transit\TransitCache;
+use App\Services\Transit\TransitRules;
 use App\Services\TransitKmlImportService;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +18,8 @@ use Illuminate\Support\Str;
 class TransitImportController extends Controller
 {
     use ChecksTransitScope;
+
+    public function __construct(private readonly TransitCache $cache) {}
 
     /**
      * Preview a Google My Maps share (or uploaded KML/KMZ/GeoJSON) without
@@ -63,7 +68,7 @@ class TransitImportController extends Controller
         $override = $validated['city_id'] ?? null;
 
         if ($override !== null) {
-            $this->ensureTransitCityAccess($request, $override, ['transit.review_drafts']);
+            $this->ensureTransitCityAccess($request, $override, [PermissionCatalogue::TRANSIT_REVIEW_DRAFTS]);
         }
 
         foreach ($candidates as &$c) {
@@ -106,20 +111,15 @@ class TransitImportController extends Controller
             'name_ar' => 'required|string|max:255',
             'name_en' => 'nullable|string|max:255',
             'price' => 'nullable|integer|min:0|max:1000000',
-            'color_index' => 'nullable|integer|min:0|max:20',
+            'color_index' => TransitRules::colorIndex(),
             'notes' => 'nullable|string|max:5000',
-            'geojson' => 'required|array',
-            'geojson.features' => 'required|array|min:1|max:500',
-            'geojson.features.*.geometry' => 'required|array',
-            'geojson.features.*.geometry.type' => 'required|string|in:LineString,MultiLineString,Point',
-            'geojson.features.*.geometry.coordinates' => 'required|array|min:1',
             'mode' => 'nullable|string|in:draft,direct',
             'source_mid' => 'nullable|string|max:128',
-        ]);
+        ] + TransitRules::routeGeoJson());
 
         $this->ensureTransitCityAccess($request, $validated['city_id'], [
-            'transit.review_drafts',
-            'transit.edit_routes',
+            PermissionCatalogue::TRANSIT_REVIEW_DRAFTS,
+            PermissionCatalogue::TRANSIT_EDIT_ROUTES,
         ]);
 
         $geojson = $request->input('geojson');
@@ -256,7 +256,6 @@ class TransitImportController extends Controller
             foreach ($geojson['features'] ?? [] as $feature) {
                 $type = $feature['geometry']['type'] ?? null;
                 if ($type === 'LineString' || $type === 'MultiLineString') {
-                    // Prefer the longest line when several are present.
                     $len = $type === 'LineString'
                         ? count($feature['geometry']['coordinates'] ?? [])
                         : array_sum(array_map(fn ($r) => is_array($r) ? count($r) : 0, $feature['geometry']['coordinates'] ?? []));
@@ -309,7 +308,7 @@ class TransitImportController extends Controller
 
             DB::commit();
 
-            $this->clearCityMapCache($validated['city_id']);
+            $this->cache->forgetCity($validated['city_id']);
 
             return response()->json([
                 'message' => 'تم نشر الخط المستورد',
@@ -361,19 +360,5 @@ class TransitImportController extends Controller
         }
 
         return null;
-    }
-
-    private function clearCityMapCache(string $cityId): void
-    {
-        Cache::forget("transit:map-data:{$cityId}");
-        Cache::forget("transit:routes:{$cityId}");
-        if ($cityId === 'damascus' || $cityId === 'rif-dimashq') {
-            Cache::forget('transit:map-data:damascus');
-            Cache::forget('transit:map-data:rif-dimashq');
-            Cache::forget('transit:routes:damascus');
-            Cache::forget('transit:routes:rif-dimashq');
-            Cache::forget('transit:routes:damascus+rif-dimashq');
-        }
-        Cache::forget('transit:cities');
     }
 }

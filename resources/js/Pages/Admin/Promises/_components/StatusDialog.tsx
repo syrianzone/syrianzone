@@ -1,5 +1,5 @@
+import { promisesApi } from '@/Domain/promises/api';
 import { useState } from 'react';
-import axios from '@/Lib/axios';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
@@ -10,10 +10,10 @@ import {
 } from '@/Components/ui/dialog';
 import { Loader2 } from 'lucide-react';
 import { notify } from '@/Lib/notify';
-import { extractApiErrorMessage, extractApiFieldErrors } from '@/Lib/apiError';
+import { apiErrorMessage, apiFieldErrors } from '@/Lib/api';
 import FieldError, { fieldA11y } from '@/Components/ui/field-error';
-import { STATE_META, STATUS_ORDER } from '@/Pages/Promises/_lib/status';
-import type { PromiseStatus } from '@/Pages/Promises/_lib/types';
+import { STATE_META, STATUS_ORDER } from '@/Domain/promises/status';
+import type { PromiseStatus } from '@/Domain/promises/types';
 import type { AdminPromiseDetail } from '../_lib/types';
 
 /**
@@ -41,7 +41,7 @@ export default function StatusDialog({ promise, today, open, onOpenChange, onSav
         setSaving(true);
         setErrors({});
         try {
-            const res = await axios.post(`/api/v1/admin/promises/${promise.id}/status`, {
+            const res = await promisesApi.changeStatus<{ promise: AdminPromiseDetail }>(promise.id, {
                 status,
                 happened_on: happenedOn,
                 body: body || null,
@@ -49,11 +49,11 @@ export default function StatusDialog({ promise, today, open, onOpenChange, onSav
                 archive_url: archiveUrl || null,
             });
             notify.success('تغيّرت حالة الوعد');
-            onSaved(res.data.promise);
+            onSaved(res.promise);
             onOpenChange(false);
         } catch (err) {
-            setErrors(extractApiFieldErrors(err));
-            notify.error(extractApiErrorMessage(err, 'تعذّر تغيير الحالة'));
+            setErrors(apiFieldErrors(err));
+            notify.error(apiErrorMessage(err, 'تعذّر تغيير الحالة'));
         } finally {
             setSaving(false);
         }

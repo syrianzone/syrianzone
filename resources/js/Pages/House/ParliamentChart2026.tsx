@@ -17,7 +17,7 @@ export const SOCIAL_LABEL: Record<string, string> = {
     no_social: 'بدون حساب',
 };
 
-export function hasSocialMedia(m: Member2026): boolean {
+function hasSocialMedia(m: Member2026): boolean {
     return Boolean((m.facebook_url && m.facebook_url.trim()) || (m.twitter_url && m.twitter_url.trim()));
 }
 
@@ -25,7 +25,7 @@ export function socialGroupOf(m: Member2026): 'has_social' | 'no_social' {
     return hasSocialMedia(m) ? 'has_social' : 'no_social';
 }
 
-export function ageOf(m: Member2026): number | null {
+function ageOf(m: Member2026): number | null {
     const y = parseInt(m.birth_year, 10);
     if (!y || y < 1900 || y > 2100) return null;
     return new Date().getFullYear() - y;
@@ -167,7 +167,6 @@ export default function ParliamentChart2026({ members, dim, onDimChange, selecte
         return [...map.entries()].sort((a, b) => b[1] - a[1]);
     }, [active, dim]);
     const groupOrder = useMemo(() => groups.map(([g]) => g), [groups]);
-    // Wedge columns: contiguous angular sectors, filled right → left
     const dots = useMemo(() => hemicycleWedges(active, groupOrder, dim), [active, groupOrder, dim]);
 
     const govColor = useMemo(() => {

@@ -15,7 +15,7 @@ import PromiseCard, { type PromiseCardLayout } from './_components/PromiseCard';
 import PromiseCharts from './_components/PromiseCharts';
 import Scoreboard from './_components/Scoreboard';
 import { activeScoreboardState, filterPromises, matchesState, narrowFromChart, promiseFilterFacets, promiseListUrl, readPromiseFilters, selectScoreboardState, SORT_OPTIONS, visiblePromises, type PromiseFilterOptions } from './_lib/filters';
-import type { PromiseCardData, PromiseStats } from './_lib/types';
+import type { PromiseCardData, PromiseStats } from '@/Domain/promises/types';
 
 const LAYOUT_KEY = 'promises-layout';
 const LAYOUT_OPTIONS = [
@@ -146,11 +146,8 @@ export default function PromisesIndex({ promises, stats, filters, dueSoonDays }:
                     <SmartFilterSearch
                         embedded
                         mobileFiltersScroll
-                        facets={searchFacets} value={searchValue}
-                        onChange={(next) => changeFilters({
-                            ...next,
-                            filters: { ...next.filters, ...(selectedStates.length ? { state: selectedStates } : {}) },
-                        })}
+                        facets={searchFacets} value={value}
+                        onChange={changeFilters}
                         placeholder="ابحث بالعنوان أو اسم المسؤول..." ariaLabel="ابحث في الوعود"
                     />
                 </div>

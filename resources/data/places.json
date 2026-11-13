@@ -1,0 +1,19 @@
+{
+  "categories": [
+    { "key": "historical", "label": "تاريخي", "glyph": "Landmark" },
+    { "key": "natural", "label": "طبيعي", "glyph": "TreePine" },
+    { "key": "cultural", "label": "ثقافي", "glyph": "Building2" },
+    { "key": "religious", "label": "ديني", "glyph": "Landmark" },
+    { "key": "abandoned", "label": "مهجور", "glyph": "Building2" },
+    { "key": "viewpoint", "label": "إطلالة", "glyph": "Mountain" },
+    { "key": "market", "label": "سوق", "glyph": "Store" },
+    { "key": "food", "label": "مأكولات", "glyph": "Utensils" },
+    { "key": "other", "label": "آخر", "glyph": "MapPin" }
+  ],
+  "statuses": ["pending", "approved", "rejected"],
+  "nearby": {
+    "radius_km_default": 2,
+    "radius_km_min": 0.05,
+    "radius_km_max": 25
+  }
+}

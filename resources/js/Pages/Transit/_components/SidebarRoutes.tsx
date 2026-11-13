@@ -1,5 +1,3 @@
-'use client'
-
 import { Link } from '@inertiajs/react'
 import { MapPin, ChevronRight, Plus } from 'lucide-react'
 import { useAuth } from '@/Contexts/AuthContext'
@@ -8,13 +6,17 @@ import { ScrollArea } from '@/Components/ui/scroll-area'
 import { Separator } from '@/Components/ui/separator'
 import { useMapStore } from '../_store/useMapStore'
 import { getRouteColor } from '../_lib/mapColors'
+import type { RouteProperties } from '../_types'
+import type { TransitCity } from '@/Domain/transit/types'
 
 interface SidebarRoutesProps {
-  city: { id: string; nameAr: string } | undefined
-  routes: any[]
+  city: TransitCity | undefined
+  /** The city list, for the names of the other cities a shared map draws. */
+  cities: TransitCity[]
+  routes: RouteProperties[]
 }
 
-export function SidebarRoutes({ city, routes }: SidebarRoutesProps) {
+export function SidebarRoutes({ city, cities, routes }: SidebarRoutesProps) {
   const { user } = useAuth()
   const { selectedRouteId, setSelectedRouteId } = useMapStore()
   if (!city) return null
@@ -23,16 +25,22 @@ export function SidebarRoutes({ city, routes }: SidebarRoutesProps) {
     setSelectedRouteId(routeId)
   }
 
-  const handleBack = () => {
-    setSelectedRouteId(null)
-  }
+  // A shared map (Damascus + Rif Dimashq) lists its cities as separate
+  // sections; the group and its members' names come from the server payload,
+  // so the client never spells a pair of city ids.
+  const mapGroup = city.mapGroup
+  const sections = mapGroup.length > 1
+    ? mapGroup.map((groupId) => ({
+        id: groupId,
+        nameAr: cities.find((c) => c.id === groupId)?.nameAr ?? groupId,
+        routes: routes.filter((route) => route.cityId === groupId),
+      }))
+    : []
+  const otherRoutes = mapGroup.length > 1
+    ? routes.filter((route) => !mapGroup.includes(route.cityId ?? ''))
+    : []
 
-  const isDamascusRegion = city.id === 'damascus' || city.id === 'rif-dimashq'
-  const damascusRoutes = isDamascusRegion ? routes.filter(r => r.cityId === 'damascus') : []
-  const rifRoutes = isDamascusRegion ? routes.filter(r => r.cityId === 'rif-dimashq') : []
-  const otherRoutes = isDamascusRegion ? routes.filter(r => r.cityId !== 'damascus' && r.cityId !== 'rif-dimashq') : []
-
-  const renderRouteCard = (route: any) => {
+  const renderRouteCard = (route: RouteProperties) => {
     // API fields (stopsCount, priceNew) can be null or numeric strings —
     // guard with Number() so a null value never crashes toLocaleString.
     const stopsCount = route.stopsCount == null ? null : Number(route.stopsCount)
@@ -108,31 +116,19 @@ export function SidebarRoutes({ city, routes }: SidebarRoutesProps) {
 
       <ScrollArea className="flex-1 min-h-0">
         <div className="p-4 space-y-4">
-          {isDamascusRegion ? (
+          {sections.length > 0 ? (
             <>
-              {damascusRoutes.length > 0 && (
-                <div className="space-y-3">
+              {sections.map((section) => section.routes.length > 0 && (
+                <div key={section.id} className="space-y-3">
                   <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                    <span>دمشق</span>
-                    <span className="text-xs font-normal text-muted-foreground">({damascusRoutes.length})</span>
+                    <span>{section.nameAr}</span>
+                    <span className="text-xs font-normal text-muted-foreground">({section.routes.length})</span>
                   </h3>
                   <div className="space-y-3">
-                    {damascusRoutes.map(renderRouteCard)}
+                    {section.routes.map(renderRouteCard)}
                   </div>
                 </div>
-              )}
-
-              {rifRoutes.length > 0 && (
-                <div className="space-y-3 mt-4">
-                  <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                    <span>ريف دمشق</span>
-                    <span className="text-xs font-normal text-muted-foreground">({rifRoutes.length})</span>
-                  </h3>
-                  <div className="space-y-3">
-                    {rifRoutes.map(renderRouteCard)}
-                  </div>
-                </div>
-              )}
+              ))}
 
               {otherRoutes.length > 0 && (
                 <div className="space-y-3 mt-4">
@@ -146,7 +142,7 @@ export function SidebarRoutes({ city, routes }: SidebarRoutesProps) {
                 </div>
               )}
 
-              {damascusRoutes.length === 0 && rifRoutes.length === 0 && otherRoutes.length === 0 && (
+              {routes.length === 0 && (
                 <div className="flex items-center justify-center text-muted-foreground py-8">
                   لا توجد خطوط متاحة
                 </div>

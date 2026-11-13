@@ -1,22 +1,24 @@
+import { apiErrorMessage } from '@/Lib/api';
+import { notify } from '@/Lib/notify';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/Components/ui/card';
 import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
 import { RotateCcw, Timer, Zap, Layers, ChevronLeft, ChevronRight, Check } from 'lucide-react';
-import type { AnswerMap, Figure, QuizVersion, Spectrum } from './data/types';
-import { AXES } from './data/axes';
-import { QUESTIONS } from './data/questions';
-import { ALIGN_QUESTIONS } from './data/align';
-import { activeQuestions, activeAlignQuestions, versionTotals, axisKey, alignKey } from './lib/engine';
+import { VERSION_LABEL, type AnswerMap, type Figure, type QuizVersion, type Spectrum } from '@/Domain/compass/types';
+import { AXES } from '@/Domain/compass/axes';
+import { QUESTIONS } from '@/Domain/compass/questions';
+import { ALIGN_QUESTIONS } from '@/Domain/compass/align';
+import { activeQuestions, activeAlignQuestions, versionTotals, axisKey, alignKey } from '@/Domain/compass/engine';
 import { loadProgress, saveProgress, clearProgress, fetchAccountResults, saveResultToAccount, takePendingAccountSave, setPendingAccountSave, updateLocalResult } from './lib/storage';
-import type { CompassResult as SavedResult } from './data/types';
+import type { CompassResult as SavedResult } from '@/Domain/compass/types';
 import CompassResult from './CompassResult';
 import SavedResults from './components/SavedResults';
 
-const VERSIONS: { id: QuizVersion; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { id: 'short', label: 'قصيرة', icon: Zap },
-  { id: 'standard', label: 'قياسية', icon: Timer },
-  { id: 'full', label: 'كاملة', icon: Layers },
+const VERSIONS: { id: QuizVersion; icon: React.ComponentType<{ className?: string }> }[] = [
+  { id: 'short', icon: Zap },
+  { id: 'standard', icon: Timer },
+  { id: 'full', icon: Layers },
 ];
 
 interface Props {
@@ -43,7 +45,10 @@ export default function CompassApp({ isLoggedIn, figures, personas }: Props) {
     }
     fetchAccountResults()
       .then(setAccountResults)
-      .catch(() => setAccountResults([]));
+      .catch((e) => {
+        setAccountResults([]);
+        notify.error(apiErrorMessage(e, 'تعذّر جلب نتائجك المحفوظة'));
+      });
   }, [isLoggedIn]);
 
   useEffect(() => {
@@ -61,13 +66,13 @@ export default function CompassApp({ isLoggedIn, figures, personas }: Props) {
         updateLocalResult(pending.id, { id: saved?.id ?? pending.id, savedToAccount: true });
         refreshAccount();
       })
-      .catch(() => {
+      .catch((e) => {
         // Put it back so a later visit can retry.
         setPendingAccountSave(pending);
+        notify.error(apiErrorMessage(e, 'تعذّر حفظ نتيجتك في حسابك، حاول لاحقاً'));
       });
   }, [isLoggedIn, refreshAccount]);
 
-  // ---- build the flattened question list for the chosen version ----
   const items = useMemo(() => {
     const list: { key: string; text: string; axis?: string; target?: string }[] = [];
     for (const a of AXES) {
@@ -83,7 +88,6 @@ export default function CompassApp({ isLoggedIn, figures, personas }: Props) {
 
   const totals = useMemo(() => versionTotals(version), [version]);
 
-  // ---- resume offer on mount ----
   useEffect(() => {
     const p = loadProgress();
     if (p && Object.keys(p.answers).length > 0) {
@@ -91,7 +95,6 @@ export default function CompassApp({ isLoggedIn, figures, personas }: Props) {
     }
   }, []);
 
-  // ---- autosave progress ----
   useEffect(() => {
     if (phase !== 'quiz') return;
     saveProgress({ version, answers, index, updatedAt: new Date().toISOString() });
@@ -150,7 +153,6 @@ export default function CompassApp({ isLoggedIn, figures, personas }: Props) {
     setResumeInfo(null);
   };
 
-  // keyboard 1..5
   useEffect(() => {
     if (phase !== 'quiz') return;
     const onKey = (e: KeyboardEvent) => {
@@ -242,7 +244,6 @@ export default function CompassApp({ isLoggedIn, figures, personas }: Props) {
   );
 }
 
-// ---------------- Intro ----------------
 function IntroPanel({
   resumeInfo,
   onStart,
@@ -294,7 +295,7 @@ function IntroPanel({
                 >
                   <span className="flex items-center gap-2">
                     <Icon className="w-4 h-4 text-primary" />
-                    <span className="font-medium">{v.label}</span>
+                    <span className="font-medium">{VERSION_LABEL[v.id]}</span>
                     <span className="text-xs text-muted-foreground">
                       {v.id === 'short' ? '~3 دقائق' : v.id === 'standard' ? '~7 دقائق' : '~15 دقيقة'}
                     </span>
@@ -320,7 +321,6 @@ function IntroPanel({
   );
 }
 
-// ---------------- Quiz ----------------
 function QuizPanel({
   index,
   total,

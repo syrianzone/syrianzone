@@ -14,7 +14,7 @@ class DevController extends Controller
             abort(404);
         }
 
-        if (! in_array($role, AutoLoginDevUser::DEV_ROLES)) {
+        if (! in_array($role, AutoLoginDevUser::names(), true)) {
             abort(400, 'Unknown dev role: '.$role);
         }
 

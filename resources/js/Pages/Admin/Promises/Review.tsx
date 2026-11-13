@@ -1,6 +1,6 @@
+import { promisesApi } from '@/Domain/promises/api';
 import { useState } from 'react';
 import { Link, router } from '@inertiajs/react';
-import axios from '@/Lib/axios';
 import MainLayout from '@/Layouts/MainLayout';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
@@ -8,13 +8,14 @@ import { Card, CardContent, CardDescription, CardHeader } from '@/Components/ui/
 import { Check, ExternalLink, Pencil, Upload, X } from 'lucide-react';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
-import { extractApiErrorMessage } from '@/Lib/apiError';
-import SpeakerAvatar from '@/Pages/Promises/_components/SpeakerAvatar';
-import { formatDate, safeHref } from '@/Pages/Promises/_lib/format';
-import { PENDING_SPEAKER_LABEL } from '@/Pages/Promises/_lib/status';
+import { apiErrorMessage } from '@/Lib/api';
+import SpeakerAvatar from '@/Domain/promises/SpeakerAvatar';
+import { formatDate, safeHref } from '@/Domain/promises/format';
+import { PENDING_SPEAKER_LABEL } from '@/Domain/promises/status';
 import AdminHeader from './_components/AdminHeader';
-import { useCan } from './_lib/useCan';
-import { ORIGIN_LABEL, type AdminPromiseRow, type AdminSpeaker } from './_lib/types';
+import { useCan } from '@/Lib/useCan';
+import { ORIGIN_LABEL } from '@/Domain/promises/status';
+import type { AdminPromiseRow, AdminSpeaker } from './_lib/types';
 
 interface ReportRow {
     id: number;
@@ -40,14 +41,14 @@ export default function PromisesReview({ promises, speakers, reports, queueCount
     const canOpen = can('promises.edit') || can('promises.rule') || can('promises.review');
     const [busy, setBusy] = useState<string | null>(null);
 
-    const act = async (key: string, url: string, success: string) => {
+    const act = async (key: string, request: () => Promise<unknown>, success: string) => {
         setBusy(key);
         try {
-            await axios.post(url);
+            await request();
             notify.success(success);
             router.reload();
         } catch (e) {
-            notify.error(extractApiErrorMessage(e, 'تعذّر تنفيذ العملية'));
+            notify.error(apiErrorMessage(e, 'تعذّر تنفيذ العملية'));
         } finally {
             setBusy(null);
         }
@@ -96,10 +97,10 @@ export default function PromisesReview({ promises, speakers, reports, queueCount
                                             )}
                                             {canReview && (
                                                 <>
-                                                    <Button size="sm" className="gap-1" disabled={busy === p.id} onClick={() => act(p.id, `/api/v1/admin/promises/${p.id}/publish`, 'نُشر الوعد')}>
+                                                    <Button size="sm" className="gap-1" disabled={busy === p.id} onClick={() => act(p.id, () => promisesApi.moderate(p.id, 'publish'), 'نُشر الوعد')}>
                                                         <Upload className="h-4 w-4" aria-hidden="true" />نشر
                                                     </Button>
-                                                    <Button size="sm" variant="ghost" className="gap-1" disabled={busy === p.id} onClick={() => confirmThen(`رفض «${p.title}»؟`, () => act(p.id, `/api/v1/admin/promises/${p.id}/reject`, 'رُفض الاقتراح'))}>
+                                                    <Button size="sm" variant="ghost" className="gap-1" disabled={busy === p.id} onClick={() => confirmThen(`رفض «${p.title}»؟`, () => act(p.id, () => promisesApi.moderate(p.id, 'reject'), 'رُفض الاقتراح'))}>
                                                         <X className="h-4 w-4 text-destructive" aria-hidden="true" />رفض
                                                     </Button>
                                                 </>
@@ -130,10 +131,10 @@ export default function PromisesReview({ promises, speakers, reports, queueCount
                                     </div>
                                     {canReview && (
                                         <div className="flex gap-2">
-                                            <Button size="sm" variant="outline" className="gap-1" disabled={busy === s.id} onClick={() => act(s.id, `/api/v1/admin/promises/speakers/${s.id}/approve`, 'اعتُمد الشخص')}>
+                                            <Button size="sm" variant="outline" className="gap-1" disabled={busy === s.id} onClick={() => act(s.id, () => promisesApi.reviewSpeaker(s.id, 'approve'), 'اعتُمد الشخص')}>
                                                 <Check className="h-4 w-4" aria-hidden="true" />اعتماد
                                             </Button>
-                                            <Button size="sm" variant="ghost" className="gap-1" disabled={busy === s.id} onClick={() => confirmThen(`رفض «${s.name}»؟`, () => act(s.id, `/api/v1/admin/promises/speakers/${s.id}/reject`, 'رُفض الشخص'))}>
+                                            <Button size="sm" variant="ghost" className="gap-1" disabled={busy === s.id} onClick={() => confirmThen(`رفض «${s.name}»؟`, () => act(s.id, () => promisesApi.reviewSpeaker(s.id, 'reject'), 'رُفض الشخص'))}>
                                                 <X className="h-4 w-4 text-destructive" aria-hidden="true" />رفض
                                             </Button>
                                         </div>
@@ -175,10 +176,10 @@ export default function PromisesReview({ promises, speakers, reports, queueCount
                                         )}
                                         {canReview && (
                                             <div className="flex gap-2">
-                                                <Button size="sm" variant="outline" className="gap-1" disabled={busy === key} onClick={() => act(key, `/api/v1/admin/promises/reports/${r.id}/accept`, r.kind === 'progress' ? 'أُضيف التحديث إلى السجل' : 'أُغلق البلاغ')}>
+                                                <Button size="sm" variant="outline" className="gap-1" disabled={busy === key} onClick={() => act(key, () => promisesApi.reviewReport(r.id, 'accept'), r.kind === 'progress' ? 'أُضيف التحديث إلى السجل' : 'أُغلق البلاغ')}>
                                                     <Check className="h-4 w-4" aria-hidden="true" />{r.kind === 'progress' ? 'قبول وإضافة إلى السجل' : 'تمت المعالجة'}
                                                 </Button>
-                                                <Button size="sm" variant="ghost" className="gap-1 text-muted-foreground" disabled={busy === key} onClick={() => act(key, `/api/v1/admin/promises/reports/${r.id}/dismiss`, 'أُهمل')}>
+                                                <Button size="sm" variant="ghost" className="gap-1 text-muted-foreground" disabled={busy === key} onClick={() => act(key, () => promisesApi.reviewReport(r.id, 'dismiss'), 'أُهمل')}>
                                                     <X className="h-4 w-4" aria-hidden="true" />إهمال
                                                 </Button>
                                             </div>

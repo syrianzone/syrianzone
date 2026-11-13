@@ -34,6 +34,21 @@ final class CompassStats
     }
 
     /**
+     * The cached public aggregate. CompassStats computes it, so CompassStats
+     * owns the key and the one way to drop it.
+     */
+    public const PUBLIC_CACHE_KEY = 'compass-public-stats-v2';
+
+    /**
+     * Drop the cached public aggregate. Any write that changes an anonymous
+     * run calls this.
+     */
+    public static function forgetPublicCache(): void
+    {
+        Cache::forget(self::PUBLIC_CACHE_KEY);
+    }
+
+    /**
      * The running tally is cached under this key. Bump the suffix whenever the
      * shape of the tally (not the output) changes.
      */

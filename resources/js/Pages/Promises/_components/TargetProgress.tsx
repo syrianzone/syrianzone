@@ -1,5 +1,5 @@
-import { formatDate, formatNumber } from '../_lib/format';
-import type { PromiseTarget } from '../_lib/types';
+import { formatDate, formatNumber } from '@/Domain/promises/format';
+import type { PromiseTarget } from '@/Domain/promises/types';
 
 /**
  * Progress towards a measurable target. Renders nothing until a sourced

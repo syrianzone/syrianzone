@@ -20,8 +20,10 @@ class XApiClient
             throw new XConfigurationException('X automation credentials are incomplete');
         }
 
-        $this->verifyExpectedUser();
-
+        // verifyExpectedUser() is not called here: it is an extra authenticated
+        // request per post against a quota-limited API, and a transient failure
+        // of the check would fail a post that would otherwise succeed. Each
+        // caller that posts runs it once before posting.
         $body = ['text' => $text];
         if ($mediaIds !== []) {
             $body['media'] = ['media_ids' => array_values($mediaIds)];

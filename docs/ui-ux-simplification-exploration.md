@@ -47,8 +47,9 @@ JSX deleted, and a consistent feel across sections.
 ### 1.1 `Layouts/MainLayout.tsx`, `Components/ConditionalLayout.tsx`
 
 **What it does.** `MainLayout` wraps every page in `AuthProvider` →
-`ConditionalLayout` → page, plus ambient `SettingsSync`, `GlobalRuntime` and
-`RadioMiniPlayer`. `ConditionalLayout` owns focus mode and decides navbar
+`ConditionalLayout` → page, plus ambient `SettingsSync`, the usage tracker
+(`useUsageTracker`, called straight from the layout) and `RadioMiniPlayer`.
+`ConditionalLayout` owns focus mode and decides navbar
 stickiness per section (`resources/js/Components/ConditionalLayout.tsx:19-34`).
 
 **Clutter / duplication.**
@@ -101,20 +102,19 @@ mobile `Sheet`; page-scoped settings gears; appearance menu; account/login.
 - Add the missing Transit-admin link (capability-gated) in transit mode.
 - Kill one of each duplicated settings gear (§1.3).
 
-### 1.3 `Components/AppearanceMenu.tsx`, `UserNav.tsx`, `ThemeToggle.tsx`
+### 1.3 `Components/AppearanceMenu.tsx`, `UserNav.tsx`
 
 **What it does.** `AppearanceMenu` = theme + font picker, in the navbar for all
-visitors. `UserNav` = avatar dropdown (dashboard/profile/logout). `ThemeToggle`
-= a full theme+font dropdown.
+visitors. `UserNav` = avatar dropdown (dashboard/profile/logout).
 
 **Clutter / duplication.**
-- **`Components/ThemeToggle.tsx` is dead code** — imported nowhere and duplicates
-  `AppearanceMenu` (including the same `MutationObserver` sync). Delete it.
+- `Components/ThemeToggle.tsx` was a second, unused theme+font dropdown that
+  duplicated `AppearanceMenu`; it has been deleted.
 - The AppearanceMenu's heritage-theme row special-cases `damascus-rose` to move
   its swatch after the label (`AppearanceMenu.tsx:99-115`) — a layout hack that a
   uniform swatch-before-label would remove.
 
-**Proposals (P0).** Delete `ThemeToggle.tsx`; simplify the heritage row.
+**Proposals (P0).** Simplify the heritage row.
 
 ### 1.4 Ambient notifications — the bottom-corner pile-up
 
@@ -310,7 +310,7 @@ events.
 - The **SANA source link appears three times** (`:1106-1114`, `:1244-1252`,
   `:1264-1266`); the bottom notes card restates the holiday card.
 - **Three related governorate maps** in one file (`:35-66`, `:82-97`), the last
-  duplicating `MUSLIM_GOVERNORATES`.
+  duplicating the shared governorate table (`Domain/geography/governorates.ts`).
 - Local `formatDuration` copy (`:637-645`) duplicates `Muslim/_lib/format.ts`.
 
 **Small details / bugs.**
@@ -324,7 +324,7 @@ events.
 
 **Proposals (P1).** One settings entry; remove the duplicate next-event block;
 one notes/source location; **render the selected method's name/detail** from
-`PRAYER_METHODS`; import `MUSLIM_GOVERNORATES`; persist + rename the events
+`PRAYER_METHODS`; import `GOVERNORATES` from `Domain/geography/governorates`; persist + rename the events
 toggle; render a shell instead of `null`.
 
 ---
@@ -476,7 +476,7 @@ embedded footer, add a reset, replace `confirm()`.
 - Leaderboards use `text-gray-*` (breaks the theme system) and have no real
   loading state (`:260`), telling users to "refresh".
 
-**TierBoard** (`Components/poll/TierBoard.tsx`, 864 lines):
+**TierBoard** (`Domain/polls/TierBoard.tsx`, 864 lines):
 - Over-explains the task three times (page hint, instruction card, tier legend).
 - Silent destructive actions: switching category **wipes placements**
   (`:182-202`), "مسح الاختيارات" has no confirm (`:835`), and reset repopulates
@@ -719,7 +719,7 @@ and the false grip), `<ConfirmDialog>`, `<EmptyState>`, `<ImageUpload>`,
 - Silent destructive actions: list-edit deletes (`Home.tsx:718`),
   TierBoard category switch/clear (`TierBoard.tsx:182,835`), Priorities reset
   (`PrioritiesApp.tsx:958`), SavedResults delete (`SavedResults.tsx:90`).
-- Dead/dangling UI: ThemeToggle, `SidebarMapTools`, `StopNamePopup`,
+- Dead/dangling UI: `SidebarMapTools`, `StopNamePopup`,
   `comingSoon` badge, Compass figure block, Priorities banner dismiss,
   `Coming soon` dead branches, unreachable `!myTurn` alerts.
 
@@ -730,8 +730,8 @@ and the false grip), `<ConfirmDialog>`, `<EmptyState>`, `<ImageUpload>`,
 ### P0 — highest leverage, lowest risk
 1. **Mount Sonner once in `MainLayout`**; replace `alert`/`confirm` and the
    three custom toasts with `toast` + a shared `<ConfirmDialog>`.
-2. **Delete dead code**: `Components/ThemeToggle.tsx`,
-   `Transit/_components/SidebarMapTools.tsx`, studio `StopNamePopup`,
+2. **Delete dead code**: `Transit/_components/SidebarMapTools.tsx`,
+   studio `StopNamePopup`,
    `Games` `comingSoon` branch, unused Compass `shareResult`/`powers`,
    unused props/imports.
 3. **Merge the two Leaderboards** (`Polls`/`TierList`, 405 lines each) and

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { usePage } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription } from '@/Components/ui/alert';
 import { Button } from '@/Components/ui/button';
 import { BoardGrid, useBreakpoint } from './_components/BoardGrid';
 import { BoardToolbar } from './_components/BoardToolbar';

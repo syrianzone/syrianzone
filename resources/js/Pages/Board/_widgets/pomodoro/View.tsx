@@ -39,7 +39,6 @@ export default function PomodoroView({ config }: WidgetProps<PomodoroConfig>) {
 
   const total = (phase === 'work' ? workMin : restMin) * 60000;
 
-  // a duration change or a phase switch always rearms the clock from scratch
   useEffect(() => {
     setRunning(false);
     endAt.current = null;

@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\PrayerController;
+use App\Models\User;
+use App\Support\Facts;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -121,6 +124,36 @@ test('rejects an unknown calculation method', function () {
   Http::assertNothingSent();
 });
 
+test('accepts the methods the picker does not offer, from the shared table', function () {
+  Http::fake(['*' => Http::response(prayerPayload(), 200)]);
+
+  // 7, 14, 15 and 16 are in resources/data/prayer.json `unlisted_method_ids`:
+  // a client that stored one must not have it rejected or silently reset.
+  $table = App\Support\Facts::prayer();
+  expect($table['unlisted_method_ids'])->toBe([7, 14, 15, 16]);
+
+  foreach ($table['unlisted_method_ids'] as $id) {
+    $this->getJson("/api/prayer-times?governorate=damascus&method={$id}")->assertOk();
+  }
+
+  Http::assertSentCount(count($table['unlisted_method_ids']));
+});
+
+test('accepts every calculation method the picker offers', function () {
+  Http::fake(['*' => Http::response(prayerPayload(), 200)]);
+
+  // Behaviour, not the controller's own list: each id the shared table offers
+  // must actually be served, so a method silently dropped from the accepted set
+  // fails here instead of resetting a stored choice to the default.
+  $methodIds = array_column(App\Support\Facts::prayer()['methods'], 'id');
+
+  foreach ($methodIds as $id) {
+    $this->getJson("/api/prayer-times?governorate=damascus&method={$id}")->assertOk();
+  }
+
+  Http::assertSentCount(count($methodIds));
+});
+
 test('caches a successful response instead of refetching', function () {
   Http::fake(['*' => Http::response(prayerPayload(), 200)]);
 
@@ -210,4 +243,23 @@ test('returns a null hijri date when upstream omits it', function () {
     ->assertOk()
     ->assertJsonPath('hijri', null)
     ->assertJsonPath('timings.Fajr', '04:00');
+});
+
+// The account-settings validator, the timings proxy and the pickers must accept
+// the same method ids, and that list is resources/data/prayer.json. #6 was the
+// third copy of it; this is the check that it does not come back.
+test('account settings accept every method id the prayer table defines', function () {
+  $user = User::factory()->create();
+
+  expect(PrayerController::methods())->toBe(Facts::prayerMethodIds());
+
+  foreach (Facts::prayerMethodIds() as $id) {
+    $this->actingAs($user)
+      ->postJson('/api/user/settings', ['settings' => ['muslimMethod' => $id]])
+      ->assertOk();
+  }
+
+  $this->actingAs($user)
+    ->postJson('/api/user/settings', ['settings' => ['muslimMethod' => 99]])
+    ->assertStatus(422);
 });

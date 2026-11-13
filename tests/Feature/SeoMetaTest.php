@@ -8,17 +8,81 @@ use Illuminate\Support\Facades\Vite;
 use Inertia\Ssr\Gateway;
 use Inertia\Ssr\Response;
 
+/**
+ * The head of a server-rendered page, as the values a crawler reads.
+ *
+ * `meta` and `links` are keyed by property/name/rel, so an assertion says which
+ * preview field must carry which value rather than which tag string was
+ * printed. `json_ld` holds every structured-data block, decoded.
+ *
+ * @return array{meta: array<string, string>, links: array<string, string>, title: string, json_ld: array<int, mixed>}
+ */
+function seoHeadTags(string $html): array
+{
+    $attributesOf = function (string $source): array {
+        preg_match_all('/([a-zA-Z:-]+)="([^"]*)"/', $source, $pairs, PREG_SET_ORDER);
+
+        return array_column($pairs, 2, 1);
+    };
+
+    $meta = [];
+    preg_match_all('/<meta\b([^>]*)>/i', $html, $metaTags);
+    foreach ($metaTags[1] as $source) {
+        $tag = $attributesOf($source);
+        $key = $tag['property'] ?? $tag['name'] ?? null;
+        if ($key !== null) {
+            $meta[$key] = $tag['content'] ?? '';
+        }
+    }
+
+    $links = [];
+    preg_match_all('/<link\b([^>]*)>/i', $html, $linkTags);
+    foreach ($linkTags[1] as $source) {
+        $tag = $attributesOf($source);
+        if (isset($tag['rel'])) {
+            $links[$tag['rel']] = $tag['href'] ?? '';
+        }
+    }
+
+    $jsonLd = [];
+    preg_match_all('/<script\b[^>]*application\/ld\+json[^>]*>(.*?)<\/script>/is', $html, $blocks);
+    foreach ($blocks[1] as $block) {
+        $decoded = json_decode(trim($block), true);
+        if (is_array($decoded)) {
+            $jsonLd[] = $decoded;
+        }
+    }
+
+    preg_match('/<title\b[^>]*>(.*?)<\/title>/is', $html, $title);
+
+    return [
+        'meta' => $meta,
+        'links' => $links,
+        'title' => html_entity_decode($title[1] ?? '', ENT_QUOTES | ENT_HTML5),
+        'json_ld' => $jsonLd,
+    ];
+}
+
 test('server-rendered html includes seo meta and json-ld even when inertia.ssr.enabled is true and ssr server is offline', function () {
     Vite::useHotFile(storage_path('framework/testing/hot-missing'));
     config()->set('inertia.ssr.enabled', true);
     config()->set('inertia.ssr.url', 'http://127.0.0.1:59999');
 
-    $html = $this->get('/about')->assertOk()->getContent();
+    $head = seoHeadTags($this->get('/about')->assertOk()->getContent());
 
-    expect($html)->toContain('<title inertia>عن المنصة | Syrian Zone</title>')
-        ->and($html)->toContain('<link rel="canonical" href="https://syrian.zone/about" inertia>')
-        ->and($html)->toContain('<meta property="og:image" content="https://syrian.zone'.StaticCards::url('about').'" inertia>')
-        ->and($html)->toContain('<script type="application/ld+json" inertia>');
+    expect($head['title'])->toBe('عن المنصة | Syrian Zone')
+        ->and($head['links']['canonical'])->toBe('https://syrian.zone/about')
+        ->and($head['meta']['og:image'])->toBe('https://syrian.zone'.StaticCards::url('about'))
+        ->and($head['json_ld'])->not->toBe([]);
+});
+
+test('the share card size travels with the seo metadata', function () {
+    // The client prints og:image:width/height from these two values instead of
+    // restating them, so the card's canvas is decided once.
+    $meta = SeoMeta::resolve(Request::create('/about'));
+
+    expect($meta['image_width'])->toBe(StaticCards::CARD_WIDTH)
+        ->and($meta['image_height'])->toBe(StaticCards::CARD_HEIGHT);
 });
 
 test('head tags are printed once even when ssr succeeds but the page rendered nothing', function () {
@@ -34,24 +98,23 @@ test('head tags are printed once even when ssr succeeds but the page rendered no
     });
 
     $html = $this->get('/phonebook')->assertOk()->getContent();
+    $head = seoHeadTags($html);
 
     expect(substr_count($html, '<title'))->toBe(1)
         ->and(substr_count($html, 'property="og:image"'))->toBe(1)
         ->and(substr_count($html, 'rel="canonical"'))->toBe(1)
         ->and(substr_count($html, 'application/ld+json'))->toBe(1)
-        ->and($html)->toContain('<title inertia>دليل الهاتف والواتساب الخدمي | Syrian Zone</title>')
-        ->and($html)->toContain('<meta property="og:image" content="https://syrian.zone'.StaticCards::url('phonebook').'" inertia>');
+        ->and($head['title'])->toBe('دليل الهاتف والواتساب الخدمي | Syrian Zone')
+        ->and($head['meta']['og:image'])->toBe('https://syrian.zone'.StaticCards::url('phonebook'));
 });
 
 test('a missing page announces itself as a 404 and is not indexed', function () {
-    $html = $this->get('/no-such-page')->assertNotFound()->getContent();
+    $head = seoHeadTags($this->get('/no-such-page')->assertNotFound()->getContent());
 
-    expect($html)->toContain('<title inertia>الصفحة غير موجودة (404) | Syrian Zone</title>')
-        ->and($html)->toContain('<meta name="robots" content="noindex, follow" inertia>')
-        ->and($html)->not->toContain('<title inertia>المساحة السورية — منصة سورية مفتوحة المصدر</title>');
+    expect($head['title'])->toBe('الصفحة غير موجودة (404) | Syrian Zone')
+        ->and($head['meta']['robots'])->toBe('noindex, follow');
 
-    $jsonLd = json_decode(str($html)->betweenFirst('<script type="application/ld+json" inertia>', '</script>')->toString(), true);
-    $page = collect($jsonLd['@graph'])->firstWhere('@type', 'WebPage');
+    $page = collect($head['json_ld'][0]['@graph'])->firstWhere('@type', 'WebPage');
     expect($page['name'])->toBe('الصفحة غير موجودة (404) | Syrian Zone');
 });
 

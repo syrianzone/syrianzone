@@ -44,7 +44,7 @@ class QuranBookmarkController extends Controller
   public function destroy(Request $request, int $surah, int $ayah)
   {
     if ($surah < 1 || $surah > 114 || $ayah < 1 || $ayah > 286) {
-      return response()->json(['message' => 'Not found'], 404);
+      return response()->json(['message' => 'العنصر غير موجود.'], 404);
     }
 
     QuranBookmark::where('user_id', $request->user()->id)

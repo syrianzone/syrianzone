@@ -23,6 +23,9 @@ renders on the server like any other Inertia page.
 All four are public closures in `routes/web.php` with no middleware, no
 throttle and no auth gate — they are static shells, exactly like `/muslim`.
 
+The registry also carries `president`, which is `external` (hosted on another
+domain), so the hub opens it in a new tab and this app has no route for it.
+
 Guess Who is not one of these shells: it is the online, multiplayer game hosted
 by `GuessWhoController` at `/guesswho`, and it is currently marked `comingSoon`
 in `GAMES`, so the hub shows an inert card and nothing else in the UI links to
@@ -33,18 +36,24 @@ it. Its route, API and admin surface stay live for direct access.
 ```
 resources/js/Pages/Games/
 ├── Index.tsx                    # hub: icon + title tile grid
-├── 2048/Index.tsx               # page shell (Head, MainLayout, GameShell)
-├── Solitare/Index.tsx           # page shell
+├── 2048/Index.tsx               # page shell (MainLayout, GameShell) + styles.css
+├── Solitare/Index.tsx           # page shell + styles.css
 ├── Tarneeb/Index.tsx            # page shell
+├── Trix/Index.tsx               # page shell + styles.css
 ├── _components/
 │   ├── GameShell.tsx            # shared sub-page chrome: back link + title
-│   ├── PlayingCard.tsx          # shared card face/back, no game rules
+│   ├── GameMenu.tsx             # الإحصائيات / خيارات modals both tables share
+│   ├── HeaderButton.tsx         # the strip button shape "القوانين" uses
+│   ├── HeaderPortal.tsx         # portals a game's buttons into that strip
+│   ├── gameHeaderActions.ts     # the header-slot context
+│   ├── CardStyleToggle.tsx      # large-card preference switch
 │   ├── Game2048.tsx             # the board: state, input, rendering
 │   ├── Solitaire.tsx            # clock, selection, undo, drag plumbing
-│   └── Tarneeb.tsx              # the table: seats, trick, bidding, hand
+│   ├── Tarneeb.tsx              # the table: seats, trick, bidding, hand
+│   ├── Trix.tsx                 # the table: kingdoms, contracts, shed layout
+│   └── table.css                # the shared .sz-tbl boundary (imported by both tables)
 └── _lib/
-    ├── games.ts                 # GAMES registry — the single source of truth
-    ├── cards.ts                 # shared deck, labels and pip geometry
+    ├── cardDisplay.ts           # the large-card display preference
     ├── cardGames/
     │   ├── trick.ts             # shared trick-taking primitives
     │   ├── bidding.ts           # shared ascending auction
@@ -61,17 +70,24 @@ resources/js/Pages/Games/
     └── scores.ts                # localStorage records
 ```
 
-`GameShell` is what keeps sub-games consistent: it renders the back link to
-`/games`, the title block and the icon, so a new game only has to supply its
-own board.
+The `GAMES` registry is **not** in the page folder: `resources/js/Domain/games/games.ts` reads `resources/data/games.json` (PHP reads the same file for the sitemap) and attaches the icons, so the hub, the 404 page and a game's own chrome all agree.
 
-`PlayingCard` and `_lib/cards.ts` are the shared **card kit**: the card value,
+`GameShell` is what keeps sub-games consistent: it renders the back link to
+`/games`, the title block and the icon (the last two read from `GAMES` by the
+page's `slug`), so a new game only has to supply its slug and its own board.
+
+`Domain/games/PlayingCard.tsx` and `Domain/games/cards.ts` are the shared **card kit**: the card value,
 the 52-card deck, the rank/suit labels and the pip geometry are game-agnostic,
 and the component draws any card face or back from them. They are styled
 entirely by the generic `.sz-card*` classes in `app.css`; a board supplies the
 sizing context (`--sz-card-w`, `--sz-card-h-ratio`, `--sz-card-radius`) and
-lays out its own piles. Solitaire is the first consumer; the trick-taking games
-(tarneeb, trix) will reuse it rather than restate a card.
+lays out its own piles. Solitaire was the first consumer; the trick-taking games
+(tarneeb, trix) draw the same kit rather than restating a card.
+
+Outside the page folder, `resources/js/Domain/games/` holds what the hub, the
+three boards and the 404 page all draw from: `games.ts` (the `GAMES` registry,
+built from `resources/data/games.json`), `cards.ts` (the card value, the deck,
+the labels and the pip geometry) and `PlayingCard.tsx` (the card face and back).
 
 `_lib/cardGames/` is the shared **engine kit** for trick-taking games: the
 follow-suit and trick-winner rules (`trick.ts`), the ascending auction
@@ -156,7 +172,8 @@ and redeal conditions are not modelled.
 
 ## The table (tarneeb and trix)
 
-Both card tables share one invisible boundary, `.sz-tbl` in `app.css`, so a deal
+Both card tables share one invisible boundary, `.sz-tbl` in
+`_components/table.css` (imported by both boards), so a deal
 *is* the page rather than something scrolled to. The games page passes
 `fit` to `GameShell`, which turns the shell into a fixed-height flex column
 (`h-[calc(100svh-4rem-1px)]`) with `overflow-hidden`; the game fills the leftover
@@ -220,19 +237,23 @@ bun run test:js        # vitest run
 bun run test:js:watch  # vitest
 ```
 
-Tests live beside the code they cover (`_lib/cards.test.ts`,
-`_lib/solitaire.test.ts`) and run in a plain Node environment — no DOM, no
-browser — because the rules carry no React.
+Tests live beside the code they cover (`Domain/games/cards.test.ts`,
+`_lib/solitaire.test.ts`, `_lib/cardGames/*.test.ts`) and run in a plain Node
+environment — no DOM, no browser — because the rules carry no React.
 
 ## 3. Adding a game
 
-1. Add an entry to `GAMES` in `_lib/games.ts` (slug, title, icon,
-   `comingSoon` if not playable yet).
+1. Add an entry to `resources/data/games.json` and its icon to `GAME_ICONS` in
+   `Domain/games/games.ts` (slug, title, `comingSoon` if not playable yet,
+   `external`/`href` if it lives elsewhere).
 2. Add a route in `routes/web.php` returning the new Inertia component.
-3. Add `Pages/Games/<Slug>/Index.tsx` wrapping its board in `GameShell`.
-4. Add the icon to `Components/Icons/ProjectIcons.tsx` following the house
+3. Add `Pages/Games/<Slug>/Index.tsx` wrapping its board in `GameShell`, passing
+   the registry slug.
+4. Add the icon to `resources/data/project-icons.json` following the house
    style (32×32 viewBox, light/dark Tailwind colour pairs, one
-   `hsl(var(--primary))` accent).
+   `hsl(var(--primary))` accent), name it in
+   `Components/Icons/ProjectIcons.tsx`, and let `projectIcons.test.ts` check the
+   paint tokens it lists.
 
 The hub grid, the `comingSoon` badge and the back navigation all follow from
 the registry, so nothing else needs touching.
@@ -290,8 +311,9 @@ travel into the merge point and fade, instead of blinking out of existence.
 They accumulate rather than replace, so a fast second move does not yank a
 still-sliding ghost off the board.
 
-Styles live in `resources/css/app.css` under `sz-2048-*` (the repo's home for
-module CSS, as with `.mushaf-page`). Timings are custom properties
+Styles live in `resources/js/Pages/Games/2048/styles.css`, imported by
+`2048/Index.tsx` so the board's CSS ships with the game (the card kit's shared
+`.sz-card*` rules stay in `resources/css/app.css`). Timings are custom properties
 (`--sz-2048-slide`, `--sz-2048-pop`, …) so the component can retune them, and
 `GHOST_MS` in the component must stay in step with the CSS. The whole set is
 disabled under `prefers-reduced-motion: reduce`.
@@ -368,7 +390,7 @@ stack and the two ways of moving a card.
 - **Only the top waste card is grabbable.** Draw-one Klondike moves the single
   exposed card, so the ones fanned out beneath it are decoration and must not
   be draggable or clickable.
-- **Card faces follow a real deck.** `PIP_LAYOUTS` in the engine places the
+- **Card faces follow a real deck.** `PIP_LAYOUTS` in `Domain/games/cards.ts` places the
   number cards on the traditional three-column, seven-row grid, with each rank
   carrying exactly its own number of pips and everything below the middle line
   mirrored, as a printed deck is. Aces get one large centred pip; jacks, queens
@@ -397,7 +419,8 @@ whether the run set a record, so the UI can say so.
 
 ## 7. Discovery
 
-`/games` is one entry in the shared `Lib/siteLinks.ts` registry, so it appears
-in the homepage app grid and the navbar mega menu like every other tool (a
-single `/games` link — the hub, not each game), and it is listed in the
-sitemap's `STATIC_PAGES`.
+`/games` is one entry in `resources/data/site-modules.json` (the catalogue
+behind `Lib/siteLinks.ts`), so it appears in the homepage app grid and the
+navbar mega menu like every other tool (a single `/games` link — the hub, not
+each game). The sitemap lists `/games` and each routable game from its record in
+`resources/data/seo.json`, so a new game needs no sitemap edit.

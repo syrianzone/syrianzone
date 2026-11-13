@@ -1,42 +1,22 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import type { FeatureCollection, RouteProperties, StopProperties } from '../_types'
-
-const API = () => '/api'
-
-// ─── Map data (routes + stops GeoJSON) ───────────────────────────────────────
-
-interface MapDataResponse {
-  routes: FeatureCollection<RouteProperties>
-  stops: FeatureCollection<StopProperties>
-}
-
-const fetchMapData = async (cityId: string): Promise<MapDataResponse> => {
-  const res = await fetch(`${API()}/v1/cities/${cityId}/map-data`)
-  if (!res.ok) throw new Error('Failed to fetch map data')
-  return res.json()
-}
+import type { RouteProperties } from '../_types'
+import type { Draft } from '../_types/admin'
+import { apiErrorMessage } from '@/Lib/api'
+import { transitApi, type MapDataResponse } from '../_lib/api'
 
 export function useMapData(cityId: string | undefined) {
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error } = useQuery<MapDataResponse>({
     queryKey: ['mapData', cityId],
-    queryFn: () => fetchMapData(cityId!),
+    queryFn: ({ signal }) => transitApi.mapData(cityId ?? '', signal),
     enabled: !!cityId,
     staleTime: 5 * 60 * 1000,
   })
 
   return {
-    data: data || null,
+    data: data ?? null,
     loading: isLoading,
-    error: error instanceof Error ? error.message : null,
+    error: error ? apiErrorMessage(error, 'تعذّر تحميل بيانات المدينة') : null,
   }
-}
-
-// ─── City routes list ─────────────────────────────────────────────────────────
-
-const fetchRoutes = async (cityId: string): Promise<RouteProperties[]> => {
-  const res = await fetch(`${API()}/v1/cities/${cityId}/routes`)
-  if (!res.ok) throw new Error('Failed to fetch routes')
-  return res.json()
 }
 
 /**
@@ -45,16 +25,14 @@ const fetchRoutes = async (cityId: string): Promise<RouteProperties[]> => {
  * of an empty state.
  */
 export function useRoutes(cityId: string, initialData?: RouteProperties[]) {
-  return useQuery({
+  return useQuery<RouteProperties[]>({
     queryKey: ['routes', cityId],
-    queryFn: () => fetchRoutes(cityId),
+    queryFn: ({ signal }) => transitApi.routes(cityId, signal),
     enabled: !!cityId,
-    initialData,
+    ...(initialData ? { initialData } : {}),
     staleTime: 5 * 60 * 1000,
   })
 }
-
-// ─── Admin drafts ─────────────────────────────────────────────────────────────
 
 /**
  * Pending route drafts for the moderation queue.
@@ -64,34 +42,25 @@ export function useRoutes(cityId: string, initialData?: RouteProperties[]) {
  * must not fire a request that is guaranteed to 403 on mount.
  */
 export function useAdminDrafts(enabled = true) {
-  return useQuery({
+  return useQuery<Draft[]>({
     queryKey: ['admin-drafts'],
     enabled,
-    queryFn: () =>
-      fetch(`${API()}/v1/admin/route-drafts`, {
-        credentials: 'include',
-      }).then((r) => {
-        if (r.status === 401) throw new Error('UNAUTHORIZED')
-        if (!r.ok) throw new Error('Failed to fetch drafts')
-        return r.json()
-      }),
+    queryFn: () => transitApi.routeDrafts(),
     staleTime: 30_000,
   })
 }
-
-// ─── Prefetch helpers (called on hover) ──────────────────────────────────────
 
 export function usePreloadCity() {
   const queryClient = useQueryClient()
   return (cityId: string) => {
     queryClient.prefetchQuery({
       queryKey: ['mapData', cityId],
-      queryFn: () => fetchMapData(cityId),
+      queryFn: ({ signal }) => transitApi.mapData(cityId, signal),
       staleTime: 5 * 60 * 1000,
     })
     queryClient.prefetchQuery({
       queryKey: ['routes', cityId],
-      queryFn: () => fetchRoutes(cityId),
+      queryFn: ({ signal }) => transitApi.routes(cityId, signal),
       staleTime: 5 * 60 * 1000,
     })
   }

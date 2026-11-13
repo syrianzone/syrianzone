@@ -32,7 +32,7 @@ const WANTED = {
 
 /** Colours that live in the logo artwork rather than in a theme token. */
 const BRAND = {
-  gold: '#988561', // public/eagle-logo.svg and public/pattern-light.svg
+  gold: '#988561', // public/syid-assets/materials/logo.ai.svg and pattern.svg
 }
 
 function hslToHex(h, s, l) {
@@ -72,11 +72,8 @@ function declarations(css, selectors) {
 
 export function readTokens(css = readFileSync(CSS, 'utf8')) {
   const light = declarations(css, [':root'])
-  const darkShared = declarations(css, [
-    '[data-theme="dark"]', '[data-theme="dark-blue"]', '[data-theme="dark-purple"]',
-    '[data-theme="dark-green"]', '[data-theme="high-contrast"]', '[data-theme="damascus-rose"]', '.dark',
-  ])
-  const darkOnly = declarations(css, ['[data-theme="dark"]', '.dark'])
+  const darkShared = declarations(css, ['[data-scheme="dark"]'])
+  const darkOnly = declarations(css, ['[data-theme="dark"]'])
 
   const pick = (source) => {
     const theme = {}

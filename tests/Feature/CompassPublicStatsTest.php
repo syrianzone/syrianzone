@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\CompassResult;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -19,24 +18,6 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 beforeEach(fn () => Cache::flush());
 
-function publicCompassRun(array $overrides = []): CompassResult
-{
-    static $n = 0;
-    $n++;
-
-    return CompassResult::create(array_merge([
-        'user_id' => null,
-        'version' => 'short',
-        'answers' => ['auth_lib#0' => 2],
-        'scores' => ['auth_lib' => 0.5],
-        'align' => ['west' => 1],
-        'spectrum' => 'tech_reform',
-        'consistency' => 0.5,
-        'answered' => 1,
-        'stats_consent' => true,
-    ], $overrides));
-}
-
 it('is public and renders without authentication', function () {
     $this->get('/compass/stats')
         ->assertOk()
@@ -44,10 +25,10 @@ it('is public and renders without authentication', function () {
 });
 
 it('counts only anonymous consented runs', function () {
-    publicCompassRun();                                  // counted
-    publicCompassRun(['stats_consent' => false]);        // withdrawn
+    compassRun();                                  // counted
+    compassRun(['stats_consent' => false]);        // withdrawn
     $owner = User::factory()->create();
-    publicCompassRun(['user_id' => $owner->id]);         // saved to an account
+    compassRun(['user_id' => $owner->id]);         // saved to an account
 
     $this->get('/compass/stats')->assertInertia(fn (Assert $page) => $page
         ->where('stats.total', 1)
@@ -55,9 +36,9 @@ it('counts only anonymous consented runs', function () {
 });
 
 it('averages a question and breaks the counts down by length', function () {
-    publicCompassRun(['version' => 'short', 'answers' => ['auth_lib#0' => 2], 'spectrum' => 'tech_reform']);
-    publicCompassRun(['version' => 'short', 'answers' => ['auth_lib#0' => -2], 'spectrum' => 'civic_reform']);
-    publicCompassRun(['version' => 'full', 'answers' => ['auth_lib#0' => 2], 'spectrum' => 'tech_reform']);
+    compassRun(['version' => 'short', 'answers' => ['auth_lib#0' => 2], 'spectrum' => 'tech_reform']);
+    compassRun(['version' => 'short', 'answers' => ['auth_lib#0' => -2], 'spectrum' => 'civic_reform']);
+    compassRun(['version' => 'full', 'answers' => ['auth_lib#0' => 2], 'spectrum' => 'tech_reform']);
 
     $this->get('/compass/stats')->assertInertia(fn (Assert $page) => $page
         ->where('stats.total', 3)
@@ -78,7 +59,7 @@ it('averages a question and breaks the counts down by length', function () {
 });
 
 it('never exposes consistency or recent submissions', function () {
-    publicCompassRun();
+    compassRun();
 
     $this->get('/compass/stats')->assertInertia(fn (Assert $page) => $page
         ->missing('stats.consistency')

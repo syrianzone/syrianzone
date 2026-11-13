@@ -9,9 +9,9 @@ import {
     type LifelineChart, type TrendPoint,
 } from '../_lib/charts';
 import type { ChartFilterKey } from '../_lib/filters';
-import { formatDate } from '../_lib/format';
-import type { PromiseCardData } from '../_lib/types';
-import SpeakerAvatar from './SpeakerAvatar';
+import { formatDate } from '@/Domain/promises/format';
+import type { PromiseCardData } from '@/Domain/promises/types';
+import SpeakerAvatar from '@/Domain/promises/SpeakerAvatar';
 
 /** Rows shown per chart before "show all". */
 const ROW_LIMIT = 6;

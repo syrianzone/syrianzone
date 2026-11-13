@@ -1,14 +1,6 @@
 <?php
 
-use App\Http\Middleware\CompassAdmin;
-use App\Http\Middleware\GovAppsAdmin;
 use App\Http\Middleware\ModuleCapabilityGuard;
-use App\Http\Middleware\PhonebookAdmin;
-use App\Http\Middleware\PlacesAdmin;
-use App\Http\Middleware\PollsAdmin;
-use App\Http\Middleware\SyOfficialAdmin;
-use App\Http\Middleware\TransitAdmin;
-use App\Http\Middleware\UsersAdmin;
 use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Support\Facades\Route;
 
@@ -35,17 +27,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-$guarded = [
-    'polls_admin' => 'polls',
-    'places_admin' => 'places',
-    'syofficial_admin' => 'syofficial',
-    'govapps_admin' => 'govapps',
-    'phonebook_admin' => 'phonebook',
-    'transit_admin' => 'transit',
-    'users_admin' => 'users',
-    'compass_admin' => 'compass',
-    'promises_admin' => 'promises',
-];
+$guarded = ModuleCapabilityGuard::ALIASES;
 
 it('leaves no route inside a guarded admin group without a capability', function () use ($guarded) {
     $offenders = [];
@@ -152,49 +134,22 @@ it('only ever tags routes with real capabilities', function () use ($guarded) {
 });
 
 it('declares only real capabilities in each middleware', function () {
-    $middlewares = [
-        PollsAdmin::class,
-        PlacesAdmin::class,
-        SyOfficialAdmin::class,
-        GovAppsAdmin::class,
-        PhonebookAdmin::class,
-        TransitAdmin::class,
-        UsersAdmin::class,
-        CompassAdmin::class,
-    ];
-
-    foreach ($middlewares as $class) {
-        $middleware = new $class;
-        $middleware->assertCapabilitiesAreReal();
-    }
-
-    expect(true)->toBeTrue();
+    // Throws if any module middleware tags a capability that is not in the
+    // catalogue, which would deny the route outright.
+    expect(fn () => (new ModuleCapabilityGuard)->assertCapabilitiesAreReal())
+        ->not->toThrow(Throwable::class);
 });
 
-it('registers every guard under the alias it declares', function () {
-    // The guard's bare group instance looks for its own alias when deciding
-    // whether a route is tagged. A mismatch between alias() and the alias
-    // table is silent and would 403 every route in the module, so it is
-    // asserted rather than trusted.
+it('registers every guard alias to the one parameterised guard', function () {
+    // The bare group instance reads its module from this alias table. A mismatch
+    // between the table and bootstrap/app.php is silent and would 403 every
+    // route in the module, so it is asserted rather than trusted.
     $registered = app('router')->getMiddleware();
 
-    $middlewares = [
-        PollsAdmin::class,
-        PlacesAdmin::class,
-        SyOfficialAdmin::class,
-        GovAppsAdmin::class,
-        PhonebookAdmin::class,
-        TransitAdmin::class,
-        UsersAdmin::class,
-        CompassAdmin::class,
-    ];
-
-    foreach ($middlewares as $class) {
-        $alias = (new $class)->alias();
-
+    foreach (array_keys(ModuleCapabilityGuard::ALIASES) as $alias) {
         expect($registered[$alias] ?? null)->toBe(
-            $class,
-            sprintf('%s declares alias "%s" but bootstrap/app.php registers something else.', $class, $alias)
+            ModuleCapabilityGuard::class,
+            sprintf('Alias "%s" is not registered to ModuleCapabilityGuard.', $alias)
         );
     }
 });

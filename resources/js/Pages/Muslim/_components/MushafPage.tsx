@@ -1,9 +1,10 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { Bookmark, BookmarkCheck } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
-import AyahMark from './ayah-mark/AyahMark';
-import { BASMALAH_LIGATURE, ensureRtlBidi, type QuranPage } from '../_lib/quran';
-import { splitPartTokens } from '../_lib/quranAudio';
+import AyahMark from '@/Domain/quran/AyahMark';
+import { BASMALAH_LIGATURE, ensureRtlBidi, type QuranPage } from '../../../Domain/quran/quran';
+import { splitPartTokens } from '../../../Domain/quran/quranAudio';
+import '@/Domain/quran/quran.css';
 
 interface Props {
   data: QuranPage;
@@ -116,8 +117,6 @@ export default function MushafPage({ data, currentAyahKey, activeWordKey, active
       // so measure the slot column (grandparent) for real available width.
       const slot = root.parentElement?.parentElement ?? root.parentElement;
       const availW = slot ? slot.clientWidth : frameWidth;
-      // Always fill the viewport: scale up or down until either the
-      // width or the height limit is hit (font is fixed at 25px).
       const wFit = availW / frameWidth;
       const naturalH = root.offsetHeight;
       const hFit = (maxHeight && naturalH > 0) ? maxHeight / naturalH : wFit;

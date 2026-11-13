@@ -15,7 +15,7 @@
 // whole hand) is scored as in `tarneebScore`. The doubles some tables allow are
 // still not modelled.
 
-import { createDeck, shuffle, type Card, type Suit } from './cards';
+import { createDeck, shuffle, type Card, type Suit } from '@/Domain/games/cards';
 import {
   createAuction,
   currentSeat,
@@ -42,7 +42,7 @@ export const TARNEEB_TEAMS: Seat[][] = [
   [1, 3],
 ];
 
-export interface TarneebOptions {
+interface TarneebOptions {
   /** Points a team must reach to win the match. */
   target: number;
   /** Smallest legal bid. */
@@ -97,7 +97,6 @@ export interface TarneebRound {
   history: CompletedTrick[];
 }
 
-/** The team a seat plays for. */
 export const teamOf = (seat: Seat): 0 | 1 => (seat % 2 === 0 ? 0 : 1);
 
 export function createRound(
@@ -201,11 +200,6 @@ export function isRedeal(round: TarneebRound): boolean {
   return round.phase === 'complete' && round.declarer === null;
 }
 
-/**
- * Points per team for a finished contract: the contract team scores the tricks
- * it took when it reached the bid, and the defenders score the bid when it did
- * not. `declarerTeam` is a team index (0 or 1).
- */
 /**
  * Points per team for a finished contract.
  *

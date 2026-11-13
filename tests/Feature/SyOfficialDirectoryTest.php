@@ -4,7 +4,7 @@ use App\Exceptions\Directories\DirectoryActionException;
 use App\Models\OfficialCategory;
 use App\Models\OfficialEntity;
 use App\Services\SyOfficial\SyOfficialDirectoryService;
-use Illuminate\Support\Facades\Cache;
+use Inertia\Testing\AssertableInertia as Assert;
 
 /*
 |--------------------------------------------------------------------------
@@ -81,7 +81,7 @@ it('rejects an entity pointing at a category that does not exist', function () {
     ]);
 })->throws(DirectoryActionException::class, 'No category exists with id no-such-category');
 
-it('drops non-http social links and reindexes so the column stays a list', function () {
+it('keeps the platform keys and drops non-http social links', function () {
     $category = OfficialCategory::factory()->create();
 
     $entity = $this->service->createEntity(
@@ -91,23 +91,45 @@ it('drops non-http social links and reindexes so the column stays a list', funct
             'name' => 'Social',
             'name_ar' => 'سوشيال',
         ],
-        ['https://example.com', 'javascript:alert(1)', '', 'http://example.org', null],
+        [
+            'facebook' => 'https://example.com',
+            'twitter' => 'javascript:alert(1)',
+            'instagram' => '',
+            'telegram' => '  http://example.org  ',
+            'youtube' => null,
+        ],
     );
 
     $entity->refresh();
 
-    // The old code array_filter'd without array_values, which would have stored
-    // {"2":"http://example.org"} and broken .map() in the Inertia components.
-    expect($entity->socials)->toBe(['https://example.com', 'http://example.org'])
-        ->and(array_is_list($entity->socials))->toBeTrue();
+    // The column is a platform-keyed map: the public tile resolves each link's
+    // icon and label from its key, and the admin form reads it back by key.
+    expect($entity->socials)->toBe([
+        'facebook' => 'https://example.com',
+        'telegram' => 'http://example.org',
+    ]);
 });
 
+it('refuses a list-shaped socials payload instead of flattening the map', function () {
+    $category = OfficialCategory::factory()->create();
+
+    $this->service->createEntity(
+        [
+            'id' => 'social-list',
+            'category_id' => $category->id,
+            'name' => 'Social List',
+            'name_ar' => 'قائمة',
+        ],
+        ['https://example.com', 'http://example.org'],
+    );
+})->throws(DirectoryActionException::class, 'socials must be an object keyed by platform');
+
 it('leaves socials untouched on update when none are supplied', function () {
-    $entity = OfficialEntity::factory()->create(['socials' => ['https://keep.me']]);
+    $entity = OfficialEntity::factory()->create(['socials' => ['facebook' => 'https://keep.me']]);
 
     $this->service->updateEntity($entity->id, ['name' => 'Renamed']);
 
-    expect($entity->fresh()->socials)->toBe(['https://keep.me'])
+    expect($entity->fresh()->socials)->toBe(['facebook' => 'https://keep.me'])
         ->and($entity->fresh()->name)->toBe('Renamed');
 });
 
@@ -140,21 +162,32 @@ it('refuses to delete a category that does not exist', function () {
 })->throws(DirectoryActionException::class, 'No Category exists with id ghost');
 
 it('flushes both public read caches on every write', function () {
-    Cache::put(SyOfficialDirectoryService::CATEGORIES_CACHE_KEY, 'stale', 600);
-    Cache::put(SyOfficialDirectoryService::ENTITIES_CACHE_KEY, 'stale', 600);
+    $category = OfficialCategory::factory()->create(['is_active' => true]);
+    OfficialEntity::factory()->inCategory($category)->create(['is_active' => true, 'name_ar' => 'قبل التعطيل']);
 
-    $category = OfficialCategory::factory()->create();
+    // Prime the cached page: one active category with one entity.
+    $this->get('/syofficial')->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->has('categories', 1)
+        ->has('initialData', 1)
+    );
+
     $this->service->setCategoryActive($category->id, false);
 
-    expect(Cache::has(SyOfficialDirectoryService::CATEGORIES_CACHE_KEY))->toBeFalse()
-        ->and(Cache::has(SyOfficialDirectoryService::ENTITIES_CACHE_KEY))->toBeFalse();
+    // Deactivating the category must reach the page at once, both props: it
+    // disappears from the list and its entity is no longer published.
+    $this->get('/syofficial')->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->has('categories', 0)
+        ->has('initialData', 0)
+    );
 });
 
 it('applies a reorder and forgets the cache', function () {
-    Cache::put(SyOfficialDirectoryService::CATEGORIES_CACHE_KEY, 'stale', 600);
+    $first = OfficialCategory::factory()->create(['order_column' => 1, 'is_active' => true]);
+    $second = OfficialCategory::factory()->create(['order_column' => 2, 'is_active' => true]);
 
-    $first = OfficialCategory::factory()->create(['order_column' => 1]);
-    $second = OfficialCategory::factory()->create(['order_column' => 2]);
+    $this->get('/syofficial')->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->where('categories.0.id', $first->id)
+    );
 
     $written = $this->service->reorderCategories([
         ['id' => $second->id, 'order_column' => 1],
@@ -163,8 +196,12 @@ it('applies a reorder and forgets the cache', function () {
 
     expect($written)->toBe(2)
         ->and($first->fresh()->order_column)->toBe(2)
-        ->and($second->fresh()->order_column)->toBe(1)
-        ->and(Cache::has(SyOfficialDirectoryService::CATEGORIES_CACHE_KEY))->toBeFalse();
+        ->and($second->fresh()->order_column)->toBe(1);
+
+    // The public page reads the new order immediately.
+    $this->get('/syofficial')->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->where('categories.0.id', $second->id)
+    );
 });
 
 it('reports a not-found kind so the transport layer can answer 404', function () {

@@ -12,8 +12,8 @@ import {
   Utensils,
   type LucideIcon,
 } from 'lucide-react';
-import { CATEGORY_LABELS } from '../_lib/categories';
-import type { PlaceCategory, PlaceListItem } from '../_lib/types';
+import { CATEGORY_LABELS } from '@/Domain/places/categories';
+import type { PlaceCategory, PlaceListItem } from '@/Domain/places/types';
 
 const CATEGORY_ICONS: Record<PlaceCategory, LucideIcon> = {
   historical: Landmark,

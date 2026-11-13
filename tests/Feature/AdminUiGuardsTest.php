@@ -5,11 +5,9 @@
 | Admin UI authorization guards
 |--------------------------------------------------------------------------
 |
-| The admin pages used to render every control for anyone holding any capability
-| in the module, so a `places.review`-only reviewer saw eight moderation buttons
-| and 403'd on all of them, and a `polls.delete`-only account was offered the
-| create-poll button. The endpoints have been tagged per capability since
-| ModuleCapabilityGuard landed; this asserts the UI caught up.
+| A control may only render when the caller holds the capability its endpoint is
+| tagged with: a `places.review`-only reviewer must not be offered the eight
+| moderation buttons that would 403.
 |
 | These are source-level assertions rather than rendered-output tests. The
 | failure mode being guarded against is precisely the one a render test would
@@ -33,7 +31,7 @@ function adminUiGateCases(): array
         'resources/js/Pages/Admin/Places/PlaceReviewCard.tsx' => [
             'places.approve', 'places.edit', 'places.delete', 'places.moderate_photos',
         ],
-        'resources/js/Components/admin/AdminPollManager.tsx' => [
+        'resources/js/Domain/polls/AdminPollManager.tsx' => [
             'polls.create', 'polls.edit', 'polls.delete',
         ],
         'resources/js/Pages/Admin/SyOfficial/Index.tsx' => [
@@ -81,13 +79,15 @@ it('gates every module admin control on a capability', function () {
 });
 
 it('derives no module admin gate from a role string', function () {
-    // resources/js/Lib/permissions.ts documents why: a module role holds its
-    // whole module with an empty permissions array, and a plain user can hold
-    // explicit grants, so a role check hides the panel from both.
+    // resources/js/Lib/capabilities.ts documents why: an account's access is
+    // exactly its stored grants, so a role check hides the panel from a plain
+    // user who was granted a capability explicitly.
     //
-    // The dashboard is deliberately excluded. It still gates the Filament link,
-    // the asset manager, the site popup and the token page by role, because
-    // those are superadmin-only surfaces with no capability of their own.
+    // The dashboard is deliberately excluded. It still gates the Filament
+    // panel link and the route-submissions tab by role — those are the
+    // account kind, not a module capability. Its admin tabs are gated on
+    // capabilities, including the superadmin-only modules (guesswho.manage,
+    // assets.manage, site.popup, site.navigation).
     foreach (array_keys(adminUiGateCases()) as $file) {
         $source = file_get_contents(base_path($file));
 
@@ -107,8 +107,8 @@ it('gates the dashboard poll controls on their own capabilities', function () {
 });
 
 it('does not fire a capability-gated fetch from an ungated mount', function () {
-    // useAdminDrafts() used to run unconditionally, so a transit.edit_routes-only
-    // operator hit a 403 on page load for data they cannot see.
+    // A transit.edit_routes-only operator must not fire the drafts fetch, or the
+    // page load 403s for data they cannot see.
     $hook = file_get_contents(base_path('resources/js/Pages/Transit/_hooks/useMapData.ts'));
     $page = file_get_contents(base_path('resources/js/Pages/Transit/admin/Index.tsx'));
 
@@ -126,8 +126,8 @@ it('hides the transit logs tab from operators who cannot read the audit trail', 
 it('gates the import publish buttons on the capability the route requires', function () {
     $source = file_get_contents(base_path('resources/js/Pages/Transit/admin/ImportTab.tsx'));
 
-    // Both modes go through /import-publish, tagged transit_admin:transit.edit_routes.
-    // "Save as draft" used to be offered to anyone with transit.review_drafts.
+    // Both modes go through /import-publish, tagged
+    // transit_admin:transit.edit_routes, so both need that capability.
     $at = strpos($source, "handlePublish('draft')");
     expect($at)->not->toBeFalse();
 
@@ -135,26 +135,24 @@ it('gates the import publish buttons on the capability the route requires', func
 });
 
 it('keeps the superadmin-only asset upload out of reach of poll managers', function () {
-    // Candidate images post to /api/v1/admin/assets/upload, in the
-    // ['auth','superadmin'] group. The drop zone is now inert for everyone else.
-    $source = file_get_contents(base_path('resources/js/Components/admin/AdminPollManager.tsx'));
+    // Candidate images post to /api/v1/admin/assets/upload, which is guarded by
+    // assets.manage. The drop zone is now inert for anyone without it.
+    $source = file_get_contents(base_path('resources/js/Domain/polls/AdminPollManager.tsx'));
 
     expect($source)
         ->toContain('canUploadImages')
         ->toContain('disabled={!canUploadImages}');
 });
 
-it('makes both sortable lists read-only without their reorder capability', function () {
-    foreach ([
-        'resources/js/Pages/Admin/SyOfficial/_components/SortableList.tsx',
-        'resources/js/Pages/Admin/GovApps/_components/SortableList.tsx',
-    ] as $file) {
-        $source = file_get_contents(base_path($file));
+it('makes the sortable list read-only without its reorder capability', function () {
+    // One component serves both admin sections since the directories kit; the
+    // capability itself still comes from the caller (syofficial.reorder vs
+    // govapps.reorder), so it stays a prop and not a constant here.
+    $source = file_get_contents(base_path('resources/js/Components/directory/SortableList.tsx'));
 
-        expect($source)
-            ->toContain('canReorder')
-            ->toContain('if (!canReorder) return;');
-    }
+    expect($source)
+        ->toContain('canReorder')
+        ->toContain('if (!canReorder) return;');
 });
 
 it('never calls useAuth() from a page that renders MainLayout', function () {

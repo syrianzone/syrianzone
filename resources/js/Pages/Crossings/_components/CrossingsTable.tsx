@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils';
+import { cn } from '@/Lib/utils';
 import { StatusDot } from './StatusPill';
 import { WhatsAppIcon } from './WhatsAppIcon';
 import {
@@ -9,7 +9,7 @@ import {
     windowLabel,
     type Crossing,
     type Direction,
-} from '../_lib/crossings';
+} from '@/Domain/crossings/crossings';
 
 /** One line of hours for the row: the h24 case and the multi-window case both
  *  collapse, because the full breakdown lives in the detail card. */

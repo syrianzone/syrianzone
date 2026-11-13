@@ -1,12 +1,12 @@
-import { lazy } from 'react';
 import { MessageCircleQuestion } from 'lucide-react';
-import type { WidgetDefinition } from '../../_lib/types';
+import type { WidgetDeclaration } from '../../_lib/types';
+import { sources } from '../../_lib/sources';
 
 export interface AnswersConfig {
   limit: number;
 }
 
-export const answersWidget: WidgetDefinition<AnswersConfig> = {
+export const answersWidget: WidgetDeclaration = {
   id: 'answers',
   name: 'إجابات سوريا',
   description: 'أحدث الأسئلة من إجابات سوريا',
@@ -30,5 +30,8 @@ export const answersWidget: WidgetDefinition<AnswersConfig> = {
   // only ever re-reads our own cache
   refresh: { staleMs: 5 * 60_000, intervalMs: 10 * 60_000 },
   multiple: false,
-  Component: lazy(() => import('./View')),
+  seed: { order: 8, w: 6, h: 3 },
+  source: sources.answers,
 };
+
+export default answersWidget;

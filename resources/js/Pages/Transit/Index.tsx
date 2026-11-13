@@ -3,9 +3,9 @@ import CityGrid from './_components/landing/CityGrid'
 
 import MainLayout from '@/Layouts/MainLayout'
 
-import type { City } from './_types'
+import type { TransitCity } from '@/Domain/transit/types'
 
-export default function TransitLandingPage({ cities = [] }: { cities?: City[] }) {
+export default function TransitLandingPage({ cities = [] }: { cities?: TransitCity[] }) {
   return (
     <MainLayout>
       

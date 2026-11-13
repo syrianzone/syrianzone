@@ -1,29 +1,24 @@
+import { apiErrorMessage } from '@/Lib/api';
+import { notify } from '@/Lib/notify';
 import React, { useMemo, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/card';
 import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
 import { Separator } from '@/Components/ui/separator';
 import { RotateCcw, Download, Trash2, ShieldCheck, AlertTriangle, Save, LogIn, BarChart3 } from 'lucide-react';
-import type { AnswerMap, AlignBloc, CompassResult as Result, Figure, QuizVersion, Spectrum } from './data/types';
-import { AXES } from './data/axes';
-import { computeScores, computeConsistency, matchFigures, matchSpectrum, versionTotals } from './lib/engine';
-import { addResult, setLastResultId, clearLocal, saveResultToAccount, updateLocalResult, setPendingAccountSave, deleteAccountResults, deleteAccountResult, submitStats, removeStats } from './lib/storage';
+import type { AnswerMap, CompassResult as Result, Figure, QuizVersion, Spectrum } from '@/Domain/compass/types';
+import { AXES } from '@/Domain/compass/axes';
+import { computeScores, computeConsistency, matchFigures, matchSpectrum, versionTotals } from '@/Domain/compass/engine';
+import { addResult, clearLocal, saveResultToAccount, updateLocalResult, setPendingAccountSave, deleteAccountResults, deleteAccountResult, submitStats, removeStats } from './lib/storage';
 import FigureAvatar from './components/FigureAvatar';
-import SpectrumIcon from './components/SpectrumIcon';
+import SpectrumIcon from '@/Domain/compass/SpectrumIcon';
 import { COMPASS_FLAGS } from './flags';
-import AxisBars from './components/AxisBars';
-import AlignmentCard from './components/AlignmentCard';
+import { useThemeId } from '@/Lib/theme';
+import AxisBars from '@/Domain/compass/AxisBars';
+import AlignmentCard from '@/Domain/compass/AlignmentCard';
 import CompassCanvas from './components/CompassCanvas';
 import CompassShareCard from './components/CompassShareCard';
 import { exportElementAsPng } from '@/Lib/exportElementAsPng';
-
-const BLOC_LABEL: Record<AlignBloc, string> = {
-  west: 'غربي',
-  gulf: 'خليجي',
-  turkish: 'تركي',
-  east: 'شرقي',
-  neutral: 'حياد',
-};
 
 export default function CompassResult({
   answers,
@@ -54,7 +49,7 @@ export default function CompassResult({
   const [savedId, setSavedId] = useState<number | string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
-  const [themeKey, setThemeKey] = useState('dark');
+  const themeKey = useThemeId();
   const storyCardRef = useRef<HTMLDivElement>(null);
   const localResultRef = useRef<Result | null>(null);
 
@@ -66,7 +61,6 @@ export default function CompassResult({
     const top = matches[0] ?? null;
     const total = versionTotals(version).total;
     const answered = Object.keys(answers).length;
-    // strongest / weakest axes (by |value|)
     const rankedAxes = AXES.map((a) => ({ axis: a, value: axes[a.id] }))
       .filter((x) => x.value != null)
       .sort((a, b) => Math.abs(b.value as number) - Math.abs(a.value as number));
@@ -90,7 +84,6 @@ export default function CompassResult({
   const persistLocal = (extra: Partial<Result> = {}) => {
     const r = { ...buildResult(), id: crypto.randomUUID?.() ?? Date.now(), ...extra };
     addResult(r);
-    setLastResultId(r.id as string);
     return r;
   };
 
@@ -116,8 +109,8 @@ export default function CompassResult({
       setSavedToAccount(true);
       setSavedId(r?.id ?? null);
       onSavedToAccount?.();
-    } catch {
-      // keep local only
+    } catch (e) {
+      notify.error(apiErrorMessage(e, 'تعذّر الحفظ في الحساب، بقيت نتيجتك على هذا الجهاز'));
     } finally {
       setSaving(false);
     }
@@ -131,7 +124,8 @@ export default function CompassResult({
       setSavedToAccount(false);
       setSavedId(null);
       onSavedToAccount?.();
-    } catch {
+    } catch (e) {
+      notify.error(apiErrorMessage(e, 'تعذّر حذف النتيجة من حسابك'));
     } finally {
       setSaving(false);
     }
@@ -153,8 +147,8 @@ export default function CompassResult({
       } else {
         setStatsShared(false);
       }
-    } catch {
-      // keep current state on failure
+    } catch (e) {
+      notify.error(apiErrorMessage(e, 'تعذّر تحديث المشاركة في الإحصاءات المجهولة'));
     } finally {
       setStatsBusy(false);
     }
@@ -165,7 +159,9 @@ export default function CompassResult({
     if (isLoggedIn) {
       try {
         await deleteAccountResults();
-      } catch {}
+      } catch (e) {
+        notify.error(apiErrorMessage(e, 'تعذّر حذف نتائجك المحفوظة'));
+      }
     }
     setConfirmDelete(false);
     onRestart();
@@ -176,21 +172,12 @@ export default function CompassResult({
     setImageBusy(true);
     try {
       await exportElementAsPng(storyCardRef.current, `bousalat-syria-${Date.now()}.png`);
-    } catch (e) {
-      console.error('compass image export failed', e);
+    } catch {
+      notify.error('تعذّر إنشاء صورة النتيجة، حاول مرة أخرى');
     } finally {
       setImageBusy(false);
     }
   };
-
-  // Track the active theme so the share card matches it.
-  React.useEffect(() => {
-    const read = () => setThemeKey(document.documentElement.getAttribute('data-theme') || 'dark');
-    read();
-    const observer = new MutationObserver(read);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-    return () => observer.disconnect();
-  }, []);
 
   // keep a local copy on first render (never auto-saves to the account)
   React.useEffect(() => {
@@ -207,7 +194,6 @@ export default function CompassResult({
 
   return (
     <div className="space-y-4" id="compass-card" dir="rtl">
-      {/* ---- Header: spectrum + match ---- */}
       <Card className="overflow-hidden">
         <div className="bg-primary/10 border-b border-border px-4 py-5 text-center">
           <p className="text-xs text-muted-foreground mb-1">طيفك السياسي</p>
@@ -222,7 +208,6 @@ export default function CompassResult({
           )}
         </div>
         <CardContent className="pt-4 space-y-4">
-          {/* Closest figure — only when character names are enabled. */}
           {COMPASS_FLAGS.showCharacterNames && top && (
             <div>
               <div className="flex items-center gap-4">
@@ -275,7 +260,6 @@ export default function CompassResult({
         </CardContent>
       </Card>
 
-      {/* ---- Axis bars ---- */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">موقعك على المحاور</CardTitle>
@@ -285,17 +269,15 @@ export default function CompassResult({
         </CardContent>
       </Card>
 
-      {/* ---- Alignment ---- */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">توجّهك الخارجي</CardTitle>
         </CardHeader>
         <CardContent>
-          <AlignmentCard align={computed.align} label={BLOC_LABEL} />
+          <AlignmentCard align={computed.align} />
         </CardContent>
       </Card>
 
-      {/* ---- 2D compass ---- */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">موقعك على الساحة</CardTitle>
@@ -306,7 +288,6 @@ export default function CompassResult({
         </CardContent>
       </Card>
 
-      {/* ---- Stats ---- */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">إحصاءات</CardTitle>
@@ -340,7 +321,6 @@ export default function CompassResult({
         </CardContent>
       </Card>
 
-      {/* ---- Anonymous stats (default-on): title above, red remove button ---- */}
       {!readOnly && statsShared && (
         <div className="space-y-2">
           <p className="text-center text-base font-bold text-foreground leading-snug">
@@ -357,7 +337,6 @@ export default function CompassResult({
         </div>
       )}
 
-      {/* ---- Save to account: title above, primary save button ---- */}
       {!readOnly && isLoggedIn && (
         <div className="space-y-2">
           <p className="text-center text-base font-bold text-foreground leading-snug">
@@ -383,7 +362,6 @@ export default function CompassResult({
         </Button>
       )}
 
-      {/* ---- Actions ---- */}
       <div className="flex flex-col gap-3">
         {readOnly ? (
           <Button variant="secondary" onClick={onRestart} className="w-full gap-2">

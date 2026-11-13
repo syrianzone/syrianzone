@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\Facts;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -15,57 +16,83 @@ class PrayerController extends Controller
   // load-bearing: it broke on staging and on localhost. Fetching server-side has
   // no CORS at all and gives us caching the direct call never had.
   //
-  // Same fixed governorate list as WeatherController::COORDS: coordinates are
-  // never accepted from the client, so this cannot become an open proxy and the
-  // cache stays bounded.
-  private const COORDS = [
-    'damascus' => [33.5138, 36.2765],
-    'rural-damascus' => [33.5138, 36.2765],
-    'aleppo' => [36.2021, 37.1343],
-    'homs' => [34.7324, 36.7137],
-    'hama' => [35.1318, 36.7578],
-    'latakia' => [35.5317, 35.7901],
-    'tartus' => [34.8890, 35.8866],
-    'deir-ez-zor' => [35.3359, 40.1408],
-    'idlib' => [35.9306, 36.6339],
-    'daraa' => [32.6255, 36.1016],
-    'quneitra' => [33.1250, 35.8250],
-    'sweida' => [32.7089, 36.5695],
-    'hasakah' => [36.5023, 40.7382],
-    'raqqa' => [35.9520, 39.0081],
-  ];
+  // Only a fixed governorate list is served: coordinates are never accepted
+  // from the client, so this cannot become an open proxy and the cache stays
+  // bounded. The list and its centres are the shared table in
+  // resources/data/governorates.json, which WeatherController reads too.
 
-  // AlAdhan calculation methods (verified against GET /v1/methods).
-  // 3 (Muslim World League, Fajr 18° / Isha 17°) is the Syrian standard and
-  // the default everywhere. The method is a fiqh choice, never a coder
-  // default: the /muslim route exposes this list to the user instead of
-  // hardcoding a silent HighLatitudeRule (see Itqan #720).
-  public const METHODS = [0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
-
-  public const DEFAULT_METHOD = 3;
+  // AlAdhan calculation methods. The table is resources/data/prayer.json, which
+  // Domain/prayer/methods.ts reads too: `methods` is what the pickers offer, and
+  // `unlisted_method_ids` are ids the endpoint has always accepted (a client
+  // that stored one keeps it instead of being silently reset). 3 (Muslim World
+  // League, Fajr 18° / Isha 17°) is the Syrian standard and the default. The
+  // method is a fiqh choice, never a coder default: the /muslim route exposes
+  // this list to the user instead of hardcoding a silent HighLatitudeRule (see
+  // Itqan #720).
 
   // Only the six the widgets render. Aladhan also returns Imsak, Midnight and
   // the night thirds, which nothing on the board uses.
   private const PRAYERS = ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
+  /**
+   * Every calculation method id the endpoint accepts.
+   *
+   * @return array<int, int>
+   */
+  public static function methods(): array
+  {
+    return Facts::prayerMethodIds();
+  }
+
+  public static function defaultMethod(): int
+  {
+    return (int) Facts::prayer()['default_method'];
+  }
+
+  /**
+   * The governorate ids the endpoint accepts.
+   *
+   * @return array<int, string>
+   */
+  private static function governorateIds(): array
+  {
+    return array_column(Facts::governorates(), 'id');
+  }
+
+  /**
+   * @return array{0: float, 1: float}
+   */
+  private static function coordsFor(string $governorate): array
+  {
+    $row = Facts::governorate($governorate);
+    if ($row === null) {
+      throw new \InvalidArgumentException("Unknown governorate: {$governorate}");
+    }
+
+    return [(float) $row['lat'], (float) $row['lng']];
+  }
+
   // Timings are for a calendar day in Syria, so the day boundary that matters is
   // Damascus midnight, not the app timezone or the visitor's clock.
-  private const TZ = 'Asia/Damascus';
+  private static function timezone(): string
+  {
+    return Facts::syria()['timezone'];
+  }
 
   public function show(Request $request)
   {
     $validated = $request->validate([
-      'governorate' => 'nullable|string|in:'.implode(',', array_keys(self::COORDS)),
+      'governorate' => 'nullable|string|in:'.implode(',', self::governorateIds()),
       'latitude' => 'nullable|numeric|between:-90,90',
       'longitude' => 'nullable|numeric|between:-180,180',
-      'method' => 'nullable|integer|in:'.implode(',', self::METHODS),
+      'method' => 'nullable|integer|in:'.implode(',', self::methods()),
     ], [
       'governorate.in' => 'محافظة غير معروفة',
       'method.in' => 'طريقة حساب غير معروفة',
     ]);
 
-    $method = (int) ($validated['method'] ?? self::DEFAULT_METHOD);
-    $today = now()->timezone(self::TZ);
+    $method = (int) ($validated['method'] ?? self::defaultMethod());
+    $today = now()->timezone(self::timezone());
 
     // Custom coordinates (diaspora / custom city): unlike weather, prayer is
     // deliberately NOT clamped to the Syria bbox — the user may be anywhere.
@@ -84,7 +111,7 @@ class PrayerController extends Controller
       // the date is part of the key, so the entry rolls over at Damascus midnight
       // on its own instead of relying on a ttl landing on the boundary
       $key = "prayer:{$governorate}:{$method}:{$today->format('Y-m-d')}";
-      [$lat, $lon] = self::COORDS[$governorate];
+      [$lat, $lon] = self::coordsFor($governorate);
     }
 
     $cached = Cache::get($key);

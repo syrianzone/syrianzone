@@ -1,0 +1,31 @@
+[
+  {
+    "slug": "2048",
+    "title": "2048"
+  },
+  {
+    "slug": "solitare",
+    "title": "سوليتير"
+  },
+  {
+    "slug": "tarneeb",
+    "title": "طرنيب"
+  },
+  {
+    "slug": "trix",
+    "title": "تركس"
+  },
+  {
+    "slug": "guesswho",
+    "title": "مَنْ هُوَ؟",
+    "href": "/guesswho",
+    "online": true,
+    "comingSoon": true
+  },
+  {
+    "slug": "president",
+    "title": "رئيس الجمهورية",
+    "href": "https://game.hadealahmad.com",
+    "external": true
+  }
+]

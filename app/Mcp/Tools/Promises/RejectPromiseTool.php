@@ -6,6 +6,8 @@ use App\Services\Promises\PromiseModerationService;
 use App\Services\Promises\PromisePresenter;
 use App\Services\Promises\PromiseRules;
 use App\Support\Agents\AgentContext;
+use App\Support\Permissions\PermissionCatalogue;
+use App\Support\RejectionReason;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -27,7 +29,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
 #[IsIdempotent]
 class RejectPromiseTool extends PromisesTool
 {
-    protected array $permissions = ['promises.review'];
+    protected array $permissions = [PermissionCatalogue::PROMISES_REVIEW];
 
     public function schema(JsonSchema $schema): array
     {
@@ -37,8 +39,8 @@ class RejectPromiseTool extends PromisesTool
                 ->required(),
 
             'reason' => $schema->string()
-                ->description('Why it was rejected, in Arabic. Max 1000 characters.')
-                ->max(1000),
+                ->description('Why it was rejected, in Arabic. Max '.RejectionReason::MAX_LENGTH.' characters.')
+                ->max(RejectionReason::MAX_LENGTH),
         ];
     }
 

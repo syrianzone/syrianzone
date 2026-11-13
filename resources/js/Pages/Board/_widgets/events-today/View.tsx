@@ -2,7 +2,7 @@ import { CalendarDays, ExternalLink, MapPin } from 'lucide-react';
 import { WidgetShell } from '../../_components/WidgetShell';
 import { useWidgetQuery } from '../../_lib/query';
 import { sources, type TodayEvent } from '../../_lib/sources';
-import { GOVERNORATES } from '../../_lib/governorates';
+import { GOVERNORATES_BY_ID } from '@/Domain/geography/governorates';
 import type { WidgetProps } from '../../_lib/types';
 import { eventsTodayWidget, ALL_SYRIA, type EventsTodayConfig } from './index';
 
@@ -22,7 +22,7 @@ function priceLabel(event: TodayEvent): string | null {
 
 export default function EventsTodayView({ config }: WidgetProps<EventsTodayConfig>) {
   const governorate = config.governorate ?? 'damascus';
-  const label = governorate === ALL_SYRIA ? 'كل سوريا' : (GOVERNORATES[governorate]?.label ?? '');
+  const label = governorate === ALL_SYRIA ? 'كل سوريا' : (GOVERNORATES_BY_ID[governorate]?.nameAr ?? '');
   const query = useWidgetQuery(eventsTodayWidget, governorate, () => sources.eventsToday(governorate));
   const events = query.data?.events ?? [];
   const isFallback = query.data?.is_fallback ?? false;

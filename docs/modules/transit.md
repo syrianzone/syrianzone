@@ -86,6 +86,9 @@ erDiagram
 
 The backend performs advanced PostGIS spatial queries to handle search, geo-decoding, and distance lookups:
 
+### A. Arabic name search
+`GET /api/v1/transit/search?q=…` matches `routes.name_ar_fold` / `stops.name_ar_fold` with the folded query (`App\Support\ArabicSearch::fold()`), so «احمد» finds «أحمد» and «صلاه» finds «صلاة»; ids, `city_id` and `name_en` are compared with the raw query. The fold is stored on write by `App\Models\Concerns\FoldsSearchColumns` (`App\Support\SearchFold::COLUMNS`), never computed in SQL.
+
 ### A. Distance Calculation (Nearby Stops)
 Finds all bus stops within $R$ meters (default: 500m) of the user's location coordinates.
 *   **API**: `GET /v1/stops/nearby?lat=33.513&lng=36.291`
@@ -97,7 +100,7 @@ Finds all bus stops within $R$ meters (default: 500m) of the user's location coo
     ```
 
 ### B. GeoJSON Rendering (Map Data Load)
-Instead of retrieving raw columns, Laravel converts database geometric fields into GeoJSON-compliant strings at query time.
+Instead of retrieving raw columns, Laravel converts database geometric fields into GeoJSON-compliant strings at query time, and `TransitPresenter` turns each row into its Feature.
 *   **API**: `GET /v1/cities/{id}/map-data`
 *   **SQL Logic** (`TransitController@getMapData`):
     ```sql
@@ -112,6 +115,13 @@ Instead of retrieving raw columns, Laravel converts database geometric fields in
     FROM stops
     WHERE city_id = ?;
     ```
+
+### C. The user's location
+The city map does not own geolocation: «أظهر موقعي» calls
+`Domain/location`'s `resolveGps()`, stores the fix with `setGeo()` and then keeps
+a watch only for live dot updates. The stored point is the same one the prayer
+timings and the weather act on, and a point resolved from those settings reaches
+the map through `LOC_CHANGED_EVENT`.
 
 ---
 
@@ -131,12 +141,19 @@ The map canvas loads vector tiles using MapLibre GL and layers them in order of 
 +-------------------------------------------------------+
 |  Layer 2: Background reference lines (Opacity 0.22)   |
 +-------------------------------------------------------+
-|  Layer 1: MapLibre Base Vector (dark-matter style)    |
+|  Layer 1: MapLibre Base Vector (theme's basemap style) |
 +-------------------------------------------------------+
 ```
 
-### Style Scheme (`dark-matter.json`)
-The application relies on a locally hosted dark-themed style sheet to ensure privacy and allow potential offline operations.
+### Style Scheme
+Every MapLibre map (city map, admin, studio) resolves its basemap through
+`Components/map/resolveStyle.ts`: `light-vector.json` for a light scheme and
+`dark-matter-vector.json` for a dark one, both hosted under
+`public/styles/styles/` so no API key or third party is involved. The canvas is
+created by `Components/map/createMap.ts` (RTL text plugin, compact attribution +
+navigation controls) and restyles the live instance with `setStyle` when the
+visitor switches theme — the camera, the loaded GeoJSON and the current
+selection survive the switch.
 
 ### Hover and Selection Store (`useMapStore.ts`)
 Tracks the user's interactions with map entities:
@@ -208,7 +225,7 @@ stateDiagram-v2
         InsertStops --> InsertPivot : Write route_stop order sequence
         InsertPivot --> UpdateDraftStatus : Set draft as 'approved'
         UpdateDraftStatus --> DbTxCommit : Transaction Commit
-        DbTxCommit --> CacheBuster : Flush 'transit:cities' & 'map-data:{id}'
+        DbTxCommit --> CacheBuster : TransitCache::forgetCity()
     }
 
     state Rejected {
@@ -221,12 +238,41 @@ stateDiagram-v2
 ```
 
 #### Database Cache Busting
-Upon approval or rejection, the backend explicitly busts associated cache keys to ensure instant map updates for the next user:
+Every write goes through `TransitCache`: the keys are composed there
+(`routesKey()`, `mapDataKey()`, `CITIES`, `CITIES_API`) and `forgetCity()`
+clears the whole map group a city belongs to, so Damascus and Rif Dimashq —
+which share one map — can never keep a stale half:
+
 ```php
-Cache::forget("transit:map-data:{$draft->city_id}");
-Cache::forget('transit:cities');
+app(TransitCache::class)->forgetCity($cityId);  // the group's map + route keys, then the city lists
 ```
-This forces the subsequent client calls to read the freshly populated geometries directly from the PostGIS database.
+
+The published-route list (`PublishedRoutes`) and the city list (`TransitCities`)
+read through the same class, so a key cannot be forgotten under a name the
+writer never used.
+
+### The city list (`cities` table, not a JSON mirror)
+
+`GET /api/v1/cities` and the `/transit` pages serve the same rows, built once by
+`App\Services\Transit\TransitCities` (`forPage()` without icons, `forApi()` with
+the governorate outline) and mapped once by `TransitPresenter::city()`. The
+payload carries the map group (`mapGroup`, `mapGroupLabel`) so the client renders
+the Damascus/Rif Dimashq banner and the sidebar's per-city sections from the
+server's declaration in `City::SHARED_MAPS` instead of spelling the pair itself.
+
+`TransitCities::forCards()` is the same rows reduced to what a city card draws
+(names, status, the published-route count) and without the map geometry, so the
+404 page can send them from the exception handler: that query must stay plain
+SQL, because `forPage()`/`forApi()` read their geometry through `ST_AsGeoJSON()`.
+Every surface reads a server payload — there is no checked-in copy of the cities
+table, and a route count cannot go stale.
+
+### Map payload
+
+The map's GeoJSON is written once, by `TransitPresenter::routeFeature()` and
+`stopFeature()` — the public map and the admin geometry endpoint both call them.
+A route's colour travels under one key, `colorIndex`; the browser
+(`_lib/mapColors.ts`) and the Flutter client read that key and nothing else.
 
 ---
 
@@ -263,7 +309,7 @@ action `imported`). Draft mode is the default and should stay so.
   (`transit.edit_routes`, throttle 30/min). Publish re-validates the full
   studio GeoJSON contract plus deep `[lng, lat]` range checks, then either
   creates a pending `RouteDraft` (with `mid` provenance appended to notes)
-  or runs the direct-publish transaction + `clearCityMapCache()`.
+  or runs the direct-publish transaction + `TransitCache::forgetCity()`.
 * City is auto-suggested by testing the candidate centroid against city
   bounds; the admin can always override.
 

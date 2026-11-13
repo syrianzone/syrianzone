@@ -1,51 +1,41 @@
 import { useEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/Contexts/AuthContext';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription } from '@/Components/ui/alert';
+import { Button } from '@/Components/ui/button';
+import { Input } from '@/Components/ui/input';
+import { Label } from '@/Components/ui/label';
+import { Textarea } from '@/Components/ui/textarea';
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from '@/components/ui/sheet';
+} from '@/Components/ui/sheet';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { api, extractError, extractFieldErrors } from '../_lib/api';
-import { CATEGORIES } from '../_lib/categories';
-import type { LatLng, NearbyPlace, PlaceCategory } from '../_lib/types';
+} from '@/Components/ui/select';
+import { api } from '@/Domain/places/api';
+import { apiErrorMessage, apiFieldErrors } from '@/Lib/api';
+import { CATEGORIES } from '@/Domain/places/categories';
+import type { LatLng, NearbyPlace, PlaceCategory } from '@/Domain/places/types';
 import { confirmDialog } from '@/Lib/confirm';
+import { useIsMobile } from '@/Lib/useIsMobile';
 import { DuplicateSuggestions } from './DuplicateSuggestions';
 import { PhotoPicker } from './PhotoPicker';
 
 type Step = 'auth' | 'duplicates' | 'form' | 'done';
 
-function useIsMobile() {
-  const [mobile, setMobile] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia('(max-width: 767px)');
-    const update = () => setMobile(mq.matches);
-    update();
-    mq.addEventListener('change', update);
-    return () => mq.removeEventListener('change', update);
-  }, []);
-  return mobile;
-}
-
 export function SubmitSheet(props: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   point: LatLng | null;
-  onSubmitted: (id: number) => void;
+  onSubmitted: () => void;
   onSelectExisting: (id: number) => void;
 }) {
   const { open, onOpenChange, point, onSubmitted, onSelectExisting } = props;
@@ -61,7 +51,7 @@ export function SubmitSheet(props: {
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
-  const [submittedId, setSubmittedId] = useState<number | null>(null);
+  const [submitted, setSubmitted] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   // Bumped only when a submit fails, so the focus effect runs after the errors
   // are in the DOM — never on an ordinary re-render or while the user types.
@@ -76,7 +66,7 @@ export function SubmitSheet(props: {
     setError(null);
     setFieldErrors({});
     setSubmitting(false);
-    setSubmittedId(null);
+    setSubmitted(false);
     setNearby(null);
     if (!user) {
       setStep('auth');
@@ -115,7 +105,7 @@ export function SubmitSheet(props: {
       const ok = await confirmDialog({ title: 'إغلاق دون إرسال؟', description: 'سيتم تجاهل ما أدخلته.', destructive: true, confirmText: 'تجاهل وإغلاق', cancelText: 'متابعة' });
       if (!ok) return;
     }
-    if (!next && step === 'done' && submittedId !== null) onSubmitted(submittedId);
+    if (!next && step === 'done' && submitted) onSubmitted();
     onOpenChange(next);
   };
 
@@ -157,16 +147,16 @@ export function SubmitSheet(props: {
         lng: point.lng,
         photos,
       });
-      setSubmittedId(res.id);
+      setSubmitted(true);
       setStep('done');
     } catch (e) {
-      const fe = extractFieldErrors(e);
-      if (fe) {
+      const fe = apiFieldErrors(e, { arabicOnly: true });
+      if (Object.keys(fe).length) {
         setFieldErrors(fe);
         setError(null);
       } else {
         setFieldErrors({});
-        setError(extractError(e));
+        setError(apiErrorMessage(e));
       }
       setFailedSubmit((n) => n + 1);
     } finally {

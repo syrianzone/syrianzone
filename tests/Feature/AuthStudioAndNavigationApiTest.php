@@ -1,43 +1,8 @@
 <?php
 
-use App\Models\Route as TransitRoute;
-use App\Models\RouteDraft;
 use App\Models\User;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
-
-function seedTestCityForStudio(string $id = 'damascus'): void
-{
-    if (DB::table('cities')->where('id', $id)->exists()) {
-        return;
-    }
-
-    $geometry = function (array $shape) {
-        $json = json_encode($shape, JSON_THROW_ON_ERROR);
-        if (DB::connection()->getDriverName() === 'sqlite') {
-            return $json;
-        }
-        $quoted = DB::connection()->getPdo()->quote($json);
-
-        return DB::raw("ST_GeomFromGeoJSON({$quoted})");
-    };
-
-    DB::table('cities')->insert([
-        'id' => $id,
-        'name_ar' => 'دمشق',
-        'name_en' => 'Damascus',
-        'center' => $geometry(['type' => 'Point', 'coordinates' => [36.29, 33.51]]),
-        'bounds' => $geometry([
-            'type' => 'Polygon',
-            'coordinates' => [[[36.1, 33.4], [36.5, 33.4], [36.5, 33.6], [36.1, 33.6], [36.1, 33.4]]],
-        ]),
-        'zoom' => 12,
-        'status' => 'active',
-        'created_at' => now(),
-        'updated_at' => now(),
-    ]);
-}
 
 test('POST /api/v1/auth/google/token exchanges a valid Google id_token or access_token into the shared user pool', function () {
     Config::set('services.google.client_id', 'web-client-id.apps.googleusercontent.com');
@@ -166,26 +131,25 @@ test('POST /api/v1/auth/google/token rejects banned users and mismatched client 
 });
 
 test('GET /api/v1/transit/studio/routes lists authenticated user drafts and studio edit hides linked live route until approved', function () {
-    seedTestCityForStudio('damascus');
+    seedCity('damascus', [
+        'name_ar' => 'دمشق',
+        'name_en' => 'Damascus',
+        'center' => [36.29, 33.51],
+        'bounds' => [[36.1, 33.4], [36.5, 33.6]],
+    ]);
 
     $user = User::factory()->create();
     $otherUser = User::factory()->create();
     $mobileToken = $user->createToken('Flutter Test', ['mobile'])->plainTextToken;
 
-    $liveRoute = TransitRoute::create([
-        'id' => 'route-mazzeh-1',
-        'city_id' => 'damascus',
+    $liveRoute = transitRoute('route-mazzeh-1', 'damascus', [
         'user_id' => $user->id,
         'name_ar' => 'خط المزة - البرامكة',
         'name_en' => 'Mazzeh - Baramkeh',
-        'mode' => 'bus',
-        'color' => '#10B981',
-        'status' => 'published',
     ]);
 
-    RouteDraft::create([
+    transitDraft('damascus', [
         'user_id' => $otherUser->id,
-        'city_id' => 'damascus',
         'name_ar' => 'مسودة مستخدم آخر',
         'geojson' => [
             'type' => 'FeatureCollection',
@@ -195,7 +159,6 @@ test('GET /api/v1/transit/studio/routes lists authenticated user drafts and stud
                 'properties' => [],
             ]],
         ],
-        'stops' => [],
         'status' => 'pending_review',
     ]);
 
@@ -234,19 +197,19 @@ test('GET /api/v1/transit/studio/routes lists authenticated user drafts and stud
         ->getJson('/api/v1/transit/studio/routes')
         ->assertOk();
 
-    expect($listResp->json('drafts'))->toHaveCount(1)
-        ->and($listResp->json('drafts.0.id'))->toBe($draftId)
-        ->and($listResp->json('drafts.0.route_id'))->toBe($liveRoute->id)
-        ->and($listResp->json('drafts.0.city.id'))->toBe('damascus')
-        ->and($listResp->json('drafts.0.linked_route.id'))->toBe($liveRoute->id);
+    expect($listResp->json('data'))->toHaveCount(1)
+        ->and($listResp->json('data.0.id'))->toBe($draftId)
+        ->and($listResp->json('data.0.route_id'))->toBe($liveRoute->id)
+        ->and($listResp->json('data.0.city.id'))->toBe('damascus')
+        ->and($listResp->json('data.0.linked_route.id'))->toBe($liveRoute->id);
 
     // Legacy alias /api/v1/studio/routes returns identical payload
     $legacyListResp = $this->withHeader('Authorization', 'Bearer '.$mobileToken)
         ->getJson('/api/v1/studio/routes')
         ->assertOk();
 
-    expect($legacyListResp->json('drafts'))->toHaveCount(1)
-        ->and($legacyListResp->json('drafts.0.id'))->toBe($draftId);
+    expect($legacyListResp->json('data'))->toHaveCount(1)
+        ->and($legacyListResp->json('data.0.id'))->toBe($draftId);
 });
 
 test('GET /api/v1/navigation and superadmin PUT /api/v1/admin/navigation manage the single-source-of-truth navigation catalog', function () {
@@ -269,7 +232,7 @@ test('GET /api/v1/navigation and superadmin PUT /api/v1/admin/navigation manage 
         ->and($transitItem['target'])->toBe('transit_map');
 
     // 2. Non-superadmin cannot update navigation catalog
-    $normalUser = User::factory()->create(['role' => 'user']);
+    $normalUser = User::factory()->create();
     $this->actingAs($normalUser)
         ->putJson('/api/v1/admin/navigation', ['items' => []])
         ->assertForbidden();
@@ -379,7 +342,7 @@ test('user-facing /api/v1/* write routes live in api group without unconditional
             ->not->toContain('web');
     }
 
-    $user = User::factory()->create(['role' => 'user']);
+    $user = User::factory()->create();
     $token = $user->createToken('Flutter Client', ['mobile'])->plainTextToken;
 
     // POST /api/v1/places with Bearer token

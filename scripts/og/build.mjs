@@ -25,6 +25,7 @@ const MANIFEST = join(OUT, 'manifest.json')
 /** Every file that changes how a card looks. */
 const INGREDIENTS = [
   'package.json:@resvg/resvg-wasm',
+  'resources/data/seo.json',
   'resources/og/cards.json',
   'resources/og/tokens.json',
   'resources/og/icons.json',

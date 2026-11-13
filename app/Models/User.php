@@ -31,6 +31,40 @@ class User extends Authenticatable implements FilamentUser
         ];
     }
 
+    /**
+     * The `auth.user` shape shared with every Inertia page and the JSON API.
+     *
+     * `effective_permissions` is the resolved list — role implications already
+     * applied by effectivePermissions(). The frontend uses it as the single
+     * source of truth for capability checks instead of re-deriving which
+     * modules a role implies, which is how the TS mirror drifted out of sync
+     * with the PHP rules. `permissions` is still sent for the admin UI, which
+     * needs the raw stored values to render its checkboxes.
+     *
+     * `transit_scope` is the resolved governorate scope (null = unrestricted),
+     * so the browser never re-implements the superadmin bypass or the trimming
+     * `allowedTransitCities()` does; `permission_scopes` stays for the raw
+     * editor.
+     *
+     * @return array<string, mixed>
+     */
+    public function toAuthPayload(): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'email' => $this->email,
+            'role' => $this->role,
+            'is_banned' => (bool) $this->is_banned,
+            'avatar_url' => $this->avatar_url,
+            'permissions' => $this->permissions ?? [],
+            'effective_permissions' => $this->effectivePermissions(),
+            'permission_scopes' => $this->permission_scopes ?? [],
+            'transit_scope' => $this->allowedTransitCities(),
+            'settings' => $this->settings ?? null,
+        ];
+    }
+
     public function isSuperAdmin(): bool
     {
         return $this->role === 'superadmin';
@@ -173,20 +207,5 @@ class User extends Authenticatable implements FilamentUser
     public function canAccessPanel(Panel $panel): bool
     {
         return $this->isSuperAdmin() && ! $this->is_banned;
-    }
-
-    public function polls()
-    {
-        return $this->hasMany(Poll::class);
-    }
-
-    public function routes()
-    {
-        return $this->hasMany(Route::class);
-    }
-
-    public function routeDrafts()
-    {
-        return $this->hasMany(RouteDraft::class);
     }
 }

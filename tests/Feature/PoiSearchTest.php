@@ -4,15 +4,6 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
-function poiPhotonFeature(string $name, string $osmValue, float $lng, float $lat): array
-{
-    return [
-        'type' => 'Feature',
-        'geometry' => ['type' => 'Point', 'coordinates' => [$lng, $lat]],
-        'properties' => ['name' => $name, 'osm_value' => $osmValue, 'city' => 'دمشق'],
-    ];
-}
-
 beforeEach(function () {
     Cache::flush();
     Http::preventStrayRequests();
@@ -27,10 +18,10 @@ test('poi search returns photon results without touching google', function () {
     Http::fake([
         'photon.komoot.io*' => Http::response([
             'features' => [
-                poiPhotonFeature('جامع الأموي', 'place_of_worship', 36.29, 33.51),
-                poiPhotonFeature('مقهى الروضة', 'cafe', 36.28, 33.52),
-                poiPhotonFeature('مطعم بيت ورد', 'restaurant', 36.27, 33.53),
-                poiPhotonFeature('مدرسة الفرات', 'school', 36.26, 33.54),
+                photonFeature('جامع الأموي', 'place_of_worship', 36.29, 33.51),
+                photonFeature('مقهى الروضة', 'cafe', 36.28, 33.52),
+                photonFeature('مطعم بيت ورد', 'restaurant', 36.27, 33.53),
+                photonFeature('مدرسة الفرات', 'school', 36.26, 33.54),
             ],
         ], 200),
     ]);
@@ -51,7 +42,7 @@ test('poi search falls back to google on thin photon results', function () {
     config()->set('services.google_places.key', 'test-key');
     Http::fake([
         'photon.komoot.io*' => Http::response([
-            'features' => [poiPhotonFeature('جامع صغير', 'place_of_worship', 36.29, 33.51)],
+            'features' => [photonFeature('جامع صغير', 'place_of_worship', 36.29, 33.51)],
         ], 200),
         'places.googleapis.com*' => Http::response([
             'places' => [
@@ -108,9 +99,9 @@ test('poi search caches repeat queries', function () {
     Http::fake([
         'photon.komoot.io*' => Http::response([
             'features' => [
-                poiPhotonFeature('أ', 'cafe', 36.28, 33.52),
-                poiPhotonFeature('ب', 'cafe', 36.27, 33.53),
-                poiPhotonFeature('ج', 'cafe', 36.26, 33.54),
+                photonFeature('أ', 'cafe', 36.28, 33.52),
+                photonFeature('ب', 'cafe', 36.27, 33.53),
+                photonFeature('ج', 'cafe', 36.26, 33.54),
             ],
         ], 200),
     ]);
@@ -127,7 +118,7 @@ test('poi search dedupes google rows matching photon coordinates', function () {
     config()->set('services.google_places.key', 'test-key');
     Http::fake([
         'photon.komoot.io*' => Http::response([
-            'features' => [poiPhotonFeature('مقهى الروضة', 'cafe', 36.28001, 33.52001)],
+            'features' => [photonFeature('مقهى الروضة', 'cafe', 36.28001, 33.52001)],
         ], 200),
         'places.googleapis.com*' => Http::response([
             'places' => [
@@ -205,7 +196,9 @@ test('poi search expansion keeps the definite article on variants', function () 
         ->values()
         ->all();
 
-    expect($qs)->toEqualCanonicalizing(['الجامع الأموي', 'المسجد الأموي', 'المصلى الأموي', 'المصلي الأموي']);
+    // The shared Arabic fold runs first, so the upstream spelling is
+    // «…الاموي»; the article survives on every variant.
+    expect($qs)->toEqualCanonicalizing(['الجامع الاموي', 'المسجد الاموي', 'المصلى الاموي', 'المصلي الاموي']);
 });
 
 test('poi search does not expand queries without (or with several) type words', function () {
@@ -223,7 +216,8 @@ test('poi search does not expand queries without (or with several) type words', 
 test('poi search strips diacritics before querying upstream', function () {
     Http::fake(['photon.komoot.io*' => Http::response(['features' => []], 200)]);
 
-    // 'مقهى السّلام' carries a shadda on س; upstream must see 'مقهى السلام'.
+    // 'مقهى السّلام' carries a shadda on س; upstream must see the folded
+    // query 'مقهي السلام'.
     $this->getJson('/api/v1/geo/poi?q='.urlencode('مقهى السّلام'))->assertOk();
 
     $qs = collect(Http::recorded())->map(function ($r) {
@@ -234,7 +228,7 @@ test('poi search strips diacritics before querying upstream', function () {
     foreach ($qs as $sent) {
         expect($sent)->not->toContain('ّ');
     }
-    expect($qs)->toContain('مقهى السلام');
+    expect($qs)->toContain('مقهي السلام');
 });
 
 test('poi search merges variant hits original-first and keeps districts', function () {
@@ -243,11 +237,11 @@ test('poi search merges variant hits original-first and keeps districts', functi
         $q = $params['q'] ?? '';
         if ($q === 'جامع السلام') {
             return Http::response(['features' => [
-                array_merge(poiPhotonFeature('جامع السلام', 'place_of_worship', 36.29, 33.51), []),
+                array_merge(photonFeature('جامع السلام', 'place_of_worship', 36.29, 33.51), []),
             ]], 200);
         }
         if ($q === 'مسجد السلام') {
-            $f = poiPhotonFeature('مسجد السلام', 'place_of_worship', 36.10, 33.60);
+            $f = photonFeature('مسجد السلام', 'place_of_worship', 36.10, 33.60);
             $f['properties']['district'] = 'جرمانا';
             $f['properties']['city'] = 'ريف دمشق';
 

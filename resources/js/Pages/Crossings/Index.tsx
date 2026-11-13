@@ -16,8 +16,9 @@ import {
     statusOf,
     syriaMinutes,
     syriaNow,
+    syriaOffsetLabel,
     toFeatureCollection,
-} from './_lib/crossings';
+} from '@/Domain/crossings/crossings';
 
 // maplibre and the basemap style are a large chunk, and the table answers the
 // common question on its own, so the map arrives after the first paint.
@@ -43,7 +44,7 @@ const SyriaClock = React.memo(function SyriaClock() {
 
     return (
         <div className="text-end">
-            <div className="text-[10px] leading-none text-muted-foreground">سوريا (GMT+3)</div>
+            <div className="text-[10px] leading-none text-muted-foreground">سوريا ({syriaOffsetLabel()})</div>
             <div className="text-base font-bold tabular-nums text-foreground" dir="ltr">
                 {time}
             </div>
@@ -132,8 +133,7 @@ export default function CrossingsPage() {
               start (right) side, the map fills the end (left), clear of the map's
               bottom-left controls.
             */}
-            <div className="flex flex-col-reverse lg:h-[calc(100vh-64px)] lg:flex-row lg:overflow-hidden" dir="rtl">
-                {/* Table side */}
+            <div className="flex flex-col-reverse lg:h-[calc(100vh-var(--sz-navbar-h))] lg:flex-row lg:overflow-hidden" dir="rtl">
                 <aside className="flex flex-col border-border bg-card lg:min-h-0 lg:w-[26%] lg:min-w-[320px] lg:max-w-[440px] lg:border-e">
                     <div className="border-b border-border p-4">
                         <div className="mb-3 flex items-start justify-between gap-3">
@@ -200,7 +200,6 @@ export default function CrossingsPage() {
                     </p>
                 </aside>
 
-                {/* Map side */}
                 <div className="relative h-[45vh] shrink-0 lg:h-auto lg:min-h-0 lg:flex-1">
                     <MapErrorBoundary className="h-full w-full">
                         <React.Suspense

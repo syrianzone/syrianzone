@@ -76,6 +76,7 @@ class PostAnswerCard extends Command
 
         try {
             $mediaId = $client->uploadMedia(file_get_contents($imagePath), basename($imagePath));
+            $client->verifyExpectedUser();
             $postId = $client->createPost($caption, [$mediaId]);
         } catch (XTransientException $exception) {
             // A transient failure (rate limit, 5xx upload, connection loss

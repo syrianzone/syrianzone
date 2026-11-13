@@ -1,6 +1,8 @@
+import { addBookmark, listBookmarks, removeBookmark } from '@/Domain/quran/bookmarksApi';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AlertCircle, ArrowRight, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight, HardDrive, Loader2, Maximize, Minimize } from 'lucide-react';
-import axios from '@/Lib/axios';
+import { apiErrorMessage } from '@/Lib/api';
+import { notify } from '@/Lib/notify';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import AudioPlayer from './AudioPlayer';
@@ -8,17 +10,18 @@ import MushafPage from './MushafPage';
 import { Popover, PopoverContent, PopoverTrigger } from '@/Components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/Components/ui/command';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/Components/ui/dialog';
-import QuranUsageCard from '@/Components/QuranUsageCard';
+import QuranUsageCard from '@/Domain/quran/QuranUsageCard';
 import { ChevronDown, Check } from 'lucide-react';
 
 import { Link } from '@inertiajs/react';
-import { guestBookmarkKeys, toggleGuestBookmark } from '../_lib/guestBookmarks';
-import { useMuslimNav } from '../_lib/nav';
+import { guestBookmarkKeys, toggleGuestBookmark } from '../../../Domain/quran/guestBookmarks';
+import { useAppShell } from '@/Lib/appShell';
+import { useQuranTarget } from '@/Domain/quran/targetAyah';
 import {
   SURAH_NAMES_AR, TOTAL_PAGES, findPageForAyah, renderMushafPage, type Ayah, type QuranPage,
-} from '../_lib/quran';
-import { alignWordIndexes, wordsOfText } from '../_lib/quranAudio';
-import { useQuranPlayer } from '@/Lib/quranPlayer';
+} from '../../../Domain/quran/quran';
+import { alignWordIndexes, wordsOfText } from '../../../Domain/quran/quranAudio';
+import { useQuranPlayer } from '@/Domain/quran/quranPlayer';
 
 interface Props {
   page: number;
@@ -50,8 +53,8 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
   // Desktop spread (RTL: right = page, left = page+1); mobile single page.
   const visiblePages = isDesktop ? [page, page + 1].filter((p) => p <= TOTAL_PAGES) : [page];
 
-  const isFocused = useMuslimNav((s) => s.quranFocus);
-  const setIsFocused = useMuslimNav((s) => s.setQuranFocus);
+  const isFocused = useAppShell((s) => s.quranFocus);
+  const setIsFocused = useAppShell((s) => s.setQuranFocus);
   const [pages, setPages] = useState<QuranPage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -69,9 +72,9 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
   const playerCurrent = useQuranPlayer((s) => s.current);
   const playerSource = useQuranPlayer((s) => s.source);
   const activeWord = useQuranPlayer((s) => s.activeWord);
-  const setBookmarksOpen = useMuslimNav((s) => s.setBookmarksOpen);
-  const targetAyah = useMuslimNav((s) => s.targetAyah);
-  const setTargetAyah = useMuslimNav((s) => s.setTargetAyah);
+  const setBookmarksOpen = useAppShell((s) => s.setBookmarksOpen);
+  const targetAyah = useQuranTarget((s) => s.targetAyah);
+  const setTargetAyah = useQuranTarget((s) => s.setTargetAyah);
 
   // Mobile 100vh layout refs (the parent locks the exact remaining height).
   const viewportRef = useRef<HTMLDivElement | null>(null);
@@ -106,13 +109,10 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, isDesktop, fontSize]);
 
-  // Keep the global player's recitation in step with the reader preference.
   useEffect(() => {
     useQuranPlayer.getState().setRecitation(reciterCode);
   }, [reciterCode]);
 
-  // While the reader owns the queue, follow the reciter and flip the page when
-  // the recited ayah moves off the visible spread.
   useEffect(() => {
     if (playerSource !== 'reader' || !playerCurrent) return;
     const key = `${playerCurrent.surah}:${playerCurrent.ayah}`;
@@ -133,9 +133,8 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
       return;
     }
     let live = true;
-    axios.get('/api/v1/quran-bookmarks').then((r) => {
+    listBookmarks().then((list) => {
       if (!live) return;
-      const list = (r.data?.bookmarks ?? []) as { surah: number; ayah: number }[];
       setSavedKeys(new Set([...list.map((b) => `${b.surah}:${b.ayah}`), ...guestBookmarkKeys()]));
     }).catch(() => {
       if (live) setSavedKeys(guestBookmarkKeys());
@@ -168,7 +167,6 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
       ? Math.min(1, activeWord.letterIndex / activeWord.letterCount)
       : null;
 
-  // Landing from a bookmark/modal jump: select the target Ayah once loaded.
   useEffect(() => {
     if (targetAyah && ayahs.some((a) => a.key === targetAyah)) {
       setCurrentAyahKey(targetAyah);
@@ -178,7 +176,6 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
 
   const toggleBookmark = async () => {
     if (bookmarkBusy || !currentAyah) return;
-    // Guests keep bookmarks on this device; logged-in users on the account.
     if (!isLoggedIn) {
       const saved = toggleGuestBookmark({
         surah: currentAyah.surah,
@@ -199,23 +196,18 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
     setBookmarkBusy(true);
     try {
       if (savedKeys.has(key)) {
-        await axios.delete(`/api/v1/quran-bookmarks/${currentAyah.surah}/${currentAyah.ayah}`);
+        await removeBookmark(currentAyah.surah, currentAyah.ayah);
         setSavedKeys((prev) => {
           const next = new Set(prev);
           next.delete(key);
           return next;
         });
       } else {
-        await axios.post('/api/v1/quran-bookmarks', {
-          surah: currentAyah.surah,
-          ayah: currentAyah.ayah,
-          page: currentAyah.page,
-          juz: currentAyah.juz,
-        });
+        await addBookmark(currentAyah);
         setSavedKeys((prev) => new Set(prev).add(key));
       }
-    } catch {
-      // silent: button stays in previous state
+    } catch (err) {
+      notify.error(apiErrorMessage(err, 'تعذّر حفظ العلامة'));
     } finally {
       setBookmarkBusy(false);
     }
@@ -261,7 +253,6 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
   // Single click highlights the Ayah; double click plays its recitation.
   const requestPlay = (key: string) => setCurrentAyahKey(key);
 
-  // Play from the selected ayah, continuously; the reader follows the player.
   const startReader = (startKey: string | null) => {
     const start = ayahs.find((a) => a.key === startKey) ?? ayahs[0];
     if (!start) return;
@@ -292,7 +283,6 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
     return { page, ayahKey: `${surah}:${ayah}` };
   };
 
-  // Single header for the visible spread: Surah name(s) right, Juz left.
   const surahs = [...new Set(pages.map((d) => d.surahName))].join(' · ');
   const juzs = [...new Set(pages.map((d) => d.juz))].join('، ');
   const lastVisible = visiblePages[visiblePages.length - 1] ?? page;
@@ -442,7 +432,6 @@ export default function QuranReader({ page, setPage, isLoggedIn, reciterCode, se
         </div>
       )}
 
-      {/* Pager under the page(s), with the page numbers. */}
       <div className={`mt-3 flex shrink-0 items-center justify-between gap-2 ${isFocused ? 'hidden' : ''}`}>
         <Button variant="outline" size="sm" onClick={() => go(page - step)} disabled={page <= 1}>
           <ChevronRight className="h-4 w-4" /> السابق

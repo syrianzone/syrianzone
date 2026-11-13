@@ -2,14 +2,16 @@ import React, { useState } from 'react';
 import { router } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Button } from '@/Components/ui/button';
-import { Input } from '@/Components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/Components/ui/table';
 import { Badge } from '@/Components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/card';
-import { Plus, Search, Edit3, Trash2, HelpCircle, Users } from 'lucide-react';
+import { Plus, Edit3, Trash2, HelpCircle, Users } from 'lucide-react';
 import CategoryDialog, { GuessWhoCategoryData } from './_components/CategoryDialog';
 import CharacterDialog, { GuessWhoCharacterData } from './_components/CharacterDialog';
+import DirectoryResultCount from '@/Components/directory/DirectoryResultCount';
+import { DirectorySearch } from '@/Components/directory/DirectorySearch';
+import { useDirectory } from '@/Components/directory/useDirectory';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
 
@@ -18,8 +20,20 @@ interface AdminGuessWhoProps {
     characters: GuessWhoCharacterData[];
 }
 
+const categorySearchText = (category: GuessWhoCategoryData) =>
+    `${category.name_ar} ${category.name_en} ${category.slug}`;
+
+const characterSearchText = (character: GuessWhoCharacterData) =>
+    `${character.name_ar} ${character.name_en} ${character.category?.name_ar ?? ''}`;
+
 export default function GuessWhoAdminIndex({ categories, characters }: AdminGuessWhoProps) {
-    const [searchTerm, setSearchTerm] = useState('');
+    // One field drives both tabs' lists through the shared directory search.
+    const characterList = useDirectory<GuessWhoCharacterData>({ items: characters, searchText: characterSearchText });
+    const categoryList = useDirectory<GuessWhoCategoryData>({ items: categories, searchText: categorySearchText });
+    const setSearch = (query: string) => {
+        characterList.setQuery(query);
+        categoryList.setQuery(query);
+    };
 
     const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState<GuessWhoCategoryData | null>(null);
@@ -27,25 +41,8 @@ export default function GuessWhoAdminIndex({ categories, characters }: AdminGues
     const [characterDialogOpen, setCharacterDialogOpen] = useState(false);
     const [selectedCharacter, setSelectedCharacter] = useState<GuessWhoCharacterData | null>(null);
 
-    const filteredCategories = categories.filter((c) => {
-        const term = searchTerm.toLowerCase();
-        return (
-            !searchTerm ||
-            c.name_ar.toLowerCase().includes(term) ||
-            c.name_en.toLowerCase().includes(term) ||
-            c.slug.toLowerCase().includes(term)
-        );
-    });
-
-    const filteredCharacters = characters.filter((ch) => {
-        const term = searchTerm.toLowerCase();
-        return (
-            !searchTerm ||
-            ch.name_ar.toLowerCase().includes(term) ||
-            ch.name_en.toLowerCase().includes(term) ||
-            (ch.category?.name_ar && ch.category.name_ar.toLowerCase().includes(term))
-        );
-    });
+    const filteredCategories = categoryList.results;
+    const filteredCharacters = characterList.results;
 
     const handleDeleteCategory = async (id: number) => {
         const ok = await confirmDialog({ title: 'حذف هذه الفئة؟', description: 'سيتم حذف الفئة وجميع شخصياتها.', destructive: true, confirmText: 'حذف' });
@@ -85,15 +82,13 @@ export default function GuessWhoAdminIndex({ categories, characters }: AdminGues
                         </p>
                     </div>
 
-                    <div className="relative w-full md:w-64">
-                        <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input aria-label="بحث..."
-                            placeholder="بحث..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="ps-9"
-                        />
-                    </div>
+                    <DirectorySearch
+                        className="w-full md:w-64"
+                        value={characterList.query}
+                        onChange={setSearch}
+                        placeholder="بحث..."
+                        ariaLabel="بحث..."
+                    />
                 </div>
 
                 <Tabs defaultValue="characters" className="w-full">
@@ -124,6 +119,9 @@ export default function GuessWhoAdminIndex({ categories, characters }: AdminGues
                                 </Button>
                             </CardHeader>
                             <CardContent>
+                                <DirectoryResultCount className="mb-3 text-xs">
+                                    عرض {filteredCategories.length} من أصل {categories.length} فئة
+                                </DirectoryResultCount>
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
@@ -135,6 +133,13 @@ export default function GuessWhoAdminIndex({ categories, characters }: AdminGues
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
+                                        {filteredCategories.length === 0 && (
+                                            <TableRow>
+                                                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                                                    لا توجد فئات مطابقة للبحث.
+                                                </TableCell>
+                                            </TableRow>
+                                        )}
                                         {filteredCategories.map((c) => (
                                             <TableRow key={c.id}>
                                                 <TableCell className="font-bold">{c.name_ar}</TableCell>
@@ -193,6 +198,9 @@ export default function GuessWhoAdminIndex({ categories, characters }: AdminGues
                                 </Button>
                             </CardHeader>
                             <CardContent>
+                                <DirectoryResultCount className="mb-3 text-xs">
+                                    عرض {filteredCharacters.length} من أصل {characters.length} شخصية
+                                </DirectoryResultCount>
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
@@ -204,6 +212,13 @@ export default function GuessWhoAdminIndex({ categories, characters }: AdminGues
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
+                                        {filteredCharacters.length === 0 && (
+                                            <TableRow>
+                                                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                                                    لا توجد شخصيات مطابقة للبحث.
+                                                </TableCell>
+                                            </TableRow>
+                                        )}
                                         {filteredCharacters.map((ch) => (
                                             <TableRow key={ch.id}>
                                                 <TableCell>

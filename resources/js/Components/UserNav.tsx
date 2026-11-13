@@ -1,7 +1,5 @@
-'use client';
-
 import React from 'react';
-import axios from '@/lib/axios';
+import { api } from '@/Lib/api';
 import { Link } from '@inertiajs/react';
 import {
     DropdownMenu,
@@ -10,19 +8,25 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+} from "@/Components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/Components/ui/avatar";
+import { Button } from "@/Components/ui/button";
 import { LogOut, User as UserIcon, LayoutDashboard } from "lucide-react";
 import { useAuth } from '@/Contexts/AuthContext';
+import { apiErrorMessage } from '@/Lib/api';
+import { notify } from '@/Lib/notify';
 
 export default function UserNav() {
     const { user } = useAuth();
 
     const logout = () => {
-        axios.post('/logout').then(() => {
-            window.location.reload();
-        });
+        api.post('/logout')
+            .then(() => {
+                window.location.reload();
+            })
+            .catch((err) => {
+                notify.error(apiErrorMessage(err, 'تعذّر تسجيل الخروج'));
+            });
     };
 
     if (!user) {
@@ -34,7 +38,7 @@ export default function UserNav() {
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-9 w-9 sm:h-10 sm:w-10 rounded-full p-0">
                     <Avatar className="h-9 w-9 sm:h-10 sm:w-10 border border-border/50">
-                        <AvatarImage src={user.avatar_url} alt={user.name} />
+                        <AvatarImage src={user.avatar_url ?? undefined} alt={user.name} />
                         <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                 </Button>

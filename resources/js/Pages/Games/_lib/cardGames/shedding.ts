@@ -3,10 +3,10 @@
 // Fan Tan and Sevens use the seven. Ranks are compared by playing power, since
 // the ace is stored as rank 1 but sits above the king.
 
-import type { Card, Suit } from '../cards';
+import type { Card, Suit } from '@/Domain/games/cards';
 import { power } from './hand';
 
-export interface ShedRun {
+interface ShedRun {
   /** Lowest and highest power laid down in this suit, inclusive. */
   lo: number;
   hi: number;
@@ -41,7 +41,6 @@ export function lay(layout: ShedLayout, card: Card, pivot: number): ShedLayout {
   };
 }
 
-/** The cards in a hand that the layout will accept right now. */
 export function legalCards(layout: ShedLayout, hand: Card[], pivot: number): Card[] {
   return hand.filter((card) => canPlay(layout, card, pivot));
 }

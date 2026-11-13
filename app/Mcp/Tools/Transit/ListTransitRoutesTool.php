@@ -4,7 +4,9 @@ namespace App\Mcp\Tools\Transit;
 
 use App\Services\Transit\TransitAdminService;
 use App\Services\Transit\TransitPresenter;
+use App\Services\Transit\TransitRules;
 use App\Support\Agents\AgentContext;
+use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -27,15 +29,13 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 #[IsIdempotent]
 class ListTransitRoutesTool extends TransitTool
 {
-    protected array $permissions = ['transit.review_drafts'];
-
-    public const STATUSES = ['published', 'disapproved', 'hidden'];
+    protected array $permissions = [PermissionCatalogue::TRANSIT_REVIEW_DRAFTS];
 
     public function schema(JsonSchema $schema): array
     {
         return [
             'status' => $schema->string()
-                ->enum([...self::STATUSES, 'all'])
+                ->enum([...TransitRules::STATUSES, 'all'])
                 ->description('Route status to list. Defaults to "all".')
                 ->default('all'),
 
@@ -71,14 +71,14 @@ class ListTransitRoutesTool extends TransitTool
     protected function run(Request $request, AgentContext $context): Response|ResponseFactory
     {
         $validated = $request->validate([
-            'status' => 'sometimes|in:'.implode(',', [...self::STATUSES, 'all']),
+            'status' => 'sometimes|'.TransitRules::statusRule(withAll: true),
             'city_id' => 'sometimes|string|max:64',
         ]);
 
         $allowed = $context->allowedTransitCities();
 
         if (isset($validated['city_id'])) {
-            $this->guardCity($context, 'transit.review_drafts', $validated['city_id']);
+            $this->guardCity($context, PermissionCatalogue::TRANSIT_REVIEW_DRAFTS, $validated['city_id']);
 
             $allowed = $allowed === null
                 ? [$validated['city_id']]

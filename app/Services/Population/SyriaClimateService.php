@@ -3,6 +3,7 @@
 namespace App\Services\Population;
 
 use App\Models\Population\PopulationEnvironmentalLog;
+use App\Support\Facts;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -13,30 +14,6 @@ class SyriaClimateService
 {
     private ?OutputInterface $output = null;
     private ?ProgressBar $progressBar = null;
-
-    private const WEATHER_CODES = [
-        0 => 'Clear sky',
-        1 => 'Mainly clear',
-        2 => 'Partly cloudy',
-        3 => 'Overcast',
-        45 => 'Fog',
-        48 => 'Depositing rime fog',
-        51 => 'Light drizzle',
-        53 => 'Moderate drizzle',
-        55 => 'Dense drizzle',
-        61 => 'Slight rain',
-        63 => 'Moderate rain',
-        65 => 'Heavy rain',
-        71 => 'Slight snow fall',
-        73 => 'Moderate snow fall',
-        75 => 'Heavy snow fall',
-        80 => 'Slight rain showers',
-        81 => 'Moderate rain showers',
-        82 => 'Violent rain showers',
-        95 => 'Thunderstorm',
-        96 => 'Thunderstorm with slight hail',
-        99 => 'Thunderstorm with heavy hail',
-    ];
 
     public function setOutput(OutputInterface $output): self
     {
@@ -454,8 +431,14 @@ class SyriaClimateService
         return $summary;
     }
 
+    /**
+     * The stored English wording of a WMO code. The table is
+     * `resources/data/weather.json` (the atlas's Arabic labels and the
+     * aggregator's copy are built from the same rows), so the description a log
+     * row carries and the label the client prints cannot diverge.
+     */
     private function getWeatherDescription(int $code): string
     {
-        return self::WEATHER_CODES[$code] ?? "Unknown (code: {$code})";
+        return Facts::weatherCodes()[$code] ?? "Unknown (code: {$code})";
     }
 }

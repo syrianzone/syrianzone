@@ -6,10 +6,12 @@ import { PhotoGrid } from './_components/PhotoGrid';
 import { PlacesPanel } from './_components/PlacesPanel';
 import { SubmitSheet } from './_components/SubmitSheet';
 import { ViewToggle } from './_components/ViewToggle';
-import { BottomSheet } from '../Transit/_components/BottomSheet';
-import { api, extractError } from './_lib/api';
-import { discovery, type GridPhoto } from './_lib/discovery';
-import type { GeoSuggestion, HotelFeatureCollection, LatLng, Paginated, PlaceCategory, PlaceFeatureCollection, PlaceListItem } from './_lib/types';
+import { BottomSheet } from '@/Components/BottomSheet';
+import { api } from '@/Domain/places/api';
+import { apiErrorMessage } from '@/Lib/api';
+import { notify } from '@/Lib/notify';
+import type { GeoSuggestion, GridPhoto, HotelFeatureCollection, LatLng, Paginated, PlaceCategory, PlaceFeatureCollection, PlaceListItem } from '@/Domain/places/types';
+import { inSyriaBox } from '@/Domain/geography/syria';
 
 const PlacesMap = lazy(() => import('./_components/PlacesMap').then(m => ({ default: m.PlacesMap })));
 
@@ -27,7 +29,6 @@ export default function Index() {
   const [submitOpen, setSubmitOpen] = useState(false);
   const [listPlaces, setListPlaces] = useState<Paginated<PlaceListItem> | null>(null);
   const [listLoading, setListLoading] = useState(false);
-  const [notice, setNotice] = useState<{ text: string; destructive: boolean } | null>(null);
   const [addMode, setAddMode] = useState(false);
   const [focus, setFocus] = useState<{ lng: number; lat: number; zoom?: number; key: number } | null>(null);
   const [highlight, setHighlight] = useState<LatLng | null>(null);
@@ -82,7 +83,7 @@ export default function Index() {
   // a ?guide= link arrives without a name: look it up so the chip reads properly
   useEffect(() => {
     if (!guide || guide.name !== '') return;
-    discovery.guides('submissions')
+    api.guides('submissions')
       .then((res) => {
         const match = res.guides.find((g) => g.user_id === guide.id);
         setGuide({ id: guide.id, name: match?.name ?? 'مرشد' });
@@ -93,10 +94,10 @@ export default function Index() {
   useEffect(() => {
     api.mapData()
       .then(setFeatures)
-      .catch((e) => setNotice({ text: extractError(e), destructive: true }));
+      .catch((e) => notify.error(apiErrorMessage(e)));
     api.hotelMapData()
-      .then((data) => { console.log('[Index] hotelMapData resolved, features:', data.features?.length); setHotelFeatures(data); })
-      .catch((e) => { console.warn('[Index] hotelMapData failed:', e); });
+      .then(setHotelFeatures)
+      .catch((e) => notify.error(apiErrorMessage(e, 'تعذر تحميل طبقة الفنادق')));
   }, []);
 
   // ?place=ID deep link: open the detail and fly to the place once the map is ready
@@ -110,7 +111,7 @@ export default function Index() {
     api.getPlace(id)
       .then((place) => flyTo(place.lng, place.lat))
       .catch((e) => {
-        setNotice({ text: extractError(e), destructive: true });
+        notify.error(apiErrorMessage(e));
         // only clear if the deep-linked place is still selected; the user may have picked another
         setSelectedId((cur) => (cur === id ? null : cur));
       });
@@ -168,7 +169,7 @@ export default function Index() {
         page > 1 && prev ? { ...res, data: [...prev.data, ...res.data] } : res,
       );
     } catch (e) {
-      if (id === requestRef.current) setNotice({ text: extractError(e), destructive: true });
+      if (id === requestRef.current) notify.error(apiErrorMessage(e));
     } finally {
       if (id === requestRef.current) setListLoading(false);
     }
@@ -204,9 +205,9 @@ export default function Index() {
       setSelectedType(null);
       return;
     }
-    // mirror the server's Syria bounding box so users learn before filling the form
-    if (point.lat < 32.0 || point.lat > 37.5 || point.lng < 35.5 || point.lng > 42.5) {
-      setNotice({ text: 'النقطة خارج حدود سوريا', destructive: true });
+    // the same Syria bounding box the server enforces, so users learn before filling the form
+    if (!inSyriaBox(point)) {
+      notify.error('النقطة خارج حدود سوريا');
       return;
     }
     setSubmitPoint(point);
@@ -214,15 +215,9 @@ export default function Index() {
     setAddMode(false);
   }
 
-  function handlePinClick(id: number) {
+  function handlePinClick(id: number, type: 'place' | 'hotel') {
     setSelectedId(id);
-    setSelectedType('place');
-    setAddMode(false);
-  }
-
-  function handleHotelPinClick(id: number) {
-    setSelectedId(id);
-    setSelectedType('hotel');
+    setSelectedType(type);
     setAddMode(false);
   }
 
@@ -240,15 +235,9 @@ export default function Index() {
   }
 
   // panel taps must expand the mobile sheet too, or the detail opens 224px tall
-  function handlePanelSelect(id: number, lat: number, lng: number) {
+  function handlePanelSelect(id: number, lat: number, lng: number, type: 'place' | 'hotel') {
     setSelectedId(id);
-    setSelectedType('place');
-    flyTo(lng, lat);
-  }
-
-  function handlePanelSelectHotel(id: number, lat: number, lng: number) {
-    setSelectedId(id);
-    setSelectedType('hotel');
+    setSelectedType(type);
     flyTo(lng, lat);
   }
 
@@ -257,13 +246,8 @@ export default function Index() {
     setSelectedType(null);
   }
 
-  function handleCloseHotel() {
-    setSelectedId(null);
-    setSelectedType(null);
-  }
-
   function handleSubmitted() {
-    setNotice({ text: 'تم إرسال المكان وسيظهر بعد الموافقة', destructive: false });
+    notify.success('تم إرسال المكان وسيظهر بعد الموافقة');
   }
 
   function handleSelectExisting(id: number) {
@@ -276,7 +260,7 @@ export default function Index() {
     <MainLayout>
       
       <h1 className="sr-only">مشوار — أماكن وفنادق</h1>
-      <div dir="rtl" className="relative h-[calc(100dvh-4rem)] overflow-hidden">
+      <div dir="rtl" className="relative h-[calc(100dvh-var(--sz-navbar-h))] overflow-hidden">
         <Suspense fallback={<div className="absolute inset-0 bg-background flex items-center justify-center text-muted-foreground">جاري تحميل الخريطة...</div>}>
           <PlacesMap
             features={filteredFeatures}
@@ -286,8 +270,8 @@ export default function Index() {
             addMode={addMode}
             focus={focus}
             highlight={highlight}
-            onPinClick={handlePinClick}
-            onHotelPinClick={handleHotelPinClick}
+            onPinClick={(id) => handlePinClick(id, 'place')}
+            onHotelPinClick={(id) => handlePinClick(id, 'hotel')}
             onMapClick={handleMapClick}
             // bottom-56 keeps the map's bottom-left controls above the collapsed mobile sheet
             className="absolute inset-0"
@@ -298,7 +282,7 @@ export default function Index() {
         <PhotoGrid
           active={view === 'grid'}
           guideId={guide?.id ?? null}
-          bannerActive={guide !== null || notice !== null}
+          bannerActive={guide !== null}
           onPhotoClick={handleGridPhotoClick}
         />
 
@@ -345,21 +329,6 @@ export default function Index() {
               </span>
             </div>
           )}
-          {notice && (
-            <div className="flex justify-center">
-              <span
-                role="alert"
-                className={`pointer-events-auto flex items-center gap-2 rounded-full border bg-card/95 px-3 py-1 text-xs shadow-sm ${
-                  notice.destructive ? 'border-destructive/50 text-destructive' : 'border-border text-foreground'
-                }`}
-              >
-                {notice.text}
-                <button type="button" aria-label="إغلاق" onClick={() => setNotice(null)}>
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </span>
-            </div>
-          )}
         </div>
 
         {/* FAB and the sheet/panel are conditionally unmounted in grid view (not css-hidden) */}
@@ -372,10 +341,9 @@ export default function Index() {
                 loading={listLoading}
                 selectedId={selectedId}
                 selectedType={selectedType}
-                onSelect={handlePanelSelect}
+                onSelect={(id, lat, lng) => handlePanelSelect(id, lat, lng, 'place')}
                 onClose={handleClose}
-                onSelectHotel={handlePanelSelectHotel}
-                onCloseHotel={handleCloseHotel}
+                onSelectHotel={(id, lat, lng) => handlePanelSelect(id, lat, lng, 'hotel')}
                 hasMore={listPlaces !== null && listPlaces.current_page < listPlaces.last_page}
                 onLoadMore={() => listPlaces && fetchList(listPlaces.current_page + 1)}
                 onSelectGuide={selectGuide}
@@ -392,10 +360,9 @@ export default function Index() {
                 loading={listLoading}
                 selectedId={selectedId}
                 selectedType={selectedType}
-                onSelect={handlePanelSelect}
+                onSelect={(id, lat, lng) => handlePanelSelect(id, lat, lng, 'place')}
                 onClose={handleClose}
-                onSelectHotel={handlePanelSelectHotel}
-                onCloseHotel={handleCloseHotel}
+                onSelectHotel={(id, lat, lng) => handlePanelSelect(id, lat, lng, 'hotel')}
                 hasMore={listPlaces !== null && listPlaces.current_page < listPlaces.last_page}
                 onLoadMore={() => listPlaces && fetchList(listPlaces.current_page + 1)}
                 onSelectGuide={selectGuide}

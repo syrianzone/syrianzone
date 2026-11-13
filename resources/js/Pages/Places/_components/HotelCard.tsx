@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Hotel, Star } from 'lucide-react';
-import type { HotelListItem } from '../_lib/types';
+import type { HotelListItem } from '@/Domain/places/types';
 
 export function HotelCard(props: { hotel: HotelListItem; onClick: (id: number, lat: number, lng: number) => void }) {
   const { hotel, onClick } = props;

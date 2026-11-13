@@ -4,8 +4,20 @@ import requests
 import json
 import pandas as pd
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Dict, List, Any
 import time
+
+# The WMO weather vocabulary, shared with the app: `SyriaClimateService` stores
+# the `en` wording and `Domain/weather` prints the Arabic labels from the same
+# file, so a code cannot be described three ways.
+WEATHER_CODES_FILE = Path(__file__).resolve().parent.parent / 'resources' / 'data' / 'weather.json'
+
+def _weather_codes() -> Dict[int, str]:
+    """WMO code -> the English wording the app stores, from resources/data/weather.json."""
+    with WEATHER_CODES_FILE.open(encoding='utf-8') as f:
+        return {row['code']: row['en'] for row in json.load(f)['codes']}
+
 
 class SyriaEnvironmentalDataAggregator:
     def __init__(self):
@@ -323,15 +335,7 @@ class SyriaEnvironmentalDataAggregator:
 
     def get_weather_description(self, code: int) -> str:
         """Convert weather code to description"""
-        weather_codes = {
-            0: "Clear sky", 1: "Mainly clear", 2: "Partly cloudy", 3: "Overcast",
-            45: "Fog", 48: "Depositing rime fog", 51: "Light drizzle", 53: "Moderate drizzle",
-            55: "Dense drizzle", 61: "Slight rain", 63: "Moderate rain", 65: "Heavy rain",
-            71: "Slight snow fall", 73: "Moderate snow fall", 75: "Heavy snow fall",
-            80: "Slight rain showers", 81: "Moderate rain showers", 82: "Violent rain showers",
-            95: "Thunderstorm", 96: "Thunderstorm with slight hail", 99: "Thunderstorm with heavy hail"
-        }
-        return weather_codes.get(code, f"Unknown (code: {code})")
+        return _weather_codes().get(code, f"Unknown (code: {code})")
 
     def add_country_level_analysis(self):
         """Add country-wide environmental analysis"""

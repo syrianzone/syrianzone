@@ -16,7 +16,7 @@ class AppIconController extends Controller
             $id = $request->query('id');
             if (! $id || ! ctype_digit((string) $id)) {
                 return response()->json([
-                    'message' => 'Invalid or missing Apple store id.',
+                    'message' => 'معرّف متجر آبل غير صالح أو مفقود.',
                     'icon' => null,
                 ], 400);
             }
@@ -40,7 +40,7 @@ class AppIconController extends Controller
             $package = $request->query('package');
             if (! $package || ! preg_match('/^[a-zA-Z0-9._]+$/', (string) $package)) {
                 return response()->json([
-                    'message' => 'Invalid or missing Google Play package.',
+                    'message' => 'اسم حزمة متجر جوجل بلاي غير صالح أو مفقود.',
                     'icon' => null,
                 ], 400);
             }
@@ -57,7 +57,6 @@ class AppIconController extends Controller
 
                 $html = $response->body();
 
-                // Parse JSON-LD for icon
                 if (preg_match('/<script type="application\/ld\+json">(.*?)<\/script>/s', $html, $matches)) {
                     $json = json_decode($matches[1], true);
                     if (! empty($json['image'])) {
@@ -65,7 +64,6 @@ class AppIconController extends Controller
                     }
                 }
 
-                // Fallback: og:image meta
                 if (preg_match('/<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']/', $html, $matches)) {
                     return $matches[1];
                 }
@@ -77,7 +75,7 @@ class AppIconController extends Controller
         }
 
         return response()->json([
-            'message' => 'Unsupported store.',
+            'message' => 'المتجر غير مدعوم.',
             'icon' => null,
         ], 400);
     }

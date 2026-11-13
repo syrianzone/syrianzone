@@ -217,7 +217,7 @@ export default function SiteNavigationAdminIndex({ navigation }: Props) {
             return;
         }
 
-        const isExternal = href.startsWith('http://') || href.startsWith('http://') || draftItem.external;
+        const isExternal = /^https?:\/\//.test(href) || Boolean(draftItem.external);
         const normalized: SiteNavigationItemData = {
             ...draftItem,
             id,
@@ -229,7 +229,7 @@ export default function SiteNavigationAdminIndex({ navigation }: Props) {
             target: (draftItem.target || href).trim(),
             iconUrl: draftItem.iconUrl ? draftItem.iconUrl.trim() : null,
             image: draftItem.iconUrl ? draftItem.iconUrl.trim() : null,
-            external: Boolean(draftItem.external || href.startsWith('http')),
+            external: isExternal,
             enabled: draftItem.enabled !== false,
             subCategories: (draftItem.subCategories || []).filter((s) => s.title.trim() !== ''),
         };
@@ -261,7 +261,7 @@ export default function SiteNavigationAdminIndex({ navigation }: Props) {
             description: `هل أنت متأكد من حذف «${item.title || item.text}» من القائمة؟`,
             confirmText: 'حذف',
             cancelText: 'إلغاء',
-            variant: 'destructive',
+            destructive: true,
         });
         if (!confirmed) return;
 
@@ -305,7 +305,7 @@ export default function SiteNavigationAdminIndex({ navigation }: Props) {
                 'سيتم إرجاع جميع الأيقونات والأقسام والترتيب إلى الوضع الافتراضي للمنصة. هل تود المتابعة؟',
             confirmText: 'استعادة الافتراضي',
             cancelText: 'إلغاء',
-            variant: 'destructive',
+            destructive: true,
         });
         if (!confirmed) return;
 
@@ -363,7 +363,6 @@ export default function SiteNavigationAdminIndex({ navigation }: Props) {
         <MainLayout>
             <h1 className="sr-only">إدارة أيقونات وأقسام المنصة</h1>
             <div className="container mx-auto px-4 py-8 max-w-5xl space-y-6" dir="rtl">
-                {/* Header & Actions */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
@@ -415,7 +414,6 @@ export default function SiteNavigationAdminIndex({ navigation }: Props) {
                     </div>
                 </div>
 
-                {/* Summary & Navbar Settings */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <Card>
                         <CardHeader className="pb-2">
@@ -468,7 +466,6 @@ export default function SiteNavigationAdminIndex({ navigation }: Props) {
                     </Card>
                 </div>
 
-                {/* Items List */}
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-base font-bold">
@@ -497,7 +494,6 @@ export default function SiteNavigationAdminIndex({ navigation }: Props) {
                                             : 'bg-muted/30 border-border/40 opacity-65'
                                     }`}
                                 >
-                                    {/* Left: Order arrows + Icon + Info */}
                                     <div className="flex items-center gap-3 min-w-0">
                                         <div className="flex flex-col gap-1 shrink-0">
                                             <Button
@@ -576,7 +572,6 @@ export default function SiteNavigationAdminIndex({ navigation }: Props) {
                                         </div>
                                     </div>
 
-                                    {/* Right: Visibility Switches & Edit/Delete */}
                                     <div className="flex flex-wrap items-center justify-end gap-3 pt-2 lg:pt-0 border-t lg:border-t-0 border-border/50 shrink-0">
                                         <label className="flex items-center gap-2 text-xs font-medium cursor-pointer select-none">
                                             <Switch
@@ -641,7 +636,6 @@ export default function SiteNavigationAdminIndex({ navigation }: Props) {
                     </CardContent>
                 </Card>
 
-                {/* Edit / Create Modal */}
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                     <DialogContent dir="rtl" className="max-w-2xl max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
@@ -802,7 +796,6 @@ export default function SiteNavigationAdminIndex({ navigation }: Props) {
                                 </label>
                             </div>
 
-                            {/* SubCategories Editor */}
                             <div className="space-y-2 border-t pt-4">
                                 <div className="flex items-center justify-between">
                                     <Label className="flex items-center gap-1.5 font-bold">

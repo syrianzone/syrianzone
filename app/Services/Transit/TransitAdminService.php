@@ -6,7 +6,7 @@ use App\Exceptions\Transit\TransitActionException;
 use App\Models\Route;
 use App\Models\RouteDraft;
 use App\Models\TransitRouteLog;
-use App\Models\User;
+use App\Support\ArabicSearch;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -366,8 +366,8 @@ class TransitAdminService
                     ->value('geojson');
 
                 DB::statement(
-                    'INSERT INTO stops (id, city_id, name_ar, geometry, created_at, updated_at) VALUES (?, ?, ?, ST_GeomFromGeoJSON(?), ?, ?)',
-                    [$newStopId, $targetCityId, $stop->name_ar, $geometry, now(), now()]
+                    'INSERT INTO stops (id, city_id, name_ar, name_ar_fold, geometry, created_at, updated_at) VALUES (?, ?, ?, ?, ST_GeomFromGeoJSON(?), ?, ?)',
+                    [$newStopId, $targetCityId, $stop->name_ar, ArabicSearch::fold((string) $stop->name_ar), $geometry, now(), now()]
                 );
 
                 DB::table('route_stop')
@@ -558,17 +558,11 @@ class TransitAdminService
 
     protected function statusDescription(Route $route, string $oldStatus, string $newStatus): string
     {
-        $labels = [
-            'published' => 'منشور',
-            'disapproved' => 'ملغى (مرفوض)',
-            'hidden' => 'مخفي',
-        ];
-
         return sprintf(
             "تغيير حالة الخط '%s' من '%s' إلى '%s'",
             $route->name_ar,
-            $labels[$oldStatus] ?? $oldStatus,
-            $labels[$newStatus] ?? $newStatus,
+            TransitRules::STATUS_LABELS[$oldStatus] ?? $oldStatus,
+            TransitRules::STATUS_LABELS[$newStatus] ?? $newStatus,
         );
     }
 
@@ -606,13 +600,5 @@ class TransitAdminService
         } catch (\Exception $e) {
             report($e);
         }
-    }
-
-    /**
-     * Resolve the reviewing actor's user id, for callers that only hold a name.
-     */
-    public function actorId(?User $user): ?int
-    {
-        return $user?->getAuthIdentifier();
     }
 }

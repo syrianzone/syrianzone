@@ -1,13 +1,17 @@
-"use client";
-
-import React, { useState, useMemo } from 'react';
-import { Website } from './types';
-import { Search, X, Globe, List, LayoutGrid, Plus, ExternalLink } from 'lucide-react';
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { useMemo, useState } from 'react';
+import { Search, Globe, ExternalLink, Plus } from 'lucide-react';
+import { Button } from "@/Components/ui/button";
+import { Card, CardContent } from "@/Components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/Components/ui/table";
+import { Badge } from "@/Components/ui/badge";
+import type { Website } from './types';
+import DirectoryEmptyState from '@/Components/directory/DirectoryEmptyState';
+import DirectoryFilterChips from '@/Components/directory/DirectoryFilterChips';
+import DirectoryLoadMore from '@/Components/directory/DirectoryLoadMore';
+import DirectoryResultCount from '@/Components/directory/DirectoryResultCount';
+import { DirectorySearch } from '@/Components/directory/DirectorySearch';
+import DirectoryViewToggle from '@/Components/directory/DirectoryViewToggle';
+import { useDirectory, type DirectoryFacet } from '@/Components/directory/useDirectory';
 
 interface SitesClientProps {
     initialWebsites: Website[];
@@ -15,60 +19,51 @@ interface SitesClientProps {
 
 const ITEMS_PER_PAGE = 24;
 
+const getTypeDisplayName = (type: string) => {
+    if (type.includes('مدونة شخصية')) return 'المدونات الشخصية';
+    if (type.includes('شركة') || type.includes('مبادرة')) return 'المواقع التعريفية';
+    if (type.includes('مجلة') || type.includes('إخباري')) return 'المدونات والمواقع الإخبارية';
+    return type;
+};
+
+const getFaviconUrl = (url: string) => {
+    try {
+        const domain = new URL(url).hostname;
+        return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+    } catch {
+        return '';
+    }
+};
+
+const siteSearchText = (site: Website) => `${site.name} ${site.description} ${site.url}`;
+
+const TYPE_FACET: DirectoryFacet<Website> = {
+    key: 'type',
+    label: 'النوع',
+    options: [],
+    valueOf: (site) => site.type,
+};
+
 export default function SitesClient({ initialWebsites }: SitesClientProps) {
-    const [searchTerm, setSearchTerm] = useState('');
-    const [typeFilter, setTypeFilter] = useState('');
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
-    const [displayCount, setDisplayCount] = useState(ITEMS_PER_PAGE);
 
-    const categories = useMemo(() => Array.from(new Set(initialWebsites.map(w => w.type).filter(Boolean))).sort(), [initialWebsites]);
-
-    const filteredWebsites = useMemo(() => {
-        return initialWebsites.filter(site => {
-            const matchSearch = searchTerm === '' ||
-                site.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                site.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                site.url.toLowerCase().includes(searchTerm.toLowerCase());
-
-            const matchType = typeFilter === '' || site.type === typeFilter;
-
-            return matchSearch && matchType;
-        });
-    }, [initialWebsites, searchTerm, typeFilter]);
-
-    const displayedWebsites = filteredWebsites.slice(0, displayCount);
-
-    const handleLoadMore = () => setDisplayCount(prev => prev + ITEMS_PER_PAGE);
-
-    const clearFilters = () => {
-        setTypeFilter('');
-        setSearchTerm('');
-    };
-
-    // Reset display count when filters change
-    React.useEffect(() => {
-        setDisplayCount(ITEMS_PER_PAGE);
-    }, [searchTerm, typeFilter]);
-
-    const getTypeDisplayName = (type: string) => {
-        if (type.includes('مدونة شخصية')) return 'المدونات الشخصية';
-        if (type.includes('شركة') || type.includes('مبادرة')) return 'المواقع التعريفية';
-        if (type.includes('مجلة') || type.includes('إخباري')) return 'المدونات والمواقع الإخبارية';
-        return type;
-    };
-
-    const getFaviconUrl = (url: string) => {
-        try {
-            const domain = new URL(url).hostname;
-            return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
-        } catch {
-            return '';
-        }
-    };
+    const categories = useMemo(
+        () => Array.from(new Set(initialWebsites.map(w => w.type).filter(Boolean))).sort(),
+        [initialWebsites],
+    );
+    const facets = useMemo<DirectoryFacet<Website>[]>(
+        () => [{ ...TYPE_FACET, options: categories.map(type => ({ value: type, label: getTypeDisplayName(type) })) }],
+        [categories],
+    );
+    const directory = useDirectory<Website>({
+        items: initialWebsites,
+        searchText: siteSearchText,
+        facets,
+        pageSize: ITEMS_PER_PAGE,
+    });
 
     return (
         <div className="min-h-screen transition-colors" dir="rtl">
-            {/* Header & Filters */}
             <section className="bg-card py-10 shadow-xs border-b border-border">
                 <div className="container mx-auto px-4 text-center max-w-4xl space-y-6">
                     <div className="relative">
@@ -93,106 +88,52 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
                         </div>
                     </div>
 
-                    {/* Search Box */}
-                    <div className="flex flex-col md:flex-row gap-4 max-w-2xl mx-auto items-center">
-                        <div className="relative w-full">
-                            <Search className="absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground start-3 pointer-events-none" />
-                            <Input aria-label="ابحث في المواقع السورية..."
-                                type="text"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                placeholder="ابحث في المواقع السورية..."
-                                className="w-full ps-10 pe-10 bg-card border-border"
-                            />
-                            {searchTerm && (
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => setSearchTerm('')}
-                                    className="absolute top-1/2 -translate-y-1/2 end-2 h-9 w-9 text-muted-foreground hover:text-foreground"
-                                >
-                                    <X className="h-4 w-4" />
-                                </Button>
-                            )}
-                        </div>
-                    </div>
+                    <DirectorySearch
+                        size="default"
+                        className="mx-auto max-w-2xl"
+                        value={directory.query}
+                        onChange={directory.setQuery}
+                        placeholder="ابحث في المواقع السورية..."
+                        ariaLabel="ابحث في المواقع السورية"
+                    />
 
-                    {/* Category Filter Chips (Styled like SyOfficial) */}
-                    <div className="mt-6 flex flex-wrap justify-center gap-2">
-                        <Button
-                            variant={typeFilter === '' ? "default" : "outline"}
-                            onClick={() => setTypeFilter('')}
-                            className="rounded-full"
-                            size="sm"
-                        >
-                            الكل
-                        </Button>
-                        {categories.map((c) => (
-                            <Button
-                                key={c}
-                                variant={typeFilter === c ? "default" : "outline"}
-                                onClick={() => setTypeFilter(c)}
-                                className="rounded-full"
-                                size="sm"
-                            >
-                                {getTypeDisplayName(c)}
-                            </Button>
-                        ))}
-                    </div>
+                    <DirectoryFilterChips
+                        label="النوع"
+                        options={facets[0].options}
+                        value={directory.filters.type ?? []}
+                        onChange={(next) => directory.setFilters({ ...directory.filters, type: next })}
+                    />
                 </div>
             </section>
 
-            {/* Content Area */}
             <div className="container mx-auto px-4 py-8">
-                {/* Visual Controls */}
                 <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-                    <span role="status" aria-live="polite" className="text-sm text-muted-foreground font-medium">
-                        {filteredWebsites.length === 0
+                    <DirectoryResultCount>
+                        {directory.results.length === 0
                             ? 'لم يتم العثور على نتائج'
-                            : `عرض ${displayedWebsites.length} من أصل ${filteredWebsites.length} موقع`}
-                    </span>
+                            : `عرض ${directory.shown} من أصل ${directory.results.length} موقع`}
+                    </DirectoryResultCount>
 
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
                             <span className="text-sm text-muted-foreground">عرض:</span>
-                            <div className="bg-card rounded-lg p-1 shadow-xs border border-border flex gap-1">
-                                <Button aria-label="عرض كجدول"
-                                    variant={viewMode === 'table' ? 'secondary' : 'ghost'}
-                                    size="icon"
-                                    onClick={() => setViewMode('table')}
-                                    className="h-8 w-8"
-                                    title="عرض كجدول"
-                                >
-                                    <List className="h-4 w-4" />
-                                </Button>
-                                <Button aria-label="عرض كبطاقات"
-                                    variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
-                                    size="icon"
-                                    onClick={() => setViewMode('grid')}
-                                    className="h-8 w-8"
-                                    title="عرض كبطاقات"
-                                >
-                                    <LayoutGrid className="h-4 w-4" />
-                                </Button>
-                            </div>
+                            <DirectoryViewToggle value={viewMode} onChange={setViewMode} className="shadow-xs" />
                         </div>
                     </div>
                 </div>
 
-                {filteredWebsites.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 bg-card rounded-2xl border border-dashed border-border shadow-xs text-center">
-                        <Search className="h-16 w-16 text-muted-foreground/30 mb-4" />
-                        <h2 className="text-lg font-semibold text-foreground mb-2">لم يتم العثور على مواقع</h2>
-                        <p className="text-muted-foreground text-sm">جرب تغيير مصطلحات البحث أو الفلاتر</p>
-                        <Button onClick={clearFilters} variant="link" className="mt-2 text-primary">
-                            مسح جميع الفلاتر
-                        </Button>
-                    </div>
+                {directory.results.length === 0 ? (
+                    <DirectoryEmptyState
+                        icon={Search}
+                        title="لم يتم العثور على مواقع"
+                        description="جرب تغيير مصطلحات البحث أو الفلاتر"
+                        directory={directory}
+                    />
                 ) : (
                     <>
                         {viewMode === 'grid' ? (
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-3.5 sm:gap-4">
-                                {displayedWebsites.map(site => (
+                                {directory.visible.map(site => (
                                     <a
                                         key={site.id}
                                         href={site.url}
@@ -248,7 +189,7 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {displayedWebsites.map(site => (
+                                        {directory.visible.map(site => (
                                             <TableRow key={site.id} className="hover:bg-muted/50 transition-colors">
                                                 <TableCell className="font-medium">
                                                     <div className="flex items-center gap-3">
@@ -290,22 +231,11 @@ export default function SitesClient({ initialWebsites }: SitesClientProps) {
                             </div>
                         )}
 
-                        {displayedWebsites.length < filteredWebsites.length && (
-                            <div className="flex justify-center mt-12 pb-8">
-                                <Button
-                                    onClick={handleLoadMore}
-                                    size="lg"
-                                    className="bg-primary hover:bg-primary/90 text-primary-foreground min-w-[200px] rounded-full font-bold shadow-md hover:shadow-lg transition-all"
-                                >
-                                    تحميل المزيد
-                                </Button>
-                            </div>
-                        )}
+                        {directory.hasMore && <DirectoryLoadMore onClick={directory.loadMore} />}
                     </>
                 )}
             </div>
 
-            {/* About Section */}
             <section className="bg-card py-16 px-4 border-t border-border mt-12">
                 <div className="max-w-3xl mx-auto text-center">
                     <h2 className="text-3xl font-bold mb-6 text-foreground">حول المواقع السورية</h2>

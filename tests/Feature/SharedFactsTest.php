@@ -75,17 +75,17 @@ test('the prayer method table keeps the offered methods separate from the accept
 
 test('the open and closed promise statuses partition the status list', function () {
     // Which status is open decides whether the vote countdown applies and
-    // whether `resolved_at` is stamped; which is closed freezes votes. The two
-    // constants are hand-kept next to a list that lives in promises.json, so
-    // this is the check that a status added there is classified instead of
-    // becoming neither.
+    // whether `resolved_at` is stamped; which is closed freezes votes. The
+    // classification rides on each status in promises.json, so this is the check
+    // that a status added there is classified instead of becoming neither.
     $statuses = Promise::statuses();
+    $open = Promise::openStatuses();
+    $closed = Promise::closedStatuses();
 
-    expect(Promise::OPEN_STATUSES)->not->toBeEmpty()
-        ->and(Promise::CLOSED_STATUSES)->not->toBeEmpty()
-        ->and(array_intersect(Promise::OPEN_STATUSES, Promise::CLOSED_STATUSES))->toBe([])
-        ->and([...Promise::OPEN_STATUSES, ...Promise::CLOSED_STATUSES])
-        ->toEqualCanonicalizing($statuses);
+    expect($open)->not->toBeEmpty()
+        ->and($closed)->not->toBeEmpty()
+        ->and(array_intersect($open, $closed))->toBe([])
+        ->and([...$open, ...$closed])->toEqualCanonicalizing($statuses);
 });
 
 test('the media base is one readable value', function () {

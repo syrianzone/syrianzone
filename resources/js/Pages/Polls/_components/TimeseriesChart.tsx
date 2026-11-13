@@ -1,8 +1,8 @@
 import { useId, useMemo, useState, useRef } from "react"
 import { CartesianGrid, Line, LineChart, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Components/ui/card"
-import { Tabs, TabsList, TabsTrigger } from "@/Components/ui/tabs"
 import { Button } from "@/Components/ui/button"
+import { cn } from "@/Lib/utils"
 import { Download } from "lucide-react"
 import { notify } from "@/Lib/notify"
 import type { PngDeclarations } from "@/Lib/exportElementAsPng"
@@ -51,10 +51,69 @@ interface TimeseriesChartProps {
     title: string
 }
 
+type Timeframe = "day" | "week" | "month" | "year"
+type Metric = "votes" | "score"
+type ViewMode = "cumulative" | "periodic"
+
+const VIEW_MODES: readonly { value: ViewMode; label: string }[] = [
+    { value: "cumulative", label: "تراكمي" },
+    { value: "periodic", label: "دوري" },
+]
+
+const METRICS: readonly { value: Metric; label: string }[] = [
+    { value: "score", label: "النقاط" },
+    { value: "votes", label: "الأصوات" },
+]
+
+const TIMEFRAMES: readonly { value: Timeframe; label: string }[] = [
+    { value: "day", label: "يومي" },
+    { value: "week", label: "أسبوعي" },
+    { value: "month", label: "شهري" },
+    { value: "year", label: "سنوي" },
+]
+
+/**
+ * One row of bound options for the chart below it. These are not tabs: nothing
+ * is switched, the single chart is redrawn. As Radix tabs they named a
+ * TabsContent that was never rendered (axe: aria-valid-attr-value).
+ */
+function OptionGroup<T extends string>({
+    label, value, options, onChange, className,
+}: {
+    label: string
+    value: T
+    options: readonly { value: T; label: string }[]
+    onChange: (value: T) => void
+    className: string
+}) {
+    return (
+        <div
+            role="group"
+            aria-label={label}
+            className={cn("h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground", className)}
+        >
+            {options.map((option) => (
+                <button
+                    key={option.value}
+                    type="button"
+                    aria-pressed={value === option.value}
+                    onClick={() => onChange(option.value)}
+                    className={cn(
+                        "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                        value === option.value && "bg-background text-foreground shadow-sm",
+                    )}
+                >
+                    {option.label}
+                </button>
+            ))}
+        </div>
+    )
+}
+
 export function TimeseriesChart({ history, candidates, title }: TimeseriesChartProps) {
-    const [timeframe, setTimeframe] = useState<"day" | "week" | "month" | "year">("day")
-    const [metric, setMetric] = useState<"votes" | "score">("score")
-    const [viewMode, setViewMode] = useState<"cumulative" | "periodic">("cumulative")
+    const [timeframe, setTimeframe] = useState<Timeframe>("day")
+    const [metric, setMetric] = useState<Metric>("score")
+    const [viewMode, setViewMode] = useState<ViewMode>("cumulative")
     const [selectedCandidates, setSelectedCandidates] = useState<string[]>(["all"])
 
     const toggleCandidate = (id: string) => {
@@ -213,28 +272,29 @@ export function TimeseriesChart({ history, candidates, title }: TimeseriesChartP
                             <CardDescription>تقدم المرشحين عبر الزمن</CardDescription>
                         </div>
                         <div className="flex gap-2 flex-wrap">
-                            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)} className="w-[160px]">
-                                <TabsList className="grid w-full grid-cols-2">
-                                    <TabsTrigger value="cumulative">تراكمي</TabsTrigger>
-                                    <TabsTrigger value="periodic">دوري</TabsTrigger>
-                                </TabsList>
-                            </Tabs>
+                            <OptionGroup
+                                label="طريقة العرض"
+                                value={viewMode}
+                                options={VIEW_MODES}
+                                onChange={setViewMode}
+                                className="grid w-[160px] grid-cols-2"
+                            />
 
-                            <Tabs value={metric} onValueChange={(v) => setMetric(v as any)} className="w-[160px]">
-                                <TabsList className="grid w-full grid-cols-2">
-                                    <TabsTrigger value="score">النقاط</TabsTrigger>
-                                    <TabsTrigger value="votes">الأصوات</TabsTrigger>
-                                </TabsList>
-                            </Tabs>
+                            <OptionGroup
+                                label="القيمة المعروضة"
+                                value={metric}
+                                options={METRICS}
+                                onChange={setMetric}
+                                className="grid w-[160px] grid-cols-2"
+                            />
 
-                            <Tabs value={timeframe} onValueChange={(v) => setTimeframe(v as any)} className="w-[280px]">
-                                <TabsList className="grid w-full grid-cols-4">
-                                    <TabsTrigger value="day">يومي</TabsTrigger>
-                                    <TabsTrigger value="week">أسبوعي</TabsTrigger>
-                                    <TabsTrigger value="month">شهري</TabsTrigger>
-                                    <TabsTrigger value="year">سنوي</TabsTrigger>
-                                </TabsList>
-                            </Tabs>
+                            <OptionGroup
+                                label="المدى الزمني"
+                                value={timeframe}
+                                options={TIMEFRAMES}
+                                onChange={setTimeframe}
+                                className="grid w-[280px] grid-cols-4"
+                            />
                         </div>
                     </div>
                 </div>

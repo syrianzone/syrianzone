@@ -1,5 +1,5 @@
 import { api as client, API_V1 } from '@/Lib/api'
-import type { City, FeatureCollection, RouteProperties, StopProperties } from '../_types'
+import type { FeatureCollection, RouteProperties, StopProperties } from '../_types'
 import type { ActivityLog, Draft, PublishedRoute, RouteStop, StudioDraftPayload } from '../_types/admin'
 
 /** One search row: a route or a stop from our own tables. */
@@ -76,10 +76,6 @@ export interface RouteUpdatePayload {
 
 /** One typed client for the transit resources the map, admin, studio and dashboard read. */
 export const transitApi = {
-  cities(signal?: AbortSignal): Promise<City[]> {
-    return client.get(`${API_V1}/cities`, { signal })
-  },
-
   mapData(cityId: string, signal?: AbortSignal): Promise<MapDataResponse> {
     return client.get(`${API_V1}/cities/${cityId}/map-data`, { signal })
   },

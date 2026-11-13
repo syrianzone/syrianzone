@@ -386,61 +386,66 @@ export default function ApiTokensIndex(props: ApiTokensData) {
                                         <TableHead className="text-right">الصلاحيات</TableHead>
                                         <TableHead className="text-right">آخر استخدام</TableHead>
                                         <TableHead className="text-right">ينتهي</TableHead>
-                                        <TableHead />
+                                        <TableHead className="text-right">
+                                            <span className="sr-only">إجراءات</span>
+                                        </TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {tokens.map((t) => (
-                                        <TableRow key={t.id}>
-                                            <TableCell className="font-medium" dir="ltr">{t.name}</TableCell>
-                                            {!selfService && (
-                                            <TableCell>
-                                                <div className="flex items-center gap-1.5">
-                                                    {t.owner?.name ?? '—'}
-                                                    {t.owner_banned && (
-                                                        <ShieldAlert className="w-4 h-4 text-destructive" aria-label="حساب محظور" />
-                                                    )}
-                                                </div>
-                                            </TableCell>
-                                            )}
-                                            <TableCell>
-                                                <div className="flex flex-wrap gap-1">
-                                                    {(t.abilities ?? []).map((a) => (
-                                                        <Badge key={a} variant="secondary" className="text-[10px]" dir="ltr">
-                                                            {a}
-                                                        </Badge>
-                                                    ))}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="text-muted-foreground text-xs">
-                                                {t.last_used_at ? formatDate(t.last_used_at) : 'لم يُستخدم'}
-                                            </TableCell>
-                                            <TableCell className="text-xs">
-                                                <span className={t.is_expired ? 'text-destructive font-bold' : 'text-muted-foreground'}>
-                                                    {t.is_expired ? 'منتهٍ' : formatDate(t.expires_at)}
-                                                </span>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center gap-1">
-                                                    {/* Revoke-all also ends the user's mobile sessions,
-                                                        so it stays a superadmin leak response. */}
-                                                    {!selfService && t.owner && (
-                                                        <Button aria-label="إبطال كل رموز هذا المستخدم"
-                                                            size="sm"
-                                                            variant="ghost"
-                                                            title="إبطال كل رموز هذا المستخدم"
-                                                            onClick={() => revokeAll(t.owner!.id)}
-                                                        >
-                                                            <AlertTriangle className="w-4 h-4 text-amber-600" />
+                                    {tokens.map((t) => {
+                                        const owner = t.owner;
+                                        return (
+                                            <TableRow key={t.id}>
+                                                <TableCell className="font-medium" dir="ltr">{t.name}</TableCell>
+                                                {!selfService && (
+                                                <TableCell>
+                                                    <div className="flex items-center gap-1.5">
+                                                        {owner?.name ?? '—'}
+                                                        {t.owner_banned && (
+                                                            <ShieldAlert className="w-4 h-4 text-destructive" aria-label="حساب محظور" />
+                                                        )}
+                                                    </div>
+                                                </TableCell>
+                                                )}
+                                                <TableCell>
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {(t.abilities ?? []).map((a) => (
+                                                            <Badge key={a} variant="secondary" className="text-[10px]" dir="ltr">
+                                                                {a}
+                                                            </Badge>
+                                                        ))}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="text-muted-foreground text-xs">
+                                                    {t.last_used_at ? formatDate(t.last_used_at) : 'لم يُستخدم'}
+                                                </TableCell>
+                                                <TableCell className="text-xs">
+                                                    <span className={t.is_expired ? 'text-destructive font-bold' : 'text-muted-foreground'}>
+                                                        {t.is_expired ? 'منتهٍ' : formatDate(t.expires_at)}
+                                                    </span>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex items-center gap-1">
+                                                        {/* Revoke-all also ends the user's mobile sessions,
+                                                            so it stays a superadmin leak response. */}
+                                                        {!selfService && owner && (
+                                                            <Button aria-label="إبطال كل رموز هذا المستخدم"
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                title="إبطال كل رموز هذا المستخدم"
+                                                                onClick={() => revokeAll(owner.id)}
+                                                            >
+                                                                <AlertTriangle className="w-4 h-4 text-amber-600" />
+                                                            </Button>
+                                                        )}
+                                                        <Button aria-label="إبطال" size="sm" variant="ghost" title="إبطال" onClick={() => revoke(t.id)}>
+                                                            <Trash2 className="w-4 h-4 text-destructive" />
                                                         </Button>
-                                                    )}
-                                                    <Button aria-label="إبطال" size="sm" variant="ghost" title="إبطال" onClick={() => revoke(t.id)}>
-                                                        <Trash2 className="w-4 h-4 text-destructive" />
-                                                    </Button>
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        );
+                                    })}
                                 </TableBody>
                             </Table>
                         )}

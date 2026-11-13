@@ -6,12 +6,13 @@ import { ScrollArea } from '@/Components/ui/scroll-area'
 import { Separator } from '@/Components/ui/separator'
 import { useMapStore } from '../_store/useMapStore'
 import { getRouteColor } from '../_lib/mapColors'
-import type { City, RouteProperties } from '../_types'
+import type { RouteProperties } from '../_types'
+import type { TransitCity } from '@/Domain/transit/types'
 
 interface SidebarRoutesProps {
-  city: City | undefined
+  city: TransitCity | undefined
   /** The city list, for the names of the other cities a shared map draws. */
-  cities: City[]
+  cities: TransitCity[]
   routes: RouteProperties[]
 }
 

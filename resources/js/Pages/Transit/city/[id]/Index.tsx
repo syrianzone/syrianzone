@@ -2,7 +2,8 @@ import React, { Suspense, useMemo, useEffect, useRef, lazy } from 'react'
 import type { Bounds } from '@/Components/map/geo'
 import { useMapData } from '../../_hooks/useMapData'
 import { useMapStore } from '../../_store/useMapStore'
-import type { City, FeatureCollection, RouteProperties, StopProperties } from '../../_types'
+import type { FeatureCollection, RouteProperties, StopProperties } from '../../_types'
+import type { TransitCity } from '@/Domain/transit/types'
 import TransitLayout from '../../layout'
 
 const MapView = lazy(() => import('../../_components/citymap/MapView'))
@@ -10,9 +11,9 @@ const MapView = lazy(() => import('../../_components/citymap/MapView'))
 interface CityPageProps {
   id: string
   /** The city, from the same cached list the API serves (sent with the page). */
-  city?: City
+  city?: TransitCity
   /** The whole list, for the names of a shared map's other cities. */
-  cities?: City[]
+  cities?: TransitCity[]
 }
 
 export default function CityPage({ id, city, cities = [] }: CityPageProps) {

@@ -12,7 +12,7 @@ This document is the single contract for the feature as implemented. Every name,
 
 Follows [mishwar-places.md](mishwar-places.md) §2 exactly. Additions specific to this feature:
 
-- Widgets never call `axios` directly. They call a typed client in `_lib/`, or reuse an existing one (`Domain/places/discovery.ts`, `Domain/places/api.ts`).
+- Widgets never call `axios` directly. They call a typed client in `_lib/`, or reuse an existing one (`Domain/places/api.ts`, `Domain/weather/weather.ts`, `Domain/transit/api.ts`).
 - Cross-origin, non-app APIs (the weather worker, `api.aladhan.com`) are the one exception and use plain `fetch`.
 - Widgets never handle auth or geolocation permission themselves. `BoardTile` enforces `requires` and only mounts a widget once its capabilities are satisfied.
 - Widgets never render their own spinner, error, or empty state. `WidgetShell` owns all of them.
@@ -148,7 +148,7 @@ Shared: `resources/js/Providers/QueryProvider.tsx` (moved out of `Pages/Transit/
 | `rss` | community | `GET /api/feed?source=` | | yes |
 | `answers` | community | `GET /api/answers` (answers.syrian.zone) | | no |
 | `events-today` | community | `GET /api/events/today` (F3alia) | | yes |
-| `guides` | community | `GET /api/v1/guides` via `Domain/places/discovery` | | yes |
+| `guides` | community | `GET /api/v1/guides` via `Domain/places/api` | | yes |
 | `places-nearby` | places | `GET /api/v1/places/nearby` (radius capped at 25km) | `geo` | no |
 | `transit-cities` | places | `GET /api/v1/cities` | | no |
 | `recipe` | food | `GET /api/recipe-of-the-day` (food.syrian.zone) | | no |

@@ -1,8 +1,8 @@
-import type { City } from '../../_types'
+import type { TransitCity } from '@/Domain/transit/types'
 
 interface HeroProps {
   /** The server's city list (`/transit` renders it into the first HTML). */
-  cities: City[]
+  cities: TransitCity[]
 }
 
 export default function Hero({ cities: allCities }: HeroProps) {

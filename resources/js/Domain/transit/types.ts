@@ -1,3 +1,5 @@
+import type { Bounds } from '@/Components/map/geo'
+
 /**
  * The transit shapes more than one feature reads: the dashboard moderates the
  * same route drafts the transit admin reviews, and the shell lists the cities
@@ -33,9 +35,11 @@ export interface RouteDraftRow {
 }
 
 /**
- * The city fields the surfaces outside the map read: the search palette's city
- * group and the 404 grid's cards. The rideable count is the table's, so a city
- * with no published route says "قريباً" instead of offering a dead link.
+ * The city row `GET /api/v1/cities` sends and the transit landing page receives:
+ * the card fields every surface reads (the search palette's city group and the
+ * 404 grid's cards) plus the map view the admin and the lander fit. The rideable
+ * count is the table's, so a city with no published route says "قريباً" instead
+ * of offering a dead link. `TransitPresenter::city()` is the one producer.
  */
 export interface TransitCity {
   id: string
@@ -43,4 +47,17 @@ export interface TransitCity {
   nameEn: string
   status: 'active' | 'coming_soon'
   routeCount: number
+  bounds: Bounds | null
+  center: [number, number]
+  zoom: number
+  /**
+   * The cities drawn on the same map, itself included (Damascus and Rif
+   * Dimashq are one network). `GET /api/v1/cities` composes it from
+   * `City::mapGroup()`; the client never spells a pair of ids itself.
+   */
+  mapGroup: string[]
+  /** The shared map's Arabic name, e.g. «دمشق الكبرى»; null for a map of one. */
+  mapGroupLabel: string | null
+  /** The governorate outline, on the API payload only (the pages draw their own). */
+  icon?: { viewBox: string; path: string } | null
 }

@@ -25,7 +25,7 @@ const fmt = (n: number) => n.toLocaleString('en-US');
  * The list is only as fresh as the data file: `meta.asOf` rather than today's
  * clock, which also kept the server's render and the browser's apart.
  */
-const updatedArabic = formatGregorianSyrianShort(`${meta.asOf}T00:00:00`);
+const updatedArabic = formatGregorianSyrianShort(meta.asOf);
 
 // names already announced as detained by the MoI; matched members get a cross
 const detainedNames = new Set(individuals.map((p) => p.name));

@@ -7,11 +7,12 @@ import { Card, CardContent } from '@/Components/ui/card'
 import { ScrollArea } from '@/Components/ui/scroll-area'
 import { Separator } from '@/Components/ui/separator'
 import { getRouteColor } from '../_lib/mapColors'
-import type { City, RouteProperties } from '../_types'
+import type { RouteProperties } from '../_types'
+import type { TransitCity } from '@/Domain/transit/types'
 
 interface SidebarRouteDetailProps {
   route: RouteProperties
-  city: City | undefined
+  city: TransitCity | undefined
   stops: any[]
 }
 

@@ -186,9 +186,8 @@ Rules:
   it prints the exact value the other side needs.
 - **The accessibility sweep's coverage is the thing worth asserting.** A route
   that renders an Inertia page must be in `scripts/a11y_axe_audit.py`'s
-  `PUBLIC_ROUTES`/`ADMIN_ROUTES`, or in that test's exclusion list with the axe
-  finding or missing data that blocks it. A new page therefore fails the gate
-  until it is either swept or explicitly accounted for.
+  `PUBLIC_ROUTES`/`ADMIN_ROUTES`; there is no exclusion list. A new page
+  therefore fails the gate until the sweep visits it.
 
 ## Admin route authorisation
 

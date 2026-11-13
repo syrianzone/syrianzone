@@ -3,6 +3,7 @@
   "states": [
     {
       "key": "pending",
+      "class": "open",
       "label": "قيد الانتظار",
       "glyph": "Hourglass",
       "card_tone": "outline",
@@ -11,6 +12,7 @@
     },
     {
       "key": "in_progress",
+      "class": "open",
       "label": "قيد التنفيذ",
       "glyph": "Wrench",
       "card_tone": "outline",
@@ -19,6 +21,7 @@
     },
     {
       "key": "overdue",
+      "class": "open",
       "label": "متأخر",
       "glyph": "AlarmClock",
       "card_tone": "destructive",
@@ -27,6 +30,7 @@
     },
     {
       "key": "fulfilled",
+      "class": "closed",
       "label": "تحقق",
       "glyph": "BadgeCheck",
       "card_tone": "primary",
@@ -35,6 +39,7 @@
     },
     {
       "key": "partially_fulfilled",
+      "class": "closed",
       "label": "تحقق جزئياً",
       "glyph": "CircleDashed",
       "card_tone": "soft",
@@ -43,6 +48,7 @@
     },
     {
       "key": "broken",
+      "class": "closed",
       "label": "لم يتحقق",
       "glyph": "XCircle",
       "card_tone": "destructive",
@@ -51,6 +57,7 @@
     },
     {
       "key": "postponed",
+      "class": "closed",
       "label": "أُجّل",
       "glyph": "CalendarClock",
       "card_tone": "soft",
@@ -59,6 +66,7 @@
     },
     {
       "key": "retracted",
+      "class": "closed",
       "label": "سُحب",
       "glyph": "Undo2",
       "card_tone": "soft",

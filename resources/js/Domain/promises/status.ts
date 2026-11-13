@@ -167,7 +167,11 @@ export function sectorIcon(key: string | null | undefined): LucideIcon {
     return (key && SECTOR_ICONS[key]) || CircleEllipsis;
 }
 
-/** States still awaiting a verdict. */
+/** States still awaiting a verdict, from the `class` each carries in the data file. */
+const OPEN_STATES = new Set(
+    raw.states.filter((state) => state.class === 'open').map((state) => state.key),
+);
+
 export function isOpenState(state: PromiseState): boolean {
-    return state === 'pending' || state === 'in_progress' || state === 'overdue';
+    return OPEN_STATES.has(state);
 }

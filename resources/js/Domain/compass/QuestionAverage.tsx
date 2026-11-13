@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/card';
 import {
     Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue,
@@ -48,6 +48,8 @@ const fmt = (v: number | null) => (v == null ? '—' : `${v > 0 ? '+' : ''}${v.t
 export default function QuestionAverage({ questions, scope, scopeLabel }: Props) {
     const [groupId, setGroupId] = useState(QUESTION_GROUPS[0].id);
     const [questionKey, setQuestionKey] = useState(QUESTION_GROUPS[0].questions[0].key);
+    const groupLabelId = useId();
+    const questionLabelId = useId();
 
     const group = QUESTION_GROUPS.find((g) => g.id === groupId) ?? QUESTION_GROUPS[0];
     const question = group.questions.find((q) => q.key === questionKey) ?? group.questions[0];
@@ -71,7 +73,7 @@ export default function QuestionAverage({ questions, scope, scopeLabel }: Props)
             <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div className="space-y-2">
-                        <label className="text-xs text-muted-foreground">المحور</label>
+                        <label id={groupLabelId} className="text-xs text-muted-foreground">المحور</label>
                         <Select
                             value={groupId}
                             onValueChange={(v) => {
@@ -81,7 +83,7 @@ export default function QuestionAverage({ questions, scope, scopeLabel }: Props)
                             }}
                             dir="rtl"
                         >
-                            <SelectTrigger>
+                            <SelectTrigger aria-labelledby={groupLabelId}>
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -92,9 +94,9 @@ export default function QuestionAverage({ questions, scope, scopeLabel }: Props)
                         </Select>
                     </div>
                     <div className="space-y-2">
-                        <label className="text-xs text-muted-foreground">السؤال</label>
+                        <label id={questionLabelId} className="text-xs text-muted-foreground">السؤال</label>
                         <Select value={questionKey} onValueChange={setQuestionKey} dir="rtl">
-                            <SelectTrigger>
+                            <SelectTrigger aria-labelledby={questionLabelId}>
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>

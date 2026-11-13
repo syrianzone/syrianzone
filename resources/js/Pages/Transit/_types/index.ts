@@ -26,27 +26,6 @@ export type StopProperties = {
   routeIds: string[]
 }
 
-export interface City {
-  id: string
-  nameAr: string
-  nameEn: string
-  status: 'active' | 'coming_soon'
-  routeCount: number
-  bounds: [[number, number], [number, number]] | null
-  center: [number, number]
-  zoom: number
-  /**
-   * The cities drawn on the same map, itself included (Damascus and Rif
-   * Dimashq are one network). `GET /api/v1/cities` composes it from
-   * `City::mapGroup()`; the client never spells a pair of ids itself.
-   */
-  mapGroup: string[]
-  /** The shared map's Arabic name, e.g. «دمشق الكبرى»; null for a map of one. */
-  mapGroupLabel: string | null
-  /** The governorate outline, on the API payload only (the page draws its own). */
-  icon?: { viewBox: string; path: string } | null
-}
-
 /**
  * The GeoJSON payloads the transit API sends. The properties are aliases (not
  * interfaces) so the collections are assignable to the `geojson` package types

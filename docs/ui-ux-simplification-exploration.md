@@ -476,7 +476,7 @@ embedded footer, add a reset, replace `confirm()`.
 - Leaderboards use `text-gray-*` (breaks the theme system) and have no real
   loading state (`:260`), telling users to "refresh".
 
-**TierBoard** (`Components/poll/TierBoard.tsx`, 864 lines):
+**TierBoard** (`Domain/polls/TierBoard.tsx`, 864 lines):
 - Over-explains the task three times (page hint, instruction card, tier legend).
 - Silent destructive actions: switching category **wipes placements**
   (`:182-202`), "مسح الاختيارات" has no confirm (`:835`), and reset repopulates

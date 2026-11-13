@@ -11,7 +11,8 @@ import { resolveBasemapStyle } from '@/Components/map/resolveStyle'
 import { featureCollectionBounds, normalizeFeatureCollection } from '@/Components/map/geo'
 import { useMapColors } from '@/Components/map/mapColors'
 import { ROUTE_COLOR_COUNT, ROUTE_PALETTE, TRANSIT_MAP_COLORS, getRouteColor, buildColorMatch } from '../_lib/mapColors'
-import type { City } from '../_types'
+import { transitCities } from '@/Domain/transit/api'
+import type { TransitCity } from '@/Domain/transit/types'
 import type { ActivityLog, Draft, PublishedRoute, RouteStop } from '../_types/admin'
 import TransitLayout from '../layout'
 import { Button } from '@/Components/ui/button'
@@ -134,7 +135,7 @@ function TransitAdminPageContent() {
   const [routeStatusFilter, setRouteStatusFilter] = useState<string>('all')
   const [logs, setLogs] = useState<ActivityLog[]>([])
   const [loadingLogs, setLoadingLogs] = useState(false)
-  const [cities, setCities] = useState<City[]>([])
+  const [cities, setCities] = useState<TransitCity[]>([])
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
 
   const { user, can, canInCity, allowedTransitCities } = useAuth()
@@ -203,7 +204,7 @@ function TransitAdminPageContent() {
   }, [])
 
   useEffect(() => {
-    transitApi.cities()
+    transitCities()
       .then(setCities)
       .catch((e) => notify.error(apiErrorMessage(e)))
   }, [])

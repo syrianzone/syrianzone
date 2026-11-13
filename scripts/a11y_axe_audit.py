@@ -28,25 +28,26 @@ import sys
 # Routes to audit. Public routes first; the dev impersonation route (if reachable)
 # is visited before admin routes so a session cookie is present.
 #
-# Every route that renders an Inertia page must appear in one of these lists or
-# in the exclusion list of tests/Feature/Tooling/A11yRouteCoverageTest.php, which
-# reads this file: a new page fails that test until it is either swept or
-# excluded there with a reason.
+# Every route that renders an Inertia page must appear in one of these lists:
+# tests/Feature/Tooling/A11yRouteCoverageTest.php reads this file and fails when
+# a page is missing, so "0 violations" covers every page.
 PUBLIC_ROUTES = [
     "/", "/about", "/privacy", "/terms", "/stats",
     "/syofficial", "/phonebook", "/govapps", "/party", "/house",
     "/justice", "/sites", "/syrian-contributors", "/syid", "/atlas",
     "/crossings", "/shawarma", "/roznama", "/priorities", "/alignment",
-    "/compass", "/tierlist", "/polls", "/guesswho", "/muslim",
+    "/compass", "/compass/stats", "/tierlist", "/tierlist/leaderboard",
+    "/polls", "/guesswho", "/muslim",
     "/muslim/prayer", "/muslim/quran", "/muslim/radio",
-    "/games", "/games/2048", "/games/solitare", "/board",
+    "/games", "/games/2048", "/games/solitare", "/games/tarneeb", "/games/trix", "/board",
     "/mishwar", "/transit", "/transit/studio",
     "/promises", "/promises/suggest",
 ]
 ADMIN_ROUTES = [
     "/dashboard", "/admin/govapps", "/admin/phonebook", "/admin/syofficial",
     "/admin/guesswho", "/admin/assets", "/admin/navigation", "/admin/places",
-    "/admin/site-popup", "/transit/admin",
+    "/admin/site-popup", "/admin/api-tokens", "/transit/admin",
+    "/admin/compass", "/admin/compass/figures", "/admin/compass/personas",
     "/admin/promises", "/admin/promises/new", "/admin/promises/review",
     "/admin/promises/speakers", "/admin/promises/sectors",
 ]

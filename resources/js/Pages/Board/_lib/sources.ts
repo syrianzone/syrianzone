@@ -3,7 +3,7 @@ import { api } from '@/Domain/places/api';
 import type { Guide, GuidesSort, NearbyPlace } from '@/Domain/places/types';
 import { fetchPrayerTimes, type PrayerTimesResponse } from '@/Domain/prayer/times';
 import { transitCities } from '@/Domain/transit/api';
-import { WEATHER_URL, type WeatherResponse } from '@/Domain/weather/weather';
+import { fetchWeatherByGovernorate } from '@/Domain/weather/weather';
 
 // The board's read clients: every widget names the fetcher it uses in its own
 // declaration (`source`), and the registry publishes that mapping as
@@ -76,9 +76,7 @@ export const sources = {
 
   // proxied through the app: the upstream worker only sends CORS headers for the
   // production origin, so calling it from the browser fails everywhere else
-  weather(governorate: string): Promise<WeatherResponse> {
-    return client.get(WEATHER_URL, { params: { governorate } });
-  },
+  weather: fetchWeatherByGovernorate,
 
   // every method below is proxied through the app for the same reason as the
   // weather worker: the browser never talks to a third-party host directly

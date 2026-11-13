@@ -1,7 +1,7 @@
 import React from 'react';
 import type { Category } from '@/Domain/compass/types';
 import { Landmark, Scale, BookOpen, Building2, Flag, Users, Star, type LucideIcon } from 'lucide-react';
-import './compass.css';
+import '../compass.css';
 
 // Symbolic, theme-aware avatar for a figure. Uses a real image when available,
 // otherwise a category-coloured circle with a role icon or the first letter.

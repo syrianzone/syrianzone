@@ -21,7 +21,7 @@ import {
     TabsList,
     TabsTrigger,
 } from "@/Components/ui/tabs";
-import { featureToSVG } from '@/Lib/geo-utils';
+import { featureToSVG } from './featureToSVG';
 import { GOVERNORATES, getGovernorateNameAr } from '@/Domain/geography/governorates';
 import {
     Select,

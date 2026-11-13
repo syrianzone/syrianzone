@@ -186,7 +186,7 @@ Haversine (meters): `6371000 * 2 * asin(sqrt(sin²(Δlat/2) + cos(lat1)cos(lat2)
 
 **`GET /api/v1/places/photos`** -> `PlaceDiscoveryController@photos`. Photo grid feed: photos of approved places only, newest photo first, `paginate(24)`. Each entry: `{ "id", "thumb_url", "display_url", "place": { "id", "name", "category", "lat", "lng" } }` (lat/lng included so the grid can fly to the place without a second fetch). `Cache-Control: public, max-age=60`. Registered before `/places/{id}`.
 
-**`GET /api/v1/guides`** -> `PlaceDiscoveryController@guides`. Local guides leaderboard. `'sort' => 'sometimes|in:submissions,saves,recent'` (default `submissions`). Single aggregate over approved places joined to non-banned, non-deleted users; top 20; cached per sort with `Cache::remember("places:guides:{$sort}", 300, ...)` (no forget hooks, 5-minute staleness is accepted). Response: `{ "sort", "guides": [ { "rank", "user_id", "name", "avatar_url", "approved_count", "saves_total", "recent_count" } ] }` (rank 1-based). `Cache-Control: public, max-age=60`.
+**`GET /api/v1/guides`** -> `PlaceDiscoveryController@guides`. Local guides leaderboard. `'sort' => 'sometimes|in:points,submissions,saves,recent'` (default `points`). Single aggregate over approved places joined to non-banned, non-deleted users; top 20; cached per sort with `Cache::remember("places:guides:{$sort}", 300, ...)` (no forget hooks, 5-minute staleness is accepted). Response: `{ "sort", "guides": [ { "rank", "user_id", "name", "avatar_url", "approved_count", "saves_total", "recent_count" } ] }` (rank 1-based). `Cache-Control: public, max-age=60`.
 
 Future guide-ranking criteria (documented only, deliberately NOT built): category specialists (top contributor per category), governorate coverage (distinct governorates contributed to, needs a governorate resolver), streaks (consecutive weeks with an approved place).
 
@@ -563,7 +563,7 @@ Backend:
 - Routes: the places block in `routes/api.php` (public reads) and `routes/web.php` (page routes, authed writes, admin moderation)
 
 Frontend:
-- `resources/js/Domain/places/types.ts`, `categories.ts`, `api.ts`, `discovery.ts`, `reports.ts`
+- `resources/js/Domain/places/types.ts`, `categories.ts`, `api.ts`, `reports.ts`
 - `resources/js/Pages/Places/Index.tsx`
 - `resources/js/Pages/Places/_components/`: PlacesMap, FilterBar, PlacesPanel, PlaceCard, PlaceDetailView, PhotoGallery, Lightbox, EngagementBar, SubmitSheet, DuplicateSuggestions, PhotoPicker
 - `resources/js/Pages/Admin/Places/`: Index.tsx, PlaceReviewCard.tsx, RejectDialog.tsx

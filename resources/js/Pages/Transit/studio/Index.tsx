@@ -22,7 +22,7 @@ import {
 } from 'lucide-react'
 import { useStudioStore, type StudioPatch, type StopFeature } from '../_store/useStudioStore'
 import { useMapData } from '../_hooks/useMapData'
-import type { City } from '../_types'
+import type { TransitCity } from '@/Domain/transit/types'
 import TransitLayout from '../layout'
 import { createBaseMap } from '@/Components/map/createMap'
 import { useMapStyle } from '@/Components/map/useMapStyle'
@@ -229,9 +229,9 @@ function TransitStudioPageContent() {
 
   // The city list travels with the page: the studio resolves `?edit=`, `?city=`
   // and the default city on mount, so it cannot wait for a fetch.
-  const page = usePage<{ cities: City[] }>()
+  const page = usePage<{ cities: TransitCity[] }>()
   const pageUrl = page.url
-  const cities: City[] = page.props.cities ?? []
+  const cities: TransitCity[] = page.props.cities ?? []
   const pageSearch = new URLSearchParams(pageUrl.split('?')[1] ?? '')
   const editParam = pageSearch.get('edit')
   const cityParam = pageSearch.get('city')

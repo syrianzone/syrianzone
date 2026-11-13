@@ -28,6 +28,9 @@ final class Facts
     /** @var array<string, string>|null */
     private static ?array $governorateIdByAlias = null;
 
+    /** @var array{open: array<int, string>, closed: array<int, string>}|null */
+    private static ?array $promiseStatusClasses = null;
+
     /**
      * @return array<int, array{
      *     id: string, name_ar: string, name_en: string, dataset_name_en: string,
@@ -187,6 +190,42 @@ final class Facts
     public static function promiseStatuses(): array
     {
         return self::json('promises')['statuses'];
+    }
+
+    /**
+     * The editorial statuses split by the `class` each one carries in
+     * `resources/data/promises.json`: `open` still awaits a verdict (its
+     * countdown runs and it can become overdue), `closed` is a verdict (votes
+     * freeze and `resolved_at` applies). `overdue` carries a class too, but it is
+     * derived from an open promise's deadline, not a status, so it is not listed.
+     *
+     * @return array{open: array<int, string>, closed: array<int, string>}
+     */
+    public static function promiseStatusClasses(): array
+    {
+        if (self::$promiseStatusClasses !== null) {
+            return self::$promiseStatusClasses;
+        }
+
+        /** @var array<string, array<string, mixed>> $states */
+        $states = [];
+        foreach (self::json('promises')['states'] as $state) {
+            $states[$state['key']] = $state;
+        }
+
+        $classes = ['open' => [], 'closed' => []];
+
+        foreach (self::promiseStatuses() as $status) {
+            $class = $states[$status]['class'] ?? null;
+            if (! is_string($class) || ! array_key_exists($class, $classes)) {
+                throw new RuntimeException(
+                    "resources/data/promises.json gives the status \"{$status}\" the class \"{$class}\"; expected open or closed.",
+                );
+            }
+            $classes[$class][] = $status;
+        }
+
+        return self::$promiseStatusClasses = $classes;
     }
 
     /**

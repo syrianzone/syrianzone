@@ -33,20 +33,14 @@ export interface AccountCustomLink {
 export interface AccountSettingsPatch {
   theme?: string;
   fontFamily?: 'ibm-plex' | 'system';
-  language?: 'ar' | 'en';
   governorate?: string;
   eventsGovernorate?: string;
-  clockFormat?: '12' | '24';
-  searchEngine?: 'duckduckgo' | 'google' | 'bing' | 'searx' | 'custom';
-  showClock?: boolean;
   showWeather?: boolean;
   showPrayerTimes?: boolean;
   showEvents?: boolean;
-  showSearch?: boolean;
   useCustomCoords?: boolean | null;
   customLat?: number | null;
   customLon?: number | null;
-  customSearchUrl?: string;
   customLinks?: AccountCustomLink[];
   muslimCity?: string | null;
   muslimMethod?: number | null;

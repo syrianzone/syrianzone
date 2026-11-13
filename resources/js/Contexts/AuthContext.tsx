@@ -6,8 +6,6 @@ import type { AuthProps, AuthUser } from '@/types/auth';
 
 interface AuthContextType {
     user: AuthUser | null;
-    loading: boolean;
-    isSuperAdmin: boolean;
     /** Reads the server-resolved capability list. */
     can: (permission: Capability) => boolean;
     /** Capability + governorate scope (transit.* only), from the server's resolved scope. */
@@ -24,25 +22,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const sharedUser = props.auth?.user ?? null;
 
     const [user, setUser] = useState<AuthUser | null>(sharedUser);
-    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         setUser(sharedUser);
     }, [sharedUser]);
 
     const refreshUser = async () => {
-        setLoading(true);
         try {
             const res = await api.get<AuthUser>('/user');
             setUser(res);
-        } catch (error) {
+        } catch {
             setUser(null);
-        } finally {
-            setLoading(false);
         }
     };
-
-    const isSuperAdmin = user?.role === 'superadmin';
 
     // Role implications are resolved on the server and arrive as
     // effective_permissions, so this delegates to the same function useCan()
@@ -68,7 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, isSuperAdmin, can, canInCity, allowedTransitCities, refreshUser }}>
+        <AuthContext.Provider value={{ user, can, canInCity, allowedTransitCities, refreshUser }}>
             {children}
         </AuthContext.Provider>
     );

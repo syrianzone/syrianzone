@@ -2,7 +2,8 @@ import { useMemo, useEffect, useRef } from 'react'
 import { usePage } from '@inertiajs/react'
 import { useRoutes, useMapData } from '../_hooks/useMapData'
 import { useMapStore } from '../_store/useMapStore'
-import type { City, RouteProperties } from '../_types'
+import type { RouteProperties } from '../_types'
+import type { TransitCity } from '@/Domain/transit/types'
 import { SidebarRoutes } from './SidebarRoutes'
 import { SidebarRouteDetail } from './SidebarRouteDetail'
 
@@ -18,7 +19,7 @@ export function TransitSidebar({ pathname }: TransitSidebarProps) {
   // The city page carries its own route list; any other transit page has none.
   // The city list is a page prop on every transit page (the server renders it
   // from the table), so the sidebar names a city without a fetch of its own.
-  const page = usePage<{ id?: string; routes?: RouteProperties[]; cities?: City[] }>().props
+  const page = usePage<{ id?: string; routes?: RouteProperties[]; cities?: TransitCity[] }>().props
   const cities = page.cities ?? []
   const { data: routes } = useRoutes(cityId || '', page.id === cityId ? page.routes : undefined)
   const { data: mapData } = useMapData(cityId || undefined)

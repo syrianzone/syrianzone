@@ -261,6 +261,7 @@ export default function CompassFigures({ figures, categories, canViewStats }: Pr
                                                     checked={f.enabled}
                                                     disabled={busyId === f.id}
                                                     onCheckedChange={() => toggle(f)}
+                                                    aria-label={`مفعّلة في المطابقة: ${f.name}`}
                                                 />
                                             </TableCell>
                                             <TableCell>
@@ -308,9 +309,9 @@ export default function CompassFigures({ figures, categories, canViewStats }: Pr
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label>الفئة</Label>
+                                <Label id="fig-category-label">الفئة</Label>
                                 <Select value={form.category} onValueChange={(v) => setForm((f) => ({ ...f, category: v }))} dir="rtl">
-                                    <SelectTrigger>
+                                    <SelectTrigger aria-labelledby="fig-category-label">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -334,6 +335,7 @@ export default function CompassFigures({ figures, categories, canViewStats }: Pr
                                 <Switch
                                     checked={form.enabled}
                                     onCheckedChange={(v) => setForm((f) => ({ ...f, enabled: v }))}
+                                    aria-label="مفعّلة في المطابقة"
                                 />
                             </div>
                         </div>

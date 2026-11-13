@@ -45,11 +45,25 @@ class Promise extends Model
         return Facts::promiseStatuses();
     }
 
-    /** Statuses that still await a verdict, and so can become overdue. */
-    public const OPEN_STATUSES = ['pending', 'in_progress'];
+    /**
+     * Statuses that still await a verdict, and so can become overdue.
+     *
+     * @return array<int, string>
+     */
+    public static function openStatuses(): array
+    {
+        return Facts::promiseStatusClasses()['open'];
+    }
 
-    /** Verdicts that close a promise (votes freeze, `resolved_at` applies). */
-    public const CLOSED_STATUSES = ['fulfilled', 'partially_fulfilled', 'broken', 'postponed', 'retracted'];
+    /**
+     * Verdicts that close a promise (votes freeze, `resolved_at` applies).
+     *
+     * @return array<int, string>
+     */
+    public static function closedStatuses(): array
+    {
+        return Facts::promiseStatusClasses()['closed'];
+    }
 
     /**
      * The editorial vocabularies of a promise statement. The keys are the
@@ -201,7 +215,7 @@ class Promise extends Model
 
     public function isOpen(): bool
     {
-        return in_array($this->status, self::OPEN_STATUSES, true);
+        return in_array($this->status, self::openStatuses(), true);
     }
 
     /**

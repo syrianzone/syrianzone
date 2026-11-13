@@ -257,14 +257,6 @@ export default function Index() {
 
     const formatDateGregorian = (date: Date) => formatGregorianSyrian(date);
 
-    // `formatGregorianSyrianShort` reads a date string; a local Date is anchored
-    // at noon so no time zone can move it to the neighbouring day.
-    const formatDateShort = (date: Date) => {
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return formatGregorianSyrianShort(`${date.getFullYear()}-${month}-${day}T12:00:00`);
-    };
-
     // Active and next prayer, one implementation shared with /muslim, Home and
     // the board widget.
     const schedule = useMemo(
@@ -611,7 +603,7 @@ export default function Index() {
                                                             </div>
                                                             <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
                                                                 <span className={`font-semibold ${isPast ? 'text-muted-foreground' : 'text-foreground/75'}`}>
-                                                                    {formatDateShort(holiday.date)}
+                                                                    {formatGregorianSyrianShort(holiday.date)}
                                                                     {holiday.date.getFullYear() !== currentTime.getFullYear() && ` (${holiday.date.getFullYear()})`}
                                                                 </span>
                                                                 {holiday.description && (

@@ -99,6 +99,15 @@ export function fetchWeather(point: { lat: number; lon: number }): Promise<Weath
   return client.get(WEATHER_URL, { params: { lat: point.lat, lon: point.lon } });
 }
 
+/**
+ * The board's read: the same endpoint keyed by governorate slug instead of the
+ * user's resolved point, so its weather tile is not tied to the page's location.
+ * The widget's react-query supplies the caching.
+ */
+export function fetchWeatherByGovernorate(governorate: string): Promise<WeatherResponse> {
+  return client.get(WEATHER_URL, { params: { governorate } });
+}
+
 export interface UseWeatherOptions {
   enabled?: boolean;
   /** Reuse Home's 15-minute `sessionStorage` entry (Roznama never cached). */

@@ -191,7 +191,7 @@ class PromiseEditor
 
             $promise->update([
                 'status' => $to,
-                'resolved_at' => in_array($to, Promise::CLOSED_STATUSES, true) ? $entry['happened_on'] : null,
+                'resolved_at' => in_array($to, Promise::closedStatuses(), true) ? $entry['happened_on'] : null,
             ]);
 
             $promise->updates()->create([
@@ -329,7 +329,7 @@ class PromiseEditor
 
             $promise->update([
                 'status' => $status,
-                'resolved_at' => $previous && in_array($status, Promise::CLOSED_STATUSES, true)
+                'resolved_at' => $previous && in_array($status, Promise::closedStatuses(), true)
                     ? $previous->happened_on
                     : null,
             ]);

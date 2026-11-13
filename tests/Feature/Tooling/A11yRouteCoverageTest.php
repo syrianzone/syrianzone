@@ -33,23 +33,6 @@ function auditedPaths(): array
     return array_values(array_unique($paths));
 }
 
-/**
- * The Inertia routes the sweep does not visit, each with the reason. A route
- * belongs here only when it cannot be swept as it stands (an axe finding, or
- * content that only exists for a signed-in record); "the list is old" is not a
- * reason.
- */
-const A11Y_ROUTE_EXCLUSIONS = [
-    'games/tarneeb' => 'No <main> landmark and no <h1> on the table page (axe: landmark-one-main, page-has-heading-one). Owned by Pages/Games; add to PUBLIC_ROUTES once the page has a landmark.',
-    'games/trix' => 'Same two findings as games/tarneeb: a table page without a <main> landmark or an <h1>. Owned by Pages/Games.',
-    'tierlist/leaderboard' => 'The chart\'s three filter rows are Radix Tabs with no TabsContent, so every trigger\'s aria-controls points at an element that does not exist (axe: aria-valid-attr-value, critical). Sweep it once Pages/Polls/_components/TimeseriesChart.tsx stops naming a panel it never renders.',
-    'compass/stats' => 'The two answer pickers are Select triggers with no accessible name, because the shared Select primitive does not label its trigger (axe: button-name, critical). Sweep it once Components/ui/select names the control.',
-    'admin/api-tokens' => 'The token table renders an empty <th> while a token is pending (axe: empty-table-header). Sweep it once the table header is named.',
-    'admin/compass' => 'Same unlabelled Select trigger as compass/stats (axe: button-name, critical). Owned by the shared Select primitive.',
-    'admin/compass/figures' => 'Same unlabelled Select trigger as compass/stats (axe: button-name, critical). Owned by the shared Select primitive.',
-    'admin/compass/personas' => 'Same unlabelled Select trigger as compass/stats (axe: button-name, critical). Owned by the shared Select primitive.',
-];
-
 /** Does this route's action body render an Inertia page? */
 function rendersInertiaPage(RoutingRoute $route): bool
 {
@@ -111,16 +94,12 @@ function inertiaPagePaths(): array
     return array_values(array_unique($paths));
 }
 
-test('every Inertia route is audited by the axe sweep or excluded with a reason', function () {
-    $audited = auditedPaths();
-    $excluded = array_map(fn (string $path) => '/'.ltrim($path, '/'), array_keys(A11Y_ROUTE_EXCLUSIONS));
-
-    $unswept = array_values(array_diff(inertiaPagePaths(), $audited, $excluded));
+test('every Inertia route is audited by the axe sweep', function () {
+    $unswept = array_values(array_diff(inertiaPagePaths(), auditedPaths()));
     expect($unswept)->toBe([], implode("\n", [
         'These routes render an Inertia page but the axe sweep never visits them,',
-        'so its "0 violations" says nothing about them. Either add the path to',
-        'PUBLIC_ROUTES/ADMIN_ROUTES in scripts/a11y_axe_audit.py, or list it in',
-        'A11Y_ROUTE_EXCLUSIONS with the reason it cannot be swept:',
+        'so its "0 violations" says nothing about them. Add the path to',
+        'PUBLIC_ROUTES/ADMIN_ROUTES in scripts/a11y_axe_audit.py:',
         ...$unswept,
     ]));
 });
@@ -137,20 +116,6 @@ test('the sweep only visits routes that exist, and repeats no route', function (
 
     $unknown = array_values(array_filter($paths, fn (string $path) => ! in_array($path, $registered, true)));
     expect($unknown)->toBe([], 'scripts/a11y_axe_audit.py visits routes that are not registered: '.implode(', ', $unknown));
-});
-
-test('every exclusion names a real, unswept Inertia route and says why', function () {
-    $inertia = inertiaPagePaths();
-    $audited = auditedPaths();
-
-    foreach (A11Y_ROUTE_EXCLUSIONS as $path => $reason) {
-        $route = '/'.ltrim($path, '/');
-        expect(in_array($route, $inertia, true))
-            ->toBeTrue("A11Y_ROUTE_EXCLUSIONS lists {$route}, which is not an Inertia route any more.");
-        expect(in_array($route, $audited, true))
-            ->toBeFalse("{$route} is excluded and swept: delete the exclusion.");
-        expect(trim($reason))->not->toBe('', "A11Y_ROUTE_EXCLUSIONS has no reason for {$route}.");
-    }
 });
 
 test('every DEFERRED_PAGES prefix resolves to a Pages/ folder', function () {

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Support\Agents\ApiTokenIssuer;
 use App\Support\Agents\InvalidTokenAbilities;
+use App\Support\Agents\TokenAbilities;
 use App\Support\Agents\TokenIssuer;
 use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Http\Request;
@@ -142,7 +143,7 @@ class ApiTokenAdminController extends Controller
 
         // This page manages agent tokens. A mobile app session is not listed
         // here, so it is not revocable from here either (except by superadmins).
-        if (! $actor->isSuperAdmin() && $token->abilities === ['mobile']) {
+        if (! $actor->isSuperAdmin() && TokenAbilities::isMobileToken($token)) {
             abort(404);
         }
 
@@ -177,7 +178,7 @@ class ApiTokenAdminController extends Controller
             ->latest('id')
             ->limit(200)
             ->get()
-            ->reject(fn (PersonalAccessToken $token) => $token->abilities === ['mobile'])
+            ->reject(fn (PersonalAccessToken $token) => TokenAbilities::isMobileToken($token))
             ->map(fn (PersonalAccessToken $token) => [
                 'id' => $token->id,
                 'name' => $token->name,

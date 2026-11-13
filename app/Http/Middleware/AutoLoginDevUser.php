@@ -19,58 +19,70 @@ use Illuminate\Support\Facades\Auth;
 class AutoLoginDevUser
 {
     /**
-     * Preset names the switcher offers. Mirrored by ROLE_META in
-     * resources/js/Components/DevRoleSwitcher.tsx.
-     */
-    public const DEV_ROLES = [
-        'user', 'transit_admin', 'syofficial_admin', 'govapps_admin',
-        'phonebook_admin', 'places_admin', 'users_admin', 'admin', 'superadmin',
-    ];
-
-    /**
-     * Per preset: the account, and the capabilities it holds. A module preset
-     * holds exactly its module, so it previews that panel's real access rather
-     * than a role string that happens to unlock it.
+     * The one preset table. Each entry is the account the preset logs in as, the
+     * capabilities it holds, and how the switcher presents it.
      *
-     * @var array<string, array{name: string, email: string, permissions: array<int, string>}>
+     * A module preset holds exactly its module, so it previews that panel's real
+     * access rather than a role string that happens to unlock it. `icon` is a key
+     * from a small vocabulary (`user`, `bus`, `settings`, `shield`) that the
+     * switcher resolves to its own icon set; the label is the Arabic name the
+     * switcher prints, so adding a preset is this array and nothing else.
+     *
+     * @var array<string, array{label: string, icon: string, name: string, email: string, permissions: array<int, string>}>
      */
     public const DEV_USERS = [
         'user' => [
+            'label' => 'مستخدم (User)',
+            'icon' => 'user',
             'name' => 'Dev User',
             'email' => 'dev-user@syrian.zone',
             'permissions' => [],
         ],
         'transit_admin' => [
+            'label' => 'مشرف تنقل (Transit)',
+            'icon' => 'bus',
             'name' => 'Dev Transit Admin',
             'email' => 'dev-transit@syrian.zone',
             'permissions' => ['module:transit'],
         ],
         'syofficial_admin' => [
+            'label' => 'مشرف الحسابات الرسمية',
+            'icon' => 'settings',
             'name' => 'Dev SyOfficial Admin',
             'email' => 'dev-syofficial@syrian.zone',
             'permissions' => ['module:syofficial'],
         ],
         'govapps_admin' => [
+            'label' => 'مشرف التطبيقات الحكومية',
+            'icon' => 'settings',
             'name' => 'Dev Gov Apps Admin',
             'email' => 'dev-govapps@syrian.zone',
             'permissions' => ['module:govapps'],
         ],
         'phonebook_admin' => [
+            'label' => 'مشرف دليل الهاتف',
+            'icon' => 'settings',
             'name' => 'Dev Phonebook Admin',
             'email' => 'dev-phonebook@syrian.zone',
             'permissions' => ['module:phonebook'],
         ],
         'places_admin' => [
+            'label' => 'مشرف مشوار',
+            'icon' => 'settings',
             'name' => 'Dev Places Admin',
             'email' => 'dev-places@syrian.zone',
             'permissions' => ['module:places'],
         ],
         'users_admin' => [
+            'label' => 'مشرف المستخدمين',
+            'icon' => 'settings',
             'name' => 'Dev Users Admin',
             'email' => 'dev-users@syrian.zone',
             'permissions' => ['module:users'],
         ],
         'admin' => [
+            'label' => 'مدير (Admin)',
+            'icon' => 'settings',
             'name' => 'Dev Admin',
             'email' => 'dev-admin@syrian.zone',
             // The whole catalogue explicitly, so this preset previews "staff
@@ -78,11 +90,39 @@ class AutoLoginDevUser
             'permissions' => ['catalogue'],
         ],
         'superadmin' => [
+            'label' => 'مدير عام (Superadmin)',
+            'icon' => 'shield',
             'name' => 'Dev Superadmin',
             'email' => 'dev-superadmin@syrian.zone',
             'permissions' => ['catalogue'],
         ],
     ];
+
+    /**
+     * The presets the switcher renders, in table order.
+     *
+     * @return list<array{id: string, label: string, icon: string}>
+     */
+    public static function presets(): array
+    {
+        $presets = [];
+
+        foreach (self::DEV_USERS as $id => $spec) {
+            $presets[] = ['id' => $id, 'label' => $spec['label'], 'icon' => $spec['icon']];
+        }
+
+        return $presets;
+    }
+
+    /**
+     * The preset names `/dev/impersonate/{preset}` accepts.
+     *
+     * @return list<string>
+     */
+    public static function names(): array
+    {
+        return array_keys(self::DEV_USERS);
+    }
 
     public static function isDevMode(): bool
     {
@@ -129,12 +169,12 @@ class AutoLoginDevUser
             $role = $request->cookie('dev_role');
         }
 
-        return in_array($role, self::DEV_ROLES) ? $role : 'superadmin';
+        return in_array($role, self::names(), true) ? $role : 'superadmin';
     }
 
     public function ensureDevUser(string $preset): User
     {
-        $preset = in_array($preset, self::DEV_ROLES) ? $preset : 'superadmin';
+        $preset = in_array($preset, self::names(), true) ? $preset : 'superadmin';
         $spec = self::DEV_USERS[$preset];
         $permissions = $this->resolvePermissions($spec['permissions']);
 

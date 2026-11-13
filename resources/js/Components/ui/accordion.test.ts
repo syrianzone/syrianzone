@@ -1,7 +1,7 @@
 import { createElement as h } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './accordion';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger, nextSelection } from './accordion';
 
 /**
  * The accordion is built on <details>/<summary> so collapsed content stays in
@@ -10,7 +10,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './
  * is a server-render one — see the todos at the bottom for the click checks).
  */
 
-type OwnProps = { type?: 'single' | 'multiple'; value?: string; defaultValue?: string };
+type OwnProps = { type?: 'single' | 'multiple'; value?: string | string[]; defaultValue?: string };
 
 function item(value: string, label: string, body: string) {
     return h(AccordionItem, {
@@ -69,6 +69,20 @@ describe('accordion', () => {
         expect(isOpen(second)).toBe(true);
     });
 
+    it('keeps several panels open in multiple mode', () => {
+        const html = render({ type: 'multiple', value: ['one', 'two'] });
+
+        expect(openCount(html)).toBe(2);
+    });
+
+    it('replaces the open panel in single mode and toggles in multiple', () => {
+        expect(nextSelection('single', [], 'one')).toEqual(['one']);
+        expect(nextSelection('single', ['one'], 'two')).toEqual(['two']);
+        expect(nextSelection('single', ['one'], 'one')).toEqual([]);
+        expect(nextSelection('multiple', ['one'], 'two')).toEqual(['one', 'two']);
+        expect(nextSelection('multiple', ['one', 'two'], 'one')).toEqual(['two']);
+    });
+
     it('uses a native summary trigger, without duplicating its state', () => {
         const html = render({ defaultValue: 'one' });
         const summary = html.match(/<summary[^>]*>/)?.[0] ?? '';
@@ -85,11 +99,4 @@ describe('accordion', () => {
         expect(summary).toContain('focus-visible:ring-2');
         expect(summary).not.toMatch(/(^|\s)focus:outline-none/);
     });
-
-    // Clicking a <summary>, and watching the group close the previous item in
-    // single mode, needs a DOM. The vitest environment is `node` and neither
-    // jsdom nor @testing-library/react is installed, so these are recorded
-    // rather than run.
-    it.todo('opens the panel when the summary is clicked');
-    it.todo('closes the previously open item when another one is clicked in single mode');
 });

@@ -3,7 +3,7 @@ import type { AxisId, Spectrum } from '@/Domain/compass/types';
 import { AXES } from '@/Domain/compass/axes';
 import { axisDisplay } from '@/Domain/compass/axisDisplay';
 import SpectrumIcon from '@/Domain/compass/SpectrumIcon';
-import { getThemeById, THEME_REGISTRY, hexToRgbString, readThemeColor, readThemeRgb } from '@/lib/theme';
+import { getThemeById, THEME_REGISTRY, hexToRgbString, readThemeColor, readThemeRgb } from '@/Lib/theme';
 
 const fmt = (v: number) => `${v > 0 ? '+' : ''}${v.toFixed(2)}`;
 

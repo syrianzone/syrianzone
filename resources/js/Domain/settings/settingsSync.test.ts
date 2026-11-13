@@ -130,7 +130,7 @@ describe('choosing «هذا الجهاز» for the coordinates', () => {
   it('clears the account pair when the device holds no coordinates', async () => {
     installWindow();
 
-    await applyConflictChoices([customConflict], { customLoc: 'local' });
+    await applyConflictChoices([customConflict], { customLoc: 'local' }, LEGACY_ACCOUNT);
 
     // Null, not omission: the account keeps a location the device no longer has
     // unless every family is written, and '' would be rejected by validation.
@@ -148,7 +148,7 @@ describe('choosing «هذا الجهاز» for the coordinates', () => {
     storage.setItem('sz-muslim-lat', '35.5');
     storage.setItem('sz-muslim-lon', '38.2');
 
-    await applyConflictChoices([customConflict], { customLoc: 'local' });
+    await applyConflictChoices([customConflict], { customLoc: 'local' }, LEGACY_ACCOUNT);
 
     expect(settingsPosted().settings).toEqual({
       muslimUseCustomCoords: false,
@@ -157,5 +157,19 @@ describe('choosing «هذا الجهاز» for the coordinates', () => {
       customLat: 35.5,
       customLon: 38.2,
     });
+  });
+
+  it('writes the account choice onto the device in the same call', async () => {
+    const storage = installWindow();
+    storage.setItem('sz-muslim-use-custom', 'false');
+    storage.setItem('sz-muslim-lat', '35.5');
+    storage.setItem('sz-muslim-lon', '38.2');
+
+    await applyConflictChoices([customConflict], { customLoc: 'server' }, LEGACY_ACCOUNT);
+
+    // «الحساب» needs no second function: the device now holds the account pair
+    // and nothing was posted (the account already has it).
+    expect(readDeviceCustomCoords()).toEqual({ on: 'false', lat: '33.51', lon: '36.27' });
+    expect(postMock).not.toHaveBeenCalled();
   });
 });

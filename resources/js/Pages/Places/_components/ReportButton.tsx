@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Flag, Loader2 } from 'lucide-react';
 import { useAuth } from '@/Contexts/AuthContext';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription } from '@/Components/ui/alert';
+import { Button } from '@/Components/ui/button';
+import { Label } from '@/Components/ui/label';
+import { Textarea } from '@/Components/ui/textarea';
 import {
   Dialog,
   DialogContent,
@@ -12,14 +12,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from '@/Components/ui/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@/Components/ui/select';
 import { notify } from '@/Lib/notify';
 import { api } from '@/Domain/places/api';
 import { apiErrorMessage } from '@/Lib/api';

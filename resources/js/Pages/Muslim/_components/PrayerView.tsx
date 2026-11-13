@@ -3,12 +3,6 @@ import { AlertCircle, Check, Settings } from 'lucide-react';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
-import {
-  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
-} from '@/Components/ui/dialog';
-import {
-  Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger,
-} from '@/Components/ui/sheet';
 import { formatDuration } from '../../../Lib/format';
 import { PRAYER_KEYS, PRAYER_LABELS, type PrayerKey } from '../../../Domain/prayer/methods';
 import { TRACKED_PRAYERS, todayKey, type MuslimPrefs } from '../../../Domain/settings/prefs';
@@ -16,9 +10,9 @@ import { hijriDateLabel } from '../../../Domain/prayer/hijri';
 import { prayerSchedule } from '../../../Domain/prayer/nextPrayer';
 import { PrayerIcon } from '../../../Domain/prayer/PrayerIcon';
 import PrayerSettingsFields from '../../../Domain/prayer/PrayerSettingsFields';
+import ResponsiveSettingsDialog from '../../../Domain/prayer/ResponsiveSettingsDialog';
 import { usePrayerTimes } from '../../../Domain/prayer/times';
 import { resolvePlaceLabel, useLocationPreference } from '../../../Domain/location/preference';
-import { useIsMobile } from '@/Lib/useIsMobile';
 import { useAppShell } from '@/Lib/appShell';
 
 interface Props {
@@ -66,7 +60,6 @@ export default function PrayerView({ prefs, setPrefs, isLoggedIn }: Props) {
 
   const prayerSettingsOpen = useAppShell((s) => s.muslimPrayerSettingsOpen);
   const setPrayerSettingsOpen = useAppShell((s) => s.setMuslimPrayerSettingsOpen);
-  const isMobile = useIsMobile();
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -77,59 +70,28 @@ export default function PrayerView({ prefs, setPrefs, isLoggedIn }: Props) {
             <div className="flex shrink-0 items-center gap-1.5">
               {apiHijri && <Badge variant="outline" className="hidden text-[10px] sm:inline-flex">{apiHijri} هـ</Badge>}
               <Badge variant="secondary" dir="ltr" className="text-[10px] tabular-nums lg:hidden">{doneCount}/5</Badge>
-              {isMobile ? (
-                <Sheet open={prayerSettingsOpen} onOpenChange={setPrayerSettingsOpen}>
-                  <SheetTrigger asChild>
-                    <Button aria-label="إعدادات المواقيت" variant="ghost" size="sm" className="h-8 gap-1.5 px-2 text-xs" title="إعدادات المواقيت">
-                      <Settings className="h-4 w-4" />
-                      <span>الإعدادات</span>
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent side="bottom" dir="rtl" className="rounded-t-3xl border-b-0 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-                    <SheetHeader className="text-right">
-                      <SheetTitle>إعدادات المواقيت</SheetTitle>
-                      <SheetDescription>
-                        المدينة والإحداثيات وطريقة الحساب — تُستخدم أيضاً في الروزنامة ولوح والرئيسية.
-                      </SheetDescription>
-                    </SheetHeader>
-                    <div className="max-h-[70dvh] overflow-y-auto sz-scroll">
-                      <PrayerSettingsFields
-                        cityLabel="المدينة"
-                        method={prefs.method}
-                        onMethodChange={(method) => setPrefs({ method })}
-                        methodNote=" — الطريقة رأي فقهي: قارن مع مسجدك، وبدّلها إن خالفته."
-                        onLocationChange={setPrefs}
-                      />
-                    </div>
-                  </SheetContent>
-                </Sheet>
-              ) : (
-                <Dialog open={prayerSettingsOpen} onOpenChange={setPrayerSettingsOpen}>
-                  <DialogTrigger asChild>
-                    <Button aria-label="إعدادات المواقيت" variant="ghost" size="sm" className="h-8 gap-1.5 px-2 text-xs" title="إعدادات المواقيت">
-                      <Settings className="h-4 w-4" />
-                      <span>الإعدادات</span>
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent dir="rtl" className="sm:max-w-md">
-                    <DialogHeader className="text-right">
-                      <DialogTitle>إعدادات المواقيت</DialogTitle>
-                      <DialogDescription>
-                        المدينة والإحداثيات وطريقة الحساب — تُستخدم أيضاً في الروزنامة ولوح والرئيسية.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <PrayerSettingsFields
-                      cityLabel="المدينة"
-                      method={prefs.method}
-                      onMethodChange={(method) => setPrefs({ method })}
-                      methodNote=" — الطريقة رأي فقهي: قارن مع مسجدك، وبدّلها إن خالفته."
-                      onLocationChange={setPrefs}
-                    />
-                  </DialogContent>
-                </Dialog>
-              )}
+              <Button aria-label="إعدادات المواقيت" variant="ghost" size="sm" className="h-8 gap-1.5 px-2 text-xs" title="إعدادات المواقيت"
+                onClick={() => setPrayerSettingsOpen(true)}>
+                <Settings className="h-4 w-4" />
+                <span>الإعدادات</span>
+              </Button>
             </div>
           </div>
+
+          <ResponsiveSettingsDialog
+            open={prayerSettingsOpen}
+            onOpenChange={setPrayerSettingsOpen}
+            title="إعدادات المواقيت"
+            description="المدينة والإحداثيات وطريقة الحساب — تُستخدم أيضاً في الروزنامة ولوح والرئيسية."
+          >
+            <PrayerSettingsFields
+              cityLabel="المدينة"
+              method={prefs.method}
+              onMethodChange={(method) => setPrefs({ method })}
+              methodNote=" — الطريقة رأي فقهي: قارن مع مسجدك، وبدّلها إن خالفته."
+              onLocationChange={setPrefs}
+            />
+          </ResponsiveSettingsDialog>
 
           {schedule?.next && (
             <div className="mb-4 flex items-center justify-between rounded-xl border border-primary/10 bg-primary/5 p-4">

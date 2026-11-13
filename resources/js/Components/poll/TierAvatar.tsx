@@ -1,5 +1,5 @@
 import { ImgHTMLAttributes } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/Lib/utils";
 import { getDisplayImageUrl } from "@/Lib/imageUtils";
 
 type Props = Omit<ImgHTMLAttributes<HTMLImageElement>, "src" | "width" | "height"> & { src?: string; size?: number };

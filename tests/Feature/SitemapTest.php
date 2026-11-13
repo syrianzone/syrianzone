@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Poll;
+use App\Support\Seo\Pages;
 
 /**
  * Pull every <loc> out of a sitemap document as a plain array of strings.
@@ -59,6 +60,29 @@ test('sitemap lists the public pages including games and compass stats', functio
     }
 });
 
+test('sitemap lists every page in the SEO table', function () {
+    // The sitemap has no page list of its own: resources/data/seo.json is the
+    // one table, so a page with a record there is listed. If this fails, a page
+    // was added with `"sitemap": false` or the two lists have diverged again.
+    $locs = sitemapLocs($this->get('/sitemap.xml')->getContent());
+
+    foreach (Pages::paths() as $path) {
+        expect($locs)->toContain('https://syrian.zone'.$path);
+    }
+});
+
+test('sitemap uses the canonical host configuration every other SEO surface reads', function () {
+    config(['seo.base_url' => 'https://staging.example.test']);
+
+    $locs = sitemapLocs($this->get('/sitemap.xml')->getContent());
+
+    expect($locs)->not->toBeEmpty();
+
+    foreach ($locs as $loc) {
+        expect($loc)->toStartWith('https://staging.example.test/');
+    }
+});
+
 test('every url uses the canonical host', function () {
     foreach (sitemapLocs($this->get('/sitemap.xml')->getContent()) as $loc) {
         expect($loc)->toStartWith('https://syrian.zone/');
@@ -95,7 +119,8 @@ test('sitemap includes active polls and skips inactive ones', function () {
 
 test('the tier list poll is not listed twice', function () {
     // /tierlist and /polls/best-ministers render the same poll from the same
-    // records, so only the /tierlist pair belongs in the sitemap.\n    Poll::factory()->create(['slug' => 'best-ministers', 'is_active' => true]);
+    // records, so only the /tierlist pair belongs in the sitemap.
+    Poll::factory()->create(['slug' => 'best-ministers', 'is_active' => true]);
 
     $locs = sitemapLocs($this->get('/sitemap.xml')->getContent());
 

@@ -79,6 +79,20 @@ export function updateLocalResult(
   } catch {}
 }
 
+/** Delete one stored local result (by id) and return what remains, or `null`
+ *  when the browser refused the write (so the caller can report it). */
+export function removeLocalResult(id: string | number | undefined | null): CompassResult[] | null {
+  const all = loadResults();
+  if (typeof window === 'undefined' || id == null) return all;
+  const kept = all.filter((r) => String(r.id) !== String(id));
+  try {
+    localStorage.setItem(KEY_RESULTS, JSON.stringify(kept));
+  } catch {
+    return null;
+  }
+  return kept;
+}
+
 /** Queue a completed result to be saved to the account once the user is
  *  logged in. Called right before redirecting to the login provider. */
 export function setPendingAccountSave(result: CompassResult) {

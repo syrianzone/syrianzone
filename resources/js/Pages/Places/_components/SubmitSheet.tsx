@@ -1,46 +1,35 @@
 import { useEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/Contexts/AuthContext';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription } from '@/Components/ui/alert';
+import { Button } from '@/Components/ui/button';
+import { Input } from '@/Components/ui/input';
+import { Label } from '@/Components/ui/label';
+import { Textarea } from '@/Components/ui/textarea';
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from '@/components/ui/sheet';
+} from '@/Components/ui/sheet';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@/Components/ui/select';
 import { api } from '@/Domain/places/api';
 import { apiErrorMessage, apiFieldErrors } from '@/Lib/api';
 import { CATEGORIES } from '@/Domain/places/categories';
 import type { LatLng, NearbyPlace, PlaceCategory } from '@/Domain/places/types';
 import { confirmDialog } from '@/Lib/confirm';
+import { useIsMobile } from '@/Lib/useIsMobile';
 import { DuplicateSuggestions } from './DuplicateSuggestions';
 import { PhotoPicker } from './PhotoPicker';
 
 type Step = 'auth' | 'duplicates' | 'form' | 'done';
-
-function useIsMobile() {
-  const [mobile, setMobile] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia('(max-width: 767px)');
-    const update = () => setMobile(mq.matches);
-    update();
-    mq.addEventListener('change', update);
-    return () => mq.removeEventListener('change', update);
-  }, []);
-  return mobile;
-}
 
 export function SubmitSheet(props: {
   open: boolean;

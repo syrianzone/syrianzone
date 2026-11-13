@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { usePage } from '@inertiajs/react';
-import { api } from '@/Lib/api';
 import { SYRIA_TIMEZONE } from '@/Domain/geography/syria';
+import { saveAccountSettings, type AccountSettingsPatch } from './accountSettings';
 import { DEFAULT_PRAYER_METHOD } from '../prayer/methods';
 import { DEFAULT_RECITATION_CODE, normalizeRecitationCode } from '../quran/quran';
 import {
@@ -16,8 +16,8 @@ import type { GeoPoint, LocMode } from '../location/location';
 // the prayer log and the Quran position. The location half (city, manual
 // coordinates, mode and resolved point) is owned by `Domain/location`; this
 // module mirrors it into `MuslimPrefs` and mirrors edits to `users.settings`.
-// Guests persist to localStorage only; logged-in users also sync to
-// users.settings via POST /api/user/settings (debounced).
+// Guests persist to localStorage only; logged-in users also sync their edits to
+// the account through `Domain/settings/accountSettings`.
 export interface MuslimPrefs {
   city: string;
   useCustomCoords: boolean;
@@ -73,6 +73,15 @@ export function todayKey(now = new Date()): string {
   }).format(now);
 }
 
+/**
+ * The same national day as a Date at local midnight, for the date-only
+ * comparisons (holiday "days left") that cannot compare against a key string.
+ */
+export function todayInSyria(now = new Date()): Date {
+  const [year, month, day] = todayKey(now).split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
 function readPrayerLog(): Record<string, Record<string, boolean>> {
   try {
     const raw = readLS(LS.plog, '');
@@ -95,15 +104,6 @@ export function prunePrayerLog(log: Record<string, Record<string, boolean>>): Re
 /** The stored calculation method, falling back to the Syrian standard. */
 export function readStoredMethod(): number {
   return Number(readLS(LS.method, String(DEFAULT_PRAYER_METHOD))) || DEFAULT_PRAYER_METHOD;
-}
-
-/** Store the calculation method (the account mirror is a separate `setPrefs` call). */
-export function writeStoredMethod(method: number): void {
-  try {
-    window.localStorage.setItem(LS.method, String(method));
-  } catch {
-    // private mode: state still works for the session
-  }
 }
 
 export function defaultMuslimPrefs(): MuslimPrefs {
@@ -141,32 +141,6 @@ export function useMuslimPrefs() {
         : base.quranReciterId,
     };
   });
-
-  const pending = useRef<Record<string, unknown>>({});
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const flush = useCallback(async () => {
-    if (!isLoggedIn) return;
-    const payload = pending.current;
-    pending.current = {};
-    if (Object.keys(payload).length === 0) return;
-    try {
-      await api.post('/api/user/settings', { settings: payload });
-    } catch {
-      // localStorage already holds the value; server sync is best-effort
-    }
-  }, [isLoggedIn]);
-
-  useEffect(() => {
-    const onHide = () => void flush();
-    window.addEventListener('visibilitychange', onHide);
-    window.addEventListener('beforeunload', onHide);
-    return () => {
-      window.removeEventListener('visibilitychange', onHide);
-      window.removeEventListener('beforeunload', onHide);
-      if (timer.current) clearTimeout(timer.current);
-    };
-  }, [flush]);
 
   const setPrefs = useCallback(
     (patch: Partial<MuslimPrefs>) => {
@@ -206,7 +180,7 @@ export function useMuslimPrefs() {
       }
 
       if (!isLoggedIn) return;
-      const serverPatch: Record<string, unknown> = {};
+      const serverPatch: AccountSettingsPatch = {};
       if (patch.city !== undefined) serverPatch.muslimCity = patch.city;
       if (patch.method !== undefined) serverPatch.muslimMethod = patch.method;
       if (patch.useCustomCoords !== undefined) serverPatch.muslimUseCustomCoords = patch.useCustomCoords;
@@ -225,11 +199,9 @@ export function useMuslimPrefs() {
         serverPatch.quranPageAt = Math.floor(at / 1000);
       }
       if (patch.quranReciterId !== undefined) serverPatch.quranReciterId = patch.quranReciterId;
-      pending.current = { ...pending.current, ...serverPatch };
-      if (timer.current) clearTimeout(timer.current);
-      timer.current = setTimeout(() => void flush(), 600);
+      if (Object.keys(serverPatch).length > 0) saveAccountSettings(serverPatch);
     },
-    [flush, isLoggedIn],
+    [isLoggedIn],
   );
 
   return {

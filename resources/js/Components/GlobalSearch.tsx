@@ -36,7 +36,7 @@ import {
 } from '@/Components/ui/command';
 import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
-import { cn } from '@/lib/utils';
+import { cn } from '@/Lib/utils';
 import { useSiteNavigation, type SiteLink } from '@/Lib/siteLinks';
 import { siteModule } from '@/Lib/siteModules';
 import { isActive } from '@/Lib/routes';

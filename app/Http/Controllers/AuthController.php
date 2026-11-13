@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\User;
+use App\Support\Agents\TokenAbilities;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
@@ -163,13 +163,13 @@ class AuthController extends Controller
         }
 
         $deviceName = trim((string) ($validated['device_name'] ?? 'mobile')) ?: 'mobile';
-        $newAccessToken = $user->createToken($deviceName, ['mobile']);
+        $newAccessToken = $user->createToken($deviceName, [TokenAbilities::MOBILE]);
 
         return response()->json([
             'token' => $newAccessToken->plainTextToken,
             'token_type' => 'Bearer',
             'expires_at' => $newAccessToken->accessToken->expires_at?->toIso8601String(),
-            'user' => HandleInertiaRequests::userPayload($user),
+            'user' => $user->toAuthPayload(),
         ]);
     }
 
@@ -236,7 +236,7 @@ class AuthController extends Controller
 
         // Shares one definition with the Inertia payload so /user and the
         // initial page load can never disagree about the user's capabilities.
-        return response()->json(HandleInertiaRequests::userPayload($user));
+        return response()->json($user?->toAuthPayload());
     }
 
     public function logout(Request $request)
@@ -287,7 +287,7 @@ class AuthController extends Controller
 
         $revoked = 0;
         foreach ($user->tokens()->get() as $token) {
-            if ($token->abilities === ['mobile'] || in_array('mobile', $token->abilities ?? [], true)) {
+            if (TokenAbilities::isMobileToken($token)) {
                 $token->delete();
                 $revoked++;
             }

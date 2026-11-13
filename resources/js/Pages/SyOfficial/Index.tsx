@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Globe, Send, Link as LinkIcon, MessageCircle, Pencil, Settings } from 'lucide-react';
-import { Facebook, Instagram, Linkedin, Twitter, Youtube } from '@/Components/ui/icons';
+import { Globe, Pencil, Send, Settings } from 'lucide-react';
+import { Twitter } from '@/Components/ui/icons';
 import { Button } from "@/Components/ui/button";
 import { Card, CardContent } from "@/Components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/Components/ui/table";
@@ -8,7 +8,7 @@ import { Badge } from "@/Components/ui/badge";
 import MainLayout from '@/Layouts/MainLayout';
 import { useCanAny, useCanModule } from '@/Lib/useCan';
 import { formatEntityImage } from '@/Lib/entityImage';
-import { socialPlatformLabel } from '@/Domain/syofficial/social';
+import { socialPlatformLabel, socialVisual } from '@/Domain/syofficial/social';
 import type { OfficialCategory, OfficialEntity } from '@/Domain/syofficial/types';
 import DirectoryEmptyState from '@/Components/directory/DirectoryEmptyState';
 import DirectoryFilterChips from '@/Components/directory/DirectoryFilterChips';
@@ -84,60 +84,6 @@ const TRANSLATIONS = {
         tableCategory: 'Kategorî',
         tableDesc: 'Ravekirin',
         tableSocial: 'Hesabên Fermî',
-    }
-};
-
-const getSocialIcon = (platform: string) => {
-    switch (platform) {
-        case 'facebook':
-        case 'facebook_secondary':
-            return <Facebook className="w-4 h-4 text-[#1877F2]" />;
-        case 'instagram':
-        case 'instagram_secondary':
-            return <Instagram className="w-4 h-4 text-[#E4405F]" />;
-        case 'twitter':
-        case 'twitter_secondary':
-            return <Twitter className="w-4 h-4 text-[#1DA1F2]" />;
-        case 'telegram':
-        case 'telegram_secondary':
-            return <Send className="w-4 h-4 text-[#26A5E4]" />;
-        case 'linkedin':
-            return <Linkedin className="w-4 h-4 text-[#0A66C2]" />;
-        case 'youtube':
-            return <Youtube className="w-4 h-4 text-[#FF0000]" />;
-        case 'whatsapp':
-            return <MessageCircle className="w-4 h-4 text-[#25D366]" />;
-        case 'website':
-            return <Globe className="w-4 h-4 text-primary" />;
-        default:
-            return <LinkIcon className="w-4 h-4" />;
-    }
-};
-
-const getSocialStyle = (platform: string) => {
-    switch (platform) {
-        case 'facebook':
-        case 'facebook_secondary':
-            return 'hover:border-[#1877F2]/50 hover:bg-[#1877F2]/10';
-        case 'instagram':
-        case 'instagram_secondary':
-            return 'hover:border-[#E4405F]/50 hover:bg-[#E4405F]/10';
-        case 'twitter':
-        case 'twitter_secondary':
-            return 'hover:border-[#1DA1F2]/50 hover:bg-[#1DA1F2]/10';
-        case 'telegram':
-        case 'telegram_secondary':
-            return 'hover:border-[#26A5E4]/50 hover:bg-[#26A5E4]/10';
-        case 'linkedin':
-            return 'hover:border-[#0A66C2]/50 hover:bg-[#0A66C2]/10';
-        case 'youtube':
-            return 'hover:border-[#FF0000]/50 hover:bg-[#FF0000]/10';
-        case 'whatsapp':
-            return 'hover:border-[#25D366]/50 hover:bg-[#25D366]/10';
-        case 'website':
-            return 'hover:border-primary/50 hover:bg-primary/10';
-        default:
-            return '';
     }
 };
 
@@ -377,18 +323,21 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
 
                                                         {nonEmptySocials(item).length > 0 && (
                                                             <div className="flex flex-wrap justify-center gap-1.5 pt-1">
-                                                                {nonEmptySocials(item).map(([plat, url]) => (
-                                                                    <a
-                                                                        key={plat}
-                                                                        href={url}
-                                                                        target="_blank"
-                                                                        rel="noopener noreferrer"
-                                                                        className={`p-1.5 rounded-lg border border-border/50 bg-muted/50 text-muted-foreground transition-all duration-200 hover:scale-105 shadow-2xs ${getSocialStyle(plat)}`}
-                                                                        title={socialPlatformLabel(plat, language === 'ar' ? 'ar' : 'en')}
-                                                                    >
-                                                                        {getSocialIcon(plat)}
-                                                                    </a>
-                                                                ))}
+                                                                {nonEmptySocials(item).map(([plat, url]) => {
+                                                                    const visual = socialVisual(plat);
+                                                                    return (
+                                                                        <a
+                                                                            key={plat}
+                                                                            href={url}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            className={`p-1.5 rounded-lg border border-border/50 bg-muted/50 text-muted-foreground transition-all duration-200 hover:scale-105 shadow-2xs ${visual.hoverClass}`}
+                                                                            title={socialPlatformLabel(plat, language === 'ar' ? 'ar' : 'en')}
+                                                                        >
+                                                                            <visual.Icon className={`w-4 h-4 ${visual.iconClass}`} />
+                                                                        </a>
+                                                                    );
+                                                                })}
                                                             </div>
                                                         )}
                                                     </CardContent>
@@ -440,18 +389,21 @@ export default function SyOfficialIndex({ initialData = [], categories = [] }: S
                                                 </TableCell>
                                                 <TableCell>
                                                     <div className="flex items-center gap-1.5 flex-wrap">
-                                                        {nonEmptySocials(item).map(([plat, url]) => (
-                                                            <a
-                                                                key={plat}
-                                                                href={url}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className={`p-1.5 rounded-lg border border-border/40 bg-muted/40 text-muted-foreground transition-all duration-200 hover:scale-105 ${getSocialStyle(plat)}`}
-                                                                title={socialPlatformLabel(plat, language === 'ar' ? 'ar' : 'en')}
-                                                            >
-                                                                {getSocialIcon(plat)}
-                                                            </a>
-                                                        ))}
+                                                        {nonEmptySocials(item).map(([plat, url]) => {
+                                                            const visual = socialVisual(plat);
+                                                            return (
+                                                                <a
+                                                                    key={plat}
+                                                                    href={url}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className={`p-1.5 rounded-lg border border-border/40 bg-muted/40 text-muted-foreground transition-all duration-200 hover:scale-105 ${visual.hoverClass}`}
+                                                                    title={socialPlatformLabel(plat, language === 'ar' ? 'ar' : 'en')}
+                                                                >
+                                                                    <visual.Icon className={`w-4 h-4 ${visual.iconClass}`} />
+                                                                </a>
+                                                            );
+                                                        })}
                                                     </div>
                                                 </TableCell>
                                                 {canEditEntries && (

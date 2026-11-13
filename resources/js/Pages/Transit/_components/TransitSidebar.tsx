@@ -1,31 +1,30 @@
 import { useMemo, useEffect, useRef } from 'react'
 import { usePage } from '@inertiajs/react'
-import citiesData from '@/Domain/transit/cities.json'
 import { useRoutes, useMapData } from '../_hooks/useMapData'
 import { useMapStore } from '../_store/useMapStore'
 import type { City, RouteProperties } from '../_types'
 import { SidebarRoutes } from './SidebarRoutes'
 import { SidebarRouteDetail } from './SidebarRouteDetail'
-import { SidebarMapTools } from './SidebarMapTools'
-
-const cities = citiesData as City[]
 
 interface TransitSidebarProps {
   pathname: string
   search: URLSearchParams
 }
 
-export function TransitSidebar({ pathname, search }: TransitSidebarProps) {
+export function TransitSidebar({ pathname }: TransitSidebarProps) {
   const cityId = getCityIdFromPath(pathname)
   const { selectedRouteId, setSelectedRouteId } = useMapStore()
   const prevCityIdRef = useRef(cityId)
 
   // The city page carries its own route list; any other transit page has none.
-  const page = usePage<{ id?: string; routes?: RouteProperties[] }>().props
+  // The city list is a page prop on every transit page (the server renders it
+  // from the table), so the sidebar names a city without a fetch of its own.
+  const page = usePage<{ id?: string; routes?: RouteProperties[]; cities?: City[] }>().props
+  const cities = page.cities ?? []
   const { data: routes } = useRoutes(cityId || '', page.id === cityId ? page.routes : undefined)
   const { data: mapData } = useMapData(cityId || undefined)
 
-  const city = useMemo(() => cities.find(c => c.id === cityId), [cityId])
+  const city = useMemo(() => cities.find(c => c.id === cityId), [cities, cityId])
   const route = useMemo(
     () => routes?.find(r => r.id === selectedRouteId),
     [routes, selectedRouteId]
@@ -48,7 +47,7 @@ export function TransitSidebar({ pathname, search }: TransitSidebarProps) {
     return <SidebarRouteDetail route={route} city={city} stops={stops} />
   }
 
-  return <SidebarRoutes city={city} routes={routes ?? []} />
+  return <SidebarRoutes city={city} cities={cities} routes={routes ?? []} />
 }
 
 function getCityIdFromPath(path: string): string | null {

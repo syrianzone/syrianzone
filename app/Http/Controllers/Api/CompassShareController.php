@@ -45,7 +45,7 @@ class CompassShareController extends Controller
     {
         $row = CompassResult::where('share_id', $shareId)->first();
         if (! $row) {
-            return response()->json(['message' => 'Not found'], 404);
+            return response()->json(['message' => 'العنصر غير موجود.'], 404);
         }
         return response()->json(['data' => [
             'version' => $row->version,

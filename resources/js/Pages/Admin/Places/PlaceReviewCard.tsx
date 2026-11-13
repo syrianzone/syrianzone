@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { Check, ExternalLink, Loader2, Pencil, Plus, RotateCw, Trash2, Upload, X } from 'lucide-react';
 import { Badge } from '@/Components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/Components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
 import { useAuth } from '@/Contexts/AuthContext';
 import { api } from '@/Domain/places/api';
@@ -11,6 +11,7 @@ import type { AdminPlace, PlaceStatus } from '@/Domain/places/types';
 import { EditPlaceDialog } from './EditPlaceDialog';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
+import { formatGregorianSyrianShort } from '@/Lib/syrian-date';
 
 const STATUS_LABELS: Record<PlaceStatus, string> = {
   pending: 'قيد الانتظار',
@@ -224,7 +225,7 @@ export function PlaceReviewCard(props: {
               {place.lat.toFixed(5)}, {place.lng.toFixed(5)}
             </span>
           </a>
-          <span>{new Date(place.created_at).toLocaleDateString('ar-SY')}</span>
+          <span>{formatGregorianSyrianShort(place.created_at)}</span>
         </div>
 
         {place.status === 'rejected' && place.rejection_reason && (

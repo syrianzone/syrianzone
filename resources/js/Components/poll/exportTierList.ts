@@ -1,4 +1,4 @@
-type TierKey = "S" | "A" | "B" | "C" | "D" | "F";
+import { TIERS, TIER_KEYS, type TierKey } from "@/Domain/polls/tiers";
 
 type ExportTierDataOptions = {
     tiers: Record<TierKey, Array<{ name: string; title?: string | null; imageUrl?: string | null }>>;
@@ -32,20 +32,8 @@ export async function exportTierListFromData(options: ExportTierDataOptions): Pr
         width = 1000,
         scale = 2,
         watermarkText = "syrian.zone/tierlist",
-        logoSrc = (typeof window !== "undefined" ? `/assets/logo-lightmode.svg` : "/assets/logo-lightmode.svg"),
+        logoSrc = "/assets/logo-lightmode.svg",
     } = options;
-
-    const tierOrder: TierKey[] = ["S", "A", "B", "C", "D", "F"];
-    const tierLabel: Record<TierKey, string> = { S: "S", A: "A", B: "B", C: "C", D: "D", F: "F" };
-    const tierArabic: Record<TierKey, string> = { S: "ممتاز", A: "جيد جدًا", B: "جيد", C: "مقبول", D: "ضعيف", F: "سيئ" };
-    const tierColor: Record<TierKey, string> = {
-        S: "#e11d48",
-        A: "#d97706",
-        B: "#059669",
-        C: "#0284c7",
-        D: "#7c3aed",
-        F: "#1f2937",
-    };
 
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
@@ -183,7 +171,7 @@ export async function exportTierListFromData(options: ExportTierDataOptions): Pr
     const maxPerRow = Math.max(1, Math.floor((areaW + itemGap) / (itemWidth + itemGap)));
     const tierHeights: Record<TierKey, number> = { S: 0, A: 0, B: 0, C: 0, D: 0, F: 0 };
     let contentHeight = 0;
-    for (const k of tierOrder) {
+    for (const k of TIER_KEYS) {
         const count = (tiers[k] || []).length;
         const rows = Math.max(1, Math.ceil(count / maxPerRow));
         const blockHeight = tierTopPad + rows * itemHeight + (rows - 1) * internalRowGap + tierBottomPad;
@@ -191,7 +179,7 @@ export async function exportTierListFromData(options: ExportTierDataOptions): Pr
         contentHeight += blockHeight;
     }
     const watermarkH = 64;
-    const height = padding.top + contentHeight + rowGap * (tierOrder.length - 1) + padding.bottom + watermarkH;
+    const height = padding.top + contentHeight + rowGap * (TIER_KEYS.length - 1) + padding.bottom + watermarkH;
     canvas.width = Math.floor(finalWidth * scale);
     canvas.height = Math.floor(height * scale);
     ctx.scale(scale, scale);
@@ -224,7 +212,7 @@ export async function exportTierListFromData(options: ExportTierDataOptions): Pr
 
     const loaded: Map<string, HTMLImageElement> = new Map();
     const toLoad: string[] = [];
-    for (const k of tierOrder) {
+    for (const k of TIER_KEYS) {
         for (const it of tiers[k] || []) {
             const u = it.imageUrl || "";
             if (!u) continue;
@@ -243,16 +231,16 @@ export async function exportTierListFromData(options: ExportTierDataOptions): Pr
     );
 
     let y = padding.top;
-    for (const k of tierOrder) {
+    for (const k of TIER_KEYS) {
         const items = tiers[k] || [];
         const blockHeight = tierHeights[k];
-        ctx.fillStyle = tierColor[k];
+        ctx.fillStyle = TIERS[k].color;
         ctx.fillRect(padding.left, y, labelWidth, blockHeight);
         ctx.fillStyle = "#ffffff";
         ctx.font = "bold 24px " + fontFamily;
-        ctx.fillText(rtl(tierLabel[k]), padding.left + labelWidth / 2, y + 24);
+        ctx.fillText(rtl(k), padding.left + labelWidth / 2, y + 24);
         ctx.font = "600 16px " + fontFamily;
-        ctx.fillText(rtl(tierArabic[k]), padding.left + labelWidth / 2, y + 52);
+        ctx.fillText(rtl(TIERS[k].arabic), padding.left + labelWidth / 2, y + 52);
         ctx.font = "600 14px " + fontFamily;
         const areaX = padding.left + labelWidth;
         const areaY = y;

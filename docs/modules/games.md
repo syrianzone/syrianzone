@@ -422,6 +422,5 @@ whether the run set a record, so the UI can say so.
 `/games` is one entry in `resources/data/site-modules.json` (the catalogue
 behind `Lib/siteLinks.ts`), so it appears in the homepage app grid and the
 navbar mega menu like every other tool (a single `/games` link — the hub, not
-each game). The sitemap lists `/games` in `SitemapBuilder::STATIC_PAGES` and adds
-one entry per routable game from `resources/data/games.json` via
-`SitemapBuilder::gamePaths()`, so a new game needs no sitemap edit.
+each game). The sitemap lists `/games` and each routable game from its record in
+`resources/data/seo.json`, so a new game needs no sitemap edit.

@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\Place;
 use App\Models\User;
+use App\Services\Places\PlaceRules;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class PlaceFactory extends Factory
@@ -12,13 +13,15 @@ class PlaceFactory extends Factory
 
   public function definition(): array
   {
+    [$minLng, $minLat, $maxLng, $maxLat] = PlaceRules::syriaBox();
+
     return [
       'user_id' => User::factory(),
       'name' => fake()->city(),
-      'category' => fake()->randomElement(['historical', 'natural', 'cultural', 'religious', 'abandoned', 'viewpoint', 'market', 'food', 'other']),
+      'category' => fake()->randomElement(PlaceRules::categories()),
       'description' => fake()->sentence(12),
-      'lat' => fake()->randomFloat(7, 32.5, 37.0),
-      'lng' => fake()->randomFloat(7, 35.8, 42.0),
+      'lat' => fake()->randomFloat(7, $minLat, $maxLat),
+      'lng' => fake()->randomFloat(7, $minLng, $maxLng),
       'status' => 'pending',
     ];
   }

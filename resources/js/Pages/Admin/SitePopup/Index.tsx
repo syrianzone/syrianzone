@@ -8,6 +8,7 @@ import { Textarea } from '@/Components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/card';
 import { Switch } from '@/Components/ui/switch';
 import { Megaphone } from 'lucide-react';
+import { notify } from '@/Lib/notify';
 
 export interface SitePopupData {
     enabled: boolean;
@@ -29,6 +30,9 @@ export default function SitePopupAdminIndex({ popup }: { popup: SitePopupData })
     const handleSave = () => {
         setSaving(true);
         router.put('/api/v1/admin/site-popup', { ...form }, {
+            preserveScroll: true,
+            onSuccess: () => notify.success('تم حفظ النافذة المنبثقة'),
+            onError: (errors) => notify.error(Object.values(errors)[0] ?? 'تعذّر حفظ النافذة المنبثقة'),
             onFinish: () => setSaving(false),
         });
     };

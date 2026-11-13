@@ -4,6 +4,7 @@ namespace App\Services\SyOfficial;
 
 use App\Models\OfficialCategory;
 use App\Models\OfficialEntity;
+use App\Support\Facts;
 use Illuminate\Database\Eloquent\Collection;
 
 /**
@@ -57,7 +58,7 @@ class SyOfficialPresenter
     {
         if ($image !== null && $image !== '' && ! str_starts_with($image, 'http') && ! str_starts_with($image, '/')) {
             $r2Url = env('R2_PUBLIC_URL')
-                ?: (config('filesystems.disks.r2.url') ?: 'https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev');
+                ?: (config('filesystems.disks.r2.url') ?: Facts::media()['public_base']);
 
             return rtrim($r2Url, '/').'/'.SyOfficialDirectoryService::IMAGE_DIR.'/'.basename($image);
         }

@@ -9,8 +9,9 @@ civic portal (Arabic, RTL). Stack and commands:
 ```bash
 bun install && bun run dev        # dev: artisan serve + reverb + vite
 npm run build                     # vite build + ssr build
-npm run test:js                   # vitest
-vendor/bin/pest                   # PHP tests
+bash scripts/gate.sh              # THE GATE: tsc + vitest + pest (+ advisory Pint); CI runs this
+npm run test:js                   # vitest only
+vendor/bin/pest                   # PHP tests only
 vendor/bin/pint                   # PHP lint (see caveat below)
 npx tsc --noEmit                  # typecheck
 python3 scripts/a11y_axe_audit.py --base http://localhost:8000   # a11y gate
@@ -30,7 +31,11 @@ them without being asked.
    `start/end`, `border-s/e`), never physical `ml/mr/pl/pr` or `left/right`
    outside a deliberate `dir="ltr"` island.
 3. **Theming** — colour is always a token (`hsl(var(--…))` or a token class);
-   never a literal hex. The theme is `data-theme`; the registry is `Lib/theme.ts`.
+   never a literal hex. The theme is two attributes set together at
+   `document.documentElement`: `data-theme` (which theme) and `data-scheme`
+   (`light`/`dark`, which the dark tokens and the `dark:` variant key off). The
+   registry — ids, labels, storage keys, dark flags — is
+   `resources/data/themes.json`, read by `Lib/theme.ts` and by Blade.
    Every theme must pass contrast (`--primary` ↔ `--primary-foreground`).
 4. **Language** — product copy is Arabic (RTL); code, comments, commits and docs
    are English. Quran-related names follow the `quranic-terminology-lint` hook.

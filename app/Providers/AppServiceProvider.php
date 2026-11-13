@@ -58,10 +58,10 @@ class AppServiceProvider extends ServiceProvider
         }
 
         RateLimiter::for('voting', fn (Request $request) => Limit::perMinute(10)->by($request->ip())
-            ->response($this->throttled('Too many votes. Please slow down.')));
+            ->response($this->throttled('لقد وصلت إلى حد التصويت المسموح. يرجى المحاولة بعد قليل.')));
 
         RateLimiter::for('public-api', fn (Request $request) => Limit::perMinute(60)->by($request->ip())
-            ->response($this->throttled('Too many requests. Please slow down.')));
+            ->response($this->throttled('تم تجاوز حد الطلبات المسموح. يرجى المحاولة بعد قليل.')));
 
         RateLimiter::for('compass-stats', function (Request $request) {
             $message = ['message' => 'يمكنك إرسال نتيجة مجهولة واحدة كل عشر دقائق.'];
@@ -101,7 +101,7 @@ class AppServiceProvider extends ServiceProvider
                 : 'user:'.($request->user()?->getAuthIdentifier() ?? 'ip:'.$request->ip());
 
             return Limit::perMinute(120)->by($key)
-                ->response($this->throttled('Too many agent requests. Slow down and retry shortly.'));
+                ->response($this->throttled('تم تجاوز حد طلبات الوكيل. يرجى الانتظار قليلاً ثم إعادة المحاولة.'));
         });
     }
 

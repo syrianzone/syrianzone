@@ -9,13 +9,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/Components/ui/switch';
 import FieldError, { fieldA11y } from '@/Components/ui/field-error';
 import { UploadCloud, Image as ImageIcon } from 'lucide-react';
-import type { AdminOfficialEntity, OfficialCategory } from '@/Domain/syofficial/types';
+import type { AdminOfficialEntity, OfficialCategory, SocialLinks } from '@/Domain/syofficial/types';
+import { SOCIAL_PLATFORMS } from '@/Domain/syofficial/social';
 
 interface EntityDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     entity?: AdminOfficialEntity | null;
     categories: OfficialCategory[];
+}
+
+/** One field per platform in the vocabulary, so a new platform needs no edit here. */
+function toSocials(socials?: SocialLinks | null): Record<string, string> {
+    return Object.fromEntries(
+        SOCIAL_PLATFORMS.map((platform) => [platform.key, socials?.[platform.key] ?? '']),
+    );
 }
 
 export default function EntityDialog({ open, onOpenChange, entity, categories }: EntityDialogProps) {
@@ -31,20 +39,7 @@ export default function EntityDialog({ open, onOpenChange, entity, categories }:
         description_ar: entity?.description_ar || '',
         image_file: null as File | null,
         is_active: entity?.is_active ?? true,
-        socials: {
-            facebook: entity?.socials?.facebook || '',
-            facebook_secondary: entity?.socials?.facebook_secondary || '',
-            instagram: entity?.socials?.instagram || '',
-            instagram_secondary: entity?.socials?.instagram_secondary || '',
-            twitter: entity?.socials?.twitter || '',
-            twitter_secondary: entity?.socials?.twitter_secondary || '',
-            telegram: entity?.socials?.telegram || '',
-            telegram_secondary: entity?.socials?.telegram_secondary || '',
-            website: entity?.socials?.website || '',
-            whatsapp: entity?.socials?.whatsapp || '',
-            youtube: entity?.socials?.youtube || '',
-            linkedin: entity?.socials?.linkedin || '',
-        },
+        socials: toSocials(entity?.socials),
     });
 
     useEffect(() => {
@@ -58,20 +53,7 @@ export default function EntityDialog({ open, onOpenChange, entity, categories }:
                 description_ar: entity.description_ar || '',
                 image_file: null,
                 is_active: entity.is_active,
-                socials: {
-                    facebook: entity.socials?.facebook || '',
-                    facebook_secondary: entity.socials?.facebook_secondary || '',
-                    instagram: entity.socials?.instagram || '',
-                    instagram_secondary: entity.socials?.instagram_secondary || '',
-                    twitter: entity.socials?.twitter || '',
-                    twitter_secondary: entity.socials?.twitter_secondary || '',
-                    telegram: entity.socials?.telegram || '',
-                    telegram_secondary: entity.socials?.telegram_secondary || '',
-                    website: entity.socials?.website || '',
-                    whatsapp: entity.socials?.whatsapp || '',
-                    youtube: entity.socials?.youtube || '',
-                    linkedin: entity.socials?.linkedin || '',
-                },
+                socials: toSocials(entity.socials),
             });
             setImagePreview(entity.image && (entity.image.startsWith('http') || entity.image.startsWith('/')) ? entity.image : null);
         } else {
@@ -237,59 +219,22 @@ export default function EntityDialog({ open, onOpenChange, entity, categories }:
                         <h4 className="font-bold text-sm text-foreground">روابط وسائل التواصل الاجتماعي</h4>
                         
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                            <div>
-                                <Label className="text-xs">فيسبوك رئيسي</Label>
-                                <Input aria-label="رابط فيسبوك" value={data.socials.facebook} onChange={(e) => handleSocialChange('facebook', e.target.value)} placeholder="https://facebook.com/..." dir="ltr" className="text-left h-9" />
-                            </div>
-                            <div>
-                                <Label className="text-xs">فيسبوك فرعي / إعلامي</Label>
-                                <Input aria-label="رابط فيسبوك (ثانوي)" value={data.socials.facebook_secondary} onChange={(e) => handleSocialChange('facebook_secondary', e.target.value)} placeholder="https://facebook.com/..." dir="ltr" className="text-left h-9" />
-                            </div>
-
-                            <div>
-                                <Label className="text-xs">إكس / تويتر رئيسي</Label>
-                                <Input aria-label="رابط إكس" value={data.socials.twitter} onChange={(e) => handleSocialChange('twitter', e.target.value)} placeholder="https://x.com/..." dir="ltr" className="text-left h-9" />
-                            </div>
-                            <div>
-                                <Label className="text-xs">إكس / تويتر فرعي / إعلامي</Label>
-                                <Input aria-label="رابط إكس (ثانوي)" value={data.socials.twitter_secondary} onChange={(e) => handleSocialChange('twitter_secondary', e.target.value)} placeholder="https://x.com/..." dir="ltr" className="text-left h-9" />
-                            </div>
-
-                            <div>
-                                <Label className="text-xs">تلغرام رئيسي</Label>
-                                <Input aria-label="رابط تلغرام" value={data.socials.telegram} onChange={(e) => handleSocialChange('telegram', e.target.value)} placeholder="https://t.me/..." dir="ltr" className="text-left h-9" />
-                            </div>
-                            <div>
-                                <Label className="text-xs">تلغرام فرعي / إعلامي</Label>
-                                <Input aria-label="رابط تلغرام (ثانوي)" value={data.socials.telegram_secondary} onChange={(e) => handleSocialChange('telegram_secondary', e.target.value)} placeholder="https://t.me/..." dir="ltr" className="text-left h-9" />
-                            </div>
-
-                            <div>
-                                <Label className="text-xs">إنستغرام رئيسي</Label>
-                                <Input aria-label="رابط إنستغرام" value={data.socials.instagram} onChange={(e) => handleSocialChange('instagram', e.target.value)} placeholder="https://instagram.com/..." dir="ltr" className="text-left h-9" />
-                            </div>
-                            <div>
-                                <Label className="text-xs">إنستغرام فرعي / إعلامي</Label>
-                                <Input aria-label="رابط إنستغرام (ثانوي)" value={data.socials.instagram_secondary} onChange={(e) => handleSocialChange('instagram_secondary', e.target.value)} placeholder="https://instagram.com/..." dir="ltr" className="text-left h-9" />
-                            </div>
-
-                            <div>
-                                <Label className="text-xs">الموقع الرسمي</Label>
-                                <Input aria-label="الموقع الإلكتروني" value={data.socials.website} onChange={(e) => handleSocialChange('website', e.target.value)} placeholder="https://..." dir="ltr" className="text-left h-9" />
-                            </div>
-                            <div>
-                                <Label className="text-xs">واتساب</Label>
-                                <Input aria-label="رابط واتساب" value={data.socials.whatsapp} onChange={(e) => handleSocialChange('whatsapp', e.target.value)} placeholder="https://whatsapp.com/channel/..." dir="ltr" className="text-left h-9" />
-                            </div>
-
-                            <div>
-                                <Label className="text-xs">يوتيوب</Label>
-                                <Input aria-label="رابط يوتيوب" value={data.socials.youtube} onChange={(e) => handleSocialChange('youtube', e.target.value)} placeholder="https://youtube.com/..." dir="ltr" className="text-left h-9" />
-                            </div>
-                            <div>
-                                <Label className="text-xs">لينكد إن</Label>
-                                <Input aria-label="رابط لينكدإن" value={data.socials.linkedin} onChange={(e) => handleSocialChange('linkedin', e.target.value)} placeholder="https://linkedin.com/..." dir="ltr" className="text-left h-9" />
-                            </div>
+                            {SOCIAL_PLATFORMS.map((platform) => (
+                                <div key={platform.key}>
+                                    <Label className="text-xs" htmlFor={`social-${platform.key}`}>
+                                        {platform.formLabelAr}
+                                    </Label>
+                                    <Input
+                                        id={`social-${platform.key}`}
+                                        aria-label={platform.inputAriaLabel}
+                                        value={data.socials[platform.key] ?? ''}
+                                        onChange={(e) => handleSocialChange(platform.key, e.target.value)}
+                                        placeholder={platform.placeholder}
+                                        dir="ltr"
+                                        className="text-left h-9"
+                                    />
+                                </div>
+                            ))}
                         </div>
                     </div>
 

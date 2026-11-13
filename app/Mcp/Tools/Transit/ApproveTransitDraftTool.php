@@ -5,6 +5,7 @@ namespace App\Mcp\Tools\Transit;
 use App\Models\Route;
 use App\Services\Transit\TransitAdminService;
 use App\Services\Transit\TransitPresenter;
+use App\Services\Transit\TransitRules;
 use App\Support\Agents\AgentContext;
 use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -45,7 +46,8 @@ class ApproveTransitDraftTool extends TransitTool
 
             'color_index' => $schema->integer()
                 ->description('Colour to publish with. Optional — omit to keep the colour the contributor chose.')
-                ->min(0),
+                ->min(0)
+                ->max(TransitRules::colorIndexMax()),
         ];
     }
 
@@ -53,7 +55,7 @@ class ApproveTransitDraftTool extends TransitTool
     {
         $validated = $request->validate([
             'draft_id' => 'required|integer|min:1',
-            'color_index' => 'nullable|integer|min:0',
+            'color_index' => TransitRules::colorIndex(),
         ]);
 
         return $this->attempt(function () use ($validated, $context) {

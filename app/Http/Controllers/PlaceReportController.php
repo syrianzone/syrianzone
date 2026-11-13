@@ -27,7 +27,7 @@ class PlaceReportController extends Controller
         // Only published places are visible to other users, so only those can be reported.
         $place = Place::where('status', 'approved')->find($id);
         if (! $place) {
-            return response()->json(['message' => 'Not found'], 404);
+            return response()->json(['message' => 'العنصر غير موجود.'], 404);
         }
 
         $validated = $request->validate([

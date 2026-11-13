@@ -16,7 +16,7 @@ class AppIconController extends Controller
             $id = $request->query('id');
             if (! $id || ! ctype_digit((string) $id)) {
                 return response()->json([
-                    'message' => 'Invalid or missing Apple store id.',
+                    'message' => 'معرّف متجر آبل غير صالح أو مفقود.',
                     'icon' => null,
                 ], 400);
             }
@@ -40,7 +40,7 @@ class AppIconController extends Controller
             $package = $request->query('package');
             if (! $package || ! preg_match('/^[a-zA-Z0-9._]+$/', (string) $package)) {
                 return response()->json([
-                    'message' => 'Invalid or missing Google Play package.',
+                    'message' => 'اسم حزمة متجر جوجل بلاي غير صالح أو مفقود.',
                     'icon' => null,
                 ], 400);
             }
@@ -75,7 +75,7 @@ class AppIconController extends Controller
         }
 
         return response()->json([
-            'message' => 'Unsupported store.',
+            'message' => 'المتجر غير مدعوم.',
             'icon' => null,
         ], 400);
     }

@@ -3,55 +3,9 @@ import { WidgetShell } from '../../_components/WidgetShell';
 import { useWidgetQuery } from '../../_lib/query';
 import { sources } from '../../_lib/sources';
 import { GOVERNORATES_BY_ID } from '@/Domain/geography/governorates';
+import { weatherCodeAr, weatherDescriptionAr } from '@/Domain/weather/weather';
 import type { WidgetProps } from '../../_lib/types';
 import { weatherWidget, type WeatherConfig } from './index';
-
-const WEATHER_AR: Record<string, string> = {
-  'clear sky': 'سماء صافية',
-  'few clouds': 'غيوم قليلة',
-  'scattered clouds': 'غيوم متفرقة',
-  'broken clouds': 'غيوم متقطعة',
-  'overcast clouds': 'غائم',
-  'light rain': 'مطر خفيف',
-  'moderate rain': 'مطر معتدل',
-  'heavy intensity rain': 'مطر غزير',
-  'shower rain': 'زخات مطر',
-  'rain': 'مطر',
-  'thunderstorm': 'عاصفة رعدية',
-  'snow': 'ثلج',
-  'mist': 'ضباب',
-  'haze': 'ضباب خفيف',
-  'fog': 'ضباب كثيف',
-  'dust': 'غبار',
-  'sand': 'عواصف رملية',
-};
-
-// WMO codes from the forecast upstream. Kept client-side next to WEATHER_AR so
-// all the display vocabulary lives in one file: the server passes the code
-// through raw and never has to know how it is worded.
-const WMO_AR: Record<number, string> = {
-  0: 'صافية',
-  1: 'صافية غالبا',
-  2: 'غيوم متفرقة',
-  3: 'غائم',
-  45: 'ضباب',
-  48: 'ضباب',
-  51: 'رذاذ',
-  53: 'رذاذ',
-  55: 'رذاذ كثيف',
-  61: 'مطر خفيف',
-  63: 'مطر',
-  65: 'مطر غزير',
-  71: 'ثلج خفيف',
-  73: 'ثلج',
-  75: 'ثلج كثيف',
-  80: 'زخات',
-  81: 'زخات',
-  82: 'زخات غزيرة',
-  95: 'عاصفة رعدية',
-  96: 'عاصفة رعدية',
-  99: 'عاصفة رعدية',
-};
 
 const DAYS_AR = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 
@@ -66,7 +20,7 @@ function dayLabel(date: string, index: number): string {
 export default function WeatherView({ config }: WidgetProps<WeatherConfig>) {
   const governorate = config.governorate ?? 'damascus';
   const query = useWidgetQuery(weatherWidget, governorate, () => sources.weather(governorate));
-  const description = query.data ? (WEATHER_AR[query.data.description] ?? query.data.description) : '';
+  const description = query.data ? weatherDescriptionAr(query.data.description) : '';
   // four fits the tile at its default and minimum widths; the endpoint sends
   // five so a taller layout later needs no backend change
   const forecast = (query.data?.forecast ?? []).slice(0, 4);
@@ -98,7 +52,7 @@ export default function WeatherView({ config }: WidgetProps<WeatherConfig>) {
                 <span
                   dir="ltr"
                   className="text-[11px] leading-tight tabular-nums text-foreground"
-                  title={WMO_AR[day.code] ?? ''}
+                  title={weatherCodeAr(day.code) ?? ''}
                 >
                   {day.max}° / {day.min}°
                 </span>

@@ -11,6 +11,7 @@
 // opt-out, so it resolves to "denied" and the banner is never shown. The
 // deprecated Do Not Track header is deliberately not read.
 import { useEffect, useState } from 'react';
+import { pathnameOf } from './routes';
 
 /** localStorage key holding the visitor's decision. */
 export const ANALYTICS_CONSENT_KEY = 'sz-analytics-consent';
@@ -269,7 +270,7 @@ export function sendPageView(url: string, context: PageViewContext): boolean {
     if (!context.id || typeof context.gtag !== 'function') return false;
 
     // Path only: query strings carry search terms, room codes and route ids.
-    const pagePath = url.split(/[?#]/)[0];
+    const pagePath = pathnameOf(url);
 
     context.gtag('config', context.id, {
         page_path: pagePath,

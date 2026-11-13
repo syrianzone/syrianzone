@@ -1,5 +1,6 @@
 /**
- * The shape of `auth.user` as `HandleInertiaRequests::userPayload()` shares it.
+ * The shape of `auth.user` as `User::toAuthPayload()` shares it (through the
+ * Inertia page props and the `/user` endpoint).
  *
  * `effective_permissions` is the resolved list (role implications already
  * applied server-side); `permissions` is the raw stored array, which only the

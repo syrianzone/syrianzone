@@ -89,6 +89,7 @@ class PostTierlistChangeToX implements ShouldBeUnique, ShouldQueue
         }
 
         try {
+            $client->verifyExpectedUser();
             $xPostId = $client->createPost($post->text);
         } catch (XAmbiguousException $exception) {
             $this->recordApiFailure($post, $exception, 'needs_review');

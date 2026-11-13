@@ -39,7 +39,7 @@ export interface AbsorbedTile {
   targetCol: number;
 }
 
-export interface MoveResult {
+interface MoveResult {
   tiles: Tile[];
   absorbed: AbsorbedTile[];
   moved: boolean;

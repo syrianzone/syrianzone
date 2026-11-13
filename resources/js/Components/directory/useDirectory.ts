@@ -30,10 +30,10 @@ export interface DirectoryConfig<T> {
     /** Results per "page"; 0 or absent renders every result and hides "load more". */
     pageSize?: number;
     initialQuery?: string;
+    /** Seeds the chosen values, so a link or the page URL can open a facet. */
     initialFilters?: Record<string, string[]>;
-    /** Controlled facet state, for a page whose filters another control owns. */
+    /** Controlled facet state, for a page whose filter chips another control owns. */
     filters?: Record<string, string[]>;
-    onFiltersChange?: (filters: Record<string, string[]>) => void;
 }
 
 export interface Directory<T> {
@@ -47,13 +47,13 @@ export interface Directory<T> {
     setValue: (value: SmartFilterValue) => void;
     /** The facets without the per-resource `valueOf`, for the smart search field. */
     searchFacets: SmartFilterFacet[];
-    toggleFilter: (key: string, value: string) => void;
     clear: () => void;
     isFiltered: boolean;
     /** Everything that matches, in the configured order. */
     results: T[];
     /** The part of `results` the page renders today. */
     visible: T[];
+    /** `results.length`: the number of items that match, for "X of Y". */
     total: number;
     shown: number;
     hasMore: boolean;
@@ -77,7 +77,7 @@ function facetValues<T>(facet: DirectoryFacet<T>, item: T): readonly string[] {
 export function useDirectory<T>(config: DirectoryConfig<T>): Directory<T> {
     const {
         items, searchText, search, facets = [], sort, pageSize = 0,
-        initialQuery = '', initialFilters = {}, onFiltersChange,
+        initialQuery = '', initialFilters = {},
     } = config;
     const [query, setQuery] = useState(initialQuery);
     const [ownFilters, setOwnFilters] = useState<Record<string, string[]>>(initialFilters);
@@ -129,9 +129,8 @@ export function useDirectory<T>(config: DirectoryConfig<T>): Directory<T> {
         for (const [key, values] of Object.entries(next)) {
             if (values.length > 0) cleaned[key] = values;
         }
-        if (onFiltersChange) onFiltersChange(cleaned);
-        else setOwnFilters(cleaned);
-    }, [onFiltersChange]);
+        setOwnFilters(cleaned);
+    }, []);
 
     const clear = useCallback(() => {
         setQuery('');
@@ -143,27 +142,15 @@ export function useDirectory<T>(config: DirectoryConfig<T>): Directory<T> {
         emitFilters(value.filters);
     }, [emitFilters]);
 
-    const toggleFilter = useCallback((key: string, value: string) => {
-        const chosen = filters[key] ?? [];
-        const facet = facets.find((entry) => entry.key === key);
-        const next = chosen.includes(value)
-            ? chosen.filter((entry) => entry !== value)
-            : facet?.selectionMode === 'multiple' ? [...chosen, value] : [value];
-        const updated = { ...filters };
-        if (next.length > 0) updated[key] = next;
-        else delete updated[key];
-        emitFilters(updated);
-    }, [facets, filters, emitFilters]);
-
     const value = useMemo<SmartFilterValue>(() => ({ search: query, filters, sort: '' }), [query, filters]);
 
     return {
         query, setQuery,
-        filters, setFilters: emitFilters, value, setValue, searchFacets, toggleFilter, clear,
+        filters, setFilters: emitFilters, value, setValue, searchFacets, clear,
         isFiltered: query.trim() !== '' || Object.keys(filters).length > 0,
         results,
         visible,
-        total: items.length,
+        total: results.length,
         shown: visible.length,
         hasMore: visible.length < results.length,
         loadMore: () => setPaging({ key: stateKey, limit: limit + pageSize }),

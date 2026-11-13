@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\City;
 use App\Models\Poll;
 use App\Models\Route;
 use App\Models\RouteDraft;
@@ -50,9 +51,23 @@ class DashboardController extends Controller
             'role' => $user->role,
         ];
 
-        $citiesPath = resource_path('js/Domain/transit/cities.json');
-        $cities = file_exists($citiesPath) ? json_decode(file_get_contents($citiesPath), true) : [];
-        $data['cities'] = $cities;
+        // The city list the dashboard names a submission's governorate with.
+        // It comes from the table, not from a hand-kept JSON mirror of it; the
+        // spatial columns are irrelevant here, so the query does not pay for
+        // them.
+        $data['cities'] = City::query()
+            ->select('id', 'name_ar', 'name_en', 'status', 'zoom')
+            ->withCount(['routes as routeCount' => fn ($q) => $q->where('status', 'published')])
+            ->orderBy('name_ar')
+            ->get()
+            ->map(fn (City $city) => [
+                'id' => $city->id,
+                'nameAr' => $city->name_ar,
+                'nameEn' => $city->name_en,
+                'status' => $city->status,
+                'zoom' => $city->zoom,
+                'routeCount' => $city->routeCount,
+            ]);
 
         if ($user->role === 'user') {
             $data['myDrafts'] = RouteDraft::where('user_id', $user->id)
@@ -104,7 +119,7 @@ class DashboardController extends Controller
             return response()->json([
                 'ok' => true,
                 'message' => 'تم تحديث الحساب بنجاح',
-                'user' => \App\Http\Middleware\HandleInertiaRequests::userPayload($user->fresh()),
+                'user' => $user->fresh()?->toAuthPayload(),
             ]);
         }
 

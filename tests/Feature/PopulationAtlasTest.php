@@ -1,9 +1,9 @@
 <?php
 
-use App\Http\Controllers\Api\PopulationAtlasController;
 use App\Models\Population\PopulationDemographic;
 use App\Models\Population\PopulationEnvironmentalLog;
 use App\Models\Population\PopulationRainfall;
+use App\Services\Population\PopulationCache;
 use Illuminate\Support\Facades\Cache;
 
 /*
@@ -236,7 +236,7 @@ it('caches the master payload and serves the second read from it', function () {
 
     $this->getJson('/api/population/master')->assertOk();
 
-    expect(Cache::has(PopulationAtlasController::MASTER_CACHE_KEY))->toBeTrue();
+    expect(Cache::has(PopulationCache::MASTER))->toBeTrue();
 
     // A row added after the first read must not appear until the key is flushed,
     // which is the whole point of the hour-long cache.
@@ -248,7 +248,7 @@ it('caches the master payload and serves the second read from it', function () {
 
     expect($cached)->toBe(['Damascus' => 1]);
 
-    PopulationAtlasController::flushCache();
+    PopulationCache::forget();
 
     $fresh = $this->getJson('/api/population/master')->assertOk()->json('groups.population.0.cities');
 
@@ -260,14 +260,14 @@ it('caches the environmental report under its own key', function () {
 
     $this->getJson('/api/population/env-report')->assertOk();
 
-    expect(Cache::has(PopulationAtlasController::ENV_CACHE_KEY))->toBeTrue();
+    expect(Cache::has(PopulationCache::ENVIRONMENT))->toBeTrue();
 
     // Independent of the master key: flushing both is one call, but a refresh of
     // one must not silently drop the other.
-    Cache::forget(PopulationAtlasController::MASTER_CACHE_KEY);
-    PopulationAtlasController::flushCache();
+    Cache::forget(PopulationCache::MASTER);
+    PopulationCache::forget();
 
-    expect(Cache::has(PopulationAtlasController::ENV_CACHE_KEY))->toBeFalse();
+    expect(Cache::has(PopulationCache::ENVIRONMENT))->toBeFalse();
 });
 
 it('renders the atlas page without inlining the payload', function () {

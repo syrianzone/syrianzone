@@ -2,13 +2,8 @@ import React from "react";
 import { Link } from "@inertiajs/react";
 import MainLayout from "@/Layouts/MainLayout";
 import TierBoard, { type Candidate, type CandidateGroup } from "@/Components/poll/TierBoard";
-import { Button } from "@/components/ui/button";
-
-interface Poll {
-  id: string;
-  slug: string;
-  title: string;
-}
+import { Button } from "@/Components/ui/button";
+import type { Poll } from "@/Domain/polls/types";
 
 interface PollShowProps {
   poll: Poll;

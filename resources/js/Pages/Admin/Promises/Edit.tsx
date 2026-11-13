@@ -37,7 +37,7 @@ interface Props {
 
 const NONE = '__none';
 
-export interface CoSpeakerForm {
+interface CoSpeakerForm {
     speaker: SpeakerOption | null;
     speakerTitle: string;
 }
@@ -114,7 +114,7 @@ export function initialForm(p: AdminPromiseDetail | null): FormState {
     };
 }
 
-export const toForm = initialForm;
+const toForm = initialForm;
 
 /** Form content without client-only keys, for "has anything changed?". */
 const fingerprint = (f: FormState) => JSON.stringify({ ...f, sources: f.sources.map(({ key: _key, ...rest }) => rest) });

@@ -83,15 +83,16 @@ a resolver, set `title` (document) and `shareTitle` (preview).
 1. Add one record to `resources/data/seo.json`: the `path`, an Arabic `title`,
    a `description` of roughly 110 to 160 characters, the `card` slug, and — when
    they differ from the defaults — `type` (`article`), `schema` (a JSON-LD type
-   more specific than `WebPage`), `parent` (the hub's path) and `parentLabel`
-   (only when the hub's own title is too long to repeat in a breadcrumb).
+   more specific than `WebPage`), `parent` (the hub's path), `parentLabel`
+   (only when the hub's own title is too long to repeat in a breadcrumb) and
+   the sitemap's `priority` (default `0.5`) and `changefreq` (default
+   `monthly`). A record opts out of the sitemap with `"sitemap": false`.
 2. Reuse an existing card from `resources/og/cards.json`, or add one there: a
    `slug`, a short `title`, one `subtitle` sentence written for the card (not the
    meta description), and an `icon` key from `SITE_ICON_MAP`. The page table is
    what says which page uses it, so `cards.json` no longer lists paths.
 3. Run `npm run og:build` and commit `public/og/<slug>.png` and `manifest.json`.
-4. Add `[path, priority, changefreq]` to `SitemapBuilder::STATIC_PAGES`.
-5. Give the page a single `<h1>` (use `sr-only` when the design has none),
+4. Give the page a single `<h1>` (use `sr-only` when the design has none),
    present in every state the server can render, including loading and error.
 6. If the page is one a reader should be pointed to, add it to a section of
    `LlmsTxt::SECTIONS`.
@@ -283,7 +284,7 @@ Every fixed page has its own card at `/og/<slug>.png`; the slug is in
 
 | Path | Preview source | Card | Sitemap |
 | --- | --- | --- | --- |
-| Fixed pages in `resources/data/seo.json` (41) | the page table | committed, one each | `SitemapBuilder::STATIC_PAGES` |
+| Fixed pages in `resources/data/seo.json` (41) | the page table | committed, one each | `Pages::sitemapPages()` — every record, unless it sets `"sitemap": false` |
 | `/promises/{number}` | `PromisePreview` | `/og/r/promise/{number}.png` | published promises |
 | `/polls/{slug}`, `/polls/{slug}/leaderboard` | `PollPreview` | `/og/r/poll/{slug}.png` (the tier list poll uses its page cards) | active polls |
 | `/transit/city/{id}` | `TransitCityPreview` | `/og/r/city/{id}.png` | published cities |

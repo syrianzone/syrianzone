@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/Components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -7,8 +7,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
+} from '@/Components/ui/dialog';
+import { Textarea } from '@/Components/ui/textarea';
 
 export function RejectDialog(props: {
   open: boolean;

@@ -8,14 +8,24 @@ import {
 import { Button } from "@/Components/ui/button";
 import { Card, CardContent } from "@/Components/ui/card";
 import MainLayout from '@/Layouts/MainLayout';
-import { api } from '@/Lib/api';
-import { applyTheme as persistTheme, getThemePreference, SYSTEM_THEME, isDarkTheme } from '@/lib/theme';
+import { applyTheme as persistTheme, getThemePreference, useColorScheme } from '@/Lib/theme';
 import { applyFont, getFontPreference } from '@/Lib/font';
 import UserNav from '@/Components/UserNav';
 import AppearanceMenu from '@/Components/AppearanceMenu';
 import { HomeInlineSearchSection } from '@/Components/GlobalSearch';
 import F3aliaEvents from '@/Components/F3aliaEvents';
 import type { CustomLink } from '@/Pages/Home/_lib/links';
+import {
+    DEFAULT_HOME_DISPLAY_PREFS,
+    persistHomeDisplayPrefs,
+    readEventsGovernorate,
+    readHomeDisplayPrefs,
+    setEventsGovernorate,
+    setHomeToggle,
+    type HomeDisplayPrefs,
+    type HomeToggleKey,
+} from '@/Pages/Home/_lib/homePrefs';
+import { saveAccountSettings } from '@/Domain/settings/accountSettings';
 import {
     accountPatchForLocation,
     readLocationPreference,
@@ -55,8 +65,6 @@ export default function Home() {
     const user = props.auth?.user ?? null;
     const { homeLinks } = useSiteNavigation();
 
-    const [theme, setTheme] = useState<string | null>(null);
-    const [systemDark, setSystemDark] = useState(false);
     const [customLinks, setCustomLinks] = useState<CustomLink[]>([]);
     const [editingLink, setEditingLink] = useState<CustomLink | null>(null);
     const [settingsOpen, setSettingsOpen] = [useAppShell((s) => s.homeSettingsOpen), useAppShell((s) => s.setHomeSettingsOpen)] as const;
@@ -67,12 +75,12 @@ export default function Home() {
     const [lastPage, setLastPage] = useState<string | null>(null);
     const location = useLocationPreference();
     const [mounted, setMounted] = useState(false);
+    const scheme = useColorScheme();
 
-    const [eventsGovernorate, setEventsGovernorate] = useState('all');
+    const [eventsGovernorate, setEventsGovernorateState] = useState('all');
 
-    const [showWeather, setShowWeather] = useState(true);
-    const [showPrayerTimes, setShowPrayerTimes] = useState(true);
-    const [showEvents, setShowEvents] = useState(true);
+    const [displayPrefs, setDisplayPrefs] = useState<HomeDisplayPrefs>(DEFAULT_HOME_DISPLAY_PREFS);
+    const { showWeather, showPrayerTimes, showEvents } = displayPrefs;
 
     const { weather } = useWeather(location, { enabled: mounted && showWeather, sessionCache: true });
     const { timings: prayerTimes } = usePrayerTimes(location, readStoredMethod(), {
@@ -80,44 +88,6 @@ export default function Home() {
         timeoutMs: null,
         sessionCache: true,
     });
-
-    // Debounced account-settings saver: coalesce partial updates (lat/lon,
-    // toggles) over 500ms so rapid toggles collapse into one POST.
-    const pendingSettings = React.useRef<Record<string, any>>({});
-    const saveTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    const flushAccountSettings = async () => {
-        if (!user) return;
-        const payload = pendingSettings.current;
-        pendingSettings.current = {};
-        if (Object.keys(payload).length === 0) return;
-        try {
-            await api.post('/api/user/settings', { settings: payload });
-        } catch (e) {
-            // Background mirror of device preferences: the value is already in
-            // localStorage and the next change retries, so no toast per pause.
-            console.error('Failed to save settings to account', e);
-        }
-    };
-
-    const saveAccountSettings = (partialSettings: Record<string, any>) => {
-        if (!user) return;
-        pendingSettings.current = { ...pendingSettings.current, ...partialSettings };
-        if (saveTimer.current) clearTimeout(saveTimer.current);
-        saveTimer.current = setTimeout(() => { void flushAccountSettings(); }, 500);
-    };
-
-    useEffect(() => {
-        const flush = () => { void flushAccountSettings(); };
-        window.addEventListener('visibilitychange', flush);
-        window.addEventListener('beforeunload', flush);
-        return () => {
-            window.removeEventListener('visibilitychange', flush);
-            window.removeEventListener('beforeunload', flush);
-            if (saveTimer.current) clearTimeout(saveTimer.current);
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user?.id]);
 
     // Read the last-visited page after mount (localStorage) so SSR and the
     // first client render match.
@@ -128,10 +98,8 @@ export default function Home() {
 
         const savedTheme = accSettings.theme ?? getThemePreference();
         const savedFont = accSettings.fontFamily ?? getFontPreference();
-        const savedEventsGovernorate = accSettings.eventsGovernorate ?? (localStorage.getItem('eventsGovernorate') || 'all');
-        const savedShowWeather = accSettings.showWeather ?? (localStorage.getItem('sz-showWeather') !== 'false');
-        const savedShowPrayerTimes = accSettings.showPrayerTimes ?? (localStorage.getItem('sz-showPrayerTimes') !== 'false');
-        const savedShowEvents = accSettings.showEvents ?? (localStorage.getItem('sz-showEvents') !== 'false');
+        const savedDisplayPrefs = readHomeDisplayPrefs(accSettings);
+        const savedEventsGovernorate = readEventsGovernorate(accSettings);
 
         // The location keys are conflict-tracked and owned by Domain/location:
         // the login sync seeds an empty device from the account (once, before it
@@ -144,6 +112,8 @@ export default function Home() {
         } else {
             const savedLinks = localStorage.getItem('customLinks');
             if (savedLinks) {
+                // Device storage only: a corrupt value is reported to the console
+                // and the page starts with no custom links rather than failing.
                 try { parsedLinks = JSON.parse(savedLinks); } catch (e) { console.error(e); }
             }
         }
@@ -152,27 +122,18 @@ export default function Home() {
         // seeded above.
         if (savedTheme) persistTheme(savedTheme);
         if (savedFont) applyFont(savedFont);
-        if (localStorage.getItem('eventsGovernorate') === null) {
-            localStorage.setItem('eventsGovernorate', savedEventsGovernorate);
-        }
-        localStorage.setItem('sz-showWeather', String(savedShowWeather));
-        localStorage.setItem('sz-showPrayerTimes', String(savedShowPrayerTimes));
-        localStorage.setItem('sz-showEvents', String(savedShowEvents));
+        persistHomeDisplayPrefs(savedDisplayPrefs);
         localStorage.setItem('customLinks', JSON.stringify(parsedLinks));
 
-        setTheme(savedTheme);
-        setEventsGovernorate(savedEventsGovernorate);
-        setShowWeather(savedShowWeather);
-        setShowPrayerTimes(savedShowPrayerTimes);
-        setShowEvents(savedShowEvents);
+        setDisplayPrefs(savedDisplayPrefs);
+        setEventsGovernorateState(savedEventsGovernorate);
         setCustomLinks(parsedLinks);
 
         if (user && Object.keys(accSettings).length === 0) {
             saveAccountSettings({
                 theme: savedTheme,
-                showWeather: savedShowWeather,
-                showPrayerTimes: savedShowPrayerTimes,
-                showEvents: savedShowEvents,
+                ...savedDisplayPrefs,
+                eventsGovernorate: savedEventsGovernorate,
                 customLinks: parsedLinks,
                 ...accountPatchForLocation(savedLocation),
             });
@@ -181,51 +142,28 @@ export default function Home() {
         setMounted(true);
     }, []);
 
-    useEffect(() => {
-        const query = window.matchMedia('(prefers-color-scheme: dark)');
-        setSystemDark(query.matches);
-        const onChange = (e: MediaQueryListEvent) => setSystemDark(e.matches);
-        query.addEventListener('change', onChange);
-        return () => query.removeEventListener('change', onChange);
-    }, []);
-
-    // Stay in sync when the theme changes elsewhere (user menu, other menus).
-    useEffect(() => {
-        const sync = () => setTheme(getThemePreference());
-        const observer = new MutationObserver(sync);
-        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-        return () => observer.disconnect();
-    }, []);
-
-    const applyTheme = (newTheme: string) => {
-        setTheme(newTheme);
-        persistTheme(newTheme);
-        saveAccountSettings({ theme: newTheme });
-    };
+    const isDark = scheme === 'dark';
 
     const addCustomLink = (link: CustomLink) => {
         const updated = [...customLinks, link];
         setCustomLinks(updated);
         localStorage.setItem('customLinks', JSON.stringify(updated));
-        saveAccountSettings({ customLinks: updated });
+        if (user) saveAccountSettings({ customLinks: updated });
     };
 
     const updateCustomLink = (updatedLink: CustomLink) => {
         const updated = customLinks.map(l => l.id === updatedLink.id ? updatedLink : l);
         setCustomLinks(updated);
         localStorage.setItem('customLinks', JSON.stringify(updated));
-        saveAccountSettings({ customLinks: updated });
+        if (user) saveAccountSettings({ customLinks: updated });
     };
 
     const removeCustomLink = (id: string) => {
         const updated = customLinks.filter(l => l.id !== id);
         setCustomLinks(updated);
         localStorage.setItem('customLinks', JSON.stringify(updated));
-        saveAccountSettings({ customLinks: updated });
+        if (user) saveAccountSettings({ customLinks: updated });
     };
-
-    const activeTheme = theme || SYSTEM_THEME;
-    const isDark = isDarkTheme(activeTheme, systemDark);
 
     const prayerMini = showPrayerTimes ? nextPrayer(prayerTimes, new Date()) : null;
     const weatherMini = showWeather && weather ? weather : null;
@@ -233,7 +171,17 @@ export default function Home() {
     /** Mirror a location edit into the account settings (device storage is the module's). */
     const handleLocationChange = (patch: LocationPatch) => {
         const accountPatch = accountPatchForLocation(patch);
-        if (Object.keys(accountPatch).length > 0) saveAccountSettings(accountPatch);
+        if (user && Object.keys(accountPatch).length > 0) saveAccountSettings(accountPatch);
+    };
+
+    const handleToggleChange = (key: HomeToggleKey, value: boolean) => {
+        setDisplayPrefs((prev) => ({ ...prev, [key]: value }));
+        setHomeToggle(key, value, Boolean(user));
+    };
+
+    const handleEventsGovernorateChange = (governorate: string) => {
+        setEventsGovernorateState(governorate);
+        setEventsGovernorate(governorate, Boolean(user));
     };
 
     return (
@@ -578,15 +526,10 @@ export default function Home() {
                             open={settingsOpen}
                             onOpenChange={setSettingsOpen}
                             eventsGovernorate={eventsGovernorate}
-                            setEventsGovernorate={setEventsGovernorate}
-                            showWeather={showWeather}
-                            setShowWeather={setShowWeather}
-                            showPrayerTimes={showPrayerTimes}
-                            setShowPrayerTimes={setShowPrayerTimes}
-                            showEvents={showEvents}
-                            setShowEvents={setShowEvents}
+                            onEventsGovernorateChange={handleEventsGovernorateChange}
+                            displayPrefs={displayPrefs}
+                            onToggleChange={handleToggleChange}
                             onLocationChange={handleLocationChange}
-                            saveAccountSettings={saveAccountSettings}
                         />
                     </React.Suspense>
                 )}

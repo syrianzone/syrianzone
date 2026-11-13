@@ -2,15 +2,17 @@
 
 namespace App\Support\Seo;
 
+use App\Support\Facts;
 use RuntimeException;
 
 /**
  * The one table of public pages: `resources/data/seo.json`.
  *
  * A page is one record there — its path, title, description, share card, og:type,
- * JSON-LD type and breadcrumb parent. `SeoMeta`, `Og\StaticCards` and the share
- * card renderer in `scripts/og` all read the same file, so a page cannot be
- * added to one and forgotten in another. See docs/guidelines/seo.md.
+ * JSON-LD type, breadcrumb parent and sitemap priority. `SeoMeta`, `Og\StaticCards`,
+ * `SitemapBuilder` and the share card renderer in `scripts/og` all read the same
+ * file, so a page cannot be added to one and forgotten in another. See
+ * docs/guidelines/seo.md.
  *
  * A missing or malformed file is a deploy error, not a runtime condition: it
  * would empty every <head> on the site, so it throws instead.
@@ -41,6 +43,31 @@ final class Pages
     public static function paths(): array
     {
         return array_keys(self::pages());
+    }
+
+    /**
+     * The fixed pages as the sitemap lists them: [path, priority, changefreq].
+     *
+     * Priority and changefreq are record fields, so a page reaches the sitemap by
+     * having a record here rather than by a second hand-kept list; a record opts
+     * out with `"sitemap": false`. Google ignores priority and almost ignores
+     * changefreq, but the crawlers that still read them get a value.
+     *
+     * @return list<array{0: string, 1: float, 2: string}>
+     */
+    public static function sitemapPages(): array
+    {
+        $pages = [];
+
+        foreach (self::pages() as $path => $page) {
+            if (($page['sitemap'] ?? true) === false) {
+                continue;
+            }
+
+            $pages[] = [$path, (float) ($page['priority'] ?? 0.5), (string) ($page['changefreq'] ?? 'monthly')];
+        }
+
+        return $pages;
     }
 
     /** The share-card slug of a fixed page. */
@@ -136,17 +163,11 @@ final class Pages
             return self::$data;
         }
 
-        $file = resource_path('data/seo.json');
-        $json = @file_get_contents($file);
-        if ($json === false) {
-            throw new RuntimeException("Missing SEO page table: {$file}");
+        $data = Facts::json('seo');
+        if (! is_array($data['pages'] ?? null)) {
+            throw new RuntimeException('Malformed SEO page table: resources/data/seo.json');
         }
 
-        $decoded = json_decode($json, true);
-        if (! is_array($decoded) || ! is_array($decoded['pages'] ?? null)) {
-            throw new RuntimeException("Malformed SEO page table: {$file}");
-        }
-
-        return self::$data = $decoded;
+        return self::$data = $data;
     }
 }

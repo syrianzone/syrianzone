@@ -4,6 +4,7 @@ namespace App\Mcp\Tools\Transit;
 
 use App\Services\Transit\TransitAdminService;
 use App\Services\Transit\TransitPresenter;
+use App\Services\Transit\TransitRules;
 use App\Support\Agents\AgentContext;
 use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -38,7 +39,7 @@ class SetTransitRouteStatusTool extends TransitTool
                 ->required(),
 
             'status' => $schema->string()
-                ->enum([...ListTransitRoutesTool::STATUSES])
+                ->enum([...TransitRules::STATUSES])
                 ->description('The status to set.')
                 ->required(),
         ];
@@ -48,7 +49,7 @@ class SetTransitRouteStatusTool extends TransitTool
     {
         $validated = $request->validate([
             'route_id' => 'required|string|max:191',
-            'status' => 'required|string|in:published,disapproved,hidden',
+            'status' => 'required|string|'.TransitRules::statusRule(),
         ]);
 
         return $this->attempt(function () use ($validated, $context) {

@@ -219,7 +219,7 @@ class PlaceController extends Controller
       $canSee = $user && ($user->id === $place->user_id
           || $user->hasAnyPermission(PermissionCatalogue::forModule('places')));
       if (!$canSee) {
-        return response()->json(['message' => 'Not found'], 404);
+        return response()->json(['message' => 'العنصر غير موجود.'], 404);
       }
     }
 

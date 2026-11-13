@@ -4,6 +4,7 @@ namespace App\Mcp\Tools\Transit;
 
 use App\Services\Transit\TransitAdminService;
 use App\Services\Transit\TransitPresenter;
+use App\Services\Transit\TransitRules;
 use App\Support\Agents\AgentContext;
 use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -80,7 +81,7 @@ class ListTransitDraftsTool extends TransitTool
     protected function run(Request $request, AgentContext $context): Response|ResponseFactory
     {
         $validated = $request->validate([
-            'status' => 'sometimes|in:pending,approved,rejected,all',
+            'status' => 'sometimes|'.TransitRules::draftStatusRule(withAll: true),
             'city_id' => 'sometimes|string|max:64',
             'limit' => 'sometimes|integer|min:1|max:500',
         ]);

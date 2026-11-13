@@ -10,7 +10,7 @@ export interface PromiseFilterOptions {
     tags: string[];
 }
 
-export const STATE_FILTERS = [
+const STATE_FILTERS = [
     { value: 'overdue', label: 'متأخرة' },
     { value: 'due_soon', label: 'تقترب مواعيدها' },
     { value: 'open', label: 'لم تُحسم بعد' },

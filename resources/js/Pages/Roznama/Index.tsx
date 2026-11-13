@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { usePage } from '@inertiajs/react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     Calendar, Clock, MapPin, Sparkles, AlertCircle, Info, CalendarDays,
     ExternalLink, Settings,
@@ -57,12 +56,6 @@ import { Label } from "@/Components/ui/label";
 import MainLayout from '@/Layouts/MainLayout';
 import { api, API_ROOT, apiErrorMessage } from '@/Lib/api';
 import {
-    Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
-} from '@/Components/ui/dialog';
-import {
-    Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle,
-} from '@/Components/ui/sheet';
-import {
     accountPatchForLocation,
     isDeviceLocation,
     resolvePlaceLabel,
@@ -75,11 +68,13 @@ import { prayerSchedule } from '@/Domain/prayer/nextPrayer';
 import { usePrayerTimes } from '@/Domain/prayer/times';
 import { PrayerIcon } from '@/Domain/prayer/PrayerIcon';
 import PrayerSettingsFields from '@/Domain/prayer/PrayerSettingsFields';
-import { readStoredMethod, writeStoredMethod } from '@/Domain/settings/prefs';
+import ResponsiveSettingsDialog from '@/Domain/prayer/ResponsiveSettingsDialog';
+import { todayInSyria, todayKey, useMuslimPrefs } from '@/Domain/settings/prefs';
+import { saveAccountSettings } from '@/Domain/settings/accountSettings';
 import { useWeather } from '@/Domain/weather/weather';
 import { WeatherIcon } from '@/Domain/weather/WeatherIcon';
 import { formatDuration } from '@/Lib/format';
-import { useIsMobile } from '@/Lib/useIsMobile';
+import { formatGregorianSyrian, formatGregorianSyrianShort } from '@/Lib/syrian-date';
 import { useAppShell } from '@/Lib/appShell';
 import {
     GOVERNORATES_BY_ID,
@@ -144,20 +139,17 @@ function holidaysForYear(year: number): ActiveHoliday[] {
 }
 
 export default function Index() {
-    const { props } = usePage<{ auth?: { user?: { id: number; settings?: Record<string, unknown> | null } | null } }>();
-    const isMobile = useIsMobile();
-    const isLoggedIn = Boolean(props.auth?.user?.id);
-    const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
     // One location preference, shared with Home, /muslim and the board.
     const location = useLocationPreference();
-    const [method, setMethod] = useState(readStoredMethod);
+    // The calculation method is part of `Domain/settings/prefs`: the choice is
+    // stored on this device and mirrored to the account, the same as /muslim.
+    const { prefs, setPrefs, isLoggedIn } = useMuslimPrefs();
+    const method = prefs.method;
     const roznamaSettingsOpen = useAppShell((s) => s.roznamaSettingsOpen);
     const setRoznamaSettingsOpen = useAppShell((s) => s.setRoznamaSettingsOpen);
 
     const handleMethodChange = (next: number) => {
-        setMethod(next);
-        writeStoredMethod(next);
+        setPrefs({ method: next });
     };
     const [currentTime, setCurrentTime] = useState<Date>(new Date());
     const [mounted, setMounted] = useState(false);
@@ -237,11 +229,7 @@ export default function Index() {
                     endDate: undefined,
                     category: e.category ? { nameAr: e.category, nameEn: '' } : undefined,
                 })) as F3aliaEvent[];
-                const d = new Date();
-                const year = d.getFullYear();
-                const month = String(d.getMonth() + 1).padStart(2, '0');
-                const day = String(d.getDate()).padStart(2, '0');
-                const todayStr = `${year}-${month}-${day}`;
+                const todayStr = todayKey();
                 const upcoming = fetchedEvents
                     .filter(e => e.eventDate >= todayStr)
                     .sort((a, b) => a.eventDate.localeCompare(b.eventDate));
@@ -258,37 +246,24 @@ export default function Index() {
         return () => { clearTimeout(timer); ctrl.abort(); };
     }, [location.city, showOtherGovEvents, mounted]);
 
-    const savePrefs = (patch: Record<string, unknown>) => {
-        if (!isLoggedIn) return;
-        if (saveTimer.current) clearTimeout(saveTimer.current);
-        saveTimer.current = setTimeout(() => {
-            // Background mirror: the choice is already in device storage and
-            // the next change retries, so a failed save is not toast-worthy.
-            api.post('/api/user/settings', { settings: patch }).catch(() => {});
-        }, 600);
-    };
-
     /** Device storage belongs to Domain/location; the account mirror is ours. */
     const handleLocationChange = (patch: LocationPatch) => {
         const accountPatch = accountPatchForLocation(patch);
-        if (Object.keys(accountPatch).length > 0) savePrefs(accountPatch);
+        if (isLoggedIn && Object.keys(accountPatch).length > 0) saveAccountSettings(accountPatch);
     };
-
-    useEffect(() => () => {
-        if (saveTimer.current) clearTimeout(saveTimer.current);
-    }, []);
 
     const formatTime = (date: Date) => {
         return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
     };
 
-    const formatDateGregorian = (date: Date) => {
-        return date.toLocaleDateString('ar-SY', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
+    const formatDateGregorian = (date: Date) => formatGregorianSyrian(date);
+
+    // `formatGregorianSyrianShort` reads a date string; a local Date is anchored
+    // at noon so no time zone can move it to the neighbouring day.
+    const formatDateShort = (date: Date) => {
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return formatGregorianSyrianShort(`${date.getFullYear()}-${month}-${day}T12:00:00`);
     };
 
     // Active and next prayer, one implementation shared with /muslim, Home and
@@ -301,19 +276,23 @@ export default function Index() {
 
     const holidays = useMemo(() => holidaysForYear(currentTime.getFullYear()), [currentTime]);
 
+    // The national calendar day, not this browser's: the same boundary the
+    // prayer log and the timings API use. One value for the holiday filter, the
+    // "days left" badge and the events filter, recomputed once per day.
+    const syriaDayKey = todayKey(currentTime);
+    const startOfToday = useMemo(() => todayInSyria(currentTime), [syriaDayKey]);
+
     const nextHoliday = useMemo(() => {
-        const startOfToday = new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate());
         const next = holidays.find(h => h.date >= startOfToday) ?? holidaysForYear(currentTime.getFullYear() + 1)[0];
 
         const daysLeft = Math.ceil((next.date.getTime() - startOfToday.getTime()) / (1000 * 60 * 60 * 24));
         return { ...next, daysLeft };
-    }, [holidays, currentTime]);
+    }, [holidays, currentTime, startOfToday]);
 
     const filteredHolidays = useMemo(() => {
         if (!hidePassed) return holidays;
-        const startOfToday = new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate());
         return holidays.filter(h => h.date >= startOfToday);
-    }, [holidays, hidePassed, currentTime]);
+    }, [holidays, hidePassed, startOfToday]);
 
     const activeGov = GOVERNORATES_BY_ID[location.city] ?? GOVERNORATES_BY_ID['damascus'];
     // Labels follow the effective location: a resolved GPS/IP point wins over
@@ -416,7 +395,7 @@ export default function Index() {
                                                 <div className="flex items-center gap-2 text-xs font-medium text-primary">
                                                     <CalendarDays className="h-4 w-4" />
                                                     <span>
-                                                        {nextHoliday.date.toLocaleDateString('ar-SY', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                                        {formatGregorianSyrian(nextHoliday.date)}
                                                     </span>
                                                 </div>
                                             </div>
@@ -614,8 +593,8 @@ export default function Index() {
                                     ) : (
                                         <div className="space-y-3">
                                             {filteredHolidays.map((holiday, idx) => {
-                                                const isPast = holiday.date < new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate());
-                                                const daysDiff = Math.ceil((holiday.date.getTime() - new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate()).getTime()) / (1000 * 60 * 60 * 24));
+                                                const isPast = holiday.date < startOfToday;
+                                                const daysDiff = Math.ceil((holiday.date.getTime() - startOfToday.getTime()) / (1000 * 60 * 60 * 24));
                                                 
                                                 return (
                                                     <div 
@@ -633,7 +612,7 @@ export default function Index() {
                                                             </div>
                                                             <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
                                                                 <span className={`font-semibold ${isPast ? 'text-muted-foreground' : 'text-foreground/75'}`}>
-                                                                    {holiday.date.toLocaleDateString('ar-SY', { day: 'numeric', month: 'long' })}
+                                                                    {formatDateShort(holiday.date)}
                                                                     {holiday.date.getFullYear() !== currentTime.getFullYear() && ` (${holiday.date.getFullYear()})`}
                                                                 </span>
                                                                 {holiday.description && (
@@ -835,43 +814,19 @@ export default function Index() {
 
                 </div>
 
-                {isMobile ? (
-                    <Sheet open={roznamaSettingsOpen} onOpenChange={setRoznamaSettingsOpen}>
-                        <SheetContent side="bottom" dir="rtl" className="rounded-t-3xl border-b-0 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-                            <SheetHeader className="text-right">
-                                <SheetTitle>إعدادات الروزنامة</SheetTitle>
-                                <SheetDescription>
-                                    الموقع المستخدم لمواقيت الصلاة والطقس — GPS أو الإنترنت أو مدينة يدوية.
-                                </SheetDescription>
-                            </SheetHeader>
-                            <div className="max-h-[70dvh] overflow-y-auto sz-scroll">
-                                <PrayerSettingsFields
-                                    cityLabel="المدينة (للمواقيت والطقس والفعاليات)"
-                                    method={method}
-                                    onMethodChange={handleMethodChange}
-                                    onLocationChange={handleLocationChange}
-                                />
-                            </div>
-                        </SheetContent>
-                    </Sheet>
-                ) : (
-                    <Dialog open={roznamaSettingsOpen} onOpenChange={setRoznamaSettingsOpen}>
-                        <DialogContent dir="rtl" className="sm:max-w-md">
-                            <DialogHeader className="text-right">
-                                <DialogTitle>إعدادات الروزنامة</DialogTitle>
-                                <DialogDescription>
-                                    الموقع المستخدم لمواقيت الصلاة والطقس — GPS أو الإنترنت أو مدينة يدوية.
-                                </DialogDescription>
-                            </DialogHeader>
-                            <PrayerSettingsFields
-                                cityLabel="المدينة (للمواقيت والطقس والفعاليات)"
-                                method={method}
-                                onMethodChange={handleMethodChange}
-                                onLocationChange={handleLocationChange}
-                            />
-                        </DialogContent>
-                    </Dialog>
-                )}
+                <ResponsiveSettingsDialog
+                    open={roznamaSettingsOpen}
+                    onOpenChange={setRoznamaSettingsOpen}
+                    title="إعدادات الروزنامة"
+                    description="الموقع المستخدم لمواقيت الصلاة والطقس — GPS أو الإنترنت أو مدينة يدوية."
+                >
+                    <PrayerSettingsFields
+                        cityLabel="المدينة (للمواقيت والطقس والفعاليات)"
+                        method={method}
+                        onMethodChange={handleMethodChange}
+                        onLocationChange={handleLocationChange}
+                    />
+                </ResponsiveSettingsDialog>
             </MainLayout>
     );
 }

@@ -16,9 +16,9 @@ import {
 
 import { useAuth } from '@/Contexts/AuthContext';
 import { useAppShell } from '@/Lib/appShell';
-import { useColorScheme } from '@/lib/theme';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import { useColorScheme } from '@/Lib/theme';
+import { cn } from '@/Lib/utils';
+import { Button } from '@/Components/ui/button';
 import {
   Sheet,
   SheetClose,
@@ -26,8 +26,8 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from '@/components/ui/sheet';
-import { Separator } from '@/components/ui/separator';
+} from '@/Components/ui/sheet';
+import { Separator } from '@/Components/ui/separator';
 
 import UserNav from './UserNav';
 import AppearanceMenu from './AppearanceMenu';
@@ -38,6 +38,14 @@ import { siteModule } from '@/Lib/siteModules';
 
 /** Columns for the desktop mega menu, matching the homepage's tile grid. */
 const MEGA_GRID = 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-9';
+
+/**
+ * The sticky navbar's height: the `h-16` row plus its bottom border. Full-page
+ * surfaces that fill the viewport under the navbar (the Quran reader) subtract
+ * it, so the number lives next to the markup that produces it instead of being
+ * measured from the DOM.
+ */
+export const NAVBAR_HEIGHT_PX = 65;
 
 /**
  * The page links the navbar shows twice — in the "more" panel and in the mobile

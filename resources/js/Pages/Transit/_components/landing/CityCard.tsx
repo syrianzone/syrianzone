@@ -47,7 +47,7 @@ function GovernorateIcon({ cityId }: { cityId: string }) {
   )
 }
 
-import { cn } from '@/lib/utils'
+import { cn } from '@/Lib/utils'
 
 export default function CityCard({ city, index }: CityCardProps) {
   const isReady = city.status === 'active' && city.routeCount > 0

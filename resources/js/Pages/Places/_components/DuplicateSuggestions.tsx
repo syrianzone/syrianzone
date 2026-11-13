@@ -1,5 +1,5 @@
 import { MapPin } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/Components/ui/button';
 import type { NearbyPlace } from '@/Domain/places/types';
 
 export function DuplicateSuggestions(props: {

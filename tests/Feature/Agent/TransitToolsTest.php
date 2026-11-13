@@ -13,6 +13,7 @@ use App\Mcp\Tools\Transit\UpdateTransitRouteTool;
 use App\Models\Route;
 use App\Models\TransitRouteLog;
 use App\Models\User;
+use App\Services\Transit\TransitRules;
 
 /*
 |--------------------------------------------------------------------------
@@ -255,6 +256,29 @@ it('refuses an update carrying no fields, naming the ones it accepts', function 
 
     expect(toolText($response))->toContain('No fields to update')
         ->and(toolText($response))->toContain('name_ar');
+});
+
+it('holds the colour index to the same ceiling the admin API enforces', function () {
+    $route = transitRoute('route-homs-colour', 'homs');
+    $draft = transitDraft('homs', ['color_index' => 1]);
+    $tooHigh = TransitRules::colorIndexMax() + 1;
+
+    agentToken($this->scoped, ['transit.edit_routes', 'transit.approve']);
+
+    $update = toolText(callTool(UpdateTransitRouteTool::class, [
+        'route_id' => $route->id,
+        'color_index' => $tooHigh,
+    ]));
+
+    $approve = toolText(callTool(ApproveTransitDraftTool::class, [
+        'draft_id' => $draft->id,
+        'color_index' => $tooHigh,
+    ]));
+
+    expect($update)->toContain((string) TransitRules::colorIndexMax())
+        ->and($approve)->toContain((string) TransitRules::colorIndexMax())
+        ->and($route->fresh()->color_index)->not->toBe($tooHigh)
+        ->and($draft->fresh()->status)->toBe('pending');
 });
 
 it('returns a draft line and its stops as GeoJSON', function () {

@@ -48,3 +48,11 @@ export function formatGregorianSyrianShort(dateStr: string): string {
     return dateStr;
   }
 }
+
+/** e.g. "١٠ أيلول ٢٠٢٦، ١٤:٣٠" — a timestamp, 24-hour, no weekday. */
+export function formatSyrianDateTime(value: string | number | Date): string {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const time = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+  return `${toArabicDigits(date.getDate())} ${SYRIAN_MONTHS_AR[date.getMonth()]} ${toArabicDigits(date.getFullYear())}، ${toArabicDigits(time)}`;
+}

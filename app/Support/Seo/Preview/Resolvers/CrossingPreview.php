@@ -2,6 +2,7 @@
 
 namespace App\Support\Seo\Preview\Resolvers;
 
+use App\Support\Facts;
 use App\Support\Seo\Og\CardSource;
 use App\Support\Seo\Og\RecordCard;
 use App\Support\Seo\Preview\DescribesCards;
@@ -67,10 +68,7 @@ final class CrossingPreview implements CardSource, PreviewResolver
     /** @return array<string, mixed>|null */
     private function find(int $number): ?array
     {
-        $file = resource_path('js/Domain/crossings/crossings.json');
-        $data = is_file($file) ? json_decode((string) file_get_contents($file), true) : null;
-
-        foreach ($data['crossings'] ?? [] as $crossing) {
+        foreach (Facts::json('crossings')['crossings'] ?? [] as $crossing) {
             if (($crossing['n'] ?? null) === $number) {
                 return $crossing;
             }

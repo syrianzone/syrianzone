@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
 import MainLayout from '@/Layouts/MainLayout';
 import { Button } from '@/Components/ui/button';
@@ -10,13 +10,16 @@ import { Badge } from '@/Components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import { 
     Upload, Copy, Check, CloudUpload, FileCheck, Folder, Download, 
-    Trash2, RefreshCw, Search, ExternalLink, FileText, Image as ImageIcon, Archive
+    Trash2, RefreshCw, ExternalLink, FileText, Image as ImageIcon, Archive
 } from 'lucide-react';
 import { api, apiErrorMessage } from '@/Lib/api';
 import JSZip from 'jszip';
 import { notify } from '@/Lib/notify';
 import { copyText } from '@/Lib/copy';
 import { confirmDialog } from '@/Lib/confirm';
+import DirectoryResultCount from '@/Components/directory/DirectoryResultCount';
+import { DirectorySearch } from '@/Components/directory/DirectorySearch';
+import { useDirectory, type DirectoryFacet } from '@/Components/directory/useDirectory';
 
 interface R2File {
     path: string;
@@ -54,8 +57,6 @@ export default function AssetManagerIndex() {
     const [loadingMore, setLoadingMore] = useState<boolean>(false);
     const [nextCursor, setNextCursor] = useState<string | null>(null);
     const [hasMore, setHasMore] = useState<boolean>(false);
-    const [searchQuery, setSearchQuery] = useState<string>('');
-    const [selectedFolder, setSelectedFolder] = useState<string>('all');
     const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
     const [downloadingZip, setDownloadingZip] = useState<boolean>(false);
     const [zipProgress, setZipProgress] = useState<number>(0);
@@ -165,14 +166,23 @@ export default function AssetManagerIndex() {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     };
 
-    const foldersList = Array.from(new Set(files.map(f => f.folder)));
+    const foldersList = useMemo(() => Array.from(new Set(files.map(f => f.folder))), [files]);
 
-    const filteredFiles = files.filter(f => {
-        const matchesFolder = selectedFolder === 'all' || f.folder === selectedFolder;
-        const matchesSearch = f.filename.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                              f.path.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesFolder && matchesSearch;
+    const folderFacet = useMemo<DirectoryFacet<R2File>>(() => ({
+        key: 'folder',
+        label: 'المجلد',
+        options: foldersList.map(folderName => ({ value: folderName, label: folderName })),
+        valueOf: (file) => file.folder,
+    }), [foldersList]);
+    const directory = useDirectory<R2File>({
+        items: files,
+        searchText: (file) => `${file.filename} ${file.path}`,
+        facets: [folderFacet],
     });
+    const selectedFolder = directory.filters.folder?.[0] ?? 'all';
+    const filteredFiles = directory.results;
+    const selectFolder = (folderName: string) =>
+        directory.setFilters({ ...directory.filters, folder: folderName === 'all' ? [] : [folderName] });
 
     const handleDownloadAll = async () => {
         if (files.length === 0) return;
@@ -283,24 +293,20 @@ export default function AssetManagerIndex() {
                                         </CardDescription>
                                     </div>
 
-                                    <div className="flex flex-wrap gap-2 w-full md:w-auto">
-                                        <div className="relative flex-1 min-w-[200px]">
-                                            <Search className="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                                            <Input aria-label="بحث باسم الملف..."
-                                                placeholder="بحث باسم الملف..."
-                                                value={searchQuery}
-                                                onChange={(e) => setSearchQuery(e.target.value)}
-                                                className="ps-9"
-                                            />
-                                        </div>
-                                    </div>
+                                    <DirectorySearch
+                                        className="w-full md:w-auto md:min-w-[200px]"
+                                        value={directory.query}
+                                        onChange={directory.setQuery}
+                                        placeholder="بحث باسم الملف..."
+                                        ariaLabel="بحث باسم الملف..."
+                                    />
                                 </div>
 
                                 {foldersList.length > 0 && (
                                     <div className="flex flex-wrap gap-2 pt-3">
                                         <FilterChip
                                             active={selectedFolder === 'all'}
-                                            onClick={() => setSelectedFolder('all')}
+                                            onClick={() => selectFolder('all')}
                                         >
                                             الكل ({files.length})
                                         </FilterChip>
@@ -310,7 +316,7 @@ export default function AssetManagerIndex() {
                                                 <FilterChip
                                                     key={folderName}
                                                     active={selectedFolder === folderName}
-                                                    onClick={() => setSelectedFolder(folderName)}
+                                                    onClick={() => selectFolder(folderName)}
                                                 >
                                                     <Folder className="h-3 w-3 me-1" />
                                                     {folderName} ({count})
@@ -321,6 +327,9 @@ export default function AssetManagerIndex() {
                                 )}
                             </CardHeader>
                             <CardContent>
+                                <DirectoryResultCount className="mb-3 text-xs">
+                                    عرض {filteredFiles.length} من أصل {files.length} ملف
+                                </DirectoryResultCount>
                                 {loadingFiles ? (
                                     <div className="py-12 text-center text-muted-foreground space-y-2">
                                         <RefreshCw className="h-8 w-8 animate-spin mx-auto text-primary" />

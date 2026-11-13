@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils';
+import { cn } from '@/Lib/utils';
 import { STATUS_TEXT, type Status } from '@/Domain/crossings/crossings';
 
 const STYLES: Record<Status, string> = {

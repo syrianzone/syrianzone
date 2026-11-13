@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { router } from '@inertiajs/react';
 import {
-    Plus, Edit, Trash2, Eye, EyeOff, Search, ArrowUp, ArrowDown, Settings, Check, X, Phone, MessageSquare, ExternalLink, ArrowRight
+    Plus, Edit, Trash2, Eye, EyeOff, ArrowUp, ArrowDown, Settings, Check, X, Phone, MessageSquare, ExternalLink, ArrowRight
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
@@ -9,6 +9,9 @@ import { Input } from "@/Components/ui/input";
 import { Badge } from "@/Components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/Components/ui/dialog";
 import CategoryDialog from '@/Components/directory/CategoryDialog';
+import DirectoryResultCount from '@/Components/directory/DirectoryResultCount';
+import { DirectorySearch } from '@/Components/directory/DirectorySearch';
+import { useDirectory, type DirectoryFacet } from '@/Components/directory/useDirectory';
 import { Label } from "@/Components/ui/label";
 import { Switch } from "@/Components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/Components/ui/table";
@@ -23,16 +26,32 @@ interface AdminPhonebookProps {
     entries: PhonebookEntry[];
 }
 
-export default function PhonebookAdminIndex({ categories, entries }: AdminPhonebookProps) {
-    const [searchTerm, setSearchTerm] = useState('');
+const entrySearchText = (entry: PhonebookEntry) =>
+    `${entry.name_ar} ${entry.name_en ?? ''} ${entry.number}`;
 
+export default function PhonebookAdminIndex({ categories, entries }: AdminPhonebookProps) {
     // Each control is gated on the capability its route requires (routes/web.php).
     const can = useCan();
     const canCreate = can('phonebook.create');
     const canEdit = can('phonebook.edit');
     const canToggle = can('phonebook.toggle');
     const canDelete = can('phonebook.delete');
-    const [selectedCategory, setSelectedCategory] = useState<string>('all');
+
+    // The same search and category filter the public directory runs on, so a
+    // spelling that matches there matches here.
+    const categoryFacet = useMemo<DirectoryFacet<PhonebookEntry>>(() => ({
+        key: 'category',
+        label: 'الفئة',
+        options: categories.map((cat) => ({ value: cat.id, label: cat.label_ar })),
+        valueOf: (entry) => entry.category_id,
+    }), [categories]);
+    const directory = useDirectory<PhonebookEntry>({
+        items: entries,
+        searchText: entrySearchText,
+        facets: [categoryFacet],
+    });
+    const selectedCategory = directory.filters.category?.[0] ?? 'all';
+    const filteredEntries = directory.results;
 
     const [categoryModalOpen, setCategoryModalOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<PhonebookCategory | null>(null);
@@ -49,19 +68,6 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
         source_url: '',
         is_active: true,
     });
-
-    const filteredEntries = useMemo(() => {
-        return entries.filter(item => {
-            const matchesCat = selectedCategory === 'all' || item.category_id === selectedCategory;
-            const term = searchTerm.toLowerCase();
-            const matchesSearch = !searchTerm || (
-                item.name_ar.toLowerCase().includes(term) ||
-                (item.name_en && item.name_en.toLowerCase().includes(term)) ||
-                item.number.includes(term)
-            );
-            return matchesCat && matchesSearch;
-        });
-    }, [entries, selectedCategory, searchTerm]);
 
     const openCreateCategory = () => {
         setEditingCategory(null);
@@ -185,7 +191,7 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
                     <div className="flex items-center gap-2 overflow-x-auto pb-2">
                         <Button
                             variant={selectedCategory === 'all' ? 'default' : 'outline'}
-                            onClick={() => setSelectedCategory('all')}
+                            onClick={() => directory.setFilters({ ...directory.filters, category: [] })}
                             className="rounded-full text-xs font-semibold shrink-0"
                         >
                             الكل ({entries.length})
@@ -196,7 +202,7 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
                                 <div key={cat.id} className="flex items-center gap-1 shrink-0">
                                     <Button
                                         variant={selectedCategory === cat.id ? 'default' : 'outline'}
-                                        onClick={() => setSelectedCategory(cat.id)}
+                                        onClick={() => directory.setFilters({ ...directory.filters, category: [cat.id] })}
                                         className="rounded-full text-xs font-semibold gap-1.5"
                                     >
                                         <span>{cat.label_ar}</span>
@@ -221,18 +227,16 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
                     </div>
 
                     <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-card p-4 rounded-xl border border-border">
-                        <div className="relative w-full sm:w-80">
-                            <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input aria-label="ابحث بالاسم أو الرقم..."
-                                placeholder="ابحث بالاسم أو الرقم..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="ps-9 h-10 text-sm"
-                            />
-                        </div>
-                        <div className="text-xs text-muted-foreground">
+                        <DirectorySearch
+                            className="w-full sm:w-80"
+                            value={directory.query}
+                            onChange={directory.setQuery}
+                            placeholder="ابحث بالاسم أو الرقم..."
+                            ariaLabel="ابحث بالاسم أو الرقم..."
+                        />
+                        <DirectoryResultCount className="text-xs">
                             عرض <span className="font-bold text-foreground">{filteredEntries.length}</span> من أصل {entries.length} رقم
-                        </div>
+                        </DirectoryResultCount>
                     </div>
 
                     <div className="bg-card rounded-2xl border border-border shadow-xs overflow-hidden">
@@ -248,6 +252,13 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
+                                {filteredEntries.length === 0 && (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
+                                            لا توجد أرقام مطابقة للبحث.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
                                 {filteredEntries.map((item) => (
                                     <TableRow key={item.id} className={`hover:bg-muted/40 transition-colors ${!item.is_active ? 'opacity-60 bg-muted/20' : ''}`}>
                                         <TableCell>

@@ -5,6 +5,7 @@ import {
 import { Button } from "@/Components/ui/button";
 import { notify } from '@/Lib/notify';
 import { copyText } from '@/Lib/copy';
+import { MEDIA_BASE } from '@/Domain/govapps/media';
 import { Card, CardContent } from "@/Components/ui/card";
 import {
     Dialog,
@@ -20,7 +21,7 @@ import {
     TabsList,
     TabsTrigger,
 } from "@/Components/ui/tabs";
-import { featureToSVG } from '@/lib/geo-utils';
+import { featureToSVG } from '@/Lib/geo-utils';
 import { GOVERNORATES, getGovernorateNameAr } from '@/Domain/geography/governorates';
 import {
     Select,
@@ -730,7 +731,7 @@ export default function SyidClient() {
                                     <span>تحميل الشعار (SVG)</span>
                                 </a>
                                 <a
-                                    href="https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/downloads/191b8f0d278fc2ab095fb4f344e3e9b4-vGF1L1.zip"
+                                    href={`${MEDIA_BASE}/downloads/191b8f0d278fc2ab095fb4f344e3e9b4-vGF1L1.zip`}
                                     target="_blank"
                                     rel="noreferrer"
                                     className="inline-flex items-center justify-center gap-2 flex-1 bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border font-medium text-xs h-10 px-3 rounded-lg transition-colors"
@@ -925,7 +926,7 @@ export default function SyidClient() {
 
                                     <div className="mt-6 pt-4 border-t border-border/40 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                                         <a
-                                            href="https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/downloads/syria_provinces.geojson"
+                                            href={`${MEDIA_BASE}/downloads/syria_provinces.geojson`}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border border-border hover:bg-muted/50 transition-colors"

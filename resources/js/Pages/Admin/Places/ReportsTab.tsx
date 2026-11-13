@@ -1,19 +1,20 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription } from '@/Components/ui/alert';
 import { Badge } from '@/Components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/Components/ui/button';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@/Components/ui/select';
 import { confirmDialog } from '@/Lib/confirm';
 import { notify } from '@/Lib/notify';
 import { api } from '@/Domain/places/api';
 import { apiErrorMessage } from '@/Lib/api';
+import { formatGregorianSyrianShort } from '@/Lib/syrian-date';
 import { REPORT_REASON_LABELS } from '@/Domain/places/reports';
 import type { AdminPlaceReport, Paginated, PlaceReportStatus } from '@/Domain/places/types';
 
@@ -160,7 +161,7 @@ export function ReportsTab() {
               <p className="text-xs text-muted-foreground">
                 أبلغ عنه {report.user.name} ·{' '}
                 <time dateTime={report.created_at}>
-                  {new Date(report.created_at).toLocaleDateString('ar-SY')}
+                  {formatGregorianSyrianShort(report.created_at)}
                 </time>
               </p>
               {report.status === 'open' && (

@@ -7,8 +7,8 @@ use App\Models\Route;
 use App\Models\RouteDraft;
 use App\Models\TransitRouteLog;
 use App\Services\Transit\TransitCache;
+use App\Services\Transit\TransitRules;
 use App\Services\TransitKmlImportService;
-use App\Support\Facts;
 use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -111,16 +111,11 @@ class TransitImportController extends Controller
             'name_ar' => 'required|string|max:255',
             'name_en' => 'nullable|string|max:255',
             'price' => 'nullable|integer|min:0|max:1000000',
-            'color_index' => 'nullable|integer|min:0|max:'.Facts::transit()['color_index_max'],
+            'color_index' => TransitRules::colorIndex(),
             'notes' => 'nullable|string|max:5000',
-            'geojson' => 'required|array',
-            'geojson.features' => 'required|array|min:1|max:500',
-            'geojson.features.*.geometry' => 'required|array',
-            'geojson.features.*.geometry.type' => 'required|string|in:LineString,MultiLineString,Point',
-            'geojson.features.*.geometry.coordinates' => 'required|array|min:1',
             'mode' => 'nullable|string|in:draft,direct',
             'source_mid' => 'nullable|string|max:128',
-        ]);
+        ] + TransitRules::routeGeoJson());
 
         $this->ensureTransitCityAccess($request, $validated['city_id'], [
             PermissionCatalogue::TRANSIT_REVIEW_DRAFTS,

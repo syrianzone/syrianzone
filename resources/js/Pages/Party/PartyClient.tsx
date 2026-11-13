@@ -5,17 +5,17 @@ import {
     Search, MapPin, Globe, FileText, Users,
     Plus, Send
 } from 'lucide-react';
-import { Twitter, Facebook, Instagram, Youtube } from '@/components/ui/icons';
-import { Button } from "@/components/ui/button";
+import { Twitter, Facebook, Instagram, Youtube } from '@/Components/ui/icons';
+import { Button } from "@/Components/ui/button";
 import DirectoryEmptyState from '@/Components/directory/DirectoryEmptyState';
 import DirectoryLoadMore from '@/Components/directory/DirectoryLoadMore';
 import DirectoryResultCount from '@/Components/directory/DirectoryResultCount';
 import { DirectorySmartSearch } from '@/Components/directory/DirectorySearch';
 import DirectoryViewToggle from '@/Components/directory/DirectoryViewToggle';
 import { useDirectory, type DirectoryFacet } from '@/Components/directory/useDirectory';
-import { Card, CardContent } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/Components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/Components/ui/table";
+import { Badge } from "@/Components/ui/badge";
 
 interface PartyClientProps {
     initialOrganizations: Organization[];

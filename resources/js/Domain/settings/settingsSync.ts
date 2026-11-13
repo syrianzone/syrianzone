@@ -1,8 +1,8 @@
-import { api } from '@/Lib/api';
 import { addBookmark } from '@/Domain/quran/bookmarksApi';
 import { getGovernorateNameAr, governorateById } from '../geography/governorates';
-import { PRAYER_METHODS } from '../prayer/methods';
+import { isAcceptedPrayerMethod, PRAYER_METHODS } from '../prayer/methods';
 import { MUSLIM_LS_KEYS, prunePrayerLog } from './prefs';
+import { postAccountSettings, type AccountSettingsPatch } from './accountSettings';
 import { pushGuestBookmarks } from '../quran/guestBookmarks';
 import {
   accountCustomCoords,
@@ -12,6 +12,7 @@ import {
   readDeviceCustomCoords,
   writeDeviceCity,
   writeDeviceCustomCoords,
+  type AccountLocation,
   type DeviceCustomCoords,
 } from '../location/preference';
 
@@ -87,7 +88,9 @@ function sanitizeMethod(v: string | null): string | null {
   if (v === null || v === '') return null;
   const n = Number(v);
   if (!Number.isInteger(n)) return null;
-  return PRAYER_METHODS.some((m) => m.id === n) ? String(n) : null;
+  // Every id the timings endpoint accepts, offered in the picker or not: an id
+  // another client stored is a real choice, not absent data.
+  return isAcceptedPrayerMethod(n) ? String(n) : null;
 }
 
 function finiteNumber(v: string): number | null {
@@ -158,11 +161,9 @@ export async function runLoginSync(userId: number, rawSettings: Record<string, u
   // device here, before anything is compared, keeps the fill out of the
   // device-vs-account diff it would otherwise look like (docs/modules/settings-sync.md §4).
   adoptAccountLocation(account);
-  const serverPatch: Record<string, unknown> = {};
-  let patchEmpty = true;
-  const put = (k: string, v: unknown) => {
-    serverPatch[k] = v;
-    patchEmpty = false;
+  const serverPatch: AccountSettingsPatch = {};
+  const put = <K extends keyof AccountSettingsPatch>(key: K, value: AccountSettingsPatch[K]) => {
+    serverPatch[key] = value;
   };
 
   const localLog = readLocalPrayerLog();
@@ -202,20 +203,23 @@ export async function runLoginSync(userId: number, rawSettings: Record<string, u
 
   const conflicts: SettingConflict[] = [];
 
-  const scalar = (
-    key: ConflictKey,
+  // One scalar preference: push a device-only value, adopt an account-only one,
+  // and surface a real difference as a conflict. `key` is the account's key
+  // spelling, so a chosen value and its account field cannot drift apart.
+  const scalar = <K extends Exclude<ConflictKey, 'customLoc'>>(
+    key: K,
     label: string,
     local: string | null,
     serverVal: string | null,
     display: (v: string) => string,
-    toServer: (v: string) => unknown,
+    toServer: (v: string) => AccountSettingsPatch[K],
     toLocal: (v: string) => void,
   ) => {
     const l = local === '' ? null : local;
     const s = serverVal === '' ? null : serverVal;
     if (l === null && s === null) return;
     if (s === null && l !== null) {
-      put(serverKeyFor(key), toServer(l));
+      put(key, toServer(l));
       return;
     }
     if (l === null && s !== null) {
@@ -281,97 +285,88 @@ export async function runLoginSync(userId: number, rawSettings: Record<string, u
     });
   }
 
-  if (!patchEmpty) {
-    try {
-      await api.post('/api/user/settings', { settings: serverPatch });
-    } catch {
-      // best-effort; conflicts (if any) still surface for explicit choice
-    }
+  if (Object.keys(serverPatch).length > 0) {
+    // Best-effort: the device already holds the merged values, and any conflict
+    // still surfaces for an explicit choice.
+    await postAccountSettings(serverPatch);
   }
 
   void userId;
   return { conflicts };
 }
 
-function serverKeyFor(key: ConflictKey): string {
-  switch (key) {
-    case 'governorate':
-      return 'governorate';
-    case 'muslimCity':
-      return 'muslimCity';
-    case 'muslimMethod':
-      return 'muslimMethod';
-    case 'customLoc':
-      return 'muslimUseCustomCoords';
-  }
-}
-
-/** Apply modal choices: write winners to both sides + push one batch. */
+/**
+ * Apply the modal's choices: the winner is written to both sides in one call,
+ * so a "server wins" choice can no longer depend on a second function running
+ * afterwards with the same key list.
+ */
 export async function applyConflictChoices(
   conflicts: SettingConflict[],
   choices: Partial<ConflictChoices>,
+  serverSettings: Record<string, unknown> | null | undefined,
 ): Promise<void> {
-  const serverPatch: Record<string, unknown> = {};
+  const server = (serverSettings ?? {}) as ServerSettings;
+  const account = accountLocation(server);
+  const serverPatch: AccountSettingsPatch = {};
+
   for (const c of conflicts) {
     const choice = choices[c.key];
     if (!choice) continue;
-    if (c.key === 'governorate' || c.key === 'muslimCity' || c.key === 'muslimMethod') {
-      if (choice === 'local') {
-        const v =
-          c.key === 'governorate'
-            ? readDeviceCity('display')
-            : c.key === 'muslimCity'
-              ? readDeviceCity('prayer')
-              : ls(MUSLIM_LS_KEYS.method);
-        if (v !== null) {
-          if (c.key === 'muslimMethod') {
-            const n = Number(v);
-            if (Number.isFinite(n)) serverPatch[serverKeyFor(c.key)] = n;
-          } else {
-            serverPatch[serverKeyFor(c.key)] = v;
-          }
-          if (c.key === 'governorate') writeDeviceCity('display', v);
-        }
-      } else {
-        // server wins: pull into device storage (re-read from account below).
-      }
-    } else if (c.key === 'customLoc') {
-      if (choice === 'local') {
-        const cur = readLocalCustom();
-        if (cur?.on !== null && cur?.on !== undefined) serverPatch.muslimUseCustomCoords = cur.on === 'true';
-        const lat = cur ? finiteNumber(cur.lat) : null;
-        const lon = cur ? finiteNumber(cur.lon) : null;
-        // «هذا الجهاز» with no coordinates is a choice, not a missing value: it
-        // clears the account's pair (null) in both key families, or the account
-        // keeps a location the device no longer has.
-        serverPatch.muslimLat = lat;
-        serverPatch.muslimLon = lon;
-        serverPatch.customLat = lat;
-        serverPatch.customLon = lon;
-      }
+
+    if (choice === 'server') {
+      adoptAccountChoice(c.key, server, account);
+      continue;
     }
+
+    if (c.key === 'customLoc') {
+      const cur = readLocalCustom();
+      if (cur?.on !== null && cur?.on !== undefined) serverPatch.muslimUseCustomCoords = cur.on === 'true';
+      const lat = cur ? finiteNumber(cur.lat) : null;
+      const lon = cur ? finiteNumber(cur.lon) : null;
+      // «هذا الجهاز» with no coordinates is a choice, not a missing value: it
+      // clears the account's pair (null) in both key families, or the account
+      // keeps a location the device no longer has.
+      serverPatch.muslimLat = lat;
+      serverPatch.muslimLon = lon;
+      serverPatch.customLat = lat;
+      serverPatch.customLon = lon;
+      continue;
+    }
+
+    if (c.key === 'muslimMethod') {
+      const stored = ls(MUSLIM_LS_KEYS.method);
+      const method = stored === null ? null : Number(stored);
+      if (method !== null && Number.isFinite(method)) {
+        serverPatch.muslimMethod = method;
+        lsSet(MUSLIM_LS_KEYS.method, String(method));
+      }
+      continue;
+    }
+
+    const channel = c.key === 'governorate' ? 'display' : 'prayer';
+    const city = readDeviceCity(channel);
+    if (city === null) continue;
+    if (c.key === 'governorate') serverPatch.governorate = city;
+    else serverPatch.muslimCity = city;
+    writeDeviceCity(channel, city);
   }
-  if (Object.keys(serverPatch).length > 0) {
-    await api.post('/api/user/settings', { settings: serverPatch });
-  }
+
+  if (Object.keys(serverPatch).length > 0) await postAccountSettings(serverPatch);
 }
 
-/** Pull the current account values for conflicted keys into device storage. */
-export function pullServerValues(rawSettings: Record<string, unknown> | null | undefined, keys: ConflictKey[]): void {
-  const s = (rawSettings ?? {}) as ServerSettings;
-  for (const key of keys) {
-    if (key === 'governorate' && s.governorate) {
-      writeDeviceCity('display', s.governorate);
-    } else if (key === 'muslimCity' && s.muslimCity) {
-      writeDeviceCity('prayer', s.muslimCity);
-    } else if (key === 'muslimMethod' && s.muslimMethod !== null && s.muslimMethod !== undefined) {
-      lsSet(MUSLIM_LS_KEYS.method, String(s.muslimMethod));
-    } else if (key === 'customLoc') {
-      const cur = accountCustomCoords(accountLocation(s));
-      if (!cur) continue;
-      // An empty lat/lon here means the account has none: clear the device copy
-      // so the next login compares equal.
-      writeDeviceCustomCoords({ ...(cur.on !== null ? { on: cur.on } : {}), lat: cur.lat, lon: cur.lon });
-    }
+/** Write the account's value for one conflicted key onto this device. */
+function adoptAccountChoice(key: ConflictKey, server: ServerSettings, account: AccountLocation): void {
+  if (key === 'governorate' && server.governorate) {
+    writeDeviceCity('display', server.governorate);
+  } else if (key === 'muslimCity' && server.muslimCity) {
+    writeDeviceCity('prayer', server.muslimCity);
+  } else if (key === 'muslimMethod' && server.muslimMethod !== null && server.muslimMethod !== undefined) {
+    lsSet(MUSLIM_LS_KEYS.method, String(server.muslimMethod));
+  } else if (key === 'customLoc') {
+    const cur = accountCustomCoords(account);
+    if (!cur) return;
+    // An empty lat/lon here means the account has none: clear the device copy
+    // so the next login compares equal.
+    writeDeviceCustomCoords({ ...(cur.on !== null ? { on: cur.on } : {}), lat: cur.lat, lon: cur.lon });
   }
 }

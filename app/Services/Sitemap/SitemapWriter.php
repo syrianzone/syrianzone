@@ -2,8 +2,6 @@
 
 namespace App\Services\Sitemap;
 
-use App\Support\Facts;
-
 /**
  * Renders SitemapUrl objects into a sitemaps.org urlset document. Holds no
  * domain knowledge and touches no database, so it is testable on its own.
@@ -14,13 +12,13 @@ class SitemapWriter
 
     /**
      * The base URL is a constructor argument so tests can pin it, but defaults
-     * to the canonical host: staging answers on a different hostname, and a
-     * sitemap built from the request host would advertise a duplicate site.
-     * The host itself is a shared fact (resources/data/site.json).
+     * to the canonical host every other SEO surface reads (`config('seo.base_url')`,
+     * overridable with SEO_BASE_URL): staging answers on a different hostname,
+     * and a sitemap built from the request host would advertise a duplicate site.
      */
     public function __construct(?string $baseUrl = null)
     {
-        $this->baseUrl = $baseUrl ?? Facts::site()['base_url'];
+        $this->baseUrl = $baseUrl ?? (string) config('seo.base_url');
     }
 
     /**

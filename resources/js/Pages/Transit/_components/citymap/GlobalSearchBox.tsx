@@ -7,7 +7,7 @@ import { Card } from '@/Components/ui/card'
 import { Badge } from '@/Components/ui/badge'
 import { Button } from '@/Components/ui/button'
 import { Search, Loader2, X, Bus, MapPin, Landmark } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/Lib/utils'
 import { transitApi, type TransitSearchResult } from '../../_lib/api'
 
 interface PoiResult {

@@ -17,7 +17,7 @@ export const SOCIAL_LABEL: Record<string, string> = {
     no_social: 'بدون حساب',
 };
 
-export function hasSocialMedia(m: Member2026): boolean {
+function hasSocialMedia(m: Member2026): boolean {
     return Boolean((m.facebook_url && m.facebook_url.trim()) || (m.twitter_url && m.twitter_url.trim()));
 }
 

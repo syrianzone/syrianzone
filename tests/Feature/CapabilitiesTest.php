@@ -156,39 +156,6 @@ it('offers exactly superadmin and user in the role select', function () {
         );
 });
 
-it('creates a staff account as a user holding the full catalogue', function () {
-    $this->actingAs(User::factory()->create(['role' => 'superadmin']))
-        ->postJson('/api/admins', ['name' => 'Staff', 'email' => 'staff@example.test'])
-        ->assertCreated()
-        ->assertJsonPath('role', 'user');
-
-    $created = User::where('email', 'staff@example.test')->firstOrFail();
-
-    expect($created->permissions)->toEqual(PermissionCatalogue::all())
-        ->and($created->effectivePermissions())->toEqual(PermissionCatalogue::all());
-});
-
-it('discards a retired role requested at the admin API', function () {
-    $superadmin = User::factory()->create(['role' => 'superadmin']);
-
-    $this->actingAs($superadmin)
-        ->postJson('/api/admins', [
-            'name' => 'Transit Operator',
-            'email' => 'transit-operator@example.test',
-            'role' => 'transit_admin',
-        ])
-        ->assertCreated()
-        ->assertJsonPath('role', 'user');
-
-    $created = User::where('email', 'transit-operator@example.test')->firstOrFail();
-
-    // The requested role is ignored rather than honoured, and access comes from
-    // the catalogue — so a caller cannot mint a label that means nothing and
-    // leave the operator to guess why the account is not scoped.
-    expect($created->role)->toBe('user')
-        ->and($created->effectivePermissions())->toEqual(PermissionCatalogue::all());
-});
-
 //
 // The presets are named after the module they preview, which made them read as
 // role values. They are not: each is a `user` account holding that module's
@@ -198,7 +165,7 @@ it('discards a retired role requested at the admin API', function () {
 it('gives every dev preset a plain user or superadmin role', function () {
     $middleware = new AutoLoginDevUser;
 
-    foreach (AutoLoginDevUser::DEV_ROLES as $preset) {
+    foreach (AutoLoginDevUser::names() as $preset) {
         $user = $middleware->ensureDevUser($preset);
 
         expect($user->role)->toBe($preset === 'superadmin' ? 'superadmin' : 'user');

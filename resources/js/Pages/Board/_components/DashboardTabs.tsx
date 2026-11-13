@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Check, Pencil, Plus, X } from 'lucide-react';
 import { cn } from '@/Lib/utils';
-import { Input } from '@/components/ui/input';
+import { Input } from '@/Components/ui/input';
 import { MAX_DASHBOARDS } from '../_lib/layout';
 import type { BoardDoc } from '../_lib/types';
 

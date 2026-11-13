@@ -56,6 +56,24 @@ test('a session cookie is not accepted in place of a bearer token', function () 
         ->assertJsonPath('error', fn ($message) => str_contains($message, 'bearer API token'));
 });
 
+test('a mobile session token is refused even when it carries other abilities', function (array $abilities) {
+    $user = User::factory()->create();
+    $plain = $user->createToken('phone', $abilities)->plainTextToken;
+
+    $this->withHeader('Authorization', 'Bearer '.$plain)
+        ->postJson('/mcp/admin', [
+            'jsonrpc' => '2.0',
+            'id' => 1,
+            'method' => 'tools/list',
+        ])
+        ->assertForbidden()
+        ->assertJsonPath('error', 'Mobile user tokens are not accepted for MCP agent access.');
+})->with([
+    'mobile only' => [['mobile']],
+    'mobile before a capability' => [['mobile', 'places.review']],
+    'mobile after a capability' => [['places.review', 'mobile']],
+]);
+
 test('a valid bearer token passes the middleware stack', function () {
     $admin = User::factory()->create(['role' => 'superadmin']);
     $token = app(TokenIssuer::class)->issue($admin, 'ok', ['places.review'])['token'];

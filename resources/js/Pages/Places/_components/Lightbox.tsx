@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { zipSync } from 'fflate';
 import { ChevronLeft, ChevronRight, Download, Loader2, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/Components/ui/button';
+import { Dialog, DialogContent, DialogTitle } from '@/Components/ui/dialog';
 import type { PlacePhoto } from '@/Domain/places/types';
 
 // media-query hook instead of sm: utilities: the code-split css chunks each emit

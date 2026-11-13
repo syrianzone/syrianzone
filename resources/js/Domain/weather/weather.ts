@@ -3,12 +3,13 @@ import { api as client } from '@/Lib/api';
 import { resolveWeatherPoint, type LocationPreference } from '../location/preference';
 
 /**
- * `/api/weather` for the user's location, and the display vocabulary for it.
+ * `/api/weather` for the user's location, and the one display vocabulary for it.
  *
  * Only the current conditions are typed here: Home and Roznama render
  * temperature, Arabic description and an icon at their own sizes. The board's
  * weather widget asks the endpoint by governorate slug (not by the user's
- * resolved point) and keeps its own wording and forecast strip.
+ * resolved point) and adds its own forecast strip, but words the conditions and
+ * the forecast codes from this module so one condition cannot print two ways.
  */
 
 export interface WeatherResponse {
@@ -33,8 +34,12 @@ export interface WeatherCurrent {
   icon: string;
 }
 
-/** The endpoint's English descriptions, in the wording the home page has always shown. */
-const WEATHER_TRANSLATIONS: Record<string, string> = {
+/**
+ * The endpoint's English condition descriptions, in the wording the surfaces
+ * print. Every key the upstream can send is listed here: an unlisted one falls
+ * through as-is, which is the bug this table replaces.
+ */
+const WEATHER_DESCRIPTIONS_AR: Record<string, string> = {
   'clear sky': 'سماء صافية',
   'few clouds': 'غيوم قليلة',
   'scattered clouds': 'غيوم متفرقة',
@@ -47,10 +52,45 @@ const WEATHER_TRANSLATIONS: Record<string, string> = {
   'overcast clouds': 'غيوم ملبدة',
   'light rain': 'مطر خفيف',
   'moderate rain': 'مطر متوسط',
+  'heavy intensity rain': 'مطر غزير',
+  'haze': 'ضباب خفيف',
+  'fog': 'ضباب كثيف',
+  'dust': 'غبار',
+  'sand': 'عواصف رملية',
+};
+
+/** WMO codes from the forecast upstream (the server passes the code through raw). */
+const FORECAST_CODES_AR: Record<number, string> = {
+  0: 'صافية',
+  1: 'صافية غالباً',
+  2: 'غيوم متفرقة',
+  3: 'غائم',
+  45: 'ضباب',
+  48: 'ضباب',
+  51: 'رذاذ',
+  53: 'رذاذ',
+  55: 'رذاذ كثيف',
+  61: 'مطر خفيف',
+  63: 'مطر',
+  65: 'مطر غزير',
+  71: 'ثلج خفيف',
+  73: 'ثلج',
+  75: 'ثلج كثيف',
+  80: 'زخات',
+  81: 'زخات',
+  82: 'زخات غزيرة',
+  95: 'عاصفة رعدية',
+  96: 'عاصفة رعدية',
+  99: 'عاصفة رعدية',
 };
 
 export function weatherDescriptionAr(description: string): string {
-  return WEATHER_TRANSLATIONS[description] ?? description;
+  return WEATHER_DESCRIPTIONS_AR[description] ?? description;
+}
+
+/** A forecast day's WMO code in Arabic; null for a code the table does not know. */
+export function weatherCodeAr(code: number): string | null {
+  return FORECAST_CODES_AR[code] ?? null;
 }
 
 export const WEATHER_URL = '/api/weather';

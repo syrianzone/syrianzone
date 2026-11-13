@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Middleware\AutoLoginDevUser;
-use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\PhonebookCategory;
 use App\Models\Place;
 use App\Models\User;
@@ -105,11 +104,22 @@ test('capabilities from two modules combine without implying a third', function 
 
 // The role select is asserted once, in CapabilitiesTest.
 
-test('dev impersonation covers every assignable role', function () {
+test('dev impersonation covers every preset in the one table', function () {
     $offered = array_keys(AutoLoginDevUser::DEV_USERS);
 
-    expect($offered)->toEqualCanonicalizing(AutoLoginDevUser::DEV_ROLES)
+    expect($offered)->toEqualCanonicalizing(AutoLoginDevUser::names())
         ->and($offered)->toContain('places_admin', 'phonebook_admin');
+
+    // The switcher renders what the server sends: every preset carries the
+    // label and icon key it needs, so the client keeps no second table.
+    $presets = AutoLoginDevUser::presets();
+
+    expect($presets)->toHaveCount(count($offered));
+
+    foreach ($presets as $preset) {
+        expect($preset['label'])->not->toBe('')
+            ->and($preset['icon'])->toBeIn(['user', 'bus', 'settings', 'shield']);
+    }
 });
 
 test('superadmin still holds every capability', function () {
@@ -127,7 +137,7 @@ test('superadmin still holds every capability', function () {
 test('the shared auth payload carries the capabilities it was given', function () {
     $user = User::factory()->withPermissions(PermissionCatalogue::all())->create();
 
-    expect(HandleInertiaRequests::userPayload($user)['effective_permissions'])
+    expect($user->toAuthPayload()['effective_permissions'])
         ->toHaveCount(count(PermissionCatalogue::all()));
 });
 
@@ -152,7 +162,6 @@ test('a places-scoped account is refused the other modules', function () {
         ->assertForbidden();
 
     $this->actingAs($user)->getJson('/api/v1/admin/route-drafts')->assertForbidden();
-    $this->actingAs($user)->getJson('/api/admins')->assertForbidden();
 });
 
 test('a phonebook-scoped account passes the phonebook admin middleware', function () {
@@ -179,7 +188,7 @@ test('a phonebook-scoped account is refused places and transit', function () {
 test('the shared auth payload carries resolved capabilities', function () {
     $user = moduleStaff('places');
 
-    $payload = HandleInertiaRequests::userPayload($user);
+    $payload = $user->toAuthPayload();
 
     // Both payload keys are the stored array, so the payload carries nothing the
     // client could not already read.
@@ -189,8 +198,10 @@ test('the shared auth payload carries resolved capabilities', function () {
         ->and($payload['permissions'])->toBe(PermissionCatalogue::forModule('places'));
 });
 
-test('the auth payload is null for a guest', function () {
-    expect(HandleInertiaRequests::userPayload(null))->toBeNull();
+test('the page props carry no user for a guest', function () {
+    $this->get('/')
+        ->assertOk()
+        ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page->where('auth.user', null));
 });
 
 test('the /user endpoint returns the same payload shape as the page props', function () {

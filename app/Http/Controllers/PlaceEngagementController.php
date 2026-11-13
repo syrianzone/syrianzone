@@ -13,7 +13,7 @@ class PlaceEngagementController extends Controller
   {
     $place = $this->approvedPlace($id);
     if (!$place) {
-      return response()->json(['message' => 'Not found'], 404);
+      return response()->json(['message' => 'العنصر غير موجود.'], 404);
     }
 
     $save = PlaceSave::firstOrCreate(['place_id' => $place->id, 'user_id' => $request->user()->id]);
@@ -28,7 +28,7 @@ class PlaceEngagementController extends Controller
   {
     $place = $this->approvedPlace($id);
     if (!$place) {
-      return response()->json(['message' => 'Not found'], 404);
+      return response()->json(['message' => 'العنصر غير موجود.'], 404);
     }
 
     $deleted = PlaceSave::where('place_id', $place->id)->where('user_id', $request->user()->id)->delete();

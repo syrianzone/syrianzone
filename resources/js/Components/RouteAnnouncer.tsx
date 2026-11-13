@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { usePage } from '@inertiajs/react';
+import { pathnameOf } from '@/Lib/routes';
 
 /**
  * Announces client-side (Inertia) navigations to screen readers and moves focus
@@ -12,7 +13,7 @@ import { usePage } from '@inertiajs/react';
  */
 export default function RouteAnnouncer() {
   const { url } = usePage();
-  const pathname = url.split(/[?#]/)[0];
+  const pathname = pathnameOf(url);
   const firstRender = useRef(true);
   const [message, setMessage] = useState('');
 

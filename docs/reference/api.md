@@ -47,7 +47,7 @@ Used by native mobile clients (Flutter iOS/Android):
    Accept: application/json
    ```
    No cookies or CSRF tokens are required when authenticating with `Authorization: Bearer <token>`.
-4. **Scope Isolation**: Mobile login tokens are minted with `abilities: ["mobile"]`. They authenticate all user-facing endpoints (`auth:sanctum` / `auth:web,sanctum`), are **rejected (`403`)** on the automated `/mcp/admin` agent endpoint, and are excluded from the MCP agent token table (`/admin/api-tokens`).
+4. **Scope Isolation**: Mobile login tokens are minted with the `mobile` ability. Any token whose abilities include `mobile` authenticates every user-facing endpoint (`auth:sanctum` / `auth:web,sanctum`), is **rejected (`403`)** on the automated `/mcp/admin` agent endpoint, and is excluded from the MCP agent token table (`/admin/api-tokens`). Membership decides it, not array identity (`App\Support\Agents\TokenAbilities`).
 
 #### Auth Endpoints Summary
 
@@ -837,7 +837,6 @@ They are not JSON endpoints — an over-long field comes back as the standard
 - **User Moderation (`users_admin`)**:
   - `PATCH /api/v1/admin/users/{id}/ban` (legacy alias `POST /api/v1/admin/users/{id}/toggle-ban`) — requires `users.ban`.
 - **Superadmin (`superadmin`)**:
-  - Staff & permissions: `GET|POST /api/v1/admin/admins`, `DELETE /api/v1/admin/admins/{id}` (legacy `/api/admins*`).
   - Asset Storage (Cloudflare R2): `GET /api/v1/admin/assets/list`, `POST /api/v1/admin/assets/upload`, `DELETE /api/v1/admin/assets/delete` (the paths the asset page and the poll editor's image upload call).
   - Site Navigation & Icon Catalog: `GET /admin/navigation`, `GET|PUT /api/v1/admin/navigation`.
   - Site Popup: `GET /admin/site-popup`, `GET|PUT /api/v1/admin/site-popup`.
@@ -891,6 +890,5 @@ Where both rows describe the same module (auth token, global search, transit rea
 | `POST /api/user/settings` | `PATCH /api/v1/user/settings` |
 | `POST /api/user/radio-usage` | `POST /api/v1/user/radio-usage` |
 | `POST /api/user/radio-usage/clear` | `DELETE /api/v1/user/radio-usage` |
-| `GET\|POST\|DELETE /api/admins*` | `GET\|POST\|DELETE /api/v1/admin/admins*` |
 | `POST /api/v1/admin/api-tokens/revoke-all/{userId}` | `DELETE /api/v1/admin/users/{userId}/api-tokens` |
 | `POST /api/v1/admin/users/{id}/toggle-ban` | `PATCH /api/v1/admin/users/{id}/ban` |

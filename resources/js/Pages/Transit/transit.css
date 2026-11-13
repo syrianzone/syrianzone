@@ -6,7 +6,6 @@
   --surface-2: hsl(var(--muted));
   --border: var(--color-border);
   --border-hover: hsl(var(--primary));
-  --gold: hsl(var(--primary));
   --pomegranate: hsl(var(--destructive));
   --tile-blue: #4a8fa8;
   --terracotta: #d4956a;

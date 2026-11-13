@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ArrowsUpFromLine, Palette, MapPin, Download, Info, Globe, Trash2, Edit2, Plus } from 'lucide-react';
-import { Twitter } from '@/components/ui/icons';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Twitter } from '@/Components/ui/icons';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/Components/ui/card";
+import { Input } from "@/Components/ui/input";
+import { Button } from "@/Components/ui/button";
+import { Label } from "@/Components/ui/label";
+import { ScrollArea } from "@/Components/ui/scroll-area";
 import { confirmDialog } from '@/Lib/confirm';
 
 interface Dot {

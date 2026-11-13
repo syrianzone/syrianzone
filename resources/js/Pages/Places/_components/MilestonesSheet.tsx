@@ -4,7 +4,7 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from '@/components/ui/sheet';
+} from '@/Components/ui/sheet';
 import { LevelBadge, rankName } from './LevelBadge';
 
 // mirrors GuideLevelService::LEVELS; the API threshold test keeps the two in sync

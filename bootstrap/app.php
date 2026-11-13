@@ -6,7 +6,6 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -124,43 +123,8 @@ return Application::configure(basePath: dirname(__DIR__))
                 }
             }
 
-            if (
-                $response->getStatusCode() === 404
-                && $request->isMethod('GET')
-                && ! $request->expectsJson()
-                && ! $request->is('api/*', 'superadmin*')
-            ) {
-                \App\Support\Seo\SeoMeta::override($request, [
-                    'title' => 'الصفحة غير موجودة (404) | Syrian Zone',
-                    'description' => 'الصفحة التي تبحث عنها غير موجودة أو تم نقلها — استكشف أدوات ومشاريع المساحة السورية.',
-                    'robots' => 'noindex, follow',
-                ]);
-
-                Inertia::share(app(\App\Http\Middleware\HandleInertiaRequests::class)->share($request));
-
-                // This page is rendered outside the middleware stack, so the
-                // nonce has to be registered before the view stamps its script
-                // tags, then the headers are applied to the finished response.
-                $securityHeaders = app(\App\Http\Middleware\SecurityHeaders::class);
-                $securityHeaders->registerNonce();
-
-                $section = match (true) {
-                    $request->is('muslim', 'muslim/*') => 'muslim',
-                    $request->is('games', 'games/*', 'guesswho', 'guesswho/*') => 'games',
-                    $request->is('transit', 'transit/*', 'mishwar', 'mishwar/*', 'crossings', 'crossings/*', 'places', 'places/*') => 'transit',
-                    default => 'general',
-                };
-
-                $override = $request->query('section');
-                if (in_array($override, ['general', 'transit', 'games', 'muslim'], true)) {
-                    $section = $override;
-                }
-
-                return $securityHeaders->applyHeaders(Inertia::render('Errors/NotFound', [
-                    'status' => 404,
-                    'path' => '/'.ltrim($request->path(), '/'),
-                    'section' => $section,
-                ])->toResponse($request)->setStatusCode(404)->prepare($request));
+            if (\App\Support\Errors\NotFoundPage::replaces($request, $response)) {
+                return \App\Support\Errors\NotFoundPage::render($request);
             }
 
             return $response;

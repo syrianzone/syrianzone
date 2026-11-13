@@ -20,8 +20,7 @@ use Illuminate\Support\Facades\DB;
  *    cast for them (see App\Models\City / Stop / RouteGeometry: the columns are
  *    fillable but plain), so an updateOrCreate would bind the WKT/GeoJSON as a
  *    literal string and MySQL would reject it. Every geometry write here goes
- *    through raw SQL, exactly like App\Console\Commands\ImportTransitGeoJson,
- *    which is the only other producer of these rows.
+ *    through raw SQL; this seeder is the only producer of these rows.
  *
  * 2. SRID MATTERS FOR STOPS. The importer writes stops and route geometries
  *    with ST_GeomFromGeoJSON (SRID 4326) and cities with ST_GeomFromText
@@ -238,8 +237,7 @@ class StagingTransitSeeder extends StagingSeed
    *
    * INSERT-ONLY, unlike every other write in this file. 'damascus', 'aleppo'
    * and 'homs' are the REAL production city ids: they are the ids in
-   * resources/js/Domain/transit/cities.json and the ids
-   * App\Console\Commands\ImportTransitGeoJson writes. They are the one set of
+   * resources/js/Domain/transit/cities.json. They are the one set of
    * keys this module cannot namespace, because /transit/city/{id}/route/{...}
    * looks the city up in cities.json by that exact id, so a 'staging-damascus'
    * row would render a city page with no matching entry. So instead of an

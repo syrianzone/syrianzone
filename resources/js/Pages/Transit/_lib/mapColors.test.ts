@@ -25,4 +25,11 @@ describe('transit route palette', () => {
     expect(expression).toContain(JSON.stringify(['literal', [...ROUTE_PALETTE]]));
     expect(expression).toContain(`,${ROUTE_COLOR_COUNT}]`);
   });
+
+  it('reads the one colour key the payload carries', () => {
+    const expression = JSON.stringify(buildColorMatch());
+    expect(expression).toContain('"colorIndex"');
+    expect(expression).not.toContain('color_index');
+    expect(expression).not.toContain('coalesce');
+  });
 });

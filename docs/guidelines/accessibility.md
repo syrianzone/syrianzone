@@ -129,7 +129,15 @@ python3 scripts/a11y_axe_audit.py --base http://localhost:8000 --admin # + admin
 - **Blocks on WCAG serious/critical findings that reproduce across two passes**
   (a live clock can otherwise cause a one-off contrast hit). Best-practice rules
   (`region`, `heading-order`) are reported but advisory.
-- Exit code 1 when a blocking violation remains. Current state: **0 violations**.
+- **Fails closed.** Before auditing it checks that `--base` really serves this
+  app (`lang="ar"`, `dir="rtl"`, the `<main id="main-content">` landmark);
+  otherwise it refuses and exits 1 — a dev server on the wrong port, a fresh
+  install or a proxy error page would otherwise produce a clean sweep of nothing.
+  A route that errors, answers non-2xx (including a renamed route's 404) or
+  cannot be reached fails the run instead of being skipped, as does an
+  `--admin` run that cannot impersonate, and a run that audits zero routes.
+- Exit code 1 when a blocking violation remains or the sweep could not audit
+  what it was asked to. Current state: **0 violations**.
 - It injects axe from the CDN unless `--axe ./axe.min.js` is given; it uses the
   system chromium (`--executable` to override).
 

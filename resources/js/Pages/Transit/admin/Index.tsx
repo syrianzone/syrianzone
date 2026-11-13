@@ -521,7 +521,7 @@ function TransitAdminPageContent() {
           ...prev,
           features: prev.features.map((feature) => ({
             ...feature,
-            properties: { ...feature.properties, colorIndex: newColorIndex, color_index: newColorIndex }
+            properties: { ...feature.properties, colorIndex: newColorIndex }
           }))
         }
       })

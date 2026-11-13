@@ -13,6 +13,7 @@ import { addResult, clearLocal, saveResultToAccount, updateLocalResult, setPendi
 import FigureAvatar from './components/FigureAvatar';
 import SpectrumIcon from '@/Domain/compass/SpectrumIcon';
 import { COMPASS_FLAGS } from './flags';
+import { useThemeId } from '@/Lib/theme';
 import AxisBars from '@/Domain/compass/AxisBars';
 import AlignmentCard from '@/Domain/compass/AlignmentCard';
 import CompassCanvas from './components/CompassCanvas';
@@ -56,7 +57,7 @@ export default function CompassResult({
   const [savedId, setSavedId] = useState<number | string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
-  const [themeKey, setThemeKey] = useState('dark');
+  const themeKey = useThemeId();
   const storyCardRef = useRef<HTMLDivElement>(null);
   const localResultRef = useRef<Result | null>(null);
 
@@ -185,14 +186,6 @@ export default function CompassResult({
       setImageBusy(false);
     }
   };
-
-  React.useEffect(() => {
-    const read = () => setThemeKey(document.documentElement.getAttribute('data-theme') || 'dark');
-    read();
-    const observer = new MutationObserver(read);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-    return () => observer.disconnect();
-  }, []);
 
   // keep a local copy on first render (never auto-saves to the account)
   React.useEffect(() => {

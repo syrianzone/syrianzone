@@ -1,25 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
 import { Loader2, Plus, RotateCw, Trash2 } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription } from '@/Components/ui/alert';
 import { Badge } from '@/Components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/Components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+} from '@/Components/ui/dialog';
+import { Input } from '@/Components/ui/input';
+import { Label } from '@/Components/ui/label';
+import { Textarea } from '@/Components/ui/textarea';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@/Components/ui/select';
 import { api } from '@/Domain/places/api';
 import { apiErrorMessage, apiFieldErrors } from '@/Lib/api';
 import { CATEGORIES } from '@/Domain/places/categories';

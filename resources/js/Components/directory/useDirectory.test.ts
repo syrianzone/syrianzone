@@ -113,6 +113,17 @@ describe('directory search and facets', () => {
         }]);
     });
 
+    it('counts what matches, not what was passed in', () => {
+        const { state } = render({
+            items: ROWS,
+            facets: [TYPE_FACET],
+            initialFilters: { type: ['org'] },
+        });
+
+        expect(state.total).toBe(state.results.length);
+        expect(state.total).toBe(2);
+    });
+
     it('reads facet state from the page when it is controlled', () => {
         const { state } = render({ items: ROWS, facets: [TYPE_FACET], filters: { type: ['org'] } });
 

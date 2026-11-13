@@ -2,22 +2,27 @@ import React, { useState, useEffect } from 'react';
 import { router } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Button } from '@/Components/ui/button';
-import { Input } from '@/Components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/Components/ui/table';
 import { Badge } from '@/Components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/card';
-import { Plus, Search, Edit3, Trash2, Smartphone, ArrowUpDown, Globe } from 'lucide-react';
+import { Plus, Edit3, Trash2, Smartphone, ArrowUpDown, Globe } from 'lucide-react';
 import { notify } from '@/Lib/notify';
 import { confirmDialog } from '@/Lib/confirm';
 import AppDialog from './_components/AppDialog';
 import SortableList from '@/Components/directory/SortableList';
+import DirectoryResultCount from '@/Components/directory/DirectoryResultCount';
+import { DirectorySearch } from '@/Components/directory/DirectorySearch';
+import { useDirectory } from '@/Components/directory/useDirectory';
 import { useCan } from '@/Lib/useCan';
+import { DEFAULT_GOVAPP_ICON } from '@/Domain/govapps/media';
 import type { GovApp } from '@/Domain/govapps/types';
 
 interface AdminGovAppsProps {
     apps: GovApp[];
 }
+
+const appSearchText = (app: GovApp) => `${app.name} ${app.name_ar ?? ''} ${app.id}`;
 
 export default function GovAppsAdminIndex({ apps }: AdminGovAppsProps) {
 
@@ -27,7 +32,10 @@ export default function GovAppsAdminIndex({ apps }: AdminGovAppsProps) {
     const canEdit = can('govapps.edit');
     const canDelete = can('govapps.delete');
     const canReorder = can('govapps.reorder');
-    const [searchTerm, setSearchTerm] = useState('');
+
+    // The public listing's search, so «احمد» finds «أحمد» here too.
+    const directory = useDirectory<GovApp>({ items: apps, searchText: appSearchText });
+    const filteredApps = directory.results;
 
     const [appDialogOpen, setAppDialogOpen] = useState(false);
     const [selectedApp, setSelectedApp] = useState<GovApp | null>(null);
@@ -43,16 +51,6 @@ export default function GovAppsAdminIndex({ apps }: AdminGovAppsProps) {
             }
         }
     }, [apps]);
-
-    const filteredApps = apps.filter((item) => {
-        const term = searchTerm.toLowerCase();
-        return (
-            !searchTerm ||
-            item.name.toLowerCase().includes(term) ||
-            (item.name_ar && item.name_ar.toLowerCase().includes(term)) ||
-            item.id.toLowerCase().includes(term)
-        );
-    });
 
     const handleDeleteApp = async (appId: string) => {
         const ok = await confirmDialog({ title: 'حذف هذا التطبيق الحكومي؟', destructive: true, confirmText: 'حذف' });
@@ -107,19 +105,17 @@ export default function GovAppsAdminIndex({ apps }: AdminGovAppsProps) {
 
                     <TabsContent value="list" className="mt-6 space-y-4">
                         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                            <div className="relative w-full sm:w-96">
-                                <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                                <Input aria-label="ابحث بالاسم أو المعرف..."
-                                    placeholder="ابحث بالاسم أو المعرف..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="ps-9"
-                                />
-                            </div>
+                            <DirectorySearch
+                                className="w-full sm:w-96"
+                                value={directory.query}
+                                onChange={directory.setQuery}
+                                placeholder="ابحث بالاسم أو المعرف..."
+                                ariaLabel="ابحث بالاسم أو المعرف..."
+                            />
 
-                            <div className="text-xs text-muted-foreground font-medium">
+                            <DirectoryResultCount className="text-xs">
                                 الإجمالي: {filteredApps.length} تطبيق
-                            </div>
+                            </DirectoryResultCount>
                         </div>
 
                         <Card className="overflow-hidden border">
@@ -147,11 +143,11 @@ export default function GovAppsAdminIndex({ apps }: AdminGovAppsProps) {
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-10 h-10 rounded-xl overflow-hidden bg-muted flex-shrink-0 border flex items-center justify-center">
                                                             <img
-                                                                src={item.icon || 'https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/govapps/mofa/icon.webp'}
+                                                                src={item.icon || DEFAULT_GOVAPP_ICON}
                                                                 alt=""
                                                                 className="w-full h-full object-cover"
                                                                 onError={(e) => {
-                                                                    (e.target as HTMLImageElement).src = 'https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/govapps/mofa/icon.webp';
+                                                                    (e.target as HTMLImageElement).src = DEFAULT_GOVAPP_ICON;
                                                                 }}
                                                             />
                                                         </div>

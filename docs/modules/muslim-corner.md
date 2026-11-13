@@ -72,11 +72,18 @@ One module owns each fact, so `/muslim/prayer`, `/roznama`, Home and the board's
 - **Hijri date** — `Domain/prayer/hijri.ts`: `hijriDateLabel(response.hijri)` for
   the endpoint's Umm al-Qura date and `formatHijriDate(date)` for the client-side
   fallback.
+- **Calculation methods** — `Domain/prayer/methods.ts` projects
+  `resources/data/prayer.json`, which `PrayerController` validates against: the
+  picker offers `methods` (the twelve, in display order) and the endpoint also
+  accepts `unlisted_method_ids` (7, 14, 15, 16) so a stored method is kept rather
+  than silently reset. `default_method` is the Syrian standard (Muslim World
+  League) and is not restated in TS or PHP.
 - **Settings panel** — `Domain/prayer/PrayerSettingsFields`: location source,
-  city, manual coordinates and (optionally) the calculation method, rendered by
-  `/muslim`, Roznama and Home's settings dialog. Each surface passes only its own
-  copy (city label, whether the method select appears) and mirrors
-  `onLocationChange` to its account-settings call.
+  city, manual coordinates and (optionally) the calculation method, inside
+  `Domain/prayer/ResponsiveSettingsDialog` (a bottom sheet on a phone, a centred
+  dialog above `md`), rendered by `/muslim`, Roznama and Home's settings dialog.
+  Each surface passes only its own copy (city label, whether the method select
+  appears) and mirrors `onLocationChange` to its account-settings call.
 
 ### 2.4 Quran Radio (`/muslim/radio`)
 "Followed recitation": continuous MP3Quran v4 playback (the whole mushaf, surah after surah) with the text under it. It replaces the old live streams, which had no timeline and so could never show what was being recited.

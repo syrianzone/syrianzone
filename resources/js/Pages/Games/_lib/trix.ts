@@ -19,9 +19,9 @@ import { emptyLayout, lay, legalCards, type ShedLayout } from './cardGames/shedd
 import { nextSeat, type Seat } from './cardGames/trick';
 
 export const TRIX_PLAYERS = 4;
-export const TRIX_HAND = 13;
+const TRIX_HAND = 13;
 /** The layout's pivot: the Jack. */
-export const TRIX_PIVOT = 11;
+const TRIX_PIVOT = 11;
 /** Jack, then up to the ace and down to the two. */
 const TRIX_POSITION = [200, 150, 100, 50];
 
@@ -62,7 +62,7 @@ interface TrixShedDeal {
 
 export type TrixDeal = TrixAvoidDeal | TrixShedDeal;
 
-export function dealHands(random: () => number = Math.random): Card[][] {
+function dealHands(random: () => number = Math.random): Card[][] {
   const deck = shuffle(createDeck(), random).map((card) => ({ ...card, faceUp: true }));
   return Array.from({ length: TRIX_PLAYERS }, (_, seat) =>
     deck.slice(seat * TRIX_HAND, seat * TRIX_HAND + TRIX_HAND),
@@ -70,7 +70,7 @@ export function dealHands(random: () => number = Math.random): Card[][] {
 }
 
 /** Put a contract on already-dealt hands — the king sees the hand before choosing. */
-export function buildDeal(contract: Contract, hands: Card[][], leader: Seat): TrixDeal {
+function buildDeal(contract: Contract, hands: Card[][], leader: Seat): TrixDeal {
   if (contract === 'trix') {
     return { contract, hands, layout: emptyLayout(), turn: leader, out: [], phase: 'playing' };
   }
@@ -130,10 +130,6 @@ function nextActive(seat: Seat, out: Seat[]): Seat {
   let next = nextSeat(seat, TRIX_PLAYERS);
   while (out.includes(next)) next = nextSeat(next, TRIX_PLAYERS);
   return next;
-}
-
-export function isDealComplete(deal: TrixDeal): boolean {
-  return deal.phase === 'complete';
 }
 
 /** Points per seat for a finished deal. */

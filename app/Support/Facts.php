@@ -39,7 +39,7 @@ final class Facts
     public static function governorates(): array
     {
         /** @var array<int, array{id: string, name_ar: string, name_en: string, dataset_name_en: string, pcode: string, lat: float, lng: float, option_order: int, picker_order: int, sort_order: int, f3alia_province: string, transit_svg: string, aliases: array<int, string>}> $rows */
-        $rows = self::read('governorates');
+        $rows = self::json('governorates');
 
         return $rows;
     }
@@ -121,7 +121,7 @@ final class Facts
     public static function syria(): array
     {
         /** @var array{bbox: array{lat_min: float, lat_max: float, lng_min: float, lng_max: float}, country_code: string, timezone: string} $syria */
-        $syria = self::read('syria');
+        $syria = self::json('syria');
 
         return $syria;
     }
@@ -145,7 +145,7 @@ final class Facts
     public static function places(): array
     {
         /** @var array{categories: array<int, array{key: string, label: string, glyph: string}>, statuses: array<int, string>, nearby: array{radius_km_default: float, radius_km_min: float, radius_km_max: float}} $places */
-        $places = self::read('places');
+        $places = self::json('places');
 
         return $places;
     }
@@ -186,7 +186,7 @@ final class Facts
      */
     public static function promiseStatuses(): array
     {
-        return self::read('promises')['statuses'];
+        return self::json('promises')['statuses'];
     }
 
     /**
@@ -198,7 +198,7 @@ final class Facts
     public static function promiseStates(): array
     {
         $out = [];
-        foreach (self::read('promises')['states'] as $state) {
+        foreach (self::json('promises')['states'] as $state) {
             $out[$state['key']] = [$state['label'], $state['card_tone'], $state['glyph']];
         }
 
@@ -211,7 +211,7 @@ final class Facts
     public static function polls(): array
     {
         /** @var array{core_slug: string, default_timezone: string} $polls */
-        $polls = self::read('polls');
+        $polls = self::json('polls');
 
         return $polls;
     }
@@ -222,7 +222,7 @@ final class Facts
     public static function transit(): array
     {
         /** @var array{color_index_max: int, nearby_stops_radius_m: int, nearby_stops_radius_max_m: int, route_palette: array<int, string>} $transit */
-        $transit = self::read('transit');
+        $transit = self::json('transit');
 
         return $transit;
     }
@@ -233,9 +233,55 @@ final class Facts
     public static function games(): array
     {
         /** @var array<int, array{slug: string, title: string, href?: string, online?: bool, external?: bool, comingSoon?: bool}> $games */
-        $games = self::read('games');
+        $games = self::json('games');
 
         return $games;
+    }
+
+    /**
+     * The prayer-calculation method table: the default method, the methods the
+     * picker offers in display order, and the extra method ids the prayer proxy
+     * accepts although the UI does not offer them (a stored account setting
+     * must survive a round trip even when its method is not on the list).
+     *
+     * @return array{default_method: int, methods: array<int, array{id: int, name_ar: string, name_en: string, detail: string}>, unlisted_method_ids: array<int, int>}
+     */
+    public static function prayer(): array
+    {
+        /** @var array{default_method: int, methods: array<int, array{id: int, name_ar: string, name_en: string, detail: string}>, unlisted_method_ids: array<int, int>} $prayer */
+        $prayer = self::json('prayer');
+
+        return $prayer;
+    }
+
+    /**
+     * The governorate outline drawings, keyed by the SVG basename that
+     * `governorates.json` carries as `transit_svg`: the `viewBox` plus the path
+     * `d` the transit API, the landing grid and the mobile client draw.
+     *
+     * The SVG files under `resources/js/Pages/Transit/_data/governorates/` stay
+     * the authoring source because the browser loads them directly with
+     * `import.meta.glob`; this file is the server-readable copy, and
+     * tests/Feature/GovernorateIconFactsTest.php fails when the two drift.
+     *
+     * @return array<string, array{viewBox: string, path: string}>
+     */
+    public static function governorateIcons(): array
+    {
+        /** @var array<string, array{viewBox: string, path: string}> $icons */
+        $icons = self::json('governorate-icons');
+
+        return $icons;
+    }
+
+    /**
+     * One governorate outline by SVG basename, or null when none is drawn.
+     *
+     * @return array{viewBox: string, path: string}|null
+     */
+    public static function governorateIcon(string $file): ?array
+    {
+        return self::governorateIcons()[$file] ?? null;
     }
 
     /**
@@ -244,7 +290,7 @@ final class Facts
     public static function site(): array
     {
         /** @var array{base_url: string} $site */
-        $site = self::read('site');
+        $site = self::json('site');
 
         return $site;
     }
@@ -264,7 +310,7 @@ final class Facts
     public static function siteModules(): array
     {
         /** @var array{navbar: array{topCount: int}, modules: array<int, array<string, mixed>>, adminSections: array<int, array<string, mixed>>} $modules */
-        $modules = self::read('site-modules');
+        $modules = self::json('site-modules');
 
         return $modules;
     }
@@ -279,9 +325,37 @@ final class Facts
     public static function projectIcons(): array
     {
         /** @var array{icons: array<string, array<string, mixed>>} $icons */
-        $icons = self::read('project-icons');
+        $icons = self::json('project-icons');
 
         return $icons;
+    }
+
+    /**
+     * The public base URL of the media store (Cloudflare R2). A stored file
+     * name is served from here; `R2_PUBLIC_URL` / `R2_URL` still override it in
+     * a deployment, but the default lives in one file for both languages.
+     *
+     * @return array{public_base: string}
+     */
+    public static function media(): array
+    {
+        /** @var array{public_base: string} $media */
+        $media = self::json('media');
+
+        return $media;
+    }
+
+    /**
+     * The theme record: storage keys, the system-preference id, the font
+     * defaults and every theme's identity. Read by the pre-paint script in
+     * `resources/views/app.blade.php` and by `Lib/theme.ts`; both sides render
+     * from this one file.
+     *
+     * @return array<string, mixed>
+     */
+    public static function themes(): array
+    {
+        return self::json('themes');
     }
 
     /**
@@ -290,15 +364,21 @@ final class Facts
     public static function sitePopup(): array
     {
         /** @var array{enabled: bool, title: string, description: string, buttonText: string, dismissText: string, link: string, version: int} $popup */
-        $popup = self::read('site-popup');
+        $popup = self::json('site-popup');
 
         return $popup;
     }
 
     /**
+     * One shared facts file, decoded and memoised for the request.
+     *
+     * Public because every reader of `resources/data` must share this one cache
+     * and this one failure mode: a missing or malformed file is a deploy error,
+     * so it throws instead of returning a partial value.
+     *
      * @return array<mixed>
      */
-    private static function read(string $name): array
+    public static function json(string $name): array
     {
         if (isset(self::$files[$name])) {
             return self::$files[$name];

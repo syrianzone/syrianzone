@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils';
+import { cn } from '@/Lib/utils';
 import { StatusDot } from './StatusPill';
 import { WhatsAppIcon } from './WhatsAppIcon';
 import {

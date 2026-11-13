@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { ArrowRight, Check, Copy } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Alert, AlertDescription } from '@/Components/ui/alert';
+import { Avatar, AvatarFallback, AvatarImage } from '@/Components/ui/avatar';
 import { Badge } from '@/Components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/Components/ui/button';
 import { copyText } from '@/Lib/copy';
 import { api } from '@/Domain/places/api';
 import { apiErrorMessage } from '@/Lib/api';

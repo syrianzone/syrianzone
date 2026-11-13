@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\AboutController;
-use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\Api\PopulationAtlasController;
 use App\Http\Controllers\ApiTokenAdminController;
 use App\Http\Controllers\AssetUploadController;
@@ -39,8 +38,6 @@ use App\Http\Controllers\TransitAdminController;
 use App\Http\Controllers\TransitImportController;
 use App\Http\Controllers\UserSettingsController;
 use App\Models\City;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -200,39 +197,9 @@ Route::prefix('api/v1/guesswho')->group(fn () => $guessWhoRoutes('rooms', 'actio
 Route::prefix('guesswho')->group(fn () => $guessWhoRoutes('room', 'action', null));
 
 Route::get('/transit', function () {
-    $cities = Cache::remember('transit:cities', 3600, function () {
-        $citiesModel = City::select(
-            'id', 'name_ar', 'name_en', 'zoom', 'status',
-            DB::raw('ST_AsGeoJSON(center) as center_geojson'),
-            DB::raw('ST_AsGeoJSON(bounds) as bounds_geojson')
-        )->withCount(['routes as routeCount' => fn ($q) => $q->where('status', 'published')])->get();
-
-        return $citiesModel->map(function ($city) {
-            $centerJson = json_decode($city->center_geojson, true);
-            $boundsJson = json_decode($city->bounds_geojson, true);
-
-            $minLng = $boundsJson['coordinates'][0][0][0] ?? 0;
-            $minLat = $boundsJson['coordinates'][0][0][1] ?? 0;
-            $maxLng = $boundsJson['coordinates'][0][2][0] ?? 0;
-            $maxLat = $boundsJson['coordinates'][0][2][1] ?? 0;
-
-            return [
-                'id' => $city->id,
-                'nameAr' => $city->name_ar,
-                'nameEn' => $city->name_en,
-                'status' => $city->status,
-                'zoom' => $city->zoom,
-                'center' => $centerJson['coordinates'] ?? [0, 0],
-                'bounds' => [
-                    [$minLng, $minLat],
-                    [$maxLng, $maxLat],
-                ],
-                'routeCount' => $city->routeCount,
-            ];
-        })->toArray();
-    });
-
-    return Inertia::render('Transit/Index', ['cities' => $cities]);
+    return Inertia::render('Transit/Index', [
+        'cities' => app(\App\Services\Transit\TransitCities::class)->forPage(),
+    ]);
 });
 
 Route::get('/transit/city/{id}', function ($id) {
@@ -240,10 +207,16 @@ Route::get('/transit/city/{id}', function ($id) {
     abort_unless($city !== null, 404);
     \App\Support\Seo\SeoMeta::remember(request(), 'city', $city);
 
-    // The route list travels with the page, so the first HTML names the
-    // city's lines instead of an empty state that fills in after a fetch.
+    // The city list, the city's own payload and its route list travel with the
+    // page, so the first HTML names the city and its lines instead of an empty
+    // state that fills in after a fetch. All three come from the cached list the
+    // API serves, not from a checked-in copy of the cities table.
+    $cities = app(\App\Services\Transit\TransitCities::class)->forPage();
+
     return Inertia::render('Transit/city/[id]/Index', [
         'id' => $id,
+        'cities' => $cities,
+        'city' => collect($cities)->firstWhere('id', $id),
         'routes' => app(\App\Services\Transit\PublishedRoutes::class)->forCity($id),
     ]);
 })->where('id', '[a-z0-9\-]+');
@@ -257,7 +230,9 @@ Route::get('/transit/city/{id}/route/{routeId}', function ($id, $routeId) {
 })->where(['id' => '[a-z0-9\-]+', 'routeId' => '[a-z0-9\-]+']);
 
 Route::get('/transit/studio', function () {
-    return Inertia::render('Transit/studio/Index');
+    return Inertia::render('Transit/studio/Index', [
+        'cities' => app(\App\Services\Transit\TransitCities::class)->forPage(),
+    ]);
 });
 
 Route::get('/mishwar', [PlaceController::class, 'renderIndex']);
@@ -286,20 +261,6 @@ Route::middleware('auth:web,sanctum')->group(function () {
     });
 
     Route::middleware(['auth:web,sanctum', 'superadmin'])->group(function () {
-        // Staff CRUD: one definition, mounted under the canonical
-        // /api/v1/admin prefix (which owns the route names) and the older /api
-        // prefix.
-        $adminUserRoutes = function (?string $namePrefix): void {
-            $name = fn (string $suffix): ?string => $namePrefix === null ? null : $namePrefix.$suffix;
-
-            Route::get('/admins', [AdminUserController::class, 'index'])->name($name('admins.index'));
-            Route::post('/admins', [AdminUserController::class, 'store'])->name($name('admins.store'));
-            Route::delete('/admins/{id}', [AdminUserController::class, 'destroy'])->name($name('admins.destroy'));
-        };
-
-        Route::prefix('api/v1/admin')->group(fn () => $adminUserRoutes('api.v1.admin.'));
-        Route::prefix('api')->group(fn () => $adminUserRoutes(null));
-
         // Revoking every token of a user is superadmin-only: it also ends that
         // user's mobile sessions, so it is a leak response, not self-service.
         // The page, minting and single revocation are in the agent_tokens

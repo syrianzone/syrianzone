@@ -6,7 +6,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '@/Components/ui/dropdown-menu';
 import { allowedSizes } from '../_lib/doc';
 import type { WidgetDeclaration, WidgetSize } from '../_lib/types';
 

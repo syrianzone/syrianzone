@@ -8,6 +8,7 @@ import { Label } from '@/Components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card';
 import { notify as toastNotify } from '@/Lib/notify';
 import { copyText } from '@/Lib/copy';
+import { formatGregorianSyrianShort } from '@/Lib/syrian-date';
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/Components/ui/select';
@@ -62,8 +63,7 @@ const ROLE_LABELS: Record<string, string> = {
 
 function formatDate(iso: string | null): string {
     if (!iso) return '—';
-    const d = new Date(iso);
-    return d.toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' });
+    return formatGregorianSyrianShort(iso);
 }
 
 export default function ApiTokensIndex(props: ApiTokensData) {

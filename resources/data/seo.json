@@ -14,7 +14,9 @@
             "title": "المساحة السورية — منصة سورية مفتوحة المصدر",
             "description": "المساحة السورية - منصة تفاعلية تجمع وتوفر الموارد والخدمات والمعلومات المفتوحة المتعلقة بالشأن السوري من استطلاعات رأي، وأدلة رسمية، وأطلس، وترانزيت، وهويات بصرية.",
             "card": "home",
-            "suffix": false
+            "suffix": false,
+            "priority": 1.0,
+            "changefreq": "daily"
         },
         {
             "path": "/tierlist",
@@ -22,7 +24,9 @@
             "description": "شارك في تقييم وتصنيف أداء أعضاء الحكومة السورية الجديدة عبر منصة تير ليست تفاعلية وشاركه مع الآخرين.",
             "card": "tierlist",
             "type": "article",
-            "schema": "Article"
+            "schema": "Article",
+            "priority": 0.9,
+            "changefreq": "daily"
         },
         {
             "path": "/tierlist/leaderboard",
@@ -31,28 +35,36 @@
             "card": "tierlist-leaderboard",
             "type": "article",
             "schema": "Article",
-            "parent": "/tierlist"
+            "parent": "/tierlist",
+            "priority": 0.6,
+            "changefreq": "daily"
         },
         {
             "path": "/polls",
             "title": "الاستبيانات واستطلاعات الرأي",
             "description": "شارك في الاستبيانات واستطلاعات الرأي المجتمعية حول مختلف القضايا والشؤون السورية.",
             "card": "polls",
-            "schema": "CollectionPage"
+            "schema": "CollectionPage",
+            "priority": 0.8,
+            "changefreq": "weekly"
         },
         {
             "path": "/mishwar",
             "title": "مشوار | دليل وخريطة الأماكن والخدمات والمعالم في سوريا",
             "description": "دليل وخريطة تفاعلية لاكتشاف وتصفح الأماكن الخدمية، المعالم، المطاعم، المقاهي، والأماكن المخفية في سوريا مع التوصيات والتقييمات.",
             "card": "mishwar",
-            "schema": "CollectionPage"
+            "schema": "CollectionPage",
+            "priority": 0.9,
+            "changefreq": "daily"
         },
         {
             "path": "/transit",
             "title": "ترانزيت سوريا | شبكة المواصلات العامة",
             "description": "ترانزيت سوريا - دليل وخرائط تفاعلية لشبكات وخطوط المواصلات العامة والسرافيس في المدن السورية.",
             "card": "transit",
-            "schema": "CollectionPage"
+            "schema": "CollectionPage",
+            "priority": 0.9,
+            "changefreq": "weekly"
         },
         {
             "path": "/transit/studio",
@@ -60,42 +72,54 @@
             "description": "استوديو ترانزيت - ارسم خطوط المواصلات العامة، أضف المواقف، وشارك مسارك لمدن سوريا على الخريطة.",
             "card": "transit-studio",
             "parent": "/transit",
-            "parentLabel": "ترانزيت سوريا"
+            "parentLabel": "ترانزيت سوريا",
+            "priority": 0.5,
+            "changefreq": "monthly"
         },
         {
             "path": "/syofficial",
             "title": "الحسابات الرسمية السورية",
             "description": "دليل الحسابات والجهات الرسمية السورية الموثقة على منصات التواصل، مصنّف حسب القطاعات والجهات.",
             "card": "syofficial",
-            "schema": "CollectionPage"
+            "schema": "CollectionPage",
+            "priority": 0.9,
+            "changefreq": "weekly"
         },
         {
             "path": "/phonebook",
             "title": "دليل الهاتف والواتساب الخدمي",
             "description": "دليل أرقام الهواتف وخطوط الواتساب الرسمية للجهات الحكومية والخدمية السورية. أرقام الطوارئ، الشكاوى، والمؤسسات الرسمية.",
             "card": "phonebook",
-            "schema": "CollectionPage"
+            "schema": "CollectionPage",
+            "priority": 0.9,
+            "changefreq": "weekly"
         },
         {
             "path": "/govapps",
             "title": "دليل التطبيقات والخدمات الحكومية",
             "description": "دليل تفاعلي لاستكشاف، ومتابعة، وتقييم التطبيقات والخدمات الإلكترونية الصادرة عن الجهات الحكومية السورية.",
             "card": "govapps",
-            "schema": "CollectionPage"
+            "schema": "CollectionPage",
+            "priority": 0.9,
+            "changefreq": "weekly"
         },
         {
             "path": "/sites",
             "title": "دليل المواقع السورية",
             "description": "دليل تفاعلي شامل للمواقع الإلكترونية والخدمات والمنصات السورية المفيدة بمختلف المجالات.",
             "card": "sites",
-            "schema": "CollectionPage"
+            "schema": "CollectionPage",
+            "priority": 0.9,
+            "changefreq": "weekly"
         },
         {
             "path": "/party",
             "title": "دليل الأحزاب والقوى السياسية",
             "description": "دليل تفاعلي للتعرف على الأحزاب، والتنظيمات، والقوى السياسية والمدنية الفاعلة في الساحة السورية.",
             "card": "party",
-            "schema": "CollectionPage"
+            "schema": "CollectionPage",
+            "priority": 0.8,
+            "changefreq": "weekly"
         },
         {
             "path": "/house",
@@ -103,7 +127,9 @@
             "description": "التشكيلة النهائية لمجلس الشعب السوري 2026: مخطط القاعة، إحصائيات، وقائمة الأعضاء. المصدر: مركز عمران للدراسات الاستراتيجية.",
             "card": "house",
             "type": "article",
-            "schema": "Article"
+            "schema": "Article",
+            "priority": 0.8,
+            "changefreq": "weekly"
         },
         {
             "path": "/justice",
@@ -111,110 +137,142 @@
             "description": "العدالة الانتقالية - قوائم وإحصائيات رموز نظام الأسد والمجرمين الموقوفين لدى وزارة الداخلية السورية وهيكل القيادة العسكرية والأمنية.",
             "card": "justice",
             "type": "article",
-            "schema": "Article"
+            "schema": "Article",
+            "priority": 0.8,
+            "changefreq": "monthly"
         },
         {
             "path": "/crossings",
             "title": "الحالة الفنية للمنافذ الحدودية في سوريا",
             "description": "متابعة الحالة الفنية وساعات العمل للمنافذ الحدودية السورية والمعابر البرية، مع أرقام التواصل والمواقع.",
             "card": "crossings",
-            "schema": "CollectionPage"
+            "schema": "CollectionPage",
+            "priority": 0.8,
+            "changefreq": "monthly"
         },
         {
             "path": "/atlas",
             "title": "أطلس سوريا التفاعلي",
             "description": "أطلس سوريا التفاعلي - منصة لاستكشاف البيانات السكانية والجغرافية والإحصائية التفصيلية لمختلف المحافظات والمدن السورية.",
             "card": "atlas",
-            "schema": "Dataset"
+            "schema": "Dataset",
+            "priority": 0.9,
+            "changefreq": "monthly"
         },
         {
             "path": "/syid",
             "title": "الهوية البصرية السورية",
             "description": "عناصر الهوية البصرية السورية - دليل وموارد غير رسمية تشمل الألوان والخطوط وخريطة سوريا ونسب العلم السوري وتطبيقاته.",
             "card": "syid",
-            "schema": "CollectionPage"
+            "schema": "CollectionPage",
+            "priority": 0.9,
+            "changefreq": "monthly"
         },
         {
             "path": "/muslim",
             "title": "الركن الإسلامي",
             "description": "الركن الإسلامي - مواقيت الصلاة، قارئ القرآن بالرسم العثماني، وإذاعة القرآن الكريم، في مكان واحد.",
             "card": "muslim",
-            "schema": "CollectionPage"
+            "schema": "CollectionPage",
+            "priority": 0.9,
+            "changefreq": "daily"
         },
         {
             "path": "/muslim/prayer",
             "title": "مواقيت الصلاة | الركن الإسلامي",
             "description": "مواقيت الصلاة اليومية في سوريا حسب مدينتك وطريقة الحساب، مع عدّاد للصلاة القادمة وتتبّع الصلوات المنجزة.",
             "card": "muslim-prayer",
-            "parent": "/muslim"
+            "parent": "/muslim",
+            "priority": 0.8,
+            "changefreq": "daily"
         },
         {
             "path": "/muslim/quran",
             "title": "قارئ القرآن | الركن الإسلامي",
             "description": "قارئ القرآن بالرسم العثماني مع التلاوة الصوتية، تتبّع الآيات والكلمات، وعلامات الحفظ — يعمل دون اتصال.",
             "card": "muslim-quran",
-            "parent": "/muslim"
+            "parent": "/muslim",
+            "priority": 0.8,
+            "changefreq": "weekly"
         },
         {
             "path": "/muslim/radio",
             "title": "إذاعة القرآن | الركن الإسلامي",
             "description": "إذاعة القرآن الكريم وتلاوة مستمرة مع اختيار القارئ ومؤقت للنوم ومشغّل مصغّر يتابع القراءة.",
             "card": "muslim-radio",
-            "parent": "/muslim"
+            "parent": "/muslim",
+            "priority": 0.7,
+            "changefreq": "weekly"
         },
         {
             "path": "/roznama",
             "title": "الروزنامة السورية",
             "description": "الروزنامة السورية الرسمية: التوقيت المحلي، التاريخ الهجري والميلادي بأسماء الأشهر السورية، مواقيت الصلاة، والأعياد والعطل الرسمية للدولة السورية بموجب المرسوم 188 لعام 2025.",
-            "card": "roznama"
+            "card": "roznama",
+            "priority": 0.8,
+            "changefreq": "daily"
         },
         {
             "path": "/priorities",
             "title": "أولويات سوريا المستقبل",
             "description": "رتب أولوياتك للجمهورية العربية السورية المستقبلية وشاركها مع المجتمع عبر بطاقات مخصصة وتفاعلية.",
-            "card": "priorities"
+            "card": "priorities",
+            "priority": 0.8,
+            "changefreq": "monthly"
         },
         {
             "path": "/compass",
             "title": "بوصلة سوريا",
             "description": "اكتشف موقعك السياسي على أحد عشر محوراً عبر اختبار بوصلة سوريا التفاعلي، وقارن نتائجك مع الشخصيات والقوى السياسية.",
             "card": "compass",
-            "schema": "Quiz"
+            "schema": "Quiz",
+            "priority": 0.8,
+            "changefreq": "monthly"
         },
         {
             "path": "/promises",
             "title": "عداد الوعود",
             "description": "سجل علني موثّق بالمصادر لوعود المسؤولين السوريين منذ 8 كانون الأول 2024، مع عدّاد تنازلي لكل وعد وما تحقق منه.",
             "card": "promises",
-            "schema": "CollectionPage"
+            "schema": "CollectionPage",
+            "priority": 0.9,
+            "changefreq": "daily"
         },
         {
             "path": "/promises/suggest",
             "title": "اقترح وعداً — عداد الوعود",
             "description": "أرسل وعداً علنياً أطلقه مسؤول سوري مع رابط المصدر، ليراجعه المحررون ويضيفوه إلى عداد الوعود.",
             "card": "promises-suggest",
-            "parent": "/promises"
+            "parent": "/promises",
+            "priority": 0.5,
+            "changefreq": "monthly"
         },
         {
             "path": "/compass/stats",
             "title": "إحصاءات بوصلة سوريا",
             "description": "إحصاءات مجمّعة ومجهولة الهوية عن نتائج بوصلة سوريا عبر المحاور والفئات والمشاركات.",
             "card": "compass-stats",
-            "parent": "/compass"
+            "parent": "/compass",
+            "priority": 0.6,
+            "changefreq": "daily"
         },
         {
             "path": "/alignment",
             "title": "مواءمة البوصلة السياسية",
             "description": "أداة مواءمة البوصلة السياسية السورية - قارن توجهاتك وميولك مع المكونات والقوى السياسية المختلفة.",
             "card": "alignment",
-            "schema": "Quiz"
+            "schema": "Quiz",
+            "priority": 0.8,
+            "changefreq": "monthly"
         },
         {
             "path": "/games",
             "title": "الألعاب",
             "description": "مجموعة ألعاب سورية تفاعلية: 2048، سوليتير، طرنيب، تركس، ومن هو؟ — العب مجاناً على المساحة السورية.",
             "card": "games",
-            "schema": "CollectionPage"
+            "schema": "CollectionPage",
+            "priority": 0.8,
+            "changefreq": "weekly"
         },
         {
             "path": "/games/2048",
@@ -222,7 +280,9 @@
             "description": "لعبة 2048 الكلاسيكية على المساحة السورية - حرّك المربعات واجمع الأرقام للوصول إلى 2048.",
             "card": "games-2048",
             "schema": "VideoGame",
-            "parent": "/games"
+            "parent": "/games",
+            "priority": 0.6,
+            "changefreq": "monthly"
         },
         {
             "path": "/games/solitare",
@@ -230,7 +290,9 @@
             "description": "لعبة سوليتير (كلوندايك) الكلاسيكية - رتّب البطاقات على أربعة أسس.",
             "card": "games-solitaire",
             "schema": "VideoGame",
-            "parent": "/games"
+            "parent": "/games",
+            "priority": 0.6,
+            "changefreq": "monthly"
         },
         {
             "path": "/games/tarneeb",
@@ -238,7 +300,9 @@
             "description": "لعبة الطرنيب الشهيرة - العب مع شريكك ضد فريق الخصوم واجمع الطلبات.",
             "card": "games-tarneeb",
             "schema": "VideoGame",
-            "parent": "/games"
+            "parent": "/games",
+            "priority": 0.6,
+            "changefreq": "monthly"
         },
         {
             "path": "/games/trix",
@@ -246,58 +310,76 @@
             "description": "لعبة التركس الشهيرة - العب الفريقين أو اليهودية واستمتع بالذكاء والتخطيط.",
             "card": "games-trix",
             "schema": "VideoGame",
-            "parent": "/games"
+            "parent": "/games",
+            "priority": 0.6,
+            "changefreq": "monthly"
         },
         {
             "path": "/guesswho",
             "title": "لعبة من هو؟ - Guess Who",
             "description": "تحدّ صديقك في لعبة التخمين الشهيرة 'من هو؟' بالاتصال المباشر! اطرح الأسئلة واستبعد الشخصيات لتكشف بطاقة خصمك السرية.",
             "card": "guesswho",
-            "schema": "VideoGame"
+            "schema": "VideoGame",
+            "priority": 0.7,
+            "changefreq": "monthly"
         },
         {
             "path": "/board",
             "title": "لوحتي | لوحة أدواتك اليومية المخصصة",
             "description": "لوح أدوات مخصص: الطقس، مواقيت الصلاة، المهام، الملاحظات، الأخبار، والمزيد في لوحة واحدة قابلة للتخصيص.",
-            "card": "board"
+            "card": "board",
+            "priority": 0.7,
+            "changefreq": "monthly"
         },
         {
             "path": "/syrian-contributors",
             "title": "أفضل المساهمين السوريين في GitHub",
             "description": "قائمة وتصنيف لأكثر المطورين والمبرمجين السوريين مساهمةً في المشاريع مفتوحة المصدر على GitHub على المستويات اليومية والشهرية والسنوية.",
             "card": "syrian-contributors",
-            "schema": "CollectionPage"
+            "schema": "CollectionPage",
+            "priority": 0.8,
+            "changefreq": "weekly"
         },
         {
             "path": "/shawarma",
             "title": "@macdoos's Shawarma Tier List",
             "description": "تقييم وتصنيف محلات الشاورما السورية الشهيرة - قائمة مكدوس لأفضل محلات الشاورما.",
             "card": "shawarma",
-            "schema": "CollectionPage"
+            "schema": "CollectionPage",
+            "priority": 0.6,
+            "changefreq": "monthly"
         },
         {
             "path": "/stats",
             "title": "إحصائيات المنصة",
             "description": "إحصائيات وتقارير تفاعلية حول المنصة وزوارها والنشاط العام في المساحة السورية.",
-            "card": "stats"
+            "card": "stats",
+            "priority": 0.5,
+            "changefreq": "daily"
         },
         {
             "path": "/about",
             "title": "عن المنصة",
             "description": "تعرف على منصة المساحة السورية (Syrian Zone) - مشروع تفاعلي غير تجاري ومفتوح المصدر يقدم أدوات وموارد بالشأن السوري.",
-            "card": "about"
+            "card": "about",
+            "priority": 0.5,
+            "changefreq": "monthly"
         },
         {
             "path": "/privacy",
             "title": "سياسة الخصوصية",
             "description": "سياسة الخصوصية لمنصة المساحة السورية - تعرف على كيفية حماية بياناتك والتقنيات المستخدمة.",
-            "card": "privacy"
+            "card": "privacy",
+            "priority": 0.3,
+            "changefreq": "yearly"
         },
         {
             "path": "/terms",
             "title": "الشروط والأحكام",
             "description": "الشروط والأحكام لمنصة المساحة السورية - شروط الاستخدام، السلوك المقبول، وحدود المسؤولية.",
-            "card": "terms"
+            "card": "terms",
+            "priority": 0.3,
+            "changefreq": "yearly"
         }
     ]
 }

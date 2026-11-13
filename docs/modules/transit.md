@@ -97,7 +97,7 @@ Finds all bus stops within $R$ meters (default: 500m) of the user's location coo
     ```
 
 ### B. GeoJSON Rendering (Map Data Load)
-Instead of retrieving raw columns, Laravel converts database geometric fields into GeoJSON-compliant strings at query time.
+Instead of retrieving raw columns, Laravel converts database geometric fields into GeoJSON-compliant strings at query time, and `TransitPresenter` turns each row into its Feature.
 *   **API**: `GET /v1/cities/{id}/map-data`
 *   **SQL Logic** (`TransitController@getMapData`):
     ```sql
@@ -112,6 +112,13 @@ Instead of retrieving raw columns, Laravel converts database geometric fields in
     FROM stops
     WHERE city_id = ?;
     ```
+
+### C. The user's location
+The city map does not own geolocation: «أظهر موقعي» calls
+`Domain/location`'s `resolveGps()`, stores the fix with `setGeo()` and then keeps
+a watch only for live dot updates. The stored point is the same one the prayer
+timings and the weather act on, and a point resolved from those settings reaches
+the map through `LOC_CHANGED_EVENT`.
 
 ---
 
@@ -215,7 +222,7 @@ stateDiagram-v2
         InsertStops --> InsertPivot : Write route_stop order sequence
         InsertPivot --> UpdateDraftStatus : Set draft as 'approved'
         UpdateDraftStatus --> DbTxCommit : Transaction Commit
-        DbTxCommit --> CacheBuster : Flush 'transit:cities' & 'map-data:{id}'
+        DbTxCommit --> CacheBuster : TransitCache::forgetCity()
     }
 
     state Rejected {
@@ -228,12 +235,43 @@ stateDiagram-v2
 ```
 
 #### Database Cache Busting
-Upon approval or rejection, the backend explicitly busts associated cache keys to ensure instant map updates for the next user:
+Every write goes through `TransitCache`: the keys are composed there
+(`routesKey()`, `mapDataKey()`, `CITIES`, `CITIES_API`) and `forgetCity()`
+clears the whole map group a city belongs to, so Damascus and Rif Dimashq —
+which share one map — can never keep a stale half:
+
 ```php
-Cache::forget("transit:map-data:{$draft->city_id}");
-Cache::forget('transit:cities');
+app(TransitCache::class)->forgetCity($cityId);  // the group's map + route keys, then the city lists
 ```
-This forces the subsequent client calls to read the freshly populated geometries directly from the PostGIS database.
+
+The published-route list (`PublishedRoutes`) and the city list (`TransitCities`)
+read through the same class, so a key cannot be forgotten under a name the
+writer never used.
+
+### The city list (`cities` table, not a JSON mirror)
+
+`GET /api/v1/cities` and the `/transit` pages serve the same rows, built once by
+`App\Services\Transit\TransitCities` (`forPage()` without icons, `forApi()` with
+the governorate outline) and mapped once by `TransitPresenter::city()`. The
+payload carries the map group (`mapGroup`, `mapGroupLabel`) so the client renders
+the Damascus/Rif Dimashq banner and the sidebar's per-city sections from the
+server's declaration in `City::SHARED_MAPS` instead of spelling the pair itself.
+
+`resources/js/Domain/transit/cities.json` is **seed data**, not a second copy of
+the table: it holds the columns a city row is created with (`id`, names, status,
+centre, bounds, zoom) and is read by the global search's static index. It
+deliberately carries no `routeCount` or other derived column — a published route
+changes the API's answer immediately, and a static file cannot follow it
+(`tests/Feature/TransitCitySeedTest.php` fails if a derived field appears there).
+Every runtime reader (the landing page, the city page, the studio, the sidebar)
+uses the server payload.
+
+### Map payload
+
+The map's GeoJSON is written once, by `TransitPresenter::routeFeature()` and
+`stopFeature()` — the public map and the admin geometry endpoint both call them.
+A route's colour travels under one key, `colorIndex`; the browser
+(`_lib/mapColors.ts`) and the Flutter client read that key and nothing else.
 
 ---
 

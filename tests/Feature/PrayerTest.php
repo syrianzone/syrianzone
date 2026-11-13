@@ -121,6 +121,30 @@ test('rejects an unknown calculation method', function () {
   Http::assertNothingSent();
 });
 
+test('accepts the methods the picker does not offer, from the shared table', function () {
+  Http::fake(['*' => Http::response(prayerPayload(), 200)]);
+
+  // 7, 14, 15 and 16 are in resources/data/prayer.json `unlisted_method_ids`:
+  // a client that stored one must not have it rejected or silently reset.
+  $table = App\Support\Facts::prayer();
+  expect($table['unlisted_method_ids'])->toBe([7, 14, 15, 16]);
+
+  foreach ($table['unlisted_method_ids'] as $id) {
+    $this->getJson("/api/prayer-times?governorate=damascus&method={$id}")->assertOk();
+  }
+
+  Http::assertSentCount(count($table['unlisted_method_ids']));
+});
+
+test('the accepted methods are the offered ones plus the unlisted ids', function () {
+  $table = App\Support\Facts::prayer();
+
+  $offered = array_column($table['methods'], 'id');
+  expect(App\Http\Controllers\PrayerController::methods())
+    ->toEqualCanonicalizing([...$offered, ...$table['unlisted_method_ids']])
+    ->and(App\Http\Controllers\PrayerController::defaultMethod())->toBe($table['default_method']);
+});
+
 test('caches a successful response instead of refetching', function () {
   Http::fake(['*' => Http::response(prayerPayload(), 200)]);
 

@@ -11,7 +11,7 @@ test('cannot delete best-ministers poll', function () {
     $this->actingAs($admin)
         ->deleteJson("/api/polls/{$poll->id}")
         ->assertStatus(403)
-        ->assertJsonPath('message', 'Cannot delete the core Best Ministers poll.');
+        ->assertJsonPath('message', 'لا يمكن حذف الاستطلاع الأساسي.');
 
     $this->assertDatabaseHas('polls', ['id' => $poll->id]);
 });

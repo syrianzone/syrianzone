@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/Contexts/AuthContext';
 import SettingsConflictModal from './SettingsConflictModal';
 import {
-  applyConflictChoices, pullServerValues, runLoginSync,
+  applyConflictChoices, runLoginSync,
   type ConflictChoices, type SettingConflict,
 } from './settingsSync';
 
@@ -56,13 +56,7 @@ export default function SettingsSync() {
   };
 
   const apply = async (choices: Partial<ConflictChoices>) => {
-    await applyConflictChoices(conflicts ?? [], choices);
-    // Server-chosen keys: pull the account values into device storage so
-    // both sides agree and the next login stays quiet.
-    const serverKeys = (conflicts ?? [])
-      .filter((c) => choices[c.key] === 'server')
-      .map((c) => c.key);
-    pullServerValues(user?.settings ?? null, serverKeys);
+    await applyConflictChoices(conflicts ?? [], choices, user?.settings ?? null);
     snooze();
   };
 

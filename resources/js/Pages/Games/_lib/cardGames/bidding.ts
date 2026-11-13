@@ -8,9 +8,9 @@
 
 import type { Seat } from './trick';
 
-export type AuctionAction = { seat: Seat; value: number } | { seat: Seat; pass: true };
+type AuctionAction = { seat: Seat; value: number } | { seat: Seat; pass: true };
 
-export interface AuctionOptions {
+interface AuctionOptions {
   /** Seats in bidding order. */
   order: Seat[];
   /** Smallest legal bid. */

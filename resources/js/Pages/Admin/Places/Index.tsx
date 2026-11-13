@@ -2,15 +2,15 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { Loader2 } from 'lucide-react';
 import MainLayout from '@/Layouts/MainLayout';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/Components/ui/alert';
+import { Button } from '@/Components/ui/button';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@/Components/ui/select';
 import { api } from '@/Domain/places/api';
 import { apiErrorMessage } from '@/Lib/api';
 import type { AdminPlace, Paginated } from '@/Domain/places/types';

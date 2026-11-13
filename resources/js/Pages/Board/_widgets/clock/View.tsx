@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Clock } from 'lucide-react';
 import { WidgetShell } from '../../_components/WidgetShell';
+import { formatGregorianSyrian } from '@/Lib/syrian-date';
 import type { WidgetProps } from '../../_lib/types';
 import type { ClockConfig } from './index';
 
@@ -20,11 +21,9 @@ export default function ClockView({ config }: WidgetProps<ClockConfig>) {
     hour12: config.format === '12',
   });
 
-  const date = now.toLocaleDateString('ar-SY', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  });
+  // The shared Syrian calendar, so this tile names the month and the digits the
+  // same way Home and Roznama do.
+  const date = formatGregorianSyrian(now);
 
   return (
     <WidgetShell title="الساعة" icon={Clock}>

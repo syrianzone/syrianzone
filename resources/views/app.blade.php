@@ -57,12 +57,7 @@
         // The theme record shared with Lib/theme.ts and Lib/font.ts. Everything
         // the pre-paint script may name (storage keys, the system preference id,
         // the font defaults, which theme ids are dark) comes from this one file.
-        $themeFacts = json_decode(
-            file_get_contents(resource_path('data/themes.json')),
-            true,
-            512,
-            JSON_THROW_ON_ERROR,
-        );
+        $themeFacts = \App\Support\Facts::themes();
         $themeKey = $themeFacts['theme']['key'];
         $systemTheme = $themeFacts['theme']['system'];
         $fontKey = $themeFacts['font']['key'];

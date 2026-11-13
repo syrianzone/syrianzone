@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Support\Agents\AgentContext;
+use App\Support\Agents\TokenAbilities;
 use Closure;
 use Illuminate\Http\Request;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -34,7 +35,7 @@ class RequireApiToken
             );
         }
 
-        if ($token->abilities === ['mobile']) {
+        if (TokenAbilities::isMobileToken($token)) {
             return $this->deny(
                 $request,
                 'Mobile user tokens are not accepted for MCP agent access.'

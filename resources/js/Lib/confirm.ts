@@ -20,19 +20,37 @@ export interface ConfirmOptions {
 type Resolver = (confirmed: boolean) => void;
 type Opener = (options: ConfirmOptions, resolve: Resolver) => void;
 
+interface Pending {
+  options: ConfirmOptions;
+  resolve: Resolver;
+}
+
 let opener: Opener | null = null;
+/** Asked before the host mounted its dialog; shown once it does. */
+const queue: Pending[] = [];
+let showing = false;
+
+function pump() {
+  if (!opener || showing) return;
+  const next = queue.shift();
+  if (!next) return;
+
+  showing = true;
+  opener(next.options, (confirmed) => {
+    showing = false;
+    next.resolve(confirmed);
+    pump();
+  });
+}
 
 export function registerConfirmOpener(fn: Opener | null) {
   opener = fn;
+  pump();
 }
 
 export function confirmDialog(options: ConfirmOptions): Promise<boolean> {
-  if (!opener) {
-    // Extremely unlikely (host not mounted); fail safe with a native prompt so
-    // a destructive action is never silently confirmed.
-    return Promise.resolve(
-      typeof window !== 'undefined' ? window.confirm(options.title) : false
-    );
-  }
-  return new Promise<boolean>((resolve) => opener!(options, resolve));
+  return new Promise<boolean>((resolve) => {
+    queue.push({ options, resolve });
+    pump();
+  });
 }

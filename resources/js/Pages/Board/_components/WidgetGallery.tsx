@@ -1,5 +1,5 @@
 import { Plus } from 'lucide-react';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/Components/ui/sheet';
 import { Button } from '@/Components/ui/button';
 import { GALLERY_CATEGORIES, WIDGETS } from '../_lib/registry';
 import type { WidgetDeclaration } from '../_lib/types';

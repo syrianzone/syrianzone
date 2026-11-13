@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTabList } from '@/Lib/useTabList';
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { TierAvatar as Avatar } from "@/components/poll/TierAvatar";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Card } from "@/Components/ui/card";
+import { Button } from "@/Components/ui/button";
+import { TierAvatar as Avatar } from "@/Components/poll/TierAvatar";
+import { Alert, AlertDescription, AlertTitle } from "@/Components/ui/alert";
 import { CheckCircle2Icon, AlertCircleIcon, Download } from "lucide-react";
-import { exportTierListFromData } from "@/lib/exportImage";
+import { TIERS, TIER_KEYS, type TierKey } from "@/Domain/polls/tiers";
+import { exportTierListFromData } from "@/Components/poll/exportTierList";
 import { getOriginalImageUrl } from "@/Lib/imageUtils";
 import { getDeviceId } from "@/Lib/deviceId";
 import { api, apiErrorMessage } from '@/Lib/api';
@@ -37,39 +38,6 @@ type Props = {
     submitApiPath?: string; // e.g., "/api/jolani/submit"
     /** The poll this board votes on; both callers pass their loaded poll's slug. */
     pollSlug: string;
-};
-
-type TierKey = "S" | "A" | "B" | "C" | "D" | "F";
-
-const tierKeys: TierKey[] = ["S", "A", "B", "C", "D", "F"];
-
-const tierStyles: Record<
-    TierKey,
-    { label: string; area: string; border: string }
-> = {
-    S: { label: "bg-rose-600", area: "bg-rose-50", border: "border-rose-200" },
-    A: { label: "bg-amber-600", area: "bg-amber-50", border: "border-amber-200" },
-    B: {
-        label: "bg-emerald-600",
-        area: "bg-emerald-50",
-        border: "border-emerald-200",
-    },
-    C: { label: "bg-sky-600", area: "bg-sky-50", border: "border-sky-200" },
-    D: {
-        label: "bg-violet-600",
-        area: "bg-violet-50",
-        border: "border-violet-200",
-    },
-    F: { label: "bg-gray-800", area: "bg-gray-100", border: "border-gray-300" },
-};
-
-const tierDescriptions: Record<TierKey, string> = {
-    S: "ممتاز",
-    A: "جيد جدًا",
-    B: "جيد",
-    C: "مقبول",
-    D: "ضعيف",
-    F: "سيئ",
 };
 
 const BASE_PATH = import.meta.env.VITE_BASE_PATH ?? "";
@@ -204,7 +172,7 @@ export default function TierBoard({
     }, [selectedGroupId, shuffledInitial, groups]);
 
     function moveCandidateTo(candidateId: string, target: TierKey | "bank") {
-        const fromTierKey = tierKeys.find((k) =>
+        const fromTierKey = TIER_KEYS.find((k) =>
             tiers[k].some((c) => c.id === candidateId)
         );
         const fromBank = bank.some((c) => c.id === candidateId);
@@ -217,7 +185,7 @@ export default function TierBoard({
 
         setTiers((t) => {
             const copy: Record<TierKey, Candidate[]> = { ...t };
-            for (const k of tierKeys)
+            for (const k of TIER_KEYS)
                 copy[k] = copy[k].filter((c) => c.id !== candidateId);
             return copy;
         });
@@ -233,7 +201,7 @@ export default function TierBoard({
     function moveCandidatesTo(candidateIds: string[], target: TierKey | "bank") {
         const idSet = new Set(candidateIds);
         const found: Candidate[] = [
-            ...tierKeys.flatMap((k) => tiers[k].filter((c) => idSet.has(c.id))),
+            ...TIER_KEYS.flatMap((k) => tiers[k].filter((c) => idSet.has(c.id))),
             ...bank.filter((c) => idSet.has(c.id)),
         ];
         setTiers((prev) => {
@@ -241,7 +209,7 @@ export default function TierBoard({
                 TierKey,
                 Candidate[]
             >;
-            for (const k of tierKeys)
+            for (const k of TIER_KEYS)
                 copy[k] = copy[k].filter((c) => !idSet.has(c.id));
             if (target !== "bank") copy[target] = [...copy[target], ...found];
             return copy;
@@ -281,7 +249,7 @@ export default function TierBoard({
     }
 
     async function submit() {
-        const totalAssigned = tierKeys.reduce((acc, k) => acc + tiers[k].length, 0);
+        const totalAssigned = TIER_KEYS.reduce((acc, k) => acc + tiers[k].length, 0);
         if (totalAssigned < MIN_SELECTIONS) {
             setSubmitStatus({
                 ok: false,
@@ -310,7 +278,7 @@ export default function TierBoard({
         } = {
             pollSlug,
             deviceId,
-            tiers: tierKeys.reduce(
+            tiers: TIER_KEYS.reduce(
                 (acc, k) => {
                     acc[k] = tiers[k].map((c, idx) => ({ candidateId: c.id, pos: idx }));
                     return acc;
@@ -597,9 +565,9 @@ export default function TierBoard({
                         style={{ top: `${modalPosition.top}px`, left: `${modalPosition.left}px`, transform: "translate(-50%, -100%)", minWidth: "160px", maxWidth: "180px" }}
                         onClick={(e) => e.stopPropagation()}>
                         <div className="flex flex-wrap gap-0.5 justify-center">
-                            {tierKeys.map((k) => (
+                            {TIER_KEYS.map((k) => (
                                 <button key={k} onClick={() => { moveCandidateTo(selectedForTier, k); setSelectedForTier(null); setModalPosition(null); }}
-                                    className={`${tierStyles[k].label} text-white px-2 py-1 rounded text-xs font-bold hover:opacity-90 transition`}>{k}</button>
+                                    className={`${TIERS[k].labelClass} text-white px-2 py-1 rounded text-xs font-bold hover:opacity-90 transition`}>{k}</button>
                             ))}
                         </div>
                     </div>
@@ -610,15 +578,15 @@ export default function TierBoard({
                 <div className="mb-3 p-3 bg-purple-100 dark:bg-purple-900/30 border-2 border-purple-400 rounded-lg">
                     <div className="flex items-center justify-between">
                         <div className="flex flex-wrap gap-1">
-                            {tierKeys.map((k) => (
+                            {TIER_KEYS.map((k) => (
                                 <button
                                     key={k}
                                     type="button"
-                                    aria-label={`نقل إلى المستوى ${k} (${tierDescriptions[k]})`}
+                                    aria-label={`نقل إلى المستوى ${k} (${TIERS[k].arabic})`}
                                     onClick={() => {
                                         moveCandidatesTo(Array.from(selectedIds), k);
                                     }}
-                                    className={`${tierStyles[k].label} text-white px-2.5 py-1 rounded-md font-bold text-xs hover:opacity-90 transition`}
+                                    className={`${TIERS[k].labelClass} text-white px-2.5 py-1 rounded-md font-bold text-xs hover:opacity-90 transition`}
                                 >
                                     {k}
                                 </button>
@@ -628,14 +596,14 @@ export default function TierBoard({
                 </div>
             )}
 
-            {[...bank, ...tierKeys.flatMap(k => tiers[k])].length > 0 && (
+            {[...bank, ...TIER_KEYS.flatMap(k => tiers[k])].length > 0 && (
                 <div className="flex justify-center mb-4">
                     <Button
                         type="button"
                         variant="outline"
                         onClick={() => {
                             const activeGroup = groups.find(g => g.id === selectedGroupId);
-                            downloadAllImages([...bank, ...tierKeys.flatMap(k => tiers[k])], activeGroup?.name);
+                            downloadAllImages([...bank, ...TIER_KEYS.flatMap(k => tiers[k])], activeGroup?.name);
                         }}
                         disabled={isDownloadingAll}
                         className="gap-1.5"
@@ -699,20 +667,20 @@ export default function TierBoard({
             </div>
 
             <div ref={tiersRef} data-capture-target>
-                {tierKeys.map((k) => (
-                    <div key={k} role="region" aria-label={`المستوى ${k}: ${tierDescriptions[k]}`} className="flex mb-1">
+                {TIER_KEYS.map((k) => (
+                    <div key={k} role="region" aria-label={`المستوى ${k}: ${TIERS[k].arabic}`} className="flex mb-1">
                         <div
                             data-tier-label={k}
-                            className={`w-20 min-h-[165px] ${tierStyles[k].label} text-white rounded-r flex flex-col items-center justify-center`}
+                            className={`w-20 min-h-[165px] ${TIERS[k].labelClass} text-white rounded-r flex flex-col items-center justify-center`}
                         >
                             <span className="text-xl font-bold leading-none">{k}</span>
                             <span className="text-[16px] font-bold leading-none mt-4 opacity-90">
-                                {tierDescriptions[k]}
+                                {TIERS[k].arabic}
                             </span>
                         </div>
                         <div
                             data-tier-area={k}
-                            className={`flex flex-wrap justify-center min-h-[165px] flex-grow p-2 border-2 border-dashed ${tierStyles[k].border} ${tierStyles[k].area} dark:bg-background rounded-l`}
+                            className={`flex flex-wrap justify-center min-h-[165px] flex-grow p-2 border-2 border-dashed ${TIERS[k].borderClass} ${TIERS[k].areaClass} dark:bg-background rounded-l`}
                             onDragOver={handleDragOver}
                             onDrop={(e) => handleDrop(e, k)}
                         >

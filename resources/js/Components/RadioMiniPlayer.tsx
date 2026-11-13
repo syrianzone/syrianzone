@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/Co
 import QuranWordWindow from '@/Components/QuranWordWindow';
 import { useQuranPlayer } from '@/Domain/quran/quranPlayer';
 import { SURAH_NAMES_AR, recitationByCode } from '@/Domain/quran/quran';
+import { isUnderPath, pathnameOf } from '@/Lib/routes';
 
 // A persistent "now playing" for the followed recitation (إذاعة القرآن). It
 // appears once the radio owns the player and the user is elsewhere in the app;
@@ -14,7 +15,7 @@ import { SURAH_NAMES_AR, recitationByCode } from '@/Domain/quran/quran';
 // it hides. Everything is themed through the shadcn tokens.
 export default function RadioMiniPlayer() {
   const { url } = usePage();
-  const pathname = url.split('?')[0];
+  const pathname = pathnameOf(url);
 
   const source = useQuranPlayer((s) => s.source);
   const current = useQuranPlayer((s) => s.current);
@@ -31,7 +32,7 @@ export default function RadioMiniPlayer() {
   // Only while the radio owns the queue, and never on a page that already
   // shows the full player (the radio view and the Quran reader).
   if (source !== 'continuous' || !current) return null;
-  if (pathname === '/muslim/radio' || pathname === '/muslim/quran') return null;
+  if (isUnderPath(pathname, '/muslim/radio') || isUnderPath(pathname, '/muslim/quran')) return null;
 
   const surahName = SURAH_NAMES_AR[current.surah] ?? `سورة ${current.surah}`;
   const reciter = recitationByCode(recitationCode).nameAr;

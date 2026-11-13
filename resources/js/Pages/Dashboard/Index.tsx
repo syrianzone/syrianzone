@@ -62,7 +62,8 @@ import { pollsApi } from '@/Domain/polls/api';
 import { transitAdminApi } from '@/Domain/transit/api';
 import type { Poll, PollCandidate, PollGroup } from '@/Domain/polls/types';
 import FieldError, { fieldA11y } from '@/Components/ui/field-error';
-import { cn } from '@/lib/utils';
+import { cn } from '@/Lib/utils';
+import { formatGregorianSyrianShort } from '@/Lib/syrian-date';
 
 interface City {
   id: string;
@@ -640,7 +641,7 @@ export default function Dashboard({
                               )}
                             </div>
                             <p className="text-muted-foreground text-xs mt-1">
-                              المدينة: {draft.city?.name_ar ?? draft.city_id} · تاريخ التقديم: {new Date(draft.created_at).toLocaleDateString('ar-SY')}
+                              المدينة: {draft.city?.name_ar ?? draft.city_id} · تاريخ التقديم: {formatGregorianSyrianShort(draft.created_at)}
                             </p>
                             {draft.status === 'rejected' && draft.rejection_reason && (
                               <div className="mt-2 p-2 bg-destructive/10 border border-destructive/30 rounded text-destructive text-xs">

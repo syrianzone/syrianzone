@@ -22,7 +22,7 @@ import {
 } from 'lucide-react'
 import { useStudioStore, type StudioPatch, type StopFeature } from '../_store/useStudioStore'
 import { useMapData } from '../_hooks/useMapData'
-import cities from '@/Domain/transit/cities.json'
+import type { City } from '../_types'
 import TransitLayout from '../layout'
 import { createBaseMap } from '@/Components/map/createMap'
 import { useMapStyle } from '@/Components/map/useMapStyle'
@@ -227,7 +227,11 @@ function TransitStudioPageContent() {
   } = useStudioStore()
   const { user, allowedTransitCities } = useAuth()
 
-  const { url: pageUrl } = usePage()
+  // The city list travels with the page: the studio resolves `?edit=`, `?city=`
+  // and the default city on mount, so it cannot wait for a fetch.
+  const page = usePage<{ cities: City[] }>()
+  const pageUrl = page.url
+  const cities: City[] = page.props.cities ?? []
   const pageSearch = new URLSearchParams(pageUrl.split('?')[1] ?? '')
   const editParam = pageSearch.get('edit')
   const cityParam = pageSearch.get('city')
@@ -494,7 +498,7 @@ function TransitStudioPageContent() {
 
   const applyCityBounds = useCallback((cId: string, opts: { fit?: boolean } = {}) => {
     const c = cities.find(x => x.id === cId)
-    if (c && mapRef.current) {
+    if (c?.bounds && mapRef.current) {
       const sw = c.bounds[0] as [number, number]
       const ne = c.bounds[1] as [number, number]
 
@@ -562,7 +566,7 @@ function TransitStudioPageContent() {
       doubleClickZoom: false,
     })
 
-    if (initCity) {
+    if (initCity?.bounds) {
       const sw = initCity.bounds[0] as [number, number]
       const ne = initCity.bounds[1] as [number, number]
       map.setMaxBounds([[sw[0] - 0.08, sw[1] - 0.08], [ne[0] + 0.08, ne[1] + 0.08]])
@@ -974,7 +978,7 @@ function TransitStudioPageContent() {
     const features: Feature[] = [
       {
         type: 'Feature',
-        properties: { colorIndex, color_index: colorIndex },
+        properties: { colorIndex },
         geometry: { type: 'LineString', coordinates: drawnLine },
       },
       ...stops.map((s): Feature => ({

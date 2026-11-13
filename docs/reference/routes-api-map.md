@@ -61,7 +61,6 @@ Modules served under more than one prefix (transit admin, polls admin, asset man
 - Dashboard (`web.php`): `GET /dashboard`
 - Legacy account aliases (`web.php`): `/api/user`, `POST /api/account/update|avatar|delete`, `POST /api/user/settings`, `POST /api/user/radio-usage(/clear)`
 - Superadmin (`web.php`):
-  - Staff CRUD: canonical `GET|POST /api/v1/admin/admins`, `DELETE /api/v1/admin/admins/{id}` (legacy `/api/admins[/{id}]`)
   - Asset explorer: `/admin/assets` + `GET /api/v1/admin/assets/list`, `POST /api/v1/admin/assets/upload`, `DELETE /api/v1/admin/assets/delete`
   - Site navigation & icon catalog: `/admin/navigation` + `GET|PUT /api/v1/admin/navigation`
   - Homepage popup: `/admin/site-popup` + `GET|PUT /api/v1/admin/site-popup`
@@ -90,7 +89,7 @@ Every panel below is gated by a single per-route capability, not by module membe
 
 | Route | Auth | Notes |
 |---|---|---|
-| `POST\|GET\|DELETE /mcp/admin` | `auth:sanctum` + `RequireApiToken` + `throttle:mcp` | Only registered when `MCP_ENABLED=true`; session cookies and mobile user tokens (`abilities: ["mobile"]`) are refused. Effective permission = user's live permission AND token abilities. See [modules/agent-mcp.md](../modules/agent-mcp.md) |
+| `POST\|GET\|DELETE /mcp/admin` | `auth:sanctum` + `RequireApiToken` + `throttle:mcp` | Only registered when `MCP_ENABLED=true`; session cookies and mobile user tokens (any token carrying the `mobile` ability) are refused. Effective permission = user's live permission AND token abilities. See [modules/agent-mcp.md](../modules/agent-mcp.md) |
 
 ## JSON API (`api.php` — Canonical `/api/v1/*` + Legacy Aliases)
 

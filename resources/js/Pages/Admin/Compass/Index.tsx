@@ -18,6 +18,7 @@ import AxisBars from '@/Domain/compass/AxisBars';
 import AlignmentCard from '@/Domain/compass/AlignmentCard';
 import QuestionAverage from '@/Domain/compass/QuestionAverage';
 import { STATS_SCOPES, VERSION_LABEL, type AlignBloc, type CompassStatsPayload, type QuizVersion } from '@/Domain/compass/types';
+import { formatSyrianDateTime } from '@/Lib/syrian-date';
 
 interface RecentRow {
     id: number;
@@ -311,7 +312,7 @@ export default function CompassAdminIndex({
                                         {stats.recent.map((r) => (
                                             <tr key={r.id} className="border-b border-border/50">
                                                 <td className="px-2 py-2 text-xs text-muted-foreground">
-                                                    {r.createdAt ? new Date(r.createdAt).toLocaleString('ar') : '—'}
+                                                    {r.createdAt ? formatSyrianDateTime(r.createdAt) : '—'}
                                                 </td>
                                                 <td className="px-2 py-2">{VERSION_LABEL[r.version] ?? r.version}</td>
                                                 <td className="px-2 py-2">{spectrumName(r.spectrum)}</td>

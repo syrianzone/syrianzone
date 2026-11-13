@@ -1,23 +1,26 @@
 import React, { Suspense, useMemo, useEffect, useRef, lazy } from 'react'
-import citiesData from '@/Domain/transit/cities.json'
 import type { Bounds } from '@/Components/map/geo'
 import { useMapData } from '../../_hooks/useMapData'
 import { useMapStore } from '../../_store/useMapStore'
 import type { City, FeatureCollection, RouteProperties, StopProperties } from '../../_types'
 import TransitLayout from '../../layout'
 
-const cities = citiesData as City[]
 const MapView = lazy(() => import('../../_components/citymap/MapView'))
 
 interface CityPageProps {
   id: string
+  /** The city, from the same cached list the API serves (sent with the page). */
+  city?: City
+  /** The whole list, for the names of a shared map's other cities. */
+  cities?: City[]
 }
 
-export default function CityPage({ id }: CityPageProps) {
-  const city = cities.find((c) => c.id === id)
+export default function CityPage({ id, city, cities = [] }: CityPageProps) {
   const { data, loading, error } = useMapData(city?.id)
   const { selectedRouteId, setSelectedRouteId } = useMapStore()
-  const isComposite = id === 'damascus' || id === 'rif-dimashq'
+  const mapGroup = city?.mapGroup ?? [id]
+  const isComposite = mapGroup.length > 1
+  const groupNames = mapGroup.map((groupId) => cities.find((c) => c.id === groupId)?.nameAr ?? groupId)
   const didSyncUrlRef = useRef(false)
   const prevCityIdRef = useRef(id)
 
@@ -81,9 +84,9 @@ export default function CityPage({ id }: CityPageProps) {
     <TransitLayout>
       <h1 className="sr-only">مواصلات {city.nameAr}</h1>
       <div className="relative h-full overflow-hidden">
-        {isComposite && (
+        {isComposite && city.mapGroupLabel && (
           <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 rounded-full bg-card/90 border border-border px-3 py-1.5 text-[11px] text-muted-foreground shadow-sm pointer-events-none">
-            تعرض هذه الخريطة خطوط دمشق الكبرى: دمشق وريف دمشق معاً.
+            تعرض هذه الخريطة خطوط {city.mapGroupLabel}: {groupNames.join(' و')} معاً.
           </div>
         )}
         {loading && (

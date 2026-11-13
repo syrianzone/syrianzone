@@ -20,8 +20,12 @@ return [
     'servers' => [
 
         'reverb' => [
+            // The container's nginx proxies /app/ to 127.0.0.1:6001
+            // (docker/server-opts.d/app-websocket.conf), so 6001 is the default
+            // and the s6 run script listens on this same value. Changing the
+            // port means changing both.
             'host' => env('REVERB_SERVER_HOST', '0.0.0.0'),
-            'port' => env('REVERB_SERVER_PORT', 8080),
+            'port' => env('REVERB_SERVER_PORT', 6001),
             'path' => env('REVERB_SERVER_PATH', ''),
             'hostname' => env('REVERB_HOST'),
             'options' => [

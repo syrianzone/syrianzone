@@ -3,7 +3,6 @@
 namespace App\Http\Middleware;
 
 use App\Models\SiteSetting;
-use App\Models\User;
 use App\Support\Seo\SeoMeta;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -30,38 +29,6 @@ class HandleInertiaRequests extends Middleware
     }
 
     /**
-     * The auth payload shared with every Inertia response.
-     *
-     * `effective_permissions` is the resolved list — role implications already
-     * applied by User::effectivePermissions(). The frontend uses it as the
-     * single source of truth for capability checks instead of re-deriving which
-     * modules a role implies, which is how the TS mirror drifted out of sync
-     * with the PHP rules. `permissions` is still sent for the admin UI, which
-     * needs the raw stored values to render its checkboxes.
-     *
-     * @return array<string, mixed>
-     */
-    public static function userPayload(?User $user): ?array
-    {
-        if ($user === null) {
-            return null;
-        }
-
-        return [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'role' => $user->role,
-            'is_banned' => (bool) $user->is_banned,
-            'avatar_url' => $user->avatar_url,
-            'permissions' => $user->permissions ?? [],
-            'effective_permissions' => $user->effectivePermissions(),
-            'permission_scopes' => $user->permission_scopes ?? [],
-            'settings' => $user->settings ?? null,
-        ];
-    }
-
-    /**
      * Define the props that are shared by default.
      *
      * @see https://inertiajs.com/shared-data
@@ -77,11 +44,11 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => self::userPayload($request->user()),
+                'user' => $request->user()?->toAuthPayload(),
             ],
             'dev' => [
                 'enabled' => $devMode,
-                'roles' => $devMode ? AutoLoginDevUser::DEV_ROLES : [],
+                'roles' => $devMode ? AutoLoginDevUser::presets() : [],
                 'currentRole' => $devMode
                     ? (new AutoLoginDevUser)->resolveRole($request)
                     : null,

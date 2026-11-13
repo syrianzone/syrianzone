@@ -2,12 +2,9 @@ import React, { useMemo, useState } from 'react';
 import { Link, router } from '@inertiajs/react';
 import {
     ArrowRight,
-    ExternalLink,
     Home,
-    Lock,
     Search,
     Shuffle,
-    Users,
 } from 'lucide-react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Button } from '@/Components/ui/button';
@@ -20,12 +17,14 @@ import {
     TransitIcon,
 } from '@/Components/Icons/ProjectIcons';
 import PlayingCard from '@/Domain/games/PlayingCard';
-import { GAMES, gameEntryHref, type GameEntry } from '@/Domain/games/games';
+import { GAMES, gameEntryHref } from '@/Domain/games/games';
+import { GameTileGrid } from '@/Domain/games/GameTile';
 import AyahMark from '@/Domain/quran/AyahMark';
 import { TOOLS, toolHref } from '@/Domain/muslim/tools';
 import CityGrid from '@/Pages/Transit/_components/landing/CityGrid';
+import transitCities from '@/Domain/transit/cities.json';
 
-export type NotFoundSection = 'general' | 'transit' | 'games' | 'muslim';
+type NotFoundSection = 'general' | 'transit' | 'games' | 'muslim';
 
 interface NotFoundProps {
     status?: number;
@@ -61,36 +60,10 @@ function detectSectionFromPath(path: string): NotFoundSection {
 
 const TILE_CLASS = 'group flex flex-col items-center gap-2 py-1 text-center no-underline';
 
-function GameTile({ game }: { game: GameEntry }) {
-    const Icon = game.icon;
-    return (
-        <>
-            <Icon className="h-12 w-12 shrink-0 text-foreground transition-all group-hover:scale-110 group-hover:text-primary" />
-            <span className="text-xs font-medium text-foreground transition-colors group-hover:text-primary">
-                {game.title}
-            </span>
-            {/* Same rule as the hub: a coming-soon tile carries only "قريباً". */}
-            {game.online && !game.comingSoon && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
-                    <Users className="h-3 w-3" />
-                    لعب مع صديق
-                </span>
-            )}
-            {game.external && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
-                    <ExternalLink className="h-3 w-3" />
-                    موقع خارجي
-                </span>
-            )}
-            {game.comingSoon && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
-                    <Lock className="h-3 w-3" />
-                    قريباً
-                </span>
-            )}
-        </>
-    );
-}
+/** The 404 is rendered without the transit page's server payload, so it shows
+ *  the committed city list; the JSON carries what the cards read, not the
+ *  API-only map grouping. */
+const TRANSIT_CITIES = transitCities as React.ComponentProps<typeof CityGrid>['cities'];
 
 export default function NotFound({ path = '/404', section }: NotFoundProps) {
     const resolvedSection: NotFoundSection = useMemo(() => {
@@ -285,29 +258,7 @@ function GamesNotFound({ path, onBack }: { path: string; onBack: () => void }) {
                 <p className="mb-4 text-center text-xs font-medium text-muted-foreground">
                     الألعاب المتاحة
                 </p>
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-x-2 gap-y-5">
-                    {GAMES.map((game) =>
-                        game.comingSoon ? (
-                            <div key={game.slug} aria-disabled className={`${TILE_CLASS} opacity-60`}>
-                                <GameTile game={game} />
-                            </div>
-                        ) : game.external ? (
-                            <a
-                                key={game.slug}
-                                href={gameEntryHref(game)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className={TILE_CLASS}
-                            >
-                                <GameTile game={game} />
-                            </a>
-                        ) : (
-                            <Link key={game.slug} href={gameEntryHref(game)} className={TILE_CLASS}>
-                                <GameTile game={game} />
-                            </Link>
-                        ),
-                    )}
-                </div>
+                <GameTileGrid className="grid-cols-3 sm:grid-cols-4 md:grid-cols-7" />
             </div>
         </div>
     );
@@ -429,7 +380,7 @@ function TransitNotFound({ path, onBack }: { path: string; onBack: () => void })
                 </div>
             </div>
 
-            <CityGrid />
+            <CityGrid cities={TRANSIT_CITIES} />
         </div>
     );
 }

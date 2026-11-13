@@ -6,7 +6,7 @@ import { api as client } from '@/Lib/api';
  */
 
 /** The authoritative snapshot the server returns when a player rejoins. */
-export interface GuessWhoState {
+interface GuessWhoState {
   myCharacterId?: number | null;
   myEliminated?: number[];
   opponentRemaining?: number;

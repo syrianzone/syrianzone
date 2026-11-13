@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Bookmark, Check, ExternalLink, Share2 } from 'lucide-react';
 import { useAuth } from '@/Contexts/AuthContext';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/Components/ui/button';
 import { cn } from '@/Lib/utils';
 import { shareOrCopy } from '@/Lib/webShare';
 import { api } from '@/Domain/places/api';

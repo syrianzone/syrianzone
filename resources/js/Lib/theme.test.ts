@@ -104,7 +104,8 @@ describe('the single theme record', () => {
   });
 
   it('prints the dark ids from the data file instead of a hand-written list', () => {
-    expect(blade).toContain("resource_path('data/themes.json')");
+    // The view reads the record through Facts, the one reader of resources/data.
+    expect(blade).toContain('Facts::themes()');
     expect(blade).toContain('@json($darkThemeIds)');
     expect(blade).not.toMatch(/dark-blue|dark-purple|dark-green|high-contrast|damascus-rose|jasmine/);
   });

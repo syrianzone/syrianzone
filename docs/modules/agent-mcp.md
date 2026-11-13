@@ -410,7 +410,7 @@ The rules a self-service user cannot get around:
   and refuses any other id with 403.
 - **Own tokens only.** `destroy` looks up someone else's token as a 404, so ids
   cannot be probed, and does not revoke the caller's own mobile-app session
-  (`abilities: ["mobile"]`), which this page does not list.
+  (a token carrying the `mobile` ability), which this page does not list.
 - **Revoke-all stays superadmin-only.** It also ends the user's mobile sessions,
   so it is a leak response, not self-service.
 - **No minting with a token.** Every token route refuses a caller authenticated

@@ -1,12 +1,12 @@
-import citiesData from '@/Domain/transit/cities.json'
 import type { City } from '../../_types'
 
 interface HeroProps {
-  cities?: City[]
+  /** The server's city list (`/transit` renders it into the first HTML). */
+  cities: City[]
 }
 
-export default function Hero({ cities: propCities }: HeroProps) {
-  const cities = (propCities && propCities.length > 0 ? propCities : (citiesData as City[])).filter((c) => c.status === 'active')
+export default function Hero({ cities: allCities }: HeroProps) {
+  const cities = allCities.filter((c) => c.status === 'active')
   const readyCities = cities.filter((c) => c.routeCount > 0).length
   const totalRoutes = cities.reduce((sum, c) => sum + (c.routeCount || 0), 0)
 

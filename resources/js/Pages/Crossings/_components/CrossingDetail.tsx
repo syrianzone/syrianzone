@@ -1,6 +1,6 @@
 import { Clock, Globe2, MapPin, Share2, X } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
-import { cn } from '@/lib/utils';
+import { cn } from '@/Lib/utils';
 import { StatusPill } from './StatusPill';
 import { WhatsAppIcon } from './WhatsAppIcon';
 import { formatIntl, isWindowOpen, shareCrossing, statusOf, windowLabel, type Crossing } from '@/Domain/crossings/crossings';

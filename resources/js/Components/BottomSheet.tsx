@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/Lib/utils'
 
 const MINIMAL_HEIGHT = 250
 const MAX_RATIO = 0.92

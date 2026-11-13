@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Head } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
 import BookmarksModal from '../_components/BookmarksModal';
@@ -7,28 +7,15 @@ import { DEFAULT_RECITATION_CODE, findPageForAyah } from '../../../Domain/quran/
 import { useMuslimPrefs } from '../../../Domain/settings/prefs';
 import { useAppShell } from '@/Lib/appShell';
 import { useQuranTarget } from '@/Domain/quran/targetAyah';
+import { NAVBAR_HEIGHT_PX } from '@/Components/Navbar';
 
 export default function Index() {
   const { prefs, setPrefs, isLoggedIn } = useMuslimPrefs();
   const targetAyah = useQuranTarget((s) => s.targetAyah);
   const setTargetAyah = useQuranTarget((s) => s.setTargetAyah);
   const quranFocus = useAppShell((s) => s.quranFocus);
-  // Sticky navbar height (h-16 + border) for the mobile 100dvh lock.
-  const [navH, setNavH] = useState(65);
-
-  useEffect(() => {
-    if (quranFocus) {
-      setNavH(0);
-      return;
-    }
-    const measure = () => {
-      const h = document.querySelector('header')?.getBoundingClientRect().height;
-      if (h) setNavH(Math.round(h));
-    };
-    measure();
-    window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
-  }, [quranFocus]);
+  // The reader fills the viewport under the navbar, which publishes its height.
+  const readerHeight = `calc(100dvh - ${quranFocus ? 0 : NAVBAR_HEIGHT_PX}px)`;
 
   // Deep link from the hub's last-bookmark strip or the radio's "continue":
   // make sure the page that holds the target ayah is shown. In-page jumps
@@ -64,8 +51,8 @@ export default function Index() {
 
       <div dir="rtl" className="text-foreground" style={{ fontFamily: 'var(--site-font, inherit)' }}>
         <div
-          className="h-[calc(100dvh-var(--muslim-nav,65px))] overflow-hidden"
-          style={{ '--muslim-nav': `${navH}px` } as React.CSSProperties}
+          className="overflow-hidden"
+          style={{ height: readerHeight }}
         >
           <div className={`container mx-auto h-full max-w-6xl px-4 ${quranFocus ? 'py-1' : 'py-3'}`}>
             <QuranReader

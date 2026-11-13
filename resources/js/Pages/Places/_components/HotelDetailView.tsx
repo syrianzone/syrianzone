@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight, ExternalLink, Star } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/Components/ui/alert';
+import { Button } from '@/Components/ui/button';
 import { api } from '@/Domain/places/api';
 import { apiErrorMessage } from '@/Lib/api';
 import type { HotelDetail } from '@/Domain/places/types';

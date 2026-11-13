@@ -117,6 +117,7 @@ function applyThemeAttributes(themeId: string) {
 export function applyTheme(pref: string) {
   try { localStorage.setItem(THEME_KEY, pref); } catch {}
   applyThemeAttributes(resolveTheme(pref));
+  notifyThemeChanged();
 }
 
 // Follow the device scheme while the preference is 'system'. Call once at boot.
@@ -125,6 +126,7 @@ export function watchSystemTheme(): () => void {
   const onChange = () => {
     if (getThemePreference() === SYSTEM_THEME) {
       applyThemeAttributes(resolveTheme(SYSTEM_THEME));
+      notifyThemeChanged();
     }
   };
   query.addEventListener('change', onChange);
@@ -149,6 +151,52 @@ function subscribeToScheme(onChange: () => void): () => void {
  */
 export function useColorScheme(): ColorScheme {
   return useSyncExternalStore(subscribeToScheme, getColorScheme, () => 'light');
+}
+
+/** The theme id currently applied to the document (`data-theme`). */
+export function getThemeId(): string {
+  if (typeof document === 'undefined') return 'light';
+  return document.documentElement.getAttribute('data-theme') || 'light';
+}
+
+// `applyTheme` also reports here, because picking 'system' while already on the
+// resolved theme changes the preference without changing the attribute.
+const themeListeners = new Set<() => void>();
+
+function notifyThemeChanged(): void {
+  for (const listener of themeListeners) listener();
+}
+
+function subscribeToTheme(onChange: () => void): () => void {
+  themeListeners.add(onChange);
+  const observer =
+    typeof document === 'undefined'
+      ? null
+      : new MutationObserver(onChange);
+  observer?.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  return () => {
+    themeListeners.delete(onChange);
+    observer?.disconnect();
+  };
+}
+
+/**
+ * The theme id the page is rendering with, reactive. Use it instead of reading
+ * `data-theme` yourself: a share card, a palette lookup or a preview all want
+ * the applied theme, and the server snapshot is the registry's light default so
+ * SSR markup hydrates unchanged.
+ */
+export function useThemeId(): string {
+  return useSyncExternalStore(subscribeToTheme, getThemeId, () => 'light');
+}
+
+/**
+ * The stored theme preference (`'system'` or a registry id), reactive — the
+ * appearance menu's pressed state. Distinct from `useThemeId()`: under
+ * `'system'` the applied id is whatever the device scheme resolved to.
+ */
+export function useThemePreference(): string {
+  return useSyncExternalStore(subscribeToTheme, getThemePreference, () => SYSTEM_THEME);
 }
 
 interface Rgba {

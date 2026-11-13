@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, ExternalLink } from 'lucide-react';
 import { usePage } from '@inertiajs/react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/Components/ui/button';
 import { useConsentBannerPending } from '@/Lib/analyticsConsent';
 import popupFacts from '../../data/site-popup.json';
 

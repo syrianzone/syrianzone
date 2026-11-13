@@ -40,7 +40,7 @@ import {
 import { Instagram } from '@/Components/ui/icons';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/Components/ui/card";
-import { THEME_REGISTRY, getThemeById, hexToRgbString } from '@/lib/theme';
+import { THEME_REGISTRY, getThemeById, hexToRgbString, useThemeId } from '@/Lib/theme';
 import { Button } from "@/Components/ui/button";
 
 import {
@@ -203,9 +203,9 @@ export default function PrioritiesApp() {
   const [selectedSubFiles, setSelectedSubFiles] = useState<Set<string>>(new Set());
   const [activeComparisonKey, setActiveComparisonKey] = useState<string>('average');
   const [showBanner, setShowBanner] = useState<boolean>(true);
-  const [activeTheme, setActiveTheme] = useState<string>('dark');
+  const activeTheme = useThemeId();
   const [isStoryModalOpen, setIsStoryModalOpen] = useState<boolean>(false);
-  const [storyTheme, setStoryTheme] = useState<string>('dark');
+  const [storyTheme, setStoryTheme] = useState<string>(activeTheme);
   const storyThemeStyles = getStoryThemeStyles(storyTheme);
   const [expandedTopics, setExpandedTopics] = useState<Set<string>>(new Set(['economy', 'justice', 'housing', 'security', 'politics', 'digital']));
 
@@ -219,16 +219,6 @@ export default function PrioritiesApp() {
     if (bannerDismissed === 'true') {
       setShowBanner(false);
     }
-
-    const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
-    setActiveTheme(currentTheme);
-
-    const observer = new MutationObserver(() => {
-      const newTheme = document.documentElement.getAttribute('data-theme') || 'dark';
-      setActiveTheme(newTheme);
-    });
-
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
     const params = new URLSearchParams(window.location.search);
     const stateParam = params.get('state');
@@ -256,10 +246,6 @@ export default function PrioritiesApp() {
         console.error('Failed to parse URL state', e);
       }
     }
-
-    return () => {
-      observer.disconnect();
-    };
   }, []);
 
   const totalAllocated = useMemo(() => {

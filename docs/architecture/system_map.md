@@ -82,12 +82,12 @@ syrianzone/
 │   │   ├── Contexts/            # AuthContext
 │   │   ├── Domain/              # Modules more than one page needs (geography, places, prayer, …)
 │   │   ├── Layouts/MainLayout.tsx
-│   │   ├── Lib/                 # api.ts (the one client + error extractor), cn(), theme/font utils, geo-utils, exportImage…
+│   │   ├── Lib/                 # api.ts (the one client + error extractor), cn(), theme/font utils, routes, geo-utils…
 │   │   ├── Pages/               # One folder per route/module (Inertia pages)
-│   │   └── app.tsx / ssr.tsx    # Client + SSR entry points
+│   │   └── app.tsx / ssr.tsx    # Client + SSR entry points (both resolve pages through Lib/pages.ts)
 │   └── views/app.blade.php      # Inertia root view
 ├── routes/                      # web.php, api.php, channels.php, console.php, ai.php (MCP servers)
-├── scripts/                     # build-map-glyphs.mjs (fontnik), optimize_geojson_floats.py…
+├── scripts/                     # gate.sh (the CI gate), a11y_axe_audit.py, build-map-glyphs.mjs, optimize_geojson_floats.py…
 ├── tests/                       # Pest (Feature + Unit suites) and Vitest (*.test.ts, `bun run test:js`)
 ├── Dockerfile                   # Multi-stage: bun build → serversideup php:8.4-fpm-nginx + s6
 └── android/                     # Bubblewrap TWA wrapper for the PWA (see platform/android-twa.md)
@@ -131,7 +131,7 @@ Controllers issue raw spatial SQL (`ST_AsGeoJSON`, `ST_Distance_Sphere`) against
 | Quizzes | `/compass`, `/compass/stats`, `/compass/s/{shareId}`, `/priorities` | CompassController; `/priorities` is a closure | Compass/, Priorities/ | — |
 | Legal & info | `/about`, `/stats`, `/privacy`, `/terms` | AboutController; the rest are closures | About.tsx, Stats.tsx, Privacy.tsx, Terms.tsx | — |
 | Standalone pages | `/roznama`, `/shawarma`, `/justice`, `/crossings` | (Inertia closures) | Roznama/, Shawarma/, Justice/, Crossings/ | — |
-| Dashboard/auth | `/dashboard` (incl. polls-tab admin), `/auth/google*`, `/api/v1/user` | AuthController, DashboardController, AdminUserController | Dashboard/ | — |
+| Dashboard/auth | `/dashboard` (incl. polls-tab admin), `/auth/google*`, `/api/v1/user` | AuthController, DashboardController | Dashboard/ | — |
 | Assets admin | `/admin/assets`, `/api/v1/admin/assets*` | AssetUploadController | Admin/AssetManager | [reference/asset-storage.md](../reference/asset-storage.md) |
 | Agent / MCP | `/mcp/admin` (bearer token; `MCP_ENABLED` flag), `/admin/api-tokens` | MCP tools in `app/Mcp/`, `ApiTokenAdminController`, `RequireApiToken` | Admin/ApiTokens/ | [modules/agent-mcp.md](../modules/agent-mcp.md) |
 | Site popup | `/admin/site-popup`, `/api/v1/admin/site-popup` (superadmin; shared as `sitePopup` prop, versioned dismiss) | SitePopupAdminController | Admin/SitePopup | — |

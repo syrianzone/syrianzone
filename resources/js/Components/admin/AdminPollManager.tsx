@@ -3,15 +3,15 @@ import { pollsApi } from "@/Domain/polls/api";
 import { apiErrorMessage } from '@/Lib/api';
 import type { CandidateInput, PollCandidate as Candidate, PollGroup as Group, Poll } from "@/Domain/polls/types";
 import { useAuth } from "@/Contexts/AuthContext";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from "@/Components/ui/button";
+import { Input } from "@/Components/ui/input";
+import { Label } from "@/Components/ui/label";
 import { useTabList } from '@/Lib/useTabList';
 import { Plus, Trash2, Edit2, Save, X, MoreVertical, Star as StarIcon, ArrowLeft, ArrowRight, Archive, Undo2, Power, PowerOff } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/Components/ui/badge";
+import { Textarea } from "@/Components/ui/textarea";
+import { Alert, AlertDescription } from "@/Components/ui/alert";
+import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { confirmDialog } from "@/Lib/confirm";
 import { notify } from "@/Lib/notify";
 import {
@@ -22,14 +22,14 @@ import {
     DialogHeader,
     DialogTitle,
     DialogTrigger,
-} from "@/components/ui/dialog";
+} from "@/Components/ui/dialog";
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select";
+} from "@/Components/ui/select";
 
 interface PollData {
     id: string;

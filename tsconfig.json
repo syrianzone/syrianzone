@@ -13,9 +13,6 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "paths": {
-      "@/lib/*": ["./resources/js/Lib/*"],
-      "@/components/*": ["./resources/js/Components/*"],
-      "@/context/*": ["./resources/js/Contexts/*"],
       "@/*": ["./resources/js/*"]
     },
     "types": ["vite/client"]

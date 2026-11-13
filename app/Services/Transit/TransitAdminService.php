@@ -558,17 +558,11 @@ class TransitAdminService
 
     protected function statusDescription(Route $route, string $oldStatus, string $newStatus): string
     {
-        $labels = [
-            'published' => 'منشور',
-            'disapproved' => 'ملغى (مرفوض)',
-            'hidden' => 'مخفي',
-        ];
-
         return sprintf(
             "تغيير حالة الخط '%s' من '%s' إلى '%s'",
             $route->name_ar,
-            $labels[$oldStatus] ?? $oldStatus,
-            $labels[$newStatus] ?? $newStatus,
+            TransitRules::STATUS_LABELS[$oldStatus] ?? $oldStatus,
+            TransitRules::STATUS_LABELS[$newStatus] ?? $newStatus,
         );
     }
 

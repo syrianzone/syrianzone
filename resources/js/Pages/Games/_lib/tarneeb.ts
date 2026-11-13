@@ -42,7 +42,7 @@ export const TARNEEB_TEAMS: Seat[][] = [
   [1, 3],
 ];
 
-export interface TarneebOptions {
+interface TarneebOptions {
   /** Points a team must reach to win the match. */
   target: number;
   /** Smallest legal bid. */

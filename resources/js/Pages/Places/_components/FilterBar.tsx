@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Loader2, MapPin, Search, SlidersHorizontal } from 'lucide-react';
 import { Card } from '@/Components/ui/card';
-import { Input } from '@/components/ui/input';
+import { Input } from '@/Components/ui/input';
 import { Badge, badgeVariants } from '@/Components/ui/badge';
 import { cn } from '@/Lib/utils';
 import { CATEGORIES, CATEGORY_LABELS } from '@/Domain/places/categories';

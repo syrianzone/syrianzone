@@ -206,7 +206,6 @@ class UserResource extends Resource
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'superadmin' => 'danger',
-                        'admin' => 'warning',
                         'user' => 'info',
                         default => 'gray',
                     })

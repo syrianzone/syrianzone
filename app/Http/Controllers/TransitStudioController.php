@@ -8,7 +8,7 @@ use App\Models\RouteDraft;
 use App\Models\TransitRouteLog;
 use App\Models\User;
 use App\Services\Transit\TransitCache;
-use App\Support\Facts;
+use App\Services\Transit\TransitRules;
 use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -37,7 +37,7 @@ class TransitStudioController extends Controller
     {
         $user = $this->resolveUser($request);
         if (! $user) {
-            return response()->json(['message' => 'Unauthenticated.'], 401);
+            abort(401, 'سجل الدخول للمتابعة');
         }
 
         $query = RouteDraft::where('user_id', $user->id)
@@ -45,7 +45,7 @@ class TransitStudioController extends Controller
             ->orderBy('created_at', 'desc');
 
         $status = $request->query('status');
-        if (is_string($status) && in_array($status, ['pending', 'approved', 'rejected'], true)) {
+        if (is_string($status) && in_array($status, TransitRules::DRAFT_STATUSES, true)) {
             $query->where('status', $status);
         }
 
@@ -69,7 +69,7 @@ class TransitStudioController extends Controller
         // anonymous POST with route_id leaves an orphan pending draft and no
         // unpublish, and could take routes offline at will.
         if ($request->filled('route_id') && ! $user) {
-            return response()->json(['message' => 'Authentication is required to suggest edits to published routes.'], 401);
+            abort(401, 'يلزم تسجيل الدخول لاقتراح تعديل على مسار منشور.');
         }
 
         $validated = $request->validate([
@@ -77,15 +77,10 @@ class TransitStudioController extends Controller
             'name_ar' => 'required|string|max:255',
             'name_en' => 'nullable|string|max:255',
             'price' => 'nullable|integer',
-            'color_index' => 'nullable|integer|min:0|max:'.Facts::transit()['color_index_max'],
+            'color_index' => TransitRules::colorIndex(),
             'notes' => 'nullable|string',
-            'geojson' => 'required|array',
-            'geojson.features' => 'required|array|min:1|max:500',
-            'geojson.features.*.geometry' => 'required|array',
-            'geojson.features.*.geometry.type' => 'required|string|in:LineString,MultiLineString,Point',
-            'geojson.features.*.geometry.coordinates' => 'required|array|min:1',
             'route_id' => 'nullable|exists:routes,id',
-        ]);
+        ] + TransitRules::routeGeoJson());
 
         $this->ensureStudioTransitCityAccess($request, $validated['city_id']);
 
@@ -94,7 +89,7 @@ class TransitStudioController extends Controller
         if (! empty($validated['route_id'])) {
             $linked = Route::find($validated['route_id']);
             if (! $linked || $linked->city_id !== $validated['city_id']) {
-                return response()->json(['message' => 'Linked route must belong to the same city.'], 422);
+                abort(422, 'يجب أن ينتمي المسار المرتبط إلى المدينة نفسها.');
             }
         }
 
@@ -130,7 +125,7 @@ class TransitStudioController extends Controller
         $draft = RouteDraft::with(['user:id,name', 'city:id,name_ar,name_en', 'linkedRoute:id,name_ar,name_en'])->findOrFail($id);
 
         if (! $this->canEditDraft($request, $draft)) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            abort(403, 'لا تملك صلاحية تنفيذ هذا الإجراء');
         }
 
         return response()->json($draft);
@@ -139,7 +134,7 @@ class TransitStudioController extends Controller
     public function showForEdit(Request $request, $routeId)
     {
         if (! $this->resolveUser($request)) {
-            return response()->json(['message' => 'Unauthorized'], 401);
+            abort(401, 'سجل الدخول للمتابعة');
         }
 
         $route = Route::with(['city:id,name_ar,name_en'])->findOrFail($routeId);
@@ -197,7 +192,7 @@ class TransitStudioController extends Controller
         $draft = RouteDraft::findOrFail($id);
 
         if (! $this->canEditDraft($request, $draft)) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            abort(403, 'لا تملك صلاحية تنفيذ هذا الإجراء');
         }
 
         $validated = $request->validate([
@@ -205,14 +200,9 @@ class TransitStudioController extends Controller
             'name_ar' => 'sometimes|string|max:255',
             'name_en' => 'nullable|string|max:255',
             'price' => 'nullable|integer',
-            'color_index' => 'nullable|integer|min:0|max:'.Facts::transit()['color_index_max'],
+            'color_index' => TransitRules::colorIndex(),
             'notes' => 'nullable|string',
-            'geojson' => 'sometimes|array',
-            'geojson.features' => 'required_with:geojson|array|min:1|max:500',
-            'geojson.features.*.geometry' => 'required_with:geojson|array',
-            'geojson.features.*.geometry.type' => 'required_with:geojson|string|in:LineString,MultiLineString,Point',
-            'geojson.features.*.geometry.coordinates' => 'required_with:geojson|array|min:1',
-        ]);
+        ] + TransitRules::routeGeoJson(sometimes: true));
 
         $updateData = [];
         if ($request->has('city_id')) {
@@ -323,11 +313,11 @@ class TransitStudioController extends Controller
         $draft = RouteDraft::findOrFail($id);
 
         if (! $this->canEditDraft($request, $draft)) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            abort(403, 'لا تملك صلاحية تنفيذ هذا الإجراء');
         }
 
         if ($draft->status !== 'pending') {
-            return response()->json(['message' => 'Only pending drafts can be withdrawn.'], 422);
+            abort(422, 'لا يمكن سحب إلا المسودة التي ما زالت قيد المراجعة.');
         }
 
         $draft->delete();

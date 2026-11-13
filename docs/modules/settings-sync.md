@@ -35,13 +35,13 @@ Silently merged (never modal):
 
 Deliberately device-local (never synced, never modal): GPS/IP `locMode` + resolved `geo` point — a phone and a laptop are rarely in one place.
 
-Deliberately untouched by sync: `theme`, `fontFamily`, `clockFormat`, toggles, links, `eventsGovernorate` (homepage events city — server-wins on mount like the other display prefs). They keep their existing server-wins-on-mount behavior. The `settings.language` whitelist is vestigial (the bilingual pages are gone) and nothing reads it.
+Deliberately untouched by sync: `theme`, `fontFamily`, `clockFormat`, toggles, links, `eventsGovernorate` (homepage events city — server-wins on mount like the other display prefs). They keep their existing server-wins-on-mount behavior, and each is written to the device and the account through `accountSettings.ts` (the homepage's display toggles and events city through `Pages/Home/_lib/homePrefs.ts`). The `settings.language` whitelist is vestigial (the bilingual pages are gone) and nothing reads it.
 
 ## 3. CONFLICT MODAL
 
 `SettingsConflictModal.tsx`: one card per conflicting key, two options each — «هذا الجهاز: X» vs «الحساب: Y» with human-readable values (governorate Arabic names, method Arabic names). Apply requires an explicit choice per key (no defaults); winners are written to **both** sides plus one batched `POST /api/user/settings`, so the next login is quiet. Closing via X snoozes for the session without writing anything (asks again next session).
 
-Stale/unknown values (city slugs or method IDs outside the allowlists) count as **absent**: the other side wins silently instead of surfacing a meaningless choice. Non-finite coordinates are dropped before any batch so one bad value can never fail the whole batch (the endpoint 422s the entire payload otherwise).
+Stale/unknown values (city slugs or method IDs outside the allowlists) count as **absent**: the other side wins silently instead of surfacing a meaningless choice. The method allowlist is `resources/data/prayer.json` — the offered `methods` **plus** `unlisted_method_ids`, so an account holding an id the picker does not offer (7, 14, 15, 16) is a real value, not absent data. Non-finite coordinates are dropped before any batch so one bad value can never fail the whole batch (the endpoint 422s the entire payload otherwise).
 
 ## 4. WRITE-THROUGH DISCIPLINE (load-bearing)
 
@@ -86,13 +86,20 @@ the device. Home and Roznama no longer copy `props.auth.user.settings` on mount 
 they read and write the shared preference store — so no page mount can race the
 sync over the same keys.
 
-Account writes are unchanged and still belong to the surfaces:
-Home debounces `governorate/useCustomCoords/customLat/customLon` at 500 ms,
-Roznama at 600 ms, and `Domain/settings/prefs.ts` posts
-`muslimCity/muslimMethod/muslimUseCustomCoords/muslimLat/muslimLon` at 600 ms. The
-three prayer-settings surfaces render one component
-(`Domain/prayer/PrayerSettingsFields`) and mirror its `onLocationChange` patch to
-their own account call.
+**One writer owns the account PATCH.** `Domain/settings/accountSettings.ts` is the
+only module that spells `POST /api/user/settings`, the `{ settings }` envelope,
+the debounce (500 ms), the flush on `visibilitychange`/`pagehide` and the failure
+policy (one `notify.error`; silent only while the page is unloading). Home,
+Roznama, `useMuslimPrefs`, the appearance menu and this sync engine call
+`saveAccountSettings(patch)`; the sync engine's own batches and the conflict
+modal's use `postAccountSettings(patch)`, which sends immediately and can be
+awaited. A key set by two surfaces in one burst is merged and sent once, last
+write wins.
+
+The prayer-settings surfaces render one component
+(`Domain/prayer/PrayerSettingsFields`) inside one container
+(`Domain/prayer/ResponsiveSettingsDialog`, sheet on a phone and dialog above it),
+and mirror its `onLocationChange` patch to their own account call.
 
 ## 5. LABELS FOLLOW THE EFFECTIVE LOCATION
 

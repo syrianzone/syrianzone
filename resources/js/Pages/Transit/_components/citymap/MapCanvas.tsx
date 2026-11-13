@@ -4,10 +4,16 @@ import { MapCanvas as SharedMapCanvas } from '@/Components/map/MapCanvas'
 import { useMap } from '@/Components/map/MapContext'
 import type { Bounds } from '@/Components/map/geo'
 import { notify } from '@/Lib/notify'
+import { LOC_CHANGED_EVENT, getGeo, gpsAvailable, resolveGps, setGeo } from '@/Domain/location/location'
 
 export type LocationStatus = 'idle' | 'loading' | 'available' | 'denied'
 
-export const LocationContext = createContext<{ lng: number; lat: number } | null>(null)
+interface Point {
+  lng: number
+  lat: number
+}
+
+export const LocationContext = createContext<Point | null>(null)
 export const LocationStatusContext = createContext<LocationStatus>('idle')
 export const LocationRequestContext = createContext<() => void>(() => undefined)
 
@@ -25,10 +31,22 @@ interface MapCanvasProps {
   children?: React.ReactNode
 }
 
+/**
+ * The point `Domain/location` already knows about, in map coordinates. The map
+ * does not own the user's location: a fix resolved here (or in the prayer and
+ * weather settings) is the one every surface uses.
+ */
+function storedLocation(): Point | null {
+  const geo = getGeo()
+  return geo ? { lng: geo.lon, lat: geo.lat } : null
+}
+
 function Geolocator({ children }: { children: React.ReactNode }) {
   const map = useMap()
-  const [userLocation, setUserLocation] = useState<{ lng: number; lat: number } | null>(null)
-  const [locationStatus, setLocationStatus] = useState<LocationStatus>('idle')
+  const [userLocation, setUserLocation] = useState<Point | null>(storedLocation)
+  const [locationStatus, setLocationStatus] = useState<LocationStatus>(
+    () => (storedLocation() === null ? 'idle' : 'available'),
+  )
   const watchIdRef = useRef<number | null>(null)
 
   const stopWatch = useCallback(() => {
@@ -38,31 +56,56 @@ function Geolocator({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  // Live updates for the dot while the visitor stays on the map. Failures are
+  // silent: the fix that started the watch is already on screen, and the
+  // request that produced it is what reports a refused permission.
   const startWatch = useCallback(() => {
-    if (watchIdRef.current !== null) return
+    if (watchIdRef.current !== null || !gpsAvailable()) return
 
-    if (!('geolocation' in navigator)) {
-      setLocationStatus('denied')
-      notify.error('متصفحك لا يدعم تحديد الموقع')
-      return
-    }
-
-    setLocationStatus('loading')
     watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => {
         setLocationStatus('available')
         setUserLocation({ lng: pos.coords.longitude, lat: pos.coords.latitude })
       },
-      () => {
-        stopWatch()
-        setLocationStatus('denied')
-        notify.error('تعذر تحديد موقعك، تحقق من إذن الموقع في المتصفح')
-      },
+      stopWatch,
       { enableHighAccuracy: false, maximumAge: 60000, timeout: 10000 },
     )
   }, [stopWatch])
 
-  // Only a visitor who already granted location is watched on load (that path
+  const requestLocation = useCallback(async () => {
+    setLocationStatus('loading')
+    try {
+      // The shared request: permission handling, retries and the Arabic refusal
+      // live in Domain/location, and the resolved point is stored there so the
+      // prayer and weather surfaces use the same fix the map drew.
+      setGeo(await resolveGps())
+      startWatch()
+    } catch (e) {
+      setLocationStatus('denied')
+      notify.error(e instanceof Error ? e.message : 'تعذر تحديد موقعك، تحقق من إذن الموقع في المتصفح')
+    }
+  }, [startWatch])
+
+  // The control is a plain callback; the request itself is a promise whose
+  // outcome is already reported through the status and the toast.
+  const requestLocationFromControl = useCallback(() => {
+    void requestLocation()
+  }, [requestLocation])
+
+  // A point resolved elsewhere (the settings' GPS option, another tab) reaches
+  // the map the same way it reaches the timings.
+  useEffect(() => {
+    const sync = () => {
+      const point = storedLocation()
+      setUserLocation(point)
+      if (point !== null) setLocationStatus('available')
+    }
+
+    window.addEventListener(LOC_CHANGED_EVENT, sync)
+    return () => window.removeEventListener(LOC_CHANGED_EVENT, sync)
+  }, [])
+
+  // Only a visitor who already granted location is asked on load (that path
   // shows no prompt). "prompt", "denied" and browsers without the Permissions
   // API all wait for the map control instead of asking every visitor.
   useEffect(() => {
@@ -72,9 +115,14 @@ function Geolocator({ children }: { children: React.ReactNode }) {
 
     navigator.permissions
       .query({ name: 'geolocation' })
-      .then((status) => {
+      .then(async (status) => {
         if (cancelled || status.state !== 'granted') return
-        startWatch()
+        try {
+          setGeo(await resolveGps())
+          if (!cancelled) startWatch()
+        } catch {
+          // A silent preflight: nothing was on screen to explain.
+        }
       })
       .catch(() => {
         // permission name unsupported: behave like "prompt"
@@ -90,7 +138,7 @@ function Geolocator({ children }: { children: React.ReactNode }) {
   return (
     <LocationContext.Provider value={userLocation}>
       <LocationStatusContext.Provider value={locationStatus}>
-        <LocationRequestContext.Provider value={startWatch}>
+        <LocationRequestContext.Provider value={requestLocationFromControl}>
           {children}
         </LocationRequestContext.Provider>
       </LocationStatusContext.Provider>

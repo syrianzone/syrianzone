@@ -4,13 +4,7 @@ import { Button } from '@/Components/ui/button';
 import { Settings2 } from 'lucide-react';
 import MainLayout from '@/Layouts/MainLayout';
 import { useCanModule } from '@/Lib/useCan';
-
-interface Poll {
-    id: string;
-    slug: string;
-    title: string;
-    is_active: boolean;
-}
+import type { Poll } from '@/Domain/polls/types';
 
 interface PollsPageProps {
     polls: Poll[];

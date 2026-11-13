@@ -1,15 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { router } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
 import { Button } from '@/Components/ui/button';
-import { Input } from '@/Components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/Components/ui/table';
 import { Badge } from '@/Components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/card';
-import { Plus, Search, Edit3, Trash2, Layers, FolderPlus, ArrowUpDown, Globe, Eye, EyeOff } from 'lucide-react';
+import { Plus, Edit3, Trash2, Layers, FolderPlus, ArrowUpDown, Globe, Eye, EyeOff } from 'lucide-react';
 import CategoryDialog from '@/Components/directory/CategoryDialog';
 import SortableList from '@/Components/directory/SortableList';
+import DirectoryResultCount from '@/Components/directory/DirectoryResultCount';
+import { DirectorySearch } from '@/Components/directory/DirectorySearch';
+import { useDirectory, type DirectoryFacet } from '@/Components/directory/useDirectory';
 import EntityDialog from './_components/EntityDialog';
 import type { AdminOfficialEntity, OfficialCategory } from '@/Domain/syofficial/types';
 import { formatEntityImage } from '@/Lib/entityImage';
@@ -22,6 +24,9 @@ interface AdminSyOfficialProps {
     entities: AdminOfficialEntity[];
 }
 
+const entitySearchText = (entity: AdminOfficialEntity) =>
+    `${entity.name} ${entity.name_ar} ${entity.id}`;
+
 export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOfficialProps) {
 
     // Each control is gated on the capability its route requires (routes/web.php).
@@ -30,8 +35,23 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
     const canEdit = can('syofficial.edit');
     const canDelete = can('syofficial.delete');
     const canReorder = can('syofficial.reorder');
-    const [searchTerm, setSearchTerm] = useState('');
-    const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all');
+
+    // The public directory's search and category filter, shared by both tabs.
+    const categoryFacet = useMemo<DirectoryFacet<AdminOfficialEntity>>(() => ({
+        key: 'category',
+        label: 'الفئة',
+        options: categories.map((cat) => ({ value: cat.id, label: cat.label_ar })),
+        valueOf: (entity) => entity.category_id,
+    }), [categories]);
+    const directory = useDirectory<AdminOfficialEntity>({
+        items: entities,
+        searchText: entitySearchText,
+        facets: [categoryFacet],
+    });
+    const selectedCategoryFilter = directory.filters.category?.[0] ?? 'all';
+    const filteredEntities = directory.results;
+    const selectCategory = (category: string) =>
+        directory.setFilters({ ...directory.filters, category: category === 'all' ? [] : [category] });
 
     const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState<OfficialCategory | null>(null);
@@ -50,17 +70,6 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
             }
         }
     }, [entities]);
-
-    const filteredEntities = entities.filter((item) => {
-        const matchesCategory = selectedCategoryFilter === 'all' || item.category_id === selectedCategoryFilter;
-        const term = searchTerm.toLowerCase();
-        const matchesSearch =
-            !searchTerm ||
-            item.name.toLowerCase().includes(term) ||
-            item.name_ar.toLowerCase().includes(term) ||
-            item.id.toLowerCase().includes(term);
-        return matchesCategory && matchesSearch;
-    });
 
     const handleDeleteCategory = async (catId: string) => {
         const ok = await confirmDialog({ title: 'حذف هذه الفئة؟', description: 'سيتم حذف جميع الحسابات التابعة لها.', destructive: true, confirmText: 'حذف' });
@@ -160,20 +169,18 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
                                     </div>
 
                                     <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                                        <div className="relative w-full sm:w-64">
-                                            <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                                            <Input aria-label="بحث بالاسم أو ID..."
-                                                placeholder="بحث بالاسم أو ID..."
-                                                value={searchTerm}
-                                                onChange={(e) => setSearchTerm(e.target.value)}
-                                                className="ps-9 h-9"
-                                            />
-                                        </div>
+                                        <DirectorySearch
+                                            className="w-full sm:w-64"
+                                            value={directory.query}
+                                            onChange={directory.setQuery}
+                                            placeholder="بحث بالاسم أو ID..."
+                                            ariaLabel="بحث بالاسم أو ID..."
+                                        />
 
                                         <select
                                             aria-label="تصفية حسب الفئة"
                                             value={selectedCategoryFilter}
-                                            onChange={(e) => setSelectedCategoryFilter(e.target.value)}
+                                            onChange={(e) => selectCategory(e.target.value)}
                                             className="h-9 px-3 rounded-md border border-input bg-card text-sm text-foreground focus:ring-2 focus:ring-primary"
                                         >
                                             <option value="all">جميع الفئات</option>
@@ -187,6 +194,9 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
                                 </CardHeader>
 
                                 <CardContent>
+                                    <DirectoryResultCount className="mb-3 text-xs">
+                                        عرض {filteredEntities.length} من أصل {entities.length} جهة
+                                    </DirectoryResultCount>
                                     <div className="rounded-xl border border-border overflow-hidden">
                                         <Table>
                                             <TableHeader className="bg-muted/50">
@@ -393,7 +403,7 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
                                         <select
                                             aria-label="تصفية حسب الفئة"
                                             value={selectedCategoryFilter}
-                                            onChange={(e) => setSelectedCategoryFilter(e.target.value)}
+                                            onChange={(e) => selectCategory(e.target.value)}
                                             className="w-full h-9 px-3 rounded-md border border-input bg-card text-sm text-foreground mb-4"
                                         >
                                             {categories.map((c) => (

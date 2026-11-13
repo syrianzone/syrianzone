@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Search, Globe, ExternalLink, Plus } from 'lucide-react';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/Components/ui/button";
+import { Card, CardContent } from "@/Components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/Components/ui/table";
+import { Badge } from "@/Components/ui/badge";
 import type { Website } from './types';
 import DirectoryEmptyState from '@/Components/directory/DirectoryEmptyState';
 import DirectoryFilterChips from '@/Components/directory/DirectoryFilterChips';

@@ -82,8 +82,8 @@ test('canonical /api/v1/polls/{idOrSlug}/ballots and /api/v1/polls/{idOrSlug}/le
         'tiers' => ['S' => ['c1']],
         'deviceId' => '1234567890',
     ])
-        ->assertStatus(400)
-        ->assertJsonPath('message', 'Minimum selection is 3');
+        ->assertStatus(422)
+        ->assertJsonPath('message', 'يجب اختيار 3 مرشحين على الأقل.');
 });
 
 test('the atlas answers under /api/v1/atlas and the legacy /api/population/master', function () {
@@ -95,7 +95,7 @@ test('the atlas answers under /api/v1/atlas and the legacy /api/population/maste
 
     $this->getJson('/api/v1/app-icon?store=invalid')
         ->assertStatus(400)
-        ->assertJsonPath('message', 'Unsupported store.')
+        ->assertJsonPath('message', 'المتجر غير مدعوم.')
         ->assertJsonPath('icon', null);
 });
 

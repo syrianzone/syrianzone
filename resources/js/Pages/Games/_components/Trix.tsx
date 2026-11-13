@@ -30,6 +30,7 @@ import { DialogClose } from '@/Components/ui/dialog';
 import PlayingCard from '@/Domain/games/PlayingCard';
 import CardStyleToggle from './CardStyleToggle';
 import GameMenu from './GameMenu';
+import { useCardDrag } from '../_lib/useCardDrag';
 import './table.css';
 
 /** Seat 0 is the player; 1 left, 2 opposite, 3 right. */
@@ -47,23 +48,12 @@ export default function Trix() {
   const [large, setLarge] = useState(false);
   const [paused, setPaused] = useState(false);
   const [stats, setStats] = useState<MatchStats>({ played: 0, wins: 0, losses: 0, draws: 0 });
-  /** The card under the finger while dragging it out to play. */
-  const [ghost, setGhost] = useState<{ card: Card; x: number; y: number; w: number } | null>(null);
   /** The card picked on a touch screen, waiting for a second tap to play it. */
   const [selected, setSelected] = useState<string | null>(null);
   const seen = useRef(0);
   const recorded = useRef(false);
   /** The last pointer kind: a touch picks first, a mouse plays at once. */
   const lastPointerType = useRef('');
-  const drag = useRef<{
-    card: Card;
-    startX: number;
-    startY: number;
-    grabX: number;
-    grabY: number;
-    w: number;
-    active: boolean;
-  } | null>(null);
 
   const fresh = (opts: TrixOptions) => {
     seen.current = 0;
@@ -180,51 +170,16 @@ export default function Trix() {
 
   // Card drag: a legal card can be pulled out and dropped on the table to play,
   // or tapped. Only a real drag swallows the following click.
-  const startDrag = (card: Card, e: React.PointerEvent) => {
+  const { drag, startDrag } = useCardDrag<Card>({
+    onDrop: (element, card) => {
+      if (element?.closest('.sz-tbl')) play(card);
+    },
+  });
+
+  const beginDrag = (card: Card, e: React.PointerEvent) => {
     lastPointerType.current = e.pointerType;
     if (!legalIds.has(card.id)) return;
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    drag.current = {
-      card,
-      startX: e.clientX,
-      startY: e.clientY,
-      grabX: e.clientX - rect.left,
-      grabY: e.clientY - rect.top,
-      w: rect.width,
-      active: false,
-    };
-    const move = (ev: PointerEvent) => {
-      const d = drag.current;
-      if (!d) return;
-      if (!d.active) {
-        if (Math.hypot(ev.clientX - d.startX, ev.clientY - d.startY) < 8) return;
-        d.active = true;
-      }
-      if (ev.cancelable) ev.preventDefault();
-      setGhost({ card: d.card, x: ev.clientX - d.grabX, y: ev.clientY - d.grabY, w: d.w });
-    };
-    const up = (ev: PointerEvent) => {
-      window.removeEventListener('pointermove', move);
-      window.removeEventListener('pointerup', up);
-      window.removeEventListener('pointercancel', up);
-      const d = drag.current;
-      drag.current = null;
-      setGhost(null);
-      if (!d?.active) return; // a tap falls through to onClick
-      const under = document.elementFromPoint(ev.clientX, ev.clientY);
-      const onTable = under instanceof Element && under.closest('.sz-tbl') !== null;
-      const swallow = (ce: Event) => {
-        ce.stopPropagation();
-        ce.preventDefault();
-        window.removeEventListener('click', swallow, true);
-      };
-      window.addEventListener('click', swallow, true);
-      window.setTimeout(() => window.removeEventListener('click', swallow, true), 500);
-      if (onTable) play(d.card);
-    };
-    window.addEventListener('pointermove', move, { passive: false });
-    window.addEventListener('pointerup', up);
-    window.addEventListener('pointercancel', up);
+    startDrag(e, card);
   };
   const nameContract = (contract: Contract) =>
     setGame((g) => (g && g.hands ? chooseContract(g, contract) : g));
@@ -334,7 +289,7 @@ export default function Trix() {
               interactive={legalIds.has(card.id)}
               picked={selected === card.id}
               className={legalIds.has(card.id) ? 'sz-tbl__playable' : ''}
-              onPointerDown={(e) => startDrag(card, e)}
+              onPointerDown={(e) => beginDrag(card, e)}
               onClick={() => tapCard(card)}
             />
           ))}
@@ -342,20 +297,20 @@ export default function Trix() {
       </div>
 
       {/* The card following the finger while it is dragged out to play. */}
-      {ghost && (
+      {drag && (
         <div
           className="sz-tbl__ghost"
           style={
             {
-              left: ghost.x,
-              top: ghost.y,
-              width: ghost.w,
-              '--sz-card-w': `${ghost.w}px`,
+              left: drag.x,
+              top: drag.y,
+              width: drag.w,
+              '--sz-card-w': `${drag.w}px`,
               '--sz-card-h-ratio': 1.4286,
             } as React.CSSProperties
           }
         >
-          <PlayingCard card={ghost.card} large={large} decorative />
+          <PlayingCard card={drag.payload} large={large} decorative />
         </div>
       )}
 

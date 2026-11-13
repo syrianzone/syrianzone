@@ -1,34 +1,31 @@
 import * as React from 'react';
 import { usePage, router } from '@inertiajs/react';
-import { Shield, User, Bus, Settings2, ChevronDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Shield, User, Bus, Settings2, ChevronDown, type LucideIcon } from 'lucide-react';
+import { cn } from '@/Lib/utils';
 
-// Preset identities, mirrored from AutoLoginDevUser::DEV_USERS; dev-only.
+// Preset identities, sent by AutoLoginDevUser as `dev.roles`; dev-only.
 //
 // These are not `users.role` values: each preset is a plain `user` account
 // holding an explicit capability list, named after the module it previews —
 // see AutoLoginDevUser.
-const ROLE_META: Record<string, { label: string; icon: React.ComponentType<{ className?: string }> }> = {
-    user:              { label: 'مستخدم (User)',                    icon: User },
-    transit_admin:     { label: 'مشرف تنقل (Transit)',               icon: Bus },
-    syofficial_admin:  { label: 'مشرف الحسابات الرسمية',            icon: Settings2 },
-    govapps_admin:     { label: 'مشرف التطبيقات الحكومية',          icon: Settings2 },
-    phonebook_admin:   { label: 'مشرف دليل الهاتف',                 icon: Settings2 },
-    places_admin:      { label: 'مشرف مشوار',                       icon: Settings2 },
-    users_admin:       { label: 'مشرف المستخدمين',                  icon: Settings2 },
-    admin:             { label: 'مدير (Admin)',                     icon: Settings2 },
-    superadmin:        { label: 'مدير عام (Superadmin)',            icon: Shield },
+const ROLE_ICONS: Record<string, LucideIcon> = {
+    user: User,
+    bus: Bus,
+    settings: Settings2,
+    shield: Shield,
 };
 
 export function DevRoleSwitcher() {
-    const { props } = usePage<{ dev?: { enabled: boolean; roles: string[]; currentRole: string | null } }>();
+    const { props } = usePage();
     const dev = props.dev;
     const [open, setOpen] = React.useState(false);
 
     if (!dev?.enabled) return null;
 
+    const roles = dev.roles;
     const current = dev.currentRole ?? 'superadmin';
-    const CurrentIcon = ROLE_META[current]?.icon ?? Shield;
+    const currentRole = roles.find((role) => role.id === current);
+    const CurrentIcon = ROLE_ICONS[currentRole?.icon ?? ''] ?? Shield;
 
     const switchTo = (role: string) => {
         setOpen(false);
@@ -46,7 +43,7 @@ export function DevRoleSwitcher() {
                     title="تبديل دور المستخدم (وضع التطوير)"
                 >
                     <CurrentIcon className="h-4 w-4 text-primary" />
-                    <span className="hidden sm:inline">{ROLE_META[current]?.label ?? current}</span>
+                    <span className="hidden sm:inline">{currentRole?.label ?? current}</span>
                     <ChevronDown className="h-3 w-3 opacity-60" />
                 </button>
 
@@ -55,15 +52,14 @@ export function DevRoleSwitcher() {
                         <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                             وضع التطوير — تبديل الدور
                         </p>
-                        {dev.roles.map((role: string) => {
-                            const Meta = ROLE_META[role] ?? { label: role, icon: Shield };
-                            const Icon = Meta.icon;
-                            const isActive = role === current;
+                        {roles.map((role) => {
+                            const Icon = ROLE_ICONS[role.icon] ?? Shield;
+                            const isActive = role.id === current;
                             return (
                                 <button
-                                    key={role}
+                                    key={role.id}
                                     type="button"
-                                    onClick={() => switchTo(role)}
+                                    onClick={() => switchTo(role.id)}
                                     className={cn(
                                         'flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors',
                                         isActive
@@ -72,7 +68,7 @@ export function DevRoleSwitcher() {
                                     )}
                                 >
                                     <Icon className="h-4 w-4" />
-                                    <span className="flex-1 text-right">{Meta.label}</span>
+                                    <span className="flex-1 text-right">{role.label}</span>
                                     {isActive && <span className="text-xs">✓</span>}
                                 </button>
                             );

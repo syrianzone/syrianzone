@@ -21,18 +21,39 @@ class PrayerController extends Controller
   // bounded. The list and its centres are the shared table in
   // resources/data/governorates.json, which WeatherController reads too.
 
-  // AlAdhan calculation methods (verified against GET /v1/methods).
-  // 3 (Muslim World League, Fajr 18° / Isha 17°) is the Syrian standard and
-  // the default everywhere. The method is a fiqh choice, never a coder
-  // default: the /muslim route exposes this list to the user instead of
-  // hardcoding a silent HighLatitudeRule (see Itqan #720).
-  public const METHODS = [0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
-
-  public const DEFAULT_METHOD = 3;
+  // AlAdhan calculation methods. The table is resources/data/prayer.json, which
+  // Domain/prayer/methods.ts reads too: `methods` is what the pickers offer, and
+  // `unlisted_method_ids` are ids the endpoint has always accepted (a client
+  // that stored one keeps it instead of being silently reset). 3 (Muslim World
+  // League, Fajr 18° / Isha 17°) is the Syrian standard and the default. The
+  // method is a fiqh choice, never a coder default: the /muslim route exposes
+  // this list to the user instead of hardcoding a silent HighLatitudeRule (see
+  // Itqan #720).
 
   // Only the six the widgets render. Aladhan also returns Imsak, Midnight and
   // the night thirds, which nothing on the board uses.
   private const PRAYERS = ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+
+  /**
+   * Every calculation method id the endpoint accepts.
+   *
+   * @return array<int, int>
+   */
+  public static function methods(): array
+  {
+    $prayer = Facts::prayer();
+    $ids = array_merge(
+      array_map('intval', array_column($prayer['methods'], 'id')),
+      array_map('intval', $prayer['unlisted_method_ids']),
+    );
+
+    return array_values(array_unique($ids));
+  }
+
+  public static function defaultMethod(): int
+  {
+    return (int) Facts::prayer()['default_method'];
+  }
 
   /**
    * The governorate ids the endpoint accepts.
@@ -70,13 +91,13 @@ class PrayerController extends Controller
       'governorate' => 'nullable|string|in:'.implode(',', self::governorateIds()),
       'latitude' => 'nullable|numeric|between:-90,90',
       'longitude' => 'nullable|numeric|between:-180,180',
-      'method' => 'nullable|integer|in:'.implode(',', self::METHODS),
+      'method' => 'nullable|integer|in:'.implode(',', self::methods()),
     ], [
       'governorate.in' => 'محافظة غير معروفة',
       'method.in' => 'طريقة حساب غير معروفة',
     ]);
 
-    $method = (int) ($validated['method'] ?? self::DEFAULT_METHOD);
+    $method = (int) ($validated['method'] ?? self::defaultMethod());
     $today = now()->timezone(self::timezone());
 
     // Custom coordinates (diaspora / custom city): unlike weather, prayer is

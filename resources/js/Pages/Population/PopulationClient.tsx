@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { sortCitiesByOrder, getCanonicalGovernorateName, getGovernorateDatasetNameEn, getGovernoratePcode } from '@/Domain/geography/governorates';
 import { buildLegend } from './utils/color-calculator';
+import { useIsMobile } from '@/Lib/useIsMobile';
 
 type DataType = typeof DATA_TYPES[keyof typeof DATA_TYPES];
 
@@ -30,6 +31,7 @@ const getWindDirection = (degrees: number) => {
 };
 
 export default function PopulationClient() {
+    const isMobile = useIsMobile();
     const [geoJsonData, setGeoJsonData] = useState<unknown>(null);
     const [currentDataType, setCurrentDataType] = useState<DataType>(DATA_TYPES.POPULATION);
     const [currentSourceId, setCurrentSourceId] = useState<number | null>(null);
@@ -91,13 +93,9 @@ export default function PopulationClient() {
     }, [currentDataType, livePopulationData]);
 
     useEffect(() => {
-        const handleResize = () => {
-            if (window.innerWidth >= 768) setIsPanelOpen(true);
-        };
-        window.addEventListener('resize', handleResize);
-        handleResize();
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
+        // The panel is open by default where it fits beside the map.
+        if (!isMobile) setIsPanelOpen(true);
+    }, [isMobile]);
 
     const currentSource = useMemo(() => {
         if (currentDataType === DATA_TYPES.RAINFALL) return null;
@@ -310,7 +308,7 @@ export default function PopulationClient() {
 
                                 if (rData) {
                                     setSelectedRainfallProvince({ name: nameAr, data: rData });
-                                    if (window.innerWidth < 768) setIsPanelOpen(true);
+                                    if (isMobile) setIsPanelOpen(true);
                                 }
                             }
 

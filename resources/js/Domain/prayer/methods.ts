@@ -1,7 +1,17 @@
-// AlAdhan calculation methods. IDs verified against GET /v1/methods.
-// Method 3 (Muslim World League, Fajr 18° / Isha 17°) is the Syrian standard
-// and the default. The choice is exposed to the user on purpose: per Itqan
-// #720 the method is a fiqh decision, never a silent coder default.
+import raw from '../../../data/prayer.json';
+
+/**
+ * AlAdhan calculation methods.
+ *
+ * The table is `resources/data/prayer.json` (documented in
+ * `resources/data/README.md`) and `App\Http\Controllers\PrayerController` reads
+ * the same file through `App\Support\Facts`: the picker offers `methods`, and
+ * the server also accepts `unlisted_method_ids` so a method stored by another
+ * client (7, 14, 15, 16) is kept rather than silently replaced.
+ *
+ * The choice is exposed to the user on purpose: per Itqan #720 the method is a
+ * fiqh decision, never a silent coder default.
+ */
 export interface PrayerMethod {
   id: number;
   nameAr: string;
@@ -9,22 +19,26 @@ export interface PrayerMethod {
   detail: string;
 }
 
-export const PRAYER_METHODS: PrayerMethod[] = [
-  { id: 3, nameAr: 'رابطة العالم الإسلامي', nameEn: 'Muslim World League', detail: 'فجر 18° / عشاء 17° — المعتمد في سوريا' },
-  { id: 5, nameAr: 'الهيئة المصرية للمساحة', nameEn: 'Egyptian General Authority', detail: 'فجر 19.5° / عشاء 17.5°' },
-  { id: 4, nameAr: 'جامعة أم القرى (مكة)', nameEn: 'Umm al-Qura, Makkah', detail: 'فجر 18.5° / عشاء 90 دقيقة بعد المغرب' },
-  { id: 1, nameAr: 'جامعة العلوم الإسلامية (كراتشي)', nameEn: 'Karachi', detail: 'فجر 18° / عشاء 18°' },
-  { id: 2, nameAr: 'الجمعية الإسلامية لأمريكا الشمالية', nameEn: 'ISNA', detail: 'فجر 15° / عشاء 15°' },
-  { id: 8, nameAr: 'الخليج', nameEn: 'Gulf Region', detail: 'فجر 19.5° / عشاء 90 دقيقة' },
-  { id: 9, nameAr: 'الكويت', nameEn: 'Kuwait', detail: 'فجر 18° / عشاء 17.5°' },
-  { id: 10, nameAr: 'قطر', nameEn: 'Qatar', detail: 'فجر 18° / عشاء 90 دقيقة' },
-  { id: 11, nameAr: 'سنغافورة', nameEn: 'Singapore', detail: 'فجر 20° / عشاء 18°' },
-  { id: 12, nameAr: 'فرنسا', nameEn: 'UOIF, France', detail: 'فجر 12° / عشاء 12°' },
-  { id: 13, nameAr: 'تركيا (الديانة)', nameEn: 'Diyanet, Turkey', detail: 'فجر 18° / عشاء 17°' },
-  { id: 0, nameAr: 'جعفري (شيعة)', nameEn: 'Shia Ithna-Ashari', detail: 'فجر 16° / عشاء 14°' },
-];
+/** What the settings picker offers, in display order. */
+export const PRAYER_METHODS: PrayerMethod[] = raw.methods.map((row) => ({
+  id: row.id,
+  nameAr: row.name_ar,
+  nameEn: row.name_en,
+  detail: row.detail,
+}));
 
-export const DEFAULT_PRAYER_METHOD = 3;
+export const DEFAULT_PRAYER_METHOD: number = raw.default_method;
+
+/** Every id the timings endpoint accepts: the offered list plus the unlisted ids. */
+const ACCEPTED_METHOD_IDS: ReadonlySet<number> = new Set([
+  ...PRAYER_METHODS.map((method) => method.id),
+  ...raw.unlisted_method_ids,
+]);
+
+/** True for a method a stored preference may hold, offered or not. */
+export function isAcceptedPrayerMethod(id: number): boolean {
+  return ACCEPTED_METHOD_IDS.has(id);
+}
 
 export const PRAYER_KEYS = ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'] as const;
 export type PrayerKey = (typeof PRAYER_KEYS)[number];

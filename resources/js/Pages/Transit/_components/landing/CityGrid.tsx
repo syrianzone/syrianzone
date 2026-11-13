@@ -1,14 +1,14 @@
 import { Link } from '@inertiajs/react'
-import citiesData from '@/Domain/transit/cities.json'
 import CityCard from './CityCard'
 import type { City } from '../../_types'
 
 interface CityGridProps {
-  cities?: City[]
+  /** The server's city list (`/transit` renders it into the first HTML). */
+  cities: City[]
 }
 
-export default function CityGrid({ cities: propCities }: CityGridProps) {
-  const cities = (propCities && propCities.length > 0 ? propCities : (citiesData as City[])).filter((c) => c.status === 'active')
+export default function CityGrid({ cities: allCities }: CityGridProps) {
+  const cities = allCities.filter((c) => c.status === 'active')
   
   const sortedCities = [...cities].sort((a, b) => {
     const aReady = a.routeCount > 0

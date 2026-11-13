@@ -4,6 +4,7 @@ namespace App\Mcp\Tools\Transit;
 
 use App\Services\Transit\TransitAdminService;
 use App\Services\Transit\TransitPresenter;
+use App\Services\Transit\TransitRules;
 use App\Support\Agents\AgentContext;
 use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -30,13 +31,11 @@ class ListTransitRoutesTool extends TransitTool
 {
     protected array $permissions = [PermissionCatalogue::TRANSIT_REVIEW_DRAFTS];
 
-    public const STATUSES = ['published', 'disapproved', 'hidden'];
-
     public function schema(JsonSchema $schema): array
     {
         return [
             'status' => $schema->string()
-                ->enum([...self::STATUSES, 'all'])
+                ->enum([...TransitRules::STATUSES, 'all'])
                 ->description('Route status to list. Defaults to "all".')
                 ->default('all'),
 
@@ -72,7 +71,7 @@ class ListTransitRoutesTool extends TransitTool
     protected function run(Request $request, AgentContext $context): Response|ResponseFactory
     {
         $validated = $request->validate([
-            'status' => 'sometimes|in:'.implode(',', [...self::STATUSES, 'all']),
+            'status' => 'sometimes|'.TransitRules::statusRule(withAll: true),
             'city_id' => 'sometimes|string|max:64',
         ]);
 

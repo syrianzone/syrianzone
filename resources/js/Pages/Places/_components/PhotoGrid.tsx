@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/Components/ui/button';
 import { discovery, type GridPhoto } from '@/Domain/places/discovery';
 
 // media-query hook instead of md: utilities: the code-split css chunks each emit

@@ -6,7 +6,7 @@
 import type { Card, Suit } from '@/Domain/games/cards';
 import { power } from './hand';
 
-export interface ShedRun {
+interface ShedRun {
   /** Lowest and highest power laid down in this suit, inclusive. */
   lo: number;
   hi: number;

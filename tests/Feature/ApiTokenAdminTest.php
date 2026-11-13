@@ -259,6 +259,23 @@ test('a capability holder revokes only their own agent tokens', function () {
         ->and(PersonalAccessToken::find($foreign->id))->not->toBeNull();
 });
 
+test('a phone session with extra abilities is still hidden and not revocable here', function () {
+    // Membership decides "this is a phone session", not array identity: a token
+    // that ever carries `mobile` next to another ability must not appear on the
+    // agent-token page, nor be revocable through it.
+    $staff = moduleStaff('places');
+    $mobile = $staff->createToken('phone', ['mobile', 'places.review'])->accessToken;
+
+    $this->actingAs($staff)
+        ->get('/admin/api-tokens')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('tokens', []));
+
+    $this->actingAs($staff)->deleteJson("/api/v1/admin/api-tokens/{$mobile->id}")->assertNotFound();
+
+    expect(PersonalAccessToken::find($mobile->id))->not->toBeNull();
+});
+
 test('revoking every token of a user stays superadmin-only', function () {
     $staff = moduleStaff('places');
     app(TokenIssuer::class)->issue($staff, 'mine', ['places.review']);

@@ -1,6 +1,6 @@
 import * as React from "react"
 import { ChevronDown } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn } from "@/Lib/utils"
 
 interface AccordionItemContextProps {
   value: string
@@ -10,22 +10,35 @@ interface AccordionItemContextProps {
 
 const AccordionItemContext = React.createContext<AccordionItemContextProps | null>(null)
 
-interface AccordionProps {
-  type?: "single" | "multiple"
+export type AccordionType = "single" | "multiple"
+
+interface AccordionBaseProps {
   defaultValue?: string | string[]
   value?: string | string[]
-  onValueChange?: (value: any) => void
   children: React.ReactNode
   className?: string
 }
 
-export function Accordion({
-  defaultValue,
-  value: valueProp,
-  onValueChange,
-  children,
-  className,
-}: AccordionProps) {
+/**
+ * A closing accordion keeps one panel open at a time and reports a string; a
+ * multiple one lets several open at once and reports the array, so the callback
+ * a caller writes is checked against the mode it asked for.
+ */
+type AccordionProps =
+  | (AccordionBaseProps & { type?: "single"; onValueChange?: (value: string) => void })
+  | (AccordionBaseProps & { type: "multiple"; onValueChange?: (value: string[]) => void })
+
+/**
+ * The open items after one is clicked: `single` replaces the open panel,
+ * `multiple` toggles the clicked one and keeps its siblings open.
+ */
+export function nextSelection(type: AccordionType, open: readonly string[], value: string): string[] {
+  if (open.includes(value)) return open.filter((entry) => entry !== value)
+  return type === "multiple" ? [...open, value] : [value]
+}
+
+export function Accordion(props: AccordionProps) {
+  const { defaultValue, value: valueProp, children, className } = props
   const [selectedValues, setSelectedValues] = React.useState<string[]>(() => {
     if (Array.isArray(valueProp)) return valueProp
     if (typeof valueProp === "string") return [valueProp]
@@ -40,21 +53,17 @@ export function Accordion({
   }, [valueProp])
 
   const toggleItem = (val: string) => {
-    let next: string[]
-    if (selectedValues.includes(val)) {
-      next = selectedValues.filter((v) => v !== val)
-    } else {
-      next = [val]
-    }
+    const next = nextSelection(props.type ?? "single", selectedValues, val)
     setSelectedValues(next)
-    onValueChange?.(next[0] || "")
+    if (props.type === "multiple") props.onValueChange?.(next)
+    else props.onValueChange?.(next[0] || "")
   }
 
   return (
     <div className={cn("space-y-2", className)}>
       {React.Children.map(children, (child) => {
-        if (!React.isValidElement(child)) return null
-        const itemValue = (child.props as any).value as string
+        if (!React.isValidElement<{ value?: string }>(child)) return null
+        const itemValue = child.props.value ?? ""
         const isOpen = selectedValues.includes(itemValue)
         return (
           <AccordionItemContext.Provider

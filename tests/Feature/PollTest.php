@@ -150,7 +150,8 @@ test('vote requires minimum 3 selections', function () {
         'pollSlug' => 'test',
         'deviceId' => 'test-device-123',
         'tiers' => ['S' => [['candidateId' => $candidate->id]]],
-    ])->assertStatus(400);
+    ])->assertStatus(422)
+        ->assertJsonPath('message', 'يجب اختيار 3 مرشحين على الأقل.');
 });
 
 test('voting is rate limited', function () {
@@ -173,5 +174,5 @@ test('voting is rate limited', function () {
         $response = $this->postJson('/api/submit', $payload);
     }
 
-    $response->assertStatus(429)->assertJsonPath('error', 'Too many votes. Please slow down.');
+    $response->assertStatus(429)->assertJsonPath('error', 'لقد وصلت إلى حد التصويت المسموح. يرجى المحاولة بعد قليل.');
 });

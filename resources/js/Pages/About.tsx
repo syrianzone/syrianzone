@@ -6,6 +6,7 @@ import MainLayout from '@/Layouts/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/card';
 import { Separator } from '@/Components/ui/separator';
 import { Button } from '@/Components/ui/button';
+import { MEDIA_BASE } from '@/Domain/govapps/media';
 
 interface Contributor {
     login: string;
@@ -254,7 +255,7 @@ export default function About({ contributors = [] }: { contributors?: Contributo
                                         </a>
                                     </Button>
                                     <Button variant="outline" asChild size="sm" className="gap-2">
-                                        <a href="https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/downloads/brandkit-y5sZMu.zip" target="_blank" rel="noreferrer">
+                                        <a href={`${MEDIA_BASE}/downloads/brandkit-y5sZMu.zip`} target="_blank" rel="noreferrer">
                                             <Download className="w-4 h-4" />
                                             تحميل الهوية البصرية (Brand Kit)
                                         </a>

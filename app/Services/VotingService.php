@@ -13,6 +13,13 @@ use Illuminate\Validation\ValidationException;
 
 class VotingService
 {
+    /**
+     * A ballot that scores fewer candidates than this is refused as incomplete.
+     * It is a rule of the vote, so it lives with the rest of the submission and
+     * not in the controller that happens to call it.
+     */
+    public const MIN_SELECTIONS = 3;
+
     private const TIER_MINIMUMS = ['S' => 50, 'A' => 40, 'B' => 30, 'C' => 20, 'D' => 10, 'F' => 0];
 
     private const TIER_BONUSES = [
@@ -28,6 +35,7 @@ class VotingService
     {
         $voteDay = Carbon::now($poll->safeTimezone())->startOfDay();
 
+        $this->rejectIncompleteBallot($tiers);
         $this->rejectIneligibleCandidates($poll, $tiers);
 
         // One ballot per device per poll per day. The DB unique index
@@ -36,7 +44,7 @@ class VotingService
         // instead of a 500, while the unique index wins races.
         if (Ballot::where('poll_id', $poll->id)->where('vote_day', $voteDay)->where('voter_key', $voterKey)->exists()) {
             throw ValidationException::withMessages([
-                'tiers' => 'You have already voted today.',
+                'tiers' => 'لقد صوّتت اليوم بالفعل.',
             ]);
         }
 
@@ -56,7 +64,7 @@ class VotingService
                 // ballot that counts as "voted" but scores nothing.
                 if (empty($scoreDelta)) {
                     throw ValidationException::withMessages([
-                        'tiers' => 'Ballot contains no valid candidates.',
+                        'tiers' => 'لم يتضمّن التصويت أي مرشح صالح.',
                     ]);
                 }
 
@@ -67,10 +75,26 @@ class VotingService
             // index rejected the second. Report as already-voted, not 500.
             if (str_contains($e->getMessage(), 'ballots_poll_day_voter_unique') || ($e->errorInfo[1] ?? null) === 1062) {
                 throw ValidationException::withMessages([
-                    'tiers' => 'You have already voted today.',
+                    'tiers' => 'لقد صوّتت اليوم بالفعل.',
                 ]);
             }
             throw $e;
+        }
+    }
+
+    /**
+     * A ballot must score at least MIN_SELECTIONS candidates. An under-filled
+     * ballot is refused before anything is written, so it is a validation error
+     * of the same field the client fills (`tiers`).
+     *
+     * @param  array<string, mixed>  $tiers
+     */
+    private function rejectIncompleteBallot(array $tiers): void
+    {
+        if (collect($tiers)->flatten(1)->count() < self::MIN_SELECTIONS) {
+            throw ValidationException::withMessages([
+                'tiers' => 'يجب اختيار '.self::MIN_SELECTIONS.' مرشحين على الأقل.',
+            ]);
         }
     }
 

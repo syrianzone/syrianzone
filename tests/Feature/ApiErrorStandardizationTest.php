@@ -43,7 +43,7 @@ test('central exception handler renders DomainActionException to standard JSON m
         ->assertJsonPath('message', 'العنصر غير موجود');
 });
 
-test('poll submit under-minimum selection returns both standard message and legacy error key', function () {
+test('poll submit under-minimum selection is an Arabic validation refusal, not a legacy envelope', function () {
     $poll = Poll::create([
         'id' => '00000000-0000-0000-0000-000000000099',
         'title' => 'Error Contract Poll',
@@ -57,9 +57,11 @@ test('poll submit under-minimum selection returns both standard message and lega
         'tiers' => ['S' => ['only-one']],
         'deviceId' => 'device-standard-test-1234',
     ])
-        ->assertStatus(400)
-        ->assertJsonPath('message', 'Minimum selection is 3')
-        ->assertJsonPath('error', 'Minimum selection is 3');
+        ->assertStatus(422)
+        ->assertJsonPath('message', 'يجب اختيار 3 مرشحين على الأقل.')
+        // The rule now lives in VotingService and refuses through the standard
+        // validation envelope, so there is no second `error` copy of the text.
+        ->assertJsonMissingPath('error');
 });
 
 test('voting rate limiter returns both standard message and legacy error key on 429', function () {
@@ -85,8 +87,8 @@ test('voting rate limiter returns both standard message and legacy error key on 
         'deviceId' => 'device-rate-limit-1234',
     ])
         ->assertStatus(429)
-        ->assertJsonPath('message', 'Too many votes. Please slow down.')
-        ->assertJsonPath('error', 'Too many votes. Please slow down.');
+        ->assertJsonPath('message', 'لقد وصلت إلى حد التصويت المسموح. يرجى المحاولة بعد قليل.')
+        ->assertJsonPath('error', 'لقد وصلت إلى حد التصويت المسموح. يرجى المحاولة بعد قليل.');
 });
 
 test('unauthenticated user settings and radio usage endpoints include standard message and legacy error', function () {
@@ -147,6 +149,6 @@ test('guess who endpoints include both standard message and legacy error on refu
 test('app icon endpoint includes standard message while preserving icon null on 400', function () {
     $this->getJson('/api/app-icon?store=invalid')
         ->assertStatus(400)
-        ->assertJsonPath('message', 'Unsupported store.')
+        ->assertJsonPath('message', 'المتجر غير مدعوم.')
         ->assertJsonPath('icon', null);
 });

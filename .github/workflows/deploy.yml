@@ -16,36 +16,10 @@ permissions:
 
 jobs:
   tests:
-    name: run tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-
-      - name: prepare test environment
-        run: cp .env.example .env
-
-      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
-        with:
-          php-version: '8.4'
-          coverage: none
-
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
-
-      - name: install PHP dependencies
-        run: composer install --no-interaction --prefer-dist --no-progress
-
-      - name: build frontend assets
-        run: |
-          bun install --frozen-lockfile
-          bun run build
-
-      - name: type-check and run frontend tests
-        run: |
-          bunx tsc --noEmit
-          bun run test:js
-
-      - name: run test suite
-        run: php artisan test
+    name: run the gate
+    # One reusable workflow, shared with staging: scripts/gate.sh holds the
+    # commands (typecheck, frontend tests, PHP tests, advisory Pint).
+    uses: ./.github/workflows/tests.yml
 
   build:
     name: build and push image

@@ -1,15 +1,15 @@
 import React from 'react';
-import { api } from '@/Lib/api';
 import { Check, Palette } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/Components/ui/button';
 import {
     Popover,
     PopoverContent,
     PopoverTrigger,
-} from '@/components/ui/popover';
+} from '@/Components/ui/popover';
 import { useAuth } from '@/Contexts/AuthContext';
-import { applyTheme, getThemePreference, THEME_REGISTRY } from '@/lib/theme';
+import { applyTheme, THEME_REGISTRY, useThemePreference } from '@/Lib/theme';
 import { applyFont, getFontPreference, FontPreference } from '@/Lib/font';
+import { saveAccountSettings, type AccountSettingsPatch } from '@/Domain/settings/accountSettings';
 
 const FONT_OPTIONS: Array<[FontPreference, string]> = [
     ['ibm-plex', 'Plex'],
@@ -20,33 +20,26 @@ const FONT_OPTIONS: Array<[FontPreference, string]> = [
 // navbar next to the account button, independent of the auth state.
 export default function AppearanceMenu({ className }: { className?: string }) {
     const { user } = useAuth();
-    const [mounted, setMounted] = React.useState(false);
-    const [currentTheme, setCurrentTheme] = React.useState<string>(getThemePreference());
+    const currentTheme = useThemePreference();
     const [currentFont, setCurrentFont] = React.useState<FontPreference>(getFontPreference());
 
-    // Stay in sync when the theme/font change elsewhere (swatches, other menus).
+    // The font half of the appearance: `Lib/font.ts` has no document
+    // subscription yet, so the menu watches the attribute it applies.
     React.useEffect(() => {
-        const sync = () => {
-            setMounted(true);
-            setCurrentTheme(getThemePreference());
-            setCurrentFont(getFontPreference());
-        };
-        sync();
+        const sync = () => setCurrentFont(getFontPreference());
+        // `applyFont` sets data-font; read it back when a surface changes it.
         const observer = new MutationObserver(sync);
-        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-font'] });
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-font'] });
         return () => observer.disconnect();
     }, []);
 
-    const saveSetting = (settings: Record<string, string>) => {
+    const saveSetting = (settings: AccountSettingsPatch) => {
         if (!user) return;
-        // Background mirror of the appearance choice, which is already applied
-        // and stored on this device.
-        api.post('/api/user/settings', { settings }).catch(() => {});
+        saveAccountSettings(settings);
     };
 
     const handleThemeChange = (themeId: string) => {
         applyTheme(themeId);
-        setCurrentTheme(themeId);
         saveSetting({ theme: themeId });
     };
 
@@ -70,7 +63,7 @@ export default function AppearanceMenu({ className }: { className?: string }) {
                     className={`h-9 w-9 sm:h-10 sm:w-10 rounded-full hover:bg-accent/50 ${className ?? ''}`}
                     title="المظهر والخط"
                 >
-                    {mounted && activeTheme ? (
+                    {activeTheme ? (
                         <span
                             aria-hidden="true"
                             className="h-4 w-4 sm:h-5 sm:w-5 rounded-full overflow-hidden shadow-sm"
@@ -108,9 +101,8 @@ export default function AppearanceMenu({ className }: { className?: string }) {
                                             onClick={() => handleThemeChange(t.id)}
                                             className={`flex flex-1 items-center justify-center gap-1.5 rounded-md border px-2 py-1.5 text-xs font-medium transition-colors ${isActive ? 'border-primary bg-accent text-accent-foreground' : 'border-border text-foreground hover:border-primary'}`}
                                         >
-                                            {t.id !== 'damascus-rose' && swatch}
+                                            {swatch}
                                             <span>{t.shortNameAr ?? t.nameAr}</span>
-                                            {t.id === 'damascus-rose' && swatch}
                                             {isActive && <Check aria-hidden="true" className="h-3.5 w-3.5 text-primary" />}
                                         </button>
                                     );

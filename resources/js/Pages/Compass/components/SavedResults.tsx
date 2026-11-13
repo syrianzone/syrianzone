@@ -7,7 +7,8 @@ import { Badge } from '@/Components/ui/badge';
 import { Separator } from '@/Components/ui/separator';
 import { Trash2, History } from 'lucide-react';
 import { VERSION_LABEL, type CompassResult as Result } from '@/Domain/compass/types';
-import { loadResults, deleteAccountResult } from '../lib/storage';
+import { loadResults, deleteAccountResult, removeLocalResult } from '../lib/storage';
+import { formatGregorianSyrianShort } from '@/Lib/syrian-date';
 import { SPECTRA } from '@/Domain/compass/spectra';
 import { COMPASS_FLAGS } from '../flags';
 
@@ -50,11 +51,11 @@ export default function SavedResults({
       }
       onChanged();
     } else {
-      // local-only: rewrite localStorage without this row
-      const kept = loadResults().filter((r) => r.id !== row.id);
-      try {
-        localStorage.setItem('sz-compass-v2-results', JSON.stringify(kept));
-      } catch {}
+      const kept = removeLocalResult(row.id);
+      if (kept === null) {
+        notify.error('تعذّر حذف النتيجة من هذا الجهاز');
+        return;
+      }
       setLocal(kept);
     }
   };
@@ -83,7 +84,7 @@ export default function SavedResults({
                   {COMPASS_FLAGS.showCharacterNames && r.topFigure ? ` · ${r.topFigure}` : ''}
                 </p>
                 <p className="text-[11px] text-muted-foreground">
-                  {new Date(r.createdAt).toLocaleDateString('ar')} · {VERSION_LABEL[r.version] ?? r.version}
+                  {formatGregorianSyrianShort(r.createdAt)} · {VERSION_LABEL[r.version] ?? r.version}
                   {r.topScore != null ? ` · ${Math.round(r.topScore * 100)}%` : ''}
                 </p>
               </button>

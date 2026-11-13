@@ -21,7 +21,7 @@ class GuessWhoSeeder extends Seeder
             return;
         }
 
-        $poll = Poll::where('slug', 'best-ministers')->first();
+        $poll = Poll::where('slug', Poll::coreSlug())->first();
         if (!$poll) {
             $this->command?->info("Best Ministers poll not found. Seeding with dummy categories.");
             $this->seedDummyData();

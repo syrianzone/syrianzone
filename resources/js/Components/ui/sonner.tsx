@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Toaster as Sonner, toast } from "sonner"
-import { useColorScheme } from "@/lib/theme"
+import { useColorScheme } from "@/Lib/theme"
 
 type ToasterProps = React.ComponentProps<typeof Sonner>
 

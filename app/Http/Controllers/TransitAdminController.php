@@ -2,13 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\DomainActionException;
 use App\Exceptions\Transit\TransitActionException;
 use App\Http\Controllers\Concerns\ChecksTransitScope;
 use App\Models\Route;
 use App\Models\RouteDraft;
 use App\Services\Transit\TransitAdminService;
+use App\Services\Transit\TransitPresenter;
 use App\Services\Transit\TransitRouteComposer;
-use App\Support\Facts;
+use App\Services\Transit\TransitRules;
 use App\Support\Permissions\PermissionCatalogue;
 use App\Support\RejectionReason;
 use Illuminate\Http\JsonResponse;
@@ -42,7 +44,7 @@ class TransitAdminController extends Controller
     public function approve(Request $request, $id): SymfonyResponse
     {
         $validated = $request->validate([
-            'color_index' => 'nullable|integer|min:0|max:'.Facts::transit()['color_index_max'],
+            'color_index' => TransitRules::colorIndex(),
         ]);
 
         $draft = RouteDraft::with('linkedRoute')->findOrFail($id);
@@ -54,21 +56,18 @@ class TransitAdminController extends Controller
             $this->ensureTransitCityAccess($request, $linkedCityId, [PermissionCatalogue::TRANSIT_APPROVE]);
         }
 
-        try {
-            $route = $this->transit->approveDraft(
+        return $this->respond(
+            'Failed to approve draft',
+            fn () => $this->transit->approveDraft(
                 $draft,
                 $validated['color_index'] ?? null,
                 $request->user()?->getAuthIdentifier(),
-            );
-        } catch (TransitActionException $e) {
-            throw $e;
-        } catch (\Exception $e) {
-            return $this->failure('Failed to approve draft', $e);
-        }
-
-        $message = $draft->route_id ? 'Draft approved and route updated' : 'Draft approved';
-
-        return response()->json(['message' => $message, 'route' => $route]);
+            ),
+            fn (Route $approved) => response()->json([
+                'message' => $draft->route_id ? 'Draft approved and route updated' : 'Draft approved',
+                'route' => $approved,
+            ]),
+        );
     }
 
     public function reject(Request $request, $id): SymfonyResponse
@@ -106,7 +105,7 @@ class TransitAdminController extends Controller
     public function updateRouteStatus(Request $request, $id): SymfonyResponse
     {
         $validated = $request->validate([
-            'status' => 'required|string|in:published,disapproved,hidden',
+            'status' => 'required|string|'.TransitRules::statusRule(),
         ]);
 
         $route = Route::findOrFail($id);
@@ -149,19 +148,15 @@ class TransitAdminController extends Controller
             [PermissionCatalogue::TRANSIT_EDIT_ROUTES],
         );
 
-        try {
-            $moved = $this->transit->moveRoute(
+        return $this->respond(
+            'Failed to move route',
+            fn () => $this->transit->moveRoute(
                 $route,
                 $validated['city_id'],
                 $request->user()?->getAuthIdentifier(),
-            );
-        } catch (TransitActionException $e) {
-            throw $e;
-        } catch (\Exception $e) {
-            return $this->failure('Failed to move route', $e);
-        }
-
-        return response()->json(['message' => 'Route moved successfully', 'route' => $moved]);
+            ),
+            fn (Route $moved) => response()->json(['message' => 'Route moved successfully', 'route' => $moved]),
+        );
     }
 
     /**
@@ -174,13 +169,11 @@ class TransitAdminController extends Controller
 
         $this->ensureTransitCityAccess($request, $route->city_id, [PermissionCatalogue::TRANSIT_DELETE_ROUTES]);
 
-        try {
-            $this->transit->destroyRoute($route, $request->user()?->getAuthIdentifier());
-        } catch (\Exception $e) {
-            return $this->failure('Failed to delete route', $e);
-        }
-
-        return response()->json(['message' => 'Route deleted']);
+        return $this->respond(
+            'Failed to delete route',
+            fn () => $this->transit->destroyRoute($route, $request->user()?->getAuthIdentifier()),
+            fn () => response()->json(['message' => 'Route deleted']),
+        );
     }
 
     public function updateRoute(Request $request, $id): SymfonyResponse
@@ -194,7 +187,7 @@ class TransitAdminController extends Controller
         $validated = $request->validate([
             'name_ar' => 'sometimes|string|max:255',
             'name_en' => 'nullable|string|max:255',
-            'color_index' => 'nullable|integer|min:0|max:'.Facts::transit()['color_index_max'],
+            'color_index' => TransitRules::colorIndex(),
             'price_new' => 'nullable|integer',
             'price_old' => 'nullable|integer',
         ]);
@@ -243,20 +236,16 @@ class TransitAdminController extends Controller
 
         $this->ensureTransitCitiesAccess($request, [$routeA->city_id, $routeB->city_id], [PermissionCatalogue::TRANSIT_EDIT_ROUTES]);
 
-        try {
-            $result = $this->composer->combine(
+        return $this->respond(
+            'Failed to combine routes',
+            fn () => $this->composer->combine(
                 $routeA,
                 $routeB,
                 $validated,
                 $request->user()?->getAuthIdentifier(),
-            );
-        } catch (TransitActionException $e) {
-            throw $e;
-        } catch (\Exception $e) {
-            return $this->failure('Failed to combine routes', $e);
-        }
-
-        return response()->json(['message' => 'Routes combined successfully', 'route' => $result->route]);
+            ),
+            fn ($result) => response()->json(['message' => 'Routes combined successfully', 'route' => $result->route]),
+        );
     }
 
     public function splitRoute(Request $request): SymfonyResponse
@@ -274,24 +263,20 @@ class TransitAdminController extends Controller
 
         $this->ensureTransitCityAccess($request, $route->city_id, [PermissionCatalogue::TRANSIT_EDIT_ROUTES]);
 
-        try {
-            $result = $this->composer->split(
+        return $this->respond(
+            'Failed to split route',
+            fn () => $this->composer->split(
                 $route,
                 $validated['split_stop_id'],
                 $validated,
                 $request->user()?->getAuthIdentifier(),
-            );
-        } catch (TransitActionException $e) {
-            throw $e;
-        } catch (\Exception $e) {
-            return $this->failure('Failed to split route', $e);
-        }
-
-        return response()->json([
-            'message' => 'Route split successfully',
-            'route_a' => $result->routeA,
-            'route_b' => $result->routeB,
-        ]);
+            ),
+            fn ($result) => response()->json([
+                'message' => 'Route split successfully',
+                'route_a' => $result->routeA,
+                'route_b' => $result->routeB,
+            ]),
+        );
     }
 
     public function getRouteStops(Request $request, $id): SymfonyResponse
@@ -313,7 +298,7 @@ class TransitAdminController extends Controller
         return response()->json($formatted);
     }
 
-    public function getRouteGeoJson(Request $request, $id): SymfonyResponse
+    public function getRouteGeoJson(Request $request, $id, TransitPresenter $presenter): SymfonyResponse
     {
         $route = Route::findOrFail($id);
 
@@ -323,32 +308,13 @@ class TransitAdminController extends Controller
 
         $features = [];
         if ($geomJson) {
-            $features[] = [
-                'type' => 'Feature',
-                'geometry' => json_decode($geomJson, true),
-                'properties' => [
-                    'id' => $route->id,
-                    'nameAr' => $route->name_ar,
-                    'nameEn' => $route->name_en,
-                    'colorIndex' => (int) ($route->color_index ?? 0),
-                    'color_index' => (int) ($route->color_index ?? 0),
-                    'priceOld' => $route->price_old,
-                    'priceNew' => $route->price_new,
-                ],
-            ];
+            $features[] = $presenter->routeFeature($route, json_decode($geomJson, true));
         }
 
         foreach ($route->stopPoints() as $s) {
             $stopGeomJson = $s->geojson;
             if ($stopGeomJson) {
-                $features[] = [
-                    'type' => 'Feature',
-                    'geometry' => json_decode($stopGeomJson, true),
-                    'properties' => [
-                        'id' => $s->id,
-                        'nameAr' => $s->name_ar,
-                    ],
-                ];
+                $features[] = $presenter->stopFeature($s, json_decode($stopGeomJson, true));
             }
         }
 
@@ -356,6 +322,34 @@ class TransitAdminController extends Controller
             'type' => 'FeatureCollection',
             'features' => $features,
         ]);
+    }
+
+    /**
+     * Run a domain action, keeping the controller's two failure contracts.
+     *
+     * Refusals are domain answers: `bootstrap/app.php` renders them with the
+     * status the exception carries, so they are rethrown untouched. An
+     * unexpected failure keeps the legacy `{message, error}` envelope of
+     * `failure()`, which legacy callers reading `<error>` depend on — and which
+     * is why a plain catch around the whole call would swallow refusals into a
+     * 500.
+     *
+     * @template TReturn
+     *
+     * @param  callable(): TReturn  $action
+     * @param  callable(TReturn): SymfonyResponse  $success
+     */
+    private function respond(string $failureMessage, callable $action, callable $success): SymfonyResponse
+    {
+        try {
+            $result = $action();
+        } catch (DomainActionException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            return $this->failure($failureMessage, $e);
+        }
+
+        return $success($result);
     }
 
     /**

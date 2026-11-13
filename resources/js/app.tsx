@@ -1,10 +1,10 @@
 import '../css/app.css';
 
-import React, { Suspense, type ComponentType } from 'react';
+import { Suspense, type ComponentType } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createInertiaApp, router } from '@inertiajs/react';
-import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
-import { watchSystemTheme } from '@/lib/theme';
+import { pageResolver } from '@/Lib/pages';
+import { watchSystemTheme } from '@/Lib/theme';
 import { loadAnalytics, trackPageView } from '@/Lib/analyticsConsent';
 import { QueryProvider } from '@/Providers/QueryProvider';
 import { DirectionProvider } from '@radix-ui/react-direction';
@@ -40,19 +40,7 @@ createInertiaApp({
     // SeoHead supplies the full title (already carrying the brand), so the
     // callback is identity rather than appending the app name again.
     title: (title) => title || appName,
-    resolve: (name) => {
-        const path = `./Pages/${name}.tsx`;
-        const page = pages[path];
-        if (!page) throw new Error(`Page not found: ${name}`);
-
-        if (name.startsWith('Transit/admin')) {
-            return {
-                default: React.lazy(page),
-            };
-        }
-
-        return resolvePageComponent(path, pages);
-    },
+    resolve: pageResolver(pages),
     setup({ el, App, props }) {
         const root = createRoot(el);
         root.render(

@@ -188,7 +188,7 @@ class PollController extends Controller
         if ($poll->slug === Poll::coreSlug()
             && isset($validated['slug'])
             && $validated['slug'] !== Poll::coreSlug()) {
-            return response()->json(['message' => 'Cannot rename the core Best Ministers poll.'], 403);
+            return response()->json(['message' => 'لا يمكن إعادة تسمية الاستطلاع الأساسي.'], 403);
         }
 
         $poll->update($validated);
@@ -200,7 +200,7 @@ class PollController extends Controller
     {
         $poll = Poll::findOrFail($id);
         if ($poll->slug === Poll::coreSlug()) {
-            return response()->json(['message' => 'Cannot delete the core Best Ministers poll.'], 403);
+            return response()->json(['message' => 'لا يمكن حذف الاستطلاع الأساسي.'], 403);
         }
         $poll->delete();
 
@@ -299,14 +299,6 @@ class PollController extends Controller
             'tiers' => 'required|array',
             'deviceId' => 'required|string|min:8',
         ]);
-
-        $totalAssigned = collect($data['tiers'])->flatten(1)->count();
-        if ($totalAssigned < 3) {
-            return response()->json([
-                'message' => 'Minimum selection is 3',
-                'error' => 'Minimum selection is 3',
-            ], 400);
-        }
 
         $poll = Poll::idOrSlug($data['pollSlug'])->firstOrFail();
         $votingService->submit(

@@ -22,16 +22,16 @@ export function getRouteColor(colorIndex: number | string | null | undefined): s
 }
 
 /**
- * `line-color` for the published-routes layer: the route's `color_index` (the
- * GeoJSON key is `colorIndex`) wrapped around the palette, the same rule as
- * `getRouteColor`.
+ * `line-color` for the published-routes layer: the route's `colorIndex` wrapped
+ * around the palette, the same rule as `getRouteColor`. One key, one reader:
+ * the server and the studio both emit `colorIndex` and nothing else.
  */
 export function buildColorMatch(): maplibregl.ExpressionSpecification {
   return [
     'to-color',
     [
       'at',
-      ['%', ['abs', ['floor', ['to-number', ['coalesce', ['get', 'colorIndex'], ['get', 'color_index'], 0], 0]]], ROUTE_COLOR_COUNT],
+      ['%', ['abs', ['floor', ['to-number', ['get', 'colorIndex'], 0]]], ROUTE_COLOR_COUNT],
       ['literal', [...ROUTE_PALETTE]],
     ],
   ]

@@ -1,7 +1,7 @@
 import { MapPin } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Avatar, AvatarFallback, AvatarImage } from '@/Components/ui/avatar';
+import { Button } from '@/Components/ui/button';
+import { Dialog, DialogContent, DialogTitle } from '@/Components/ui/dialog';
 import type { Guide } from '@/Domain/places/discovery';
 import { LevelBadge, RANK_NAMES, rankName } from './LevelBadge';
 

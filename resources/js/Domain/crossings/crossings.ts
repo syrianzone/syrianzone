@@ -1,5 +1,5 @@
 import { shareOrCopy } from '@/Lib/webShare';
-import data from './crossings.json';
+import data from '../../../data/crossings.json';
 
 export type WorkWindow = { label?: string; start?: string; end?: string; h24?: boolean };
 

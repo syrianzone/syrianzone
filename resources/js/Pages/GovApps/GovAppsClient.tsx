@@ -1,8 +1,9 @@
 import React from 'react';
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/Components/ui/card";
 import { Smartphone, Globe, Pencil, Settings } from "lucide-react";
 import { useCanAny, useCanModule } from '@/Lib/useCan';
 import type { GovApp } from '@/Domain/govapps/types';
+import { DEFAULT_GOVAPP_ICON } from '@/Domain/govapps/media';
 import DirectoryEmptyState from '@/Components/directory/DirectoryEmptyState';
 import { DirectorySmartSearch } from '@/Components/directory/DirectorySearch';
 import { useDirectory, type DirectoryFacet } from '@/Components/directory/useDirectory';
@@ -45,8 +46,6 @@ function IosIcon({ className }: { className?: string }) {
 interface GovAppsClientProps {
     initialData: GovApp[];
 }
-
-const DEFAULT_GOVAPP_ICON = 'https://pub-1d51b625c56e4fd085c58a79672e1b15.r2.dev/govapps/mofa/icon.webp';
 
 function AppIcon({ app, className }: {
     app: GovApp;

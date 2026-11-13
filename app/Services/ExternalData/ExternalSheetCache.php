@@ -3,6 +3,8 @@
 namespace App\Services\ExternalData;
 
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 /**
  * The cache entries of the Google-Sheet-backed pages (/party, /sites).
@@ -53,6 +55,75 @@ final class ExternalSheetCache
     public static function fetchedAt(string $sheet): ?string
     {
         return Cache::get(self::fetchedAtKey($sheet));
+    }
+
+    /**
+     * Fetch one CSV sheet, check its header row, and return its rows keyed by
+     * header. Empty when anything failed — a non-2xx response, an unreachable
+     * host, a header the sheet no longer carries, or a body with no row — so a
+     * caller never caches an outage.
+     *
+     * Both sheets share this body: the fetch, the retry budget and the CSV loop
+     * must not exist twice, or a change to one silently leaves the other behind.
+     * Each caller keeps only its own row→array mapping.
+     *
+     * @param  array<int, string>  $requiredHeaders  cells a usable sheet must carry
+     * @param  bool  $lowercaseHeaders  the party sheet arrives mixed-case and is
+     *                                  matched case-insensitively
+     * @return array<int, array<string, string>>
+     */
+    public static function rows(string $sheet, string $url, array $requiredHeaders, bool $lowercaseHeaders = false): array
+    {
+        try {
+            $response = Http::timeout(8)->retry(2, 500)->get($url);
+
+            if (! $response->successful()) {
+                Log::warning("External sheet {$sheet}: HTTP ".$response->status());
+
+                return [];
+            }
+
+            $lines = explode("\n", trim($response->body()));
+            if (count($lines) < 2) {
+                return [];
+            }
+
+            $headers = array_map(
+                fn (string $header): string => $lowercaseHeaders ? strtolower(trim($header)) : trim($header),
+                str_getcsv($lines[0]),
+            );
+
+            // A renamed column must fail loudly, not silently drop every row.
+            foreach ($requiredHeaders as $required) {
+                if (! in_array($required, $headers, true)) {
+                    Log::warning("External sheet {$sheet} is missing a required header", ['headers' => $headers]);
+
+                    return [];
+                }
+            }
+
+            $rows = [];
+            for ($i = 1; $i < count($lines); $i++) {
+                if (trim($lines[$i]) === '') {
+                    continue;
+                }
+
+                $values = str_getcsv($lines[$i]);
+                $row = [];
+                foreach ($headers as $index => $header) {
+                    if ($index < count($values)) {
+                        $row[$header] = $values[$index];
+                    }
+                }
+                $rows[] = $row;
+            }
+
+            return $rows;
+        } catch (\Exception $e) {
+            Log::warning("External sheet {$sheet}: fetch failed", ['error' => $e->getMessage()]);
+
+            return [];
+        }
     }
 
     private static function fetchedAtKey(string $sheet): string

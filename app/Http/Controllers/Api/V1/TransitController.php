@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\City;
 use App\Models\Route;
 use App\Models\Stop;
-use App\Services\Transit\GovernorateIconService;
 use App\Services\Transit\PublishedRoutes;
+use App\Services\Transit\TransitCache;
+use App\Services\Transit\TransitCities;
+use App\Services\Transit\TransitPresenter;
 use App\Support\Facts;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -18,48 +20,14 @@ class TransitController extends Controller
     /** Most results one search returns per kind (routes, stops). */
     private const SEARCH_LIMIT = 50;
 
-    public function __construct(private readonly GovernorateIconService $governorateIcons) {}
+    public function __construct(
+        private readonly TransitCache $cache,
+        private readonly TransitPresenter $presenter,
+    ) {}
 
-    public function getCities()
+    public function getCities(TransitCities $cities)
     {
-        // Dedicated key: the /transit page caches the same rows under
-        // 'transit:cities', but without icons (they are code-split in the
-        // browser). Sharing one key would let whichever ran first decide the
-        // shape, so the public API keeps its own enriched copy.
-        $formatted = Cache::remember('transit:cities:api', 3600, function () {
-            $cities = City::select(
-                'id', 'name_ar', 'name_en', 'zoom', 'status',
-                DB::raw('ST_AsGeoJSON(center) as center_geojson'),
-                DB::raw('ST_AsGeoJSON(bounds) as bounds_geojson')
-            )->withCount(['routes as routeCount' => fn ($q) => $q->where('status', 'published')])->get();
-
-            return $cities->map(function ($city) {
-                $centerJson = json_decode($city->center_geojson, true);
-                $boundsJson = json_decode($city->bounds_geojson, true);
-
-                $minLng = $boundsJson['coordinates'][0][0][0];
-                $minLat = $boundsJson['coordinates'][0][0][1];
-                $maxLng = $boundsJson['coordinates'][0][2][0];
-                $maxLat = $boundsJson['coordinates'][0][2][1];
-
-                return [
-                    'id' => $city->id,
-                    'nameAr' => $city->name_ar,
-                    'nameEn' => $city->name_en,
-                    'status' => $city->status,
-                    'zoom' => $city->zoom,
-                    'center' => $centerJson['coordinates'],
-                    'bounds' => [
-                        [$minLng, $minLat],
-                        [$maxLng, $maxLat],
-                    ],
-                    'routeCount' => $city->routeCount,
-                    'icon' => $this->governorateIcons->forCity($city->id),
-                ];
-            });
-        });
-
-        return response()->json($formatted);
+        return response()->json($cities->forApi());
     }
 
     /**
@@ -89,7 +57,7 @@ class TransitController extends Controller
     public function getMapData($id)
     {
         $cityIds = $this->cityIdsFor($id);
-        $data = Cache::remember("transit:map-data:{$id}", 600, function () use ($cityIds) {
+        $data = Cache::remember($this->cache->mapDataKey($id), 600, function () use ($cityIds) {
             $routeGeometries = DB::table('route_geometries')
                 ->join('routes', 'route_geometries.route_id', '=', 'routes.id')
                 ->whereIn('routes.city_id', $cityIds)
@@ -97,21 +65,10 @@ class TransitController extends Controller
                 ->select('routes.*', DB::raw('ST_AsGeoJSON(route_geometries.geometry) as geojson'))
                 ->get();
 
-            $routeFeatures = $routeGeometries->map(function ($r) {
-                return [
-                    'type' => 'Feature',
-                    'geometry' => json_decode($r->geojson, true),
-                    'properties' => [
-                        'id' => $r->id,
-                        'nameAr' => $r->name_ar,
-                        'nameEn' => $r->name_en,
-                        'colorIndex' => (int) ($r->color_index ?? 0),
-                        'color_index' => (int) ($r->color_index ?? 0),
-                        'priceOld' => $r->price_old,
-                        'priceNew' => $r->price_new,
-                    ],
-                ];
-            });
+            $routeFeatures = $routeGeometries->map(fn ($r) => $this->presenter->routeFeature(
+                $r,
+                json_decode($r->geojson, true),
+            ));
 
             $stops = DB::table('stops')
                 ->whereIn('city_id', $cityIds)
@@ -127,19 +84,13 @@ class TransitController extends Controller
                 ->select('route_stop.stop_id', 'route_stop.route_id')
                 ->get()
                 ->groupBy('stop_id')
-                ->map(fn ($rows) => $rows->pluck('route_id')->values());
+                ->map(fn ($rows) => $rows->pluck('route_id')->values()->all());
 
-            $stopFeatures = $stops->map(function ($s) use ($routeMap) {
-                return [
-                    'type' => 'Feature',
-                    'geometry' => json_decode($s->geojson, true),
-                    'properties' => [
-                        'id' => $s->id,
-                        'nameAr' => $s->name_ar,
-                        'routeIds' => $routeMap->get($s->id, collect())->values(),
-                    ],
-                ];
-            });
+            $stopFeatures = $stops->map(fn ($s) => $this->presenter->stopFeature(
+                $s,
+                json_decode($s->geojson, true),
+                $routeMap->get($s->id, []),
+            ));
 
             return [
                 'routes' => [

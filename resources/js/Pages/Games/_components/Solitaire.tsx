@@ -20,6 +20,7 @@ import {
 import { readRecord, recordResult } from '../_lib/scores';
 import { readLargeCards, writeLargeCards } from '../_lib/cardDisplay';
 import PlayingCard from '@/Domain/games/PlayingCard';
+import { useCardDrag } from '../_lib/useCardDrag';
 import HeaderButton from './HeaderButton';
 import HeaderPortal from './HeaderPortal';
 
@@ -72,8 +73,6 @@ export default function Solitaire() {
   const [hint, setHint] = useState<Move | null>(null);
   const [dragFrom, setDragFrom] = useState<Source | null>(null);
   const [over, setOver] = useState<string | null>(null);
-  /** The run the pointer is carrying, with its current viewport position. */
-  const [ghost, setGhost] = useState<{ run: Card[]; x: number; y: number; w: number } | null>(null);
   const [best, setBest] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const [won, setWon] = useState(false);
@@ -221,21 +220,6 @@ export default function Solitaire() {
     [selected, tryMove, toggle],
   );
 
-  // The in-flight pointer drag, kept in a ref so the window listeners always
-  // read the latest and never go stale. A drag only becomes "active" once the
-  // pointer has moved past a small threshold, which is what lets a plain tap
-  // still select a card.
-  const dragRef = useRef<{
-    from: Source;
-    run: Card[];
-    startX: number;
-    startY: number;
-    grabX: number;
-    grabY: number;
-    width: number;
-    active: boolean;
-  } | null>(null);
-
   /** Resolve a drop key (`stock` | `waste` | `f3` | `t2`) to a move. */
   const applyDrop = useCallback(
     (key: string, from: Source) => {
@@ -253,69 +237,25 @@ export default function Solitaire() {
    * still falls through to the click-to-select handler; a drag swallows the
    * click the browser fires on release so it does not also toggle a selection.
    */
-  const startDrag = useCallback(
-    (from: Source, e: React.PointerEvent) => {
-      if (e.pointerType === 'mouse' && e.button !== 0) return;
-      const run = liftable(board.current, from);
-      if (!run || run.length === 0) return;
-
-      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-      dragRef.current = {
-        from,
-        run,
-        startX: e.clientX,
-        startY: e.clientY,
-        grabX: e.clientX - rect.left,
-        grabY: e.clientY - rect.top,
-        width: rect.width,
-        active: false,
-      };
-
-      const move = (ev: PointerEvent) => {
-        const d = dragRef.current;
-        if (!d) return;
-        if (!d.active) {
-          if (Math.hypot(ev.clientX - d.startX, ev.clientY - d.startY) < 8) return;
-          d.active = true;
-          setDragFrom(d.from);
-        }
-        if (ev.cancelable) ev.preventDefault();
-        setGhost({ run: d.run, x: ev.clientX - d.grabX, y: ev.clientY - d.grabY, w: d.width });
-        const under = document.elementFromPoint(ev.clientX, ev.clientY);
-        const pile = under instanceof Element ? under.closest('[data-drop]') : null;
-        setOver(pile ? pile.getAttribute('data-drop') : null);
-      };
-
-      const finish = (ev: PointerEvent) => {
-        window.removeEventListener('pointermove', move);
-        window.removeEventListener('pointerup', finish);
-        window.removeEventListener('pointercancel', finish);
-        const d = dragRef.current;
-        dragRef.current = null;
-        setGhost(null);
-        setDragFrom(null);
-        setOver(null);
-        if (!d?.active) return;
-        // Swallow the synthetic click that follows the release.
-        const swallow = (ce: Event) => {
-          ce.stopPropagation();
-          ce.preventDefault();
-          window.removeEventListener('click', swallow, true);
-        };
-        window.addEventListener('click', swallow, true);
-        window.setTimeout(() => window.removeEventListener('click', swallow, true), 500);
-        const under = document.elementFromPoint(ev.clientX, ev.clientY);
-        const pile = under instanceof Element ? under.closest('[data-drop]') : null;
-        const key = pile ? pile.getAttribute('data-drop') : null;
-        if (key) applyDrop(key, d.from);
-      };
-
-      window.addEventListener('pointermove', move, { passive: false });
-      window.addEventListener('pointerup', finish);
-      window.addEventListener('pointercancel', finish);
+  const { drag, startDrag } = useCardDrag<{ from: Source; run: Card[] }>({
+    onDragStart: ({ from }) => setDragFrom(from),
+    onOver: (element) => setOver(element?.closest('[data-drop]')?.getAttribute('data-drop') ?? null),
+    onDragEnd: () => {
+      setDragFrom(null);
+      setOver(null);
     },
-    [applyDrop],
-  );
+    onDrop: (element, { from }) => {
+      const key = element?.closest('[data-drop]')?.getAttribute('data-drop') ?? null;
+      if (key) applyDrop(key, from);
+    },
+  });
+
+  const beginDrag = (from: Source, e: React.PointerEvent) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    const run = liftable(board.current, from);
+    if (!run || run.length === 0) return;
+    startDrag(e, { from, run });
+  };
 
   const showHint = useCallback(() => {
     const candidates = availableMoves(board.current);
@@ -429,7 +369,7 @@ export default function Solitaire() {
                     hinted={hint?.from.kind === 'waste'}
                     onClick={() => toggle({ kind: 'waste' })}
                     onDoubleClick={() => sendToFoundation({ kind: 'waste' })}
-                    onPointerDown={(e) => startDrag({ kind: 'waste' }, e)}
+                    onPointerDown={(e) => beginDrag({ kind: 'waste' }, e)}
                   />
                 ))}
               </div>
@@ -473,7 +413,7 @@ export default function Solitaire() {
                     className={isHintTarget ? 'sz-sol-target' : ''}
                     onClick={() => onFoundation(index)}
                     onDoubleClick={() => sendToFoundation({ kind: 'foundation', index })}
-                    onPointerDown={(e) => startDrag({ kind: 'foundation', index }, e)}
+                    onPointerDown={(e) => beginDrag({ kind: 'foundation', index }, e)}
                   />
                 )}
               </Pile>
@@ -553,7 +493,7 @@ export default function Solitaire() {
                           className={receivesHint ? 'sz-sol-target' : ''}
                           onClick={() => movable && onTableauCard(colIndex, from)}
                           onDoubleClick={() => movable && sendToFoundation(from)}
-                          onPointerDown={(e) => movable && startDrag(from, e)}
+                          onPointerDown={(e) => movable && beginDrag(from, e)}
                         />
                       );
                     })}
@@ -574,21 +514,21 @@ export default function Solitaire() {
           the board so `position: fixed` stays viewport-relative (the board's
           `container-type` would otherwise become its containing block), and it
           carries the board's card length inline so the corner text is sized. */}
-      {ghost && (
+      {drag && (
         <div
           className="sz-sol-ghost"
           style={
             {
-              left: ghost.x,
-              top: ghost.y,
-              width: ghost.w,
-              '--sz-card-w': `${ghost.w}px`,
+              left: drag.x,
+              top: drag.y,
+              width: drag.w,
+              '--sz-card-w': `${drag.w}px`,
               '--sz-card-h-ratio': 1.4286,
-              '--sz-sol-face-step': `${ghost.w * 1.4286 * 0.29}px`,
+              '--sz-sol-face-step': `${drag.w * 1.4286 * 0.29}px`,
             } as React.CSSProperties
           }
         >
-          {ghost.run.map((card) => (
+          {drag.payload.run.map((card) => (
             <PlayingCard key={card.id} card={card} large={large} decorative />
           ))}
         </div>

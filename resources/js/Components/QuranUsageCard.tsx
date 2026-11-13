@@ -1,7 +1,7 @@
-import React from 'react';
 import { HardDrive } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
+import { confirmDialog } from '@/Lib/confirm';
 import { formatBytes } from '@/Domain/quran/radioUsage';
 import { clearAllUsage, useUsageStore } from '@/Domain/quran/usageStore';
 import { formatDuration } from '@/Lib/format';
@@ -14,16 +14,17 @@ export default function QuranUsageCard() {
   const account = useUsageStore((s) => s.account);
   const isLoggedIn = useUsageStore((s) => s.isLoggedIn);
 
-  const [confirmClear, setConfirmClear] = React.useState(false);
-
-  const clearUsage = () => {
-    if (!confirmClear) {
-      setConfirmClear(true);
-      window.setTimeout(() => setConfirmClear(false), 4000);
-      return;
-    }
-    setConfirmClear(false);
-    void clearAllUsage();
+  const clearUsage = async () => {
+    const confirmed = await confirmDialog({
+      title: 'مسح سجل استهلاك البيانات؟',
+      description: isLoggedIn
+        ? 'سيُمسح سجل هذا الجهاز وهذا الحساب نهائياً ولا يمكن التراجع.'
+        : 'سيُمسح سجل هذا الجهاز نهائياً ولا يمكن التراجع.',
+      confirmText: 'مسح',
+      destructive: true,
+    });
+    if (!confirmed) return;
+    await clearAllUsage();
   };
 
   return (
@@ -37,10 +38,10 @@ export default function QuranUsageCard() {
           <Button
             size="sm"
             variant="ghost"
-            onClick={clearUsage}
+            onClick={() => void clearUsage()}
             className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive"
           >
-            {confirmClear ? 'تأكيد المسح' : 'مسح السجل'}
+            مسح السجل
           </Button>
         </div>
 

@@ -214,47 +214,5 @@ class AssetUploadController extends Controller
 
         return response()->json(['success' => false, 'message' => 'الملف غير موجود'], 404);
     }
-
-    /**
-     * Server-side manifest of all R2 keys (paginated through S3, no browser
-     * N-fetch). The Asset Manager "Download all" currently fetches every file
-     * body in the tab and zips with JSZip — OOM on large buckets. Clients
-     * should use this manifest to cap the selection (e.g. first 200) or drive
-     * a future server-side streaming zip.
-     */
-    public function manifest(Request $request)
-    {
-        $validated = $request->validate([
-            'prefix' => 'nullable|string|max:100',
-            'max_keys' => 'nullable|integer|min:1|max:2000',
-        ]);
-        $prefix = preg_replace('/[^a-zA-Z0-9_\-\/]/', '', $validated['prefix'] ?? '') ?: null;
-        $maxKeys = $validated['max_keys'] ?? 1000;
-
-        try {
-            $cfg = config('filesystems.disks.r2');
-            $client = $this->r2Client();
-            $disk = Storage::disk('r2');
-
-            $keys = [];
-            $token = null;
-            do {
-                $params = ['Bucket' => $cfg['bucket'], 'MaxKeys' => 1000];
-                if ($prefix) $params['Prefix'] = $prefix;
-                if ($token) $params['ContinuationToken'] = $token;
-                $res = $client->listObjectsV2($params);
-                foreach ($res['Contents'] ?? [] as $o) {
-                    $keys[] = ['path' => $o['Key'], 'size' => (int) ($o['Size'] ?? 0), 'url' => $disk->url($o['Key'])];
-                    if (count($keys) >= $maxKeys) break 2;
-                }
-                $token = ($res['IsTruncated'] ?? false) ? ($res['NextContinuationToken'] ?? null) : null;
-            } while ($token);
-
-            return response()->json(['success' => true, 'count' => count($keys), 'files' => $keys]);
-        } catch (\Throwable $e) {
-            report($e);
-            return response()->json(['success' => false, 'message' => 'Failed to build manifest.'], 503);
-        }
-    }
 }
 

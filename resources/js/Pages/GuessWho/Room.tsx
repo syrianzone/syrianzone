@@ -7,6 +7,7 @@ import { Button } from '@/Components/ui/button';
 import { Card } from '@/Components/ui/card';
 import { Badge } from '@/Components/ui/badge';
 import { apiErrorMessage } from '@/Lib/api';
+import { copyText } from '@/Lib/copy';
 import { guessWhoApi } from './_lib/api';
 import { getGuessWhoSessionId } from '@/Lib/guessWhoSession';
 import { notify } from '@/Lib/notify';
@@ -47,6 +48,9 @@ interface GameStateBroadcast {
 interface EchoSubscription {
   leave: (channel: string) => void;
 }
+
+/** Stated once: the winner sees it on the broadcast and again after a reload. */
+const VICTORY_MESSAGE = 'مبروك! لقد فزت باللعبة بتخمين شخصية الخصم بنجاح!';
 
 // 3D Flipped Card Component
 function CharacterCard({
@@ -227,7 +231,7 @@ export default function GameRoom({ game }: GameProps) {
     try {
       await guessWhoApi.sendAction(game.room_code, sessionUuid, action, payload ?? {});
     } catch (err) {
-      console.error('Failed to send action:', err);
+      notify.error(apiErrorMessage(err, 'تعذّر تنفيذ الحركة، حاول مرة أخرى'));
     }
   }
 
@@ -247,7 +251,7 @@ export default function GameRoom({ game }: GameProps) {
       setGameState('ended');
       const guessedId = state.guess?.characterId;
       if (state.winner === sessionUuid) {
-        setWinMessage('مبروك! لقد فزت باللعبة بتخمين شخصية الخصم بنجاح!');
+        setWinMessage(VICTORY_MESSAGE);
       } else if (guessedId) {
         const name = game.category.characters.find((c) => c.id === guessedId)?.name_ar;
         setWinMessage(`لقد فاز ${opponentNameRef.current}! خمّن أن شخصيتك هي: ${name ?? ''}`);
@@ -276,10 +280,11 @@ export default function GameRoom({ game }: GameProps) {
           setIsJoined(true);
           setLoadingJoin(false);
         }
-      } catch (err) {
-        console.error('Room registration error:', err);
+      } catch {
+        // The lobby is the one place that explains a failed join (full room and
+        // server error alike), so the outcome travels there rather than to a
+        // toast this navigation would unmount.
         if (active) {
-          // Redirect full rooms or errors back to lobby index with warning query param
           router.visit('/guesswho?error=room_full');
         }
       }
@@ -323,9 +328,7 @@ export default function GameRoom({ game }: GameProps) {
           setGameState('ended');
           setMyTurn(false);
           setWinMessage(
-            data.winner === sessionUuid
-              ? 'مبروك! لقد فزت باللعبة بتخمين شخصية الخصم بنجاح!'
-              : `لقد فاز ${opponentNameRef.current}!`,
+            data.winner === sessionUuid ? VICTORY_MESSAGE : `لقد فاز ${opponentNameRef.current}!`,
           );
         } else if (data.myCharacterId) {
           setGameState('selecting');
@@ -385,11 +388,14 @@ export default function GameRoom({ game }: GameProps) {
         .leaving((user: PresenceMember) => {
           if (user.session_id === peerUuidRef.current) {
             setPeerConnected(false);
+            // A real grace period: a reload or a network blip drops the presence
+            // entry for a few seconds and `.joining` clears this timer, so the
+            // banner only appears when the opponent is actually gone.
             peerReconnectTimer.current = setTimeout(() => setPeerDisconnected(true), 5000);
           }
         })
         .error((error: unknown) => {
-          console.error('[GuessWho] Presence channel subscription error:', error);
+          notify.error(apiErrorMessage(error, 'تعذّر الاتصال بقناة الغرفة'));
         })
         .listen('.state', (e: GameStateBroadcast) => {
           // Authoritative: turn, phase, winner, counts. Both players get this.
@@ -529,10 +535,7 @@ export default function GameRoom({ game }: GameProps) {
                 {peerConnected ? `متصل بـ ${opponentName}` : 'بانتظار انضمام الخصم...'}
               </Badge>
               <Button
-                onClick={() => {
-                  navigator.clipboard.writeText(window.location.href);
-                  notify.copy('تم نسخ رابط الغرفة إلى الحافظة');
-                }}
+                onClick={() => void copyText(window.location.href, { successMessage: 'تم نسخ رابط الغرفة إلى الحافظة' })}
                 variant={peerConnected ? 'outline' : 'default'}
                 className={`px-4 py-2 rounded-lg flex items-center gap-2 text-sm transition font-bold ${
                   !peerConnected 
@@ -696,8 +699,10 @@ export default function GameRoom({ game }: GameProps) {
             <Card className="bg-card border-border text-card-foreground rounded-2xl p-12 text-center max-w-xl mx-auto shadow-2xl">
               <h2 className="text-3xl font-black text-foreground mb-4">انتهت اللعبة!</h2>
               <p className="text-primary font-bold text-lg mb-8">{winMessage}</p>
+              {/* A finished room stays finished on the server (there is no rematch
+                  action), so a new game starts from the lobby, not by reloading. */}
               <Button
-                onClick={() => window.location.reload()}
+                onClick={() => router.visit('/guesswho')}
                 className="px-6 py-4 bg-primary text-primary-foreground hover:bg-primary/90 font-bold rounded-xl transition flex items-center gap-2 mx-auto text-md"
               >
                 <RefreshCw className="h-5 w-5" /> العب مجدداً

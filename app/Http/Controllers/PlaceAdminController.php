@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\Places\PlaceModerationService;
 use App\Services\Places\PlacePresenter;
 use App\Services\Places\PlaceRules;
+use App\Support\RejectionReason;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -72,7 +73,7 @@ class PlaceAdminController extends Controller
 
     public function reject(Request $request, int $id, PlaceModerationService $places)
     {
-        $validated = $request->validate(['reason' => 'nullable|string|max:1000']);
+        $validated = $request->validate(['reason' => RejectionReason::rules()], RejectionReason::messages());
 
         $place = $places->reject($id, $validated['reason'] ?? null);
 

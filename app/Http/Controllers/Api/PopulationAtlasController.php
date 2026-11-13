@@ -22,11 +22,6 @@ class PopulationAtlasController extends Controller
         Cache::forget(self::ENV_CACHE_KEY);
     }
 
-    public function index(): JsonResponse
-    {
-        return $this->getData();
-    }
-
     public function getData(): JsonResponse
     {
         $data = Cache::remember(self::MASTER_CACHE_KEY, 3600, function () {
@@ -34,11 +29,6 @@ class PopulationAtlasController extends Controller
         });
 
         return response()->json($data);
-    }
-
-    public function environment(): JsonResponse
-    {
-        return $this->getEnvironmentalDetails();
     }
 
     public function getEnvironmentalDetails(): JsonResponse

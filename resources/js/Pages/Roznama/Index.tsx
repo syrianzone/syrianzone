@@ -63,6 +63,7 @@ import {
     Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle,
 } from '@/Components/ui/sheet';
 import {
+    accountPatchForLocation,
     isDeviceLocation,
     resolvePlaceLabel,
     useLocationPreference,
@@ -274,11 +275,7 @@ export default function Index() {
 
     /** Device storage belongs to Domain/location; the account mirror is ours. */
     const handleLocationChange = (patch: LocationPatch) => {
-        const accountPatch: Record<string, unknown> = {};
-        if (patch.city !== undefined) accountPatch.governorate = patch.city;
-        if (patch.useCustomCoords !== undefined) accountPatch.useCustomCoords = patch.useCustomCoords;
-        if (patch.customLat !== undefined) accountPatch.customLat = patch.customLat;
-        if (patch.customLon !== undefined) accountPatch.customLon = patch.customLon;
+        const accountPatch = accountPatchForLocation(patch);
         if (Object.keys(accountPatch).length > 0) savePrefs(accountPatch);
     };
 

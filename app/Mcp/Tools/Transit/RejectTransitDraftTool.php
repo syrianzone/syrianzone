@@ -6,6 +6,7 @@ use App\Models\Route;
 use App\Services\Transit\TransitAdminService;
 use App\Support\Agents\AgentContext;
 use App\Support\Permissions\PermissionCatalogue;
+use App\Support\RejectionReason;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -39,7 +40,7 @@ class RejectTransitDraftTool extends TransitTool
 
             'reason' => $schema->string()
                 ->description('Why the draft was rejected, shown to the contributor. Optional but strongly recommended.')
-                ->max(1000),
+                ->max(RejectionReason::MAX_LENGTH),
         ];
     }
 
@@ -47,8 +48,8 @@ class RejectTransitDraftTool extends TransitTool
     {
         $validated = $request->validate([
             'draft_id' => 'required|integer|min:1',
-            'reason' => 'nullable|string|max:1000',
-        ]);
+            'reason' => RejectionReason::rules(),
+        ], RejectionReason::messages());
 
         return $this->attempt(function () use ($validated, $context) {
             $service = app(TransitAdminService::class);

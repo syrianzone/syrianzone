@@ -6,6 +6,7 @@ use App\Models\Promise;
 use App\Models\PromiseSource;
 use App\Models\PromiseUpdate;
 use App\Support\Governorates;
+use App\Support\RejectionReason;
 use Illuminate\Validation\Rule;
 
 /**
@@ -195,7 +196,7 @@ final class PromiseRules
      */
     public function reason(): array
     {
-        return ['reason' => ['nullable', 'string', 'max:1000']];
+        return ['reason' => RejectionReason::rules()];
     }
 
     /**
@@ -300,7 +301,7 @@ final class PromiseRules
             'archive_url.url' => $link,
             'type.required' => 'اختر نوع البند',
             'type.in' => 'اختر نوع البند من القائمة',
-            'reason.max' => $long,
+            'reason.max' => RejectionReason::message(),
             'note.max' => $long,
             'image.required' => 'اختر صورة',
             'image.image' => 'الملف ليس صورة',

@@ -1,11 +1,33 @@
-import { useMemo, useState, useRef } from "react"
+import { useId, useMemo, useState, useRef } from "react"
 import { CartesianGrid, Line, LineChart, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/Components/ui/select"
 import { Tabs, TabsList, TabsTrigger } from "@/Components/ui/tabs"
 import { Button } from "@/Components/ui/button"
 import { Download } from "lucide-react"
-import html2canvas from "html2canvas-pro"
+import { notify } from "@/Lib/notify"
+import type { PngDeclarations } from "@/Lib/exportElementAsPng"
+
+/** The card paints its own fixed dark palette so the export never depends on the theme. */
+const CHART_BACKGROUND = '#020817'
+const CHART_FOREGROUND = '#f8fafc'
+const CHART_BORDER = '#1e293b'
+
+/** html2canvas cannot parse oklch/oklab/color-mix: keep the card's own tones instead. */
+const CHART_PNG_OPTIONS = {
+    scale: 2,
+    backgroundColor: CHART_BACKGROUND,
+    removeSelectors: ['[data-chart-controls]'],
+    colorPolicy: (node: HTMLElement, style: CSSStyleDeclaration): PngDeclarations => {
+        const modern = (value: string | undefined): value is string =>
+            !!value && (value.includes('oklch') || value.includes('oklab') || value.includes('color-mix'))
+        const declarations: PngDeclarations = {}
+        if (modern(style.backgroundColor)) declarations['background-color'] = CHART_BACKGROUND
+        if (modern(style.color)) declarations.color = CHART_FOREGROUND
+        if (modern(style.borderColor)) declarations['border-color'] = CHART_BORDER
+        if (modern(style.backgroundImage)) declarations['background-image'] = 'none'
+        return declarations
+    },
+}
 
 interface HistoryPoint {
     date: string
@@ -172,58 +194,20 @@ export function TimeseriesChart({ history, candidates, title }: TimeseriesChartP
     }
 
     const chartRef = useRef<HTMLDivElement>(null)
+    // The exporter keeps only the captured node when it has an id, which is how
+    // the controls below stay out of the image.
+    const chartId = useId()
 
     const handleDownload = async () => {
-        if (!chartRef.current) return
+        const chart = chartRef.current
+        if (!chart) return
 
         try {
-            const canvas = await html2canvas(chartRef.current, {
-                backgroundColor: "#020817",
-                scale: 2,
-                useCORS: true,
-                onclone: (clonedDoc: Document) => {
-                    const element = clonedDoc.querySelector('[data-chart-container]') as HTMLElement
-                    if (element) {
-                        // Double enforce styles in the clone
-                        element.style.backgroundColor = '#020817'
-                        element.style.color = '#f8fafc'
-                        element.style.direction = 'rtl' // Ensure RTL is preserved
-                        element.style.textAlign = 'right'
-                        // element.style.fontFamily = 'Arial, sans-serif' // optional: ensure consistent font rendering
-
-                        // Fix spacing/overflow issues in export by expanding width slightly if needed or unsetting max-width
-                        // element.style.width = '1200px' // optional: force wide capture
-
-                        // Try to strip potential lab colors from children if possible
-                        const children = element.querySelectorAll('*') as NodeListOf<HTMLElement>
-                        children.forEach(child => {
-                            const style = window.getComputedStyle(child)
-                            if (style.borderColor && style.borderColor.includes('lab')) {
-                                child.style.borderColor = '#1e293b' // fallback border
-                            }
-                            if (style.backgroundColor && style.backgroundColor.includes('lab')) {
-                                child.style.backgroundColor = '#020817' // fallback bg
-                            }
-                            if (style.color && style.color.includes('lab')) {
-                                child.style.color = '#f8fafc' // fallback text
-                            }
-                        })
-
-                        // Hide controls in export
-                        const controls = clonedDoc.querySelector('[data-chart-controls]') as HTMLElement
-                        if (controls) {
-                            controls.style.display = 'none'
-                        }
-                    }
-                }
-            } as any)
-
-            const link = document.createElement('a')
-            link.download = `chart-${new Date().getTime()}.png`
-            link.href = canvas.toDataURL()
-            link.click()
-        } catch (err) {
-            console.error("Failed to download chart image", err)
+            // Loaded on demand: html2canvas is heavy and only this button needs it.
+            const { exportElementAsPng } = await import("@/Lib/exportElementAsPng")
+            await exportElementAsPng(chart, `chart-${Date.now()}.png`, CHART_PNG_OPTIONS)
+        } catch {
+            notify.error('تعذّر إنشاء صورة المخطط، حاول مرة أخرى')
         }
     }
 
@@ -265,10 +249,10 @@ export function TimeseriesChart({ history, candidates, title }: TimeseriesChartP
             </CardHeader>
             <CardContent>
                 {/* 
-                    Using inline styles for backgroundColor and color to prevent inheritence of 'lab()' colors 
-                    that cause html2canvas to crash.
+                    Inline styles for backgroundColor and color keep the card's own
+                    palette, so 'lab()' colours never reach html2canvas.
                 */}
-                <div ref={chartRef} data-chart-container style={{ backgroundColor: '#020817', color: '#f8fafc', padding: '16px', borderRadius: '8px' }}>
+                <div id={chartId} ref={chartRef} style={{ backgroundColor: CHART_BACKGROUND, color: CHART_FOREGROUND, padding: '16px', borderRadius: '8px' }}>
                     <div className="h-[300px] w-full" dir="ltr">
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>

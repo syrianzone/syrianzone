@@ -387,7 +387,7 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
                                     <CardContent>
                                         <SortableList
                                             items={categories.map((c) => ({ id: c.id, label: c.label_ar, subtitle: c.label_en }))}
-                                            endpoint="/api/v1/admin/syofficial/reorder/categories"
+                                            endpoint="/api/v1/admin/syofficial/categories/reorder"
                                             capability="syofficial.reorder"
                                             canReorder={canReorder}
                                             onSaved={() => router.reload()}
@@ -419,7 +419,7 @@ export default function SyOfficialAdminIndex({ categories, entities }: AdminSyOf
                                             items={entities
                                                 .filter((e) => selectedCategoryFilter === 'all' || e.category_id === selectedCategoryFilter)
                                                 .map((e) => ({ id: e.id, label: e.name_ar, subtitle: e.name, image: formatEntityImage(e.image) }))}
-                                            endpoint="/api/v1/admin/syofficial/reorder/entities"
+                                            endpoint="/api/v1/admin/syofficial/entities/reorder"
                                             capability="syofficial.reorder"
                                             canReorder={canReorder}
                                             onSaved={() => router.reload()}

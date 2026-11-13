@@ -433,7 +433,12 @@ export default function Dashboard({
   const handleApproveDraft = async (id: number) => {
     setApiLoading(id);
     try {
-      await transitAdminApi.approveDraft(id);
+      const res = await transitAdminApi.approveDraft(id);
+      // The submission list is the page's own copy of the draft rows: without
+      // this the badge keeps reading «قيد المراجعة» until a reload.
+      setLocalMyDrafts(prev => prev.map(d => d.id === id
+        ? { ...d, status: 'approved', rejection_reason: null, route_id: res.route?.id ?? d.route_id }
+        : d));
       notify.success('تمت الموافقة على المسار ونشره.');
     } catch (err) {
       notify.error(apiErrorMessage(err, 'خطأ أثناء الموافقة'));
@@ -452,9 +457,13 @@ export default function Dashboard({
   // Confirm Reject
   const handleConfirmReject = async () => {
     if (!rejectDraftId) return;
+    const reason = rejectReason.trim() || null;
     setRejectLoading(true);
     try {
-      await transitAdminApi.rejectDraft(rejectDraftId, rejectReason.trim() || null);
+      await transitAdminApi.rejectDraft(rejectDraftId, reason);
+      setLocalMyDrafts(prev => prev.map(d => d.id === rejectDraftId
+        ? { ...d, status: 'rejected', rejection_reason: reason }
+        : d));
       setRejectOpen(false);
       notify.success('تم رفض المسار.');
     } catch (err) {

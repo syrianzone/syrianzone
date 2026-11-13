@@ -345,8 +345,13 @@ export async function applyConflictChoices(
         if (cur?.on !== null && cur?.on !== undefined) serverPatch.muslimUseCustomCoords = cur.on === 'true';
         const lat = cur ? finiteNumber(cur.lat) : null;
         const lon = cur ? finiteNumber(cur.lon) : null;
-        if (lat !== null) serverPatch.muslimLat = lat;
-        if (lon !== null) serverPatch.muslimLon = lon;
+        // «هذا الجهاز» with no coordinates is a choice, not a missing value: it
+        // clears the account's pair (null) in both key families, or the account
+        // keeps a location the device no longer has.
+        serverPatch.muslimLat = lat;
+        serverPatch.muslimLon = lon;
+        serverPatch.customLat = lat;
+        serverPatch.customLon = lon;
       }
     }
   }

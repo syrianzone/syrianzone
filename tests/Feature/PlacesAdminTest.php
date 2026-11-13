@@ -159,6 +159,19 @@ test('reject is rejected for non-pending places', function () {
     ->assertJsonPath('message', 'Place is already rejected');
 });
 
+test('a rejection reason over the shared cap answers the one Arabic message', function () {
+  $place = Place::factory()->create();
+
+  // The cap and its refusal live in App\Support\RejectionReason, shared with
+  // the transit and promises rejections and their agent tools.
+  $this->actingAs(moduleStaff('places'))
+    ->postJson("/api/v1/admin/places/{$place->id}/reject", [
+      'reason' => str_repeat('ص', \App\Support\RejectionReason::MAX_LENGTH + 1),
+    ])
+    ->assertStatus(422)
+    ->assertJsonPath('errors.reason.0', \App\Support\RejectionReason::message());
+});
+
 test('approving a place makes it appear on the cached map', function () {
   $place = Place::factory()->create();
 

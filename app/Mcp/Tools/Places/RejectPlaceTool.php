@@ -5,6 +5,7 @@ namespace App\Mcp\Tools\Places;
 use App\Services\Places\PlaceModerationService;
 use App\Support\Agents\AgentContext;
 use App\Support\Permissions\PermissionCatalogue;
+use App\Support\RejectionReason;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -35,8 +36,8 @@ class RejectPlaceTool extends PlacesTool
                 ->required(),
 
             'reason' => $schema->string()
-                ->description('Short, specific reason shown to the submitter. Explain what was wrong and what a resubmission should fix. Max 1000 characters.')
-                ->max(1000),
+                ->description('Short, specific reason shown to the submitter. Explain what was wrong and what a resubmission should fix. Max '.RejectionReason::MAX_LENGTH.' characters.')
+                ->max(RejectionReason::MAX_LENGTH),
         ];
     }
 
@@ -44,10 +45,8 @@ class RejectPlaceTool extends PlacesTool
     {
         $validated = $request->validate([
             'place_id' => 'required|integer|min:1',
-            'reason' => 'nullable|string|max:1000',
-        ], [
-            'reason.max' => 'Keep the rejection reason under 1000 characters.',
-        ]);
+            'reason' => RejectionReason::rules(),
+        ], RejectionReason::messages());
 
         return $this->attempt(function () use ($validated) {
             $place = app(PlaceModerationService::class)->reject(

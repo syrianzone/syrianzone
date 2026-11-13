@@ -123,19 +123,22 @@ export default function PhonebookAdminIndex({ categories, entries }: AdminPhoneb
 
     const handleSaveEntry = (e: React.FormEvent) => {
         e.preventDefault();
+        const options = {
+            onSuccess: () => setEntryModalOpen(false),
+            onError: (errors: Record<string, string>) =>
+                notify.error(Object.values(errors)[0] ?? 'تعذر حفظ البيانات'),
+        };
         if (editingEntry) {
-            router.post(`/api/v1/admin/phonebook/entries/${editingEntry.id}`, entryForm, {
-                onSuccess: () => setEntryModalOpen(false),
-            });
+            router.post(`/api/v1/admin/phonebook/entries/${editingEntry.id}`, entryForm, options);
         } else {
-            router.post('/api/v1/admin/phonebook/entries', entryForm, {
-                onSuccess: () => setEntryModalOpen(false),
-            });
+            router.post('/api/v1/admin/phonebook/entries', entryForm, options);
         }
     };
 
     const handleToggleActive = (id: string) => {
-        router.post(`/api/v1/admin/phonebook/entries/${id}/toggle`);
+        router.post(`/api/v1/admin/phonebook/entries/${id}/toggle`, {}, {
+            onError: () => notify.error('تعذر تغيير حالة الرقم'),
+        });
     };
 
     const handleDeleteEntry = async (id: string) => {

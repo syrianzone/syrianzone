@@ -109,7 +109,7 @@ export function CrossingDetail({
                         الموقع
                     </a>
                 </Button>
-                <Button variant="outline" onClick={() => shareCrossing(crossing)}>
+                <Button variant="outline" onClick={() => void shareCrossing(crossing)}>
                     <Share2 className="h-4 w-4" />
                     مشاركة
                 </Button>

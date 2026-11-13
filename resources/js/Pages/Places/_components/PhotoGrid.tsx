@@ -90,7 +90,7 @@ export function PhotoGrid(props: {
 
   return (
     <div dir="rtl" className="absolute inset-0 z-10 overflow-y-auto bg-background">
-      {/* pt-16 clears the slim top row; a guide/notice banner stacks ~34px more below it */}
+      {/* pt-16 clears the slim top row; the guide banner stacks ~34px more below it */}
       <div className={'mx-auto max-w-5xl px-3 pb-8 ' + (bannerActive ? 'pt-28' : 'pt-16')}>
         {photos.length > 0 && (
           <div style={{ columnCount: columns, columnGap: '0.75rem' }}>

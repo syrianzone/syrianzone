@@ -1,6 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { customLabel, runLoginSync } from './settingsSync';
+import { applyConflictChoices, customLabel, runLoginSync, type SettingConflict } from './settingsSync';
 import { adoptAccountLocation, readDeviceCustomCoords } from '../location/preference';
+
+/** The one POST the sync and the conflict choices make, captured per test. */
+const { postMock } = vi.hoisted(() => ({
+  postMock: vi.fn(async (_path: string, _body?: unknown) => ({ status: 'ok' })),
+}));
+vi.mock('@/Lib/api', () => ({ api: { post: postMock }, API_ROOT: '/api', API_V1: '/api/v1' }));
 
 /**
  * The login sync is the one owner of the account-to-device location seed. These
@@ -45,7 +51,10 @@ const LEGACY_ACCOUNT = {
   muslimMethod: 13,
 };
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  postMock.mockClear();
+});
 
 describe('login sync on an empty device', () => {
   it('adopts the account location itself and raises no conflict', async () => {
@@ -105,5 +114,48 @@ describe('conflicts', () => {
     expect(customLabel(off)).toBe('معطّلة (33.51، 36.27)');
     expect(customLabel({ on: 'false', lat: '', lon: '' })).toBe('معطّلة');
     expect(customLabel(null)).toBe('—');
+  });
+});
+
+describe('choosing «هذا الجهاز» for the coordinates', () => {
+  const customConflict: SettingConflict = {
+    key: 'customLoc',
+    label: 'الإحداثيات المخصصة للمواقيت',
+    local: '—',
+    server: 'مفعّلة (33.51، 36.27)',
+  };
+
+  const settingsPosted = () => postMock.mock.calls.at(-1)?.[1] as { settings: Record<string, unknown> };
+
+  it('clears the account pair when the device holds no coordinates', async () => {
+    installWindow();
+
+    await applyConflictChoices([customConflict], { customLoc: 'local' });
+
+    // Null, not omission: the account keeps a location the device no longer has
+    // unless every family is written, and '' would be rejected by validation.
+    expect(settingsPosted().settings).toEqual({
+      muslimLat: null,
+      muslimLon: null,
+      customLat: null,
+      customLon: null,
+    });
+  });
+
+  it('copies the device numbers into both key families', async () => {
+    const storage = installWindow();
+    storage.setItem('sz-muslim-use-custom', 'false');
+    storage.setItem('sz-muslim-lat', '35.5');
+    storage.setItem('sz-muslim-lon', '38.2');
+
+    await applyConflictChoices([customConflict], { customLoc: 'local' });
+
+    expect(settingsPosted().settings).toEqual({
+      muslimUseCustomCoords: false,
+      muslimLat: 35.5,
+      muslimLon: 38.2,
+      customLat: 35.5,
+      customLon: 38.2,
+    });
   });
 });

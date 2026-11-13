@@ -62,7 +62,7 @@ Modules served under more than one prefix (transit admin, polls admin, asset man
 - Legacy account aliases (`web.php`): `/api/user`, `POST /api/account/update|avatar|delete`, `POST /api/user/settings`, `POST /api/user/radio-usage(/clear)`
 - Superadmin (`web.php`):
   - Staff CRUD: canonical `GET|POST /api/v1/admin/admins`, `DELETE /api/v1/admin/admins/{id}` (legacy `/api/admins[/{id}]`)
-  - Asset explorer: `/admin/assets` + canonical `GET|POST|DELETE /api/v1/admin/assets` & `GET /api/v1/admin/assets/manifest` (legacy `/api/v1/admin/assets/(list|upload|delete)`)
+  - Asset explorer: `/admin/assets` + `GET /api/v1/admin/assets/list`, `POST /api/v1/admin/assets/upload`, `DELETE /api/v1/admin/assets/delete`
   - Site navigation & icon catalog: `/admin/navigation` + `GET|PUT /api/v1/admin/navigation`
   - Homepage popup: `/admin/site-popup` + `GET|PUT /api/v1/admin/site-popup`
   - Agent API tokens, revoke all for a user: `DELETE /api/v1/admin/users/{userId}/api-tokens` (legacy `POST /api/v1/admin/api-tokens/revoke-all/{userId}`)
@@ -72,11 +72,11 @@ Modules served under more than one prefix (transit admin, polls admin, asset man
 
 Every panel below is gated by a single per-route capability, not by module membership. `ModuleCapabilityGuard` (in `app/Http/Middleware/`) denies any route inside these groups that does not name a capability, so a capability such as `phonebook.reorder` no longer implies `phonebook.delete`. Page shells and read-only indexes are tagged `any`, meaning "any one capability in this module". Adding a route to one of these groups therefore requires choosing its capability; `ModuleCapabilityRoutesTest` fails the build if one is missing, is not a real capability, is used on the wrong module's middleware, or if `any` appears on a mutating route.
 
-| Area | Pages | Canonical API (`/api/v1/admin/*`) |
+| Area | Pages | API |
 |---|---|---|
-| Polls | `/dashboard` polls tab (legacy `/admin/polls*` 301-redirects) | `/api/v1/admin/polls*`, `/api/v1/admin/candidate-groups*`, `/api/v1/admin/candidates*` (legacy `/api/polls*`, `/api/candidate-groups*`, `/api/candidates*`) |
+| Polls | `/dashboard` polls tab (legacy `/admin/polls*` 301-redirects) | `/api/polls*`, `/api/candidate-groups*`, `/api/candidates*` |
 | Places | `/admin/places` (`places_admin:any`) | `/api/v1/admin/places*` and `/api/v1/admin/place-photos*` |
-| Transit | `/transit/admin` (`transit_admin:any`) | `/api/v1/admin/transit/route-drafts*`, `/api/v1/admin/transit/routes*` (legacy `/api/v1/admin/route-drafts*`, `/api/v1/admin/routes*`) |
+| Transit | `/transit/admin` (`transit_admin:any`) | `/api/v1/admin/route-drafts*`, `/api/v1/admin/routes*` |
 | Guess Who | `/admin/guesswho` (`superadmin`) | `/api/v1/admin/guesswho/categories*`, `/api/v1/admin/guesswho/characters*` |
 | Site navigation | `/admin/navigation` (`superadmin`) | `GET\|PUT /api/v1/admin/navigation` |
 | Site popup | `/admin/site-popup` (`superadmin`) | `GET\|PUT /api/v1/admin/site-popup` |

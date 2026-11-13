@@ -6,7 +6,6 @@ use App\Services\GovApps\GovAppPresenter;
 use App\Services\GovApps\GovAppService;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\RedirectResponse;
-use Symfony\Component\HttpFoundation\Response;
 
 /**
  * HTTP adapter for the government apps admin.
@@ -85,7 +84,7 @@ class GovAppsAdminController extends Controller
         return redirect()->back()->with('success', 'تم حذف التطبيق بنجاح');
     }
 
-    public function reorder(Request $request): Response
+    public function reorder(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'orders' => 'required|array',
@@ -95,6 +94,6 @@ class GovAppsAdminController extends Controller
 
         $this->apps->reorder($validated['orders']);
 
-        return response()->json(['message' => 'تم إعادة الترتيب بنجاح']);
+        return redirect()->back()->with('success', 'تم إعادة الترتيب بنجاح');
     }
 }

@@ -748,23 +748,27 @@ These endpoints accept either a stateful Web session cookie + CSRF token (`web` 
 Every admin endpoint is protected by `auth:web,sanctum` and a per-route capability middleware (`<module>_admin:<capability>`) enforced by `ModuleCapabilityGuard` and verified at test time by `ModuleCapabilityRoutesTest`. Only `superadmin` bypasses individual capability checks.
 
 ### 10.1 Polls Admin (`polls_admin`)
-| Method & Canonical Path | Legacy Alias | Required Capability |
-|---|---|---|
-| `POST /api/v1/admin/polls` | `POST /api/polls` | `polls.create` |
-| `PUT\|PATCH /api/v1/admin/polls/{id}` | `PUT /api/polls/{id}` | `polls.edit` |
-| `DELETE /api/v1/admin/polls/{id}` | `DELETE /api/polls/{id}` | `polls.delete` |
-| `GET /api/v1/admin/candidate-groups` | `GET /api/candidate-groups` | `any` (`polls.*`) |
-| `GET /api/v1/admin/candidate-groups/{id}` | `GET /api/candidate-groups/{id}` | `any` (`polls.*`) |
-| `POST /api/v1/admin/candidate-groups` | `POST /api/candidate-groups` | `polls.create` |
-| `PUT\|PATCH /api/v1/admin/candidate-groups/{id}` | `PUT\|PATCH /api/candidate-groups/{id}` | `polls.edit` |
-| `DELETE /api/v1/admin/candidate-groups/{id}` | `DELETE /api/candidate-groups/{id}` | `polls.delete` |
-| `POST /api/v1/admin/candidate-groups/reorder` | `POST /api/candidate-groups/reorder` | `polls.edit` |
-| `POST /api/v1/admin/candidate-groups/{id}/default` | `POST /api/candidate-groups/{id}/default` | `polls.edit` |
-| `POST /api/v1/admin/candidates` | `POST /api/candidates` | `polls.create` |
-| `PUT\|PATCH /api/v1/admin/candidates/{id}` | `PUT\|PATCH /api/candidates/{id}` | `polls.edit` |
-| `DELETE /api/v1/admin/candidates/{id}` | `DELETE /api/candidates/{id}` | `polls.delete` |
-| `PATCH /api/v1/admin/candidates/{id}/archive` | `PATCH /api/candidates/{id}/archive` | `polls.edit` |
-| `PATCH /api/v1/admin/candidates/{id}/restore` | `PATCH /api/candidates/{id}/restore` | `polls.edit` |
+The dashboard's poll editor calls these paths unversioned (`/api/*`), like the
+account and settings endpoints. The `/api/v1/admin/polls|candidate-groups|candidates`
+twins that no client requested are gone: one route tree per module.
+
+| Method & Path | Required Capability |
+|---|---|
+| `POST /api/polls` | `polls.create` |
+| `PUT /api/polls/{id}` | `polls.edit` |
+| `DELETE /api/polls/{id}` | `polls.delete` |
+| `GET /api/candidate-groups` | `any` (`polls.*`) |
+| `GET /api/candidate-groups/{id}` | `any` (`polls.*`) |
+| `POST /api/candidate-groups` | `polls.create` |
+| `PUT\|PATCH /api/candidate-groups/{id}` | `polls.edit` |
+| `DELETE /api/candidate-groups/{id}` | `polls.delete` |
+| `POST /api/candidate-groups/reorder` | `polls.edit` |
+| `POST /api/candidate-groups/{id}/default` | `polls.edit` |
+| `POST /api/candidates` | `polls.create` |
+| `PUT\|PATCH /api/candidates/{id}` | `polls.edit` |
+| `DELETE /api/candidates/{id}` | `polls.delete` |
+| `PATCH /api/candidates/{id}/archive` | `polls.edit` |
+| `PATCH /api/candidates/{id}/restore` | `polls.edit` |
 
 `PUT|PATCH /candidate-groups/{id}` also accepts `is_active` (boolean). Setting it
 to `false` disables the category without deleting it: the row, its candidates,
@@ -792,33 +796,41 @@ group and candidate, including disabled and archived ones.
 | `DELETE /api/v1/admin/place-photos/{id}` | `places.moderate_photos` |
 
 ### 10.3 Transit Admin (`transit_admin`, Governorate-Scoped)
-| Method & Canonical Path | Legacy Alias | Required Capability |
-|---|---|---|
-| `GET /api/v1/admin/transit/route-drafts` | `GET /api/v1/admin/route-drafts` | `transit.review_drafts` |
-| `POST /api/v1/admin/transit/route-drafts/{id}/approve` | `POST /api/v1/admin/route-drafts/{id}/approve` | `transit.approve` |
-| `POST /api/v1/admin/transit/route-drafts/{id}/reject` | `POST /api/v1/admin/route-drafts/{id}/reject` | `transit.reject` |
-| `GET /api/v1/admin/transit/routes` | `GET /api/v1/admin/routes` | `transit.review_drafts` |
-| `GET /api/v1/admin/transit/routes/logs` | `GET /api/v1/admin/routes/logs` | `transit.review_drafts` |
-| `GET /api/v1/admin/transit/routes/{id}/geojson` | `GET /api/v1/admin/routes/{id}/geojson` | `transit.review_drafts` |
-| `GET /api/v1/admin/transit/routes/{id}/stops` | `GET /api/v1/admin/routes/{id}/stops` | `transit.review_drafts` |
-| `PATCH\|POST /api/v1/admin/transit/routes/{id}/status` | `POST /api/v1/admin/routes/{id}/status` | `transit.edit_routes` |
-| `PUT /api/v1/admin/transit/routes/{id}` | `PUT /api/v1/admin/routes/{id}` | `transit.edit_routes` |
-| `DELETE /api/v1/admin/transit/routes/{id}` | `DELETE /api/v1/admin/routes/{id}` | `transit.delete_routes` |
-| `POST /api/v1/admin/transit/routes/{id}/move` | `POST /api/v1/admin/routes/{id}/move` | `transit.edit_routes` |
-| `POST /api/v1/admin/transit/routes/combine` | `POST /api/v1/admin/routes/combine` | `transit.edit_routes` |
-| `POST /api/v1/admin/transit/routes/split` | `POST /api/v1/admin/routes/split` | `transit.edit_routes` |
-| `POST /api/v1/admin/transit/routes/import-preview` | `POST /api/v1/admin/routes/import-preview` | `transit.review_drafts` (`30/min`) |
-| `POST /api/v1/admin/transit/routes/import-publish` | `POST /api/v1/admin/routes/import-publish` | `transit.edit_routes` (`30/min`) |
+The dashboard and the studio call these paths; the `/api/v1/admin/transit/*`
+twin that no client requested is gone: one route tree per module.
+
+| Method & Path | Required Capability |
+|---|---|
+| `GET /api/v1/admin/route-drafts` | `transit.review_drafts` |
+| `POST /api/v1/admin/route-drafts/{id}/approve` | `transit.approve` |
+| `POST /api/v1/admin/route-drafts/{id}/reject` | `transit.reject` |
+| `GET /api/v1/admin/routes` | `transit.review_drafts` |
+| `GET /api/v1/admin/routes/logs` | `transit.review_drafts` |
+| `GET /api/v1/admin/routes/{id}/geojson` | `transit.review_drafts` |
+| `GET /api/v1/admin/routes/{id}/stops` | `transit.review_drafts` |
+| `PATCH`/`POST /api/v1/admin/routes/{id}/status` | `transit.edit_routes` |
+| `PUT /api/v1/admin/routes/{id}` | `transit.edit_routes` |
+| `DELETE /api/v1/admin/routes/{id}` | `transit.delete_routes` |
+| `POST /api/v1/admin/routes/{id}/move` | `transit.edit_routes` |
+| `POST /api/v1/admin/routes/combine` | `transit.edit_routes` |
+| `POST /api/v1/admin/routes/split` | `transit.edit_routes` |
+| `POST /api/v1/admin/routes/import-preview` | `transit.review_drafts` (`30/min`) |
+| `POST /api/v1/admin/routes/import-publish` | `transit.edit_routes` (`30/min`) |
 
 ### 10.4 Directory & Module Admin Panels
+These three panels are driven by their Inertia pages, so every write answers the
+same way: validate, write, `redirect()->back()` with an Arabic `success` flash.
+They are not JSON endpoints — an over-long field comes back as the standard
+`422` envelope in §1.2, and the page reloads from the redirect.
+
 - **SyOfficial (`syofficial_admin`, `/api/v1/admin/syofficial/*`)**:
-  - `POST /categories` (`syofficial.create`), `PUT /categories/{id}` (`syofficial.edit`), `DELETE /categories/{id}` (`syofficial.delete`), `POST /categories/reorder` (`syofficial.reorder`, alias `/reorder/categories`).
-  - `POST /entities` (`syofficial.create`), `PUT|POST /entities/{id}` (`syofficial.edit`), `DELETE /entities/{id}` (`syofficial.delete`), `POST /entities/reorder` (`syofficial.reorder`, alias `/reorder/entities`).
+  - `POST /categories` (`syofficial.create`), `PUT /categories/{id}` (`syofficial.edit`), `DELETE /categories/{id}` (`syofficial.delete`), `POST /categories/reorder` (`syofficial.reorder`).
+  - `POST /entities` (`syofficial.create`), `PUT|POST /entities/{id}` (`syofficial.edit`), `DELETE /entities/{id}` (`syofficial.delete`), `POST /entities/reorder` (`syofficial.reorder`).
 - **GovApps (`govapps_admin`, `/api/v1/admin/govapps/*`)**:
   - `POST /` (`govapps.create`), `PUT|POST /{id}` (`govapps.edit`), `DELETE /{id}` (`govapps.delete`), `POST /reorder` (`govapps.reorder`).
 - **Phonebook (`phonebook_admin`, `/api/v1/admin/phonebook/*`)**:
-  - `POST /categories` (`phonebook.create`), `PUT /categories/{id}` (`phonebook.edit`), `DELETE /categories/{id}` (`phonebook.delete`), `POST /categories/reorder` (`phonebook.reorder`, alias `/reorder/categories`).
-  - `POST /entries` (`phonebook.create`), `PUT|POST /entries/{id}` (`phonebook.edit`), `PATCH|POST /entries/{id}/toggle` (`phonebook.toggle`), `DELETE /entries/{id}` (`phonebook.delete`), `POST /entries/reorder` (`phonebook.reorder`, alias `/reorder/entries`).
+  - `POST /categories` (`phonebook.create`), `PUT /categories/{id}` (`phonebook.edit`), `DELETE /categories/{id}` (`phonebook.delete`), `POST /categories/reorder` (`phonebook.reorder`).
+  - `POST /entries` (`phonebook.create`), `PUT|POST /entries/{id}` (`phonebook.edit`), `PATCH|POST /entries/{id}/toggle` (`phonebook.toggle`), `DELETE /entries/{id}` (`phonebook.delete`), `POST /entries/reorder` (`phonebook.reorder`).
 - **Compass (`compass_admin`, `/api/v1/admin/compass/*`)**:
   - Figures (`compass.figures`): `GET /figures`, `POST /figures`, `POST /figures/upload-image`, `PUT /figures/{id}`, `DELETE /figures/{id}`, `PATCH|POST /figures/{id}/toggle`.
   - Personas (`compass.personas`): `GET /personas`, `POST /personas`, `PUT /personas/{id}`, `DELETE /personas/{id}`, `PATCH|POST /personas/{id}/toggle`.
@@ -826,7 +838,7 @@ group and candidate, including disabled and archived ones.
   - `PATCH /api/v1/admin/users/{id}/ban` (legacy alias `POST /api/v1/admin/users/{id}/toggle-ban`) — requires `users.ban`.
 - **Superadmin (`superadmin`)**:
   - Staff & permissions: `GET|POST /api/v1/admin/admins`, `DELETE /api/v1/admin/admins/{id}` (legacy `/api/admins*`).
-  - Asset Storage (Cloudflare R2): `GET /api/v1/admin/assets`, `GET /api/v1/admin/assets/manifest`, `POST /api/v1/admin/assets`, `DELETE /api/v1/admin/assets` (legacy `/api/v1/admin/assets/list|upload|delete`).
+  - Asset Storage (Cloudflare R2): `GET /api/v1/admin/assets/list`, `POST /api/v1/admin/assets/upload`, `DELETE /api/v1/admin/assets/delete` (the paths the asset page and the poll editor's image upload call).
   - Site Navigation & Icon Catalog: `GET /admin/navigation`, `GET|PUT /api/v1/admin/navigation`.
   - Site Popup: `GET /admin/site-popup`, `GET|PUT /api/v1/admin/site-popup`.
   - Guess Who Roster: `POST|PUT|DELETE /api/v1/admin/guesswho/categories[/{id}]`, `POST|PUT|DELETE /api/v1/admin/guesswho/characters[/{id}]`.
@@ -879,11 +891,6 @@ Where both rows describe the same module (auth token, global search, transit rea
 | `POST /api/user/settings` | `PATCH /api/v1/user/settings` |
 | `POST /api/user/radio-usage` | `POST /api/v1/user/radio-usage` |
 | `POST /api/user/radio-usage/clear` | `DELETE /api/v1/user/radio-usage` |
-| `POST\|PUT\|DELETE /api/polls*` | `POST\|PUT\|PATCH\|DELETE /api/v1/admin/polls*` |
-| `GET\|POST\|PUT\|PATCH\|DELETE /api/candidate-groups*` | `GET\|POST\|PUT\|PATCH\|DELETE /api/v1/admin/candidate-groups*` |
-| `POST\|PUT\|PATCH\|DELETE /api/candidates*` | `POST\|PUT\|PATCH\|DELETE /api/v1/admin/candidates*` |
 | `GET\|POST\|DELETE /api/admins*` | `GET\|POST\|DELETE /api/v1/admin/admins*` |
-| `GET\|POST\|DELETE /api/v1/admin/assets/(list\|upload\|delete)` | `GET\|POST\|DELETE /api/v1/admin/assets` |
 | `POST /api/v1/admin/api-tokens/revoke-all/{userId}` | `DELETE /api/v1/admin/users/{userId}/api-tokens` |
 | `POST /api/v1/admin/users/{id}/toggle-ban` | `PATCH /api/v1/admin/users/{id}/ban` |
-| `GET\|POST\|PUT\|DELETE /api/v1/admin/route(s\|-drafts)*` | `GET\|POST\|PUT\|PATCH\|DELETE /api/v1/admin/transit/route(s\|-drafts)*` |

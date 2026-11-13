@@ -366,6 +366,35 @@ export function adoptAccountLocation(account: AccountLocation | null | undefined
   if (changed) notifyLocationChanged();
 }
 
+/** '' clears the account value; a half-typed coordinate is skipped, not sent. */
+function accountCoordinate(value: string): number | null | undefined {
+  if (value.trim() === '') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+/**
+ * The account mirror of a device-side location edit. Home and Roznama both show
+ * the same fields and post what the user changed; the account's key spelling is
+ * this module's, so neither page has to know it. An emptied coordinate field
+ * travels as null (the server takes it as "cleared"), which the device's own
+ * empty string does not survive as.
+ */
+export function accountPatchForLocation(patch: LocationPatch): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  if (patch.city !== undefined) out.governorate = patch.city;
+  if (patch.useCustomCoords !== undefined) out.useCustomCoords = patch.useCustomCoords;
+  if (patch.customLat !== undefined) {
+    const lat = accountCoordinate(patch.customLat);
+    if (lat !== undefined) out.customLat = lat;
+  }
+  if (patch.customLon !== undefined) {
+    const lon = accountCoordinate(patch.customLon);
+    if (lon !== undefined) out.customLon = lon;
+  }
+  return out;
+}
+
 // --- resolvers: preference -> coordinates, labels and request params ---
 
 /** GPS/IP point resolved earlier in this session. */

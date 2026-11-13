@@ -184,7 +184,7 @@ class PhonebookAdminController extends Controller
 
         $this->flushCache();
 
-        return response()->json(['success' => true]);
+        return redirect()->back()->with('success', 'تم إعادة الترتيب بنجاح');
     }
 
     /**
@@ -203,7 +203,7 @@ class PhonebookAdminController extends Controller
 
         $this->flushCache();
 
-        return response()->json(['success' => true]);
+        return redirect()->back()->with('success', 'تم إعادة الترتيب بنجاح');
     }
 
     private function flushCache(): void

@@ -180,8 +180,8 @@ export default function CompassResult({
     setImageBusy(true);
     try {
       await exportElementAsPng(storyCardRef.current, `bousalat-syria-${Date.now()}.png`);
-    } catch (e) {
-      console.error('compass image export failed', e);
+    } catch {
+      notify.error('تعذّر إنشاء صورة النتيجة، حاول مرة أخرى');
     } finally {
       setImageBusy(false);
     }

@@ -7,6 +7,7 @@ import { Label } from '@/Components/ui/label';
 import { Textarea } from '@/Components/ui/textarea';
 import { Switch } from '@/Components/ui/switch';
 import { Smartphone, Upload } from 'lucide-react';
+import { notify } from '@/Lib/notify';
 import type { GovApp } from '@/Domain/govapps/types';
 
 interface AppDialogProps {
@@ -68,6 +69,11 @@ export default function AppDialog({ open, onOpenChange, app }: AppDialogProps) {
         }
     };
 
+    const handleError = (errors: Record<string, string>) => {
+        setProcessing(false);
+        notify.error(Object.values(errors)[0] ?? 'تعذر حفظ بيانات التطبيق');
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setProcessing(true);
@@ -97,7 +103,7 @@ export default function AppDialog({ open, onOpenChange, app }: AppDialogProps) {
                     setProcessing(false);
                     onOpenChange(false);
                 },
-                onError: () => setProcessing(false),
+                onError: handleError,
             });
         } else {
             router.post('/api/v1/admin/govapps', formData, {
@@ -105,7 +111,7 @@ export default function AppDialog({ open, onOpenChange, app }: AppDialogProps) {
                     setProcessing(false);
                     onOpenChange(false);
                 },
-                onError: () => setProcessing(false),
+                onError: handleError,
             });
         }
     };

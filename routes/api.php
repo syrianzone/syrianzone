@@ -186,26 +186,27 @@ Route::prefix('v1')->group(function () use ($pollBallotRoutes, $pollLeaderboardR
         $globalSearchRoutes('/global-search', null);
     });
 
-    // 2. Transit API. One definition of the public reads, mounted under the
-    // canonical /api/v1/transit prefix and at the root of /api/v1. The
-    // canonical mount keeps the pass-through actions, owns the route names and
-    // adds the /map alias; the older aliases call the get* methods and use
-    // /geo/poi.
+    // 2. Transit API. The public reads answer on the canonical
+    // /api/v1/transit prefix (mobile calls it) and at the root of /api/v1
+    // (the web calls it), mounted from these declarations so an endpoint or a
+    // throttle cannot land on one URL and not its twin. `$canonical` only picks
+    // the two path spellings the trees differ in (`/map`, `/pois`) and owns the
+    // route names.
     $transitPublicRoutes = function (bool $canonical): void {
         $name = fn (string $suffix): ?string => $canonical ? 'api.v1.transit.'.$suffix : null;
 
         Route::middleware('throttle:60,1')->group(function () use ($canonical, $name) {
-            Route::get('/cities', [TransitController::class, $canonical ? 'cities' : 'getCities'])
+            Route::get('/cities', [TransitController::class, 'getCities'])
                 ->name($name('cities.index'));
-            Route::get('/cities/{id}/routes', [TransitController::class, $canonical ? 'routes' : 'getRoutes'])
+            Route::get('/cities/{id}/routes', [TransitController::class, 'getRoutes'])
                 ->name($name('cities.routes.index'));
-            Route::get('/cities/{id}/map-data', [TransitController::class, $canonical ? 'mapData' : 'getMapData'])
+            Route::get('/cities/{id}/map-data', [TransitController::class, 'getMapData'])
                 ->name($name('cities.map-data'));
             if ($canonical) {
-                Route::get('/cities/{id}/map', [TransitController::class, 'mapData'])
+                Route::get('/cities/{id}/map', [TransitController::class, 'getMapData'])
                     ->name($name('cities.map'));
             }
-            Route::get('/stops/nearby', [TransitController::class, $canonical ? 'nearbyStops' : 'getNearbyStops'])
+            Route::get('/stops/nearby', [TransitController::class, 'getNearbyStops'])
                 ->name($name('stops.nearby'));
             Route::get('/search', [TransitController::class, 'search'])
                 ->name($name('search'));
@@ -422,9 +423,9 @@ Route::prefix('v1')->group(function () use ($pollBallotRoutes, $pollLeaderboardR
     $publicWidgetRoutes('api.v1.');
 
     Route::middleware('throttle:60,1')->group(function () {
-        Route::get('/atlas', [PopulationAtlasController::class, 'index'])
+        Route::get('/atlas', [PopulationAtlasController::class, 'getData'])
             ->name('api.v1.atlas.index');
-        Route::get('/atlas/environment', [PopulationAtlasController::class, 'environment'])
+        Route::get('/atlas/environment', [PopulationAtlasController::class, 'getEnvironmentalDetails'])
             ->name('api.v1.atlas.environment');
     });
 });

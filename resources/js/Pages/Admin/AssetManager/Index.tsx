@@ -15,6 +15,7 @@ import {
 import { api, apiErrorMessage } from '@/Lib/api';
 import JSZip from 'jszip';
 import { notify } from '@/Lib/notify';
+import { copyText } from '@/Lib/copy';
 import { confirmDialog } from '@/Lib/confirm';
 
 interface R2File {
@@ -152,8 +153,8 @@ export default function AssetManagerIndex() {
         }
     };
 
-    const copyToClipboard = (url: string) => {
-        navigator.clipboard.writeText(url);
+    const copyToClipboard = async (url: string) => {
+        if (!(await copyText(url))) return;
         setCopiedUrl(url);
         setTimeout(() => setCopiedUrl(null), 2000);
     };
@@ -385,7 +386,7 @@ export default function AssetManagerIndex() {
                                                             variant="ghost"
                                                             className="h-8 w-8"
                                                             title="نسخ الرابط المباشر"
-                                                            onClick={() => copyToClipboard(item.url)}
+                                                            onClick={() => void copyToClipboard(item.url)}
                                                         >
                                                             {copiedUrl === item.url ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
                                                         </Button>
@@ -512,7 +513,7 @@ export default function AssetManagerIndex() {
                                                 <Button
                                                     type="button"
                                                     variant="outline"
-                                                    onClick={() => copyToClipboard(uploadResult.url)}
+                                                    onClick={() => void copyToClipboard(uploadResult.url)}
                                                     className="shrink-0"
                                                 >
                                                     {copiedUrl === uploadResult.url ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}

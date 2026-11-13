@@ -17,6 +17,7 @@ import { HomeInlineSearchSection } from '@/Components/GlobalSearch';
 import F3aliaEvents from '@/Components/F3aliaEvents';
 import type { CustomLink } from '@/Pages/Home/_lib/links';
 import {
+    accountPatchForLocation,
     readLocationPreference,
     useLocationPreference,
     type LocationPatch,
@@ -175,14 +176,11 @@ export default function Home() {
         if (user && Object.keys(accSettings).length === 0) {
             saveAccountSettings({
                 theme: savedTheme,
-                governorate: savedLocation.city,
                 showWeather: savedShowWeather,
                 showPrayerTimes: savedShowPrayerTimes,
                 showEvents: savedShowEvents,
-                useCustomCoords: savedLocation.useCustomCoords,
-                customLat: savedLocation.customLat,
-                customLon: savedLocation.customLon,
                 customLinks: parsedLinks,
+                ...accountPatchForLocation(savedLocation),
             });
         }
 
@@ -242,11 +240,7 @@ export default function Home() {
 
     /** Mirror a location edit into the account settings (device storage is the module's). */
     const handleLocationChange = (patch: LocationPatch) => {
-        const accountPatch: Record<string, unknown> = {};
-        if (patch.city !== undefined) accountPatch.governorate = patch.city;
-        if (patch.useCustomCoords !== undefined) accountPatch.useCustomCoords = patch.useCustomCoords;
-        if (patch.customLat !== undefined) accountPatch.customLat = patch.customLat;
-        if (patch.customLon !== undefined) accountPatch.customLon = patch.customLon;
+        const accountPatch = accountPatchForLocation(patch);
         if (Object.keys(accountPatch).length > 0) saveAccountSettings(accountPatch);
     };
 

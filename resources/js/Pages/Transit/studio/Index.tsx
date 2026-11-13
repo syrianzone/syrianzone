@@ -47,7 +47,7 @@ import { Button } from '@/Components/ui/button'
 import { Input } from '@/Components/ui/input'
 import { Textarea } from '@/Components/ui/textarea'
 import { Badge } from '@/Components/ui/badge'
-import { toast } from '@/Components/ui/sonner'
+import { notify } from '@/Lib/notify'
 import {
   Select,
   SelectContent,
@@ -259,19 +259,6 @@ function TransitStudioPageContent() {
   const cityInScope = (id?: string | null) => !isScopedStaff || (!!id && allowedCities!.includes(id))
   const studioCities = isScopedStaff ? activeCities.filter(c => allowedCities!.includes(c.id)) : activeCities
 
-  // ─── Shadcn Sonner Toast Notification Handler ───────────────────────────────
-  const addToast = useCallback((msg: string, type: 'success' | 'destructive' | 'info' | 'warning' = 'info') => {
-    if (type === 'success') {
-      toast.success(msg)
-    } else if (type === 'destructive') {
-      toast.error(msg)
-    } else if (type === 'warning') {
-      toast.warning(msg)
-    } else {
-      toast.info(msg)
-    }
-  }, [])
-
   // Helper to ensure MapLibre custom sources & layers exist (survives setStyle)
   const ensureMapLayers = useCallback((map: maplibregl.Map, currentColorIndex: number) => {
     const empty: FeatureCollection = { type: 'FeatureCollection', features: [] }
@@ -408,7 +395,7 @@ function TransitStudioPageContent() {
       const finalLine = [...activeLine.current]
       setDrawnLine(finalLine)
       setMode('idle')
-      addToast(`اكتمل رسم المسار (${finalLine.length} نقطة)`, 'success')
+      notify.success(`اكتمل رسم المسار (${finalLine.length} نقطة)`)
 
       if (refData?.routes?.features?.length) {
         const conflict = checkConflict(finalLine, refData.routes.features)
@@ -420,13 +407,13 @@ function TransitStudioPageContent() {
       const curDrawn = useStudioStore.getState().drawnLine
       if (curDrawn && curDrawn.length >= 2) {
         setMode('idle')
-        addToast(`تم إنهاء تعديل المسار (${curDrawn.length} نقطة)`, 'success')
+        notify.success(`تم إنهاء تعديل المسار (${curDrawn.length} نقطة)`)
         setAccordionValue('stops')
       } else {
-        addToast('يجب رسم نقطتين على الأقل', 'destructive')
+        notify.error('يجب رسم نقطتين على الأقل')
       }
     }
-  }, [addToast, refData, setDrawnLine, setMode])
+  }, [refData, setDrawnLine, setMode])
 
   // Focus station input in sidebar and scroll to it
   const handleFocusStationInput = useCallback((stopId: number) => {
@@ -466,7 +453,7 @@ function TransitStudioPageContent() {
           restoredEditIdRef.current = s.editingRouteId
         }
         useStudioStore.setState(patch)
-        addToast('تمت استعادة مسارك لتقديمه تحت حسابك المسجل', 'success')
+        notify.success('تمت استعادة مسارك لتقديمه تحت حسابك المسجل')
       } catch { /* */ }
       localStorage.removeItem('transit:studio:pending')
     }
@@ -496,13 +483,13 @@ function TransitStudioPageContent() {
       }
 
       if (!result) {
-        addToast('تعذّر تحميل المسار للتعديل', 'destructive')
+        notify.error('تعذّر تحميل المسار للتعديل')
         return
       }
 
       const draftCity = result.draft?.city_id
       if (!cityInScope(draftCity)) {
-        addToast('هذا المسار يقع خارج نطاق المحافظات المسموح لك', 'destructive')
+        notify.error('هذا المسار يقع خارج نطاق المحافظات المسموح لك')
         return
       }
       const knownCity = !!draftCity && cities.some(c => c.id === draftCity)
@@ -511,10 +498,10 @@ function TransitStudioPageContent() {
       } else {
         // Never bind to a city the UI cannot represent: the header would show
         // one city while the submit sends another (or null).
-        addToast('تعذّر تحديد مدينة هذا المسار — تم اختيار مدينة افتراضية، تحقق من المدينة قبل الحفظ', 'warning')
+        notify.warning('تعذّر تحديد مدينة هذا المسار — تم اختيار مدينة افتراضية، تحقق من المدينة قبل الحفظ')
         loadDraft({ ...result.draft, city_id: useStudioStore.getState().cityId || studioCities[0]?.id || '' })
       }
-      addToast(result.isRoute ? 'تم تحميل الخط المنشور للتعديل' : 'تم تحميل المسار للتعديل', 'success')
+      notify.success(result.isRoute ? 'تم تحميل الخط المنشور للتعديل' : 'تم تحميل المسار للتعديل')
     })()
   }, [editParam]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -770,7 +757,7 @@ function TransitStudioPageContent() {
         ev.preventDefault()
         const cur = useStudioStore.getState().drawnLine!
         if (cur.length <= 2) {
-          addToast('يجب أن يحتوي المسار على نقطتين على الأقل', 'info')
+          notify.info('يجب أن يحتوي المسار على نقطتين على الأقل')
           return
         }
         const updatedLine = cur.filter((_, i) => i !== idx)
@@ -784,12 +771,12 @@ function TransitStudioPageContent() {
             updateStopCoordinates(stop.id, [nearest.x, nearest.y])
           })
         }
-        addToast('تمت إزالة النقطة وإعادة محاذاة المحطات على المسار', 'info')
+        notify.info('تمت إزالة النقطة وإعادة محاذاة المحطات على المسار')
       })
 
       vertexMarkersRef.current.push(marker)
     })
-  }, [mapReady, drawnLine, colorIndex, setDrawnLine, updateStopCoordinates, addToast, finishLineEditing])
+  }, [mapReady, drawnLine, colorIndex, setDrawnLine, updateStopCoordinates, finishLineEditing])
 
   // Render bus stop dots with smooth continuous line snapping during drag
   useEffect(() => {
@@ -860,7 +847,7 @@ function TransitStudioPageContent() {
         if (curDrawn && curDrawn.length >= 2 && activeLine.current.length === 0) {
           const updated = [...curDrawn, point]
           setDrawnLine(updated)
-          addToast(`تمت إضافة نقطة جديدة للمسار (${updated.length} نقطة)`, 'info')
+          notify.info(`تمت إضافة نقطة جديدة للمسار (${updated.length} نقطة)`)
           return
         }
 
@@ -869,7 +856,7 @@ function TransitStudioPageContent() {
         setActiveVertexCount(count)
         flushActive(activeLine.current)
 
-        if (count === 1) addToast('انقر لإضافة نقاط إضافية • انقر مرتين لإنهاء الرسم والتعديل', 'info')
+        if (count === 1) notify.info('انقر لإضافة نقاط إضافية • انقر مرتين لإنهاء الرسم والتعديل')
       } else if (modeRef.current === 'point') {
         const curLine = useStudioStore.getState().drawnLine
         if (curLine && curLine.length >= 2) {
@@ -881,7 +868,7 @@ function TransitStudioPageContent() {
           if (added) {
             handleFocusStationInput(added.id)
           }
-          addToast('تمت إضافة محطة ومحاذاتها لموقعها على الخط', 'success')
+          notify.success('تمت إضافة محطة ومحاذاتها لموقعها على الخط')
           return
         }
         addStop(point)
@@ -890,7 +877,7 @@ function TransitStudioPageContent() {
         if (added) {
           handleFocusStationInput(added.id)
         }
-        addToast('تمت إضافة محطة', 'success')
+        notify.success('تمت إضافة محطة')
       }
     }
 
@@ -926,7 +913,7 @@ function TransitStudioPageContent() {
       map.off('touchend', onTouchEnd)
       map.off('mousemove', onMouseMove)
     }
-  }, [mapReady, addStop, setDrawnLine, flushActive, addToast, finishLineEditing, handleFocusStationInput])
+  }, [mapReady, addStop, setDrawnLine, flushActive, finishLineEditing, handleFocusStationInput])
 
   // Key press shortcuts (Esc to cancel drawing)
   useEffect(() => {
@@ -943,7 +930,7 @@ function TransitStudioPageContent() {
   const handleStartDraw = () => {
     setAccordionValue('line')
     setMode('line')
-    addToast('انقر على الخريطة لبدء رسم المسار', 'info')
+    notify.info('انقر على الخريطة لبدء رسم المسار')
   }
 
   const handleRedraw = () => {
@@ -951,7 +938,7 @@ function TransitStudioPageContent() {
     setConflictWarning(false)
     setAccordionValue('line')
     setMode('line')
-    addToast('تمت إزالة الخط. انقر على الخريطة لرسم مسار جديد.', 'info')
+    notify.info('تمت إزالة الخط. انقر على الخريطة لرسم مسار جديد.')
   }
 
   const handleUndo = () => {
@@ -963,14 +950,14 @@ function TransitStudioPageContent() {
     } else if (drawnLine && drawnLine.length > 2) {
       const updated = drawnLine.slice(0, -1)
       setDrawnLine(updated)
-      addToast('تمت إزالة النقطة الأخيرة من المسار', 'info')
+      notify.info('تمت إزالة النقطة الأخيرة من المسار')
     }
   }
 
   const handleActivatePoint = () => {
     setAccordionValue('stops')
     setMode('point')
-    addToast('انقر على الخريطة لوضع محطات الحافلات (تتحاذى وتتحرك على الخط)', 'info')
+    notify.info('انقر على الخريطة لوضع محطات الحافلات (تتحاذى وتتحرك على الخط)')
   }
 
   const handleConfirmStopName = (name: string) => {
@@ -990,22 +977,22 @@ function TransitStudioPageContent() {
     setMode('idle')
     reset()
     setAccordionValue('line')
-    addToast('تمت إعادة ضبط الاستوديو', 'info')
+    notify.info('تمت إعادة ضبط الاستوديو')
   }
 
   // Submit Draft to Backend API (Supports Anonymous and Authenticated mode)
   const handleSubmit = async (requireLogin: boolean = false) => {
     if (!cityId) {
-      addToast('اختر المدينة أولاً', 'destructive')
+      notify.error('اختر المدينة أولاً')
       return
     }
     if (!nameAr.trim()) {
-      addToast('اسم المسار بالعربية مطلوب', 'destructive')
+      notify.error('اسم المسار بالعربية مطلوب')
       setAccordionValue('details')
       return
     }
     if (!drawnLine || drawnLine.length < 2) {
-      addToast('يجب رسم خط المسار أولاً', 'destructive')
+      notify.error('يجب رسم خط المسار أولاً')
       setAccordionValue('line')
       return
     }
@@ -1013,7 +1000,7 @@ function TransitStudioPageContent() {
     if (requireLogin && !user) {
       const stateToSave = { cityId, drawnLine, stops, nameAr, nameEn, price, notes, editingRouteId, editingDraftId }
       localStorage.setItem('transit:studio:pending', JSON.stringify(stateToSave))
-      addToast('يرجى تسجيل الدخول بحساب Google لتُنسب المساهمة لك', 'info')
+      notify.info('يرجى تسجيل الدخول بحساب Google لتُنسب المساهمة لك')
       window.location.href = '/auth/google?redirect=' + encodeURIComponent(window.location.pathname + window.location.search)
       return
     }
@@ -1054,18 +1041,16 @@ function TransitStudioPageContent() {
 
       setLastSubmittedIsAnon(!user)
       setSubmittedDraftId(data.id ?? 1)
-      addToast(
+      notify.success(
         !user
           ? 'تم إرسال المسودة بنجاح كزائر (مجهول)'
           : isUpdating
           ? editingRouteId
             ? 'تم إرسال التعديلات للمراجعة'
             : 'تم تحديث المسودة بنجاح'
-          : 'تم إرسال المسودة للمراجعة باسمك',
-        'success'
-      )
+          : 'تم إرسال المسودة للمراجعة باسمك')
     } catch (e) {
-      addToast(apiErrorMessage(e), 'destructive')
+      notify.error(apiErrorMessage(e))
     } finally {
       setSubmitting(false)
     }

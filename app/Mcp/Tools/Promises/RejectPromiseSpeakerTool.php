@@ -7,6 +7,7 @@ use App\Services\Promises\PromiseRules;
 use App\Services\Promises\PromiseSpeakerService;
 use App\Support\Agents\AgentContext;
 use App\Support\Permissions\PermissionCatalogue;
+use App\Support\RejectionReason;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -38,8 +39,8 @@ class RejectPromiseSpeakerTool extends PromisesTool
                 ->required(),
 
             'reason' => $schema->string()
-                ->description('Why they were rejected, in Arabic. Max 1000 characters.')
-                ->max(1000),
+                ->description('Why they were rejected, in Arabic. Max '.RejectionReason::MAX_LENGTH.' characters.')
+                ->max(RejectionReason::MAX_LENGTH),
         ];
     }
 

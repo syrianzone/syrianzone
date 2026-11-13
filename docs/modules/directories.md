@@ -1,6 +1,8 @@
 # Directory Modules — SyOfficial, Phonebook, Gov Apps, Hotels
 
-Four read-mostly directory modules sharing the same pattern: string-ID keyset tables with bilingual labels, `order_column` manual reordering, `is_active` toggles, and a capability-gated Inertia admin page backed by `/api/v1/admin/*` CRUD endpoints.
+Four read-mostly directory modules sharing the same pattern: string-ID keyset tables with bilingual labels, `order_column` manual reordering, `is_active` toggles, and a capability-gated Inertia admin page backed by `/api/v1/admin/*` write routes.
+
+The three admin panels above are Inertia pages, so their write routes answer one way: validate, write, `redirect()->back()` with an Arabic `success` flash. A validation failure is the standard `422` envelope, which the Inertia form renders on its field.
 
 ## SyOfficial (الحسابات الرسمية السورية)
 

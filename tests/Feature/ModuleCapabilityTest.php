@@ -91,10 +91,10 @@ it('still lets a phonebook.reorder holder reorder', function () {
     // Phonebook reorder takes a positional list of ids, not an id/ordinal
     // object list like the SyOfficial one.
     $this->actingAs(capabilityUser('phonebook.reorder'))
-        ->postJson('/api/v1/admin/phonebook/reorder/categories', [
+        ->postJson('/api/v1/admin/phonebook/categories/reorder', [
             'order' => [$second->id, $category->id],
         ])
-        ->assertOk();
+        ->assertRedirect();
 
     expect($category->fresh()->order_column)->toBe(2);
 });

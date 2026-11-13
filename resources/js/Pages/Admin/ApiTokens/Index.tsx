@@ -7,6 +7,7 @@ import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card';
 import { notify as toastNotify } from '@/Lib/notify';
+import { copyText } from '@/Lib/copy';
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/Components/ui/select';
@@ -164,12 +165,14 @@ export default function ApiTokensIndex(props: ApiTokensData) {
 
     const copyToken = async () => {
         if (!issued) return;
-        try {
-            await navigator.clipboard.writeText(issued.token);
+        // The local check mark is this panel's own confirmation; the copy helper
+        // still owns the failure message when the browser refuses.
+        if (await copyText(issued.token, {
+            successMessage: 'نُسخ رمز الوصول',
+            failureMessage: 'تعذّر النسخ، انسخ الرمز يدوياً.',
+        })) {
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
-        } catch {
-            notify('تعذّر النسخ، انسخ الرمز يدوياً.', false);
         }
     };
 
@@ -232,7 +235,7 @@ export default function ApiTokensIndex(props: ApiTokensData) {
                                 <code dir="ltr" className="flex-1 bg-muted rounded-md p-3 text-xs break-all text-left select-all">
                                     {issued.token}
                                 </code>
-                                <Button size="sm" variant="outline" onClick={copyToken}>
+                                <Button size="sm" variant="outline" onClick={() => void copyToken()}>
                                     {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                                     {copied ? 'تم النسخ' : 'نسخ'}
                                 </Button>

@@ -6,7 +6,6 @@ use App\Services\SyOfficial\SyOfficialDirectoryService;
 use App\Services\SyOfficial\SyOfficialPresenter;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\RedirectResponse;
-use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Admin dashboard for the SyOfficial directory.
@@ -133,7 +132,7 @@ class SyOfficialAdminController extends Controller
         return redirect()->back()->with('success', 'تم حذف الجهة الرسمية بنجاح');
     }
 
-    public function reorderCategories(Request $request): Response
+    public function reorderCategories(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'orders' => 'required|array',
@@ -143,10 +142,10 @@ class SyOfficialAdminController extends Controller
 
         $this->directory->reorderCategories($validated['orders']);
 
-        return response()->json(['message' => 'تم إعادة الترتيب بنجاح']);
+        return redirect()->back()->with('success', 'تم إعادة الترتيب بنجاح');
     }
 
-    public function reorderEntities(Request $request): Response
+    public function reorderEntities(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'orders' => 'required|array',
@@ -156,6 +155,6 @@ class SyOfficialAdminController extends Controller
 
         $this->directory->reorderEntities($validated['orders']);
 
-        return response()->json(['message' => 'تم إعادة الترتيب بنجاح']);
+        return redirect()->back()->with('success', 'تم إعادة الترتيب بنجاح');
     }
 }

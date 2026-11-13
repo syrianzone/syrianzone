@@ -20,7 +20,15 @@ const { meta, ranks, individuals, hierarchy } = data as {
 
 const fmt = (n: number) => n.toLocaleString('en-US');
 
-const updatedArabic = new Date().toLocaleDateString('ar-SY', { year: 'numeric', month: 'long', day: 'numeric' });
+/**
+ * The list is only as fresh as the data file: `meta.asOf` rather than today's
+ * clock, which also kept the server's render and the browser's apart.
+ */
+const updatedArabic = new Date(`${meta.asOf}T00:00:00`).toLocaleDateString('ar-SY', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+});
 
 // names already announced as detained by the MoI; matched members get a cross
 const detainedNames = new Set(individuals.map((p) => p.name));

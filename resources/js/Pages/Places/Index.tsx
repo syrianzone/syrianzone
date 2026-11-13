@@ -9,6 +9,7 @@ import { ViewToggle } from './_components/ViewToggle';
 import { BottomSheet } from '@/Components/BottomSheet';
 import { api } from '@/Domain/places/api';
 import { apiErrorMessage } from '@/Lib/api';
+import { notify } from '@/Lib/notify';
 import { discovery, type GridPhoto } from '@/Domain/places/discovery';
 import type { GeoSuggestion, HotelFeatureCollection, LatLng, Paginated, PlaceCategory, PlaceFeatureCollection, PlaceListItem } from '@/Domain/places/types';
 import { inSyriaBox } from '@/Domain/geography/syria';
@@ -29,7 +30,6 @@ export default function Index() {
   const [submitOpen, setSubmitOpen] = useState(false);
   const [listPlaces, setListPlaces] = useState<Paginated<PlaceListItem> | null>(null);
   const [listLoading, setListLoading] = useState(false);
-  const [notice, setNotice] = useState<{ text: string; destructive: boolean } | null>(null);
   const [addMode, setAddMode] = useState(false);
   const [focus, setFocus] = useState<{ lng: number; lat: number; zoom?: number; key: number } | null>(null);
   const [highlight, setHighlight] = useState<LatLng | null>(null);
@@ -95,7 +95,7 @@ export default function Index() {
   useEffect(() => {
     api.mapData()
       .then(setFeatures)
-      .catch((e) => setNotice({ text: apiErrorMessage(e), destructive: true }));
+      .catch((e) => notify.error(apiErrorMessage(e)));
     api.hotelMapData()
       .then(setHotelFeatures)
       .catch((e) => { console.warn('[Index] hotelMapData failed:', e); });
@@ -112,7 +112,7 @@ export default function Index() {
     api.getPlace(id)
       .then((place) => flyTo(place.lng, place.lat))
       .catch((e) => {
-        setNotice({ text: apiErrorMessage(e), destructive: true });
+        notify.error(apiErrorMessage(e));
         // only clear if the deep-linked place is still selected; the user may have picked another
         setSelectedId((cur) => (cur === id ? null : cur));
       });
@@ -170,7 +170,7 @@ export default function Index() {
         page > 1 && prev ? { ...res, data: [...prev.data, ...res.data] } : res,
       );
     } catch (e) {
-      if (id === requestRef.current) setNotice({ text: apiErrorMessage(e), destructive: true });
+      if (id === requestRef.current) notify.error(apiErrorMessage(e));
     } finally {
       if (id === requestRef.current) setListLoading(false);
     }
@@ -208,7 +208,7 @@ export default function Index() {
     }
     // the same Syria bounding box the server enforces, so users learn before filling the form
     if (!inSyriaBox(point)) {
-      setNotice({ text: 'النقطة خارج حدود سوريا', destructive: true });
+      notify.error('النقطة خارج حدود سوريا');
       return;
     }
     setSubmitPoint(point);
@@ -248,7 +248,7 @@ export default function Index() {
   }
 
   function handleSubmitted() {
-    setNotice({ text: 'تم إرسال المكان وسيظهر بعد الموافقة', destructive: false });
+    notify.success('تم إرسال المكان وسيظهر بعد الموافقة');
   }
 
   function handleSelectExisting(id: number) {
@@ -283,7 +283,7 @@ export default function Index() {
         <PhotoGrid
           active={view === 'grid'}
           guideId={guide?.id ?? null}
-          bannerActive={guide !== null || notice !== null}
+          bannerActive={guide !== null}
           onPhotoClick={handleGridPhotoClick}
         />
 
@@ -327,21 +327,6 @@ export default function Index() {
             <div className="flex justify-center">
               <span className="pointer-events-auto flex items-center gap-2 rounded-full border border-border bg-card/95 px-3 py-1 text-xs text-muted-foreground shadow-sm">
                 انقر على الخريطة لتحديد الموقع
-              </span>
-            </div>
-          )}
-          {notice && (
-            <div className="flex justify-center">
-              <span
-                role="alert"
-                className={`pointer-events-auto flex items-center gap-2 rounded-full border bg-card/95 px-3 py-1 text-xs shadow-sm ${
-                  notice.destructive ? 'border-destructive/50 text-destructive' : 'border-border text-foreground'
-                }`}
-              >
-                {notice.text}
-                <button type="button" aria-label="إغلاق" onClick={() => setNotice(null)}>
-                  <X className="h-3.5 w-3.5" />
-                </button>
               </span>
             </div>
           )}

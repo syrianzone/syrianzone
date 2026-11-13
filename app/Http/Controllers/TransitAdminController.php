@@ -10,6 +10,7 @@ use App\Services\Transit\TransitAdminService;
 use App\Services\Transit\TransitRouteComposer;
 use App\Support\Facts;
 use App\Support\Permissions\PermissionCatalogue;
+use App\Support\RejectionReason;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -72,7 +73,7 @@ class TransitAdminController extends Controller
 
     public function reject(Request $request, $id): SymfonyResponse
     {
-        $validated = $request->validate(['reason' => 'nullable|string|max:1000']);
+        $validated = $request->validate(['reason' => RejectionReason::rules()], RejectionReason::messages());
 
         $draft = RouteDraft::findOrFail($id);
 

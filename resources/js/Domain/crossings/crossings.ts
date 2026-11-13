@@ -1,3 +1,4 @@
+import { shareOrCopy } from '@/Lib/webShare';
 import data from './crossings.json';
 
 export type WorkWindow = { label?: string; start?: string; end?: string; h24?: boolean };
@@ -160,16 +161,10 @@ export async function shareCrossing(c: Crossing) {
     // it was shared.
     const text = buildShareMessage(c, isOpenNow(c, syriaMinutes()));
 
-    if (navigator.share) {
-        try {
-            await navigator.share({ title: c.name, text });
-            return;
-        } catch (err) {
-            if (err instanceof Error && err.name === 'AbortError') return;
-        }
-    }
-
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+    await shareOrCopy(
+        { title: c.name, text },
+        { successMessage: 'تم نسخ تفاصيل المعبر', failureMessage: 'تعذّرت مشاركة تفاصيل المعبر' },
+    );
 }
 
 export function toFeatureCollection(list: Crossing[], nowMin: number | null): GeoJSON.FeatureCollection {

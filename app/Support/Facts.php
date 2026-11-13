@@ -206,11 +206,11 @@ final class Facts
     }
 
     /**
-     * @return array{core_slug: string, default_timezone: string}
+     * @return array{core_slug: string, default_timezone: string, min_selections: int}
      */
     public static function polls(): array
     {
-        /** @var array{core_slug: string, default_timezone: string} $polls */
+        /** @var array{core_slug: string, default_timezone: string, min_selections: int} $polls */
         $polls = self::json('polls');
 
         return $polls;

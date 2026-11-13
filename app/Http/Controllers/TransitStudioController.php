@@ -53,7 +53,6 @@ class TransitStudioController extends Controller
 
         return response()->json([
             'data' => $drafts,
-            'drafts' => $drafts,
         ]);
     }
 
@@ -62,7 +61,7 @@ class TransitStudioController extends Controller
         $user = $this->resolveUser($request);
 
         if ($user && $user->is_banned) {
-            return response()->json(['message' => 'Your account has been banned from submitting route drafts.'], 403);
+            return response()->json(['message' => 'تم حظر حسابك من تقديم المسارات.'], 403);
         }
 
         // Linked-edit auth must run BEFORE creating the draft: otherwise an

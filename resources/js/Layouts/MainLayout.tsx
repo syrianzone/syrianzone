@@ -1,7 +1,7 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import { AuthProvider } from '@/Contexts/AuthContext';
 import ConditionalLayout from '@/Components/ConditionalLayout';
-import RadioMiniPlayer from '@/Components/RadioMiniPlayer';
+import RadioMiniPlayer from '@/Domain/quran/RadioMiniPlayer';
 import ConfirmHost from '@/Components/ConfirmHost';
 import RouteAnnouncer from '@/Components/RouteAnnouncer';
 import AnalyticsConsentBanner from '@/Components/AnalyticsConsentBanner';

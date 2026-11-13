@@ -31,7 +31,7 @@ function adminUiGateCases(): array
         'resources/js/Pages/Admin/Places/PlaceReviewCard.tsx' => [
             'places.approve', 'places.edit', 'places.delete', 'places.moderate_photos',
         ],
-        'resources/js/Components/admin/AdminPollManager.tsx' => [
+        'resources/js/Domain/polls/AdminPollManager.tsx' => [
             'polls.create', 'polls.edit', 'polls.delete',
         ],
         'resources/js/Pages/Admin/SyOfficial/Index.tsx' => [
@@ -137,7 +137,7 @@ it('gates the import publish buttons on the capability the route requires', func
 it('keeps the superadmin-only asset upload out of reach of poll managers', function () {
     // Candidate images post to /api/v1/admin/assets/upload, which is guarded by
     // assets.manage. The drop zone is now inert for anyone without it.
-    $source = file_get_contents(base_path('resources/js/Components/admin/AdminPollManager.tsx'));
+    $source = file_get_contents(base_path('resources/js/Domain/polls/AdminPollManager.tsx'));
 
     expect($source)
         ->toContain('canUploadImages')

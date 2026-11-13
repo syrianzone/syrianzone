@@ -5,11 +5,11 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
- * `resources/js/Domain/transit/cities.json` is the city **seed** list: the input
- * `transit:import-geojson` writes the `cities` table from, and the synchronous
- * index the global search reads. It is not a runtime copy of the table — the
- * live city payload (with its published-route count) comes from `GET
- * /api/v1/cities` — so a derived field must never creep back into it.
+ * `resources/js/Domain/transit/cities.json` is the city **seed** list: the ids
+ * and columns a `cities` row is created with, and the synchronous index the
+ * global search reads. It is not a runtime copy of the table — the live city
+ * payload (with its published-route count) comes from `GET /api/v1/cities` — so
+ * a derived field must never creep back into it.
  */
 function citySeedRows(): array
 {

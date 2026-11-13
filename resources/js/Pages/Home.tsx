@@ -13,7 +13,7 @@ import { applyFont, getFontPreference } from '@/Lib/font';
 import UserNav from '@/Components/UserNav';
 import AppearanceMenu from '@/Components/AppearanceMenu';
 import { HomeInlineSearchSection } from '@/Components/GlobalSearch';
-import F3aliaEvents from '@/Components/F3aliaEvents';
+import F3aliaEvents from '@/Pages/Home/_components/F3aliaEvents';
 import type { CustomLink } from '@/Pages/Home/_lib/links';
 import {
     DEFAULT_HOME_DISPLAY_PREFS,
@@ -279,7 +279,7 @@ export default function Home() {
 
                     {showEvents && (
                         <div className="mb-8">
-                            <F3aliaEvents governorate={eventsGovernorate} language="ar" variant="single" />
+                            <F3aliaEvents governorate={eventsGovernorate} />
                         </div>
                     )}
 

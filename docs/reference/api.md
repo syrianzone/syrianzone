@@ -94,7 +94,7 @@ Used by native mobile clients (Flutter iOS/Android):
 ```
 - **Errors**:
   - `401 Unauthorized`: Invalid/expired Google token, unverified Google email, or `aud` not in `GOOGLE_ALLOWED_CLIENT_IDS`.
-  - `403 Forbidden`: `{ "message": "Your account has been banned." }`.
+  - `403 Forbidden`: `{ "message": "تم حظر حسابك." }`.
   - `422 Unprocessable Entity`: Neither `id_token` nor `access_token` was provided.
 
 #### `POST /api/v1/auth/logout` & `POST /api/v1/auth/logout-devices`
@@ -309,10 +309,17 @@ Cached for 1 hour (`transit:cities:api`). Coordinates use GeoJSON `[lng, lat]` o
     "center": [36.2765, 33.5138],
     "bounds": [[35.8, 33.3], [36.8, 33.7]],
     "routeCount": 4,
+    "mapGroup": ["damascus", "rif-dimashq"],
+    "mapGroupLabel": "دمشق الكبرى",
     "icon": { "viewBox": "0 0 0.174653 0.124551", "path": "M0.160,0.058 L..." }
   }
 ]
 ```
+
+`mapGroup` lists the city ids drawn on one shared map (the city itself included)
+and `mapGroupLabel` is that map's Arabic name; for a city with a map of its own
+`mapGroup` is `[id]` and the label is `null`. `icon` is the governorate outline
+`forApi()` adds; `forPage()` omits it.
 
 ### `GET /api/v1/transit/cities/{id}/routes`
 Cached for 10 minutes. Returns published routes for `{id}`:
@@ -349,7 +356,6 @@ Cached for 10 minutes (`Cache-Control: public, max-age=600`). Returns two GeoJSO
           "nameAr": "المزة - باب توما",
           "nameEn": "Mezzeh - Bab Touma",
           "colorIndex": 1,
-          "color_index": 1,
           "priceOld": 2000,
           "priceNew": 3000
         }
@@ -443,7 +449,7 @@ Transit Studio allows community members and transit moderators to draw new bus/m
 - **Auth**: Required (Session cookie or `Authorization: Bearer <token>`).
 - **Query Parameters**:
   - `status` *(optional)*: Filter by `pending`, `approved`, or `rejected`.
-- **Response (`200 OK`)**: Returns the user's drafts ordered newest first (`created_at DESC`) under both `data` and `drafts` keys:
+- **Response (`200 OK`)**: Returns the user's drafts ordered newest first (`created_at DESC`) under `data`:
 ```json
 {
   "data": [
@@ -479,9 +485,6 @@ Transit Studio allows community members and transit moderators to draw new bus/m
       "created_at": "2026-04-15T10:00:00.000000Z",
       "updated_at": "2026-04-15T10:00:00.000000Z"
     }
-  ],
-  "drafts": [
-    { "...same items..." }
   ]
 }
 ```
@@ -585,7 +588,7 @@ Transit Studio allows community members and transit moderators to draw new bus/m
 #### 6. Withdraw a Pending Draft — `DELETE /api/v1/transit/studio/routes/{id}`
 - **Legacy Alias**: `DELETE /api/v1/studio/routes/{id}`
 - **Auth**: Required (owner or `transit.edit_routes`).
-- **Response (`200 OK`)**: `{ "ok": true }` (or `422` `{ "message": "Only pending drafts can be withdrawn." }` if already reviewed).
+- **Response (`200 OK`)**: `{ "ok": true }` (or `422` `{ "message": "لا يمكن سحب إلا المسودة التي ما زالت قيد المراجعة." }` if already reviewed).
 
 ---
 

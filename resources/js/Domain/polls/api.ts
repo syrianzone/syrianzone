@@ -1,4 +1,5 @@
 import { api as client, API_ROOT, API_V1 } from '@/Lib/api';
+import type { TierKey } from './tiers';
 import type {
   CandidateArchiveInput,
   CandidateInput,
@@ -7,12 +8,23 @@ import type {
   PollGroup,
 } from './types';
 
+/** One daily ranking as the tier board submits it. */
+export interface RankingSubmission {
+  pollSlug: string;
+  deviceId: string;
+  tiers: Record<TierKey, Array<{ candidateId: string; pos: number }>>;
+}
+
 /**
- * Poll resources. The public vote path is passed in by the page (`TierBoard`),
- * so it is not named here; everything the admin editors and the dashboard
+ * Poll resources. Everything the board, the admin editors and the dashboard
  * mutate goes through this one client.
  */
 export const pollsApi = {
+  /** The public daily ranking from the tier board. */
+  submit(payload: RankingSubmission): Promise<void> {
+    return client.post(`${API_ROOT}/submit`, payload);
+  },
+
   details(id: string): Promise<PollDetails> {
     return client.get(`${API_ROOT}/polls/${id}`, { params: { include_archived: 1 } });
   },

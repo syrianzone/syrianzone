@@ -39,9 +39,15 @@ interface ItemHistory {
     [candidateId: string]: HistoryPoint[]
 }
 
+/** One candidate row: the chart keys the series by `candidateId` and labels it by `name`. */
+interface ChartCandidate {
+    candidateId: string
+    name: string
+}
+
 interface TimeseriesChartProps {
     history: ItemHistory
-    candidates: any[]
+    candidates: readonly ChartCandidate[]
     title: string
 }
 

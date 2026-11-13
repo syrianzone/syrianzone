@@ -388,8 +388,7 @@ html {
     --input: 0 0% 89.8%;
     --ring: 105 15.2% 36.1%;
     --radius: 0.5rem;
-    /* The shell's accent alias (the navbar's transit link reads it), so it has
-       to exist on every page, not only inside the transit subtree. */
+    /* Transit's accent alias. */
     --gold: hsl(var(--primary));
 
     /* Syrian Compass — figure category colours (light defaults) */

@@ -36,7 +36,6 @@ export default function PollShow({ poll, candidates, groups, voteDay }: PollShow
             groups={groups}
             pollId={poll.id}
             voteDay={voteDay}
-            submitApiPath="/api/submit"
             pollSlug={poll.slug}
           />
         </div>

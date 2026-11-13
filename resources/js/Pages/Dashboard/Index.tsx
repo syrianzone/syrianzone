@@ -57,7 +57,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/Components/ui/dialog';
-import AdminPollManager from '@/Components/admin/AdminPollManager';
+import AdminPollManager from '@/Domain/polls/AdminPollManager';
 import { pollsApi } from '@/Domain/polls/api';
 import { transitAdminApi } from '@/Domain/transit/api';
 import type { Poll, PollCandidate, PollGroup } from '@/Domain/polls/types';
@@ -108,7 +108,6 @@ interface DashboardProps {
     };
   };
   role: string;
-  cities: City[];
   myDrafts?: Draft[];
   polls?: Poll[];
 }
@@ -226,7 +225,6 @@ const statusBadge = (status: Draft['status']) => {
 export default function Dashboard({
   auth,
   role,
-  cities,
   myDrafts = [],
   polls = []
 }: DashboardProps) {

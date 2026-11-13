@@ -1,7 +1,7 @@
 /**
  * The global search modal. Mounted lazily (React.lazy in Layouts/MainLayout),
  * so everything the page shells also need — the search engine, the results
- * renderer, the filter tabs, the shortcut labels — lives in `./GlobalSearch`.
+ * renderer and the filter tabs — lives in `./GlobalSearch`.
  * Importing any of those from this file would make the modal a static
  * dependency of the eager graph and Rollup would drop the code-split.
  *
@@ -23,7 +23,8 @@ import {
 } from '@/Components/ui/command';
 import { useAppShell } from '@/Lib/appShell';
 import { pathnameOf } from '@/Lib/routes';
-import { FILTER_TABS, IS_MAC, SearchResultsContent, useGlobalSearchData } from './GlobalSearch';
+import { useIsMac } from '@/Lib/platform';
+import { FILTER_TABS, SearchResultsContent, useGlobalSearchData } from './GlobalSearch';
 import type { FilterScope } from './GlobalSearch';
 
 export default function GlobalCommandPalette() {
@@ -32,6 +33,7 @@ export default function GlobalCommandPalette() {
     const open = useAppShell((s) => s.searchOpen);
     const setOpen = useAppShell((s) => s.setSearchOpen);
 
+    const isMac = useIsMac();
     const [query, setQuery] = useState('');
     const [scope, setScope] = useState<FilterScope>('all');
     const inputRef = useRef<HTMLInputElement | null>(null);
@@ -162,7 +164,7 @@ export default function GlobalCommandPalette() {
                             </span>
                         </div>
                         <span dir="ltr" className="font-mono text-[10px]">
-                            {IS_MAC ? '⌘ + K' : 'Ctrl + K'}
+                            {isMac ? '⌘ + K' : 'Ctrl + K'}
                         </span>
                     </div>
                 </Command>

@@ -197,19 +197,19 @@ test('GET /api/v1/transit/studio/routes lists authenticated user drafts and stud
         ->getJson('/api/v1/transit/studio/routes')
         ->assertOk();
 
-    expect($listResp->json('drafts'))->toHaveCount(1)
-        ->and($listResp->json('drafts.0.id'))->toBe($draftId)
-        ->and($listResp->json('drafts.0.route_id'))->toBe($liveRoute->id)
-        ->and($listResp->json('drafts.0.city.id'))->toBe('damascus')
-        ->and($listResp->json('drafts.0.linked_route.id'))->toBe($liveRoute->id);
+    expect($listResp->json('data'))->toHaveCount(1)
+        ->and($listResp->json('data.0.id'))->toBe($draftId)
+        ->and($listResp->json('data.0.route_id'))->toBe($liveRoute->id)
+        ->and($listResp->json('data.0.city.id'))->toBe('damascus')
+        ->and($listResp->json('data.0.linked_route.id'))->toBe($liveRoute->id);
 
     // Legacy alias /api/v1/studio/routes returns identical payload
     $legacyListResp = $this->withHeader('Authorization', 'Bearer '.$mobileToken)
         ->getJson('/api/v1/studio/routes')
         ->assertOk();
 
-    expect($legacyListResp->json('drafts'))->toHaveCount(1)
-        ->and($legacyListResp->json('drafts.0.id'))->toBe($draftId);
+    expect($legacyListResp->json('data'))->toHaveCount(1)
+        ->and($legacyListResp->json('data.0.id'))->toBe($draftId);
 });
 
 test('GET /api/v1/navigation and superadmin PUT /api/v1/admin/navigation manage the single-source-of-truth navigation catalog', function () {

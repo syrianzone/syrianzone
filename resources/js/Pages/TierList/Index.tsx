@@ -84,7 +84,6 @@ export default function Index({ poll, candidates = [], groups = [], voteDay }: T
                         groups={groups}
                         pollId={poll.id}
                         voteDay={voteDay}
-                        submitApiPath="/api/submit"
                         pollSlug={CORE_POLL_SLUG}
                     />
                 ) : (

@@ -6,6 +6,7 @@ use App\Models\Ballot;
 use App\Models\BallotItem;
 use App\Models\Candidate;
 use App\Models\Poll;
+use App\Support\Facts;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -13,13 +14,6 @@ use Illuminate\Validation\ValidationException;
 
 class VotingService
 {
-    /**
-     * A ballot that scores fewer candidates than this is refused as incomplete.
-     * It is a rule of the vote, so it lives with the rest of the submission and
-     * not in the controller that happens to call it.
-     */
-    public const MIN_SELECTIONS = 3;
-
     private const TIER_MINIMUMS = ['S' => 50, 'A' => 40, 'B' => 30, 'C' => 20, 'D' => 10, 'F' => 0];
 
     private const TIER_BONUSES = [
@@ -91,9 +85,9 @@ class VotingService
      */
     private function rejectIncompleteBallot(array $tiers): void
     {
-        if (collect($tiers)->flatten(1)->count() < self::MIN_SELECTIONS) {
+        if (collect($tiers)->flatten(1)->count() < Facts::polls()['min_selections']) {
             throw ValidationException::withMessages([
-                'tiers' => 'يجب اختيار '.self::MIN_SELECTIONS.' مرشحين على الأقل.',
+                'tiers' => 'يجب اختيار '.Facts::polls()['min_selections'].' مرشحين على الأقل.',
             ]);
         }
     }

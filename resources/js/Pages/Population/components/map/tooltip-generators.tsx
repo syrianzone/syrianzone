@@ -1,4 +1,5 @@
 import { getCanonicalGovernorateName } from '@/Domain/geography/governorates';
+import { weatherDescriptionAr } from '@/Domain/weather/weather';
 import { STATUS_COLORS } from '../../constants/data-config';
 import { getTemperatureColor } from '../../utils/color-calculator';
 
@@ -71,7 +72,7 @@ export function generateEnvironmentalTooltipHtml(name: string, data: any) {
     const feelsLike = data.current_conditions?.feels_like_celsius || temp;
     const humidity = data.current_conditions?.humidity_percent || 0;
     const windSpeed = data.current_conditions?.wind_speed_kmh || 0;
-    const weatherDesc = escapeHtml(data.current_conditions?.weather_description || '');
+    const weatherDesc = escapeHtml(weatherDescriptionAr(data.current_conditions?.weather_description || ''));
     const aqi = data.air_quality?.estimated_aqi || 0;
     const droughtRisk = escapeHtml(data.drought_risk?.drought_risk || 'N/A');
 

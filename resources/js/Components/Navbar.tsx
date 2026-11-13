@@ -229,7 +229,6 @@ function NavTopLink({
   image,
   external,
   active,
-  gold,
 }: {
   href: string;
   label: string;
@@ -237,7 +236,6 @@ function NavTopLink({
   image?: string;
   external?: boolean;
   active?: boolean;
-  gold?: boolean;
 }) {
   const cls = cn(
     NAV_TRIGGER_CLASS,
@@ -249,7 +247,7 @@ function NavTopLink({
       {image ? (
         <img src={image} alt="" className="h-4 w-4 me-2 object-contain" />
       ) : Icon ? (
-        <Icon className={cn('h-4 w-4 me-2', gold && 'text-[var(--gold)]')} />
+        <Icon className="h-4 w-4 me-2" />
       ) : null}
       {label}
     </>
@@ -472,7 +470,7 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
                           isActive(studioPath, pathname) ? "text-primary" : "text-muted-foreground"
                         )}
                       >
-                        <Sparkles className="h-4 w-4 text-[var(--gold)]" />
+                        <Sparkles className="h-4 w-4 text-primary" />
                         إضافة خط / الاستوديو
                       </Link>
                     </div>
@@ -524,7 +522,7 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
           {isTransitPage ? (
             <>
               <NavTopLink href={transitHref} icon={Bus} label="الرئيسية" active={isActive(transitHref, pathname)} />
-              <NavTopLink href={studioHref} icon={Sparkles} label="إضافة خط / الاستوديو" active={isActive(studioPath, pathname)} gold />
+              <NavTopLink href={studioHref} icon={Sparkles} label="إضافة خط / الاستوديو" active={isActive(studioPath, pathname)} />
               <MoreTrigger ref={moreBtnRef} label="أقسام الموقع" open={moreOpen} onToggle={() => setMoreOpen((o) => !o)} />
             </>
           ) : (
@@ -582,7 +580,7 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
                         isActive(studioPath, pathname) ? 'text-primary' : 'text-muted-foreground'
                       )}
                     >
-                      <Sparkles className="h-4 w-4 text-[var(--gold)]" />
+                      <Sparkles className="h-4 w-4 text-primary" />
                       إضافة خط / الاستوديو
                     </Link>
                     <p className="px-3 pt-1 text-xs font-bold text-muted-foreground/60">أقسام الموقع الأخرى</p>

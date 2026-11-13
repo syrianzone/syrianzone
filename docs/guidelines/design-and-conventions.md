@@ -18,7 +18,7 @@ Repo-wide styling and coding conventions. The most detailed normative reference 
 - **Zustand stores are colocated per page** (e.g. `Pages/Transit/_store/useMapStore.ts`); the only app-wide store is `Lib/appShell.ts` (`useAppShell`: global search, the dialogs the navbar opens).
 - Page-scoped folders under `Pages/<Module>/` with `_components`, `_lib`, `_widgets` subfolders for private code; code a second page or the shell needs goes to `Domain/<module>/`; shared cross-module UI goes to `Components/` (see [Layering](#layering-pages--domain--shared)).
 - Grid layouts on the Board use inline styles instead of Tailwind responsive classes (CSS chunk cascade trap — see board spec).
-- TypeScript strict mode; path aliases `@`, `@/lib`, `@/components`, `@/context`.
+- TypeScript strict mode; one path alias, `@/` → `resources/js/`.
 
 ## Layering: Pages → Domain → shared
 
@@ -43,7 +43,7 @@ graph and fails on a violation, so run `npm run test:js` after moving code.
 - The one allowed shared → `Domain/` edge is a *facts* module (pure data and
   lookups, no React, no page code): a shared component that renders a domain
   label reads it from there rather than keeping its own copy of the table, e.g.
-  `Components/F3aliaEvents` naming a governorate.
+  `Components/GlobalSearch` listing transit cities from `Domain/transit/cities.ts`.
 
 ## Accessibility
 

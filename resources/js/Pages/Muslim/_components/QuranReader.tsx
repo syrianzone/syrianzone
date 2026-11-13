@@ -10,7 +10,7 @@ import MushafPage from './MushafPage';
 import { Popover, PopoverContent, PopoverTrigger } from '@/Components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/Components/ui/command';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/Components/ui/dialog';
-import QuranUsageCard from '@/Components/QuranUsageCard';
+import QuranUsageCard from '@/Domain/quran/QuranUsageCard';
 import { ChevronDown, Check } from 'lucide-react';
 
 import { Link } from '@inertiajs/react';

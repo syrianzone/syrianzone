@@ -1,4 +1,5 @@
 {
   "core_slug": "best-ministers",
-  "default_timezone": "Europe/Amsterdam"
+  "default_timezone": "Europe/Amsterdam",
+  "min_selections": 3
 }

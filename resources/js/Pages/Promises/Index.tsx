@@ -140,11 +140,8 @@ export default function PromisesIndex({ promises, stats, filters, dueSoonDays }:
                     <SmartFilterSearch
                         embedded
                         mobileFiltersScroll
-                        facets={searchFacets} value={searchValue}
-                        onChange={(next) => changeFilters({
-                            ...next,
-                            filters: { ...next.filters, ...(selectedStates.length ? { state: selectedStates } : {}) },
-                        })}
+                        facets={searchFacets} value={value}
+                        onChange={changeFilters}
                         placeholder="ابحث بالعنوان أو اسم المسؤول..." ariaLabel="ابحث في الوعود"
                     />
                 </div>

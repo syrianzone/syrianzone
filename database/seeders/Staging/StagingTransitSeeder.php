@@ -237,13 +237,13 @@ class StagingTransitSeeder extends StagingSeed
    *
    * INSERT-ONLY, unlike every other write in this file. 'damascus', 'aleppo'
    * and 'homs' are the REAL production city ids: they are the ids in
-   * resources/js/Domain/transit/cities.json. They are the one set of
-   * keys this module cannot namespace, because /transit/city/{id}/route/{...}
-   * looks the city up in cities.json by that exact id, so a 'staging-damascus'
-   * row would render a city page with no matching entry. So instead of an
-   * upsert we fill the row in only when it is missing: a staging box restored
-   * from a production dump keeps its imported name, centre, bounds and zoom,
-   * and only gains cities it did not already have.
+   * resources/js/Domain/transit/cities.json and in every /transit/city/{id}
+   * URL, so they are the one set of keys this module cannot namespace. A
+   * 'staging-damascus' row would be a second city no page or client link
+   * reaches. So instead of an upsert we fill the row in only when it is
+   * missing: a staging box restored from a production dump keeps its imported
+   * name, centre, bounds and zoom, and only gains cities it did not already
+   * have.
    *
    * The no-op ON DUPLICATE KEY UPDATE (rather than a read-then-insert) keeps
    * this a single atomic statement, and drops the VALUES(col) form that MySQL

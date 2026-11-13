@@ -35,9 +35,11 @@ export interface WeatherCurrent {
 }
 
 /**
- * The endpoint's English condition descriptions, in the wording the surfaces
- * print. Every key the upstream can send is listed here: an unlisted one falls
- * through as-is, which is the bug this table replaces.
+ * The English condition descriptions both weather upstreams send, in the wording
+ * the surfaces print: OpenWeather wording from `/api/weather`, WMO wording from
+ * the Population environmental endpoint (`SyriaClimateService`). Every string an
+ * upstream can send is listed here, keyed lower-case; the WMO rows reuse the
+ * forecast table's words so one condition cannot print two ways.
  */
 const WEATHER_DESCRIPTIONS_AR: Record<string, string> = {
   'clear sky': 'سماء صافية',
@@ -57,6 +59,23 @@ const WEATHER_DESCRIPTIONS_AR: Record<string, string> = {
   'fog': 'ضباب كثيف',
   'dust': 'غبار',
   'sand': 'عواصف رملية',
+  'mainly clear': 'صافية غالباً',
+  'partly cloudy': 'غيوم متفرقة',
+  'overcast': 'غائم',
+  'depositing rime fog': 'ضباب متجمد',
+  'light drizzle': 'رذاذ',
+  'moderate drizzle': 'رذاذ',
+  'dense drizzle': 'رذاذ كثيف',
+  'slight rain': 'مطر خفيف',
+  'heavy rain': 'مطر غزير',
+  'slight snow fall': 'ثلج خفيف',
+  'moderate snow fall': 'ثلج',
+  'heavy snow fall': 'ثلج كثيف',
+  'slight rain showers': 'زخات',
+  'moderate rain showers': 'زخات',
+  'violent rain showers': 'زخات غزيرة',
+  'thunderstorm with slight hail': 'عاصفة رعدية',
+  'thunderstorm with heavy hail': 'عاصفة رعدية',
 };
 
 /** WMO codes from the forecast upstream (the server passes the code through raw). */
@@ -85,7 +104,7 @@ const FORECAST_CODES_AR: Record<number, string> = {
 };
 
 export function weatherDescriptionAr(description: string): string {
-  return WEATHER_DESCRIPTIONS_AR[description] ?? description;
+  return WEATHER_DESCRIPTIONS_AR[description.trim().toLowerCase()] ?? description;
 }
 
 /** A forecast day's WMO code in Arabic; null for a code the table does not know. */

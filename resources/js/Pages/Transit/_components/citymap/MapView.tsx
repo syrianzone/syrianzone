@@ -8,6 +8,7 @@ import UserLocationLayer from './UserLocationLayer'
 import GlobalSearchBox from './GlobalSearchBox'
 import NearbyTransitDrawer from './NearbyTransitDrawer'
 import { useMapStore } from '../../_store/useMapStore'
+import { matchesMaxWidth } from '@/Lib/useIsMobile'
 import type { FeatureCollection, RouteProperties, StopProperties } from '../../_types'
 
 interface MapViewProps {
@@ -23,7 +24,7 @@ function FitToCity({ bounds }: { bounds: Bounds }) {
   useEffect(() => {
     if (!map) return
 
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
+    const isMobile = matchesMaxWidth('md')
     const fit = () => {
       if (!map.loaded()) return
       map.fitBounds(bounds, {
@@ -53,7 +54,7 @@ function FitToSelectedRoute({ routes }: { routes: FeatureCollection<RoutePropert
     const feature = routes.features.find(f => f.properties?.id === selectedRouteId)
     if (!feature) return
 
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
+    const isMobile = matchesMaxWidth('md')
 
     const fit = () => {
       if (!map.loaded()) return

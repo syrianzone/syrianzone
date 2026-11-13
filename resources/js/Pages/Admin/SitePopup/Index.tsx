@@ -9,22 +9,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Com
 import { Switch } from '@/Components/ui/switch';
 import { Megaphone } from 'lucide-react';
 import { notify } from '@/Lib/notify';
+import type { SitePopup } from '@/Domain/settings/popup';
 
-export interface SitePopupData {
-    enabled: boolean;
-    title: string;
-    description: string;
-    buttonText: string;
-    dismissText: string;
-    link: string;
-    version: number;
-}
-
-export default function SitePopupAdminIndex({ popup }: { popup: SitePopupData }) {
-    const [form, setForm] = useState<SitePopupData>(popup);
+export default function SitePopupAdminIndex({ popup }: { popup: SitePopup }) {
+    const [form, setForm] = useState<SitePopup>(popup);
     const [saving, setSaving] = useState(false);
 
-    const set = (key: keyof SitePopupData, value: string | boolean) =>
+    const set = (key: keyof SitePopup, value: string | boolean) =>
         setForm((f) => ({ ...f, [key]: value }));
 
     const handleSave = () => {

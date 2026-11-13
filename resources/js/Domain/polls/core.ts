@@ -10,6 +10,9 @@ export const CORE_POLL_SLUG: string = raw.core_slug;
 /** The timezone a new poll starts with; the dashboard editor never exposes it. */
 export const DEFAULT_POLL_TIMEZONE: string = raw.default_timezone;
 
+/** A ballot scoring fewer candidates is refused by `App\\Services\\VotingService`. */
+export const MIN_SELECTIONS: number = raw.min_selections;
+
 export function isCorePollSlug(slug: string | null | undefined): boolean {
   return slug === CORE_POLL_SLUG;
 }

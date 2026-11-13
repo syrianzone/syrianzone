@@ -8,7 +8,6 @@ import { SidebarRouteDetail } from './SidebarRouteDetail'
 
 interface TransitSidebarProps {
   pathname: string
-  search: URLSearchParams
 }
 
 export function TransitSidebar({ pathname }: TransitSidebarProps) {

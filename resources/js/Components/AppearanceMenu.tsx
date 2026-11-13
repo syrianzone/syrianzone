@@ -1,4 +1,3 @@
-import React from 'react';
 import { Check, Palette } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import {
@@ -8,7 +7,7 @@ import {
 } from '@/Components/ui/popover';
 import { useAuth } from '@/Contexts/AuthContext';
 import { applyTheme, THEME_REGISTRY, useThemePreference } from '@/Lib/theme';
-import { applyFont, getFontPreference, FontPreference } from '@/Lib/font';
+import { applyFont, useFontPreference, type FontPreference } from '@/Lib/font';
 import { saveAccountSettings, type AccountSettingsPatch } from '@/Domain/settings/accountSettings';
 
 const FONT_OPTIONS: Array<[FontPreference, string]> = [
@@ -21,17 +20,7 @@ const FONT_OPTIONS: Array<[FontPreference, string]> = [
 export default function AppearanceMenu({ className }: { className?: string }) {
     const { user } = useAuth();
     const currentTheme = useThemePreference();
-    const [currentFont, setCurrentFont] = React.useState<FontPreference>(getFontPreference());
-
-    // The font half of the appearance: `Lib/font.ts` has no document
-    // subscription yet, so the menu watches the attribute it applies.
-    React.useEffect(() => {
-        const sync = () => setCurrentFont(getFontPreference());
-        // `applyFont` sets data-font; read it back when a surface changes it.
-        const observer = new MutationObserver(sync);
-        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-font'] });
-        return () => observer.disconnect();
-    }, []);
+    const currentFont = useFontPreference();
 
     const saveSetting = (settings: AccountSettingsPatch) => {
         if (!user) return;
@@ -45,7 +34,6 @@ export default function AppearanceMenu({ className }: { className?: string }) {
 
     const handleFontChange = (font: FontPreference) => {
         applyFont(font);
-        setCurrentFont(font);
         saveSetting({ fontFamily: font });
     };
 

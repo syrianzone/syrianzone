@@ -38,6 +38,7 @@ import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
 import { cn } from '@/Lib/utils';
 import { useSiteNavigation, type SiteLink } from '@/Lib/siteLinks';
+import { useIsMac } from '@/Lib/platform';
 import { siteModule } from '@/Lib/siteModules';
 import { isActive } from '@/Lib/routes';
 import { normalizeArabic } from '@/Lib/arabic';
@@ -47,17 +48,7 @@ import { SURAH_AYAH_COUNTS, SURAH_NAMES_AR } from '@/Domain/quran/quran';
 import { GAMES, gameEntryHref } from '@/Domain/games/games';
 import { TOOLS as MUSLIM_TOOLS, toolHref } from '@/Domain/muslim/tools';
 import { STATUS_TEXT, crossings, statusOf, syriaMinutes } from '@/Domain/crossings/crossings';
-import citiesData from '@/Domain/transit/cities.json';
-
-interface TransitCityItem {
-    id: string;
-    nameAr: string;
-    nameEn: string;
-    status: string;
-    routeCount?: number;
-}
-
-const CITIES = citiesData as TransitCityItem[];
+import { TRANSIT_CITY_SEED as CITIES } from '@/Domain/transit/cities';
 
 const CITY_NAME_MAP: Record<string, string> = Object.fromEntries(
     CITIES.map((c) => [c.id, c.nameAr]),
@@ -259,18 +250,15 @@ export function useGlobalSearchData(query: string, scope: FilterScope, enabled =
     };
 }
 
-export const IS_MAC = typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform || navigator.userAgent || '');
-const SHORTCUT_LABEL = IS_MAC ? '⌘ K' : 'Ctrl K';
-const SHORTCUT_ARIA = `بحث سريع في المنصة (${SHORTCUT_LABEL})`;
-
 export function DesktopSearchTrigger({ className = '' }: { className?: string }) {
     const setSearchOpen = useAppShell((s) => s.setSearchOpen);
+    const shortcutLabel = useIsMac() ? '⌘ K' : 'Ctrl K';
     return (
         <Button
             type="button"
             variant="outline"
             onClick={() => setSearchOpen(true)}
-            aria-label={SHORTCUT_ARIA}
+            aria-label={`بحث سريع في المنصة (${shortcutLabel})`}
             className={`hidden lg:inline-flex h-9 items-center justify-between gap-3 rounded-xl border-border/80 bg-muted/40 px-3 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors ${className}`}
         >
             <span className="flex items-center gap-2">
@@ -281,7 +269,7 @@ export function DesktopSearchTrigger({ className = '' }: { className?: string })
                 dir="ltr"
                 className="pointer-events-none inline-flex h-5 select-none items-center gap-0.5 rounded-md border border-border bg-background px-1.5 font-mono text-[10px] font-semibold text-muted-foreground shadow-2xs"
             >
-                {SHORTCUT_LABEL}
+                {shortcutLabel}
             </kbd>
         </Button>
     );
@@ -942,6 +930,7 @@ export function HomeInlineSearchSection({
     const [scope, setScope] = useState<FilterScope>('all');
     const inputRef = useRef<HTMLInputElement | null>(null);
     const registerInlineSearch = useAppShell((s) => s.registerInlineSearch);
+    const shortcutLabel = useIsMac() ? '⌘ K' : 'Ctrl K';
 
     // The shell's Ctrl/Cmd+K handler focuses this field instead of opening the
     // palette while the homepage is mounted. Registering the focus function is
@@ -1027,7 +1016,7 @@ export function HomeInlineSearchSection({
                             dir="ltr"
                             className="hidden sm:inline-flex h-6 select-none items-center gap-0.5 rounded-md border border-border bg-muted/60 px-2 font-mono text-[11px] font-semibold text-muted-foreground shrink-0"
                         >
-                            {SHORTCUT_LABEL}
+                            {shortcutLabel}
                         </kbd>
                     )}
                 </div>

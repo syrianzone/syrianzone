@@ -12,7 +12,7 @@
  *  (c) no imports between two different `Pages/<Feature>` folders (ratcheted at
  *      today's edges so the set can only shrink).
  *
- * The specifiers are resolved with the same aliases vite.config.js and
+ * The specifiers are resolved with the same alias vite.config.js and
  * tsconfig.json declare, so the test reads the graph the bundler builds.
  */
 import { readdirSync, readFileSync } from 'node:fs';
@@ -26,16 +26,8 @@ const SOURCE_EXTENSIONS = ['.ts', '.tsx'];
 const RESOLVE_EXTENSIONS = ['', '.ts', '.tsx', '.d.ts', '.js', '.jsx', '.json'];
 const INDEX_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx'];
 
-/** Alias families from vite.config.js / tsconfig.json, longest prefix first. */
-const ALIASES: Array<[string, string]> = [
-  ['@/lib/', path.join(JS_DIR, 'Lib')],
-  ['@/components/', path.join(JS_DIR, 'Components')],
-  ['@/context/', path.join(JS_DIR, 'Contexts')],
-  ['@/lib', path.join(JS_DIR, 'Lib')],
-  ['@/components', path.join(JS_DIR, 'Components')],
-  ['@/context', path.join(JS_DIR, 'Contexts')],
-  ['@/', JS_DIR],
-];
+/** The alias vite.config.js and tsconfig.json declare. */
+const ALIASES: Array<[string, string]> = [['@/', JS_DIR]];
 
 const SPECIFIER_PATTERNS = [
   /(?:^|[\s;])(?:import|export)\s+(?:type\s+)?(?:[^'"]*?\bfrom\s*)?['"]([^'"]+)['"]/g,

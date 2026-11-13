@@ -159,7 +159,7 @@ class AuthController extends Controller
         $user = $this->upsertAndResolveGoogleUser($email, $googleId, $name, $avatar);
 
         if ($user->is_banned) {
-            return response()->json(['message' => 'Your account has been banned.'], 403);
+            return response()->json(['message' => 'تم حظر حسابك.'], 403);
         }
 
         $deviceName = trim((string) ($validated['device_name'] ?? 'mobile')) ?: 'mobile';
@@ -231,7 +231,7 @@ class AuthController extends Controller
         $user = $request->user() ?? Auth::guard('sanctum')->user();
 
         if ($user && $user->is_banned) {
-            return response()->json(['message' => 'Your account has been banned.'], 403);
+            return response()->json(['message' => 'تم حظر حسابك.'], 403);
         }
 
         // Shares one definition with the Inertia payload so /user and the

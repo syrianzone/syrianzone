@@ -11,7 +11,6 @@ interface BottomSheetProps {
   storageKey?: string
   initialHeight?: number
   hideBreakpoint?: 'sm' | 'md' | 'lg'
-  onHeightChange?: (height: number) => void
 }
 
 function getInitialHeight(storageKey?: string, initial?: number) {
@@ -32,7 +31,6 @@ export function BottomSheet({
   storageKey,
   initialHeight,
   hideBreakpoint = 'sm',
-  onHeightChange
 }: BottomSheetProps) {
   const [sheetHeight, setSheetHeight] = useState(() => getInitialHeight(storageKey, initialHeight))
   const [isDragging, setIsDragging] = useState(false)
@@ -42,11 +40,6 @@ export function BottomSheet({
   const isDraggingRef = useRef(false)
   const contentRef = useRef<HTMLDivElement>(null)
   const [contentNaturalHeight, setContentNaturalHeight] = useState(0)
-
-  const updateHeight = useCallback((h: number) => {
-    setSheetHeight(h)
-    onHeightChange?.(h)
-  }, [onHeightChange])
 
   useEffect(() => {
     if (!contentRef.current) return
@@ -69,8 +62,8 @@ export function BottomSheet({
     const deltaY = dragStartY.current - e.touches[0].clientY
     const maxH = window.innerHeight * MAX_RATIO
     const newHeight = Math.max(MINIMAL_HEIGHT, Math.min(maxH, dragStartHeight.current + deltaY))
-    updateHeight(newHeight)
-  }, [updateHeight])
+    setSheetHeight(newHeight)
+  }, [])
 
   const handleTouchEnd = useCallback(() => {
     isDraggingRef.current = false
@@ -81,13 +74,13 @@ export function BottomSheet({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        updateHeight(MINIMAL_HEIGHT)
+        setSheetHeight(MINIMAL_HEIGHT)
         if (storageKey) localStorage.setItem(storageKey, String(MINIMAL_HEIGHT))
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [storageKey, updateHeight])
+  }, [storageKey])
 
   const maxH = typeof window !== 'undefined' ? window.innerHeight * MAX_RATIO : 800
   const progress = Math.min(1, Math.max(0, (sheetHeight - MINIMAL_HEIGHT) / (maxH - MINIMAL_HEIGHT)))
@@ -134,7 +127,7 @@ export function BottomSheet({
           className={cn('fixed inset-0 -z-10 bg-black/40 transition-opacity duration-200', hideClass)}
           style={{ opacity: (progress - 0.85) / 0.15 * 0.5 }}
           onClick={() => {
-            updateHeight(MINIMAL_HEIGHT)
+            setSheetHeight(MINIMAL_HEIGHT)
             if (storageKey) localStorage.setItem(storageKey, String(MINIMAL_HEIGHT))
           }}
           aria-hidden="true"

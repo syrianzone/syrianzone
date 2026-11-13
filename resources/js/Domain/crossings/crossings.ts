@@ -1,4 +1,5 @@
 import { shareOrCopy } from '@/Lib/webShare';
+import { SYRIA_TIMEZONE } from '@/Domain/geography/syria';
 import data from '../../../data/crossings.json';
 
 export type WorkWindow = { label?: string; start?: string; end?: string; h24?: boolean };
@@ -54,13 +55,47 @@ export const DIRECTION_LABELS: Record<Direction, string> = {
 /** Groups run clockwise from the Turkish border, with the ports last. */
 export const DIRECTION_ORDER: Direction[] = ['north', 'west', 'east', 'south', 'sea'];
 
-// Syria sits on GMT+3 all year (no DST since 2022), so the offset is a constant
-// rather than something we have to look up per date.
-const SYRIA_OFFSET_MINUTES = 3 * 60;
+// The clock is read in the country's own zone rather than from a fixed offset:
+// Syria has had no DST since 2022, and that is a rule the zone database knows.
+const SYRIA_WALL_CLOCK = new Intl.DateTimeFormat('en-GB', {
+    timeZone: SYRIA_TIMEZONE,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+});
 
-export function syriaNow(): Date {
-    const now = new Date();
-    return new Date(now.getTime() + now.getTimezoneOffset() * 60000 + SYRIA_OFFSET_MINUTES * 60000);
+function syriaParts(now: Date) {
+    const parts = SYRIA_WALL_CLOCK.formatToParts(now);
+    const value = (type: string) => Number(parts.find((part) => part.type === type)?.value ?? 0);
+    return {
+        year: value('year'),
+        month: value('month'),
+        day: value('day'),
+        hour: value('hour'),
+        minute: value('minute'),
+        second: value('second'),
+    };
+}
+
+/** The Syrian wall clock as a Date, so `getHours`/`getMinutes` read Damascus time. */
+export function syriaNow(now: Date = new Date()): Date {
+    const p = syriaParts(now);
+    return new Date(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
+}
+
+/** The zone's current label, e.g. `GMT+3`, for the page's clock caption. */
+export function syriaOffsetLabel(now: Date = new Date()): string {
+    const p = syriaParts(now);
+    const wall = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
+    const offsetMinutes = Math.round((wall - now.getTime()) / 60000);
+    const sign = offsetMinutes < 0 ? '-' : '+';
+    const abs = Math.abs(offsetMinutes);
+    const minutes = abs % 60;
+    return `GMT${sign}${Math.floor(abs / 60)}${minutes ? `:${String(minutes).padStart(2, '0')}` : ''}`;
 }
 
 /** Minutes since midnight, Syria time. */

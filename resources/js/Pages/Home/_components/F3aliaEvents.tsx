@@ -8,9 +8,6 @@ import { getGovernorateNameAr, governorateNameForF3aliaProvince } from '@/Domain
 
 interface F3aliaEventsProps {
     governorate: string; // local governorate key, e.g., 'damascus'
-    /** The homepage passes these; the section is Arabic single-row only. */
-    language?: 'ar';
-    variant?: 'single';
 }
 
 /** One event exactly as the server proxy (`/api/events/today`) normalizes it. */

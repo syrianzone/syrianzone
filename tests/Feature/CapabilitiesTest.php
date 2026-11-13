@@ -294,6 +294,7 @@ it('keeps a plain user on their own drafts only', function () {
             // Nothing else. This is the one role check the dashboard keeps: a
             // negative test asking "is this an ordinary account?", correct
             // precisely because it is not an authorisation grant.
+            ->missing('cities')
             ->missing('allDrafts')
             ->missing('publishedRoutes')
             ->missing('polls')

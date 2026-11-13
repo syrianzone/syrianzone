@@ -22,7 +22,7 @@ import { GameTileGrid } from '@/Domain/games/GameTile';
 import AyahMark from '@/Domain/quran/AyahMark';
 import { TOOLS, toolHref } from '@/Domain/muslim/tools';
 import CityGrid from '@/Pages/Transit/_components/landing/CityGrid';
-import transitCities from '@/Domain/transit/cities.json';
+import { TRANSIT_CITY_SEED } from '@/Domain/transit/cities';
 
 type NotFoundSection = 'general' | 'transit' | 'games' | 'muslim';
 
@@ -63,7 +63,7 @@ const TILE_CLASS = 'group flex flex-col items-center gap-2 py-1 text-center no-u
 /** The 404 is rendered without the transit page's server payload, so it shows
  *  the committed city list; the JSON carries what the cards read, not the
  *  API-only map grouping. */
-const TRANSIT_CITIES = transitCities as React.ComponentProps<typeof CityGrid>['cities'];
+const TRANSIT_CITIES = TRANSIT_CITY_SEED as React.ComponentProps<typeof CityGrid>['cities'];
 
 export default function NotFound({ path = '/404', section }: NotFoundProps) {
     const resolvedSection: NotFoundSection = useMemo(() => {

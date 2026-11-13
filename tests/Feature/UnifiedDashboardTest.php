@@ -29,7 +29,7 @@ test('banned user cannot submit route drafts', function () {
             ],
         ])
         ->assertStatus(403)
-        ->assertJsonPath('message', 'Your account has been banned from submitting route drafts.');
+        ->assertJsonPath('message', 'تم حظر حسابك من تقديم المسارات.');
 });
 
 test('deleting user account soft deletes user and delegates polls and routes to superadmin', function () {

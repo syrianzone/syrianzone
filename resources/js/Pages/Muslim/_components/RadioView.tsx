@@ -5,8 +5,8 @@ import {
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
 import RecitationPicker from '@/Domain/quran/RecitationPicker';
-import QuranWordWindow from '@/Components/QuranWordWindow';
-import QuranUsageCard from '@/Components/QuranUsageCard';
+import QuranWordWindow from '@/Domain/quran/QuranWordWindow';
+import QuranUsageCard from '@/Domain/quran/QuranUsageCard';
 import { QuranRadioIcon } from '@/Components/Icons/ProjectIcons';
 import { useQuranPlayer } from '@/Domain/quran/quranPlayer';
 import { formatDuration } from '../../../Lib/format';

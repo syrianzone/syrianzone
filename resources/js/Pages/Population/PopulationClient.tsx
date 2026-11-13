@@ -10,6 +10,7 @@ import {
 import { sortCitiesByOrder, getCanonicalGovernorateName, getGovernorateDatasetNameEn, getGovernoratePcode } from '@/Domain/geography/governorates';
 import { buildLegend } from './utils/color-calculator';
 import { useIsMobile } from '@/Lib/useIsMobile';
+import { weatherDescriptionAr } from '@/Domain/weather/weather';
 
 type DataType = typeof DATA_TYPES[keyof typeof DATA_TYPES];
 
@@ -464,7 +465,9 @@ export default function PopulationClient() {
                                                 المحسوسة {selectedEnvProvince.data.current_conditions?.feels_like_celsius ?? '—'}°C
                                             </p>
                                             <p className="text-sm text-foreground/80 mt-1">
-                                                {selectedEnvProvince.data.current_conditions?.weather_description ?? ''}
+                                                {selectedEnvProvince.data.current_conditions?.weather_description
+                                                    ? weatherDescriptionAr(selectedEnvProvince.data.current_conditions.weather_description)
+                                                    : ''}
                                             </p>
                                         </div>
                                     </div>

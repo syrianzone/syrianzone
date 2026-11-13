@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, Loader2, Pause, Play, Radio, Square, Volume2
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/Components/ui/sheet';
-import QuranWordWindow from '@/Components/QuranWordWindow';
+import QuranWordWindow from './QuranWordWindow';
 import { useQuranPlayer } from '@/Domain/quran/quranPlayer';
 import { SURAH_NAMES_AR, recitationByCode } from '@/Domain/quran/quran';
 import { isUnderPath, pathnameOf } from '@/Lib/routes';

@@ -3,25 +3,11 @@ import { X, ExternalLink } from 'lucide-react';
 import { usePage } from '@inertiajs/react';
 import { Button } from '@/Components/ui/button';
 import { useConsentBannerPending } from '@/Lib/analyticsConsent';
-import popupFacts from '../../data/site-popup.json';
-
-export interface SitePopup {
-    enabled: boolean;
-    title: string;
-    description: string;
-    buttonText: string;
-    dismissText: string;
-    link: string;
-    version: number;
-}
-
-// The copy ships in resources/data/site-popup.json, which SiteSetting::defaults()
-// reads too: the server prop overrides it, the file keeps the two in step.
-const FALLBACK_POPUP: SitePopup = popupFacts;
+import { SITE_POPUP_DEFAULTS, type SitePopup } from '@/Domain/settings/popup';
 
 const UnblockSyriaNotification = () => {
     const { props } = usePage<{ sitePopup?: SitePopup }>();
-    const popup: SitePopup = { ...FALLBACK_POPUP, ...(props.sitePopup ?? {}) };
+    const popup: SitePopup = { ...SITE_POPUP_DEFAULTS, ...(props.sitePopup ?? {}) };
 
     const [isVisible, setIsVisible] = useState(false);
     const [isDismissing, setIsDismissing] = useState(false);

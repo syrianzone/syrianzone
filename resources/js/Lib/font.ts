@@ -1,3 +1,4 @@
+import { useSyncExternalStore } from 'react';
 import themeData from '../../data/themes.json';
 
 export const FONT_KEY = themeData.font.key;
@@ -36,4 +37,22 @@ export function applyFont(font: FontPreference) {
   if (typeof document !== 'undefined') {
     document.documentElement.setAttribute('data-font', font);
   }
+}
+
+function subscribeToFont(onChange: () => void): () => void {
+  const observer =
+    typeof document === 'undefined'
+      ? null
+      : new MutationObserver(onChange);
+  observer?.observe(document.documentElement, { attributes: true, attributeFilter: ['data-font'] });
+  return () => observer?.disconnect();
+}
+
+/**
+ * The font currently applied to the document, reactive — the appearance menu's
+ * pressed state. Read it here instead of observing `data-font` yourself; the
+ * server snapshot is the registry's default so SSR markup hydrates unchanged.
+ */
+export function useFontPreference(): FontPreference {
+  return useSyncExternalStore(subscribeToFont, getFontPreference, () => defaultFont('other'));
 }

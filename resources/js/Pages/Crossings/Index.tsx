@@ -16,6 +16,7 @@ import {
     statusOf,
     syriaMinutes,
     syriaNow,
+    syriaOffsetLabel,
     toFeatureCollection,
 } from '@/Domain/crossings/crossings';
 
@@ -43,7 +44,7 @@ const SyriaClock = React.memo(function SyriaClock() {
 
     return (
         <div className="text-end">
-            <div className="text-[10px] leading-none text-muted-foreground">سوريا (GMT+3)</div>
+            <div className="text-[10px] leading-none text-muted-foreground">سوريا ({syriaOffsetLabel()})</div>
             <div className="text-base font-bold tabular-nums text-foreground" dir="ltr">
                 {time}
             </div>

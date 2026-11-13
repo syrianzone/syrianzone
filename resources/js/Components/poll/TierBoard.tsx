@@ -6,10 +6,12 @@ import { TierAvatar as Avatar } from "@/Components/poll/TierAvatar";
 import { Alert, AlertDescription, AlertTitle } from "@/Components/ui/alert";
 import { CheckCircle2Icon, AlertCircleIcon, Download } from "lucide-react";
 import { TIERS, TIER_KEYS, type TierKey } from "@/Domain/polls/tiers";
+import { MIN_SELECTIONS } from "@/Domain/polls/core";
+import { pollsApi, type RankingSubmission } from "@/Domain/polls/api";
 import { exportTierListFromData } from "@/Components/poll/exportTierList";
 import { getOriginalImageUrl } from "@/Lib/imageUtils";
 import { getDeviceId } from "@/Lib/deviceId";
-import { api, apiErrorMessage } from '@/Lib/api';
+import { apiErrorMessage } from '@/Lib/api';
 import { notify } from '@/Lib/notify';
 import JSZip from "jszip";
 
@@ -35,22 +37,17 @@ type Props = {
     groups: CandidateGroup[];
     pollId: string;
     voteDay: string;
-    submitApiPath?: string; // e.g., "/api/jolani/submit"
     /** The poll this board votes on; both callers pass their loaded poll's slug. */
     pollSlug: string;
 };
 
 const BASE_PATH = import.meta.env.VITE_BASE_PATH ?? "";
 
-/** The board submits a ranking, so it always asks for at least three picks. */
-const MIN_SELECTIONS = 3;
-
 export default function TierBoard({
     initialCandidates,
     groups,
     pollId,
     voteDay,
-    submitApiPath,
     pollSlug,
 }: Props) {
     const [tiers, setTiers] = useState<Record<TierKey, Candidate[]>>({
@@ -271,11 +268,7 @@ export default function TierBoard({
         }
         setIsSubmitting(true);
         const deviceId = getDeviceId() ?? crypto.randomUUID();
-        const payload: {
-            pollSlug: string;
-            deviceId: string;
-            tiers: Record<TierKey, Array<{ candidateId: string; pos: number }>>;
-        } = {
+        const payload: RankingSubmission = {
             pollSlug,
             deviceId,
             tiers: TIER_KEYS.reduce(
@@ -293,13 +286,8 @@ export default function TierBoard({
                 } as Record<TierKey, Array<{ candidateId: string; pos: number }>>
             ),
         };
-        // Build submit path without double-prefixing BASE_PATH
-        const providedPath = submitApiPath || "/submit";
-        // axios baseURL already includes /api usually, or at least the host. 
-        // If providedPath is relative, axios uses baseURL.
-
         try {
-            await api.post(providedPath, payload);
+            await pollsApi.submit(payload);
             setSubmitStatus({ ok: true, message: "تم تسجيل التصويت" });
             const ts = Date.now() + 1 * 60 * 1000;
             setNextSubmitAt(ts);

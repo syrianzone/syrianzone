@@ -115,6 +115,15 @@ export default function Tarneeb() {
     );
   }, [round]);
 
+  // Hooks run before the loading return below; the drop handler reaches the
+  // current render's `play` through a ref.
+  const playRef = useRef<(card: Card) => void>(() => {});
+  const { drag, startDrag } = useCardDrag<Card>({
+    onDrop: (element, card) => {
+      if (element?.closest('.sz-tbl')) playRef.current(card);
+    },
+  });
+
   if (!match || !round) {
     return <div className="py-16 text-center text-sm text-muted-foreground">جاري التوزيع…</div>;
   }
@@ -129,6 +138,7 @@ export default function Tarneeb() {
     setSelected(null);
     setRound((current) => (current ? playCard(current, HUMAN, card) : current));
   };
+  playRef.current = play;
   // On a touch screen a tap only picks the card — raised and ringed — and a
   // second tap on it plays. A mouse click plays at once, and a drag plays out.
   const tapCard = (card: Card) => {
@@ -167,14 +177,6 @@ export default function Tarneeb() {
       writeLargeCards(!value);
       return !value;
     });
-
-  // Card drag: a legal card can be pulled out and dropped on the table to play,
-  // or tapped. Only a real drag swallows the following click.
-  const { drag, startDrag } = useCardDrag<Card>({
-    onDrop: (element, card) => {
-      if (element?.closest('.sz-tbl')) play(card);
-    },
-  });
 
   const beginDrag = (card: Card, e: React.PointerEvent) => {
     lastPointerType.current = e.pointerType;

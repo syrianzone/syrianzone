@@ -256,7 +256,7 @@ export default function Home() {
                         {mounted && (
                             <>
                                 <span className="text-base font-bold text-foreground">{formatGregorianSyrian(new Date())}</span>
-                                <span className="text-sm text-primary/80 font-medium">{formatHijriDate(new Date())}</span>
+                                <span className="text-sm text-primary font-medium">{formatHijriDate(new Date())}</span>
                             </>
                         )}
                     </div>

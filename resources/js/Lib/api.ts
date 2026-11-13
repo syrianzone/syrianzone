@@ -43,8 +43,9 @@ function config(options: ApiRequestConfig | undefined) {
     signal: options.signal,
     timeout: options.timeout,
     headers: options.headers,
-    // The default (XHR) adapter drops `keepalive`; the fetch adapter honours it.
-    ...(options.keepalive ? { keepalive: true, adapter: 'fetch' as const } : {}),
+    // The default (XHR) adapter drops `keepalive`; axios's fetch adapter only
+    // forwards it through `fetchOptions`.
+    ...(options.keepalive ? { adapter: 'fetch' as const, fetchOptions: { keepalive: true } } : {}),
   };
 }
 

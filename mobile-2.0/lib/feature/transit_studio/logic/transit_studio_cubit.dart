@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_osm_plugin/flutter_osm_plugin.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:syrianzone/core/bloc/safe_emit_mixin.dart';
 import 'package:syrianzone/core/data/model/lng_lat.dart';
 import 'package:syrianzone/core/extensions/api_error_handler.dart';
@@ -81,7 +81,7 @@ class TransitStudioCubit extends Cubit<TransitStudioState>
     priceController.text = draft.price?.toString() ?? '';
     notesController.text = draft.notes ?? '';
 
-    final roadPoints = <GeoPoint>[];
+    final roadPoints = <LatLng>[];
     final stops = <StudioStop>[];
 
     if (draft.geojson != null) {
@@ -89,12 +89,12 @@ class TransitStudioCubit extends Cubit<TransitStudioState>
       for (final feature in draft.geojson!.features) {
         final coords = feature.geometry.coordinates;
         if (feature.geometry.type == 'LineString' && coords is List<LngLat>) {
-          roadPoints.addAll(coords.map((p) => p.toGeoPoint()));
+          roadPoints.addAll(coords.map((p) => p.toLatLng()));
         } else if (feature.geometry.type == 'Point' && coords is LngLat) {
           stops.add(
             StudioStop(
               id: DateTime.now().millisecondsSinceEpoch + (stopIdx++),
-              position: coords.toGeoPoint(),
+              position: coords.toLatLng(),
               name: feature.properties.nameAr ?? '',
             ),
           );
@@ -191,9 +191,9 @@ class TransitStudioCubit extends Cubit<TransitStudioState>
     );
   }
 
-  void addRoadPoint(GeoPoint point) {
+  void addRoadPoint(LatLng point) {
     if (state.isSubmitting) return;
-    final updated = List<GeoPoint>.from(state.roadPoints)..add(point);
+    final updated = List<LatLng>.from(state.roadPoints)..add(point);
     safeEmit(state.copyWith(roadPoints: updated));
   }
 
@@ -218,12 +218,12 @@ class TransitStudioCubit extends Cubit<TransitStudioState>
     );
   }
 
-  void moveSelectedPoint(GeoPoint newPoint) {
+  void moveSelectedPoint(LatLng newPoint) {
     if (state.isSubmitting) return;
     final idx = state.selectedPointIndex;
     if (idx == null || idx >= state.roadPoints.length) return;
 
-    final updated = List<GeoPoint>.from(state.roadPoints);
+    final updated = List<LatLng>.from(state.roadPoints);
     updated[idx] = newPoint;
 
     safeEmit(
@@ -239,7 +239,7 @@ class TransitStudioCubit extends Cubit<TransitStudioState>
   void undoLastRoadPoint() {
     if (state.isSubmitting) return;
     if (state.roadPoints.isEmpty) return;
-    final updated = List<GeoPoint>.from(state.roadPoints)..removeLast();
+    final updated = List<LatLng>.from(state.roadPoints)..removeLast();
     safeEmit(state.copyWith(roadPoints: updated));
   }
 
@@ -258,7 +258,7 @@ class TransitStudioCubit extends Cubit<TransitStudioState>
     );
   }
 
-  void addStop(GeoPoint point) {
+  void addStop(LatLng point) {
     if (state.isSubmitting) return;
     final newStop = StudioStop(
       id: DateTime.now().millisecondsSinceEpoch,

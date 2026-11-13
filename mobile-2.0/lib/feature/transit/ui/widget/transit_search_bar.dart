@@ -10,12 +10,14 @@ class TransitSearchBar extends StatefulWidget {
   final String cityId;
   final String? selectedRouteId;
   final ValueChanged<String> onRouteSelected;
+  final ValueChanged<bool>? onSearchActiveChanged;
 
   const TransitSearchBar({
     super.key,
     required this.cityId,
     required this.onRouteSelected,
     this.selectedRouteId,
+    this.onSearchActiveChanged,
   });
 
   @override
@@ -36,24 +38,44 @@ class _TransitSearchBarState extends State<TransitSearchBar> {
   static const _selectedBg = Color(0xFFF1ECE4);
   static const _clearButtonBg = Color(0xFF7A7067);
 
+  bool _lastReportedSearchOpen = false;
+
+  void _checkSearchOpen() {
+    final isOpen = _showResults || _focusNode.hasFocus || _searchController.text.isNotEmpty;
+    if (isOpen != _lastReportedSearchOpen) {
+      _lastReportedSearchOpen = isOpen;
+      widget.onSearchActiveChanged?.call(isOpen);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     _searchController.addListener(_onTextChange);
+    _focusNode.addListener(_onFocusChange);
   }
 
   @override
   void dispose() {
     _debounceTimer?.cancel();
     _searchController.removeListener(_onTextChange);
+    _focusNode.removeListener(_onFocusChange);
     _searchController.dispose();
     _focusNode.dispose();
     super.dispose();
   }
 
+  void _onFocusChange() {
+    if (mounted) {
+      setState(() {});
+      _checkSearchOpen();
+    }
+  }
+
   void _onTextChange() {
     if (mounted) {
       setState(() {});
+      _checkSearchOpen();
     }
   }
 
@@ -64,6 +86,7 @@ class _TransitSearchBarState extends State<TransitSearchBar> {
       setState(() {
         _showResults = false;
       });
+      _checkSearchOpen();
       context.read<TransitCubit>().clearSearch();
       return;
     }
@@ -71,6 +94,7 @@ class _TransitSearchBarState extends State<TransitSearchBar> {
     setState(() {
       _showResults = true;
     });
+    _checkSearchOpen();
 
     _debounceTimer = Timer(const Duration(milliseconds: 300), () {
       if (mounted && trimmed.isNotEmpty) {
@@ -85,23 +109,46 @@ class _TransitSearchBarState extends State<TransitSearchBar> {
     setState(() {
       _showResults = false;
     });
+    _checkSearchOpen();
+    context.read<TransitCubit>().clearSearch();
+  }
+
+  void _closeSearch() {
+    _debounceTimer?.cancel();
+    _searchController.clear();
+    _focusNode.unfocus();
+    setState(() {
+      _showResults = false;
+    });
+    _checkSearchOpen();
     context.read<TransitCubit>().clearSearch();
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<TransitCubit, TransitState>(
-      builder: (context, state) {
-        final searchResults = state.searchResults;
-        final hasResults = searchResults != null &&
-            (searchResults.routes.isNotEmpty ||
-                searchResults.stops.isNotEmpty);
-        final hasError = state.searchErrorMessage != null;
-        final showCard = _showResults &&
-            _searchController.text.trim().isNotEmpty &&
-            (hasResults || hasError || (!state.searchLoading && searchResults != null));
+    final isSearchOpen =
+        _showResults || _focusNode.hasFocus || _searchController.text.isNotEmpty;
 
-        return Column(
+    return PopScope(
+      canPop: !isSearchOpen,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (isSearchOpen) {
+          _closeSearch();
+        }
+      },
+      child: BlocBuilder<TransitCubit, TransitState>(
+        builder: (context, state) {
+          final searchResults = state.searchResults;
+          final hasResults = searchResults != null &&
+              (searchResults.routes.isNotEmpty ||
+                  searchResults.stops.isNotEmpty);
+          final hasError = state.searchErrorMessage != null;
+          final showCard = _showResults &&
+              _searchController.text.trim().isNotEmpty &&
+              (hasResults || hasError || (!state.searchLoading && searchResults != null));
+
+          return Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -301,6 +348,7 @@ class _TransitSearchBarState extends State<TransitSearchBar> {
           ],
         );
       },
+    ),
     );
   }
 

@@ -1,6 +1,6 @@
 import 'dart:ui';
-import 'package:flutter_osm_plugin/flutter_osm_plugin.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:syrianzone/core/constants/route_palette.dart';
 import 'package:syrianzone/core/network/response/city_response.dart';
 import 'package:syrianzone/core/network/response/map_data_response.dart';
@@ -24,7 +24,7 @@ abstract class TransitStudioState with _$TransitStudioState {
     MapDataResponse? cityMapData,
     String? mapDataError,
     @Default(StudioToolMode.none) StudioToolMode activeTool,
-    @Default([]) List<GeoPoint> roadPoints,
+    @Default([]) List<LatLng> roadPoints,
     int? selectedPointIndex,
     @Default([]) List<StudioStop> stops,
     @Default(0) int selectedColorIndex,

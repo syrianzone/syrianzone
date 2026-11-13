@@ -40,6 +40,7 @@ class TransitScreen extends StatefulWidget {
 
 class _TransitScreenState extends State<TransitScreen> {
   String? _selectedRouteId;
+  bool _isSearchActive = false;
 
   void _openRouteDetails(String routeId) {
     setState(() {
@@ -69,9 +70,9 @@ class _TransitScreenState extends State<TransitScreen> {
   @override
   Widget build(BuildContext context) {
     return PopScope<void>(
-      canPop: _selectedRouteId == null,
+      canPop: _selectedRouteId == null && !_isSearchActive,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && _selectedRouteId != null) {
+        if (!didPop && !_isSearchActive && _selectedRouteId != null) {
           _closeRouteDetails();
         }
       },
@@ -216,6 +217,11 @@ class _TransitScreenState extends State<TransitScreen> {
                 cityId: widget.cityId,
                 selectedRouteId: _selectedRouteId,
                 onRouteSelected: _openRouteDetails,
+                onSearchActiveChanged: (isActive) {
+                  setState(() {
+                    _isSearchActive = isActive;
+                  });
+                },
               ),
             ),
           ],

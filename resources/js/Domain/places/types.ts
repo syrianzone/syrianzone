@@ -58,7 +58,7 @@ export interface AdminPlaceReport {
   place: { id: number; name: string; status: PlaceStatus };
 }
 
-export type GuidesSort = 'submissions' | 'saves' | 'recent';
+export type GuidesSort = 'points' | 'submissions' | 'saves' | 'recent';
 
 export interface Guide {
   rank: number; user_id: number; name: string; avatar_url: string | null;

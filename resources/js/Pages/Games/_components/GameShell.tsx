@@ -54,8 +54,8 @@ export default function GameShell({
 
   // The navbar is non-sticky on games and hidden in focus mode, so the viewport
   // is 4rem taller then. The class strings are literal so Tailwind keeps them.
-  const fillHeight = focus ? 'h-[100svh]' : 'h-[calc(100svh-4rem-1px)]';
-  const minHeight = focus ? 'min-h-[100svh]' : 'min-h-[calc(100svh-4rem-1px)]';
+  const fillHeight = focus ? 'h-[100svh]' : 'h-[calc(100svh-var(--sz-navbar-h))]';
+  const minHeight = focus ? 'min-h-[100svh]' : 'min-h-[calc(100svh-var(--sz-navbar-h))]';
 
   return (
     <div

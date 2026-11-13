@@ -29,21 +29,28 @@ graph and fails on a violation, so run `npm run test:js` after moving code.
 | Layer | Holds | May import |
 |---|---|---|
 | `Pages/<Feature>/` | the page and its private `_components`/`_lib`/`_data` | `Domain/`, the shared layer, its own folder |
-| `Domain/<module>/` | anything more than one page — or the shell — needs (`quran`, `settings`, `location`, `prayer`, `games`, `muslim`, `places`, `promises`, `compass`) | the shared layer, other `Domain/` modules |
-| `Components/`, `Lib/`, `Layouts/`, `Contexts/`, `Providers/` | the shell and generic primitives | itself; `Lib/` only uses `Components/ui` |
+| `Domain/<module>/` | anything more than one page — or the shell — needs (`quran`, `settings`, `location`, `prayer`, `games`, `muslim`, `places`, `promises`, `compass`, `polls`) | the shared layer, other `Domain/` modules |
+| `Components/`, `Lib/`, `Layouts/`, `Contexts/`, `Providers/` | the shell and generic primitives | itself; `Lib/` only uses `Components/ui`; a `Domain/` facts module (see below) |
 
 - Never import `Pages/**` from `Domain/` or the shared layer, and never import
   another feature's `Pages/<Other>/`. When a page module gets a second consumer,
-  move it into `Domain/<module>/` verbatim — do not import across folders.
+  move it into `Domain/<module>/` verbatim — do not import across folders. A
+  widget only one page renders stays in that page's `_components/` however large
+  it is (`Pages/Polls/_components/TimeseriesChart.tsx`).
 - `Domain/` folders are per domain and cohesive; do not add a grab-bag folder.
 - App-wide UI state lives in `Lib/appShell.ts`; page state stays in the page
   store. `Layouts/MainLayout.tsx` is the single owner of the Ctrl/Cmd+K
   shortcut: a page that renders an inline search field registers its focus
   function with `registerInlineSearch`, so the shell never looks up a DOM id.
-- The one allowed shared → `Domain/` edge is a *facts* module (pure data and
-  lookups, no React, no page code): a shared component that renders a domain
-  label reads it from there rather than keeping its own copy of the table, e.g.
-  `Components/GlobalSearch` listing transit cities from `Domain/transit/cities.ts`.
+- A shared component may read a `Domain/` *facts* module — pure data and lookups
+  (a registry, a label table), no page code — rather than keep its own copy of
+  the table, e.g. `Components/GlobalSearch` listing transit cities from
+  `Domain/transit/cities.ts`. The test holds the exact edge list in
+  `SHARED_TO_DOMAIN_ALLOWED`: the facts edges, plus today's few exceptions
+  (the components and stores `MainLayout` mounts, the account-settings write
+  behind the appearance menu, the reader-session lookup in the search box). The
+  list is a ratchet — delete a line when its edge goes, and no new one can be
+  added.
 
 ## Accessibility
 
@@ -145,6 +152,7 @@ Rules:
   - Domain services that back both HTTP controllers and MCP tools throw subclasses of `App\Exceptions\DomainActionException` (`PlaceActionException`, `DirectoryActionException`, `TransitActionException`, `UserModerationException`). `bootstrap/app.php` suppresses reporting for `DomainActionException` and renders it directly to `{ "message": $e->getMessage() }` with `$e->httpStatus()` (converting `404` on non-JSON web requests into a `NotFoundHttpException` so Inertia renders the 404 page).
 - Rate limiters named in `AppServiceProvider`: `voting` (10/min), `public-api` (120/min per IP), `mcp` (120/min, keyed by API token id so one agent cannot starve another behind the same IP), `studio-submit`; widget endpoints 60/min.
 - Module capability middleware aliases (`bootstrap/app.php`): `transit_admin`, `syofficial_admin`, `phonebook_admin`, `places_admin`, `polls_admin`, `govapps_admin`, `compass_admin`, `users_admin`, and `superadmin`. The `*_admin` aliases take per-route capability params (e.g. `transit_admin:transit.approve`). There is no general `admin` alias any more.
+- `auth:sanctum` is for mounts that *require* a caller. A mount that also answers a browser session, or is open to guests but behaves differently for a signed-in visitor, carries `api_user` (`ResolveApiUser`) instead; the action then reads `$request->user()`. Do not re-implement `$request->user() ?? Auth::guard('sanctum')->user()` in a controller: without the middleware's `setUserResolver()` the rest of the request still sees a guest.
 - Capability ids live **only** in `app/Support/Permissions/PermissionCatalogue.php` — the Filament user form and agent API tokens both read it. Never introduce a second permission vocabulary.
 - Authorisation is capability-based, not role-based. `User::hasPermission()` is: superadmin, **or** the id is in the account's `permissions` array (which may contain `*`). The module roles (`*_admin`) and the old `admin` role stopped conferring capabilities (Phases D and G, `2026_09_27`); every non-superadmin account's access is exactly its stored `permissions`. `User::effectivePermissions()` resolves the same rule against the catalogue and is shared with the frontend.
 - Capability checks in React go through `useCan()` (`Lib/useCan.ts`) against the server-resolved `effective_permissions`. Never re-derive role implications in TypeScript — use `User::effectivePermissions()` server-side and share the result via `HandleInertiaRequests::userPayload()`.
@@ -163,16 +171,24 @@ Rules:
 - Pint runs in the CI gate **advisory only**: roughly 170 pre-existing files are not Pint-clean, so `scripts/gate.sh` runs `vendor/bin/pint --test`, prints the result and never fails the job. Do not reformat untouched files to "fix" a Pint run — keep the diff to what the change actually needs.
 - **One gate for CI and for humans**: `scripts/gate.sh` runs the typecheck, the vitest suite, Pest and the advisory Pint. `.github/workflows/tests.yml` calls it, and both deploy workflows call that reusable workflow, so a command added to the gate reaches production and staging together. Add the command there, not in a workflow step and not only in AGENTS.md.
 - Feature suites cover Polls, Places, Voting API, Weather, Sitemap, Prayer, middleware, models, VotingService.
-- **A list that mirrors another list is asserted, not trusted.** Four places
+- **A list that mirrors another list is asserted, not trusted.** Six places
   restate something the code already knows, and each has a test that reads both
   sides and fails on drift: `public/sw.js`'s path lists against `routes/*.php`
   (`tests/Feature/Pwa/ServiceWorkerTest.php`), the terminology hook's `files:`
   regex against `.terminology.json` (`Tooling/TerminologyPathsTest.php`),
   `config/*.php`'s env keys against `.env.example`
-  (`Tooling/EnvExampleTest.php`), and the browser Sentry build-arg names across
+  (`Tooling/EnvExampleTest.php`), the browser Sentry build-arg names across
   `Dockerfile`, both deploy workflows and the code that consumes them
-  (`Tooling/BuildArgsTest.php`). When you change one side, run its test: it
-  prints the exact value the other side needs.
+  (`Tooling/BuildArgsTest.php`), the axe sweep's route lists against the routes
+  that render an Inertia page, and the deferred-page prefixes in
+  `resources/js/Lib/pages.ts` against the `Pages/` folders
+  (`Tooling/A11yRouteCoverageTest.php`). When you change one side, run its test:
+  it prints the exact value the other side needs.
+- **The accessibility sweep's coverage is the thing worth asserting.** A route
+  that renders an Inertia page must be in `scripts/a11y_axe_audit.py`'s
+  `PUBLIC_ROUTES`/`ADMIN_ROUTES`, or in that test's exclusion list with the axe
+  finding or missing data that blocks it. A new page therefore fails the gate
+  until it is either swept or explicitly accounted for.
 
 ## Admin route authorisation
 

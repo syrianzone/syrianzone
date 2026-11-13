@@ -14,6 +14,7 @@ use App\Models\Route;
 use App\Models\TransitRouteLog;
 use App\Models\User;
 use App\Services\Transit\TransitRules;
+use Illuminate\JsonSchema\JsonSchemaTypeFactory;
 
 /*
 |--------------------------------------------------------------------------
@@ -339,4 +340,14 @@ it('lists one route history even when newer entries for other routes fill the li
 
     expect($payload['count'])->toBe(1)
         ->and($payload['entries'][0]['description'])->toBe('قديم');
+});
+
+it('advertises every draft status the validator accepts in the list tool schema', function () {
+    $schema = app(ListTransitDraftsTool::class)->schema(new JsonSchemaTypeFactory);
+
+    // The enum an agent codes against must be the one run() validates with, or
+    // a new draft status is accepted by the server and rejected by the client
+    // schema it was built from.
+    expect($schema['status']->toArray()['enum'])
+        ->toEqualCanonicalizing([...TransitRules::DRAFT_STATUSES, 'all']);
 });

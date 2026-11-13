@@ -9,25 +9,11 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/Components/ui/select'
 import { ROUTE_PALETTE } from '../_lib/mapColors'
-import { transitApi } from '../_lib/api'
+import { transitApi, type ImportCandidate } from '../_lib/api'
 import { apiErrorMessage } from '@/Lib/api'
 import {
   Link2, Upload, Loader2, CheckCircle2, Trash2, PencilLine, FileUp, X,
 } from 'lucide-react'
-
-export interface ImportCandidate {
-  name_ar: string
-  name_en: string | null
-  price: number | null
-  notes: string | null
-  geojson: any
-  vertex_count: number
-  stop_count: number
-  bounds: [number, number, number, number] | null
-  warnings: string[]
-  source: { doc_name: string; doc_description: string | null }
-  suggested_city_id: string | null
-}
 
 interface EditableStop {
   coordinates: [number, number]

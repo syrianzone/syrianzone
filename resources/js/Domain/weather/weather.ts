@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api as client } from '@/Lib/api';
+import raw from '../../../data/weather.json';
 import { resolveWeatherPoint, type LocationPreference } from '../location/preference';
 
 /**
@@ -35,73 +36,22 @@ export interface WeatherCurrent {
 }
 
 /**
- * The English condition descriptions both weather upstreams send, in the wording
- * the surfaces print: OpenWeather wording from `/api/weather`, WMO wording from
- * the Population environmental endpoint (`SyriaClimateService`). Every string an
- * upstream can send is listed here, keyed lower-case; the WMO rows reuse the
- * forecast table's words so one condition cannot print two ways.
+ * The weather vocabulary both upstreams speak, from `resources/data/weather.json`:
+ * the WMO code table (code, the English wording PHP stores, the Arabic label for
+ * the conditions line and the short one the forecast chips use) and the
+ * OpenWeather wordings `/api/weather` sends, which have no code. The same file
+ * is read by `SyriaClimateService` and the environmental-data aggregator, so a
+ * condition cannot be worded three ways.
  */
-const WEATHER_DESCRIPTIONS_AR: Record<string, string> = {
-  'clear sky': 'سماء صافية',
-  'few clouds': 'غيوم قليلة',
-  'scattered clouds': 'غيوم متفرقة',
-  'broken clouds': 'غيوم جزئية',
-  'shower rain': 'مطر غزير',
-  'rain': 'ممطر',
-  'thunderstorm': 'عاصفة رعدية',
-  'snow': 'مثلج',
-  'mist': 'ضباب',
-  'overcast clouds': 'غيوم ملبدة',
-  'light rain': 'مطر خفيف',
-  'moderate rain': 'مطر متوسط',
-  'heavy intensity rain': 'مطر غزير',
-  'haze': 'ضباب خفيف',
-  'fog': 'ضباب كثيف',
-  'dust': 'غبار',
-  'sand': 'عواصف رملية',
-  'mainly clear': 'صافية غالباً',
-  'partly cloudy': 'غيوم متفرقة',
-  'overcast': 'غائم',
-  'depositing rime fog': 'ضباب متجمد',
-  'light drizzle': 'رذاذ',
-  'moderate drizzle': 'رذاذ',
-  'dense drizzle': 'رذاذ كثيف',
-  'slight rain': 'مطر خفيف',
-  'heavy rain': 'مطر غزير',
-  'slight snow fall': 'ثلج خفيف',
-  'moderate snow fall': 'ثلج',
-  'heavy snow fall': 'ثلج كثيف',
-  'slight rain showers': 'زخات',
-  'moderate rain showers': 'زخات',
-  'violent rain showers': 'زخات غزيرة',
-  'thunderstorm with slight hail': 'عاصفة رعدية',
-  'thunderstorm with heavy hail': 'عاصفة رعدية',
-};
+const WEATHER_DESCRIPTIONS_AR: Record<string, string> = Object.fromEntries([
+  ...raw.codes.map((row) => [row.en, row.label] as const),
+  ...raw.descriptions.map((row) => [row.en, row.label] as const),
+].map(([en, label]) => [en.trim().toLowerCase(), label]));
 
 /** WMO codes from the forecast upstream (the server passes the code through raw). */
-const FORECAST_CODES_AR: Record<number, string> = {
-  0: 'صافية',
-  1: 'صافية غالباً',
-  2: 'غيوم متفرقة',
-  3: 'غائم',
-  45: 'ضباب',
-  48: 'ضباب',
-  51: 'رذاذ',
-  53: 'رذاذ',
-  55: 'رذاذ كثيف',
-  61: 'مطر خفيف',
-  63: 'مطر',
-  65: 'مطر غزير',
-  71: 'ثلج خفيف',
-  73: 'ثلج',
-  75: 'ثلج كثيف',
-  80: 'زخات',
-  81: 'زخات',
-  82: 'زخات غزيرة',
-  95: 'عاصفة رعدية',
-  96: 'عاصفة رعدية',
-  99: 'عاصفة رعدية',
-};
+const FORECAST_CODES_AR: Record<number, string> = Object.fromEntries(
+  raw.codes.map((row) => [row.code, row.short] as const),
+);
 
 export function weatherDescriptionAr(description: string): string {
   return WEATHER_DESCRIPTIONS_AR[description.trim().toLowerCase()] ?? description;

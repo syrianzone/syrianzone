@@ -73,6 +73,12 @@ export interface QuranPlayerState {
   muted: boolean;
   /** Who owns the queue: the reader, or the continuous recitation. */
   source: 'reader' | 'continuous' | null;
+  /**
+   * Epoch ms at which playback stops, or null for endless. It belongs to
+   * playback, not to a page: `new Audio()` and the audio clock outlive every
+   * route, so a deadline set on the radio page still stops it in the reader.
+   */
+  sleepUntil: number | null;
 
   setRecitation: (code: string) => void;
   /** Followed recitation: the whole mushaf, surah after surah. */
@@ -85,6 +91,7 @@ export interface QuranPlayerState {
   stop: () => void;
   setVolume: (v: number) => void;
   setMuted: (m: boolean) => void;
+  setSleepUntil: (until: number | null) => void;
 }
 
 // --- engine state (module singletons, not React state) ----------------------
@@ -101,6 +108,7 @@ let index = -1;
 let loadedSurah: number | null = null;
 let pendingSeek: number | null = null;
 let activeWordSnapshot: PlayerActiveWord | null = null;
+let sleepTimer: number | null = null;
 
 const useQuranPlayer = create<QuranPlayerState>((set, get) => ({
   recitationCode: readRecitation(),
@@ -113,6 +121,7 @@ const useQuranPlayer = create<QuranPlayerState>((set, get) => ({
   volume: readVolume(),
   muted: false,
   source: null,
+  sleepUntil: null,
 
   setRecitation: (code) => {
     if (get().recitationCode === code) return;
@@ -204,7 +213,44 @@ const useQuranPlayer = create<QuranPlayerState>((set, get) => ({
     if (audio) audio.volume = m ? 0 : get().volume;
     set({ muted: m });
   },
+
+  setSleepUntil: (until) => {
+    set({ sleepUntil: until });
+    armSleepTimer(until);
+  },
 }));
+
+/**
+ * The radio's sleep deadline. The timer, not a page effect, is what stops the
+ * audio: the element keeps playing while the visitor reads the Quran or leaves
+ * the section, and this module is the only thing that is always mounted.
+ */
+function clearSleepTimer(): void {
+  if (sleepTimer === null) return;
+  window.clearTimeout(sleepTimer);
+  sleepTimer = null;
+}
+
+function armSleepTimer(until: number | null): void {
+  clearSleepTimer();
+  if (until === null || typeof window === 'undefined') return;
+  sleepTimer = window.setTimeout(fireSleepTimer, Math.max(0, until - Date.now()));
+}
+
+function fireSleepTimer(): void {
+  sleepTimer = null;
+  const state = useQuranPlayer.getState();
+  const { sleepUntil } = state;
+  if (sleepUntil === null) return;
+  const remaining = sleepUntil - Date.now();
+  if (remaining > 0) {
+    // A clock change moved the deadline: wait for it rather than stopping early.
+    sleepTimer = window.setTimeout(fireSleepTimer, remaining);
+    return;
+  }
+  useQuranPlayer.setState({ sleepUntil: null });
+  if (state.playing) state.toggle();
+}
 
 function ensureAudio(): HTMLAudioElement | null {
   if (typeof Audio === 'undefined') return null;

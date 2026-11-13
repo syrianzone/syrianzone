@@ -238,7 +238,7 @@ export function finishDeal(game: TrixGame): TrixGame {
 }
 
 /** The scoring units: partners when teams are on, otherwise every seat alone. */
-export function gameUnits(game: TrixGame): number[][] {
+function gameUnits(game: TrixGame): number[][] {
   return game.options.teams ? [[0, 2], [1, 3]] : [[0], [1], [2], [3]];
 }
 

@@ -5,11 +5,12 @@ namespace App\Exceptions\Directories;
 use App\Exceptions\DomainActionException;
 
 /**
- * Domain refusal from the directory modules (SyOfficial and Gov Apps).
+ * Domain refusal from the directory modules (SyOfficial, Phonebook and Gov
+ * Apps).
  *
- * One exception for both because they are structurally the same module: a
+ * One exception for all three because they are structurally the same module: a
  * string-keyed, ordered, is_active-flagged record with an admin form behind it.
- * Sharing it keeps the `httpStatus()` mapping in one place instead of two
+ * Sharing it keeps the `httpStatus()` mapping in one place instead of three
  * copies that can disagree.
  *
  * Transport-agnostic, like App\Exceptions\Places\PlaceActionException: the HTTP
@@ -25,6 +26,8 @@ class DirectoryActionException extends DomainActionException
     public const ID_REQUIRED = 'id_required';
 
     public const CATEGORY_NOT_FOUND = 'category_not_found';
+
+    public const SOCIALS_NOT_KEYED = 'socials_not_keyed';
 
     /**
      * @param  class-string  $label  Human noun for the message, e.g. 'Entity'.
@@ -64,11 +67,25 @@ class DirectoryActionException extends DomainActionException
         );
     }
 
+    /**
+     * `socials` is an object keyed by platform, not a list of URLs: a list has
+     * nowhere to keep which platform each link belongs to, so the public tile
+     * loses its icon and label. Refusing is what keeps the column a map.
+     */
+    public static function socialsNotKeyed(): self
+    {
+        return new self(
+            self::SOCIALS_NOT_KEYED,
+            'socials must be an object keyed by platform, e.g. {"facebook": "https://facebook.com/page"}. '
+            .'A plain list of links cannot say which platform each belongs to; send a map instead.',
+        );
+    }
+
     public function httpStatus(): int
     {
         return match ($this->kind) {
             self::NOT_FOUND, self::CATEGORY_NOT_FOUND => 404,
-            self::ID_TAKEN => 422,
+            self::ID_TAKEN, self::SOCIALS_NOT_KEYED => 422,
             default => 422,
         };
     }

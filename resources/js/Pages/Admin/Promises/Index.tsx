@@ -18,7 +18,9 @@ import { formatDate } from '@/Domain/promises/format';
 import { PENDING_SPEAKER_LABEL } from '@/Domain/promises/status';
 import AdminHeader from './_components/AdminHeader';
 import { useCan } from '@/Lib/useCan';
-import { ORIGIN_LABEL, REVIEW_STATUS_LABEL, type AdminPromiseRow, type ReviewStatus } from './_lib/types';
+import { ORIGIN_LABEL, REVIEW_STATUS_LABEL } from '@/Domain/promises/status';
+import type { ReviewStatus } from '@/Domain/promises/types';
+import type { AdminPromiseRow } from './_lib/types';
 
 interface Props {
     promises: AdminPromiseRow[];

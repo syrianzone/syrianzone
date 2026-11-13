@@ -3,6 +3,7 @@
 use App\Mcp\Tools\GovApps\CreateGovAppTool;
 use App\Mcp\Tools\GovApps\RestoreGovAppTool;
 use App\Mcp\Tools\SyOfficial\CreateSyOfficialCategoryTool;
+use App\Mcp\Tools\SyOfficial\CreateSyOfficialEntityTool;
 use App\Mcp\Tools\SyOfficial\DeleteSyOfficialCategoryTool;
 use App\Mcp\Tools\SyOfficial\ListSyOfficialCategoriesTool;
 use App\Mcp\Tools\SyOfficial\ReorderSyOfficialCategoriesTool;
@@ -109,8 +110,24 @@ it('refuses the directory listing to a token with no capability in the module', 
     expect(toolText($response))->toContain('Permission denied');
 });
 
+it('refuses a list-shaped socials argument from the tool', function () {
+    $category = OfficialCategory::factory()->create();
+    agentToken($this->user, ['syofficial.create']);
+
+    $response = callTool(CreateSyOfficialEntityTool::class, [
+        'id' => 'list-socials',
+        'category_id' => $category->id,
+        'name' => 'List',
+        'name_ar' => 'قائمة',
+        'socials' => ['https://example.com', 'http://example.org'],
+    ]);
+
+    expect(toolText($response))->toContain('socials must be an object keyed by platform')
+        ->and(OfficialEntity::where('id', 'list-socials')->exists())->toBeFalse();
+});
+
 it('keeps a directory entity visible when the edit omits socials', function () {
-    $entity = OfficialEntity::factory()->create(['socials' => ['https://keep.me']]);
+    $entity = OfficialEntity::factory()->create(['socials' => ['facebook' => 'https://keep.me']]);
     agentToken($this->user, ['syofficial.edit']);
 
     callTool(UpdateSyOfficialEntityTool::class, [
@@ -118,7 +135,7 @@ it('keeps a directory entity visible when the edit omits socials', function () {
         'name' => 'Renamed',
     ]);
 
-    expect($entity->fresh()->socials)->toBe(['https://keep.me'])
+    expect($entity->fresh()->socials)->toBe(['facebook' => 'https://keep.me'])
         ->and($entity->fresh()->name)->toBe('Renamed');
 });
 

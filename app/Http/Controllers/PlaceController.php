@@ -12,7 +12,6 @@ use App\Services\Places\PlaceRules;
 use App\Support\Facts;
 use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -171,7 +170,7 @@ class PlaceController extends Controller
     $lat = (float) $validated['lat'];
     $lng = (float) $validated['lng'];
     $radiusKm = (float) ($validated['radius_km'] ?? Facts::places()['nearby']['radius_km_default']);
-    $user = $request->user() ?? Auth::guard('sanctum')->user();
+    $user = $request->user();
     // Only the requester's own pending places are included, or any account could
     // enumerate other users' unmoderated submissions that show deliberately 404s.
     $includePending = $request->boolean('include_pending') && $user;
@@ -211,7 +210,7 @@ class PlaceController extends Controller
   public function show(Request $request, GuideLevelService $levels, PlacePresenter $presenter, int $id)
   {
     $place = Place::with(['user', 'photos'])->findOrFail($id);
-    $user = $request->user() ?? Auth::guard('sanctum')->user();
+    $user = $request->user();
 
     if ($place->status !== 'approved') {
       // Owner, or staff with a places capability. User::hasAnyPermission()

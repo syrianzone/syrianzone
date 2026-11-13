@@ -40,7 +40,7 @@ import {
 import { Instagram } from '@/Components/ui/icons';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/Components/ui/card";
-import { THEME_REGISTRY, getThemeById, hexToRgbString, useThemeId } from '@/Lib/theme';
+import { THEME_REGISTRY, getThemeById, hexToRgbString, shareCardPalette, useThemeId } from '@/Lib/theme';
 import { Button } from "@/Components/ui/button";
 
 import {
@@ -84,14 +84,15 @@ const getStoryThemeStyles = (themeKey: string) => {
   // The card's gradient comes from the palette, not from the scheme: jasmine is
   // a light theme with a deliberately dark card gradient, so only `light` draws
   // the dark-on-light text set.
-  const isLight = theme.id === 'light';
-  const textPrimary = isLight ? '#0f172a' : '#ffffff';
-  const textSecondary = isLight ? '#475569' : '#94a3b8';
-  const textMuted = isLight ? '#64748b' : 'rgba(255, 255, 255, 0.45)';
-  const cardBg = isLight ? 'rgba(255, 255, 255, 0.75)' : 'rgba(15, 23, 42, 0.5)';
-  const cardBorder = isLight ? 'rgba(203, 213, 225, 0.8)' : 'rgba(30, 41, 59, 0.6)';
+  const palette = shareCardPalette(theme.id);
+  const isLight = palette.isLight;
+  const textPrimary = palette.textPrimary;
+  const textSecondary = palette.textSecondary;
+  const textMuted = palette.textMuted;
+  const cardBg = palette.cardBg;
+  const cardBorder = palette.cardBorder;
 
-  const headerTitle = isLight ? '#0f172a' : '#ffffff';
+  const headerTitle = palette.textPrimary;
   const headerSubtitle = priorities.headerSubtitle;
   const urlLabel = isLight ? '#64748b' : '#cbd5e1';
   const urlText = priorities.urlText;

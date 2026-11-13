@@ -3,7 +3,7 @@ import type { AxisId, Spectrum } from '@/Domain/compass/types';
 import { AXES } from '@/Domain/compass/axes';
 import { axisDisplay } from '@/Domain/compass/axisDisplay';
 import SpectrumIcon from '@/Domain/compass/SpectrumIcon';
-import { getThemeById, THEME_REGISTRY, hexToRgbString, readThemeColor, readThemeRgb } from '@/Lib/theme';
+import { getThemeById, THEME_REGISTRY, hexToRgbString, readThemeColor, readThemeRgb, shareCardPalette } from '@/Lib/theme';
 
 const fmt = (v: number) => `${v > 0 ? '+' : ''}${v.toFixed(2)}`;
 
@@ -25,21 +25,21 @@ const CompassShareCard = forwardRef<HTMLDivElement, Props>(function CompassShare
   // The card's gradient comes from the palette, not from the scheme: jasmine is
   // a light theme with a deliberately dark card gradient, so only `light` draws
   // the dark-on-light text set.
-  const isLight = theme.id === 'light';
+  const palette = shareCardPalette(theme.id);
   const pri = theme.priorities;
   const primary = readThemeColor('--primary', themeKey) || theme.primary;
   const primaryRgb = readThemeRgb('--primary', themeKey) || hexToRgbString(theme.primary);
   const urlText = pri?.urlText || primary;
   const gradient =
     pri?.gradient ||
-    (isLight ? 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)' : 'linear-gradient(135deg, #0b0f19 0%, #064e3b 50%, #022c22 100%)');
+    (palette.isLight ? 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)' : 'linear-gradient(135deg, #0b0f19 0%, #064e3b 50%, #022c22 100%)');
 
-  const fg = isLight ? '#0f172a' : '#ffffff';
-  const sub = isLight ? '#475569' : '#94a3b8';
-  const muted = isLight ? '#64748b' : 'rgba(255,255,255,0.5)';
-  const faint = isLight ? 'rgba(15,23,42,0.10)' : 'rgba(255,255,255,0.12)';
-  const panelBg = isLight ? 'rgba(255,255,255,0.75)' : 'rgba(15,23,42,0.5)';
-  const panelBorder = isLight ? 'rgba(203,213,225,0.8)' : 'rgba(148,163,184,0.22)';
+  const fg = palette.textPrimary;
+  const sub = palette.textSecondary;
+  const muted = palette.textMuted;
+  const faint = palette.isLight ? 'rgba(15,23,42,0.10)' : 'rgba(255,255,255,0.12)';
+  const panelBg = palette.cardBg;
+  const panelBorder = palette.cardBorder;
 
   return (
     <div

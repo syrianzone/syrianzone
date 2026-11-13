@@ -41,6 +41,11 @@ class User extends Authenticatable implements FilamentUser
      * with the PHP rules. `permissions` is still sent for the admin UI, which
      * needs the raw stored values to render its checkboxes.
      *
+     * `transit_scope` is the resolved governorate scope (null = unrestricted),
+     * so the browser never re-implements the superadmin bypass or the trimming
+     * `allowedTransitCities()` does; `permission_scopes` stays for the raw
+     * editor.
+     *
      * @return array<string, mixed>
      */
     public function toAuthPayload(): array
@@ -55,6 +60,7 @@ class User extends Authenticatable implements FilamentUser
             'permissions' => $this->permissions ?? [],
             'effective_permissions' => $this->effectivePermissions(),
             'permission_scopes' => $this->permission_scopes ?? [],
+            'transit_scope' => $this->allowedTransitCities(),
             'settings' => $this->settings ?? null,
         ];
     }
@@ -201,20 +207,5 @@ class User extends Authenticatable implements FilamentUser
     public function canAccessPanel(Panel $panel): bool
     {
         return $this->isSuperAdmin() && ! $this->is_banned;
-    }
-
-    public function polls()
-    {
-        return $this->hasMany(Poll::class);
-    }
-
-    public function routes()
-    {
-        return $this->hasMany(Route::class);
-    }
-
-    public function routeDrafts()
-    {
-        return $this->hasMany(RouteDraft::class);
     }
 }

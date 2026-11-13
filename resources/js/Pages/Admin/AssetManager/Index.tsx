@@ -12,7 +12,8 @@ import {
     Upload, Copy, Check, CloudUpload, FileCheck, Folder, Download, 
     Trash2, RefreshCw, ExternalLink, FileText, Image as ImageIcon, Archive
 } from 'lucide-react';
-import { api, apiErrorMessage } from '@/Lib/api';
+import { apiErrorMessage } from '@/Lib/api';
+import { assetsApi, type R2File, type UploadResult } from './_lib/api';
 import JSZip from 'jszip';
 import { notify } from '@/Lib/notify';
 import { copyText } from '@/Lib/copy';
@@ -20,29 +21,6 @@ import { confirmDialog } from '@/Lib/confirm';
 import DirectoryResultCount from '@/Components/directory/DirectoryResultCount';
 import { DirectorySearch } from '@/Components/directory/DirectorySearch';
 import { useDirectory, type DirectoryFacet } from '@/Components/directory/useDirectory';
-
-interface R2File {
-    path: string;
-    filename: string;
-    folder: string;
-    size: number;
-    last_modified: number | null;
-    url: string;
-}
-
-interface AssetListResponse {
-    success: boolean;
-    files: R2File[];
-    total_size: number;
-    next_cursor?: string | null;
-    has_more?: boolean;
-}
-
-interface UploadResult {
-    url: string;
-    filename: string;
-    size: number;
-}
 
 export default function AssetManagerIndex() {
     const [file, setFile] = useState<File | null>(null);
@@ -68,9 +46,7 @@ export default function AssetManagerIndex() {
         setHasMore(false);
         setTotalSize(0);
         try {
-            const res = await api.get<AssetListResponse>('/api/v1/admin/assets/list', {
-                params: { refresh: refresh ? 1 : 0 }
-            });
+            const res = await assetsApi.list({ refresh: refresh ? 1 : 0 });
             if (res.success) {
                 setFiles(res.files);
                 setTotalSize(res.total_size);
@@ -88,9 +64,7 @@ export default function AssetManagerIndex() {
         if (!nextCursor || loadingMore) return;
         setLoadingMore(true);
         try {
-            const res = await api.get<AssetListResponse>('/api/v1/admin/assets/list', {
-                params: { cursor: nextCursor }
-            });
+            const res = await assetsApi.list({ cursor: nextCursor });
             if (res.success) {
                 setFiles(prev => [...prev, ...res.files]);
                 setTotalSize(prev => prev + res.total_size);
@@ -124,12 +98,8 @@ export default function AssetManagerIndex() {
         setUploadError(null);
         setUploadResult(null);
 
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('folder', folder);
-
         try {
-            const res = await api.post<UploadResult>('/api/v1/admin/assets/upload', formData);
+            const res = await assetsApi.upload(file, folder);
             setUploadResult(res);
             setFile(null);
             fetchFiles(true);
@@ -144,7 +114,7 @@ export default function AssetManagerIndex() {
         const ok = await confirmDialog({ title: 'حذف هذا الملف؟', description: path, destructive: true, confirmText: 'حذف' });
         if (!ok) return;
         try {
-            await api.delete('/api/v1/admin/assets/delete', { path });
+            await assetsApi.remove(path);
             notify.success('تم حذف الملف');
             fetchFiles(true);
         } catch (err) {

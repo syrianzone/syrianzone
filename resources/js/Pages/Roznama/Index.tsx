@@ -75,7 +75,7 @@ import { useWeather } from '@/Domain/weather/weather';
 import { WeatherIcon } from '@/Domain/weather/WeatherIcon';
 import { formatDuration } from '@/Lib/format';
 import { formatGregorianSyrian, formatGregorianSyrianShort } from '@/Lib/syrian-date';
-import { useAppShell } from '@/Lib/appShell';
+import { usePageDialog } from '@/Lib/appShell';
 import {
     GOVERNORATES_BY_ID,
     governorateNameForF3aliaProvince,
@@ -145,8 +145,7 @@ export default function Index() {
     // stored on this device and mirrored to the account, the same as /muslim.
     const { prefs, setPrefs, isLoggedIn } = useMuslimPrefs();
     const method = prefs.method;
-    const roznamaSettingsOpen = useAppShell((s) => s.roznamaSettingsOpen);
-    const setRoznamaSettingsOpen = useAppShell((s) => s.setRoznamaSettingsOpen);
+    const [roznamaSettingsOpen, setRoznamaSettingsOpen] = usePageDialog('roznama-settings');
 
     const handleMethodChange = (next: number) => {
         setPrefs({ method: next });

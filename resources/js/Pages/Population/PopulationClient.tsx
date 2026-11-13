@@ -10,6 +10,7 @@ import {
 import { sortCitiesByOrder, getCanonicalGovernorateName, getGovernorateDatasetNameEn, getGovernoratePcode } from '@/Domain/geography/governorates';
 import { buildLegend } from './utils/color-calculator';
 import { useIsMobile } from '@/Lib/useIsMobile';
+import { notify } from '@/Lib/notify';
 import { weatherDescriptionAr } from '@/Domain/weather/weather';
 
 type DataType = typeof DATA_TYPES[keyof typeof DATA_TYPES];
@@ -60,7 +61,9 @@ export default function PopulationClient() {
         fetch('/assets/population/syr_admin1_opt.geojson')
             .then(res => res.json())
             .then(data => setGeoJsonData(data))
-            .catch(err => console.error('Failed to load GeoJSON', err));
+            // The governorate polygons are the atlas's map: without them the page
+            // renders its panels over an empty canvas, so say so instead of logging.
+            .catch(err => notify.error(apiErrorMessage(err, 'تعذّر تحميل خريطة المحافظات')));
     }, []);
 
     useEffect(() => {
@@ -157,7 +160,7 @@ export default function PopulationClient() {
 
     if (isLoading) {
         return (
-            <div className="flex flex-col items-center justify-center h-[calc(100vh-64px)] bg-background text-foreground gap-6">
+            <div className="flex flex-col items-center justify-center h-[calc(100vh-var(--sz-navbar-h))] bg-background text-foreground gap-6">
                 {/* The loaded view has its own heading; without this one the page
                     the server sends, which is this state, has none. */}
                 <h1 className="sr-only">أطلس سوريا التفاعلي</h1>
@@ -177,7 +180,7 @@ export default function PopulationClient() {
 
     if (error) {
         return (
-            <div className="flex flex-col items-center justify-center h-[calc(100vh-64px)] bg-background text-foreground gap-6 px-4">
+            <div className="flex flex-col items-center justify-center h-[calc(100vh-var(--sz-navbar-h))] bg-background text-foreground gap-6 px-4">
                 <h1 className="sr-only">أطلس سوريا التفاعلي</h1>
                 <div className="text-center max-w-md">
                     <div className="text-red-500 mb-4">
@@ -198,7 +201,7 @@ export default function PopulationClient() {
     }
 
     return (
-        <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden relative bg-background text-foreground" dir="rtl">
+        <div className="flex flex-col h-[calc(100vh-var(--sz-navbar-h))] overflow-hidden relative bg-background text-foreground" dir="rtl">
 
             {comparisonData && currentDataType !== DATA_TYPES.RAINFALL && currentDataType !== DATA_TYPES.ENVIRONMENTAL && (
                 <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-[1100] w-[90%] max-w-2xl bg-card border-2 border-primary rounded-xl shadow-2xl animate-in zoom-in-95 duration-200">

@@ -60,33 +60,11 @@ import {
 import AdminPollManager from '@/Domain/polls/AdminPollManager';
 import { pollsApi } from '@/Domain/polls/api';
 import { transitAdminApi } from '@/Domain/transit/api';
+import type { DraftStatus, RouteDraftRow } from '@/Domain/transit/types';
 import type { Poll, PollCandidate, PollGroup } from '@/Domain/polls/types';
 import FieldError, { fieldA11y } from '@/Components/ui/field-error';
 import { cn } from '@/Lib/utils';
 import { formatGregorianSyrianShort } from '@/Lib/syrian-date';
-
-interface City {
-  id: string;
-  name_ar: string;
-  name_en: string;
-}
-
-interface Draft {
-  id: number;
-  user_id: number | null;
-  user: { id: number; name: string; email: string } | null;
-  city_id: string;
-  city: City | null;
-  name_ar: string;
-  name_en: string | null;
-  price: number | null;
-  notes: string | null;
-  geojson: any;
-  status: 'pending' | 'approved' | 'rejected';
-  rejection_reason: string | null;
-  route_id: string | null;
-  created_at: string;
-}
 
 const pollPublicUrl = (slug: string) =>
   isCorePollSlug(slug) ? '/tierlist' : `/polls/${slug}`;
@@ -108,7 +86,9 @@ interface DashboardProps {
     };
   };
   role: string;
-  myDrafts?: Draft[];
+  /** The studio's own rule, resolved server-side: any account that is not banned may submit. */
+  canSubmitTransit: boolean;
+  myDrafts?: RouteDraftRow[];
   polls?: Poll[];
 }
 
@@ -214,7 +194,7 @@ const ADMIN_SECTION_ICONS: Record<string, React.ComponentType<{ className?: stri
   api_tokens: KeyRound,
 };
 
-const statusBadge = (status: Draft['status']) => {
+const statusBadge = (status: DraftStatus) => {
   if (status === 'approved')
     return <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20">تم القبول والنشر</Badge>;
   if (status === 'rejected')
@@ -225,6 +205,7 @@ const statusBadge = (status: Draft['status']) => {
 export default function Dashboard({
   auth,
   role,
+  canSubmitTransit,
   myDrafts = [],
   polls = []
 }: DashboardProps) {
@@ -249,14 +230,19 @@ export default function Dashboard({
     // every account has, so it is always a safe landing place.
     if (new URLSearchParams(window.location.search).get('tab') === 'profile') return 'profile';
 
-    // Check canManagePolls first so poll managers and full-catalogue admins
-    // (whose role is also 'user') land on the Polls tab rather than an empty
-    // route-submissions tab.
+    // Check canManagePolls first so a poll manager who may also submit routes
+    // lands on the Polls tab rather than on their (possibly empty) route
+    // submissions.
     if (canManagePolls) return 'polls';
-    if (role === 'user') return 'submissions';
+    if (canSubmitTransit) return 'submissions';
 
     return 'profile';
   });
+
+  // The submissions tab belongs to the account, not to a role: anyone who may
+  // submit sees it, and an account that already has drafts keeps them even
+  // after a ban stops it submitting.
+  const showTransitSubmissions = canSubmitTransit || myDrafts.length > 0;
 
   // Per-action poll capabilities. The tab itself opens for any polls.* holder,
   // so without these a polls.delete-only account is offered create and edit
@@ -291,7 +277,7 @@ export default function Dashboard({
   const [rejectLoading, setRejectLoading] = useState(false);
 
   const [localPolls, setLocalPolls] = useState<Poll[]>(polls);
-  const [localMyDrafts, setLocalMyDrafts] = useState<Draft[]>(myDrafts);
+  const [localMyDrafts, setLocalMyDrafts] = useState<RouteDraftRow[]>(myDrafts);
 
   const [apiLoading, setApiLoading] = useState<number | null>(null); // maps draft ID to loading state
 
@@ -574,7 +560,7 @@ export default function Dashboard({
           <div className="flex flex-col lg:flex-row gap-8">
             <aside className="w-full lg:w-64 shrink-0">
               <nav aria-label="أقسام لوحة التحكم" className="flex flex-row lg:flex-col gap-1.5 overflow-x-auto lg:overflow-x-visible pb-3 lg:pb-0">
-                {role === 'user' && (
+                {showTransitSubmissions && (
                   <button type="button" aria-pressed={activeTab === 'submissions'} onClick={() => setActiveTab('submissions')} className={navItemClass(activeTab === 'submissions')}>
                     <TransitIcon className="h-5 w-5" />
                     اقتراحاتي للخطوط
@@ -610,7 +596,7 @@ export default function Dashboard({
             </aside>
 
             <div className="flex-1 bg-card border border-border rounded-xl p-6 shadow-sm min-h-[480px]">
-              {activeTab === 'submissions' && role === 'user' && (
+              {activeTab === 'submissions' && showTransitSubmissions && (
                 <div>
                   <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
                     <TransitIcon className="h-6 w-6" />

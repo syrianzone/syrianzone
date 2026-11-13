@@ -15,15 +15,17 @@ const DEFAULT_DURATION = 3200;
 export const notify = {
   success: (message: string, options?: Record<string, unknown>) =>
     toast.success(message, { duration: DEFAULT_DURATION, ...options }),
-  error: (message?: string, options?: Record<string, unknown>) =>
-    toast.error(message || 'حدث خطأ غير متوقع', { duration: 4200, ...options }),
+  // The message is required: the fallback text and the copy confirmation are
+  // product copy owned by `Lib/api` and `Lib/copy`, so they are not restated here.
+  error: (message: string, options?: Record<string, unknown>) =>
+    toast.error(message, { duration: 4200, ...options }),
   info: (message: string, options?: Record<string, unknown>) =>
     toast.info(message, { duration: DEFAULT_DURATION, ...options }),
   warning: (message: string, options?: Record<string, unknown>) =>
     toast.warning(message, { duration: 4200, ...options }),
   message: (message: string, options?: Record<string, unknown>) =>
     toast(message, { duration: DEFAULT_DURATION, ...options }),
-  copy: (message = 'تم النسخ') => toast.success(message, { duration: 1800 }),
+  copy: (message: string) => toast.success(message, { duration: 1800 }),
 };
 
 export type Notify = typeof notify;

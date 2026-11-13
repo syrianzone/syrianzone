@@ -10,7 +10,9 @@
  *  (b) `Lib/` may use `Components/ui` primitives but not a higher-level
  *      component (rule ratcheted at today's one offender);
  *  (c) no imports between two different `Pages/<Feature>` folders (ratcheted at
- *      today's edges so the set can only shrink).
+ *      today's edges so the set can only shrink);
+ *  (d) the shared layer only reads a `Domain/` *facts* module — the exceptions
+ *      are listed, with their reason, in `SHARED_TO_DOMAIN_ALLOWED`.
  *
  * The specifiers are resolved with the same alias vite.config.js and
  * tsconfig.json declare, so the test reads the graph the bundler builds.
@@ -152,6 +154,31 @@ const SHARED_TO_PAGES_ALLOWED: string[] = [];
 const LIB_TO_COMPONENTS_ALLOWED: string[] = [];
 
 /**
+ * The shared layer may read a `Domain/` *facts* module — pure data and lookups the
+ * shell has to render the same labels the feature renders — and nothing else.
+ * The first block is that rule; the second block is today's exceptions, kept so
+ * the set can only shrink (delete the line when the edge goes).
+ */
+const SHARED_TO_DOMAIN_ALLOWED = [
+  // Facts modules: data, lookups and route registries, no page code.
+  'Components/GlobalSearch.tsx -> Domain/crossings/crossings.ts',
+  'Components/GlobalSearch.tsx -> Domain/games/games.ts',
+  'Components/GlobalSearch.tsx -> Domain/muslim/tools.ts',
+  'Components/GlobalSearch.tsx -> Domain/quran/quran.ts',
+  'Components/GlobalSearch.tsx -> Domain/transit/cities.ts',
+  'Components/UnblockSyriaNotification.tsx -> Domain/settings/popup.ts',
+  'Lib/entityImage.ts -> Domain/govapps/media.ts',
+  // Exceptions. `MainLayout` mounts the sync and radio components the app shell
+  // owns, the onboarding tracker records a visit, the appearance menu writes the
+  // account setting, and the search box focuses the reader's current ayah.
+  'Components/AppearanceMenu.tsx -> Domain/settings/accountSettings.ts',
+  'Components/GlobalSearch.tsx -> Domain/quran/targetAyah.ts',
+  'Layouts/MainLayout.tsx -> Domain/quran/RadioMiniPlayer.tsx',
+  'Layouts/MainLayout.tsx -> Domain/quran/usageStore.ts',
+  'Layouts/MainLayout.tsx -> Domain/settings/SettingsSync.tsx',
+];
+
+/**
  * The `Pages/<A>` → `Pages/<B>` edges that remain, one per line. Nothing new
  * may be added; deleting one means deleting its line. Both survivors have a
  * reason outside the frontend, written next to them.
@@ -184,6 +211,13 @@ describe('layering', () => {
         !isUnder(edge.to, 'Components/ui'),
     ).map(label);
     assertMatches('Lib → Components', Array.from(new Set(offending)).sort(), LIB_TO_COMPONENTS_ALLOWED);
+  });
+
+  it('the shared layer only reads facts from Domain/', () => {
+    const offending = EDGES.filter(
+      (edge) => SHARED_LAYERS.some((layer) => isUnder(edge.from, layer)) && isUnder(edge.to, 'Domain'),
+    ).map(label);
+    assertMatches('Shared → Domain', Array.from(new Set(offending)).sort(), SHARED_TO_DOMAIN_ALLOWED);
   });
 
   it('no feature folder imports another feature folder', () => {

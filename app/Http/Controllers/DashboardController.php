@@ -48,15 +48,20 @@ class DashboardController extends Controller
         $user = $request->user();
         $data = [
             'role' => $user->role,
-        ];
-
-        if ($user->role === 'user') {
-            $data['myDrafts'] = RouteDraft::where('user_id', $user->id)
+            // Studio submissions are open to every account (the endpoint takes
+            // anonymous drafts too), so the rule is "not banned", not a role.
+            // The dashboard's submissions tab follows this flag instead of
+            // testing the role string, which is why a staff account that
+            // submits in the studio can now watch its own drafts.
+            'canSubmitTransit' => ! $user->is_banned,
+            // The account's own drafts, whoever it is: the tab that lists them
+            // is the account's, not a role's.
+            'myDrafts' => RouteDraft::where('user_id', $user->id)
                 ->select(self::DRAFT_LIST_COLUMNS)
                 ->with('city:id,name_ar,name_en')
                 ->orderBy('created_at', 'desc')
-                ->get();
-        }
+                ->get(),
+        ];
 
         // 3. Anyone holding a polls capability sees Polls management data.
         //

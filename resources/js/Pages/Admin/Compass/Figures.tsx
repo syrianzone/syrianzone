@@ -39,7 +39,6 @@ interface AdminFigure {
 interface Props {
     figures: AdminFigure[];
     categories: string[];
-    axes: string[];
     canViewStats: boolean;
 }
 
@@ -90,7 +89,7 @@ function emptyForm(categories: string[]): FormState {
     };
 }
 
-export default function CompassFigures({ figures, categories, axes = [], canViewStats }: Props) {
+export default function CompassFigures({ figures, categories, canViewStats }: Props) {
     const [open, setOpen] = useState(false);
     const [editing, setEditing] = useState<AdminFigure | null>(null);
     const [form, setForm] = useState<FormState>(() => emptyForm(categories));
@@ -100,9 +99,7 @@ export default function CompassFigures({ figures, categories, axes = [], canView
     const fileRef = useRef<HTMLInputElement>(null);
 
     // The axis rows come from the same AXES catalogue the editor labels use, so
-    // a value can never be written to a key the form did not render. The `axes`
-    // prop is accepted only so a server-side axis list can be reconciled later.
-    void axes;
+    // a value can never be written to a key the form did not render.
 
     const enabledCount = useMemo(() => figures.filter((f) => f.enabled).length, [figures]);
 

@@ -48,11 +48,7 @@ import { SURAH_AYAH_COUNTS, SURAH_NAMES_AR } from '@/Domain/quran/quran';
 import { GAMES, gameEntryHref } from '@/Domain/games/games';
 import { TOOLS as MUSLIM_TOOLS, toolHref } from '@/Domain/muslim/tools';
 import { STATUS_TEXT, crossings, statusOf, syriaMinutes } from '@/Domain/crossings/crossings';
-import { TRANSIT_CITY_SEED as CITIES } from '@/Domain/transit/cities';
-
-const CITY_NAME_MAP: Record<string, string> = Object.fromEntries(
-    CITIES.map((c) => [c.id, c.nameAr]),
-);
+import { useTransitCities } from '@/Domain/transit/cities';
 
 // All 114 Surahs (1-based index); the names and counts live in the Quran domain.
 const SURAHS: Array<{ number: number; name: string; ayahs: number }> = SURAH_NAMES_AR.slice(1).map(
@@ -105,6 +101,14 @@ export function useGlobalSearchData(query: string, scope: FilterScope, enabled =
     const [remote, setRemote] = useState<RemoteSearchResults>(EMPTY_REMOTE);
     const [loadingRemote, setLoadingRemote] = useState(false);
     const { allLinks } = useSiteNavigation();
+    // The city group is the API's list, so the badge counts the routes the city
+    // actually has and a city with none offers no dead link.
+    const { data: transitCities } = useTransitCities(enabled && (scope === 'all' || scope === 'transit'));
+    const cities = useMemo(() => transitCities ?? [], [transitCities]);
+    const cityNames = useMemo(
+        () => Object.fromEntries(cities.map((city) => [city.id, city.nameAr])),
+        [cities],
+    );
 
     useEffect(() => {
         const trimmed = query.trim();
@@ -165,14 +169,14 @@ export function useGlobalSearchData(query: string, scope: FilterScope, enabled =
 
     const matchedCities = useMemo(() => {
         if (scope !== 'all' && scope !== 'transit') return [];
-        const list = CITIES.filter((c) =>
+        const list = cities.filter((c) =>
             matchesSearch(trimmedQuery, c.nameAr, c.nameEn, c.id, 'ترانزيت سرفيس باص محافظة مدينة'),
         );
         if (!trimmedQuery && scope !== 'transit') {
-            return list.filter((c) => (c.routeCount ?? 0) > 0 || c.status === 'active').slice(0, 6);
+            return list.filter((c) => c.routeCount > 0 || c.status === 'active').slice(0, 6);
         }
         return scope === 'transit' && !trimmedQuery ? list : list.slice(0, 8);
-    }, [trimmedQuery, scope]);
+    }, [trimmedQuery, scope, cities]);
 
     const matchedMuslimTools = useMemo(() => {
         if (scope !== 'all' && scope !== 'muslim') return [];
@@ -247,6 +251,7 @@ export function useGlobalSearchData(query: string, scope: FilterScope, enabled =
         showRemoteOfficials,
         showRemoteGovApps,
         totalVisibleResults,
+        cityNames,
     };
 }
 
@@ -326,6 +331,7 @@ export function SearchResultsContent({
         showRemoteOfficials,
         showRemoteGovApps,
         totalVisibleResults,
+        cityNames,
     } = data;
 
     const tileClassName =
@@ -527,12 +533,12 @@ export function SearchResultsContent({
                                         {route.nameAr}
                                     </span>
                                     <span className="text-xs text-muted-foreground">
-                                        خط نقل عام · {CITY_NAME_MAP[route.cityId] || route.cityId}
+                                        خط نقل عام · {cityNames[route.cityId] || route.cityId}
                                     </span>
                                 </div>
                             </div>
                             <Badge variant="outline" className="text-[10px] shrink-0">
-                                {CITY_NAME_MAP[route.cityId] || route.cityId}
+                                {cityNames[route.cityId] || route.cityId}
                             </Badge>
                         </ItemRow>
                     ))}
@@ -543,7 +549,7 @@ export function SearchResultsContent({
             {matchedCities.length > 0 && (
                 <GroupWrapper heading="مدن ومحافظات ترانزيت">
                     {matchedCities.map((city) => {
-                        const count = city.routeCount ?? 0;
+                        const count = city.routeCount;
                         return (
                             <ItemRow
                                 key={`city-${city.id}`}

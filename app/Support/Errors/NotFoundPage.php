@@ -4,8 +4,10 @@ namespace App\Support\Errors;
 
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SecurityHeaders;
+use App\Services\Transit\TransitCities;
 use App\Support\Seo\SeoMeta;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -57,7 +59,31 @@ final class NotFoundPage
             Inertia::render('Errors/NotFound', [
                 'status' => 404,
                 'path' => '/'.ltrim($request->path(), '/'),
+                // The transit variant draws the landing page's city cards, whose
+                // "N خط" badge and link are only right with the table's counts.
+                // Sent on every 404 rather than re-deriving the page's own
+                // section rule here, so the two cannot disagree about which 404
+                // a visitor sees.
+                'transitCities' => self::transitCityCards(),
             ])->toResponse($request)->setStatusCode(404)->prepare($request)
         );
+    }
+
+    /**
+     * The cards the transit variant draws. A 404 has to render whatever is
+     * wrong with the database — an unseeded or unreachable table must not turn
+     * a missing page into a 500 — so a failed read leaves the grid empty.
+     *
+     * @return array<int, array{id: string, nameAr: string, nameEn: string, status: string, routeCount: int}>
+     */
+    private static function transitCityCards(): array
+    {
+        try {
+            return app(TransitCities::class)->forCards();
+        } catch (\Throwable $e) {
+            Log::warning('404 transit city cards unavailable', ['error' => $e->getMessage()]);
+
+            return [];
+        }
     }
 }

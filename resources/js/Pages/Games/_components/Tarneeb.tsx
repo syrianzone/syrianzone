@@ -56,8 +56,6 @@ export default function Tarneeb() {
   const [large, setLarge] = useState(false);
   /** The card picked on a touch screen, waiting for a second tap to play it. */
   const [selected, setSelected] = useState<string | null>(null);
-  /** The last pointer kind: a touch picks first, a mouse plays at once. */
-  const lastPointerType = useRef('');
 
   const recorded = useRef<MatchState | null>(null);
   const seenHistory = useRef(0);
@@ -118,7 +116,7 @@ export default function Tarneeb() {
   // Hooks run before the loading return below; the drop handler reaches the
   // current render's `play` through a ref.
   const playRef = useRef<(card: Card) => void>(() => {});
-  const { drag, startDrag } = useCardDrag<Card>({
+  const { drag, startDrag, isTouchPick } = useCardDrag<Card>({
     onDrop: (element, card) => {
       if (element?.closest('.sz-tbl')) playRef.current(card);
     },
@@ -143,7 +141,7 @@ export default function Tarneeb() {
   // second tap on it plays. A mouse click plays at once, and a drag plays out.
   const tapCard = (card: Card) => {
     if (!legalIds.has(card.id)) return;
-    if (lastPointerType.current === 'touch' && selected !== card.id) {
+    if (isTouchPick(selected === card.id)) {
       setSelected(card.id);
       return;
     }
@@ -177,12 +175,6 @@ export default function Tarneeb() {
       writeLargeCards(!value);
       return !value;
     });
-
-  const beginDrag = (card: Card, e: React.PointerEvent) => {
-    lastPointerType.current = e.pointerType;
-    if (!legalIds.has(card.id)) return;
-    startDrag(e, card);
-  };
 
   const trick = paused && round.history.length > 0 ? round.history[round.history.length - 1].plays : round.trick;
   const trickWinnerSeat = paused && round.history.length > 0 ? round.history[round.history.length - 1].winner : null;
@@ -280,7 +272,7 @@ export default function Tarneeb() {
               interactive={legalIds.has(card.id)}
               picked={selected === card.id}
               className={legalIds.has(card.id) ? 'sz-tbl__playable' : ''}
-              onPointerDown={(e) => beginDrag(card, e)}
+              onPointerDown={(e) => { if (legalIds.has(card.id)) startDrag(e, card); }}
               onClick={() => tapCard(card)}
             />
           ))}

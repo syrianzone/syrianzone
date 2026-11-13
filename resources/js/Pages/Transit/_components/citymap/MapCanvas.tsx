@@ -33,8 +33,8 @@ interface MapCanvasProps {
 
 /**
  * The point `Domain/location` already knows about, in map coordinates. The map
- * does not own the user's location: a fix resolved here (or in the prayer and
- * weather settings) is the one every surface uses.
+ * does not own the user's location: a fix resolved anywhere (this map, settings)
+ * is stored as one shared point and every surface reads it.
  */
 function storedLocation(): Point | null {
   const geo = getGeo()
@@ -76,8 +76,9 @@ function Geolocator({ children }: { children: React.ReactNode }) {
     setLocationStatus('loading')
     try {
       // The shared request: permission handling, retries and the Arabic refusal
-      // live in Domain/location, and the resolved point is stored there so the
-      // prayer and weather surfaces use the same fix the map drew.
+      // live in Domain/location, and the resolved point is stored there as the
+      // last GPS fix. It does not switch the prayer or weather mode: where those
+      // surfaces take their coordinates from is the user's own choice.
       setGeo(await resolveGps())
       startWatch()
     } catch (e) {

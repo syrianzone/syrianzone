@@ -64,29 +64,29 @@ class AppServiceProvider extends ServiceProvider
             ->response($this->throttled('تم تجاوز حد الطلبات المسموح. يرجى المحاولة بعد قليل.')));
 
         RateLimiter::for('compass-stats', function (Request $request) {
-            $message = ['message' => 'يمكنك إرسال نتيجة مجهولة واحدة كل عشر دقائق.'];
+            $response = $this->throttled('يمكنك إرسال نتيجة مجهولة واحدة كل عشر دقائق.');
 
             // Anonymous (guest) submissions: one per 10 minutes per IP.
             // Logged-in users: a bit more headroom, still capped.
             if ($request->user()) {
                 return Limit::perMinutes(10, 5)->by('user:'.$request->user()->id)
-                    ->response(fn ($request, $headers) => response()->json($message, 429, $headers));
+                    ->response($response);
             }
 
             return Limit::perMinutes(10, 1)->by('ip:'.$request->ip())
-                ->response(fn ($request, $headers) => response()->json($message, 429, $headers));
+                ->response($response);
         });
 
         RateLimiter::for('studio-submit', function (Request $request) {
-            $message = ['message' => 'تم تجاوز حد المحاولات المسموح، يرجى الانتظار قليلاً قبل إعادة المحاولة.'];
+            $response = $this->throttled('تم تجاوز حد المحاولات المسموح، يرجى الانتظار قليلاً قبل إعادة المحاولة.');
 
             if ($request->user()) {
                 return Limit::perMinute(30)->by('user:'.$request->user()->id)
-                    ->response(fn ($request, $headers) => response()->json($message, 429, $headers));
+                    ->response($response);
             }
 
             return Limit::perMinute(5)->by('ip:'.$request->ip())
-                ->response(fn ($request, $headers) => response()->json($message, 429, $headers));
+                ->response($response);
         });
 
         // Agent/MCP traffic. Keyed by API token so one runaway agent cannot
@@ -110,12 +110,17 @@ class AppServiceProvider extends ServiceProvider
      *
      * The shape is a released contract (mobile clients read `message`, older
      * web callers read `error`), so both keys carry the same text.
+     *
+     * The framework passes the rate-limit headers to this callback and attaches
+     * only what the response carries; `Lib/api.ts` reads `Retry-After` to tell
+     * the visitor how long to wait, so dropping them left the busiest limiters
+     * with no wait time in the body either.
      */
     private function throttled(string $message): \Closure
     {
-        return fn () => response()->json([
+        return fn ($request, array $headers) => response()->json([
             'message' => $message,
             'error' => $message,
-        ], 429);
+        ], 429, $headers);
     }
 }

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Services\SyOfficial\SyOfficialDirectoryService;
-use App\Services\SyOfficial\SyOfficialPresenter;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
@@ -18,10 +17,7 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
  */
 class SyOfficialAdminController extends Controller
 {
-    public function __construct(
-        private readonly SyOfficialDirectoryService $directory,
-        private readonly SyOfficialPresenter $presenter,
-    ) {}
+    public function __construct(private readonly SyOfficialDirectoryService $directory) {}
 
     public function renderIndex()
     {

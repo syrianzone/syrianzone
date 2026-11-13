@@ -11,15 +11,13 @@ interface AppShellState {
   /** Saved-bookmarks modal visibility (navbar button + reader top row). */
   bookmarksOpen: boolean;
   setBookmarksOpen: (open: boolean) => void;
-  /** Homepage settings dialog (navbar gear instead of the hamburger on `/`). */
-  homeSettingsOpen: boolean;
-  setHomeSettingsOpen: (open: boolean) => void;
-  /** Roznama settings modal visibility (navbar gear on `/roznama`). */
-  roznamaSettingsOpen: boolean;
-  setRoznamaSettingsOpen: (open: boolean) => void;
-  /** Prayer settings dialog (navbar gear on `/muslim/prayer`). */
-  muslimPrayerSettingsOpen: boolean;
-  setMuslimPrayerSettingsOpen: (open: boolean) => void;
+  /**
+   * The page-owned settings dialog the navbar's gear opens, by id, or null. The
+   * page owns the dialog and its form; the shell only knows which trigger
+   * belongs to which route, so adding a page adds an id, not a store member.
+   */
+  pageDialog: PageDialog | null;
+  openPageDialog: (dialog: PageDialog | null) => void;
   /** Quran reader focus mode — hides the navbar and chrome to enlarge text. */
   quranFocus: boolean;
   setQuranFocus: (focus: boolean) => void;
@@ -32,22 +30,31 @@ interface AppShellState {
   registerInlineSearch: (focus: (() => void) | null) => void;
 }
 
+/** The page-owned dialogs the navbar can open. */
+export type PageDialog = 'home-settings' | 'roznama-settings' | 'muslim-prayer-settings';
+
 export const useAppShell = create<AppShellState>((set) => ({
   searchOpen: false,
   setSearchOpen: (searchOpen) => set({ searchOpen }),
   bookmarksOpen: false,
   setBookmarksOpen: (bookmarksOpen) => set({ bookmarksOpen }),
-  homeSettingsOpen: false,
-  setHomeSettingsOpen: (homeSettingsOpen) => set({ homeSettingsOpen }),
-  roznamaSettingsOpen: false,
-  setRoznamaSettingsOpen: (roznamaSettingsOpen) => set({ roznamaSettingsOpen }),
-  muslimPrayerSettingsOpen: false,
-  setMuslimPrayerSettingsOpen: (muslimPrayerSettingsOpen) => set({ muslimPrayerSettingsOpen }),
+  pageDialog: null,
+  openPageDialog: (pageDialog) => set({ pageDialog }),
   quranFocus: false,
   setQuranFocus: (quranFocus) => set({ quranFocus }),
   inlineSearchFocus: null,
   registerInlineSearch: (inlineSearchFocus) => set({ inlineSearchFocus }),
 }));
+
+/**
+ * Whether *this page's* dialog is open, plus an `onOpenChange`-shaped setter.
+ * Two pages cannot see each other's state, and closing one never closes another.
+ */
+export function usePageDialog(id: PageDialog): [boolean, (open: boolean) => void] {
+  const open = useAppShell((state) => state.pageDialog === id);
+  const setPageDialog = useAppShell((state) => state.openPageDialog);
+  return [open, (next: boolean) => setPageDialog(next ? id : null)];
+}
 
 /**
  * Hand the search shortcut to the page's inline search field. Returns false

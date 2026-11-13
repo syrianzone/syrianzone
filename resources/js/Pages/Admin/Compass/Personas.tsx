@@ -41,7 +41,6 @@ interface AdminPersona {
 
 interface Props {
     personas: AdminPersona[];
-    axes: string[];
     icons: string[];
     canViewStats: boolean;
 }

@@ -66,6 +66,12 @@ describe('apiErrorMessage', () => {
         expect(apiErrorMessage(axiosError(419, {}))).toBe('انتهت الجلسة، أعد تحميل الصفحة');
     });
 
+    it('words a 413 for the file at hand, not for one endpoint’s limit', () => {
+        // A 413 comes from the proxy's body size, not from any endpoint's own
+        // per-image rule, so the message names no limit and no file role.
+        expect(apiErrorMessage(axiosError(413, {}))).toBe('الملف المرفوع أكبر من الحد المسموح');
+    });
+
     it('returns the fallback for an unknown error', () => {
         expect(apiErrorMessage({}, 'خطأ')).toBe('خطأ');
         expect(apiErrorMessage(null)).toBe('حدث خطأ غير متوقع');

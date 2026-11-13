@@ -236,9 +236,9 @@ class StagingTransitSeeder extends StagingSeed
    * routes/web.php read the north-east corner as coordinates[0][2].
    *
    * INSERT-ONLY, unlike every other write in this file. 'damascus', 'aleppo'
-   * and 'homs' are the REAL production city ids: they are the ids in
-   * resources/js/Domain/transit/cities.json and in every /transit/city/{id}
-   * URL, so they are the one set of keys this module cannot namespace. A
+   * and 'homs' are the REAL production city ids: they are the ids in every
+   * /transit/city/{id} URL, so they are the one set of keys this module cannot
+   * namespace. A
    * 'staging-damascus' row would be a second city no page or client link
    * reaches. So instead of an upsert we fill the row in only when it is
    * missing: a staging box restored from a production dump keeps its imported

@@ -22,7 +22,6 @@ import { GameTileGrid } from '@/Domain/games/GameTile';
 import AyahMark from '@/Domain/quran/AyahMark';
 import { TOOLS, toolHref } from '@/Domain/muslim/tools';
 import CityGrid from '@/Pages/Transit/_components/landing/CityGrid';
-import { TRANSIT_CITY_SEED } from '@/Domain/transit/cities';
 
 type NotFoundSection = 'general' | 'transit' | 'games' | 'muslim';
 
@@ -30,6 +29,11 @@ interface NotFoundProps {
     status?: number;
     path?: string;
     section?: NotFoundSection;
+    /**
+     * The transit city cards, sent by `NotFoundPage` from the cities table so
+     * the grid's counts and links are the live ones (`TransitCities::forCards()`).
+     */
+    transitCities?: React.ComponentProps<typeof CityGrid>['cities'];
 }
 
 function detectSectionFromPath(path: string): NotFoundSection {
@@ -60,12 +64,7 @@ function detectSectionFromPath(path: string): NotFoundSection {
 
 const TILE_CLASS = 'group flex flex-col items-center gap-2 py-1 text-center no-underline';
 
-/** The 404 is rendered without the transit page's server payload, so it shows
- *  the committed city list; the JSON carries what the cards read, not the
- *  API-only map grouping. */
-const TRANSIT_CITIES = TRANSIT_CITY_SEED as React.ComponentProps<typeof CityGrid>['cities'];
-
-export default function NotFound({ path = '/404', section }: NotFoundProps) {
+export default function NotFound({ path = '/404', section, transitCities = [] }: NotFoundProps) {
     const resolvedSection: NotFoundSection = useMemo(() => {
         if (typeof window !== 'undefined') {
             const overrideSec = new URLSearchParams(window.location.search).get('section');
@@ -92,11 +91,13 @@ export default function NotFound({ path = '/404', section }: NotFoundProps) {
     return (
         <MainLayout>
             <div
-                className="min-h-[calc(100svh-4rem-1px)] bg-background text-foreground"
+                className="min-h-[calc(100svh-var(--sz-navbar-h))] bg-background text-foreground"
                 dir="rtl"
             >
                 {resolvedSection === 'muslim' && <MuslimNotFound path={path} onBack={goBack} />}
-                {resolvedSection === 'transit' && <TransitNotFound path={path} onBack={goBack} />}
+                {resolvedSection === 'transit' && (
+                    <TransitNotFound path={path} onBack={goBack} transitCities={transitCities} />
+                )}
                 {resolvedSection === 'games' && <GamesNotFound path={path} onBack={goBack} />}
                 {resolvedSection === 'general' && <GeneralNotFound path={path} onBack={goBack} />}
             </div>
@@ -264,7 +265,11 @@ function GamesNotFound({ path, onBack }: { path: string; onBack: () => void }) {
     );
 }
 
-function TransitNotFound({ path, onBack }: { path: string; onBack: () => void }) {
+function TransitNotFound({ path, onBack, transitCities }: {
+    path: string;
+    onBack: () => void;
+    transitCities: React.ComponentProps<typeof CityGrid>['cities'];
+}) {
     return (
         <div className="mx-auto max-w-7xl px-4 pt-10">
             <div className="mx-auto max-w-3xl flex flex-col items-center text-center">
@@ -380,7 +385,7 @@ function TransitNotFound({ path, onBack }: { path: string; onBack: () => void })
                 </div>
             </div>
 
-            <CityGrid cities={TRANSIT_CITIES} />
+            <CityGrid cities={transitCities} />
         </div>
     );
 }

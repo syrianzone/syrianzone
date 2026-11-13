@@ -99,7 +99,7 @@ function finiteNumber(v: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-export function methodLabel(id: string | null): string {
+function methodLabel(id: string | null): string {
   if (id === null || id === '') return '—';
   return PRAYER_METHODS.find((m) => String(m.id) === String(id))?.nameAr ?? String(id);
 }
@@ -122,7 +122,7 @@ function sameCustom(a: DeviceCustomCoords | null, b: DeviceCustomCoords | null):
   return JSON.stringify(a) === JSON.stringify(b);
 }
 
-export function mergePrayerLog(
+function mergePrayerLog(
   local: Record<string, Record<string, boolean>> | null,
   server: Record<string, Record<string, boolean>> | null,
 ): Record<string, Record<string, boolean>> {
@@ -150,7 +150,7 @@ function readLocalPrayerLog(): Record<string, Record<string, boolean>> | null {
   }
 }
 
-export interface SyncOutcome {
+interface SyncOutcome {
   conflicts: SettingConflict[];
 }
 

@@ -93,8 +93,8 @@ export const api = {
     return client.get(`${API_V1}/guides`, { params: { sort } });
   },
 
-  async gridPhotos(page: number): Promise<Paginated<GridPhoto>> {
-    return client.get(`${base}/photos`, { params: { page } });
+  async gridPhotos(page: number, userId?: number): Promise<Paginated<GridPhoto>> {
+    return client.get(`${base}/photos`, { params: { page, user_id: userId } });
   },
 
   async mySaves(page?: number): Promise<Paginated<PlaceListItem>> {

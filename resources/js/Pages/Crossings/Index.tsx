@@ -133,7 +133,7 @@ export default function CrossingsPage() {
               start (right) side, the map fills the end (left), clear of the map's
               bottom-left controls.
             */}
-            <div className="flex flex-col-reverse lg:h-[calc(100vh-64px)] lg:flex-row lg:overflow-hidden" dir="rtl">
+            <div className="flex flex-col-reverse lg:h-[calc(100vh-var(--sz-navbar-h))] lg:flex-row lg:overflow-hidden" dir="rtl">
                 <aside className="flex flex-col border-border bg-card lg:min-h-0 lg:w-[26%] lg:min-w-[320px] lg:max-w-[440px] lg:border-e">
                     <div className="border-b border-border p-4">
                         <div className="mb-3 flex items-start justify-between gap-3">

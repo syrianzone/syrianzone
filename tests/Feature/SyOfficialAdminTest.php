@@ -161,6 +161,24 @@ it('reorders categories and flashes the admin toast', function () {
     expect($first->fresh()->order_column)->toBe(2);
 });
 
+it('reorders entities through the sortable list endpoint', function () {
+    $category = OfficialCategory::factory()->create();
+    $first = OfficialEntity::factory()->inCategory($category)->create(['order_column' => 1]);
+    $second = OfficialEntity::factory()->inCategory($category)->create(['order_column' => 2]);
+
+    $this->actingAs($this->admin)
+        ->postJson($this->routes['reorderEntities'], [
+            'orders' => [
+                ['id' => $second->id, 'order_column' => 1],
+                ['id' => $first->id, 'order_column' => 2],
+            ],
+        ])
+        ->assertRedirect();
+
+    expect($first->fresh()->order_column)->toBe(2)
+        ->and($second->fresh()->order_column)->toBe(1);
+});
+
 it('rejects a reorder naming a category that does not exist', function () {
     // The sortable list posts JSON, so a bad payload comes back as the 422
     // envelope rather than a redirect (the success path redirects).

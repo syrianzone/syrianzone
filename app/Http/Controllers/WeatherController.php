@@ -107,9 +107,11 @@ class WeatherController extends Controller
   // series the widget needs. Every failure path returns [] rather than throwing,
   // because this runs inside a request whose primary job is current conditions.
   //
-  // The WMO code is passed through raw. The arabic labels live in the widget,
-  // next to the arabic mapping it already owns for `description`, so display
-  // vocabulary stays in one place instead of being split across the boundary.
+  // The WMO code is passed through raw. Its Arabic label, and the Arabic of the
+  // `description` above, live in resources/data/weather.json (`Domain/weather`),
+  // the same table SyriaClimateService and the environmental aggregator read, so
+  // display vocabulary stays in one place instead of being split across the
+  // boundary.
   private function forecast(string $governorate, float $lat, float $lon): array
   {
     $key = "weather:forecast:{$governorate}";

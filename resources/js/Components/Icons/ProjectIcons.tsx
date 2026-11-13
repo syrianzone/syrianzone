@@ -7,7 +7,7 @@ import { projectIcon } from '@/Lib/projectIcons';
  * Add an icon by adding a key to that file; `projectIcons.test.ts` keeps the
  * two sides on the same key set.
  */
-export interface ProjectIconProps {
+interface ProjectIconProps {
     className?: string;
 }
 

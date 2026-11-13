@@ -1,0 +1,24 @@
+/* Syrian Compass — the figure category colours. Scoped to the avatar, their only
+   consumer, so the palette is stated once next to the feature that draws it
+   instead of twice in the global theme sheet and stays out of every other page's
+   cascade. */
+.sz-figure-avatar {
+    --fig-founder: #3b82f6;
+    --fig-baath: #ef4444;
+    --fig-islam: #16a34a;
+    --fig-civ: #ca8a04;
+    --fig-kurd: #9333ea;
+    --fig-minority: #ea580c;
+    --fig-current: #0284c7;
+}
+
+/* Brighter on the dark schemes, like the rest of the dark token set. */
+[data-scheme="dark"] .sz-figure-avatar {
+    --fig-founder: #60a5fa;
+    --fig-baath: #f87171;
+    --fig-islam: #4ade80;
+    --fig-civ: #facc15;
+    --fig-kurd: #c084fc;
+    --fig-minority: #fb923c;
+    --fig-current: #38bdf8;
+}

@@ -51,7 +51,7 @@ class SeoMeta
     }
 
     /**
-     * @return array{title:string,og_title:string,description:string,type:string,image:string,image_type:string,url:string,canonical:string,robots:string,json_ld:string,twitter_site:?string}
+     * @return array{title:string,og_title:string,description:string,type:string,image:string,image_type:string,image_width:int,image_height:int,url:string,canonical:string,robots:string,json_ld:string,twitter_site:?string}
      */
     public static function resolve(Request $request): array
     {
@@ -82,6 +82,10 @@ class SeoMeta
             'type' => $preview->type,
             'image' => self::absolute($preview->image, $base),
             'image_type' => str_contains($preview->image, '.jpg') ? 'image/jpeg' : 'image/png',
+            // The card's canvas, from the class that owns what a share card is:
+            // <SeoHead> prints these instead of restating the numbers.
+            'image_width' => StaticCards::CARD_WIDTH,
+            'image_height' => StaticCards::CARD_HEIGHT,
             // What a share points at. Usually the canonical page; for a record
             // opened through a query string it keeps that parameter, so each
             // record previews as itself instead of collapsing into its section.

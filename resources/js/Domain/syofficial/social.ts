@@ -10,7 +10,7 @@ import raw from '../../../data/social-platforms.json';
  * — adding a platform is a data edit, and the form state, its inputs, the public
  * icon and its hover treatment all follow from this list.
  */
-export interface SocialPlatform {
+interface SocialPlatform {
   key: string;
   labelAr: string;
   labelEn: string;
@@ -30,7 +30,7 @@ export const SOCIAL_PLATFORMS: SocialPlatform[] = raw.map((platform) => ({
   placeholder: platform.placeholder,
 }));
 
-export interface SocialVisual {
+interface SocialVisual {
   Icon: ComponentType<{ className?: string }>;
   /** The brand colour class of the platform's icon. */
   iconClass: string;

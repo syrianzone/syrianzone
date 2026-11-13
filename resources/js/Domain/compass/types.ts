@@ -98,7 +98,7 @@ export interface Figure {
 }
 
 /** Per-axis window. When present, a run must fall inside it to keep this persona. */
-export type PersonaRange = { min: number; max: number };
+type PersonaRange = { min: number; max: number };
 
 /** A spectrum (umbrella ideological label) with stance copy + historical factoid. */
 export interface Spectrum {

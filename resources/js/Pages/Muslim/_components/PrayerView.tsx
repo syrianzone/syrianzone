@@ -13,7 +13,7 @@ import PrayerSettingsFields from '../../../Domain/prayer/PrayerSettingsFields';
 import ResponsiveSettingsDialog from '../../../Domain/prayer/ResponsiveSettingsDialog';
 import { usePrayerTimes } from '../../../Domain/prayer/times';
 import { resolvePlaceLabel, useLocationPreference } from '../../../Domain/location/preference';
-import { useAppShell } from '@/Lib/appShell';
+import { usePageDialog } from '@/Lib/appShell';
 
 interface Props {
   prefs: MuslimPrefs;
@@ -58,8 +58,7 @@ export default function PrayerView({ prefs, setPrefs, isLoggedIn }: Props) {
 
   const cityLabel = resolvePlaceLabel(location);
 
-  const prayerSettingsOpen = useAppShell((s) => s.muslimPrayerSettingsOpen);
-  const setPrayerSettingsOpen = useAppShell((s) => s.setMuslimPrayerSettingsOpen);
+  const [prayerSettingsOpen, setPrayerSettingsOpen] = usePageDialog('muslim-prayer-settings');
 
   return (
     <div className="mx-auto max-w-2xl">

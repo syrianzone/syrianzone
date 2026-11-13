@@ -52,8 +52,6 @@ export default function Trix() {
   const [selected, setSelected] = useState<string | null>(null);
   const seen = useRef(0);
   const recorded = useRef(false);
-  /** The last pointer kind: a touch picks first, a mouse plays at once. */
-  const lastPointerType = useRef('');
 
   const fresh = (opts: TrixOptions) => {
     seen.current = 0;
@@ -132,7 +130,7 @@ export default function Trix() {
   // Hooks run before the loading return below; the drop handler reaches the
   // current render's `play` through a ref.
   const playRef = useRef<(card: Card) => void>(() => {});
-  const { drag, startDrag } = useCardDrag<Card>({
+  const { drag, startDrag, isTouchPick } = useCardDrag<Card>({
     onDrop: (element, card) => {
       if (element?.closest('.sz-tbl')) playRef.current(card);
     },
@@ -170,7 +168,7 @@ export default function Trix() {
   // second tap on it plays. A mouse click plays at once, and a drag plays out.
   const tapCard = (card: Card) => {
     if (!legalIds.has(card.id)) return;
-    if (lastPointerType.current === 'touch' && selected !== card.id) {
+    if (isTouchPick(selected === card.id)) {
       setSelected(card.id);
       return;
     }
@@ -178,11 +176,6 @@ export default function Trix() {
   };
   const doPass = () => setGame((g) => (g?.deal ? { ...g, deal: pass(g.deal, HUMAN) } : g));
 
-  const beginDrag = (card: Card, e: React.PointerEvent) => {
-    lastPointerType.current = e.pointerType;
-    if (!legalIds.has(card.id)) return;
-    startDrag(e, card);
-  };
   const nameContract = (contract: Contract) =>
     setGame((g) => (g && g.hands ? chooseContract(g, contract) : g));
   const proceed = () => setPaused(false);
@@ -291,7 +284,7 @@ export default function Trix() {
               interactive={legalIds.has(card.id)}
               picked={selected === card.id}
               className={legalIds.has(card.id) ? 'sz-tbl__playable' : ''}
-              onPointerDown={(e) => beginDrag(card, e)}
+              onPointerDown={(e) => { if (legalIds.has(card.id)) startDrag(e, card); }}
               onClick={() => tapCard(card)}
             />
           ))}

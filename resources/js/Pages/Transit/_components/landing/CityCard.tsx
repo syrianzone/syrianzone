@@ -1,11 +1,23 @@
 import { Link } from '@inertiajs/react'
-import type { City } from '../../_types'
 import { usePreloadCity } from '../../_hooks/useMapData'
 import { GOVERNORATE_SVGS } from '../../_data/governorate_svgs'
 import { governorateByAnyName } from '@/Domain/geography/governorates'
 
+/**
+ * The city fields a card draws. The `/transit` page passes the map's full city
+ * rows and the 404 grid the card-sized listing the exception handler sends
+ * (`TransitCities::forCards()`), so the card names only what it reads.
+ */
+export interface CityCardCity {
+  id: string
+  nameAr: string
+  nameEn: string
+  status: 'active' | 'coming_soon'
+  routeCount: number
+}
+
 interface CityCardProps {
-  city: City
+  city: CityCardCity
   index: number
 }
 

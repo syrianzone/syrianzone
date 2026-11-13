@@ -47,9 +47,8 @@ class CreateSyOfficialEntityTool extends SyOfficialTool
 
             'description_ar' => $schema->string()->description('Optional Arabic description.'),
 
-            'socials' => $schema->array()
-                ->description('Optional profile links. Only http and https are kept; anything else is dropped.')
-                ->items($schema->string()->max(2048)),
+            'socials' => $schema->object($this->socialProperties($schema))
+                ->description('Optional profile links as an object keyed by platform, e.g. {"facebook": "https://facebook.com/page"}. Only http and https are kept; an empty value drops that platform. A plain list is refused because it loses the platform.'),
         ];
     }
 

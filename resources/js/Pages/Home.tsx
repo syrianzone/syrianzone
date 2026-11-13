@@ -15,6 +15,7 @@ import AppearanceMenu from '@/Components/AppearanceMenu';
 import { HomeInlineSearchSection } from '@/Components/GlobalSearch';
 import F3aliaEvents from '@/Pages/Home/_components/F3aliaEvents';
 import type { CustomLink } from '@/Pages/Home/_lib/links';
+import { readCustomLinks, saveCustomLinks } from '@/Pages/Home/_lib/links';
 import {
     DEFAULT_HOME_DISPLAY_PREFS,
     persistHomeDisplayPrefs,
@@ -39,7 +40,7 @@ import { usePrayerTimes } from '@/Domain/prayer/times';
 import { useWeather } from '@/Domain/weather/weather';
 import { WeatherIcon } from '@/Domain/weather/WeatherIcon';
 import { getLastPage } from '@/Lib/visit';
-import { useAppShell } from '@/Lib/appShell';
+import { usePageDialog } from '@/Lib/appShell';
 import { formatGregorianSyrian } from '@/Lib/syrian-date';
 
 const HomeSettingsDialog = React.lazy(() => import('@/Pages/Home/_components/HomeSettingsDialog'));
@@ -67,7 +68,7 @@ export default function Home() {
 
     const [customLinks, setCustomLinks] = useState<CustomLink[]>([]);
     const [editingLink, setEditingLink] = useState<CustomLink | null>(null);
-    const [settingsOpen, setSettingsOpen] = [useAppShell((s) => s.homeSettingsOpen), useAppShell((s) => s.setHomeSettingsOpen)] as const;
+    const [settingsOpen, setSettingsOpen] = usePageDialog('home-settings');
     const [addLinkOpen, setAddLinkOpen] = useState(false);
     const [editMode, setEditMode] = useState(false);
     // Last-visited page badge. Read after mount (localStorage) so the server
@@ -106,24 +107,16 @@ export default function Home() {
         // compares the two sides), so this page only reads the preference.
         const savedLocation = readLocationPreference();
 
-        let parsedLinks: CustomLink[] = [];
-        if (accSettings.customLinks) {
-            parsedLinks = accSettings.customLinks;
-        } else {
-            const savedLinks = localStorage.getItem('customLinks');
-            if (savedLinks) {
-                // Device storage only: a corrupt value is reported to the console
-                // and the page starts with no custom links rather than failing.
-                try { parsedLinks = JSON.parse(savedLinks); } catch (e) { console.error(e); }
-            }
-        }
+        const parsedLinks = readCustomLinks(accSettings);
 
         // Everything except the location keys, which the location module already
         // seeded above.
         if (savedTheme) persistTheme(savedTheme);
         if (savedFont) applyFont(savedFont);
         persistHomeDisplayPrefs(savedDisplayPrefs);
-        localStorage.setItem('customLinks', JSON.stringify(parsedLinks));
+        // The device copy follows the value the page resolved (the account's when
+        // it has one), so a signed-out visit shows the same links.
+        saveCustomLinks(parsedLinks, false);
 
         setDisplayPrefs(savedDisplayPrefs);
         setEventsGovernorateState(savedEventsGovernorate);
@@ -147,22 +140,19 @@ export default function Home() {
     const addCustomLink = (link: CustomLink) => {
         const updated = [...customLinks, link];
         setCustomLinks(updated);
-        localStorage.setItem('customLinks', JSON.stringify(updated));
-        if (user) saveAccountSettings({ customLinks: updated });
+        saveCustomLinks(updated, Boolean(user));
     };
 
     const updateCustomLink = (updatedLink: CustomLink) => {
         const updated = customLinks.map(l => l.id === updatedLink.id ? updatedLink : l);
         setCustomLinks(updated);
-        localStorage.setItem('customLinks', JSON.stringify(updated));
-        if (user) saveAccountSettings({ customLinks: updated });
+        saveCustomLinks(updated, Boolean(user));
     };
 
     const removeCustomLink = (id: string) => {
         const updated = customLinks.filter(l => l.id !== id);
         setCustomLinks(updated);
-        localStorage.setItem('customLinks', JSON.stringify(updated));
-        if (user) saveAccountSettings({ customLinks: updated });
+        saveCustomLinks(updated, Boolean(user));
     };
 
     const prayerMini = showPrayerTimes ? nextPrayer(prayerTimes, new Date()) : null;

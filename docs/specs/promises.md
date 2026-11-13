@@ -102,6 +102,12 @@ Editor-managed list (directory pattern): string `id` key (`electricity`,
 Pivots: `promise_governorate (promise_id, governorate)` using the project's
 governorate keys; `promise_tags (promise_id, tag)`.
 
+The accepted values of `statement_venue`, a source's `type`, `review_status` and
+`origin` are one record in `resources/data/promises.json` (`{key, label}` rows,
+with their Arabic labels); `Promise::VENUES`, `PromiseSource::TYPES` and the
+review/origin lists are the validation mirror that file is pinned to
+(`tests/Feature/PromiseVocabularyTest.php`).
+
 Derived (computed in the model, never stored):
 
 - **display state** — `overdue` when `deadline_date` < today (Asia/Damascus) and

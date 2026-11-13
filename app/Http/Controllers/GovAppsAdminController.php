@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\GovApps\GovAppPresenter;
 use App\Services\GovApps\GovAppService;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -16,10 +15,7 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
  */
 class GovAppsAdminController extends Controller
 {
-    public function __construct(
-        private readonly GovAppService $apps,
-        private readonly GovAppPresenter $presenter,
-    ) {}
+    public function __construct(private readonly GovAppService $apps) {}
 
     public function renderIndex()
     {

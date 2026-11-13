@@ -77,14 +77,6 @@ final class AgentContext
     }
 
     /**
-     * @param  array<int, string>  $permissions
-     */
-    public function canAnyInCity(array $permissions, ?string $cityId): bool
-    {
-        return $this->authorizer->allowsAnyInCity($this->user, $permissions, $cityId, $this->token);
-    }
-
-    /**
      * Governorates this agent's user may act on, or null when unrestricted.
      *
      * A thin delegation on purpose: the scope lives on the user row, and the
@@ -113,21 +105,6 @@ final class AgentContext
     public function abilities(): array
     {
         return $this->authorizer->effectiveAbilities($this->user, $this->token);
-    }
-
-    /**
-     * True when the agent holds at least one capability in the module. Used by
-     * shouldRegister() so a transit-only token is not offered places tools.
-     */
-    public function canAnythingIn(string $module): bool
-    {
-        foreach (PermissionCatalogue::forModule($module) as $permission) {
-            if ($this->can($permission)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**

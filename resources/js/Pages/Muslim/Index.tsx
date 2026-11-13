@@ -91,7 +91,7 @@ export default function Index() {
       </Head>
 
       <div
-        className="min-h-[calc(100svh-4rem-1px)] bg-background text-foreground"
+        className="min-h-[calc(100svh-var(--sz-navbar-h))] bg-background text-foreground"
         dir="rtl"
         style={{ fontFamily: 'var(--site-font, inherit)' }}
       >

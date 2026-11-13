@@ -3,22 +3,8 @@ import { zipSync } from 'fflate';
 import { ChevronLeft, ChevronRight, Download, Loader2, X } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/Components/ui/dialog';
+import { useIsMobile } from '@/Lib/useIsMobile';
 import type { PlacePhoto } from '@/Domain/places/types';
-
-// media-query hook instead of sm: utilities: the code-split css chunks each emit
-// their own tailwind layer, so responsive show/hide classes lose cascade order here
-function useIsNarrow(): boolean {
-  const [narrow, setNarrow] = useState(() =>
-    typeof window === 'undefined' ? false : window.matchMedia('(max-width: 639px)').matches,
-  );
-  useEffect(() => {
-    const mq = window.matchMedia('(max-width: 639px)');
-    const onChange = () => setNarrow(mq.matches);
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
-  }, []);
-  return narrow;
-}
 
 export function Lightbox(props: {
   photos: PlacePhoto[];
@@ -32,7 +18,7 @@ export function Lightbox(props: {
   const [busy, setBusy] = useState<'one' | 'all' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
-  const narrow = useIsNarrow();
+  const narrow = useIsMobile('sm');
 
   useEffect(() => {
     if (open) {

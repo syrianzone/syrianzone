@@ -9,7 +9,7 @@ export const TIER_KEYS = ['S', 'A', 'B', 'C', 'D', 'F'] as const;
 
 export type TierKey = (typeof TIER_KEYS)[number];
 
-export interface Tier {
+interface Tier {
     /** The Arabic description, on the board and on the image. */
     arabic: string;
     /** Tailwind class for the label column. */

@@ -6,12 +6,10 @@ use App\Http\Controllers\Concerns\ChecksTransitScope;
 use App\Models\Route;
 use App\Models\RouteDraft;
 use App\Models\TransitRouteLog;
-use App\Models\User;
 use App\Services\Transit\TransitCache;
 use App\Services\Transit\TransitRules;
 use App\Support\Permissions\PermissionCatalogue;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class TransitStudioController extends Controller
@@ -20,22 +18,12 @@ class TransitStudioController extends Controller
 
     public function __construct(private readonly TransitCache $cache) {}
 
-    private function resolveUser(Request $request): ?User
-    {
-        $user = $request->user() ?? Auth::guard('sanctum')->user();
-        if ($user instanceof User && ! $request->user()) {
-            $request->setUserResolver(fn () => $user);
-        }
-
-        return $user instanceof User ? $user : null;
-    }
-
     /**
      * List the authenticated user's own route drafts (newest first).
      */
     public function index(Request $request)
     {
-        $user = $this->resolveUser($request);
+        $user = $request->user();
         if (! $user) {
             abort(401, 'سجل الدخول للمتابعة');
         }
@@ -58,7 +46,7 @@ class TransitStudioController extends Controller
 
     public function store(Request $request)
     {
-        $user = $this->resolveUser($request);
+        $user = $request->user();
 
         if ($user && $user->is_banned) {
             return response()->json(['message' => 'تم حظر حسابك من تقديم المسارات.'], 403);
@@ -119,8 +107,6 @@ class TransitStudioController extends Controller
 
     public function show(Request $request, $id)
     {
-        $this->resolveUser($request);
-
         $draft = RouteDraft::with(['user:id,name', 'city:id,name_ar,name_en', 'linkedRoute:id,name_ar,name_en'])->findOrFail($id);
 
         if (! $this->canEditDraft($request, $draft)) {
@@ -132,7 +118,7 @@ class TransitStudioController extends Controller
 
     public function showForEdit(Request $request, $routeId)
     {
-        if (! $this->resolveUser($request)) {
+        if (! $request->user()) {
             abort(401, 'سجل الدخول للمتابعة');
         }
 
@@ -187,7 +173,7 @@ class TransitStudioController extends Controller
 
     public function update(Request $request, $id)
     {
-        $user = $this->resolveUser($request);
+        $user = $request->user();
         $draft = RouteDraft::findOrFail($id);
 
         if (! $this->canEditDraft($request, $draft)) {
@@ -280,7 +266,7 @@ class TransitStudioController extends Controller
 
     private function canEditDraft(Request $request, RouteDraft $draft): bool
     {
-        $user = $this->resolveUser($request);
+        $user = $request->user();
         if (! $user) {
             return false;
         }
@@ -308,7 +294,6 @@ class TransitStudioController extends Controller
      */
     public function destroy(Request $request, $id)
     {
-        $this->resolveUser($request);
         $draft = RouteDraft::findOrFail($id);
 
         if (! $this->canEditDraft($request, $draft)) {

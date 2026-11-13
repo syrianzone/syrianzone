@@ -257,14 +257,12 @@ payload carries the map group (`mapGroup`, `mapGroupLabel`) so the client render
 the Damascus/Rif Dimashq banner and the sidebar's per-city sections from the
 server's declaration in `City::SHARED_MAPS` instead of spelling the pair itself.
 
-`resources/js/Domain/transit/cities.json` is **seed data**, not a second copy of
-the table: it holds the columns a city row is created with (`id`, names, status,
-centre, bounds, zoom) and is read by the global search's static index. It
-deliberately carries no `routeCount` or other derived column — a published route
-changes the API's answer immediately, and a static file cannot follow it
-(`tests/Feature/TransitCitySeedTest.php` fails if a derived field appears there).
-Every runtime reader (the landing page, the city page, the studio, the sidebar)
-uses the server payload.
+`TransitCities::forCards()` is the same rows reduced to what a city card draws
+(names, status, the published-route count) and without the map geometry, so the
+404 page can send them from the exception handler: that query must stay plain
+SQL, because `forPage()`/`forApi()` read their geometry through `ST_AsGeoJSON()`.
+Every surface reads a server payload — there is no checked-in copy of the cities
+table, and a route count cannot go stale.
 
 ### Map payload
 

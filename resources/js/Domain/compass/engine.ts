@@ -30,7 +30,7 @@ export function alignKey(i: number) {
   return `align#${i}`;
 }
 
-export function tierMax(version: QuizVersion): number {
+function tierMax(version: QuizVersion): number {
   return version === 'short' ? 1 : version === 'standard' ? 2 : 3;
 }
 
@@ -145,7 +145,7 @@ function invertMatrix(C: number[][], ridge: number): number[][] {
   return I;
 }
 
-export function buildWhitener(): Whitener {
+function buildWhitener(): Whitener {
   if (_whitener) return _whitener;
   const axes = AXIS_IDS;
   const D = axes.length;

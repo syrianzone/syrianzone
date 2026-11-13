@@ -38,7 +38,7 @@
   inset-block: 0;
   inset-inline-start: 0;
   width: 3px;
-  background: var(--gold);
+  background: hsl(var(--primary));
   transform: scaleY(0);
   transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -47,7 +47,7 @@
   transform: scaleY(1);
 }
 .transit-root .city-card.is-ready:hover {
-  box-shadow: 0 14px 34px -16px color-mix(in srgb, var(--gold) 36%, transparent);
+  box-shadow: 0 14px 34px -16px color-mix(in srgb, hsl(var(--primary)) 36%, transparent);
 }
 
 @keyframes cardReveal {

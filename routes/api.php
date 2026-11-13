@@ -97,7 +97,7 @@ Route::prefix('v1')->group(function () use ($pollBallotRoutes, $pollLeaderboardR
         $googleTokenRoutes('/google/token', 'api.v1.auth.google.token');
         $googleTokenRoutes('/google', null);
         Route::get('/user', [AuthController::class, 'user'])
-            ->middleware('throttle:60,1')
+            ->middleware(['api_user', 'throttle:60,1'])
             ->name('api.v1.auth.user');
 
         Route::middleware('auth:sanctum')->group(function () {
@@ -219,7 +219,7 @@ Route::prefix('v1')->group(function () use ($pollBallotRoutes, $pollLeaderboardR
         // Transit Studio is open for community contributions (supports optional
         // session or Bearer token).
         Route::post('/studio/routes', [TransitStudioController::class, 'store'])
-            ->middleware('throttle:studio-submit')
+            ->middleware(['api_user', 'throttle:studio-submit'])
             ->name($name('studio.routes.store'));
 
         // Authenticated iterative editing (admin geometry fixes, owner
@@ -292,7 +292,9 @@ Route::prefix('v1')->group(function () use ($pollBallotRoutes, $pollLeaderboardR
     });
 
     // Static /places/* paths must register before /places/{id}.
-    Route::middleware('throttle:60,1')->group(function () {
+    // `api_user` because reads are public but a Bearer token still decides what
+    // the caller may see (own pending places, own saves).
+    Route::middleware(['api_user', 'throttle:60,1'])->group(function () {
         Route::get('/places/map', [PlaceController::class, 'mapData'])
             ->name('api.v1.places.map');
         Route::get('/places/nearby', [PlaceController::class, 'nearby'])

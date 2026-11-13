@@ -55,7 +55,8 @@ export function PinLayer(props: {
   data: FeatureCollection
   selectedId: number | null
   onPinClick: (id: number) => void
-  onClusterClick: (zoom: number, center: [number, number]) => void
+  /** Optional: the layer already zooms into the cluster itself. */
+  onClusterClick?: (zoom: number, center: [number, number]) => void
 }) {
   const map = useMap()
   const { style } = props
@@ -135,7 +136,7 @@ export function PinLayer(props: {
       const zoom = await source.getClusterExpansionZoom(feature.properties?.cluster_id)
       const coords = (feature.geometry as GeoJSON.Point).coordinates as [number, number]
       target.easeTo({ center: coords, zoom })
-      onClusterClickRef.current(zoom, coords)
+      onClusterClickRef.current?.(zoom, coords)
     }
 
     const onPinClick = (e: maplibregl.MapLayerMouseEvent) => {

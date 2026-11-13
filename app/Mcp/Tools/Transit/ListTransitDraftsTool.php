@@ -36,7 +36,7 @@ class ListTransitDraftsTool extends TransitTool
     {
         return [
             'status' => $schema->string()
-                ->enum(['pending', 'approved', 'rejected', 'all'])
+                ->enum([...TransitRules::DRAFT_STATUSES, 'all'])
                 ->description('Draft status to list. Defaults to "pending", the review queue.')
                 ->default('pending'),
 

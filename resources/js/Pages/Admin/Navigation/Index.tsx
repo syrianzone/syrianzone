@@ -217,7 +217,7 @@ export default function SiteNavigationAdminIndex({ navigation }: Props) {
             return;
         }
 
-        const isExternal = href.startsWith('http://') || href.startsWith('http://') || draftItem.external;
+        const isExternal = /^https?:\/\//.test(href) || Boolean(draftItem.external);
         const normalized: SiteNavigationItemData = {
             ...draftItem,
             id,
@@ -229,7 +229,7 @@ export default function SiteNavigationAdminIndex({ navigation }: Props) {
             target: (draftItem.target || href).trim(),
             iconUrl: draftItem.iconUrl ? draftItem.iconUrl.trim() : null,
             image: draftItem.iconUrl ? draftItem.iconUrl.trim() : null,
-            external: Boolean(draftItem.external || href.startsWith('http')),
+            external: isExternal,
             enabled: draftItem.enabled !== false,
             subCategories: (draftItem.subCategories || []).filter((s) => s.title.trim() !== ''),
         };

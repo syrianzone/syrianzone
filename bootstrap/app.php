@@ -73,6 +73,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'superadmin'      => \App\Http\Middleware\SuperAdmin::class,
             // Agent API tokens: any capability holder, for their own tokens.
             'agent_tokens'    => \App\Http\Middleware\AgentTokensAccess::class,
+            // Session-or-bearer mounts: resolves a Sanctum token where the route
+            // does not require auth:sanctum, so the action reads $request->user().
+            'api_user'        => \App\Http\Middleware\ResolveApiUser::class,
         ]);
         $middleware->statefulApi();
         $middleware->validateCsrfTokens(except: [

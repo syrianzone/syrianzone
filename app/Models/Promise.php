@@ -51,6 +51,13 @@ class Promise extends Model
     /** Verdicts that close a promise (votes freeze, `resolved_at` applies). */
     public const CLOSED_STATUSES = ['fulfilled', 'partially_fulfilled', 'broken', 'postponed', 'retracted'];
 
+    /**
+     * The editorial vocabularies of a promise statement. The keys are the
+     * record's, not this model's: `resources/data/promises.json` holds them with
+     * their Arabic labels, read here through `Facts` — but these constants stay
+     * as the validation mirror the console importer and the MCP tools call, so
+     * `tests/Feature/PromiseVocabularyTest.php` fails when the two disagree.
+     */
     public const VENUES = [
         'x_post', 'facebook_post', 'telegram_post', 'tv_interview', 'news_interview',
         'press_conference', 'official_statement', 'speech', 'other',

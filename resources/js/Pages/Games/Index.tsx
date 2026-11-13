@@ -9,7 +9,7 @@ export default function Index() {
 
       {/* The navbar is non-sticky here, so the page is only as tall as the
           navbar plus this block — it scrolls only when the games do not fit. */}
-      <div className="min-h-[calc(100svh-4rem-1px)] bg-background text-foreground" dir="rtl">
+      <div className="min-h-[calc(100svh-var(--sz-navbar-h))] bg-background text-foreground" dir="rtl">
         <div className="container mx-auto max-w-6xl px-4 py-6">
           <div className="mb-6 text-center">
             <GamesIcon className="mx-auto mb-2 h-12 w-12" />

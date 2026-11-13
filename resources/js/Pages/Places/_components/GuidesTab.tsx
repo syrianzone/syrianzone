@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/Components/ui/avatar';
 import { Button } from '@/Components/ui/button';
-import { discovery, type Guide, type GuidesSort } from '@/Domain/places/discovery';
+import { api as placesApi } from '@/Domain/places/api';
+import type { Guide, GuidesSort } from '@/Domain/places/types';
 import { GuideProfileCard } from './GuideProfileCard';
 import { LevelBadge } from './LevelBadge';
 import { MilestonesSheet } from './MilestonesSheet';
@@ -27,7 +28,7 @@ export function GuidesTab(props: { onSelectGuide: (guide: { id: number; name: st
     const id = ++requestRef.current;
     setGuides(null);
     setError(false);
-    discovery.guides(sort)
+    placesApi.guides(sort)
       .then((res) => {
         if (id === requestRef.current) setGuides(res.guides);
       })

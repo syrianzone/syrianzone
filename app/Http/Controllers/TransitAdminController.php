@@ -16,6 +16,7 @@ use App\Support\RejectionReason;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 /**
@@ -57,7 +58,7 @@ class TransitAdminController extends Controller
         }
 
         return $this->respond(
-            'Failed to approve draft',
+            'تعذّر اعتماد المسودة. أعد المحاولة، وإن تكرّر الخطأ أبلغ المشرف.',
             fn () => $this->transit->approveDraft(
                 $draft,
                 $validated['color_index'] ?? null,
@@ -128,7 +129,7 @@ class TransitAdminController extends Controller
 
             throw $e;
         } catch (\Exception $e) {
-            return $this->failure('Failed to update route status', $e);
+            return $this->failure('تعذّر تحديث حالة الخط. أعد المحاولة، وإن تكرّر الخطأ أبلغ المشرف.', $e);
         }
 
         return response()->json(['message' => 'Route status updated successfully', 'route' => $updated]);
@@ -149,7 +150,7 @@ class TransitAdminController extends Controller
         );
 
         return $this->respond(
-            'Failed to move route',
+            'تعذّر نقل الخط. أعد المحاولة، وإن تكرّر الخطأ أبلغ المشرف.',
             fn () => $this->transit->moveRoute(
                 $route,
                 $validated['city_id'],
@@ -170,7 +171,7 @@ class TransitAdminController extends Controller
         $this->ensureTransitCityAccess($request, $route->city_id, [PermissionCatalogue::TRANSIT_DELETE_ROUTES]);
 
         return $this->respond(
-            'Failed to delete route',
+            'تعذّر حذف الخط. أعد المحاولة، وإن تكرّر الخطأ أبلغ المشرف.',
             fn () => $this->transit->destroyRoute($route, $request->user()?->getAuthIdentifier()),
             fn () => response()->json(['message' => 'Route deleted']),
         );
@@ -205,7 +206,9 @@ class TransitAdminController extends Controller
         }
 
         if ($updateData === []) {
-            return response()->json(['message' => 'No fields to update'], 400);
+            return response()->json([
+                'message' => 'لم يصل أي تعديل. أرسل حقلاً واحداً على الأقل: الاسم العربي، الاسم الإنجليزي، لون الخط، التسعيرة الجديدة أو القديمة.',
+            ], 400);
         }
 
         if (isset($updateData['color_index'])) {
@@ -237,7 +240,7 @@ class TransitAdminController extends Controller
         $this->ensureTransitCitiesAccess($request, [$routeA->city_id, $routeB->city_id], [PermissionCatalogue::TRANSIT_EDIT_ROUTES]);
 
         return $this->respond(
-            'Failed to combine routes',
+            'تعذّر دمج الخطين. أعد المحاولة، وإن تكرّر الخطأ أبلغ المشرف.',
             fn () => $this->composer->combine(
                 $routeA,
                 $routeB,
@@ -264,7 +267,7 @@ class TransitAdminController extends Controller
         $this->ensureTransitCityAccess($request, $route->city_id, [PermissionCatalogue::TRANSIT_EDIT_ROUTES]);
 
         return $this->respond(
-            'Failed to split route',
+            'تعذّر تقسيم الخط. أعد المحاولة، وإن تكرّر الخطأ أبلغ المشرف.',
             fn () => $this->composer->split(
                 $route,
                 $validated['split_stop_id'],
@@ -356,13 +359,18 @@ class TransitAdminController extends Controller
      * The legacy `{message, error}` envelope for an unexpected failure.
      *
      * The shape is a released contract (mobile clients read `<message>` and
-     * legacy callers read `<error>`), so it is produced in one place here.
+     * legacy callers read `<error>`), so it is produced in one place here. The
+     * text is the Arabic sentence the caller passed, in both keys: the exception
+     * message is for the log, not for a browser — a `QueryException` there
+     * would publish SQL and table names.
      */
     private function failure(string $message, \Exception $e): JsonResponse
     {
+        Log::error($message, ['exception' => $e]);
+
         return response()->json([
             'message' => $message,
-            'error' => $e->getMessage(),
+            'error' => $message,
         ], 500);
     }
 }

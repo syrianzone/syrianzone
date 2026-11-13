@@ -14,7 +14,8 @@ import { formatDate, safeHref } from '@/Domain/promises/format';
 import { PENDING_SPEAKER_LABEL } from '@/Domain/promises/status';
 import AdminHeader from './_components/AdminHeader';
 import { useCan } from '@/Lib/useCan';
-import { ORIGIN_LABEL, type AdminPromiseRow, type AdminSpeaker } from './_lib/types';
+import { ORIGIN_LABEL } from '@/Domain/promises/status';
+import type { AdminPromiseRow, AdminSpeaker } from './_lib/types';
 
 interface ReportRow {
     id: number;

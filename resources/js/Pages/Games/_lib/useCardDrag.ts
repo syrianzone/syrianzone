@@ -5,7 +5,7 @@ const DRAG_THRESHOLD_PX = 8;
 /** How long the click that follows a release stays swallowed. */
 const SWALLOW_MS = 500;
 
-export interface CardDragState<T> {
+interface CardDragState<T> {
   payload: T;
   /** Viewport position and width of the ghost, so it stays under the pointer. */
   x: number;
@@ -37,6 +37,11 @@ function elementUnder(clientX: number, clientY: number): Element | null {
  * attaches a one-shot capturing click listener so the release does not also
  * select or play the card. Each game supplies only its payload, its drop
  * resolution and what a drop means.
+ *
+ * It also owns the pointer kind, because that is what makes a tap mean two
+ * things on a touch screen: the first tap picks a card, a second tap on the
+ * same card plays it, and a mouse (or a keyboard activation, which sends no
+ * pointer event) plays at once. `isTouchPick` is that rule.
  */
 export function useCardDrag<T>({ onDragStart, onOver, onDrop, onDragEnd }: UseCardDragOptions<T>) {
   const gesture = useRef<{
@@ -49,9 +54,12 @@ export function useCardDrag<T>({ onDragStart, onOver, onDrop, onDragEnd }: UseCa
     active: boolean;
   } | null>(null);
   const [drag, setDrag] = useState<CardDragState<T> | null>(null);
+  /** The kind of the last press, so the click that follows it knows what it is. */
+  const pointerType = useRef('');
 
   const startDrag = (e: ReactPointerEvent, payload: T) => {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    pointerType.current = e.pointerType;
     gesture.current = {
       payload,
       startX: e.clientX,
@@ -101,5 +109,16 @@ export function useCardDrag<T>({ onDragStart, onOver, onDrop, onDragEnd }: UseCa
     window.addEventListener('pointercancel', release);
   };
 
-  return { drag, startDrag };
+  return {
+    drag,
+    startDrag,
+    /**
+     * Whether the click that just landed is the picking half of the touch
+     * gesture: a touch screen picks with the first tap and plays with the
+     * second, while a mouse click — and a keyboard activation, which produces
+     * no pointer event — plays at once. `picked` is the card already shown as
+     * selected.
+     */
+    isTouchPick: (picked: boolean) => pointerType.current === 'touch' && !picked,
+  };
 }

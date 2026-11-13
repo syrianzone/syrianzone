@@ -27,7 +27,8 @@ import SourcesEditor, { emptySource, sourceKey, type SourceForm } from './_compo
 import StatusDialog from './_components/StatusDialog';
 import UpdatesPanel from './_components/UpdatesPanel';
 import { useCan } from '@/Lib/useCan';
-import { ORIGIN_LABEL, REVIEW_STATUS_LABEL, type AdminPromiseDetail, type EditorOptions } from './_lib/types';
+import { ORIGIN_LABEL, REVIEW_STATUS_LABEL } from '@/Domain/promises/status';
+import type { AdminPromiseDetail, EditorOptions } from './_lib/types';
 
 interface Props {
     promise: AdminPromiseDetail | null;

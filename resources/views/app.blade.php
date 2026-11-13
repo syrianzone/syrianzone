@@ -29,8 +29,8 @@
     <meta property="og:url" content="{{ $meta['url'] }}" inertia>
     <meta property="og:image" content="{{ $meta['image'] }}" inertia>
     <meta property="og:image:type" content="{{ $meta['image_type'] }}" inertia>
-    <meta property="og:image:width" content="1200" inertia>
-    <meta property="og:image:height" content="630" inertia>
+    <meta property="og:image:width" content="{{ $meta['image_width'] }}" inertia>
+    <meta property="og:image:height" content="{{ $meta['image_height'] }}" inertia>
     <meta property="og:image:alt" content="{{ $meta['og_title'] }}" inertia>
     <meta name="twitter:card" content="summary_large_image" inertia>
     <meta name="twitter:title" content="{{ $meta['og_title'] }}" inertia>

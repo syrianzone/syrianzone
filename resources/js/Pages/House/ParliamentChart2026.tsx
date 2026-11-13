@@ -25,7 +25,7 @@ export function socialGroupOf(m: Member2026): 'has_social' | 'no_social' {
     return hasSocialMedia(m) ? 'has_social' : 'no_social';
 }
 
-export function ageOf(m: Member2026): number | null {
+function ageOf(m: Member2026): number | null {
     const y = parseInt(m.birth_year, 10);
     if (!y || y < 1900 || y > 2100) return null;
     return new Date().getFullYear() - y;

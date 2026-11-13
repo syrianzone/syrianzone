@@ -6,11 +6,11 @@ import { notify } from '@/Lib/notify';
 import { Card, CardContent } from "@/Components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/Components/ui/alert";
 import { AlertCircleIcon, Vote } from "lucide-react";
-import { TierAvatar as Avatar } from "@/Components/poll/TierAvatar";
+import { TierAvatar as Avatar } from "@/Domain/polls/TierAvatar";
 import { Badge } from "@/Components/ui/badge";
 import { Button } from "@/Components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/Components/ui/tabs";
-import { TimeseriesChart } from "@/Components/charts/TimeseriesChart";
+import { TimeseriesChart } from "@/Pages/Polls/_components/TimeseriesChart";
 import MainLayout from '@/Layouts/MainLayout';
 
 type StatusFilter = "active" | "former" | "all";

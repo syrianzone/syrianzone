@@ -190,6 +190,52 @@ final class Facts
     }
 
     /**
+     * Every `{key, label}` vocabulary of the promise tracker, keyed by the list
+     * name: the places a statement was made (`venues`), the kinds of source
+     * (`source_types`), the review verdicts and the origins. The Arabic labels
+     * are for Surface rendering; callers that validate use the `*Keys()` forms.
+     *
+     * @param  'venues'|'source_types'|'review_statuses'|'origins'  $list
+     * @return array<int, array{key: string, label: string}>
+     */
+    public static function promiseVocabulary(string $list): array
+    {
+        return self::json('promises')[$list];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function promiseVenues(): array
+    {
+        return array_column(self::promiseVocabulary('venues'), 'key');
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function promiseSourceTypes(): array
+    {
+        return array_column(self::promiseVocabulary('source_types'), 'key');
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function promiseReviewStatuses(): array
+    {
+        return array_column(self::promiseVocabulary('review_statuses'), 'key');
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function promiseOrigins(): array
+    {
+        return array_column(self::promiseVocabulary('origins'), 'key');
+    }
+
+    /**
      * Display state => [label, card tone, glyph]. `overdue` is derived from an
      * open promise's deadline rather than stored, so it is a state, not a status.
      *
@@ -228,17 +274,6 @@ final class Facts
     }
 
     /**
-     * @return array<int, array{slug: string, title: string, href?: string, online?: bool, external?: bool, comingSoon?: bool}>
-     */
-    public static function games(): array
-    {
-        /** @var array<int, array{slug: string, title: string, href?: string, online?: bool, external?: bool, comingSoon?: bool}> $games */
-        $games = self::json('games');
-
-        return $games;
-    }
-
-    /**
      * The prayer-calculation method table: the default method, the methods the
      * picker offers in display order, and the extra method ids the prayer proxy
      * accepts although the UI does not offer them (a stored account setting
@@ -252,6 +287,27 @@ final class Facts
         $prayer = self::json('prayer');
 
         return $prayer;
+    }
+
+    /**
+     * Every calculation method id the prayer endpoints accept: the methods the
+     * pickers offer plus `unlisted_method_ids` (a client that stored one of
+     * those keeps it instead of being reset).
+     *
+     * `PrayerController::methods()` and the account-settings validator both read
+     * this one list, so a method added to the table cannot be offered by the
+     * picker and refused on save.
+     *
+     * @return array<int, int>
+     */
+    public static function prayerMethodIds(): array
+    {
+        $prayer = self::prayer();
+
+        return array_values(array_unique(array_merge(
+            array_map('intval', array_column($prayer['methods'], 'id')),
+            array_map('intval', $prayer['unlisted_method_ids']),
+        )));
     }
 
     /**
@@ -367,6 +423,40 @@ final class Facts
         $popup = self::json('site-popup');
 
         return $popup;
+    }
+
+    /**
+     * The social-link vocabulary of an official entity: the platform keys a
+     * `socials` map may carry, in the order the admin form and the public tiles
+     * show them, with the copy each surface renders.
+     *
+     * The map itself is `official_entities.socials`, an object keyed by these
+     * keys; `Domain/syofficial/social.ts` reads the same file for the picker,
+     * the icons and the labels.
+     *
+     * @return array<int, array{key: string, label_ar: string, label_en: string, form_label_ar: string, input_aria_label: string, placeholder: string}>
+     */
+    public static function socialPlatforms(): array
+    {
+        /** @var array<int, array{key: string, label_ar: string, label_en: string, form_label_ar: string, input_aria_label: string, placeholder: string}> $platforms */
+        $platforms = self::json('social-platforms');
+
+        return $platforms;
+    }
+
+    /**
+     * The WMO weather codes (`resources/data/weather.json`): the English wording
+     * the population logs store, keyed by code. The same file carries the Arabic
+     * labels `Domain/weather` prints, so a condition is worded once.
+     *
+     * @return array<int, string>
+     */
+    public static function weatherCodes(): array
+    {
+        /** @var array<int, string> $codes */
+        $codes = array_column(self::json('weather')['codes'], 'en', 'code');
+
+        return $codes;
     }
 
     /**

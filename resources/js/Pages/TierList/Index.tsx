@@ -1,33 +1,14 @@
 import React from 'react';
 import { Link } from '@inertiajs/react';
-import TierBoard from "@/Components/poll/TierBoard";
+import TierBoard from "@/Domain/polls/TierBoard";
+import type { Candidate, CandidateGroup } from "@/Domain/polls/TierBoard";
+import type { Poll } from "@/Domain/polls/types";
 import { Card, CardContent } from "@/Components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/Components/ui/alert";
 import { AlertCircleIcon, BarChart3Icon } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import MainLayout from '@/Layouts/MainLayout';
 import { CORE_POLL_SLUG } from '@/Domain/polls/core';
-
-interface Candidate {
-    id: string;
-    name: string;
-    title?: string | null;
-    imageUrl: string | null;
-    category?: string | null;
-    candidate_group_id?: string | null;
-}
-
-interface CandidateGroup {
-    id: string;
-    name: string;
-    key?: string | null;
-}
-
-interface Poll {
-    id: string;
-    slug: string;
-    title: string;
-}
 
 interface TierListPageProps {
     poll: Poll;

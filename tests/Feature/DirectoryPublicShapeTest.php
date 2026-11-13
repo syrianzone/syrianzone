@@ -1,8 +1,11 @@
 <?php
 
+use App\Mcp\Tools\SyOfficial\CreateSyOfficialEntityTool;
 use App\Models\GovApp;
 use App\Models\OfficialCategory;
 use App\Models\OfficialEntity;
+use App\Models\User;
+use App\Support\Permissions\PermissionCatalogue;
 
 /*
 | The public SyOfficial and GovApps pages receive their rows from presenters
@@ -46,6 +49,61 @@ test('syofficial page keeps its public entity shape', function () {
         ->toContain('id', 'label_ar', 'label_en', 'icon', 'order_column');
     // a stored path is expanded to the public asset host
     expect($props['initialData'][0]['image'])->toContain('/syofficial/entities/ent-1.webp');
+});
+
+test('social links keep their platform keys on both write paths', function () {
+    OfficialCategory::create([
+        'id' => 'cat-1',
+        'label_ar' => 'وزارات',
+        'label_en' => 'Ministries',
+        'icon' => null,
+        'order_column' => 1,
+        'is_active' => true,
+    ]);
+
+    $admin = User::factory()->create(['permissions' => PermissionCatalogue::forModule('syofficial')]);
+
+    $this->actingAs($admin)
+        ->post('/api/v1/admin/syofficial/entities', [
+            'id' => 'ent-admin',
+            'category_id' => 'cat-1',
+            'name' => 'Admin Entity',
+            'name_ar' => 'جهة إدارية',
+            'socials' => [
+                'facebook' => 'https://facebook.com/ministry',
+                'telegram' => 'https://t.me/ministry',
+            ],
+        ])
+        ->assertRedirect();
+
+    $agent = User::factory()->create(['permissions' => ['syofficial.create']]);
+    agentToken($agent, ['syofficial.create']);
+
+    $created = toolPayload(callTool(CreateSyOfficialEntityTool::class, [
+        'id' => 'ent-agent',
+        'category_id' => 'cat-1',
+        'name' => 'Agent Entity',
+        'name_ar' => 'جهة وكيل',
+        'socials' => [
+            'instagram' => 'https://instagram.com/ministry',
+            'website' => 'https://ministry.example',
+        ],
+    ]));
+
+    expect($created['created'])->toBeTrue();
+
+    $props = $this->get('/syofficial')->assertOk()->viewData('page')['props'];
+    $rows = collect($props['initialData'])->keyBy('id');
+
+    // Both write paths hand the public page the same map it renders: the tile
+    // needs the platform key, not a positional slot.
+    expect((array) $rows['ent-admin']['socials'])->toBe([
+        'facebook' => 'https://facebook.com/ministry',
+        'telegram' => 'https://t.me/ministry',
+    ])->and((array) $rows['ent-agent']['socials'])->toBe([
+        'instagram' => 'https://instagram.com/ministry',
+        'website' => 'https://ministry.example',
+    ]);
 });
 
 test('govapps page keeps its public app shape', function () {

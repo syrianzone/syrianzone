@@ -76,6 +76,15 @@ test('server-rendered html includes seo meta and json-ld even when inertia.ssr.e
         ->and($head['json_ld'])->not->toBe([]);
 });
 
+test('the share card size travels with the seo metadata', function () {
+    // The client prints og:image:width/height from these two values instead of
+    // restating them, so the card's canvas is decided once.
+    $meta = SeoMeta::resolve(Request::create('/about'));
+
+    expect($meta['image_width'])->toBe(StaticCards::CARD_WIDTH)
+        ->and($meta['image_height'])->toBe(StaticCards::CARD_HEIGHT);
+});
+
 test('head tags are printed once even when ssr succeeds but the page rendered nothing', function () {
     // A page that returns nothing on its first server render (a "mounted"
     // guard, a loading state) leaves the SSR head empty. The tags must not

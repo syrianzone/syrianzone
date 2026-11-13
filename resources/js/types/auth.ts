@@ -16,7 +16,15 @@ export interface AuthUser {
     avatar_url: string | null;
     permissions?: string[];
     effective_permissions?: string[];
+    /** The raw stored scopes; the permission editor renders these. */
     permission_scopes?: Record<string, string[]> | null;
+    /**
+     * The transit governorates this account may act on, resolved by
+     * `User::allowedTransitCities()`: null means unrestricted (the superadmin
+     * bypass, no scope, or an empty list). Compare against it; never re-derive
+     * the rule from `permission_scopes`.
+     */
+    transit_scope?: string[] | null;
     settings?: Record<string, unknown> | null;
 }
 

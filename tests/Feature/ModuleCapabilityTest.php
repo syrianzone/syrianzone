@@ -88,11 +88,14 @@ it('still lets a phonebook.reorder holder reorder', function () {
     $category = pbCategory(['order_column' => 1]);
     $second = pbCategory(['order_column' => 2]);
 
-    // Phonebook reorder takes a positional list of ids, not an id/ordinal
-    // object list like the SyOfficial one.
+    // The same id/ordinal payload the shared SortableList posts to the other
+    // two directory admins.
     $this->actingAs(capabilityUser('phonebook.reorder'))
         ->postJson('/api/v1/admin/phonebook/categories/reorder', [
-            'order' => [$second->id, $category->id],
+            'orders' => [
+                ['id' => $second->id, 'order_column' => 1],
+                ['id' => $category->id, 'order_column' => 2],
+            ],
         ])
         ->assertRedirect();
 

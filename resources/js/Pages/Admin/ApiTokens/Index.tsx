@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { router } from '@inertiajs/react';
-import { api, apiErrorMessage } from '@/Lib/api';
+import { apiErrorMessage } from '@/Lib/api';
+import { apiTokensApi } from './_lib/api';
 import MainLayout from '@/Layouts/MainLayout';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
@@ -20,7 +21,7 @@ import {
     KeyRound, Plus, Copy, Check, Trash2, ShieldAlert, AlertTriangle,
 } from 'lucide-react';
 
-export interface TokenRow {
+interface TokenRow {
     id: number;
     name: string;
     abilities: string[];
@@ -35,7 +36,7 @@ export interface TokenRow {
 interface Owner { id: number; name: string; role: string }
 interface TtlOption { value: string; label: string }
 
-export interface ApiTokensData {
+interface ApiTokensData {
     /**
      * True for anyone but a superadmin: the page manages only the viewer's own
      * tokens, `owners` is just them, and `capabilities` is narrowed server-side
@@ -124,7 +125,7 @@ export default function ApiTokensIndex(props: ApiTokensData) {
         }
         setSaving(true);
         try {
-            const res = await api.post<{ plain_text_token: string; message: string }>('/api/v1/admin/api-tokens', {
+            const res = await apiTokensApi.issue({
                 user_id: Number(ownerId),
                 name: name.trim(),
                 ttl,
@@ -143,7 +144,7 @@ export default function ApiTokensIndex(props: ApiTokensData) {
 
     const revoke = async (id: number) => {
         try {
-            const res = await api.delete<{ message: string }>(`/api/v1/admin/api-tokens/${id}`);
+            const res = await apiTokensApi.revoke(id);
             notify(res.message);
             router.reload({ only: ['tokens'] });
         } catch (e) {
@@ -153,7 +154,7 @@ export default function ApiTokensIndex(props: ApiTokensData) {
 
     const revokeAll = async (userId: number) => {
         try {
-            const res = await api.post<{ message: string }>(`/api/v1/admin/api-tokens/revoke-all/${userId}`);
+            const res = await apiTokensApi.revokeAllForUser(userId);
             notify(res.message);
             router.reload({ only: ['tokens'] });
         } catch (e) {

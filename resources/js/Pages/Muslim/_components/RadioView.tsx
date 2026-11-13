@@ -10,7 +10,6 @@ import QuranUsageCard from '@/Domain/quran/QuranUsageCard';
 import { QuranRadioIcon } from '@/Components/Icons/ProjectIcons';
 import { useQuranPlayer } from '@/Domain/quran/quranPlayer';
 import { formatDuration } from '../../../Lib/format';
-import { useMuslimNav } from '../_lib/nav';
 
 /** Sleep-timer presets in minutes. Endless (null) is the default. */
 const SLEEP_OPTIONS: Array<{ minutes: number | null; label: string }> = [
@@ -33,8 +32,8 @@ interface Props {
  * opens the Quran tab.
  */
 export default function RadioView({ onContinue }: Props) {
-  const sleepUntil = useMuslimNav((s) => s.radioSleepUntil);
-  const setSleepUntil = useMuslimNav((s) => s.setRadioSleepUntil);
+  const sleepUntil = useQuranPlayer((s) => s.sleepUntil);
+  const setSleepUntil = useQuranPlayer((s) => s.setSleepUntil);
 
   const playing = useQuranPlayer((s) => s.playing);
   const loading = useQuranPlayer((s) => s.loading);
@@ -53,14 +52,9 @@ export default function RadioView({ onContinue }: Props) {
     return () => window.clearInterval(id);
   }, []);
 
-  // Sleep timer lives in the nav store, so it keeps running across views.
+  // The countdown is display only: the player stops the audio at the deadline,
+  // whether or not this page is still mounted (the visitor may be in the reader).
   const sleepRemaining = sleepUntil === null ? null : sleepUntil - now;
-  React.useEffect(() => {
-    if (sleepRemaining === null || sleepRemaining > 0) return;
-    const p = useQuranPlayer.getState();
-    if (p.playing) p.toggle();
-    setSleepUntil(null);
-  }, [sleepRemaining, setSleepUntil]);
 
   const selectSleep = (minutes: number | null) => {
     setSleepUntil(minutes === null ? null : Date.now() + minutes * 60_000);

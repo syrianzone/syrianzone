@@ -17,7 +17,7 @@ final class CardImages
 {
     /** Where each image sits in a card model, and the box it is scaled to cover. */
     private const SLOTS = [
-        'photo' => [1200, 630],
+        'photo' => [StaticCards::CARD_WIDTH, StaticCards::CARD_HEIGHT],
         'person.image' => [256, 256],
     ];
 

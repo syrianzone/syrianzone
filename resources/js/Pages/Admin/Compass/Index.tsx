@@ -40,14 +40,6 @@ interface Stats extends CompassStatsPayload {
     recent: RecentRow[];
 }
 
-const BLOC_LABEL: Record<AlignBloc, string> = {
-    west: 'غربي',
-    gulf: 'خليجي',
-    turkish: 'تركي',
-    east: 'شرقي',
-    neutral: 'حياد',
-};
-
 const spectrumNameFrom = (personas: { id: string; name: string }[], id: string | null) =>
     personas.find((s) => s.id === id)?.name ?? '—';
 
@@ -257,7 +249,7 @@ export default function CompassAdminIndex({
                     </CardHeader>
                     <CardContent>
                         {stats.total > 0 ? (
-                            <AlignmentCard align={stats.alignTotals} label={BLOC_LABEL} />
+                            <AlignmentCard align={stats.alignTotals} />
                         ) : (
                             <p className="text-sm text-muted-foreground">لا توجد بيانات بعد.</p>
                         )}

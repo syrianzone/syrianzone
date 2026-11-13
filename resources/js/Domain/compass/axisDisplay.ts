@@ -32,7 +32,7 @@ export const AXIS_MIRRORED: Record<AxisId, boolean> = {
   sect_memory: false,
 };
 
-export interface AxisDisplay {
+interface AxisDisplay {
   /** Label shown at the physical right end of the bar. */
   rightLabel: string;
   /** Label shown at the physical left end of the bar. */
@@ -51,7 +51,7 @@ export function axisDisplay(axis: Axis): AxisDisplay {
 }
 
 /** Physical horizontal position (0 = left … 100 = right) of a value marker. */
-export function axisMarkerLeft(value: number, positiveOnLeft: boolean): number {
+function axisMarkerLeft(value: number, positiveOnLeft: boolean): number {
   const magnitude = Math.min(Math.abs(value), 1) * 50;
   const leansLeft = value >= 0 === positiveOnLeft;
   return leansLeft ? 50 - magnitude : 50 + magnitude;

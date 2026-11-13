@@ -9,7 +9,7 @@ import { api as client, API_V1 } from '@/Lib/api';
 const PUBLIC = `${API_V1}/promises`;
 const ADMIN = `${API_V1}/admin/promises`;
 
-export interface PromiseVoteCounts {
+interface PromiseVoteCounts {
   yes: number;
   no: number;
 }

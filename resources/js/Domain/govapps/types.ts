@@ -1,4 +1,4 @@
-export interface GovAppLinks {
+interface GovAppLinks {
     official?: string | null;
     android?: string | null;
     apple?: string | null;

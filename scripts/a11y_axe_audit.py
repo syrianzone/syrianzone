@@ -27,6 +27,11 @@ import sys
 
 # Routes to audit. Public routes first; the dev impersonation route (if reachable)
 # is visited before admin routes so a session cookie is present.
+#
+# Every route that renders an Inertia page must appear in one of these lists or
+# in the exclusion list of tests/Feature/Tooling/A11yRouteCoverageTest.php, which
+# reads this file: a new page fails that test until it is either swept or
+# excluded there with a reason.
 PUBLIC_ROUTES = [
     "/", "/about", "/privacy", "/terms", "/stats",
     "/syofficial", "/phonebook", "/govapps", "/party", "/house",
@@ -40,7 +45,8 @@ PUBLIC_ROUTES = [
 ]
 ADMIN_ROUTES = [
     "/dashboard", "/admin/govapps", "/admin/phonebook", "/admin/syofficial",
-    "/admin/guesswho", "/admin/assets",
+    "/admin/guesswho", "/admin/assets", "/admin/navigation", "/admin/places",
+    "/admin/site-popup", "/transit/admin",
     "/admin/promises", "/admin/promises/new", "/admin/promises/review",
     "/admin/promises/speakers", "/admin/promises/sectors",
 ]

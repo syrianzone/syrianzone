@@ -106,7 +106,7 @@ export function readStoredMethod(): number {
   return Number(readLS(LS.method, String(DEFAULT_PRAYER_METHOD))) || DEFAULT_PRAYER_METHOD;
 }
 
-export function defaultMuslimPrefs(): MuslimPrefs {
+function defaultMuslimPrefs(): MuslimPrefs {
   const location = readLocationPreference();
   return {
     city: location.city,

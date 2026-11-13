@@ -5,7 +5,16 @@ import {
     XCircle, Zap,
 } from 'lucide-react';
 import raw from '../../../data/promises.json';
-import { PROMISE_STATE_KEYS, PROMISE_STATUS_KEYS, type PromiseState, type PromiseStatus } from './types';
+import {
+    PROMISE_ORIGIN_KEYS,
+    PROMISE_REVIEW_STATUS_KEYS,
+    PROMISE_SOURCE_TYPE_KEYS,
+    PROMISE_STATE_KEYS,
+    PROMISE_STATUS_KEYS,
+    PROMISE_VENUE_KEYS,
+    type PromiseState,
+    type PromiseStatus,
+} from './types';
 
 type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline';
 
@@ -61,28 +70,45 @@ export const STATE_META: Record<PromiseState, {
 
 export const STATUS_ORDER: PromiseStatus[] = [...PROMISE_STATUS_KEYS];
 
-export const VENUE_LABEL: Record<string, string> = {
-    x_post: 'منشور على إكس',
-    facebook_post: 'منشور على فيسبوك',
-    telegram_post: 'منشور على تلغرام',
-    tv_interview: 'مقابلة تلفزيونية',
-    news_interview: 'مقابلة صحفية',
-    press_conference: 'مؤتمر صحفي',
-    official_statement: 'بيان رسمي',
-    speech: 'خطاب',
-    other: 'أخرى',
-};
+/**
+ * A `{key, label}` list from resources/data/promises.json, as the label map the
+ * surfaces index. Throws when the file and the key constants above disagree, so
+ * a key can never render raw in the Arabic UI (the maps below used to be hand
+ * copies of Promise::VENUES and friends, and a miss printed the raw key).
+ */
+function labelMap<K extends string>(
+    rows: Array<{ key: string; label: string }>,
+    keys: readonly K[],
+    name: string,
+): Record<K, string> {
+    const out = {} as Record<string, string>;
+    for (const key of keys) {
+        const row = rows.find((candidate) => candidate.key === key);
+        if (!row || row.label.trim() === '') {
+            throw new Error(`resources/data/promises.json: ${name} is missing a label for "${key}"`);
+        }
+        out[key] = row.label;
+    }
 
-export const SOURCE_TYPE_LABEL: Record<string, string> = {
-    x_post: 'منشور على إكس',
-    facebook_post: 'منشور على فيسبوك',
-    telegram_post: 'منشور على تلغرام',
-    tv_interview: 'مقابلة تلفزيونية',
-    press_conference: 'مؤتمر صحفي',
-    official_statement: 'بيان رسمي',
-    news_article: 'خبر صحفي',
-    video: 'فيديو',
-};
+    if (rows.length !== keys.length) {
+        const names = rows.map((row) => row.key).join(', ');
+        throw new Error(`resources/data/promises.json: ${name} lists ${names}, the domain expects ${keys.join(', ')}`);
+    }
+
+    return out as Record<K, string>;
+}
+
+/** Where a statement was made; indexed by the server's key, so a key without a label fails loudly. */
+export const VENUE_LABEL: Record<string, string> = labelMap(raw.venues, PROMISE_VENUE_KEYS, 'venues');
+
+/** The kind of source a promise cites. */
+export const SOURCE_TYPE_LABEL: Record<string, string> = labelMap(raw.source_types, PROMISE_SOURCE_TYPE_KEYS, 'source_types');
+
+/** The moderation verdict: the admin queue's chips and filters. */
+export const REVIEW_STATUS_LABEL: Record<string, string> = labelMap(raw.review_statuses, PROMISE_REVIEW_STATUS_KEYS, 'review_statuses');
+
+/** Who entered the promise. */
+export const ORIGIN_LABEL: Record<string, string> = labelMap(raw.origins, PROMISE_ORIGIN_KEYS, 'origins');
 
 export const UPDATE_TYPE_LABEL: Record<string, string> = {
     progress: 'تقدّم',

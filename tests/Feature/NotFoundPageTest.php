@@ -37,6 +37,25 @@ test('a 404 renders the not-found page through the shared props', function (stri
     'crossings subdirectory' => ['/crossings/unknown-border', '/crossings/unknown-border'],
 ]);
 
+test('the 404 page carries the transit city cards with the live route counts', function () {
+    seedCity('damascus');
+    seedCity('aleppo');
+    transitRoute('route-404-damascus', 'damascus', ['name_ar' => 'خط 404']);
+
+    $this->get('/transit/a-route-that-does-not-exist')
+        ->assertNotFound()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Errors/NotFound')
+            // The grid's "N خط" badge and its link are the table's, not a
+            // checked-in copy: the count moves with the published routes.
+            ->has('transitCities', 2)
+            ->where('transitCities.0.id', 'aleppo')
+            ->where('transitCities.0.routeCount', 0)
+            ->where('transitCities.1.id', 'damascus')
+            ->where('transitCities.1.routeCount', 1)
+        );
+});
+
 test('the 404 page carries the same security headers as a normal page', function () {
     $response = $this->get('/some-non-existent-page')->assertNotFound();
 

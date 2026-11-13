@@ -6,7 +6,7 @@ import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
 import { Separator } from '@/Components/ui/separator';
 import { RotateCcw, Download, Trash2, ShieldCheck, AlertTriangle, Save, LogIn, BarChart3 } from 'lucide-react';
-import type { AnswerMap, AlignBloc, CompassResult as Result, Figure, QuizVersion, Spectrum } from '@/Domain/compass/types';
+import type { AnswerMap, CompassResult as Result, Figure, QuizVersion, Spectrum } from '@/Domain/compass/types';
 import { AXES } from '@/Domain/compass/axes';
 import { computeScores, computeConsistency, matchFigures, matchSpectrum, versionTotals } from '@/Domain/compass/engine';
 import { addResult, clearLocal, saveResultToAccount, updateLocalResult, setPendingAccountSave, deleteAccountResults, deleteAccountResult, submitStats, removeStats } from './lib/storage';
@@ -19,14 +19,6 @@ import AlignmentCard from '@/Domain/compass/AlignmentCard';
 import CompassCanvas from './components/CompassCanvas';
 import CompassShareCard from './components/CompassShareCard';
 import { exportElementAsPng } from '@/Lib/exportElementAsPng';
-
-const BLOC_LABEL: Record<AlignBloc, string> = {
-  west: 'غربي',
-  gulf: 'خليجي',
-  turkish: 'تركي',
-  east: 'شرقي',
-  neutral: 'حياد',
-};
 
 export default function CompassResult({
   answers,
@@ -282,7 +274,7 @@ export default function CompassResult({
           <CardTitle className="text-base">توجّهك الخارجي</CardTitle>
         </CardHeader>
         <CardContent>
-          <AlignmentCard align={computed.align} label={BLOC_LABEL} />
+          <AlignmentCard align={computed.align} />
         </CardContent>
       </Card>
 

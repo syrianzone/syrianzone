@@ -1,10 +1,9 @@
 import { Link } from '@inertiajs/react'
-import CityCard from './CityCard'
-import type { City } from '../../_types'
+import CityCard, { type CityCardCity } from './CityCard'
 
 interface CityGridProps {
-  /** The server's city list (`/transit` renders it into the first HTML). */
-  cities: City[]
+  /** The server's city list: `/transit` renders it into the first HTML, the 404 sends the card listing. */
+  cities: CityCardCity[]
 }
 
 export default function CityGrid({ cities: allCities }: CityGridProps) {
@@ -15,10 +14,10 @@ export default function CityGrid({ cities: allCities }: CityGridProps) {
     const bReady = b.routeCount > 0
     if (aReady && !bReady) return -1
     if (!aReady && bReady) return 1
-    return (b.routeCount || 0) - (a.routeCount || 0)
+    return b.routeCount - a.routeCount
   })
 
-  const readyCount = cities.filter((c) => (c.routeCount || 0) > 0).length
+  const readyCount = cities.filter((c) => c.routeCount > 0).length
 
   return (
     <section className="px-4 pb-14 pt-8 sm:pt-10">

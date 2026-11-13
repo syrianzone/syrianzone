@@ -19,6 +19,17 @@ final class StaticCards
     /** The site's own card: the home page, and the fallback of last resort. */
     public const DEFAULT = 'home';
 
+    /**
+     * The share card's canvas, in pixels. The Node renderer draws exactly this
+     * size (`scripts/og/lib/engine.mjs`), a card photo covers this box
+     * (`CardImages::SLOTS`), and the `og:image:width`/`height` tags the Blade
+     * head and `<SeoHead>` print are these two numbers, sent as
+     * `seo.image_width`/`seo.image_height`.
+     */
+    public const CARD_WIDTH = 1200;
+
+    public const CARD_HEIGHT = 630;
+
     /** @var array<string, mixed>|null the decoded public/og/manifest.json */
     private static ?array $manifest = null;
 

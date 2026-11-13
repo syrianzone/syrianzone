@@ -6,7 +6,6 @@ use App\Exceptions\Transit\TransitActionException;
 use App\Models\Route;
 use App\Models\RouteDraft;
 use App\Models\TransitRouteLog;
-use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -600,13 +599,5 @@ class TransitAdminService
         } catch (\Exception $e) {
             report($e);
         }
-    }
-
-    /**
-     * Resolve the reviewing actor's user id, for callers that only hold a name.
-     */
-    public function actorId(?User $user): ?int
-    {
-        return $user?->getAuthIdentifier();
     }
 }

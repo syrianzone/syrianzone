@@ -547,6 +547,9 @@ Route::middleware('auth:web,sanctum')->group(function () {
             Route::post('/categories', [SyOfficialAdminController::class, 'storeCategory'])
                 ->middleware('syofficial_admin:syofficial.create')
                 ->name('api.v1.admin.syofficial.categories.store');
+            Route::post('/categories/reorder', [SyOfficialAdminController::class, 'reorderCategories'])
+                ->middleware('syofficial_admin:syofficial.reorder')
+                ->name('api.v1.admin.syofficial.categories.reorder');
             Route::put('/categories/{id}', [SyOfficialAdminController::class, 'updateCategory'])
                 ->middleware('syofficial_admin:syofficial.edit')
                 ->name('api.v1.admin.syofficial.categories.update');
@@ -555,13 +558,15 @@ Route::middleware('auth:web,sanctum')->group(function () {
             Route::delete('/categories/{id}', [SyOfficialAdminController::class, 'destroyCategory'])
                 ->middleware('syofficial_admin:syofficial.delete')
                 ->name('api.v1.admin.syofficial.categories.destroy');
-            Route::post('/categories/reorder', [SyOfficialAdminController::class, 'reorderCategories'])
-                ->middleware('syofficial_admin:syofficial.reorder')
-                ->name('api.v1.admin.syofficial.categories.reorder');
 
             Route::post('/entities', [SyOfficialAdminController::class, 'storeEntity'])
                 ->middleware('syofficial_admin:syofficial.create')
                 ->name('api.v1.admin.syofficial.entities.store');
+            // Before {id}: a static segment must not be swallowed by the update
+            // route, which is what made this unreachable.
+            Route::post('/entities/reorder', [SyOfficialAdminController::class, 'reorderEntities'])
+                ->middleware('syofficial_admin:syofficial.reorder')
+                ->name('api.v1.admin.syofficial.entities.reorder');
             Route::post('/entities/{id}', [SyOfficialAdminController::class, 'updateEntity'])
                 ->middleware('syofficial_admin:syofficial.edit');
             Route::put('/entities/{id}', [SyOfficialAdminController::class, 'updateEntity'])
@@ -570,9 +575,6 @@ Route::middleware('auth:web,sanctum')->group(function () {
             Route::delete('/entities/{id}', [SyOfficialAdminController::class, 'destroyEntity'])
                 ->middleware('syofficial_admin:syofficial.delete')
                 ->name('api.v1.admin.syofficial.entities.destroy');
-            Route::post('/entities/reorder', [SyOfficialAdminController::class, 'reorderEntities'])
-                ->middleware('syofficial_admin:syofficial.reorder')
-                ->name('api.v1.admin.syofficial.entities.reorder');
         });
     });
 
@@ -606,19 +608,24 @@ Route::middleware('auth:web,sanctum')->group(function () {
             Route::post('/categories', [PhonebookAdminController::class, 'storeCategory'])
                 ->middleware('phonebook_admin:phonebook.create')
                 ->name('api.v1.admin.phonebook.categories.store');
+            Route::post('/categories/reorder', [PhonebookAdminController::class, 'reorderCategories'])
+                ->middleware('phonebook_admin:phonebook.reorder')
+                ->name('api.v1.admin.phonebook.categories.reorder');
             Route::put('/categories/{id}', [PhonebookAdminController::class, 'updateCategory'])
                 ->middleware('phonebook_admin:phonebook.edit')
                 ->name('api.v1.admin.phonebook.categories.update');
             Route::delete('/categories/{id}', [PhonebookAdminController::class, 'destroyCategory'])
                 ->middleware('phonebook_admin:phonebook.delete')
                 ->name('api.v1.admin.phonebook.categories.destroy');
-            Route::post('/categories/reorder', [PhonebookAdminController::class, 'reorderCategories'])
-                ->middleware('phonebook_admin:phonebook.reorder')
-                ->name('api.v1.admin.phonebook.categories.reorder');
 
             Route::post('/entries', [PhonebookAdminController::class, 'storeEntry'])
                 ->middleware('phonebook_admin:phonebook.create')
                 ->name('api.v1.admin.phonebook.entries.store');
+            // Before {id}: a static segment must not be swallowed by the
+            // update route, which is what made this unreachable.
+            Route::post('/entries/reorder', [PhonebookAdminController::class, 'reorderEntries'])
+                ->middleware('phonebook_admin:phonebook.reorder')
+                ->name('api.v1.admin.phonebook.entries.reorder');
             Route::post('/entries/{id}', [PhonebookAdminController::class, 'updateEntry'])
                 ->middleware('phonebook_admin:phonebook.edit');
             Route::put('/entries/{id}', [PhonebookAdminController::class, 'updateEntry'])
@@ -632,9 +639,6 @@ Route::middleware('auth:web,sanctum')->group(function () {
             Route::delete('/entries/{id}', [PhonebookAdminController::class, 'destroyEntry'])
                 ->middleware('phonebook_admin:phonebook.delete')
                 ->name('api.v1.admin.phonebook.entries.destroy');
-            Route::post('/entries/reorder', [PhonebookAdminController::class, 'reorderEntries'])
-                ->middleware('phonebook_admin:phonebook.reorder')
-                ->name('api.v1.admin.phonebook.entries.reorder');
         });
     });
 
@@ -806,8 +810,8 @@ Route::middleware('auth:web,sanctum')->group(function () {
 });
 
 Route::post('/api/user/settings', [UserSettingsController::class, 'update'])
-    ->middleware('throttle:60,1');
+    ->middleware(['api_user', 'throttle:60,1']);
 Route::post('/api/user/radio-usage', [RadioUsageController::class, 'add'])
-    ->middleware('throttle:60,1');
+    ->middleware(['api_user', 'throttle:60,1']);
 Route::post('/api/user/radio-usage/clear', [RadioUsageController::class, 'clear'])
-    ->middleware('throttle:10,1');
+    ->middleware(['api_user', 'throttle:10,1']);

@@ -1,11 +1,12 @@
 import { Head, Link } from '@inertiajs/react';
 import { ExternalLink } from 'lucide-react';
 import { PromisesIcon } from '@/Components/Icons/ProjectIcons';
+import { type SectionKey } from '../_lib/sections';
 import AdminNav from './AdminNav';
 
 export default function AdminHeader({ title, current, queueCount, actions }: {
     title: string;
-    current: 'promises' | 'review' | 'speakers' | 'sectors';
+    current: SectionKey;
     queueCount: number;
     actions?: React.ReactNode;
 }) {

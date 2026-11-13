@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "@inertiajs/react";
 import MainLayout from "@/Layouts/MainLayout";
-import TierBoard, { type Candidate, type CandidateGroup } from "@/Components/poll/TierBoard";
+import TierBoard, { type Candidate, type CandidateGroup } from "@/Domain/polls/TierBoard";
 import { Button } from "@/Components/ui/button";
 import type { Poll } from "@/Domain/polls/types";
 

@@ -1,40 +1,14 @@
-import { api as client, API_ROOT, API_V1 } from '@/Lib/api';
+import { api as client, API_ROOT } from '@/Lib/api';
 import { api } from '@/Domain/places/api';
-import { discovery, type Guide, type GuidesSort } from '@/Domain/places/discovery';
-import type { NearbyPlace } from '@/Domain/places/types';
+import type { Guide, GuidesSort, NearbyPlace } from '@/Domain/places/types';
 import { fetchPrayerTimes, type PrayerTimesResponse } from '@/Domain/prayer/times';
+import { transitCities } from '@/Domain/transit/api';
+import { WEATHER_URL, type WeatherResponse } from '@/Domain/weather/weather';
 
 // The board's read clients: every widget names the fetcher it uses in its own
 // declaration (`source`), and the registry publishes that mapping as
-// WIDGET_SOURCES. Places-backed widgets reuse the typed clients that already
-// live in Domain/places rather than restating them here.
-
-// The endpoint returns camelCase keys, not the underlying column names.
-export interface TransitCity {
-  id: string;
-  nameAr: string;
-  nameEn: string;
-  routeCount: number;
-  status: string;
-}
-
-export interface Weather {
-  governorate: string;
-  temp: number;
-  description: string;
-  icon: string;
-  // additive: an empty array is a normal answer when the forecast upstream is
-  // down, and current conditions still render
-  forecast: ForecastDay[];
-}
-
-export interface ForecastDay {
-  date: string;
-  min: number;
-  max: number;
-  // raw WMO code; the widget owns the arabic labels, as it does for description
-  code: number;
-}
+// WIDGET_SOURCES. Places, transit and weather reads reuse the typed clients and
+// payload types that already live in `Domain/` rather than restating them here.
 
 // Normalized server-side from the Apache Answer instance. `url` is an absolute
 // permalink on answers.syrian.zone, built by the backend, not by the widget.
@@ -96,15 +70,14 @@ export interface Feed {
 }
 
 export const sources = {
-  async transitCities(): Promise<TransitCity[]> {
-    const data = await client.get<TransitCity[] | { cities?: TransitCity[]; data?: TransitCity[] }>(`${API_V1}/cities`);
-    return Array.isArray(data) ? data : (data.cities ?? data.data ?? []);
-  },
+  // The city list with its published-route counts: the same client the palette
+  // and the 404 grid read.
+  transitCities,
 
   // proxied through the app: the upstream worker only sends CORS headers for the
   // production origin, so calling it from the browser fails everywhere else
-  weather(governorate: string): Promise<Weather> {
-    return client.get(`${API_ROOT}/weather`, { params: { governorate } });
+  weather(governorate: string): Promise<WeatherResponse> {
+    return client.get(WEATHER_URL, { params: { governorate } });
   },
 
   // every method below is proxied through the app for the same reason as the
@@ -136,7 +109,7 @@ export const sources = {
   // The two Places reads a board widget needs; the widget folder declares which
   // of these it uses, and the client itself stays with the Places domain.
   async guides(sort: GuidesSort): Promise<{ sort: GuidesSort; guides: Guide[] }> {
-    return discovery.guides(sort);
+    return api.guides(sort);
   },
 
   async nearby(params: { lat: number; lng: number; radius_km?: number }): Promise<{ places: NearbyPlace[] }> {

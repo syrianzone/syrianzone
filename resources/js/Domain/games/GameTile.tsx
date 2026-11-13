@@ -7,7 +7,7 @@ import { GAMES, gameEntryHref, type GameEntry } from './games';
 const GAME_TILE_CLASS = 'group flex flex-col items-center gap-2 py-1 text-center no-underline';
 
 /** One game's icon, title and state badges; the caller owns the link or wrapper. */
-export function GameTile({ game }: { game: GameEntry }) {
+function GameTile({ game }: { game: GameEntry }) {
     const Icon = game.icon;
     return (
         <>

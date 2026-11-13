@@ -43,7 +43,7 @@ export const isCourt = (rank: number): boolean => rank >= 11;
  * A real deck mirrors everything below the middle line, so `y > 50` is drawn
  * rotated; without that the card reads as lopsided rather than as a card.
  */
-export interface Pip {
+interface Pip {
   x: number;
   y: number;
   flip?: boolean;

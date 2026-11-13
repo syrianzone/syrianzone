@@ -2,14 +2,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTabList } from '@/Lib/useTabList';
 import { Card } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
-import { TierAvatar as Avatar } from "@/Components/poll/TierAvatar";
+import { TierAvatar as Avatar } from "./TierAvatar";
 import { Alert, AlertDescription, AlertTitle } from "@/Components/ui/alert";
 import { CheckCircle2Icon, AlertCircleIcon, Download } from "lucide-react";
 import { TIERS, TIER_KEYS, type TierKey } from "@/Domain/polls/tiers";
 import { MIN_SELECTIONS } from "@/Domain/polls/core";
 import { pollsApi, type RankingSubmission } from "@/Domain/polls/api";
-import { exportTierListFromData } from "@/Components/poll/exportTierList";
-import { getOriginalImageUrl } from "@/Lib/imageUtils";
+import { exportTierListFromData } from "./exportTierList";
 import { getDeviceId } from "@/Lib/deviceId";
 import { apiErrorMessage } from '@/Lib/api';
 import { notify } from '@/Lib/notify';
@@ -394,13 +393,16 @@ export default function TierBoard({
         return extFromUrlPath(url) || extFromMime(blob.type) || 'png';
     }
 
-    // getOriginalImageUrl takes string URLs; a candidate's image fields are
-    // nullable because the API omits them when it has no image.
+    // A candidate's image fields are nullable because the API omits them when
+    // it has no image; a CDN-resized URL is rewritten back to the original.
     function originalImageUrl(candidate: Candidate): string {
-        return getOriginalImageUrl({
-            originalUrl: candidate.originalUrl ?? undefined,
-            imageUrl: candidate.imageUrl ?? undefined,
-        });
+        const rawUrl = candidate.originalUrl || candidate.imageUrl || '';
+        if (rawUrl.includes('/cdn-cgi/image/')) {
+            const parts = rawUrl.split('/cdn-cgi/image/');
+            const rest = parts[1].substring(parts[1].indexOf('/'));
+            return `${parts[0]}${rest}`;
+        }
+        return rawUrl;
     }
 
     async function downloadSingleCandidateImage(candidate: Candidate) {

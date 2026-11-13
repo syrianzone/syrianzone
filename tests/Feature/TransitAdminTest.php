@@ -269,16 +269,21 @@ it('ignores an absent field but clears one explicitly set to null', function () 
         ->and($fresh->price_old)->toBeNull();
 });
 
-it('answers 400 when a route update carries nothing updatable', function () {
+it('answers an Arabic 400 when a route update carries nothing updatable', function () {
     seedCity('homs');
     $route = transitRoute('route-homs-1', 'homs');
 
     $editor = capabilityUser(PermissionCatalogue::forModule('transit'), ['homs']);
 
+    // The client shows an Arabic server message and replaces anything else with
+    // a generic fallback, so an English "No fields to update" was invisible.
     $this->actingAs($editor)
         ->putJson("/api/v1/admin/routes/{$route->id}", ['nonsense' => 'x'])
         ->assertStatus(400)
-        ->assertJsonPath('message', 'No fields to update');
+        ->assertJsonPath(
+            'message',
+            'لم يصل أي تعديل. أرسل حقلاً واحداً على الأقل: الاسم العربي، الاسم الإنجليزي، لون الخط، التسعيرة الجديدة أو القديمة.',
+        );
 });
 
 it('refuses a move to a governorate that does not exist', function () {

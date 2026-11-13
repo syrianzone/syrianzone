@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
-import { discovery, type GridPhoto } from '@/Domain/places/discovery';
+import { useIsMobile } from '@/Lib/useIsMobile';
+import { api as placesApi } from '@/Domain/places/api';
+import type { GridPhoto } from '@/Domain/places/types';
 
-// media-query hook instead of md: utilities: the code-split css chunks each emit
-// their own tailwind layer, so responsive classes lose cascade order here (see Lightbox)
+// media-query hook instead of the hover: utility: the code-split css chunks each
+// emit their own tailwind layer, so responsive classes lose cascade order here (see Lightbox)
 function useMedia(query: string): boolean {
   const [matches, setMatches] = useState(() =>
     typeof window === 'undefined' ? false : window.matchMedia(query).matches,
@@ -31,7 +33,7 @@ export function PhotoGrid(props: {
   const [lastPage, setLastPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
-  const columns = useMedia('(min-width: 768px)') ? 4 : 2;
+  const columns = useIsMobile('md') ? 2 : 4;
   // captions hide-until-hover only where hover exists: a wide iPad has no hover,
   // and tapping a tile opens the lightbox, so a width branch would never reveal them
   const hoverable = useMedia('(hover: hover) and (pointer: fine)');
@@ -42,7 +44,7 @@ export function PhotoGrid(props: {
     const id = ++requestRef.current;
     setLoading(true);
     setError(false);
-    discovery.gridPhotos(p, guideId ?? undefined)
+    placesApi.gridPhotos(p, guideId ?? undefined)
       .then((res) => {
         if (id !== requestRef.current) return;
         setPhotos((prev) => (p === 1 ? res.data : [...prev, ...res.data]));

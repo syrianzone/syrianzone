@@ -17,15 +17,15 @@ const BLOC_COLORS: Record<AlignBloc, string> = {
   neutral: 'light-dark(#64748b, #94a3b8)',
 };
 
-const BLOCS: { id: AlignBloc; icon: LucideIcon; powers: string }[] = [
-  { id: 'west', icon: Globe, powers: 'أمريكا · أوروبا' },
-  { id: 'gulf', icon: Sun, powers: 'السعودية · الخليج' },
-  { id: 'turkish', icon: MoonStar, powers: 'تركيا · قطر' },
-  { id: 'east', icon: Compass, powers: 'إيران · الصين · روسيا' },
-  { id: 'neutral', icon: Minus, powers: 'غير منحاز' },
+const BLOCS: { id: AlignBloc; label: string; icon: LucideIcon; powers: string }[] = [
+  { id: 'west', label: 'غربي', icon: Globe, powers: 'أمريكا · أوروبا' },
+  { id: 'gulf', label: 'خليجي', icon: Sun, powers: 'السعودية · الخليج' },
+  { id: 'turkish', label: 'تركي', icon: MoonStar, powers: 'تركيا · قطر' },
+  { id: 'east', label: 'شرقي', icon: Compass, powers: 'إيران · الصين · روسيا' },
+  { id: 'neutral', label: 'حياد', icon: Minus, powers: 'غير منحاز' },
 ];
 
-export function BlocIcon({ id, className }: { id: AlignBloc; className?: string }) {
+function BlocIcon({ id, className }: { id: AlignBloc; className?: string }) {
   const b = BLOCS.find((x) => x.id === id);
   if (!b) return null;
   const Icon = b.icon;
@@ -34,10 +34,8 @@ export function BlocIcon({ id, className }: { id: AlignBloc; className?: string 
 
 export default function AlignmentCard({
   align,
-  label,
 }: {
   align: Record<AlignBloc, number>;
-  label: Record<AlignBloc, string>;
 }) {
   const values = BLOCS.map((b) => Math.max(0, align[b.id] ?? 0));
   const total = values.reduce((s, x) => s + x, 0);
@@ -50,7 +48,7 @@ export default function AlignmentCard({
         <p className="text-sm flex items-center gap-1.5">
           <span>توجّهك الأبرز:</span>
           <BlocIcon id={top.id} className="w-4 h-4" />
-          <span className="font-bold text-primary">{label[top.id]}</span>{' '}
+          <span className="font-bold text-primary">{top.label}</span>{' '}
           <span className="text-muted-foreground">
             ({Math.round(((align[top.id] ?? 0) / total) * 100)}%)
           </span>
@@ -64,7 +62,7 @@ export default function AlignmentCard({
             <div key={b.id} className="flex items-center gap-2">
               <span className="flex items-center gap-1.5 text-xs w-28 shrink-0">
                 <Icon className="w-3.5 h-3.5" style={{ color: BLOC_COLORS[b.id] }} />
-                {label[b.id]}
+                {b.label}
               </span>
               <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                 <div

@@ -7,15 +7,15 @@ import { DEFAULT_RECITATION_CODE, findPageForAyah } from '../../../Domain/quran/
 import { useMuslimPrefs } from '../../../Domain/settings/prefs';
 import { useAppShell } from '@/Lib/appShell';
 import { useQuranTarget } from '@/Domain/quran/targetAyah';
-import { NAVBAR_HEIGHT_PX } from '@/Components/Navbar';
 
 export default function Index() {
   const { prefs, setPrefs, isLoggedIn } = useMuslimPrefs();
   const targetAyah = useQuranTarget((s) => s.targetAyah);
   const setTargetAyah = useQuranTarget((s) => s.setTargetAyah);
   const quranFocus = useAppShell((s) => s.quranFocus);
-  // The reader fills the viewport under the navbar, which publishes its height.
-  const readerHeight = `calc(100dvh - ${quranFocus ? 0 : NAVBAR_HEIGHT_PX}px)`;
+  // The reader fills the viewport under the navbar, which publishes its height
+  // as `--sz-navbar-h`; focus mode hides the navbar and takes the whole height.
+  const readerHeight = quranFocus ? '100dvh' : 'calc(100dvh - var(--sz-navbar-h))';
 
   // Deep link from the hub's last-bookmark strip or the radio's "continue":
   // make sure the page that holds the target ayah is shown. In-page jumps

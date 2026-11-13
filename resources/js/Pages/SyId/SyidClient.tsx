@@ -156,18 +156,24 @@ export default function SyidClient() {
     useEffect(() => {
         const loadSvgs = async () => {
             const loaded: Record<string, string> = {};
+            let failed = 0;
             await Promise.all(
                 GOVERNORATE_ICONS.map(async (icon) => {
                     try {
                         const res = await fetch(`/syid-assets/icons/governorates/with-frame/${encodeURIComponent(icon.file)}`);
                         const text = await res.text();
                         loaded[icon.file] = text;
-                    } catch (e) {
-                        console.error('Failed to load SVG', icon.file, e);
+                    } catch {
+                        failed += 1;
                     }
                 })
             );
             setSvgContents(loaded);
+            // The icons are the poster's artwork: a failed load draws a hole in it,
+            // which the visitor only notices after downloading.
+            if (failed > 0) {
+                notify.error(`تعذّر تحميل ${failed} من أيقونات المحافظات، وسيظهر الشعار ناقصاً`);
+            }
         };
         loadSvgs();
     }, []);

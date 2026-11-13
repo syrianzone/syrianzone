@@ -35,7 +35,9 @@ Silently merged (never modal):
 
 Deliberately device-local (never synced, never modal): GPS/IP `locMode` + resolved `geo` point — a phone and a laptop are rarely in one place.
 
-Deliberately untouched by sync: `theme`, `fontFamily`, `clockFormat`, toggles, links, `eventsGovernorate` (homepage events city — server-wins on mount like the other display prefs). They keep their existing server-wins-on-mount behavior, and each is written to the device and the account through `accountSettings.ts` (the homepage's display toggles and events city through `Pages/Home/_lib/homePrefs.ts`). The `settings.language` whitelist is vestigial (the bilingual pages are gone) and nothing reads it.
+Deliberately untouched by sync: `theme`, `fontFamily`, toggles, links, `eventsGovernorate` (homepage events city — server-wins on mount like the other display prefs). They keep their existing server-wins-on-mount behavior, and each is written to the device and the account through `accountSettings.ts` (the homepage's display toggles and events city through `Pages/Home/_lib/homePrefs.ts`).
+
+`clockFormat`, `showClock`, `searchEngine`, `customSearchUrl`, `showSearch` and `language` are gone from the account contract too: they belonged to the home clock and the site-search box, both removed, and nothing read them.
 
 ## 3. CONFLICT MODAL
 
@@ -111,5 +113,5 @@ while auto-location drives the numbers.
 
 ## 6. ENDPOINT CONTRACTS
 
-- `POST /api/user/settings { settings: {...} }` — throttled `60,1`; whitelisted keys only (see `routes/web.php`); merges into `users.settings`; rejects >40KB merged and `prayerLog` >31 days. Covered by `tests/Feature/UserSettingsTest.php`.
+- `POST /api/user/settings { settings: {...} }` — throttled `60,1`; whitelisted keys only (`UserSettingsController::rules()`, the server side of `AccountSettingsPatch`); merges into `users.settings`; rejects >40KB merged, `customLinks` >20KB and `prayerLog` >31 days, all as Arabic validation refusals. `tests/Feature/UserSettingsTest.php` posts every key of the patch, so a key added on one side only fails the build.
 - `GET/POST/DELETE /api/v1/quran-bookmarks` — session + CSRF, throttled `60,1`. Covered by `tests/Feature/QuranBookmarkTest.php`.

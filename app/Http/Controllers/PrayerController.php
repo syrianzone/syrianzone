@@ -41,13 +41,7 @@ class PrayerController extends Controller
    */
   public static function methods(): array
   {
-    $prayer = Facts::prayer();
-    $ids = array_merge(
-      array_map('intval', array_column($prayer['methods'], 'id')),
-      array_map('intval', $prayer['unlisted_method_ids']),
-    );
-
-    return array_values(array_unique($ids));
+    return Facts::prayerMethodIds();
   }
 
   public static function defaultMethod(): int

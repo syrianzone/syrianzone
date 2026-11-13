@@ -81,7 +81,7 @@ it('rejects an entity pointing at a category that does not exist', function () {
     ]);
 })->throws(DirectoryActionException::class, 'No category exists with id no-such-category');
 
-it('drops non-http social links and reindexes so the column stays a list', function () {
+it('keeps the platform keys and drops non-http social links', function () {
     $category = OfficialCategory::factory()->create();
 
     $entity = $this->service->createEntity(
@@ -91,23 +91,45 @@ it('drops non-http social links and reindexes so the column stays a list', funct
             'name' => 'Social',
             'name_ar' => 'سوشيال',
         ],
-        ['https://example.com', 'javascript:alert(1)', '', 'http://example.org', null],
+        [
+            'facebook' => 'https://example.com',
+            'twitter' => 'javascript:alert(1)',
+            'instagram' => '',
+            'telegram' => '  http://example.org  ',
+            'youtube' => null,
+        ],
     );
 
     $entity->refresh();
 
-    // The old code array_filter'd without array_values, which would have stored
-    // {"2":"http://example.org"} and broken .map() in the Inertia components.
-    expect($entity->socials)->toBe(['https://example.com', 'http://example.org'])
-        ->and(array_is_list($entity->socials))->toBeTrue();
+    // The column is a platform-keyed map: the public tile resolves each link's
+    // icon and label from its key, and the admin form reads it back by key.
+    expect($entity->socials)->toBe([
+        'facebook' => 'https://example.com',
+        'telegram' => 'http://example.org',
+    ]);
 });
 
+it('refuses a list-shaped socials payload instead of flattening the map', function () {
+    $category = OfficialCategory::factory()->create();
+
+    $this->service->createEntity(
+        [
+            'id' => 'social-list',
+            'category_id' => $category->id,
+            'name' => 'Social List',
+            'name_ar' => 'قائمة',
+        ],
+        ['https://example.com', 'http://example.org'],
+    );
+})->throws(DirectoryActionException::class, 'socials must be an object keyed by platform');
+
 it('leaves socials untouched on update when none are supplied', function () {
-    $entity = OfficialEntity::factory()->create(['socials' => ['https://keep.me']]);
+    $entity = OfficialEntity::factory()->create(['socials' => ['facebook' => 'https://keep.me']]);
 
     $this->service->updateEntity($entity->id, ['name' => 'Renamed']);
 
-    expect($entity->fresh()->socials)->toBe(['https://keep.me'])
+    expect($entity->fresh()->socials)->toBe(['facebook' => 'https://keep.me'])
         ->and($entity->fresh()->name)->toBe('Renamed');
 });
 

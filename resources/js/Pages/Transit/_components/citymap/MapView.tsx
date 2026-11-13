@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import type maplibregl from 'maplibre-gl'
 import MapCanvas from './MapCanvas'
 import { useMap } from '@/Components/map/MapContext'
 import { boundsArePoint, geometryPositions, positionsBounds, type Bounds } from '@/Components/map/geo'
@@ -18,6 +19,21 @@ interface MapViewProps {
   stops: FeatureCollection<StopProperties>
 }
 
+/**
+ * Run a camera fit as soon as the map can take it. The children of `MapCanvas`
+ * mount only after `load`, which never fires twice, so waiting for it again
+ * would wait forever; `idle` is the repeatable signal that the tiles are in and
+ * `map.loaded()` is what the fit itself needs.
+ */
+function fitWhenLoaded(map: maplibregl.Map, fit: () => void): () => void {
+  if (map.loaded()) {
+    fit()
+    return () => {}
+  }
+  map.once('idle', fit)
+  return () => map.off('idle', fit)
+}
+
 function FitToCity({ bounds }: { bounds: Bounds }) {
   const map = useMap()
 
@@ -33,12 +49,7 @@ function FitToCity({ bounds }: { bounds: Bounds }) {
       })
     }
 
-    if (map.loaded()) {
-      fit()
-    } else {
-      map.once('idle', fit)
-      map.once('load', fit)
-    }
+    return fitWhenLoaded(map, fit)
   }, [map, bounds])
 
   return null
@@ -74,12 +85,7 @@ function FitToSelectedRoute({ routes }: { routes: FeatureCollection<RoutePropert
       }
     }
 
-    if (map.loaded()) {
-      fit()
-    } else {
-      map.once('idle', fit)
-      map.once('load', fit)
-    }
+    return fitWhenLoaded(map, fit)
   }, [map, selectedRouteId, routes])
 
   return null

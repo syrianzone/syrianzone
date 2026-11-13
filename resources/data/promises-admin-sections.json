@@ -1,0 +1,6 @@
+{
+  "promises": { "page": "/admin/promises", "capability": "any" },
+  "review": { "page": "/admin/promises/review", "capability": "promises.review" },
+  "speakers": { "page": "/admin/promises/speakers", "capability": "promises.speakers" },
+  "sectors": { "page": "/admin/promises/sectors", "capability": "promises.speakers" }
+}

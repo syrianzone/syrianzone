@@ -725,7 +725,7 @@ These endpoints accept either a stateful Web session cookie + CSRF token (`web` 
 | `PATCH\|PUT /api/v1/account` | `api.v1.account.update` | `POST /api/account/update` | Session or Bearer | — | Update account `name` and `email` (returns JSON for Bearer requests, Inertia redirect for Web) |
 | `POST /api/v1/account/avatar` | `api.v1.account.avatar.store` | `POST /api/account/avatar` | Session or Bearer | `10/min` | Upload profile avatar (`max 2MB`; returns `{ ok, avatar_url, user }` for Bearer requests) |
 | `DELETE /api/v1/account` | `api.v1.account.destroy` | `POST /api/account/delete` | Session or Bearer | — | Soft-delete user account & revoke tokens |
-| `PATCH\|PUT\|POST /api/v1/user/settings` | `api.v1.user.settings.update` | `POST /api/user/settings` | Session or Bearer | `60/min` | Merge whitelisted user preferences (`theme`, `language`, `governorate`, `customLinks`, etc.) |
+| `PATCH\|PUT\|POST /api/v1/user/settings` | `api.v1.user.settings.update` | `POST /api/user/settings` | Session or Bearer | `60/min` | Merge whitelisted user preferences (`theme`, `fontFamily`, `governorate`, `customLinks`, the prayer/Quran keys, etc.) |
 | `POST /api/v1/user/radio-usage` | `api.v1.user.radio-usage.store` | `POST /api/user/radio-usage` | Session or Bearer | `60/min` | Add Quran radio streaming delta (`bytes`, `seconds`) under row lock |
 | `DELETE /api/v1/user/radio-usage` | `api.v1.user.radio-usage.destroy` | `POST /api/user/radio-usage/clear` | Session or Bearer | `10/min` | Reset Quran radio usage counters |
 | `GET /api/v1/board` | `api.v1.board.show` | — | Session or Bearer | `60/min` | Fetch user's synced `/board` widget layout |

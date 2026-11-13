@@ -24,6 +24,7 @@ import { ScrollArea } from '@/Components/ui/scroll-area'
 import { FilterChip } from '@/Components/ui/filter-chip'
 import { notify } from '@/Lib/notify'
 import { apiErrorMessage } from '@/Lib/api'
+import { formatGregorianSyrianShort } from '@/Lib/syrian-date'
 import { transitApi } from '../_lib/api'
 import { transitAdminApi } from '@/Domain/transit/api'
 import { Separator } from '@/Components/ui/separator'
@@ -492,7 +493,7 @@ function TransitAdminPageContent() {
 
       queryClient.invalidateQueries({ queryKey: ['mapData'] })
       queryClient.invalidateQueries({ queryKey: ['routes'] })
-      try { fetchRoutes() } catch { /* */ }
+      await fetchRoutes()
     }
   }, [selectedRoute, editRouteNameAr, editRouteNameEn, editRouteColorIndex, editRoutePrice, fetchRoutes, showToast, queryClient])
 
@@ -535,7 +536,7 @@ function TransitAdminPageContent() {
 
       queryClient.invalidateQueries({ queryKey: ['mapData'] })
       queryClient.invalidateQueries({ queryKey: ['routes'] })
-      try { fetchRoutes() } catch { /* */ }
+      await fetchRoutes()
     }
   }, [selectedRoute, fetchRoutes, showToast, queryClient])
 
@@ -699,7 +700,7 @@ function TransitAdminPageContent() {
                           <span>·</span>
                           <span>{stopCount(draft)} محطة</span>
                           <span>·</span>
-                          <span>{new Date(draft.created_at).toLocaleDateString('ar-SY')}</span>
+                          <span>{formatGregorianSyrianShort(draft.created_at)}</span>
                         </div>
                         {draft.status === 'rejected' && draft.rejection_reason && (
                           <p className="text-[11px] text-destructive mt-1 italic">{draft.rejection_reason}</p>

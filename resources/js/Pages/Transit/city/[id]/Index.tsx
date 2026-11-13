@@ -85,7 +85,8 @@ export default function CityPage({ id, city, cities = [] }: CityPageProps) {
       <h1 className="sr-only">مواصلات {city.nameAr}</h1>
       <div className="relative h-full overflow-hidden">
         {isComposite && city.mapGroupLabel && (
-          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 rounded-full bg-card/90 border border-border px-3 py-1.5 text-[11px] text-muted-foreground shadow-sm pointer-events-none">
+          // Below the search box (top-3 + a 36px field) so the two never overlap.
+          <div className="pointer-events-none absolute inset-x-3 top-16 z-10 mx-auto max-w-md rounded-xl border border-border bg-card/90 px-3 py-1.5 text-center text-[11px] text-muted-foreground shadow-sm">
             تعرض هذه الخريطة خطوط {city.mapGroupLabel}: {groupNames.join(' و')} معاً.
           </div>
         )}

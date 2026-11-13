@@ -30,6 +30,23 @@ test('allowedTransitCities trims and drops blank entries', function () {
     expect($user->allowedTransitCities())->toBe(['homs', 'aleppo']);
 });
 
+test('the auth payload carries the resolved transit scope, not the raw scopes', function () {
+    // The browser compares against this list; the trimming and the superadmin
+    // bypass must not be re-implemented on the client.
+    $scoped = User::factory()->create([
+        'role' => 'user',
+        'permission_scopes' => ['transit' => ['homs', ' homs ']],
+    ]);
+    $super = User::factory()->create([
+        'role' => 'superadmin',
+        'permission_scopes' => ['transit' => ['homs']],
+    ]);
+
+    expect($scoped->toAuthPayload()['transit_scope'])->toBe(['homs'])
+        ->and($super->toAuthPayload()['transit_scope'])->toBeNull()
+        ->and($super->toAuthPayload()['permission_scopes'])->toBe(['transit' => ['homs']]);
+});
+
 test('hasPermissionInCity gates transit capabilities by governorate', function () {
     $user = User::factory()->create([
         'role' => 'user',

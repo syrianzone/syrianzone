@@ -19,20 +19,18 @@ export function PlacesMap(props: {
   className?: string;
 }) {
   return (
-    <MapCanvas center={[38.0, 35.0]} zoom={6.2} className={props.className}>
+    <MapCanvas className={props.className}>
       <PinLayer
         style={PLACE_PINS}
         data={props.features}
         selectedId={props.selectedType === 'place' ? props.selectedId : null}
         onPinClick={props.onPinClick}
-        onClusterClick={() => {}}
       />
       <PinLayer
         style={HOTEL_PINS}
         data={props.hotelFeatures}
         selectedId={props.selectedType === 'hotel' ? props.selectedId : null}
         onPinClick={props.onHotelPinClick}
-        onClusterClick={() => {}}
       />
       <MapInteractions addMode={props.addMode} onMapClick={props.onMapClick} />
       <HighlightMarker point={props.highlight} />

@@ -388,17 +388,10 @@ html {
     --input: 0 0% 89.8%;
     --ring: 105 15.2% 36.1%;
     --radius: 0.5rem;
-    /* Transit's accent alias. */
-    --gold: hsl(var(--primary));
-
-    /* Syrian Compass — figure category colours (light defaults) */
-    --fig-founder: #3b82f6;
-    --fig-baath: #ef4444;
-    --fig-islam: #16a34a;
-    --fig-civ: #ca8a04;
-    --fig-kurd: #9333ea;
-    --fig-minority: #ea580c;
-    --fig-current: #0284c7;
+    /* The sticky navbar's total height: the `h-16` row in
+       Components/Navbar.tsx plus its 1px bottom border. Full-viewport pages
+       subtract it instead of restating the arithmetic. */
+    --sz-navbar-h: calc(4rem + 1px);
 }
 
 [data-theme="jasmine"] {
@@ -452,15 +445,6 @@ html {
     --border: 0 0% 100% / 10%;
     --input: 0 0% 100% / 10%;
     --ring: 105 15.2% 36.1%;
-
-    /* Syrian Compass — figure colours (brighter for dark themes) */
-    --fig-founder: #60a5fa;
-    --fig-baath: #f87171;
-    --fig-islam: #4ade80;
-    --fig-civ: #facc15;
-    --fig-kurd: #c084fc;
-    --fig-minority: #fb923c;
-    --fig-current: #38bdf8;
 }
 
 

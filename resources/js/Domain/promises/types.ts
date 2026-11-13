@@ -18,6 +18,32 @@ export type PromiseStatus = (typeof PROMISE_STATUS_KEYS)[number];
 /** The editorial status plus the derived `overdue` state. */
 export type PromiseState = (typeof PROMISE_STATE_KEYS)[number];
 
+/** Where a statement was made (`Promise::VENUES`, checked against the file). */
+export const PROMISE_VENUE_KEYS = [
+    'x_post', 'facebook_post', 'telegram_post', 'tv_interview', 'news_interview',
+    'press_conference', 'official_statement', 'speech', 'other',
+] as const;
+
+export type PromiseVenue = (typeof PROMISE_VENUE_KEYS)[number];
+
+/** What kind of source a promise cites (`PromiseSource::TYPES`). */
+export const PROMISE_SOURCE_TYPE_KEYS = [
+    'x_post', 'facebook_post', 'telegram_post', 'tv_interview', 'press_conference',
+    'official_statement', 'news_article', 'video',
+] as const;
+
+export type PromiseSourceType = (typeof PROMISE_SOURCE_TYPE_KEYS)[number];
+
+/** The moderation verdict on a submission. */
+export const PROMISE_REVIEW_STATUS_KEYS = ['pending', 'published', 'rejected'] as const;
+
+export type ReviewStatus = (typeof PROMISE_REVIEW_STATUS_KEYS)[number];
+
+/** Who entered the promise: an editor, the public, or the research sweep. */
+export const PROMISE_ORIGIN_KEYS = ['editor', 'public', 'research'] as const;
+
+export type PromiseOrigin = (typeof PROMISE_ORIGIN_KEYS)[number];
+
 export interface SectorOption {
     id: string;
     label: string;
@@ -47,7 +73,7 @@ export interface PromiseCounter {
     value: number | null;
 }
 
-export interface PromiseCoSpeakerData {
+interface PromiseCoSpeakerData {
     id: string | null;
     name: string | null;
     title: string | null;
@@ -114,7 +140,7 @@ export interface PromiseUpdateData {
     archiveUrl: string | null;
 }
 
-export interface RelatedPromise {
+interface RelatedPromise {
     number: number;
     title: string;
     state: PromiseState;

@@ -14,7 +14,7 @@ import { notify } from '@/Lib/notify';
  * synced preference means adding it here as well.
  */
 
-export const USER_SETTINGS_URL = '/api/user/settings';
+const USER_SETTINGS_URL = '/api/user/settings';
 
 /** Long enough that a burst of toggles is one request, short enough that a
  * navigation away does not need the unload flush. */

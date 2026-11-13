@@ -10,8 +10,7 @@ import { BottomSheet } from '@/Components/BottomSheet';
 import { api } from '@/Domain/places/api';
 import { apiErrorMessage } from '@/Lib/api';
 import { notify } from '@/Lib/notify';
-import { discovery, type GridPhoto } from '@/Domain/places/discovery';
-import type { GeoSuggestion, HotelFeatureCollection, LatLng, Paginated, PlaceCategory, PlaceFeatureCollection, PlaceListItem } from '@/Domain/places/types';
+import type { GeoSuggestion, GridPhoto, HotelFeatureCollection, LatLng, Paginated, PlaceCategory, PlaceFeatureCollection, PlaceListItem } from '@/Domain/places/types';
 import { inSyriaBox } from '@/Domain/geography/syria';
 
 const PlacesMap = lazy(() => import('./_components/PlacesMap').then(m => ({ default: m.PlacesMap })));
@@ -84,7 +83,7 @@ export default function Index() {
   // a ?guide= link arrives without a name: look it up so the chip reads properly
   useEffect(() => {
     if (!guide || guide.name !== '') return;
-    discovery.guides('submissions')
+    api.guides('submissions')
       .then((res) => {
         const match = res.guides.find((g) => g.user_id === guide.id);
         setGuide({ id: guide.id, name: match?.name ?? 'مرشد' });
@@ -98,7 +97,7 @@ export default function Index() {
       .catch((e) => notify.error(apiErrorMessage(e)));
     api.hotelMapData()
       .then(setHotelFeatures)
-      .catch((e) => { console.warn('[Index] hotelMapData failed:', e); });
+      .catch((e) => notify.error(apiErrorMessage(e, 'تعذر تحميل طبقة الفنادق')));
   }, []);
 
   // ?place=ID deep link: open the detail and fly to the place once the map is ready
@@ -261,7 +260,7 @@ export default function Index() {
     <MainLayout>
       
       <h1 className="sr-only">مشوار — أماكن وفنادق</h1>
-      <div dir="rtl" className="relative h-[calc(100dvh-4rem)] overflow-hidden">
+      <div dir="rtl" className="relative h-[calc(100dvh-var(--sz-navbar-h))] overflow-hidden">
         <Suspense fallback={<div className="absolute inset-0 bg-background flex items-center justify-center text-muted-foreground">جاري تحميل الخريطة...</div>}>
           <PlacesMap
             features={filteredFeatures}

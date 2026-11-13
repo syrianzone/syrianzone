@@ -10,9 +10,9 @@ interface AuthContextType {
     isSuperAdmin: boolean;
     /** Reads the server-resolved capability list. */
     can: (permission: Capability) => boolean;
-    /** Capability + governorate scope (transit.* only), mirrors hasPermissionInCity(). */
+    /** Capability + governorate scope (transit.* only), from the server's resolved scope. */
     canInCity: (permission: Capability, cityId?: string | null) => boolean;
-    /** Allowed transit governorates, or null when unrestricted. */
+    /** Allowed transit governorates, or null when unrestricted (resolved server-side). */
     allowedTransitCities: () => string[] | null;
     refreshUser: () => Promise<void>;
 }
@@ -50,18 +50,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const can = (permission: Capability): boolean =>
         hasCapability(user?.effective_permissions, permission);
 
-    const allowedTransitCities = (): string[] | null => {
-        if (!user || isSuperAdmin) return null;
-
-        const scoped = user.permission_scopes?.transit;
-        if (!Array.isArray(scoped)) return null;
-
-        const cities = scoped.filter((city): city is string => typeof city === 'string' && city.length > 0);
-        return cities.length > 0 ? cities : null;
-    };
+    // The scope rule (superadmin bypass, stored scopes trimmed and emptied) is
+    // `User::allowedTransitCities()`, and it arrives resolved as `transit_scope`
+    // on the auth payload. This module only compares against it.
+    const allowedTransitCities = (): string[] | null => user?.transit_scope ?? null;
 
     const canInCity = (permission: Capability, cityId?: string | null): boolean => {
         if (!can(permission)) return false;
+        // Only transit.* capabilities carry a governorate scope
+        // (User::hasPermissionInCity()).
         if (!permission.startsWith('transit.')) return true;
 
         const allowed = allowedTransitCities();

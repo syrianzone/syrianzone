@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\PrayerController;
+use App\Models\User;
+use App\Support\Facts;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -240,4 +243,23 @@ test('returns a null hijri date when upstream omits it', function () {
     ->assertOk()
     ->assertJsonPath('hijri', null)
     ->assertJsonPath('timings.Fajr', '04:00');
+});
+
+// The account-settings validator, the timings proxy and the pickers must accept
+// the same method ids, and that list is resources/data/prayer.json. #6 was the
+// third copy of it; this is the check that it does not come back.
+test('account settings accept every method id the prayer table defines', function () {
+  $user = User::factory()->create();
+
+  expect(PrayerController::methods())->toBe(Facts::prayerMethodIds());
+
+  foreach (Facts::prayerMethodIds() as $id) {
+    $this->actingAs($user)
+      ->postJson('/api/user/settings', ['settings' => ['muslimMethod' => $id]])
+      ->assertOk();
+  }
+
+  $this->actingAs($user)
+    ->postJson('/api/user/settings', ['settings' => ['muslimMethod' => 99]])
+    ->assertStatus(422);
 });

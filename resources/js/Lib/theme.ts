@@ -74,10 +74,43 @@ export function getThemeById(id: string): ThemeConfig | undefined {
   return THEME_REGISTRY.find((t) => t.id === id);
 }
 
-export function isDarkTheme(id: string, systemDark: boolean): boolean {
-  if (id === SYSTEM_THEME) return systemDark;
-  const theme = getThemeById(id);
-  return theme ? theme.isDark : false;
+export interface ShareCardPalette {
+  /** The `light` theme draws a dark-on-light card; every other theme is the reverse. */
+  isLight: boolean;
+  textPrimary: string;
+  textSecondary: string;
+  textMuted: string;
+  /** Panel fill and hairline inside the card. */
+  cardBg: string;
+  cardBorder: string;
+}
+
+/**
+ * The text palette a 360×640 story card draws on its `priorities` gradient. The
+ * gradient is a theme record; these sets are not — the card is painted by
+ * html2canvas, which cannot read CSS tokens — so they live here once and both
+ * share cards (`Compass/components/CompassShareCard`, `PrioritiesApp`) read them
+ * instead of keeping a copy each.
+ */
+export function shareCardPalette(themeId: string): ShareCardPalette {
+  const isLight = themeId === 'light';
+  return isLight
+    ? {
+        isLight,
+        textPrimary: '#0f172a',
+        textSecondary: '#475569',
+        textMuted: '#64748b',
+        cardBg: 'rgba(255,255,255,0.75)',
+        cardBorder: 'rgba(203,213,225,0.8)',
+      }
+    : {
+        isLight,
+        textPrimary: '#ffffff',
+        textSecondary: '#94a3b8',
+        textMuted: 'rgba(255,255,255,0.5)',
+        cardBg: 'rgba(15,23,42,0.5)',
+        cardBorder: 'rgba(148,163,184,0.22)',
+      };
 }
 
 export type ColorScheme = 'light' | 'dark';

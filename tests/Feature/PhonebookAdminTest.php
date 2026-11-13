@@ -86,6 +86,71 @@ test('admin can create, toggle active state, and delete phonebook entries', func
     ]);
 });
 
+test('reorders with the payload the shared sortable list posts', function () {
+    $superadmin = User::factory()->create(['role' => 'superadmin']);
+
+    $category = PhonebookCategory::create([
+        'id' => 'test_cat',
+        'label_ar' => 'فئة تجريبية',
+        'label_en' => 'Test Category',
+        'order_column' => 1,
+        'is_active' => true,
+    ]);
+
+    $first = PhonebookEntry::create([
+        'id' => 'phone_first',
+        'category_id' => $category->id,
+        'name_ar' => 'الأول',
+        'number' => '111',
+        'order_column' => 1,
+        'is_active' => true,
+    ]);
+
+    $second = PhonebookEntry::create([
+        'id' => 'phone_second',
+        'category_id' => $category->id,
+        'name_ar' => 'الثاني',
+        'number' => '222',
+        'order_column' => 2,
+        'is_active' => true,
+    ]);
+
+    $this->withoutMiddleware(AutoLoginDevUser::class)
+        ->actingAs($superadmin)
+        ->postJson('/api/v1/admin/phonebook/entries/reorder', [
+            'orders' => [
+                ['id' => $second->id, 'order_column' => 1],
+                ['id' => $first->id, 'order_column' => 2],
+            ],
+        ])
+        ->assertRedirect();
+
+    expect($first->fresh()->order_column)->toBe(2)
+        ->and($second->fresh()->order_column)->toBe(1);
+});
+
+test('refuses the positional reorder payload the phonebook used to accept', function () {
+    $superadmin = User::factory()->create(['role' => 'superadmin']);
+
+    $category = PhonebookCategory::create([
+        'id' => 'test_cat',
+        'label_ar' => 'فئة تجريبية',
+        'label_en' => 'Test Category',
+        'order_column' => 1,
+        'is_active' => true,
+    ]);
+
+    $this->withoutMiddleware(AutoLoginDevUser::class)
+        ->actingAs($superadmin)
+        ->postJson('/api/v1/admin/phonebook/categories/reorder', [
+            'order' => [$category->id],
+        ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('orders');
+
+    expect($category->fresh()->order_column)->toBe(1);
+});
+
 test('two entries created without an id get distinct generated ids', function () {
     $superadmin = User::factory()->create(['role' => 'superadmin']);
 

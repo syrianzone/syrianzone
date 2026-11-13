@@ -50,7 +50,6 @@ class CompassAdminController extends Controller
         return inertia('Admin/Compass/Figures', [
             'figures' => $this->allFigures(),
             'categories' => CompassFigure::CATEGORIES,
-            'axes' => CompassStats::AXIS_IDS,
             'canViewStats' => (bool) $request->user()?->hasPermission(PermissionCatalogue::COMPASS_STATS),
         ]);
     }
@@ -206,7 +205,6 @@ class CompassAdminController extends Controller
     {
         return inertia('Admin/Compass/Personas', [
             'personas' => $this->allPersonas(),
-            'axes' => CompassStats::AXIS_IDS,
             'icons' => self::PERSONA_ICONS,
             'canViewStats' => (bool) $request->user()?->hasPermission(PermissionCatalogue::COMPASS_STATS),
         ]);

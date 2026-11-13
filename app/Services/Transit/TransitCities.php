@@ -46,6 +46,36 @@ class TransitCities
     }
 
     /**
+     * The card fields only: names, status and the live published-route count,
+     * without the map geometry.
+     *
+     * The 404 page draws the same city cards as the landing page, so it needs
+     * the same live counts — but it is rendered by the exception handler, on a
+     * path that may not be a transit one, and the two payloads above are
+     * MySQL-only (`ST_AsGeoJSON`). This query is plain SQL and is deliberately
+     * not cached: a 404 is not a hot page, and its counts come from the table.
+     *
+     * @return array<int, array{id: string, nameAr: string, nameEn: string, status: string, routeCount: int}>
+     */
+    public function forCards(): array
+    {
+        return City::query()
+            ->select('id', 'name_ar', 'name_en', 'status')
+            ->withCount(['routes as routeCount' => fn ($q) => $q->where('status', 'published')])
+            ->orderBy('id')
+            ->get()
+            ->map(fn (City $city) => [
+                'id' => (string) $city->id,
+                'nameAr' => (string) $city->name_ar,
+                'nameEn' => (string) $city->name_en,
+                'status' => (string) $city->status,
+                'routeCount' => (int) ($city->routeCount ?? 0),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
      * @return array<int, array<string, mixed>>
      */
     private function rows(bool $withIcons = false): array

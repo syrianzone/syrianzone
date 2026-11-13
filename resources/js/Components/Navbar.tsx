@@ -40,14 +40,6 @@ import { siteModule } from '@/Lib/siteModules';
 const MEGA_GRID = 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-9';
 
 /**
- * The sticky navbar's height: the `h-16` row plus its bottom border. Full-page
- * surfaces that fill the viewport under the navbar (the Quran reader) subtract
- * it, so the number lives next to the markup that produces it instead of being
- * measured from the DOM.
- */
-export const NAVBAR_HEIGHT_PX = 65;
-
-/**
  * The page links the navbar shows twice — in the "more" panel and in the mobile
  * sheet. They are not site modules (`about: true` marks the two the transit
  * variant of the panel leaves out).
@@ -356,9 +348,7 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
   // The buttons the navbar carries for one page's own dialog. The page owns the
   // dialog; the shell only knows which route shows which trigger.
   const setBookmarksOpen = useAppShell((s) => s.setBookmarksOpen);
-  const setRoznamaSettingsOpen = useAppShell((s) => s.setRoznamaSettingsOpen);
-  const setMuslimPrayerSettingsOpen = useAppShell((s) => s.setMuslimPrayerSettingsOpen);
-  const setHomeSettingsOpen = useAppShell((s) => s.setHomeSettingsOpen);
+  const openPageDialog = useAppShell((s) => s.openPageDialog);
   const quranFocus = useAppShell((s) => s.quranFocus);
   const pageActions = [
     // Quran reader (mobile): bookmark access. The reader's own top row
@@ -375,20 +365,22 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
       label: 'إعدادات الروزنامة',
       icon: Settings,
       className: 'h-9 w-9 sm:h-10 sm:w-10',
-      open: () => setRoznamaSettingsOpen(true),
+      open: () => openPageDialog('roznama-settings'),
     },
     {
       href: '/muslim/prayer',
       label: 'إعدادات المواقيت',
       icon: Settings,
       className: 'h-9 w-9 sm:h-10 sm:w-10',
-      open: () => setMuslimPrayerSettingsOpen(true),
+      open: () => openPageDialog('muslim-prayer-settings'),
     },
   ].filter((action) => isActive(action.href, pathname));
 
   return (
     quranFocus && isActive('/muslim/quran', pathname) ? null :
     <header className={`${sticky ? 'sticky top-0' : 'relative'} z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ${isHomepage ? 'lg:hidden' : ''}`}>
+      {/* This row plus the border of the header is `--sz-navbar-h`
+          (resources/css/app.css), which the full-viewport pages subtract. */}
       <div className="container relative flex h-16 max-w-7xl mx-auto items-center px-4 md:px-8 lg:px-6 xl:px-8 justify-between lg:justify-normal" dir="rtl">
         {/* Mobile Menu / Settings */}
         <div className="flex items-center lg:hidden">
@@ -397,7 +389,7 @@ export default function Navbar({ sticky = true }: { sticky?: boolean }) {
               variant="ghost"
               size="icon"
               className="h-9 w-9 sm:h-10 sm:w-10"
-              onClick={() => setHomeSettingsOpen(true)}
+              onClick={() => openPageDialog('home-settings')}
               title="الإعدادات"
             >
               <Settings className="h-5 w-5 sm:h-6 sm:w-6" />

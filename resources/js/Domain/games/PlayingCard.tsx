@@ -1,7 +1,7 @@
 import React from 'react';
 import { PIP_LAYOUTS, RANK_LABEL, SUIT_LABEL, isCourt, isRed, type Card } from './cards';
 
-export interface PlayingCardProps {
+interface PlayingCardProps {
   card: Card;
   /** Force the back — an opponent's hand, or a card with no up/down state of its own. */
   faceDown?: boolean;

@@ -2,7 +2,7 @@ import { MapPin } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/Components/ui/avatar';
 import { Button } from '@/Components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/Components/ui/dialog';
-import type { Guide } from '@/Domain/places/discovery';
+import type { Guide } from '@/Domain/places/types';
 import { LevelBadge, RANK_NAMES, rankName } from './LevelBadge';
 
 function nextRank(points: number): { level: number; points: number } | null {

@@ -5,7 +5,7 @@ export default function PopulationPage() {
     return (
         <MainLayout>
             
-            <div className="h-[calc(100vh-64px)] overflow-hidden flex flex-col bg-background">
+            <div className="h-[calc(100vh-var(--sz-navbar-h))] overflow-hidden flex flex-col bg-background">
                 <PopulationClient />
             </div>
         </MainLayout>

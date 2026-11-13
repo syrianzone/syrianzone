@@ -284,6 +284,25 @@ it('does not ship transit drafts or routes to the dashboard', function () {
         );
 });
 
+it('lists a staff account\'s own route drafts too', function () {
+    // Submitting in the studio is open to every account, so the tab that lists
+    // the result cannot be a role check: an editor who drafts a route watches it
+    // here like anyone else.
+    seedCity('damascus');
+    $staff = User::factory()->withPermissions(['transit.review_drafts'])->create();
+    transitDraft('damascus', ['user_id' => $staff->id, 'name_ar' => 'اقتراح الموظف']);
+
+    $this->actingAs($staff)
+        ->get('/dashboard')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('Dashboard/Index')
+            ->where('canSubmitTransit', true)
+            ->has('myDrafts', 1)
+            ->where('myDrafts.0.name_ar', 'اقتراح الموظف')
+        );
+});
+
 it('keeps a plain user on their own drafts only', function () {
     $user = User::factory()->create();
 
@@ -293,9 +312,9 @@ it('keeps a plain user on their own drafts only', function () {
         ->assertInertia(fn ($page) => $page
             ->component('Dashboard/Index')
             ->has('myDrafts')
-            // Nothing else. This is the one role check the dashboard keeps: a
-            // negative test asking "is this an ordinary account?", correct
-            // precisely because it is not an authorisation grant.
+            // Nothing else: the dashboard ships the account's own drafts and
+            // the studio's submit rule, never the transit admin's data.
+            ->where('canSubmitTransit', true)
             ->missing('cities')
             ->missing('allDrafts')
             ->missing('publishedRoutes')

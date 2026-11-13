@@ -228,7 +228,7 @@ class AuthController extends Controller
 
     public function user(Request $request)
     {
-        $user = $request->user() ?? Auth::guard('sanctum')->user();
+        $user = $request->user();
 
         if ($user && $user->is_banned) {
             return response()->json(['message' => 'تم حظر حسابك.'], 403);
@@ -259,7 +259,7 @@ class AuthController extends Controller
      */
     public function apiLogout(Request $request)
     {
-        $user = $request->user() ?? Auth::guard('sanctum')->user();
+        $user = $request->user();
         $accessToken = $user?->currentAccessToken();
 
         if ($accessToken instanceof PersonalAccessToken) {
@@ -280,7 +280,7 @@ class AuthController extends Controller
 
     public function apiLogoutAllDevices(Request $request)
     {
-        $user = $request->user() ?? Auth::guard('sanctum')->user();
+        $user = $request->user();
         if (! $user) {
             return response()->json(['message' => 'Unauthenticated.'], 401);
         }

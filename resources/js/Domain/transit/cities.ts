@@ -1,21 +1,20 @@
-import seed from './cities.json';
-
-/** One city of the committed transit seed, as the seeder and the city pages name it. */
-export interface TransitCitySeed {
-  id: string;
-  nameAr: string;
-  nameEn: string;
-  status: 'active' | 'coming_soon';
-  routeCount?: number;
-  bounds: [[number, number], [number, number]] | null;
-  center: [number, number];
-  zoom: number;
-}
+import { useQuery } from '@tanstack/react-query';
+import { transitCities } from './api';
+import type { TransitCity } from './types';
 
 /**
- * The committed city list — seed data, not a second copy of the API. The server
- * renders the live list; the surfaces that have no server payload (the 404's
- * city grid, the global search's transit group) read this, and this module is
- * the one TypeScript reader of the JSON.
+ * The live city list — `GET /api/v1/cities` — for the surfaces that are not the
+ * map: the search palette's city group and the 404 grid.
+ *
+ * The list is the table's, so the "N خط" badge and the card's link follow what
+ * the server serves instead of a checked-in copy of the cities. `enabled` lets a
+ * closed palette ask for nothing; the shared query client caches the answer for
+ * every surface that opens afterwards.
  */
-export const TRANSIT_CITY_SEED: readonly TransitCitySeed[] = seed as TransitCitySeed[];
+export function useTransitCities(enabled = true) {
+  return useQuery<TransitCity[]>({
+    queryKey: ['transit', 'cities'],
+    queryFn: ({ signal }) => transitCities(signal),
+    enabled,
+  });
+}

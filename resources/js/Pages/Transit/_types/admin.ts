@@ -1,25 +1,18 @@
 /** A route draft in the moderation queue (`GET /api/v1/admin/route-drafts`). */
-export type DraftStatus = 'pending' | 'approved' | 'rejected'
+import type { RouteDraftRow } from '@/Domain/transit/types'
 
 export type RouteStatus = 'published' | 'disapproved' | 'hidden'
 
-export interface Draft {
-  id: number
-  user_id: number
+/**
+ * The queue's row: the draft columns both listings carry (`RouteDraftRow`) plus
+ * what the admin screen loads on top — the contributor, the linked published
+ * route and the drawn geometry.
+ */
+export interface Draft extends RouteDraftRow {
   user: { name: string } | null
-  route_id: string | null
   linked_route: { name_ar: string; name_en: string } | null
-  city_id: string
-  city: { name_ar: string; name_en: string } | null
-  name_ar: string
-  name_en: string | null
-  price: number | null
-  notes: string | null
   /** GeoJSON, usually a JSON string on the wire; normalise before drawing. */
   geojson: unknown
-  status: DraftStatus
-  rejection_reason: string | null
-  created_at: string
 }
 
 export interface PublishedRoute {
